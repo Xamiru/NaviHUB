@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output
+out/
+dist/
+dist-electron/
+release/
+.vite/
+
+# TypeScript incremental build cache
+*.tsbuildinfo
+
+# Claude Code — local, machine-specific settings (keep shared settings.json if added)
+.claude/settings.local.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db

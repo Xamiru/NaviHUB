@@ -1,0 +1,1194 @@
+#!/usr/bin/env node
+/*
+ * NaviHUB one-time BULK importer.
+ *
+ * This is NOT wired into the app — it's a standalone maintenance script you run
+ * once to seed the library, then forget. It talks to the same SQLite DB the app
+ * uses (~/.config/navihub/navihub.db) and writes images into the same media
+ * folder, replicating the exact persist logic from src/main/anilist.ts and
+ * src/main/tmdb.ts (dedup by external_source/external_id, authoritative re-import
+ * with prune, personal-tracking preservation).
+ *
+ * IMPORTANT — how to run it:
+ *   better-sqlite3 in this project is built against ELECTRON's ABI (electron-rebuild),
+ *   so a plain `node` can't open the DB. Run it through Electron-as-Node:
+ *
+ *     ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron scripts/bulk-import.cjs <command> [flags]
+ *
+ *   (Inside the VS Code / Claude Code terminal ELECTRON_RUN_AS_NODE is already set,
+ *    so `./node_modules/.bin/electron scripts/bulk-import.cjs ...` is enough.)
+ *
+ *   >>> CLOSE THE NAVIHUB APP FIRST <<< so the two processes don't fight over writes.
+ *
+ * Commands:
+ *   anilist-user <username> [--limit N] [--basic] [--preserve-tracking] [--skip-anime] [--skip-manga] [--delay MS]
+ *       Import your whole AniList anime AND manga lists by username (public, no login).
+ *       Brings over your status / score (0-10) / progress. Full detail by default
+ *       (characters, voice actors, studios, staff — the VA cross-link graph; manga
+ *       gets characters + mangaka, no voice actors). --basic skips cast/staff for a
+ *       fast metadata+tracking seed. --skip-anime / --skip-manga do just one list.
+ *
+ *   tmdb-top [--type movie|tv] [--list top_rated|popular|trending] [--count N] [--omdb-key KEY] [--delay MS]
+ *       Import a ranked list of titles from TMDB (uses the api key already saved
+ *       in the app's Settings → settings table key `tmdb.api_key`).
+ *       Defaults: --type movie --list top_rated --count 50.
+ *       --omdb-key adds IMDb rating + Rotten Tomatoes per title (free key from
+ *       omdbapi.com; otherwise read from settings `omdb.api_key` if present).
+ *
+ *   anime-themes [--limit N] [--no-audio] [--only-missing] [--audio-dir PATH] [--delay MS]
+ *       Add opening/ending songs (+ artists + audio) to every AniList-sourced
+ *       anime already in the library, from AnimeThemes.moe. Downloads each .ogg
+ *       by default (a few MB each); --no-audio stores only the streaming URL.
+ *       --audio-dir sets where audio is saved (e.g. a roomier drive) and remembers
+ *       it for the app too. --only-missing skips anime that already have themes.
+ *       Run this AFTER anilist-user so there are anime to match.
+ *
+ * Examples:
+ *   ./node_modules/.bin/electron scripts/bulk-import.cjs anilist-user YourName
+ *   ./node_modules/.bin/electron scripts/bulk-import.cjs anilist-user YourName --basic --limit 200
+ *   ./node_modules/.bin/electron scripts/bulk-import.cjs tmdb-top --type movie --list top_rated --count 100
+ *   ./node_modules/.bin/electron scripts/bulk-import.cjs tmdb-top --type tv --list popular --count 40
+ */
+
+const path = require('path')
+const os = require('os')
+const fs = require('fs')
+const Database = require('better-sqlite3')
+
+/* ----------------------------- paths / db ----------------------------- */
+// Mirrors Electron's app.getPath('userData') on Linux: ~/.config/<name>.
+// Override with NAVIHUB_DIR if your data lives elsewhere.
+const USER_DIR = process.env.NAVIHUB_DIR || path.join(os.homedir(), '.config', 'navihub')
+const DB_PATH = path.join(USER_DIR, 'navihub.db')
+const MEDIA_DIR = path.join(USER_DIR, 'media')
+
+if (!fs.existsSync(DB_PATH)) {
+  console.error(`✗ DB not found at ${DB_PATH}. Run the app once first (or set NAVIHUB_DIR).`)
+  process.exit(1)
+}
+if (!fs.existsSync(MEDIA_DIR)) fs.mkdirSync(MEDIA_DIR, { recursive: true })
+
+const db = new Database(DB_PATH)
+db.pragma('journal_mode = WAL')
+db.pragma('foreign_keys = ON')
+
+// The theme tables are newer than some DBs; create them if the app hasn't yet
+// (CREATE TABLE IF NOT EXISTS mirrors src/main/db/init.sql — keep in sync).
+db.exec(`
+  CREATE TABLE IF NOT EXISTS theme_song (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    media_id INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+    slug TEXT, type TEXT, sequence INTEGER, title TEXT,
+    audio_url TEXT, audio_path TEXT, sort_order INTEGER,
+    external_source TEXT, external_id TEXT,
+    UNIQUE(external_source, external_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_theme_media ON theme_song(media_id);
+  CREATE TABLE IF NOT EXISTS theme_artist (
+    theme_song_id INTEGER NOT NULL REFERENCES theme_song(id) ON DELETE CASCADE,
+    person_id INTEGER NOT NULL REFERENCES person(id) ON DELETE CASCADE,
+    sort_order INTEGER,
+    UNIQUE(theme_song_id, person_id)
+  );
+  CREATE INDEX IF NOT EXISTS idx_theme_artist_song ON theme_artist(theme_song_id);
+  CREATE INDEX IF NOT EXISTS idx_theme_artist_person ON theme_artist(person_id);
+`)
+
+/* ----------------------------- utilities ----------------------------- */
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+let dlCounter = 0
+// Mirrors src/main/files.ts downloadImage(): fetch a remote image into MEDIA_DIR,
+// return the stored relative path ("media/dl-...") or null on any failure.
+async function downloadImage(url) {
+  if (!url) return null
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    const urlExt = path.extname(new URL(url).pathname)
+    const ext = /^\.(png|jpe?g|webp|gif|bmp)$/i.test(urlExt) ? urlExt : '.jpg'
+    dlCounter += 1
+    const fileName = `dl-${process.pid}-${dlCounter}${ext}`
+    fs.writeFileSync(path.join(MEDIA_DIR, fileName), buf)
+    return path.join('media', fileName)
+  } catch {
+    return null
+  }
+}
+
+// Theme-song audio dir — resolved by cmdAnimeThemes from --audio-dir / the
+// `audio.dir` setting / the default media dir. Files are stored under a virtual
+// "audio/" prefix (see src/main/files.ts) so the location stays swappable.
+let AUDIO_DIR = MEDIA_DIR
+// Illegal path chars + control chars -> space (mirrors src/main/files.ts).
+function sanitizeFileBase(s) {
+  // eslint-disable-next-line no-control-regex
+  const clean = s.replace(/[/\\:*?"<>|\x00-\x1f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120)
+  return clean || 'theme'
+}
+// Mirrors src/main/files.ts downloadAudio(): fetch a remote audio file into the
+// audio dir, return the stored relative path ("audio/<file>") or null. baseName
+// gives the file a readable name (e.g. "Berserk OP1 - Tell Me Why").
+async function downloadAudio(url, baseName) {
+  if (!url) return null
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    const urlExt = path.extname(new URL(url).pathname)
+    const ext = /^\.(ogg|mp3|m4a|aac|opus|webm|wav)$/i.test(urlExt) ? urlExt : '.ogg'
+    if (!fs.existsSync(AUDIO_DIR)) fs.mkdirSync(AUDIO_DIR, { recursive: true })
+    let fileName
+    if (baseName && baseName.trim()) {
+      fileName = `${sanitizeFileBase(baseName)}${ext}`
+    } else {
+      dlCounter += 1
+      fileName = `aud-${process.pid}-${dlCounter}${ext}`
+    }
+    fs.writeFileSync(path.join(AUDIO_DIR, fileName), buf)
+    return `audio/${fileName}`
+  } catch {
+    return null
+  }
+}
+
+// Merge a JSON-patch into an existing metadata JSON string (null-safe). null/
+// undefined patch values are skipped so we never clobber with nothing.
+function mergeMeta(rawJson, patch) {
+  let obj = {}
+  if (rawJson) {
+    try {
+      obj = JSON.parse(rawJson) || {}
+    } catch {
+      obj = {}
+    }
+  }
+  for (const [k, v] of Object.entries(patch)) {
+    if (v == null) continue
+    obj[k] = v
+  }
+  return Object.keys(obj).length ? JSON.stringify(obj) : null
+}
+
+// genre name -> tag id (shared by both sources).
+function upsertTagAndLink(mediaId, name) {
+  if (!name) return
+  const existing = db.prepare('SELECT id FROM tag WHERE name=?').get(name)
+  const tagId = existing
+    ? existing.id
+    : Number(db.prepare('INSERT INTO tag (name, category) VALUES (?, ?)').run(name, 'genre').lastInsertRowid)
+  db.prepare('INSERT OR IGNORE INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, tagId)
+}
+
+// Authoritative prune (mirrors both importers): drop SOURCE-sourced characters
+// linked to this media that weren't in the latest import, then sweep orphans.
+function pruneCharacters(mediaId, source, keptCharacterIds) {
+  const linked = db
+    .prepare(
+      `SELECT mc.character_id AS cid FROM media_character mc
+       JOIN character ch ON ch.id = mc.character_id
+       WHERE mc.media_id = ? AND ch.external_source = ?`
+    )
+    .all(mediaId, source)
+  for (const { cid } of linked) {
+    if (!keptCharacterIds.has(cid)) {
+      db.prepare('DELETE FROM credit WHERE media_id = ? AND character_id = ?').run(mediaId, cid)
+      db.prepare('DELETE FROM media_character WHERE media_id = ? AND character_id = ?').run(mediaId, cid)
+    }
+  }
+  db.prepare(
+    `DELETE FROM character WHERE external_source = ?
+     AND id NOT IN (SELECT character_id FROM media_character)`
+  ).run(source)
+}
+
+function parseFlags(argv) {
+  const flags = {}
+  const positional = []
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i]
+    if (a.startsWith('--')) {
+      const key = a.slice(2)
+      const next = argv[i + 1]
+      if (next === undefined || next.startsWith('--')) flags[key] = true
+      else {
+        flags[key] = next
+        i++
+      }
+    } else positional.push(a)
+  }
+  return { flags, positional }
+}
+
+/* =====================================================================
+ * ANILIST  (anime) — ports src/main/anilist.ts
+ * ===================================================================== */
+const AL_ENDPOINT = 'https://graphql.anilist.co'
+const AL_SOURCE = 'anilist'
+// Manga characters get their own source so a character shared by an anime and
+// its manga stays two distinct rows (and each prune stays scoped to its type).
+const AL_MANGA_CHAR_SOURCE = 'anilist-manga'
+
+async function alGql(query, variables, attempt = 0) {
+  const res = await fetch(AL_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ query, variables })
+  })
+  if (res.status === 429) {
+    const retry = Number(res.headers.get('retry-after')) || 60
+    console.log(`   …rate-limited by AniList, waiting ${retry}s`)
+    await sleep((retry + 1) * 1000)
+    return alGql(query, variables, attempt)
+  }
+  if (!res.ok) {
+    if (attempt < 3) {
+      await sleep(2000)
+      return alGql(query, variables, attempt + 1)
+    }
+    throw new Error(`AniList request failed (${res.status})`)
+  }
+  const json = await res.json()
+  if (json.errors?.length) throw new Error(json.errors[0].message ?? 'AniList error')
+  return json.data
+}
+
+const alPickTitle = (t) => ({
+  title: t?.english || t?.romaji || t?.native || 'Untitled',
+  native: t?.native ?? null
+})
+function alStripHtml(s) {
+  if (!s) return null
+  return s.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').replace(/\n{3,}/g, '\n\n').trim()
+}
+function alFmtDate(d) {
+  if (!d?.year) return null
+  return `${d.year}-${String(d.month ?? 1).padStart(2, '0')}-${String(d.day ?? 1).padStart(2, '0')}`
+}
+function alRankFromRole(role) {
+  switch ((role ?? '').toUpperCase()) {
+    case 'MAIN': return 0
+    case 'SUPPORTING': return 1
+    case 'BACKGROUND': return 2
+    default: return 3
+  }
+}
+function alMapStaffRole(role) {
+  const r = (role ?? '').toLowerCase()
+  if (r.includes('director') && !r.includes('art') && !r.includes('sound')) return 'director'
+  if (r.includes('composition') || r.includes('script') || r.includes('screenplay')) return 'writer'
+  if (r.includes('music')) return 'composer'
+  return 'staff'
+}
+// Manga staff are mostly the author/artist; surface those as mangaka.
+function alMapMangaStaffRole(role) {
+  const r = (role ?? '').toLowerCase()
+  if (r.includes('story') || r.includes('art') || r.includes('creator') || r.includes('mangaka')) return 'mangaka'
+  return 'staff'
+}
+
+const AL_DETAIL_QUERY = `
+query ($id: Int) {
+  Media(id: $id, type: ANIME) {
+    id
+    title { romaji english native }
+    description(asHtml: false)
+    episodes
+    averageScore
+    startDate { year month day }
+    coverImage { large extraLarge }
+    genres
+    studios { edges { isMain node { id name } } }
+    characters(sort: [ROLE, FAVOURITES_DESC], page: 1, perPage: 25) {
+      pageInfo { hasNextPage }
+      edges {
+        role
+        node { id name { full native } image { large } }
+        voiceActors(language: JAPANESE) { id name { full native } image { large } }
+      }
+    }
+    staff(perPage: 8, sort: RELEVANCE) {
+      edges { role node { id name { full native } image { large } } }
+    }
+  }
+}`
+
+const AL_CHARS_QUERY = `
+query ($id: Int, $page: Int) {
+  Media(id: $id, type: ANIME) {
+    characters(sort: [ROLE, FAVOURITES_DESC], page: $page, perPage: 25) {
+      pageInfo { hasNextPage }
+      edges {
+        role
+        node { id name { full native } image { large } }
+        voiceActors(language: JAPANESE) { id name { full native } image { large } }
+      }
+    }
+  }
+}`
+
+// A user's anime list with personal tracking. Public — no auth.
+const AL_LIST_QUERY = `
+query ($userName: String) {
+  MediaListCollection(userName: $userName, type: ANIME) {
+    lists {
+      name
+      isCustomList
+      entries {
+        status
+        score(format: POINT_10)
+        progress
+        media { id }
+      }
+    }
+  }
+}`
+
+// A user's manga list with personal tracking (same shape, type MANGA).
+const AL_LIST_QUERY_MANGA = `
+query ($userName: String) {
+  MediaListCollection(userName: $userName, type: MANGA) {
+    lists {
+      name
+      isCustomList
+      entries {
+        status
+        score(format: POINT_10)
+        progress
+        media { id }
+      }
+    }
+  }
+}`
+
+// AniList list status -> the app's default anime status labels.
+const AL_STATUS_MAP = {
+  CURRENT: 'Watching',
+  REPEATING: 'Watching',
+  PLANNING: 'Plan to Watch',
+  COMPLETED: 'Completed',
+  DROPPED: 'Dropped',
+  PAUSED: 'On Hold'
+}
+
+// -> the app's default manga status labels (Reading / Plan to Read…).
+const AL_STATUS_MAP_MANGA = {
+  CURRENT: 'Reading',
+  REPEATING: 'Reading',
+  PLANNING: 'Plan to Read',
+  COMPLETED: 'Completed',
+  DROPPED: 'Dropped',
+  PAUSED: 'On Hold'
+}
+
+async function alUpsertCompany(node) {
+  const ext = String(node.id)
+  const row = db.prepare('SELECT id FROM company WHERE external_source=? AND external_id=?').get(AL_SOURCE, ext)
+  if (row) return row.id
+  return Number(
+    db.prepare('INSERT INTO company (name, type, external_source, external_id) VALUES (?, ?, ?, ?)')
+      .run(node.name, 'studio', AL_SOURCE, ext).lastInsertRowid
+  )
+}
+async function alUpsertPerson(node) {
+  const ext = String(node.id)
+  const row = db.prepare('SELECT id, photo_path FROM person WHERE external_source=? AND external_id=?').get(AL_SOURCE, ext)
+  const name = node.name?.full ?? 'Unknown'
+  const nativeName = node.name?.native ?? null
+  if (row) {
+    if (!row.photo_path && node.image?.large) {
+      const p = await downloadImage(node.image.large)
+      if (p) db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(p, row.id)
+    }
+    return row.id
+  }
+  const photo = await downloadImage(node.image?.large)
+  return Number(
+    db.prepare('INSERT INTO person (name, name_native, photo_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)')
+      .run(name, nativeName, photo, AL_SOURCE, ext).lastInsertRowid
+  )
+}
+async function alUpsertCharacter(node, charSource = AL_SOURCE) {
+  const ext = String(node.id)
+  const row = db.prepare('SELECT id, image_path FROM character WHERE external_source=? AND external_id=?').get(charSource, ext)
+  const name = node.name?.full ?? 'Unknown'
+  const nativeName = node.name?.native ?? null
+  if (row) {
+    if (!row.image_path && node.image?.large) {
+      const p = await downloadImage(node.image.large)
+      if (p) db.prepare('UPDATE character SET image_path=? WHERE id=?').run(p, row.id)
+    }
+    return row.id
+  }
+  const img = await downloadImage(node.image?.large)
+  return Number(
+    db.prepare('INSERT INTO character (name, name_native, image_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)')
+      .run(name, nativeName, img, charSource, ext).lastInsertRowid
+  )
+}
+
+// Ports importAnime(). `full` controls whether cast/staff are fetched.
+async function alImportAnime(anilistId, { full }) {
+  const data = await alGql(AL_DETAIL_QUERY, { id: anilistId })
+  const m = data?.Media
+  if (!m) throw new Error('Anime not found on AniList')
+
+  const { title, native } = alPickTitle(m.title)
+  const coverPath = await downloadImage(m.coverImage?.extraLarge || m.coverImage?.large)
+
+  const existing = db.prepare('SELECT id FROM media_item WHERE external_source=? AND external_id=?').get(AL_SOURCE, String(m.id))
+  let mediaId
+  const created = !existing
+  if (existing) {
+    mediaId = existing.id
+    db.prepare(
+      `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+       total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
+    ).run(title, native, alStripHtml(m.description), coverPath, m.episodes ?? null, alFmtDate(m.startDate), mediaId)
+  } else {
+    mediaId = Number(
+      db.prepare(
+        `INSERT INTO media_item
+         (media_type, title, title_original, synopsis, cover_path, total_units, release_date, external_source, external_id)
+         VALUES ('anime', ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(title, native, alStripHtml(m.description), coverPath, m.episodes ?? null, alFmtDate(m.startDate), AL_SOURCE, String(m.id)).lastInsertRowid
+    )
+  }
+
+  // AniList community average (0-100) -> metadata, merged so re-import doesn't
+  // wipe any other metadata keys. Shown beside the user's own score in the app.
+  const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId)
+  const meta = mergeMeta(metaRow?.metadata, {
+    averageScore: typeof m.averageScore === 'number' && m.averageScore > 0 ? m.averageScore : null
+  })
+  db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(meta, mediaId)
+
+  // studios (main only) + genres always (cheap, no images for studios/genres)
+  let studios = 0
+  for (const edge of m.studios?.edges ?? []) {
+    if (!edge.isMain) continue
+    const companyId = await alUpsertCompany(edge.node)
+    db.prepare('INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)').run(mediaId, companyId, 'animation_studio')
+    studios++
+  }
+  for (const g of m.genres ?? []) upsertTagAndLink(mediaId, g)
+
+  let cast = 0
+  let staff = 0
+  if (full) {
+    const MAX_CHARACTERS = 125
+    const charEdges = [...(m.characters?.edges ?? [])]
+    let hasNext = !!m.characters?.pageInfo?.hasNextPage
+    let page = 1
+    while (hasNext && charEdges.length < MAX_CHARACTERS) {
+      page++
+      const more = await alGql(AL_CHARS_QUERY, { id: anilistId, page })
+      const conn = more?.Media?.characters
+      charEdges.push(...(conn?.edges ?? []))
+      hasNext = !!conn?.pageInfo?.hasNextPage
+    }
+    const limited = charEdges.slice(0, MAX_CHARACTERS)
+
+    let order = 0
+    const keptCharacterIds = new Set()
+    for (const edge of limited) {
+      const characterId = await alUpsertCharacter(edge.node)
+      keptCharacterIds.add(characterId)
+      const sortOrder = order++
+      const importance = alRankFromRole(edge.role)
+      db.prepare(
+        `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)
+         ON CONFLICT(media_id, character_id) DO UPDATE SET sort_order = excluded.sort_order`
+      ).run(mediaId, characterId, sortOrder)
+      for (const va of edge.voiceActors ?? []) {
+        const personId = await alUpsertPerson(va)
+        const dup = db.prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND character_id IS ? AND role=?')
+          .get(mediaId, personId, characterId, 'voice_actor')
+        if (dup) db.prepare('UPDATE credit SET importance=? WHERE id=?').run(importance, dup.id)
+        else db.prepare('INSERT INTO credit (media_id, person_id, character_id, role, language, importance) VALUES (?, ?, ?, ?, ?, ?)')
+          .run(mediaId, personId, characterId, 'voice_actor', 'Japanese', importance)
+        cast++
+      }
+    }
+    pruneCharacters(mediaId, AL_SOURCE, keptCharacterIds)
+
+    for (const edge of m.staff?.edges ?? []) {
+      const personId = await alUpsertPerson(edge.node)
+      const role = alMapStaffRole(edge.role)
+      const dup = db.prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL').get(mediaId, personId, role)
+      if (!dup) db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(mediaId, personId, role)
+      staff++
+    }
+  }
+
+  return { mediaId, title, studios, cast, staff, created }
+}
+
+const AL_DETAIL_QUERY_MANGA = `
+query ($id: Int) {
+  Media(id: $id, type: MANGA) {
+    id
+    title { romaji english native }
+    description(asHtml: false)
+    chapters
+    averageScore
+    startDate { year month day }
+    coverImage { large extraLarge }
+    genres
+    characters(sort: [ROLE, FAVOURITES_DESC], page: 1, perPage: 25) {
+      pageInfo { hasNextPage }
+      edges { role node { id name { full native } image { large } } }
+    }
+    staff(perPage: 8, sort: RELEVANCE) {
+      edges { role node { id name { full native } image { large } } }
+    }
+  }
+}`
+
+const AL_CHARS_QUERY_MANGA = `
+query ($id: Int, $page: Int) {
+  Media(id: $id, type: MANGA) {
+    characters(sort: [ROLE, FAVOURITES_DESC], page: $page, perPage: 25) {
+      pageInfo { hasNextPage }
+      edges { role node { id name { full native } image { large } } }
+    }
+  }
+}`
+
+// Ports importManga(): like anime but no studios, no voice actors; characters use
+// AL_MANGA_CHAR_SOURCE and staff are surfaced as mangaka.
+async function alImportManga(anilistId, { full }) {
+  const data = await alGql(AL_DETAIL_QUERY_MANGA, { id: anilistId })
+  const m = data?.Media
+  if (!m) throw new Error('Manga not found on AniList')
+
+  const { title, native } = alPickTitle(m.title)
+  const coverPath = await downloadImage(m.coverImage?.extraLarge || m.coverImage?.large)
+
+  const existing = db.prepare('SELECT id FROM media_item WHERE external_source=? AND external_id=?').get(AL_SOURCE, String(m.id))
+  let mediaId
+  const created = !existing
+  if (existing) {
+    mediaId = existing.id
+    db.prepare(
+      `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+       total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
+    ).run(title, native, alStripHtml(m.description), coverPath, m.chapters ?? null, alFmtDate(m.startDate), mediaId)
+  } else {
+    mediaId = Number(
+      db.prepare(
+        `INSERT INTO media_item
+         (media_type, title, title_original, synopsis, cover_path, total_units, release_date, external_source, external_id)
+         VALUES ('manga', ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(title, native, alStripHtml(m.description), coverPath, m.chapters ?? null, alFmtDate(m.startDate), AL_SOURCE, String(m.id)).lastInsertRowid
+    )
+  }
+
+  const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId)
+  const meta = mergeMeta(metaRow?.metadata, {
+    averageScore: typeof m.averageScore === 'number' && m.averageScore > 0 ? m.averageScore : null
+  })
+  db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(meta, mediaId)
+
+  for (const g of m.genres ?? []) upsertTagAndLink(mediaId, g)
+
+  let staff = 0
+  const keptCharacterIds = new Set()
+  if (full) {
+    const MAX_CHARACTERS = 125
+    const charEdges = [...(m.characters?.edges ?? [])]
+    let hasNext = !!m.characters?.pageInfo?.hasNextPage
+    let page = 1
+    while (hasNext && charEdges.length < MAX_CHARACTERS) {
+      page++
+      const more = await alGql(AL_CHARS_QUERY_MANGA, { id: anilistId, page })
+      const conn = more?.Media?.characters
+      charEdges.push(...(conn?.edges ?? []))
+      hasNext = !!conn?.pageInfo?.hasNextPage
+    }
+    const limited = charEdges.slice(0, MAX_CHARACTERS)
+
+    let order = 0
+    for (const edge of limited) {
+      const characterId = await alUpsertCharacter(edge.node, AL_MANGA_CHAR_SOURCE)
+      keptCharacterIds.add(characterId)
+      const sortOrder = order++
+      db.prepare(
+        `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)
+         ON CONFLICT(media_id, character_id) DO UPDATE SET sort_order = excluded.sort_order`
+      ).run(mediaId, characterId, sortOrder)
+    }
+    pruneCharacters(mediaId, AL_MANGA_CHAR_SOURCE, keptCharacterIds)
+
+    for (const edge of m.staff?.edges ?? []) {
+      const personId = await alUpsertPerson(edge.node)
+      const role = alMapMangaStaffRole(edge.role)
+      const dup = db.prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL').get(mediaId, personId, role)
+      if (!dup) db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(mediaId, personId, role)
+      staff++
+    }
+  }
+
+  // cast count reports linked characters (manga has no per-character credits).
+  return { mediaId, title, studios: 0, cast: keptCharacterIds.size, staff, created }
+}
+
+// Import one AniList list (anime or manga) for a user. Shared by both sections.
+async function alImportUserSection(sec, username, { full, limit, preserveTracking, delay }) {
+  console.log(`▶ Fetching AniList ${sec.label} list for "${username}"…`)
+  const data = await alGql(sec.listQuery, { userName: username })
+  const lists = data?.MediaListCollection?.lists ?? []
+  // Standard status lists only (skip custom lists, which duplicate entries).
+  const seen = new Set()
+  const entries = []
+  for (const list of lists) {
+    if (list.isCustomList) continue
+    for (const e of list.entries ?? []) {
+      const id = e.media?.id
+      if (!id || seen.has(id)) continue
+      seen.add(id)
+      entries.push(e)
+    }
+  }
+  const targets = entries.slice(0, limit === Infinity ? entries.length : limit)
+  console.log(`  Found ${entries.length} ${sec.label}${targets.length < entries.length ? `, importing first ${targets.length}` : ''}. Mode: ${full ? 'full detail' : 'basic'}.\n`)
+
+  let ok = 0
+  const failures = []
+  for (let i = 0; i < targets.length; i++) {
+    const e = targets[i]
+    const id = e.media.id
+    const tag = `[${sec.label} ${i + 1}/${targets.length}]`
+    try {
+      const sum = await sec.importFn(id, { full })
+      // tracking: AniList authoritative by default; --preserve-tracking only sets on first add.
+      if (!preserveTracking || sum.created) {
+        const status = sec.statusMap[e.status] ?? null
+        const score = e.score && e.score > 0 ? e.score : null
+        db.prepare(`UPDATE media_item SET status=?, score=?, progress=?, updated_at=datetime('now') WHERE id=?`)
+          .run(status, score, e.progress ?? 0, sum.mediaId)
+      }
+      ok++
+      console.log(`${tag} ✓ ${sum.title} (${sum.created ? 'added' : 'updated'}${full ? `, ${sum.cast} ${sec.castLabel}` : ''})`)
+    } catch (err) {
+      failures.push({ id, msg: err.message })
+      console.log(`${tag} ✗ AniList ${sec.label} #${id} — ${err.message}`)
+    }
+    if (delay) await sleep(delay)
+  }
+
+  console.log(`\n✔ ${sec.label}: ${ok}/${targets.length} imported.${failures.length ? ` ${failures.length} failed.` : ''}`)
+  if (failures.length) console.log('  Failed ids:', failures.map((f) => f.id).join(', '))
+  return { ok, total: targets.length, failures: failures.length }
+}
+
+async function cmdAnilistUser(positional, flags) {
+  const username = positional[0]
+  if (!username) {
+    console.error('✗ Usage: anilist-user <username> [--limit N] [--basic] [--preserve-tracking] [--skip-anime] [--skip-manga] [--delay MS]')
+    process.exit(1)
+  }
+  const opts = {
+    full: !flags.basic,
+    limit: flags.limit ? Number(flags.limit) : Infinity,
+    preserveTracking: !!flags['preserve-tracking'],
+    delay: flags.delay ? Number(flags.delay) : 500
+  }
+
+  // Both lists by default; characters from each stay distinct (anime vs manga
+  // character sources), so a title with both an anime and a manga keeps two
+  // separate cast lists.
+  const sections = []
+  if (!flags['skip-anime'])
+    sections.push({ label: 'anime', listQuery: AL_LIST_QUERY, statusMap: AL_STATUS_MAP, importFn: alImportAnime, castLabel: 'VA credits' })
+  if (!flags['skip-manga'])
+    sections.push({ label: 'manga', listQuery: AL_LIST_QUERY_MANGA, statusMap: AL_STATUS_MAP_MANGA, importFn: alImportManga, castLabel: 'characters' })
+
+  const totals = []
+  for (const sec of sections) {
+    totals.push(await alImportUserSection(sec, username, opts))
+    console.log('')
+  }
+  const ok = totals.reduce((a, t) => a + t.ok, 0)
+  const total = totals.reduce((a, t) => a + t.total, 0)
+  console.log(`✔ All done. ${ok}/${total} titles imported across ${sections.length} list(s).`)
+}
+
+/* =====================================================================
+ * TMDB  (movies + TV) — ports src/main/tmdb.ts
+ * ===================================================================== */
+const TMDB_BASE = 'https://api.themoviedb.org/3'
+const TMDB_IMG = 'https://image.tmdb.org/t/p'
+const TMDB_SOURCE = 'tmdb'
+const TMDB_MAX_CAST = 30
+
+// OMDb (IMDb rating + Rotten Tomatoes). Optional enrichment; key from the
+// --omdb-key flag or the settings table (omdb.api_key). Set by cmdTmdbTop.
+let OMDB_KEY = null
+function omdbKey() {
+  if (OMDB_KEY) return OMDB_KEY
+  const row = db.prepare("SELECT value FROM settings WHERE key='omdb.api_key'").get()
+  return row?.value?.trim() || null
+}
+async function fetchOmdb(imdbId) {
+  const key = omdbKey()
+  if (!key || !imdbId) return null
+  try {
+    const url = new URL('https://www.omdbapi.com/')
+    url.searchParams.set('apikey', key)
+    url.searchParams.set('i', imdbId)
+    const res = await fetch(url.toString())
+    if (!res.ok) return null
+    const d = await res.json()
+    if (d.Response === 'False') return null
+    const patch = {}
+    const rating = parseFloat(d.imdbRating)
+    if (Number.isFinite(rating)) patch.imdbRating = rating
+    const votes = parseInt(String(d.imdbVotes ?? '').replace(/,/g, ''), 10)
+    if (Number.isFinite(votes)) patch.imdbVotes = votes
+    const rt = (d.Ratings ?? []).find((x) => x.Source === 'Rotten Tomatoes')
+    if (rt) {
+      const v = parseInt(rt.Value, 10)
+      if (Number.isFinite(v)) patch.rottenTomatoes = v
+    }
+    const ms = parseInt(d.Metascore, 10)
+    if (Number.isFinite(ms)) patch.metascore = ms
+    return Object.keys(patch).length ? patch : null
+  } catch {
+    return null
+  }
+}
+
+function tmdbApiKey() {
+  const row = db.prepare('SELECT value FROM settings WHERE key=?').get('tmdb.api_key')
+  const key = row?.value?.trim()
+  if (!key) throw new Error('No TMDB api key in settings (set it in the app: Settings → TMDB API key).')
+  return key
+}
+async function tmdbGet(p, params = {}, attempt = 0) {
+  const url = new URL(`${TMDB_BASE}${p}`)
+  url.searchParams.set('api_key', tmdbApiKey())
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v))
+  const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } })
+  if (res.status === 429) {
+    const retry = Number(res.headers.get('retry-after')) || 2
+    await sleep((retry + 1) * 1000)
+    return tmdbGet(p, params, attempt)
+  }
+  if (res.status === 401) throw new Error('Invalid TMDB API key.')
+  if (!res.ok) {
+    if (attempt < 3) {
+      await sleep(1500)
+      return tmdbGet(p, params, attempt + 1)
+    }
+    throw new Error(`TMDB request failed (${res.status})`)
+  }
+  return res.json()
+}
+const tmdbPoster = (p, size = 'w500') => (p ? `${TMDB_IMG}/${size}${p}` : null)
+const tmdbProfile = (p) => (p ? `${TMDB_IMG}/w185${p}` : null)
+function tmdbMapCrewJob(job) {
+  const j = (job ?? '').toLowerCase()
+  if (j === 'director') return 'director'
+  if (j === 'screenplay' || j === 'writer' || j === 'story' || j === 'author') return 'writer'
+  if (j === 'original music composer' || j === 'music') return 'composer'
+  return null
+}
+async function tmdbUpsertCompany(node) {
+  const ext = String(node.id)
+  const row = db.prepare('SELECT id FROM company WHERE external_source=? AND external_id=?').get(TMDB_SOURCE, ext)
+  if (row) return row.id
+  return Number(db.prepare('INSERT INTO company (name, type, external_source, external_id) VALUES (?, ?, ?, ?)')
+    .run(node.name, 'studio', TMDB_SOURCE, ext).lastInsertRowid)
+}
+async function tmdbUpsertPerson(node) {
+  const ext = String(node.id)
+  const row = db.prepare('SELECT id, photo_path FROM person WHERE external_source=? AND external_id=?').get(TMDB_SOURCE, ext)
+  if (row) {
+    if (!row.photo_path && node.profile_path) {
+      const p = await downloadImage(tmdbProfile(node.profile_path))
+      if (p) db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(p, row.id)
+    }
+    return row.id
+  }
+  const photo = await downloadImage(tmdbProfile(node.profile_path))
+  return Number(db.prepare('INSERT INTO person (name, photo_path, external_source, external_id) VALUES (?, ?, ?, ?)')
+    .run(node.name ?? 'Unknown', photo, TMDB_SOURCE, ext).lastInsertRowid)
+}
+async function tmdbUpsertCharacter(name, creditId, profilePath) {
+  const row = db.prepare('SELECT id, image_path FROM character WHERE external_source=? AND external_id=?').get(TMDB_SOURCE, creditId)
+  if (row) {
+    if (!row.image_path && profilePath) {
+      const p = await downloadImage(tmdbProfile(profilePath))
+      if (p) db.prepare('UPDATE character SET image_path=? WHERE id=?').run(p, row.id)
+    }
+    return row.id
+  }
+  const img = await downloadImage(tmdbProfile(profilePath))
+  return Number(db.prepare('INSERT INTO character (name, image_path, external_source, external_id) VALUES (?, ?, ?, ?)')
+    .run(name, img, TMDB_SOURCE, creditId).lastInsertRowid)
+}
+
+// Ports persistTitle().
+async function tmdbPersist(n) {
+  const coverPath = await downloadImage(tmdbPoster(n.posterPath, 'w500'))
+  const existing = db.prepare('SELECT id FROM media_item WHERE external_source=? AND external_id=?').get(TMDB_SOURCE, n.externalId)
+  let mediaId
+  const created = !existing
+  if (existing) {
+    mediaId = existing.id
+    db.prepare(
+      `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+       total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
+    ).run(n.title, n.native, n.synopsis, coverPath, n.totalUnits, n.releaseDate, mediaId)
+  } else {
+    mediaId = Number(
+      db.prepare(
+        `INSERT INTO media_item
+         (media_type, title, title_original, synopsis, cover_path, total_units, release_date, external_source, external_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(n.mediaType, n.title, n.native, n.synopsis, coverPath, n.totalUnits, n.releaseDate, TMDB_SOURCE, n.externalId).lastInsertRowid
+    )
+  }
+
+  // OMDb scores -> metadata (merged so re-import keeps other keys).
+  if (n.extraMeta) {
+    const mr = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId)
+    db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(mergeMeta(mr?.metadata, n.extraMeta), mediaId)
+  }
+
+  let studios = 0
+  for (const node of n.companies.slice(0, 3)) {
+    const companyId = await tmdbUpsertCompany(node)
+    db.prepare('INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)').run(mediaId, companyId, 'production_studio')
+    studios++
+  }
+  for (const g of n.genres) upsertTagAndLink(mediaId, g.name)
+
+  const castEdges = [...n.cast].sort((a, b) => (a.order ?? 999) - (b.order ?? 999)).slice(0, TMDB_MAX_CAST)
+  let cast = 0
+  let order = 0
+  const keptCharacterIds = new Set()
+  for (const edge of castEdges) {
+    const characterName = (edge.character ?? '').trim()
+    if (!characterName) continue
+    const personId = await tmdbUpsertPerson(edge)
+    const characterId = await tmdbUpsertCharacter(characterName, String(edge.credit_id), edge.profile_path)
+    keptCharacterIds.add(characterId)
+    const sortOrder = order++
+    db.prepare(
+      `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)
+       ON CONFLICT(media_id, character_id) DO UPDATE SET sort_order = excluded.sort_order`
+    ).run(mediaId, characterId, sortOrder)
+    const dup = db.prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND character_id IS ? AND role=?').get(mediaId, personId, characterId, 'actor')
+    if (dup) db.prepare('UPDATE credit SET importance=? WHERE id=?').run(sortOrder, dup.id)
+    else db.prepare('INSERT INTO credit (media_id, person_id, character_id, role, importance) VALUES (?, ?, ?, ?, ?)').run(mediaId, personId, characterId, 'actor', sortOrder)
+    cast++
+  }
+  pruneCharacters(mediaId, TMDB_SOURCE, keptCharacterIds)
+
+  let staff = 0
+  const seenCrew = new Set()
+  for (const edge of n.crew) {
+    const role = tmdbMapCrewJob(edge.job)
+    if (!role) continue
+    const personId = await tmdbUpsertPerson(edge)
+    const key = `${personId}:${role}`
+    if (seenCrew.has(key)) continue
+    seenCrew.add(key)
+    const dup = db.prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL').get(mediaId, personId, role)
+    if (!dup) db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(mediaId, personId, role)
+    staff++
+  }
+
+  return { mediaId, title: n.title, studios, cast, staff, created }
+}
+
+async function tmdbImportMovie(id) {
+  const m = await tmdbGet(`/movie/${id}`, { append_to_response: 'credits' })
+  if (!m?.id) throw new Error('Movie not found')
+  const title = m.title || m.original_title || 'Untitled'
+  return tmdbPersist({
+    externalId: String(m.id), mediaType: 'movie', title,
+    native: m.original_title && m.original_title !== title ? m.original_title : null,
+    synopsis: m.overview || null, posterPath: m.poster_path ?? null,
+    totalUnits: m.runtime ?? null, releaseDate: m.release_date || null,
+    companies: m.production_companies ?? [], genres: m.genres ?? [],
+    cast: m.credits?.cast ?? [], crew: m.credits?.crew ?? [],
+    extraMeta: await fetchOmdb(m.imdb_id)
+  })
+}
+async function tmdbImportTv(id) {
+  const m = await tmdbGet(`/tv/${id}`, { append_to_response: 'aggregate_credits,external_ids' })
+  if (!m?.id) throw new Error('TV show not found')
+  const title = m.name || m.original_name || 'Untitled'
+  return tmdbPersist({
+    externalId: String(m.id), mediaType: 'tv', title,
+    native: m.original_name && m.original_name !== title ? m.original_name : null,
+    synopsis: m.overview || null, posterPath: m.poster_path ?? null,
+    totalUnits: m.number_of_episodes ?? null, releaseDate: m.first_air_date || null,
+    companies: [...(m.networks ?? []), ...(m.production_companies ?? [])], genres: m.genres ?? [],
+    cast: (m.aggregate_credits?.cast ?? []).map((c) => {
+      const primary = c.roles?.[0] ?? {}
+      return { id: c.id, name: c.name, profile_path: c.profile_path, order: c.order, character: primary.character ?? '', credit_id: primary.credit_id ?? `agg_${c.id}` }
+    }),
+    crew: [],
+    extraMeta: await fetchOmdb(m.external_ids?.imdb_id)
+  })
+}
+
+// Resolve a ranked list to an ordered array of {id} up to `count`, paging as needed.
+async function tmdbRankedIds(type, list, count) {
+  const ids = []
+  let page = 1
+  const endpoint =
+    list === 'trending' ? `/trending/${type}/week` : `/${type}/${list}` // top_rated | popular
+  while (ids.length < count && page <= 500) {
+    const data = await tmdbGet(endpoint, { page: page })
+    const results = data?.results ?? []
+    if (results.length === 0) break
+    for (const r of results) {
+      if (ids.length >= count) break
+      ids.push(r.id)
+    }
+    if (page >= (data.total_pages ?? page)) break
+    page++
+  }
+  return ids
+}
+
+async function cmdTmdbTop(flags) {
+  const type = flags.type === 'tv' ? 'tv' : 'movie'
+  const list = ['top_rated', 'popular', 'trending'].includes(flags.list) ? flags.list : 'top_rated'
+  const count = flags.count ? Number(flags.count) : 50
+  const delay = flags.delay ? Number(flags.delay) : 250
+
+  if (flags['omdb-key']) OMDB_KEY = String(flags['omdb-key']).trim()
+  const omdbOn = !!omdbKey()
+
+  console.log(`▶ TMDB ${type} · ${list} · top ${count}`)
+  console.log(omdbOn ? '  OMDb enrichment: ON (IMDb + Rotten Tomatoes)' : '  OMDb enrichment: off (no key — pass --omdb-key or set it in Settings)')
+  const ids = await tmdbRankedIds(type, list, count)
+  console.log(`  Resolved ${ids.length} ids.\n`)
+
+  let ok = 0
+  const failures = []
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i]
+    const tag = `[${i + 1}/${ids.length}]`
+    try {
+      const sum = type === 'tv' ? await tmdbImportTv(id) : await tmdbImportMovie(id)
+      ok++
+      console.log(`${tag} ✓ ${sum.title} (${sum.created ? 'added' : 'updated'}, ${sum.cast} cast)`)
+    } catch (err) {
+      failures.push({ id, msg: err.message })
+      console.log(`${tag} ✗ TMDB ${type} #${id} — ${err.message}`)
+    }
+    if (delay) await sleep(delay)
+  }
+  console.log(`\n✔ Done. ${ok}/${ids.length} imported.${failures.length ? ` ${failures.length} failed.` : ''}`)
+  if (failures.length) console.log('  Failed ids:', failures.map((f) => f.id).join(', '))
+}
+
+/* =====================================================================
+ * ANIMETHEMES  (anime OP/ED songs) — ports src/main/themes.ts
+ * ===================================================================== */
+const AT_BASE = 'https://api.animethemes.moe'
+const AT_UA = 'NaviHUB/0.1 (personal media tracker)'
+const AT_SOURCE = 'animethemes'
+
+async function atGet(pathAndQuery, attempt = 0) {
+  const res = await fetch(`${AT_BASE}${pathAndQuery}`, {
+    headers: { Accept: 'application/json', 'User-Agent': AT_UA }
+  })
+  if (res.status === 429) {
+    const retry = Number(res.headers.get('retry-after')) || 5
+    await sleep((retry + 1) * 1000)
+    return atGet(pathAndQuery, attempt)
+  }
+  if (!res.ok) {
+    if (attempt < 3) {
+      await sleep(1500)
+      return atGet(pathAndQuery, attempt + 1)
+    }
+    throw new Error(`AnimeThemes request failed (${res.status})`)
+  }
+  return res.json()
+}
+
+function atArtistImage(artist) {
+  const imgs = artist?.images ?? []
+  const large = imgs.find((i) => /large/i.test(i.facet ?? ''))
+  return (large ?? imgs[0])?.link ?? null
+}
+
+async function atFetchThemes(anilistId) {
+  const resData = await atGet(`/resource?filter[site]=AniList&filter[external_id]=${anilistId}&include=anime`)
+  const slug = resData?.resources?.[0]?.anime?.[0]?.slug
+  if (!slug) return null // not catalogued
+  const inc = encodeURIComponent('animethemes.song.artists.images,animethemes.animethemeentries.videos.audio')
+  const data = await atGet(`/anime/${slug}?include=${inc}`)
+  const themes = data?.anime?.animethemes ?? []
+  return themes.map((t) => {
+    const entries = t.animethemeentries ?? []
+    const entry = entries.find((e) => !e.spoiler) ?? entries[0]
+    return {
+      externalId: String(t.id),
+      slug: t.slug ?? null,
+      type: t.type ?? null,
+      sequence: typeof t.sequence === 'number' ? t.sequence : null,
+      title: t.song?.title ?? null,
+      audioUrl: entry?.videos?.[0]?.audio?.link ?? null,
+      artists: (t.song?.artists ?? []).map((a) => ({
+        externalId: String(a.id),
+        name: a.name ?? 'Unknown',
+        imageUrl: atArtistImage(a)
+      }))
+    }
+  })
+}
+
+async function atUpsertArtist(artist) {
+  const ext = artist.externalId
+  const row = db.prepare('SELECT id, photo_path FROM person WHERE external_source=? AND external_id=?').get(AT_SOURCE, ext)
+  if (row) {
+    if (!row.photo_path && artist.imageUrl) {
+      const p = await downloadImage(artist.imageUrl)
+      if (p) db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(p, row.id)
+    }
+    return row.id
+  }
+  const photo = await downloadImage(artist.imageUrl)
+  return Number(
+    db.prepare('INSERT INTO person (name, photo_path, external_source, external_id) VALUES (?, ?, ?, ?)')
+      .run(artist.name, photo, AT_SOURCE, ext).lastInsertRowid
+  )
+}
+
+// Readable audio filename base, e.g. "Berserk OP1 - Tell Me Why".
+function themeFileBase(anime, slug, title) {
+  const head = [anime, slug].filter(Boolean).join(' ')
+  return title ? `${head} - ${title}` : head
+}
+
+// Ports importThemes(): replace this anime's themes + artist credits.
+async function atImportThemes(mediaId, anilistId, animeTitle, { withAudio }) {
+  const themes = await atFetchThemes(anilistId)
+  if (themes === null) return { songs: 0, artists: 0, audio: 0, catalogued: false }
+
+  db.prepare('DELETE FROM theme_song WHERE media_id=?').run(mediaId)
+  db.prepare("DELETE FROM credit WHERE media_id=? AND role='artist'").run(mediaId)
+
+  let songs = 0
+  let audio = 0
+  const artistIds = new Set()
+  let order = 0
+  for (const t of themes) {
+    const audioPath =
+      withAudio && t.audioUrl
+        ? await downloadAudio(t.audioUrl, themeFileBase(animeTitle, t.slug, t.title))
+        : null
+    if (audioPath) audio++
+    const themeSongId = Number(
+      db.prepare(
+        `INSERT INTO theme_song
+         (media_id, slug, type, sequence, title, audio_url, audio_path, sort_order, external_source, external_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(mediaId, t.slug, t.type, t.sequence, t.title, t.audioUrl, audioPath, order++, AT_SOURCE, t.externalId).lastInsertRowid
+    )
+    songs++
+    let aOrder = 0
+    for (const a of t.artists) {
+      const personId = await atUpsertArtist(a)
+      artistIds.add(personId)
+      db.prepare('INSERT OR IGNORE INTO theme_artist (theme_song_id, person_id, sort_order) VALUES (?, ?, ?)').run(themeSongId, personId, aOrder++)
+      db.prepare(
+        "INSERT INTO credit (media_id, person_id, role) SELECT ?, ?, 'artist' WHERE NOT EXISTS " +
+        "(SELECT 1 FROM credit WHERE media_id=? AND person_id=? AND role='artist' AND character_id IS NULL)"
+      ).run(mediaId, personId, mediaId, personId)
+    }
+  }
+  db.prepare(`DELETE FROM person WHERE external_source=? AND id NOT IN (SELECT person_id FROM theme_artist)`).run(AT_SOURCE)
+  return { songs, artists: artistIds.size, audio, catalogued: true }
+}
+
+async function cmdAnimeThemes(flags) {
+  const withAudio = !flags['no-audio']
+  const limit = flags.limit ? Number(flags.limit) : Infinity
+  const onlyMissing = !!flags['only-missing']
+  const delay = flags.delay ? Number(flags.delay) : 400
+
+  // Audio location: --audio-dir wins (and is saved so the app uses it too),
+  // else the saved `audio.dir` setting, else the default media dir.
+  if (flags['audio-dir']) {
+    AUDIO_DIR = String(flags['audio-dir'])
+    db.prepare(
+      `INSERT INTO settings (key, value) VALUES ('audio.dir', ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+    ).run(AUDIO_DIR)
+  } else {
+    const saved = db.prepare("SELECT value FROM settings WHERE key='audio.dir'").get()
+    AUDIO_DIR = saved?.value?.trim() || MEDIA_DIR
+  }
+  if (withAudio) console.log(`  Audio dir: ${AUDIO_DIR}`)
+
+  // Every AniList-sourced anime in the library.
+  let rows = db.prepare(
+    "SELECT id, title, external_id FROM media_item WHERE media_type='anime' AND external_source='anilist' AND external_id IS NOT NULL ORDER BY id"
+  ).all()
+  if (onlyMissing) rows = rows.filter((r) => !db.prepare('SELECT 1 FROM theme_song WHERE media_id=? LIMIT 1').get(r.id))
+  const targets = rows.slice(0, limit === Infinity ? rows.length : limit)
+
+  console.log(`▶ AnimeThemes for ${targets.length} anime${onlyMissing ? ' (missing only)' : ''}`)
+  console.log(withAudio ? '  Audio: ON (downloading .ogg per OP/ED — a few MB each)' : '  Audio: off (storing streaming URLs only)')
+  console.log('')
+
+  let ok = 0, noHits = 0, totalSongs = 0
+  const failures = []
+  for (let i = 0; i < targets.length; i++) {
+    const r = targets[i]
+    const tag = `[${i + 1}/${targets.length}]`
+    try {
+      const s = await atImportThemes(r.id, Number(r.external_id), r.title, { withAudio })
+      if (!s.catalogued) { noHits++; console.log(`${tag} – ${r.title} — not on AnimeThemes`) }
+      else { ok++; totalSongs += s.songs; console.log(`${tag} ✓ ${r.title} — ${s.songs} songs, ${s.artists} artists${withAudio ? `, ${s.audio} audio` : ''}`) }
+    } catch (err) {
+      failures.push({ id: r.id, msg: err.message })
+      console.log(`${tag} ✗ ${r.title} — ${err.message}`)
+    }
+    if (delay) await sleep(delay)
+  }
+  console.log(`\n✔ Done. ${ok} with themes (${totalSongs} songs), ${noHits} not catalogued.${failures.length ? ` ${failures.length} failed.` : ''}`)
+  if (failures.length) console.log('  Failed ids:', failures.map((f) => f.id).join(', '))
+}
+
+/* ----------------------------- main ----------------------------- */
+async function main() {
+  const [command, ...rest] = process.argv.slice(2)
+  const { flags, positional } = parseFlags(rest)
+
+  if (command === 'anilist-user') await cmdAnilistUser(positional, flags)
+  else if (command === 'tmdb-top') await cmdTmdbTop(flags)
+  else if (command === 'anime-themes') await cmdAnimeThemes(flags)
+  else {
+    console.log('NaviHUB bulk importer\n')
+    console.log('  anilist-user <username> [--limit N] [--basic] [--preserve-tracking] [--skip-anime] [--skip-manga] [--delay MS]')
+    console.log('  tmdb-top [--type movie|tv] [--list top_rated|popular|trending] [--count N] [--omdb-key KEY] [--delay MS]')
+    console.log('  anime-themes [--limit N] [--no-audio] [--only-missing] [--audio-dir PATH] [--delay MS]\n')
+    console.log('Run via:  ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron scripts/bulk-import.cjs <command>')
+    console.log('Close the NaviHUB app first.')
+    process.exit(command ? 1 : 0)
+  }
+}
+
+main()
+  .then(() => {
+    db.close()
+    process.exit(0)
+  })
+  .catch((err) => {
+    console.error('\n✗ Fatal:', err.message)
+    db.close()
+    process.exit(1)
+  })
