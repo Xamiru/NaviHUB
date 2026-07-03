@@ -3,11 +3,20 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
-import { useScoreMax, useImageUrl } from '../lib/hooks'
-import { usePlayer } from '../lib/player'
-import { CAST_ROLES, type MediaConfig } from '../lib/mediaConfig'
+import { useScoreMax } from '../lib/hooks'
+import { qk } from '../lib/queryKeys'
+import { usePlayer, type Track } from '../lib/player'
+import { CAST_ROLES, fmtMinutesAsHours, pathForMedia, type MediaConfig } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
-import type { MediaDetail, MediaCharacterEntry, ThemeSong } from '@shared/types'
+import AddToListMenu from '../components/AddToListMenu'
+import MangaChaptersSection from '../components/MangaChaptersSection'
+import type {
+  MediaDetail,
+  MediaCharacterEntry,
+  ThemeSong,
+  MediaRelation,
+  HltbTimes
+} from '@shared/types'
 
 export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const { id } = useParams()
@@ -17,18 +26,18 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const scoreMax = useScoreMax()
 
   const { data: m, isLoading } = useQuery({
-    queryKey: ['media', 'detail', mediaId],
+    queryKey: qk.media.detail(mediaId),
     queryFn: () => api.media.get(mediaId)
   })
 
-  const refresh = () => qc.invalidateQueries({ queryKey: ['media', 'detail', mediaId] })
+  const refresh = () => qc.invalidateQueries({ queryKey: qk.media.detail(mediaId) })
 
   async function del() {
     if (!confirm(`Delete this ${cfg.singular.toLowerCase()} from your library? This cannot be undone.`))
       return
     await api.media.remove(mediaId)
-    await qc.invalidateQueries({ queryKey: ['media'] })
-    await qc.invalidateQueries({ queryKey: ['media-counts'] })
+    await qc.invalidateQueries({ queryKey: qk.media.all })
+    await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
     navigate(cfg.basePath)
   }
 
@@ -48,6 +57,11 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const imdbRaw = metaNum('imdbRating')
   const imdb = imdbRaw != null ? ((imdbRaw / 10) * scoreMax).toFixed(1) : null
   const rottenTomatoes = metaNum('rottenTomatoes')
+  // VNDB rating is 0–100 like AniList's, scaled to the user's score range.
+  const vndbRaw = metaNum('vndbRating')
+  const vndbScore = vndbRaw != null ? ((vndbRaw / 100) * scoreMax).toFixed(1) : null
+  // Metacritic (games, via RAWG) stays its familiar 0–100 score.
+  const metacritic = metaNum('metacritic')
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -74,6 +88,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               Delete
             </button>
           </div>
+          <div className="mt-2">
+            <AddToListMenu kind="media" entityId={mediaId} />
+          </div>
         </div>
 
         <div className="min-w-0">
@@ -91,8 +108,10 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
             <Stat label="Status" value={m.status ?? '—'} />
             <Stat label="My Score" value={m.score != null ? `${m.score} / ${scoreMax}` : '—'} />
             {anilistAvg != null && <Stat label="AniList Avg" value={`${anilistAvg} / ${scoreMax}`} />}
+            {vndbScore != null && <Stat label="VNDB" value={`${vndbScore} / ${scoreMax}`} />}
             {imdb != null && <Stat label="IMDb" value={`${imdb} / ${scoreMax}`} />}
             {rottenTomatoes != null && <Stat label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />}
+            {metacritic != null && <Stat label="Metacritic" value={`${metacritic} / 100`} />}
             <Stat label={cfg.progressStatLabel} value={cfg.formatProgressStat(m)} />
             <Stat label="Released" value={m.releaseDate ?? '—'} />
           </div>
@@ -127,6 +146,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
       {/* Full-width below the cover/info, using the space under the Edit button */}
       <div className="mt-7">
+        {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
+        {cfg.hasLocalReader && <MangaChaptersSection m={m} />}
+        <RelatedSection m={m} />
         {cfg.hasThemes && <ThemesSection m={m} onChange={refresh} />}
         <CastSection cfg={cfg} m={m} onChange={refresh} />
         {cfg.hasCrew !== false && <StaffSection cfg={cfg} m={m} onChange={refresh} />}
@@ -136,6 +158,96 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 }
 
 /* ---------------- Companies (studios / production) ---------------- */
+// HowLongToBeat-style time formatting, with "—" for missing values.
+function fmtPlaytime(minutes: number | null | undefined): string {
+  if (minutes == null || minutes <= 0) return '—'
+  return fmtMinutesAsHours(minutes)
+}
+
+// Play-time estimates for games + VNs (cfg.hasPlaytimes): VNDB's average for
+// VNs, HowLongToBeat's Main / Main+Extras / Completionist boxes for both.
+// Games get HLTB filled automatically at import; the button covers items
+// imported before that existed, failed lookups, and refreshes.
+function PlaytimeSection({ m, onChange }: { m: MediaDetail; onChange: () => void }) {
+  const meta = (m.metadata ?? {}) as Record<string, unknown>
+  const hltb = (meta.hltb as HltbTimes | undefined) ?? null
+  const isVn = m.mediaType === 'visual_novel'
+  const vndbVotes = typeof meta.vndbLengthVotes === 'number' ? meta.vndbLengthVotes : null
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function fetchTimes() {
+    setBusy(true)
+    setError(null)
+    try {
+      const res = await api.hltb.fetch(m.id)
+      if (res) onChange()
+      else setError('No matching entry found on HowLongToBeat.')
+    } catch {
+      setError('HowLongToBeat lookup failed — try again in a bit.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const boxes: { label: string; minutes: number | null; sub?: string }[] = []
+  // VN average play time comes from VNDB votes (stored in totalUnits, minutes).
+  if (isVn && m.totalUnits != null && m.totalUnits > 0) {
+    boxes.push({
+      label: 'Average',
+      minutes: m.totalUnits,
+      sub: vndbVotes ? `VNDB · ${vndbVotes} votes` : 'VNDB'
+    })
+  }
+  if (hltb) {
+    const polled = (n?: number) => (n ? `${n} polled` : undefined)
+    boxes.push(
+      { label: 'Main Story', minutes: hltb.main, sub: polled(hltb.mainCount) },
+      { label: 'Main + Extras', minutes: hltb.mainExtra, sub: polled(hltb.mainExtraCount) },
+      { label: 'Completionist', minutes: hltb.completionist, sub: polled(hltb.completionistCount) },
+      { label: 'All Styles', minutes: hltb.allStyles, sub: polled(hltb.allStylesCount) }
+    )
+  }
+
+  return (
+    <Section title="How long to beat">
+      {boxes.length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          {boxes.map((b) => (
+            <div key={b.label} className="card p-4 text-center">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+                {b.label}
+              </p>
+              <p
+                className={`mt-1 text-2xl font-bold ${b.minutes ? 'text-accent' : 'text-gray-600'}`}
+              >
+                {fmtPlaytime(b.minutes)}
+              </p>
+              {b.sub && <p className="mt-0.5 text-[11px] text-gray-500">{b.sub}</p>}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">No play-time estimates yet.</p>
+      )}
+      <div className="mt-2 flex flex-wrap items-center gap-3 text-xs">
+        <button className="btn-ghost text-xs" onClick={fetchTimes} disabled={busy}>
+          {busy
+            ? 'Fetching…'
+            : hltb
+              ? '↻ Refresh from HowLongToBeat'
+              : '⏱ Fetch from HowLongToBeat'}
+        </button>
+        {/* Surface the matched entry so a wrong match is easy to catch */}
+        {hltb && hltb.name && hltb.name.toLowerCase() !== m.title.toLowerCase() && (
+          <span className="text-gray-500">Matched: “{hltb.name}”</span>
+        )}
+        {error && <span className="text-red-400">{error}</span>}
+      </div>
+    </Section>
+  )
+}
+
 function CompaniesSection({
   cfg,
   m,
@@ -454,6 +566,27 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
   const current = Math.min(page, Math.max(0, pageCount - 1))
   const shown = themes.slice(current * THEMES_PAGE_SIZE, current * THEMES_PAGE_SIZE + THEMES_PAGE_SIZE)
 
+  // Playing any theme queues the whole anime's playable OP/EDs (across pages),
+  // so the bar's next/prev walk this anime's songs. Src resolution is lazy in
+  // the player, so this is just a cheap mapping.
+  const player = usePlayer()
+  const playable = themes.filter((t) => t.audioPath || t.audioUrl)
+  function playTheme(theme: ThemeSong) {
+    const start = playable.findIndex((t) => t.id === theme.id)
+    if (start < 0) return
+    const tracks: Track[] = playable.map((t) => ({
+      id: `theme-${t.id}`,
+      audioPath: t.audioPath,
+      audioUrl: t.audioUrl,
+      title: t.slug ? `${t.slug} · ${t.title ?? 'Untitled'}` : (t.title ?? 'Untitled'),
+      subtitle: t.artists.map((a) => a.name).join(', ') || null,
+      context: m.title,
+      coverPath: m.coverPath,
+      mediaId: m.id
+    }))
+    player.playQueue(tracks, start)
+  }
+
   return (
     <Section title={`Theme Songs${themes.length ? ` · ${themes.length}` : ''}`}>
       <div className="space-y-2 mb-2">
@@ -463,7 +596,7 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
           </p>
         )}
         {shown.map((t) => (
-          <ThemeRow key={t.id} theme={t} animeTitle={m.title} />
+          <ThemeRow key={t.id} theme={t} onPlay={() => playTheme(t)} />
         ))}
       </div>
       {pageCount > 1 && (
@@ -501,26 +634,14 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
   )
 }
 
-function ThemeRow({ theme, animeTitle }: { theme: ThemeSong; animeTitle: string }) {
-  // Prefer the locally-downloaded copy; fall back to streaming the remote .ogg.
-  const localUrl = useImageUrl(theme.audioPath)
-  const src = localUrl ?? theme.audioUrl ?? undefined
+function ThemeRow({ theme, onPlay }: { theme: ThemeSong; onPlay: () => void }) {
+  // The player resolves local-vs-remote audio lazily when the track starts, so
+  // the row no longer pre-checks the local file (one IPC per row saved).
+  const hasAudio = !!(theme.audioPath || theme.audioUrl)
   const player = usePlayer()
   const id = `theme-${theme.id}`
   const isCurrent = player.track?.id === id
   const isPlaying = isCurrent && player.isPlaying
-  const artistNames = theme.artists.map((a) => a.name).join(', ')
-
-  function onPlay() {
-    if (!src) return
-    player.play({
-      id,
-      src,
-      title: theme.slug ? `${theme.slug} · ${theme.title ?? 'Untitled'}` : (theme.title ?? 'Untitled'),
-      subtitle: artistNames || null,
-      context: animeTitle
-    })
-  }
 
   return (
     <div
@@ -529,9 +650,9 @@ function ThemeRow({ theme, animeTitle }: { theme: ThemeSong; animeTitle: string 
       }`}
     >
       <button
-        onClick={onPlay}
-        disabled={!src}
-        title={!src ? 'No audio available' : isPlaying ? 'Pause' : 'Play'}
+        onClick={() => (isCurrent ? player.toggle() : onPlay())}
+        disabled={!hasAudio}
+        title={!hasAudio ? 'No audio available' : isPlaying ? 'Pause' : 'Play'}
         className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs bg-accent/15 text-accent hover:bg-accent/30 disabled:opacity-30 disabled:hover:bg-accent/15"
       >
         {isPlaying ? '❚❚' : '▶'}
@@ -559,6 +680,93 @@ function ThemeRow({ theme, animeTitle }: { theme: ThemeSong; animeTitle: string 
           </p>
         )}
       </div>
+    </div>
+  )
+}
+
+/* ---------------- Related titles (seasons + manga source) ---------------- */
+const RELATION_LABELS: Record<string, string> = {
+  PREQUEL: 'Prequel',
+  SEQUEL: 'Sequel',
+  PARENT: 'Parent story',
+  SIDE_STORY: 'Side story',
+  ALTERNATIVE: 'Alternative',
+  SPIN_OFF: 'Spin-off',
+  SOURCE: 'Source',
+  ADAPTATION: 'Adaptation'
+}
+
+// Logical reading order for the season chain, then side material, then source.
+const RELATION_ORDER = [
+  'PREQUEL',
+  'SEQUEL',
+  'PARENT',
+  'SIDE_STORY',
+  'SPIN_OFF',
+  'ALTERNATIVE',
+  'SOURCE',
+  'ADAPTATION'
+]
+
+// Un-imported relations are only hints, so cap them — big franchises (One Piece
+// has 42) would otherwise bury the page. Every in-library relation is always
+// shown; the cap trims only the greyed ones, with a "+N more" note.
+const GREYED_CAP = 8
+
+function RelatedSection({ m }: { m: MediaDetail }) {
+  if (m.relations.length === 0) return null
+  // Order each group by relation type so the season chain reads top-to-bottom
+  // instead of following AniList's arbitrary edge order.
+  const byType = (a: MediaRelation, b: MediaRelation) =>
+    RELATION_ORDER.indexOf(a.relationType) - RELATION_ORDER.indexOf(b.relationType)
+  const inLibrary = m.relations.filter((r) => r.media).sort(byType)
+  const greyed = m.relations.filter((r) => !r.media).sort(byType)
+  const shown = [...inLibrary, ...greyed.slice(0, GREYED_CAP)]
+  const hidden = greyed.length - Math.min(greyed.length, GREYED_CAP)
+  return (
+    <Section title={`Related · ${shown.length}`}>
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
+        {shown.map((r, i) => (
+          <RelatedCard key={i} r={r} />
+        ))}
+      </div>
+      {hidden > 0 && (
+        <p className="mt-2 text-xs text-gray-600">+{hidden} more not in your library</p>
+      )}
+    </Section>
+  )
+}
+
+// A related title: links to the local item when imported, otherwise a greyed,
+// non-clickable placeholder that hints at what to import next.
+function RelatedCard({ r }: { r: MediaRelation }) {
+  const label = RELATION_LABELS[r.relationType] ?? r.relationType.toLowerCase().replace(/_/g, ' ')
+  const body = (
+    <>
+      <div className="aspect-[2/3] rounded-lg overflow-hidden">
+        <CoverImage
+          path={r.media?.coverPath ?? null}
+          alt={r.title}
+          rounded="rounded-lg"
+          className="h-full w-full transition-transform group-hover:scale-105"
+        />
+      </div>
+      <p className="mt-1.5 text-[10px] uppercase tracking-widest text-accent/80">{label}</p>
+      <p className="text-xs font-medium line-clamp-2 leading-tight group-hover:text-accent">
+        {r.title}
+      </p>
+    </>
+  )
+  if (r.media) {
+    return (
+      <Link to={pathForMedia(r.media)} className="group block">
+        {body}
+      </Link>
+    )
+  }
+  return (
+    <div className="opacity-45" title="Not in your library yet">
+      {body}
     </div>
   )
 }

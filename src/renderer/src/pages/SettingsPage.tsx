@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useSettings } from '../lib/hooks'
+import { qk } from '../lib/queryKeys'
 import { MEDIA_CONFIGS, type MediaConfig } from '../lib/mediaConfig'
 
 export default function SettingsPage() {
@@ -11,7 +12,9 @@ export default function SettingsPage() {
   const [scoreMax, setScoreMax] = useState('10')
   const [tmdbKey, setTmdbKey] = useState('')
   const [omdbKey, setOmdbKey] = useState('')
+  const [rawgKey, setRawgKey] = useState('')
   const [audioDir, setAudioDir] = useState('')
+  const [mangaDir, setMangaDir] = useState('')
   const [savedAt, setSavedAt] = useState<string | null>(null)
 
   useEffect(() => {
@@ -19,12 +22,14 @@ export default function SettingsPage() {
     setScoreMax(data['score.max'] ?? '10')
     setTmdbKey(data['tmdb.api_key'] ?? '')
     setOmdbKey(data['omdb.api_key'] ?? '')
+    setRawgKey(data['rawg.api_key'] ?? '')
     setAudioDir(data['audio.dir'] ?? '')
+    setMangaDir(data['manga.dir'] ?? '')
   }, [data])
 
   async function setKey(key: string, value: string) {
     await api.settings.set(key, value)
-    await qc.invalidateQueries({ queryKey: ['settings'] })
+    await qc.invalidateQueries({ queryKey: qk.settings.all })
     setSavedAt('Saved')
   }
 
@@ -99,6 +104,27 @@ export default function SettingsPage() {
       </section>
 
       <section className="card p-5 mb-6">
+        <h2 className="font-semibold mb-1">RAWG API key</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Required to import games. Get a free key at{' '}
+          <span className="text-gray-400">rawg.io/apidocs</span>. Stored locally on this machine
+          only.
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            className="input"
+            type="password"
+            value={rawgKey}
+            onChange={(e) => setRawgKey(e.target.value)}
+            placeholder="Paste your RAWG API key…"
+          />
+          <button className="btn-ghost shrink-0" onClick={() => setKey('rawg.api_key', rawgKey.trim())}>
+            Save
+          </button>
+        </div>
+      </section>
+
+      <section className="card p-5 mb-6">
         <h2 className="font-semibold mb-1">Anime music folder</h2>
         <p className="text-sm text-gray-500 mb-4">
           Where downloaded opening/ending audio is stored. Point it at a roomier
@@ -115,6 +141,27 @@ export default function SettingsPage() {
             placeholder="/media/you/Drive/Music/Anime"
           />
           <button className="btn-ghost shrink-0" onClick={() => setKey('audio.dir', audioDir.trim())}>
+            Save
+          </button>
+        </div>
+      </section>
+
+      <section className="card p-5 mb-6">
+        <h2 className="font-semibold mb-1">Manga library folder</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          The root folder your manga lives in. Set automatically the first time you link a series
+          folder from a manga page; chapter paths are stored relative to this root, so if you move
+          the library, just update this to the new location.
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            className="input"
+            type="text"
+            value={mangaDir}
+            onChange={(e) => setMangaDir(e.target.value)}
+            placeholder="/home/you/Manga"
+          />
+          <button className="btn-ghost shrink-0" onClick={() => setKey('manga.dir', mangaDir.trim())}>
             Save
           </button>
         </div>

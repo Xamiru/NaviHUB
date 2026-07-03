@@ -51,6 +51,28 @@ const api: NaviApi = {
   search: {
     global: (query) => ipcRenderer.invoke('search:global', query)
   },
+  quiz: {
+    songPool: (filter) => ipcRenderer.invoke('quiz:songPool', filter)
+  },
+  hltb: {
+    fetch: (mediaId) => ipcRenderer.invoke('hltb:fetch', mediaId)
+  },
+  lists: {
+    list: (kind) => ipcRenderer.invoke('lists:list', kind),
+    get: (id) => ipcRenderer.invoke('lists:get', id),
+    create: (input) => ipcRenderer.invoke('lists:create', input),
+    update: (id, input) => ipcRenderer.invoke('lists:update', id, input),
+    remove: (id) => ipcRenderer.invoke('lists:remove', id),
+    addItem: (listId, entityId, note) =>
+      ipcRenderer.invoke('lists:addItem', listId, entityId, note),
+    removeItem: (itemId) => ipcRenderer.invoke('lists:removeItem', itemId),
+    removeItemByEntity: (listId, entityId) =>
+      ipcRenderer.invoke('lists:removeItemByEntity', listId, entityId),
+    updateItem: (itemId, patch) => ipcRenderer.invoke('lists:updateItem', itemId, patch),
+    reorder: (listId, orderedItemIds) =>
+      ipcRenderer.invoke('lists:reorder', listId, orderedItemIds),
+    forEntity: (kind, entityId) => ipcRenderer.invoke('lists:forEntity', kind, entityId)
+  },
   anilist: {
     search: (query) => ipcRenderer.invoke('anilist:search', query),
     import: (anilistId) => ipcRenderer.invoke('anilist:import', anilistId)
@@ -67,8 +89,51 @@ const api: NaviApi = {
     search: (query) => ipcRenderer.invoke('tmdbTv:search', query),
     import: (tmdbId) => ipcRenderer.invoke('tmdbTv:import', tmdbId)
   },
+  vndb: {
+    search: (query) => ipcRenderer.invoke('vndb:search', query),
+    import: (vndbId) => ipcRenderer.invoke('vndb:import', vndbId)
+  },
+  rawg: {
+    search: (query) => ipcRenderer.invoke('rawg:search', query),
+    import: (rawgId) => ipcRenderer.invoke('rawg:import', rawgId)
+  },
   themes: {
     import: (mediaId) => ipcRenderer.invoke('themes:import', mediaId)
+  },
+  japanese: {
+    listCourses: () => ipcRenderer.invoke('japanese:listCourses'),
+    getCourse: (id) => ipcRenderer.invoke('japanese:getCourse', id),
+    createCourse: (input) => ipcRenderer.invoke('japanese:createCourse', input),
+    updateCourse: (id, input) => ipcRenderer.invoke('japanese:updateCourse', id, input),
+    removeCourse: (id) => ipcRenderer.invoke('japanese:removeCourse', id),
+    getLesson: (id) => ipcRenderer.invoke('japanese:getLesson', id),
+    createLesson: (input) => ipcRenderer.invoke('japanese:createLesson', input),
+    updateLesson: (id, patch) => ipcRenderer.invoke('japanese:updateLesson', id, patch),
+    removeLesson: (id) => ipcRenderer.invoke('japanese:removeLesson', id),
+    setLessonLearned: (id, learned) => ipcRenderer.invoke('japanese:setLessonLearned', id, learned),
+    createCard: (lessonId, input) => ipcRenderer.invoke('japanese:createCard', lessonId, input),
+    updateCard: (id, patch) => ipcRenderer.invoke('japanese:updateCard', id, patch),
+    removeCard: (id) => ipcRenderer.invoke('japanese:removeCard', id),
+    reviewQueue: (newLimit) => ipcRenderer.invoke('japanese:reviewQueue', newLimit),
+    submitReview: (cardId, grade) => ipcRenderer.invoke('japanese:submitReview', cardId, grade),
+    quizPool: (scope) => ipcRenderer.invoke('japanese:quizPool', scope),
+    stats: () => ipcRenderer.invoke('japanese:stats'),
+    ensureMiningInbox: () => ipcRenderer.invoke('japanese:ensureMiningInbox'),
+    jishoLookup: (term) => ipcRenderer.invoke('japanese:jishoLookup', term),
+    tokenize: (text) => ipcRenderer.invoke('japanese:tokenize', text),
+    minedFronts: (fronts) => ipcRenderer.invoke('japanese:minedFronts', fronts)
+  },
+  manga: {
+    attachFolder: (mediaId) => ipcRenderer.invoke('manga:attachFolder', mediaId),
+    rescan: (mediaId) => ipcRenderer.invoke('manga:rescan', mediaId),
+    detach: (mediaId) => ipcRenderer.invoke('manga:detach', mediaId),
+    chapters: (mediaId) => ipcRenderer.invoke('manga:chapters', mediaId),
+    pages: (chapterId) => ipcRenderer.invoke('manga:pages', chapterId),
+    markProgress: (chapterId, page) => ipcRenderer.invoke('manga:markProgress', chapterId, page),
+    markChapterRead: (chapterId, read) =>
+      ipcRenderer.invoke('manga:markChapterRead', chapterId, read),
+    ocrStatus: (chapterId) => ipcRenderer.invoke('manga:ocrStatus', chapterId),
+    ocrPage: (chapterId, pageIndex) => ipcRenderer.invoke('manga:ocrPage', chapterId, pageIndex)
   },
   settings: {
     all: () => ipcRenderer.invoke('settings:all'),

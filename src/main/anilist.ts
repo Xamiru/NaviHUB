@@ -1,5 +1,6 @@
 import { getSqlite } from './db/connection'
-import { downloadImage } from './files'
+import { downloadImages } from './files'
+import { fetchWithRetry } from './http'
 import type { AniListSearchResult, AniListImportSummary } from '@shared/types'
 
 // AniList public GraphQL API — no auth needed for reads.
@@ -14,7 +15,7 @@ const MANGA_CHAR_SOURCE = 'anilist-manga'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 async function gql(query: string, variables: Record<string, unknown>): Promise<any> {
-  const res = await fetch(ENDPOINT, {
+  const res = await fetchWithRetry(ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     body: JSON.stringify({ query, variables })
@@ -82,8 +83,11 @@ function mapMangaStaffRole(role: string | null): string {
   return 'staff'
 }
 
-/* ---------------- shared upsert helpers (dedup by external id) ---------------- */
-async function upsertCompany(db: any, node: any): Promise<number> {
+/* ---------------- shared upsert helpers (dedup by external id) ----------------
+ * Synchronous on purpose: images are pre-downloaded (files.downloadImages), so
+ * these can run inside the import transaction. `photo`/`img` is the stored
+ * relative path for the entity's image, or null. */
+function upsertCompany(db: any, node: any): number {
   const ext = String(node.id)
   const row = db
     .prepare('SELECT id FROM company WHERE external_source=? AND external_id=?')
@@ -95,7 +99,7 @@ async function upsertCompany(db: any, node: any): Promise<number> {
   return Number(info.lastInsertRowid)
 }
 
-async function upsertPerson(db: any, node: any): Promise<number> {
+function upsertPerson(db: any, node: any, photo: string | null): number {
   const ext = String(node.id)
   const row = db
     .prepare('SELECT id, photo_path FROM person WHERE external_source=? AND external_id=?')
@@ -103,13 +107,11 @@ async function upsertPerson(db: any, node: any): Promise<number> {
   const name = node.name?.full ?? 'Unknown'
   const nativeName = node.name?.native ?? null
   if (row) {
-    if (!row.photo_path && node.image?.large) {
-      const p = await downloadImage(node.image.large)
-      if (p) db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(p, row.id)
+    if (!row.photo_path && photo) {
+      db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(photo, row.id)
     }
     return row.id
   }
-  const photo = await downloadImage(node.image?.large)
   const info = db
     .prepare(
       'INSERT INTO person (name, name_native, photo_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)'
@@ -120,7 +122,7 @@ async function upsertPerson(db: any, node: any): Promise<number> {
 
 // `charSource` namespaces the character so anime and manga characters that share
 // an AniList id stay distinct (see MANGA_CHAR_SOURCE above).
-async function upsertCharacter(db: any, node: any, charSource: string): Promise<number> {
+function upsertCharacter(db: any, node: any, charSource: string, img: string | null): number {
   const ext = String(node.id)
   const row = db
     .prepare('SELECT id, image_path FROM character WHERE external_source=? AND external_id=?')
@@ -128,13 +130,11 @@ async function upsertCharacter(db: any, node: any, charSource: string): Promise<
   const name = node.name?.full ?? 'Unknown'
   const nativeName = node.name?.native ?? null
   if (row) {
-    if (!row.image_path && node.image?.large) {
-      const p = await downloadImage(node.image.large)
-      if (p) db.prepare('UPDATE character SET image_path=? WHERE id=?').run(p, row.id)
+    if (!row.image_path && img) {
+      db.prepare('UPDATE character SET image_path=? WHERE id=?').run(img, row.id)
     }
     return row.id
   }
-  const img = await downloadImage(node.image?.large)
   const info = db
     .prepare(
       'INSERT INTO character (name, name_native, image_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)'
@@ -163,6 +163,14 @@ function pruneCharacters(db: any, mediaId: number, charSource: string, keptIds: 
       )
     }
   }
+  // Characters about to be swept may sit on user lists (list_item has no FK to
+  // enforce this — repos clean up on manual delete, so imports must too).
+  db.prepare(
+    `DELETE FROM list_item
+     WHERE list_id IN (SELECT id FROM list WHERE entity_kind = 'character')
+     AND entity_id IN (SELECT id FROM character WHERE external_source = ?
+                       AND id NOT IN (SELECT character_id FROM media_character))`
+  ).run(charSource)
   db.prepare(
     `DELETE FROM character WHERE external_source = ?
      AND id NOT IN (SELECT character_id FROM media_character)`
@@ -267,6 +275,44 @@ export async function searchManga(query: string): Promise<AniListSearchResult[]>
   })
 }
 
+// AniList relation types we surface on the detail page: the season chain plus
+// the manga/novel a title was adapted from (SOURCE) or that adapts it
+// (ADAPTATION). The rest (CHARACTER, SUMMARY, OTHER…) are noise for a seasons
+// view, so they're skipped.
+const RELATION_TYPES = new Set([
+  'PREQUEL',
+  'SEQUEL',
+  'PARENT',
+  'SIDE_STORY',
+  'ALTERNATIVE',
+  'SPIN_OFF',
+  'SOURCE',
+  'ADAPTATION'
+])
+
+// Authoritatively replaces a title's stored relations from AniList's edges.
+// Stored by the RELATED work's AniList id (SOURCE, i.e. 'anilist' — both anime
+// and manga media_items use it, and AniList ids are unique across both) so the
+// link resolves regardless of which title is imported first; related_title/type
+// keep enough to render a relation whose target isn't in the library yet.
+function replaceRelations(db: any, mediaId: number, relations: any): void {
+  db.prepare('DELETE FROM media_relation WHERE media_id = ?').run(mediaId)
+  const ins = db.prepare(
+    `INSERT OR IGNORE INTO media_relation
+       (media_id, relation_type, related_source, related_external_id, related_type, related_title, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  )
+  let order = 0
+  for (const edge of relations?.edges ?? []) {
+    if (!RELATION_TYPES.has(edge?.relationType)) continue
+    const node = edge.node
+    if (!node?.id) continue
+    const { title } = pickTitle(node.title)
+    const type = node.type ? String(node.type).toLowerCase() : null
+    ins.run(mediaId, edge.relationType, SOURCE, String(node.id), type, title, order++)
+  }
+}
+
 // ---------------- Import (anime) ----------------
 const DETAIL_QUERY = `
 query ($id: Int) {
@@ -280,6 +326,12 @@ query ($id: Int) {
     coverImage { large extraLarge }
     genres
     studios { edges { isMain node { id name } } }
+    relations {
+      edges {
+        relationType
+        node { id type title { romaji english native } }
+      }
+    }
     characters(sort: [ROLE, FAVOURITES_DESC], page: 1, perPage: 25) {
       pageInfo { hasNextPage }
       edges {
@@ -311,72 +363,13 @@ query ($id: Int, $page: Int) {
 
 // Imports an AniList anime into the local DB, deduping every entity by
 // (external_source, external_id). Returns a summary for the UI.
+// Two phases: all network work first (GraphQL pages + every image), then every
+// DB write inside one transaction — a failure mid-import can't leave half a
+// title behind, and re-import stays authoritative or doesn't happen at all.
 export async function importAnime(anilistId: number): Promise<AniListImportSummary> {
   const data = await gql(DETAIL_QUERY, { id: anilistId })
   const m = data?.Media
   if (!m) throw new Error('Anime not found on AniList')
-  const db = getSqlite()
-
-  const { title, native } = pickTitle(m.title)
-  const coverPath = await downloadImage(m.coverImage?.extraLarge || m.coverImage?.large)
-
-  // ---- media (preserve personal tracking on re-import) ----
-  const existing = db
-    .prepare('SELECT id FROM media_item WHERE external_source = ? AND external_id = ?')
-    .get(SOURCE, String(m.id)) as { id: number } | undefined
-
-  let mediaId: number
-  const created = !existing
-  if (existing) {
-    mediaId = existing.id
-    db.prepare(
-      `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-       total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
-    ).run(
-      title,
-      native,
-      stripHtml(m.description),
-      coverPath,
-      m.episodes ?? null,
-      fmtDate(m.startDate),
-      mediaId
-    )
-  } else {
-    const info = db
-      .prepare(
-        `INSERT INTO media_item
-         (media_type, title, title_original, synopsis, cover_path, total_units, release_date,
-          external_source, external_id)
-         VALUES ('anime', ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        title,
-        native,
-        stripHtml(m.description),
-        coverPath,
-        m.episodes ?? null,
-        fmtDate(m.startDate),
-        SOURCE,
-        String(m.id)
-      )
-    mediaId = Number(info.lastInsertRowid)
-  }
-
-  mergeAverageScore(db, mediaId, m.averageScore)
-
-  // ---- studios: only the main animation studio(s), not producers/licensors ----
-  let studios = 0
-  for (const edge of m.studios?.edges ?? []) {
-    if (!edge.isMain) continue
-    const companyId = await upsertCompany(db, edge.node)
-    db.prepare(
-      'INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)'
-    ).run(mediaId, companyId, 'animation_studio')
-    studios++
-  }
-
-  // ---- genres -> tags ----
-  for (const g of m.genres ?? []) linkGenre(db, mediaId, g)
 
   // ---- characters + voice actors (Japanese) ----
   // Pull characters in AniList's own order (ROLE then relevance), across pages,
@@ -394,58 +387,137 @@ export async function importAnime(anilistId: number): Promise<AniListImportSumma
   }
   const limited = charEdges.slice(0, MAX_CHARACTERS)
 
-  let cast = 0
-  let order = 0
-  const keptCharacterIds = new Set<number>()
-  for (const edge of limited) {
-    const characterId = await upsertCharacter(db, edge.node, SOURCE)
-    keptCharacterIds.add(characterId)
-    const sortOrder = order++
-    const importance = rankFromRole(edge.role)
-    // Upsert the link, recording the source ordering (updates on re-import).
-    db.prepare(
-      `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)
-       ON CONFLICT(media_id, character_id) DO UPDATE SET sort_order = excluded.sort_order`
-    ).run(mediaId, characterId, sortOrder)
-    for (const va of edge.voiceActors ?? []) {
-      const personId = await upsertPerson(db, va)
-      const dup = db
-        .prepare(
-          'SELECT id FROM credit WHERE media_id=? AND person_id=? AND character_id IS ? AND role=?'
-        )
-        .get(mediaId, personId, characterId, 'voice_actor') as { id: number } | undefined
-      if (dup) {
-        db.prepare('UPDATE credit SET importance=? WHERE id=?').run(importance, dup.id)
-      } else {
-        db.prepare(
-          'INSERT INTO credit (media_id, person_id, character_id, role, language, importance) VALUES (?, ?, ?, ?, ?, ?)'
-        ).run(mediaId, personId, characterId, 'voice_actor', 'Japanese', importance)
-      }
-      cast++
-    }
-  }
+  const coverUrl = m.coverImage?.extraLarge || m.coverImage?.large
+  const images = await downloadImages([
+    coverUrl,
+    ...limited.flatMap((edge: any) => [
+      edge.node?.image?.large,
+      ...(edge.voiceActors ?? []).map((va: any) => va.image?.large)
+    ]),
+    ...(m.staff?.edges ?? []).map((edge: any) => edge.node?.image?.large)
+  ])
+  const img = (url: string | null | undefined): string | null =>
+    url ? (images.get(url) ?? null) : null
 
-  pruneCharacters(db, mediaId, SOURCE, keptCharacterIds)
+  const db = getSqlite()
+  return db.transaction((): AniListImportSummary => {
+    const { title, native } = pickTitle(m.title)
+    const coverPath = img(coverUrl)
 
-  // ---- staff ----
-  let staff = 0
-  for (const edge of m.staff?.edges ?? []) {
-    const personId = await upsertPerson(db, edge.node)
-    const role = mapStaffRole(edge.role)
-    const dup = db
-      .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL')
-      .get(mediaId, personId, role)
-    if (!dup) {
-      db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(
-        mediaId,
-        personId,
-        role
+    // ---- media (preserve personal tracking on re-import) ----
+    const existing = db
+      .prepare('SELECT id FROM media_item WHERE external_source = ? AND external_id = ?')
+      .get(SOURCE, String(m.id)) as { id: number } | undefined
+
+    let mediaId: number
+    const created = !existing
+    if (existing) {
+      mediaId = existing.id
+      db.prepare(
+        `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+         total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
+      ).run(
+        title,
+        native,
+        stripHtml(m.description),
+        coverPath,
+        m.episodes ?? null,
+        fmtDate(m.startDate),
+        mediaId
       )
+    } else {
+      const info = db
+        .prepare(
+          `INSERT INTO media_item
+           (media_type, title, title_original, synopsis, cover_path, total_units, release_date,
+            external_source, external_id)
+           VALUES ('anime', ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          title,
+          native,
+          stripHtml(m.description),
+          coverPath,
+          m.episodes ?? null,
+          fmtDate(m.startDate),
+          SOURCE,
+          String(m.id)
+        )
+      mediaId = Number(info.lastInsertRowid)
     }
-    staff++
-  }
 
-  return { mediaId, title, studios, cast, staff, created }
+    mergeAverageScore(db, mediaId, m.averageScore)
+
+    // ---- studios: only the main animation studio(s), not producers/licensors ----
+    let studios = 0
+    for (const edge of m.studios?.edges ?? []) {
+      if (!edge.isMain) continue
+      const companyId = upsertCompany(db, edge.node)
+      db.prepare(
+        'INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)'
+      ).run(mediaId, companyId, 'animation_studio')
+      studios++
+    }
+
+    // ---- genres -> tags ----
+    for (const g of m.genres ?? []) linkGenre(db, mediaId, g)
+
+    let cast = 0
+    let order = 0
+    const keptCharacterIds = new Set<number>()
+    for (const edge of limited) {
+      const characterId = upsertCharacter(db, edge.node, SOURCE, img(edge.node?.image?.large))
+      keptCharacterIds.add(characterId)
+      const sortOrder = order++
+      const importance = rankFromRole(edge.role)
+      // Upsert the link, recording the source ordering (updates on re-import).
+      db.prepare(
+        `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)
+         ON CONFLICT(media_id, character_id) DO UPDATE SET sort_order = excluded.sort_order`
+      ).run(mediaId, characterId, sortOrder)
+      for (const va of edge.voiceActors ?? []) {
+        const personId = upsertPerson(db, va, img(va.image?.large))
+        const dup = db
+          .prepare(
+            'SELECT id FROM credit WHERE media_id=? AND person_id=? AND character_id IS ? AND role=?'
+          )
+          .get(mediaId, personId, characterId, 'voice_actor') as { id: number } | undefined
+        if (dup) {
+          db.prepare('UPDATE credit SET importance=? WHERE id=?').run(importance, dup.id)
+        } else {
+          db.prepare(
+            'INSERT INTO credit (media_id, person_id, character_id, role, language, importance) VALUES (?, ?, ?, ?, ?, ?)'
+          ).run(mediaId, personId, characterId, 'voice_actor', 'Japanese', importance)
+        }
+        cast++
+      }
+    }
+
+    pruneCharacters(db, mediaId, SOURCE, keptCharacterIds)
+
+    // ---- staff ----
+    let staff = 0
+    for (const edge of m.staff?.edges ?? []) {
+      const personId = upsertPerson(db, edge.node, img(edge.node?.image?.large))
+      const role = mapStaffRole(edge.role)
+      const dup = db
+        .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL')
+        .get(mediaId, personId, role)
+      if (!dup) {
+        db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(
+          mediaId,
+          personId,
+          role
+        )
+      }
+      staff++
+    }
+
+    // ---- related titles (seasons + manga source) ----
+    replaceRelations(db, mediaId, m.relations)
+
+    return { mediaId, title, studios, cast, staff, created }
+  })()
 }
 
 // ---------------- Import (manga) ----------------
@@ -463,6 +535,12 @@ query ($id: Int) {
     startDate { year month day }
     coverImage { large extraLarge }
     genres
+    relations {
+      edges {
+        relationType
+        node { id type title { romaji english native } }
+      }
+    }
     characters(sort: [ROLE, FAVOURITES_DESC], page: 1, perPage: 25) {
       pageInfo { hasNextPage }
       edges { role node { id name { full native } image { large } } }
@@ -483,59 +561,11 @@ query ($id: Int, $page: Int) {
   }
 }`
 
+// Same two-phase shape as importAnime: fetch everything, then write atomically.
 export async function importManga(anilistId: number): Promise<AniListImportSummary> {
   const data = await gql(DETAIL_QUERY_MANGA, { id: anilistId })
   const m = data?.Media
   if (!m) throw new Error('Manga not found on AniList')
-  const db = getSqlite()
-
-  const { title, native } = pickTitle(m.title)
-  const coverPath = await downloadImage(m.coverImage?.extraLarge || m.coverImage?.large)
-
-  const existing = db
-    .prepare('SELECT id FROM media_item WHERE external_source = ? AND external_id = ?')
-    .get(SOURCE, String(m.id)) as { id: number } | undefined
-
-  let mediaId: number
-  const created = !existing
-  if (existing) {
-    mediaId = existing.id
-    db.prepare(
-      `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-       total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
-    ).run(
-      title,
-      native,
-      stripHtml(m.description),
-      coverPath,
-      m.chapters ?? null,
-      fmtDate(m.startDate),
-      mediaId
-    )
-  } else {
-    const info = db
-      .prepare(
-        `INSERT INTO media_item
-         (media_type, title, title_original, synopsis, cover_path, total_units, release_date,
-          external_source, external_id)
-         VALUES ('manga', ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        title,
-        native,
-        stripHtml(m.description),
-        coverPath,
-        m.chapters ?? null,
-        fmtDate(m.startDate),
-        SOURCE,
-        String(m.id)
-      )
-    mediaId = Number(info.lastInsertRowid)
-  }
-
-  mergeAverageScore(db, mediaId, m.averageScore)
-
-  for (const g of m.genres ?? []) linkGenre(db, mediaId, g)
 
   // ---- characters (no voice actors for manga) ----
   const MAX_CHARACTERS = 125
@@ -551,37 +581,105 @@ export async function importManga(anilistId: number): Promise<AniListImportSumma
   }
   const limited = charEdges.slice(0, MAX_CHARACTERS)
 
-  let order = 0
-  const keptCharacterIds = new Set<number>()
-  for (const edge of limited) {
-    const characterId = await upsertCharacter(db, edge.node, MANGA_CHAR_SOURCE)
-    keptCharacterIds.add(characterId)
-    const sortOrder = order++
-    db.prepare(
-      `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)
-       ON CONFLICT(media_id, character_id) DO UPDATE SET sort_order = excluded.sort_order`
-    ).run(mediaId, characterId, sortOrder)
-  }
-  pruneCharacters(db, mediaId, MANGA_CHAR_SOURCE, keptCharacterIds)
+  const coverUrl = m.coverImage?.extraLarge || m.coverImage?.large
+  const images = await downloadImages([
+    coverUrl,
+    ...limited.map((edge: any) => edge.node?.image?.large),
+    ...(m.staff?.edges ?? []).map((edge: any) => edge.node?.image?.large)
+  ])
+  const img = (url: string | null | undefined): string | null =>
+    url ? (images.get(url) ?? null) : null
 
-  // ---- mangaka / staff ----
-  let staff = 0
-  for (const edge of m.staff?.edges ?? []) {
-    const personId = await upsertPerson(db, edge.node)
-    const role = mapMangaStaffRole(edge.role)
-    const dup = db
-      .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL')
-      .get(mediaId, personId, role)
-    if (!dup) {
-      db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(
-        mediaId,
-        personId,
-        role
+  const db = getSqlite()
+  return db.transaction((): AniListImportSummary => {
+    const { title, native } = pickTitle(m.title)
+    const coverPath = img(coverUrl)
+
+    const existing = db
+      .prepare('SELECT id FROM media_item WHERE external_source = ? AND external_id = ?')
+      .get(SOURCE, String(m.id)) as { id: number } | undefined
+
+    let mediaId: number
+    const created = !existing
+    if (existing) {
+      mediaId = existing.id
+      db.prepare(
+        `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+         total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
+      ).run(
+        title,
+        native,
+        stripHtml(m.description),
+        coverPath,
+        m.chapters ?? null,
+        fmtDate(m.startDate),
+        mediaId
       )
+    } else {
+      const info = db
+        .prepare(
+          `INSERT INTO media_item
+           (media_type, title, title_original, synopsis, cover_path, total_units, release_date,
+            external_source, external_id)
+           VALUES ('manga', ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          title,
+          native,
+          stripHtml(m.description),
+          coverPath,
+          m.chapters ?? null,
+          fmtDate(m.startDate),
+          SOURCE,
+          String(m.id)
+        )
+      mediaId = Number(info.lastInsertRowid)
     }
-    staff++
-  }
 
-  // cast count reports linked characters (manga has no per-character credits).
-  return { mediaId, title, studios: 0, cast: keptCharacterIds.size, staff, created }
+    mergeAverageScore(db, mediaId, m.averageScore)
+
+    for (const g of m.genres ?? []) linkGenre(db, mediaId, g)
+
+    let order = 0
+    const keptCharacterIds = new Set<number>()
+    for (const edge of limited) {
+      const characterId = upsertCharacter(
+        db,
+        edge.node,
+        MANGA_CHAR_SOURCE,
+        img(edge.node?.image?.large)
+      )
+      keptCharacterIds.add(characterId)
+      const sortOrder = order++
+      db.prepare(
+        `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)
+         ON CONFLICT(media_id, character_id) DO UPDATE SET sort_order = excluded.sort_order`
+      ).run(mediaId, characterId, sortOrder)
+    }
+    pruneCharacters(db, mediaId, MANGA_CHAR_SOURCE, keptCharacterIds)
+
+    // ---- mangaka / staff ----
+    let staff = 0
+    for (const edge of m.staff?.edges ?? []) {
+      const personId = upsertPerson(db, edge.node, img(edge.node?.image?.large))
+      const role = mapMangaStaffRole(edge.role)
+      const dup = db
+        .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL')
+        .get(mediaId, personId, role)
+      if (!dup) {
+        db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(
+          mediaId,
+          personId,
+          role
+        )
+      }
+      staff++
+    }
+
+    // ---- related titles (other volumes/parts + anime adaptation) ----
+    replaceRelations(db, mediaId, m.relations)
+
+    // cast count reports linked characters (manga has no per-character credits).
+    return { mediaId, title, studios: 0, cast: keptCharacterIds.size, staff, created }
+  })()
 }

@@ -29,6 +29,9 @@ export const mediaItem = sqliteTable(
     metadata: text('metadata', { mode: 'json' }),
     externalSource: text('external_source'),
     externalId: text('external_id'),
+    // Manga reader: attached series folder relative to the manga library root
+    // (settings key manga.dir). Written only by src/main/manga.ts.
+    localDir: text('local_dir'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -162,6 +165,8 @@ export const mediaCharacter = sqliteTable(
     sortOrder: integer('sort_order')
   },
   (t) => ({
+    // media_id is covered by the unique index; only character_id needs its own.
+    byCharacter: index('idx_media_character_character').on(t.characterId),
     uniq: unique('uniq_media_character').on(t.mediaId, t.characterId)
   })
 )
@@ -189,7 +194,12 @@ export const mediaTag = sqliteTable(
       .notNull()
       .references(() => tag.id, { onDelete: 'cascade' })
   },
-  (t) => ({ uniq: unique('uniq_media_tag').on(t.mediaId, t.tagId) })
+  (t) => ({
+    // media_id (and media_id+tag_id) is covered by the unique index; the reverse
+    // tag_id browse needs its own.
+    byTag: index('idx_media_tag_tag').on(t.tagId),
+    uniq: unique('uniq_media_tag').on(t.mediaId, t.tagId)
+  })
 )
 
 // ---------------------------------------------------------------------------
@@ -242,9 +252,216 @@ export const themeArtist = sqliteTable(
 )
 
 // ---------------------------------------------------------------------------
+// media_relation — links between titles (anime seasons, manga source, etc.),
+// stored by the related work's AniList id so links resolve regardless of the
+// order titles are imported; related_title powers the "not imported yet" hint.
+// ---------------------------------------------------------------------------
+export const mediaRelation = sqliteTable(
+  'media_relation',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    relationType: text('relation_type').notNull(),
+    relatedSource: text('related_source').notNull(),
+    relatedExternalId: text('related_external_id').notNull(),
+    relatedType: text('related_type'),
+    relatedTitle: text('related_title'),
+    sortOrder: integer('sort_order')
+  },
+  (t) => ({
+    byMedia: index('idx_media_relation_media').on(t.mediaId),
+    byRelated: index('idx_media_relation_related').on(t.relatedSource, t.relatedExternalId),
+    uniq: unique('uniq_media_relation').on(t.mediaId, t.relatedSource, t.relatedExternalId)
+  })
+)
+
+// ---------------------------------------------------------------------------
 // settings — key/value for customization (statuses, score scale, theme…)
 // ---------------------------------------------------------------------------
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull()
 })
+
+// ---------------------------------------------------------------------------
+// list + list_item — user-curated ordered collections (Letterboxd-style).
+// entity_kind is fixed per list; list_item.entity_id targets the kind's table
+// (polymorphic, so no FK). ranked toggles visible numbering.
+// ---------------------------------------------------------------------------
+export const list = sqliteTable(
+  'list',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    title: text('title').notNull(),
+    description: text('description'),
+    entityKind: text('entity_kind').notNull(),
+    ranked: integer('ranked').notNull().default(0),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({ byKind: index('idx_list_kind').on(t.entityKind) })
+)
+
+export const listItem = sqliteTable(
+  'list_item',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    listId: integer('list_id')
+      .notNull()
+      .references(() => list.id, { onDelete: 'cascade' }),
+    entityId: integer('entity_id').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    note: text('note'),
+    addedAt: text('added_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byList: index('idx_list_item_list').on(t.listId),
+    uniq: unique('uniq_list_item').on(t.listId, t.entityId)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// manga_chapter — a locally-readable chapter of a manga media_item, discovered
+// by scanning the attached series folder (media_item.local_dir). dir_path is
+// relative to the manga library root; '' = the series folder itself holds the
+// pages (flat series). Pages are listed from disk at read-time; only the count
+// is cached here.
+// ---------------------------------------------------------------------------
+export const mangaChapter = sqliteTable(
+  'manga_chapter',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    dirPath: text('dir_path').notNull(),
+    title: text('title').notNull(),
+    number: real('number'),
+    pageCount: integer('page_count').notNull().default(0),
+    sortOrder: integer('sort_order').notNull().default(0),
+    lastReadPage: integer('last_read_page'),
+    readAt: text('read_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byMedia: index('idx_manga_chapter_media').on(t.mediaId),
+    uniq: unique('uniq_manga_chapter_dir').on(t.mediaId, t.dirPath)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// Japanese learning — standalone section (courses → lessons → cards). A lesson
+// is 'grammar' (body = explanation, cards = example sentences) or 'vocab'
+// (cards = vocabulary entries). Cards carry SRS state inline; only learned
+// lessons' cards surface in reviews and quizzes.
+// ---------------------------------------------------------------------------
+export const jpCourse = sqliteTable('jp_course', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  description: text('description'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})
+
+export const jpLesson = sqliteTable(
+  'jp_lesson',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    courseId: integer('course_id')
+      .notNull()
+      .references(() => jpCourse.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(),
+    title: text('title').notNull(),
+    body: text('body'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    learned: integer('learned').notNull().default(0),
+    learnedAt: text('learned_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({ byCourse: index('idx_jp_lesson_course').on(t.courseId) })
+)
+
+export const jpCard = sqliteTable(
+  'jp_card',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    lessonId: integer('lesson_id')
+      .notNull()
+      .references(() => jpLesson.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+    front: text('front').notNull(),
+    reading: text('reading'),
+    back: text('back').notNull(),
+    pos: text('pos'),
+    notes: text('notes'),
+    exampleJp: text('example_jp'),
+    exampleReading: text('example_reading'),
+    exampleEn: text('example_en'),
+    onyomi: text('onyomi'),
+    kunyomi: text('kunyomi'),
+    // media_item.id a mined card came from; no FK — reads tolerate deletion
+    sourceMediaId: integer('source_media_id'),
+    // SRS state; written only by submitReview (see src/shared/srs.ts)
+    status: text('status').notNull().default('new'),
+    learningStep: integer('learning_step').notNull().default(0),
+    dueAt: text('due_at'),
+    intervalDays: real('interval_days').notNull().default(0),
+    ease: real('ease').notNull().default(2.5),
+    reps: integer('reps').notNull().default(0),
+    lapses: integer('lapses').notNull().default(0),
+    lastReviewedAt: text('last_reviewed_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byLesson: index('idx_jp_card_lesson').on(t.lessonId),
+    byDue: index('idx_jp_card_due').on(t.status, t.dueAt)
+  })
+)
+
+export const jpReviewLog = sqliteTable(
+  'jp_review_log',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    cardId: integer('card_id')
+      .notNull()
+      .references(() => jpCard.id, { onDelete: 'cascade' }),
+    grade: text('grade').notNull(),
+    reviewedAt: text('reviewed_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    intervalDays: real('interval_days').notNull(),
+    ease: real('ease').notNull()
+  },
+  (t) => ({
+    byCard: index('idx_jp_review_log_card').on(t.cardId),
+    byTime: index('idx_jp_review_log_time').on(t.reviewedAt)
+  })
+)

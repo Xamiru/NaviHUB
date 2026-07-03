@@ -28,8 +28,12 @@ Other scripts:
 ```bash
 npm run build      # production build into ./out
 npm run typecheck  # tsc for both main and renderer
+npm run test       # vitest — repo + importer tests against in-memory SQLite
 npm run rebuild    # re-run electron-rebuild if you hit a native-module error
 ```
+
+Tests run through Electron in Node mode (`ELECTRON_RUN_AS_NODE=1 electron …`)
+because better-sqlite3 is compiled for Electron's ABI, not the system Node's.
 
 ### Note when running from inside the VS Code integrated terminal
 
@@ -99,6 +103,11 @@ to refresh what the shortcut launches (`npm run dev` is still best for developme
   play, directors/writers, production companies). Paste a free TMDB API key into
   Settings once. Movie browse pages are **Actors** and **Directors**, ranked by
   number of roles, exactly like Voice Actors / Studios. VN / games / TV next.
+- **Games are live** — import from **RAWG** (free key in Settings): cover,
+  developers/publishers, genres, average playtime, Metacritic. RAWG has no cast
+  data, so game characters + voice actors are added by hand on the detail page —
+  and the VA picker draws from the same seiyuu pool as anime and visual novels,
+  so a Japanese game's cast lands on the same person pages.
 
 > Note: changing import/ordering logic only affects existing titles after you
 > **re-import** them (character order and importance are stored at import time).

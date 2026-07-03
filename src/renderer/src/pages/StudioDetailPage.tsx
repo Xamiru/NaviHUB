@@ -1,6 +1,7 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import EntityHeader from '../components/EntityHeader'
 import CoverImage from '../components/CoverImage'
 import { pathForMedia } from '../lib/mediaConfig'
@@ -15,11 +16,11 @@ export default function StudioDetailPage() {
   const qc = useQueryClient()
 
   const { data: company } = useQuery({
-    queryKey: ['companies', 'get', companyId],
+    queryKey: qk.companies.get(companyId),
     queryFn: () => api.companies.get(companyId)
   })
   const { data: works = [] } = useQuery({
-    queryKey: ['companies', 'media', companyId],
+    queryKey: qk.companies.media(companyId),
     queryFn: () => api.companies.media(companyId)
   })
 
@@ -44,7 +45,7 @@ export default function StudioDetailPage() {
               onChange={(e) =>
                 api.companies
                   .upsert({ id: companyId, name: company.name, type: e.target.value as CompanyType })
-                  .then(() => qc.invalidateQueries({ queryKey: ['companies'] }))
+                  .then(() => qc.invalidateQueries({ queryKey: qk.companies.all }))
               }
             >
               {TYPES.map((t) => (
@@ -63,11 +64,11 @@ export default function StudioDetailPage() {
             type: company.type,
             logoPath: f.imgPath
           })
-          qc.invalidateQueries({ queryKey: ['companies'] })
+          qc.invalidateQueries({ queryKey: qk.companies.all })
         }}
         onDelete={async () => {
           await api.companies.remove(companyId)
-          qc.invalidateQueries({ queryKey: ['companies'] })
+          qc.invalidateQueries({ queryKey: qk.companies.all })
           navigate('/studios')
         }}
       />

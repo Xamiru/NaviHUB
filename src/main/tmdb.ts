@@ -1,5 +1,6 @@
 import { getSqlite } from './db/connection'
-import { downloadImage } from './files'
+import { downloadImages } from './files'
+import { fetchWithRetry } from './http'
 import * as settingsRepo from './repos/settingsRepo'
 import type { ImportSearchResult, ImportSummary, MediaType } from '@shared/types'
 
@@ -25,7 +26,7 @@ async function tmdbGet(path: string, params: Record<string, string> = {}): Promi
   const url = new URL(`${BASE}${path}`)
   url.searchParams.set('api_key', apiKey())
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
-  const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } })
+  const res = await fetchWithRetry(url.toString(), { headers: { Accept: 'application/json' } })
   if (res.status === 401) throw new Error('Invalid TMDB API key — check it in Settings.')
   if (!res.ok) throw new Error(`TMDB request failed (${res.status})`)
   return res.json()
@@ -59,7 +60,7 @@ async function fetchOmdb(imdbId: string | null | undefined): Promise<Record<stri
     const url = new URL('https://www.omdbapi.com/')
     url.searchParams.set('apikey', key)
     url.searchParams.set('i', imdbId)
-    const res = await fetch(url.toString())
+    const res = await fetchWithRetry(url.toString())
     if (!res.ok) return null
     const d = await res.json()
     if (d.Response === 'False') return null
@@ -123,7 +124,10 @@ function mapCrewJob(job: string | null): string | null {
   return null
 }
 
-async function upsertCompany(db: any, node: any): Promise<number> {
+// Synchronous on purpose: images are pre-downloaded (files.downloadImages) so
+// these can run inside the import transaction; `photo`/`img` is the stored
+// relative path, or null.
+function upsertCompany(db: any, node: any): number {
   const ext = String(node.id)
   const row = db
     .prepare('SELECT id FROM company WHERE external_source=? AND external_id=?')
@@ -135,19 +139,17 @@ async function upsertCompany(db: any, node: any): Promise<number> {
   return Number(info.lastInsertRowid)
 }
 
-async function upsertPerson(db: any, node: any): Promise<number> {
+function upsertPerson(db: any, node: any, photo: string | null): number {
   const ext = String(node.id)
   const row = db
     .prepare('SELECT id, photo_path FROM person WHERE external_source=? AND external_id=?')
     .get(SOURCE, ext) as { id: number; photo_path: string | null } | undefined
   if (row) {
-    if (!row.photo_path && node.profile_path) {
-      const p = await downloadImage(profileUrl(node.profile_path))
-      if (p) db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(p, row.id)
+    if (!row.photo_path && photo) {
+      db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(photo, row.id)
     }
     return row.id
   }
-  const photo = await downloadImage(profileUrl(node.profile_path))
   const info = db
     .prepare('INSERT INTO person (name, photo_path, external_source, external_id) VALUES (?, ?, ?, ?)')
     .run(node.name ?? 'Unknown', photo, SOURCE, ext)
@@ -156,23 +158,16 @@ async function upsertPerson(db: any, node: any): Promise<number> {
 
 // A TMDB "character" is keyed by the cast credit_id (stable per role), since
 // TMDB has no global character entities like AniList.
-async function upsertCharacter(
-  db: any,
-  name: string,
-  creditId: string,
-  profilePath?: string | null
-): Promise<number> {
+function upsertCharacter(db: any, name: string, creditId: string, img: string | null): number {
   const row = db
     .prepare('SELECT id, image_path FROM character WHERE external_source=? AND external_id=?')
     .get(SOURCE, creditId) as { id: number; image_path: string | null } | undefined
   if (row) {
-    if (!row.image_path && profilePath) {
-      const p = await downloadImage(profileUrl(profilePath))
-      if (p) db.prepare('UPDATE character SET image_path=? WHERE id=?').run(p, row.id)
+    if (!row.image_path && img) {
+      db.prepare('UPDATE character SET image_path=? WHERE id=?').run(img, row.id)
     }
     return row.id
   }
-  const img = await downloadImage(profileUrl(profilePath))
   const info = db
     .prepare('INSERT INTO character (name, image_path, external_source, external_id) VALUES (?, ?, ?, ?)')
     .run(name, img, SOURCE, creditId)
@@ -197,164 +192,185 @@ interface NormalizedTitle {
 
 // The authoritative import shared by movies + TV: refreshes canonical fields but
 // preserves personal tracking, and prunes cast no longer present (mirrors AniList).
+// Two phases like the AniList importer: every download first, then all DB writes
+// in one transaction so a failed import can't leave a half-written title.
 async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
-  const db = getSqlite()
-  const coverPath = await downloadImage(posterUrl(n.posterPath, 'w500'))
-
-  // ---- media (preserve personal tracking on re-import) ----
-  const existing = db
-    .prepare('SELECT id FROM media_item WHERE external_source = ? AND external_id = ?')
-    .get(SOURCE, n.externalId) as { id: number } | undefined
-
-  let mediaId: number
-  const created = !existing
-  if (existing) {
-    mediaId = existing.id
-    db.prepare(
-      `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-       total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
-    ).run(n.title, n.native, n.synopsis, coverPath, n.totalUnits, n.releaseDate, mediaId)
-  } else {
-    const info = db
-      .prepare(
-        `INSERT INTO media_item
-         (media_type, title, title_original, synopsis, cover_path, total_units, release_date,
-          external_source, external_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        n.mediaType,
-        n.title,
-        n.native,
-        n.synopsis,
-        coverPath,
-        n.totalUnits,
-        n.releaseDate,
-        SOURCE,
-        n.externalId
-      )
-    mediaId = Number(info.lastInsertRowid)
-  }
-
-  // ---- OMDb scores (IMDb / Rotten Tomatoes) -> metadata, merged so re-import
-  // keeps any other metadata keys. Shown beside the user's own score. ----
-  if (n.extraMeta) {
-    const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId) as
-      | { metadata: string | null }
-      | undefined
-    let metaObj: Record<string, unknown> = {}
-    if (metaRow?.metadata) {
-      try {
-        metaObj = JSON.parse(metaRow.metadata) || {}
-      } catch {
-        metaObj = {}
-      }
-    }
-    for (const [k, v] of Object.entries(n.extraMeta)) if (v != null) metaObj[k] = v
-    db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(
-      Object.keys(metaObj).length ? JSON.stringify(metaObj) : null,
-      mediaId
-    )
-  }
-
-  // ---- production companies / networks (cap a few) ----
-  let studios = 0
-  for (const node of n.companies.slice(0, 3)) {
-    const companyId = await upsertCompany(db, node)
-    db.prepare(
-      'INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)'
-    ).run(mediaId, companyId, 'production_studio')
-    studios++
-  }
-
-  // ---- genres -> tags ----
-  for (const g of n.genres) {
-    const existingTag = db.prepare('SELECT id FROM tag WHERE name=?').get(g.name) as
-      | { id: number }
-      | undefined
-    const tagId = existingTag
-      ? existingTag.id
-      : Number(
-          db.prepare('INSERT INTO tag (name, category) VALUES (?, ?)').run(g.name, 'genre').lastInsertRowid
-        )
-    db.prepare('INSERT OR IGNORE INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, tagId)
-  }
-
-  // ---- cast (actor playing a character), top-billed first ----
   const castEdges: any[] = [...n.cast]
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
     .slice(0, MAX_CAST)
 
-  let cast = 0
-  let order = 0
-  const keptCharacterIds = new Set<number>()
-  for (const edge of castEdges) {
-    const characterName = (edge.character ?? '').trim()
-    if (!characterName) continue // skip uncredited / nameless roles
-    const personId = await upsertPerson(db, edge)
-    const characterId = await upsertCharacter(db, characterName, String(edge.credit_id), edge.profile_path)
-    keptCharacterIds.add(characterId)
-    const sortOrder = order++
-    db.prepare(
-      `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)
-       ON CONFLICT(media_id, character_id) DO UPDATE SET sort_order = excluded.sort_order`
-    ).run(mediaId, characterId, sortOrder)
-    const dup = db
-      .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND character_id IS ? AND role=?')
-      .get(mediaId, personId, characterId, 'actor') as { id: number } | undefined
-    if (dup) {
-      db.prepare('UPDATE credit SET importance=? WHERE id=?').run(sortOrder, dup.id)
-    } else {
+  const coverUrl = posterUrl(n.posterPath, 'w500')
+  const images = await downloadImages([
+    coverUrl,
+    ...castEdges.map((e) => profileUrl(e.profile_path)),
+    ...n.crew.filter((e) => mapCrewJob(e.job)).map((e) => profileUrl(e.profile_path))
+  ])
+  const img = (url: string | null): string | null => (url ? (images.get(url) ?? null) : null)
+
+  const db = getSqlite()
+  return db.transaction((): ImportSummary => {
+    const coverPath = img(coverUrl)
+
+    // ---- media (preserve personal tracking on re-import) ----
+    const existing = db
+      .prepare('SELECT id FROM media_item WHERE external_source = ? AND external_id = ?')
+      .get(SOURCE, n.externalId) as { id: number } | undefined
+
+    let mediaId: number
+    const created = !existing
+    if (existing) {
+      mediaId = existing.id
       db.prepare(
-        'INSERT INTO credit (media_id, person_id, character_id, role, importance) VALUES (?, ?, ?, ?, ?)'
-      ).run(mediaId, personId, characterId, 'actor', sortOrder)
+        `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+         total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
+      ).run(n.title, n.native, n.synopsis, coverPath, n.totalUnits, n.releaseDate, mediaId)
+    } else {
+      const info = db
+        .prepare(
+          `INSERT INTO media_item
+           (media_type, title, title_original, synopsis, cover_path, total_units, release_date,
+            external_source, external_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          n.mediaType,
+          n.title,
+          n.native,
+          n.synopsis,
+          coverPath,
+          n.totalUnits,
+          n.releaseDate,
+          SOURCE,
+          n.externalId
+        )
+      mediaId = Number(info.lastInsertRowid)
     }
-    cast++
-  }
 
-  // ---- prune TMDB characters no longer in the imported set (authoritative) ----
-  const linked = db
-    .prepare(
-      `SELECT mc.character_id AS cid FROM media_character mc
-       JOIN character ch ON ch.id = mc.character_id
-       WHERE mc.media_id = ? AND ch.external_source = ?`
-    )
-    .all(mediaId, SOURCE) as { cid: number }[]
-  for (const { cid } of linked) {
-    if (!keptCharacterIds.has(cid)) {
-      db.prepare('DELETE FROM credit WHERE media_id = ? AND character_id = ?').run(mediaId, cid)
-      db.prepare('DELETE FROM media_character WHERE media_id = ? AND character_id = ?').run(mediaId, cid)
-    }
-  }
-  db.prepare(
-    `DELETE FROM character WHERE external_source = ?
-     AND id NOT IN (SELECT character_id FROM media_character)`
-  ).run(SOURCE)
-
-  // ---- crew (director, writer, composer) — skipped for TV (empty array) ----
-  let staff = 0
-  const seenCrew = new Set<string>()
-  for (const edge of n.crew) {
-    const role = mapCrewJob(edge.job)
-    if (!role) continue
-    const personId = await upsertPerson(db, edge)
-    const key = `${personId}:${role}`
-    if (seenCrew.has(key)) continue
-    seenCrew.add(key)
-    const dup = db
-      .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL')
-      .get(mediaId, personId, role)
-    if (!dup) {
-      db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(
-        mediaId,
-        personId,
-        role
+    // ---- OMDb scores (IMDb / Rotten Tomatoes) -> metadata, merged so re-import
+    // keeps any other metadata keys. Shown beside the user's own score. ----
+    if (n.extraMeta) {
+      const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId) as
+        | { metadata: string | null }
+        | undefined
+      let metaObj: Record<string, unknown> = {}
+      if (metaRow?.metadata) {
+        try {
+          metaObj = JSON.parse(metaRow.metadata) || {}
+        } catch {
+          metaObj = {}
+        }
+      }
+      for (const [k, v] of Object.entries(n.extraMeta)) if (v != null) metaObj[k] = v
+      db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(
+        Object.keys(metaObj).length ? JSON.stringify(metaObj) : null,
+        mediaId
       )
     }
-    staff++
-  }
 
-  return { mediaId, title: n.title, studios, cast, staff, created }
+    // ---- production companies / networks (cap a few) ----
+    let studios = 0
+    for (const node of n.companies.slice(0, 3)) {
+      const companyId = upsertCompany(db, node)
+      db.prepare(
+        'INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)'
+      ).run(mediaId, companyId, 'production_studio')
+      studios++
+    }
+
+    // ---- genres -> tags ----
+    for (const g of n.genres) {
+      const existingTag = db.prepare('SELECT id FROM tag WHERE name=?').get(g.name) as
+        | { id: number }
+        | undefined
+      const tagId = existingTag
+        ? existingTag.id
+        : Number(
+            db.prepare('INSERT INTO tag (name, category) VALUES (?, ?)').run(g.name, 'genre').lastInsertRowid
+          )
+      db.prepare('INSERT OR IGNORE INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, tagId)
+    }
+
+    // ---- cast (actor playing a character), top-billed first ----
+    let cast = 0
+    let order = 0
+    const keptCharacterIds = new Set<number>()
+    for (const edge of castEdges) {
+      const characterName = (edge.character ?? '').trim()
+      if (!characterName) continue // skip uncredited / nameless roles
+      const profile = img(profileUrl(edge.profile_path))
+      const personId = upsertPerson(db, edge, profile)
+      const characterId = upsertCharacter(db, characterName, String(edge.credit_id), profile)
+      keptCharacterIds.add(characterId)
+      const sortOrder = order++
+      db.prepare(
+        `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)
+         ON CONFLICT(media_id, character_id) DO UPDATE SET sort_order = excluded.sort_order`
+      ).run(mediaId, characterId, sortOrder)
+      const dup = db
+        .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND character_id IS ? AND role=?')
+        .get(mediaId, personId, characterId, 'actor') as { id: number } | undefined
+      if (dup) {
+        db.prepare('UPDATE credit SET importance=? WHERE id=?').run(sortOrder, dup.id)
+      } else {
+        db.prepare(
+          'INSERT INTO credit (media_id, person_id, character_id, role, importance) VALUES (?, ?, ?, ?, ?)'
+        ).run(mediaId, personId, characterId, 'actor', sortOrder)
+      }
+      cast++
+    }
+
+    // ---- prune TMDB characters no longer in the imported set (authoritative) ----
+    const linked = db
+      .prepare(
+        `SELECT mc.character_id AS cid FROM media_character mc
+         JOIN character ch ON ch.id = mc.character_id
+         WHERE mc.media_id = ? AND ch.external_source = ?`
+      )
+      .all(mediaId, SOURCE) as { cid: number }[]
+    for (const { cid } of linked) {
+      if (!keptCharacterIds.has(cid)) {
+        db.prepare('DELETE FROM credit WHERE media_id = ? AND character_id = ?').run(mediaId, cid)
+        db.prepare('DELETE FROM media_character WHERE media_id = ? AND character_id = ?').run(mediaId, cid)
+      }
+    }
+    // Characters about to be swept may sit on user lists (list_item has no FK to
+    // enforce this — repos clean up on manual delete, so imports must too).
+    db.prepare(
+      `DELETE FROM list_item
+       WHERE list_id IN (SELECT id FROM list WHERE entity_kind = 'character')
+       AND entity_id IN (SELECT id FROM character WHERE external_source = ?
+                         AND id NOT IN (SELECT character_id FROM media_character))`
+    ).run(SOURCE)
+    db.prepare(
+      `DELETE FROM character WHERE external_source = ?
+       AND id NOT IN (SELECT character_id FROM media_character)`
+    ).run(SOURCE)
+
+    // ---- crew (director, writer, composer) — skipped for TV (empty array) ----
+    let staff = 0
+    const seenCrew = new Set<string>()
+    for (const edge of n.crew) {
+      const role = mapCrewJob(edge.job)
+      if (!role) continue
+      const personId = upsertPerson(db, edge, img(profileUrl(edge.profile_path)))
+      const key = `${personId}:${role}`
+      if (seenCrew.has(key)) continue
+      seenCrew.add(key)
+      const dup = db
+        .prepare('SELECT id FROM credit WHERE media_id=? AND person_id=? AND role=? AND character_id IS NULL')
+        .get(mediaId, personId, role)
+      if (!dup) {
+        db.prepare('INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, ?)').run(
+          mediaId,
+          personId,
+          role
+        )
+      }
+      staff++
+    }
+
+    return { mediaId, title: n.title, studios, cast, staff, created }
+  })()
 }
 
 // ---------------- Import ----------------

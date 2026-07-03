@@ -28,6 +28,15 @@
  *       gets characters + mangaka, no voice actors). --basic skips cast/staff for a
  *       fast metadata+tracking seed. --skip-anime / --skip-manga do just one list.
  *
+ *   imdb-top [--count N] [--min-votes N] [--omdb-key KEY] [--delay MS]
+ *       Import the all-time greatest films, ranked the way IMDb's own Top 250 is.
+ *       Pulls IMDb's official ratings dataset (~25 MB, free for personal use),
+ *       ranks by the weighted-rating (Bayesian) formula with a vote floor
+ *       (--min-votes, default 25000), then resolves each IMDb id to TMDB by id
+ *       (no fuzzy name search; non-movies are skipped). Defaults: --count 500.
+ *       This is the recommended "greatest movies" command (TMDB's own lists skew
+ *       to recent/hyped titles). OMDb scores apply as in tmdb-top.
+ *
  *   tmdb-top [--type movie|tv] [--list top_rated|popular|trending] [--count N] [--omdb-key KEY] [--delay MS]
  *       Import a ranked list of titles from TMDB (uses the api key already saved
  *       in the app's Settings → settings table key `tmdb.api_key`).
@@ -53,6 +62,7 @@
 const path = require('path')
 const os = require('os')
 const fs = require('fs')
+const zlib = require('zlib')
 const Database = require('better-sqlite3')
 
 /* ----------------------------- paths / db ----------------------------- */
@@ -288,6 +298,71 @@ function alMapMangaStaffRole(role) {
   return 'staff'
 }
 
+// AniList relation types surfaced on the detail page: the season chain + the
+// manga/novel a title was adapted from (SOURCE) or that adapts it (ADAPTATION).
+const AL_RELATION_TYPES = new Set([
+  'PREQUEL', 'SEQUEL', 'PARENT', 'SIDE_STORY', 'ALTERNATIVE', 'SPIN_OFF', 'SOURCE', 'ADAPTATION'
+])
+
+// The bulk script opens the DB raw and never runs init.sql, so the (newly added)
+// media_relation table may not exist yet — create it on demand. DDL mirrors
+// init.sql exactly; IF NOT EXISTS keeps it idempotent with the app's own init.
+function ensureRelationTable() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS media_relation (
+      id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+      media_id             INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+      relation_type        TEXT NOT NULL,
+      related_source       TEXT NOT NULL,
+      related_external_id  TEXT NOT NULL,
+      related_type         TEXT,
+      related_title        TEXT,
+      sort_order           INTEGER,
+      UNIQUE(media_id, related_source, related_external_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_media_relation_media ON media_relation(media_id);
+    CREATE INDEX IF NOT EXISTS idx_media_relation_related
+      ON media_relation(related_source, related_external_id);
+  `)
+}
+
+// Ports replaceRelations(): authoritatively replaces a title's relations. Keyed
+// by the related work's AniList id (both anime and manga media_items use
+// AL_SOURCE and AniList ids are unique across both), so links resolve whichever
+// title is imported first.
+function alReplaceRelations(mediaId, relations) {
+  db.prepare('DELETE FROM media_relation WHERE media_id = ?').run(mediaId)
+  const ins = db.prepare(
+    `INSERT OR IGNORE INTO media_relation
+       (media_id, relation_type, related_source, related_external_id, related_type, related_title, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`
+  )
+  let order = 0
+  for (const edge of relations?.edges ?? []) {
+    if (!AL_RELATION_TYPES.has(edge?.relationType)) continue
+    const node = edge.node
+    if (!node?.id) continue
+    const { title } = alPickTitle(node.title)
+    const type = node.type ? String(node.type).toLowerCase() : null
+    ins.run(mediaId, edge.relationType, AL_SOURCE, String(node.id), type, title, order++)
+  }
+}
+
+// Lightweight relations-only query (no `type:` filter → works for anime & manga
+// by id), used by the relations-backfill command.
+const AL_RELATIONS_QUERY = `
+query ($id: Int) {
+  Media(id: $id) {
+    id
+    relations {
+      edges {
+        relationType
+        node { id type title { romaji english native } }
+      }
+    }
+  }
+}`
+
 const AL_DETAIL_QUERY = `
 query ($id: Int) {
   Media(id: $id, type: ANIME) {
@@ -300,6 +375,12 @@ query ($id: Int) {
     coverImage { large extraLarge }
     genres
     studios { edges { isMain node { id name } } }
+    relations {
+      edges {
+        relationType
+        node { id type title { romaji english native } }
+      }
+    }
     characters(sort: [ROLE, FAVOURITES_DESC], page: 1, perPage: 25) {
       pageInfo { hasNextPage }
       edges {
@@ -522,6 +603,9 @@ async function alImportAnime(anilistId, { full }) {
     }
   }
 
+  // related titles (seasons + manga source) — cheap, always captured
+  alReplaceRelations(mediaId, m.relations)
+
   return { mediaId, title, studios, cast, staff, created }
 }
 
@@ -536,6 +620,12 @@ query ($id: Int) {
     startDate { year month day }
     coverImage { large extraLarge }
     genres
+    relations {
+      edges {
+        relationType
+        node { id type title { romaji english native } }
+      }
+    }
     characters(sort: [ROLE, FAVOURITES_DESC], page: 1, perPage: 25) {
       pageInfo { hasNextPage }
       edges { role node { id name { full native } image { large } } }
@@ -629,6 +719,9 @@ async function alImportManga(anilistId, { full }) {
       staff++
     }
   }
+
+  // related titles (other parts + anime adaptation) — cheap, always captured
+  alReplaceRelations(mediaId, m.relations)
 
   // cast count reports linked characters (manga has no per-character credits).
   return { mediaId, title, studios: 0, cast: keptCharacterIds.size, staff, created }
@@ -992,6 +1085,111 @@ async function cmdTmdbTop(flags) {
 }
 
 /* =====================================================================
+ * IMDB TOP — the canonical "greatest films" list, mapped to TMDB by id.
+ *
+ * IMDb has no free list API, so we use IMDb's official ratings dataset
+ * (datasets.imdbws.com, free for personal use): ~1.5M titles with averageRating
+ * + numVotes. We rank with IMDb's own weighted-rating (true Bayesian) formula,
+ * then resolve each IMDb id to TMDB via /find (which also tells us movie vs TV,
+ * so non-movies are skipped cleanly). No fuzzy name-matching.
+ * ===================================================================== */
+const IMDB_RATINGS_URL = 'https://datasets.imdbws.com/title.ratings.tsv.gz'
+
+async function fetchImdbRatings() {
+  const res = await fetch(IMDB_RATINGS_URL)
+  if (!res.ok) throw new Error(`IMDb ratings download failed (${res.status})`)
+  const gz = Buffer.from(await res.arrayBuffer())
+  const text = zlib.gunzipSync(gz).toString('utf8')
+  const lines = text.split('\n')
+  const rows = []
+  for (let i = 1; i < lines.length; i++) {
+    // header: tconst  averageRating  numVotes
+    const line = lines[i]
+    if (!line) continue
+    const tab1 = line.indexOf('\t')
+    const tab2 = line.indexOf('\t', tab1 + 1)
+    if (tab1 < 0 || tab2 < 0) continue
+    const tconst = line.slice(0, tab1)
+    const r = parseFloat(line.slice(tab1 + 1, tab2))
+    const v = parseInt(line.slice(tab2 + 1), 10)
+    if (Number.isFinite(r) && Number.isFinite(v)) rows.push({ tconst, r, v })
+  }
+  return rows
+}
+
+// IMDb Top-250-style weighted rating: W = (v/(v+m))R + (m/(v+m))C, where m is the
+// minimum-votes threshold and C is the mean rating across qualifying titles.
+function rankImdb(rows, minVotes) {
+  const pool = rows.filter((x) => x.v >= minVotes)
+  const C = pool.reduce((a, x) => a + x.r, 0) / (pool.length || 1)
+  for (const x of pool) x.w = (x.v / (x.v + minVotes)) * x.r + (minVotes / (x.v + minVotes)) * C
+  pool.sort((a, b) => b.w - a.w)
+  return pool
+}
+
+// IMDb id -> TMDB movie id (null if it isn't a movie / not found on TMDB).
+async function tmdbFindMovieByImdb(tconst) {
+  const d = await tmdbGet(`/find/${tconst}`, { external_source: 'imdb_id' })
+  return d?.movie_results?.[0]?.id ?? null
+}
+
+async function cmdImdbTop(flags) {
+  const count = flags.count ? Number(flags.count) : 500
+  const minVotes = flags['min-votes'] ? Number(flags['min-votes']) : 25000
+  const delay = flags.delay ? Number(flags.delay) : 250
+  if (flags['omdb-key']) OMDB_KEY = String(flags['omdb-key']).trim()
+  const omdbOn = !!omdbKey()
+
+  console.log(`▶ IMDb top ${count} movies (weighted rating, ≥${minVotes} votes) → TMDB by id`)
+  console.log(omdbOn ? '  OMDb enrichment: ON (IMDb + Rotten Tomatoes)' : '  OMDb enrichment: off (no key)')
+
+  console.log('  Downloading IMDb ratings dataset (~25 MB)…')
+  const ranked = rankImdb(await fetchImdbRatings(), minVotes)
+  console.log(`  ${ranked.length} titles qualify (≥${minVotes} votes); resolving top movies on TMDB…`)
+
+  // Walk the ranked list top-down, resolving to TMDB movie ids and skipping
+  // anything that isn't a movie (highly-rated TV series/episodes), until `count`.
+  const ids = []
+  const seen = new Set()
+  let scanned = 0
+  for (const x of ranked) {
+    if (ids.length >= count) break
+    scanned++
+    let tmdbId = null
+    try {
+      tmdbId = await tmdbFindMovieByImdb(x.tconst)
+    } catch {
+      tmdbId = null
+    }
+    if (tmdbId && !seen.has(tmdbId)) {
+      seen.add(tmdbId)
+      ids.push(tmdbId)
+    }
+    if (scanned % 100 === 0) console.log(`   …${ids.length}/${count} movies (scanned ${scanned})`)
+    await sleep(40) // gentle on TMDB during resolution
+  }
+  console.log(`  Resolved ${ids.length} movie ids (scanned ${scanned} titles).\n`)
+
+  let ok = 0
+  const failures = []
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i]
+    const tag = `[${i + 1}/${ids.length}]`
+    try {
+      const sum = await tmdbImportMovie(id)
+      ok++
+      console.log(`${tag} ✓ ${sum.title} (${sum.created ? 'added' : 'updated'}, ${sum.cast} cast)`)
+    } catch (err) {
+      failures.push({ id, msg: err.message })
+      console.log(`${tag} ✗ TMDB #${id} — ${err.message}`)
+    }
+    if (delay) await sleep(delay)
+  }
+  console.log(`\n✔ Done. ${ok}/${ids.length} imported.${failures.length ? ` ${failures.length} failed.` : ''}`)
+  if (failures.length) console.log('  Failed ids:', failures.map((f) => f.id).join(', '))
+}
+
+/* =====================================================================
  * ANIMETHEMES  (anime OP/ED songs) — ports src/main/themes.ts
  * ===================================================================== */
 const AT_BASE = 'https://api.animethemes.moe'
@@ -1164,18 +1362,64 @@ async function cmdAnimeThemes(flags) {
 }
 
 /* ----------------------------- main ----------------------------- */
+// Backfills media_relation for AniList titles already in the library WITHOUT a
+// full re-import: one tiny relations-only query per title (no images, no cast).
+// Run once after adding the relations feature to light up seasons/source links
+// on the anime + manga you already have.
+async function cmdRelationsBackfill(flags) {
+  ensureRelationTable()
+  const delay = flags.delay ? Number(flags.delay) : 200
+  const rows = db
+    .prepare(
+      `SELECT id, external_id, title FROM media_item
+       WHERE external_source = ? AND media_type IN ('anime', 'manga') AND external_id IS NOT NULL
+       ORDER BY id`
+    )
+    .all(AL_SOURCE)
+  console.log(`▶ Backfilling relations for ${rows.length} AniList titles (relations-only, no re-import)`)
+  let ok = 0
+  let withRel = 0
+  const failures = []
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i]
+    const tag = `[${i + 1}/${rows.length}]`
+    try {
+      const data = await alGql(AL_RELATIONS_QUERY, { id: Number(row.external_id) })
+      alReplaceRelations(row.id, data?.Media?.relations)
+      const n = db.prepare('SELECT COUNT(*) c FROM media_relation WHERE media_id=?').get(row.id).c
+      ok++
+      if (n > 0) withRel++
+      console.log(`${tag} ✓ ${row.title} — ${n} relation${n === 1 ? '' : 's'}`)
+    } catch (err) {
+      failures.push(row.title)
+      console.log(`${tag} ✗ ${row.title} — ${err.message}`)
+    }
+    if (delay) await sleep(delay)
+  }
+  console.log(
+    `\n✔ Done. ${ok}/${rows.length} processed, ${withRel} have relations.${failures.length ? ` ${failures.length} failed.` : ''}`
+  )
+}
+
 async function main() {
   const [command, ...rest] = process.argv.slice(2)
   const { flags, positional } = parseFlags(rest)
 
+  // Any AniList write path may touch the (new) media_relation table.
+  if (command === 'anilist-user' || command === 'relations-backfill') ensureRelationTable()
+
   if (command === 'anilist-user') await cmdAnilistUser(positional, flags)
   else if (command === 'tmdb-top') await cmdTmdbTop(flags)
+  else if (command === 'imdb-top') await cmdImdbTop(flags)
   else if (command === 'anime-themes') await cmdAnimeThemes(flags)
+  else if (command === 'relations-backfill') await cmdRelationsBackfill(flags)
   else {
     console.log('NaviHUB bulk importer\n')
     console.log('  anilist-user <username> [--limit N] [--basic] [--preserve-tracking] [--skip-anime] [--skip-manga] [--delay MS]')
+    console.log('  imdb-top [--count N] [--min-votes N] [--omdb-key KEY] [--delay MS]   (greatest films, IMDb-ranked → TMDB)')
     console.log('  tmdb-top [--type movie|tv] [--list top_rated|popular|trending] [--count N] [--omdb-key KEY] [--delay MS]')
-    console.log('  anime-themes [--limit N] [--no-audio] [--only-missing] [--audio-dir PATH] [--delay MS]\n')
+    console.log('  anime-themes [--limit N] [--no-audio] [--only-missing] [--audio-dir PATH] [--delay MS]')
+    console.log('  relations-backfill [--delay MS]   (add season + manga-source links to titles you already imported)\n')
     console.log('Run via:  ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron scripts/bulk-import.cjs <command>')
     console.log('Close the NaviHUB app first.')
     process.exit(command ? 1 : 0)

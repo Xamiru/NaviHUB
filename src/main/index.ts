@@ -4,6 +4,7 @@ import { pathToFileURL } from 'url'
 import { initDatabase, closeDatabase } from './db/connection'
 import { registerIpc } from './ipc'
 import { absoluteMediaPath } from './files'
+import { splitArchivePath, readArchiveEntry, mimeFor } from './archive'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
 protocol.registerSchemesAsPrivileged([
@@ -43,10 +44,21 @@ app.whenReady().then(() => {
   initDatabase()
   registerIpc()
 
-  // navimg://media/<file> -> the real file under userData/media
-  protocol.handle('navimg', (request) => {
+  // navimg://media/<file> -> the real file under userData/media.
+  // navimg://manga/<...>.cbz/<entry> -> a page streamed out of the archive.
+  protocol.handle('navimg', async (request) => {
     const url = new URL(request.url)
     const relPath = decodeURIComponent(url.host + url.pathname)
+    const archived = relPath.startsWith('manga/') ? splitArchivePath(relPath) : null
+    if (archived) {
+      const data = await readArchiveEntry(absoluteMediaPath(archived.archiveRel), archived.entryName)
+      if (!data) return new Response('Not found', { status: 404 })
+      // Buffer is a valid Response body at runtime; TS's dom BodyInit just
+      // doesn't admit Node's Buffer/Uint8Array<ArrayBufferLike> generics.
+      return new Response(data as unknown as BodyInit, {
+        headers: { 'content-type': mimeFor(archived.entryName) }
+      })
+    }
     return net.fetch(pathToFileURL(absoluteMediaPath(relPath)).toString())
   })
 

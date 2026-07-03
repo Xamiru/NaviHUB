@@ -1,9 +1,11 @@
 import { useRef } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useScrollRestoration } from './lib/navState'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import NowPlayingBar from './components/NowPlayingBar'
+import Toaster from './components/Toaster'
+import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
 import MediaListPage from './pages/MediaListPage'
@@ -15,17 +17,48 @@ import PersonDetailPage from './pages/PersonDetailPage'
 import StudioListPage from './pages/StudioListPage'
 import StudioDetailPage from './pages/StudioDetailPage'
 import CharacterDetailPage from './pages/CharacterDetailPage'
-import { ANIME, MANGA, MOVIE, TV } from './lib/mediaConfig'
+import QuizLandingPage from './pages/QuizLandingPage'
+import SongQuizPage from './pages/SongQuizPage'
+import ListsIndexPage from './pages/ListsIndexPage'
+import ListFormPage from './pages/ListFormPage'
+import ListDetailPage from './pages/ListDetailPage'
+import JapaneseHomePage from './pages/JapaneseHomePage'
+import JapaneseCoursePage from './pages/JapaneseCoursePage'
+import JapaneseCourseFormPage from './pages/JapaneseCourseFormPage'
+import JapaneseLessonPage from './pages/JapaneseLessonPage'
+import JapaneseLessonFormPage from './pages/JapaneseLessonFormPage'
+import JapaneseReviewPage from './pages/JapaneseReviewPage'
+import JapaneseQuizPage from './pages/JapaneseQuizPage'
+import JapaneseMinePage from './pages/JapaneseMinePage'
+import MangaReaderPage from './pages/MangaReaderPage'
+import { ANIME, MANGA, VISUAL_NOVEL, GAME, MOVIE, TV } from './lib/mediaConfig'
 
 export default function App() {
   const mainRef = useRef<HTMLElement>(null)
+  const location = useLocation()
   useScrollRestoration(mainRef)
+
+  // The manga reader is immersive: no sidebar/topbar/now-playing chrome, black
+  // full-bleed. Audio keeps playing — the <audio> element lives in
+  // AudioPlayerProvider, not in the (unmounted) NowPlayingBar.
+  if (/^\/manga\/\d+\/read\//.test(location.pathname)) {
+    return (
+      <ErrorBoundary key={location.pathname}>
+        <Routes>
+          <Route path="/manga/:id/read/:chapterId" element={<MangaReaderPage />} />
+        </Routes>
+        <Toaster />
+      </ErrorBoundary>
+    )
+  }
+
   return (
     <div className="flex h-full">
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col">
         <Topbar />
         <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto min-h-0">
+          <ErrorBoundary key={location.pathname}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />
@@ -41,6 +74,18 @@ export default function App() {
             <Route path="/manga/new" element={<MediaFormPage cfg={MANGA} />} />
             <Route path="/manga/:id" element={<MediaDetailPage cfg={MANGA} />} />
             <Route path="/manga/:id/edit" element={<MediaFormPage cfg={MANGA} />} />
+
+            {/* Visual Novels (VNDB) */}
+            <Route path="/visual-novels" element={<MediaListPage cfg={VISUAL_NOVEL} />} />
+            <Route path="/visual-novels/new" element={<MediaFormPage cfg={VISUAL_NOVEL} />} />
+            <Route path="/visual-novels/:id" element={<MediaDetailPage cfg={VISUAL_NOVEL} />} />
+            <Route path="/visual-novels/:id/edit" element={<MediaFormPage cfg={VISUAL_NOVEL} />} />
+
+            {/* Games (RAWG) — cast is manual; VAs share the anime/VN seiyuu pool */}
+            <Route path="/games" element={<MediaListPage cfg={GAME} />} />
+            <Route path="/games/new" element={<MediaFormPage cfg={GAME} />} />
+            <Route path="/games/:id" element={<MediaDetailPage cfg={GAME} />} />
+            <Route path="/games/:id/edit" element={<MediaFormPage cfg={GAME} />} />
 
             {/* Movies + TV (shared section: same actors, separate lists) */}
             <Route path="/movies" element={<MediaListPage cfg={MOVIE} />} />
@@ -62,7 +107,9 @@ export default function App() {
                   title="Voice Actors"
                   basePath="/people"
                   personRole="voice_actor"
-                  mediaType="anime"
+                  // Voice actors are one pool shared across anime, visual
+                  // novels and games (same seiyuu), like actors span movies + TV.
+                  mediaType={['anime', 'visual_novel', 'game']}
                 />
               }
             />
@@ -121,11 +168,36 @@ export default function App() {
             <Route path="/studios/:id" element={<StudioDetailPage />} />
 
             <Route path="/characters/:id" element={<CharacterDetailPage />} />
+
+            {/* Quiz — a hub of quizzes over the library (song quiz is the first) */}
+            <Route path="/quiz" element={<QuizLandingPage />} />
+            <Route path="/quiz/song" element={<SongQuizPage />} />
+
+            {/* Lists — user-curated, type-scoped collections */}
+            <Route path="/lists" element={<ListsIndexPage />} />
+            <Route path="/lists/new" element={<ListFormPage />} />
+            <Route path="/lists/:id" element={<ListDetailPage />} />
+            <Route path="/lists/:id/edit" element={<ListFormPage />} />
+
+            {/* Japanese learning — standalone section (courses, SRS review, quiz) */}
+            <Route path="/japanese" element={<JapaneseHomePage />} />
+            <Route path="/japanese/courses/new" element={<JapaneseCourseFormPage />} />
+            <Route path="/japanese/courses/:id" element={<JapaneseCoursePage />} />
+            <Route path="/japanese/courses/:id/edit" element={<JapaneseCourseFormPage />} />
+            <Route path="/japanese/lessons/new" element={<JapaneseLessonFormPage />} />
+            <Route path="/japanese/lessons/:id" element={<JapaneseLessonPage />} />
+            <Route path="/japanese/lessons/:id/edit" element={<JapaneseLessonFormPage />} />
+            <Route path="/japanese/review" element={<JapaneseReviewPage />} />
+            <Route path="/japanese/quiz" element={<JapaneseQuizPage />} />
+            <Route path="/japanese/mine" element={<JapaneseMinePage />} />
+
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/anime" replace />} />
           </Routes>
+          </ErrorBoundary>
         </main>
         <NowPlayingBar />
+        <Toaster />
       </div>
     </div>
   )

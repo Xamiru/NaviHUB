@@ -17,6 +17,7 @@ interface Props {
   onSave: (f: Fields) => Promise<void>
   onDelete: () => Promise<void>
   extra?: React.ReactNode // e.g. company type selector
+  actions?: React.ReactNode // extra buttons beside Save/Delete (e.g. Add to list)
 }
 
 // Editable header (image + name + native + bio/description) shared by the
@@ -27,7 +28,8 @@ export default function EntityHeader({
   rounded = 'rounded-xl',
   onSave,
   onDelete,
-  extra
+  extra,
+  actions
 }: Props) {
   const navigate = useNavigate()
   const [f, setF] = useState<Fields>(initial)
@@ -109,6 +111,7 @@ export default function EntityHeader({
             >
               Delete
             </button>
+            {actions}
           </div>
         </div>
       </div>

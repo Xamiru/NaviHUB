@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useStatuses, useScoreMax, useImageUrl } from '../lib/hooks'
-import type { MediaConfig } from '../lib/mediaConfig'
+import { qk } from '../lib/queryKeys'
+import { isCompletedStatus, type MediaConfig } from '../lib/mediaConfig'
 import type { MediaItemInput, Tag } from '@shared/types'
 
 interface FormState {
@@ -97,9 +98,32 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
     return Number.isFinite(n) ? n : null
   }
 
+  // Unit-based progress (episodes/chapters) can't exceed the known total.
+  const progressCap = cfg.unitProgress ? toNum(form.totalUnits) : null
+
+  function setStatus(status: string) {
+    setForm((f) => {
+      const next = { ...f, status }
+      // Completing a unit-based item fills progress to the total.
+      if (cfg.unitProgress && isCompletedStatus(status) && f.totalUnits.trim() !== '') {
+        next.progress = f.totalUnits
+      }
+      return next
+    })
+  }
+
+  function setProgress(value: string) {
+    const n = toNum(value)
+    set('progress', progressCap != null && n != null && n > progressCap ? String(progressCap) : value)
+  }
+
   async function save() {
     if (!form.title.trim()) return
     setSaving(true)
+    const totalUnits = toNum(form.totalUnits)
+    let progress = toNum(form.progress) ?? 0
+    // Re-clamp on save in case the total was lowered after progress was set.
+    if (cfg.unitProgress && totalUnits != null) progress = Math.min(progress, totalUnits)
     const payload: MediaItemInput = {
       mediaType: cfg.key,
       title: form.title.trim(),
@@ -107,8 +131,8 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
       coverPath: form.coverPath,
       status: form.status || null,
       score: toNum(form.score),
-      progress: toNum(form.progress) ?? 0,
-      totalUnits: toNum(form.totalUnits),
+      progress,
+      totalUnits,
       startedAt: form.startedAt || null,
       finishedAt: form.finishedAt || null,
       releaseDate: form.releaseDate || null,
@@ -124,13 +148,16 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
     } else {
       targetId = await api.media.create(payload)
     }
-    await qc.invalidateQueries({ queryKey: ['media'] })
-    await qc.invalidateQueries({ queryKey: ['media-counts'] })
+    await qc.invalidateQueries({ queryKey: qk.media.all })
+    await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
     setSaving(false)
     navigate(`${cfg.basePath}/${targetId}`)
   }
 
   const coverUrl = useImageUrl(form.coverPath)
+  // useImageUrl no longer pre-checks existence, so guard a stale path with onError.
+  const [coverFailed, setCoverFailed] = useState(false)
+  useEffect(() => setCoverFailed(false), [coverUrl])
 
   if (!loaded) return <div className="p-6 text-gray-500">Loading…</div>
 
@@ -149,8 +176,13 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
         {/* Cover */}
         <div>
           <div className="aspect-[2/3] rounded-lg overflow-hidden bg-base-700 border border-base-600">
-            {coverUrl ? (
-              <img src={coverUrl} alt="cover" className="h-full w-full object-cover" />
+            {coverUrl && !coverFailed ? (
+              <img
+                src={coverUrl}
+                alt="cover"
+                className="h-full w-full object-cover"
+                onError={() => setCoverFailed(true)}
+              />
             ) : (
               <div className="h-full w-full flex items-center justify-center text-gray-600 text-sm">
                 No cover
@@ -197,7 +229,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
               <select
                 className="input"
                 value={form.status}
-                onChange={(e) => set('status', e.target.value)}
+                onChange={(e) => setStatus(e.target.value)}
               >
                 <option value="">—</option>
                 {statuses.map((s) => (
@@ -229,8 +261,9 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
                 className="input"
                 type="number"
                 min={0}
+                max={progressCap ?? undefined}
                 value={form.progress}
-                onChange={(e) => set('progress', e.target.value)}
+                onChange={(e) => setProgress(e.target.value)}
               />
             </div>
             <div>
@@ -342,7 +375,7 @@ function TagEditor({
     setAll(fresh)
     if (!selected.includes(id)) onChange([...selected, id])
     setInput('')
-    qc.invalidateQueries({ queryKey: ['tags'] })
+    qc.invalidateQueries({ queryKey: qk.tags.all })
   }
 
   return (

@@ -3,6 +3,7 @@ import { join } from 'path'
 import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import initSql from './init.sql?raw'
+import { seedJapanese } from './japaneseSeed'
 import * as schema from './schema'
 
 export type DB = BetterSQLite3Database<typeof schema>
@@ -20,6 +21,13 @@ const DEFAULT_SETTINGS: Record<string, string> = {
     'Plan to Watch'
   ]),
   'movie.statuses': JSON.stringify(['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch']),
+  'visual_novel.statuses': JSON.stringify([
+    'Playing',
+    'Completed',
+    'On Hold',
+    'Dropped',
+    'Plan to Play'
+  ]),
   'score.max': '10',
   theme: 'dark'
 }
@@ -47,6 +55,14 @@ function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'character', 'external_id', 'external_id TEXT')
   ensureColumn(sqlite, 'credit', 'importance', 'importance INTEGER')
   ensureColumn(sqlite, 'media_character', 'sort_order', 'sort_order INTEGER')
+  // Japanese section: kanji readings + mined-word source (DBs created before
+  // these columns existed in init.sql). Must run before seedJapanese().
+  ensureColumn(sqlite, 'jp_card', 'onyomi', 'onyomi TEXT')
+  ensureColumn(sqlite, 'jp_card', 'kunyomi', 'kunyomi TEXT')
+  ensureColumn(sqlite, 'jp_card', 'source_media_id', 'source_media_id INTEGER')
+  // Manga reader: series folder attached to a manga entry (written only by
+  // src/main/manga.ts — deliberately absent from mediaRepo's column map).
+  ensureColumn(sqlite, 'media_item', 'local_dir', 'local_dir TEXT')
 }
 
 export function initDatabase(): DB {
@@ -65,6 +81,7 @@ export function initDatabase(): DB {
     for (const [k, v] of rows) seed.run(k, v)
   })
   seedMany(Object.entries(DEFAULT_SETTINGS))
+  seedJapanese(sqlite)
 
   _sqlite = sqlite
   _db = drizzle(sqlite, { schema })
@@ -82,6 +99,13 @@ export function getSqlite(): Database.Database {
 }
 
 export function closeDatabase(): void {
+  // Fold the WAL back into the main db file and truncate it on exit, so it can't
+  // grow unbounded across sessions (it had been larger than the db itself).
+  try {
+    _sqlite?.pragma('wal_checkpoint(TRUNCATE)')
+  } catch {
+    // Best-effort: a checkpoint failure must never block a clean shutdown.
+  }
   _sqlite?.close()
   _sqlite = null
   _db = null

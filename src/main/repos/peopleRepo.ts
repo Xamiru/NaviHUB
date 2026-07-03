@@ -1,5 +1,6 @@
 import { getSqlite } from '../db/connection'
 import { mapPerson, mapMedia, mapCharacter } from './mappers'
+import * as listRepo from './listRepo'
 import type { Person, PersonCredit, CreditRole, MediaType } from '@shared/types'
 
 // Sorted by how many works they're credited in (most prolific first).
@@ -135,5 +136,6 @@ export function upsert(input: Partial<Person> & { name: string }): number {
 }
 
 export function remove(id: number): void {
+  listRepo.removeEntityFromLists('person', id)
   getSqlite().prepare('DELETE FROM person WHERE id = ?').run(id)
 }

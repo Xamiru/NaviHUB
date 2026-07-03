@@ -1,4 +1,8 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { usePlayer } from '../lib/player'
+import CoverImage from './CoverImage'
+import QueuePanel from './QueuePanel'
 
 function fmt(t: number): string {
   if (!isFinite(t) || t < 0) return '0:00'
@@ -11,25 +15,83 @@ function fmt(t: number): string {
 // theme song is playing; survives navigation because the player lives at the
 // app root.
 export default function NowPlayingBar(): React.JSX.Element | null {
-  const { track, isPlaying, currentTime, duration, volume, toggle, seek, setVolume, stop } =
-    usePlayer()
+  const {
+    track,
+    isPlaying,
+    currentTime,
+    duration,
+    volume,
+    queue,
+    hasNext,
+    shuffled,
+    toggle,
+    next,
+    previous,
+    toggleShuffle,
+    seek,
+    setVolume,
+    stop
+  } = usePlayer()
+  const [queueOpen, setQueueOpen] = useState(false)
   if (!track) return null
 
   const sub = [track.context, track.subtitle].filter(Boolean).join(' · ')
+  // Theme songs are anime-only, so a track that knows its media links there.
+  // Quiz tracks carry no mediaId/cover on purpose (the answer stays masked).
+  const animeLink = track.mediaId != null ? `/anime/${track.mediaId}` : null
+  const cover = (
+    <CoverImage path={track.coverPath} alt={track.context ?? track.title} className="h-14 w-10" />
+  )
 
   return (
-    <div className="shrink-0 border-t border-base-700 bg-base-800 px-4 py-2.5 flex items-center gap-4">
-      <button
-        onClick={toggle}
-        className="shrink-0 w-9 h-9 rounded-full bg-accent/20 text-accent hover:bg-accent/30 flex items-center justify-center text-sm"
-        title={isPlaying ? 'Pause' : 'Play'}
-      >
-        {isPlaying ? '❚❚' : '▶'}
-      </button>
+    <div className="relative shrink-0 border-t border-base-700 bg-base-800 px-4 py-2 flex items-center gap-3">
+      {track.coverPath &&
+        (animeLink ? (
+          <Link to={animeLink} className="shrink-0 hover:opacity-80" title={track.context ?? ''}>
+            {cover}
+          </Link>
+        ) : (
+          <div className="shrink-0">{cover}</div>
+        ))}
 
       <div className="min-w-0 w-40 sm:w-52 shrink-0">
         <p className="text-sm font-medium truncate leading-tight">{track.title}</p>
-        {sub && <p className="text-xs text-gray-500 truncate leading-tight">{sub}</p>}
+        {sub &&
+          (animeLink ? (
+            <Link
+              to={animeLink}
+              className="block text-xs text-gray-500 truncate leading-tight hover:text-accent"
+            >
+              {sub}
+            </Link>
+          ) : (
+            <p className="text-xs text-gray-500 truncate leading-tight">{sub}</p>
+          ))}
+      </div>
+
+      <div className="flex items-center gap-1 shrink-0">
+        <button
+          onClick={previous}
+          className="w-8 h-8 rounded-full text-gray-400 hover:text-white hover:bg-base-700 flex items-center justify-center text-sm"
+          title="Previous"
+        >
+          ⏮
+        </button>
+        <button
+          onClick={toggle}
+          className="w-9 h-9 rounded-full bg-accent/20 text-accent hover:bg-accent/30 flex items-center justify-center text-sm"
+          title={isPlaying ? 'Pause' : 'Play'}
+        >
+          {isPlaying ? '❚❚' : '▶'}
+        </button>
+        <button
+          onClick={next}
+          disabled={!hasNext}
+          className="w-8 h-8 rounded-full text-gray-400 hover:text-white hover:bg-base-700 flex items-center justify-center text-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+          title="Next"
+        >
+          ⏭
+        </button>
       </div>
 
       <span className="text-xs text-gray-500 tabular-nums shrink-0 w-9 text-right">
@@ -46,6 +108,27 @@ export default function NowPlayingBar(): React.JSX.Element | null {
         aria-label="Seek"
       />
       <span className="text-xs text-gray-500 tabular-nums shrink-0 w-9">{fmt(duration)}</span>
+
+      {queue.length > 1 && (
+        <button
+          onClick={toggleShuffle}
+          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+            shuffled ? 'text-accent bg-accent/15' : 'text-gray-400 hover:text-white hover:bg-base-700'
+          }`}
+          title={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
+        >
+          🔀
+        </button>
+      )}
+      <button
+        onClick={() => setQueueOpen((v) => !v)}
+        className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+          queueOpen ? 'text-accent bg-accent/15' : 'text-gray-400 hover:text-white hover:bg-base-700'
+        }`}
+        title="Queue"
+      >
+        ☰
+      </button>
 
       <div className="hidden sm:flex items-center gap-1.5 w-28 shrink-0">
         <span className="text-gray-500 text-xs">🔊</span>
@@ -68,6 +151,8 @@ export default function NowPlayingBar(): React.JSX.Element | null {
       >
         ×
       </button>
+
+      {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
     </div>
   )
 }

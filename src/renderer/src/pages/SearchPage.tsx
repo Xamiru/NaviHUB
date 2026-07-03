@@ -1,6 +1,7 @@
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
 import { pathForMedia } from '../lib/mediaConfig'
 import type { GlobalSearchResults } from '@shared/types'
@@ -10,7 +11,7 @@ export default function SearchPage() {
   const q = params.get('q') ?? ''
 
   const { data, isLoading } = useQuery({
-    queryKey: ['search', q],
+    queryKey: qk.search(q),
     queryFn: () => api.search.global(q),
     enabled: q.trim().length > 0
   })

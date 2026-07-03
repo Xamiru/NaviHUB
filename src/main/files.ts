@@ -1,7 +1,9 @@
 import { app, dialog } from 'electron'
 import { join, extname, basename } from 'path'
 import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs'
+import { createHash } from 'crypto'
 import { get as getSetting } from './repos/settingsRepo'
+import { mediaUrl } from '@shared/mediaUrl'
 
 // Images live under userData/media. The DB stores only the relative filename
 // (e.g. "media/cover-169...png") so the library stays portable.
@@ -18,6 +20,15 @@ function mediaDir(): string {
 function audioDir(): string {
   const custom = getSetting('audio.dir')?.trim()
   return custom && custom.length ? custom : join(app.getPath('userData'), 'media')
+}
+
+// Manga pages live in a user-chosen library root (settings key `manga.dir`,
+// auto-set on the first folder attach). DB rows and navimg URLs use a virtual
+// "manga/" prefix, mirroring the audio/ scheme above, so the library can be
+// relocated by changing one setting.
+export function mangaRootDir(): string {
+  const custom = getSetting('manga.dir')?.trim()
+  return custom && custom.length ? custom : join(app.getPath('userData'), 'manga')
 }
 
 let counter = 0
@@ -68,13 +79,7 @@ export function resolveUrl(relPath: string | null): string | null {
   if (!relPath) return null
   const abs = absoluteMediaPath(relPath)
   if (!existsSync(abs)) return null
-  const encoded = relPath
-    .split('\\')
-    .join('/')
-    .split('/')
-    .map(encodeURIComponent)
-    .join('/')
-  return `navimg://${encoded}`
+  return mediaUrl(relPath)
 }
 
 // Absolute path on disk for a stored relative path (used by the protocol handler
@@ -82,7 +87,11 @@ export function resolveUrl(relPath: string | null): string | null {
 // everything else ("media/<file>") against userData.
 export function absoluteMediaPath(relPath: string): string {
   const norm = relPath.split('\\').join('/')
+  // The protocol handler serves whatever path this returns; with user-chosen
+  // roots in play, never let a stored/requested path escape its root.
+  if (norm.split('/').includes('..')) throw new Error(`Path escapes media root: ${relPath}`)
   if (norm.startsWith('audio/')) return join(audioDir(), norm.slice('audio/'.length))
+  if (norm.startsWith('manga/')) return join(mangaRootDir(), norm.slice('manga/'.length))
   return join(app.getPath('userData'), norm)
 }
 
@@ -118,21 +127,41 @@ export async function downloadAudio(
   }
 }
 
+// Pre-downloads a batch of images and returns url -> stored relative path (or
+// null for failures). Importers fetch every image up front with this so all
+// their DB writes can then run synchronously inside ONE transaction (an import
+// is atomic; a crash can't leave half a title). Downloading unconditionally is
+// fine: downloadImage caches by URL hash, so on re-import anything already on
+// disk is a hit, not a re-download.
+export async function downloadImages(
+  urls: (string | null | undefined)[]
+): Promise<Map<string, string | null>> {
+  const map = new Map<string, string | null>()
+  for (const url of urls) {
+    if (!url || map.has(url)) continue
+    map.set(url, await downloadImage(url))
+  }
+  return map
+}
+
 // Downloads a remote image (e.g. an AniList cover) into userData/media and
-// returns the stored relative path, or null on failure.
+// returns the stored relative path, or null on failure. The filename is derived
+// deterministically from the URL, so re-importing a title whose art is already
+// on disk is a cache hit (no network, no rewrite) instead of a fresh download.
 export async function downloadImage(url: string | null | undefined): Promise<string | null> {
   if (!url) return null
   try {
+    const urlExt = extname(new URL(url).pathname)
+    const ext = /^\.(png|jpe?g|webp|gif|bmp)$/i.test(urlExt) ? urlExt : '.jpg'
+    const fileName = `dl-${createHash('sha1').update(url).digest('hex').slice(0, 16)}${ext}`
+    const dest = join(mediaDir(), fileName)
+    const relPath = join('media', fileName)
+    if (existsSync(dest)) return relPath
     const res = await fetch(url)
     if (!res.ok) return null
     const buf = Buffer.from(await res.arrayBuffer())
-    const urlExt = extname(new URL(url).pathname)
-    const ext = /^\.(png|jpe?g|webp|gif|bmp)$/i.test(urlExt) ? urlExt : '.jpg'
-    counter += 1
-    const fileName = `dl-${process.pid}-${counter}${ext}`
-    const dest = join(mediaDir(), fileName)
     writeFileSync(dest, buf)
-    return join('media', fileName)
+    return relPath
   } catch {
     return null
   }

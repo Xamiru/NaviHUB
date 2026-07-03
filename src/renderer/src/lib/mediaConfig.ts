@@ -13,8 +13,8 @@ export interface ChildNav {
 }
 
 export interface ImportSourceCfg {
-  key: 'anilist' | 'anilistManga' | 'tmdb' | 'tmdbTv'
-  label: string // "AniList" / "TMDB"
+  key: 'anilist' | 'anilistManga' | 'tmdb' | 'tmdbTv' | 'vndb' | 'rawg'
+  label: string // "AniList" / "TMDB" / "VNDB" / "RAWG"
   placeholder: string
 }
 
@@ -37,6 +37,11 @@ export interface MediaConfig {
   // form labels
   progressFieldLabel: string // "Progress (episodes watched)" / "Times watched"
   totalFieldLabel: string // "Total episodes" / "Runtime (min)"
+  // Progress counts discrete units toward totalUnits (episodes/chapters), so a
+  // completed status fills progress to the total and progress is capped at it.
+  // Off for time-based progress (VN minutes, game hours — playing past the
+  // average is normal) and movies (progress = times watched, total = runtime).
+  unitProgress?: boolean
   // detail / card display
   progressStatLabel: string // "Progress" / "Runtime"
   formatProgressStat: (m: MediaItem) => string
@@ -71,11 +76,33 @@ export interface MediaConfig {
   importSource?: ImportSourceCfg
   // OP/ED theme songs (anime only) — shows the Theme Songs section + import.
   hasThemes?: boolean
+  // HowLongToBeat-style play-time panel (games + VNs) — shows length estimate
+  // boxes on the detail page plus a manual HLTB fetch/refresh button.
+  hasPlaytimes?: boolean
+  // Local manga reader (manga only) — shows the Chapters section (attach a
+  // local folder, read in-app) on the detail page.
+  hasLocalReader?: boolean
 }
 
 // Roles that represent "playing/voicing a character" (vs. crew). Used to split
 // a person's credits and to exclude cast from the crew section.
 export const CAST_ROLES: CreditRole[] = ['voice_actor', 'actor']
+
+// Minutes displayed HowLongToBeat-style: under an hour as "45m", then hours
+// rounded to the nearest half ("31½ h"). Used by the VN card/progress stats
+// (VN lengths are stored in minutes) and the play-time boxes on detail pages.
+export function fmtMinutesAsHours(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`
+  const halves = Math.round(minutes / 30)
+  const h = Math.floor(halves / 2)
+  return halves % 2 ? `${h}½ h` : `${h} h`
+}
+
+// Statuses that mean "finished the whole thing" across the per-type presets
+// ("Completed" / "Watched"). Statuses are user-editable, so match by name.
+export function isCompletedStatus(status: string | null | undefined): boolean {
+  return !!status && /^(completed|watched)$/i.test(status.trim())
+}
 
 export const ANIME: MediaConfig = {
   key: 'anime',
@@ -87,6 +114,7 @@ export const ANIME: MediaConfig = {
   defaultStatuses: ['Watching', 'Completed', 'On Hold', 'Dropped', 'Plan to Watch'],
   progressFieldLabel: 'Progress (episodes watched)',
   totalFieldLabel: 'Total episodes',
+  unitProgress: true,
   progressStatLabel: 'Progress',
   formatProgressStat: (m) => `${m.totalUnits != null ? `${m.progress} / ${m.totalUnits}` : m.progress} ep`,
   formatCardSub: (m) => `${m.totalUnits != null ? `${m.progress}/${m.totalUnits}` : m.progress} ep`,
@@ -125,6 +153,7 @@ export const MANGA: MediaConfig = {
   defaultStatuses: ['Reading', 'Completed', 'On Hold', 'Dropped', 'Plan to Read'],
   progressFieldLabel: 'Progress (chapters read)',
   totalFieldLabel: 'Total chapters',
+  unitProgress: true,
   progressStatLabel: 'Progress',
   formatProgressStat: (m) =>
     `${m.totalUnits != null ? `${m.progress} / ${m.totalUnits}` : m.progress} ch`,
@@ -149,7 +178,87 @@ export const MANGA: MediaConfig = {
     key: 'anilistManga',
     label: 'AniList',
     placeholder: 'Search AniList manga (e.g. Berserk)…'
-  }
+  },
+  hasLocalReader: true
+}
+
+// Visual novels come from VNDB (AniList has no VN data). Structurally they're
+// like anime — characters with voice actors, plus developers as the "studio" —
+// so they reuse the character/voice-actor layout. Voice actors are deliberately
+// SHARED with anime (same seiyuu), so the VA browse child points at the same
+// /people page (widened to anime + VN in App.tsx).
+export const VISUAL_NOVEL: MediaConfig = {
+  key: 'visual_novel',
+  singular: 'Visual Novel',
+  plural: 'Visual Novels',
+  basePath: '/visual-novels',
+  icon: '✦',
+  statusesKey: 'visual_novel.statuses',
+  defaultStatuses: ['Playing', 'Completed', 'On Hold', 'Dropped', 'Plan to Play'],
+  progressFieldLabel: 'Progress (minutes)',
+  totalFieldLabel: 'Length (minutes)',
+  progressStatLabel: 'Progress',
+  formatProgressStat: (m) =>
+    m.totalUnits != null
+      ? `${fmtMinutesAsHours(m.progress)} / ${fmtMinutesAsHours(m.totalUnits)}`
+      : fmtMinutesAsHours(m.progress),
+  formatCardSub: (m) => (m.totalUnits != null ? fmtMinutesAsHours(m.totalUnits) : ''),
+  castRole: 'voice_actor',
+  castSectionTitle: 'Characters',
+  castPersonLabel: 'Voice actor',
+  castShowLanguage: true,
+  castLayout: 'character',
+  crewTitle: 'Staff',
+  companyTitle: 'Developers',
+  companyRoles: [
+    { value: 'developer', label: 'Developer' },
+    { value: 'publisher', label: 'Publisher' },
+    { value: 'other', label: 'Other' }
+  ],
+  companyDefaultRole: 'developer',
+  companyPickerPlaceholder: 'Add developer / publisher…',
+  children: [{ to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' }],
+  importSource: { key: 'vndb', label: 'VNDB', placeholder: 'Search VNDB (e.g. Steins;Gate)…' },
+  hasPlaytimes: true
+}
+
+// Games come from RAWG (metadata, cover, developers/publishers, genres — it has
+// no cast data, so characters and voice actors are added by hand). Structurally
+// they mirror visual novels: characters voiced by seiyuu, so the cast layout is
+// character + VA, and the VA pool is SHARED with anime/VN — a Japanese game's
+// voice actor resolves to the same person page as their anime roles (the
+// /people route is widened to include games in App.tsx).
+export const GAME: MediaConfig = {
+  key: 'game',
+  singular: 'Game',
+  plural: 'Games',
+  basePath: '/games',
+  icon: '❖',
+  statusesKey: 'game.statuses',
+  defaultStatuses: ['Playing', 'Completed', 'On Hold', 'Dropped', 'Plan to Play'],
+  progressFieldLabel: 'Progress (hours played)',
+  totalFieldLabel: 'Average length (hours)',
+  progressStatLabel: 'Playtime',
+  formatProgressStat: (m) =>
+    m.totalUnits != null ? `${m.progress} / ~${m.totalUnits} h` : `${m.progress} h`,
+  formatCardSub: (m) => (m.totalUnits != null ? `~${m.totalUnits} h` : ''),
+  castRole: 'voice_actor',
+  castSectionTitle: 'Characters',
+  castPersonLabel: 'Voice actor',
+  castShowLanguage: true,
+  castLayout: 'character',
+  crewTitle: 'Staff',
+  companyTitle: 'Developers',
+  companyRoles: [
+    { value: 'developer', label: 'Developer' },
+    { value: 'publisher', label: 'Publisher' },
+    { value: 'other', label: 'Other' }
+  ],
+  companyDefaultRole: 'developer',
+  companyPickerPlaceholder: 'Add developer / publisher…',
+  children: [{ to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' }],
+  importSource: { key: 'rawg', label: 'RAWG', placeholder: 'Search RAWG (e.g. Persona 5)…' },
+  hasPlaytimes: true
 }
 
 export const MOVIE: MediaConfig = {
@@ -203,6 +312,7 @@ export const TV: MediaConfig = {
   defaultStatuses: ['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch'],
   progressFieldLabel: 'Progress (episodes watched)',
   totalFieldLabel: 'Total episodes',
+  unitProgress: true,
   progressStatLabel: 'Progress',
   formatProgressStat: (m) =>
     `${m.totalUnits != null ? `${m.progress} / ${m.totalUnits}` : m.progress} ep`,
@@ -232,7 +342,7 @@ export const TV: MediaConfig = {
 }
 
 // Media types with a live UI, in sidebar order.
-export const MEDIA_CONFIGS: MediaConfig[] = [ANIME, MANGA, MOVIE, TV]
+export const MEDIA_CONFIGS: MediaConfig[] = [ANIME, MANGA, VISUAL_NOVEL, GAME, MOVIE, TV]
 
 const BY_KEY: Record<string, MediaConfig> = Object.fromEntries(
   MEDIA_CONFIGS.map((c) => [c.key, c])

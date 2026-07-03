@@ -1,5 +1,6 @@
 import { getSqlite } from '../db/connection'
 import { mapMedia, mapTag, mapPerson, mapCompany, mapCharacter } from './mappers'
+import * as listRepo from './listRepo'
 import type {
   MediaItem,
   MediaItemInput,
@@ -9,7 +10,9 @@ import type {
   MediaCharacterEntry,
   ThemeSong,
   CreditRole,
-  MediaCompanyRole
+  MediaCompanyRole,
+  MediaRelation,
+  MediaType
 } from '@shared/types'
 
 // Columns that map 1:1 from MediaItemInput -> media_item (excluding tags).
@@ -277,7 +280,34 @@ export function get(id: number): MediaDetail | null {
   }
   const themes = [...themeMap.values()]
 
-  return { ...base, tags, companies, cast, characters, themes }
+  // Related titles (seasons + manga/novel source). Each stored relation is
+  // resolved to a local media_item by the related work's AniList id; a LEFT JOIN
+  // means un-imported relations still come back (media null) so the UI can show
+  // them greyed. m2.* is the local row when present — mapMedia ignores the extra
+  // mr.* columns; related_type/related_title differ in name so there's no clash.
+  const relations: MediaRelation[] = (
+    db
+      .prepare(
+        `SELECT mr.relation_type, mr.related_type, mr.related_title, m2.*
+         FROM media_relation mr
+         LEFT JOIN media_item m2
+           ON m2.external_source = mr.related_source
+          AND m2.external_id = mr.related_external_id
+         WHERE mr.media_id = ?
+         ORDER BY COALESCE(mr.sort_order, 1000000) ASC`
+      )
+      .all(id) as Record<string, unknown>[]
+  ).map((r) => {
+    const local = r.id != null ? mapMedia(r) : null
+    return {
+      relationType: r.relation_type as string,
+      media: local,
+      title: (local?.title as string) ?? (r.related_title as string) ?? 'Untitled',
+      mediaType: (local?.mediaType ?? (r.related_type as MediaType) ?? null) as MediaType | null
+    }
+  })
+
+  return { ...base, tags, companies, cast, characters, themes, relations }
 }
 
 function setTags(mediaId: number, tagIds: number[]): void {
@@ -333,5 +363,6 @@ export function update(id: number, input: Partial<MediaItemInput>): void {
 }
 
 export function remove(id: number): void {
+  listRepo.removeEntityFromLists('media', id)
   getSqlite().prepare('DELETE FROM media_item WHERE id = ?').run(id)
 }

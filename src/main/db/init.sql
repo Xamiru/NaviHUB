@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS media_item (
   metadata        TEXT,
   external_source TEXT,
   external_id     TEXT,
+  local_dir       TEXT,
   created_at      TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -93,6 +94,10 @@ CREATE TABLE IF NOT EXISTS media_character (
   sort_order    INTEGER,
   UNIQUE(media_id, character_id)
 );
+-- media_id lookups are already served by the UNIQUE(media_id, character_id)
+-- auto-index; only the reverse direction (character detail, import prune by
+-- character) needs its own index.
+CREATE INDEX IF NOT EXISTS idx_media_character_character ON media_character(character_id);
 
 CREATE TABLE IF NOT EXISTS tag (
   id        INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,6 +111,10 @@ CREATE TABLE IF NOT EXISTS media_tag (
   tag_id    INTEGER NOT NULL REFERENCES tag(id) ON DELETE CASCADE,
   UNIQUE(media_id, tag_id)
 );
+-- media_id lookups (and the media_id+tag_id EXISTS filter) are served by the
+-- UNIQUE(media_id, tag_id) auto-index; the reverse "all media with tag X" browse
+-- needs its own index on tag_id.
+CREATE INDEX IF NOT EXISTS idx_media_tag_tag ON media_tag(tag_id);
 
 CREATE TABLE IF NOT EXISTS settings (
   key    TEXT PRIMARY KEY,
@@ -140,4 +149,151 @@ CREATE TABLE IF NOT EXISTS theme_artist (
   UNIQUE(theme_song_id, person_id)
 );
 CREATE INDEX IF NOT EXISTS idx_theme_artist_song ON theme_artist(theme_song_id);
+
+-- media_relation — links between titles: anime seasons (prequel/sequel/side story)
+-- and the manga/novel a title was adapted from, captured from AniList at import.
+-- Stored by the RELATED work's AniList id (not a local FK) so a link resolves
+-- whichever order the two titles are imported; related_title keeps the AniList
+-- name so relations not yet in the library can still be shown (greyed).
+CREATE TABLE IF NOT EXISTS media_relation (
+  id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id             INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  relation_type        TEXT NOT NULL,
+  related_source       TEXT NOT NULL,
+  related_external_id  TEXT NOT NULL,
+  related_type         TEXT,
+  related_title        TEXT,
+  sort_order           INTEGER,
+  UNIQUE(media_id, related_source, related_external_id)
+);
+CREATE INDEX IF NOT EXISTS idx_media_relation_media ON media_relation(media_id);
+CREATE INDEX IF NOT EXISTS idx_media_relation_related
+  ON media_relation(related_source, related_external_id);
 CREATE INDEX IF NOT EXISTS idx_theme_artist_person ON theme_artist(person_id);
+
+-- list — a user-curated, ordered collection (Letterboxd-style). entity_kind is
+-- fixed per list ('media' | 'person' | 'character' | 'company'); ranked toggles
+-- visible numbering. Items live in list_item and target the kind's table.
+CREATE TABLE IF NOT EXISTS list (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  title        TEXT NOT NULL,
+  description  TEXT,
+  entity_kind  TEXT NOT NULL,
+  ranked       INTEGER NOT NULL DEFAULT 0,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_list_kind ON list(entity_kind);
+
+-- list_item — one entry in a list. entity_id points at the row in the table for
+-- the list's entity_kind (polymorphic, so no FK); reads resolve/skip missing ids
+-- and entity deletes clean up matching rows.
+CREATE TABLE IF NOT EXISTS list_item (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  list_id    INTEGER NOT NULL REFERENCES list(id) ON DELETE CASCADE,
+  entity_id  INTEGER NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  note       TEXT,
+  added_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(list_id, entity_id)
+);
+CREATE INDEX IF NOT EXISTS idx_list_item_list ON list_item(list_id);
+
+-- manga_chapter — a locally-readable chapter of a manga media_item, discovered
+-- by scanning the series folder (media_item.local_dir). dir_path is relative to
+-- the manga library root (settings key manga.dir); '' means the series folder
+-- itself holds the pages (flat series = one chapter). Pages are listed from
+-- disk at read-time; only the count is cached here.
+CREATE TABLE IF NOT EXISTS manga_chapter (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id       INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  dir_path       TEXT NOT NULL,
+  title          TEXT NOT NULL,
+  number         REAL,
+  page_count     INTEGER NOT NULL DEFAULT 0,
+  sort_order     INTEGER NOT NULL DEFAULT 0,
+  last_read_page INTEGER,
+  read_at        TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(media_id, dir_path)
+);
+CREATE INDEX IF NOT EXISTS idx_manga_chapter_media ON manga_chapter(media_id);
+
+-- ---- Japanese learning ----
+-- Standalone section, unrelated to the media tables. Courses hold ordered
+-- lessons; a lesson is 'grammar' (body = explanation, cards = example
+-- sentences), 'vocab' (cards = vocabulary entries) or 'kanji' (cards =
+-- characters with on/kun readings + an example word). Cards carry their own
+-- SRS scheduling state inline (single user, strictly 1:1); only learned
+-- lessons' cards surface in reviews and quizzes.
+
+CREATE TABLE IF NOT EXISTS jp_course (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  title       TEXT NOT NULL,
+  description TEXT,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS jp_lesson (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  course_id   INTEGER NOT NULL REFERENCES jp_course(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL,
+  title       TEXT NOT NULL,
+  body        TEXT,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  learned     INTEGER NOT NULL DEFAULT 0,
+  learned_at  TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_jp_lesson_course ON jp_lesson(course_id);
+
+-- vocab card:   front=term, reading=kana, back=meaning (+pos, example_*)
+-- grammar card: front=JP sentence, reading=kana, back=translation
+-- kanji card:   front=character, reading=primary reading, back=meaning,
+--               onyomi/kunyomi=comma-separated readings, example_*=example word
+-- source_media_id: mined cards remember the manga/VN they came from
+-- (media_item.id, no FK — reads LEFT JOIN and tolerate deletion).
+CREATE TABLE IF NOT EXISTS jp_card (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  lesson_id        INTEGER NOT NULL REFERENCES jp_lesson(id) ON DELETE CASCADE,
+  sort_order       INTEGER NOT NULL DEFAULT 0,
+  front            TEXT NOT NULL,
+  reading          TEXT,
+  back             TEXT NOT NULL,
+  pos              TEXT,
+  notes            TEXT,
+  example_jp       TEXT,
+  example_reading  TEXT,
+  example_en       TEXT,
+  onyomi           TEXT,
+  kunyomi          TEXT,
+  source_media_id  INTEGER,
+  -- SRS state; written only by submitReview (see src/shared/srs.ts)
+  status           TEXT NOT NULL DEFAULT 'new',
+  learning_step    INTEGER NOT NULL DEFAULT 0,
+  due_at           TEXT,
+  interval_days    REAL NOT NULL DEFAULT 0,
+  ease             REAL NOT NULL DEFAULT 2.5,
+  reps             INTEGER NOT NULL DEFAULT 0,
+  lapses           INTEGER NOT NULL DEFAULT 0,
+  last_reviewed_at TEXT,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_jp_card_lesson ON jp_card(lesson_id);
+CREATE INDEX IF NOT EXISTS idx_jp_card_due ON jp_card(status, due_at);
+
+CREATE TABLE IF NOT EXISTS jp_review_log (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  card_id       INTEGER NOT NULL REFERENCES jp_card(id) ON DELETE CASCADE,
+  grade         TEXT NOT NULL,
+  reviewed_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  interval_days REAL NOT NULL,
+  ease          REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_jp_review_log_card ON jp_review_log(card_id);
+CREATE INDEX IF NOT EXISTS idx_jp_review_log_time ON jp_review_log(reviewed_at);

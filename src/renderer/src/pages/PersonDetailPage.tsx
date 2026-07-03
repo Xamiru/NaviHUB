@@ -1,10 +1,13 @@
+import { memo, useMemo } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import EntityHeader from '../components/EntityHeader'
+import AddToListMenu from '../components/AddToListMenu'
 import CoverImage from '../components/CoverImage'
-import { pathForMedia } from '../lib/mediaConfig'
-import type { PersonCredit } from '@shared/types'
+import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
+import type { PersonCredit, MediaType } from '@shared/types'
 
 export default function PersonDetailPage() {
   const { id } = useParams()
@@ -13,21 +16,56 @@ export default function PersonDetailPage() {
   const qc = useQueryClient()
 
   const { data: person } = useQuery({
-    queryKey: ['people', 'get', personId],
+    queryKey: qk.people.get(personId),
     queryFn: () => api.people.get(personId)
   })
   const { data: credits = [] } = useQuery({
-    queryKey: ['people', 'credits', personId],
+    queryKey: qk.people.credits(personId),
     queryFn: () => api.people.credits(personId)
   })
 
+  // Group credits into acting (character-bearing) blocks per medium + a flat crew
+  // list. This double-Map build runs over the whole credit list, so memoize it on
+  // `credits` — otherwise it recomputes on every unrelated re-render. Declared
+  // before the early return below so the hook order stays stable.
+  const { staffRoles, actingByType, actingTypes, totalActing } = useMemo(() => {
+    // Acting/voicing roles carry a character; crew roles don't. Splitting this
+    // way works for anyone — a voice actor, a film actor, or a director — and a
+    // person who does both shows up correctly in each section.
+    const staffRoles = credits.filter((c) => !c.character)
+
+    // Acting roles are grouped by medium (Anime vs Visual Novels vs Movies…) so a
+    // seiyuu's anime and VN work read as separate blocks. Within each medium the
+    // same character is collapsed (a role played across multiple seasons repeats
+    // once, with a "+N" hint); since credits arrive importance-sorted the first is
+    // the most prominent. Groups are ordered by MEDIA_CONFIGS, so a new media type
+    // (e.g. games) slots in automatically once its config exists.
+    const actingByType = new Map<MediaType, Map<number, { credit: PersonCredit; titles: number }>>()
+    for (const c of credits) {
+      if (!c.character) continue
+      const type = c.media.mediaType
+      let group = actingByType.get(type)
+      if (!group) {
+        group = new Map()
+        actingByType.set(type, group)
+      }
+      const seen = group.get(c.character.id)
+      if (seen) seen.titles++
+      else group.set(c.character.id, { credit: c, titles: 1 })
+    }
+    const knownOrder = MEDIA_CONFIGS.map((cfg) => cfg.key)
+    const actingTypes: MediaType[] = [
+      ...knownOrder.filter((k) => actingByType.has(k)),
+      ...[...actingByType.keys()].filter((k) => !knownOrder.includes(k))
+    ]
+    const totalActing = [...actingByType.values()].reduce((n, g) => n + g.size, 0)
+    return { staffRoles, actingByType, actingTypes, totalActing }
+  }, [credits])
+
   if (!person) return <div className="p-6 text-gray-500">Loading…</div>
 
-  // Acting/voicing roles carry a character; crew roles don't. Splitting this way
-  // works for anyone — a voice actor, a film actor, or a director — and a person
-  // who does both (e.g. acts and directs) shows up correctly in each section.
-  const actingRoles = credits.filter((c) => c.character)
-  const staffRoles = credits.filter((c) => !c.character)
+  const typeLabel = (t: MediaType): string =>
+    MEDIA_CONFIGS.find((cfg) => cfg.key === t)?.plural ?? t.replace(/_/g, ' ')
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
@@ -48,28 +86,41 @@ export default function PersonDetailPage() {
             bio: f.longText || null,
             photoPath: f.imgPath
           })
-          qc.invalidateQueries({ queryKey: ['people'] })
+          qc.invalidateQueries({ queryKey: qk.people.all })
         }}
         onDelete={async () => {
           await api.people.remove(personId)
-          qc.invalidateQueries({ queryKey: ['people'] })
+          qc.invalidateQueries({ queryKey: qk.people.all })
           navigate('/people')
         }}
+        actions={<AddToListMenu kind="person" entityId={personId} />}
       />
 
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
-        Roles · {actingRoles.length}
-      </h2>
-      {actingRoles.length === 0 ? (
-        <p className="text-sm text-gray-600 mb-8">
-          No roles yet. Add this person to a title&apos;s cast from its page.
-        </p>
+      {totalActing === 0 ? (
+        <>
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+            Roles
+          </h2>
+          <p className="text-sm text-gray-600 mb-8">
+            No roles yet. Add this person to a title&apos;s cast from its page.
+          </p>
+        </>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4 mb-8">
-          {actingRoles.map((c) => (
-            <RoleCard key={c.creditId} c={c} />
-          ))}
-        </div>
+        actingTypes.map((type) => {
+          const group = [...actingByType.get(type)!.values()]
+          return (
+            <div key={type} className="mb-8">
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+                {typeLabel(type)} · {group.length}
+              </h2>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+                {group.map(({ credit, titles }) => (
+                  <RoleCard key={credit.character!.id} c={credit} titles={titles} />
+                ))}
+              </div>
+            </div>
+          )
+        })
       )}
 
       {staffRoles.length > 0 && (
@@ -95,7 +146,7 @@ export default function PersonDetailPage() {
   )
 }
 
-function RoleCard({ c }: { c: PersonCredit }) {
+const RoleCard = memo(function RoleCard({ c, titles = 1 }: { c: PersonCredit; titles?: number }) {
   // Show the character's portrait (the role) rather than the show's cover.
   // Fall back to the show cover when the character has no image.
   const roleImage = c.character?.imagePath ?? c.media.coverPath
@@ -123,8 +174,11 @@ function RoleCard({ c }: { c: PersonCredit }) {
         </Link>
       )}
       <Link to={pathForMedia(c.media)}>
-        <p className="text-xs text-gray-500 hover:text-accent line-clamp-1">{c.media.title}</p>
+        <p className="text-xs text-gray-500 hover:text-accent line-clamp-1">
+          {c.media.title}
+          {titles > 1 && <span className="text-gray-600"> +{titles - 1}</span>}
+        </p>
       </Link>
     </div>
   )
-}
+})

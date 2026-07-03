@@ -1,7 +1,9 @@
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import EntityHeader from '../components/EntityHeader'
+import AddToListMenu from '../components/AddToListMenu'
 import CoverImage from '../components/CoverImage'
 import { pathForMedia } from '../lib/mediaConfig'
 
@@ -12,11 +14,11 @@ export default function CharacterDetailPage() {
   const qc = useQueryClient()
 
   const { data: character } = useQuery({
-    queryKey: ['characters', 'get', characterId],
+    queryKey: qk.characters.get(characterId),
     queryFn: () => api.characters.get(characterId)
   })
   const { data: roles = [] } = useQuery({
-    queryKey: ['characters', 'roles', characterId],
+    queryKey: qk.characters.roles(characterId),
     queryFn: () => api.characters.roles(characterId)
   })
 
@@ -41,13 +43,14 @@ export default function CharacterDetailPage() {
             description: f.longText || null,
             imagePath: f.imgPath
           })
-          qc.invalidateQueries({ queryKey: ['characters'] })
+          qc.invalidateQueries({ queryKey: qk.characters.all })
         }}
         onDelete={async () => {
           await api.characters.remove(characterId)
-          qc.invalidateQueries({ queryKey: ['characters'] })
+          qc.invalidateQueries({ queryKey: qk.characters.all })
           navigate('/characters')
         }}
+        actions={<AddToListMenu kind="character" entityId={characterId} />}
       />
 
       <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">

@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { memo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
-import { useStatuses } from '../lib/hooks'
+import { useStatuses, useDebouncedValue, useIncrementalList } from '../lib/hooks'
+import { qk } from '../lib/queryKeys'
 import { configFor, type MediaConfig } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import ImportDialog from '../components/ImportDialog'
@@ -23,12 +24,16 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   const [favOnly, setFavOnly] = usePersistedState('favOnly', false)
   const [showImport, setShowImport] = useState(false)
 
-  const { data: tags = [] } = useQuery({ queryKey: ['tags'], queryFn: () => api.tags.list() })
+  // Debounce the search box so each keystroke doesn't refire the media query;
+  // the <input> stays bound to `search` for instant visual feedback.
+  const debouncedSearch = useDebouncedValue(search, 250)
+
+  const { data: tags = [] } = useQuery({ queryKey: qk.tags.all, queryFn: () => api.tags.list() })
 
   const filter: MediaListFilter = {
     mediaType: cfg.key,
     status,
-    search: search.trim() || null,
+    search: debouncedSearch.trim() || null,
     sort,
     sortDir,
     tagId,
@@ -36,12 +41,14 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   }
 
   const { data: items = [], isLoading } = useQuery({
-    queryKey: ['media', filter],
+    queryKey: qk.media.list(filter),
     queryFn: () => api.media.list(filter)
   })
+  // Big libraries render in scroll-fed batches, same as the entity grids.
+  const { visible, sentinelRef, hasMore } = useIncrementalList(items)
 
   const { data: counts = {} } = useQuery({
-    queryKey: ['media-counts', cfg.key],
+    queryKey: qk.mediaCounts.byType(cfg.key),
     queryFn: () => api.media.setStatusCounts(cfg.key)
   })
 
@@ -165,11 +172,19 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
       ) : items.length === 0 ? (
         <EmptyState cfg={cfg} onAdd={() => navigate(`${cfg.basePath}/new`)} />
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
-          {items.map((m) => (
-            <MediaCard key={m.id} cfg={cfg} item={m} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+            {visible.map((m) => (
+              <MediaCard key={m.id} cfg={cfg} item={m} />
+            ))}
+          </div>
+          <div ref={sentinelRef} />
+          {hasMore && (
+            <p className="mt-4 text-center text-xs text-gray-600">
+              Showing {visible.length} of {items.length} — scroll for more
+            </p>
+          )}
+        </>
       )}
     </div>
   )
@@ -201,7 +216,7 @@ function FilterPill({
   )
 }
 
-function MediaCard({ cfg, item }: { cfg: MediaConfig; item: MediaItem }) {
+const MediaCard = memo(function MediaCard({ cfg, item }: { cfg: MediaConfig; item: MediaItem }) {
   const sub = cfg.formatCardSub(item)
   return (
     <Link to={`${cfg.basePath}/${item.id}`} className="group">
@@ -229,7 +244,7 @@ function MediaCard({ cfg, item }: { cfg: MediaConfig; item: MediaItem }) {
       </div>
     </Link>
   )
-}
+})
 
 function EmptyState({ cfg, onAdd }: { cfg: MediaConfig; onAdd: () => void }) {
   return (

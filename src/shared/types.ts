@@ -126,6 +126,50 @@ export interface GlobalSearchResults {
   characters: Character[]
 }
 
+// ---- Lists (user-curated collections) ----
+
+// A list is type-scoped: it holds one kind of entity. 'company' == studios.
+export type ListKind = 'media' | 'person' | 'character' | 'company'
+
+export interface List {
+  id: number
+  title: string
+  description: string | null
+  kind: ListKind
+  ranked: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+// A resolved list entry: the list_item joined with the entity it points to,
+// normalized so any kind renders the same way.
+export interface ListEntry {
+  itemId: number // list_item.id
+  sortOrder: number
+  note: string | null
+  entityId: number
+  name: string // media title or entity name
+  subtitle: string | null // media type label / native name / company type
+  imagePath: string | null
+  mediaType: MediaType | null // set only when kind === 'media', for the route
+}
+
+export interface ListSummary extends List {
+  itemCount: number
+  previewImages: (string | null)[] // a few cover/photo paths for the index card
+}
+
+export interface ListDetail extends List {
+  items: ListEntry[]
+}
+
+export interface ListInput {
+  title: string
+  description?: string | null
+  kind: ListKind // required on create; immutable afterwards
+  ranked?: boolean
+}
+
 // ---- Composite view models ----
 
 export interface CastEntry {
@@ -162,12 +206,24 @@ export interface ThemeSong {
   artists: Person[]
 }
 
+// A related title on the detail page: another season, or the manga/novel a title
+// was adapted from. `media` is set when the related work is in the library (so
+// the card links to it); otherwise only the AniList title/type is known and it's
+// shown greyed out as a hint of what to import next.
+export interface MediaRelation {
+  relationType: string // 'PREQUEL' | 'SEQUEL' | 'SIDE_STORY' | 'SOURCE' | …
+  media: MediaItem | null // the local item, or null if not imported yet
+  title: string // display title (local title if imported, else AniList title)
+  mediaType: MediaType | null // the related work's type ('anime' | 'manga' | …)
+}
+
 export interface MediaDetail extends MediaItem {
   tags: Tag[]
   companies: MediaCompanyLink[]
   cast: CastEntry[] // still used for staff (non voice-actor credits)
   characters: MediaCharacterEntry[] // the character-centric cast list
   themes: ThemeSong[] // anime OP/ED songs (empty for other types)
+  relations: MediaRelation[] // seasons + manga/novel source (empty for others)
 }
 
 // Result of importing an anime's theme songs from AnimeThemes.moe.
@@ -176,6 +232,44 @@ export interface ThemeImportSummary {
   songs: number
   artists: number
   audioDownloaded: number
+}
+
+// One playable song in the song quiz pool: a theme flattened with the anime it
+// belongs to. Only themes with audio (local or remote) are returned.
+export interface QuizSong {
+  themeId: number
+  slug: string | null // "OP1", "ED2"
+  type: string | null // "OP" | "ED"
+  title: string | null
+  audioUrl: string | null
+  audioPath: string | null
+  mediaId: number
+  animeTitle: string
+  coverPath: string | null
+  status: string | null
+  artists: string[] // performer names, shown on the reveal card
+}
+
+// Narrows the song quiz pool. Omit a field (or pass null) to leave it unfiltered.
+export interface QuizSongFilter {
+  songType?: 'OP' | 'ED' | null // null/omit = both OP and ED
+  statuses?: string[] | null // null/empty = any anime status
+}
+
+// HowLongToBeat play-time estimates for a game or VN, stored (all in minutes)
+// under metadata.hltb by the HLTB lookup. `name` is the matched HLTB entry's
+// title — shown when it differs from ours so a bad match is easy to spot.
+export interface HltbTimes {
+  id: number
+  name: string
+  main: number | null
+  mainExtra: number | null
+  completionist: number | null
+  allStyles: number | null
+  mainCount?: number
+  mainExtraCount?: number
+  completionistCount?: number
+  allStylesCount?: number
 }
 
 // One row of a voice actor's filmography (powers the VA -> anime page)
@@ -221,3 +315,249 @@ export interface ImportSummary {
 // Back-compat aliases (the AniList client predates the generic names).
 export type AniListSearchResult = ImportSearchResult
 export type AniListImportSummary = ImportSummary
+
+// ---- Japanese learning ----
+// Standalone section: courses → lessons → cards. A lesson is 'grammar'
+// (body = explanation text, cards = example sentences), 'vocab' (cards =
+// vocabulary entries) or 'kanji' (cards = characters with on/kun readings).
+// Cards carry their SRS scheduling state (src/shared/srs.ts); only cards from
+// lessons marked learned surface in reviews and quizzes.
+
+export type JpLessonKind = 'grammar' | 'vocab' | 'kanji'
+
+export type SrsGrade = 'again' | 'hard' | 'good' | 'easy'
+
+export type SrsStatus = 'new' | 'learning' | 'review'
+
+export interface JpCourse {
+  id: number
+  title: string
+  description: string | null
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface JpCourseSummary extends JpCourse {
+  lessonCount: number
+  learnedLessonCount: number
+  cardCount: number
+}
+
+export interface JpLesson {
+  id: number
+  courseId: number
+  kind: JpLessonKind
+  title: string
+  body: string | null
+  sortOrder: number
+  learned: boolean
+  learnedAt: string | null
+}
+
+export interface JpLessonSummary extends JpLesson {
+  cardCount: number
+}
+
+export interface JpCourseDetail extends JpCourse {
+  lessons: JpLessonSummary[]
+}
+
+export interface JpCard {
+  id: number
+  lessonId: number
+  sortOrder: number
+  front: string // vocab: term (kanji/kana) · grammar: JP sentence · kanji: character
+  reading: string | null // kana reading of `front` (kanji: primary reading)
+  back: string // vocab: meaning · grammar: translation · kanji: meaning
+  pos: string | null // part of speech (vocab only)
+  notes: string | null
+  exampleJp: string | null // kanji cards use example_* for an example word
+  exampleReading: string | null
+  exampleEn: string | null
+  onyomi: string | null // kanji cards: on'yomi, comma-separated
+  kunyomi: string | null // kanji cards: kun'yomi, comma-separated
+  sourceMediaId: number | null // mined cards: the manga/VN it came from
+  // Resolved from source_media_id at read time (LEFT JOIN; null if the media
+  // item was deleted). Read-only — never part of JpCardInput.
+  sourceTitle: string | null
+  sourceMediaType: MediaType | null
+  sourceCoverPath: string | null
+  // SRS state (read-only outside submitReview)
+  status: SrsStatus
+  learningStep: number
+  dueAt: string | null
+  intervalDays: number
+  ease: number
+  reps: number
+  lapses: number
+  lastReviewedAt: string | null
+}
+
+export interface JpLessonDetail extends JpLesson {
+  courseTitle: string
+  cards: JpCard[]
+}
+
+export interface JpCourseInput {
+  title: string
+  description?: string | null
+}
+
+export interface JpCardInput {
+  front: string
+  reading?: string | null
+  back: string
+  pos?: string | null
+  notes?: string | null
+  exampleJp?: string | null
+  exampleReading?: string | null
+  exampleEn?: string | null
+  onyomi?: string | null
+  kunyomi?: string | null
+  sourceMediaId?: number | null
+}
+
+export interface JpLessonInput {
+  courseId: number
+  kind: JpLessonKind // required on create; immutable afterwards
+  title: string
+  body?: string | null
+  cards?: JpCardInput[] // inserted with the lesson in one transaction
+}
+
+// A review session's queue: cards already in rotation that are due, plus up to
+// `newLimit` not-yet-introduced cards (both from learned lessons only).
+export interface JpReviewQueue {
+  due: JpCard[]
+  fresh: JpCard[]
+}
+
+// What submitReview reports back — enough for the UI to show the outcome.
+export interface JpReviewOutcome {
+  cardId: number
+  status: SrsStatus
+  intervalDays: number
+  dueAt: string
+}
+
+// Narrows the multiple-choice quiz pool. Omit/null = unfiltered.
+export interface JpQuizScope {
+  courseId?: number | null
+  kind?: JpLessonKind | null
+}
+
+// One quizzable item: a card flattened with its lesson context.
+export interface JpQuizItem extends JpCard {
+  lessonKind: JpLessonKind
+  lessonTitle: string
+}
+
+export interface JpStats {
+  dueCount: number
+  newAvailableCount: number
+  learnedLessons: number
+  totalLessons: number
+  totalCards: number
+  reviewsToday: number
+}
+
+// One dictionary hit from jisho.org, mapped for the mining page.
+export interface JishoResult {
+  slug: string
+  word: string // japanese[0].word, falling back to the kana reading
+  reading: string | null
+  meanings: string // first senses' english_definitions, joined
+  pos: string | null
+  isCommon: boolean
+  jlpt: string | null // e.g. 'jlpt-n5'
+}
+
+// The auto-created capture target for mined words (course "Mining inbox" →
+// vocab lesson "Mined words", created learned so cards enter SRS immediately).
+export interface JpMiningInbox {
+  courseId: number
+  lessonId: number
+}
+
+// ---- Local manga reader ----
+// Chapters are folders of page images under the manga library root (settings
+// key manga.dir), attached to a manga media_item and scanned into manga_chapter
+// rows. Pages are listed from disk at read-time.
+
+export interface MangaChapter {
+  id: number
+  mediaId: number
+  dirPath: string // relative to the manga root, e.g. "Berserk/Ch 001"
+  title: string
+  number: number | null
+  pageCount: number
+  sortOrder: number
+  lastReadPage: number | null // 0-based; null = never opened
+  readAt: string | null // non-null = completed
+}
+
+export interface MangaLibrary {
+  localDir: string | null // attached series folder (relative to root); null = not attached
+  chapters: MangaChapter[]
+}
+
+export interface MangaPage {
+  relPath: string // "manga/<dirPath>/<file>"
+  url: string // navimg:// URL, usable directly as <img src>
+}
+
+export interface MangaPages {
+  chapterId: number
+  mediaId: number
+  title: string
+  number: number | null
+  pages: MangaPage[]
+}
+
+export interface MangaAttachResult {
+  ok: boolean
+  error?: string
+  chapterCount?: number
+}
+
+// Scanner output for one discovered chapter (dirPath relative to the SERIES
+// folder, '' = the series folder itself holds the pages).
+export interface ScannedChapter {
+  dirPath: string
+  title: string
+  number: number | null
+  pageCount: number
+}
+
+// ---- Mokuro OCR sidecars ----
+// The user runs mokuro (github.com/kha-white/mokuro) on raw manga; the reader
+// picks up its output and overlays tappable text boxes on the page.
+
+export interface MokuroBlock {
+  box: [number, number, number, number] // xmin, ymin, xmax, ymax in source-image px
+  vertical: boolean
+  fontSize: number | null
+  lines: string[]
+}
+
+export interface MokuroPageOcr {
+  imgWidth: number
+  imgHeight: number
+  blocks: MokuroBlock[]
+}
+
+export interface ChapterOcrStatus {
+  hasOcr: boolean
+  matchedPages: number
+  totalPages: number
+}
+
+// One token from morphological analysis (kuromoji) of an OCR'd text block.
+export interface JpToken {
+  surface: string
+  base: string // dictionary form (食べた → 食べる); falls back to surface
+  reading: string | null // hiragana
+  pos: string // top-level POS: 名詞 / 動詞 / 助詞 / …
+  wordLike: boolean // false for particles, aux verbs, punctuation
+}

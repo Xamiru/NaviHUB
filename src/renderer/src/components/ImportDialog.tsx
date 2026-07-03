@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import type { MediaConfig } from '../lib/mediaConfig'
 import type { ImportSearchResult } from '@shared/types'
 
@@ -25,7 +26,7 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
   const [done, setDone] = useState<string | null>(null)
 
   const { data: results = [], isFetching } = useQuery({
-    queryKey: [source.key, 'search', submitted],
+    queryKey: qk.importSearch(source.key, submitted),
     queryFn: () => client.search(submitted),
     enabled: submitted.trim().length > 0
   })
@@ -36,8 +37,8 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
     setImportingId(r.id)
     try {
       const summary = await client.import(r.id)
-      await qc.invalidateQueries({ queryKey: ['media'] })
-      await qc.invalidateQueries({ queryKey: ['media-counts'] })
+      await qc.invalidateQueries({ queryKey: qk.media.all })
+      await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
       setDone(
         `Imported “${summary.title}” — ${summary.studios} ${cfg.companyTitle.toLowerCase()}, ${summary.cast} ${cfg.castSectionTitle.toLowerCase()}, ${summary.staff} ${cfg.crewTitle.toLowerCase()}.`
       )

@@ -7,10 +7,20 @@ import * as linkRepo from './repos/linkRepo'
 import * as tagRepo from './repos/tagRepo'
 import * as settingsRepo from './repos/settingsRepo'
 import * as searchRepo from './repos/searchRepo'
+import * as quizRepo from './repos/quizRepo'
+import * as listRepo from './repos/listRepo'
+import * as japaneseRepo from './repos/japaneseRepo'
 import * as anilist from './anilist'
 import * as tmdb from './tmdb'
+import * as vndb from './vndb'
+import * as rawg from './rawg'
 import * as themes from './themes'
+import * as hltb from './hltb'
+import * as jisho from './jisho'
 import * as files from './files'
+import * as manga from './manga'
+import * as mokuro from './mokuro'
+import * as tokenizer from './tokenizer'
 
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
@@ -64,6 +74,75 @@ export function registerIpc(): void {
   // ---- global search ----
   ipcMain.handle('search:global', (_e, query) => searchRepo.global(query))
 
+  // ---- quiz ----
+  ipcMain.handle('quiz:songPool', (_e, filter) => quizRepo.songPool(filter))
+
+  // ---- HowLongToBeat times (games + VNs) ----
+  ipcMain.handle('hltb:fetch', (_e, mediaId) => hltb.fetchForMedia(mediaId))
+
+  // ---- lists ----
+  ipcMain.handle('lists:list', (_e, kind) => listRepo.list(kind))
+  ipcMain.handle('lists:get', (_e, id) => listRepo.get(id))
+  ipcMain.handle('lists:create', (_e, input) => listRepo.create(input))
+  ipcMain.handle('lists:update', (_e, id, input) => listRepo.update(id, input))
+  ipcMain.handle('lists:remove', (_e, id) => listRepo.remove(id))
+  ipcMain.handle('lists:addItem', (_e, listId, entityId, note) =>
+    listRepo.addItem(listId, entityId, note)
+  )
+  ipcMain.handle('lists:removeItem', (_e, itemId) => listRepo.removeItem(itemId))
+  ipcMain.handle('lists:removeItemByEntity', (_e, listId, entityId) =>
+    listRepo.removeItemByEntity(listId, entityId)
+  )
+  ipcMain.handle('lists:updateItem', (_e, itemId, patch) => listRepo.updateItem(itemId, patch))
+  ipcMain.handle('lists:reorder', (_e, listId, orderedItemIds) =>
+    listRepo.reorder(listId, orderedItemIds)
+  )
+  ipcMain.handle('lists:forEntity', (_e, kind, entityId) => listRepo.forEntity(kind, entityId))
+
+  // ---- Japanese learning ----
+  ipcMain.handle('japanese:listCourses', () => japaneseRepo.listCourses())
+  ipcMain.handle('japanese:getCourse', (_e, id) => japaneseRepo.getCourse(id))
+  ipcMain.handle('japanese:createCourse', (_e, input) => japaneseRepo.createCourse(input))
+  ipcMain.handle('japanese:updateCourse', (_e, id, input) => japaneseRepo.updateCourse(id, input))
+  ipcMain.handle('japanese:removeCourse', (_e, id) => japaneseRepo.removeCourse(id))
+  ipcMain.handle('japanese:getLesson', (_e, id) => japaneseRepo.getLesson(id))
+  ipcMain.handle('japanese:createLesson', (_e, input) => japaneseRepo.createLesson(input))
+  ipcMain.handle('japanese:updateLesson', (_e, id, patch) => japaneseRepo.updateLesson(id, patch))
+  ipcMain.handle('japanese:removeLesson', (_e, id) => japaneseRepo.removeLesson(id))
+  ipcMain.handle('japanese:setLessonLearned', (_e, id, learned) =>
+    japaneseRepo.setLessonLearned(id, learned)
+  )
+  ipcMain.handle('japanese:createCard', (_e, lessonId, input) =>
+    japaneseRepo.createCard(lessonId, input)
+  )
+  ipcMain.handle('japanese:updateCard', (_e, id, patch) => japaneseRepo.updateCard(id, patch))
+  ipcMain.handle('japanese:removeCard', (_e, id) => japaneseRepo.removeCard(id))
+  ipcMain.handle('japanese:reviewQueue', (_e, newLimit) => japaneseRepo.reviewQueue(newLimit))
+  ipcMain.handle('japanese:submitReview', (_e, cardId, grade) =>
+    japaneseRepo.submitReview(cardId, grade)
+  )
+  ipcMain.handle('japanese:quizPool', (_e, scope) => japaneseRepo.quizPool(scope))
+  ipcMain.handle('japanese:stats', () => japaneseRepo.stats())
+  ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
+  ipcMain.handle('japanese:jishoLookup', (_e, term) => jisho.lookup(term))
+  ipcMain.handle('japanese:tokenize', (_e, text) => tokenizer.tokenize(text))
+  ipcMain.handle('japanese:minedFronts', (_e, fronts) => japaneseRepo.minedFronts(fronts))
+
+  // ---- local manga reader ----
+  ipcMain.handle('manga:attachFolder', (_e, mediaId) => manga.attachFolder(mediaId))
+  ipcMain.handle('manga:rescan', (_e, mediaId) => manga.rescan(mediaId))
+  ipcMain.handle('manga:detach', (_e, mediaId) => manga.detach(mediaId))
+  ipcMain.handle('manga:chapters', (_e, mediaId) => manga.chapters(mediaId))
+  ipcMain.handle('manga:pages', (_e, chapterId) => manga.pages(chapterId))
+  ipcMain.handle('manga:markProgress', (_e, chapterId, page) =>
+    manga.markProgress(chapterId, page)
+  )
+  ipcMain.handle('manga:markChapterRead', (_e, chapterId, read) =>
+    manga.markChapterRead(chapterId, read)
+  )
+  ipcMain.handle('manga:ocrStatus', (_e, chapterId) => mokuro.status(chapterId))
+  ipcMain.handle('manga:ocrPage', (_e, chapterId, pageIndex) => mokuro.page(chapterId, pageIndex))
+
   // ---- AniList import (anime + manga) ----
   ipcMain.handle('anilist:search', (_e, query) => anilist.search(query))
   ipcMain.handle('anilist:import', (_e, anilistId) => anilist.importAnime(anilistId))
@@ -75,6 +154,14 @@ export function registerIpc(): void {
   ipcMain.handle('tmdb:import', (_e, tmdbId) => tmdb.importMovie(tmdbId))
   ipcMain.handle('tmdbTv:search', (_e, query) => tmdb.searchTv(query))
   ipcMain.handle('tmdbTv:import', (_e, tmdbId) => tmdb.importTv(tmdbId))
+
+  // ---- VNDB import (visual novels) ----
+  ipcMain.handle('vndb:search', (_e, query) => vndb.search(query))
+  ipcMain.handle('vndb:import', (_e, vndbId) => vndb.importVisualNovel(vndbId))
+
+  // ---- RAWG import (games) ----
+  ipcMain.handle('rawg:search', (_e, query) => rawg.search(query))
+  ipcMain.handle('rawg:import', (_e, rawgId) => rawg.importGame(rawgId))
 
   // ---- AnimeThemes import (anime OP/ED songs) ----
   ipcMain.handle('themes:import', (_e, mediaId) => themes.importThemes(mediaId))

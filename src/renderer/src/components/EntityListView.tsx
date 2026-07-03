@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
+import { useDebouncedValue, useIncrementalList } from '../lib/hooks'
+import { qk, type EntityNamespace } from '../lib/queryKeys'
 import CoverImage from './CoverImage'
 import type { CreditRole, MediaType } from '@shared/types'
 
@@ -20,7 +22,7 @@ const SOURCE: Record<
   {
     list: (s?: string, role?: CreditRole, mediaType?: MediaType | MediaType[]) => Promise<Row[]>
     create: (name: string) => Promise<number>
-    queryKey: string
+    queryKey: EntityNamespace
   }
 > = {
   person: {
@@ -76,18 +78,23 @@ export default function EntityListView({
   const src = SOURCE[kind]
   const [search, setSearch] = usePersistedState('search', '')
   const [newName, setNewName] = useState('')
+  // Debounce so typing doesn't refire the entity list query on every keystroke.
+  const debouncedSearch = useDebouncedValue(search, 250)
 
   const { data: rows = [], isLoading } = useQuery({
-    queryKey: [src.queryKey, 'list', search, personRole ?? null, mediaType ?? null],
-    queryFn: () => src.list(search.trim() || undefined, personRole, mediaType)
+    queryKey: qk.entity(src.queryKey).list(debouncedSearch, personRole ?? null, mediaType ?? null),
+    queryFn: () => src.list(debouncedSearch.trim() || undefined, personRole, mediaType)
   })
+  // A role like voice_actor matches thousands of people; mounting them all at
+  // once froze the app. Reveal the grid in batches as the user scrolls instead.
+  const { visible, sentinelRef, hasMore } = useIncrementalList(rows)
 
   async function add() {
     const name = newName.trim()
     if (!name) return
     await src.create(name)
     setNewName('')
-    qc.invalidateQueries({ queryKey: [src.queryKey] })
+    qc.invalidateQueries({ queryKey: qk.entity(src.queryKey).all })
   }
 
   return (
@@ -121,22 +128,32 @@ export default function EntityListView({
       ) : rows.length === 0 ? (
         <p className="text-gray-600">Nothing here yet.</p>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
-          {rows.map((r) => (
-            <Link key={r.id} to={`${basePath}/${r.id}`} className="group text-center">
-              <CoverImage
-                path={r.imgPath}
-                alt={r.name}
-                rounded="rounded-full"
-                className="w-24 h-24 mx-auto"
-              />
-              <p className="mt-2 text-sm font-medium group-hover:text-accent line-clamp-2">
-                {r.name}
-              </p>
-              {r.nameNative && <p className="text-xs text-gray-500 line-clamp-1">{r.nameNative}</p>}
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
+            {visible.map((r) => (
+              <Link key={r.id} to={`${basePath}/${r.id}`} className="group text-center">
+                <CoverImage
+                  path={r.imgPath}
+                  alt={r.name}
+                  rounded="rounded-full"
+                  className="w-24 h-24 mx-auto"
+                />
+                <p className="mt-2 text-sm font-medium group-hover:text-accent line-clamp-2">
+                  {r.name}
+                </p>
+                {r.nameNative && (
+                  <p className="text-xs text-gray-500 line-clamp-1">{r.nameNative}</p>
+                )}
+              </Link>
+            ))}
+          </div>
+          <div ref={sentinelRef} />
+          {hasMore && (
+            <p className="mt-4 text-center text-xs text-gray-600">
+              Showing {visible.length} of {rows.length} — scroll for more
+            </p>
+          )}
+        </>
       )}
     </div>
   )
