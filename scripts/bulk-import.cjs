@@ -28,8 +28,11 @@
  *       gets characters + mangaka, no voice actors). --basic skips cast/staff for a
  *       fast metadata+tracking seed. --skip-anime / --skip-manga do just one list.
  *
- *   imdb-top [--count N] [--min-votes N] [--omdb-key KEY] [--delay MS]
+ *   imdb-top [--count N] [--min-votes N] [--only-missing] [--exclude-langs hi,ta,…] [--omdb-key KEY] [--delay MS]
  *       Import the all-time greatest films, ranked the way IMDb's own Top 250 is.
+ *       --only-missing resumes an interrupted run (skips titles already in the
+ *       library). --exclude-langs skips movies by ORIGINAL language (ISO 639-1
+ *       codes, comma-separated) and fills the count with the next ranked titles.
  *       Pulls IMDb's official ratings dataset (~25 MB, free for personal use),
  *       ranks by the weighted-rating (Bayesian) formula with a vote floor
  *       (--min-votes, default 25000), then resolves each IMDb id to TMDB by id
@@ -44,6 +47,15 @@
  *       --omdb-key adds IMDb rating + Rotten Tomatoes per title (free key from
  *       omdbapi.com; otherwise read from settings `omdb.api_key` if present).
  *
+ *   rawg-top [--list metacritic|rating|added] [--count N] [--rawg-key KEY] [--no-hltb] [--delay MS]
+ *       Import a ranked list of video games from RAWG. Key from settings
+ *       `rawg.api_key` (free at rawg.io/apidocs); pass --rawg-key once and it's
+ *       saved to settings so the app can use it too. Defaults: --list metacritic
+ *       --count 500. DLC/special editions are skipped (exclude_additions).
+ *       Each game gets developers/publishers, genres, Metacritic score, and —
+ *       unless --no-hltb — HowLongToBeat play times, same as the in-app
+ *       importer. RAWG has no cast data; characters/VAs stay hand-curated.
+ *
  *   anime-themes [--limit N] [--no-audio] [--only-missing] [--audio-dir PATH] [--delay MS]
  *       Add opening/ending songs (+ artists + audio) to every AniList-sourced
  *       anime already in the library, from AnimeThemes.moe. Downloads each .ogg
@@ -57,6 +69,7 @@
  *   ./node_modules/.bin/electron scripts/bulk-import.cjs anilist-user YourName --basic --limit 200
  *   ./node_modules/.bin/electron scripts/bulk-import.cjs tmdb-top --type movie --list top_rated --count 100
  *   ./node_modules/.bin/electron scripts/bulk-import.cjs tmdb-top --type tv --list popular --count 40
+ *   ./node_modules/.bin/electron scripts/bulk-import.cjs rawg-top --rawg-key YOURKEY --count 300
  */
 
 const path = require('path')
@@ -1127,54 +1140,76 @@ function rankImdb(rows, minVotes) {
   return pool
 }
 
-// IMDb id -> TMDB movie id (null if it isn't a movie / not found on TMDB).
+// IMDb id -> TMDB movie {id, lang} (null if it isn't a movie / not found on
+// TMDB). lang is TMDB's original_language (ISO 639-1), used by --exclude-langs.
 async function tmdbFindMovieByImdb(tconst) {
   const d = await tmdbGet(`/find/${tconst}`, { external_source: 'imdb_id' })
-  return d?.movie_results?.[0]?.id ?? null
+  const m = d?.movie_results?.[0]
+  return m?.id ? { id: m.id, lang: m.original_language ?? null } : null
 }
 
 async function cmdImdbTop(flags) {
   const count = flags.count ? Number(flags.count) : 500
   const minVotes = flags['min-votes'] ? Number(flags['min-votes']) : 25000
   const delay = flags.delay ? Number(flags.delay) : 250
+  const onlyMissing = !!flags['only-missing']
+  // e.g. --exclude-langs hi,ta,te — skip movies whose ORIGINAL language is in
+  // the list, replacing them with the next ranked titles (count stays full).
+  const excludeLangs = new Set(
+    String(flags['exclude-langs'] || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+  )
   if (flags['omdb-key']) OMDB_KEY = String(flags['omdb-key']).trim()
   const omdbOn = !!omdbKey()
 
   console.log(`▶ IMDb top ${count} movies (weighted rating, ≥${minVotes} votes) → TMDB by id`)
   console.log(omdbOn ? '  OMDb enrichment: ON (IMDb + Rotten Tomatoes)' : '  OMDb enrichment: off (no key)')
+  if (excludeLangs.size) console.log(`  Excluding original languages: ${[...excludeLangs].join(', ')}`)
 
   console.log('  Downloading IMDb ratings dataset (~25 MB)…')
   const ranked = rankImdb(await fetchImdbRatings(), minVotes)
   console.log(`  ${ranked.length} titles qualify (≥${minVotes} votes); resolving top movies on TMDB…`)
 
   // Walk the ranked list top-down, resolving to TMDB movie ids and skipping
-  // anything that isn't a movie (highly-rated TV series/episodes), until `count`.
+  // anything that isn't a movie (highly-rated TV series/episodes) or is in an
+  // excluded language, until `count`.
   const ids = []
   const seen = new Set()
   let scanned = 0
+  let excluded = 0
   for (const x of ranked) {
     if (ids.length >= count) break
     scanned++
-    let tmdbId = null
+    let found = null
     try {
-      tmdbId = await tmdbFindMovieByImdb(x.tconst)
+      found = await tmdbFindMovieByImdb(x.tconst)
     } catch {
-      tmdbId = null
+      found = null
     }
-    if (tmdbId && !seen.has(tmdbId)) {
-      seen.add(tmdbId)
-      ids.push(tmdbId)
+    if (found && excludeLangs.has(found.lang)) excluded++
+    else if (found && !seen.has(found.id)) {
+      seen.add(found.id)
+      ids.push(found.id)
     }
     if (scanned % 100 === 0) console.log(`   …${ids.length}/${count} movies (scanned ${scanned})`)
     await sleep(40) // gentle on TMDB during resolution
   }
-  console.log(`  Resolved ${ids.length} movie ids (scanned ${scanned} titles).\n`)
+  console.log(`  Resolved ${ids.length} movie ids (scanned ${scanned} titles${excluded ? `, ${excluded} excluded by language` : ''}).`)
+
+  // --only-missing: resume after an interrupted run without re-importing (and
+  // re-downloading images for) everything already in the library.
+  let targets = ids
+  if (onlyMissing) {
+    const have = db.prepare('SELECT 1 FROM media_item WHERE external_source=? AND external_id=?')
+    targets = ids.filter((id) => !have.get(TMDB_SOURCE, String(id)))
+    console.log(`  --only-missing: ${ids.length - targets.length} already in library, importing ${targets.length}.`)
+  }
+  console.log('')
 
   let ok = 0
   const failures = []
-  for (let i = 0; i < ids.length; i++) {
-    const id = ids[i]
-    const tag = `[${i + 1}/${ids.length}]`
+  for (let i = 0; i < targets.length; i++) {
+    const id = targets[i]
+    const tag = `[${i + 1}/${targets.length}]`
     try {
       const sum = await tmdbImportMovie(id)
       ok++
@@ -1185,7 +1220,339 @@ async function cmdImdbTop(flags) {
     }
     if (delay) await sleep(delay)
   }
-  console.log(`\n✔ Done. ${ok}/${ids.length} imported.${failures.length ? ` ${failures.length} failed.` : ''}`)
+  console.log(`\n✔ Done. ${ok}/${targets.length} imported.${failures.length ? ` ${failures.length} failed.` : ''}`)
+  if (failures.length) console.log('  Failed ids:', failures.map((f) => f.id).join(', '))
+}
+
+/* =====================================================================
+ * RAWG  (video games) — ports src/main/rawg.ts (+ src/main/hltb.ts)
+ * ===================================================================== */
+const RAWG_BASE = 'https://api.rawg.io/api'
+const RAWG_SOURCE = 'rawg'
+
+// Key from the --rawg-key flag (set by cmdRawgTop, also saved to settings so
+// the app picks it up) or the settings table (rawg.api_key).
+let RAWG_KEY = null
+function rawgApiKey() {
+  if (RAWG_KEY) return RAWG_KEY
+  const row = db.prepare("SELECT value FROM settings WHERE key='rawg.api_key'").get()
+  const key = row?.value?.trim()
+  if (!key) throw new Error('No RAWG api key. Get one free at rawg.io/apidocs, then pass --rawg-key KEY (saved for the app too) or set it in the app Settings.')
+  return key
+}
+
+async function rawgGet(p, params = {}, attempt = 0) {
+  const url = new URL(`${RAWG_BASE}${p}`)
+  url.searchParams.set('key', rawgApiKey())
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, String(v))
+  const res = await fetch(url.toString(), { headers: { Accept: 'application/json' } })
+  if (res.status === 429) {
+    const retry = Number(res.headers.get('retry-after')) || 5
+    await sleep((retry + 1) * 1000)
+    return rawgGet(p, params, attempt)
+  }
+  if (res.status === 401) throw new Error('Invalid RAWG API key.')
+  if (!res.ok) {
+    if (attempt < 3) {
+      await sleep(1500)
+      return rawgGet(p, params, attempt + 1)
+    }
+    throw new Error(`RAWG request failed (${res.status})`)
+  }
+  return res.json()
+}
+
+/* ---- HowLongToBeat (ports src/main/hltb.ts) — best-effort play times.
+ * No official API; mirrors the site's own JS (as of mid-2026): GET
+ * /api/bleed/init for a token + honeypot pair, POST /api/bleed with them as
+ * headers AND the hp pair echoed in the body; 403 = expired token, re-init
+ * once. Token is bound to IP + User-Agent so the same UA goes on every
+ * request. Every failure path returns null/[] — HLTB must never break an
+ * import. ---- */
+const HLTB_BASE = 'https://howlongtobeat.com'
+const HLTB_UA =
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
+let hltbCreds = null
+
+async function hltbInit() {
+  try {
+    const res = await fetch(`${HLTB_BASE}/api/bleed/init?t=${Date.now()}`, {
+      headers: { 'User-Agent': HLTB_UA, Referer: `${HLTB_BASE}/` },
+      signal: AbortSignal.timeout(15000)
+    })
+    if (!res.ok) return null
+    const j = await res.json()
+    hltbCreds = j?.token && j?.hpKey && j?.hpVal
+      ? { token: j.token, hpKey: j.hpKey, hpVal: j.hpVal }
+      : null
+    return hltbCreds
+  } catch {
+    return null
+  }
+}
+
+async function hltbSearch(query) {
+  const terms = query.trim().split(/\s+/).filter(Boolean)
+  if (!terms.length) return []
+  let c = hltbCreds ?? (await hltbInit())
+  if (!c) return []
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const body = {
+      searchType: 'games',
+      searchTerms: terms,
+      searchPage: 1,
+      size: 20,
+      searchOptions: {
+        games: {
+          userId: 0,
+          platform: '',
+          sortCategory: 'popular',
+          rangeCategory: 'main',
+          rangeTime: { min: null, max: null },
+          gameplay: { perspective: '', flow: '', genre: '', difficulty: '' },
+          rangeYear: { min: '', max: '' },
+          modifier: ''
+        },
+        users: { sortCategory: 'postcount' },
+        lists: { sortCategory: 'follows' },
+        filter: '',
+        sort: 0,
+        randomizer: 0
+      },
+      useCache: true,
+      [c.hpKey]: c.hpVal
+    }
+    try {
+      const res = await fetch(`${HLTB_BASE}/api/bleed`, {
+        method: 'POST',
+        headers: {
+          'User-Agent': HLTB_UA,
+          Referer: `${HLTB_BASE}/`,
+          'Content-Type': 'application/json',
+          'x-auth-token': c.token,
+          'x-hp-key': c.hpKey,
+          'x-hp-val': c.hpVal
+        },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(15000)
+      })
+      if (res.status === 403 && attempt === 0) {
+        c = await hltbInit()
+        if (!c) return []
+        continue
+      }
+      if (!res.ok) return []
+      const j = await res.json()
+      return Array.isArray(j?.data) ? j.data : []
+    } catch {
+      return []
+    }
+  }
+  return []
+}
+
+// Loose title key: lowercase, accents stripped, punctuation collapsed — so
+// "Steins;Gate" matches "Steins Gate" and "Pokémon" matches "Pokemon".
+function hltbNorm(s) {
+  return s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+// Results come back popularity-sorted, so the first is already a decent guess;
+// an exact title/alias match (and a release year within ±1) beats popularity.
+function hltbPickBest(results, title, year) {
+  const target = hltbNorm(title)
+  let best = null
+  let bestScore = -1
+  for (const g of results) {
+    let score = 0
+    if (hltbNorm(String(g.game_name ?? '')) === target) score += 4
+    else if (
+      typeof g.game_alias === 'string' &&
+      g.game_alias.split(/\s*,\s*/).some((a) => hltbNorm(a) === target)
+    )
+      score += 3
+    if (year && typeof g.release_world === 'number' && Math.abs(g.release_world - year) <= 1)
+      score += 2
+    if (score > bestScore) {
+      bestScore = score
+      best = g
+    }
+  }
+  return best
+}
+
+// HLTB reports seconds; the DB stores minutes (same unit VNDB uses).
+const hltbMins = (sec) => (typeof sec === 'number' && sec > 0 ? Math.round(sec / 60) : null)
+
+function hltbToTimes(g) {
+  return {
+    id: Number(g.game_id) || 0,
+    name: String(g.game_name ?? ''),
+    main: hltbMins(g.comp_main),
+    mainExtra: hltbMins(g.comp_plus),
+    completionist: hltbMins(g.comp_100),
+    allStyles: hltbMins(g.comp_all),
+    mainCount: Number(g.comp_main_count) || 0,
+    mainExtraCount: Number(g.comp_plus_count) || 0,
+    completionistCount: Number(g.comp_100_count) || 0,
+    allStylesCount: Number(g.comp_all_count) || 0
+  }
+}
+
+// Best-effort lookup by title (+ release year). Falls back to the pre-colon
+// part of the title ("Persona 5: The Phantom X" -> "Persona 5") when the full
+// title finds nothing. Null on no match or any network trouble.
+async function hltbFetchPlaytimes(title, year = null) {
+  if (!title.trim()) return null
+  let results = await hltbSearch(title)
+  if (!results.length && title.includes(':')) {
+    const short = title.split(':')[0].trim()
+    if (short && short !== title) results = await hltbSearch(short)
+  }
+  const best = hltbPickBest(results, title, year)
+  return best ? hltbToTimes(best) : null
+}
+
+// Developer/publisher -> company, deduped by (rawg, id). RAWG company nodes
+// carry no logo, so nothing to download (mirrors rawg.ts upsertCompany).
+function rawgUpsertCompany(node) {
+  const ext = String(node.id)
+  const row = db.prepare('SELECT id FROM company WHERE external_source=? AND external_id=?').get(RAWG_SOURCE, ext)
+  if (row) return row.id
+  return Number(
+    db.prepare('INSERT INTO company (name, type, external_source, external_id) VALUES (?, ?, ?, ?)')
+      .run(node.name ?? 'Unknown', 'developer', RAWG_SOURCE, ext).lastInsertRowid
+  )
+}
+
+// Ports importGame(): media upsert (personal tracking preserved), Metacritic +
+// HLTB -> metadata, developers/publishers -> companies, genres -> tags. No
+// characters and no prune — RAWG never writes cast, hand-added cast is untouched.
+async function rawgImportGame(rawgId, { withHltb }) {
+  const g = await rawgGet(`/games/${rawgId}`)
+  if (!g?.id) throw new Error('Game not found on RAWG')
+
+  const coverPath = await downloadImage(g.background_image ?? null)
+  const year = g.released ? Number(String(g.released).slice(0, 4)) || null : null
+  const hltbTimes = withHltb ? await hltbFetchPlaytimes(g.name ?? '', year) : null
+
+  const title = g.name ?? 'Untitled'
+  const native = g.name_original && g.name_original !== title ? String(g.name_original) : null
+
+  const existing = db.prepare('SELECT id FROM media_item WHERE external_source=? AND external_id=?').get(RAWG_SOURCE, String(g.id))
+  let mediaId
+  const created = !existing
+  if (existing) {
+    mediaId = existing.id
+    db.prepare(
+      `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+       total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
+    ).run(title, native, g.description_raw || null, coverPath, g.playtime > 0 ? g.playtime : null, g.released || null, mediaId)
+  } else {
+    mediaId = Number(
+      db.prepare(
+        `INSERT INTO media_item
+         (media_type, title, title_original, synopsis, cover_path, total_units, release_date, external_source, external_id)
+         VALUES ('game', ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(title, native, g.description_raw || null, coverPath, g.playtime > 0 ? g.playtime : null, g.released || null, RAWG_SOURCE, String(g.id)).lastInsertRowid
+    )
+  }
+
+  // Metacritic + HLTB -> metadata (mergeMeta skips nulls, so a failed HLTB
+  // lookup keeps whatever was stored before).
+  const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId)
+  const meta = mergeMeta(metaRow?.metadata, {
+    metacritic: typeof g.metacritic === 'number' && g.metacritic > 0 ? g.metacritic : null,
+    hltb: hltbTimes
+  })
+  db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(meta, mediaId)
+
+  let studios = 0
+  const companyRoles = [
+    [g.developers ?? [], 'developer'],
+    [g.publishers ?? [], 'publisher']
+  ]
+  for (const [nodes, role] of companyRoles) {
+    for (const node of nodes) {
+      const companyId = rawgUpsertCompany(node)
+      db.prepare('INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)').run(mediaId, companyId, role)
+      studios++
+    }
+  }
+  for (const genre of g.genres ?? []) upsertTagAndLink(mediaId, genre?.name)
+
+  return { mediaId, title, studios, created, hltb: !!hltbTimes }
+}
+
+// Resolve a ranked list to an ordered array of game ids up to `count`, paging
+// as needed. exclude_additions drops DLC/special editions.
+async function rawgRankedIds(ordering, count) {
+  const ids = []
+  let page = 1
+  while (ids.length < count) {
+    const data = await rawgGet('/games', {
+      ordering,
+      page_size: 40,
+      page,
+      exclude_additions: 'true'
+    })
+    const results = data?.results ?? []
+    if (!results.length) break
+    for (const r of results) {
+      if (ids.length >= count) break
+      if (r?.id) ids.push(r.id)
+    }
+    if (!data.next) break
+    page++
+  }
+  return ids
+}
+
+async function cmdRawgTop(flags) {
+  const list = ['metacritic', 'rating', 'added'].includes(flags.list) ? flags.list : 'metacritic'
+  const count = flags.count ? Number(flags.count) : 500
+  const delay = flags.delay ? Number(flags.delay) : 250
+  const withHltb = !flags['no-hltb']
+
+  // --rawg-key wins and is saved so the app's own importer works too.
+  if (flags['rawg-key']) {
+    RAWG_KEY = String(flags['rawg-key']).trim()
+    db.prepare(
+      `INSERT INTO settings (key, value) VALUES ('rawg.api_key', ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
+    ).run(RAWG_KEY)
+  }
+  rawgApiKey() // fail fast with a clear message before any network work
+
+  console.log(`▶ RAWG games · ${list} · top ${count}`)
+  console.log(withHltb ? '  HLTB play times: ON (best-effort per game)' : '  HLTB play times: off')
+  const ids = await rawgRankedIds(`-${list}`, count)
+  console.log(`  Resolved ${ids.length} ids.\n`)
+
+  let ok = 0
+  let hltbHits = 0
+  const failures = []
+  for (let i = 0; i < ids.length; i++) {
+    const id = ids[i]
+    const tag = `[${i + 1}/${ids.length}]`
+    try {
+      const sum = await rawgImportGame(id, { withHltb })
+      ok++
+      if (sum.hltb) hltbHits++
+      console.log(`${tag} ✓ ${sum.title} (${sum.created ? 'added' : 'updated'}, ${sum.studios} companies${withHltb ? `, HLTB ${sum.hltb ? '✓' : '–'}` : ''})`)
+    } catch (err) {
+      failures.push({ id, msg: err.message })
+      console.log(`${tag} ✗ RAWG #${id} — ${err.message}`)
+    }
+    if (delay) await sleep(delay)
+  }
+  console.log(`\n✔ Done. ${ok}/${ids.length} imported${withHltb ? ` (${hltbHits} with HLTB times)` : ''}.${failures.length ? ` ${failures.length} failed.` : ''}`)
   if (failures.length) console.log('  Failed ids:', failures.map((f) => f.id).join(', '))
 }
 
@@ -1411,13 +1778,15 @@ async function main() {
   if (command === 'anilist-user') await cmdAnilistUser(positional, flags)
   else if (command === 'tmdb-top') await cmdTmdbTop(flags)
   else if (command === 'imdb-top') await cmdImdbTop(flags)
+  else if (command === 'rawg-top') await cmdRawgTop(flags)
   else if (command === 'anime-themes') await cmdAnimeThemes(flags)
   else if (command === 'relations-backfill') await cmdRelationsBackfill(flags)
   else {
     console.log('NaviHUB bulk importer\n')
     console.log('  anilist-user <username> [--limit N] [--basic] [--preserve-tracking] [--skip-anime] [--skip-manga] [--delay MS]')
-    console.log('  imdb-top [--count N] [--min-votes N] [--omdb-key KEY] [--delay MS]   (greatest films, IMDb-ranked → TMDB)')
+    console.log('  imdb-top [--count N] [--min-votes N] [--only-missing] [--exclude-langs hi,ta,…] [--omdb-key KEY] [--delay MS]   (greatest films, IMDb-ranked → TMDB)')
     console.log('  tmdb-top [--type movie|tv] [--list top_rated|popular|trending] [--count N] [--omdb-key KEY] [--delay MS]')
+    console.log('  rawg-top [--list metacritic|rating|added] [--count N] [--rawg-key KEY] [--no-hltb] [--delay MS]   (top video games)')
     console.log('  anime-themes [--limit N] [--no-audio] [--only-missing] [--audio-dir PATH] [--delay MS]')
     console.log('  relations-backfill [--delay MS]   (add season + manga-source links to titles you already imported)\n')
     console.log('Run via:  ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron scripts/bulk-import.cjs <command>')

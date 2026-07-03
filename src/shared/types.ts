@@ -333,6 +333,8 @@ export interface JpCourse {
   id: number
   title: string
   description: string | null
+  level: string | null // display label, e.g. "N5", "N4–N3"
+  difficulty: number | null // recommended study-order step (1 = start here)
   sortOrder: number
   createdAt: string
   updatedAt: string
@@ -402,6 +404,8 @@ export interface JpLessonDetail extends JpLesson {
 export interface JpCourseInput {
   title: string
   description?: string | null
+  level?: string | null
+  difficulty?: number | null
 }
 
 export interface JpCardInput {
@@ -560,4 +564,236 @@ export interface JpToken {
   reading: string | null // hiragana
   pos: string // top-level POS: 名詞 / 動詞 / 助詞 / …
   wordLike: boolean // false for particles, aux verbs, punctuation
+}
+
+// ---- Music library ----
+// Standalone local-music section: <music root>/<Artist>/<Album>/<tracks> on
+// disk, scanned into music_* tables. Completely separate from media_item /
+// person (anime OP/EDs stay in theme_song).
+
+export interface MusicArtist {
+  id: number
+  name: string
+  coverPath: string | null
+  albumCount: number
+  trackCount: number
+}
+
+export interface MusicAlbumSummary {
+  id: number
+  artistId: number
+  artistName: string
+  title: string
+  year: number | null
+  coverPath: string | null
+  trackCount: number
+}
+
+export interface MusicTrack {
+  id: number
+  albumId: number
+  albumTitle: string
+  artistId: number
+  artistName: string
+  // Raw artist tag when it differs from the folder artist (feat./compilations);
+  // display-only, the folder artist stays authoritative.
+  tagArtist: string | null
+  filePath: string // relative to the music root ("Artist/Album/01 Song.mp3")
+  title: string
+  trackNo: number | null
+  discNo: number | null
+  duration: number | null // seconds
+  likedAt: string | null
+  playCount: number
+  lastPlayedAt: string | null
+  coverPath: string | null // the album's cover
+}
+
+export interface MusicArtistDetail {
+  id: number
+  name: string
+  coverPath: string | null
+  trackCount: number
+  albums: MusicAlbumSummary[]
+  topTracks: MusicTrack[] // by play count; empty until something is played
+}
+
+export interface MusicAlbumDetail {
+  id: number
+  artistId: number
+  artistName: string
+  title: string
+  year: number | null
+  coverPath: string | null
+  tracks: MusicTrack[]
+}
+
+export interface MusicPlaylistSummary {
+  id: number
+  title: string
+  description: string | null
+  trackCount: number
+  previewCovers: (string | null)[] // first 4 album covers, playlist order
+  updatedAt: string
+}
+
+export interface MusicPlaylistEntry {
+  itemId: number
+  position: number
+  track: MusicTrack
+}
+
+export interface MusicPlaylistDetail {
+  id: number
+  title: string
+  description: string | null
+  createdAt: string
+  updatedAt: string
+  items: MusicPlaylistEntry[]
+}
+
+export interface MusicSearchResults {
+  artists: MusicArtist[]
+  albums: MusicAlbumSummary[]
+  tracks: MusicTrack[]
+}
+
+export interface MusicLibraryStats {
+  artists: number
+  albums: number
+  tracks: number
+  totalDuration: number // seconds
+}
+
+// Scanner progress, polled by the renderer while a scan runs.
+export interface MusicScanStatus {
+  running: boolean
+  phase: 'idle' | 'walking' | 'tags' | 'writing'
+  done: number // files tag-parsed so far
+  total: number // files needing tag parsing (mtime-unchanged ones are skipped)
+  error: string | null
+}
+
+export interface MusicScanSummary {
+  artists: number
+  albums: number
+  tracks: number
+  added: number
+  removed: number
+  skippedRootFiles: number // audio directly in the root (not Artist/Album) is ignored
+  durationMs: number
+}
+
+// ---- Music downloads (yt-dlp) ----
+
+export interface MusicDownloadInput {
+  url: string
+  artist: string
+  album: string
+  format: 'opus' | 'm4a' | 'mp3'
+}
+
+// Live status of the (single) active or last-finished download; polled.
+export interface MusicDownloadEvent {
+  id: string
+  status: 'starting' | 'downloading' | 'processing' | 'done' | 'error' | 'cancelled'
+  percent: number | null
+  itemIndex: number | null // "item 3 of 12" for playlist/album URLs
+  itemCount: number | null
+  title: string | null // current file being downloaded
+  message: string | null // error text / phase note
+}
+
+export interface YtDlpDetectResult {
+  ok: boolean
+  version: string | null
+  versionOld: boolean // yt-dlp releases are dates; >~90 days = extractor rot risk
+  ffmpeg: boolean
+  error: string | null
+}
+
+// ---- Music online art fallback ----
+
+export interface MusicArtResult {
+  updated: boolean
+  path: string | null
+  sourceUrl: string | null
+  reason: 'ok' | 'not_found' | 'low_confidence' | 'download_failed' | null
+}
+
+export interface MusicArtStatus {
+  running: boolean
+  done: number
+  total: number
+  updated: number
+}
+
+// ---- Global activity (import progress) ----
+// One slot for the current long-running main-process task (imports, theme
+// fetches). Polled by the renderer (Topbar pill + ImportDialog bar).
+export interface ActivityStatus {
+  active: boolean
+  label: string // e.g. "Importing from AniList"
+  phase: 'fetching' | 'images' | 'audio' | 'writing'
+  done: number // progress within the phase (images/audio only)
+  total: number
+}
+
+// ---- Music stats page ----
+// One aggregated payload for /music/stats. Period stats (days != null) come
+// from music_play_log (recording starts when the log ships); all-time falls
+// back to the play_count counters so the page works before the log has data.
+
+export interface MusicStatsTopTrack {
+  track: MusicTrack
+  plays: number // period: log count; all-time: play_count
+}
+
+export interface MusicStatsTopArtist {
+  id: number
+  name: string
+  coverPath: string | null
+  plays: number
+  seconds: number // approximate listening time
+}
+
+export interface MusicStatsTopAlbum {
+  id: number
+  artistId: number
+  artistName: string
+  title: string
+  year: number | null
+  coverPath: string | null
+  plays: number
+}
+
+export interface MusicStatsDetail {
+  days: number | null // echo of the request; null = all time
+  logStartedAt: string | null // MIN(music_play_log.played_at) UTC; null = log empty
+  tiles: {
+    plays: number
+    seconds: number // approximate listening time (duration snapshots)
+    distinctTracks: number
+    distinctArtists: number
+  }
+  streak: { current: number; longest: number } // whole-log, period-independent
+  playsPerDay: { day: string; plays: number; seconds: number }[] // local YYYY-MM-DD, asc, sparse
+  playsByHour: { hour: number; plays: number }[] // 0-23 local, sparse
+  playsByWeekday: { weekday: number; plays: number }[] // 0=Sun … 6=Sat, sparse
+  topTracks: MusicStatsTopTrack[]
+  topArtists: MusicStatsTopArtist[]
+  topAlbums: MusicStatsTopAlbum[]
+  // artists whose first-ever logged play falls inside the window ([] all-time)
+  newArtists: { id: number; name: string; coverPath: string | null; firstPlayedAt: string }[]
+  library: {
+    artists: number
+    albums: number
+    tracks: number
+    totalSeconds: number
+    avgTrackSeconds: number | null
+    likedTracks: number
+    likedSeconds: number
+    decades: { decade: number; albums: number; tracks: number }[]
+    deepestArtists: { id: number; name: string; coverPath: string | null; tracks: number }[]
+  }
 }

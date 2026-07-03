@@ -1,5 +1,6 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
+import { updateActivity } from './progress'
 import { fetchWithRetry } from './http'
 import * as settingsRepo from './repos/settingsRepo'
 import type { ImportSearchResult, ImportSummary, MediaType } from '@shared/types'
@@ -208,6 +209,7 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
   const img = (url: string | null): string | null => (url ? (images.get(url) ?? null) : null)
 
   const db = getSqlite()
+  updateActivity({ phase: 'writing' })
   return db.transaction((): ImportSummary => {
     const coverPath = img(coverUrl)
 

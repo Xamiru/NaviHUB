@@ -19,6 +19,11 @@ import * as hltb from './hltb'
 import * as jisho from './jisho'
 import * as files from './files'
 import * as manga from './manga'
+import { getActivity, withActivity } from './progress'
+import * as music from './music'
+import * as musicRepo from './repos/musicRepo'
+import * as musicDownload from './musicDownload'
+import * as musicArt from './musicArt'
 import * as mokuro from './mokuro'
 import * as tokenizer from './tokenizer'
 
@@ -144,27 +149,92 @@ export function registerIpc(): void {
   ipcMain.handle('manga:ocrPage', (_e, chapterId, pageIndex) => mokuro.page(chapterId, pageIndex))
 
   // ---- AniList import (anime + manga) ----
+  // Imports run inside withActivity so the renderer can poll activity:status
+  // for a live progress bar (phases: fetching → images → writing).
   ipcMain.handle('anilist:search', (_e, query) => anilist.search(query))
-  ipcMain.handle('anilist:import', (_e, anilistId) => anilist.importAnime(anilistId))
+  ipcMain.handle('anilist:import', (_e, anilistId) =>
+    withActivity('Importing from AniList', () => anilist.importAnime(anilistId))
+  )
   ipcMain.handle('anilistManga:search', (_e, query) => anilist.searchManga(query))
-  ipcMain.handle('anilistManga:import', (_e, anilistId) => anilist.importManga(anilistId))
+  ipcMain.handle('anilistManga:import', (_e, anilistId) =>
+    withActivity('Importing from AniList', () => anilist.importManga(anilistId))
+  )
 
   // ---- TMDB import (movies + TV) ----
   ipcMain.handle('tmdb:search', (_e, query) => tmdb.search(query))
-  ipcMain.handle('tmdb:import', (_e, tmdbId) => tmdb.importMovie(tmdbId))
+  ipcMain.handle('tmdb:import', (_e, tmdbId) =>
+    withActivity('Importing from TMDB', () => tmdb.importMovie(tmdbId))
+  )
   ipcMain.handle('tmdbTv:search', (_e, query) => tmdb.searchTv(query))
-  ipcMain.handle('tmdbTv:import', (_e, tmdbId) => tmdb.importTv(tmdbId))
+  ipcMain.handle('tmdbTv:import', (_e, tmdbId) =>
+    withActivity('Importing from TMDB', () => tmdb.importTv(tmdbId))
+  )
 
   // ---- VNDB import (visual novels) ----
   ipcMain.handle('vndb:search', (_e, query) => vndb.search(query))
-  ipcMain.handle('vndb:import', (_e, vndbId) => vndb.importVisualNovel(vndbId))
+  ipcMain.handle('vndb:import', (_e, vndbId) =>
+    withActivity('Importing from VNDB', () => vndb.importVisualNovel(vndbId))
+  )
 
   // ---- RAWG import (games) ----
   ipcMain.handle('rawg:search', (_e, query) => rawg.search(query))
-  ipcMain.handle('rawg:import', (_e, rawgId) => rawg.importGame(rawgId))
+  ipcMain.handle('rawg:import', (_e, rawgId) =>
+    withActivity('Importing from RAWG', () => rawg.importGame(rawgId))
+  )
 
   // ---- AnimeThemes import (anime OP/ED songs) ----
-  ipcMain.handle('themes:import', (_e, mediaId) => themes.importThemes(mediaId))
+  ipcMain.handle('themes:import', (_e, mediaId) =>
+    withActivity('Fetching theme songs', () => themes.importThemes(mediaId))
+  )
+
+  // ---- global activity (import progress, polled by the Topbar pill) ----
+  ipcMain.handle('activity:status', () => getActivity())
+
+  // ---- music library ----
+  ipcMain.handle('music:pickRoot', () => music.pickRootAndScan())
+  ipcMain.handle('music:scan', () => music.startScan())
+  ipcMain.handle('music:scanStatus', () => music.getScanStatus())
+  ipcMain.handle('music:artists', (_e, search) => musicRepo.listArtists(search))
+  ipcMain.handle('music:albums', (_e, search) => musicRepo.listAlbums(search))
+  ipcMain.handle('music:artist', (_e, id) => musicRepo.getArtist(id))
+  ipcMain.handle('music:album', (_e, id) => musicRepo.getAlbum(id))
+  ipcMain.handle('music:tracks', (_e, filter) => musicRepo.listTracks(filter))
+  ipcMain.handle('music:artistTracks', (_e, artistId) => musicRepo.artistTracks(artistId))
+  ipcMain.handle('music:search', (_e, query) => musicRepo.searchAll(query))
+  ipcMain.handle('music:stats', () => musicRepo.stats())
+  ipcMain.handle('music:playlists', () => musicRepo.listPlaylists())
+  ipcMain.handle('music:playlist', (_e, id) => musicRepo.getPlaylist(id))
+  ipcMain.handle('music:createPlaylist', (_e, input) => musicRepo.createPlaylist(input))
+  ipcMain.handle('music:updatePlaylist', (_e, id, patch) => musicRepo.updatePlaylist(id, patch))
+  ipcMain.handle('music:removePlaylist', (_e, id) => musicRepo.removePlaylist(id))
+  ipcMain.handle('music:addPlaylistTracks', (_e, playlistId, trackIds) =>
+    musicRepo.addPlaylistTracks(playlistId, trackIds)
+  )
+  ipcMain.handle('music:removePlaylistTrack', (_e, itemId) =>
+    musicRepo.removePlaylistTrack(itemId)
+  )
+  ipcMain.handle('music:removePlaylistTrackByTrack', (_e, playlistId, trackId) =>
+    musicRepo.removePlaylistTrackByTrack(playlistId, trackId)
+  )
+  ipcMain.handle('music:reorderPlaylist', (_e, playlistId, orderedItemIds) =>
+    musicRepo.reorderPlaylist(playlistId, orderedItemIds)
+  )
+  ipcMain.handle('music:playlistsForTrack', (_e, trackId) => musicRepo.playlistsForTrack(trackId))
+  ipcMain.handle('music:setLiked', (_e, trackId, liked) => musicRepo.setLiked(trackId, liked))
+  ipcMain.handle('music:logPlay', (_e, trackId) => musicRepo.logPlay(trackId))
+  ipcMain.handle('music:recent', (_e, limit) => musicRepo.recentlyPlayed(limit))
+  ipcMain.handle('music:statsDetail', (_e, days) => musicRepo.statsDetail(days))
+  ipcMain.handle('music:downloadStart', (_e, input) => musicDownload.startDownload(input))
+  ipcMain.handle('music:downloadCancel', (_e, id) => musicDownload.cancelDownload(id))
+  ipcMain.handle('music:downloadStatus', () => musicDownload.getStatus())
+  ipcMain.handle('music:downloadDetect', () => musicDownload.detectBinary())
+  ipcMain.handle('music:artFetchAlbum', (_e, albumId) => musicArt.fetchAlbumArt(albumId))
+  ipcMain.handle('music:artFetchArtist', (_e, artistId) => musicArt.fetchArtistImage(artistId))
+  ipcMain.handle('music:artClearAlbum', (_e, albumId) => musicArt.clearAlbumArt(albumId))
+  ipcMain.handle('music:artClearArtist', (_e, artistId) => musicArt.clearArtistArt(artistId))
+  ipcMain.handle('music:artFetchMissing', () => musicArt.fetchMissingArt())
+  ipcMain.handle('music:artCancel', () => musicArt.cancelArtFetch())
+  ipcMain.handle('music:artStatus', () => musicArt.getArtStatus())
 
   // ---- settings ----
   ipcMain.handle('settings:all', () => settingsRepo.all())

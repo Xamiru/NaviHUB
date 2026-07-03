@@ -60,6 +60,8 @@ function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'jp_card', 'onyomi', 'onyomi TEXT')
   ensureColumn(sqlite, 'jp_card', 'kunyomi', 'kunyomi TEXT')
   ensureColumn(sqlite, 'jp_card', 'source_media_id', 'source_media_id INTEGER')
+  ensureColumn(sqlite, 'jp_course', 'level', 'level TEXT')
+  ensureColumn(sqlite, 'jp_course', 'difficulty', 'difficulty INTEGER')
   // Manga reader: series folder attached to a manga entry (written only by
   // src/main/manga.ts — deliberately absent from mediaRepo's column map).
   ensureColumn(sqlite, 'media_item', 'local_dir', 'local_dir TEXT')

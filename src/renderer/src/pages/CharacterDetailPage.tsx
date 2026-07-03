@@ -57,7 +57,7 @@ export default function CharacterDetailPage() {
         Appears in · {roles.length}
       </h2>
       {roles.length === 0 ? (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-400">
           No appearances yet. Add this character to a title&apos;s cast.
         </p>
       ) : (

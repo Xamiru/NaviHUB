@@ -31,6 +31,12 @@ import JapaneseReviewPage from './pages/JapaneseReviewPage'
 import JapaneseQuizPage from './pages/JapaneseQuizPage'
 import JapaneseMinePage from './pages/JapaneseMinePage'
 import MangaReaderPage from './pages/MangaReaderPage'
+import MusicLibraryPage from './pages/MusicLibraryPage'
+import MusicArtistPage from './pages/MusicArtistPage'
+import MusicAlbumPage from './pages/MusicAlbumPage'
+import MusicPlaylistPage from './pages/MusicPlaylistPage'
+import MusicLikedPage from './pages/MusicLikedPage'
+import MusicStatsPage from './pages/MusicStatsPage'
 import { ANIME, MANGA, VISUAL_NOVEL, GAME, MOVIE, TV } from './lib/mediaConfig'
 
 export default function App() {
@@ -178,6 +184,16 @@ export default function App() {
             <Route path="/lists/new" element={<ListFormPage />} />
             <Route path="/lists/:id" element={<ListDetailPage />} />
             <Route path="/lists/:id/edit" element={<ListFormPage />} />
+
+            {/* Music — standalone local-music library (own tables, reuses the player) */}
+            <Route path="/music" element={<MusicLibraryPage />} />
+            <Route path="/music/artists/:id" element={<MusicArtistPage />} />
+            <Route path="/music/albums/:id" element={<MusicAlbumPage />} />
+            <Route path="/music/playlists/:id" element={<MusicPlaylistPage />} />
+            <Route path="/music/liked" element={<MusicLikedPage />} />
+            <Route path="/music/stats" element={<MusicStatsPage />} />
+            {/* pre-stats sessions may still have /music/history in back-history */}
+            <Route path="/music/history" element={<Navigate to="/music/stats" replace />} />
 
             {/* Japanese learning — standalone section (courses, SRS review, quiz) */}
             <Route path="/japanese" element={<JapaneseHomePage />} />

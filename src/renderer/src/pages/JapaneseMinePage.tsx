@@ -101,7 +101,7 @@ export default function JapaneseMinePage() {
                     </span>
                   )}
                   <span className="mt-0.5 block text-sm text-gray-400">{r.meanings}</span>
-                  {r.pos && <span className="block text-xs text-gray-600">{r.pos}</span>}
+                  {r.pos && <span className="block text-xs text-gray-400">{r.pos}</span>}
                 </button>
               ))}
             </div>

@@ -76,7 +76,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
           <button className="btn-ghost py-1 px-3 text-sm" disabled={busy} onClick={attach}>
             ⊕ Link local folder
           </button>
-          <span className="text-xs text-gray-600">
+          <span className="text-xs text-gray-400">
             Point at this manga's folder in your library to read it here.
           </span>
         </div>
@@ -94,7 +94,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
             <button className="btn-ghost py-1 px-3" disabled={busy} onClick={detach}>
               ✕ Unlink
             </button>
-            <span className="text-xs text-gray-600 truncate" title={data.localDir}>
+            <span className="text-xs text-gray-400 truncate" title={data.localDir}>
               {data.localDir}
             </span>
           </div>
@@ -152,7 +152,7 @@ function ChapterRow({
           p. {(ch.lastReadPage ?? 0) + 1}/{ch.pageCount}
         </span>
       )}
-      <span className="text-xs text-gray-600 shrink-0">{ch.pageCount} pages</span>
+      <span className="text-xs text-gray-400 shrink-0">{ch.pageCount} pages</span>
       <button className="btn-ghost py-0.5 px-2.5 text-xs shrink-0" onClick={onOpen}>
         Read
       </button>

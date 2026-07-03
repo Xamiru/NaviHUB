@@ -62,12 +62,19 @@ export function addMediaCompany(input: {
   companyId: number
   role: string
 }): number {
-  const info = getSqlite()
+  const db = getSqlite()
+  const info = db
     .prepare(
       `INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)`
     )
     .run(input.mediaId, input.companyId, input.role)
-  return Number(info.lastInsertRowid)
+  if (info.changes > 0) return Number(info.lastInsertRowid)
+  // Ignored duplicate: lastInsertRowid is a stale id from some earlier insert —
+  // return the existing link's id instead.
+  const row = db
+    .prepare('SELECT id FROM media_company WHERE media_id=? AND company_id=? AND role=?')
+    .get(input.mediaId, input.companyId, input.role) as { id: number } | undefined
+  return row!.id
 }
 
 export function removeMediaCompany(id: number): void {

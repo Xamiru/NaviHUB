@@ -185,7 +185,7 @@ export default function JapaneseReviewPage() {
           <button className="btn-primary w-full" disabled={loading} onClick={start}>
             {loading ? 'Loading…' : 'Start review'}
           </button>
-          <p className="text-center text-xs text-gray-600">
+          <p className="text-center text-xs text-gray-400">
             Space to flip · 1 Again · 2 Hard · 3 Good · 4 Easy
           </p>
         </div>
@@ -253,13 +253,13 @@ export default function JapaneseReviewPage() {
               <p className="mt-2 text-sm text-gray-400">
                 {card.onyomi && (
                   <span className="mr-4">
-                    <span className="mr-1 text-xs text-gray-600">音</span>
+                    <span className="mr-1 text-xs text-gray-400">音</span>
                     {card.onyomi}
                   </span>
                 )}
                 {card.kunyomi && (
                   <span>
-                    <span className="mr-1 text-xs text-gray-600">訓</span>
+                    <span className="mr-1 text-xs text-gray-400">訓</span>
                     {card.kunyomi}
                   </span>
                 )}

@@ -1,16 +1,20 @@
-import { join, dirname } from 'path'
+import { join, dirname, sep } from 'path'
 import { createRequire } from 'module'
 import kuromoji from 'kuromoji'
 import type { JpToken } from '@shared/types'
 
 // Morphological analysis for the manga reader's mining panel: splits an OCR'd
 // text block into tappable words with their dictionary forms (食べた → 食べる).
-// kuromoji is pure JS; its ~18MB dictionary ships inside the package (the app
-// runs unpackaged from the repo — if it is ever packaged, point DIC_DIR at
-// process.resourcesPath instead). The main-process bundle is CJS (require
-// exists); vitest runs this file as ESM, hence the createRequire fallback.
+// kuromoji is pure JS; its ~18MB dictionary ships inside the package. When
+// packaged, require.resolve points inside app.asar but the dict is shipped
+// unpacked (asarUnpack in electron-builder.yml), so retarget the path — a
+// no-op in dev/tests. The main-process bundle is CJS (require exists); vitest
+// runs this file as ESM, hence the createRequire fallback.
 const req = typeof require !== 'undefined' ? require : createRequire(import.meta.url)
-const DIC_DIR = join(dirname(req.resolve('kuromoji/package.json')), 'dict')
+const DIC_DIR = join(dirname(req.resolve('kuromoji/package.json')), 'dict').replace(
+  `${sep}app.asar${sep}`,
+  `${sep}app.asar.unpacked${sep}`
+)
 
 type KuromojiTokenizer = kuromoji.Tokenizer<kuromoji.IpadicFeatures>
 

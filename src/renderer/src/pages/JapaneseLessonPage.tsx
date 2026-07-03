@@ -200,13 +200,13 @@ function KanjiTable({ cards }: { cards: JpCard[] }) {
               <td className="px-4 py-2.5 text-gray-400">
                 {c.onyomi && (
                   <span className="block">
-                    <span className="mr-1.5 text-xs text-gray-600">音</span>
+                    <span className="mr-1.5 text-xs text-gray-400">音</span>
                     {c.onyomi}
                   </span>
                 )}
                 {c.kunyomi && (
                   <span className="block">
-                    <span className="mr-1.5 text-xs text-gray-600">訓</span>
+                    <span className="mr-1.5 text-xs text-gray-400">訓</span>
                     {c.kunyomi}
                   </span>
                 )}

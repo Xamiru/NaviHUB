@@ -4,6 +4,7 @@ import { api } from '../lib/api'
 import { useSettings } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
 import { MEDIA_CONFIGS, type MediaConfig } from '../lib/mediaConfig'
+import type { YtDlpDetectResult } from '@shared/types'
 
 export default function SettingsPage() {
   const { data } = useSettings()
@@ -15,6 +16,9 @@ export default function SettingsPage() {
   const [rawgKey, setRawgKey] = useState('')
   const [audioDir, setAudioDir] = useState('')
   const [mangaDir, setMangaDir] = useState('')
+  const [musicDir, setMusicDir] = useState('')
+  const [ytdlpPath, setYtdlpPath] = useState('')
+  const [ytdlpCheck, setYtdlpCheck] = useState<YtDlpDetectResult | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
 
   useEffect(() => {
@@ -25,7 +29,16 @@ export default function SettingsPage() {
     setRawgKey(data['rawg.api_key'] ?? '')
     setAudioDir(data['audio.dir'] ?? '')
     setMangaDir(data['manga.dir'] ?? '')
+    setMusicDir(data['music.dir'] ?? '')
+    setYtdlpPath(data['ytdlp.path'] ?? '')
   }, [data])
+
+  async function testYtdlp() {
+    setYtdlpCheck(null)
+    await api.settings.set('ytdlp.path', ytdlpPath.trim())
+    await qc.invalidateQueries({ queryKey: qk.settings.all })
+    setYtdlpCheck(await api.music.downloadDetect())
+  }
 
   async function setKey(key: string, value: string) {
     await api.settings.set(key, value)
@@ -165,6 +178,62 @@ export default function SettingsPage() {
             Save
           </button>
         </div>
+      </section>
+
+      <section className="card p-5 mb-6">
+        <h2 className="font-semibold mb-1">Music library folder</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          The root folder your music lives in (artists as folders, albums inside them). Set
+          automatically when you pick a folder on the Music page; tracks are stored relative to this
+          root, so if you move the library, just update this and rescan.
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            className="input"
+            type="text"
+            value={musicDir}
+            onChange={(e) => setMusicDir(e.target.value)}
+            placeholder="/home/you/Music"
+          />
+          <button className="btn-ghost shrink-0" onClick={() => setKey('music.dir', musicDir.trim())}>
+            Save
+          </button>
+        </div>
+      </section>
+
+      <section className="card p-5 mb-6">
+        <h2 className="font-semibold mb-1">yt-dlp (music downloads)</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Used by the Music page&apos;s Download button. Install yt-dlp and ffmpeg yourself (e.g.{' '}
+          <span className="text-gray-400">pipx install yt-dlp</span> or your package manager) and
+          keep yt-dlp updated — YouTube changes often. Leave blank to use{' '}
+          <span className="text-gray-400">yt-dlp</span> from PATH, or set a full binary path.
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            className="input"
+            type="text"
+            value={ytdlpPath}
+            onChange={(e) => setYtdlpPath(e.target.value)}
+            placeholder="yt-dlp"
+          />
+          <button className="btn-ghost shrink-0" onClick={testYtdlp}>
+            Save &amp; test
+          </button>
+        </div>
+        {ytdlpCheck && (
+          <p className={`mt-3 text-sm ${ytdlpCheck.ok ? 'text-green-400' : 'text-red-400'}`}>
+            {ytdlpCheck.ok
+              ? `✓ yt-dlp ${ytdlpCheck.version} · ffmpeg found`
+              : (ytdlpCheck.error ?? 'yt-dlp not found')}
+            {ytdlpCheck.ok && ytdlpCheck.versionOld && (
+              <span className="block text-yellow-400">
+                ⚠ This yt-dlp is over 3 months old — update it (yt-dlp -U or your package manager)
+                if downloads fail.
+              </span>
+            )}
+          </p>
+        )}
       </section>
 
       {savedAt && <p className="text-sm text-green-400">{savedAt}</p>}

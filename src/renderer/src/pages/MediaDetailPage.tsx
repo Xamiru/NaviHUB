@@ -10,6 +10,7 @@ import { CAST_ROLES, fmtMinutesAsHours, pathForMedia, type MediaConfig } from '.
 import CoverImage from '../components/CoverImage'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
+import Section from '../components/Section'
 import type {
   MediaDetail,
   MediaCharacterEntry,
@@ -127,7 +128,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           )}
 
           {m.synopsis && (
-            <Section title="Synopsis">
+            <Section className="mb-6" title="Synopsis">
               <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
                 {m.synopsis}
               </p>
@@ -135,7 +136,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           )}
 
           {m.notes && (
-            <Section title="My notes">
+            <Section className="mb-6" title="My notes">
               <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{m.notes}</p>
             </Section>
           )}
@@ -210,7 +211,7 @@ function PlaytimeSection({ m, onChange }: { m: MediaDetail; onChange: () => void
   }
 
   return (
-    <Section title="How long to beat">
+    <Section className="mb-6" title="How long to beat">
       {boxes.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {boxes.map((b) => (
@@ -267,9 +268,9 @@ function CompaniesSection({
   }
 
   return (
-    <Section title={cfg.companyTitle}>
+    <Section className="mb-6" title={cfg.companyTitle}>
       <div className="flex flex-wrap gap-2">
-        {m.companies.length === 0 && <span className="text-sm text-gray-600">None yet</span>}
+        {m.companies.length === 0 && <span className="text-sm text-gray-400">None yet</span>}
         {m.companies.map((c) => (
           <span key={c.id} className="chip">
             <Link to={`/studios/${c.company.id}`} className="hover:text-accent">
@@ -313,9 +314,9 @@ function CastSection({
   }
 
   return (
-    <Section title={`${cfg.castSectionTitle}${list.length ? ` · ${list.length}` : ''}`}>
+    <Section className="mb-6" title={`${cfg.castSectionTitle}${list.length ? ` · ${list.length}` : ''}`}>
       {list.length === 0 ? (
-        <p className="text-sm text-gray-600 mb-3">Nothing here yet</p>
+        <p className="text-sm text-gray-400 mb-3">Nothing here yet</p>
       ) : (
         <>
           <div
@@ -458,7 +459,7 @@ function CharacterCard({
       <div className="flex items-center gap-3 flex-1 min-w-0 justify-end text-right">
         <div className="min-w-0 pl-1">
           {voices.length === 0 ? (
-            <span className="text-xs text-gray-600">No one cast</span>
+            <span className="text-xs text-gray-400">No one cast</span>
           ) : (
             voices.map((v) => (
               <p key={v.creditId} className="text-[14px] truncate leading-tight">
@@ -588,10 +589,10 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
   }
 
   return (
-    <Section title={`Theme Songs${themes.length ? ` · ${themes.length}` : ''}`}>
+    <Section className="mb-6" title={`Theme Songs${themes.length ? ` · ${themes.length}` : ''}`}>
       <div className="space-y-2 mb-2">
         {themes.length === 0 && (
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-400">
             {canFetch ? 'None imported yet.' : 'No theme songs.'}
           </p>
         )}
@@ -724,14 +725,14 @@ function RelatedSection({ m }: { m: MediaDetail }) {
   const shown = [...inLibrary, ...greyed.slice(0, GREYED_CAP)]
   const hidden = greyed.length - Math.min(greyed.length, GREYED_CAP)
   return (
-    <Section title={`Related · ${shown.length}`}>
+    <Section className="mb-6" title={`Related · ${shown.length}`}>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
         {shown.map((r, i) => (
           <RelatedCard key={i} r={r} />
         ))}
       </div>
       {hidden > 0 && (
-        <p className="mt-2 text-xs text-gray-600">+{hidden} more not in your library</p>
+        <p className="mt-2 text-xs text-gray-400">+{hidden} more not in your library</p>
       )}
     </Section>
   )
@@ -792,9 +793,9 @@ function StaffSection({
   }
 
   return (
-    <Section title={cfg.crewTitle}>
+    <Section className="mb-6" title={cfg.crewTitle}>
       <div className="space-y-1.5 mb-3">
-        {staff.length === 0 && <span className="text-sm text-gray-600">No one yet</span>}
+        {staff.length === 0 && <span className="text-sm text-gray-400">No one yet</span>}
         {staff.map((c) => (
           <div
             key={c.creditId}
@@ -832,11 +833,3 @@ function Stat({ label, value }: { label: string; value: string }) {
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="mb-6">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">{title}</h2>
-      {children}
-    </div>
-  )
-}

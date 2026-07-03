@@ -33,7 +33,7 @@ export default function SearchPage() {
         )}
       </p>
 
-      {data && total === 0 && !isLoading && <p className="text-gray-600">No matches.</p>}
+      {data && total === 0 && !isLoading && <p className="text-gray-400">No matches.</p>}
 
       {data && (
         <div className="space-y-8">

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import StatTile from '../components/StatTile'
 import type { JpCourseSummary } from '@shared/types'
 
 export default function JapaneseHomePage() {
@@ -20,7 +21,7 @@ export default function JapaneseHomePage() {
     <div className="p-6 max-w-[1400px] mx-auto">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h1 className="text-2xl font-bold">🈶 Japanese</h1>
+          <h1 className="text-2xl font-bold">Japanese</h1>
           <p className="text-sm text-gray-500">
             Study lessons, mark them as learned, then practice with reviews and quizzes.
           </p>
@@ -52,7 +53,12 @@ export default function JapaneseHomePage() {
         </Link>
       </div>
 
-      <h2 className="text-lg font-semibold mb-3">Courses</h2>
+      <div className="mb-3">
+        <h2 className="text-lg font-semibold">Courses</h2>
+        <p className="text-xs text-gray-500">
+          Ordered by difficulty — start from the top and work your way down.
+        </p>
+      </div>
       {isLoading ? (
         <p className="text-gray-500">Loading…</p>
       ) : courses.length === 0 ? (
@@ -76,29 +82,20 @@ export default function JapaneseHomePage() {
   )
 }
 
-function StatTile({
-  label,
-  value,
-  accent = false
-}: {
-  label: string
-  value: number | string
-  accent?: boolean
-}) {
-  return (
-    <div className="card p-4">
-      <p className={`text-2xl font-bold ${accent ? 'text-accent' : ''}`}>{value}</p>
-      <p className="mt-1 text-xs uppercase tracking-wide text-gray-500">{label}</p>
-    </div>
-  )
-}
-
 function CourseCard({ course }: { course: JpCourseSummary }) {
   const pct = course.lessonCount
     ? Math.round((course.learnedLessonCount / course.lessonCount) * 100)
     : 0
   return (
     <Link to={`/japanese/courses/${course.id}`} className="card p-4 group">
+      {(course.difficulty != null || course.level) && (
+        <p className="mb-1.5 flex items-center gap-1.5">
+          {course.difficulty != null && (
+            <span className="chip bg-accent/20 text-accent">Step {course.difficulty}</span>
+          )}
+          {course.level && <span className="chip bg-base-700 text-gray-400">{course.level}</span>}
+        </p>
+      )}
       <p className="font-medium group-hover:text-accent line-clamp-1">{course.title}</p>
       {course.description && (
         <p className="mt-1 text-xs text-gray-500 line-clamp-2">{course.description}</p>

@@ -33,6 +33,8 @@ function mapCourse(r: Record<string, unknown>): JpCourse {
     id: r.id as number,
     title: r.title as string,
     description: (r.description as string) ?? null,
+    level: (r.level as string) ?? null,
+    difficulty: (r.difficulty as number) ?? null,
     sortOrder: r.sort_order as number,
     createdAt: r.created_at as string,
     updatedAt: r.updated_at as string
@@ -93,7 +95,7 @@ export function listCourses(): JpCourseSummary[] {
               (SELECT COUNT(*) FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
                WHERE l.course_id = c.id) AS card_count
        FROM jp_course c
-       ORDER BY c.sort_order ASC, c.id ASC`
+       ORDER BY (c.difficulty IS NULL) ASC, c.difficulty ASC, c.sort_order ASC, c.id ASC`
     )
     .all() as Record<string, unknown>[]
   return rows.map((r) => ({
@@ -130,8 +132,10 @@ export function createCourse(input: JpCourseInput): number {
     }
   ).next
   const info = db
-    .prepare('INSERT INTO jp_course (title, description, sort_order) VALUES (?, ?, ?)')
-    .run(input.title, input.description ?? null, next)
+    .prepare(
+      'INSERT INTO jp_course (title, description, level, difficulty, sort_order) VALUES (?, ?, ?, ?, ?)'
+    )
+    .run(input.title, input.description ?? null, input.level ?? null, input.difficulty ?? null, next)
   return Number(info.lastInsertRowid)
 }
 
@@ -145,6 +149,14 @@ export function updateCourse(id: number, input: Partial<JpCourseInput>): void {
   if (input.description !== undefined) {
     sets.push('description = ?')
     values.push(input.description ?? null)
+  }
+  if (input.level !== undefined) {
+    sets.push('level = ?')
+    values.push(input.level ?? null)
+  }
+  if (input.difficulty !== undefined) {
+    sets.push('difficulty = ?')
+    values.push(input.difficulty ?? null)
   }
   if (!sets.length) return
   sets.push(`updated_at = datetime('now')`)

@@ -45,6 +45,14 @@ export default function JapaneseCoursePage() {
 
       <div className="mt-2 flex items-start justify-between gap-4 mb-4">
         <div className="min-w-0">
+          {(course.difficulty != null || course.level) && (
+            <p className="mb-1 flex items-center gap-1.5">
+              {course.difficulty != null && (
+                <span className="chip bg-accent/20 text-accent">Step {course.difficulty}</span>
+              )}
+              {course.level && <span className="chip bg-base-700 text-gray-400">{course.level}</span>}
+            </p>
+          )}
           <h1 className="text-2xl font-bold">{course.title}</h1>
           {course.description && <p className="mt-1 text-sm text-gray-500">{course.description}</p>}
         </div>

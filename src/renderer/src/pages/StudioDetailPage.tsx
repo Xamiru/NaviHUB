@@ -77,7 +77,7 @@ export default function StudioDetailPage() {
         Works · {works.length}
       </h2>
       {works.length === 0 ? (
-        <p className="text-sm text-gray-600">
+        <p className="text-sm text-gray-400">
           No works linked yet. Add this company from a title&apos;s page.
         </p>
       ) : (

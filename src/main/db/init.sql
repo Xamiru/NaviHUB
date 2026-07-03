@@ -228,10 +228,14 @@ CREATE INDEX IF NOT EXISTS idx_manga_chapter_media ON manga_chapter(media_id);
 -- SRS scheduling state inline (single user, strictly 1:1); only learned
 -- lessons' cards surface in reviews and quizzes.
 
+-- level is a display label ("N5", "N4–N3"); difficulty is the recommended
+-- study-order step (1 = start here) — course lists sort by it, nulls last.
 CREATE TABLE IF NOT EXISTS jp_course (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   title       TEXT NOT NULL,
   description TEXT,
+  level       TEXT,
+  difficulty  INTEGER,
   sort_order  INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
@@ -297,3 +301,102 @@ CREATE TABLE IF NOT EXISTS jp_review_log (
 );
 CREATE INDEX IF NOT EXISTS idx_jp_review_log_card ON jp_review_log(card_id);
 CREATE INDEX IF NOT EXISTS idx_jp_review_log_time ON jp_review_log(reviewed_at);
+
+-- ---- Music library ----
+-- Standalone local-music section (fully separate from media_item / person —
+-- anime OP/EDs stay in theme_song). Rows are created/updated ONLY by the
+-- scanner (src/main/music.ts); identity is the path relative to the music root
+-- (settings key music.dir), so rescans upsert in place and preserve user state
+-- (liked_at, play_count, playlist membership). A moved/renamed file is a new
+-- row (old state is lost — accepted for now).
+
+CREATE TABLE IF NOT EXISTS music_artist (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  name            TEXT NOT NULL,            -- folder name (authoritative)
+  dir_path        TEXT NOT NULL,            -- "Radiohead"
+  cover_path      TEXT,                     -- filled by the online-art fetcher (media/…)
+  art_checked_at  TEXT,                     -- last online-art attempt (found or not)
+  art_source_url  TEXT,                     -- provenance of the fetched image
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(dir_path)
+);
+CREATE INDEX IF NOT EXISTS idx_music_artist_name ON music_artist(name);
+
+CREATE TABLE IF NOT EXISTS music_album (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  artist_id       INTEGER NOT NULL REFERENCES music_artist(id) ON DELETE CASCADE,
+  title           TEXT NOT NULL,            -- folder name (authoritative)
+  dir_path        TEXT NOT NULL,            -- "Radiohead/OK Computer"; equals the artist
+                                            -- dir for the synthetic "Singles" album
+  year            INTEGER,                  -- from tags (first track that has one)
+  cover_path      TEXT,                     -- "music/<dir>/cover.jpg" (folder art) |
+                                            -- "media/music-covers/<hash>" (embedded, extracted)
+                                            -- | "media/dl-<hash>" (online) | NULL
+  art_checked_at  TEXT,
+  art_source_url  TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(dir_path)
+);
+CREATE INDEX IF NOT EXISTS idx_music_album_artist ON music_album(artist_id);
+CREATE INDEX IF NOT EXISTS idx_music_album_title ON music_album(title);
+
+CREATE TABLE IF NOT EXISTS music_track (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  album_id        INTEGER NOT NULL REFERENCES music_album(id) ON DELETE CASCADE,
+  -- denormalized: track lists & search never need a double join
+  artist_id       INTEGER NOT NULL REFERENCES music_artist(id) ON DELETE CASCADE,
+  file_path       TEXT NOT NULL,            -- "Radiohead/OK Computer/01 Airbag.mp3"
+  file_mtime      INTEGER,                  -- ms; rescan skips tag-parsing unchanged files
+  title           TEXT NOT NULL,            -- tag title, else parsed from filename
+  track_no        INTEGER,
+  disc_no         INTEGER,
+  duration        REAL,                     -- seconds (nullable: parse failures still play)
+  tag_artist      TEXT,                     -- raw artist tag when it differs from the
+                                            -- folder artist (feat./compilations, display-only)
+  -- user state: preserved across rescans (the scanner never writes these)
+  liked_at        TEXT,                     -- NULL = not liked; doubles as liked-recency sort
+  play_count      INTEGER NOT NULL DEFAULT 0,
+  last_played_at  TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(file_path)
+);
+CREATE INDEX IF NOT EXISTS idx_music_track_album  ON music_track(album_id);
+CREATE INDEX IF NOT EXISTS idx_music_track_artist ON music_track(artist_id);
+CREATE INDEX IF NOT EXISTS idx_music_track_title  ON music_track(title);
+CREATE INDEX IF NOT EXISTS idx_music_track_liked  ON music_track(liked_at);
+CREATE INDEX IF NOT EXISTS idx_music_track_played ON music_track(last_played_at);
+
+CREATE TABLE IF NOT EXISTS music_playlist (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  title        TEXT NOT NULL,
+  description  TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS music_playlist_track (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  playlist_id  INTEGER NOT NULL REFERENCES music_playlist(id) ON DELETE CASCADE,
+  track_id     INTEGER NOT NULL REFERENCES music_track(id) ON DELETE CASCADE,
+  position     INTEGER NOT NULL DEFAULT 0,
+  added_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(playlist_id, track_id)             -- no duplicate tracks per playlist
+);
+CREATE INDEX IF NOT EXISTS idx_music_playlist_track_track ON music_playlist_track(track_id);
+
+-- Append-only play log (one row per counted play — the same 10s rule as
+-- play_count, see MusicPlayLogger). duration snapshots the track length at
+-- play time so listening-time math survives later re-tags. Rows die with the
+-- track (CASCADE) — deliberately the same lifetime as play_count: a log that
+-- outlived its track would make period totals disagree with every visible list.
+CREATE TABLE IF NOT EXISTS music_play_log (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  track_id   INTEGER NOT NULL REFERENCES music_track(id) ON DELETE CASCADE,
+  played_at  TEXT NOT NULL DEFAULT (datetime('now')),  -- UTC, like all timestamps
+  duration   REAL                                      -- seconds; NULL if the track had none
+);
+CREATE INDEX IF NOT EXISTS idx_music_play_log_track  ON music_play_log(track_id);
+CREATE INDEX IF NOT EXISTS idx_music_play_log_played ON music_play_log(played_at);

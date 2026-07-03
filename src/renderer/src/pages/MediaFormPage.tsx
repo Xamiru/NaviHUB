@@ -184,7 +184,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
                 onError={() => setCoverFailed(true)}
               />
             ) : (
-              <div className="h-full w-full flex items-center justify-center text-gray-600 text-sm">
+              <div className="h-full w-full flex items-center justify-center text-gray-400 text-sm">
                 No cover
               </div>
             )}
@@ -393,7 +393,7 @@ function TagEditor({
             </button>
           </span>
         ))}
-        {selectedTags.length === 0 && <span className="text-xs text-gray-600">No tags yet</span>}
+        {selectedTags.length === 0 && <span className="text-xs text-gray-400">No tags yet</span>}
       </div>
       <div className="flex gap-2">
         <input

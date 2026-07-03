@@ -1,5 +1,6 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
+import { updateActivity } from './progress'
 import { fetchWithRetry } from './http'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
 
@@ -301,6 +302,7 @@ export async function importVisualNovel(id: number): Promise<ImportSummary> {
     url ? (images.get(url) ?? null) : null
 
   const db = getSqlite()
+  updateActivity({ phase: 'writing' })
   return db.transaction((): ImportSummary => {
     const title = m.title ?? 'Untitled'
     const native = m.alttitle ?? null

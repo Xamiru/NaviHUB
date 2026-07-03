@@ -101,7 +101,7 @@ export default function PersonDetailPage() {
           <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
             Roles
           </h2>
-          <p className="text-sm text-gray-600 mb-8">
+          <p className="text-sm text-gray-400 mb-8">
             No roles yet. Add this person to a title&apos;s cast from its page.
           </p>
         </>
@@ -147,13 +147,17 @@ export default function PersonDetailPage() {
 }
 
 const RoleCard = memo(function RoleCard({ c, titles = 1 }: { c: PersonCredit; titles?: number }) {
-  // Show the character's portrait (the role) rather than the show's cover.
-  // Fall back to the show cover when the character has no image.
-  const roleImage = c.character?.imagePath ?? c.media.coverPath
+  // Animated media shows the character's portrait (the role itself). For
+  // live-action 'actor' credits TMDB has no character art — the stored
+  // character image is just the actor's own headshot — so show the film/show
+  // poster instead (otherwise a filmography is a wall of identical headshots).
+  const liveAction = c.role === 'actor'
+  const roleImage = liveAction ? c.media.coverPath : (c.character?.imagePath ?? c.media.coverPath)
   const altText = c.character?.name ?? c.media.title
-  // Clicking the character portrait goes to the character; the title below
-  // still links to the show.
-  const imageTo = c.character ? `/characters/${c.character.id}` : pathForMedia(c.media)
+  // The image links to what it shows: poster → the film, portrait → the
+  // character; the title text below always links to the show.
+  const imageTo =
+    !liveAction && c.character ? `/characters/${c.character.id}` : pathForMedia(c.media)
   return (
     <div className="group">
       <Link to={imageTo}>
@@ -176,7 +180,7 @@ const RoleCard = memo(function RoleCard({ c, titles = 1 }: { c: PersonCredit; ti
       <Link to={pathForMedia(c.media)}>
         <p className="text-xs text-gray-500 hover:text-accent line-clamp-1">
           {c.media.title}
-          {titles > 1 && <span className="text-gray-600"> +{titles - 1}</span>}
+          {titles > 1 && <span className="text-gray-400"> +{titles - 1}</span>}
         </p>
       </Link>
     </div>

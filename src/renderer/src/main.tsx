@@ -4,6 +4,7 @@ import { HashRouter } from 'react-router-dom'
 import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import App from './App'
 import { AudioPlayerProvider } from './lib/player'
+import MusicPlayLogger from './components/MusicPlayLogger'
 import { toastError } from './lib/toast'
 import './styles.css'
 
@@ -26,6 +27,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <AudioPlayerProvider>
+        {/* Inside the provider (not App) so play counts survive the chromeless
+            manga-reader route, which renders without the normal shell. */}
+        <MusicPlayLogger />
         <HashRouter>
           <App />
         </HashRouter>

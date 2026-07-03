@@ -3,6 +3,8 @@ import { join, extname, basename } from 'path'
 import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs'
 import { createHash } from 'crypto'
 import { get as getSetting } from './repos/settingsRepo'
+import { imageProgress } from './progress'
+import { fetchWithRetry } from './http'
 import { mediaUrl } from '@shared/mediaUrl'
 
 // Images live under userData/media. The DB stores only the relative filename
@@ -29,6 +31,14 @@ function audioDir(): string {
 export function mangaRootDir(): string {
   const custom = getSetting('manga.dir')?.trim()
   return custom && custom.length ? custom : join(app.getPath('userData'), 'manga')
+}
+
+// Local music library root (settings key `music.dir`, set from the Music page's
+// folder picker or Settings). DB rows and navimg URLs use a virtual "music/"
+// prefix, mirroring the manga/ scheme above.
+export function musicRootDir(): string {
+  const custom = getSetting('music.dir')?.trim()
+  return custom && custom.length ? custom : join(app.getPath('userData'), 'music')
 }
 
 let counter = 0
@@ -92,6 +102,7 @@ export function absoluteMediaPath(relPath: string): string {
   if (norm.split('/').includes('..')) throw new Error(`Path escapes media root: ${relPath}`)
   if (norm.startsWith('audio/')) return join(audioDir(), norm.slice('audio/'.length))
   if (norm.startsWith('manga/')) return join(mangaRootDir(), norm.slice('manga/'.length))
+  if (norm.startsWith('music/')) return join(musicRootDir(), norm.slice('music/'.length))
   return join(app.getPath('userData'), norm)
 }
 
@@ -106,7 +117,8 @@ export async function downloadAudio(
 ): Promise<string | null> {
   if (!url) return null
   try {
-    const res = await fetch(url)
+    // Generous timeout: theme audio runs to several MB on slow connections.
+    const res = await fetchWithRetry(url, { timeoutMs: 120_000 })
     if (!res.ok) return null
     const buf = Buffer.from(await res.arrayBuffer())
     const urlExt = extname(new URL(url).pathname)
@@ -136,11 +148,21 @@ export async function downloadAudio(
 export async function downloadImages(
   urls: (string | null | undefined)[]
 ): Promise<Map<string, string | null>> {
+  const unique = [...new Set(urls.filter((u): u is string => !!u))]
   const map = new Map<string, string | null>()
-  for (const url of urls) {
-    if (!url || map.has(url)) continue
-    map.set(url, await downloadImage(url))
+  let next = 0
+  let done = 0
+  // Small concurrency pool (same shape as music.parseFiles) — a character-heavy
+  // import fetches hundreds of images and serial downloads dominated its time.
+  const worker = async (): Promise<void> => {
+    while (next < unique.length) {
+      const url = unique[next++]
+      map.set(url, await downloadImage(url))
+      done += 1
+      imageProgress(done, unique.length) // no-op unless an activity is running
+    }
   }
+  await Promise.all(Array.from({ length: Math.min(5, unique.length) }, worker))
   return map
 }
 
@@ -157,7 +179,7 @@ export async function downloadImage(url: string | null | undefined): Promise<str
     const dest = join(mediaDir(), fileName)
     const relPath = join('media', fileName)
     if (existsSync(dest)) return relPath
-    const res = await fetch(url)
+    const res = await fetchWithRetry(url)
     if (!res.ok) return null
     const buf = Buffer.from(await res.arrayBuffer())
     writeFileSync(dest, buf)

@@ -1,10 +1,11 @@
-import { app, BrowserWindow, protocol, net } from 'electron'
+import { app, BrowserWindow, Menu, protocol, net } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { initDatabase, closeDatabase } from './db/connection'
 import { registerIpc } from './ipc'
 import { absoluteMediaPath } from './files'
 import { splitArchivePath, readArchiveEntry, mimeFor } from './archive'
+import { killActive as killActiveMusicDownload } from './musicDownload'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
 protocol.registerSchemesAsPrivileged([
@@ -23,7 +24,9 @@ function createWindow(): void {
     show: false,
     backgroundColor: '#0f1115',
     title: 'NaviHUB',
-    icon: join(__dirname, '../../assets/icon.png'),
+    icon: app.isPackaged
+      ? join(process.resourcesPath, 'assets', 'icon.png')
+      : join(__dirname, '../../assets/icon.png'),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,
@@ -32,6 +35,25 @@ function createWindow(): void {
   })
 
   win.on('ready-to-show', () => win.show())
+
+  // Right-click text menu (Electron ships none by default): cut/copy/paste in
+  // inputs, copy for selected page text. Roles delegate to Chromium's native
+  // clipboard actions, so keyboard shortcuts and IME text behave correctly.
+  win.webContents.on('context-menu', (_e, params) => {
+    const items: Electron.MenuItemConstructorOptions[] = []
+    if (params.isEditable) {
+      items.push(
+        { role: 'cut', enabled: params.editFlags.canCut },
+        { role: 'copy', enabled: params.editFlags.canCopy },
+        { role: 'paste', enabled: params.editFlags.canPaste },
+        { type: 'separator' },
+        { role: 'selectAll', enabled: params.editFlags.canSelectAll }
+      )
+    } else if (params.selectionText.trim()) {
+      items.push({ role: 'copy' })
+    }
+    if (items.length > 0) Menu.buildFromTemplate(items).popup()
+  })
 
   if (process.env['ELECTRON_RENDERER_URL']) {
     win.loadURL(process.env['ELECTRON_RENDERER_URL'])
@@ -76,4 +98,9 @@ app.on('window-all-closed', () => {
   }
 })
 
-app.on('before-quit', () => closeDatabase())
+app.on('before-quit', () => {
+  // Don't let a half-finished yt-dlp outlive the app; its .part files survive
+  // and resume on the next try.
+  killActiveMusicDownload()
+  closeDatabase()
+})

@@ -46,7 +46,25 @@ import type {
   MangaPages,
   ChapterOcrStatus,
   MokuroPageOcr,
-  JpToken
+  JpToken,
+  ActivityStatus,
+  MusicAlbumDetail,
+  MusicAlbumSummary,
+  MusicArtist,
+  MusicArtistDetail,
+  MusicArtResult,
+  MusicArtStatus,
+  MusicDownloadEvent,
+  MusicDownloadInput,
+  MusicLibraryStats,
+  MusicPlaylistDetail,
+  MusicPlaylistSummary,
+  MusicScanStatus,
+  MusicScanSummary,
+  MusicSearchResults,
+  MusicStatsDetail,
+  MusicTrack,
+  YtDlpDetectResult
 } from './types'
 
 export interface NaviApi {
@@ -211,6 +229,65 @@ export interface NaviApi {
     // Mokuro OCR sidecars (null / hasOcr:false when the user hasn't run mokuro).
     ocrStatus(chapterId: number): Promise<ChapterOcrStatus>
     ocrPage(chapterId: number, pageIndex: number): Promise<MokuroPageOcr | null>
+  }
+  music: {
+    // Standalone local-music library (<root>/<Artist>/<Album>/<tracks>).
+    // Scanning: pickRoot opens a folder dialog (null when cancelled), scan
+    // rescans the stored root; both are long-running — poll scanStatus while
+    // the promise is pending.
+    pickRoot(): Promise<MusicScanSummary | null>
+    scan(): Promise<MusicScanSummary>
+    scanStatus(): Promise<MusicScanStatus>
+    // browse
+    artists(search?: string): Promise<MusicArtist[]>
+    albums(search?: string): Promise<MusicAlbumSummary[]>
+    artist(id: number): Promise<MusicArtistDetail | null>
+    album(id: number): Promise<MusicAlbumDetail | null>
+    tracks(filter: { search?: string; likedOnly?: boolean }): Promise<MusicTrack[]>
+    artistTracks(artistId: number): Promise<MusicTrack[]>
+    search(query: string): Promise<MusicSearchResults>
+    stats(): Promise<MusicLibraryStats>
+    // playlists
+    playlists(): Promise<MusicPlaylistSummary[]>
+    playlist(id: number): Promise<MusicPlaylistDetail | null>
+    createPlaylist(input: { title: string; description?: string | null }): Promise<number>
+    updatePlaylist(
+      id: number,
+      patch: { title?: string; description?: string | null }
+    ): Promise<void>
+    removePlaylist(id: number): Promise<void>
+    addPlaylistTracks(playlistId: number, trackIds: number[]): Promise<void>
+    removePlaylistTrack(itemId: number): Promise<void>
+    removePlaylistTrackByTrack(playlistId: number, trackId: number): Promise<void>
+    reorderPlaylist(playlistId: number, orderedItemIds: number[]): Promise<void>
+    playlistsForTrack(
+      trackId: number
+    ): Promise<{ id: number; title: string; contains: boolean }[]>
+    // liked + play history
+    setLiked(trackId: number, liked: boolean): Promise<void>
+    logPlay(trackId: number): Promise<void>
+    recent(limit?: number): Promise<MusicTrack[]>
+    // The /music/stats payload: tiles/charts/top lists for the last N local
+    // days, or all time (null). One invoke per period selection.
+    statsDetail(days: number | null): Promise<MusicStatsDetail>
+    // yt-dlp downloads (one at a time; poll downloadStatus for progress)
+    downloadStart(input: MusicDownloadInput): Promise<{ id: string }>
+    downloadCancel(id: string): Promise<void>
+    downloadStatus(): Promise<MusicDownloadEvent | null>
+    downloadDetect(): Promise<YtDlpDetectResult>
+    // online art fallback (Deezer/iTunes, no API keys)
+    artFetchAlbum(albumId: number): Promise<MusicArtResult>
+    artFetchArtist(artistId: number): Promise<MusicArtResult>
+    artClearAlbum(albumId: number): Promise<void>
+    artClearArtist(artistId: number): Promise<void>
+    artFetchMissing(): Promise<MusicArtStatus>
+    artCancel(): Promise<void>
+    artStatus(): Promise<MusicArtStatus>
+  }
+  activity: {
+    // The current long-running main-process task (imports, theme fetches);
+    // poll while one runs to drive progress UI. active:false when idle.
+    status(): Promise<ActivityStatus>
   }
   settings: {
     all(): Promise<SettingsMap>

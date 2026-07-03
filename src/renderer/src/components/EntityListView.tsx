@@ -126,7 +126,7 @@ export default function EntityListView({
       {isLoading ? (
         <p className="text-gray-500">Loading…</p>
       ) : rows.length === 0 ? (
-        <p className="text-gray-600">Nothing here yet.</p>
+        <p className="text-gray-400">Nothing here yet.</p>
       ) : (
         <>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
@@ -149,7 +149,7 @@ export default function EntityListView({
           </div>
           <div ref={sentinelRef} />
           {hasMore && (
-            <p className="mt-4 text-center text-xs text-gray-600">
+            <p className="mt-4 text-center text-xs text-gray-400">
               Showing {visible.length} of {rows.length} — scroll for more
             </p>
           )}

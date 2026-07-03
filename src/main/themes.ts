@@ -1,5 +1,7 @@
 import { getSqlite } from './db/connection'
-import { downloadImage, downloadAudio } from './files'
+import { downloadImages, downloadAudio } from './files'
+import { fetchWithRetry } from './http'
+import { updateActivity } from './progress'
 import type { ThemeImportSummary } from '@shared/types'
 
 // AnimeThemes.moe — opening/ending songs (+ audio) for anime, keyed off the same
@@ -10,22 +12,13 @@ const AT_UA = 'NaviHUB/0.1 (personal media tracker)'
 const AT_SOURCE = 'animethemes'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-async function atGet(pathAndQuery: string, attempt = 0): Promise<any> {
-  const res = await fetch(`${AT_BASE}${pathAndQuery}`, {
+// fetchWithRetry supplies the 5xx/network retries, capped 429 waits, and a
+// request timeout (the old hand-rolled 429 loop here could recurse forever).
+async function atGet(pathAndQuery: string): Promise<any> {
+  const res = await fetchWithRetry(`${AT_BASE}${pathAndQuery}`, {
     headers: { Accept: 'application/json', 'User-Agent': AT_UA }
   })
-  if (res.status === 429) {
-    const retry = Number(res.headers.get('retry-after')) || 5
-    await new Promise((r) => setTimeout(r, (retry + 1) * 1000))
-    return atGet(pathAndQuery, attempt)
-  }
-  if (!res.ok) {
-    if (attempt < 3) {
-      await new Promise((r) => setTimeout(r, 1500))
-      return atGet(pathAndQuery, attempt + 1)
-    }
-    throw new Error(`AnimeThemes request failed (${res.status})`)
-  }
+  if (!res.ok) throw new Error(`AnimeThemes request failed (${res.status})`)
   return res.json()
 }
 
@@ -101,20 +94,19 @@ export async function fetchAnimeThemes(anilistId: number): Promise<NormalizedThe
 }
 
 // Upsert an artist as a person row (dedup by AnimeThemes id), refreshing the
-// photo if missing.
-async function upsertArtist(db: any, artist: NormalizedArtist): Promise<number> {
+// photo if missing. Synchronous — the photo is pre-downloaded so this can run
+// inside the import transaction.
+function upsertArtist(db: any, artist: NormalizedArtist, photo: string | null): number {
   const ext = artist.externalId
   const row = db
     .prepare('SELECT id, photo_path FROM person WHERE external_source=? AND external_id=?')
     .get(AT_SOURCE, ext) as { id: number; photo_path: string | null } | undefined
   if (row) {
-    if (!row.photo_path && artist.imageUrl) {
-      const p = await downloadImage(artist.imageUrl)
-      if (p) db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(p, row.id)
+    if (!row.photo_path && photo) {
+      db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(photo, row.id)
     }
     return row.id
   }
-  const photo = await downloadImage(artist.imageUrl)
   const info = db
     .prepare(
       'INSERT INTO person (name, photo_path, external_source, external_id) VALUES (?, ?, ?, ?)'
@@ -151,63 +143,92 @@ export async function importThemes(
 
   const themes = await fetchAnimeThemes(Number(media.external_id))
 
-  // Clean replace: drop prior themes (cascades theme_artist) and artist credits.
-  db.prepare('DELETE FROM theme_song WHERE media_id=?').run(mediaId)
-  db.prepare("DELETE FROM credit WHERE media_id=? AND role='artist'").run(mediaId)
-
-  let songs = 0
-  let audioDownloaded = 0
-  const artistIds = new Set<number>()
-  let order = 0
-
+  // Phase 1 — all network work: every audio file and artist image is on disk
+  // before a single row changes, so the clean replace below can run in one
+  // synchronous transaction (same two-phase shape as the other importers).
+  updateActivity({ phase: 'audio', done: 0, total: themes.length })
+  const audioPaths = new Map<string, string | null>()
+  let audioDone = 0
   for (const t of themes) {
-    const audioPath =
+    audioPaths.set(
+      t.externalId,
       withAudio && t.audioUrl
         ? await downloadAudio(t.audioUrl, themeFileBase(media.title, t.slug, t.title))
         : null
-    if (audioPath) audioDownloaded++
-    const sortOrder = order++
-    const info = db
-      .prepare(
-        `INSERT INTO theme_song
-         (media_id, slug, type, sequence, title, audio_url, audio_path, sort_order, external_source, external_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      )
-      .run(
-        mediaId,
-        t.slug,
-        t.type,
-        t.sequence,
-        t.title,
-        t.audioUrl,
-        audioPath,
-        sortOrder,
-        AT_SOURCE,
-        t.externalId
-      )
-    const themeSongId = Number(info.lastInsertRowid)
-    songs++
-
-    let aOrder = 0
-    for (const a of t.artists) {
-      const personId = await upsertArtist(db, a)
-      artistIds.add(personId)
-      db.prepare(
-        'INSERT OR IGNORE INTO theme_artist (theme_song_id, person_id, sort_order) VALUES (?, ?, ?)'
-      ).run(themeSongId, personId, aOrder++)
-      // Person -> media credit so artists show up in the Artists browse page and
-      // their own detail page, exactly like voice actors.
-      db.prepare(
-        "INSERT INTO credit (media_id, person_id, role) SELECT ?, ?, 'artist' WHERE NOT EXISTS " +
-          "(SELECT 1 FROM credit WHERE media_id=? AND person_id=? AND role='artist' AND character_id IS NULL)"
-      ).run(mediaId, personId, mediaId, personId)
-    }
+    )
+    updateActivity({ phase: 'audio', done: ++audioDone, total: themes.length })
   }
+  const artistImages = await downloadImages(
+    themes.flatMap((t) => t.artists.map((a) => a.imageUrl))
+  )
 
-  // Sweep AnimeThemes artists no longer linked to any theme.
-  db.prepare(
-    `DELETE FROM person WHERE external_source=? AND id NOT IN (SELECT person_id FROM theme_artist)`
-  ).run(AT_SOURCE)
+  // Phase 2 — one transaction: clean replace. Drop prior themes (cascades
+  // theme_artist) and artist credits, reinsert from the fresh fetch. A crash
+  // can no longer leave the anime with its themes deleted but not replaced.
+  updateActivity({ phase: 'writing' })
+  return db.transaction((): ThemeImportSummary => {
+    db.prepare('DELETE FROM theme_song WHERE media_id=?').run(mediaId)
+    db.prepare("DELETE FROM credit WHERE media_id=? AND role='artist'").run(mediaId)
 
-  return { mediaId, songs, artists: artistIds.size, audioDownloaded }
+    let songs = 0
+    let audioDownloaded = 0
+    const artistIds = new Set<number>()
+    let order = 0
+
+    for (const t of themes) {
+      const audioPath = audioPaths.get(t.externalId) ?? null
+      if (audioPath) audioDownloaded++
+      const info = db
+        .prepare(
+          `INSERT INTO theme_song
+           (media_id, slug, type, sequence, title, audio_url, audio_path, sort_order, external_source, external_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          mediaId,
+          t.slug,
+          t.type,
+          t.sequence,
+          t.title,
+          t.audioUrl,
+          audioPath,
+          order++,
+          AT_SOURCE,
+          t.externalId
+        )
+      const themeSongId = Number(info.lastInsertRowid)
+      songs++
+
+      let aOrder = 0
+      for (const a of t.artists) {
+        const photo = a.imageUrl ? (artistImages.get(a.imageUrl) ?? null) : null
+        const personId = upsertArtist(db, a, photo)
+        artistIds.add(personId)
+        db.prepare(
+          'INSERT OR IGNORE INTO theme_artist (theme_song_id, person_id, sort_order) VALUES (?, ?, ?)'
+        ).run(themeSongId, personId, aOrder++)
+        // Person -> media credit so artists show up in the Artists browse page and
+        // their own detail page, exactly like voice actors.
+        db.prepare(
+          "INSERT INTO credit (media_id, person_id, role) SELECT ?, ?, 'artist' WHERE NOT EXISTS " +
+            "(SELECT 1 FROM credit WHERE media_id=? AND person_id=? AND role='artist' AND character_id IS NULL)"
+        ).run(mediaId, personId, mediaId, personId)
+      }
+    }
+
+    // Sweep AnimeThemes artists no longer linked to any theme — clearing their
+    // list memberships first (list_item has no FK; imports must clean up the
+    // same way manual deletes do).
+    db.prepare(
+      `DELETE FROM list_item
+       WHERE list_id IN (SELECT id FROM list WHERE entity_kind = 'person')
+       AND entity_id IN (SELECT id FROM person WHERE external_source = ?
+                         AND id NOT IN (SELECT person_id FROM theme_artist))`
+    ).run(AT_SOURCE)
+    db.prepare(
+      `DELETE FROM person WHERE external_source=? AND id NOT IN (SELECT person_id FROM theme_artist)`
+    ).run(AT_SOURCE)
+
+    return { mediaId, songs, artists: artistIds.size, audioDownloaded }
+  })()
 }

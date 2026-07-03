@@ -1,0 +1,49 @@
+appId: dev.xamir.navihub
+# productName lives only here, NOT in package.json — app.getName() must stay
+# "navihub" so userData remains %APPDATA%\navihub / ~/.config/navihub.
+productName: NaviHUB
+directories:
+  buildResources: assets
+  output: dist
+files:
+  - out/**
+  - '!out/**/*.map'
+extraResources:
+  # Runtime window icon (index.ts loads it from process.resourcesPath when
+  # packaged — nativeImage path loading is not reliably asar-transparent).
+  - from: assets
+    to: assets
+asar: true
+asarUnpack:
+  # Native module must live on real disk, not inside the asar.
+  - node_modules/better-sqlite3/**
+  # kuromoji dict (~18MB) — tokenizer.ts retargets app.asar -> app.asar.unpacked.
+  - node_modules/kuromoji/dict/**
+# Off: @electron/rebuild can't cross-fetch native modules for another OS (it
+# silently keeps the Linux .node). The postinstall electron-rebuild keeps the
+# local binary correct for Linux packs; scripts/dist-win.sh swaps in the
+# win32-x64 prebuild explicitly before Windows builds.
+npmRebuild: false
+win:
+  icon: assets/icon.png
+  target:
+    - target: nsis
+      arch: [x64]
+    - target: portable
+      arch: [x64]
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: true
+  # Don't auto-launch after install: the library bundle must be copied into
+  # %APPDATA%\navihub BEFORE first run (see the export bundle's README.txt).
+  runAfterFinish: false
+  artifactName: ${productName}-Setup-${version}.${ext}
+portable:
+  artifactName: ${productName}-${version}-portable.${ext}
+linux:
+  # dir target only — used for smoke-testing packaged mode locally; the real
+  # distribution target is Windows.
+  target: [dir]
+  icon: assets/icon.png
+  category: AudioVideo

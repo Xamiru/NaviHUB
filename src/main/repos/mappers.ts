@@ -5,6 +5,16 @@ import type { MediaItem, Person, Company, Character, Tag } from '@shared/types'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
+// One corrupt metadata blob must not break every list/detail/search that maps
+// the row — treat unparseable JSON as no metadata.
+function safeParseMetadata(text: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
+}
+
 export function mapMedia(r: any): MediaItem {
   return {
     id: r.id,
@@ -23,7 +33,7 @@ export function mapMedia(r: any): MediaItem {
     rewatchCount: r.rewatch_count ?? 0,
     notes: r.notes ?? null,
     favorite: !!r.favorite,
-    metadata: r.metadata ? JSON.parse(r.metadata) : null,
+    metadata: r.metadata ? safeParseMetadata(r.metadata) : null,
     externalSource: r.external_source ?? null,
     externalId: r.external_id ?? null,
     createdAt: r.created_at,

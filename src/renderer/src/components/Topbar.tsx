@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
+import ActivityIndicator from './ActivityIndicator'
 
-// Persistent top bar with a global search box. Submitting navigates to /search.
+// Persistent top bar with a global search box (submitting navigates to
+// /search) and the global import-progress pill.
 export default function Topbar() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -22,7 +24,7 @@ export default function Topbar() {
   }
 
   return (
-    <header className="h-14 shrink-0 border-b border-base-700 bg-base-800/60 backdrop-blur flex items-center px-5">
+    <header className="h-14 shrink-0 border-b border-base-700 bg-base-800/60 backdrop-blur flex items-center gap-4 px-5">
       <form onSubmit={submit} className="w-full max-w-xl">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">⌕</span>
@@ -34,6 +36,9 @@ export default function Topbar() {
           />
         </div>
       </form>
+      <div className="ml-auto">
+        <ActivityIndicator />
+      </div>
     </header>
   )
 }

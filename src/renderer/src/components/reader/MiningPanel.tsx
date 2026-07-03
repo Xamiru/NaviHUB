@@ -135,7 +135,7 @@ export default function MiningPanel({
           ) : (
             <p className="select-text text-base text-gray-100 leading-relaxed">
               {blockText}
-              <span className="mt-1 block text-xs text-gray-600">
+              <span className="mt-1 block text-xs text-gray-400">
                 (No tokenizer — select text on the page or type below.)
               </span>
             </p>

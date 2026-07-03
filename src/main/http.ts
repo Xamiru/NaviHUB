@@ -6,17 +6,24 @@
 //   - 5xx / network errors: retry up to `retries` times with short backoff.
 //   - other 4xx: returned to the caller immediately (bad key, not found, …).
 const MAX_RATE_LIMIT_WAITS = 5 // safety valve against a stuck 429 loop
+const DEFAULT_TIMEOUT_MS = 30_000
 
 export async function fetchWithRetry(
   url: string,
-  init?: RequestInit,
+  init?: RequestInit & { timeoutMs?: number },
   retries = 3
 ): Promise<Response> {
+  const { timeoutMs = DEFAULT_TIMEOUT_MS, ...rest } = init ?? {}
   let rateLimitWaits = 0
   for (let attempt = 0; ; attempt++) {
     let res: Response
     try {
-      res = await fetch(url, init)
+      // Per-attempt timeout (a caller-provided signal wins) — without one, a
+      // stalled host hangs the import and the activity pill forever.
+      res = await fetch(url, {
+        ...rest,
+        signal: rest.signal ?? AbortSignal.timeout(timeoutMs)
+      })
     } catch (err) {
       if (attempt < retries) {
         await sleep(1000 * 2 ** attempt)

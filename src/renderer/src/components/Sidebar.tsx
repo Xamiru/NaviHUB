@@ -5,9 +5,6 @@ import { api } from '../lib/api'
 import { usePlayer, quizSongToTrack } from '../lib/player'
 import { toast } from '../lib/toast'
 
-// Future media types: visible-but-disabled placeholders.
-const COMING_SOON = [{ label: 'Games', icon: '◈' }]
-
 function linkClass(isActive: boolean): string {
   return `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
     isActive ? 'bg-accent/20 text-white' : 'text-gray-300 hover:bg-base-700 hover:text-white'
@@ -24,8 +21,15 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
     ...(cfg.listTabs ?? []).map((t) => configFor(t.key).basePath),
     ...cfg.children.map((c) => c.to)
   ]
-  // Auto-open when on this section's list, a sibling tab, or a child browse page.
-  const onArea = areaPaths.some((p) => location.pathname.startsWith(p))
+  // Auto-open when on this section's list, a sibling tab, or a child browse
+  // page. '/people' needs an EXACT match: /people/:id is one shared detail
+  // page (seiyuu, actors, artists and mangaka all land there), so a prefix
+  // match would light up every section with a Voice Actors child on any
+  // person's page. Unique children (/studios, …) keep prefix matching so
+  // their own detail pages still count as "in this section".
+  const onArea = areaPaths.some((p) =>
+    p === '/people' ? location.pathname === p : location.pathname.startsWith(p)
+  )
   const [open, setOpen] = useState(false)
   const expanded = open || onArea
 
@@ -50,7 +54,14 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
       {expanded && (
         <div className="ml-3 pl-3 border-l border-base-700 space-y-0.5 mb-1">
           {cfg.children.map((c) => (
-            <NavLink key={c.to} to={c.to} className={({ isActive }) => linkClass(isActive)}>
+            <NavLink
+              key={c.to}
+              to={c.to}
+              // Same '/people' caveat as onArea above: without `end`, this link
+              // reads as active on every /people/:id person page.
+              end={c.to === '/people'}
+              className={({ isActive }) => linkClass(isActive)}
+            >
               <span className="w-4 text-center opacity-80">{c.icon}</span>
               {c.label}
             </NavLink>
@@ -92,8 +103,8 @@ function ShuffleMusicButton() {
 
   return (
     <button onClick={shuffleAll} disabled={busy} className={`w-full ${linkClass(false)}`}>
-      <span className="w-4 text-center opacity-80">🔀</span>
-      {busy ? 'Shuffling…' : 'Shuffle Music'}
+      <span className="w-4 text-center opacity-80">⇄</span>
+      {busy ? 'Shuffling…' : 'Shuffle Themes'}
     </button>
   )
 }
@@ -120,20 +131,24 @@ export default function Sidebar() {
           {MEDIA_CONFIGS.filter((cfg) => !cfg.hideFromSidebar).map((cfg) => (
             <MediaSection key={cfg.key} cfg={cfg} />
           ))}
+          {/* Standalone local-music section (not a MediaConfig — own tables/pages) */}
+          <NavLink to="/music" className={({ isActive }) => linkClass(isActive)}>
+            <span className="w-4 text-center opacity-80">♪</span> Music
+          </NavLink>
         </div>
 
         <div className="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
           Curate
         </div>
         <NavLink to="/lists" className={({ isActive }) => linkClass(isActive)}>
-          <span className="w-4 text-center opacity-80">📋</span> Lists
+          <span className="w-4 text-center opacity-80">☰</span> Lists
         </NavLink>
 
         <div className="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
           Play
         </div>
         <NavLink to="/quiz" className={({ isActive }) => linkClass(isActive)}>
-          <span className="w-4 text-center opacity-80">🎵</span> Quiz
+          <span className="w-4 text-center opacity-80">♫</span> Quiz
         </NavLink>
         <ShuffleMusicButton />
 
@@ -141,22 +156,8 @@ export default function Sidebar() {
           Learn
         </div>
         <NavLink to="/japanese" className={({ isActive }) => linkClass(isActive)}>
-          <span className="w-4 text-center opacity-80">🈶</span> Japanese
+          <span className="w-4 text-center opacity-80">あ</span> Japanese
         </NavLink>
-
-        {/* Future media types (disabled) */}
-        <nav className="space-y-0.5 mt-1">
-          {COMING_SOON.map((it) => (
-            <div
-              key={it.label}
-              title="Coming soon"
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm text-gray-600 cursor-not-allowed"
-            >
-              <span className="w-4 text-center opacity-50">{it.icon}</span>
-              {it.label}
-            </div>
-          ))}
-        </nav>
       </div>
 
       <div className="p-2 border-t border-base-700">

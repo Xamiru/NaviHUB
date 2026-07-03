@@ -44,6 +44,9 @@ interface PlayerContextValue {
   // Plays a track; if it's already the current one, toggles play/pause instead.
   play: (track: Track) => void
   playQueue: (tracks: Track[], startIndex: number, opts?: { shuffle?: boolean }) => void
+  // Adds tracks to the queue without interrupting playback: right after the
+  // current track ({next: true}) or at the end. Starts playing when idle.
+  enqueue: (tracks: Track[], opts?: { next?: boolean }) => void
   playAt: (i: number) => void
   next: () => void
   previous: () => void
@@ -163,6 +166,27 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       void startAt(start)
     },
     [startAt]
+  )
+
+  const enqueue = useCallback(
+    (tracks: Track[], opts?: { next?: boolean }) => {
+      if (tracks.length === 0) return
+      if (queueRef.current.length === 0) {
+        playQueue(tracks, 0)
+        return
+      }
+      const q = [...queueRef.current]
+      // Both insertion points are strictly after the current index, so the
+      // playing track (and indexRef) never shifts.
+      q.splice(opts?.next ? indexRef.current + 1 : q.length, 0, ...tracks)
+      queueRef.current = q
+      setQueue(q)
+      // Keep the pre-shuffle order in sync so un-shuffling doesn't drop them.
+      if (originalOrderRef.current) {
+        originalOrderRef.current = [...originalOrderRef.current, ...tracks]
+      }
+    },
+    [playQueue]
   )
 
   const play = useCallback(
@@ -350,6 +374,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
         shuffled,
         play,
         playQueue,
+        enqueue,
         playAt,
         next,
         previous,

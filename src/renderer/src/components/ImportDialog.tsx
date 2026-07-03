@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { useActivity, activityText } from './ActivityIndicator'
 import type { MediaConfig } from '../lib/mediaConfig'
 import type { ImportSearchResult } from '@shared/types'
 
@@ -84,10 +85,11 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
 
         {error && <p className="text-sm text-red-400 mb-3">⚠ {error}</p>}
         {done && <p className="text-sm text-green-400 mb-3">✓ {done}</p>}
+        {importingId !== null && <ImportProgress />}
         {isFetching && <p className="text-sm text-gray-500">Searching {source.label}…</p>}
 
         {!isFetching && submitted && results.length === 0 && (
-          <p className="text-sm text-gray-600">No results.</p>
+          <p className="text-sm text-gray-400">No results.</p>
         )}
 
         <div className="space-y-2">
@@ -118,9 +120,35 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
           ))}
         </div>
 
-        <p className="text-xs text-gray-600 mt-4">
+        <p className="text-xs text-gray-400 mt-4">
           Re-importing a title refreshes its details and keeps your status, score, and progress.
         </p>
+      </div>
+    </div>
+  )
+}
+
+// Live phase + progress of the running import (polled from the main process's
+// activity slot). Image download is the long phase, so it gets a real bar;
+// fetch/write phases show an indeterminate pulse.
+function ImportProgress() {
+  const s = useActivity(true)
+  if (!s?.active) return <p className="text-sm text-gray-500 mb-3">Starting import…</p>
+  const pct =
+    (s.phase === 'images' || s.phase === 'audio') && s.total > 0
+      ? Math.round((s.done / s.total) * 100)
+      : null
+  return (
+    <div className="mb-3 rounded-md bg-base-700/60 p-3">
+      <div className="mb-1 flex justify-between text-xs text-gray-400">
+        <span>{activityText(s)}</span>
+        {pct != null && <span className="tabular-nums">{pct}%</span>}
+      </div>
+      <div className="h-1.5 overflow-hidden rounded bg-base-600">
+        <div
+          className={`h-full bg-accent transition-all ${pct == null ? 'w-full animate-pulse' : ''}`}
+          style={pct != null ? { width: `${pct}%` } : undefined}
+        />
       </div>
     </div>
   )

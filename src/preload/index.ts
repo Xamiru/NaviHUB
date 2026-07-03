@@ -135,6 +135,50 @@ const api: NaviApi = {
     ocrStatus: (chapterId) => ipcRenderer.invoke('manga:ocrStatus', chapterId),
     ocrPage: (chapterId, pageIndex) => ipcRenderer.invoke('manga:ocrPage', chapterId, pageIndex)
   },
+  music: {
+    pickRoot: () => ipcRenderer.invoke('music:pickRoot'),
+    scan: () => ipcRenderer.invoke('music:scan'),
+    scanStatus: () => ipcRenderer.invoke('music:scanStatus'),
+    artists: (search) => ipcRenderer.invoke('music:artists', search),
+    albums: (search) => ipcRenderer.invoke('music:albums', search),
+    artist: (id) => ipcRenderer.invoke('music:artist', id),
+    album: (id) => ipcRenderer.invoke('music:album', id),
+    tracks: (filter) => ipcRenderer.invoke('music:tracks', filter),
+    artistTracks: (artistId) => ipcRenderer.invoke('music:artistTracks', artistId),
+    search: (query) => ipcRenderer.invoke('music:search', query),
+    stats: () => ipcRenderer.invoke('music:stats'),
+    playlists: () => ipcRenderer.invoke('music:playlists'),
+    playlist: (id) => ipcRenderer.invoke('music:playlist', id),
+    createPlaylist: (input) => ipcRenderer.invoke('music:createPlaylist', input),
+    updatePlaylist: (id, patch) => ipcRenderer.invoke('music:updatePlaylist', id, patch),
+    removePlaylist: (id) => ipcRenderer.invoke('music:removePlaylist', id),
+    addPlaylistTracks: (playlistId, trackIds) =>
+      ipcRenderer.invoke('music:addPlaylistTracks', playlistId, trackIds),
+    removePlaylistTrack: (itemId) => ipcRenderer.invoke('music:removePlaylistTrack', itemId),
+    removePlaylistTrackByTrack: (playlistId, trackId) =>
+      ipcRenderer.invoke('music:removePlaylistTrackByTrack', playlistId, trackId),
+    reorderPlaylist: (playlistId, orderedItemIds) =>
+      ipcRenderer.invoke('music:reorderPlaylist', playlistId, orderedItemIds),
+    playlistsForTrack: (trackId) => ipcRenderer.invoke('music:playlistsForTrack', trackId),
+    setLiked: (trackId, liked) => ipcRenderer.invoke('music:setLiked', trackId, liked),
+    logPlay: (trackId) => ipcRenderer.invoke('music:logPlay', trackId),
+    recent: (limit) => ipcRenderer.invoke('music:recent', limit),
+    statsDetail: (days) => ipcRenderer.invoke('music:statsDetail', days),
+    downloadStart: (input) => ipcRenderer.invoke('music:downloadStart', input),
+    downloadCancel: (id) => ipcRenderer.invoke('music:downloadCancel', id),
+    downloadStatus: () => ipcRenderer.invoke('music:downloadStatus'),
+    downloadDetect: () => ipcRenderer.invoke('music:downloadDetect'),
+    artFetchAlbum: (albumId) => ipcRenderer.invoke('music:artFetchAlbum', albumId),
+    artFetchArtist: (artistId) => ipcRenderer.invoke('music:artFetchArtist', artistId),
+    artClearAlbum: (albumId) => ipcRenderer.invoke('music:artClearAlbum', albumId),
+    artClearArtist: (artistId) => ipcRenderer.invoke('music:artClearArtist', artistId),
+    artFetchMissing: () => ipcRenderer.invoke('music:artFetchMissing'),
+    artCancel: () => ipcRenderer.invoke('music:artCancel'),
+    artStatus: () => ipcRenderer.invoke('music:artStatus')
+  },
+  activity: {
+    status: () => ipcRenderer.invoke('activity:status')
+  },
   settings: {
     all: () => ipcRenderer.invoke('settings:all'),
     get: (key) => ipcRenderer.invoke('settings:get', key),

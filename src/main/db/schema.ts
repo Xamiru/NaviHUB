@@ -372,6 +372,9 @@ export const jpCourse = sqliteTable('jp_course', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),
   description: text('description'),
+  // display label ("N5") + recommended study-order step (1 = start here)
+  level: text('level'),
+  difficulty: integer('difficulty'),
   sortOrder: integer('sort_order').notNull().default(0),
   createdAt: text('created_at')
     .notNull()
@@ -463,5 +466,151 @@ export const jpReviewLog = sqliteTable(
   (t) => ({
     byCard: index('idx_jp_review_log_card').on(t.cardId),
     byTime: index('idx_jp_review_log_time').on(t.reviewedAt)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// Music library — standalone local-music section (fully separate from
+// media_item / person; anime OP/EDs stay in theme_song). Rows are written only
+// by the scanner (src/main/music.ts); identity is the path relative to the
+// music root (settings key music.dir), so rescans preserve user state
+// (liked_at, play_count, playlist membership).
+// ---------------------------------------------------------------------------
+export const musicArtist = sqliteTable(
+  'music_artist',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    dirPath: text('dir_path').notNull(),
+    coverPath: text('cover_path'),
+    artCheckedAt: text('art_checked_at'),
+    artSourceUrl: text('art_source_url'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byName: index('idx_music_artist_name').on(t.name),
+    uniqDir: unique('uniq_music_artist_dir').on(t.dirPath)
+  })
+)
+
+export const musicAlbum = sqliteTable(
+  'music_album',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    artistId: integer('artist_id')
+      .notNull()
+      .references(() => musicArtist.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    dirPath: text('dir_path').notNull(),
+    year: integer('year'),
+    coverPath: text('cover_path'),
+    artCheckedAt: text('art_checked_at'),
+    artSourceUrl: text('art_source_url'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byArtist: index('idx_music_album_artist').on(t.artistId),
+    byTitle: index('idx_music_album_title').on(t.title),
+    uniqDir: unique('uniq_music_album_dir').on(t.dirPath)
+  })
+)
+
+export const musicTrack = sqliteTable(
+  'music_track',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    albumId: integer('album_id')
+      .notNull()
+      .references(() => musicAlbum.id, { onDelete: 'cascade' }),
+    // denormalized: track lists & search never need a double join
+    artistId: integer('artist_id')
+      .notNull()
+      .references(() => musicArtist.id, { onDelete: 'cascade' }),
+    filePath: text('file_path').notNull(),
+    fileMtime: integer('file_mtime'),
+    title: text('title').notNull(),
+    trackNo: integer('track_no'),
+    discNo: integer('disc_no'),
+    duration: real('duration'),
+    tagArtist: text('tag_artist'),
+    // user state: preserved across rescans (the scanner never writes these)
+    likedAt: text('liked_at'),
+    playCount: integer('play_count').notNull().default(0),
+    lastPlayedAt: text('last_played_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byAlbum: index('idx_music_track_album').on(t.albumId),
+    byArtist: index('idx_music_track_artist').on(t.artistId),
+    byTitle: index('idx_music_track_title').on(t.title),
+    byLiked: index('idx_music_track_liked').on(t.likedAt),
+    byPlayed: index('idx_music_track_played').on(t.lastPlayedAt),
+    uniqPath: unique('uniq_music_track_path').on(t.filePath)
+  })
+)
+
+export const musicPlaylist = sqliteTable('music_playlist', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(),
+  description: text('description'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})
+
+export const musicPlaylistTrack = sqliteTable(
+  'music_playlist_track',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    playlistId: integer('playlist_id')
+      .notNull()
+      .references(() => musicPlaylist.id, { onDelete: 'cascade' }),
+    trackId: integer('track_id')
+      .notNull()
+      .references(() => musicTrack.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull().default(0),
+    addedAt: text('added_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byTrack: index('idx_music_playlist_track_track').on(t.trackId),
+    uniq: unique('uniq_music_playlist_track').on(t.playlistId, t.trackId)
+  })
+)
+
+export const musicPlayLog = sqliteTable(
+  'music_play_log',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    trackId: integer('track_id')
+      .notNull()
+      .references(() => musicTrack.id, { onDelete: 'cascade' }),
+    playedAt: text('played_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    duration: real('duration')
+  },
+  (t) => ({
+    byTrack: index('idx_music_play_log_track').on(t.trackId),
+    byPlayed: index('idx_music_play_log_played').on(t.playedAt)
   })
 )

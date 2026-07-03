@@ -180,7 +180,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
           </div>
           <div ref={sentinelRef} />
           {hasMore && (
-            <p className="mt-4 text-center text-xs text-gray-600">
+            <p className="mt-4 text-center text-xs text-gray-400">
               Showing {visible.length} of {items.length} — scroll for more
             </p>
           )}

@@ -1,5 +1,6 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
+import { updateActivity } from './progress'
 import { fetchWithRetry } from './http'
 import { fetchPlaytimes } from './hltb'
 import * as settingsRepo from './repos/settingsRepo'
@@ -73,6 +74,7 @@ export async function importGame(rawgId: number): Promise<ImportSummary> {
   const hltbTimes = await fetchPlaytimes(g.name ?? '', yearOf(g.released))
 
   const db = getSqlite()
+  updateActivity({ phase: 'writing' })
   return db.transaction((): ImportSummary => {
     const title: string = g.name ?? 'Untitled'
     const native =

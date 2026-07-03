@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { MEDIA_CONFIGS, configFor, pathForMedia, type MediaConfig } from '../lib/mediaConfig'
 import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
+import Section from '../components/Section'
 import type { MediaItem } from '@shared/types'
 
 // The status that marks an item as in-progress is the FIRST default status of
@@ -67,7 +68,7 @@ export default function HomePage() {
       <Hero items={all} stats={stats} />
 
       {continuing.length > 0 && (
-        <Strip title="Continue watching" items={continuing} showProgress />
+        <Strip title="Continue" items={continuing} showProgress />
       )}
 
       <div className="mt-8 grid gap-4 lg:grid-cols-[2fr_1fr] items-stretch">
@@ -77,7 +78,7 @@ export default function HomePage() {
 
       <TopPeople />
 
-      <Section title="Recently added">
+      <Section className="mt-8" title="Recently added">
         {isLoading ? (
           <p className="text-gray-500">Loading…</p>
         ) : recent.length === 0 ? (
@@ -280,7 +281,7 @@ function QuizCard() {
         {pool.length > 0 ? (
           <span className="text-xs text-gray-500">{pool.length} songs ready</span>
         ) : (
-          <span className="text-xs text-gray-600">Import theme songs to play</span>
+          <span className="text-xs text-gray-400">Import theme songs to play</span>
         )}
         <span className="btn-primary pointer-events-none group-hover:brightness-110">Play ▸</span>
       </div>
@@ -305,7 +306,7 @@ function TopPeople() {
   if (topVas.length < 3) return null
 
   return (
-    <Section title="Your people">
+    <Section className="mt-8" title="Your people">
       <div className="card p-5">
         <p className="text-xs text-gray-500 mb-3">
           The voice actors your library keeps coming back to
@@ -348,15 +349,6 @@ function TopPeople() {
   )
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="mt-8">
-      <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">{title}</h2>
-      {children}
-    </section>
-  )
-}
-
 // A horizontally-scrolling row of covers — used for the shelf sections
 // (Continue watching, Recently added, Favorites). Without a title it renders
 // just the row, for embedding inside another Section.
@@ -378,7 +370,7 @@ function Strip({
       ))}
     </div>
   )
-  return title ? <Section title={title}>{row}</Section> : row
+  return title ? <Section className="mt-8" title={title}>{row}</Section> : row
 }
 
 // Per-type total + the section's quick links. Reuses the same status-count
@@ -393,7 +385,7 @@ function LibraryGlance() {
   })
 
   return (
-    <Section title="Browse & add">
+    <Section className="mt-8" title="Browse & add">
       <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
         {sections.map((cfg, i) => {
           const total = Object.values(counts[i].data ?? {}).reduce((a, b) => a + b, 0)

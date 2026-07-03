@@ -1,5 +1,6 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
+import { updateActivity } from './progress'
 import { fetchWithRetry } from './http'
 import type { AniListSearchResult, AniListImportSummary } from '@shared/types'
 
@@ -400,6 +401,7 @@ export async function importAnime(anilistId: number): Promise<AniListImportSumma
     url ? (images.get(url) ?? null) : null
 
   const db = getSqlite()
+  updateActivity({ phase: 'writing' })
   return db.transaction((): AniListImportSummary => {
     const { title, native } = pickTitle(m.title)
     const coverPath = img(coverUrl)
@@ -591,6 +593,7 @@ export async function importManga(anilistId: number): Promise<AniListImportSumma
     url ? (images.get(url) ?? null) : null
 
   const db = getSqlite()
+  updateActivity({ phase: 'writing' })
   return db.transaction((): AniListImportSummary => {
     const { title, native } = pickTitle(m.title)
     const coverPath = img(coverUrl)

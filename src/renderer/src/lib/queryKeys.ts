@@ -88,6 +88,30 @@ export const qk = {
     tokens: (text: string) => ['japanese', 'tokens', text] as const,
     minedFronts: (fronts: string[]) => ['japanese', 'minedFronts', fronts] as const
   },
+  music: {
+    // Local music library. Mutations (scan, like, playlist edits) invalidate
+    // the `all` prefix; the polled statuses sit under it too but refetch on
+    // their own intervals while something runs.
+    all: ['music'] as const,
+    artists: (search: string) => ['music', 'artists', search] as const,
+    albums: (search: string) => ['music', 'albums', search] as const,
+    artist: (id: number) => ['music', 'artist', id] as const,
+    album: (id: number) => ['music', 'album', id] as const,
+    tracks: (filter: { search?: string; likedOnly?: boolean }) =>
+      ['music', 'tracks', filter] as const,
+    search: (q: string) => ['music', 'search', q] as const,
+    playlists: ['music', 'playlists'] as const,
+    playlist: (id: number) => ['music', 'playlist', id] as const,
+    playlistsForTrack: (trackId: number) => ['music', 'playlistsForTrack', trackId] as const,
+    recent: ['music', 'recent'] as const,
+    statsDetail: (days: number | null) => ['music', 'statsDetail', days] as const,
+    statsDetailAll: ['music', 'statsDetail'] as const, // prefix, for invalidation
+    stats: ['music', 'stats'] as const,
+    scanStatus: ['music', 'scanStatus'] as const,
+    downloadStatus: ['music', 'downloadStatus'] as const,
+    artStatus: ['music', 'artStatus'] as const
+  },
+  activity: ['activity'] as const,
   search: (q: string) => ['search', q] as const,
   // External import-source search: the source key ('anilist', 'tmdb', …) is the
   // namespace itself, so these have no shared `all` prefix to invalidate.
