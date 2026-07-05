@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useSettings } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
@@ -11,6 +12,9 @@ export default function SettingsPage() {
   const qc = useQueryClient()
 
   const [scoreMax, setScoreMax] = useState('10')
+  const [animeEpMin, setAnimeEpMin] = useState('24')
+  const [tvEpMin, setTvEpMin] = useState('40')
+  const [mangaChMin, setMangaChMin] = useState('5')
   const [tmdbKey, setTmdbKey] = useState('')
   const [omdbKey, setOmdbKey] = useState('')
   const [rawgKey, setRawgKey] = useState('')
@@ -24,6 +28,9 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!data) return
     setScoreMax(data['score.max'] ?? '10')
+    setAnimeEpMin(data['stats.animeEpMinutes'] ?? '24')
+    setTvEpMin(data['stats.tvEpMinutes'] ?? '40')
+    setMangaChMin(data['stats.mangaChapterMinutes'] ?? '5')
     setTmdbKey(data['tmdb.api_key'] ?? '')
     setOmdbKey(data['omdb.api_key'] ?? '')
     setRawgKey(data['rawg.api_key'] ?? '')
@@ -71,6 +78,58 @@ export default function SettingsPage() {
           >
             Save
           </button>
+        </div>
+      </section>
+
+      <section className="card p-5 mb-6">
+        <h2 className="font-semibold mb-1">Time stats estimates</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Per-unit minutes used on the{' '}
+          <Link to="/stats" className="text-accent hover:underline">
+            Stats
+          </Link>{' '}
+          page to estimate time spent on anime, TV and manga. Only used as a fallback when a
+          title has no real runtime from AniList/TMDB — re-import to fill those in. Games and
+          visual novels use your logged playtime directly (no estimate).
+        </p>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <label className="block">
+            <span className="label mb-1 block">Anime · min / episode</span>
+            <input
+              className="input"
+              type="number"
+              min={1}
+              value={animeEpMin}
+              onChange={(e) => setAnimeEpMin(e.target.value)}
+              onBlur={() =>
+                setKey('stats.animeEpMinutes', String(Math.max(1, Number(animeEpMin) || 24)))
+              }
+            />
+          </label>
+          <label className="block">
+            <span className="label mb-1 block">TV · min / episode</span>
+            <input
+              className="input"
+              type="number"
+              min={1}
+              value={tvEpMin}
+              onChange={(e) => setTvEpMin(e.target.value)}
+              onBlur={() => setKey('stats.tvEpMinutes', String(Math.max(1, Number(tvEpMin) || 40)))}
+            />
+          </label>
+          <label className="block">
+            <span className="label mb-1 block">Manga · min / chapter</span>
+            <input
+              className="input"
+              type="number"
+              min={1}
+              value={mangaChMin}
+              onChange={(e) => setMangaChMin(e.target.value)}
+              onBlur={() =>
+                setKey('stats.mangaChapterMinutes', String(Math.max(1, Number(mangaChMin) || 5)))
+              }
+            />
+          </label>
         </div>
       </section>
 
@@ -236,8 +295,143 @@ export default function SettingsPage() {
         )}
       </section>
 
+      <DictionarySettings />
+
       {savedAt && <p className="text-sm text-green-400">{savedAt}</p>}
     </div>
+  )
+}
+
+// Offline Japanese dictionaries: install JMdict/KANJIDIC with one click, import
+// any other Yomitan .zip, watch import progress, and remove installed ones.
+function DictionarySettings() {
+  const qc = useQueryClient()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const { data: dicts = [] } = useQuery({
+    queryKey: qk.dict.list,
+    queryFn: () => api.dict.list()
+  })
+  const { data: status } = useQuery({
+    queryKey: qk.dict.importStatus,
+    queryFn: () => api.dict.importStatus(),
+    refetchInterval: busy ? 400 : false
+  })
+
+  async function run(fn: () => Promise<unknown>) {
+    setError(null)
+    setBusy(true)
+    try {
+      await fn()
+      await qc.invalidateQueries({ queryKey: qk.dict.all })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const running = busy && status?.running
+  const phaseLabel: Record<string, string> = {
+    downloading: 'Downloading',
+    reading: 'Reading',
+    terms: 'Importing words',
+    kanji: 'Importing kanji',
+    pitch: 'Importing pitch accent',
+    tags: 'Importing tags',
+    finalizing: 'Finalizing'
+  }
+
+  return (
+    <section className="card p-5 mb-6">
+      <h2 className="font-semibold mb-1">Japanese dictionaries</h2>
+      <p className="text-sm text-gray-500 mb-4">
+        Offline dictionaries power the Japanese section&apos;s lookup, word mining and the manga
+        reader. Install JMdict and KANJIDIC with one click; import pitch-accent, grammar (DOJG) and
+        和英 dictionaries as Yomitan <span className="text-gray-400">.zip</span> files exported from
+        the extension. Large one-time downloads (JMdict is ~60&nbsp;MB); everything then works with
+        no network.
+      </p>
+
+      {dicts.length > 0 && (
+        <div className="mb-4 space-y-1.5">
+          {dicts.map((d) => (
+            <div
+              key={d.id}
+              className="flex items-center gap-3 rounded-md border border-base-700 bg-base-800 p-2.5"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{d.title}</p>
+                <p className="text-xs text-gray-500">
+                  {d.termCount > 0 && <span>{d.termCount.toLocaleString()} words</span>}
+                  {d.termCount > 0 && d.kanjiCount > 0 && ' · '}
+                  {d.kanjiCount > 0 && <span>{d.kanjiCount.toLocaleString()} kanji</span>}
+                  {d.revision && <span className="ml-1 text-gray-600">· {d.revision}</span>}
+                </p>
+              </div>
+              <button
+                className="btn-ghost shrink-0 py-1 px-2 text-xs text-gray-500 hover:text-red-400"
+                disabled={busy}
+                onClick={() => {
+                  if (window.confirm(`Remove "${d.title}"?`)) void run(() => api.dict.remove(d.id))
+                }}
+              >
+                Remove
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {running && status && (
+        <div className="mb-4">
+          <p className="mb-1 text-xs text-gray-400">
+            {phaseLabel[status.phase] ?? status.phase}
+            {status.dictTitle ? ` · ${status.dictTitle}` : ''}
+            {status.phase === 'downloading' && status.total > 0
+              ? ` · ${Math.round((status.done / status.total) * 100)}%`
+              : status.done > 0
+                ? ` · ${status.done.toLocaleString()}`
+                : ''}
+          </p>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-base-700">
+            <div
+              className="h-full bg-accent transition-all"
+              style={{
+                width:
+                  status.phase === 'downloading' && status.total > 0
+                    ? `${(status.done / status.total) * 100}%`
+                    : '100%',
+                opacity: status.phase === 'downloading' ? 1 : 0.5
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          className="btn-ghost"
+          disabled={busy}
+          onClick={() => void run(() => api.dict.importPreset('jmdict-en'))}
+        >
+          ⬇ Download JMdict (EN)
+        </button>
+        <button
+          className="btn-ghost"
+          disabled={busy}
+          onClick={() => void run(() => api.dict.importPreset('kanjidic-en'))}
+        >
+          ⬇ Download KANJIDIC (EN)
+        </button>
+        <button className="btn-ghost" disabled={busy} onClick={() => void run(() => api.dict.importZip())}>
+          Import Yomitan .zip…
+        </button>
+      </div>
+
+      {error && <p className="mt-3 text-sm text-red-400">Import failed: {error}</p>}
+    </section>
   )
 }
 

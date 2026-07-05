@@ -50,6 +50,16 @@ function ensureColumn(
   }
 }
 
+// Drops a column that init.sql no longer defines, if a pre-existing DB still
+// has it. SQLite (3.35+) supports ALTER TABLE DROP COLUMN; guarded so it only
+// runs when the column is actually present.
+function dropColumn(sqlite: Database.Database, table: string, column: string): void {
+  const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
+  if (cols.some((c) => c.name === column)) {
+    sqlite.exec(`ALTER TABLE ${table} DROP COLUMN ${column}`)
+  }
+}
+
 function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'character', 'external_source', 'external_source TEXT')
   ensureColumn(sqlite, 'character', 'external_id', 'external_id TEXT')
@@ -65,6 +75,22 @@ function runMigrations(sqlite: Database.Database): void {
   // Manga reader: series folder attached to a manga entry (written only by
   // src/main/manga.ts — deliberately absent from mediaRepo's column map).
   ensureColumn(sqlite, 'media_item', 'local_dir', 'local_dir TEXT')
+
+  // Movies used to store "times watched" in the generic `progress` column;
+  // it's now unified into `rewatch_count` (the universal times-consumed counter)
+  // like every other media type. Copy the old value across once, then blank the
+  // movie progress. The WHERE guard (progress>0 AND rewatch_count=0) makes this
+  // self-idempotent — it can't run twice or clobber a real rewatch_count.
+  sqlite.exec(
+    `UPDATE media_item SET rewatch_count = progress, progress = 0
+     WHERE media_type = 'movie' AND progress > 0 AND rewatch_count = 0`
+  )
+
+  // Retired: per-item start/finish dates are no longer tracked. Drop them from
+  // any DB that predates their removal so the schema matches init.sql (and the
+  // export sanitizer, which no longer references them).
+  dropColumn(sqlite, 'media_item', 'started_at')
+  dropColumn(sqlite, 'media_item', 'finished_at')
 }
 
 export function initDatabase(): DB {

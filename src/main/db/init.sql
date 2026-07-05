@@ -15,8 +15,7 @@ CREATE TABLE IF NOT EXISTS media_item (
   status          TEXT,
   score           REAL,
   progress        INTEGER NOT NULL DEFAULT 0,
-  started_at      TEXT,
-  finished_at     TEXT,
+  -- Universal "times consumed" counter (watched/read/played), per media type.
   rewatch_count   INTEGER NOT NULL DEFAULT 0,
   notes           TEXT,
   favorite        INTEGER NOT NULL DEFAULT 0,

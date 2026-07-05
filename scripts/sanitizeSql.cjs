@@ -15,8 +15,8 @@
 const SANITIZE_STATEMENTS = [
   // Personal tracking on media, reset to fresh-item defaults. local_dir points
   // at a folder under the exporter's manga.dir — meaningless on another machine.
-  `UPDATE media_item SET status=NULL, score=NULL, progress=0, started_at=NULL,
-     finished_at=NULL, rewatch_count=0, notes=NULL, favorite=0, local_dir=NULL`,
+  `UPDATE media_item SET status=NULL, score=NULL, progress=0,
+     rewatch_count=0, notes=NULL, favorite=0, local_dir=NULL`,
 
   // User-curated lists (rankings + notes).
   'DELETE FROM list_item',

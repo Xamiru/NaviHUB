@@ -73,7 +73,10 @@ export default function HomePage() {
 
       <div className="mt-8 grid gap-4 lg:grid-cols-[2fr_1fr] items-stretch">
         <Spotlight pool={backlog.length ? backlog : all} fromBacklog={backlog.length > 0} />
-        <QuizCard />
+        <div className="flex flex-col gap-4">
+          <TimeStatsCard />
+          <QuizCard />
+        </div>
       </div>
 
       <TopPeople />
@@ -253,6 +256,50 @@ function Spotlight({ pool, fromBacklog }: { pool: MediaItem[]; fromBacklog: bool
         </div>
       </div>
     </div>
+  )
+}
+
+// Door into the cross-library time-spent stats, with a live "days" headline.
+function TimeStatsCard() {
+  const { data: stats } = useQuery({
+    queryKey: qk.media.timeStats,
+    queryFn: () => api.media.timeStats()
+  })
+  const days = stats ? stats.totalMinutes / 1440 : 0
+  const hasData = !!stats && stats.consumedCount > 0
+  return (
+    <Link
+      to="/stats"
+      className="card group relative overflow-hidden p-5 flex flex-col justify-between bg-gradient-to-br from-accent/25 via-base-800 to-base-800 hover:from-accent/35"
+    >
+      <span
+        className="absolute -right-3 -bottom-8 text-[7rem] leading-none opacity-10 select-none"
+        aria-hidden
+      >
+        ⧗
+      </span>
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">Stats</p>
+        <p className="mt-1 text-xl font-bold">
+          {hasData ? `~${days < 10 ? days.toFixed(1) : Math.round(days)} days of your life` : 'Time spent'}
+        </p>
+        <p className="mt-1 text-sm text-gray-400">
+          {hasData
+            ? 'See where the time went, type by type.'
+            : 'Track progress to see your days-watched breakdown.'}
+        </p>
+      </div>
+      <div className="mt-4 flex items-center justify-between">
+        {hasData && (
+          <span className="text-xs text-gray-500">
+            across {stats!.consumedCount} titles
+          </span>
+        )}
+        <span className="btn-primary pointer-events-none ml-auto group-hover:brightness-110">
+          Open ▸
+        </span>
+      </div>
+    </Link>
   )
 }
 

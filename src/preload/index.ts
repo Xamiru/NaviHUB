@@ -11,7 +11,8 @@ const api: NaviApi = {
     remove: (id) => ipcRenderer.invoke('media:remove', id),
     removeCharacter: (mediaId, characterId) =>
       ipcRenderer.invoke('media:removeCharacter', mediaId, characterId),
-    setStatusCounts: (mediaType) => ipcRenderer.invoke('media:statusCounts', mediaType)
+    setStatusCounts: (mediaType) => ipcRenderer.invoke('media:statusCounts', mediaType),
+    timeStats: () => ipcRenderer.invoke('media:timeStats')
   },
   people: {
     list: (search, role, mediaType) => ipcRenderer.invoke('people:list', search, role, mediaType),
@@ -119,9 +120,17 @@ const api: NaviApi = {
     quizPool: (scope) => ipcRenderer.invoke('japanese:quizPool', scope),
     stats: () => ipcRenderer.invoke('japanese:stats'),
     ensureMiningInbox: () => ipcRenderer.invoke('japanese:ensureMiningInbox'),
-    jishoLookup: (term) => ipcRenderer.invoke('japanese:jishoLookup', term),
     tokenize: (text) => ipcRenderer.invoke('japanese:tokenize', text),
     minedFronts: (fronts) => ipcRenderer.invoke('japanese:minedFronts', fronts)
+  },
+  dict: {
+    list: () => ipcRenderer.invoke('dict:list'),
+    lookup: (query) => ipcRenderer.invoke('dict:lookup', query),
+    kanji: (text) => ipcRenderer.invoke('dict:kanji', text),
+    importPreset: (key) => ipcRenderer.invoke('dict:importPreset', key),
+    importZip: () => ipcRenderer.invoke('dict:importZip'),
+    importStatus: () => ipcRenderer.invoke('dict:importStatus'),
+    remove: (id) => ipcRenderer.invoke('dict:remove', id)
   },
   manga: {
     attachFolder: (mediaId) => ipcRenderer.invoke('manga:attachFolder', mediaId),

@@ -8,6 +8,7 @@ import Toaster from './components/Toaster'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
+import StatsPage from './pages/StatsPage'
 import MediaListPage from './pages/MediaListPage'
 import MediaDetailPage from './pages/MediaDetailPage'
 import MediaFormPage from './pages/MediaFormPage'
@@ -30,6 +31,7 @@ import JapaneseLessonFormPage from './pages/JapaneseLessonFormPage'
 import JapaneseReviewPage from './pages/JapaneseReviewPage'
 import JapaneseQuizPage from './pages/JapaneseQuizPage'
 import JapaneseMinePage from './pages/JapaneseMinePage'
+import JapaneseDictionaryPage from './pages/JapaneseDictionaryPage'
 import MangaReaderPage from './pages/MangaReaderPage'
 import MusicLibraryPage from './pages/MusicLibraryPage'
 import MusicArtistPage from './pages/MusicArtistPage'
@@ -68,6 +70,7 @@ export default function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />
+            <Route path="/stats" element={<StatsPage />} />
 
             {/* Anime */}
             <Route path="/anime" element={<MediaListPage cfg={ANIME} />} />
@@ -206,6 +209,7 @@ export default function App() {
             <Route path="/japanese/review" element={<JapaneseReviewPage />} />
             <Route path="/japanese/quiz" element={<JapaneseQuizPage />} />
             <Route path="/japanese/mine" element={<JapaneseMinePage />} />
+            <Route path="/japanese/dictionary" element={<JapaneseDictionaryPage />} />
 
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/anime" replace />} />

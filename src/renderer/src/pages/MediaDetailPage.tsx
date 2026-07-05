@@ -114,6 +114,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
             {rottenTomatoes != null && <Stat label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />}
             {metacritic != null && <Stat label="Metacritic" value={`${metacritic} / 100`} />}
             <Stat label={cfg.progressStatLabel} value={cfg.formatProgressStat(m)} />
+            <Stat label={cfg.timesConsumedLabel} value={String(m.rewatchCount)} />
             <Stat label="Released" value={m.releaseDate ?? '—'} />
           </div>
 

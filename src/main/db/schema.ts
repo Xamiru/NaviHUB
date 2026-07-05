@@ -20,8 +20,7 @@ export const mediaItem = sqliteTable(
     status: text('status'),
     score: real('score'),
     progress: integer('progress').notNull().default(0),
-    startedAt: text('started_at'),
-    finishedAt: text('finished_at'),
+    // Universal "times consumed" counter (watched/read/played), per media type.
     rewatchCount: integer('rewatch_count').notNull().default(0),
     notes: text('notes'),
     favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),

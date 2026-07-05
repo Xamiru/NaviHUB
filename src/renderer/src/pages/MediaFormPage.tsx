@@ -15,8 +15,7 @@ interface FormState {
   score: string
   progress: string
   totalUnits: string
-  startedAt: string
-  finishedAt: string
+  timesConsumed: string
   releaseDate: string
   favorite: boolean
   synopsis: string
@@ -31,8 +30,7 @@ const EMPTY: FormState = {
   score: '',
   progress: '0',
   totalUnits: '',
-  startedAt: '',
-  finishedAt: '',
+  timesConsumed: '0',
   releaseDate: '',
   favorite: false,
   synopsis: '',
@@ -72,8 +70,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
         score: m.score != null ? String(m.score) : '',
         progress: String(m.progress),
         totalUnits: m.totalUnits != null ? String(m.totalUnits) : '',
-        startedAt: m.startedAt ?? '',
-        finishedAt: m.finishedAt ?? '',
+        timesConsumed: String(m.rewatchCount),
         releaseDate: m.releaseDate ?? '',
         favorite: m.favorite,
         synopsis: m.synopsis ?? '',
@@ -133,8 +130,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
       score: toNum(form.score),
       progress,
       totalUnits,
-      startedAt: form.startedAt || null,
-      finishedAt: form.finishedAt || null,
+      rewatchCount: Math.max(0, toNum(form.timesConsumed) ?? 0),
       releaseDate: form.releaseDate || null,
       favorite: form.favorite,
       synopsis: form.synopsis.trim() || null,
@@ -151,7 +147,10 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
     await qc.invalidateQueries({ queryKey: qk.media.all })
     await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
     setSaving(false)
-    navigate(`${cfg.basePath}/${targetId}`)
+    // Replace, don't push: the form should drop out of history so that Back
+    // from the detail page returns to where the user was before editing (the
+    // detail page they clicked Edit from, or the list) — not back into the form.
+    navigate(`${cfg.basePath}/${targetId}`, { replace: true })
   }
 
   const coverUrl = useImageUrl(form.coverPath)
@@ -255,17 +254,19 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="label">{cfg.progressFieldLabel}</label>
-              <input
-                className="input"
-                type="number"
-                min={0}
-                max={progressCap ?? undefined}
-                value={form.progress}
-                onChange={(e) => setProgress(e.target.value)}
-              />
-            </div>
+            {!cfg.noProgress && (
+              <div>
+                <label className="label">{cfg.progressFieldLabel}</label>
+                <input
+                  className="input"
+                  type="number"
+                  min={0}
+                  max={progressCap ?? undefined}
+                  value={form.progress}
+                  onChange={(e) => setProgress(e.target.value)}
+                />
+              </div>
+            )}
             <div>
               <label className="label">{cfg.totalFieldLabel}</label>
               <input
@@ -279,23 +280,15 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Started</label>
+              <label className="label">{cfg.timesConsumedLabel}</label>
               <input
                 className="input"
-                type="date"
-                value={form.startedAt}
-                onChange={(e) => set('startedAt', e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="label">Finished</label>
-              <input
-                className="input"
-                type="date"
-                value={form.finishedAt}
-                onChange={(e) => set('finishedAt', e.target.value)}
+                type="number"
+                min={0}
+                value={form.timesConsumed}
+                onChange={(e) => set('timesConsumed', e.target.value)}
               />
             </div>
             <div>

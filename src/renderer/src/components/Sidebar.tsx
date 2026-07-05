@@ -135,6 +135,10 @@ export default function Sidebar() {
           <NavLink to="/music" className={({ isActive }) => linkClass(isActive)}>
             <span className="w-4 text-center opacity-80">♪</span> Music
           </NavLink>
+          {/* Cross-library time-spent stats */}
+          <NavLink to="/stats" className={({ isActive }) => linkClass(isActive)}>
+            <span className="w-4 text-center opacity-80">⧗</span> Stats
+          </NavLink>
         </div>
 
         <div className="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">

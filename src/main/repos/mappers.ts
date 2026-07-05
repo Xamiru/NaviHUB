@@ -28,8 +28,6 @@ export function mapMedia(r: any): MediaItem {
     status: r.status ?? null,
     score: r.score ?? null,
     progress: r.progress ?? 0,
-    startedAt: r.started_at ?? null,
-    finishedAt: r.finished_at ?? null,
     rewatchCount: r.rewatch_count ?? 0,
     notes: r.notes ?? null,
     favorite: !!r.favorite,

@@ -7,6 +7,7 @@ import type {
   MediaItemInput,
   MediaListFilter,
   MediaDetail,
+  LibraryTimeStats,
   Person,
   PersonCredit,
   Company,
@@ -34,7 +35,11 @@ import type {
   JpLessonDetail,
   JpLessonInput,
   JpMiningInbox,
-  JishoResult,
+  DictInfo,
+  DictEntry,
+  DictImportStatus,
+  DictImportSummary,
+  KanjiInfo,
   JpQuizItem,
   JpQuizScope,
   JpReviewOutcome,
@@ -76,6 +81,7 @@ export interface NaviApi {
     remove(id: number): Promise<void>
     removeCharacter(mediaId: number, characterId: number): Promise<void>
     setStatusCounts(mediaType: string): Promise<Record<string, number>>
+    timeStats(): Promise<LibraryTimeStats>
   }
   people: {
     // role filters the browse list to people with that kind of credit (and
@@ -205,16 +211,28 @@ export interface NaviApi {
     submitReview(cardId: number, grade: SrsGrade): Promise<JpReviewOutcome>
     quizPool(scope: JpQuizScope): Promise<JpQuizItem[]>
     stats(): Promise<JpStats>
-    // Vocab mining: find-or-create the capture course/lesson, and dictionary
-    // lookups via jisho.org (empty array on any failure — never throws).
+    // Vocab mining: find-or-create the capture course/lesson.
     ensureMiningInbox(): Promise<JpMiningInbox>
-    jishoLookup(term: string): Promise<JishoResult[]>
     // Morphological analysis (kuromoji) of an OCR'd text block; [] on failure
     // so callers fall back to manual selection.
     tokenize(text: string): Promise<JpToken[]>
     // Which of the given card fronts already exist anywhere in jp_card — the
     // reader marks them as already-mined.
     minedFronts(fronts: string[]): Promise<string[]>
+  }
+  // Offline Yomitan dictionaries (see src/main/dict/). Lookups run offline first
+  // and fall back to jisho.org; every result is a DictEntry. Nothing throws.
+  dict: {
+    list(): Promise<DictInfo[]>
+    lookup(query: string): Promise<DictEntry[]>
+    kanji(text: string): Promise<KanjiInfo[]>
+    // Download + import a freely-hosted preset (JMdict / KANJIDIC).
+    importPreset(key: 'jmdict-en' | 'kanjidic-en'): Promise<DictImportSummary>
+    // Native picker + import of any Yomitan .zip; null when cancelled.
+    importZip(): Promise<DictImportSummary | null>
+    // Live status of the running download/import (polled while it runs).
+    importStatus(): Promise<DictImportStatus>
+    remove(id: number): Promise<void>
   }
   manga: {
     // Local manga reader: chapters are page-image folders under the manga

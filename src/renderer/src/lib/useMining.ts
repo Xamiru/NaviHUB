@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from './api'
 import { qk } from './queryKeys'
 import { toast } from './toast'
-import type { JishoResult } from '@shared/types'
+import { flattenGlossary } from '@shared/dictContent'
+import type { DictEntry } from '@shared/types'
 
 // Shared vocab-mining logic between the standalone mine page
 // (JapaneseMinePage) and the manga reader's mining panel, so the two capture
@@ -69,12 +70,16 @@ export function useMiningDraft(opts: { sourceMediaId: number | null; onSaved?: (
   const targetLessonId = lessonId ?? targets?.inboxLessonId ?? null
   const canSave = !!draft.front.trim() && !!draft.back.trim() && targetLessonId != null
 
-  function fillFromJisho(r: JishoResult, exampleJp?: string) {
+  // Fills the draft from a unified dictionary entry (offline or jisho fallback).
+  // reading is left blank for a kana-only headword (front already is the kana);
+  // back is the flattened first definition; pos is the first def's tags.
+  function fillFromEntry(e: DictEntry, exampleJp?: string) {
+    const back = e.defs.length ? flattenGlossary(e.defs[0].glossary, 500) : ''
     setDraft((d) => ({
-      front: r.word,
-      reading: r.reading ?? '',
-      back: r.meanings,
-      pos: r.pos ?? '',
+      front: e.expression,
+      reading: e.reading, // '' for a kana-only headword
+      back,
+      pos: e.defs[0]?.tags.join(', ') ?? '',
       notes: '',
       exampleJp: exampleJp ?? d.exampleJp
     }))
@@ -107,7 +112,7 @@ export function useMiningDraft(opts: { sourceMediaId: number | null; onSaved?: (
     targets,
     draft,
     setDraft,
-    fillFromJisho,
+    fillFromEntry,
     targetLessonId,
     setLessonId,
     canSave,

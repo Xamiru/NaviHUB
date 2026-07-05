@@ -170,8 +170,7 @@ Optional, in the app's Settings page:
   /* ---- 6. verification summary ---- */
   const one = (sql) => Object.values(copy.prepare(sql).get())[0]
   const tracked = one(`SELECT COUNT(*) FROM media_item WHERE status IS NOT NULL
-     OR score IS NOT NULL OR progress<>0 OR started_at IS NOT NULL
-     OR finished_at IS NOT NULL OR rewatch_count<>0 OR notes IS NOT NULL
+     OR score IS NOT NULL OR progress<>0 OR rewatch_count<>0 OR notes IS NOT NULL
      OR favorite<>0 OR local_dir IS NOT NULL`)
   const hasTable = copy.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`)
   const wiped = [

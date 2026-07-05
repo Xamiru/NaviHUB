@@ -5,13 +5,14 @@ import { usePersistedState } from '../lib/navState'
 import { useMiningDraft } from '../lib/useMining'
 import UniversalPicker, { type PickedEntity } from '../components/UniversalPicker'
 import CoverImage from '../components/CoverImage'
-import type { JishoResult } from '@shared/types'
+import DictResultRow from '../components/japanese/DictResultRow'
+import type { DictEntry } from '@shared/types'
 
 export default function JapaneseMinePage() {
   const searchRef = useRef<HTMLInputElement>(null)
 
   const [term, setTerm] = useState('')
-  const [results, setResults] = useState<JishoResult[] | null>(null)
+  const [results, setResults] = useState<DictEntry[] | null>(null)
   const [searching, setSearching] = useState(false)
   const [source, setSource] = usePersistedState<PickedEntity | null>('jpMineSource', null)
 
@@ -33,7 +34,7 @@ export default function JapaneseMinePage() {
     if (!q) return
     setSearching(true)
     try {
-      setResults(await api.japanese.jishoLookup(q))
+      setResults(await api.dict.lookup(q))
     } finally {
       setSearching(false)
     }
@@ -54,12 +55,12 @@ export default function JapaneseMinePage() {
 
       <div className="card p-5 space-y-5">
         <div>
-          <div className="label mb-1">Look up on Jisho</div>
+          <div className="label mb-1">Look up (offline dictionaries · English works too)</div>
           <div className="flex gap-2">
             <input
               ref={searchRef}
               className="input flex-1"
-              placeholder="e.g. 沼, 面白い, つまり…"
+              placeholder="e.g. 沼, 面白い, or an English word…"
               value={term}
               autoFocus
               onChange={(e) => setTerm(e.target.value)}
@@ -80,29 +81,13 @@ export default function JapaneseMinePage() {
             </p>
           ) : (
             <div className="space-y-1.5">
-              {results.map((r) => (
-                <button
-                  key={r.slug}
-                  onClick={() => mining.fillFromJisho(r)}
-                  className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                    draft.front === r.word
-                      ? 'border-accent bg-accent/10'
-                      : 'border-base-700 bg-base-800 hover:border-accent hover:bg-base-700'
-                  }`}
-                >
-                  <span className="text-lg">{r.word}</span>
-                  {r.reading && r.reading !== r.word && (
-                    <span className="ml-2 text-sm text-gray-400">{r.reading}</span>
-                  )}
-                  {r.isCommon && <span className="chip ml-2 bg-green-500/20 text-green-300">common</span>}
-                  {r.jlpt && (
-                    <span className="chip ml-1 bg-base-700 text-gray-400">
-                      {r.jlpt.replace('jlpt-', '').toUpperCase()}
-                    </span>
-                  )}
-                  <span className="mt-0.5 block text-sm text-gray-400">{r.meanings}</span>
-                  {r.pos && <span className="block text-xs text-gray-400">{r.pos}</span>}
-                </button>
+              {results.map((r, i) => (
+                <DictResultRow
+                  key={`${r.expression} ${r.reading} ${i}`}
+                  entry={r}
+                  selected={draft.front === r.expression}
+                  onPick={() => mining.fillFromEntry(r)}
+                />
               ))}
             </div>
           ))}

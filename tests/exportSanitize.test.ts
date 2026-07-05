@@ -13,11 +13,11 @@ let db: Database.Database
 function seed(): void {
   db.exec(`
     INSERT INTO media_item (id, media_type, title, title_original, synopsis, cover_path,
-      release_date, total_units, status, score, progress, started_at, finished_at,
+      release_date, total_units, status, score, progress,
       rewatch_count, notes, favorite, metadata, external_source, external_id, local_dir)
     VALUES (1, 'anime', 'Cowboy Bebop', 'カウボーイビバップ', 'Space bounty hunters.',
-      'media/dl-abc.jpg', '1998-04-03', 26, 'Completed', 9.5, 26, '2025-01-01',
-      '2025-02-01', 2, 'my private notes', 1, '{"communityScore":8.8}', 'anilist', '1',
+      'media/dl-abc.jpg', '1998-04-03', 26, 'Completed', 9.5, 26,
+      2, 'my private notes', 1, '{"communityScore":8.8}', 'anilist', '1',
       'Cowboy Bebop');
 
     INSERT INTO person (id, name, photo_path) VALUES (1, 'Megumi Hayashibara', 'media/dl-p.jpg');
@@ -91,8 +91,6 @@ describe('export sanitize', () => {
     expect(row.status).toBeNull()
     expect(row.score).toBeNull()
     expect(row.progress).toBe(0)
-    expect(row.started_at).toBeNull()
-    expect(row.finished_at).toBeNull()
     expect(row.rewatch_count).toBe(0)
     expect(row.notes).toBeNull()
     expect(row.favorite).toBe(0)

@@ -2,6 +2,7 @@ import { app, BrowserWindow, Menu, protocol, net } from 'electron'
 import { join } from 'path'
 import { pathToFileURL } from 'url'
 import { initDatabase, closeDatabase } from './db/connection'
+import { closeDictDb } from './dict/dictDb'
 import { registerIpc } from './ipc'
 import { absoluteMediaPath } from './files'
 import { splitArchivePath, readArchiveEntry, mimeFor } from './archive'
@@ -94,6 +95,7 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     closeDatabase()
+    closeDictDb()
     app.quit()
   }
 })
@@ -103,4 +105,5 @@ app.on('before-quit', () => {
   // and resume on the next try.
   killActiveMusicDownload()
   closeDatabase()
+  closeDictDb()
 })

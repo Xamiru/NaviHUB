@@ -51,6 +51,9 @@ export default function JapaneseHomePage() {
         <Link to="/japanese/mine" className="btn-ghost">
           ⛏ Mine words
         </Link>
+        <Link to="/japanese/dictionary" className="btn-ghost">
+          辞 Dictionary
+        </Link>
       </div>
 
       <div className="mb-3">

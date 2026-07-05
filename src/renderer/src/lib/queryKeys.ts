@@ -32,7 +32,9 @@ export const qk = {
     all: ['media'] as const,
     list: (filter: MediaListFilter) => ['media', filter] as const,
     detail: (mediaId: number) => ['media', 'detail', mediaId] as const,
-    home: (mediaType: MediaType) => ['media', { mediaType, home: true }] as const
+    home: (mediaType: MediaType) => ['media', { mediaType, home: true }] as const,
+    // Under the ['media'] prefix on purpose: every media mutation invalidates it.
+    timeStats: ['media', 'timeStats'] as const
   },
   mediaCounts: {
     all: ['media-counts'] as const,
@@ -87,6 +89,15 @@ export const qk = {
     // Manga reader mining: tokenized OCR block text + already-mined word check.
     tokens: (text: string) => ['japanese', 'tokens', text] as const,
     minedFronts: (fronts: string[]) => ['japanese', 'minedFronts', fronts] as const
+  },
+  dict: {
+    // Offline dictionaries. Import/delete invalidate the `all` prefix, which also
+    // drops cached lookups (definitions changed).
+    all: ['dict'] as const,
+    list: ['dict', 'list'] as const,
+    lookup: (query: string) => ['dict', 'lookup', query] as const,
+    kanji: (text: string) => ['dict', 'kanji', text] as const,
+    importStatus: ['dict', 'importStatus'] as const
   },
   music: {
     // Local music library. Mutations (scan, like, playlist edits) invalidate

@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { useMiningDraft } from '../../lib/useMining'
-import type { JishoResult, JpToken } from '@shared/types'
+import DictResultRow from '../japanese/DictResultRow'
+import type { DictEntry, JpToken } from '@shared/types'
 
 // The manga reader's word-mining side panel: shows the tapped OCR block as
 // tokenized word chips, looks terms up on Jisho, and saves cards straight into
@@ -21,7 +22,7 @@ export default function MiningPanel({
 }) {
   const termRef = useRef<HTMLInputElement>(null)
   const [term, setTerm] = useState('')
-  const [results, setResults] = useState<JishoResult[] | null>(null)
+  const [results, setResults] = useState<DictEntry[] | null>(null)
   const [searching, setSearching] = useState(false)
 
   const mining = useMiningDraft({ sourceMediaId: mediaId })
@@ -39,7 +40,7 @@ export default function MiningPanel({
   // Which of the visible words are already in a deck (any lesson, any source).
   const candidateFronts = [
     ...(tokens?.filter((t) => t.wordLike).map((t) => t.base) ?? []),
-    ...(results?.map((r) => r.word) ?? [])
+    ...(results?.map((r) => r.expression) ?? [])
   ]
   const { data: mined } = useQuery({
     queryKey: qk.japanese.minedFronts(candidateFronts),
@@ -53,11 +54,11 @@ export default function MiningPanel({
     if (!trimmed) return
     setSearching(true)
     try {
-      let found = await api.japanese.jishoLookup(trimmed)
+      let found = await api.dict.lookup(trimmed)
       // A token's base form can miss (OCR noise, names); retry with the
       // surface form before giving up.
       if (found.length === 0 && retryWith && retryWith !== trimmed) {
-        found = await api.japanese.jishoLookup(retryWith)
+        found = await api.dict.lookup(retryWith)
       }
       setResults(found)
     } finally {
@@ -144,7 +145,7 @@ export default function MiningPanel({
       )}
 
       <div>
-        <div className="label mb-1">Look up on Jisho</div>
+        <div className="label mb-1">Look up (offline)</div>
         <div className="flex gap-2">
           <input
             ref={termRef}
@@ -172,31 +173,15 @@ export default function MiningPanel({
           <p className="text-sm text-gray-500">Nothing found — fill in the card by hand below.</p>
         ) : (
           <div className="space-y-1.5">
-            {results.map((r) => (
-              <button
-                key={r.slug}
-                onClick={() => mining.fillFromJisho(r, blockText ?? undefined)}
-                className={`w-full rounded-lg border p-2.5 text-left transition-colors ${
-                  draft.front === r.word
-                    ? 'border-accent bg-accent/10'
-                    : 'border-base-700 bg-base-800 hover:border-accent hover:bg-base-700'
-                }`}
-              >
-                <span className="text-base">{r.word}</span>
-                {r.reading && r.reading !== r.word && (
-                  <span className="ml-2 text-sm text-gray-400">{r.reading}</span>
-                )}
-                {isMined(r.word) && (
-                  <span className="chip ml-2 bg-green-500/20 text-green-300">✓ mined</span>
-                )}
-                {r.isCommon && <span className="chip ml-1 bg-green-500/20 text-green-300">common</span>}
-                {r.jlpt && (
-                  <span className="chip ml-1 bg-base-700 text-gray-400">
-                    {r.jlpt.replace('jlpt-', '').toUpperCase()}
-                  </span>
-                )}
-                <span className="mt-0.5 block text-sm text-gray-400">{r.meanings}</span>
-              </button>
+            {results.map((r, i) => (
+              <DictResultRow
+                key={`${r.expression} ${r.reading} ${i}`}
+                entry={r}
+                size="sm"
+                selected={draft.front === r.expression}
+                mined={isMined(r.expression)}
+                onPick={() => mining.fillFromEntry(r, blockText ?? undefined)}
+              />
             ))}
           </div>
         ))}

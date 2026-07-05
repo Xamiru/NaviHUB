@@ -91,7 +91,10 @@ export default function PersonDetailPage() {
         onDelete={async () => {
           await api.people.remove(personId)
           qc.invalidateQueries({ queryKey: qk.people.all })
-          navigate('/people')
+          // Return to wherever the user came from (an actors/directors/artists
+          // list, or a title's cast) rather than a hardcoded '/people' — that
+          // route is specifically Voice Actors, wrong for a movie actor etc.
+          navigate(-1)
         }}
         actions={<AddToListMenu kind="person" entityId={personId} />}
       />

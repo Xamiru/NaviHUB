@@ -404,6 +404,16 @@ export async function importTv(tmdbId: number): Promise<ImportSummary> {
   const title = m.name || m.original_name || 'Untitled'
   // Networks first, then production companies, for the "Networks" section.
   const companies = [...(m.networks ?? []), ...(m.production_companies ?? [])]
+  // Per-episode runtime (minutes) → metadata.epDuration for /stats time estimates.
+  // episode_run_time is an array of typical lengths; average it, else fall back to
+  // the most recent aired episode's runtime. May be absent for some shows.
+  const runTimes: number[] = (m.episode_run_time ?? []).filter((n: unknown) => typeof n === 'number' && n > 0)
+  const epDuration = runTimes.length
+    ? Math.round(runTimes.reduce((a, b) => a + b, 0) / runTimes.length)
+    : (m.last_episode_to_air?.runtime ?? null)
+  const omdb = await fetchOmdb(m.external_ids?.imdb_id)
+  const extraMeta =
+    epDuration && epDuration > 0 ? { ...(omdb ?? {}), epDuration } : omdb
   return persistTitle({
     externalId: String(m.id),
     mediaType: 'tv',
@@ -431,6 +441,6 @@ export async function importTv(tmdbId: number): Promise<ImportSummary> {
       }
     }),
     crew: [], // TV directors aren't tracked — actors are shared with movies.
-    extraMeta: await fetchOmdb(m.external_ids?.imdb_id)
+    extraMeta
   })
 }

@@ -38,8 +38,7 @@ export interface MediaItem {
   status: string | null
   score: number | null
   progress: number
-  startedAt: string | null
-  finishedAt: string | null
+  // Times consumed (watched/read/played) — the universal counter across types.
   rewatchCount: number
   notes: string | null
   favorite: boolean
@@ -99,8 +98,6 @@ export interface MediaItemInput {
   status?: string | null
   score?: number | null
   progress?: number
-  startedAt?: string | null
-  finishedAt?: string | null
   rewatchCount?: number
   notes?: string | null
   favorite?: boolean
@@ -484,6 +481,106 @@ export interface JpMiningInbox {
   lessonId: number
 }
 
+// ---- Offline Japanese dictionaries (Yomitan format) ----
+// Imported Yomitan dictionary zips (JMdict, KANJIDIC, pitch accent, DOJG, …)
+// live in a separate userData/dictionaries.db. Lookups run offline first and
+// fall back to jisho.org, but every result — offline or online — is mapped into
+// the DictEntry shape below so the three surfaces (dictionary page, mining
+// autofill, manga-reader panel) consume one type.
+
+// A Yomitan structured-content node tree: a plain string, an array of nodes, or
+// an HTML-ish element object. Kept loose because dictionaries nest arbitrarily.
+export type StructuredNode =
+  | string
+  | StructuredNode[]
+  | {
+      tag: string
+      content?: StructuredNode
+      style?: Record<string, unknown>
+      href?: string
+      lang?: string
+      // Other Yomitan attributes (data, colSpan, …) are ignored by our renderer.
+      [k: string]: unknown
+    }
+
+// One glossary item as stored in a term bank: a bare string, a structured tree,
+// a tagged text node, or an image (images are not rendered).
+export type GlossaryItem =
+  | string
+  | { type: 'structured-content'; content: StructuredNode }
+  | { type: 'text'; text: string }
+  | { type: 'image'; [k: string]: unknown }
+
+// A single dictionary's definition of one term.
+export interface DictDef {
+  dictId: number
+  dictTitle: string
+  tags: string[] // resolved definition tags (e.g. "noun", "usually kana")
+  glossary: GlossaryItem[]
+}
+
+// Pitch-accent info for a reading (downstep position; 0 = heiban/no drop).
+export interface PitchInfo {
+  reading: string
+  position: number
+  devoice?: number[]
+  nasal?: number[]
+}
+
+// One merged dictionary entry: a headword + reading with every dictionary's
+// definitions grouped under it, plus pitch and common/JLPT tags.
+export interface DictEntry {
+  expression: string
+  reading: string // '' when identical to the expression
+  defs: DictDef[]
+  pitches: PitchInfo[]
+  tags: string[] // term-level tags (common markers, JLPT, …)
+  isCommon: boolean
+  matchedForm: string // the candidate that actually hit (deinflection transparency)
+  source: 'offline' | 'jisho'
+}
+
+// A kanji's readings and meanings from a KANJIDIC-style dictionary.
+export interface KanjiInfo {
+  character: string
+  onyomi: string[]
+  kunyomi: string[]
+  meanings: string[]
+  stats: Record<string, string> // grade, strokes, jlpt, freq, …
+  dictTitle: string
+}
+
+// A row in the installed-dictionaries registry (Settings list).
+export interface DictInfo {
+  id: number
+  title: string
+  revision: string | null
+  format: number | null
+  priority: number
+  termCount: number
+  kanjiCount: number
+  importedAt: string
+}
+
+// Live status of a dictionary download/import, polled by the renderer while an
+// import runs (module-level state in the importer, like the music scan).
+export interface DictImportStatus {
+  running: boolean
+  phase: 'idle' | 'downloading' | 'reading' | 'terms' | 'kanji' | 'pitch' | 'tags' | 'finalizing'
+  done: number // downloading: bytes; other phases: rows written in the phase
+  total: number // downloading: content-length (0 if unknown); else rows in phase
+  dictTitle: string | null // known once index.json is read
+  error: string | null
+}
+
+// Outcome of a completed import.
+export interface DictImportSummary {
+  title: string
+  termCount: number
+  kanjiCount: number
+  pitchCount: number
+}
+
 // ---- Local manga reader ----
 // Chapters are folders of page images under the manga library root (settings
 // key manga.dir), attached to a manga media_item and scanned into manga_chapter
@@ -796,4 +893,37 @@ export interface MusicStatsDetail {
     decades: { decade: number; albums: number; tracks: number }[]
     deepestArtists: { id: number; name: string; coverPath: string | null; tracks: number }[]
   }
+}
+
+// ---- Library time stats (the /stats page) ----
+// All time values are MINUTES, normalized across types (see mediaRepo.timeStats).
+
+export interface TimeStatsItem {
+  id: number
+  mediaType: MediaType
+  title: string
+  coverPath: string | null
+  minutes: number
+  // Raw tracking fields so the renderer can format a per-type detail line
+  // ("24 ep × 2 watches", "180 ch", "132 h played") with mediaConfig knowledge.
+  progress: number
+  totalUnits: number | null
+  rewatchCount: number
+}
+
+export interface TimeStatsByType {
+  mediaType: MediaType
+  minutes: number
+  estimated: boolean // anime/tv/manga (and completed-but-unlogged game/vn fallbacks)
+  itemCount: number
+  topItems: TimeStatsItem[] // top 5 by minutes desc
+}
+
+export interface LibraryTimeStats {
+  totalMinutes: number
+  consumedCount: number // items that actually contributed (progress/rewatch/completed)
+  libraryCount: number // all media_item rows across the six types
+  byType: TimeStatsByType[] // all six types, zeros included; renderer filters
+  longest: TimeStatsItem | null // single biggest time sink overall
+  mostRevisited: (TimeStatsItem & { times: number }) | null // max rewatch_count, null if < 2
 }

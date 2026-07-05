@@ -189,9 +189,11 @@ function linkGenre(db: any, mediaId: number, name: string): void {
   db.prepare('INSERT OR IGNORE INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, tagId)
 }
 
-// Merge the AniList community average (0-100) into metadata without clobbering
-// other keys, so it can be shown beside the user's own score.
-function mergeAverageScore(db: any, mediaId: number, averageScore: unknown): void {
+// Merge numeric extras (community average score 0-100, per-episode duration in
+// minutes) into the metadata JSON without clobbering other keys, so they can be
+// shown beside the user's own data and feed the /stats time estimates. Only
+// applies entries that are positive numbers.
+function mergeMetadata(db: any, mediaId: number, patch: Record<string, unknown>): void {
   const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId) as
     | { metadata: string | null }
     | undefined
@@ -203,7 +205,9 @@ function mergeAverageScore(db: any, mediaId: number, averageScore: unknown): voi
       metaObj = {}
     }
   }
-  if (typeof averageScore === 'number' && averageScore > 0) metaObj.averageScore = averageScore
+  for (const [k, v] of Object.entries(patch)) {
+    if (typeof v === 'number' && v > 0) metaObj[k] = v
+  }
   db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(
     Object.keys(metaObj).length ? JSON.stringify(metaObj) : null,
     mediaId
@@ -322,6 +326,7 @@ query ($id: Int) {
     title { romaji english native }
     description(asHtml: false)
     episodes
+    duration
     averageScore
     startDate { year month day }
     coverImage { large extraLarge }
@@ -448,7 +453,7 @@ export async function importAnime(anilistId: number): Promise<AniListImportSumma
       mediaId = Number(info.lastInsertRowid)
     }
 
-    mergeAverageScore(db, mediaId, m.averageScore)
+    mergeMetadata(db, mediaId, { averageScore: m.averageScore, epDuration: m.duration })
 
     // ---- studios: only the main animation studio(s), not producers/licensors ----
     let studios = 0
@@ -639,7 +644,7 @@ export async function importManga(anilistId: number): Promise<AniListImportSumma
       mediaId = Number(info.lastInsertRowid)
     }
 
-    mergeAverageScore(db, mediaId, m.averageScore)
+    mergeMetadata(db, mediaId, { averageScore: m.averageScore })
 
     for (const g of m.genres ?? []) linkGenre(db, mediaId, g)
 

@@ -1,6 +1,7 @@
 import { getSqlite } from '../db/connection'
 import { mapMedia, mapTag, mapPerson, mapCompany, mapCharacter } from './mappers'
 import * as listRepo from './listRepo'
+import * as settingsRepo from './settingsRepo'
 import type {
   MediaItem,
   MediaItemInput,
@@ -12,7 +13,10 @@ import type {
   CreditRole,
   MediaCompanyRole,
   MediaRelation,
-  MediaType
+  MediaType,
+  LibraryTimeStats,
+  TimeStatsItem,
+  TimeStatsByType
 } from '@shared/types'
 
 // Columns that map 1:1 from MediaItemInput -> media_item (excluding tags).
@@ -27,8 +31,6 @@ const COL = {
   status: 'status',
   score: 'score',
   progress: 'progress',
-  startedAt: 'started_at',
-  finishedAt: 'finished_at',
   rewatchCount: 'rewatch_count',
   notes: 'notes',
   favorite: 'favorite',
@@ -96,6 +98,153 @@ export function statusCounts(mediaType: string): Record<string, number> {
   const out: Record<string, number> = {}
   for (const r of rows) if (r.status) out[r.status] = r.n
   return out
+}
+
+// ---- Library time stats (the /stats page) ----------------------------------
+// Aggregate "time consumed" across every media type, normalized to MINUTES.
+// Model: fetch the consumed rows once, do all per-type math in JS (the rules
+// branch on type / completed-status / metadata / settings, which reads far
+// clearer here than in a SQL CASE). Mirrors musicRepo.statsDetail's shape.
+
+const STAT_TYPES: MediaType[] = ['anime', 'manga', 'visual_novel', 'game', 'movie', 'tv']
+const ESTIMATED_TYPES = new Set<MediaType>(['anime', 'manga', 'tv'])
+
+// Must stay in sync with isCompletedStatus() in renderer/src/lib/mediaConfig.ts —
+// main can't import renderer code, so the rule is duplicated (and mirrored in SQL
+// via the WHERE clause below). Covers every default 'Completed'/'Watched' preset.
+function isCompleted(status: string | null): boolean {
+  return !!status && /^(completed|watched)$/i.test(status.trim())
+}
+
+function num(key: string, fallback: number): number {
+  const v = Number(settingsRepo.get(key))
+  return Number.isFinite(v) && v > 0 ? v : fallback
+}
+
+interface StatRow {
+  id: number
+  media_type: MediaType
+  title: string
+  cover_path: string | null
+  total_units: number | null
+  status: string | null
+  progress: number
+  rewatch_count: number
+  ep_duration: number | null
+}
+
+// Returns { minutes, estimated } for one consumed row. Estimated = the value
+// leans on a per-unit assumption (anime/tv/manga always; game/vn only when we
+// fall back to average length because no playtime was logged).
+function rowMinutes(
+  r: StatRow,
+  animeEp: number,
+  tvEp: number,
+  mangaCh: number
+): { minutes: number; estimated: boolean } {
+  const passes = Math.max(r.rewatch_count, 1)
+  const completed = isCompleted(r.status)
+  switch (r.media_type) {
+    case 'game': {
+      // progress = hours played (replays already folded in — never × passes)
+      if (r.progress > 0) return { minutes: r.progress * 60, estimated: false }
+      if (completed && r.total_units) return { minutes: r.total_units * 60, estimated: true }
+      return { minutes: 0, estimated: false }
+    }
+    case 'visual_novel': {
+      // progress = minutes played (replays already folded in — never × passes)
+      if (r.progress > 0) return { minutes: r.progress, estimated: false }
+      if (completed && r.total_units) return { minutes: r.total_units, estimated: true }
+      return { minutes: 0, estimated: false }
+    }
+    case 'movie': {
+      // total_units = runtime minutes; count every viewing
+      return { minutes: (r.total_units ?? 0) * passes, estimated: false }
+    }
+    case 'anime':
+    case 'tv': {
+      const episodes = completed && r.total_units != null ? r.total_units : r.progress
+      const perEp = r.ep_duration && r.ep_duration > 0 ? r.ep_duration : r.media_type === 'tv' ? tvEp : animeEp
+      return { minutes: episodes * perEp * passes, estimated: true }
+    }
+    case 'manga': {
+      const chapters = completed && r.total_units != null ? r.total_units : r.progress
+      return { minutes: chapters * mangaCh * passes, estimated: true }
+    }
+    default:
+      return { minutes: 0, estimated: false }
+  }
+}
+
+export function timeStats(): LibraryTimeStats {
+  const db = getSqlite()
+  const animeEp = num('stats.animeEpMinutes', 24)
+  const tvEp = num('stats.tvEpMinutes', 40)
+  const mangaCh = num('stats.mangaChapterMinutes', 5)
+
+  const placeholders = STAT_TYPES.map(() => '?').join(',')
+  const rows = db
+    .prepare(
+      `SELECT id, media_type, title, cover_path, total_units, status, progress, rewatch_count,
+              CAST(json_extract(metadata, '$.epDuration') AS REAL) AS ep_duration
+       FROM media_item
+       WHERE media_type IN (${placeholders})
+         AND (progress > 0 OR rewatch_count > 0
+              OR LOWER(TRIM(COALESCE(status, ''))) IN ('completed', 'watched'))`
+    )
+    .all(...STAT_TYPES) as StatRow[]
+
+  const libraryCount = (
+    db
+      .prepare(`SELECT COUNT(*) AS n FROM media_item WHERE media_type IN (${placeholders})`)
+      .get(...STAT_TYPES) as { n: number }
+  ).n
+
+  const byTypeMap = new Map<MediaType, { minutes: number; itemCount: number; items: TimeStatsItem[]; estimated: boolean }>()
+  for (const t of STAT_TYPES) byTypeMap.set(t, { minutes: 0, itemCount: 0, items: [], estimated: ESTIMATED_TYPES.has(t) })
+
+  let totalMinutes = 0
+  let consumedCount = 0
+  let longest: TimeStatsItem | null = null
+  let mostRevisited: (TimeStatsItem & { times: number }) | null = null
+
+  for (const r of rows) {
+    const { minutes, estimated } = rowMinutes(r, animeEp, tvEp, mangaCh)
+    const item: TimeStatsItem = {
+      id: r.id,
+      mediaType: r.media_type,
+      title: r.title,
+      coverPath: r.cover_path,
+      minutes,
+      progress: r.progress,
+      totalUnits: r.total_units,
+      rewatchCount: r.rewatch_count
+    }
+    const bucket = byTypeMap.get(r.media_type)!
+    bucket.minutes += minutes
+    bucket.itemCount += 1
+    bucket.items.push(item)
+    if (estimated) bucket.estimated = true
+    totalMinutes += minutes
+    consumedCount += 1
+    if (minutes > 0 && (!longest || minutes > longest.minutes)) longest = item
+    if (r.rewatch_count >= 2 && (!mostRevisited || r.rewatch_count > mostRevisited.times)) {
+      mostRevisited = { ...item, times: r.rewatch_count }
+    }
+  }
+
+  const byType: TimeStatsByType[] = STAT_TYPES.map((t) => {
+    const b = byTypeMap.get(t)!
+    return {
+      mediaType: t,
+      minutes: b.minutes,
+      estimated: b.estimated,
+      itemCount: b.itemCount,
+      topItems: [...b.items].sort((a, c) => c.minutes - a.minutes).slice(0, 5)
+    }
+  })
+
+  return { totalMinutes, consumedCount, libraryCount, byType, longest, mostRevisited }
 }
 
 export function get(id: number): MediaDetail | null {

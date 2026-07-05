@@ -35,13 +35,20 @@ export interface MediaConfig {
   statusesKey: string // settings key, e.g. "anime.statuses"
   defaultStatuses: string[]
   // form labels
-  progressFieldLabel: string // "Progress (episodes watched)" / "Times watched"
+  progressFieldLabel: string // "Progress (episodes watched)" / "Progress (minutes)"
   totalFieldLabel: string // "Total episodes" / "Runtime (min)"
+  // Per-type label for the universal times-consumed counter (rewatch_count),
+  // shown on every form + detail page.
+  timesConsumedLabel: string // "Times watched" / "Times read" / "Times played"
   // Progress counts discrete units toward totalUnits (episodes/chapters), so a
   // completed status fills progress to the total and progress is capped at it.
   // Off for time-based progress (VN minutes, game hours — playing past the
-  // average is normal) and movies (progress = times watched, total = runtime).
+  // average is normal).
   unitProgress?: boolean
+  // Movies have no unit progress (you don't track partial episodes/chapters) —
+  // hide the progress field entirely. Runtime lives in totalFieldLabel and the
+  // watch count in timesConsumedLabel. Defaults to showing progress.
+  noProgress?: boolean
   // detail / card display
   progressStatLabel: string // "Progress" / "Runtime"
   formatProgressStat: (m: MediaItem) => string
@@ -114,6 +121,7 @@ export const ANIME: MediaConfig = {
   defaultStatuses: ['Watching', 'Completed', 'On Hold', 'Dropped', 'Plan to Watch'],
   progressFieldLabel: 'Progress (episodes watched)',
   totalFieldLabel: 'Total episodes',
+  timesConsumedLabel: 'Times watched',
   unitProgress: true,
   progressStatLabel: 'Progress',
   formatProgressStat: (m) => `${m.totalUnits != null ? `${m.progress} / ${m.totalUnits}` : m.progress} ep`,
@@ -153,6 +161,7 @@ export const MANGA: MediaConfig = {
   defaultStatuses: ['Reading', 'Completed', 'On Hold', 'Dropped', 'Plan to Read'],
   progressFieldLabel: 'Progress (chapters read)',
   totalFieldLabel: 'Total chapters',
+  timesConsumedLabel: 'Times read',
   unitProgress: true,
   progressStatLabel: 'Progress',
   formatProgressStat: (m) =>
@@ -197,6 +206,7 @@ export const VISUAL_NOVEL: MediaConfig = {
   defaultStatuses: ['Playing', 'Completed', 'On Hold', 'Dropped', 'Plan to Play'],
   progressFieldLabel: 'Progress (minutes)',
   totalFieldLabel: 'Length (minutes)',
+  timesConsumedLabel: 'Times played',
   progressStatLabel: 'Progress',
   formatProgressStat: (m) =>
     m.totalUnits != null
@@ -238,6 +248,7 @@ export const GAME: MediaConfig = {
   defaultStatuses: ['Playing', 'Completed', 'On Hold', 'Dropped', 'Plan to Play'],
   progressFieldLabel: 'Progress (hours played)',
   totalFieldLabel: 'Average length (hours)',
+  timesConsumedLabel: 'Times played',
   progressStatLabel: 'Playtime',
   formatProgressStat: (m) =>
     m.totalUnits != null ? `${m.progress} / ~${m.totalUnits} h` : `${m.progress} h`,
@@ -269,8 +280,10 @@ export const MOVIE: MediaConfig = {
   icon: '⬚',
   statusesKey: 'movie.statuses',
   defaultStatuses: ['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch'],
-  progressFieldLabel: 'Times watched',
+  progressFieldLabel: 'Progress', // unused: movies hide progress (noProgress)
   totalFieldLabel: 'Runtime (min)',
+  timesConsumedLabel: 'Times watched',
+  noProgress: true,
   progressStatLabel: 'Runtime',
   formatProgressStat: (m) => (m.totalUnits != null ? `${m.totalUnits} min` : '—'),
   formatCardSub: (m) => (m.totalUnits != null ? `${m.totalUnits} min` : ''),
@@ -312,6 +325,7 @@ export const TV: MediaConfig = {
   defaultStatuses: ['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch'],
   progressFieldLabel: 'Progress (episodes watched)',
   totalFieldLabel: 'Total episodes',
+  timesConsumedLabel: 'Times watched',
   unitProgress: true,
   progressStatLabel: 'Progress',
   formatProgressStat: (m) =>

@@ -3,6 +3,7 @@ import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
 import * as mediaRepo from '../src/main/repos/mediaRepo'
 import * as tagRepo from '../src/main/repos/tagRepo'
+import * as settingsRepo from '../src/main/repos/settingsRepo'
 
 let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({
@@ -101,5 +102,112 @@ describe('mediaRepo create/get/update', () => {
     db.prepare(`INSERT INTO list_item (list_id, entity_id, sort_order) VALUES (1, ?, 0)`).run(id)
     mediaRepo.remove(id)
     expect(db.prepare('SELECT COUNT(*) AS n FROM list_item').get()).toEqual({ n: 0 })
+  })
+})
+
+describe('mediaRepo.timeStats', () => {
+  // Minutes for one type from a freshly-built stats snapshot.
+  function minutesFor(type: Parameters<typeof mediaRepo.create>[0]['mediaType']): number {
+    return mediaRepo.timeStats().byType.find((t) => t.mediaType === type)!.minutes
+  }
+
+  it('does NOT multiply games by rewatch_count (progress is hours, replays included)', () => {
+    mediaRepo.create({ mediaType: 'game', title: 'Elden Ring', progress: 30, rewatchCount: 3 })
+    expect(minutesFor('game')).toBe(1800) // 30h × 60, NOT × 3
+  })
+
+  it('does NOT multiply visual novels by rewatch_count (progress is minutes)', () => {
+    mediaRepo.create({ mediaType: 'visual_novel', title: 'Steins;Gate', progress: 2400, rewatchCount: 2 })
+    expect(minutesFor('visual_novel')).toBe(2400) // as-is, NOT × 2
+  })
+
+  it('DOES multiply movies by rewatch_count (runtime × times watched)', () => {
+    mediaRepo.create({ mediaType: 'movie', title: 'Interstellar', totalUnits: 148, rewatchCount: 3 })
+    expect(minutesFor('movie')).toBe(444) // 148 × 3
+  })
+
+  it('counts a movie consumed via status alone (rewatch 0 → 1 pass)', () => {
+    const id = mediaRepo.create({ mediaType: 'movie', title: 'Solaris', totalUnits: 165 })
+    mediaRepo.update(id, { status: 'Watched' })
+    const s = mediaRepo.timeStats()
+    expect(minutesFor('movie')).toBe(165)
+    expect(s.byType.find((t) => t.mediaType === 'movie')!.itemCount).toBe(1)
+  })
+
+  it('excludes backlog and includes completed/consumed (case-insensitive)', () => {
+    mediaRepo.create({ mediaType: 'anime', title: 'Backlog', status: 'Plan to Watch' })
+    mediaRepo.create({
+      mediaType: 'anime',
+      title: 'Done',
+      status: 'completed', // lowercase still counts
+      totalUnits: 10,
+      progress: 0,
+      metadata: { epDuration: 20 }
+    })
+    const s = mediaRepo.timeStats()
+    expect(s.consumedCount).toBe(1)
+    expect(minutesFor('anime')).toBe(200) // 10 ep × 20, from totalUnits since completed
+  })
+
+  it('anime completed uses totalUnits, otherwise progress; per-title duration wins', () => {
+    mediaRepo.create({
+      mediaType: 'anime',
+      title: 'Completed',
+      status: 'Completed',
+      totalUnits: 24,
+      progress: 12,
+      rewatchCount: 2,
+      metadata: { epDuration: 20 }
+    })
+    expect(minutesFor('anime')).toBe(960) // 24 (total, completed) × 20 × 2 passes
+  })
+
+  it('anime falls back to the settings default when no per-title duration', () => {
+    mediaRepo.create({ mediaType: 'anime', title: 'NoDur', status: 'Completed', totalUnits: 10 })
+    expect(minutesFor('anime')).toBe(240) // 10 × 24 default
+    settingsRepo.set('stats.animeEpMinutes', '20')
+    expect(minutesFor('anime')).toBe(200) // 10 × 20
+  })
+
+  it('manga estimate uses chapters × default × rereads', () => {
+    mediaRepo.create({
+      mediaType: 'manga',
+      title: 'Berserk',
+      status: 'Completed',
+      totalUnits: 100,
+      rewatchCount: 2
+    })
+    expect(minutesFor('manga')).toBe(1000) // 100 ch × 5 × 2
+  })
+
+  it('completed game/VN with no logged progress falls back to average length', () => {
+    mediaRepo.create({ mediaType: 'game', title: 'ShortGame', status: 'Completed', totalUnits: 8, progress: 0 })
+    mediaRepo.create({ mediaType: 'visual_novel', title: 'ShortVN', status: 'Completed', totalUnits: 300, progress: 0 })
+    expect(minutesFor('game')).toBe(480) // 8h × 60
+    expect(minutesFor('visual_novel')).toBe(300) // minutes as-is
+  })
+
+  it('aggregates: total, six types, estimate flags, top sorting, longest & mostRevisited', () => {
+    mediaRepo.create({ mediaType: 'game', title: 'G1', progress: 10 }) // 600
+    mediaRepo.create({ mediaType: 'game', title: 'G2', progress: 5, rewatchCount: 4 }) // 300, revisited
+    mediaRepo.create({ mediaType: 'movie', title: 'M1', totalUnits: 120, rewatchCount: 1 }) // 120
+    const s = mediaRepo.timeStats()
+    expect(s.byType).toHaveLength(6)
+    expect(s.totalMinutes).toBe(1020)
+    expect(s.byType.find((t) => t.mediaType === 'anime')!.estimated).toBe(true)
+    expect(s.byType.find((t) => t.mediaType === 'game')!.estimated).toBe(false)
+    // top items sorted by minutes desc within a type
+    expect(s.byType.find((t) => t.mediaType === 'game')!.topItems.map((i) => i.title)).toEqual([
+      'G1',
+      'G2'
+    ])
+    expect(s.longest!.title).toBe('G1') // 600 is the single biggest sink
+    expect(s.mostRevisited!.title).toBe('G2') // rewatch 4 ≥ 2
+    expect(s.mostRevisited!.times).toBe(4)
+  })
+
+  it('mostRevisited is null when nothing was consumed twice', () => {
+    mediaRepo.create({ mediaType: 'game', title: 'Once', progress: 10, rewatchCount: 1 })
+    expect(mediaRepo.timeStats().mostRevisited).toBeNull()
   })
 })

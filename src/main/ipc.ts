@@ -16,7 +16,6 @@ import * as vndb from './vndb'
 import * as rawg from './rawg'
 import * as themes from './themes'
 import * as hltb from './hltb'
-import * as jisho from './jisho'
 import * as files from './files'
 import * as manga from './manga'
 import { getActivity, withActivity } from './progress'
@@ -26,6 +25,8 @@ import * as musicDownload from './musicDownload'
 import * as musicArt from './musicArt'
 import * as mokuro from './mokuro'
 import * as tokenizer from './tokenizer'
+import * as dictImporter from './dict/importer'
+import * as dictLookup from './dict/lookup'
 
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
@@ -40,6 +41,7 @@ export function registerIpc(): void {
     linkRepo.removeMediaCharacter(mediaId, characterId)
   )
   ipcMain.handle('media:statusCounts', (_e, mediaType) => mediaRepo.statusCounts(mediaType))
+  ipcMain.handle('media:timeStats', () => mediaRepo.timeStats())
 
   // ---- people ----
   ipcMain.handle('people:list', (_e, search, role, mediaType) =>
@@ -129,9 +131,17 @@ export function registerIpc(): void {
   ipcMain.handle('japanese:quizPool', (_e, scope) => japaneseRepo.quizPool(scope))
   ipcMain.handle('japanese:stats', () => japaneseRepo.stats())
   ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
-  ipcMain.handle('japanese:jishoLookup', (_e, term) => jisho.lookup(term))
   ipcMain.handle('japanese:tokenize', (_e, text) => tokenizer.tokenize(text))
   ipcMain.handle('japanese:minedFronts', (_e, fronts) => japaneseRepo.minedFronts(fronts))
+
+  // ---- offline dictionaries ----
+  ipcMain.handle('dict:list', () => dictImporter.listDictionaries())
+  ipcMain.handle('dict:lookup', (_e, query) => dictLookup.lookupWord(query))
+  ipcMain.handle('dict:kanji', (_e, text) => dictLookup.lookupKanji(text))
+  ipcMain.handle('dict:importPreset', (_e, key) => dictImporter.importPreset(key))
+  ipcMain.handle('dict:importZip', () => dictImporter.importZipViaDialog())
+  ipcMain.handle('dict:importStatus', () => dictImporter.getImportStatus())
+  ipcMain.handle('dict:remove', (_e, id) => dictImporter.removeDictionary(id))
 
   // ---- local manga reader ----
   ipcMain.handle('manga:attachFolder', (_e, mediaId) => manga.attachFolder(mediaId))

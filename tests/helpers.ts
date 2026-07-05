@@ -15,3 +15,15 @@ export function createTestDb(): Database.Database {
   db.exec(initSql)
   return db
 }
+
+// In-memory dictionaries.db with the real dict schema (incl. the FTS5 virtual
+// table). Dict tests mock src/main/dict/dictDb so getDictDb() returns one.
+export function createDictTestDb(): Database.Database {
+  const initSql = readFileSync(
+    fileURLToPath(new URL('../src/main/dict/init.sql', import.meta.url)),
+    'utf8'
+  )
+  const db = new Database(':memory:')
+  db.exec(initSql)
+  return db
+}

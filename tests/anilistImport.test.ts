@@ -48,6 +48,7 @@ function animeFixture(overrides: Record<string, unknown> = {}) {
       title: { romaji: 'Test Anime', english: null, native: 'テスト' },
       description: 'Line one.<br><b>Line two.</b>',
       episodes: 12,
+      duration: 24,
       averageScore: 85,
       startDate: { year: 2020, month: 4, day: 1 },
       coverImage: { large: 'https://img/cover.png', extraLarge: 'https://img/cover-xl.png' },
@@ -106,7 +107,7 @@ describe('importAnime', () => {
     expect(media.total_units).toBe(12)
     expect(media.release_date).toBe('2020-04-01')
     expect(media.synopsis).toBe('Line one.\nLine two.')
-    expect(JSON.parse(media.metadata as string)).toEqual({ averageScore: 85 })
+    expect(JSON.parse(media.metadata as string)).toEqual({ averageScore: 85, epDuration: 24 })
 
     // Only the main studio; genres become tags; skipped relation types stay out.
     expect(db.prepare('SELECT name FROM company').all()).toEqual([{ name: 'Studio Main' }])
