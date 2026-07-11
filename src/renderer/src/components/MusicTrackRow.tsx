@@ -75,7 +75,12 @@ export default function MusicTrackRow({
         </span>
       )}
       {showCover && (
-        <CoverImage path={track.coverPath} alt={track.title} className="h-10 w-10 shrink-0" />
+        <CoverImage
+          path={track.coverPath}
+          alt={track.title}
+          className="h-10 w-10 shrink-0"
+          fallback="music"
+        />
       )}
       <button className="min-w-0 flex-1 text-left" onClick={onPlay} title="Play">
         <p

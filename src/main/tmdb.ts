@@ -39,6 +39,23 @@ function posterUrl(path: string | null | undefined, size = 'w500'): string | nul
 function profileUrl(path: string | null | undefined): string | null {
   return path ? `${IMG}/w185${path}` : null
 }
+
+// Official backdrops for a movie/show (the wallpaper Browse dialog's TMDB tab).
+// Lives here so the API-key handling stays in one module; pictures.ts turns the
+// file paths into thumb (w780) / full (original) image URLs.
+export async function fetchBackdrops(
+  mediaType: 'movie' | 'tv',
+  tmdbId: string
+): Promise<{ filePath: string; width: number | null; height: number | null }[]> {
+  const data = await tmdbGet(`/${mediaType}/${tmdbId}/images`)
+  return (data.backdrops ?? [])
+    .filter((b: any) => b?.file_path)
+    .map((b: any) => ({
+      filePath: b.file_path as string,
+      width: Number.isFinite(b.width) ? b.width : null,
+      height: Number.isFinite(b.height) ? b.height : null
+    }))
+}
 function yearOf(date: string | null | undefined): number | null {
   if (!date) return null
   const y = Number(date.slice(0, 4))

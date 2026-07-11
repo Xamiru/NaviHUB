@@ -1,10 +1,12 @@
 import { dialog } from 'electron'
 import { join, extname, basename, dirname, relative, isAbsolute } from 'path'
 import { existsSync, readdirSync } from 'fs'
+import { readdir } from 'fs/promises'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
 import { mangaRootDir } from './files'
 import { isArchiveFile, listArchivePages } from './archive'
+import { isEpubFile, epubSpineCount, listEpubPages, epubToc } from './epub'
 import { mediaUrl } from '@shared/mediaUrl'
 import type {
   MangaAttachResult,
@@ -40,10 +42,12 @@ function isImageFile(name: string): boolean {
 }
 
 // Natural-sorted page names inside a chapter path — image files for a folder
-// chapter, image entry names for a .cbz/.zip chapter. This is the format seam:
-// every page read goes through here.
+// chapter, image entry names for a .cbz/.zip chapter, spine document entry
+// paths (reading order) for a .epub book. This is the format seam: every page
+// read goes through here.
 export async function listChapterPages(absPath: string): Promise<string[]> {
   if (isArchiveFile(absPath)) return listArchivePages(absPath)
+  if (isEpubFile(absPath)) return listEpubPages(absPath)
   let entries: import('fs').Dirent[]
   try {
     entries = readdirSync(absPath, { withFileTypes: true })
@@ -57,17 +61,20 @@ export async function listChapterPages(absPath: string): Promise<string[]> {
 }
 
 // Walks a series folder and returns every "chapter" found: any directory that
-// DIRECTLY contains at least one page image, plus every .cbz/.zip archive.
-// Tolerates mixed layouts — a flat series (pages at the top level, dirPath ''),
-// nested chapter folders, and loose archives can coexist. dirPath is relative
-// to absDir with forward slashes.
+// DIRECTLY contains at least one page image, every .cbz/.zip archive, and
+// every .epub book (light novels live in the manga section; a book's "pages"
+// are its spine documents). Tolerates mixed layouts — a flat series (pages at
+// the top level, dirPath ''), nested chapter folders, loose archives and
+// books can coexist. dirPath is relative to absDir with forward slashes.
 export async function scanSeriesDir(absDir: string, seriesTitle: string): Promise<ScannedChapter[]> {
   const found: ScannedChapter[] = []
   const walk = async (dir: string, rel: string, depth: number): Promise<void> => {
     if (depth > 5) return
     let entries: import('fs').Dirent[]
     try {
-      entries = readdirSync(dir, { withFileTypes: true })
+      // Async on purpose: readdirSync bursts here block the main process (and
+      // with it keyboard input) on big/slow libraries — see walkMusicRoot.
+      entries = await readdir(dir, { withFileTypes: true })
     } catch {
       return
     }
@@ -91,6 +98,19 @@ export async function scanSeriesDir(absDir: string, seriesTitle: string): Promis
             title: stem,
             number: parseChapterNumber(stem),
             pageCount: archivePages.length
+          })
+        }
+        continue
+      }
+      if (e.isFile() && isEpubFile(e.name)) {
+        const stem = e.name.slice(0, e.name.length - extname(e.name).length)
+        const spineCount = await epubSpineCount(join(dir, e.name))
+        if (spineCount > 0) {
+          found.push({
+            dirPath: rel === '' ? e.name : `${rel}/${e.name}`,
+            title: stem,
+            number: parseChapterNumber(stem),
+            pageCount: spineCount
           })
         }
         continue
@@ -215,7 +235,8 @@ export async function attachFolder(mediaId: number): Promise<MangaAttachResult> 
   const localDir = rel.split('\\').join('/')
 
   const scanned = await scanSeriesDir(picked, media.title)
-  if (scanned.length === 0) return { ok: false, error: 'No page images found in that folder' }
+  if (scanned.length === 0)
+    return { ok: false, error: 'No page images or EPUB books found in that folder' }
   syncChapters(mediaId, localDir, scanned)
   return { ok: true, chapterCount: scanned.length }
 }
@@ -231,7 +252,8 @@ export async function rescan(mediaId: number): Promise<MangaAttachResult> {
     title: string
   }
   const scanned = await scanSeriesDir(abs, media.title)
-  if (scanned.length === 0) return { ok: false, error: 'No page images found in the folder' }
+  if (scanned.length === 0)
+    return { ok: false, error: 'No page images or EPUB books found in the folder' }
   syncChapters(mediaId, localDir, scanned)
   return { ok: true, chapterCount: scanned.length }
 }
@@ -248,7 +270,9 @@ export function detach(mediaId: number): void {
 }
 
 // Chapter row + its page list from disk (natural-sorted), as navimg URLs.
-// page_count is opportunistically corrected if the folder changed on disk.
+// For a .epub chapter the "pages" are its spine documents (served as XHTML
+// out of the zip) and the book's table of contents rides along. page_count is
+// opportunistically corrected if the folder changed on disk.
 export async function pages(chapterId: number): Promise<MangaPages | null> {
   const db = getSqlite()
   const row = db.prepare('SELECT * FROM manga_chapter WHERE id = ?').get(chapterId) as
@@ -264,6 +288,7 @@ export async function pages(chapterId: number): Promise<MangaPages | null> {
     ).run(files.length, chapterId)
     ch.pageCount = files.length
   }
+  const isBook = isEpubFile(ch.dirPath)
   return {
     chapterId: ch.id,
     mediaId: ch.mediaId,
@@ -273,7 +298,8 @@ export async function pages(chapterId: number): Promise<MangaPages | null> {
       const relPath = `manga/${ch.dirPath}/${f}`
       // relPath is never empty, so mediaUrl can't return null here.
       return { relPath, url: mediaUrl(relPath)! }
-    })
+    }),
+    ...(isBook ? { isBook: true, toc: await epubToc(abs) } : {})
   }
 }
 

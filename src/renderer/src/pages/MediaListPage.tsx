@@ -49,7 +49,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
 
   const { data: counts = {} } = useQuery({
     queryKey: qk.mediaCounts.byType(cfg.key),
-    queryFn: () => api.media.setStatusCounts(cfg.key)
+    queryFn: () => api.media.statusCounts(cfg.key)
   })
 
   const total = Object.values(counts).reduce((a, b) => a + b, 0)
@@ -82,6 +82,11 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
           <p className="text-sm text-gray-500">{total} titles in your library</p>
         </div>
         <div className="flex gap-2">
+          {cfg.hasSeasonal && (
+            <Link to={`${cfg.basePath}/seasonal`} className="btn-ghost">
+              ❆ Seasonal
+            </Link>
+          )}
           {cfg.importSource && (
             <button className="btn-ghost" onClick={() => setShowImport(true)}>
               ⬇ Import from {cfg.importSource.label}
@@ -216,7 +221,13 @@ function FilterPill({
   )
 }
 
-const MediaCard = memo(function MediaCard({ cfg, item }: { cfg: MediaConfig; item: MediaItem }) {
+export const MediaCard = memo(function MediaCard({
+  cfg,
+  item
+}: {
+  cfg: MediaConfig
+  item: MediaItem
+}) {
   const sub = cfg.formatCardSub(item)
   return (
     <Link to={`${cfg.basePath}/${item.id}`} className="group">

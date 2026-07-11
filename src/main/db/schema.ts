@@ -1,5 +1,14 @@
 import { sql } from 'drizzle-orm'
-import { sqliteTable, text, integer, real, index, unique } from 'drizzle-orm/sqlite-core'
+import {
+  sqliteTable,
+  text,
+  integer,
+  real,
+  index,
+  unique,
+  uniqueIndex,
+  primaryKey
+} from 'drizzle-orm/sqlite-core'
 
 // ---------------------------------------------------------------------------
 // media_item — any tracked work (anime now; VN/game/movie/tv ready).
@@ -247,6 +256,32 @@ export const themeArtist = sqliteTable(
     bySong: index('idx_theme_artist_song').on(t.themeSongId),
     byPerson: index('idx_theme_artist_person').on(t.personId),
     uniq: unique('uniq_theme_artist').on(t.themeSongId, t.personId)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// media_image — wallpapers + fan art attached to a media item. Files live under
+// pictures.dir (virtual "pictures/" prefix in file_path); rows are personal and
+// stripped on library export. source_url is NULL for locally-picked files.
+// ---------------------------------------------------------------------------
+export const mediaImage = sqliteTable(
+  'media_image',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    kind: text('kind').notNull(), // 'wallpaper' | 'fanart'
+    filePath: text('file_path').notNull(),
+    sourceUrl: text('source_url'),
+    source: text('source'), // 'wallhaven' | 'tmdb' | 'url' | 'file'
+    width: integer('width'),
+    height: integer('height'),
+    sortOrder: integer('sort_order'),
+    createdAt: text('created_at').notNull()
+  },
+  (t) => ({
+    byMedia: index('idx_media_image_media').on(t.mediaId, t.kind)
   })
 )
 
@@ -611,5 +646,171 @@ export const musicPlayLog = sqliteTable(
   (t) => ({
     byTrack: index('idx_music_play_log_track').on(t.trackId),
     byPlayed: index('idx_music_play_log_played').on(t.playedAt)
+  })
+)
+
+export const quizSession = sqliteTable(
+  'quiz_session',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    kind: text('kind').notNull(),
+    score: integer('score').notNull(),
+    total: integer('total').notNull(),
+    bestStreak: integer('best_streak').notNull().default(0),
+    settings: text('settings'),
+    playedAt: text('played_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byKind: index('idx_quiz_session_kind').on(t.kind, t.playedAt)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// Gacha tracker — standalone section (game list/config in src/shared/gacha.ts).
+// ---------------------------------------------------------------------------
+export const gachaUnit = sqliteTable(
+  'gacha_unit',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    game: text('game').notNull(),
+    kind: text('kind').notNull(),
+    name: text('name').notNull(),
+    rarity: integer('rarity'),
+    element: text('element'),
+    role: text('role'),
+    imagePath: text('image_path'),
+    owned: integer('owned', { mode: 'boolean' }).notNull().default(true),
+    favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
+    level: integer('level'),
+    // Extra copies consumed, 0-based (eidolon / NP-1 / imprint / sequence).
+    dupes: integer('dupes').notNull().default(0),
+    obtainedAt: text('obtained_at'),
+    notes: text('notes'),
+    data: text('data', { mode: 'json' }),
+    externalSource: text('external_source'),
+    externalId: text('external_id'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byGame: index('idx_gacha_unit_game').on(t.game, t.kind),
+    uniqExternal: uniqueIndex('idx_gacha_unit_external').on(
+      t.game,
+      t.kind,
+      t.externalSource,
+      t.externalId
+    )
+  })
+)
+
+export const gachaBuild = sqliteTable(
+  'gacha_build',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    unitId: integer('unit_id')
+      .notNull()
+      .references(() => gachaUnit.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    data: text('data', { mode: 'json' }),
+    notes: text('notes'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byUnit: index('idx_gacha_build_unit').on(t.unitId)
+  })
+)
+
+export const gachaCurrency = sqliteTable(
+  'gacha_currency',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    game: text('game').notNull(),
+    key: text('key').notNull(),
+    amount: integer('amount').notNull().default(0),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    uniq: unique('uniq_gacha_currency').on(t.game, t.key)
+  })
+)
+
+export const gachaBanner = sqliteTable(
+  'gacha_banner',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    game: text('game').notNull(),
+    name: text('name').notNull(),
+    kind: text('kind'),
+    featured: text('featured'),
+    startAt: text('start_at'),
+    endAt: text('end_at'),
+    imagePath: text('image_path'),
+    notes: text('notes'),
+    externalSource: text('external_source'),
+    externalId: text('external_id'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byGame: index('idx_gacha_banner_game').on(t.game, t.startAt)
+  })
+)
+
+export const gachaNews = sqliteTable(
+  'gacha_news',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    game: text('game').notNull(),
+    title: text('title').notNull(),
+    url: text('url'),
+    summary: text('summary'),
+    imageUrl: text('image_url'),
+    publishedAt: text('published_at'),
+    author: text('author'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    externalId: text('external_id').notNull(),
+    fetchedAt: text('fetched_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byGame: index('idx_gacha_news_game').on(t.game, t.publishedAt),
+    uniq: unique('uniq_gacha_news').on(t.game, t.externalId)
+  })
+)
+
+export const gachaMeta = sqliteTable(
+  'gacha_meta',
+  {
+    game: text('game').notNull(),
+    key: text('key').notNull(),
+    value: text('value').notNull(),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.game, t.key] })
   })
 )

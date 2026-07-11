@@ -89,7 +89,7 @@ describe('findCoverFile', () => {
 })
 
 describe('walkMusicRoot', () => {
-  it('walks Artist/Album folders and ignores non-audio litter', () => {
+  it('walks Artist/Album folders and ignores non-audio litter', async () => {
     makeFiles([
       'Radiohead/OK Computer/01 Airbag.mp3',
       'Radiohead/OK Computer/02 Paranoid Android.mp3',
@@ -97,7 +97,7 @@ describe('walkMusicRoot', () => {
       'Radiohead/OK Computer/03 Half-done.mp3.part', // yt-dlp litter
       'Radiohead/OK Computer/notes.txt'
     ])
-    const { albums, skippedRootFiles } = walkMusicRoot(root)
+    const { albums, skippedRootFiles } = await walkMusicRoot(root)
     expect(skippedRootFiles).toBe(0)
     expect(albums).toHaveLength(1)
     const a = albums[0]
@@ -107,22 +107,22 @@ describe('walkMusicRoot', () => {
     expect(a.files.map((f) => f.fileName)).toEqual(['01 Airbag.mp3', '02 Paranoid Android.mp3'])
   })
 
-  it('turns loose artist-level tracks into a synthetic Singles album', () => {
+  it('turns loose artist-level tracks into a synthetic Singles album', async () => {
     makeFiles(['Aimer/Brave Shine.mp3', 'Aimer/Deep Album/01 One.mp3'])
-    const { albums } = walkMusicRoot(root)
+    const { albums } = await walkMusicRoot(root)
     expect(albums.map((a) => a.albumTitle).sort()).toEqual(['Deep Album', 'Singles'])
     const singles = albums.find((a) => a.albumTitle === 'Singles')!
     expect(singles.albumDir).toBe('Aimer') // stable across rescans
     expect(singles.files[0].relPath).toBe('Aimer/Brave Shine.mp3')
   })
 
-  it('captures CD1/CD2 subfolders into the album and counts skipped root files', () => {
+  it('captures CD1/CD2 subfolders into the album and counts skipped root files', async () => {
     makeFiles([
       'loose.mp3',
       'Utada Hikaru/Singles Collection/CD1/01 First Love.flac',
       'Utada Hikaru/Singles Collection/CD2/01 Automatic.flac'
     ])
-    const { albums, skippedRootFiles } = walkMusicRoot(root)
+    const { albums, skippedRootFiles } = await walkMusicRoot(root)
     expect(skippedRootFiles).toBe(1)
     expect(albums).toHaveLength(1)
     expect(albums[0].files).toHaveLength(2)
@@ -233,5 +233,35 @@ describe('startScan', () => {
   it('fails with a clear error when the root folder does not exist', async () => {
     rmSync(root, { recursive: true, force: true })
     await expect(startScan(fakeReader())).rejects.toThrow(/Music folder not found/)
+  })
+
+  it('refuses to wipe a populated library when the scan finds zero files', async () => {
+    makeFiles(['A/One/01 a.mp3', 'B/Two/01 b.mp3'])
+    await startScan(fakeReader())
+    const trackId = (
+      db.prepare(`SELECT id FROM music_track WHERE file_path LIKE 'B/%'`).get() as { id: number }
+    ).id
+    db.prepare(`INSERT INTO music_playlist (title) VALUES ('Mix')`).run()
+    db.prepare(
+      `INSERT INTO music_playlist_track (playlist_id, track_id, position) VALUES (1, ?, 0)`
+    ).run(trackId)
+    db.prepare(`UPDATE music_track SET liked_at = datetime('now') WHERE id = ?`).run(trackId)
+
+    // Empty the root's contents but keep the root dir itself (unmounted-drive shape).
+    rmSync(join(root, 'A'), { recursive: true })
+    rmSync(join(root, 'B'), { recursive: true })
+    await expect(startScan(fakeReader())).rejects.toThrow(/No audio files found/)
+
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 2 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_playlist_track').get()).toEqual({ n: 1 })
+    const liked = db.prepare('SELECT liked_at FROM music_track WHERE id = ?').get(trackId) as {
+      liked_at: string | null
+    }
+    expect(liked.liked_at).not.toBeNull()
+  })
+
+  it('still completes a first scan of a genuinely empty library', async () => {
+    const summary = await startScan(fakeReader())
+    expect(summary).toMatchObject({ tracks: 0, added: 0, removed: 0 })
   })
 })

@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 import * as mediaRepo from './repos/mediaRepo'
 import * as peopleRepo from './repos/peopleRepo'
 import * as companyRepo from './repos/companyRepo'
@@ -15,6 +15,7 @@ import * as tmdb from './tmdb'
 import * as vndb from './vndb'
 import * as rawg from './rawg'
 import * as themes from './themes'
+import * as pictures from './pictures'
 import * as hltb from './hltb'
 import * as files from './files'
 import * as manga from './manga'
@@ -24,6 +25,8 @@ import * as musicRepo from './repos/musicRepo'
 import * as musicDownload from './musicDownload'
 import * as musicArt from './musicArt'
 import * as mokuro from './mokuro'
+import * as gacha from './gacha'
+import * as gachaRepo from './repos/gachaRepo'
 import * as tokenizer from './tokenizer'
 import * as dictImporter from './dict/importer'
 import * as dictLookup from './dict/lookup'
@@ -75,6 +78,9 @@ export function registerIpc(): void {
 
   // ---- tags ----
   ipcMain.handle('tags:list', () => tagRepo.list())
+  ipcMain.handle('tags:get', (_e, id) => tagRepo.get(id))
+  ipcMain.handle('tags:listWithCounts', () => tagRepo.listWithCounts())
+  ipcMain.handle('tags:media', (_e, id) => tagRepo.media(id))
   ipcMain.handle('tags:upsert', (_e, input) => tagRepo.upsert(input))
   ipcMain.handle('tags:remove', (_e, id) => tagRepo.remove(id))
 
@@ -83,6 +89,8 @@ export function registerIpc(): void {
 
   // ---- quiz ----
   ipcMain.handle('quiz:songPool', (_e, filter) => quizRepo.songPool(filter))
+  ipcMain.handle('quiz:logSession', (_e, input) => quizRepo.logSession(input))
+  ipcMain.handle('quiz:history', (_e, kind) => quizRepo.history(kind))
 
   // ---- HowLongToBeat times (games + VNs) ----
   ipcMain.handle('hltb:fetch', (_e, mediaId) => hltb.fetchForMedia(mediaId))
@@ -130,6 +138,7 @@ export function registerIpc(): void {
   )
   ipcMain.handle('japanese:quizPool', (_e, scope) => japaneseRepo.quizPool(scope))
   ipcMain.handle('japanese:stats', () => japaneseRepo.stats())
+  ipcMain.handle('japanese:statsDetail', () => japaneseRepo.statsDetail())
   ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
   ipcMain.handle('japanese:tokenize', (_e, text) => tokenizer.tokenize(text))
   ipcMain.handle('japanese:minedFronts', (_e, fronts) => japaneseRepo.minedFronts(fronts))
@@ -197,6 +206,23 @@ export function registerIpc(): void {
     withActivity('Fetching theme songs', () => themes.importThemes(mediaId))
   )
 
+  // ---- pictures (wallpapers + fan art) ----
+  ipcMain.handle('pictures:list', (_e, mediaId, kind) => pictures.listImages(mediaId, kind))
+  ipcMain.handle('pictures:searchWallhaven', (_e, query, page) =>
+    pictures.searchWallhaven(query, page)
+  )
+  ipcMain.handle('pictures:searchTmdb', (_e, mediaId) => pictures.searchTmdbBackdrops(mediaId))
+  ipcMain.handle('pictures:addFromSearch', (_e, mediaId, kind, result) =>
+    pictures.addFromSearch(mediaId, kind, result)
+  )
+  ipcMain.handle('pictures:addFromUrl', (_e, mediaId, kind, url) =>
+    pictures.addFromUrl(mediaId, kind, url)
+  )
+  ipcMain.handle('pictures:addFromFiles', (_e, mediaId, kind) =>
+    pictures.addFromFiles(mediaId, kind)
+  )
+  ipcMain.handle('pictures:remove', (_e, imageId) => pictures.removeImage(imageId))
+
   // ---- global activity (import progress, polled by the Topbar pill) ----
   ipcMain.handle('activity:status', () => getActivity())
 
@@ -245,6 +271,38 @@ export function registerIpc(): void {
   ipcMain.handle('music:artFetchMissing', () => musicArt.fetchMissingArt())
   ipcMain.handle('music:artCancel', () => musicArt.cancelArtFetch())
   ipcMain.handle('music:artStatus', () => musicArt.getArtStatus())
+
+  // ---- gacha tracker ----
+  ipcMain.handle('gacha:overview', () => gachaRepo.overview())
+  ipcMain.handle('gacha:units', (_e, game, filter) => gachaRepo.listUnits(game, filter))
+  ipcMain.handle('gacha:unit', (_e, id) => gachaRepo.getUnit(id))
+  ipcMain.handle('gacha:createUnit', (_e, input) => gachaRepo.createUnit(input))
+  ipcMain.handle('gacha:updateUnit', (_e, id, patch) => gachaRepo.updateUnit(id, patch))
+  ipcMain.handle('gacha:removeUnit', (_e, id) => gachaRepo.removeUnit(id))
+  ipcMain.handle('gacha:createBuild', (_e, unitId, input) => gachaRepo.createBuild(unitId, input))
+  ipcMain.handle('gacha:updateBuild', (_e, id, patch) => gachaRepo.updateBuild(id, patch))
+  ipcMain.handle('gacha:removeBuild', (_e, id) => gachaRepo.removeBuild(id))
+  ipcMain.handle('gacha:currencies', (_e, game) => gachaRepo.listCurrencies(game))
+  ipcMain.handle('gacha:setCurrency', (_e, game, key, amount) =>
+    gachaRepo.setCurrency(game, key, amount)
+  )
+  ipcMain.handle('gacha:banners', (_e, game) => gachaRepo.listBanners(game))
+  ipcMain.handle('gacha:createBanner', (_e, input) => gachaRepo.createBanner(input))
+  ipcMain.handle('gacha:updateBanner', (_e, id, patch) => gachaRepo.updateBanner(id, patch))
+  ipcMain.handle('gacha:removeBanner', (_e, id) => gachaRepo.removeBanner(id))
+  ipcMain.handle('gacha:news', (_e, game) => gachaRepo.listNews(game))
+  // Button-triggered, single quick request — deliberately NOT withActivity.
+  ipcMain.handle('gacha:fetchNews', (_e, game) => gacha.fetchNews(game))
+  ipcMain.handle('gacha:downloadImage', (_e, url) => files.downloadImage(url))
+  ipcMain.handle('gacha:setGameImage', (_e, game, relPath) =>
+    gachaRepo.setGameImage(game, relPath)
+  )
+
+  // ---- app (system browser for external links) ----
+  ipcMain.handle('app:openExternal', (_e, url) => {
+    if (!/^https?:\/\//i.test(String(url))) throw new Error('Only http(s) links can be opened')
+    return shell.openExternal(String(url))
+  })
 
   // ---- settings ----
   ipcMain.handle('settings:all', () => settingsRepo.all())

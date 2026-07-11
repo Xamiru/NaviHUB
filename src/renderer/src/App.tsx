@@ -4,6 +4,7 @@ import { useScrollRestoration } from './lib/navState'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import NowPlayingBar from './components/NowPlayingBar'
+import CommandPalette from './components/CommandPalette'
 import Toaster from './components/Toaster'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
@@ -12,6 +13,7 @@ import StatsPage from './pages/StatsPage'
 import MediaListPage from './pages/MediaListPage'
 import MediaDetailPage from './pages/MediaDetailPage'
 import MediaFormPage from './pages/MediaFormPage'
+import SeasonalAnimePage from './pages/SeasonalAnimePage'
 import EntityListView from './components/EntityListView'
 import SettingsPage from './pages/SettingsPage'
 import PersonDetailPage from './pages/PersonDetailPage'
@@ -23,6 +25,8 @@ import SongQuizPage from './pages/SongQuizPage'
 import ListsIndexPage from './pages/ListsIndexPage'
 import ListFormPage from './pages/ListFormPage'
 import ListDetailPage from './pages/ListDetailPage'
+import TagsIndexPage from './pages/TagsIndexPage'
+import TagDetailPage from './pages/TagDetailPage'
 import JapaneseHomePage from './pages/JapaneseHomePage'
 import JapaneseCoursePage from './pages/JapaneseCoursePage'
 import JapaneseCourseFormPage from './pages/JapaneseCourseFormPage'
@@ -32,13 +36,19 @@ import JapaneseReviewPage from './pages/JapaneseReviewPage'
 import JapaneseQuizPage from './pages/JapaneseQuizPage'
 import JapaneseMinePage from './pages/JapaneseMinePage'
 import JapaneseDictionaryPage from './pages/JapaneseDictionaryPage'
+import JapaneseStatsPage from './pages/JapaneseStatsPage'
 import MangaReaderPage from './pages/MangaReaderPage'
+import BookReaderPage from './pages/BookReaderPage'
 import MusicLibraryPage from './pages/MusicLibraryPage'
 import MusicArtistPage from './pages/MusicArtistPage'
 import MusicAlbumPage from './pages/MusicAlbumPage'
 import MusicPlaylistPage from './pages/MusicPlaylistPage'
 import MusicLikedPage from './pages/MusicLikedPage'
 import MusicStatsPage from './pages/MusicStatsPage'
+import NowPlayingPage from './pages/NowPlayingPage'
+import GachaHomePage from './pages/GachaHomePage'
+import GachaGamePage from './pages/GachaGamePage'
+import GachaUnitPage from './pages/GachaUnitPage'
 import { ANIME, MANGA, VISUAL_NOVEL, GAME, MOVIE, TV } from './lib/mediaConfig'
 
 export default function App() {
@@ -46,14 +56,15 @@ export default function App() {
   const location = useLocation()
   useScrollRestoration(mainRef)
 
-  // The manga reader is immersive: no sidebar/topbar/now-playing chrome, black
-  // full-bleed. Audio keeps playing — the <audio> element lives in
+  // The manga/book readers are immersive: no sidebar/topbar/now-playing
+  // chrome, full-bleed. Audio keeps playing — the <audio> element lives in
   // AudioPlayerProvider, not in the (unmounted) NowPlayingBar.
-  if (/^\/manga\/\d+\/read\//.test(location.pathname)) {
+  if (/^\/manga\/\d+\/(read|book)\//.test(location.pathname)) {
     return (
       <ErrorBoundary key={location.pathname}>
         <Routes>
           <Route path="/manga/:id/read/:chapterId" element={<MangaReaderPage />} />
+          <Route path="/manga/:id/book/:chapterId" element={<BookReaderPage />} />
         </Routes>
         <Toaster />
       </ErrorBoundary>
@@ -75,6 +86,7 @@ export default function App() {
             {/* Anime */}
             <Route path="/anime" element={<MediaListPage cfg={ANIME} />} />
             <Route path="/anime/new" element={<MediaFormPage cfg={ANIME} />} />
+            <Route path="/anime/seasonal" element={<SeasonalAnimePage />} />
             <Route path="/anime/:id" element={<MediaDetailPage cfg={ANIME} />} />
             <Route path="/anime/:id/edit" element={<MediaFormPage cfg={ANIME} />} />
 
@@ -188,6 +200,10 @@ export default function App() {
             <Route path="/lists/:id" element={<ListDetailPage />} />
             <Route path="/lists/:id/edit" element={<ListFormPage />} />
 
+            {/* Tags — cross-type browse of the shared tag table */}
+            <Route path="/tags" element={<TagsIndexPage />} />
+            <Route path="/tags/:id" element={<TagDetailPage />} />
+
             {/* Music — standalone local-music library (own tables, reuses the player) */}
             <Route path="/music" element={<MusicLibraryPage />} />
             <Route path="/music/artists/:id" element={<MusicArtistPage />} />
@@ -195,6 +211,8 @@ export default function App() {
             <Route path="/music/playlists/:id" element={<MusicPlaylistPage />} />
             <Route path="/music/liked" element={<MusicLikedPage />} />
             <Route path="/music/stats" element={<MusicStatsPage />} />
+            {/* Full-page view of the player (any audio, not just music) */}
+            <Route path="/now-playing" element={<NowPlayingPage />} />
             {/* pre-stats sessions may still have /music/history in back-history */}
             <Route path="/music/history" element={<Navigate to="/music/stats" replace />} />
 
@@ -210,6 +228,13 @@ export default function App() {
             <Route path="/japanese/quiz" element={<JapaneseQuizPage />} />
             <Route path="/japanese/mine" element={<JapaneseMinePage />} />
             <Route path="/japanese/dictionary" element={<JapaneseDictionaryPage />} />
+            <Route path="/japanese/stats" element={<JapaneseStatsPage />} />
+
+            {/* Gacha — standalone tracker; games/kinds/currencies configured
+                in shared/gacha.ts, one dashboard page per game */}
+            <Route path="/gacha" element={<GachaHomePage />} />
+            <Route path="/gacha/:game" element={<GachaGamePage />} />
+            <Route path="/gacha/:game/unit/:id" element={<GachaUnitPage />} />
 
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/anime" replace />} />
@@ -219,6 +244,7 @@ export default function App() {
         <NowPlayingBar />
         <Toaster />
       </div>
+      <CommandPalette />
     </div>
   )
 }

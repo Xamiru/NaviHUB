@@ -6,8 +6,13 @@ const QUIZZES = [
     to: '/quiz/song',
     icon: '🎵',
     title: 'Song Quiz',
-    desc: 'A random anime opening or ending plays — guess which anime it belongs to from 4 options.',
-    available: true
+    desc: 'A random anime opening or ending plays — guess which anime it belongs to from 4 options.'
+  },
+  {
+    to: '/japanese/quiz',
+    icon: 'あ',
+    title: 'Japanese Quiz',
+    desc: 'Multiple choice over the lessons you have marked as learned — vocab, kanji and grammar.'
   }
 ]
 
@@ -20,21 +25,13 @@ export default function QuizLandingPage() {
       </div>
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-        {QUIZZES.map((q) =>
-          q.available ? (
-            <Link key={q.to} to={q.to} className="card p-5 hover:border-accent transition-colors group">
-              <div className="text-3xl mb-3">{q.icon}</div>
-              <p className="text-lg font-semibold group-hover:text-accent">{q.title}</p>
-              <p className="mt-1 text-sm text-gray-500">{q.desc}</p>
-            </Link>
-          ) : (
-            <div key={q.title} className="card p-5 opacity-50 cursor-not-allowed" title="Coming soon">
-              <div className="text-3xl mb-3">{q.icon}</div>
-              <p className="text-lg font-semibold">{q.title}</p>
-              <p className="mt-1 text-sm text-gray-500">{q.desc}</p>
-            </div>
-          )
-        )}
+        {QUIZZES.map((q) => (
+          <Link key={q.to} to={q.to} className="card p-5 hover:border-accent transition-colors group">
+            <div className="text-3xl mb-3">{q.icon}</div>
+            <p className="text-lg font-semibold group-hover:text-accent">{q.title}</p>
+            <p className="mt-1 text-sm text-gray-500">{q.desc}</p>
+          </Link>
+        ))}
       </div>
     </div>
   )

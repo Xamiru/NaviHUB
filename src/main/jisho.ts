@@ -40,7 +40,7 @@ export async function lookup(term: string): Promise<JishoResult[]> {
   try {
     const res = await fetchWithRetry(`${API}?keyword=${encodeURIComponent(q)}`, {
       headers: { 'User-Agent': UA },
-      signal: AbortSignal.timeout(15_000)
+      timeoutMs: 15_000
     })
     if (!res.ok) return []
     const json: any = await res.json()

@@ -131,7 +131,13 @@ export default function EntityListView({
         <>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
             {visible.map((r) => (
-              <Link key={r.id} to={`${basePath}/${r.id}`} className="group text-center">
+              // The role rides along so the person page can lead with the section
+              // that matches this list (Directors → crew first, Actors → roles).
+              <Link
+                key={r.id}
+                to={personRole ? `${basePath}/${r.id}?role=${personRole}` : `${basePath}/${r.id}`}
+                className="group text-center"
+              >
                 <CoverImage
                   path={r.imgPath}
                   alt={r.name}

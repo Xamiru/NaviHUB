@@ -75,6 +75,11 @@ function runMigrations(sqlite: Database.Database): void {
   // Manga reader: series folder attached to a manga entry (written only by
   // src/main/manga.ts — deliberately absent from mediaRepo's column map).
   ensureColumn(sqlite, 'media_item', 'local_dir', 'local_dir TEXT')
+  // Gacha news moved to subreddit feeds right after first shipping: post
+  // author + the feed's hot-rank ordering (DBs from the day-one build lack
+  // these columns).
+  ensureColumn(sqlite, 'gacha_news', 'author', 'author TEXT')
+  ensureColumn(sqlite, 'gacha_news', 'sort_order', 'sort_order INTEGER NOT NULL DEFAULT 0')
 
   // Movies used to store "times watched" in the generic `progress` column;
   // it's now unified into `rewatch_count` (the universal times-consumed counter)

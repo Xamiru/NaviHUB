@@ -59,6 +59,24 @@ function seed(): void {
     INSERT INTO manga_chapter (media_id, dir_path, title, last_read_page, read_at)
       VALUES (1, 'ch1', 'Chapter 1', 12, '2025-06-15');
 
+    INSERT INTO media_image (media_id, kind, file_path, source_url, source, width, height)
+      VALUES (1, 'wallpaper', 'pictures/Cowboy Bebop (anime)/wallpapers/wallhaven-x1.jpg',
+        'https://w.wallhaven.cc/full/x1.jpg', 'wallhaven', 1920, 1080);
+
+    INSERT INTO quiz_session (kind, score, total, best_streak, settings)
+      VALUES ('song', 8, 10, 5, '{"songType":"OP"}');
+
+    INSERT INTO gacha_unit (id, game, kind, name, rarity, element, role, level, dupes, notes, data)
+      VALUES (1, 'hsr', 'character', 'Kafka', 5, 'Lightning', 'Nihility', 80, 2,
+        'my private build notes', '{"relics":"SSS"}');
+    INSERT INTO gacha_build (unit_id, name, notes) VALUES (1, 'DoT team', 'ATK boots');
+    INSERT INTO gacha_currency (game, key, amount) VALUES ('hsr', 'jade', 12345);
+    INSERT INTO gacha_banner (game, name, kind, featured, start_at, end_at)
+      VALUES ('hsr', 'Kafka Rerun', 'Character', 'Kafka', '2026-07-01', '2026-07-22');
+    INSERT INTO gacha_news (game, title, url, external_id)
+      VALUES ('hsr', 'Version 4.4 Update', 'https://www.hoyolab.com/article/1', '1');
+    INSERT INTO gacha_meta (game, key, value) VALUES ('hsr', 'news.fetchedAt', '2026-07-09T12:00:00Z');
+
     INSERT INTO settings (key, value) VALUES
       ('tmdb.api_key', 'secret-tmdb'),
       ('rawg.api_key', 'secret-rawg'),
@@ -67,6 +85,7 @@ function seed(): void {
       ('music.dir', '/media/xamir/Anglo/Music'),
       ('manga.dir', '/media/xamir/Nihon/Manga'),
       ('audio.dir', '/media/xamir/Anglo/Anime'),
+      ('pictures.dir', '/media/xamir/Anglo/Pictures'),
       ('japanese.seeded', '1'),
       ('japanese.seeded.n3kanji', '1'),
       ('japanese.seeded.levels', '1'),
@@ -115,11 +134,12 @@ describe('export sanitize', () => {
     expect(theme.audio_path).toBe('audio/tank.ogg')
   })
 
-  it('wipes lists, japanese content+progress, music library, manga chapters', () => {
+  it('wipes lists, japanese content+progress, music library, manga chapters, images, quiz history, gacha', () => {
     for (const t of [
       'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log',
       'music_artist', 'music_album', 'music_track', 'music_playlist',
-      'music_playlist_track', 'music_play_log', 'manga_chapter'
+      'music_playlist_track', 'music_play_log', 'manga_chapter', 'media_image', 'quiz_session',
+      'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta'
     ]) {
       expect(count(t), t).toBe(0)
     }

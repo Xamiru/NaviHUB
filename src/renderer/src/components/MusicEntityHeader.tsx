@@ -32,6 +32,7 @@ export default function MusicEntityHeader({
         alt={title}
         rounded={round ? 'rounded-full' : undefined}
         className={`shrink-0 ${round ? 'h-32 w-32' : 'h-44 w-44'}`}
+        fallback="music"
       />
       <div className="min-w-0">
         <h1 className="text-3xl font-bold">{title}</h1>

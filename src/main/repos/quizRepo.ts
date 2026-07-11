@@ -1,5 +1,12 @@
 import { getSqlite } from '../db/connection'
-import type { QuizSong, QuizSongFilter } from '@shared/types'
+import type {
+  QuizHistory,
+  QuizKind,
+  QuizSession,
+  QuizSessionInput,
+  QuizSong,
+  QuizSongFilter
+} from '@shared/types'
 
 // The song quiz pool: every anime theme that has playable audio (a local file or
 // a remote stream), flattened with the anime it belongs to and its performers.
@@ -66,4 +73,73 @@ export function songPool(filter: QuizSongFilter = {}): QuizSong[] {
     if (r.artist_name) s.artists.push(r.artist_name as string)
   }
   return [...byId.values()]
+}
+
+// ---- finished-round history (song + Japanese quizzes) ----
+
+export function logSession(input: QuizSessionInput): number {
+  const db = getSqlite()
+  const res = db
+    .prepare(
+      `INSERT INTO quiz_session (kind, score, total, best_streak, settings)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+    .run(
+      input.kind,
+      input.score,
+      input.total,
+      input.bestStreak,
+      input.settings ? JSON.stringify(input.settings) : null
+    )
+  return Number(res.lastInsertRowid)
+}
+
+function mapSession(r: Record<string, unknown>): QuizSession {
+  let settings: Record<string, unknown> | null = null
+  try {
+    settings = r.settings ? JSON.parse(r.settings as string) : null
+  } catch {
+    settings = null
+  }
+  return {
+    id: r.id as number,
+    kind: r.kind as QuizKind,
+    score: r.score as number,
+    total: r.total as number,
+    bestStreak: r.best_streak as number,
+    settings,
+    playedAt: r.played_at as string
+  }
+}
+
+// Recent rounds + the personal best. "Best" is the highest accuracy among
+// rounds of at least 5 questions (a lucky 1/1 endless round is not a record);
+// ties go to the longer round, then the newer one.
+export function history(kind: QuizKind, limit = 15): QuizHistory {
+  const db = getSqlite()
+  const recent = (
+    db
+      .prepare(`SELECT * FROM quiz_session WHERE kind = ? ORDER BY played_at DESC, id DESC LIMIT ?`)
+      .all(kind, limit) as Record<string, unknown>[]
+  ).map(mapSession)
+  const bestRow = db
+    .prepare(
+      `SELECT * FROM quiz_session
+       WHERE kind = ? AND total >= 5
+       ORDER BY CAST(score AS REAL) / total DESC, total DESC, played_at DESC, id DESC
+       LIMIT 1`
+    )
+    .get(kind) as Record<string, unknown> | undefined
+  const agg = db
+    .prepare(
+      `SELECT COUNT(*) AS n, COALESCE(MAX(best_streak), 0) AS streak
+       FROM quiz_session WHERE kind = ?`
+    )
+    .get(kind) as { n: number; streak: number }
+  return {
+    recent,
+    best: bestRow ? mapSession(bestRow) : null,
+    bestStreak: agg.streak,
+    totalSessions: agg.n
+  }
 }

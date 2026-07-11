@@ -34,7 +34,7 @@ async function initCreds(): Promise<Creds | null> {
   try {
     const res = await fetchWithRetry(`${BASE}/api/bleed/init?t=${Date.now()}`, {
       headers: baseHeaders(),
-      signal: AbortSignal.timeout(15_000)
+      timeoutMs: 15_000
     })
     if (!res.ok) return null
     const j = (await res.json()) as Partial<Creds>
@@ -93,7 +93,7 @@ async function search(query: string): Promise<any[]> {
           'x-hp-val': c.hpVal
         },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(15_000)
+        timeoutMs: 15_000
       })
       if (res.status === 403 && attempt === 0) {
         c = await initCreds()

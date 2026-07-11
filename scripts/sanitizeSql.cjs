@@ -41,12 +41,29 @@ const SANITIZE_STATEMENTS = [
   // Local-manga scan cache (tied to the exporter's manga.dir + local_dir).
   'DELETE FROM manga_chapter',
 
+  // Wallpapers/fan art: rows point at files under the exporter's pictures.dir,
+  // which isn't part of the bundle — they'd all be dead links on arrival.
+  'DELETE FROM media_image',
+
+  // Quiz round history (personal scores).
+  'DELETE FROM quiz_session',
+
+  // Gacha tracker: everything is personal (owned roster, builds, wallet,
+  // banner notes, fetched news, fetch timestamps). Children before parents
+  // (gacha_build FKs gacha_unit).
+  'DELETE FROM gacha_build',
+  'DELETE FROM gacha_unit',
+  'DELETE FROM gacha_currency',
+  'DELETE FROM gacha_banner',
+  'DELETE FROM gacha_news',
+  'DELETE FROM gacha_meta',
+
   // Secrets and machine-specific paths. The LIKE clause clears ALL the
   // japanese.seeded* flags (one per seeded course, see db/japaneseSeed.ts) so
   // the default courses re-seed for the recipient.
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','omdb.api_key','ytdlp.path',
-      'music.dir','manga.dir','audio.dir')
+      'music.dir','manga.dir','audio.dir','pictures.dir')
      OR key LIKE 'japanese.seeded%'`
 ]
 

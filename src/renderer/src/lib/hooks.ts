@@ -13,11 +13,14 @@ export function useSettings() {
   })
 }
 
-// Reads a media type's configurable status list (settings key + fallback come
-// from its MediaConfig), e.g. useStatuses(ANIME) or useStatuses(MOVIE).
-export function useStatuses(cfg: { statusesKey: string; defaultStatuses: string[] }): string[] {
-  const { data } = useSettings()
-  const raw = data?.[cfg.statusesKey]
+// Pure form of useStatuses for callers that already hold the settings map and
+// need several types' lists in one place (e.g. HomePage derives per-type
+// in-progress/completed/planned membership without one hook call per type).
+export function statusesFrom(
+  settings: SettingsMap | undefined,
+  cfg: { statusesKey: string; defaultStatuses: string[] }
+): string[] {
+  const raw = settings?.[cfg.statusesKey]
   if (!raw) return cfg.defaultStatuses
   try {
     const parsed = JSON.parse(raw)
@@ -25,6 +28,41 @@ export function useStatuses(cfg: { statusesKey: string; defaultStatuses: string[
   } catch {
     return cfg.defaultStatuses
   }
+}
+
+// Reads a media type's configurable status list (settings key + fallback come
+// from its MediaConfig), e.g. useStatuses(ANIME) or useStatuses(MOVIE).
+export function useStatuses(cfg: { statusesKey: string; defaultStatuses: string[] }): string[] {
+  const { data } = useSettings()
+  return statusesFrom(data, cfg)
+}
+
+// Modal dialog basics: Escape closes, focus moves into the panel on mount and
+// returns to the opener on unmount. Attach the returned ref to the panel and
+// give that element role="dialog" aria-modal="true" tabIndex={-1}. An inner
+// autoFocus input wins the initial focus (autoFocus applies at commit, before
+// effects run, so the contains() check defers to it).
+export function useDialog(onClose: () => void) {
+  const panelRef = useRef<HTMLDivElement>(null)
+  const closeRef = useRef(onClose)
+  closeRef.current = onClose
+  useEffect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    const panel = panelRef.current
+    if (panel && !panel.contains(document.activeElement)) panel.focus()
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.stopPropagation()
+        closeRef.current()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      opener?.focus?.()
+    }
+  }, [])
+  return panelRef
 }
 
 export function useScoreMax(): number {

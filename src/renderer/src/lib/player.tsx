@@ -28,7 +28,14 @@ export interface Track {
   context?: string | null // e.g. the anime title
   coverPath?: string | null // anime cover, for the bar / queue panel / MediaSession
   mediaId?: number | null // links the bar back to the anime detail page
+  // Music-library tracks only: link targets for the bar/now-playing view, plus
+  // the tag duration as a display fallback while <audio> metadata is unknown.
+  albumId?: number | null
+  artistId?: number | null
+  duration?: number | null
 }
+
+export type RepeatMode = 'off' | 'all' | 'one'
 
 interface PlayerContextValue {
   track: Track | null
@@ -41,6 +48,7 @@ interface PlayerContextValue {
   hasNext: boolean
   hasPrev: boolean
   shuffled: boolean
+  repeat: RepeatMode
   // Plays a track; if it's already the current one, toggles play/pause instead.
   play: (track: Track) => void
   playQueue: (tracks: Track[], startIndex: number, opts?: { shuffle?: boolean }) => void
@@ -51,6 +59,11 @@ interface PlayerContextValue {
   next: () => void
   previous: () => void
   toggleShuffle: () => void
+  cycleRepeat: () => void // off → all → one → off
+  // Queue editing (the panel only exposes these for "Next up" rows, so the
+  // playing track never moves).
+  removeFromQueue: (i: number) => void
+  moveInQueue: (from: number, to: number) => void
   toggle: () => void
   seek: (time: number) => void
   setVolume: (v: number) => void
@@ -90,22 +103,54 @@ export function quizSongToTrack(s: QuizSong): Track {
   }
 }
 
+// Persisted playback preferences (volume/repeat/shuffle), ReaderPrefs-style.
+// The queue itself is deliberately not persisted — the stored `shuffle` only
+// keeps the bar's flag stable across a reload; the next playQueue() overwrites it.
+const PLAYER_PREFS_KEY = 'player.prefs'
+interface PlayerPrefs {
+  volume: number
+  repeat: RepeatMode
+  shuffle: boolean
+}
+const PLAYER_DEFAULTS: PlayerPrefs = { volume: 0.8, repeat: 'off', shuffle: false }
+
+function loadPlayerPrefs(): PlayerPrefs {
+  try {
+    const p = { ...PLAYER_DEFAULTS, ...JSON.parse(localStorage.getItem(PLAYER_PREFS_KEY) ?? '{}') }
+    p.volume = Number.isFinite(p.volume) ? Math.min(Math.max(p.volume, 0), 1) : 0.8
+    if (!['off', 'all', 'one'].includes(p.repeat)) p.repeat = 'off'
+    return p
+  } catch {
+    return PLAYER_DEFAULTS
+  }
+}
+
+function savePlayerPrefs(patch: Partial<PlayerPrefs>): void {
+  try {
+    localStorage.setItem(PLAYER_PREFS_KEY, JSON.stringify({ ...loadPlayerPrefs(), ...patch }))
+  } catch {
+    // storage full/unavailable: playback still works, prefs just don't stick
+  }
+}
+
 export function AudioPlayerProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [track, setTrack] = useState<Track | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [volume, setVolumeState] = useState(0.8)
+  const [volume, setVolumeState] = useState(() => loadPlayerPrefs().volume)
   const [queue, setQueue] = useState<Track[]>([])
   const [index, setIndex] = useState(0)
-  const [shuffled, setShuffled] = useState(false)
+  const [shuffled, setShuffled] = useState(() => loadPlayerPrefs().shuffle)
+  const [repeat, setRepeatState] = useState<RepeatMode>(() => loadPlayerPrefs().repeat)
 
   // Refs are the source of truth for playback logic: onEnded/onError and rapid
   // next/prev must never act on a stale render's state.
   const queueRef = useRef<Track[]>([])
   const indexRef = useRef(0)
   const originalOrderRef = useRef<Track[] | null>(null) // non-null ⇔ shuffled
+  const repeatRef = useRef<RepeatMode>(repeat)
   // Epoch token: each start bumps it; an async src resolution that finishes
   // after a newer start (or stop) sees a stale token and bails instead of
   // clobbering whatever is playing now.
@@ -156,9 +201,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
         list = [first, ...shuffleArray(tracks.filter((_, i) => i !== start))]
         start = 0
         setShuffled(true)
+        savePlayerPrefs({ shuffle: true })
       } else {
         originalOrderRef.current = null
         setShuffled(false)
+        // Single-track plays (theme rows, quiz) say nothing about preference.
+        if (tracks.length > 1) savePlayerPrefs({ shuffle: false })
       }
       queueRef.current = list
       setQueue(list)
@@ -213,6 +261,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
 
   const next = useCallback(() => {
     if (indexRef.current + 1 < queueRef.current.length) void startAt(indexRef.current + 1)
+    // Repeat-all wraps, but never for a single-track queue — the quiz masks
+    // its answer by keeping nexttrack dead there.
+    else if (repeatRef.current === 'all' && queueRef.current.length > 1) void startAt(0)
   }, [startAt])
 
   const previous = useCallback(() => {
@@ -241,6 +292,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       indexRef.current = Math.max(i, 0)
       setIndex(Math.max(i, 0))
       setShuffled(false)
+      savePlayerPrefs({ shuffle: false })
     } else {
       originalOrderRef.current = q
       const rest = shuffleArray(q.filter((_, i) => i !== indexRef.current))
@@ -250,8 +302,19 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       indexRef.current = 0
       setIndex(0)
       setShuffled(true)
+      savePlayerPrefs({ shuffle: true })
     }
   }, [])
+
+  const cycleRepeat = useCallback(() => {
+    setRepeatState((r) => {
+      const nextMode: RepeatMode = r === 'off' ? 'all' : r === 'all' ? 'one' : 'off'
+      repeatRef.current = nextMode
+      savePlayerPrefs({ repeat: nextMode })
+      return nextMode
+    })
+  }, [])
+
 
   const toggle = useCallback(() => {
     const a = audioRef.current
@@ -269,6 +332,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
 
   const setVolume = useCallback((v: number) => {
     setVolumeState(v)
+    savePlayerPrefs({ volume: v })
     const a = audioRef.current
     if (a) a.volume = v
   }, [])
@@ -290,8 +354,55 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
     setDuration(0)
     setQueue([])
     setIndex(0)
+    // Queue teardown, not a preference change — the stored shuffle pref stays.
     setShuffled(false)
     if ('mediaSession' in navigator) navigator.mediaSession.metadata = null
+  }, [])
+
+  // Queue editing. The panel only offers it on rows AFTER the current one, so
+  // the playing track (and indexRef) can't shift out from under playback; the
+  // bookkeeping below still handles arbitrary positions defensively.
+  const removeFromQueue = useCallback(
+    (i: number) => {
+      const q = [...queueRef.current]
+      if (i < 0 || i >= q.length) return
+      const wasCurrent = i === indexRef.current
+      const [removed] = q.splice(i, 1)
+      // The same Track object lives in both arrays (playQueue/enqueue share
+      // references), so prune the pre-shuffle order by identity — ids can
+      // legitimately repeat in a queue (same album enqueued twice).
+      const orig = originalOrderRef.current
+      if (orig) {
+        const oi = orig.indexOf(removed)
+        if (oi >= 0) originalOrderRef.current = [...orig.slice(0, oi), ...orig.slice(oi + 1)]
+      }
+      if (i < indexRef.current) {
+        indexRef.current -= 1
+        setIndex(indexRef.current)
+      }
+      queueRef.current = q
+      setQueue(q)
+      if (wasCurrent) {
+        // Unreachable from the panel; kept for safety.
+        if (q.length === 0) stop()
+        else void startAt(Math.min(i, q.length - 1))
+      }
+    },
+    [startAt, stop]
+  )
+
+  const moveInQueue = useCallback((from: number, to: number) => {
+    const q = [...queueRef.current]
+    const lo = indexRef.current + 1
+    if (from < lo || from >= q.length) return
+    const clamped = Math.min(Math.max(to, lo), q.length - 1)
+    if (clamped === from) return
+    const [moved] = q.splice(from, 1)
+    q.splice(clamped, 0, moved)
+    queueRef.current = q
+    setQueue(q)
+    // originalOrderRef is left alone on purpose: un-shuffling discards manual
+    // reorders and restores the pre-shuffle order (Spotify semantics).
   }, [])
 
   // Apply the volume to the element (also covers the initial mount).
@@ -300,7 +411,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
     if (a) a.volume = volume
   }, [volume])
 
-  const hasNext = index + 1 < queue.length
+  const hasNext = index + 1 < queue.length || (repeat === 'all' && queue.length > 1)
   const hasPrev = queue.length > 0 // previous() always at least restarts
 
   // OS media integration: metadata for the system overlay + hardware media keys.
@@ -339,7 +450,16 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
   }, [toggle, previous, next, hasNext])
 
   const onEnded = useCallback(() => {
+    const a = audioRef.current
+    if (repeatRef.current === 'one' && a) {
+      // Same src — replay in place, no re-resolution. A dead track never fires
+      // `ended`, so this can't loop a broken song.
+      a.currentTime = 0
+      void a.play().catch(() => {})
+      return
+    }
     if (indexRef.current + 1 < queueRef.current.length) void startAt(indexRef.current + 1)
+    else if (repeatRef.current === 'all' && queueRef.current.length > 0) void startAt(0)
     else setIsPlaying(false) // end of queue: keep the track loaded, like before
   }, [startAt])
 
@@ -372,6 +492,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
         hasNext,
         hasPrev,
         shuffled,
+        repeat,
         play,
         playQueue,
         enqueue,
@@ -379,6 +500,9 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
         next,
         previous,
         toggleShuffle,
+        cycleRepeat,
+        removeFromQueue,
+        moveInQueue,
         toggle,
         seek,
         setVolume,

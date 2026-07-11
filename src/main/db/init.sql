@@ -170,6 +170,24 @@ CREATE INDEX IF NOT EXISTS idx_media_relation_related
   ON media_relation(related_source, related_external_id);
 CREATE INDEX IF NOT EXISTS idx_theme_artist_person ON theme_artist(person_id);
 
+-- media_image — wallpapers + fan art attached to a media item. Files live under
+-- pictures.dir (virtual "pictures/" prefix in file_path); rows are personal and
+-- stripped on library export (sanitizeSql.cjs). source_url is NULL for images
+-- picked from local disk, and is the soft dedupe key for re-downloads.
+CREATE TABLE IF NOT EXISTS media_image (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id    INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  kind        TEXT NOT NULL,              -- 'wallpaper' | 'fanart'
+  file_path   TEXT NOT NULL,              -- 'pictures/<title folder>/<kind>/<file>'
+  source_url  TEXT,
+  source      TEXT,                       -- 'wallhaven' | 'tmdb' | 'url' | 'file'
+  width       INTEGER,
+  height      INTEGER,
+  sort_order  INTEGER,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_media_image_media ON media_image(media_id, kind);
+
 -- list — a user-curated, ordered collection (Letterboxd-style). entity_kind is
 -- fixed per list ('media' | 'person' | 'character' | 'company'); ranked toggles
 -- visible numbering. Items live in list_item and target the kind's table.
@@ -399,3 +417,140 @@ CREATE TABLE IF NOT EXISTS music_play_log (
 );
 CREATE INDEX IF NOT EXISTS idx_music_play_log_track  ON music_play_log(track_id);
 CREATE INDEX IF NOT EXISTS idx_music_play_log_played ON music_play_log(played_at);
+
+-- Finished quiz rounds (song quiz + Japanese quiz), for personal bests and
+-- history. settings snapshots the round's options as JSON so a best score can
+-- show what it was played with.
+CREATE TABLE IF NOT EXISTS quiz_session (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind         TEXT NOT NULL,                -- 'song' | 'japanese'
+  score        INTEGER NOT NULL,
+  total        INTEGER NOT NULL,
+  best_streak  INTEGER NOT NULL DEFAULT 0,
+  settings     TEXT,                         -- JSON snapshot of round options
+  played_at    TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_quiz_session_kind ON quiz_session(kind, played_at);
+
+-- ---- Gacha tracker ----
+-- Standalone section for live-service gacha games (HSR, FGO, E7, WuWa — the
+-- list and per-game kinds/currencies live in src/shared/gacha.ts, so the
+-- tables are game-agnostic). Everything here is personal and stripped on
+-- library export (sanitizeSql.cjs).
+
+-- One roster entry: a character OR the game's equipment kind (light cone /
+-- craft essence / artifact / weapon) — `kind` keys into config unitKinds.
+-- element/role are generic facet slots labeled per kind by config. `dupes` is
+-- extra copies consumed, 0-based (HSR eidolon/superimpose, FGO NP-1, E7
+-- imprint, WuWa sequence/rank) — importers must never write 1-based values.
+-- `data` is a JSON escape hatch for per-game detail phases; owned defaults 1
+-- for manual entry — future catalog importers MUST bind owned explicitly (0).
+CREATE TABLE IF NOT EXISTS gacha_unit (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  game            TEXT NOT NULL,
+  kind            TEXT NOT NULL,
+  name            TEXT NOT NULL,
+  rarity          INTEGER,
+  element         TEXT,
+  role            TEXT,
+  image_path      TEXT,
+  owned           INTEGER NOT NULL DEFAULT 1,
+  favorite        INTEGER NOT NULL DEFAULT 0,
+  level           INTEGER,
+  dupes           INTEGER NOT NULL DEFAULT 0,
+  obtained_at     TEXT,
+  notes           TEXT,
+  data            TEXT,
+  external_source TEXT,
+  external_id     TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_gacha_unit_game ON gacha_unit(game, kind);
+-- Unique now so future catalog importers can ON CONFLICT-upsert. Manual rows
+-- (NULL externals) stay unconstrained — SQLite treats NULLs as distinct
+-- (theme_song precedent). kind is part of the key: FGO servant and craft
+-- essence ids share one numeric range.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_gacha_unit_external
+  ON gacha_unit(game, kind, external_source, external_id);
+
+-- Saved builds per unit. FGO (buildMode 'levelOnly') never shows these.
+-- `data` is freeform JSON this phase; detail phases give it structure (e.g.
+-- E7 gear-piece id arrays — FK-less JSON refs per app convention).
+CREATE TABLE IF NOT EXISTS gacha_build (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  unit_id     INTEGER NOT NULL REFERENCES gacha_unit(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  data        TEXT,
+  notes       TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_gacha_build_unit ON gacha_build(unit_id);
+
+-- Current premium-currency amounts, edited inline on the game page. Keys come
+-- from config; currencies without a row display as 0. The UNIQUE's auto-index
+-- also serves the per-game list query (leading `game` column).
+CREATE TABLE IF NOT EXISTS gacha_currency (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  game        TEXT NOT NULL,
+  key         TEXT NOT NULL,
+  amount      INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(game, key)
+);
+
+-- Banner schedule, manually entered this phase (per-game fetchers arrive with
+-- detail phases; external_source/external_id are their future dedupe key).
+-- Dates are 'YYYY-MM-DD' TEXT; start NULL while unannounced, end NULL when
+-- open-ended.
+CREATE TABLE IF NOT EXISTS gacha_banner (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  game            TEXT NOT NULL,
+  name            TEXT NOT NULL,
+  kind            TEXT,
+  featured        TEXT,
+  start_at        TEXT,
+  end_at          TEXT,
+  image_path      TEXT,
+  notes           TEXT,
+  external_source TEXT,
+  external_id     TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_gacha_banner_game ON gacha_banner(game, start_at);
+
+-- Fetched-on-demand news: the game's subreddit hot feed (Atom RSS — Reddit's
+-- JSON API 403s unauthenticated clients), only via the Fetch button — never
+-- automatic. A fetch REPLACES the game's rows (hot feeds churn; the tab always
+-- mirrors the latest fetch); sort_order preserves the feed's hot ranking.
+-- image_url stays REMOTE (renderer CSP img-src allows https:) — news is
+-- ephemeral, not worth media/ disk. external_id = reddit post id (t3_…).
+-- author/sort_order arrived after first ship → ensureColumn in connection.ts.
+CREATE TABLE IF NOT EXISTS gacha_news (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  game          TEXT NOT NULL,
+  title         TEXT NOT NULL,
+  url           TEXT,
+  summary       TEXT,
+  image_url     TEXT,
+  published_at  TEXT,
+  author        TEXT,
+  sort_order    INTEGER NOT NULL DEFAULT 0,
+  external_id   TEXT NOT NULL,
+  fetched_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(game, external_id)
+);
+CREATE INDEX IF NOT EXISTS idx_gacha_news_game ON gacha_news(game, published_at);
+
+-- Per-game key/value scratch (news.fetchedAt stamp now; pity counters later).
+CREATE TABLE IF NOT EXISTS gacha_meta (
+  game        TEXT NOT NULL,
+  key         TEXT NOT NULL,
+  value       TEXT NOT NULL,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (game, key)
+);

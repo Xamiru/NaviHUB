@@ -13,6 +13,7 @@ import type {
   Company,
   Character,
   Tag,
+  TagWithCounts,
   SettingsMap,
   CastEntry,
   CharacterAppearance,
@@ -21,6 +22,13 @@ import type {
   ImportSearchResult,
   ImportSummary,
   ThemeImportSummary,
+  ImageKind,
+  MediaImage,
+  WallpaperSearchPage,
+  WallpaperSearchResult,
+  QuizHistory,
+  QuizKind,
+  QuizSessionInput,
   QuizSong,
   QuizSongFilter,
   HltbTimes,
@@ -45,6 +53,7 @@ import type {
   JpReviewOutcome,
   JpReviewQueue,
   JpStats,
+  JpStatsDetail,
   SrsGrade,
   MangaAttachResult,
   MangaLibrary,
@@ -53,6 +62,18 @@ import type {
   MokuroPageOcr,
   JpToken,
   ActivityStatus,
+  GachaBanner,
+  GachaBannerInput,
+  GachaBuildInput,
+  GachaCurrency,
+  GachaGameId,
+  GachaGameOverview,
+  GachaNewsFetchResult,
+  GachaNewsPage,
+  GachaUnit,
+  GachaUnitDetail,
+  GachaUnitFilter,
+  GachaUnitInput,
   MusicAlbumDetail,
   MusicAlbumSummary,
   MusicArtist,
@@ -80,7 +101,7 @@ export interface NaviApi {
     update(id: number, input: Partial<MediaItemInput>): Promise<void>
     remove(id: number): Promise<void>
     removeCharacter(mediaId: number, characterId: number): Promise<void>
-    setStatusCounts(mediaType: string): Promise<Record<string, number>>
+    statusCounts(mediaType: string): Promise<Record<string, number>>
     timeStats(): Promise<LibraryTimeStats>
   }
   people: {
@@ -125,6 +146,11 @@ export interface NaviApi {
   }
   tags: {
     list(): Promise<Tag[]>
+    get(id: number): Promise<Tag | null>
+    // Browse pages: all tags with per-type usage counts, and everything
+    // (cross-type) carrying one tag.
+    listWithCounts(): Promise<TagWithCounts[]>
+    media(id: number): Promise<MediaItem[]>
     upsert(input: { name: string; category?: string | null }): Promise<number>
     remove(id: number): Promise<void>
   }
@@ -135,6 +161,10 @@ export interface NaviApi {
     // The pool of playable anime theme songs for the song quiz, narrowed by the
     // given filter (OP/ED, list statuses). Game logic runs in the renderer.
     songPool(filter: QuizSongFilter): Promise<QuizSong[]>
+    // Finished-round history: pages log a session at game end; setup screens
+    // show the personal best + recent rounds.
+    logSession(input: QuizSessionInput): Promise<number>
+    history(kind: QuizKind): Promise<QuizHistory>
   }
   hltb: {
     // Looks the item's title up on HowLongToBeat and stores the main / extra /
@@ -190,6 +220,20 @@ export interface NaviApi {
     // Fetch an anime's OP/ED songs (+ audio + artists) from AnimeThemes.
     import(mediaId: number): Promise<ThemeImportSummary>
   }
+  pictures: {
+    // Wallpapers + fan art per media item; files live under pictures.dir.
+    list(mediaId: number, kind: ImageKind): Promise<MediaImage[]>
+    // Browse-dialog searches (main-process — renderer CSP blocks remote fetch).
+    searchWallhaven(query: string, page: number): Promise<WallpaperSearchPage>
+    searchTmdb(mediaId: number): Promise<WallpaperSearchPage>
+    // Download a picked search result / pasted URL into pictures.dir + record it.
+    addFromSearch(mediaId: number, kind: ImageKind, result: WallpaperSearchResult): Promise<MediaImage>
+    addFromUrl(mediaId: number, kind: ImageKind, url: string): Promise<MediaImage>
+    // Native multi-select picker; copies into pictures.dir. [] when cancelled.
+    addFromFiles(mediaId: number, kind: ImageKind): Promise<MediaImage[]>
+    // Removes the row and deletes its file on disk.
+    remove(imageId: number): Promise<void>
+  }
   japanese: {
     // Standalone Japanese-learning section: courses → lessons → cards, with a
     // built-in SRS (src/shared/srs.ts). Only cards from lessons marked learned
@@ -211,6 +255,8 @@ export interface NaviApi {
     submitReview(cardId: number, grade: SrsGrade): Promise<JpReviewOutcome>
     quizPool(scope: JpQuizScope): Promise<JpQuizItem[]>
     stats(): Promise<JpStats>
+    // Review history (heatmap/streaks/grades) + due forecast for the stats page.
+    statsDetail(): Promise<JpStatsDetail>
     // Vocab mining: find-or-create the capture course/lesson.
     ensureMiningInbox(): Promise<JpMiningInbox>
     // Morphological analysis (kuromoji) of an OCR'd text block; [] on failure
@@ -301,6 +347,40 @@ export interface NaviApi {
     artFetchMissing(): Promise<MusicArtStatus>
     artCancel(): Promise<void>
     artStatus(): Promise<MusicArtStatus>
+  }
+  gacha: {
+    // Standalone gacha tracker; the game list and per-game kinds/currencies
+    // live in src/shared/gacha.ts. Online work happens ONLY via the fetch*
+    // methods (button-triggered) — everything else is local CRUD.
+    overview(): Promise<GachaGameOverview[]>
+    units(game: GachaGameId, filter?: GachaUnitFilter): Promise<GachaUnit[]>
+    unit(id: number): Promise<GachaUnitDetail | null>
+    createUnit(input: GachaUnitInput): Promise<number>
+    updateUnit(id: number, patch: Partial<GachaUnitInput>): Promise<void>
+    removeUnit(id: number): Promise<void>
+    createBuild(unitId: number, input: GachaBuildInput): Promise<number>
+    updateBuild(id: number, patch: Partial<GachaBuildInput>): Promise<void>
+    removeBuild(id: number): Promise<void>
+    currencies(game: GachaGameId): Promise<GachaCurrency[]>
+    setCurrency(game: GachaGameId, key: string, amount: number): Promise<void>
+    banners(game: GachaGameId): Promise<GachaBanner[]>
+    createBanner(input: GachaBannerInput): Promise<number>
+    updateBanner(id: number, patch: Partial<GachaBannerInput>): Promise<void>
+    removeBanner(id: number): Promise<void>
+    // news() reads the local cache; fetchNews() pulls the game's subreddit
+    // hot feed (the button — never automatic) and replaces the cached feed.
+    news(game: GachaGameId): Promise<GachaNewsPage>
+    fetchNews(game: GachaGameId): Promise<GachaNewsFetchResult>
+    // Downloads a pasted portrait/banner URL into userData/media (the renderer
+    // CSP blocks remote fetch; content-addressed like media covers).
+    downloadImage(url: string): Promise<string | null>
+    // Hero art for a game's hub card + dashboard header; null clears it.
+    setGameImage(game: GachaGameId, relPath: string | null): Promise<void>
+  }
+  app: {
+    // Opens an http(s) URL in the system browser (gacha news links). Never
+    // navigates the app window; non-http(s) URLs are rejected in main.
+    openExternal(url: string): Promise<void>
   }
   activity: {
     // The current long-running main-process task (imports, theme fetches);

@@ -1,11 +1,14 @@
-import { app, BrowserWindow, Menu, protocol, net } from 'electron'
+import { app, BrowserWindow, Menu, protocol } from 'electron'
 import { join } from 'path'
-import { pathToFileURL } from 'url'
+import { createReadStream } from 'fs'
+import { stat } from 'fs/promises'
+import { Readable } from 'stream'
 import { initDatabase, closeDatabase } from './db/connection'
 import { closeDictDb } from './dict/dictDb'
 import { registerIpc } from './ipc'
 import { absoluteMediaPath } from './files'
 import { splitArchivePath, readArchiveEntry, mimeFor } from './archive'
+import { parseByteRange } from './httpRange'
 import { killActive as killActiveMusicDownload } from './musicDownload'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
@@ -36,6 +39,10 @@ function createWindow(): void {
   })
 
   win.on('ready-to-show', () => win.show())
+
+  // No code path may spawn a child BrowserWindow — external links go through
+  // the guarded app:openExternal IPC (system browser) instead.
+  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
   // Right-click text menu (Electron ships none by default): cut/copy/paste in
   // inputs, copy for selected page text. Roles delegate to Chromium's native
@@ -69,6 +76,9 @@ app.whenReady().then(() => {
 
   // navimg://media/<file> -> the real file under userData/media.
   // navimg://manga/<...>.cbz/<entry> -> a page streamed out of the archive.
+  // Plain files are streamed by hand (not net.fetch) so Range requests get a
+  // real 206 — that's what makes <audio> seekable and lets Chromium read
+  // trailing metadata (m4a moov, VBR mp3 length) without downloading it all.
   protocol.handle('navimg', async (request) => {
     const url = new URL(request.url)
     const relPath = decodeURIComponent(url.host + url.pathname)
@@ -82,7 +92,38 @@ app.whenReady().then(() => {
         headers: { 'content-type': mimeFor(archived.entryName) }
       })
     }
-    return net.fetch(pathToFileURL(absoluteMediaPath(relPath)).toString())
+
+    const absPath = absoluteMediaPath(relPath)
+    let size: number
+    try {
+      const st = await stat(absPath)
+      if (!st.isFile()) return new Response('Not found', { status: 404 })
+      size = st.size
+    } catch {
+      return new Response('Not found', { status: 404 })
+    }
+    const baseHeaders = { 'content-type': mimeFor(absPath), 'accept-ranges': 'bytes' }
+    const range = parseByteRange(request.headers.get('range'), size)
+    if (range === 'unsatisfiable') {
+      return new Response(null, {
+        status: 416,
+        headers: { ...baseHeaders, 'content-range': `bytes */${size}` }
+      })
+    }
+    const stream = range
+      ? createReadStream(absPath, { start: range.start, end: range.end })
+      : createReadStream(absPath)
+    // Readable.toWeb's ReadableStream generics don't line up with dom's BodyInit.
+    return new Response(Readable.toWeb(stream) as unknown as BodyInit, {
+      status: range ? 206 : 200,
+      headers: range
+        ? {
+            ...baseHeaders,
+            'content-range': `bytes ${range.start}-${range.end}/${size}`,
+            'content-length': String(range.end - range.start + 1)
+          }
+        : { ...baseHeaders, 'content-length': String(size) }
+    })
   })
 
   createWindow()

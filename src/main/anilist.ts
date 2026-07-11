@@ -189,10 +189,12 @@ function linkGenre(db: any, mediaId: number, name: string): void {
   db.prepare('INSERT OR IGNORE INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, tagId)
 }
 
-// Merge numeric extras (community average score 0-100, per-episode duration in
-// minutes) into the metadata JSON without clobbering other keys, so they can be
-// shown beside the user's own data and feed the /stats time estimates. Only
-// applies entries that are positive numbers.
+// Merge canonical extras (community average score 0-100, per-episode duration
+// in minutes, airing season/seasonYear) into the metadata JSON without
+// clobbering other keys, so they can be shown beside the user's own data and
+// feed the /stats time estimates + the Seasonal page. Only applies entries
+// that are positive numbers or non-empty strings, so absent fields never
+// write junk keys.
 function mergeMetadata(db: any, mediaId: number, patch: Record<string, unknown>): void {
   const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId) as
     | { metadata: string | null }
@@ -206,7 +208,7 @@ function mergeMetadata(db: any, mediaId: number, patch: Record<string, unknown>)
     }
   }
   for (const [k, v] of Object.entries(patch)) {
-    if (typeof v === 'number' && v > 0) metaObj[k] = v
+    if ((typeof v === 'number' && v > 0) || (typeof v === 'string' && v)) metaObj[k] = v
   }
   db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(
     Object.keys(metaObj).length ? JSON.stringify(metaObj) : null,
@@ -328,6 +330,8 @@ query ($id: Int) {
     episodes
     duration
     averageScore
+    season
+    seasonYear
     startDate { year month day }
     coverImage { large extraLarge }
     genres
@@ -453,7 +457,12 @@ export async function importAnime(anilistId: number): Promise<AniListImportSumma
       mediaId = Number(info.lastInsertRowid)
     }
 
-    mergeMetadata(db, mediaId, { averageScore: m.averageScore, epDuration: m.duration })
+    mergeMetadata(db, mediaId, {
+      averageScore: m.averageScore,
+      epDuration: m.duration,
+      season: m.season,
+      seasonYear: m.seasonYear
+    })
 
     // ---- studios: only the main animation studio(s), not producers/licensors ----
     let studios = 0

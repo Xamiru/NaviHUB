@@ -6,20 +6,25 @@ import { MEDIA_CONFIGS, configFor, pathForMedia, type MediaConfig } from '../lib
 import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
-import type { MediaItem } from '@shared/types'
+import { statusesFrom, useSettings } from '../lib/hooks'
+import type { MediaItem, SettingsMap } from '@shared/types'
 
-// The status that marks an item as in-progress is the FIRST default status of
-// its media type ("Watching" for anime/TV, "Playing" for VNs and games,
-// "Reading" for manga) — "Continue watching" keys off that per item. The LAST
-// default status is by the same convention the plan-to-enjoy backlog
-// ("Plan to Watch" / "Plan to Play" / "Want to Watch"), which feeds the
-// Tonight's-pick spotlight.
-const inProgress = (m: MediaItem): boolean =>
-  m.status != null && m.status === configFor(m.mediaType).defaultStatuses[0]
-const planned = (m: MediaItem): boolean =>
-  m.status != null && m.status === configFor(m.mediaType).defaultStatuses.at(-1)
-const completed = (m: MediaItem): boolean =>
-  m.status != null && m.status === configFor(m.mediaType).defaultStatuses[1]
+// The status that marks an item as in-progress is the FIRST status of its
+// media type's *configured* list ("Watching" for anime/TV, "Playing" for VNs
+// and games, "Reading" for manga) — "Continue watching" keys off that per
+// item. The SECOND is by the same positional convention "completed", and the
+// LAST is the plan-to-enjoy backlog ("Plan to Watch" / "Plan to Play"), which
+// feeds the Tonight's-pick spotlight. Resolved from settings (not the
+// defaults) so renamed statuses keep the Home sections working.
+function statusMatchers(settings: SettingsMap | undefined) {
+  const pick = (m: MediaItem, at: (s: string[]) => string | undefined): boolean =>
+    m.status != null && m.status === at(statusesFrom(settings, configFor(m.mediaType)))
+  return {
+    inProgress: (m: MediaItem) => pick(m, (s) => s[0]),
+    completed: (m: MediaItem) => pick(m, (s) => s[1]),
+    planned: (m: MediaItem) => pick(m, (s) => s.at(-1))
+  }
+}
 
 // The same seiyuu pool the /people browse page shows (anime + VN + games).
 const VA_TYPES: MediaItem['mediaType'][] = ['anime', 'visual_novel', 'game']
@@ -37,11 +42,13 @@ export default function HomePage() {
     }))
   })
   const isLoading = lists.some((q) => q.isLoading)
+  const { data: settings } = useSettings()
 
   // Derive the sections only when a query's data actually changes, not on every
   // render (these sort/filter over the whole library). MEDIA_CONFIGS is a fixed
   // module constant, so the deps array keeps a stable length across renders.
   const { all, recent, continuing, favorites, backlog, stats } = useMemo(() => {
+    const { inProgress, completed, planned } = statusMatchers(settings)
     const all: MediaItem[] = lists.flatMap((q) => q.data ?? [])
     const scores = all.map((m) => m.score).filter((s): s is number => s != null)
     return {
@@ -61,7 +68,7 @@ export default function HomePage() {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, lists.map((q) => q.data))
+  }, [...lists.map((q) => q.data), settings])
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
@@ -427,7 +434,7 @@ function LibraryGlance() {
   const counts = useQueries({
     queries: sections.map((cfg) => ({
       queryKey: qk.mediaCounts.byType(cfg.key),
-      queryFn: () => api.media.setStatusCounts(cfg.key)
+      queryFn: () => api.media.statusCounts(cfg.key)
     }))
   })
 

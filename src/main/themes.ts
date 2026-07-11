@@ -56,13 +56,48 @@ function artistImage(artist: any): string | null {
   return (large ?? imgs[0])?.link ?? null
 }
 
-// Resolve an AniList anime id to its AnimeThemes slug, then fetch its themes.
-export async function fetchAnimeThemes(anilistId: number): Promise<NormalizedTheme[]> {
+// Look up an anime's AnimeThemes slug via one external-site resource mapping
+// (site is AnimeThemes' name, e.g. 'AniList' or 'MyAnimeList'). Null when that
+// site has no mapping for the id.
+async function resolveSlug(site: string, externalId: number): Promise<string | null> {
   const resData = await atGet(
-    `/resource?filter[site]=AniList&filter[external_id]=${anilistId}&include=anime`
+    `/resource?filter[site]=${site}&filter[external_id]=${externalId}&include=anime`
   )
-  const slug = resData?.resources?.[0]?.anime?.[0]?.slug
-  if (!slug) return [] // not catalogued on AnimeThemes
+  return resData?.resources?.[0]?.anime?.[0]?.slug ?? null
+}
+
+// AniList exposes each anime's MyAnimeList id as `idMal`; used as a fallback
+// key when AnimeThemes has an anime mapped by MAL but not by AniList. Public
+// GraphQL, no key. Returns null on any miss so the caller just gives up cleanly.
+async function fetchMalId(anilistId: number): Promise<number | null> {
+  try {
+    const res = await fetchWithRetry('https://graphql.anilist.co', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        query: 'query ($id: Int) { Media(id: $id, type: ANIME) { idMal } }',
+        variables: { id: anilistId }
+      })
+    })
+    if (!res.ok) return null
+    const json = await res.json()
+    const idMal = json?.data?.Media?.idMal
+    return typeof idMal === 'number' && idMal > 0 ? idMal : null
+  } catch {
+    return null
+  }
+}
+
+// Resolve an AniList anime id to its AnimeThemes slug, then fetch its themes.
+// Falls back to the anime's MyAnimeList id when AnimeThemes has no AniList
+// mapping (some entries carry only the MAL link — e.g. Hellsing Ultimate).
+export async function fetchAnimeThemes(anilistId: number): Promise<NormalizedTheme[]> {
+  let slug = await resolveSlug('AniList', anilistId)
+  if (!slug) {
+    const malId = await fetchMalId(anilistId)
+    if (malId) slug = await resolveSlug('MyAnimeList', malId)
+  }
+  if (!slug) return [] // not catalogued on AnimeThemes under either id
 
   const inc = encodeURIComponent(
     'animethemes.song.artists.images,animethemes.animethemeentries.videos.audio'

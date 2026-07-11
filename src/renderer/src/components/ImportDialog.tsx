@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { useDialog } from '../lib/hooks'
 import { useActivity, activityText } from './ActivityIndicator'
 import type { MediaConfig } from '../lib/mediaConfig'
 import type { ImportSearchResult } from '@shared/types'
@@ -25,6 +26,7 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
   const [importingId, setImportingId] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
+  const panelRef = useDialog(onClose)
 
   const { data: results = [], isFetching } = useQuery({
     queryKey: qk.importSearch(source.key, submitted),
@@ -56,7 +58,15 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
       className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-8 overflow-y-auto"
       onMouseDown={onClose}
     >
-      <div className="card w-full max-w-2xl p-5 mt-8" onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Import from ${source.label}`}
+        tabIndex={-1}
+        className="card w-full max-w-2xl p-5 mt-8"
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">Import from {source.label}</h2>
           <button className="text-gray-500 hover:text-white text-xl leading-none" onClick={onClose}>

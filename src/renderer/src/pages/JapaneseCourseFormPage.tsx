@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import BackButton from '../components/BackButton'
 
 export default function JapaneseCourseFormPage() {
   const { id } = useParams()
@@ -48,16 +49,17 @@ export default function JapaneseCourseFormPage() {
     }
     await qc.invalidateQueries({ queryKey: qk.japanese.all })
     setSaving(false)
-    navigate(`/japanese/courses/${targetId}`)
+    // Drop the form from history (see MediaFormPage.save): back to the detail
+    // entry beneath when editing, replace with the new detail when creating.
+    if (editing) navigate(-1)
+    else navigate(`/japanese/courses/${targetId}`, { replace: true })
   }
 
   if (!loaded) return <p className="p-6 text-gray-500">Loading…</p>
 
   return (
     <div className="p-6 max-w-xl mx-auto">
-      <button className="text-sm text-gray-500 hover:text-gray-300 mb-4" onClick={() => navigate(-1)}>
-        ← Back
-      </button>
+      <BackButton />
       <h1 className="text-2xl font-bold mb-5">{editing ? 'Edit course' : 'New course'}</h1>
 
       <div className="space-y-4">

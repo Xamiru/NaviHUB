@@ -1,11 +1,14 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { usePlayer } from '../lib/player'
+import { useIncrementalList } from '../lib/hooks'
 import CoverImage from './CoverImage'
 
 // Spotify-style "queue" popover anchored above the now-playing bar: the current
-// song plus everything still to come. Clicking a row jumps straight to it.
+// song plus everything still to come. Clicking a row jumps straight to it;
+// "Next up" rows can be reordered (▲▼) or removed (×) — the playing track
+// itself is never editable, which keeps the player's index bookkeeping trivial.
 export default function QueuePanel({ onClose }: { onClose: () => void }) {
-  const { queue, index, isPlaying, playAt, toggle } = usePlayer()
+  const { queue, index, isPlaying, playAt, toggle, removeFromQueue, moveInQueue } = usePlayer()
   const listRef = useRef<HTMLDivElement>(null)
 
   // A jump (or auto-advance) reshapes "Next up"; snap back to the top so the
@@ -15,7 +18,13 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
   }, [index])
 
   const current = queue[index]
-  const upNext = queue.slice(index + 1)
+  // Memoized so the slice's identity only changes when the queue really does —
+  // usePlayer() re-renders on every timeupdate tick, and a fresh array each
+  // tick would reset the incremental list below back to its first batch.
+  const upNext = useMemo(() => queue.slice(index + 1), [queue, index])
+  // A queue can hold thousands of tracks (a whole huge album); mounting a row
+  // for each froze the popover, so reveal in scroll batches.
+  const { visible, sentinelRef, hasMore } = useIncrementalList(upNext)
 
   return (
     <>
@@ -42,13 +51,43 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
               <p className="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
                 Next up
               </p>
-              {upNext.map((t, i) => (
-                <QueueRow
-                  key={`${index + 1 + i}-${t.id}`}
-                  track={t}
-                  onClick={() => playAt(index + 1 + i)}
-                />
-              ))}
+              {visible.map((t, i) => {
+                const abs = index + 1 + i // absolute queue position, always > index
+                return (
+                  <QueueRow
+                    key={`${abs}-${t.id}`}
+                    track={t}
+                    onClick={() => playAt(abs)}
+                    actions={
+                      <>
+                        <EditButton
+                          label="Move up in queue"
+                          disabled={i === 0}
+                          onClick={() => moveInQueue(abs, abs - 1)}
+                        >
+                          ▲
+                        </EditButton>
+                        <EditButton
+                          label="Move down in queue"
+                          disabled={i === upNext.length - 1}
+                          onClick={() => moveInQueue(abs, abs + 1)}
+                        >
+                          ▼
+                        </EditButton>
+                        <EditButton label="Remove from queue" onClick={() => removeFromQueue(abs)}>
+                          ×
+                        </EditButton>
+                      </>
+                    }
+                  />
+                )
+              })}
+              <div ref={sentinelRef} />
+              {hasMore && (
+                <p className="py-1 text-center text-[10px] text-gray-500">
+                  {visible.length} of {upNext.length} — scroll for more
+                </p>
+              )}
             </>
           )}
         </div>
@@ -57,22 +96,60 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
   )
 }
 
-function QueueRow({
+// Exported for the full-page now-playing view, which renders the same rows.
+export function EditButton({
+  label,
+  disabled = false,
+  onClick,
+  children
+}: {
+  label: string
+  disabled?: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      className="w-5 text-center text-xs text-gray-500 hover:text-white disabled:opacity-30 disabled:hover:text-gray-500"
+      title={label}
+      aria-label={label}
+      disabled={disabled}
+      onClick={(e) => {
+        e.stopPropagation() // the row itself jumps playback
+        onClick()
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+export function QueueRow({
   track,
   active = false,
   playing = false,
-  onClick
+  onClick,
+  actions
 }: {
   track: { title: string; subtitle?: string | null; context?: string | null; coverPath?: string | null }
   active?: boolean
   playing?: boolean
   onClick: () => void
+  actions?: React.ReactNode
 }) {
   const sub = [track.context, track.subtitle].filter(Boolean).join(' · ')
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
-      className={`w-full flex items-center gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-base-700 ${
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onClick()
+        }
+      }}
+      className={`group w-full flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-left hover:bg-base-700 ${
         active ? 'bg-base-700/60' : ''
       }`}
     >
@@ -80,6 +157,7 @@ function QueueRow({
         path={track.coverPath}
         alt={track.context ?? track.title}
         className="h-11 w-8 shrink-0"
+        fallback="music"
       />
       <div className="min-w-0 flex-1">
         <p className={`text-sm truncate leading-tight ${active ? 'text-accent' : ''}`}>
@@ -87,11 +165,16 @@ function QueueRow({
         </p>
         {sub && <p className="text-xs text-gray-500 truncate leading-tight mt-0.5">{sub}</p>}
       </div>
+      {actions && (
+        <div className="hidden shrink-0 items-center group-hover:flex group-focus-within:flex">
+          {actions}
+        </div>
+      )}
       {active && (
         <span className="shrink-0 text-accent text-xs" aria-hidden>
           {playing ? '▮▮▮' : '❚❚'}
         </span>
       )}
-    </button>
+    </div>
   )
 }

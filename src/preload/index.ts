@@ -11,7 +11,7 @@ const api: NaviApi = {
     remove: (id) => ipcRenderer.invoke('media:remove', id),
     removeCharacter: (mediaId, characterId) =>
       ipcRenderer.invoke('media:removeCharacter', mediaId, characterId),
-    setStatusCounts: (mediaType) => ipcRenderer.invoke('media:statusCounts', mediaType),
+    statusCounts: (mediaType) => ipcRenderer.invoke('media:statusCounts', mediaType),
     timeStats: () => ipcRenderer.invoke('media:timeStats')
   },
   people: {
@@ -46,6 +46,9 @@ const api: NaviApi = {
   },
   tags: {
     list: () => ipcRenderer.invoke('tags:list'),
+    get: (id) => ipcRenderer.invoke('tags:get', id),
+    listWithCounts: () => ipcRenderer.invoke('tags:listWithCounts'),
+    media: (id) => ipcRenderer.invoke('tags:media', id),
     upsert: (input) => ipcRenderer.invoke('tags:upsert', input),
     remove: (id) => ipcRenderer.invoke('tags:remove', id)
   },
@@ -53,7 +56,9 @@ const api: NaviApi = {
     global: (query) => ipcRenderer.invoke('search:global', query)
   },
   quiz: {
-    songPool: (filter) => ipcRenderer.invoke('quiz:songPool', filter)
+    songPool: (filter) => ipcRenderer.invoke('quiz:songPool', filter),
+    logSession: (input) => ipcRenderer.invoke('quiz:logSession', input),
+    history: (kind) => ipcRenderer.invoke('quiz:history', kind)
   },
   hltb: {
     fetch: (mediaId) => ipcRenderer.invoke('hltb:fetch', mediaId)
@@ -101,6 +106,17 @@ const api: NaviApi = {
   themes: {
     import: (mediaId) => ipcRenderer.invoke('themes:import', mediaId)
   },
+  pictures: {
+    list: (mediaId, kind) => ipcRenderer.invoke('pictures:list', mediaId, kind),
+    searchWallhaven: (query, page) => ipcRenderer.invoke('pictures:searchWallhaven', query, page),
+    searchTmdb: (mediaId) => ipcRenderer.invoke('pictures:searchTmdb', mediaId),
+    addFromSearch: (mediaId, kind, result) =>
+      ipcRenderer.invoke('pictures:addFromSearch', mediaId, kind, result),
+    addFromUrl: (mediaId, kind, url) =>
+      ipcRenderer.invoke('pictures:addFromUrl', mediaId, kind, url),
+    addFromFiles: (mediaId, kind) => ipcRenderer.invoke('pictures:addFromFiles', mediaId, kind),
+    remove: (imageId) => ipcRenderer.invoke('pictures:remove', imageId)
+  },
   japanese: {
     listCourses: () => ipcRenderer.invoke('japanese:listCourses'),
     getCourse: (id) => ipcRenderer.invoke('japanese:getCourse', id),
@@ -119,6 +135,7 @@ const api: NaviApi = {
     submitReview: (cardId, grade) => ipcRenderer.invoke('japanese:submitReview', cardId, grade),
     quizPool: (scope) => ipcRenderer.invoke('japanese:quizPool', scope),
     stats: () => ipcRenderer.invoke('japanese:stats'),
+    statsDetail: () => ipcRenderer.invoke('japanese:statsDetail'),
     ensureMiningInbox: () => ipcRenderer.invoke('japanese:ensureMiningInbox'),
     tokenize: (text) => ipcRenderer.invoke('japanese:tokenize', text),
     minedFronts: (fronts) => ipcRenderer.invoke('japanese:minedFronts', fronts)
@@ -184,6 +201,30 @@ const api: NaviApi = {
     artFetchMissing: () => ipcRenderer.invoke('music:artFetchMissing'),
     artCancel: () => ipcRenderer.invoke('music:artCancel'),
     artStatus: () => ipcRenderer.invoke('music:artStatus')
+  },
+  gacha: {
+    overview: () => ipcRenderer.invoke('gacha:overview'),
+    units: (game, filter) => ipcRenderer.invoke('gacha:units', game, filter),
+    unit: (id) => ipcRenderer.invoke('gacha:unit', id),
+    createUnit: (input) => ipcRenderer.invoke('gacha:createUnit', input),
+    updateUnit: (id, patch) => ipcRenderer.invoke('gacha:updateUnit', id, patch),
+    removeUnit: (id) => ipcRenderer.invoke('gacha:removeUnit', id),
+    createBuild: (unitId, input) => ipcRenderer.invoke('gacha:createBuild', unitId, input),
+    updateBuild: (id, patch) => ipcRenderer.invoke('gacha:updateBuild', id, patch),
+    removeBuild: (id) => ipcRenderer.invoke('gacha:removeBuild', id),
+    currencies: (game) => ipcRenderer.invoke('gacha:currencies', game),
+    setCurrency: (game, key, amount) => ipcRenderer.invoke('gacha:setCurrency', game, key, amount),
+    banners: (game) => ipcRenderer.invoke('gacha:banners', game),
+    createBanner: (input) => ipcRenderer.invoke('gacha:createBanner', input),
+    updateBanner: (id, patch) => ipcRenderer.invoke('gacha:updateBanner', id, patch),
+    removeBanner: (id) => ipcRenderer.invoke('gacha:removeBanner', id),
+    news: (game) => ipcRenderer.invoke('gacha:news', game),
+    fetchNews: (game) => ipcRenderer.invoke('gacha:fetchNews', game),
+    downloadImage: (url) => ipcRenderer.invoke('gacha:downloadImage', url),
+    setGameImage: (game, relPath) => ipcRenderer.invoke('gacha:setGameImage', game, relPath)
+  },
+  app: {
+    openExternal: (url) => ipcRenderer.invoke('app:openExternal', url)
   },
   activity: {
     status: () => ipcRenderer.invoke('activity:status')

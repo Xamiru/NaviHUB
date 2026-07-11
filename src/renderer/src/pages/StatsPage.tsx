@@ -67,6 +67,11 @@ function detailLine(it: TimeStatsItem): string {
   }
 }
 
+// Plain anchors would rewrite the HashRouter route; scroll imperatively instead.
+function scrollToType(mediaType: string): void {
+  document.getElementById(`type-${mediaType}`)?.scrollIntoView({ behavior: 'smooth' })
+}
+
 export default function StatsPage() {
   const { data: stats } = useQuery({
     queryKey: qk.media.timeStats,
@@ -146,12 +151,14 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
             const pct = (t.minutes / stats.totalMinutes) * 100
             const cfg = configFor(t.mediaType)
             return (
-              <a
+              <button
                 key={t.mediaType}
-                href={`#type-${t.mediaType}`}
+                type="button"
+                onClick={() => scrollToType(t.mediaType)}
                 className="h-full transition-opacity hover:opacity-80"
                 style={{ width: `${pct}%`, background: TYPE_COLORS[t.mediaType] }}
                 title={`${cfg.plural} · ${t.estimated ? '≈ ' : ''}${fmtHours(t.minutes)} · ${pct.toFixed(0)}%`}
+                aria-label={`Jump to ${cfg.plural}`}
               />
             )
           })}
@@ -161,9 +168,10 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
             const pct = (t.minutes / stats.totalMinutes) * 100
             const cfg = configFor(t.mediaType)
             return (
-              <a
+              <button
                 key={t.mediaType}
-                href={`#type-${t.mediaType}`}
+                type="button"
+                onClick={() => scrollToType(t.mediaType)}
                 className="flex items-center gap-2 text-sm text-gray-300 hover:text-white"
               >
                 <span
@@ -176,7 +184,7 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
                   {t.estimated ? '≈ ' : ''}
                   {fmtHours(t.minutes)} · {pct.toFixed(0)}%
                 </span>
-              </a>
+              </button>
             )
           })}
         </div>

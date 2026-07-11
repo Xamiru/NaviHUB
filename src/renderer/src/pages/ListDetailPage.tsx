@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { pathForEntity, KIND_LABEL, KIND_NOUN } from '../lib/listLinks'
 import CoverImage from '../components/CoverImage'
+import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
 import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
 import UniversalPicker, { type PickedEntity } from '../components/UniversalPicker'
@@ -68,9 +69,7 @@ export default function ListDetailPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <button className="text-sm text-gray-500 hover:text-gray-300 mb-4" onClick={() => navigate('/lists')}>
-        ← Lists
-      </button>
+      <BackButton />
 
       <div className="flex items-start justify-between gap-4 mb-5">
         <div className="min-w-0">

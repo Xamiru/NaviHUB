@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useSettings } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
+import { toast } from '../lib/toast'
 import { MEDIA_CONFIGS, type MediaConfig } from '../lib/mediaConfig'
 import type { YtDlpDetectResult } from '@shared/types'
 
@@ -21,9 +22,9 @@ export default function SettingsPage() {
   const [audioDir, setAudioDir] = useState('')
   const [mangaDir, setMangaDir] = useState('')
   const [musicDir, setMusicDir] = useState('')
+  const [picturesDir, setPicturesDir] = useState('')
   const [ytdlpPath, setYtdlpPath] = useState('')
   const [ytdlpCheck, setYtdlpCheck] = useState<YtDlpDetectResult | null>(null)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
 
   useEffect(() => {
     if (!data) return
@@ -37,6 +38,7 @@ export default function SettingsPage() {
     setAudioDir(data['audio.dir'] ?? '')
     setMangaDir(data['manga.dir'] ?? '')
     setMusicDir(data['music.dir'] ?? '')
+    setPicturesDir(data['pictures.dir'] ?? '')
     setYtdlpPath(data['ytdlp.path'] ?? '')
   }, [data])
 
@@ -50,7 +52,7 @@ export default function SettingsPage() {
   async function setKey(key: string, value: string) {
     await api.settings.set(key, value)
     await qc.invalidateQueries({ queryKey: qk.settings.all })
-    setSavedAt('Saved')
+    toast('Saved', 'success')
   }
 
   return (
@@ -261,6 +263,31 @@ export default function SettingsPage() {
       </section>
 
       <section className="card p-5 mb-6">
+        <h2 className="font-semibold mb-1">Pictures folder</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Where wallpapers and fan art are saved, organized per title (e.g.{' '}
+          <span className="text-gray-400">Berserk (manga)/wallpapers/…</span>). Leave blank to use
+          the app&apos;s data folder. Changing this only affects newly added images — existing files
+          stay where they were saved.
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            className="input"
+            type="text"
+            value={picturesDir}
+            onChange={(e) => setPicturesDir(e.target.value)}
+            placeholder="/home/you/Pictures/NaviHUB"
+          />
+          <button
+            className="btn-ghost shrink-0"
+            onClick={() => setKey('pictures.dir', picturesDir.trim())}
+          >
+            Save
+          </button>
+        </div>
+      </section>
+
+      <section className="card p-5 mb-6">
         <h2 className="font-semibold mb-1">yt-dlp (music downloads)</h2>
         <p className="text-sm text-gray-500 mb-4">
           Used by the Music page&apos;s Download button. Install yt-dlp and ffmpeg yourself (e.g.{' '}
@@ -296,8 +323,6 @@ export default function SettingsPage() {
       </section>
 
       <DictionarySettings />
-
-      {savedAt && <p className="text-sm text-green-400">{savedAt}</p>}
     </div>
   )
 }

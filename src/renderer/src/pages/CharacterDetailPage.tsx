@@ -48,7 +48,8 @@ export default function CharacterDetailPage() {
         onDelete={async () => {
           await api.characters.remove(characterId)
           qc.invalidateQueries({ queryKey: qk.characters.all })
-          navigate('/characters')
+          // No /characters index exists — return to wherever the user came from.
+          navigate(-1)
         }}
         actions={<AddToListMenu kind="character" entityId={characterId} />}
       />

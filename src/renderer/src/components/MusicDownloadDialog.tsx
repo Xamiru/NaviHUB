@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { useDialog } from '../lib/hooks'
 import { toast, toastError } from '../lib/toast'
 import type { MusicDownloadEvent } from '@shared/types'
 
@@ -67,6 +68,7 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
   const [artist, setArtist] = useState('')
   const [album, setAlbum] = useState('')
   const [format, setFormat] = useState<'opus' | 'm4a' | 'mp3'>('opus')
+  const panelRef = useDialog(onClose)
 
   const { data: artists = [] } = useQuery({
     queryKey: qk.music.artists(''),
@@ -103,7 +105,14 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
         if (e.target === e.currentTarget) onClose()
       }}
     >
-      <div className="card w-full max-w-lg p-5">
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Download music"
+        tabIndex={-1}
+        className="card w-full max-w-lg p-5"
+      >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Download music</h2>
           <button className="px-2 text-gray-500 hover:text-white" onClick={onClose}>

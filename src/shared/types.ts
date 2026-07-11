@@ -85,6 +85,12 @@ export interface Tag {
   category: string | null
 }
 
+// Tag with per-media-type usage counts, for the /tags browse page.
+export interface TagWithCounts extends Tag {
+  counts: { mediaType: MediaType; count: number }[]
+  total: number
+}
+
 // ---- Input payloads ----
 
 export interface MediaItemInput {
@@ -231,6 +237,40 @@ export interface ThemeImportSummary {
   audioDownloaded: number
 }
 
+// ---- wallpapers / fan art ----
+
+export type ImageKind = 'wallpaper' | 'fanart'
+
+// A wallpaper or fan-art image attached to a media item. The file lives under
+// pictures.dir (virtual "pictures/" prefix) — filePath feeds straight to mediaUrl().
+export interface MediaImage {
+  id: number
+  mediaId: number
+  kind: ImageKind
+  filePath: string // 'pictures/<title folder>/<wallpapers|fanart>/<file>'
+  sourceUrl: string | null // original remote URL (null for picked local files)
+  source: string | null // 'wallhaven' | 'tmdb' | 'url' | 'file'
+  width: number | null
+  height: number | null
+}
+
+// One result in the wallpaper Browse dialog. thumbUrl is shown in the grid
+// (remote, allowed by CSP img-src); fullUrl is what gets downloaded on pick.
+export interface WallpaperSearchResult {
+  source: 'wallhaven' | 'tmdb'
+  id: string // wallhaven id / tmdb file_path (seeds the saved file's base name)
+  thumbUrl: string
+  fullUrl: string
+  width: number | null
+  height: number | null
+}
+
+export interface WallpaperSearchPage {
+  results: WallpaperSearchResult[]
+  page: number
+  lastPage: number
+}
+
 // One playable song in the song quiz pool: a theme flattened with the anime it
 // belongs to. Only themes with audio (local or remote) are returned.
 export interface QuizSong {
@@ -251,6 +291,34 @@ export interface QuizSong {
 export interface QuizSongFilter {
   songType?: 'OP' | 'ED' | null // null/omit = both OP and ED
   statuses?: string[] | null // null/empty = any anime status
+}
+
+// ---- quiz history (finished rounds of either quiz) ----
+export type QuizKind = 'song' | 'japanese'
+
+export interface QuizSessionInput {
+  kind: QuizKind
+  score: number
+  total: number
+  bestStreak: number
+  settings?: Record<string, unknown> | null // round options snapshot
+}
+
+export interface QuizSession {
+  id: number
+  kind: QuizKind
+  score: number
+  total: number
+  bestStreak: number
+  settings: Record<string, unknown> | null
+  playedAt: string
+}
+
+export interface QuizHistory {
+  recent: QuizSession[] // newest first
+  best: QuizSession | null // best accuracy among rounds with total >= 5
+  bestStreak: number // max streak across all sessions
+  totalSessions: number
 }
 
 // HowLongToBeat play-time estimates for a game or VN, stored (all in minutes)
@@ -463,6 +531,18 @@ export interface JpStats {
   reviewsToday: number
 }
 
+// Everything the Japanese stats page needs in one invoke: review history off
+// jp_review_log (heatmap, streaks, grade breakdown) + the due forecast off
+// jp_card.due_at. Days are local-calendar 'YYYY-MM-DD' strings.
+export interface JpStatsDetail {
+  reviewsPerDay: { day: string; count: number }[] // last 365 days, sparse
+  streak: { current: number; longest: number }
+  gradeCounts: Record<SrsGrade, number>
+  totalReviews: number
+  firstReviewAt: string | null // UTC timestamp of the earliest log row
+  dueForecast: { day: string; due: number }[] // next 14 days; overdue folds into today
+}
+
 // One dictionary hit from jisho.org, mapped for the mining page.
 export interface JishoResult {
   slug: string
@@ -608,12 +688,23 @@ export interface MangaPage {
   url: string // navimg:// URL, usable directly as <img src>
 }
 
+// One table-of-contents entry of an EPUB book: a human chapter title mapped
+// onto the spine document ("page") it starts at.
+export interface EpubTocEntry {
+  label: string
+  page: number
+}
+
 export interface MangaPages {
   chapterId: number
   mediaId: number
   title: string
   number: number | null
   pages: MangaPage[]
+  // EPUB chapters only: pages are the book's spine documents (XHTML served
+  // via navimg://), and toc maps chapter titles onto page indices.
+  isBook?: boolean
+  toc?: EpubTocEntry[]
 }
 
 export interface MangaAttachResult {
@@ -926,4 +1017,149 @@ export interface LibraryTimeStats {
   byType: TimeStatsByType[] // all six types, zeros included; renderer filters
   longest: TimeStatsItem | null // single biggest time sink overall
   mostRevisited: (TimeStatsItem & { times: number }) | null // max rewatch_count, null if < 2
+}
+
+// ---- Gacha tracker ----
+// Standalone section for live-service gacha games. The game list and each
+// game's unit kinds / currencies / display labels live in src/shared/gacha.ts;
+// these are the DB row shapes (tables are game-agnostic).
+
+export type GachaGameId = 'hsr' | 'fgo' | 'e7' | 'wuwa'
+
+export interface GachaUnit {
+  id: number
+  game: GachaGameId
+  kind: string // keys into the game's unitKinds config (frozen vocabulary)
+  name: string
+  rarity: number | null
+  element: string | null // facet 1; labeled (or hidden) per kind config
+  role: string | null // facet 2 (Path / Class / weapon type)
+  imagePath: string | null
+  owned: boolean
+  favorite: boolean
+  level: number | null
+  // Extra copies consumed, 0-based (HSR eidolon, FGO NP-1, E7 imprint, WuWa
+  // sequence). Display formatting comes from the kind config, never the DB.
+  dupes: number
+  obtainedAt: string | null
+  notes: string | null
+  data: Record<string, unknown> | null // per-game detail-phase payload
+  externalSource: string | null // future catalog importers
+  externalId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GachaBuild {
+  id: number
+  unitId: number
+  name: string
+  sortOrder: number
+  data: Record<string, unknown> | null // freeform now; detail phases structure it
+  notes: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GachaUnitDetail extends GachaUnit {
+  builds: GachaBuild[]
+}
+
+export interface GachaUnitInput {
+  game: GachaGameId
+  kind: string
+  name: string
+  rarity?: number | null
+  element?: string | null
+  role?: string | null
+  imagePath?: string | null
+  owned?: boolean
+  favorite?: boolean
+  level?: number | null
+  dupes?: number
+  obtainedAt?: string | null
+  notes?: string | null
+  data?: Record<string, unknown> | null
+}
+
+export interface GachaUnitFilter {
+  kind?: string
+  search?: string
+  ownedOnly?: boolean
+}
+
+export interface GachaBuildInput {
+  name: string
+  data?: Record<string, unknown> | null
+  notes?: string | null
+}
+
+export interface GachaCurrency {
+  game: GachaGameId
+  key: string // keys into the game's currencies config
+  amount: number
+  updatedAt: string
+}
+
+export interface GachaBanner {
+  id: number
+  game: GachaGameId
+  name: string
+  kind: string | null
+  featured: string | null // display string; a link table may replace it later
+  startAt: string | null // 'YYYY-MM-DD'; null while unannounced
+  endAt: string | null // null = open-ended
+  imagePath: string | null
+  notes: string | null
+  externalSource: string | null // future banner fetchers
+  externalId: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GachaBannerInput {
+  game: GachaGameId
+  name: string
+  kind?: string | null
+  featured?: string | null
+  startAt?: string | null
+  endAt?: string | null
+  imagePath?: string | null
+  notes?: string | null
+}
+
+export interface GachaNewsItem {
+  id: number
+  game: GachaGameId
+  title: string
+  url: string | null
+  summary: string | null
+  // Remote https thumbnail rendered directly (CSP img-src allows https:);
+  // never downloaded — news is ephemeral.
+  imageUrl: string | null
+  publishedAt: string | null
+  author: string | null // reddit username (no u/ prefix)
+  externalId: string // fetchers always supply one (post id) for the upsert
+  fetchedAt: string
+}
+
+export type GachaNewsUpsert = Omit<GachaNewsItem, 'id' | 'game' | 'fetchedAt'>
+
+export interface GachaNewsPage {
+  fetchedAt: string | null // last successful fetch; null before the first
+  items: GachaNewsItem[]
+}
+
+export interface GachaNewsFetchResult {
+  added: number
+  total: number
+}
+
+// Hub page card data, one per configured game.
+export interface GachaGameOverview {
+  game: GachaGameId
+  unitCount: number // owned roster entries across all kinds
+  currencies: GachaCurrency[]
+  activeBanners: number
+  imagePath: string | null // user-set hero art (gacha_meta 'image')
 }

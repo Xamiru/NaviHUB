@@ -50,6 +50,8 @@ function animeFixture(overrides: Record<string, unknown> = {}) {
       episodes: 12,
       duration: 24,
       averageScore: 85,
+      season: 'SPRING',
+      seasonYear: 2020,
       startDate: { year: 2020, month: 4, day: 1 },
       coverImage: { large: 'https://img/cover.png', extraLarge: 'https://img/cover-xl.png' },
       genres: ['Action', 'Drama'],
@@ -107,7 +109,12 @@ describe('importAnime', () => {
     expect(media.total_units).toBe(12)
     expect(media.release_date).toBe('2020-04-01')
     expect(media.synopsis).toBe('Line one.\nLine two.')
-    expect(JSON.parse(media.metadata as string)).toEqual({ averageScore: 85, epDuration: 24 })
+    expect(JSON.parse(media.metadata as string)).toEqual({
+      averageScore: 85,
+      epDuration: 24,
+      season: 'SPRING',
+      seasonYear: 2020
+    })
 
     // Only the main studio; genres become tags; skipped relation types stay out.
     expect(db.prepare('SELECT name FROM company').all()).toEqual([{ name: 'Studio Main' }])
@@ -161,6 +168,32 @@ describe('importAnime', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM character').get()).toEqual({ n: 2 })
     expect(db.prepare(`SELECT COUNT(*) AS n FROM credit WHERE role='voice_actor'`).get()).toEqual({
       n: 2
+    })
+  })
+
+  it('writes no season metadata keys when AniList has no season', async () => {
+    fixture = animeFixture({ season: null, seasonYear: null })
+    await importAnime(101)
+    const media = db
+      .prepare(`SELECT metadata FROM media_item WHERE external_source='anilist' AND external_id='101'`)
+      .get() as { metadata: string }
+    expect(JSON.parse(media.metadata)).toEqual({ averageScore: 85, epDuration: 24 })
+  })
+
+  it('re-import refreshes the season and keeps sibling metadata keys', async () => {
+    const { mediaId } = await importAnime(101)
+
+    fixture = animeFixture({ season: 'WINTER', seasonYear: 2021 })
+    await importAnime(101)
+
+    const media = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId) as {
+      metadata: string
+    }
+    expect(JSON.parse(media.metadata)).toEqual({
+      averageScore: 85,
+      epDuration: 24,
+      season: 'WINTER',
+      seasonYear: 2021
     })
   })
 

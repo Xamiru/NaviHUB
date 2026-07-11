@@ -1,9 +1,13 @@
 import type {
   CreditRole,
+  GachaGameId,
+  GachaUnitFilter,
+  ImageKind,
   JpQuizScope,
   ListKind,
   MediaListFilter,
   MediaType,
+  QuizKind,
   QuizSongFilter
 } from '@shared/types'
 
@@ -60,19 +64,33 @@ export const qk = {
     roles: (characterId: number) => ['characters', 'roles', characterId] as const
   },
   tags: {
-    all: ['tags'] as const
+    all: ['tags'] as const,
+    withCounts: ['tags', 'withCounts'] as const,
+    get: (id: number) => ['tags', 'get', id] as const,
+    media: (id: number) => ['tags', 'media', id] as const
   },
   settings: {
     all: ['settings'] as const
   },
   quiz: {
-    songPool: (filter: QuizSongFilter) => ['quiz', 'songPool', filter] as const
+    all: ['quiz'] as const,
+    songPool: (filter: QuizSongFilter) => ['quiz', 'songPool', filter] as const,
+    history: (kind: QuizKind) => ['quiz', 'history', kind] as const
+  },
+  pictures: {
+    // Wallpapers + fan art per media item, plus the Browse dialog's searches.
+    all: ['pictures'] as const,
+    list: (mediaId: number, kind: ImageKind) => ['pictures', 'list', mediaId, kind] as const,
+    wallhaven: (q: string, page: number) => ['pictures', 'wallhaven', q, page] as const,
+    tmdb: (mediaId: number) => ['pictures', 'tmdb', mediaId] as const
   },
   manga: {
     // Local manga reader: attached chapters + page lists + mokuro OCR.
     all: ['manga'] as const,
     chapters: (mediaId: number) => ['manga', 'chapters', mediaId] as const,
     pages: (chapterId: number) => ['manga', 'pages', chapterId] as const,
+    // One EPUB spine document's raw XHTML (fetched from navimg://, immutable).
+    bookDoc: (chapterId: number, page: number) => ['manga', 'bookDoc', chapterId, page] as const,
     ocrStatus: (chapterId: number) => ['manga', 'ocrStatus', chapterId] as const,
     ocrPage: (chapterId: number, pageIndex: number) =>
       ['manga', 'ocrPage', chapterId, pageIndex] as const
@@ -85,6 +103,7 @@ export const qk = {
     course: (id: number) => ['japanese', 'course', id] as const,
     lesson: (id: number) => ['japanese', 'lesson', id] as const,
     stats: ['japanese', 'stats'] as const,
+    statsDetail: ['japanese', 'statsDetail'] as const,
     quizPool: (scope: JpQuizScope) => ['japanese', 'quizPool', scope] as const,
     // Manga reader mining: tokenized OCR block text + already-mined word check.
     tokens: (text: string) => ['japanese', 'tokens', text] as const,
@@ -121,6 +140,18 @@ export const qk = {
     scanStatus: ['music', 'scanStatus'] as const,
     downloadStatus: ['music', 'downloadStatus'] as const,
     artStatus: ['music', 'artStatus'] as const
+  },
+  gacha: {
+    // Gacha tracker. Mutations invalidate the `all` prefix (broad on purpose,
+    // music precedent — roster/currency/banner state is cheap to refetch).
+    all: ['gacha'] as const,
+    overview: ['gacha', 'overview'] as const,
+    units: (game: GachaGameId, filter: GachaUnitFilter) =>
+      ['gacha', 'units', game, filter] as const,
+    unit: (id: number) => ['gacha', 'unit', id] as const,
+    currencies: (game: GachaGameId) => ['gacha', 'currencies', game] as const,
+    banners: (game: GachaGameId) => ['gacha', 'banners', game] as const,
+    news: (game: GachaGameId) => ['gacha', 'news', game] as const
   },
   activity: ['activity'] as const,
   search: (q: string) => ['search', q] as const,

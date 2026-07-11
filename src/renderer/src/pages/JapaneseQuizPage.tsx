@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import CardSourceBadge from '../components/CardSourceBadge'
+import QuizRecord from '../components/QuizRecord'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
 
 type Phase = 'setup' | 'play' | 'summary'
@@ -70,9 +71,14 @@ export default function JapaneseQuizPage() {
   const [direction, setDirection] = usePersistedState<Direction>('jpQuizDirection', 'jp2en')
   const [length, setLength] = usePersistedState<number>('jpQuizLength', 10) // 0 = endless
 
+  const qc = useQueryClient()
   const { data: courses = [] } = useQuery({
     queryKey: qk.japanese.courses,
     queryFn: () => api.japanese.listCourses()
+  })
+  const { data: history } = useQuery({
+    queryKey: qk.quiz.history('japanese'),
+    queryFn: () => api.quiz.history('japanese')
   })
 
   const [phase, setPhase] = useState<Phase>('setup')
@@ -83,12 +89,14 @@ export default function JapaneseQuizPage() {
   const [stats, setStats] = useState<Stats>(ZERO)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [newBest, setNewBest] = useState(false)
 
   const poolRef = useRef<JpQuizItem[]>([])
   const deckRef = useRef<JpQuizItem[]>([])
   const statsRef = useRef<Stats>(ZERO)
   const lengthRef = useRef(0)
   const dirRef = useRef<Direction>('jp2en')
+  const loggedRef = useRef(false)
 
   async function startGame() {
     setError(null)
@@ -120,6 +128,8 @@ export default function JapaneseQuizPage() {
       statsRef.current = ZERO
       lengthRef.current = length
       dirRef.current = direction
+      loggedRef.current = false
+      setNewBest(false)
       setStats(ZERO)
       setPhase('play')
       nextQuestion()
@@ -155,10 +165,55 @@ export default function JapaneseQuizPage() {
     setAnswered(true)
   }
 
+  function endGame() {
+    const s = statsRef.current
+    if (!loggedRef.current && s.total > 0) {
+      loggedRef.current = true
+      // Decide "new personal best" BEFORE invalidating, or the refetched
+      // history would already contain this round and the banner would flip.
+      const prev = history?.best
+      setNewBest(s.total >= 5 && (!prev || s.score / s.total > prev.score / prev.total))
+      void api.quiz
+        .logSession({
+          kind: 'japanese',
+          score: s.score,
+          total: s.total,
+          bestStreak: s.best,
+          settings: { courseId, kind, direction, length }
+        })
+        .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('japanese') }))
+        .catch(() => {})
+    }
+    setPhase('summary')
+  }
+
   function advance() {
-    if (lengthRef.current > 0 && statsRef.current.total >= lengthRef.current) setPhase('summary')
+    if (lengthRef.current > 0 && statsRef.current.total >= lengthRef.current) endGame()
     else nextQuestion()
   }
+
+  // Keyboard: 1-4 answers, Enter advances (same scheme as the SRS review page).
+  useEffect(() => {
+    if (phase !== 'play') return
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)
+        return
+      if (!answered && e.key >= '1' && e.key <= '4') {
+        const opt = options[Number(e.key) - 1]
+        if (opt) {
+          e.preventDefault()
+          handleAnswer(opt.id)
+        }
+      } else if (answered && e.key === 'Enter') {
+        e.preventDefault()
+        advance()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, options, answered])
 
   if (phase === 'setup') {
     return (
@@ -223,6 +278,8 @@ export default function JapaneseQuizPage() {
             {loading ? 'Loading…' : 'Start quiz'}
           </button>
         </div>
+
+        <QuizRecord kind="japanese" />
       </div>
     )
   }
@@ -241,6 +298,7 @@ export default function JapaneseQuizPage() {
             <span>{accuracy}% correct</span>
             <span>🔥 Best streak {stats.best}</span>
           </div>
+          {newBest && <p className="mt-3 text-sm font-semibold text-accent">★ New personal best!</p>}
           <div className="mt-6 flex gap-2">
             <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
               Play again
@@ -273,7 +331,7 @@ export default function JapaneseQuizPage() {
             Score {stats.score}/{stats.total}
           </span>
           <span>🔥 {stats.streak}</span>
-          <button className="btn-ghost py-1 px-2 text-xs" onClick={() => setPhase('summary')}>
+          <button className="btn-ghost py-1 px-2 text-xs" onClick={endGame}>
             ✕ End quiz
           </button>
         </div>
@@ -293,7 +351,7 @@ export default function JapaneseQuizPage() {
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">
-        {options.map((o) => {
+        {options.map((o, i) => {
           const correct = answered && o.id === current.id
           const wrongPick = answered && picked === o.id && !correct
           return (
@@ -312,6 +370,9 @@ export default function JapaneseQuizPage() {
               <span className={`${dir === 'jp2en' ? 'text-sm' : 'text-lg'} font-medium`}>
                 {answerOf(o, dir)}
               </span>
+              <kbd className="float-right rounded bg-base-700/70 px-1.5 text-xs text-gray-600">
+                {i + 1}
+              </kbd>
             </button>
           )
         })}
@@ -363,7 +424,7 @@ export default function JapaneseQuizPage() {
         )}
         {answered &&
           (isLast ? (
-            <button className="btn-primary" onClick={() => setPhase('summary')}>
+            <button className="btn-primary" onClick={endGame}>
               See results →
             </button>
           ) : (

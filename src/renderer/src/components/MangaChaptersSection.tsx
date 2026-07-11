@@ -3,13 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { readerPath, isBookChapter } from '../lib/readerPath'
 import { toast, toastError } from '../lib/toast'
 import type { MangaChapter, MediaDetail } from '@shared/types'
 
 // Local manga reader entry point on the manga detail page: attach a series
-// folder from the manga library, list its scanned chapters, and jump into the
-// reader. Reading progress lives in manga_chapter rows; finishing chapters
-// raises the media item's chapters-read counter (never lowers it).
+// folder from the manga library, list its scanned chapters (image folders,
+// CBZ volumes and EPUB light novels), and jump into the matching reader.
+// Reading progress lives in manga_chapter rows; finishing chapters raises the
+// media item's chapters-read counter (never lowers it).
 export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
@@ -63,7 +65,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
     chapters.find((c) => c.lastReadPage != null && !c.readAt) ?? chapters.find((c) => !c.readAt)
   const readCount = chapters.filter((c) => c.readAt).length
 
-  const openReader = (ch: MangaChapter) => navigate(`/manga/${m.id}/read/${ch.id}`)
+  const openReader = (ch: MangaChapter) => navigate(readerPath(m.id, ch))
 
   return (
     <div className="mb-6">
@@ -147,12 +149,19 @@ function ChapterRow({
           {ch.title}
         </span>
       </button>
-      {inProgress && (
-        <span className="chip bg-accent/20 text-accent text-[11px] px-1.5 py-0.5 shrink-0">
-          p. {(ch.lastReadPage ?? 0) + 1}/{ch.pageCount}
+      {isBookChapter(ch) && (
+        <span className="chip text-[11px] px-1.5 py-0.5 shrink-0" title="EPUB book">
+          本
         </span>
       )}
-      <span className="text-xs text-gray-400 shrink-0">{ch.pageCount} pages</span>
+      {inProgress && (
+        <span className="chip bg-accent/20 text-accent text-[11px] px-1.5 py-0.5 shrink-0">
+          {isBookChapter(ch) ? '§' : 'p.'} {(ch.lastReadPage ?? 0) + 1}/{ch.pageCount}
+        </span>
+      )}
+      <span className="text-xs text-gray-400 shrink-0">
+        {ch.pageCount} {isBookChapter(ch) ? 'sections' : 'pages'}
+      </span>
       <button className="btn-ghost py-0.5 px-2.5 text-xs shrink-0" onClick={onOpen}>
         Read
       </button>

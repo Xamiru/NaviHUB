@@ -8,8 +8,10 @@ import { qk } from '../lib/queryKeys'
 import { usePlayer, type Track } from '../lib/player'
 import { CAST_ROLES, fmtMinutesAsHours, pathForMedia, type MediaConfig } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
+import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
+import MediaImagesSection from '../components/MediaImagesSection'
 import Section from '../components/Section'
 import type {
   MediaDetail,
@@ -66,12 +68,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <button
-        className="text-sm text-gray-500 hover:text-gray-300 mb-4"
-        onClick={() => navigate(-1)}
-      >
-        ← Back
-      </button>
+      <BackButton />
 
       <div className="grid grid-cols-[220px_1fr] gap-7">
         <div>
@@ -121,9 +118,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           {m.tags.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-5">
               {m.tags.map((t) => (
-                <span key={t.id} className="chip">
+                <Link key={t.id} to={`/tags/${t.id}`} className="chip hover:text-accent">
                   {t.name}
-                </span>
+                </Link>
               ))}
             </div>
           )}
@@ -154,6 +151,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
         {cfg.hasThemes && <ThemesSection m={m} onChange={refresh} />}
         <CastSection cfg={cfg} m={m} onChange={refresh} />
         {cfg.hasCrew !== false && <StaffSection cfg={cfg} m={m} onChange={refresh} />}
+        <MediaImagesSection m={m} kind="wallpaper" />
+        {cfg.hasFanArt && <MediaImagesSection m={m} kind="fanart" />}
       </div>
     </div>
   )
@@ -262,9 +261,11 @@ function CompaniesSection({
   // Imported titles get their companies from the source (and re-import prunes/
   // refreshes them), so manual removal doesn't apply — hide the × on those.
   const imported = !!m.externalSource
+  const qc = useQueryClient()
 
   async function remove(linkId: number) {
     await api.mediaCompanies.remove(linkId)
+    qc.invalidateQueries({ queryKey: qk.companies.all })
     onChange()
   }
 
@@ -302,6 +303,7 @@ function CastSection({
 }) {
   const [page, setPage] = usePersistedState('castPage', 0)
   const imported = !!m.externalSource
+  const qc = useQueryClient()
 
   const list = m.characters
   const PAGE_SIZE = 24
@@ -311,6 +313,9 @@ function CastSection({
 
   async function removeChar(cid: number) {
     await api.media.removeCharacter(m.id, cid)
+    // The repo also drops the character's voice credits on this work.
+    qc.invalidateQueries({ queryKey: qk.characters.all })
+    qc.invalidateQueries({ queryKey: qk.people.all })
     onChange()
   }
 
@@ -787,9 +792,11 @@ function StaffSection({
   // out of the generic staff/crew list even though they're credits too.
   const staff = m.cast.filter((c) => !CAST_ROLES.includes(c.role) && c.role !== 'artist')
   const imported = !!m.externalSource
+  const qc = useQueryClient()
 
   async function remove(creditId: number) {
     await api.credits.remove(creditId)
+    qc.invalidateQueries({ queryKey: qk.people.all })
     onChange()
   }
 
@@ -805,7 +812,11 @@ function StaffSection({
             <span className="flex-1">
               <span className="text-gray-500 capitalize">{c.role}</span>
               {' · '}
-              <Link to={`/people/${c.person.id}`} className="hover:text-accent font-medium">
+              {/* ?role= makes the person page lead with crew work, not acting */}
+              <Link
+                to={`/people/${c.person.id}?role=${c.role}`}
+                className="hover:text-accent font-medium"
+              >
                 {c.person.name}
               </Link>
             </span>

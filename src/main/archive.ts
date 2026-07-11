@@ -8,20 +8,25 @@ import yauzl from 'yauzl'
 // straight out of the archive.
 
 export const ARCHIVE_EXTS = new Set(['.cbz', '.zip'])
+// Everything the protocol handler can stream entries out of. EPUBs are zips
+// too, but deliberately NOT in ARCHIVE_EXTS — the scanner must treat a .epub
+// as a book (src/main/epub.ts), never as a CBZ of its embedded images.
+const ZIPLIKE_EXTS = new Set([...ARCHIVE_EXTS, '.epub'])
 
 export function isArchiveFile(name: string): boolean {
   return ARCHIVE_EXTS.has(extname(name).toLowerCase())
 }
 
-// A page URL inside an archive looks like "manga/Series/Vol 1.cbz/0001.png".
-// Splits it at the archive segment; null when the path has no archive segment
-// or nothing follows it (that's the archive itself, not an entry).
+// A page URL inside an archive looks like "manga/Series/Vol 1.cbz/0001.png"
+// (or "manga/Series/Vol 1.epub/OEBPS/ch1.xhtml" for books). Splits it at the
+// archive segment; null when the path has no archive segment or nothing
+// follows it (that's the archive itself, not an entry).
 export function splitArchivePath(
   relPath: string
 ): { archiveRel: string; entryName: string } | null {
   const parts = relPath.split('/')
   for (let i = 0; i < parts.length - 1; i++) {
-    if (isArchiveFile(parts[i])) {
+    if (ZIPLIKE_EXTS.has(extname(parts[i]).toLowerCase())) {
       return { archiveRel: parts.slice(0, i + 1).join('/'), entryName: parts.slice(i + 1).join('/') }
     }
   }
@@ -38,8 +43,39 @@ const MIME: Record<string, string> = {
   '.bmp': 'image/bmp'
 }
 
+// Extra types served out of EPUBs (spine documents, styles the renderer may
+// fetch, embedded fonts/SVG covers). Scripts are deliberately absent — book
+// JS is never executed. Kept separate from MIME: listArchivePages keys off
+// MIME to decide what counts as a CBZ page image.
+const EPUB_MIME: Record<string, string> = {
+  '.xhtml': 'application/xhtml+xml',
+  '.html': 'text/html',
+  '.htm': 'text/html',
+  '.css': 'text/css',
+  '.svg': 'image/svg+xml',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2'
+}
+
+// Audio served by the protocol handler's plain-file path (music library, theme
+// songs). Kept separate from MIME: listArchivePages keys off MIME to decide
+// what counts as a CBZ page image, and audio must never count.
+const AUDIO_MIME: Record<string, string> = {
+  '.mp3': 'audio/mpeg',
+  '.flac': 'audio/flac',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.ogg': 'audio/ogg',
+  '.opus': 'audio/ogg',
+  '.wav': 'audio/wav',
+  '.webm': 'audio/webm'
+}
+
 export function mimeFor(name: string): string {
-  return MIME[extname(name).toLowerCase()] ?? 'application/octet-stream'
+  const ext = extname(name).toLowerCase()
+  return MIME[ext] ?? EPUB_MIME[ext] ?? AUDIO_MIME[ext] ?? 'application/octet-stream'
 }
 
 interface OpenArchive {
@@ -113,6 +149,17 @@ export async function listArchivePages(absPath: string): Promise<string[]> {
       .sort((a, b) => collator.compare(a, b))
   } catch {
     return []
+  }
+}
+
+// Every entry name in the archive (any type), for callers that need to map
+// internal references onto real entries (the EPUB parser). null on failure.
+export async function listArchiveEntries(absPath: string): Promise<string[] | null> {
+  try {
+    const { entries } = await cachedArchive(absPath)
+    return [...entries.keys()]
+  } catch {
+    return null
   }
 }
 

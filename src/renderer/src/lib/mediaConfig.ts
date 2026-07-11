@@ -89,6 +89,12 @@ export interface MediaConfig {
   // Local manga reader (manga only) — shows the Chapters section (attach a
   // local folder, read in-app) on the detail page.
   hasLocalReader?: boolean
+  // Fan Art section on the detail page (everything except movies/TV, where
+  // official TMDB backdrops cover the need). Wallpapers show for ALL types.
+  hasFanArt?: boolean
+  // Seasonal browse page (anime) — year picker + Winter/Spring/Summer/Fall
+  // shelves at `${basePath}/seasonal`, linked from the sidebar + list header.
+  hasSeasonal?: boolean
 }
 
 // Roles that represent "playing/voicing a character" (vs. crew). Used to split
@@ -141,12 +147,15 @@ export const ANIME: MediaConfig = {
   companyDefaultRole: 'animation_studio',
   companyPickerPlaceholder: 'Add studio / company…',
   children: [
+    { to: '/anime/seasonal', label: 'Seasonal', icon: '❆' },
     { to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' },
     { to: '/artists', label: 'Artists', icon: '♪', role: 'artist' },
     { to: '/studios', label: 'Studios', icon: '⌂' }
   ],
   importSource: { key: 'anilist', label: 'AniList', placeholder: 'Search AniList (e.g. Frieren)…' },
-  hasThemes: true
+  hasThemes: true,
+  hasFanArt: true,
+  hasSeasonal: true
 }
 
 // Manga shares anime's AniList source and character-centric layout, but has no
@@ -188,7 +197,8 @@ export const MANGA: MediaConfig = {
     label: 'AniList',
     placeholder: 'Search AniList manga (e.g. Berserk)…'
   },
-  hasLocalReader: true
+  hasLocalReader: true,
+  hasFanArt: true
 }
 
 // Visual novels come from VNDB (AniList has no VN data). Structurally they're
@@ -229,7 +239,8 @@ export const VISUAL_NOVEL: MediaConfig = {
   companyPickerPlaceholder: 'Add developer / publisher…',
   children: [{ to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' }],
   importSource: { key: 'vndb', label: 'VNDB', placeholder: 'Search VNDB (e.g. Steins;Gate)…' },
-  hasPlaytimes: true
+  hasPlaytimes: true,
+  hasFanArt: true
 }
 
 // Games come from RAWG (metadata, cover, developers/publishers, genres — it has
@@ -269,7 +280,8 @@ export const GAME: MediaConfig = {
   companyPickerPlaceholder: 'Add developer / publisher…',
   children: [{ to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' }],
   importSource: { key: 'rawg', label: 'RAWG', placeholder: 'Search RAWG (e.g. Persona 5)…' },
-  hasPlaytimes: true
+  hasPlaytimes: true,
+  hasFanArt: true
 }
 
 export const MOVIE: MediaConfig = {

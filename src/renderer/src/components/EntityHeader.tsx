@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { api } from '../lib/api'
 import CoverImage from './CoverImage'
+import BackButton from './BackButton'
 
 interface Fields {
   name: string
@@ -31,7 +31,6 @@ export default function EntityHeader({
   extra,
   actions
 }: Props) {
-  const navigate = useNavigate()
   const [f, setF] = useState<Fields>(initial)
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -64,12 +63,7 @@ export default function EntityHeader({
 
   return (
     <div>
-      <button
-        className="text-sm text-gray-500 hover:text-gray-300 mb-4"
-        onClick={() => navigate(-1)}
-      >
-        ← Back
-      </button>
+      <BackButton />
       <div className="grid grid-cols-[160px_1fr] gap-6 mb-8">
         <div>
           <CoverImage path={f.imgPath} alt={f.name || '?'} rounded={rounded} className="w-40 h-40" />

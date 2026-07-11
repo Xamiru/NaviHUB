@@ -1,15 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useStatuses } from '../lib/hooks'
 import { usePlayer } from '../lib/player'
 import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
+import QuizRecord from '../components/QuizRecord'
 import type { QuizSong, QuizSongFilter } from '@shared/types'
 
 type Phase = 'setup' | 'play' | 'summary'
-type ListSource = 'watched' | 'plan' | 'both'
+type ListSource = 'watched' | 'all'
 interface Stats {
   score: number
   total: number
@@ -45,6 +48,7 @@ function uniqueByMedia(songs: QuizSong[]): QuizSong[] {
 
 export default function SongQuizPage() {
   const player = usePlayer()
+  const qc = useQueryClient()
   const statuses = useStatuses(ANIME)
   const planStatuses = statuses.filter((s) => /^plan/i.test(s))
   const watchedStatuses = statuses.filter((s) => !planStatuses.includes(s))
@@ -66,6 +70,12 @@ export default function SongQuizPage() {
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [newBest, setNewBest] = useState(false)
+
+  const { data: history } = useQuery({
+    queryKey: qk.quiz.history('song'),
+    queryFn: () => api.quiz.history('song')
+  })
 
   // Refs so timers/timeouts read fresh values without stale closures.
   const poolRef = useRef<QuizSong[]>([])
@@ -77,6 +87,7 @@ export default function SongQuizPage() {
   const offsetDoneRef = useRef<number | null>(null)
   const lengthRef = useRef(0)
   const autoNextRef = useRef(true)
+  const loggedRef = useRef(false)
 
   function clearAuto() {
     if (autoTimerRef.current != null) {
@@ -108,6 +119,30 @@ export default function SongQuizPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, answered, timerEnabled, phase, current])
+
+  // Keyboard: 1-4 answers, Enter advances (same scheme as the SRS review page).
+  useEffect(() => {
+    if (phase !== 'play') return
+    function onKey(e: KeyboardEvent) {
+      const t = e.target as HTMLElement
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)
+        return
+      if (!answeredRef.current && e.key >= '1' && e.key <= '4') {
+        const opt = options[Number(e.key) - 1]
+        if (opt) {
+          e.preventDefault()
+          handleAnswer(opt.mediaId)
+        }
+      } else if (answeredRef.current && e.key === 'Enter') {
+        e.preventDefault()
+        if (lengthRef.current > 0 && statsRef.current.total >= lengthRef.current) endGame()
+        else advance()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, options, answered])
 
   // Once the current song's duration is known, jump to a random start point.
   useEffect(() => {
@@ -181,6 +216,24 @@ export default function SongQuizPage() {
   function endGame() {
     clearAuto()
     player.stop()
+    const s = statsRef.current
+    if (!loggedRef.current && s.total > 0) {
+      loggedRef.current = true
+      // Decide "new personal best" BEFORE invalidating, or the refetched
+      // history would already contain this round and the banner would flip.
+      const prev = history?.best
+      setNewBest(s.total >= 5 && (!prev || s.score / s.total > prev.score / prev.total))
+      void api.quiz
+        .logSession({
+          kind: 'song',
+          score: s.score,
+          total: s.total,
+          bestStreak: s.best,
+          settings: { songType, listSource, length, timerEnabled, offsetEnabled, autoNext }
+        })
+        .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('song') }))
+        .catch(() => {})
+    }
     setPhase('summary')
   }
 
@@ -188,8 +241,7 @@ export default function SongQuizPage() {
     setError(null)
     setLoading(true)
     try {
-      const statusFilter =
-        listSource === 'both' ? null : listSource === 'plan' ? planStatuses : watchedStatuses
+      const statusFilter = listSource === 'all' ? null : watchedStatuses
       const filter: QuizSongFilter = { songType, statuses: statusFilter }
       const pool = await api.quiz.songPool(filter)
       const distinct = uniqueByMedia(pool).length
@@ -211,6 +263,8 @@ export default function SongQuizPage() {
       setStats(statsRef.current)
       lengthRef.current = length
       autoNextRef.current = autoNext
+      loggedRef.current = false
+      setNewBest(false)
       setPhase('play')
       nextQuestion()
     } catch (e) {
@@ -242,8 +296,7 @@ export default function SongQuizPage() {
 
           <Group label="From">
             <Pill active={listSource === 'watched'} onClick={() => setListSource('watched')} label="Watched" />
-            <Pill active={listSource === 'plan'} onClick={() => setListSource('plan')} label="Plan to Watch" />
-            <Pill active={listSource === 'both'} onClick={() => setListSource('both')} label="Both" />
+            <Pill active={listSource === 'all'} onClick={() => setListSource('all')} label="All" />
           </Group>
 
           <Group label="Length">
@@ -268,6 +321,8 @@ export default function SongQuizPage() {
             {loading ? 'Loading songs…' : 'Start quiz'}
           </button>
         </div>
+
+        <QuizRecord kind="song" />
       </div>
     )
   }
@@ -286,6 +341,7 @@ export default function SongQuizPage() {
             <span>{accuracy}% correct</span>
             <span>🔥 Best streak {stats.best}</span>
           </div>
+          {newBest && <p className="mt-3 text-sm font-semibold text-accent">★ New personal best!</p>}
           <div className="mt-6 flex gap-2">
             <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
               Play again
@@ -357,7 +413,7 @@ export default function SongQuizPage() {
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {options.map((o) => {
+        {options.map((o, i) => {
           const correct = answered && o.mediaId === current?.mediaId
           const wrongPick = answered && picked === o.mediaId && !correct
           return (
@@ -375,6 +431,9 @@ export default function SongQuizPage() {
             >
               <CoverImage path={o.coverPath} alt={o.animeTitle} className="h-24 w-16 shrink-0" />
               <span className="line-clamp-2 text-base font-medium">{o.animeTitle}</span>
+              <kbd className="ml-auto shrink-0 rounded bg-base-700/70 px-1.5 text-xs text-gray-600">
+                {i + 1}
+              </kbd>
             </button>
           )
         })}

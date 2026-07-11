@@ -147,10 +147,13 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
     await qc.invalidateQueries({ queryKey: qk.media.all })
     await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
     setSaving(false)
-    // Replace, don't push: the form should drop out of history so that Back
-    // from the detail page returns to where the user was before editing (the
-    // detail page they clicked Edit from, or the list) — not back into the form.
-    navigate(`${cfg.basePath}/${targetId}`, { replace: true })
+    // The form must drop out of history so Back from the detail page never
+    // returns into it. Editing is only entered from the item's own detail page,
+    // so go back to that existing entry — replacing the form with the detail
+    // URL instead would stack two identical detail entries and make the first
+    // Back click a no-op. Creating has no detail entry beneath, so replace.
+    if (editing) navigate(-1)
+    else navigate(`${cfg.basePath}/${targetId}`, { replace: true })
   }
 
   const coverUrl = useImageUrl(form.coverPath)

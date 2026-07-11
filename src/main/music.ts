@@ -1,6 +1,7 @@
 import { app, dialog } from 'electron'
 import { join, extname, dirname, basename } from 'path'
-import { existsSync, mkdirSync, readdirSync, statSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { readdir, stat } from 'fs/promises'
 import { createHash } from 'crypto'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
@@ -74,44 +75,73 @@ export function parseTrackFileName(name: string): { trackNo: number | null; titl
 // audio directly in an artist folder becomes a synthetic "Singles" album whose
 // albumDir is the artist dir itself (stable across rescans). Audio directly at
 // the root is skipped and counted so the scan summary can surface it.
-export function walkMusicRoot(absRoot: string): {
+//
+// Async fs on purpose: this runs on the Electron main process, which also
+// routes keyboard/mouse input to the window. A sync walk (readdirSync +
+// statSync per file) over a big library — worse on an HDD or network mount —
+// blocked the event loop for minutes and froze typing app-wide.
+export async function walkMusicRoot(absRoot: string): Promise<{
   albums: ScannedAlbumFolder[]
   skippedRootFiles: number
-} {
+}> {
   const albums: ScannedAlbumFolder[] = []
   let skippedRootFiles = 0
 
   let rootEntries: import('fs').Dirent[]
   try {
-    rootEntries = readdirSync(absRoot, { withFileTypes: true })
+    rootEntries = await readdir(absRoot, { withFileTypes: true })
   } catch {
     return { albums, skippedRootFiles }
   }
   skippedRootFiles = rootEntries.filter((e) => e.isFile() && isAudioFile(e.name)).length
 
-  const statFile = (abs: string, rel: string, albumDir: string): ScannedFile | null => {
+  const statFile = async (
+    abs: string,
+    rel: string,
+    albumDir: string
+  ): Promise<ScannedFile | null> => {
     try {
-      return { relPath: rel, albumDir, fileName: basename(rel), mtimeMs: statSync(abs).mtimeMs }
+      return { relPath: rel, albumDir, fileName: basename(rel), mtimeMs: (await stat(abs)).mtimeMs }
     } catch {
       return null
     }
   }
+  // Stats a directory's audio files concurrently (bounded by libuv's pool);
+  // callers sort by relPath afterwards, so completion order doesn't matter.
+  const statAll = (
+    names: string[],
+    absDir: string,
+    relDir: string,
+    albumDir: string
+  ): Promise<ScannedFile[]> =>
+    Promise.all(
+      names.map((n) => statFile(join(absDir, n), `${relDir}/${n}`, albumDir))
+    ).then((fs) => fs.filter((f): f is ScannedFile => f !== null))
 
   // Audio files in `dir` and up to `depth` more levels down, all owned by albumDir.
-  const collectAudio = (absDir: string, relDir: string, albumDir: string, depth: number): ScannedFile[] => {
+  const collectAudio = async (
+    absDir: string,
+    relDir: string,
+    albumDir: string,
+    depth: number
+  ): Promise<ScannedFile[]> => {
     let entries: import('fs').Dirent[]
     try {
-      entries = readdirSync(absDir, { withFileTypes: true })
+      entries = await readdir(absDir, { withFileTypes: true })
     } catch {
       return []
     }
-    const files: ScannedFile[] = []
+    const files = await statAll(
+      entries.filter((e) => e.isFile() && isAudioFile(e.name)).map((e) => e.name),
+      absDir,
+      relDir,
+      albumDir
+    )
     for (const e of entries) {
-      if (e.isFile() && isAudioFile(e.name)) {
-        const f = statFile(join(absDir, e.name), `${relDir}/${e.name}`, albumDir)
-        if (f) files.push(f)
-      } else if (e.isDirectory() && !e.isSymbolicLink() && !e.name.startsWith('.') && depth > 0) {
-        files.push(...collectAudio(join(absDir, e.name), `${relDir}/${e.name}`, albumDir, depth - 1))
+      if (e.isDirectory() && !e.isSymbolicLink() && !e.name.startsWith('.') && depth > 0) {
+        files.push(
+          ...(await collectAudio(join(absDir, e.name), `${relDir}/${e.name}`, albumDir, depth - 1))
+        )
       }
     }
     return files
@@ -126,19 +156,14 @@ export function walkMusicRoot(absRoot: string): {
     const absArtist = join(absRoot, artist)
     let artistEntries: import('fs').Dirent[]
     try {
-      artistEntries = readdirSync(absArtist, { withFileTypes: true })
+      artistEntries = await readdir(absArtist, { withFileTypes: true })
     } catch {
       continue
     }
     const artistFileNames = artistEntries.filter((e) => e.isFile()).map((e) => e.name)
 
     // Loose tracks directly under the artist -> synthetic "Singles" album.
-    const loose: ScannedFile[] = []
-    for (const name of artistFileNames) {
-      if (!isAudioFile(name)) continue
-      const f = statFile(join(absArtist, name), `${artist}/${name}`, artist)
-      if (f) loose.push(f)
-    }
+    const loose = await statAll(artistFileNames.filter(isAudioFile), absArtist, artist, artist)
     if (loose.length > 0) {
       const cover = findCoverFile(artistFileNames)
       albums.push({
@@ -158,13 +183,13 @@ export function walkMusicRoot(absRoot: string): {
     for (const album of albumDirs) {
       const albumDir = `${artist}/${album}`
       const absAlbum = join(absArtist, album)
-      const files = collectAudio(absAlbum, albumDir, albumDir, 2).sort((a, b) =>
+      const files = (await collectAudio(absAlbum, albumDir, albumDir, 2)).sort((a, b) =>
         collator.compare(a.relPath, b.relPath)
       )
       if (files.length === 0) continue
       let albumFileNames: string[] = []
       try {
-        albumFileNames = readdirSync(absAlbum, { withFileTypes: true })
+        albumFileNames = (await readdir(absAlbum, { withFileTypes: true }))
           .filter((e) => e.isFile())
           .map((e) => e.name)
       } catch {
@@ -441,8 +466,26 @@ export async function startScan(reader: TagReader = realTagReader): Promise<Musi
     if (!existsSync(root)) {
       throw new Error(`Music folder not found: ${root} — set it in Settings or pick one`)
     }
-    const { albums, skippedRootFiles } = walkMusicRoot(root)
+    const { albums, skippedRootFiles } = await walkMusicRoot(root)
     const db = getSqlite()
+
+    // Zero files with a non-empty library means the folder is wrong or the drive
+    // is unmounted — bail BEFORE syncLibrary would prune every track (cascading
+    // into playlists, likes and play history). A first scan of a genuinely empty
+    // library still proceeds and reports zeros.
+    if (albums.length === 0) {
+      const existingCount = (
+        db.prepare('SELECT COUNT(*) AS n FROM music_track').get() as { n: number }
+      ).n
+      if (existingCount > 0) {
+        throw new Error(
+          `No audio files found in ${root} — keeping the existing library (${existingCount} tracks). ` +
+            (skippedRootFiles > 0
+              ? `${skippedRootFiles} loose file(s) sit at the root; use Artist/Album folders.`
+              : 'Is the drive mounted / is the folder right?')
+        )
+      }
+    }
 
     // mtime fast path: unchanged files are rebuilt from their DB row instead of
     // re-reading tags, so a rescan after a download parses only the new files.

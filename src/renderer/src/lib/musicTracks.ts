@@ -13,7 +13,10 @@ export function musicTrackToPlayerTrack(t: MusicTrack): Track {
     context: t.albumTitle,
     coverPath: t.coverPath,
     // Must stay null: NowPlayingBar links a mediaId back to /anime/:id.
-    mediaId: null
+    mediaId: null,
+    albumId: t.albumId,
+    artistId: t.artistId,
+    duration: t.duration
   }
 }
 

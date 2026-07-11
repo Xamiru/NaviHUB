@@ -86,3 +86,67 @@ describe('quizRepo.songPool', () => {
     expect(pool[0].artists).toEqual(['Yoko', 'Kanno'])
   })
 })
+
+describe('quizRepo session history', () => {
+  it('filters history by kind and orders recent newest-first', () => {
+    quizRepo.logSession({ kind: 'song', score: 3, total: 5, bestStreak: 2 })
+    quizRepo.logSession({ kind: 'japanese', score: 9, total: 10, bestStreak: 6 })
+    const second = quizRepo.logSession({ kind: 'song', score: 4, total: 5, bestStreak: 3 })
+
+    const h = quizRepo.history('song')
+    expect(h.totalSessions).toBe(2)
+    expect(h.recent.map((s) => s.id)[0]).toBe(second) // newest first
+    expect(h.recent.every((s) => s.kind === 'song')).toBe(true)
+    expect(quizRepo.history('japanese').totalSessions).toBe(1)
+  })
+
+  it('respects the recent limit', () => {
+    for (let i = 0; i < 20; i++) {
+      quizRepo.logSession({ kind: 'song', score: i, total: 20, bestStreak: 1 })
+    }
+    expect(quizRepo.history('song').recent).toHaveLength(15)
+    expect(quizRepo.history('song').totalSessions).toBe(20)
+  })
+
+  it('ignores rounds under 5 questions for the personal best', () => {
+    quizRepo.logSession({ kind: 'song', score: 1, total: 1, bestStreak: 1 }) // lucky 1/1
+    const real = quizRepo.logSession({ kind: 'song', score: 8, total: 10, bestStreak: 4 })
+    const h = quizRepo.history('song')
+    expect(h.best?.id).toBe(real)
+    expect(h.best?.score).toBe(8)
+  })
+
+  it('breaks accuracy ties by longer round, and tracks the max streak overall', () => {
+    quizRepo.logSession({ kind: 'song', score: 4, total: 5, bestStreak: 9 })
+    const longer = quizRepo.logSession({ kind: 'song', score: 8, total: 10, bestStreak: 2 })
+    const h = quizRepo.history('song')
+    expect(h.best?.id).toBe(longer) // same 80%, longer round wins
+    expect(h.bestStreak).toBe(9) // streak record survives from the other round
+  })
+
+  it('round-trips the settings snapshot and nulls malformed JSON', () => {
+    const id = quizRepo.logSession({
+      kind: 'song',
+      score: 5,
+      total: 5,
+      bestStreak: 5,
+      settings: { songType: 'OP', length: 5 }
+    })
+    db.prepare(`UPDATE quiz_session SET settings = 'not-json' WHERE id != ?`).run(id)
+    const h = quizRepo.history('song')
+    expect(h.recent[0].settings).toEqual({ songType: 'OP', length: 5 })
+
+    quizRepo.logSession({ kind: 'song', score: 1, total: 5, bestStreak: 1 })
+    db.prepare(`UPDATE quiz_session SET settings = '{bad'`).run()
+    expect(quizRepo.history('song').recent[0].settings).toBeNull()
+  })
+
+  it('reports an empty history cleanly', () => {
+    expect(quizRepo.history('song')).toEqual({
+      recent: [],
+      best: null,
+      bestStreak: 0,
+      totalSessions: 0
+    })
+  })
+})

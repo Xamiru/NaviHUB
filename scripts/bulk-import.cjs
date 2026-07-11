@@ -28,6 +28,15 @@
  *       gets characters + mangaka, no voice actors). --basic skips cast/staff for a
  *       fast metadata+tracking seed. --skip-anime / --skip-manga do just one list.
  *
+ *   anilist-top [--anime N] [--manga N] [--sort score|popularity|trending|favourites] [--basic] [--only-missing] [--delay MS]
+ *       Import AniList's ranked "top" lists (NOT a user's tracked list — see
+ *       anilist-user for that). --anime/--manga set how many of each (either or
+ *       both; defaults to 500 anime if neither given). Adult titles are excluded.
+ *       --sort score (default, mirrors AniList's Top 100) | popularity | trending
+ *       | favourites. Full detail by default; --basic for a fast metadata seed.
+ *       Re-import preserves the personal status/score on titles you already track.
+ *       --only-missing skips titles already in the library (resume a run).
+ *
  *   imdb-top [--count N] [--min-votes N] [--only-missing] [--exclude-langs hi,ta,…] [--omdb-key KEY] [--delay MS]
  *       Import the all-time greatest films, ranked the way IMDb's own Top 250 is.
  *       --only-missing resumes an interrupted run (skips titles already in the
@@ -384,6 +393,8 @@ query ($id: Int) {
     description(asHtml: false)
     episodes
     averageScore
+    season
+    seasonYear
     startDate { year month day }
     coverImage { large extraLarge }
     genres
@@ -550,11 +561,14 @@ async function alImportAnime(anilistId, { full }) {
     )
   }
 
-  // AniList community average (0-100) -> metadata, merged so re-import doesn't
-  // wipe any other metadata keys. Shown beside the user's own score in the app.
+  // AniList community average (0-100) + airing season -> metadata, merged so
+  // re-import doesn't wipe any other metadata keys. Shown beside the user's
+  // own score in the app; season feeds the Seasonal page.
   const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId)
   const meta = mergeMeta(metaRow?.metadata, {
-    averageScore: typeof m.averageScore === 'number' && m.averageScore > 0 ? m.averageScore : null
+    averageScore: typeof m.averageScore === 'number' && m.averageScore > 0 ? m.averageScore : null,
+    season: typeof m.season === 'string' && m.season ? m.season : null,
+    seasonYear: typeof m.seasonYear === 'number' && m.seasonYear > 0 ? m.seasonYear : null
   })
   db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(meta, mediaId)
 
@@ -819,6 +833,101 @@ async function cmdAnilistUser(positional, flags) {
   const ok = totals.reduce((a, t) => a + t.ok, 0)
   const total = totals.reduce((a, t) => a + t.total, 0)
   console.log(`✔ All done. ${ok}/${total} titles imported across ${sections.length} list(s).`)
+}
+
+/* ---- anilist-top: ranked "greatest anime/manga" lists (not a user list) ---- */
+// AniList's Page.media sorted list. isAdult:false keeps hentai out of a top
+// list; SCORE_DESC mirrors AniList's own "Top 100" browse (mean score already
+// needs votes, so obscure one-vote titles don't float up).
+const AL_TOP_QUERY = `
+query ($page: Int, $perPage: Int, $type: MediaType, $sort: [MediaSort]) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo { hasNextPage }
+    media(type: $type, sort: $sort, isAdult: false) { id }
+  }
+}`
+const AL_TOP_SORTS = {
+  score: 'SCORE_DESC',
+  popularity: 'POPULARITY_DESC',
+  trending: 'TRENDING_DESC',
+  favourites: 'FAVOURITES_DESC'
+}
+
+// Resolve a ranked list to an ordered, deduped array of AniList ids (perPage
+// caps at 50, so page as needed).
+async function alRankedIds(type, sortEnum, count) {
+  const ids = []
+  const seen = new Set()
+  let page = 1
+  while (ids.length < count) {
+    const data = await alGql(AL_TOP_QUERY, { page, perPage: 50, type, sort: [sortEnum] })
+    const media = data?.Page?.media ?? []
+    if (!media.length) break
+    for (const m of media) {
+      if (ids.length >= count) break
+      if (m?.id && !seen.has(m.id)) { seen.add(m.id); ids.push(m.id) }
+    }
+    if (!data?.Page?.pageInfo?.hasNextPage) break
+    page++
+  }
+  return ids
+}
+
+async function cmdAnilistTop(positional, flags) {
+  const sortKey = Object.keys(AL_TOP_SORTS).includes(flags.sort) ? flags.sort : 'score'
+  const sortEnum = AL_TOP_SORTS[sortKey]
+  let animeCount = flags.anime !== undefined ? Number(flags.anime) : 0
+  const mangaCount = flags.manga !== undefined ? Number(flags.manga) : 0
+  if (!animeCount && !mangaCount) animeCount = 500 // sensible default when no flags
+  const full = !flags.basic
+  const onlyMissing = !!flags['only-missing']
+  const delay = flags.delay ? Number(flags.delay) : 500
+
+  const sections = []
+  if (animeCount > 0)
+    sections.push({ label: 'anime', type: 'ANIME', count: animeCount, importFn: alImportAnime, castLabel: 'VA credits' })
+  if (mangaCount > 0)
+    sections.push({ label: 'manga', type: 'MANGA', count: mangaCount, importFn: alImportManga, castLabel: 'characters' })
+
+  console.log(`▶ AniList top lists · sort=${sortKey} · ${sections.map((s) => `${s.count} ${s.label}`).join(' + ')} · ${full ? 'full detail' : 'basic'}`)
+
+  const totals = []
+  for (const sec of sections) {
+    console.log(`\n▶ Resolving top ${sec.count} ${sec.label}…`)
+    const ids = await alRankedIds(sec.type, sortEnum, sec.count)
+    let targets = ids
+    if (onlyMissing) {
+      const have = db.prepare('SELECT 1 FROM media_item WHERE external_source=? AND external_id=?')
+      targets = ids.filter((id) => !have.get(AL_SOURCE, String(id)))
+      console.log(`  ${ids.length} resolved; --only-missing → importing ${targets.length}.`)
+    } else {
+      console.log(`  Resolved ${ids.length} ${sec.label} ids.`)
+    }
+    console.log('')
+
+    let ok = 0
+    const failures = []
+    for (let i = 0; i < targets.length; i++) {
+      const id = targets[i]
+      const tag = `[${sec.label} ${i + 1}/${targets.length}]`
+      try {
+        const sum = await sec.importFn(id, { full })
+        ok++
+        console.log(`${tag} ✓ ${sum.title} (${sum.created ? 'added' : 'updated'}${full ? `, ${sum.cast} ${sec.castLabel}` : ''})`)
+      } catch (err) {
+        failures.push({ id, msg: err.message })
+        console.log(`${tag} ✗ AniList ${sec.label} #${id} — ${err.message}`)
+      }
+      if (delay) await sleep(delay)
+    }
+    console.log(`\n✔ ${sec.label}: ${ok}/${targets.length} imported.${failures.length ? ` ${failures.length} failed.` : ''}`)
+    if (failures.length) console.log('  Failed ids:', failures.map((f) => f.id).join(', '))
+    totals.push({ ok, total: targets.length })
+  }
+
+  const ok = totals.reduce((a, t) => a + t.ok, 0)
+  const total = totals.reduce((a, t) => a + t.total, 0)
+  console.log(`\n✔ All done. ${ok}/${total} titles imported across ${sections.length} list(s).`)
 }
 
 /* =====================================================================
@@ -1588,10 +1697,32 @@ function atArtistImage(artist) {
   return (large ?? imgs[0])?.link ?? null
 }
 
+// One external-site resource mapping -> AnimeThemes slug (null if that site has
+// no mapping for the id). site is AnimeThemes' name: 'AniList' | 'MyAnimeList'.
+async function atResolveSlug(site, externalId) {
+  const resData = await atGet(`/resource?filter[site]=${site}&filter[external_id]=${externalId}&include=anime`)
+  return resData?.resources?.[0]?.anime?.[0]?.slug ?? null
+}
+
+// AniList exposes each anime's MyAnimeList id as idMal — the fallback key for
+// AnimeThemes entries mapped by MAL but not AniList. Reuses alGql; null on miss.
+async function alFetchMalId(anilistId) {
+  try {
+    const data = await alGql('query ($id: Int) { Media(id: $id, type: ANIME) { idMal } }', { id: anilistId })
+    const idMal = data?.Media?.idMal
+    return typeof idMal === 'number' && idMal > 0 ? idMal : null
+  } catch {
+    return null
+  }
+}
+
 async function atFetchThemes(anilistId) {
-  const resData = await atGet(`/resource?filter[site]=AniList&filter[external_id]=${anilistId}&include=anime`)
-  const slug = resData?.resources?.[0]?.anime?.[0]?.slug
-  if (!slug) return null // not catalogued
+  let slug = await atResolveSlug('AniList', anilistId)
+  if (!slug) {
+    const malId = await alFetchMalId(anilistId)
+    if (malId) slug = await atResolveSlug('MyAnimeList', malId)
+  }
+  if (!slug) return null // not catalogued under either id
   const inc = encodeURIComponent('animethemes.song.artists.images,animethemes.animethemeentries.videos.audio')
   const data = await atGet(`/anime/${slug}?include=${inc}`)
   const themes = data?.anime?.animethemes ?? []
@@ -1773,9 +1904,10 @@ async function main() {
   const { flags, positional } = parseFlags(rest)
 
   // Any AniList write path may touch the (new) media_relation table.
-  if (command === 'anilist-user' || command === 'relations-backfill') ensureRelationTable()
+  if (command === 'anilist-user' || command === 'anilist-top' || command === 'relations-backfill') ensureRelationTable()
 
   if (command === 'anilist-user') await cmdAnilistUser(positional, flags)
+  else if (command === 'anilist-top') await cmdAnilistTop(positional, flags)
   else if (command === 'tmdb-top') await cmdTmdbTop(flags)
   else if (command === 'imdb-top') await cmdImdbTop(flags)
   else if (command === 'rawg-top') await cmdRawgTop(flags)
@@ -1784,6 +1916,7 @@ async function main() {
   else {
     console.log('NaviHUB bulk importer\n')
     console.log('  anilist-user <username> [--limit N] [--basic] [--preserve-tracking] [--skip-anime] [--skip-manga] [--delay MS]')
+    console.log('  anilist-top [--anime N] [--manga N] [--sort score|popularity|trending|favourites] [--basic] [--only-missing] [--delay MS]   (ranked top anime/manga)')
     console.log('  imdb-top [--count N] [--min-votes N] [--only-missing] [--exclude-langs hi,ta,…] [--omdb-key KEY] [--delay MS]   (greatest films, IMDb-ranked → TMDB)')
     console.log('  tmdb-top [--type movie|tv] [--list top_rated|popular|trending] [--count N] [--omdb-key KEY] [--delay MS]')
     console.log('  rawg-top [--list metacritic|rating|added] [--count N] [--rawg-key KEY] [--no-hltb] [--delay MS]   (top video games)')

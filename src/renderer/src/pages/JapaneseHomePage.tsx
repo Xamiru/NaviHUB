@@ -54,6 +54,9 @@ export default function JapaneseHomePage() {
         <Link to="/japanese/dictionary" className="btn-ghost">
           辞 Dictionary
         </Link>
+        <Link to="/japanese/stats" className="btn-ghost">
+          ⧗ Stats
+        </Link>
       </div>
 
       <div className="mb-3">

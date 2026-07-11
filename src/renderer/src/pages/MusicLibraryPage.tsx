@@ -259,6 +259,7 @@ export function ArtistCard({ artist }: { artist: MusicArtist }) {
         alt={artist.name}
         rounded="rounded-full"
         className="mx-auto aspect-square w-full"
+        fallback="music"
       />
       <p className="mt-2 line-clamp-1 text-sm font-medium group-hover:text-accent">
         {artist.name}
@@ -273,7 +274,12 @@ export function ArtistCard({ artist }: { artist: MusicArtist }) {
 export function AlbumCard({ album }: { album: MusicAlbumSummary }) {
   return (
     <Link to={`/music/albums/${album.id}`} className="group">
-      <CoverImage path={album.coverPath} alt={album.title} className="aspect-square w-full" />
+      <CoverImage
+        path={album.coverPath}
+        alt={album.title}
+        className="aspect-square w-full"
+        fallback="music"
+      />
       <p className="mt-2 line-clamp-1 text-sm font-medium group-hover:text-accent">
         {album.title}
       </p>

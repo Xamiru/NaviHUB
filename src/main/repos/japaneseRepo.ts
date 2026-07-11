@@ -1,5 +1,6 @@
 import { getSqlite } from '../db/connection'
 import { gradeCard } from '@shared/srs'
+import { computeStreaks } from './musicRepo'
 import type {
   JpCard,
   JpCardInput,
@@ -17,6 +18,7 @@ import type {
   JpReviewOutcome,
   JpReviewQueue,
   JpStats,
+  JpStatsDetail,
   MediaType,
   SrsGrade,
   SrsStatus
@@ -509,5 +511,71 @@ export function stats(): JpStats {
       `SELECT COUNT(*) AS n FROM jp_review_log
        WHERE date(reviewed_at, 'localtime') = date('now', 'localtime')`
     )
+  }
+}
+
+// Everything the Japanese stats page needs, in one invoke (mirrors
+// musicRepo.statsDetail). Timestamps are stored UTC; every user-facing
+// grouping applies 'localtime' so days land on the user's calendar.
+export function statsDetail(): JpStatsDetail {
+  const db = getSqlite()
+
+  const reviewsPerDay = db
+    .prepare(
+      `SELECT date(reviewed_at, 'localtime') AS day, COUNT(*) AS count
+       FROM jp_review_log
+       WHERE date(reviewed_at, 'localtime') >= date('now', 'localtime', '-364 days')
+       GROUP BY day ORDER BY day ASC`
+    )
+    .all() as { day: string; count: number }[]
+
+  // Streaks read ALL distinct review days (not just the heatmap window) so a
+  // longest-streak record from further back survives.
+  const allDaysDesc = (
+    db
+      .prepare(
+        `SELECT DISTINCT date(reviewed_at, 'localtime') AS day
+         FROM jp_review_log ORDER BY day DESC`
+      )
+      .all() as { day: string }[]
+  ).map((r) => r.day)
+  const today = (
+    db.prepare(`SELECT date('now', 'localtime') AS d`).get() as { d: string }
+  ).d
+  const streak = computeStreaks(allDaysDesc, today)
+
+  const gradeCounts: Record<SrsGrade, number> = { again: 0, hard: 0, good: 0, easy: 0 }
+  for (const r of db
+    .prepare(`SELECT grade, COUNT(*) AS n FROM jp_review_log GROUP BY grade`)
+    .all() as { grade: string; n: number }[]) {
+    if (r.grade in gradeCounts) gradeCounts[r.grade as SrsGrade] = r.n
+  }
+
+  const agg = db
+    .prepare(`SELECT COUNT(*) AS n, MIN(reviewed_at) AS first FROM jp_review_log`)
+    .get() as { n: number; first: string | null }
+
+  // Due forecast over the next 14 local days, same due-card definition as
+  // stats()/reviewQueue (learned lesson, not 'new'); anything overdue counts
+  // toward today so the first bar reads "what a review session clears now".
+  const dueForecast = db
+    .prepare(
+      `SELECT CASE WHEN k.due_at <= datetime('now') THEN date('now', 'localtime')
+                   ELSE date(k.due_at, 'localtime') END AS day,
+              COUNT(*) AS due
+       FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
+       WHERE l.learned = 1 AND k.status != 'new' AND k.due_at IS NOT NULL
+         AND date(k.due_at, 'localtime') <= date('now', 'localtime', '+13 days')
+       GROUP BY day ORDER BY day ASC`
+    )
+    .all() as { day: string; due: number }[]
+
+  return {
+    reviewsPerDay,
+    streak,
+    gradeCounts,
+    totalReviews: agg.n,
+    firstReviewAt: agg.first,
+    dueForecast
   }
 }

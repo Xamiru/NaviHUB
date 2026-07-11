@@ -1,20 +1,29 @@
-import { useRef, useState } from 'react'
+import { useRef } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useMiningDraft } from '../lib/useMining'
 import UniversalPicker, { type PickedEntity } from '../components/UniversalPicker'
 import CoverImage from '../components/CoverImage'
 import DictResultRow from '../components/japanese/DictResultRow'
-import type { DictEntry } from '@shared/types'
 
 export default function JapaneseMinePage() {
   const searchRef = useRef<HTMLInputElement>(null)
 
-  const [term, setTerm] = useState('')
-  const [results, setResults] = useState<DictEntry[] | null>(null)
-  const [searching, setSearching] = useState(false)
+  // Persisted so a detour (checking a lesson, the reader) and Back doesn't
+  // lose the lookup mid-mining. `submitted` drives the query; empty = no search.
+  const [term, setTerm] = usePersistedState('jpMineTerm', '')
+  const [submitted, setSubmitted] = usePersistedState('jpMineSubmitted', '')
   const [source, setSource] = usePersistedState<PickedEntity | null>('jpMineSource', null)
+
+  const { data: lookup, isFetching: searching } = useQuery({
+    queryKey: qk.dict.lookup(submitted),
+    queryFn: () => api.dict.lookup(submitted),
+    enabled: submitted.trim().length > 0
+  })
+  const results = submitted.trim() ? (lookup ?? null) : null
 
   // Draft + targets + save loop are shared with the manga reader's mining
   // panel (src/renderer/src/lib/useMining.ts) so the two flows can't drift.
@@ -22,22 +31,17 @@ export default function JapaneseMinePage() {
     sourceMediaId: source?.entityId ?? null,
     onSaved: () => {
       // Rapid-capture loop: clear the word, keep the source + target lesson.
-      setResults(null)
+      setSubmitted('')
       setTerm('')
       searchRef.current?.focus()
     }
   })
   const { draft, setDraft, targets, targetLessonId, setLessonId, canSave, saving } = mining
 
-  async function search() {
+  function search() {
     const q = term.trim()
     if (!q) return
-    setSearching(true)
-    try {
-      setResults(await api.dict.lookup(q))
-    } finally {
-      setSearching(false)
-    }
+    setSubmitted(q)
   }
 
   return (
@@ -65,7 +69,7 @@ export default function JapaneseMinePage() {
               autoFocus
               onChange={(e) => setTerm(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') void search()
+                if (e.key === 'Enter') search()
               }}
             />
             <button className="btn-primary" disabled={searching || !term.trim()} onClick={search}>

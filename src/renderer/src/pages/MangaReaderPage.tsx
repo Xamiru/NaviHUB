@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { readerPath } from '../lib/readerPath'
 import OcrOverlay from '../components/reader/OcrOverlay'
 import MiningPanel from '../components/reader/MiningPanel'
 import type { MangaChapter, MokuroBlock } from '@shared/types'
@@ -22,10 +23,17 @@ interface ReaderPrefs {
   fit: Fit
   direction: Direction
   coverOffset: boolean
+  zoom: number
 }
 
 const PREFS_KEY = 'manga.readerPrefs'
-const DEFAULTS: ReaderPrefs = { mode: 'single', fit: 'height', direction: 'rtl', coverOffset: true }
+const DEFAULTS: ReaderPrefs = {
+  mode: 'single',
+  fit: 'height',
+  direction: 'rtl',
+  coverOffset: true,
+  zoom: 1
+}
 
 function loadPrefs(): ReaderPrefs {
   try {
@@ -77,7 +85,7 @@ export default function MangaReaderPage() {
       return next
     })
   }, [])
-  const { mode, fit, direction, coverOffset } = prefs
+  const { mode, fit, direction, coverOffset, zoom } = prefs
 
   // ---- current page ----
   const [page, setPage] = useState(0)
@@ -187,10 +195,15 @@ export default function MangaReaderPage() {
   // ---- zoom (Ctrl+scroll, +/-/0, bar buttons) ----
   // Implemented by scaling the fit-size constraints (not CSS transforms), so
   // the overflowing page pans via normal scrolling and the OCR overlay's
-  // percentage layout stays exact.
-  const [zoom, setZoom] = useState(1)
+  // percentage layout stays exact. Lives in ReaderPrefs so it survives
+  // sessions like mode/fit/direction do.
   const zoomBy = useCallback((factor: number) => {
-    setZoom((z) => Math.min(4, Math.max(0.5, Math.round(z * factor * 100) / 100)))
+    setPrefs((p) => {
+      const z = Math.min(4, Math.max(0.5, Math.round(p.zoom * factor * 100) / 100))
+      const next = { ...p, zoom: z }
+      localStorage.setItem(PREFS_KEY, JSON.stringify(next))
+      return next
+    })
   }, [])
 
   // ---- navigation ----
@@ -247,7 +260,8 @@ export default function MangaReaderPage() {
       setShowEnd(false)
       // replace: a whole reading session stays ONE history entry, so exiting
       // lands on the detail page no matter how many chapters were read.
-      navigate(`/manga/${mediaId}/read/${ch.id}?page=0`, { replace: true })
+      // readerPath routes EPUB volumes into the book reader (mixed series).
+      navigate(`${readerPath(mediaId, ch)}?page=0`, { replace: true })
     },
     [navigate, mediaId]
   )
@@ -321,13 +335,21 @@ export default function MangaReaderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // ---- chapter-jump popover (bottom bar) ----
+  const [chapterListOpen, setChapterListOpen] = useState(false)
+  const chapterListOpenRef = useRef(false)
+  chapterListOpenRef.current = chapterListOpen
+
   // ---- auto-hiding bars ----
   const [barsVisible, setBarsVisible] = useState(true)
   const barsTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const pokeBar = useCallback(() => {
     setBarsVisible(true)
     if (barsTimer.current) clearTimeout(barsTimer.current)
-    barsTimer.current = setTimeout(() => setBarsVisible(false), 2500)
+    barsTimer.current = setTimeout(() => {
+      // Never hide the bar under an open chapter list.
+      if (!chapterListOpenRef.current) setBarsVisible(false)
+    }, 2500)
   }, [])
   useEffect(() => {
     pokeBar()
@@ -409,11 +431,12 @@ export default function MangaReaderPage() {
           zoomBy(1 / 1.25)
           break
         case '0':
-          setZoom(1)
+          setPref('zoom', 1)
           break
         case 'Escape':
         case 'Backspace':
-          if (showEnd) setShowEnd(false)
+          if (chapterListOpen) setChapterListOpen(false)
+          else if (showEnd) setShowEnd(false)
           else if (panelOpen) setPanelOpen(false)
           else exitToDetail()
           break
@@ -421,7 +444,7 @@ export default function MangaReaderPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [direction, fit, coverOffset, mode, goNext, goPrev, gotoPage, pageCount, panelOpen, showEnd, setPref, exitToDetail, zoomBy])
+  }, [direction, fit, coverOffset, mode, goNext, goPrev, gotoPage, pageCount, panelOpen, showEnd, chapterListOpen, setPref, exitToDetail, zoomBy])
 
   // ---- click zones (single/double): edges turn pages, centre toggles bars ----
   function onViewportClick(e: React.MouseEvent) {
@@ -648,9 +671,33 @@ export default function MangaReaderPage() {
             disabled={!prevChapter}
             onClick={() => prevChapter && goToChapter(prevChapter)}
             title="Previous chapter"
+            aria-label="Previous chapter"
           >
             ⏮
           </button>
+          <button
+            className="max-w-48 shrink-0 truncate text-xs text-gray-400 hover:text-white"
+            title="Jump to chapter"
+            aria-label="Jump to chapter"
+            aria-expanded={chapterListOpen}
+            onClick={() => {
+              setChapterListOpen((v) => !v)
+              pokeBar()
+            }}
+          >
+            {chapter?.title ?? 'Chapter'} ▾
+          </button>
+          {chapterListOpen && (
+            <ChapterListPopover
+              chapters={chapters}
+              currentId={chapterId}
+              onPick={(c) => {
+                setChapterListOpen(false)
+                if (c.id !== chapterId) goToChapter(c)
+              }}
+              onClose={() => setChapterListOpen(false)}
+            />
+          )}
           <input
             type="range"
             min={0}
@@ -659,12 +706,14 @@ export default function MangaReaderPage() {
             onChange={(e) => gotoPage(Number(e.target.value))}
             className="flex-1 accent-current"
             style={{ direction: direction === 'rtl' && mode !== 'vertical' ? 'rtl' : 'ltr' }}
+            aria-label="Page"
           />
           <button
             className="btn-ghost py-1 px-2 text-xs"
             disabled={!nextChapter}
             onClick={() => nextChapter && goToChapter(nextChapter)}
             title="Next chapter"
+            aria-label="Next chapter"
           >
             ⏭
           </button>
@@ -698,7 +747,8 @@ export default function MangaReaderPage() {
             <button
               className={`w-11 text-center text-xs ${zoom !== 1 ? 'text-accent' : 'text-gray-500'} hover:text-gray-200`}
               title="Reset zoom (0) · Ctrl+scroll to zoom"
-              onClick={() => setZoom(1)}
+              aria-label="Reset zoom"
+              onClick={() => setPref('zoom', 1)}
             >
               {Math.round(zoom * 100)}%
             </button>
@@ -722,6 +772,60 @@ export default function MangaReaderPage() {
   )
 }
 
+// Chapter jump list, anchored above the bottom bar (QueuePanel pattern):
+// read state per row, current chapter highlighted + scrolled into view.
+function ChapterListPopover({
+  chapters,
+  currentId,
+  onPick,
+  onClose
+}: {
+  chapters: MangaChapter[]
+  currentId: number
+  onPick: (c: MangaChapter) => void
+  onClose: () => void
+}) {
+  const currentRef = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    currentRef.current?.scrollIntoView({ block: 'center' })
+  }, [])
+
+  return (
+    <>
+      {/* click-away backdrop */}
+      <div className="fixed inset-0 z-20" onMouseDown={onClose} />
+      <div className="absolute bottom-full left-4 z-30 mb-2 max-h-96 w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border border-base-700 bg-base-800 py-1 shadow-xl shadow-black/40">
+        {chapters.map((c) => {
+          const current = c.id === currentId
+          const progress =
+            c.readAt != null
+              ? '✓'
+              : c.lastReadPage != null
+                ? `${c.lastReadPage + 1}/${c.pageCount}`
+                : ''
+          return (
+            <button
+              key={c.id}
+              ref={current ? currentRef : undefined}
+              className={`flex w-full items-center gap-3 px-3 py-1.5 text-left text-sm hover:bg-base-700 ${
+                current ? 'bg-base-700/60 text-accent' : 'text-gray-300'
+              }`}
+              onClick={() => onPick(c)}
+            >
+              <span className="min-w-0 flex-1 truncate">{c.title}</span>
+              <span
+                className={`shrink-0 text-xs ${c.readAt != null ? 'text-accent' : 'text-gray-500'}`}
+              >
+                {progress}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </>
+  )
+}
+
 function BarToggle({
   label,
   active,
@@ -737,6 +841,8 @@ function BarToggle({
     <button
       className={`rounded px-2 py-1 ${active ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
       title={title}
+      aria-label={title}
+      aria-pressed={active}
       onClick={onClick}
     >
       {label}

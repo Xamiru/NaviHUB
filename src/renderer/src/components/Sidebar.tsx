@@ -147,6 +147,9 @@ export default function Sidebar() {
         <NavLink to="/lists" className={({ isActive }) => linkClass(isActive)}>
           <span className="w-4 text-center opacity-80">☰</span> Lists
         </NavLink>
+        <NavLink to="/tags" className={({ isActive }) => linkClass(isActive)}>
+          <span className="w-4 text-center opacity-80">#</span> Tags
+        </NavLink>
 
         <div className="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
           Play
@@ -161,6 +164,13 @@ export default function Sidebar() {
         </div>
         <NavLink to="/japanese" className={({ isActive }) => linkClass(isActive)}>
           <span className="w-4 text-center opacity-80">あ</span> Japanese
+        </NavLink>
+
+        <div className="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+          Gacha
+        </div>
+        <NavLink to="/gacha" className={({ isActive }) => linkClass(isActive)}>
+          <span className="w-4 text-center opacity-80">◆</span> Gacha
         </NavLink>
       </div>
 

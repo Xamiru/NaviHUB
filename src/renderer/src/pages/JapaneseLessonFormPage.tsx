@@ -3,6 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import BackButton from '../components/BackButton'
 import { toast } from '../lib/toast'
 import type { JpCardInput, JpLessonKind } from '@shared/types'
 
@@ -158,7 +159,10 @@ export default function JapaneseLessonFormPage() {
       }
       await qc.invalidateQueries({ queryKey: qk.japanese.all })
       toast(editing ? 'Lesson saved' : 'Lesson created', 'success')
-      navigate(`/japanese/lessons/${targetLessonId}`)
+      // Drop the form from history (see MediaFormPage.save): back to the detail
+      // entry beneath when editing, replace with the new detail when creating.
+      if (editing) navigate(-1)
+      else navigate(`/japanese/lessons/${targetLessonId}`, { replace: true })
     } finally {
       setSaving(false)
     }
@@ -168,9 +172,7 @@ export default function JapaneseLessonFormPage() {
 
   return (
     <div className="p-6 max-w-[900px] mx-auto">
-      <button className="text-sm text-gray-500 hover:text-gray-300 mb-4" onClick={() => navigate(-1)}>
-        ← Back
-      </button>
+      <BackButton />
       <h1 className="text-2xl font-bold mb-1">
         {editing ? 'Edit lesson' : `New ${kind} lesson`}
       </h1>

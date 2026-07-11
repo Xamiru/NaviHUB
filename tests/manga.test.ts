@@ -273,3 +273,104 @@ describe('reading progress', () => {
     expect(mediaProgress(mediaId)).toBe(2)
   })
 })
+
+describe('EPUB books in the manga section', () => {
+  // Minimal-but-valid EPUB: container → OPF → two spine documents + nav TOC.
+  function makeEpub(absPath: string): void {
+    const zip = new AdmZip()
+    zip.addFile('mimetype', Buffer.from('application/epub+zip'))
+    zip.addFile(
+      'META-INF/container.xml',
+      Buffer.from(
+        `<container><rootfiles><rootfile full-path="OEBPS/content.opf"/></rootfiles></container>`
+      )
+    )
+    zip.addFile(
+      'OEBPS/content.opf',
+      Buffer.from(`<package>
+        <metadata xmlns:dc="http://purl.org/dc/elements/1.1/"><dc:title>LN</dc:title></metadata>
+        <manifest>
+          <item id="nav" href="nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+          <item id="c1" href="ch1.xhtml" media-type="application/xhtml+xml"/>
+          <item id="c2" href="ch2.xhtml" media-type="application/xhtml+xml"/>
+        </manifest>
+        <spine><itemref idref="c1"/><itemref idref="c2"/></spine>
+      </package>`)
+    )
+    zip.addFile(
+      'OEBPS/nav.xhtml',
+      Buffer.from(
+        `<html xmlns:epub="x"><body><nav epub:type="toc"><ol>
+           <li><a href="ch1.xhtml">第一章</a></li><li><a href="ch2.xhtml">第二章</a></li>
+         </ol></nav></body></html>`
+      )
+    )
+    zip.addFile('OEBPS/ch1.xhtml', Buffer.from('<html><body><p>一</p></body></html>'))
+    zip.addFile('OEBPS/ch2.xhtml', Buffer.from('<html><body><p>二</p></body></html>'))
+    zip.writeZip(absPath)
+  }
+
+  it('scanner discovers .epub volumes alongside image chapters, pageCount = spine length', async () => {
+    const dir = makeSeries('Mixed', { 'Ch 001': 2 })
+    makeEpub(join(dir, 'Vol 2.epub'))
+    const scanned = await manga.scanSeriesDir(dir, 'Mixed')
+    expect(scanned.map((c) => c.dirPath).sort()).toEqual(['Ch 001', 'Vol 2.epub'])
+    const book = scanned.find((c) => c.dirPath === 'Vol 2.epub')!
+    // number stays null by design: "Vol N" is a volume marker, not a chapter
+    // number (media progress then counts read volumes instead).
+    expect(book).toMatchObject({ title: 'Vol 2', number: null, pageCount: 2 })
+  })
+
+  it('an epub-only folder attaches (novels without any image chapters)', async () => {
+    const mediaId = makeMedia('Novel', 0)
+    const dir = join(root, 'Novel')
+    mkdirSync(dir)
+    makeEpub(join(dir, 'Vol 1.epub'))
+    const res = await attachViaDialog(mediaId, dir)
+    expect(res).toMatchObject({ ok: true, chapterCount: 1 })
+  })
+
+  it('a broken .epub is skipped, not fatal', async () => {
+    const dir = makeSeries('Broken', { 'Ch 001': 1 })
+    writeFileSync(join(dir, 'garbage.epub'), 'not a zip')
+    const scanned = await manga.scanSeriesDir(dir, 'Broken')
+    expect(scanned.map((c) => c.dirPath)).toEqual(['Ch 001'])
+  })
+
+  it('pages() serves spine documents as navimg URLs with the TOC riding along', async () => {
+    const mediaId = makeMedia('Novel', 0)
+    const dir = join(root, 'Novel')
+    mkdirSync(dir)
+    makeEpub(join(dir, 'Vol 1.epub'))
+    await attachViaDialog(mediaId, dir)
+    const ch = manga.chapters(mediaId).chapters[0]
+
+    const pages = await manga.pages(ch.id)
+    expect(pages).not.toBeNull()
+    expect(pages!.isBook).toBe(true)
+    expect(pages!.pages.map((p) => p.relPath)).toEqual([
+      'manga/Novel/Vol 1.epub/OEBPS/ch1.xhtml',
+      'manga/Novel/Vol 1.epub/OEBPS/ch2.xhtml'
+    ])
+    expect(pages!.pages[0].url).toMatch(/^navimg:\/\//)
+    expect(pages!.toc).toEqual([
+      { label: '第一章', page: 0 },
+      { label: '第二章', page: 1 }
+    ])
+
+    // Reading progress uses the same rows/flow as image chapters.
+    manga.markProgress(ch.id, 1) // last section → chapter completes
+    const after = manga.chapters(mediaId).chapters[0]
+    expect(after.readAt).not.toBeNull()
+  })
+
+  it('image pages() responses are not marked as books', async () => {
+    const mediaId = makeMedia('Berserk', 0)
+    const dir = makeSeries('Berserk', { 'Ch 001': 2 })
+    await attachViaDialog(mediaId, dir)
+    const ch = manga.chapters(mediaId).chapters[0]
+    const pages = await manga.pages(ch.id)
+    expect(pages!.isBook).toBeUndefined()
+    expect(pages!.toc).toBeUndefined()
+  })
+})

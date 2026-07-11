@@ -62,3 +62,65 @@
     @apply rounded-lg bg-base-800 border border-base-700;
   }
 }
+
+/* EPUB book reader (BookContent) — typography for sanitized novel text.
+   Font size / line height / measure come inline from BookReaderPage prefs. */
+.book-content {
+  color: theme('colors.gray.200');
+}
+.book-content p {
+  margin: 0.85em 0;
+}
+.book-content h1,
+.book-content h2,
+.book-content h3,
+.book-content h4,
+.book-content h5,
+.book-content h6 {
+  font-weight: 600;
+  margin: 1.4em 0 0.7em;
+}
+.book-content h1 { font-size: 1.5em; }
+.book-content h2 { font-size: 1.3em; }
+.book-content h3 { font-size: 1.15em; }
+.book-content blockquote {
+  border-inline-start: 2px solid theme('colors.base.600');
+  padding-inline-start: 1em;
+  color: theme('colors.gray.400');
+}
+.book-content ul,
+.book-content ol {
+  padding-inline-start: 1.5em;
+  margin: 0.85em 0;
+}
+.book-content ul { list-style: disc; }
+.book-content ol { list-style: decimal; }
+.book-content hr {
+  border-color: theme('colors.base.700');
+  margin: 1.5em 0;
+}
+.book-content rt {
+  font-size: 0.45em;
+  color: theme('colors.gray.400');
+}
+.book-content .book-img {
+  display: block;
+  margin: 1.2em auto;
+  max-width: 100%;
+  max-height: 80vh;
+  object-fit: contain;
+}
+/* Vertical (tategaki) mode: images size against the column axis instead. */
+.book-vertical .book-img {
+  margin: auto 1.2em;
+  max-height: 100%;
+  max-width: 80vw;
+}
+/* Mining mode: paragraphs advertise their tappability. */
+.book-mining p:hover,
+.book-mining li:hover,
+.book-mining blockquote:hover {
+  cursor: pointer;
+  background: rgb(124 92 255 / 0.12); /* accent @ 12% */
+  border-radius: 4px;
+}

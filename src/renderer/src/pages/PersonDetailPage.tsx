@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -14,6 +14,12 @@ export default function PersonDetailPage() {
   const personId = Number(id)
   const navigate = useNavigate()
   const qc = useQueryClient()
+  // Where the user came from: person lists and crew sections append ?role=…
+  // (EntityListView, MediaDetailPage). A crew role means they clicked e.g. a
+  // Director, so the crew section should lead instead of the acting grids.
+  const [searchParams] = useSearchParams()
+  const contextRole = searchParams.get('role')
+  const crewFirst = !!contextRole && contextRole !== 'actor' && contextRole !== 'voice_actor'
 
   const { data: person } = useQuery({
     queryKey: qk.people.get(personId),
@@ -67,6 +73,53 @@ export default function PersonDetailPage() {
   const typeLabel = (t: MediaType): string =>
     MEDIA_CONFIGS.find((cfg) => cfg.key === t)?.plural ?? t.replace(/_/g, ' ')
 
+  // When arriving via a crew role, float that role's rows to the top of the
+  // crew list (a director's directing above their writing/staff credits).
+  // Stable sort, so within each half the importance order is preserved.
+  const orderedStaff = crewFirst
+    ? [...staffRoles].sort(
+        (a, b) => Number(b.role === contextRole) - Number(a.role === contextRole)
+      )
+    : staffRoles
+
+  const actingSection =
+    totalActing > 0 &&
+    actingTypes.map((type) => {
+      const group = [...actingByType.get(type)!.values()]
+      return (
+        <div key={type} className="mb-8">
+          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+            {typeLabel(type)} · {group.length}
+          </h2>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+            {group.map(({ credit, titles }) => (
+              <RoleCard key={credit.character!.id} c={credit} titles={titles} />
+            ))}
+          </div>
+        </div>
+      )
+    })
+
+  const crewSection = staffRoles.length > 0 && (
+    <>
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+        Crew roles · {staffRoles.length}
+      </h2>
+      <div className="space-y-1.5 mb-8">
+        {orderedStaff.map((c) => (
+          <Link
+            key={c.creditId}
+            to={pathForMedia(c.media)}
+            className="flex items-center gap-2 text-sm bg-base-800 rounded-md px-3 py-2 hover:bg-base-700"
+          >
+            <span className="text-gray-500 capitalize w-20">{c.role}</span>
+            <span className="font-medium">{c.media.title}</span>
+          </Link>
+        ))}
+      </div>
+    </>
+  )
+
   return (
     <div className="p-6 max-w-4xl mx-auto">
       <EntityHeader
@@ -99,7 +152,7 @@ export default function PersonDetailPage() {
         actions={<AddToListMenu kind="person" entityId={personId} />}
       />
 
-      {totalActing === 0 ? (
+      {totalActing === 0 && staffRoles.length === 0 && (
         <>
           <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
             Roles
@@ -108,41 +161,17 @@ export default function PersonDetailPage() {
             No roles yet. Add this person to a title&apos;s cast from its page.
           </p>
         </>
-      ) : (
-        actingTypes.map((type) => {
-          const group = [...actingByType.get(type)!.values()]
-          return (
-            <div key={type} className="mb-8">
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
-                {typeLabel(type)} · {group.length}
-              </h2>
-              <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
-                {group.map(({ credit, titles }) => (
-                  <RoleCard key={credit.character!.id} c={credit} titles={titles} />
-                ))}
-              </div>
-            </div>
-          )
-        })
       )}
 
-      {staffRoles.length > 0 && (
+      {crewFirst ? (
         <>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
-            Crew roles · {staffRoles.length}
-          </h2>
-          <div className="space-y-1.5">
-            {staffRoles.map((c) => (
-              <Link
-                key={c.creditId}
-                to={pathForMedia(c.media)}
-                className="flex items-center gap-2 text-sm bg-base-800 rounded-md px-3 py-2 hover:bg-base-700"
-              >
-                <span className="text-gray-500 capitalize w-20">{c.role}</span>
-                <span className="font-medium">{c.media.title}</span>
-              </Link>
-            ))}
-          </div>
+          {crewSection}
+          {actingSection}
+        </>
+      ) : (
+        <>
+          {actingSection}
+          {crewSection}
         </>
       )}
     </div>

@@ -268,3 +268,86 @@ describe('japaneseRepo — review flow', () => {
     expect(s.reviewsToday).toBe(1)
   })
 })
+
+describe('japaneseRepo — statsDetail', () => {
+  // submitReview always stamps now; backdate log rows directly to shape
+  // history. Stored UTC (like production writes) — the repo applies
+  // 'localtime' when grouping into days.
+  function backdateLast(daysAgo: number): void {
+    db.prepare(
+      `UPDATE jp_review_log
+       SET reviewed_at = datetime('now', ?)
+       WHERE id = (SELECT MAX(id) FROM jp_review_log)`
+    ).run(`-${daysAgo} days`)
+  }
+
+  it('is empty-safe before any reviews', () => {
+    seedCourseWithLesson(true)
+    const d = jp.statsDetail()
+    expect(d.totalReviews).toBe(0)
+    expect(d.firstReviewAt).toBeNull()
+    expect(d.reviewsPerDay).toEqual([])
+    expect(d.streak).toEqual({ current: 0, longest: 0 })
+    expect(d.gradeCounts).toEqual({ again: 0, hard: 0, good: 0, easy: 0 })
+  })
+
+  it('groups reviews per local day, counts grades, and computes streaks', () => {
+    const { lessonId } = seedCourseWithLesson(true)
+    const cards = jp.getLesson(lessonId)!.cards
+
+    jp.submitReview(cards[0].id, 'good')
+    backdateLast(1)
+    jp.submitReview(cards[1].id, 'again')
+    backdateLast(1)
+    jp.submitReview(cards[2].id, 'easy') // today
+
+    const d = jp.statsDetail()
+    expect(d.totalReviews).toBe(3)
+    expect(d.gradeCounts).toEqual({ again: 1, hard: 0, good: 1, easy: 1 })
+    expect(d.reviewsPerDay).toHaveLength(2)
+    expect(d.reviewsPerDay[0].count).toBe(2) // yesterday
+    expect(d.reviewsPerDay[1].count).toBe(1) // today
+    expect(d.streak).toEqual({ current: 2, longest: 2 })
+  })
+
+  it('excludes reviews older than 365 days from the heatmap but keeps totals', () => {
+    const { lessonId } = seedCourseWithLesson(true)
+    const cards = jp.getLesson(lessonId)!.cards
+    jp.submitReview(cards[0].id, 'good')
+    backdateLast(400)
+    jp.submitReview(cards[1].id, 'good') // today
+
+    const d = jp.statsDetail()
+    expect(d.reviewsPerDay).toHaveLength(1)
+    expect(d.totalReviews).toBe(2)
+    expect(d.firstReviewAt).not.toBeNull()
+  })
+
+  it('forecasts due cards over 14 days, folding overdue into today', () => {
+    const { lessonId } = seedCourseWithLesson(true)
+    const cards = jp.getLesson(lessonId)!.cards
+    // Move all three out of 'new' (graded once), then reshape their due dates.
+    for (const c of cards) jp.submitReview(c.id, 'good')
+    db.prepare(`UPDATE jp_card SET due_at = datetime('now', '-2 days') WHERE id = ?`).run(cards[0].id)
+    db.prepare(`UPDATE jp_card SET due_at = datetime('now', '+3 days') WHERE id = ?`).run(cards[1].id)
+    db.prepare(`UPDATE jp_card SET due_at = datetime('now', '+30 days') WHERE id = ?`).run(cards[2].id)
+
+    const d = jp.statsDetail()
+    const total = d.dueForecast.reduce((a, b) => a + b.due, 0)
+    expect(total).toBe(2) // 30-days-out card excluded from the window
+    const today = (db.prepare(`SELECT date('now','localtime') AS d`).get() as { d: string }).d
+    expect(d.dueForecast.find((f) => f.day === today)?.due).toBe(1) // overdue → today
+  })
+
+  it('excludes new cards and unlearned lessons from the forecast', () => {
+    const { lessonId } = seedCourseWithLesson(true)
+    const cards = jp.getLesson(lessonId)!.cards
+    // cards are 'new' → no forecast rows even though due_at is set at creation
+    expect(jp.statsDetail().dueForecast).toEqual([])
+
+    jp.submitReview(cards[0].id, 'good')
+    db.prepare(`UPDATE jp_card SET due_at = datetime('now', '+1 day') WHERE id = ?`).run(cards[0].id)
+    jp.setLessonLearned(lessonId, false)
+    expect(jp.statsDetail().dueForecast).toEqual([]) // unlearned lesson filtered
+  })
+})

@@ -54,7 +54,10 @@ export default function ListFormPage() {
     }
     await qc.invalidateQueries({ queryKey: qk.lists.all })
     setSaving(false)
-    navigate(`/lists/${targetId}`)
+    // Drop the form from history (see MediaFormPage.save): back to the detail
+    // entry beneath when editing, replace with the new detail when creating.
+    if (editing) navigate(-1)
+    else navigate(`/lists/${targetId}`, { replace: true })
   }
 
   if (!loaded) return <p className="p-6 text-gray-500">Loading…</p>

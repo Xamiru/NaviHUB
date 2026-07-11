@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { useIncrementalList } from '../lib/hooks'
 import { usePlayer } from '../lib/player'
 import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
 import { toast, toastError } from '../lib/toast'
@@ -22,10 +23,16 @@ export default function MusicAlbumPage() {
     queryFn: () => api.music.album(albumId)
   })
 
+  // A folder dumped as one "album" can hold thousands of tracks; mounting a
+  // row per track froze the page, so reveal in batches as the user scrolls
+  // (EntityListView-style). `visible` is a prefix of `tracks`, so row indexes
+  // still line up with the full queue. Called before the early returns so the
+  // hook order stays stable.
+  const tracks = album?.tracks ?? []
+  const { visible, sentinelRef, hasMore } = useIncrementalList(tracks)
+
   if (isLoading) return <PageStatus>Loading…</PageStatus>
   if (!album) return <PageStatus>Album not found.</PageStatus>
-
-  const tracks = album.tracks
   const totalSeconds = tracks.reduce((sum, t) => sum + (t.duration ?? 0), 0)
   const multiDisc = new Set(tracks.map((t) => t.discNo ?? 1)).size > 1
 
@@ -74,7 +81,7 @@ export default function MusicAlbumPage() {
       />
 
       <div className="max-w-3xl">
-        {tracks.map((t, i) => {
+        {visible.map((t, i) => {
           const disc = t.discNo ?? 1
           const discHeader = multiDisc && disc !== lastDisc
           lastDisc = disc
@@ -94,6 +101,12 @@ export default function MusicAlbumPage() {
             </Fragment>
           )
         })}
+        <div ref={sentinelRef} />
+        {hasMore && (
+          <p className="mt-4 text-center text-xs text-gray-400">
+            Showing {visible.length} of {tracks.length} — scroll for more
+          </p>
+        )}
       </div>
     </div>
   )

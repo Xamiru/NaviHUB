@@ -41,6 +41,15 @@ export function musicRootDir(): string {
   return custom && custom.length ? custom : join(app.getPath('userData'), 'music')
 }
 
+// Wallpapers + fan art root (settings key `pictures.dir`). Files are organized
+// by title ("<Title> (<type>)/wallpapers/…") so the folder is browsable outside
+// the app too. DB rows and navimg URLs use a virtual "pictures/" prefix,
+// mirroring the audio/ scheme above.
+export function picturesDir(): string {
+  const custom = getSetting('pictures.dir')?.trim()
+  return custom && custom.length ? custom : join(app.getPath('userData'), 'pictures')
+}
+
 let counter = 0
 function uniqueName(srcPath: string): string {
   // Avoid Date.now()/Math.random(): derive from a process-lifetime counter
@@ -68,9 +77,10 @@ export async function pickImage(): Promise<string | null> {
   return join('media', fileName)
 }
 
-// Strips characters that are illegal/awkward in filenames, so theme audio can be
-// saved with a readable name (e.g. "Berserk OP1 - Tell Me Why.ogg").
-function sanitizeFileBase(s: string): string {
+// Strips characters that are illegal/awkward in filenames, so theme audio and
+// picture folders/files can be saved with readable names (e.g. "Berserk OP1 -
+// Tell Me Why.ogg", "Berserk (manga)/wallpapers/…").
+export function sanitizeFileBase(s: string, fallback = 'theme'): string {
   const clean = s
     // illegal path chars + control chars -> space; hyphens/spaces are kept
     // eslint-disable-next-line no-control-regex
@@ -78,7 +88,7 @@ function sanitizeFileBase(s: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 120)
-  return clean || 'theme'
+  return clean || fallback
 }
 
 // Returns a custom-protocol URL (served by the navimg handler in index.ts) so
@@ -103,6 +113,7 @@ export function absoluteMediaPath(relPath: string): string {
   if (norm.startsWith('audio/')) return join(audioDir(), norm.slice('audio/'.length))
   if (norm.startsWith('manga/')) return join(mangaRootDir(), norm.slice('manga/'.length))
   if (norm.startsWith('music/')) return join(musicRootDir(), norm.slice('music/'.length))
+  if (norm.startsWith('pictures/')) return join(picturesDir(), norm.slice('pictures/'.length))
   return join(app.getPath('userData'), norm)
 }
 
@@ -187,4 +198,80 @@ export async function downloadImage(url: string | null | undefined): Promise<str
   } catch {
     return null
   }
+}
+
+// If `fileName` already exists in `dir`, suffix " (2)", " (3)"… before the ext.
+// Two different source URLs can share a basename (…/a/art.jpg vs …/b/art.jpg),
+// so an existing file must never be silently reused for a new image.
+function unclashName(dir: string, fileName: string): string {
+  if (!existsSync(join(dir, fileName))) return fileName
+  const ext = extname(fileName)
+  const stem = fileName.slice(0, fileName.length - ext.length)
+  for (let n = 2; ; n += 1) {
+    const candidate = `${stem} (${n})${ext}`
+    if (!existsSync(join(dir, candidate))) return candidate
+  }
+}
+
+// Downloads a remote image into `<picturesDir()>/<subdir>` (wallpapers/fan art)
+// and returns the stored relative path ("pictures/<subdir>/<file>"), or null on
+// failure. Unlike downloadImage this is NOT content-addressed — the readable
+// name matters here (the folder is meant to be browsable) and duplicate-URL
+// checks happen against media_image rows in pictures.ts, before any network.
+export async function downloadImageTo(
+  url: string,
+  subdir: string,
+  baseName?: string | null
+): Promise<string | null> {
+  try {
+    // Generous timeout: full-res wallpapers run to 10+ MB on slow connections.
+    const res = await fetchWithRetry(url, { timeoutMs: 120_000 })
+    if (!res.ok) return null
+    const buf = Buffer.from(await res.arrayBuffer())
+    const urlExt = extname(new URL(url).pathname)
+    const ext = /^\.(png|jpe?g|webp|gif|bmp)$/i.test(urlExt) ? urlExt : '.jpg'
+    const dir = join(picturesDir(), subdir)
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    let base: string
+    if (baseName && baseName.trim()) {
+      base = sanitizeFileBase(baseName, 'image')
+    } else {
+      counter += 1
+      base = `img-${process.pid}-${counter}`
+    }
+    const fileName = unclashName(dir, `${base}${ext}`)
+    writeFileSync(join(dir, fileName), buf)
+    return `pictures/${subdir}/${fileName}`
+  } catch {
+    return null
+  }
+}
+
+// Copies a local image the user picked into `<picturesDir()>/<subdir>`, keeping
+// a sanitized version of its original name, and returns the stored relative
+// path ("pictures/<subdir>/<file>"), or null on failure.
+export function copyImageInto(srcPath: string, subdir: string): string | null {
+  try {
+    const ext = extname(srcPath) || '.jpg'
+    const base = sanitizeFileBase(basename(srcPath, ext), 'image')
+    const dir = join(picturesDir(), subdir)
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    const fileName = unclashName(dir, `${base}${ext}`)
+    copyFileSync(srcPath, join(dir, fileName))
+    return `pictures/${subdir}/${fileName}`
+  } catch {
+    return null
+  }
+}
+
+// Native multi-select image picker. Returns absolute source paths ([] on
+// cancel); the caller decides where the files go (see pictures.addFromFiles).
+export async function pickImageFiles(): Promise<string[]> {
+  const res = await dialog.showOpenDialog({
+    title: 'Choose images',
+    properties: ['openFile', 'multiSelections'],
+    filters: [{ name: 'Images', extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp'] }]
+  })
+  if (res.canceled) return []
+  return res.filePaths
 }

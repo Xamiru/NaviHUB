@@ -29,8 +29,10 @@ export default function MusicPlayLogger(): null {
       void api.music
         .logPlay(trackId)
         .then(() => {
-          void queryClient.invalidateQueries({ queryKey: qk.music.recent })
-          void queryClient.invalidateQueries({ queryKey: qk.music.statsDetailAll })
+          // Broad on purpose: play counts are denormalized into every
+          // track-returning query (artist/album/liked/stats), and invalidation
+          // only refetches mounted queries anyway.
+          void queryClient.invalidateQueries({ queryKey: qk.music.all })
         })
         .catch(() => {})
     }, LOG_AFTER_MS)
