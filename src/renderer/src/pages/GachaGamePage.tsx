@@ -84,7 +84,7 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
         <CurrencyStrip cfg={cfg} />
       </div>
 
-      <div className="mb-5 flex gap-1">
+      <div className="mb-5 flex items-center gap-1">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -96,6 +96,7 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
             {t.label}
           </button>
         ))}
+        {cfg.coach && <CoachTab cfg={cfg} />}
       </div>
 
       {tab === 'roster' && <RosterTab cfg={cfg} />}
@@ -106,6 +107,29 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
         <GachaGameImageDialog game={cfg} current={imagePath} onClose={() => setEditingImage(false)} />
       )}
     </div>
+  )
+}
+
+// The Coach entry point sits beside the tab pills, with a due/overdue reminder
+// badge (rendered from the DB — no LLM call).
+function CoachTab({ cfg }: { cfg: GachaGameCfg }) {
+  const { data: due } = useQuery({
+    queryKey: qk.gacha.dueCounts,
+    queryFn: () => api.gacha.dueCounts()
+  })
+  const n = due?.[cfg.id] ?? 0
+  return (
+    <Link
+      to={`/gacha/${cfg.id}/coach`}
+      className="ml-auto flex items-center gap-1.5 rounded-full bg-base-700 px-3 py-1 text-sm text-gray-200 hover:text-white"
+    >
+      <span style={{ color: cfg.color }}>◈</span> Coach
+      {n > 0 && (
+        <span className="rounded-full bg-red-600/90 px-1.5 text-[11px] font-semibold text-white">
+          {n}
+        </span>
+      )}
+    </Link>
   )
 }
 

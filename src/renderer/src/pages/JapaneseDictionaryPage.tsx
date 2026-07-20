@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -17,6 +17,17 @@ import type { DictEntry, GlossaryItem, KanjiInfo } from '@shared/types'
 export default function JapaneseDictionaryPage() {
   const [query, setQuery] = usePersistedState('jpDictQuery', '')
   const debounced = useDebouncedValue(query.trim(), 250)
+
+  // Deep links (?q=…) from lesson tables and elsewhere pre-fill the search.
+  const [params, setParams] = useSearchParams()
+  const linkedQuery = params.get('q')
+  useEffect(() => {
+    if (linkedQuery) {
+      setQuery(linkedQuery)
+      setParams({}, { replace: true }) // consume it so typing isn't overridden
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [linkedQuery])
 
   const { data: dicts = [] } = useQuery({
     queryKey: qk.dict.list,

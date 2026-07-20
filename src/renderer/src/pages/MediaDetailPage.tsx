@@ -12,6 +12,7 @@ import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
 import MediaImagesSection from '../components/MediaImagesSection'
+import TorrentSearchDialog from '../components/TorrentSearchDialog'
 import Section from '../components/Section'
 import type {
   MediaDetail,
@@ -27,6 +28,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const scoreMax = useScoreMax()
+  const [torrentsOpen, setTorrentsOpen] = useState(false)
 
   const { data: m, isLoading } = useQuery({
     queryKey: qk.media.detail(mediaId),
@@ -89,6 +91,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           <div className="mt-2">
             <AddToListMenu kind="media" entityId={mediaId} />
           </div>
+          <button className="btn-ghost w-full mt-2" onClick={() => setTorrentsOpen(true)}>
+            Find torrents
+          </button>
         </div>
 
         <div className="min-w-0">
@@ -154,6 +159,14 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
         <MediaImagesSection m={m} kind="wallpaper" />
         {cfg.hasFanArt && <MediaImagesSection m={m} kind="fanart" />}
       </div>
+
+      {torrentsOpen && (
+        <TorrentSearchDialog
+          title={m.title}
+          mediaType={m.mediaType}
+          onClose={() => setTorrentsOpen(false)}
+        />
+      )}
     </div>
   )
 }

@@ -9,6 +9,7 @@ import { usePlayer } from '../lib/player'
 import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
+import { ERAS } from '@shared/era'
 import type { QuizSong, QuizSongFilter } from '@shared/types'
 
 type Phase = 'setup' | 'play' | 'summary'
@@ -56,6 +57,8 @@ export default function SongQuizPage() {
   // Setup options (persisted so they survive navigation / a new round).
   const [songType, setSongType] = usePersistedState<'OP' | 'ED' | null>('quizSongType', null)
   const [listSource, setListSource] = usePersistedState<ListSource>('quizList', 'watched')
+  // Selected era keys (multi-select); empty = every decade.
+  const [eras, setEras] = usePersistedState<string[]>('quizEras', [])
   const [length, setLength] = usePersistedState<number>('quizLength', 10) // 0 = endless
   const [timerEnabled, setTimerEnabled] = usePersistedState('quizTimer', true)
   const [offsetEnabled, setOffsetEnabled] = usePersistedState('quizOffset', true)
@@ -242,7 +245,11 @@ export default function SongQuizPage() {
     setLoading(true)
     try {
       const statusFilter = listSource === 'all' ? null : watchedStatuses
-      const filter: QuizSongFilter = { songType, statuses: statusFilter }
+      const filter: QuizSongFilter = {
+        songType,
+        statuses: statusFilter,
+        eras: eras.length > 0 ? eras : null
+      }
       const pool = await api.quiz.songPool(filter)
       const distinct = uniqueByMedia(pool).length
       if (pool.length === 0) {
@@ -297,6 +304,26 @@ export default function SongQuizPage() {
           <Group label="From">
             <Pill active={listSource === 'watched'} onClick={() => setListSource('watched')} label="Watched" />
             <Pill active={listSource === 'all'} onClick={() => setListSource('all')} label="All" />
+          </Group>
+
+          <Group label="Era">
+            {/* Multi-select decades; "Any" clears the set. Unknown-year anime
+                are excluded once a specific era is picked. */}
+            <Pill active={eras.length === 0} onClick={() => setEras([])} label="Any" />
+            {ERAS.map((era) => (
+              <Pill
+                key={era.key}
+                active={eras.includes(era.key)}
+                onClick={() =>
+                  setEras(
+                    eras.includes(era.key)
+                      ? eras.filter((k) => k !== era.key)
+                      : [...eras, era.key]
+                  )
+                }
+                label={era.label}
+              />
+            ))}
           </Group>
 
           <Group label="Length">

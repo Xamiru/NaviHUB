@@ -312,7 +312,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
               type="checkbox"
               checked={form.favorite}
               onChange={(e) => set('favorite', e.target.checked)}
-              className="accent-[#7c5cff]"
+              className="accent-accent"
             />
             Mark as favorite
           </label>

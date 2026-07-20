@@ -1,5 +1,5 @@
 import { Fragment } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -16,6 +16,7 @@ export default function MusicAlbumPage() {
   const { id } = useParams()
   const albumId = Number(id)
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const player = usePlayer()
 
   const { data: album, isLoading } = useQuery({
@@ -55,6 +56,25 @@ export default function MusicAlbumPage() {
     qc.invalidateQueries({ queryKey: qk.music.all })
   }
 
+  async function deleteAlbum(): Promise<void> {
+    if (!album) return
+    if (
+      !window.confirm(
+        `Delete "${album.title}" by ${album.artistName} from your computer?\n\nThis permanently removes all ${tracks.length} track file(s) from disk — it cannot be undone.`
+      )
+    )
+      return
+    const artistId = album.artistId
+    try {
+      await api.music.deleteAlbum(albumId)
+      toast(`Deleted "${album.title}"`)
+      qc.invalidateQueries({ queryKey: qk.music.all })
+      navigate(`/music/artists/${artistId}`, { replace: true })
+    } catch (e) {
+      toastError(e)
+    }
+  }
+
   let lastDisc: number | null = null
   return (
     <div className="mx-auto max-w-4xl p-6">
@@ -78,6 +98,8 @@ export default function MusicAlbumPage() {
         artNoun="cover"
         onFindArt={findCover}
         onClearArt={clearCover}
+        onDelete={deleteAlbum}
+        deleteLabel="Delete album"
       />
 
       <div className="max-w-3xl">

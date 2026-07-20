@@ -77,15 +77,30 @@ function seed(): void {
       VALUES ('hsr', 'Version 4.4 Update', 'https://www.hoyolab.com/article/1', '1');
     INSERT INTO gacha_meta (game, key, value) VALUES ('hsr', 'news.fetchedAt', '2026-07-09T12:00:00Z');
 
+    INSERT INTO gacha_chat_thread (id, game, title) VALUES (1, 'fgo', 'My roster help');
+    INSERT INTO gacha_chat_message (thread_id, role, text) VALUES (1, 'user', 'add Mash');
+    INSERT INTO gacha_goal (game, kind, title, recur) VALUES ('fgo', 'task', 'Do dailies', 'daily');
+    INSERT INTO gacha_coach_note (game, content) VALUES ('fgo', 'Plays on NA server');
+    INSERT INTO gacha_coach_doc (game, title, content) VALUES ('fgo', 'ChatGPT log', 'raw text');
+
     INSERT INTO settings (key, value) VALUES
       ('tmdb.api_key', 'secret-tmdb'),
       ('rawg.api_key', 'secret-rawg'),
       ('omdb.api_key', 'secret-omdb'),
+      ('gemini.api_key', 'secret-gemini'),
+      ('anthropic.api_key', 'secret-anthropic'),
+      ('vertex.project_id', 'my-gcp-project'),
+      ('vertex.credentials_path', '/home/x/sa.json'),
       ('ytdlp.path', '/usr/local/bin/yt-dlp'),
       ('music.dir', '/media/xamir/Anglo/Music'),
       ('manga.dir', '/media/xamir/Nihon/Manga'),
       ('audio.dir', '/media/xamir/Anglo/Anime'),
       ('pictures.dir', '/media/xamir/Anglo/Pictures'),
+      ('jackett.url', 'http://localhost:9117'),
+      ('jackett.api_key', 'secret-jackett'),
+      ('qbittorrent.url', 'http://localhost:8080'),
+      ('qbittorrent.username', 'admin'),
+      ('qbittorrent.password', 'secret-qbit'),
       ('japanese.seeded', '1'),
       ('japanese.seeded.n3kanji', '1'),
       ('japanese.seeded.levels', '1'),
@@ -139,7 +154,8 @@ describe('export sanitize', () => {
       'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log',
       'music_artist', 'music_album', 'music_track', 'music_playlist',
       'music_playlist_track', 'music_play_log', 'manga_chapter', 'media_image', 'quiz_session',
-      'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta'
+      'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta',
+      'gacha_chat_thread', 'gacha_chat_message', 'gacha_goal', 'gacha_coach_note', 'gacha_coach_doc'
     ]) {
       expect(count(t), t).toBe(0)
     }

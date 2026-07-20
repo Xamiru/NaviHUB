@@ -6,6 +6,7 @@ import type {
   MediaItem,
   MediaItemInput,
   MediaListFilter,
+  MediaListFacets,
   MediaDetail,
   CastEntry,
   MediaCharacterEntry,
@@ -43,48 +44,197 @@ function normalize(key: string, value: unknown): unknown {
   return value === undefined ? null : value
 }
 
-export function list(filter: MediaListFilter): MediaItem[] {
-  const db = getSqlite()
+// ---- Derived SQL expressions shared by list filters, sorts and facets -------
+// Every external source stores its rating under its own metadata key on its own
+// scale; COALESCE folds them into ONE 0-100 "community score" so a single
+// slider/sort works across anime, games, VNs and film. IMDb is 0-10 → ×10.
+const COMMUNITY_SQL = `COALESCE(
+  json_extract(m.metadata, '$.averageScore'),
+  json_extract(m.metadata, '$.metacritic'),
+  json_extract(m.metadata, '$.vndbRating'),
+  json_extract(m.metadata, '$.imdbRating') * 10
+)`
+
+// Release year: the date's year, falling back to AniList's canonical seasonYear
+// for titles imported without a date.
+const YEAR_SQL = `COALESCE(
+  CAST(substr(m.release_date, 1, 4) AS INTEGER),
+  CAST(json_extract(m.metadata, '$.seasonYear') AS INTEGER)
+)`
+
+// Airing season — mirrors seasonForItem() in @shared/season.ts: canonical
+// metadata wins (AniList puts late-December premieres in the NEXT winter),
+// month quarters are the fallback. Keep the two in step.
+const SEASON_SQL = `CASE
+  WHEN lower(json_extract(m.metadata, '$.season')) IN ('winter','spring','summer','fall')
+    THEN lower(json_extract(m.metadata, '$.season'))
+  WHEN m.release_date IS NULL THEN NULL
+  WHEN CAST(substr(m.release_date, 6, 2) AS INTEGER) BETWEEN 1 AND 3 THEN 'winter'
+  WHEN CAST(substr(m.release_date, 6, 2) AS INTEGER) BETWEEN 4 AND 6 THEN 'spring'
+  WHEN CAST(substr(m.release_date, 6, 2) AS INTEGER) BETWEEN 7 AND 9 THEN 'summer'
+  WHEN CAST(substr(m.release_date, 6, 2) AS INTEGER) BETWEEN 10 AND 12 THEN 'fall'
+  ELSE NULL
+END`
+
+const SEASON_KEYS = new Set(['winter', 'spring', 'summer', 'fall'])
+
+// Sort key -> column/expression. A whitelist on purpose: the value reaches SQL
+// by interpolation, so it must never come from the filter object directly.
+const SORT_SQL: Record<NonNullable<MediaListFilter['sort']>, string> = {
+  title: 'm.title',
+  score: 'm.score',
+  communityScore: COMMUNITY_SQL,
+  updated: 'm.updated_at',
+  added: 'm.created_at',
+  release: 'm.release_date',
+  progress: 'm.progress',
+  units: 'm.total_units',
+  timesConsumed: 'm.rewatch_count',
+  random: 'RANDOM()'
+}
+
+function finite(v: unknown): number | null {
+  return typeof v === 'number' && Number.isFinite(v) ? v : null
+}
+
+// WHERE clauses for everything except the media type. Shared by list() and
+// facets() would diverge (facets deliberately ignores the active filters), so
+// this stays local to list().
+function buildWhere(filter: MediaListFilter): { where: string[]; params: unknown[] } {
   const where: string[] = ['m.media_type = ?']
   const params: unknown[] = [filter.mediaType]
 
-  if (filter.status) {
+  const statuses = (filter.statuses ?? []).filter((s) => typeof s === 'string' && s !== '')
+  if (statuses.length) {
+    where.push(`m.status IN (${statuses.map(() => '?').join(',')})`)
+    params.push(...statuses)
+  } else if (filter.status) {
     where.push('m.status = ?')
     params.push(filter.status)
   }
+
   if (filter.search) {
     where.push('(m.title LIKE ? OR m.title_original LIKE ?)')
     const q = `%${filter.search}%`
     params.push(q, q)
   }
-  if (filter.tagId) {
-    where.push('EXISTS (SELECT 1 FROM media_tag mt WHERE mt.media_id = m.id AND mt.tag_id = ?)')
-    params.push(filter.tagId)
-  }
-  if (filter.favorite) {
-    where.push('m.favorite = 1')
+
+  const tagIds = (filter.tagIds ?? []).filter((id) => Number.isInteger(id))
+  const tags = tagIds.length ? tagIds : filter.tagId ? [filter.tagId] : []
+  if (tags.length) {
+    if (filter.tagMode === 'all') {
+      // Every tag must be present — one EXISTS per tag.
+      for (const id of tags) {
+        where.push('EXISTS (SELECT 1 FROM media_tag mt WHERE mt.media_id = m.id AND mt.tag_id = ?)')
+        params.push(id)
+      }
+    } else {
+      where.push(
+        `EXISTS (SELECT 1 FROM media_tag mt WHERE mt.media_id = m.id
+                 AND mt.tag_id IN (${tags.map(() => '?').join(',')}))`
+      )
+      params.push(...tags)
+    }
   }
 
-  const sortCol =
-    filter.sort === 'score'
-      ? 'm.score'
-      : filter.sort === 'release'
-        ? 'm.release_date'
-        : filter.sort === 'title'
-          ? 'm.title'
-          : 'm.updated_at'
+  if (filter.favorite) where.push('m.favorite = 1')
+
+  if (filter.unrated) {
+    where.push('m.score IS NULL')
+  } else {
+    const scoreMin = finite(filter.scoreMin)
+    const scoreMax = finite(filter.scoreMax)
+    if (scoreMin != null) {
+      where.push('m.score >= ?')
+      params.push(scoreMin)
+    }
+    if (scoreMax != null) {
+      where.push('m.score <= ?')
+      params.push(scoreMax)
+    }
+  }
+
+  const bounded = (expr: string, min: unknown, max: unknown): void => {
+    const lo = finite(min)
+    const hi = finite(max)
+    if (lo != null) {
+      where.push(`${expr} >= ?`)
+      params.push(lo)
+    }
+    if (hi != null) {
+      where.push(`${expr} <= ?`)
+      params.push(hi)
+    }
+  }
+  bounded(COMMUNITY_SQL, filter.communityMin, filter.communityMax)
+  bounded(YEAR_SQL, filter.yearMin, filter.yearMax)
+  bounded('m.total_units', filter.unitsMin, filter.unitsMax)
+
+  const seasons = (filter.seasons ?? []).filter((s) => SEASON_KEYS.has(s))
+  if (seasons.length) {
+    where.push(`${SEASON_SQL} IN (${seasons.map(() => '?').join(',')})`)
+    params.push(...seasons)
+  }
+
+  return { where, params }
+}
+
+export function list(filter: MediaListFilter): MediaItem[] {
+  const db = getSqlite()
+  const { where, params } = buildWhere(filter)
+
+  const sortCol = SORT_SQL[filter.sort as keyof typeof SORT_SQL] ?? SORT_SQL.updated
   const dir = filter.sortDir === 'asc' ? 'ASC' : 'DESC'
-  // NULLs always sort last regardless of direction.
-  const nullsLast = `(${sortCol} IS NULL)`
+  // NULLs always sort last regardless of direction. 'random' is instead a
+  // SEEDED hash of the row id: same seed -> same order, so a refetch (or the
+  // renderer's scroll-fed batching) doesn't reshuffle under the user; the
+  // renderer bumps the seed to deal a new hand.
+  let order: string
+  if (filter.sort === 'random') {
+    // Multiplicative hash mod a prime. The MULTIPLIER carries the seed (an
+    // additive seed would only rotate the same order) and is folded in JS so
+    // `id * mult` can never overflow SQLite's 64-bit integers.
+    const seed = Math.abs(Math.trunc(finite(filter.seed) ?? 0))
+    const mult = ((seed * 2 + 1) * 2654435761) % 2147483647
+    order = '((m.id * ?) % 2147483647) ASC'
+    params.push(mult)
+  } else {
+    order = `(${sortCol} IS NULL) ASC, ${sortCol} ${dir}, m.title ASC`
+  }
 
   const rows = db
     .prepare(
       `SELECT m.* FROM media_item m
        WHERE ${where.join(' AND ')}
-       ORDER BY ${nullsLast} ASC, ${sortCol} ${dir}, m.title ASC`
+       ORDER BY ${order}`
     )
     .all(...params)
   return rows.map(mapMedia)
+}
+
+// Slider bounds for the list page's filter panel. Deliberately ignores the
+// active filters: the sliders must not collapse around the current selection.
+export function facets(mediaType: string): MediaListFacets {
+  const row = getSqlite()
+    .prepare(
+      `SELECT MIN(${YEAR_SQL}) AS year_min,
+              MAX(${YEAR_SQL}) AS year_max,
+              MAX(m.total_units) AS units_max,
+              COUNT(*) AS total
+       FROM media_item m WHERE m.media_type = ?`
+    )
+    .get(mediaType) as {
+    year_min: number | null
+    year_max: number | null
+    units_max: number | null
+    total: number
+  }
+  return {
+    yearMin: row.year_min ?? null,
+    yearMax: row.year_max ?? null,
+    unitsMax: row.units_max ?? null,
+    total: row.total
+  }
 }
 
 export function statusCounts(mediaType: string): Record<string, number> {

@@ -6,6 +6,7 @@ import type {
   MediaType,
   MediaItemInput,
   MediaListFilter,
+  MediaListFacets,
   MediaDetail,
   LibraryTimeStats,
   Person,
@@ -24,6 +25,9 @@ import type {
   ThemeImportSummary,
   ImageKind,
   MediaImage,
+  TorrentAddInput,
+  TorrentSearchResponse,
+  TorrentServiceTestResult,
   WallpaperSearchPage,
   WallpaperSearchResult,
   QuizHistory,
@@ -31,6 +35,8 @@ import type {
   QuizSessionInput,
   QuizSong,
   QuizSongFilter,
+  TournamentEntry,
+  TournamentSource,
   HltbTimes,
   ListDetail,
   ListInput,
@@ -48,8 +54,11 @@ import type {
   DictImportStatus,
   DictImportSummary,
   KanjiInfo,
+  JpLessonQuizPool,
   JpQuizItem,
   JpQuizScope,
+  PrepDeckStatus,
+  PrepDeckSummary,
   JpReviewOutcome,
   JpReviewQueue,
   JpStats,
@@ -74,12 +83,21 @@ import type {
   GachaUnitDetail,
   GachaUnitFilter,
   GachaUnitInput,
+  GachaChatThread,
+  GachaChatMessage,
+  GachaCoachStatus,
+  GachaCoachDueCounts,
+  GachaGoal,
+  GachaGoalInput,
+  GachaCoachNote,
+  GachaCoachDoc,
   MusicAlbumDetail,
   MusicAlbumSummary,
   MusicArtist,
   MusicArtistDetail,
   MusicArtResult,
   MusicArtStatus,
+  MusicDeleteResult,
   MusicDownloadEvent,
   MusicDownloadInput,
   MusicLibraryStats,
@@ -90,6 +108,7 @@ import type {
   MusicSearchResults,
   MusicStatsDetail,
   MusicTrack,
+  SyncStatus,
   YtDlpDetectResult
 } from './types'
 
@@ -102,6 +121,7 @@ export interface NaviApi {
     remove(id: number): Promise<void>
     removeCharacter(mediaId: number, characterId: number): Promise<void>
     statusCounts(mediaType: string): Promise<Record<string, number>>
+    facets(mediaType: string): Promise<MediaListFacets>
     timeStats(): Promise<LibraryTimeStats>
   }
   people: {
@@ -161,6 +181,9 @@ export interface NaviApi {
     // The pool of playable anime theme songs for the song quiz, narrowed by the
     // given filter (OP/ED, list statuses). Game logic runs in the renderer.
     songPool(filter: QuizSongFilter): Promise<QuizSong[]>
+    // Normalized contender pool for tournament mode, resolved from one library
+    // source. Returns the whole matching set; the renderer shuffles and caps.
+    tournamentPool(source: TournamentSource): Promise<TournamentEntry[]>
     // Finished-round history: pages log a session at game end; setup screens
     // show the personal best + recent rounds.
     logSession(input: QuizSessionInput): Promise<number>
@@ -234,6 +257,15 @@ export interface NaviApi {
     // Removes the row and deletes its file on disk.
     remove(imageId: number): Promise<void>
   }
+  torrents: {
+    // Jackett aggregate search (main-process — renderer CSP blocks remote fetch).
+    search(query: string, categories: number[]): Promise<TorrentSearchResponse>
+    // Hand a result to qBittorrent (magnet preferred, Jackett link fallback).
+    add(input: TorrentAddInput): Promise<void>
+    // Settings "Save & test" probes — never reject, result renders inline.
+    testJackett(): Promise<TorrentServiceTestResult>
+    testQbittorrent(): Promise<TorrentServiceTestResult>
+  }
   japanese: {
     // Standalone Japanese-learning section: courses → lessons → cards, with a
     // built-in SRS (src/shared/srs.ts). Only cards from lessons marked learned
@@ -254,6 +286,13 @@ export interface NaviApi {
     reviewQueue(newLimit: number): Promise<JpReviewQueue>
     submitReview(cardId: number, grade: SrsGrade): Promise<JpReviewOutcome>
     quizPool(scope: JpQuizScope): Promise<JpQuizItem[]>
+    // End-of-lesson self-check: lesson cards + same-course distractors,
+    // available before the lesson is marked learned.
+    lessonQuizPool(lessonId: number): Promise<JpLessonQuizPool>
+    // Series prep deck: frequency-scan an attached series' OCR/EPUB text and
+    // write a "words you'll meet" course. Long-running; poll prepDeckStatus.
+    buildPrepDeck(mediaId: number): Promise<PrepDeckSummary>
+    prepDeckStatus(): Promise<PrepDeckStatus>
     stats(): Promise<JpStats>
     // Review history (heatmap/streaks/grades) + due forecast for the stats page.
     statsDetail(): Promise<JpStatsDetail>
@@ -311,6 +350,11 @@ export interface NaviApi {
     artistTracks(artistId: number): Promise<MusicTrack[]>
     search(query: string): Promise<MusicSearchResults>
     stats(): Promise<MusicLibraryStats>
+    // Destructive: also deletes the underlying files from disk (artist delete
+    // removes the whole artist folder). Gated behind a confirm in the renderer.
+    deleteTracks(trackIds: number[]): Promise<MusicDeleteResult>
+    deleteAlbum(albumId: number): Promise<MusicDeleteResult>
+    deleteArtist(artistId: number): Promise<MusicDeleteResult>
     // playlists
     playlists(): Promise<MusicPlaylistSummary[]>
     playlist(id: number): Promise<MusicPlaylistDetail | null>
@@ -376,11 +420,54 @@ export interface NaviApi {
     downloadImage(url: string): Promise<string | null>
     // Hero art for a game's hub card + dashboard header; null clears it.
     setGameImage(game: GachaGameId, relPath: string | null): Promise<void>
+    // ---- FGO coach (config-gated by GachaGameCfg.coach) ----
+    // The coach chats + acts via tools. LLM calls happen ONLY on coachSend /
+    // importCoachDoc (both user actions); everything else is local reads/writes.
+    coachStatus(): Promise<GachaCoachStatus | null>
+    coachSend(
+      game: GachaGameId,
+      text: string,
+      attachments: string[]
+    ): Promise<{ turnId: number; threadId: number }>
+    coachCancel(): Promise<void>
+    coachThread(game: GachaGameId): Promise<GachaChatThread>
+    coachThreads(game: GachaGameId): Promise<GachaChatThread[]>
+    coachNewThread(game: GachaGameId): Promise<GachaChatThread>
+    coachMessages(threadId: number): Promise<GachaChatMessage[]>
+    // Screenshot paste → saved into userData/media, returns the rel path.
+    saveAttachment(bytes: Uint8Array, ext: string): Promise<string>
+    // goals & recurring tasks (reminders — no LLM call)
+    goals(game: GachaGameId): Promise<GachaGoal[]>
+    createGoal(game: GachaGameId, input: GachaGoalInput): Promise<number>
+    updateGoal(id: number, patch: Partial<GachaGoalInput>): Promise<void>
+    completeGoal(id: number): Promise<void>
+    dropGoal(id: number): Promise<void>
+    dueCounts(): Promise<GachaCoachDueCounts>
+    // coach memory notes
+    coachNotes(game: GachaGameId): Promise<GachaCoachNote[]>
+    removeCoachNote(id: number): Promise<void>
+    // imported prior chats
+    coachDocs(game: GachaGameId): Promise<GachaCoachDoc[]>
+    importCoachDoc(game: GachaGameId, input: { title: string; content: string }): Promise<number>
+    removeCoachDoc(id: number): Promise<void>
+  }
+  sync: {
+    // LAN sync server for the Android companion app (src/main/sync.ts). Online
+    // is button-only: it listens ONLY between start() and stop(), and pairing
+    // mode (start(true)) shows a 6-digit code that the phone must echo back.
+    // Poll status() with refetchInterval while running, like music downloads.
+    start(pairing?: boolean): Promise<SyncStatus>
+    stop(): Promise<SyncStatus>
+    status(): Promise<SyncStatus>
+    // Forgets the paired phone (clears its token); re-pair to sync again.
+    unpair(): Promise<SyncStatus>
   }
   app: {
     // Opens an http(s) URL in the system browser (gacha news links). Never
     // navigates the app window; non-http(s) URLs are rejected in main.
     openExternal(url: string): Promise<void>
+    // Native picker for a .txt/.md file (importing a prior LLM chat).
+    pickTextFile(): Promise<{ name: string; content: string } | null>
   }
   activity: {
     // The current long-running main-process task (imports, theme fetches);

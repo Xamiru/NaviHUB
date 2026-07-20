@@ -8,20 +8,48 @@ import { qk } from '../lib/queryKeys'
 import { configFor, type MediaConfig } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import ImportDialog from '../components/ImportDialog'
-import type { MediaItem, MediaListFilter } from '@shared/types'
+import MediaFilterPanel, {
+  EMPTY_FILTERS,
+  activeCount,
+  toListFilter,
+  type MediaFilters
+} from '../components/MediaFilterPanel'
+import { seasonLabel } from '@shared/season'
+import type { MediaItem, MediaListFilter, MediaSort } from '@shared/types'
 
-type Sort = NonNullable<MediaListFilter['sort']>
+// Sort menu. `random` is a seeded shuffle — it has no direction, so the page
+// swaps the direction toggle for a Shuffle button that re-seeds it.
+const SORTS: { value: MediaSort; label: string }[] = [
+  { value: 'updated', label: 'Last updated' },
+  { value: 'added', label: 'Recently added' },
+  { value: 'title', label: 'Title' },
+  { value: 'score', label: 'Your score' },
+  { value: 'communityScore', label: 'Community score' },
+  { value: 'release', label: 'Release date' },
+  { value: 'progress', label: 'Progress' },
+  { value: 'units', label: 'Length' },
+  { value: 'timesConsumed', label: 'Times consumed' },
+  { value: 'random', label: 'Random' }
+]
+
+const newSeed = (): number => Math.floor(Math.random() * 1_000_000)
 
 export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   const navigate = useNavigate()
   const statuses = useStatuses(cfg)
 
-  const [status, setStatus] = usePersistedState<string | null>('status', null)
+  // Empty = every status; the pills toggle rather than switch, so "Action games
+  // I'm either playing or planning" is one click away.
+  const [selStatuses, setSelStatuses] = usePersistedState<string[]>('statuses', [])
   const [search, setSearch] = usePersistedState('search', '')
-  const [sort, setSort] = usePersistedState<Sort>('sort', 'updated')
+  const [sort, setSort] = usePersistedState<MediaSort>('sort', 'updated')
+  // Shuffle seed: part of the query key, so bumping it deals a new hand while
+  // an unchanged seed keeps the order stable across refetches.
+  const [seed, setSeed] = usePersistedState('seed', 1)
   const [sortDir, setSortDir] = usePersistedState<'asc' | 'desc'>('sortDir', 'desc')
-  const [tagId, setTagId] = usePersistedState<number | null>('tagId', null)
   const [favOnly, setFavOnly] = usePersistedState('favOnly', false)
+  const [filters, setFilters] = usePersistedState<MediaFilters>('filters', EMPTY_FILTERS)
+  const [showFilters, setShowFilters] = usePersistedState('showFilters', false)
   const [showImport, setShowImport] = useState(false)
 
   // Debounce the search box so each keystroke doesn't refire the media query;
@@ -30,15 +58,23 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
 
   const { data: tags = [] } = useQuery({ queryKey: qk.tags.all, queryFn: () => api.tags.list() })
 
+  // Slider bounds come from the library itself (min/max year, longest title).
+  const { data: facets } = useQuery({
+    queryKey: qk.mediaCounts.facets(cfg.key),
+    queryFn: () => api.media.facets(cfg.key)
+  })
+
   const filter: MediaListFilter = {
     mediaType: cfg.key,
-    status,
+    statuses: selStatuses.length ? selStatuses : null,
     search: debouncedSearch.trim() || null,
     sort,
     sortDir,
-    tagId,
-    favorite: favOnly || null
+    favorite: favOnly || null,
+    seed: sort === 'random' ? seed : null,
+    ...toListFilter(filters)
   }
+  const nFilters = activeCount(filters) + (favOnly ? 1 : 0) + (selStatuses.length ? 1 : 0)
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: qk.media.list(filter),
@@ -52,7 +88,9 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
     queryFn: () => api.media.statusCounts(cfg.key)
   })
 
-  const total = Object.values(counts).reduce((a, b) => a + b, 0)
+  // facets counts every row of the type; statusCounts drops NULL statuses, so
+  // summing it undercounts a library with untracked entries.
+  const total = facets?.total ?? Object.values(counts).reduce((a, b) => a + b, 0)
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
@@ -109,40 +147,44 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
         />
       )}
 
-      {/* Status filter pills */}
+      {/* Status filter pills — multi-select, "All" clears */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <FilterPill active={status === null} onClick={() => setStatus(null)} label="All" count={total} />
+        <FilterPill
+          active={selStatuses.length === 0}
+          onClick={() => setSelStatuses([])}
+          label="All"
+          count={total}
+        />
         {statuses.map((s) => (
           <FilterPill
             key={s}
-            active={status === s}
-            onClick={() => setStatus(s)}
+            active={selStatuses.includes(s)}
+            onClick={() =>
+              setSelStatuses((cur) =>
+                cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]
+              )
+            }
             label={s}
             count={counts[s] ?? 0}
           />
         ))}
       </div>
 
-      {/* Search + sort */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
+      {/* Search + filters + sort */}
+      <div className="flex flex-wrap items-center gap-3 mb-4">
         <input
           className="input max-w-xs"
           placeholder="Search titles…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select
-          className="input w-auto py-1.5"
-          value={tagId ?? ''}
-          onChange={(e) => setTagId(e.target.value ? Number(e.target.value) : null)}
+        <button
+          className={`btn py-1.5 ${showFilters || nFilters ? 'bg-accent text-white' : 'bg-base-700 text-gray-300 hover:bg-base-600'}`}
+          onClick={() => setShowFilters((v) => !v)}
+          aria-expanded={showFilters}
         >
-          <option value="">All tags</option>
-          {tags.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.name}
-            </option>
-          ))}
-        </select>
+          Filters{nFilters ? ` (${nFilters})` : ''}
+        </button>
         <button
           className={`btn py-1.5 ${favOnly ? 'bg-accent text-white' : 'bg-base-700 text-gray-300 hover:bg-base-600'}`}
           onClick={() => setFavOnly((v) => !v)}
@@ -155,29 +197,129 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
           <select
             className="input w-auto py-1.5"
             value={sort}
-            onChange={(e) => setSort(e.target.value as Sort)}
+            onChange={(e) => {
+              const next = e.target.value as MediaSort
+              if (next === 'random') setSeed(newSeed())
+              setSort(next)
+            }}
           >
-            <option value="updated">Last updated</option>
-            <option value="title">Title</option>
-            <option value="score">Score</option>
-            <option value="release">Release date</option>
+            {SORTS.map((s) => (
+              <option key={s.value} value={s.value}>
+                {s.label}
+              </option>
+            ))}
           </select>
-          <button
-            className="btn-ghost py-1.5"
-            onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
-            title="Toggle direction"
-          >
-            {sortDir === 'asc' ? '↑' : '↓'}
-          </button>
+          {sort === 'random' ? (
+            <button className="btn-ghost py-1.5" onClick={() => setSeed(newSeed())}>
+              Shuffle
+            </button>
+          ) : (
+            <button
+              className="btn-ghost py-1.5"
+              onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+              title="Toggle direction"
+              aria-label="Toggle sort direction"
+            >
+              {sortDir === 'asc' ? '↑' : '↓'}
+            </button>
+          )}
         </div>
       </div>
+
+      {showFilters && (
+        <MediaFilterPanel cfg={cfg} facets={facets} value={filters} onChange={setFilters} />
+      )}
+
+      {/* What's currently narrowing the grid, each chip removable */}
+      {nFilters > 0 && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          {selStatuses.map((s) => (
+            <ActiveChip key={`st-${s}`} label={s} onClear={() =>
+              setSelStatuses((cur) => cur.filter((x) => x !== s))
+            } />
+          ))}
+          {favOnly && <ActiveChip label="Favorites" onClear={() => setFavOnly(false)} />}
+          {filters.tagIds.map((id) => (
+            <ActiveChip
+              key={`tag-${id}`}
+              label={tags.find((t) => t.id === id)?.name ?? `Tag ${id}`}
+              onClear={() =>
+                setFilters((f) => ({ ...f, tagIds: f.tagIds.filter((x) => x !== id) }))
+              }
+            />
+          ))}
+          {filters.seasons.map((s) => (
+            <ActiveChip
+              key={`se-${s}`}
+              label={seasonLabel(s)}
+              onClear={() =>
+                setFilters((f) => ({ ...f, seasons: f.seasons.filter((x) => x !== s) }))
+              }
+            />
+          ))}
+          {filters.year && (
+            <ActiveChip
+              label={`Year ${filters.year[0]}–${filters.year[1]}`}
+              onClear={() => setFilters((f) => ({ ...f, year: null }))}
+            />
+          )}
+          {filters.score && (
+            <ActiveChip
+              label={`Score ${filters.score[0]}–${filters.score[1]}`}
+              onClear={() => setFilters((f) => ({ ...f, score: null }))}
+            />
+          )}
+          {filters.unrated && (
+            <ActiveChip
+              label="Unrated"
+              onClear={() => setFilters((f) => ({ ...f, unrated: false }))}
+            />
+          )}
+          {filters.community && (
+            <ActiveChip
+              label={`Community ${filters.community[0]}–${filters.community[1]}`}
+              onClear={() => setFilters((f) => ({ ...f, community: null }))}
+            />
+          )}
+          {filters.units && (
+            <ActiveChip
+              label={`${cfg.totalFieldLabel} ${filters.units[0]}–${filters.units[1]}`}
+              onClear={() => setFilters((f) => ({ ...f, units: null }))}
+            />
+          )}
+          <button
+            className="text-xs text-gray-400 underline-offset-2 hover:text-accent hover:underline"
+            onClick={() => {
+              setFilters(EMPTY_FILTERS)
+              setSelStatuses([])
+              setFavOnly(false)
+            }}
+          >
+            Clear all
+          </button>
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-gray-500">Loading…</p>
       ) : items.length === 0 ? (
-        <EmptyState cfg={cfg} onAdd={() => navigate(`${cfg.basePath}/new`)} />
+        nFilters > 0 || debouncedSearch.trim() ? (
+          <div className="card p-12 text-center">
+            <p className="text-lg font-medium mb-1">Nothing matches these filters</p>
+            <p className="text-sm text-gray-500">
+              Loosen a range or clear a chip to widen the search.
+            </p>
+          </div>
+        ) : (
+          <EmptyState cfg={cfg} onAdd={() => navigate(`${cfg.basePath}/new`)} />
+        )
       ) : (
         <>
+          {(nFilters > 0 || debouncedSearch.trim()) && (
+            <p className="mb-3 text-xs text-gray-400">
+              {items.length} of {total} {cfg.plural.toLowerCase()} match
+            </p>
+          )}
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
             {visible.map((m) => (
               <MediaCard key={m.id} cfg={cfg} item={m} />
@@ -218,6 +360,23 @@ function FilterPill({
         {count}
       </span>
     </button>
+  )
+}
+
+// One active narrowing, removable. Mirrors the .chip idiom with a clear button.
+function ActiveChip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <span className="chip">
+      {label}
+      <button
+        onClick={onClear}
+        className="text-gray-500 hover:text-accent"
+        aria-label={`Remove filter ${label}`}
+        title={`Remove ${label}`}
+      >
+        ×
+      </button>
+    </span>
   )
 }
 

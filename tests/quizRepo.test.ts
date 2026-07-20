@@ -69,6 +69,57 @@ describe('quizRepo.songPool', () => {
     expect(quizRepo.songPool({ songType: 'ED', statuses: ['Watching'] })).toHaveLength(0)
   })
 
+  it('filters by era, using metadata.seasonYear then release_date', () => {
+    // release-date year only
+    const old = Number(
+      db
+        .prepare(
+          `INSERT INTO media_item (media_type, title, release_date) VALUES ('anime', 'Old', '1997-04-01')`
+        )
+        .run().lastInsertRowid
+    )
+    // canonical seasonYear (2021) overrides a misleading release_date (1999)
+    const modern = Number(
+      db
+        .prepare(
+          `INSERT INTO media_item (media_type, title, release_date, metadata)
+           VALUES ('anime', 'Modern', '1999-01-01', '{"seasonYear":2021}')`
+        )
+        .run().lastInsertRowid
+    )
+    // no year anywhere — excluded once an era filter is active
+    const undated = addAnime('Undated')
+    addTheme(old, { audioPath: 'audio/o.ogg' })
+    addTheme(modern, { audioPath: 'audio/m.ogg' })
+    addTheme(undated, { audioPath: 'audio/u.ogg' })
+
+    expect(quizRepo.songPool({ eras: ['90s'] }).map((s) => s.animeTitle)).toEqual(['Old'])
+    expect(quizRepo.songPool({ eras: ['2020s'] }).map((s) => s.animeTitle)).toEqual(['Modern'])
+    expect(
+      quizRepo
+        .songPool({ eras: ['90s', '2020s'] })
+        .map((s) => s.animeTitle)
+        .sort()
+    ).toEqual(['Modern', 'Old'])
+    expect(quizRepo.songPool({ eras: ['2000s'] })).toHaveLength(0)
+    // empty/omitted era list leaves the pool unfiltered (undated included)
+    expect(quizRepo.songPool({ eras: [] })).toHaveLength(3)
+  })
+
+  it('does not throw on malformed metadata JSON during era filtering', () => {
+    const a = Number(
+      db
+        .prepare(
+          `INSERT INTO media_item (media_type, title, release_date, metadata)
+           VALUES ('anime', 'Bad', '2015-01-01', '{not json')`
+        )
+        .run().lastInsertRowid
+    )
+    addTheme(a, { audioPath: 'audio/a.ogg' })
+    // json_valid guard falls through to the release_date year (2015 -> 2010s).
+    expect(quizRepo.songPool({ eras: ['2010s'] }).map((s) => s.animeTitle)).toEqual(['Bad'])
+  })
+
   it('groups multiple artists onto one song', () => {
     const a = addAnime('A')
     const themeId = addTheme(a, { audioUrl: 'https://x/a.ogg' })
@@ -139,6 +190,32 @@ describe('quizRepo session history', () => {
     quizRepo.logSession({ kind: 'song', score: 1, total: 5, bestStreak: 1 })
     db.prepare(`UPDATE quiz_session SET settings = '{bad'`).run()
     expect(quizRepo.history('song').recent[0].settings).toBeNull()
+  })
+
+  it('keeps tournament sessions isolated and round-trips the bracket settings', () => {
+    quizRepo.logSession({ kind: 'song', score: 3, total: 5, bestStreak: 2 })
+    quizRepo.logSession({
+      kind: 'tournament',
+      score: 16,
+      total: 16,
+      bestStreak: 0,
+      settings: {
+        sourceLabel: 'Characters · Frieren',
+        poolSize: 16,
+        champion: { key: 'character-3', name: 'Fern', imagePath: null },
+        runnerUp: { key: 'character-7', name: 'Stark' }
+      }
+    })
+
+    const h = quizRepo.history('tournament')
+    expect(h.totalSessions).toBe(1)
+    expect(h.recent[0].settings?.champion).toEqual({
+      key: 'character-3',
+      name: 'Fern',
+      imagePath: null
+    })
+    expect(h.recent[0].settings?.sourceLabel).toBe('Characters · Frieren')
+    expect(quizRepo.history('song').totalSessions).toBe(1)
   })
 
   it('reports an empty history cleanly', () => {

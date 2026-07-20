@@ -28,6 +28,7 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-music', icon: '♪', label: 'Music', hint: 'Go to', to: '/music' },
   { key: 'nav-stats', icon: '⧗', label: 'Stats', hint: 'Go to', to: '/stats' },
   { key: 'nav-lists', icon: '☰', label: 'Lists', hint: 'Go to', to: '/lists' },
+  { key: 'nav-torrents', icon: '·', label: 'Torrents', hint: 'Go to', to: '/torrents' },
   { key: 'nav-tags', icon: '#', label: 'Tags', hint: 'Go to', to: '/tags' },
   { key: 'nav-quiz', icon: '♫', label: 'Quiz', hint: 'Go to', to: '/quiz' },
   { key: 'nav-japanese', icon: 'あ', label: 'Japanese', hint: 'Go to', to: '/japanese' },

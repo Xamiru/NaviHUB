@@ -5,8 +5,16 @@ import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-qu
 import App from './App'
 import { AudioPlayerProvider } from './lib/player'
 import MusicPlayLogger from './components/MusicPlayLogger'
+import BootSequence from './components/BootSequence'
 import { toastError } from './lib/toast'
 import './styles.css'
+// Wired-chrome fonts, bundled as self-origin assets (CSP has no remote
+// font-src). Referenced by the --font-mono stack + .lain-crt in styles.css.
+import '@fontsource/ibm-plex-mono/400.css'
+import '@fontsource/ibm-plex-mono/500.css'
+import '@fontsource/ibm-plex-mono/600.css'
+import '@fontsource/ibm-plex-mono/700.css'
+import '@fontsource/vt323'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 5_000 } },
@@ -30,6 +38,9 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         {/* Inside the provider (not App) so play counts survive the chromeless
             manga-reader route, which renders without the normal shell. */}
         <MusicPlayLogger />
+        {/* Same placement rationale: the once-per-launch Copland OS boot
+            splash (lain theme only) covers deep links into the readers too. */}
+        <BootSequence />
         <HashRouter>
           <App />
         </HashRouter>

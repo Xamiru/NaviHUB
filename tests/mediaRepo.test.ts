@@ -63,6 +63,157 @@ describe('mediaRepo.list', () => {
   })
 })
 
+describe('mediaRepo.list advanced filters', () => {
+  it('filters by multiple statuses', () => {
+    addAnime('A', { status: 'Watching' })
+    addAnime('B', { status: 'Completed' })
+    addAnime('C', { status: 'Dropped' })
+    const out = mediaRepo.list({ mediaType: 'anime', statuses: ['Watching', 'Dropped'] })
+    expect(out.map((m) => m.title).sort()).toEqual(['A', 'C'])
+  })
+
+  it('filters by year range, falling back to seasonYear when no date', () => {
+    addAnime('Old', { releaseDate: '1988-07-16' })
+    addAnime('Mid', { releaseDate: '2005-04-01' })
+    addAnime('New', { releaseDate: '2023-09-29' })
+    addAnime('DatelessButSeasoned', { metadata: { seasonYear: 1985 } })
+
+    expect(
+      mediaRepo.list({ mediaType: 'anime', yearMax: 1990 }).map((m) => m.title).sort()
+    ).toEqual(['DatelessButSeasoned', 'Old'].sort())
+    expect(
+      mediaRepo.list({ mediaType: 'anime', yearMin: 2000, yearMax: 2010 }).map((m) => m.title)
+    ).toEqual(['Mid'])
+  })
+
+  it('filters by personal score range and by unrated', () => {
+    addAnime('Unscored')
+    addAnime('Good', { score: 7 })
+    addAnime('Great', { score: 9.5 })
+
+    expect(
+      mediaRepo.list({ mediaType: 'anime', scoreMin: 8 }).map((m) => m.title)
+    ).toEqual(['Great'])
+    expect(mediaRepo.list({ mediaType: 'anime', unrated: true }).map((m) => m.title)).toEqual([
+      'Unscored'
+    ])
+    // unrated wins over a score range — the two can't both hold.
+    expect(
+      mediaRepo.list({ mediaType: 'anime', unrated: true, scoreMin: 8 }).map((m) => m.title)
+    ).toEqual(['Unscored'])
+  })
+
+  it('normalizes community scores across sources', () => {
+    addAnime('AniList', { metadata: { averageScore: 90 } })
+    mediaRepo.create({ mediaType: 'game', title: 'Metacritic', metadata: { metacritic: 70 } })
+    mediaRepo.create({ mediaType: 'movie', title: 'IMDb', metadata: { imdbRating: 8.5 } })
+
+    expect(mediaRepo.list({ mediaType: 'anime', communityMin: 85 })).toHaveLength(1)
+    expect(mediaRepo.list({ mediaType: 'game', communityMin: 85 })).toHaveLength(0)
+    // IMDb's 0-10 is rescaled to 0-100 before comparing.
+    expect(mediaRepo.list({ mediaType: 'movie', communityMin: 80 })).toHaveLength(1)
+  })
+
+  it('filters by unit count (episodes/chapters/runtime)', () => {
+    addAnime('Short', { totalUnits: 12 })
+    addAnime('Long', { totalUnits: 500 })
+    expect(
+      mediaRepo.list({ mediaType: 'anime', unitsMax: 26 }).map((m) => m.title)
+    ).toEqual(['Short'])
+  })
+
+  it('filters by season, preferring metadata over the release month', () => {
+    // AniList files a late-December premiere as the NEXT winter.
+    addAnime('DecemberWinter', { releaseDate: '2023-12-20', metadata: { season: 'WINTER' } })
+    addAnime('SummerShow', { releaseDate: '2023-07-05' })
+
+    expect(
+      mediaRepo.list({ mediaType: 'anime', seasons: ['winter'] }).map((m) => m.title)
+    ).toEqual(['DecemberWinter'])
+    expect(
+      mediaRepo.list({ mediaType: 'anime', seasons: ['summer', 'fall'] }).map((m) => m.title)
+    ).toEqual(['SummerShow'])
+  })
+
+  it('matches any vs every tag', () => {
+    const fantasy = tagRepo.upsert({ name: 'Fantasy' })
+    const drama = tagRepo.upsert({ name: 'Drama' })
+    addAnime('Both', { tagIds: [fantasy, drama] })
+    addAnime('OnlyFantasy', { tagIds: [fantasy] })
+
+    expect(
+      mediaRepo.list({ mediaType: 'anime', tagIds: [fantasy, drama] }).map((m) => m.title).sort()
+    ).toEqual(['Both', 'OnlyFantasy'])
+    expect(
+      mediaRepo
+        .list({ mediaType: 'anime', tagIds: [fantasy, drama], tagMode: 'all' })
+        .map((m) => m.title)
+    ).toEqual(['Both'])
+  })
+
+  it('combines filters (the "anime before 1990 I rated highly" case)', () => {
+    addAnime('Akira', { releaseDate: '1988-07-16', score: 9 })
+    addAnime('OldButMeh', { releaseDate: '1985-01-01', score: 5 })
+    addAnime('ModernFave', { releaseDate: '2020-01-01', score: 9 })
+    expect(
+      mediaRepo.list({ mediaType: 'anime', yearMax: 1989, scoreMin: 8 }).map((m) => m.title)
+    ).toEqual(['Akira'])
+  })
+})
+
+describe('mediaRepo.list sorting', () => {
+  it('sorts by community score, length and times consumed', () => {
+    addAnime('Low', { metadata: { averageScore: 60 }, totalUnits: 12, rewatchCount: 0 })
+    addAnime('High', { metadata: { averageScore: 95 }, totalUnits: 4, rewatchCount: 3 })
+
+    expect(mediaRepo.list({ mediaType: 'anime', sort: 'communityScore' })[0].title).toBe('High')
+    expect(mediaRepo.list({ mediaType: 'anime', sort: 'units' })[0].title).toBe('Low')
+    expect(mediaRepo.list({ mediaType: 'anime', sort: 'timesConsumed' })[0].title).toBe('High')
+  })
+
+  it('random sort is stable per seed and reshuffles on a new one', () => {
+    for (const t of ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']) addAnime(t)
+    const order = (seed: number) =>
+      mediaRepo.list({ mediaType: 'anime', sort: 'random', seed }).map((m) => m.title)
+
+    expect(order(1)).toHaveLength(8)
+    // Same seed, same hand — a refetch must not reshuffle under the user.
+    expect(order(1)).toEqual(order(1))
+    expect(order(2)).not.toEqual(order(1))
+  })
+
+  it('falls back to updated_at for an unknown sort key', () => {
+    addAnime('A')
+    expect(
+      mediaRepo.list({ mediaType: 'anime', sort: 'bogus' as never }).map((m) => m.title)
+    ).toEqual(['A'])
+  })
+})
+
+describe('mediaRepo.facets', () => {
+  it('reports year and unit bounds for the type', () => {
+    addAnime('Old', { releaseDate: '1988-07-16', totalUnits: 51 })
+    addAnime('New', { releaseDate: '2023-01-01', totalUnits: 12 })
+    mediaRepo.create({ mediaType: 'movie', title: 'Ignored', releaseDate: '1950-01-01' })
+
+    expect(mediaRepo.facets('anime')).toEqual({
+      yearMin: 1988,
+      yearMax: 2023,
+      unitsMax: 51,
+      total: 2
+    })
+  })
+
+  it('handles an empty library', () => {
+    expect(mediaRepo.facets('manga')).toEqual({
+      yearMin: null,
+      yearMax: null,
+      unitsMax: null,
+      total: 0
+    })
+  })
+})
+
 describe('mediaRepo create/get/update', () => {
   it('round-trips a full item with tags and metadata', () => {
     const tagId = tagRepo.upsert({ name: 'Fantasy' })

@@ -3,6 +3,42 @@
 @tailwind utilities;
 
 @layer base {
+  /* Theme variables — the Lain "Wired terminal" palette (the app's ONE theme).
+     Tailwind's base/accent/gray/white tokens and the radius scale resolve
+     through these (tailwind.config.js), so every utility class keys off this
+     block. Color vars are "R G B" triplets so /alpha modifiers work. The
+     gray/base ladders keep stock Tailwind luminance ordering (contrast-checked:
+     gray-200 on base-900 is 15.1:1, accent on base-900 is 10.9:1). */
+  :root {
+    --base-900: 10 15 11;
+    --base-800: 16 24 18;
+    --base-700: 22 34 26;
+    --base-600: 31 49 37;
+    --base-500: 44 69 52;
+    --accent: 0 224 90;
+    --accent-hover: 51 255 133; /* hover glows brighter — terminal idiom */
+    --white: 240 255 244;
+    --gray-50: 234 255 240;
+    --gray-100: 221 247 228;
+    --gray-200: 201 236 212;
+    --gray-300: 169 211 183;
+    --gray-400: 127 174 144;
+    --gray-500: 86 130 102;
+    --gray-600: 63 99 80;
+    --gray-700: 47 75 60;
+    --gray-800: 32 52 42;
+    --gray-900: 21 35 28;
+    --gray-950: 11 19 14;
+    --radius-sm: 1px;
+    --radius: 2px;
+    --radius-md: 2px;
+    --radius-lg: 3px;
+    --radius-xl: 3px;
+    --radius-2xl: 4px;
+    --font-mono:
+      'IBM Plex Mono', 'Noto Sans Mono CJK JP', 'Noto Sans CJK JP', 'MS Gothic',
+      ui-monospace, monospace;
+  }
   html,
   body,
   #root {
@@ -20,13 +56,14 @@
   :focus-visible {
     @apply outline-none ring-2 ring-accent/70;
   }
-  /* Slim scrollbars to match the dark theme */
+  /* Slim square terminal scrollbars with a faint phosphor edge */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
   }
   ::-webkit-scrollbar-thumb {
-    @apply bg-base-600 rounded-full;
+    @apply bg-base-600 rounded-none;
+    box-shadow: inset 0 0 0 1px rgb(var(--accent) / 0.25);
   }
   ::-webkit-scrollbar-track {
     background: transparent;
@@ -121,6 +158,189 @@
 .book-mining li:hover,
 .book-mining blockquote:hover {
   cursor: pointer;
-  background: rgb(124 92 255 / 0.12); /* accent @ 12% */
+  background: rgb(var(--accent) / 0.12); /* accent @ 12% */
   border-radius: 4px;
+}
+
+/* ============================ WIRED CHROME ============================
+   The Lain "Wired terminal" dressing: mono chrome, CRT overlay, glows.
+   Always on — the palette itself lives in the :root vars above.
+   Every animation sits behind prefers-reduced-motion: no-preference. */
+
+/* --- mono chrome: headings, nav, labels, buttons, inputs go monospace;
+   body/long text stays Inter. aside = Sidebar, header = Topbar (their inputs
+   inherit via preflight); .btn-* listed explicitly because @apply does not
+   add .btn at runtime; .uppercase catches all the micro-label idiom uses. */
+:is(h1, h2, h3, h4, h5, h6, button, input, textarea, select, kbd, th,
+    .btn, .btn-primary, .btn-ghost, .btn-danger, .label, .chip, .uppercase),
+aside,
+header {
+  font-family: var(--font-mono);
+}
+/* Pixel-CRT face for the brand mark + boot splash only. VT323 has a single
+   weight — neutralize font-bold — and reads small, so the brand upsizes. */
+.lain-crt {
+  font-family: 'VT323', var(--font-mono);
+  font-weight: 400;
+}
+.sidebar-brand {
+  font-size: 1.375rem;
+}
+
+/* --- CRT overlay: scanlines (::before) + vignette (::after). App UI tops
+   out at z-50 and the boot splash at z-[70]; the overlay sits above both
+   (scanlines run across the boot text too) and is pointer-events:none so
+   every click lands on the UI beneath. Disabled on the chromeless readers
+   via [data-reader], stamped by App.tsx. */
+html:not([data-reader]) body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgb(0 0 0 / 0.15) 0px,
+    rgb(0 0 0 / 0.15) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+html:not([data-reader]) body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 81;
+  pointer-events: none;
+  background: radial-gradient(ellipse at center, transparent 55%, rgb(2 10 4 / 0.34) 100%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-reader]) body::before {
+    animation: lain-flicker 7s infinite;
+  }
+}
+/* Imperceptible amplitude, rare blip — opacity only (compositor-cheap). */
+@keyframes lain-flicker {
+  0%, 96.9%, 98.1%, 100% { opacity: 1; }
+  97.2% { opacity: 0.82; }
+  97.6% { opacity: 0.96; }
+  97.9% { opacity: 0.88; }
+}
+
+/* --- brand glitch: static chromatic split, with an occasional burst. */
+.brand-glitch {
+  text-shadow:
+    0.5px 0 rgb(255 60 60 / 0.35),
+    -0.5px 0 rgb(0 255 200 / 0.35);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .brand-glitch {
+    animation: lain-glitch 6s infinite;
+  }
+}
+@keyframes lain-glitch {
+  0%, 92%, 100% {
+    text-shadow: 0.5px 0 rgb(255 60 60 / 0.35), -0.5px 0 rgb(0 255 200 / 0.35);
+    transform: none;
+  }
+  93% {
+    text-shadow: -2px 0 rgb(255 60 60 / 0.7), 2px 0 rgb(0 255 200 / 0.7);
+    transform: translateX(1px);
+  }
+  94% {
+    text-shadow: 1.5px 0 rgb(255 60 60 / 0.6), -1.5px 0 rgb(0 255 200 / 0.6);
+    transform: translateX(-1px) skewX(3deg);
+  }
+  95% {
+    text-shadow: -1px 0 rgb(255 60 60 / 0.5), 1px 0 rgb(0 255 200 / 0.5);
+    transform: none;
+  }
+}
+
+/* --- phosphor glow + terminal chrome (colors/shadows only, no extra
+   border widths — these dress the component classes without reflow). */
+:is(h1, h2) {
+  text-shadow: 0 0 6px rgb(var(--accent) / 0.2);
+}
+.card {
+  border-color: rgb(var(--accent) / 0.15);
+  box-shadow: inset 0 0 22px rgb(var(--accent) / 0.03);
+}
+.input {
+  border-color: rgb(var(--accent) / 0.25);
+}
+.input:focus {
+  box-shadow: 0 0 10px rgb(var(--accent) / 0.25);
+}
+.chip,
+.btn-ghost {
+  box-shadow: inset 0 0 0 1px rgb(var(--accent) / 0.12);
+}
+/* Inverse video: white text on phosphor green is unreadable (1.7:1). Covers
+   .btn-primary (@apply — no runtime .bg-accent class) AND every markup spot
+   composing bg-accent + text-white (10.9:1 dark-on-green). Keep writing
+   `bg-accent text-white` in markup; this flips it globally. */
+.btn-primary,
+.bg-accent.text-white {
+  color: rgb(var(--base-900));
+}
+.btn-primary {
+  box-shadow: 0 0 12px rgb(var(--accent) / 0.35);
+}
+
+/* --- dual-thumb range (RangeSlider.tsx): the two inputs stack transparently
+   over the div track, so only the thumbs may take pointer events. --- */
+.range-thumb {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+}
+.range-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  pointer-events: auto;
+  height: 14px;
+  width: 14px;
+  border-radius: 9999px;
+  background: rgb(var(--accent));
+  border: 2px solid rgb(var(--base-900));
+  box-shadow: 0 0 8px rgb(var(--accent) / 0.5);
+  cursor: pointer;
+}
+.range-thumb:disabled::-webkit-slider-thumb {
+  background: rgb(var(--base-500));
+  box-shadow: none;
+  cursor: default;
+}
+
+/* --- selection --- */
+::selection {
+  background: rgb(var(--accent) / 0.32);
+  color: rgb(var(--gray-50));
+}
+
+/* --- sidebar "connected" status dot (Sidebar.tsx footer) --- */
+@media (prefers-reduced-motion: no-preference) {
+  .wired-dot {
+    animation: lain-pulse 2.4s ease-in-out infinite;
+  }
+}
+@keyframes lain-pulse {
+  50% { opacity: 0.25; }
+}
+
+/* --- boot splash cursor (BootSequence.tsx) --- */
+@media (prefers-reduced-motion: no-preference) {
+  .lain-cursor {
+    animation: lain-blink 1s steps(1) infinite;
+  }
+}
+@keyframes lain-blink {
+  50% { opacity: 0; }
 }

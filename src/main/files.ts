@@ -1,6 +1,6 @@
 import { app, dialog } from 'electron'
 import { join, extname, basename } from 'path'
-import { existsSync, mkdirSync, copyFileSync, writeFileSync } from 'fs'
+import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync } from 'fs'
 import { createHash } from 'crypto'
 import { get as getSetting } from './repos/settingsRepo'
 import { imageProgress } from './progress'
@@ -274,4 +274,30 @@ export async function pickImageFiles(): Promise<string[]> {
   })
   if (res.canceled) return []
   return res.filePaths
+}
+
+// Writes raw bytes (a pasted screenshot) into userData/media and returns the
+// stored relative path. `ext` is validated against the image whitelist.
+export function saveMediaBytes(bytes: Uint8Array, ext: string): string {
+  const clean = (ext || 'png').replace(/^\./, '').toLowerCase()
+  const allowed = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp']
+  const safeExt = allowed.includes(clean) ? clean : 'png'
+  counter += 1
+  const fileName = `paste-${process.pid}-${counter}.${safeExt}`
+  writeFileSync(join(mediaDir(), fileName), Buffer.from(bytes))
+  return join('media', fileName)
+}
+
+// Native picker for a plain-text/markdown file (importing a prior LLM chat).
+// Returns { name, content } or null on cancel; content is capped to ~2MB.
+export async function pickTextFile(): Promise<{ name: string; content: string } | null> {
+  const res = await dialog.showOpenDialog({
+    title: 'Choose a chat log',
+    properties: ['openFile'],
+    filters: [{ name: 'Text', extensions: ['txt', 'md', 'markdown', 'text'] }]
+  })
+  if (res.canceled || res.filePaths.length === 0) return null
+  const src = res.filePaths[0]
+  const content = readFileSync(src, 'utf8').slice(0, 2_000_000)
+  return { name: basename(src), content }
 }

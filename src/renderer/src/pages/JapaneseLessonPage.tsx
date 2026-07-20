@@ -1,9 +1,12 @@
+import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toast } from '../lib/toast'
+import { usePersistedState } from '../lib/navState'
 import CardSourceBadge from '../components/CardSourceBadge'
+import LessonCheck from '../components/japanese/LessonCheck'
 import type { JpCard, JpLessonKind } from '@shared/types'
 
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
@@ -22,6 +25,9 @@ export default function JapaneseLessonPage() {
     queryKey: qk.japanese.lesson(lessonId),
     queryFn: () => api.japanese.getLesson(lessonId)
   })
+
+  // Practice mode hides readings/meanings in the tables (click to reveal).
+  const [practice, setPractice] = usePersistedState('jpLessonPractice', false)
 
   async function toggleLearned() {
     if (!lesson) return
@@ -87,10 +93,21 @@ export default function JapaneseLessonPage() {
         </div>
       )}
 
-      <h2 className="text-lg font-semibold mb-3">
-        {isGrammar ? 'Example sentences' : lesson.kind === 'kanji' ? 'Kanji' : 'Vocabulary'}{' '}
-        <span className="text-sm font-normal text-gray-500">({lesson.cards.length})</span>
-      </h2>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-semibold">
+          {isGrammar ? 'Example sentences' : lesson.kind === 'kanji' ? 'Kanji' : 'Vocabulary'}{' '}
+          <span className="text-sm font-normal text-gray-500">({lesson.cards.length})</span>
+        </h2>
+        {!isGrammar && lesson.cards.length > 0 && (
+          <button
+            className={`btn-ghost text-sm ${practice ? 'text-accent' : ''}`}
+            onClick={() => setPractice(!practice)}
+            title="Hide readings and meanings — click a cell to reveal it"
+          >
+            {practice ? 'Practice mode: on' : 'Practice mode'}
+          </button>
+        )}
+      </div>
 
       {lesson.cards.length === 0 ? (
         <div className="card p-8 text-center">
@@ -103,10 +120,18 @@ export default function JapaneseLessonPage() {
           ))}
         </div>
       ) : lesson.kind === 'kanji' ? (
-        <KanjiTable cards={lesson.cards} />
+        <KanjiTable cards={lesson.cards} practice={practice} />
       ) : (
-        <VocabTable cards={lesson.cards} />
+        <VocabTable cards={lesson.cards} practice={practice} />
       )}
+
+      <LessonCheck
+        lessonId={lessonId}
+        kind={lesson.kind}
+        learned={lesson.learned}
+        cardCount={lesson.cards.length}
+        onMarkLearned={toggleLearned}
+      />
 
       <div className="mt-8">
         <button
@@ -125,6 +150,36 @@ export default function JapaneseLessonPage() {
   )
 }
 
+// A word that deep-links into the offline dictionary page.
+function DictLink({ text, className }: { text: string; className?: string }) {
+  return (
+    <Link
+      to={`/japanese/dictionary?q=${encodeURIComponent(text)}`}
+      className={`hover:text-accent hover:underline ${className ?? ''}`}
+      title="Look up in dictionary"
+    >
+      {text}
+    </Link>
+  )
+}
+
+// Practice mode: a value hidden behind a neutral block until clicked. Reveal
+// state is local per cell and resets when practice mode is toggled (key prop).
+function Reveal({ value }: { value: string }) {
+  const [shown, setShown] = useState(false)
+  if (!value) return null
+  if (shown) return <>{value}</>
+  return (
+    <button
+      className="rounded bg-base-700 px-2 text-transparent select-none hover:bg-base-600"
+      onClick={() => setShown(true)}
+      title="Reveal"
+    >
+      {value}
+    </button>
+  )
+}
+
 function SentenceCard({ card }: { card: JpCard }) {
   return (
     <div className="card p-4">
@@ -138,7 +193,7 @@ function SentenceCard({ card }: { card: JpCard }) {
   )
 }
 
-function VocabTable({ cards }: { cards: JpCard[] }) {
+function VocabTable({ cards, practice }: { cards: JpCard[]; practice: boolean }) {
   const hasSource = cards.some((c) => c.sourceTitle)
   return (
     <div className="card overflow-hidden">
@@ -155,13 +210,29 @@ function VocabTable({ cards }: { cards: JpCard[] }) {
         <tbody>
           {cards.map((c) => (
             <tr key={c.id} className="border-b border-base-700/50 last:border-0">
-              <td className="px-4 py-2.5 text-base">{c.front}</td>
+              <td className="px-4 py-2.5 text-base">
+                <DictLink text={c.front} />
+              </td>
               <td className="px-4 py-2.5 text-gray-400">
-                {c.reading && c.reading !== c.front ? c.reading : ''}
+                {c.reading && c.reading !== c.front ? (
+                  practice ? (
+                    <Reveal key={`r${c.id}`} value={c.reading} />
+                  ) : (
+                    c.reading
+                  )
+                ) : (
+                  ''
+                )}
               </td>
               <td className="px-4 py-2.5 text-gray-200">
-                {c.back}
-                {c.notes && <span className="block text-xs text-gray-500">{c.notes}</span>}
+                {practice ? (
+                  <Reveal key={`b${c.id}`} value={c.back} />
+                ) : (
+                  c.back
+                )}
+                {!practice && c.notes && (
+                  <span className="block text-xs text-gray-500">{c.notes}</span>
+                )}
               </td>
               <td className="px-4 py-2.5 text-xs text-gray-500">{c.pos ?? ''}</td>
               {hasSource && (
@@ -177,7 +248,7 @@ function VocabTable({ cards }: { cards: JpCard[] }) {
   )
 }
 
-function KanjiTable({ cards }: { cards: JpCard[] }) {
+function KanjiTable({ cards, practice }: { cards: JpCard[]; practice: boolean }) {
   return (
     <div className="card overflow-hidden">
       <table className="w-full text-sm">
@@ -192,23 +263,36 @@ function KanjiTable({ cards }: { cards: JpCard[] }) {
         <tbody>
           {cards.map((c) => (
             <tr key={c.id} className="border-b border-base-700/50 last:border-0">
-              <td className="px-4 py-2.5 text-3xl">{c.front}</td>
+              <td className="px-4 py-2.5 text-3xl">
+                <DictLink text={c.front} />
+              </td>
               <td className="px-4 py-2.5 text-gray-200">
-                {c.back}
-                {c.notes && <span className="block text-xs text-gray-500">{c.notes}</span>}
+                {practice ? <Reveal value={c.back} /> : c.back}
+                {!practice && c.notes && (
+                  <span className="block text-xs text-gray-500">{c.notes}</span>
+                )}
               </td>
               <td className="px-4 py-2.5 text-gray-400">
-                {c.onyomi && (
-                  <span className="block">
-                    <span className="mr-1.5 text-xs text-gray-400">音</span>
-                    {c.onyomi}
-                  </span>
-                )}
-                {c.kunyomi && (
-                  <span className="block">
-                    <span className="mr-1.5 text-xs text-gray-400">訓</span>
-                    {c.kunyomi}
-                  </span>
+                {practice ? (
+                  <Reveal value={[c.onyomi, c.kunyomi].filter(Boolean).join(' · ') || c.reading || ''} />
+                ) : (
+                  <>
+                    {c.onyomi && (
+                      <span className="block">
+                        <span className="mr-1.5 text-xs text-gray-400">音</span>
+                        {c.onyomi}
+                      </span>
+                    )}
+                    {c.kunyomi && (
+                      <span className="block">
+                        <span className="mr-1.5 text-xs text-gray-400">訓</span>
+                        {c.kunyomi}
+                      </span>
+                    )}
+                    {!c.onyomi && !c.kunyomi && c.reading && c.reading !== c.front && (
+                      <span className="block">{c.reading}</span>
+                    )}
+                  </>
                 )}
               </td>
               <td className="px-4 py-2.5 text-gray-300">

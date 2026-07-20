@@ -151,7 +151,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           title={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
           aria-label={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
         >
-          🔀
+          ⇄
         </button>
       )}
       <button
@@ -192,8 +192,8 @@ export default function NowPlayingBar(): React.JSX.Element | null {
       </Link>
 
       <div className="hidden sm:flex items-center gap-1.5 w-28 shrink-0">
-        <span className="text-gray-500 text-xs" aria-hidden="true">
-          🔊
+        <span className="text-gray-500 text-[10px] uppercase tracking-wide" aria-hidden="true">
+          Vol
         </span>
         <input
           type="range"

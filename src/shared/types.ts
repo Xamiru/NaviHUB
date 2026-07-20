@@ -111,14 +111,62 @@ export interface MediaItemInput {
   tagIds?: number[]
 }
 
+export type MediaSort =
+  | 'title'
+  | 'score'
+  | 'communityScore'
+  | 'updated'
+  | 'added'
+  | 'release'
+  | 'progress'
+  | 'units'
+  | 'timesConsumed'
+  | 'random'
+
+// Airing seasons, lowercase — mirrors the Season union in @shared/season.ts
+// (types.ts stays leaf-level, so the string is re-declared instead of imported).
+export type SeasonKey = 'winter' | 'spring' | 'summer' | 'fall'
+
+// Every field is optional and null/empty means "unconstrained" — the renderer
+// omits a filter by clearing it, and the repo skips any clause it doesn't see.
+// Numeric bounds are inclusive. `status`/`tagId` are the legacy single-value
+// forms, still honored so HomePage-style callers don't have to change.
 export interface MediaListFilter {
   mediaType: MediaType
   status?: string | null
+  statuses?: string[] | null
   search?: string | null
-  sort?: 'title' | 'score' | 'updated' | 'release'
+  sort?: MediaSort
   sortDir?: 'asc' | 'desc'
   tagId?: number | null
+  tagIds?: number[] | null
+  // 'any' = has at least one of the tags (default), 'all' = has every one.
+  tagMode?: 'any' | 'all'
   favorite?: boolean | null
+  // No personal score yet. Mutually exclusive with scoreMin/scoreMax.
+  unrated?: boolean | null
+  scoreMin?: number | null
+  scoreMax?: number | null
+  // Normalized 0-100 external rating (AniList / Metacritic / VNDB / IMDb×10).
+  communityMin?: number | null
+  communityMax?: number | null
+  yearMin?: number | null
+  yearMax?: number | null
+  // total_units — episodes / chapters / runtime minutes / hours, per media type.
+  unitsMin?: number | null
+  unitsMax?: number | null
+  seasons?: SeasonKey[] | null
+  // sort:'random' only — seeds the shuffle so it stays stable across refetches.
+  seed?: number | null
+}
+
+// Data-derived bounds for the list page's range sliders, so each media type
+// gets sliders that span its own library rather than hardcoded guesses.
+export interface MediaListFacets {
+  yearMin: number | null
+  yearMax: number | null
+  unitsMax: number | null
+  total: number
 }
 
 // Grouped results for the global search bar.
@@ -291,10 +339,11 @@ export interface QuizSong {
 export interface QuizSongFilter {
   songType?: 'OP' | 'ED' | null // null/omit = both OP and ED
   statuses?: string[] | null // null/empty = any anime status
+  eras?: string[] | null // era keys from @shared/era; null/empty = any decade
 }
 
-// ---- quiz history (finished rounds of either quiz) ----
-export type QuizKind = 'song' | 'japanese'
+// ---- quiz history (finished rounds of any quiz mode) ----
+export type QuizKind = 'song' | 'japanese' | 'kana' | 'kanji' | 'conjugation' | 'jlpt' | 'tournament'
 
 export interface QuizSessionInput {
   kind: QuizKind
@@ -319,6 +368,34 @@ export interface QuizHistory {
   best: QuizSession | null // best accuracy among rounds with total >= 5
   bestStreak: number // max streak across all sessions
   totalSessions: number
+}
+
+// ---- tournament mode (world-cup bracket over library entities) ----
+
+// Where a tournament's contender pool comes from. The repo resolves each
+// variant to a normalized TournamentEntry list; the renderer shuffles and
+// caps it, so the repo always returns the whole matching set.
+export type TournamentSource =
+  | { kind: 'music'; scope: 'all' | 'liked' }
+  | { kind: 'music'; scope: 'playlist' | 'artist' | 'album'; id: number }
+  | { kind: 'themes'; filter?: QuizSongFilter | null }
+  | { kind: 'characters'; mediaId?: number | null } // null/omit = every character
+  | { kind: 'media'; mediaType: MediaType; status?: string | null }
+  | { kind: 'people'; role?: CreditRole | null } // null/omit = anyone with credits
+  | { kind: 'list'; listId: number } // a custom list (any entity kind)
+
+export type TournamentEntryKind = 'music' | 'theme' | 'media' | 'character' | 'person' | 'company'
+
+// One contender, normalized across every source so the bracket UI is
+// source-agnostic. Audio fields are null for image-only kinds.
+export interface TournamentEntry {
+  key: string // unique within a pool: '<entryKind>-<rowId>'
+  entryKind: TournamentEntryKind
+  name: string
+  subtitle: string | null // artist / anime title / native name / release year
+  imagePath: string | null // virtual-prefixed path for CoverImage
+  audioPath: string | null // local playable path, resolvable via files.resolveUrl
+  audioUrl: string | null // remote stream fallback (theme songs)
 }
 
 // HowLongToBeat play-time estimates for a game or VN, stored (all in minutes)
@@ -522,6 +599,14 @@ export interface JpQuizItem extends JpCard {
   lessonTitle: string
 }
 
+// Pool for the end-of-lesson self-check quiz: the lesson's own cards plus
+// distractor cards drawn from the SAME course's other lessons (any learned
+// state — the check runs BEFORE the lesson is marked learned).
+export interface JpLessonQuizPool {
+  items: JpQuizItem[]
+  distractors: JpQuizItem[]
+}
+
 export interface JpStats {
   dueCount: number
   newAvailableCount: number
@@ -659,6 +744,27 @@ export interface DictImportSummary {
   termCount: number
   kanjiCount: number
   pitchCount: number
+}
+
+// ---- Series prep decks ----
+// Builds a "words you'll meet in this series" vocab course by tokenizing a
+// series' mokuro OCR / EPUB text, frequency-ranking it, dropping words already
+// in jp_card, and glossing the rest from the offline dictionaries.
+
+export interface PrepDeckStatus {
+  running: boolean
+  phase: 'idle' | 'reading' | 'glossing' | 'writing'
+  done: number // reading: chapters processed; glossing: words glossed
+  total: number
+  error: string | null
+}
+
+export interface PrepDeckSummary {
+  courseId: number
+  courseTitle: string
+  words: number
+  chaptersScanned: number
+  uniqueWordsSeen: number
 }
 
 // ---- Local manga reader ----
@@ -870,6 +976,12 @@ export interface MusicScanSummary {
   removed: number
   skippedRootFiles: number // audio directly in the root (not Artist/Album) is ignored
   durationMs: number
+}
+
+// Result of a destructive delete (track/album/artist) that removed files from
+// disk. `tracks` = number of track rows (and their files) removed.
+export interface MusicDeleteResult {
+  tracks: number
 }
 
 // ---- Music downloads (yt-dlp) ----
@@ -1162,4 +1274,237 @@ export interface GachaGameOverview {
   currencies: GachaCurrency[]
   activeBanners: number
   imagePath: string | null // user-set hero art (gacha_meta 'image')
+}
+
+// ---- Gacha coach (FGO LLM coaching chat) ----
+// The coach can act in the app via tools; every LLM call is user-triggered
+// (send / import). Reminders (goals/tasks) render from the DB with no API call.
+
+export interface GachaChatAction {
+  tool: string // e.g. 'add_unit'
+  label: string // e.g. 'Added Mash — 4★ Shielder'
+}
+
+export interface GachaChatMessage {
+  id: number
+  threadId: number
+  role: 'user' | 'assistant'
+  text: string
+  // The tool-action chips shown under this message (assistant turns only).
+  actions: GachaChatAction[]
+  // media/ relative paths of screenshots the user attached (display only).
+  attachments: string[]
+  usageIn: number | null
+  usageOut: number | null
+  createdAt: string
+}
+
+export interface GachaChatThread {
+  id: number
+  game: GachaGameId
+  title: string | null
+  archivedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+// The current (or just-finished) coach turn, polled by the renderer — no push
+// IPC. phase is 'thinking' | 'writing' | 'tool:<name>'.
+export interface GachaCoachStatus {
+  turnId: number
+  threadId: number
+  game: GachaGameId
+  running: boolean
+  phase: string
+  partialText: string
+  actions: GachaChatAction[]
+  error: string | null
+  startedAt: string
+}
+
+export interface GachaGoal {
+  id: number
+  game: GachaGameId
+  kind: 'goal' | 'task'
+  title: string
+  notes: string | null
+  status: 'active' | 'done' | 'dropped'
+  dueAt: string | null // 'YYYY-MM-DD'
+  recur: 'daily' | 'weekly' | null
+  createdBy: 'user' | 'coach'
+  doneAt: string | null
+  sortOrder: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GachaGoalInput {
+  kind?: 'goal' | 'task'
+  title: string
+  notes?: string | null
+  dueAt?: string | null
+  recur?: 'daily' | 'weekly' | null
+  createdBy?: 'user' | 'coach'
+}
+
+export interface GachaCoachNote {
+  id: number
+  game: GachaGameId
+  content: string
+  createdBy: 'user' | 'coach'
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GachaCoachDoc {
+  id: number
+  game: GachaGameId
+  title: string
+  content: string
+  summary: string | null
+  createdAt: string
+}
+
+export type GachaCoachDueCounts = Partial<Record<GachaGameId, number>>
+
+// ---- PC↔phone sync (LAN server behind the Settings sync card) ----
+// The phone's DB is always derived from a PC snapshot ("oplog + snapshot
+// rebase"), so ops reference PC row ids directly and carry a human-readable
+// check field to catch id drift (a row deleted + re-imported between syncs).
+// Every `ts` is a UTC 'YYYY-MM-DD HH:MM:SS' string — the same format as the
+// DB's datetime('now') — so timestamps compare lexicographically.
+
+// Bump when an op's shape or the HTTP surface changes incompatibly; the phone
+// refuses to sync across a mismatch instead of corrupting either side.
+export const SYNC_PROTOCOL_VERSION = 1
+
+export type SyncOp =
+  | {
+      kind: 'media.update'
+      mediaId: number
+      title: string // sanity check against the PC row
+      ts: string
+      // Personal tracking only — canonical fields (title, cover, …) never sync
+      // phone → PC. Absent keys are left untouched.
+      fields: {
+        status?: string | null
+        score?: number | null
+        progress?: number
+        rewatchCount?: number
+        favorite?: boolean
+        notes?: string | null
+      }
+    }
+  | {
+      kind: 'manga.progress'
+      chapterId: number
+      dirPath: string // manga_chapter identity check
+      ts: string
+      lastReadPage: number
+    }
+  | { kind: 'manga.setRead'; chapterId: number; dirPath: string; ts: string; read: boolean }
+  | {
+      kind: 'jp.review'
+      cardId: number
+      front: string // card identity check
+      ts: string // when the review happened on the phone (= log reviewed_at)
+      grade: SrsGrade
+      // The RESULTING state (the phone runs the same shared/srs.ts gradeCard),
+      // applied verbatim so due dates honor the review time, not the sync time.
+      state: {
+        status: SrsStatus
+        learningStep: number
+        intervalDays: number
+        ease: number
+        reps: number
+        lapses: number
+        dueAt: string
+      }
+    }
+  | { kind: 'jp.lessonLearned'; lessonId: number; ts: string; learned: boolean }
+  | { kind: 'music.setLiked'; trackId: number; filePath: string; ts: string; liked: boolean }
+  | { kind: 'music.logPlay'; trackId: number; filePath: string; ts: string }
+  | { kind: 'list.addItem'; listId: number; entityId: number; ts: string; note?: string | null }
+  | { kind: 'list.removeItem'; listId: number; entityId: number; ts: string }
+  | { kind: 'quiz.session'; ts: string; session: QuizSessionInput }
+
+export type SyncOpKind = SyncOp['kind']
+
+export interface SyncOpsRequest {
+  batchId: string // phone-generated unique id; re-POSTing the same batch is a no-op
+  device: string
+  ops: SyncOp[]
+}
+
+export interface SyncSkippedOp {
+  index: number
+  kind: string
+  reason: string
+}
+
+export interface SyncOpsResult {
+  applied: number
+  skipped: SyncSkippedOp[]
+  alreadyApplied: boolean // true when batchId had been applied before (dedup hit)
+}
+
+export interface SyncManifestEntry {
+  path: string // stored relative path ("media/dl-….jpg"), servable via GET /file
+  size: number
+}
+
+export interface SyncManifest {
+  scope: 'covers'
+  files: SyncManifestEntry[]
+}
+
+export interface SyncInfo {
+  app: 'navihub'
+  protocol: number
+  appVersion: string
+  device: string | null // paired device name, null before first pairing
+  dbBytes: number
+}
+
+// Live server state, polled by the Settings sync card while the server runs.
+export interface SyncStatus {
+  running: boolean
+  port: number | null
+  addresses: string[] // "http://192.168.…:port" candidates to type into the phone
+  pairingCode: string | null // 6 digits, non-null only while pairing mode is armed
+  pairedDevice: string | null
+  lastSync: { at: string; device: string; applied: number; skipped: number } | null
+  error: string | null
+}
+
+// ---- Torrents (Jackett search + qBittorrent hand-off) ----
+
+export interface TorrentSearchResult {
+  id: string // Guid ?? Link ?? Title — stable row key for React + pending map
+  title: string
+  tracker: string // Jackett indexer display name
+  category: string | null // CategoryDesc, e.g. "TV/Anime"
+  sizeBytes: number | null
+  seeders: number | null
+  peers: number | null
+  grabs: number | null
+  publishDate: string | null // ISO string as Jackett sends it
+  magnetUri: string | null
+  link: string | null // Jackett-proxied .torrent download URL
+  detailsUrl: string | null // tracker page — opened via app.openExternal
+}
+
+export interface TorrentSearchResponse {
+  results: TorrentSearchResult[]
+  indexerErrors: string[] // "IndexerName: message" — partial failures, non-fatal
+}
+
+export interface TorrentAddInput {
+  magnetUri: string | null
+  link: string | null
+}
+
+export interface TorrentServiceTestResult {
+  ok: boolean
+  message: string // "qBittorrent v5.0.2" / "Invalid API key" / "Can't reach …"
 }

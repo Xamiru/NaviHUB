@@ -120,6 +120,37 @@ describe('japaneseRepo — learned gating', () => {
     expect(jp.quizPool({ courseId: courseId + 999 })).toHaveLength(0)
     expect(jp.quizPool({ kind: 'grammar' })[0].lessonTitle).toBe('は')
   })
+
+  it('lessonQuizPool serves unlearned lessons and same-course distractors only', () => {
+    // NOT learned — the self-check runs before marking learned.
+    const { courseId, lessonId } = seedCourseWithLesson(false)
+    const otherId = jp.createLesson({
+      courseId,
+      kind: 'vocab',
+      title: 'Food',
+      cards: [
+        { front: 'ご飯', reading: 'ごはん', back: 'rice / meal' },
+        { front: '水', reading: 'みず', back: 'water' }
+      ]
+    })
+    // A different course must NOT contribute distractors.
+    const otherCourse = jp.createCourse({ title: 'Other' })
+    jp.createLesson({
+      courseId: otherCourse,
+      kind: 'vocab',
+      title: 'Elsewhere',
+      cards: [{ front: '別', reading: 'べつ', back: 'separate' }]
+    })
+
+    const pool = jp.lessonQuizPool(lessonId)
+    expect(pool.items.map((c) => c.front)).toEqual(['こんにちは', '犬', '猫'])
+    expect(pool.distractors.map((c) => c.front).sort()).toEqual(['ご飯', '水'])
+
+    // The other lesson's pool mirrors it.
+    const otherPool = jp.lessonQuizPool(otherId)
+    expect(otherPool.items).toHaveLength(2)
+    expect(otherPool.distractors).toHaveLength(3)
+  })
 })
 
 describe('japaneseRepo — review flow', () => {

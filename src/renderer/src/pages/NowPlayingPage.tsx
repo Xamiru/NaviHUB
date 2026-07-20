@@ -144,7 +144,7 @@ export default function NowPlayingPage() {
                 title={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
                 aria-label={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
               >
-                🔀
+                ⇄
               </button>
             )}
             <button
@@ -193,8 +193,8 @@ export default function NowPlayingPage() {
           </div>
 
           <div className="mt-4 flex w-40 items-center gap-1.5">
-            <span className="text-gray-500 text-xs" aria-hidden="true">
-              🔊
+            <span className="text-gray-500 text-[10px] uppercase tracking-wide" aria-hidden="true">
+              Vol
             </span>
             <input
               type="range"

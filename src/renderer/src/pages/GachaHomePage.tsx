@@ -15,6 +15,11 @@ export default function GachaHomePage() {
     queryFn: () => api.gacha.overview()
   })
 
+  const { data: due } = useQuery({
+    queryKey: qk.gacha.dueCounts,
+    queryFn: () => api.gacha.dueCounts()
+  })
+
   if (isLoading && !overview) return <PageStatus>Loading…</PageStatus>
   const byGame = new Map((overview ?? []).map((o) => [o.game, o]))
 
@@ -29,14 +34,22 @@ export default function GachaHomePage() {
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
         {GACHA_GAMES.map((g) => (
-          <GameCard key={g.id} cfg={g} overview={byGame.get(g.id)} />
+          <GameCard key={g.id} cfg={g} overview={byGame.get(g.id)} due={due?.[g.id] ?? 0} />
         ))}
       </div>
     </div>
   )
 }
 
-function GameCard({ cfg, overview }: { cfg: GachaGameCfg; overview?: GachaGameOverview }) {
+function GameCard({
+  cfg,
+  overview,
+  due
+}: {
+  cfg: GachaGameCfg
+  overview?: GachaGameOverview
+  due: number
+}) {
   const amounts = new Map((overview?.currencies ?? []).map((c) => [c.key, c.amount]))
   return (
     <Link
@@ -62,6 +75,14 @@ function GameCard({ cfg, overview }: { cfg: GachaGameCfg; overview?: GachaGameOv
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/20 to-transparent" />
+        {cfg.coach && due > 0 && (
+          <span
+            className="absolute right-2 top-2 rounded-full bg-red-600/90 px-2 py-0.5 text-[11px] font-semibold text-white"
+            title={`${due} reminder${due === 1 ? '' : 's'} due`}
+          >
+            {due} due
+          </span>
+        )}
         <div className="absolute bottom-2 left-4 right-4 flex items-baseline gap-2">
           <span className="text-lg drop-shadow" style={{ color: cfg.color }}>
             {cfg.glyph}

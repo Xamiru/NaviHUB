@@ -13,7 +13,9 @@ export default function MusicEntityHeader({
   onShuffle,
   artNoun,
   onFindArt,
-  onClearArt
+  onClearArt,
+  onDelete,
+  deleteLabel
 }: {
   coverPath: string | null
   title: string
@@ -24,6 +26,8 @@ export default function MusicEntityHeader({
   artNoun: 'cover' | 'photo'
   onFindArt: () => void
   onClearArt: () => void
+  onDelete?: () => void // permanently deletes from disk (gated by a confirm)
+  deleteLabel?: string
 }) {
   return (
     <div className={`mb-6 flex gap-5 ${round ? 'items-center' : 'items-end'}`}>
@@ -59,6 +63,15 @@ export default function MusicEntityHeader({
               title={`Look the ${artNoun} up online`}
             >
               Find {artNoun}
+            </button>
+          )}
+          {onDelete && (
+            <button
+              className="btn-danger"
+              onClick={onDelete}
+              title="Permanently delete from your computer"
+            >
+              {deleteLabel ?? 'Delete'}
             </button>
           )}
         </div>

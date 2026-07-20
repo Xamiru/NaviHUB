@@ -4,11 +4,27 @@ import { MEDIA_CONFIGS, configFor, type MediaConfig } from '../lib/mediaConfig'
 import { api } from '../lib/api'
 import { usePlayer, quizSongToTrack } from '../lib/player'
 import { toast } from '../lib/toast'
+import lainAvatar from '../assets/lain.png'
 
+// Active = phosphor indicator bar (inset shadow, no layout shift) + accent
+// text; inactive stays quiet so the hierarchy reads at a glance.
 function linkClass(isActive: boolean): string {
   return `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-    isActive ? 'bg-accent/20 text-white' : 'text-gray-300 hover:bg-base-700 hover:text-white'
+    isActive
+      ? 'bg-accent/10 text-accent shadow-[inset_2px_0_0_0_rgb(var(--accent))]'
+      : 'text-gray-300 hover:bg-base-700/70 hover:text-white'
   }`
+}
+
+// Terminal-comment section header: "// LABEL ───"
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <div className="mx-3 mt-5 mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+      <span className="text-accent/60">{'//'}</span>
+      {children}
+      <span className="h-px flex-1 bg-base-700" aria-hidden="true" />
+    </div>
+  )
 }
 
 // A media type with its expandable browse children (e.g. Anime → Voice Actors /
@@ -37,7 +53,6 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
     <div>
       <div className="flex items-center">
         <NavLink to={cfg.basePath} className={({ isActive }) => `flex-1 ${linkClass(isActive)}`}>
-          <span className="w-4 text-center opacity-80">{cfg.icon}</span>
           {cfg.sidebarLabel ?? cfg.plural}
         </NavLink>
         <button
@@ -52,7 +67,7 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
       </div>
 
       {expanded && (
-        <div className="ml-3 pl-3 border-l border-base-700 space-y-0.5 mb-1">
+        <div className="ml-3 pl-3 border-l border-accent/15 space-y-0.5 mb-1">
           {cfg.children.map((c) => (
             <NavLink
               key={c.to}
@@ -62,7 +77,6 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
               end={c.to === '/people'}
               className={({ isActive }) => linkClass(isActive)}
             >
-              <span className="w-4 text-center opacity-80">{c.icon}</span>
               {c.label}
             </NavLink>
           ))}
@@ -103,7 +117,6 @@ function ShuffleMusicButton() {
 
   return (
     <button onClick={shuffleAll} disabled={busy} className={`w-full ${linkClass(false)}`}>
-      <span className="w-4 text-center opacity-80">⇄</span>
       {busy ? 'Shuffling…' : 'Shuffle Themes'}
     </button>
   )
@@ -112,78 +125,83 @@ function ShuffleMusicButton() {
 export default function Sidebar() {
   return (
     <aside className="w-60 shrink-0 bg-base-800 border-r border-base-700 flex flex-col">
-      <NavLink to="/" className="px-4 h-14 flex items-center border-b border-base-700">
-        <span className="text-lg font-bold tracking-tight">
+      <NavLink to="/" className="px-4 h-14 flex items-center gap-2.5 border-b border-base-700">
+        {/* Lain avatar (same art as the app icon) + pixel-CRT brand with
+            chromatic glitch (styles.css Wired chrome). */}
+        <img src={lainAvatar} alt="" className="w-6 h-6" />
+        <span className="sidebar-brand lain-crt brand-glitch text-lg font-bold tracking-tight">
           Navi<span className="text-accent">HUB</span>
         </span>
       </NavLink>
 
-      <div className="flex-1 overflow-y-auto py-4 px-2">
-        <NavLink to="/" end className={({ isActive }) => `mb-2 ${linkClass(isActive)}`}>
-          <span className="w-4 text-center opacity-80">⌂</span> Home
+      <div className="flex-1 overflow-y-auto pt-3 pb-4 px-2">
+        <NavLink to="/" end className={({ isActive }) => linkClass(isActive)}>
+          Home
         </NavLink>
 
-        <div className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-          Library
-        </div>
+        <SectionLabel>Library</SectionLabel>
 
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {MEDIA_CONFIGS.filter((cfg) => !cfg.hideFromSidebar).map((cfg) => (
             <MediaSection key={cfg.key} cfg={cfg} />
           ))}
           {/* Standalone local-music section (not a MediaConfig — own tables/pages) */}
           <NavLink to="/music" className={({ isActive }) => linkClass(isActive)}>
-            <span className="w-4 text-center opacity-80">♪</span> Music
+            Music
           </NavLink>
           {/* Cross-library time-spent stats */}
           <NavLink to="/stats" className={({ isActive }) => linkClass(isActive)}>
-            <span className="w-4 text-center opacity-80">⧗</span> Stats
+            Stats
           </NavLink>
         </div>
 
-        <div className="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-          Curate
+        <SectionLabel>Curate</SectionLabel>
+        <div className="space-y-0.5">
+          <NavLink to="/lists" className={({ isActive }) => linkClass(isActive)}>
+            Lists
+          </NavLink>
+          <NavLink to="/tags" className={({ isActive }) => linkClass(isActive)}>
+            Tags
+          </NavLink>
         </div>
-        <NavLink to="/lists" className={({ isActive }) => linkClass(isActive)}>
-          <span className="w-4 text-center opacity-80">☰</span> Lists
-        </NavLink>
-        <NavLink to="/tags" className={({ isActive }) => linkClass(isActive)}>
-          <span className="w-4 text-center opacity-80">#</span> Tags
-        </NavLink>
 
-        <div className="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-          Play
+        <SectionLabel>Acquire</SectionLabel>
+        <div className="space-y-0.5">
+          <NavLink to="/torrents" className={({ isActive }) => linkClass(isActive)}>
+            Torrents
+          </NavLink>
         </div>
-        <NavLink to="/quiz" className={({ isActive }) => linkClass(isActive)}>
-          <span className="w-4 text-center opacity-80">♫</span> Quiz
-        </NavLink>
-        <ShuffleMusicButton />
 
-        <div className="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-          Learn
+        <SectionLabel>Play</SectionLabel>
+        <div className="space-y-0.5">
+          <NavLink to="/quiz" className={({ isActive }) => linkClass(isActive)}>
+            Quiz
+          </NavLink>
+          <ShuffleMusicButton />
         </div>
+
+        <SectionLabel>Learn</SectionLabel>
         <NavLink to="/japanese" className={({ isActive }) => linkClass(isActive)}>
-          <span className="w-4 text-center opacity-80">あ</span> Japanese
+          Japanese
         </NavLink>
 
-        <div className="px-3 mt-4 mb-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-          Gacha
-        </div>
+        <SectionLabel>Gacha</SectionLabel>
         <NavLink to="/gacha" className={({ isActive }) => linkClass(isActive)}>
-          <span className="w-4 text-center opacity-80">◆</span> Gacha
+          Gacha
         </NavLink>
       </div>
 
       <div className="p-2 border-t border-base-700">
-        <NavLink
-          to="/settings"
-          className={({ isActive }) =>
-            `flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ${
-              isActive ? 'bg-accent/20 text-white' : 'text-gray-400 hover:bg-base-700'
-            }`
-          }
+        {/* Decorative Wired status line (gray-600 = decorative per conventions) */}
+        <div
+          className="px-3 pt-1 pb-1.5 flex items-center gap-2 text-[10px] tracking-widest text-gray-600 uppercase"
+          aria-hidden="true"
         >
-          <span className="w-4 text-center">⚙</span> Settings
+          <span className="wired-dot inline-block w-1.5 h-1.5 rounded-full bg-accent" />
+          Connected to the Wired
+        </div>
+        <NavLink to="/settings" className={({ isActive }) => linkClass(isActive)}>
+          Settings
         </NavLink>
       </div>
     </aside>

@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useLayoutEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useScrollRestoration } from './lib/navState'
 import Sidebar from './components/Sidebar'
@@ -22,7 +22,9 @@ import StudioDetailPage from './pages/StudioDetailPage'
 import CharacterDetailPage from './pages/CharacterDetailPage'
 import QuizLandingPage from './pages/QuizLandingPage'
 import SongQuizPage from './pages/SongQuizPage'
+import TournamentPage from './pages/TournamentPage'
 import ListsIndexPage from './pages/ListsIndexPage'
+import TorrentsPage from './pages/TorrentsPage'
 import ListFormPage from './pages/ListFormPage'
 import ListDetailPage from './pages/ListDetailPage'
 import TagsIndexPage from './pages/TagsIndexPage'
@@ -36,6 +38,8 @@ import JapaneseReviewPage from './pages/JapaneseReviewPage'
 import JapaneseQuizPage from './pages/JapaneseQuizPage'
 import JapaneseMinePage from './pages/JapaneseMinePage'
 import JapaneseDictionaryPage from './pages/JapaneseDictionaryPage'
+import JapaneseKanaPage from './pages/JapaneseKanaPage'
+import JapaneseTestPage from './pages/JapaneseTestPage'
 import JapaneseStatsPage from './pages/JapaneseStatsPage'
 import MangaReaderPage from './pages/MangaReaderPage'
 import BookReaderPage from './pages/BookReaderPage'
@@ -49,6 +53,7 @@ import NowPlayingPage from './pages/NowPlayingPage'
 import GachaHomePage from './pages/GachaHomePage'
 import GachaGamePage from './pages/GachaGamePage'
 import GachaUnitPage from './pages/GachaUnitPage'
+import GachaCoachPage from './pages/GachaCoachPage'
 import { ANIME, MANGA, VISUAL_NOVEL, GAME, MOVIE, TV } from './lib/mediaConfig'
 
 export default function App() {
@@ -59,7 +64,17 @@ export default function App() {
   // The manga/book readers are immersive: no sidebar/topbar/now-playing
   // chrome, full-bleed. Audio keeps playing — the <audio> element lives in
   // AudioPlayerProvider, not in the (unmounted) NowPlayingBar.
-  if (/^\/manga\/\d+\/(read|book)\//.test(location.pathname)) {
+  const isReader = /^\/manga\/\d+\/(read|book)\//.test(location.pathname)
+
+  // The lain theme's CRT overlay (styles.css) keys off this attribute so
+  // scanlines never sit over the readers. Layout effect: no scanline frame
+  // flashes when entering a reader. Idempotent → StrictMode-safe.
+  useLayoutEffect(() => {
+    if (isReader) document.documentElement.dataset.reader = 'true'
+    else delete document.documentElement.dataset.reader
+  }, [isReader])
+
+  if (isReader) {
     return (
       <ErrorBoundary key={location.pathname}>
         <Routes>
@@ -193,8 +208,11 @@ export default function App() {
             {/* Quiz — a hub of quizzes over the library (song quiz is the first) */}
             <Route path="/quiz" element={<QuizLandingPage />} />
             <Route path="/quiz/song" element={<SongQuizPage />} />
+            <Route path="/quiz/tournament" element={<TournamentPage />} />
 
             {/* Lists — user-curated, type-scoped collections */}
+            <Route path="/torrents" element={<TorrentsPage />} />
+
             <Route path="/lists" element={<ListsIndexPage />} />
             <Route path="/lists/new" element={<ListFormPage />} />
             <Route path="/lists/:id" element={<ListDetailPage />} />
@@ -228,6 +246,8 @@ export default function App() {
             <Route path="/japanese/quiz" element={<JapaneseQuizPage />} />
             <Route path="/japanese/mine" element={<JapaneseMinePage />} />
             <Route path="/japanese/dictionary" element={<JapaneseDictionaryPage />} />
+            <Route path="/japanese/kana" element={<JapaneseKanaPage />} />
+            <Route path="/japanese/test" element={<JapaneseTestPage />} />
             <Route path="/japanese/stats" element={<JapaneseStatsPage />} />
 
             {/* Gacha — standalone tracker; games/kinds/currencies configured
@@ -235,6 +255,7 @@ export default function App() {
             <Route path="/gacha" element={<GachaHomePage />} />
             <Route path="/gacha/:game" element={<GachaGamePage />} />
             <Route path="/gacha/:game/unit/:id" element={<GachaUnitPage />} />
+            <Route path="/gacha/:game/coach" element={<GachaCoachPage />} />
 
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/anime" replace />} />

@@ -16,6 +16,29 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
+  const [buildingDeck, setBuildingDeck] = useState(false)
+
+  // Live progress while a prep deck is being built (main-process scan).
+  const { data: deckStatus } = useQuery({
+    queryKey: qk.japanese.prepDeckStatus,
+    queryFn: () => api.japanese.prepDeckStatus(),
+    enabled: buildingDeck,
+    refetchInterval: buildingDeck ? 400 : false
+  })
+
+  async function buildDeck() {
+    setBuildingDeck(true)
+    try {
+      const res = await api.japanese.buildPrepDeck(m.id)
+      await qc.invalidateQueries({ queryKey: qk.japanese.all })
+      toast(`Built "${res.courseTitle}" — ${res.words} words from ${res.chaptersScanned} chapters`, 'success')
+      navigate(`/japanese/courses/${res.courseId}`)
+    } catch (e) {
+      toastError(e)
+    } finally {
+      setBuildingDeck(false)
+    }
+  }
 
   const { data } = useQuery({
     queryKey: qk.manga.chapters(m.id),
@@ -92,6 +115,20 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
             )}
             <button className="btn-ghost py-1 px-3" disabled={busy} onClick={rescan}>
               ↻ Rescan
+            </button>
+            <button
+              className="btn-ghost py-1 px-3"
+              disabled={busy || buildingDeck}
+              title="Frequency-scan this series' text (mokuro OCR / EPUB) and build a 'words you'll meet' course"
+              onClick={() => void buildDeck()}
+            >
+              {buildingDeck
+                ? deckStatus?.phase === 'reading'
+                  ? `Scanning ${deckStatus.done}/${deckStatus.total}…`
+                  : deckStatus?.phase === 'glossing'
+                    ? `Glossing ${deckStatus.done}/${deckStatus.total}…`
+                    : 'Building…'
+                : 'Vocab deck'}
             </button>
             <button className="btn-ghost py-1 px-3" disabled={busy} onClick={detach}>
               ✕ Unlink

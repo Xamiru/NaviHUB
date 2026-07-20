@@ -423,7 +423,7 @@ CREATE INDEX IF NOT EXISTS idx_music_play_log_played ON music_play_log(played_at
 -- show what it was played with.
 CREATE TABLE IF NOT EXISTS quiz_session (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
-  kind         TEXT NOT NULL,                -- 'song' | 'japanese'
+  kind         TEXT NOT NULL,                -- QuizKind: 'song' | 'japanese' | … | 'tournament'
   score        INTEGER NOT NULL,
   total        INTEGER NOT NULL,
   best_streak  INTEGER NOT NULL DEFAULT 0,
@@ -553,4 +553,99 @@ CREATE TABLE IF NOT EXISTS gacha_meta (
   value       TEXT NOT NULL,
   updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
   PRIMARY KEY (game, key)
+);
+
+-- ---- Gacha coach (FGO LLM coaching chat) ----
+-- The AI coach for a gacha game (config-gated by GachaGameCfg.coach; FGO only
+-- for now). All rows are personal and stripped on library export
+-- (sanitizeSql.cjs). LLM calls happen ONLY on explicit user actions (send /
+-- import) — everything below renders reminders/history with zero API calls.
+
+-- One chat thread per game (archived_at NULL = the active thread). "New
+-- conversation" archives the current one and starts fresh.
+CREATE TABLE IF NOT EXISTS gacha_chat_thread (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  game        TEXT NOT NULL,
+  title       TEXT,
+  archived_at TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_gacha_chat_thread_game ON gacha_chat_thread(game, archived_at);
+
+-- Two rows per turn (one user, one assistant). `text` is the display string;
+-- `api_blocks` is the VERBATIM Anthropic content-block array used to replay the
+-- conversation (assistant thinking/text blocks passed back unchanged; user rows
+-- store text + [screenshot attached] markers — images are never replayed).
+-- `actions` = UI chips for tool calls; `attachments` = media/ rel paths.
+CREATE TABLE IF NOT EXISTS gacha_chat_message (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  thread_id   INTEGER NOT NULL REFERENCES gacha_chat_thread(id) ON DELETE CASCADE,
+  role        TEXT NOT NULL,
+  text        TEXT,
+  api_blocks  TEXT,
+  actions     TEXT,
+  attachments TEXT,
+  usage_in    INTEGER,
+  usage_out   INTEGER,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_gacha_chat_message_thread ON gacha_chat_message(thread_id, id);
+
+-- Goals + recurring tasks. Reminders render from here (due_at lexical compare,
+-- like gacha_banner). Completing a recurring task rolls due_at forward from
+-- TODAY instead of closing it.
+CREATE TABLE IF NOT EXISTS gacha_goal (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  game        TEXT NOT NULL,
+  kind        TEXT NOT NULL DEFAULT 'goal',   -- 'goal' | 'task'
+  title       TEXT NOT NULL,
+  notes       TEXT,
+  status      TEXT NOT NULL DEFAULT 'active',  -- 'active' | 'done' | 'dropped'
+  due_at      TEXT,                            -- 'YYYY-MM-DD'
+  recur       TEXT,                            -- NULL | 'daily' | 'weekly'
+  created_by  TEXT NOT NULL DEFAULT 'user',    -- 'user' | 'coach'
+  done_at     TEXT,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_gacha_goal_game ON gacha_goal(game, status, due_at);
+
+-- Coach long-term memory (server NA/JP, playstyle, spending rules). The coach
+-- saves/deletes these via tools; shown in the UI rail.
+CREATE TABLE IF NOT EXISTS gacha_coach_note (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  game        TEXT NOT NULL,
+  content     TEXT NOT NULL,
+  created_by  TEXT NOT NULL DEFAULT 'coach',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_gacha_coach_note_game ON gacha_coach_note(game);
+
+-- Imported prior chats with another LLM. `content` is the raw paste; `summary`
+-- is a one-shot LLM digest made at import time (the context block uses the
+-- summary, falling back to truncated raw if the digest failed).
+CREATE TABLE IF NOT EXISTS gacha_coach_doc (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  game        TEXT NOT NULL,
+  title       TEXT NOT NULL,
+  content     TEXT NOT NULL,
+  summary     TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_gacha_coach_doc_game ON gacha_coach_doc(game);
+
+-- ---- PC↔phone sync ----
+-- One row per op batch applied by the LAN sync server (src/main/sync.ts). A
+-- phone that never saw the response re-POSTs the same batch_id and gets the
+-- stored outcome back instead of a double apply. Personal → wiped on export.
+CREATE TABLE IF NOT EXISTS sync_batch (
+  batch_id     TEXT PRIMARY KEY,
+  device       TEXT NOT NULL,
+  applied      INTEGER NOT NULL,
+  skipped      INTEGER NOT NULL,
+  skipped_json TEXT NOT NULL DEFAULT '[]',   -- SyncSkippedOp[] for replayed responses
+  applied_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );

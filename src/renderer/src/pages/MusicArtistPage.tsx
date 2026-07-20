@@ -1,4 +1,4 @@
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -15,6 +15,7 @@ export default function MusicArtistPage() {
   const { id } = useParams()
   const artistId = Number(id)
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const player = usePlayer()
 
   const { data: artist, isLoading } = useQuery({
@@ -41,6 +42,26 @@ export default function MusicArtistPage() {
     qc.invalidateQueries({ queryKey: qk.music.all })
   }
 
+  async function deleteArtist(): Promise<void> {
+    if (!artist) return
+    if (
+      !window.confirm(
+        `Delete ${artist.name} from your computer?\n\nThis permanently removes the artist folder and all ${artist.trackCount} track(s) from disk — it cannot be undone.`
+      )
+    )
+      return
+    try {
+      await api.music.deleteArtist(artistId)
+      // A now-dead track still in the queue is skipped by the player's onError
+      // when it's next reached, so no queue surgery is needed here.
+      toast(`Deleted ${artist.name}`)
+      qc.invalidateQueries({ queryKey: qk.music.all })
+      navigate('/music', { replace: true })
+    } catch (e) {
+      toastError(e)
+    }
+  }
+
   if (isLoading) return <PageStatus>Loading…</PageStatus>
   if (!artist) return <PageStatus>Artist not found.</PageStatus>
 
@@ -63,6 +84,8 @@ export default function MusicArtistPage() {
         artNoun="photo"
         onFindArt={findPhoto}
         onClearArt={clearPhoto}
+        onDelete={deleteArtist}
+        deleteLabel="Delete artist"
       />
 
       {artist.topTracks.length > 0 && (

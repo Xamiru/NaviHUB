@@ -13,6 +13,12 @@ const QUIZZES = [
     icon: 'あ',
     title: 'Japanese Quiz',
     desc: 'Multiple choice over the lessons you have marked as learned — vocab, kanji and grammar.'
+  },
+  {
+    to: '/quiz/tournament',
+    icon: 'VS',
+    title: 'Tournament',
+    desc: 'World-cup bracket over your library — songs, characters, anime or people go head-to-head until one champion remains.'
   }
 ]
 

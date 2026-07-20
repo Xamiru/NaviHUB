@@ -34,6 +34,7 @@ export interface GachaGameCfg {
   buildMode: 'full' | 'levelOnly' // levelOnly (FGO) hides all Builds UI
   subreddit: string // news source: r/<subreddit> hot feed, fetched on button click
   color: string // per-game accent (hex) for glyph tiles / header tint
+  coach?: boolean // enables the AI coaching chat for this game (FGO only for now)
   unitKinds: GachaUnitKindCfg[] // [character kind, equipment kind]
   currencies: GachaCurrencyCfg[]
 }
@@ -83,6 +84,7 @@ export const GACHA_GAMES: GachaGameCfg[] = [
     buildMode: 'levelOnly',
     subreddit: 'grandorder',
     color: '#d9b96a',
+    coach: true,
     unitKinds: [
       {
         key: 'servant',

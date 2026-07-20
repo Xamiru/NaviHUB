@@ -42,7 +42,8 @@ export const qk = {
   },
   mediaCounts: {
     all: ['media-counts'] as const,
-    byType: (mediaType: MediaType) => ['media-counts', mediaType] as const
+    byType: (mediaType: MediaType) => ['media-counts', mediaType] as const,
+    facets: (mediaType: MediaType) => ['media-counts', 'facets', mediaType] as const
   },
   lists: {
     all: ['lists'] as const,
@@ -77,6 +78,11 @@ export const qk = {
     songPool: (filter: QuizSongFilter) => ['quiz', 'songPool', filter] as const,
     history: (kind: QuizKind) => ['quiz', 'history', kind] as const
   },
+  torrents: {
+    // Jackett searches only — results are ephemeral, nothing invalidates this group.
+    all: ['torrents'] as const,
+    search: (q: string, cats: number[]) => ['torrents', 'search', q, cats.join(',')] as const
+  },
   pictures: {
     // Wallpapers + fan art per media item, plus the Browse dialog's searches.
     all: ['pictures'] as const,
@@ -105,6 +111,8 @@ export const qk = {
     stats: ['japanese', 'stats'] as const,
     statsDetail: ['japanese', 'statsDetail'] as const,
     quizPool: (scope: JpQuizScope) => ['japanese', 'quizPool', scope] as const,
+    lessonQuizPool: (lessonId: number) => ['japanese', 'lessonQuizPool', lessonId] as const,
+    prepDeckStatus: ['japanese', 'prepDeckStatus'] as const,
     // Manga reader mining: tokenized OCR block text + already-mined word check.
     tokens: (text: string) => ['japanese', 'tokens', text] as const,
     minedFronts: (fronts: string[]) => ['japanese', 'minedFronts', fronts] as const
@@ -151,7 +159,21 @@ export const qk = {
     unit: (id: number) => ['gacha', 'unit', id] as const,
     currencies: (game: GachaGameId) => ['gacha', 'currencies', game] as const,
     banners: (game: GachaGameId) => ['gacha', 'banners', game] as const,
-    news: (game: GachaGameId) => ['gacha', 'news', game] as const
+    news: (game: GachaGameId) => ['gacha', 'news', game] as const,
+    // FGO coach — chat, reminders, memory. coachStatus polls on its own interval.
+    coachStatus: ['gacha', 'coachStatus'] as const,
+    coachThread: (game: GachaGameId) => ['gacha', 'coachThread', game] as const,
+    coachThreads: (game: GachaGameId) => ['gacha', 'coachThreads', game] as const,
+    coachMessages: (threadId: number) => ['gacha', 'coachMessages', threadId] as const,
+    goals: (game: GachaGameId) => ['gacha', 'goals', game] as const,
+    coachNotes: (game: GachaGameId) => ['gacha', 'coachNotes', game] as const,
+    coachDocs: (game: GachaGameId) => ['gacha', 'coachDocs', game] as const,
+    dueCounts: ['gacha', 'dueCounts'] as const
+  },
+  sync: {
+    // PC↔phone sync server (Settings card). Status polls while running.
+    all: ['sync'] as const,
+    status: ['sync', 'status'] as const
   },
   activity: ['activity'] as const,
   search: (q: string) => ['search', q] as const,

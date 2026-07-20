@@ -1,12 +1,12 @@
 import { app, dialog } from 'electron'
-import { join, extname, dirname, basename } from 'path'
+import { join, extname, dirname, basename, relative, isAbsolute } from 'path'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
-import { readdir, stat } from 'fs/promises'
+import { readdir, stat, unlink, rm, rmdir } from 'fs/promises'
 import { createHash } from 'crypto'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
-import { musicRootDir } from './files'
-import type { MusicScanStatus, MusicScanSummary } from '@shared/types'
+import { musicRootDir, absoluteMediaPath } from './files'
+import type { MusicDeleteResult, MusicScanStatus, MusicScanSummary } from '@shared/types'
 
 // ---------------------------------------------------------------------------
 // Pure scanning helpers (exported for tests — no electron/db access).
@@ -595,4 +595,108 @@ export async function pickRootAndScan(): Promise<MusicScanSummary | null> {
   if (res.canceled || res.filePaths.length === 0) return null
   setSetting('music.dir', res.filePaths[0])
   return startScan()
+}
+
+// ---------------------------------------------------------------------------
+// Deletion — removes DB rows AND the underlying files from disk. Destructive
+// and irreversible; the renderer gates every call behind a confirm dialog.
+// file_path/dir_path are stored root-relative (no "music/" prefix), so we re-add
+// it to reuse absoluteMediaPath's `..`-escape guard.
+// ---------------------------------------------------------------------------
+
+// Belt-and-braces on top of absoluteMediaPath: never touch anything that isn't
+// strictly *inside* the music root (and never the root itself).
+function assertInsideMusicRoot(abs: string): void {
+  const rel = relative(musicRootDir(), abs)
+  if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
+    throw new Error(`Refusing to delete outside the music root: ${abs}`)
+  }
+}
+
+async function unlinkTrackFile(relPath: string): Promise<boolean> {
+  const abs = absoluteMediaPath(`music/${relPath}`)
+  assertInsideMusicRoot(abs)
+  try {
+    await unlink(abs)
+    return true
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === 'ENOENT') return false // already gone
+    throw e
+  }
+}
+
+// Best-effort: drop a directory once its last file leaves. Safe on a folder that
+// still holds other tracks or leftover art (readdir non-empty → left alone).
+async function rmdirIfEmpty(abs: string): Promise<void> {
+  try {
+    assertInsideMusicRoot(abs)
+    if ((await readdir(abs)).length === 0) await rmdir(abs)
+  } catch {
+    /* not empty / gone / outside root — leave it */
+  }
+}
+
+// Delete individual tracks: unlink each file, drop the rows (cascades play_log +
+// playlist entries), then prune any album/artist folder the removals emptied.
+export async function deleteTracks(trackIds: number[]): Promise<MusicDeleteResult> {
+  if (!trackIds.length) return { tracks: 0 }
+  const db = getSqlite()
+  const ph = trackIds.map(() => '?').join(',')
+  const rows = db
+    .prepare(`SELECT file_path FROM music_track WHERE id IN (${ph})`)
+    .all(...trackIds) as { file_path: string }[]
+  const dirs = new Set<string>()
+  for (const r of rows) {
+    await unlinkTrackFile(r.file_path)
+    dirs.add(absoluteMediaPath(`music/${dirname(r.file_path)}`))
+  }
+  const info = db.prepare(`DELETE FROM music_track WHERE id IN (${ph})`).run(...trackIds)
+  for (const d of dirs) {
+    await rmdirIfEmpty(d) // album folder
+    await rmdirIfEmpty(dirname(d)) // its artist folder, if that was the last album
+  }
+  return { tracks: info.changes }
+}
+
+// Delete a whole album. Unlinks files PER TRACK (never a recursive rm): a
+// synthetic "Singles" album's dir_path equals the artist folder, so a recursive
+// wipe would take the entire artist down with it.
+export async function deleteAlbum(albumId: number): Promise<MusicDeleteResult> {
+  const db = getSqlite()
+  const rows = db
+    .prepare('SELECT file_path FROM music_track WHERE album_id = ?')
+    .all(albumId) as { file_path: string }[]
+  const dirs = new Set<string>()
+  for (const r of rows) {
+    await unlinkTrackFile(r.file_path)
+    dirs.add(absoluteMediaPath(`music/${dirname(r.file_path)}`))
+  }
+  db.prepare('DELETE FROM music_album WHERE id = ?').run(albumId) // cascades tracks
+  for (const d of dirs) {
+    await rmdirIfEmpty(d)
+    await rmdirIfEmpty(dirname(d))
+  }
+  return { tracks: rows.length }
+}
+
+// Delete an artist and everything under them. The artist folder is a distinct
+// top-level directory, so a recursive rm is safe here and also clears leftover
+// cover art / non-audio the per-file path would leave behind.
+export async function deleteArtist(artistId: number): Promise<MusicDeleteResult> {
+  const db = getSqlite()
+  const artist = db.prepare('SELECT dir_path FROM music_artist WHERE id = ?').get(artistId) as
+    | { dir_path: string }
+    | undefined
+  const trackCount = (
+    db.prepare('SELECT COUNT(*) AS n FROM music_track WHERE artist_id = ?').get(artistId) as {
+      n: number
+    }
+  ).n
+  db.prepare('DELETE FROM music_artist WHERE id = ?').run(artistId) // cascades albums + tracks
+  if (artist?.dir_path) {
+    const abs = absoluteMediaPath(`music/${artist.dir_path}`)
+    assertInsideMusicRoot(abs)
+    await rm(abs, { recursive: true, force: true })
+  }
+  return { tracks: trackCount }
 }

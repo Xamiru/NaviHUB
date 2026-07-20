@@ -814,3 +814,124 @@ export const gachaMeta = sqliteTable(
     pk: primaryKey({ columns: [t.game, t.key] })
   })
 )
+
+// ---------------------------------------------------------------------------
+// Gacha coach — FGO LLM coaching chat (threads/messages/goals/notes/docs).
+// ---------------------------------------------------------------------------
+export const gachaChatThread = sqliteTable(
+  'gacha_chat_thread',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    game: text('game').notNull(),
+    title: text('title'),
+    archivedAt: text('archived_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byGame: index('idx_gacha_chat_thread_game').on(t.game, t.archivedAt)
+  })
+)
+
+export const gachaChatMessage = sqliteTable(
+  'gacha_chat_message',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    threadId: integer('thread_id')
+      .notNull()
+      .references(() => gachaChatThread.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    text: text('text'),
+    apiBlocks: text('api_blocks', { mode: 'json' }),
+    actions: text('actions', { mode: 'json' }),
+    attachments: text('attachments', { mode: 'json' }),
+    usageIn: integer('usage_in'),
+    usageOut: integer('usage_out'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byThread: index('idx_gacha_chat_message_thread').on(t.threadId, t.id)
+  })
+)
+
+export const gachaGoal = sqliteTable(
+  'gacha_goal',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    game: text('game').notNull(),
+    kind: text('kind').notNull().default('goal'),
+    title: text('title').notNull(),
+    notes: text('notes'),
+    status: text('status').notNull().default('active'),
+    dueAt: text('due_at'),
+    recur: text('recur'),
+    createdBy: text('created_by').notNull().default('user'),
+    doneAt: text('done_at'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byGame: index('idx_gacha_goal_game').on(t.game, t.status, t.dueAt)
+  })
+)
+
+export const gachaCoachNote = sqliteTable(
+  'gacha_coach_note',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    game: text('game').notNull(),
+    content: text('content').notNull(),
+    createdBy: text('created_by').notNull().default('coach'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byGame: index('idx_gacha_coach_note_game').on(t.game)
+  })
+)
+
+export const gachaCoachDoc = sqliteTable(
+  'gacha_coach_doc',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    game: text('game').notNull(),
+    title: text('title').notNull(),
+    content: text('content').notNull(),
+    summary: text('summary'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byGame: index('idx_gacha_coach_doc_game').on(t.game)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// PC↔phone sync — applied op batches (dedup for re-POSTed batches).
+// ---------------------------------------------------------------------------
+export const syncBatch = sqliteTable('sync_batch', {
+  batchId: text('batch_id').primaryKey(),
+  device: text('device').notNull(),
+  applied: integer('applied').notNull(),
+  skipped: integer('skipped').notNull(),
+  skippedJson: text('skipped_json').notNull().default('[]'),
+  appliedAt: text('applied_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})

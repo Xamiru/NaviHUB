@@ -317,7 +317,7 @@ export const MOVIE: MediaConfig = {
     { to: '/actors', label: 'Actors', icon: '☻', role: 'actor' },
     { to: '/directors', label: 'Directors', icon: '✪', role: 'director' }
   ],
-  sidebarLabel: 'Movies / TV Shows',
+  sidebarLabel: 'Movies / TV', // short enough not to wrap in the mono sidebar
   listTabs: [
     { key: 'movie', label: 'Movies' },
     { key: 'tv', label: 'TV Shows' }

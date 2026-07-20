@@ -1,4 +1,5 @@
 import { getSqlite } from '../db/connection'
+import { ERAS } from '@shared/era'
 import type {
   QuizHistory,
   QuizKind,
@@ -7,6 +8,14 @@ import type {
   QuizSong,
   QuizSongFilter
 } from '@shared/types'
+
+// An anime's year for era filtering: canonical AniList seasonYear from the
+// metadata JSON when present (json_valid guards malformed blobs from throwing),
+// else the release-date year — the same precedence as @shared/season.ts.
+const YEAR_EXPR = `CAST(COALESCE(
+  CASE WHEN json_valid(mi.metadata) THEN json_extract(mi.metadata, '$.seasonYear') END,
+  substr(mi.release_date, 1, 4)
+) AS INTEGER)`
 
 // The song quiz pool: every anime theme that has playable audio (a local file or
 // a remote stream), flattened with the anime it belongs to and its performers.
@@ -29,6 +38,29 @@ export function songPool(filter: QuizSongFilter = {}): QuizSong[] {
   if (statuses && statuses.length > 0) {
     where.push(`mi.status IN (${statuses.map(() => '?').join(', ')})`)
     params.push(...statuses)
+  }
+
+  // Era filter: OR together a year-range clause per selected decade. A NULL
+  // year (unknown release) matches no range, so those anime drop out while a
+  // filter is active — same as the Seasonal page's Unknown handling.
+  const eras = filter.eras?.filter((k) => k)
+  if (eras && eras.length > 0) {
+    const clauses: string[] = []
+    for (const key of eras) {
+      const era = ERAS.find((e) => e.key === key)
+      if (!era) continue
+      const parts: string[] = []
+      if (era.minYear != null) {
+        parts.push(`${YEAR_EXPR} >= ?`)
+        params.push(era.minYear)
+      }
+      if (era.maxYear != null) {
+        parts.push(`${YEAR_EXPR} <= ?`)
+        params.push(era.maxYear)
+      }
+      if (parts.length > 0) clauses.push(`(${parts.join(' AND ')})`)
+    }
+    if (clauses.length > 0) where.push(`(${clauses.join(' OR ')})`)
   }
 
   // One row per (theme, artist); artists are grouped in JS below, mirroring the

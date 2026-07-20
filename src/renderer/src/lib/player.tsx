@@ -432,6 +432,26 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
     navigator.mediaSession.playbackState = track ? (isPlaying ? 'playing' : 'paused') : 'none'
   }, [track, isPlaying])
 
+  // Feeds the scrubber/progress bar of the OS media widget (GNOME top-bar
+  // extensions, KDE, hardware overlays). Reporting duration + playbackRate lets
+  // the shell extrapolate the position smoothly between our updates.
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return
+    const ms = navigator.mediaSession
+    if (typeof ms.setPositionState !== 'function') return
+    if (!track || !Number.isFinite(duration) || duration <= 0) return
+    try {
+      ms.setPositionState({
+        duration,
+        playbackRate: 1,
+        position: Math.min(Math.max(currentTime, 0), duration)
+      })
+    } catch {
+      // Some Chromium builds throw if position momentarily exceeds duration
+      // (e.g. a streamed track whose duration is still settling) — ignore.
+    }
+  }, [track, duration, currentTime, isPlaying])
+
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
     const ms = navigator.mediaSession
@@ -441,13 +461,20 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
     // Nulled when there's nothing next, so an OS "skip" key can't jump a
     // single-track queue (e.g. the song quiz masking its answer).
     ms.setActionHandler('nexttrack', hasNext ? () => next() : null)
+    // Scrub + stop from the widget itself.
+    ms.setActionHandler('seekto', (d) => {
+      if (d.seekTime != null && Number.isFinite(d.seekTime)) seek(d.seekTime)
+    })
+    ms.setActionHandler('stop', () => stop())
     return () => {
       ms.setActionHandler('play', null)
       ms.setActionHandler('pause', null)
       ms.setActionHandler('previoustrack', null)
       ms.setActionHandler('nexttrack', null)
+      ms.setActionHandler('seekto', null)
+      ms.setActionHandler('stop', null)
     }
-  }, [toggle, previous, next, hasNext])
+  }, [toggle, previous, next, hasNext, seek, stop])
 
   const onEnded = useCallback(() => {
     const a = audioRef.current

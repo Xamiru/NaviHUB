@@ -54,6 +54,12 @@ export default function JapaneseHomePage() {
         <Link to="/japanese/dictionary" className="btn-ghost">
           辞 Dictionary
         </Link>
+        <Link to="/japanese/kana" className="btn-ghost">
+          かな Kana drill
+        </Link>
+        <Link to="/japanese/test" className="btn-ghost">
+          検定 JLPT test
+        </Link>
         <Link to="/japanese/stats" className="btn-ghost">
           ⧗ Stats
         </Link>

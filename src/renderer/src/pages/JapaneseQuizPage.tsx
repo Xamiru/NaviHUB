@@ -9,7 +9,7 @@ import QuizRecord from '../components/QuizRecord'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
 
 type Phase = 'setup' | 'play' | 'summary'
-type Direction = 'jp2en' | 'en2jp' | 'jp2reading'
+type Direction = 'jp2en' | 'en2jp' | 'jp2reading' | 'cloze'
 interface Stats {
   score: number
   total: number
@@ -28,15 +28,27 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
+// Cloze needs an example sentence that actually contains the word, and the
+// word must not BE the sentence (grammar cards' front is the whole sentence).
+function clozable(item: JpQuizItem): boolean {
+  return (
+    !!item.exampleJp &&
+    item.exampleJp.includes(item.front) &&
+    item.exampleJp.trim() !== item.front.trim()
+  )
+}
+
 // The visible prompt / answer text for an item under the current direction.
 function promptOf(item: JpQuizItem, dir: Direction): string {
-  return dir === 'en2jp' ? item.back : item.front
+  if (dir === 'en2jp') return item.back
+  if (dir === 'cloze') return (item.exampleJp ?? '').replace(item.front, '＿＿')
+  return item.front
 }
 
 function answerOf(item: JpQuizItem, dir: Direction): string {
   if (dir === 'jp2en') return item.back
   if (dir === 'jp2reading') return item.reading ?? ''
-  return item.front
+  return item.front // en2jp and cloze both answer with the word itself
 }
 
 // Distractors must read differently from the answer (and from each other), or
@@ -108,12 +120,18 @@ export default function JapaneseQuizPage() {
       if (direction === 'jp2reading') {
         pool = pool.filter((i) => i.reading && i.reading !== i.front)
       }
+      // Cloze needs an example sentence containing the word to blank out.
+      if (direction === 'cloze') {
+        pool = pool.filter(clozable)
+      }
       const distinct = new Set(pool.map((i) => answerOf(i, direction))).size
       if (pool.length === 0) {
         setError(
           direction === 'jp2reading'
             ? 'No learned cards with a kanji form + reading match these filters. Learn kanji or vocab lessons first.'
-            : 'No learned cards match these filters. Mark some lessons as learned first.'
+            : direction === 'cloze'
+              ? 'No learned cards with example sentences match these filters — cloze needs cards whose example contains the word.'
+              : 'No learned cards match these filters. Mark some lessons as learned first.'
         )
         return
       }
@@ -264,6 +282,11 @@ export default function JapaneseQuizPage() {
               onClick={() => setDirection('jp2reading')}
               label="日本語 → Reading"
             />
+            <Pill
+              active={direction === 'cloze'}
+              onClick={() => setDirection('cloze')}
+              label="Fill the blank"
+            />
           </Group>
 
           <Group label="Length">
@@ -343,11 +366,20 @@ export default function JapaneseQuizPage() {
             ? 'What does this mean?'
             : dir === 'jp2reading'
               ? 'How is this read?'
-              : 'Which is the Japanese?'}
+              : dir === 'cloze'
+                ? 'What fills the blank?'
+                : 'Which is the Japanese?'}
         </p>
-        <p className={`mt-3 ${jpPrompt ? 'text-3xl' : 'text-xl'} leading-relaxed`}>
+        <p
+          className={`mt-3 ${
+            dir === 'cloze' ? 'text-2xl' : jpPrompt ? 'text-3xl' : 'text-xl'
+          } leading-relaxed`}
+        >
           {promptOf(current, dir)}
         </p>
+        {dir === 'cloze' && current.exampleEn && (
+          <p className="mt-2 text-sm text-gray-500">{current.exampleEn}</p>
+        )}
       </div>
 
       <div className="mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2">

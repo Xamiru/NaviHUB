@@ -20,7 +20,14 @@ vi.mock('electron', () => ({
   dialog: { showOpenDialog: (...args: unknown[]) => showOpenDialog(...args) }
 }))
 vi.mock('../src/main/files', () => ({
-  musicRootDir: () => root
+  musicRootDir: () => root,
+  // Mirror the real prefix mapping so the delete helpers resolve temp files.
+  absoluteMediaPath: (rel: string) => {
+    const norm = rel.split('\\').join('/')
+    if (norm.split('/').includes('..')) throw new Error(`escape: ${rel}`)
+    if (norm.startsWith('music/')) return join(root, norm.slice('music/'.length))
+    return join(userData, norm)
+  }
 }))
 
 import {
@@ -28,6 +35,9 @@ import {
   parseTrackFileName,
   findCoverFile,
   startScan,
+  deleteTracks,
+  deleteAlbum,
+  deleteArtist,
   type ParsedTrack,
   type TagReader,
   type ScannedFile
@@ -263,5 +273,80 @@ describe('startScan', () => {
   it('still completes a first scan of a genuinely empty library', async () => {
     const summary = await startScan(fakeReader())
     expect(summary).toMatchObject({ tracks: 0, added: 0, removed: 0 })
+  })
+})
+
+describe('delete (files + rows)', () => {
+  it('deleteTracks unlinks the file, drops the row, and prunes the empty album/artist folders', async () => {
+    makeFiles(['Radiohead/OK Computer/01 Airbag.mp3'])
+    await startScan(fakeReader())
+    const id = (db.prepare('SELECT id FROM music_track').get() as { id: number }).id
+
+    const res = await deleteTracks([id])
+    expect(res).toEqual({ tracks: 1 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 0 })
+    expect(existsSync(join(root, 'Radiohead/OK Computer/01 Airbag.mp3'))).toBe(false)
+    // last file gone -> album folder and its now-empty artist folder are pruned
+    expect(existsSync(join(root, 'Radiohead/OK Computer'))).toBe(false)
+    expect(existsSync(join(root, 'Radiohead'))).toBe(false)
+  })
+
+  it('deleteTracks tolerates an already-missing file and still removes the row', async () => {
+    makeFiles(['A/One/01 a.mp3'])
+    await startScan(fakeReader())
+    const id = (db.prepare('SELECT id FROM music_track').get() as { id: number }).id
+    rmSync(join(root, 'A/One/01 a.mp3'))
+    const res = await deleteTracks([id])
+    expect(res).toEqual({ tracks: 1 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 0 })
+  })
+
+  it('deleteAlbum on a synthetic Singles album removes only the loose file, never the sibling album', async () => {
+    // Aimer: a loose single (-> Singles album, dir_path == "Aimer") AND a real album.
+    makeFiles(['Aimer/Brave Shine.mp3', 'Aimer/Real Album/01 One.mp3'])
+    await startScan(fakeReader())
+    const singles = db
+      .prepare("SELECT id FROM music_album WHERE title = 'Singles'")
+      .get() as { id: number }
+
+    await deleteAlbum(singles.id)
+
+    // Loose single + its row gone…
+    expect(existsSync(join(root, 'Aimer/Brave Shine.mp3'))).toBe(false)
+    expect(db.prepare("SELECT COUNT(*) AS n FROM music_album WHERE title='Singles'").get()).toEqual(
+      { n: 0 }
+    )
+    // …but the real album's file, row, and the artist folder all survive.
+    expect(existsSync(join(root, 'Aimer/Real Album/01 One.mp3'))).toBe(true)
+    expect(existsSync(join(root, 'Aimer'))).toBe(true)
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 1 })
+  })
+
+  it('deleteArtist recursively removes the whole artist folder (incl. cover art) and cascades rows', async () => {
+    makeFiles([
+      'Queen/A Night at the Opera/01 Death on Two Legs.mp3',
+      'Queen/A Night at the Opera/cover.jpg',
+      'Queen/Loose Hit.mp3',
+      'ABBA/Gold/01 Dancing Queen.mp3'
+    ])
+    await startScan(fakeReader())
+    const queen = db
+      .prepare("SELECT id FROM music_artist WHERE name = 'Queen'")
+      .get() as { id: number }
+
+    const res = await deleteArtist(queen.id)
+    expect(res.tracks).toBe(2) // the album track + the loose single
+
+    // Entire Queen folder (cover art included) is gone; ABBA is untouched.
+    expect(existsSync(join(root, 'Queen'))).toBe(false)
+    expect(existsSync(join(root, 'ABBA/Gold/01 Dancing Queen.mp3'))).toBe(true)
+    // Rows cascaded away: no Queen artist/albums/tracks remain.
+    expect(db.prepare("SELECT COUNT(*) AS n FROM music_artist WHERE name='Queen'").get()).toEqual({
+      n: 0
+    })
+    expect(
+      db.prepare('SELECT COUNT(*) AS n FROM music_album WHERE artist_id = ?').get(queen.id)
+    ).toEqual({ n: 0 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 1 }) // only ABBA
   })
 })

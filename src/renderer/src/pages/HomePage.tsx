@@ -7,6 +7,7 @@ import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import { statusesFrom, useSettings } from '../lib/hooks'
+import lainIcon from '../assets/lain.png'
 import type { MediaItem, SettingsMap } from '@shared/types'
 
 // The status that marks an item as in-progress is the FIRST status of its
@@ -178,7 +179,8 @@ function Hero({
       <div className="absolute inset-0 bg-gradient-to-b from-base-900/80 via-base-900/70 to-base-900" />
 
       <div className="relative flex flex-col items-center text-center px-6 py-12">
-        <Logo className="h-16 w-16 mb-3 drop-shadow-lg" />
+        {/* The Lain mark — same art as the app icon (assets/icon.png). */}
+        <img src={lainIcon} alt="NaviHUB logo" className="h-16 w-16 mb-3 drop-shadow-lg" />
         <h1 className="text-4xl font-bold tracking-tight">
           Navi<span className="text-accent">HUB</span>
         </h1>
@@ -534,45 +536,3 @@ const MediaCard = memo(function MediaCard({
   )
 })
 
-// The NaviHUB hub mark (mirrors assets/icon.svg), inlined so it scales crisply.
-function Logo({ className = '' }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 256 256" className={className} role="img" aria-label="NaviHUB logo">
-      <defs>
-        <linearGradient id="navihub-bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7c5cff" />
-          <stop offset="1" stopColor="#4a2fd0" />
-        </linearGradient>
-      </defs>
-      <rect width="256" height="256" rx="56" fill="url(#navihub-bg)" />
-      <g stroke="#ffffff" strokeWidth="10" strokeLinecap="round" opacity="0.95">
-        <line x1="128" y1="128" x2="128" y2="56" />
-        <line x1="128" y1="128" x2="190" y2="92" />
-        <line x1="128" y1="128" x2="190" y2="164" />
-        <line x1="128" y1="128" x2="128" y2="200" />
-        <line x1="128" y1="128" x2="66" y2="164" />
-        <line x1="128" y1="128" x2="66" y2="92" />
-      </g>
-      <g fill="#ffffff">
-        <circle cx="128" cy="56" r="14" />
-        <circle cx="190" cy="92" r="14" />
-        <circle cx="190" cy="164" r="14" />
-        <circle cx="128" cy="200" r="14" />
-        <circle cx="66" cy="164" r="14" />
-        <circle cx="66" cy="92" r="14" />
-      </g>
-      <circle cx="128" cy="128" r="26" fill="#0f1115" />
-      <text
-        x="128"
-        y="138"
-        textAnchor="middle"
-        fontFamily="Inter, Arial, sans-serif"
-        fontSize="34"
-        fontWeight="700"
-        fill="#ffffff"
-      >
-        N
-      </text>
-    </svg>
-  )
-}

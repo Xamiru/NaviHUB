@@ -10,6 +10,8 @@ import { absoluteMediaPath } from './files'
 import { splitArchivePath, readArchiveEntry, mimeFor } from './archive'
 import { parseByteRange } from './httpRange'
 import { killActive as killActiveMusicDownload } from './musicDownload'
+import { abortActiveCoachTurn } from './gachaCoach'
+import { stopSyncServer } from './sync'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
 protocol.registerSchemesAsPrivileged([
@@ -26,7 +28,8 @@ function createWindow(): void {
     minWidth: 940,
     minHeight: 600,
     show: false,
-    backgroundColor: '#0f1115',
+    // Pre-paint window fill = the theme's base-900 (styles.css :root).
+    backgroundColor: '#0a0f0b',
     title: 'NaviHUB',
     icon: app.isPackaged
       ? join(process.resourcesPath, 'assets', 'icon.png')
@@ -145,6 +148,9 @@ app.on('before-quit', () => {
   // Don't let a half-finished yt-dlp outlive the app; its .part files survive
   // and resume on the next try.
   killActiveMusicDownload()
+  abortActiveCoachTurn()
+  // Sockets are destroyed synchronously — the LAN socket can't outlive the app.
+  void stopSyncServer()
   closeDatabase()
   closeDictDb()
 })

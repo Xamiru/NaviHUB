@@ -58,12 +58,29 @@ const SANITIZE_STATEMENTS = [
   'DELETE FROM gacha_news',
   'DELETE FROM gacha_meta',
 
+  // Gacha coach: chat history, goals/tasks, coach memory notes, imported chats
+  // — all personal. Children before parents (messages FK threads).
+  'DELETE FROM gacha_chat_message',
+  'DELETE FROM gacha_chat_thread',
+  'DELETE FROM gacha_goal',
+  'DELETE FROM gacha_coach_note',
+  'DELETE FROM gacha_coach_doc',
+
+  // PC↔phone sync bookkeeping (applied op batches).
+  'DELETE FROM sync_batch',
+
   // Secrets and machine-specific paths. The LIKE clause clears ALL the
   // japanese.seeded* flags (one per seeded course, see db/japaneseSeed.ts) so
-  // the default courses re-seed for the recipient.
+  // the default courses re-seed for the recipient. sync.token is the phone's
+  // bearer token — a secret; sync.device is the paired phone's name.
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','omdb.api_key','ytdlp.path',
-      'music.dir','manga.dir','audio.dir','pictures.dir')
+      'music.dir','manga.dir','audio.dir','pictures.dir',
+      'gemini.api_key','anthropic.api_key',
+      'vertex.project_id','vertex.region','vertex.credentials_path',
+      'sync.token','sync.device','sync.port',
+      'jackett.url','jackett.api_key',
+      'qbittorrent.url','qbittorrent.username','qbittorrent.password')
      OR key LIKE 'japanese.seeded%'`
 ]
 

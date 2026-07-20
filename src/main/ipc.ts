@@ -8,6 +8,7 @@ import * as tagRepo from './repos/tagRepo'
 import * as settingsRepo from './repos/settingsRepo'
 import * as searchRepo from './repos/searchRepo'
 import * as quizRepo from './repos/quizRepo'
+import * as tournamentRepo from './repos/tournamentRepo'
 import * as listRepo from './repos/listRepo'
 import * as japaneseRepo from './repos/japaneseRepo'
 import * as anilist from './anilist'
@@ -16,6 +17,8 @@ import * as vndb from './vndb'
 import * as rawg from './rawg'
 import * as themes from './themes'
 import * as pictures from './pictures'
+import * as jackett from './jackett'
+import * as qbittorrent from './qbittorrent'
 import * as hltb from './hltb'
 import * as files from './files'
 import * as manga from './manga'
@@ -27,9 +30,13 @@ import * as musicArt from './musicArt'
 import * as mokuro from './mokuro'
 import * as gacha from './gacha'
 import * as gachaRepo from './repos/gachaRepo'
+import * as gachaCoach from './gachaCoach'
+import * as coachRepo from './repos/coachRepo'
 import * as tokenizer from './tokenizer'
 import * as dictImporter from './dict/importer'
 import * as dictLookup from './dict/lookup'
+import * as prepDeck from './prepDeck'
+import * as sync from './sync'
 
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
@@ -44,6 +51,7 @@ export function registerIpc(): void {
     linkRepo.removeMediaCharacter(mediaId, characterId)
   )
   ipcMain.handle('media:statusCounts', (_e, mediaType) => mediaRepo.statusCounts(mediaType))
+  ipcMain.handle('media:facets', (_e, mediaType) => mediaRepo.facets(mediaType))
   ipcMain.handle('media:timeStats', () => mediaRepo.timeStats())
 
   // ---- people ----
@@ -89,6 +97,7 @@ export function registerIpc(): void {
 
   // ---- quiz ----
   ipcMain.handle('quiz:songPool', (_e, filter) => quizRepo.songPool(filter))
+  ipcMain.handle('quiz:tournamentPool', (_e, source) => tournamentRepo.tournamentPool(source))
   ipcMain.handle('quiz:logSession', (_e, input) => quizRepo.logSession(input))
   ipcMain.handle('quiz:history', (_e, kind) => quizRepo.history(kind))
 
@@ -137,6 +146,11 @@ export function registerIpc(): void {
     japaneseRepo.submitReview(cardId, grade)
   )
   ipcMain.handle('japanese:quizPool', (_e, scope) => japaneseRepo.quizPool(scope))
+  ipcMain.handle('japanese:lessonQuizPool', (_e, lessonId) =>
+    japaneseRepo.lessonQuizPool(lessonId)
+  )
+  ipcMain.handle('japanese:buildPrepDeck', (_e, mediaId) => prepDeck.buildPrepDeck(mediaId))
+  ipcMain.handle('japanese:prepDeckStatus', () => prepDeck.getPrepDeckStatus())
   ipcMain.handle('japanese:stats', () => japaneseRepo.stats())
   ipcMain.handle('japanese:statsDetail', () => japaneseRepo.statsDetail())
   ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
@@ -223,6 +237,15 @@ export function registerIpc(): void {
   )
   ipcMain.handle('pictures:remove', (_e, imageId) => pictures.removeImage(imageId))
 
+  // ---- torrents (Jackett search + qBittorrent hand-off) ----
+  // Button-triggered quick fetches — deliberately NOT withActivity.
+  ipcMain.handle('torrents:search', (_e, query, categories) =>
+    jackett.searchTorrents(query, categories)
+  )
+  ipcMain.handle('torrents:add', (_e, input) => qbittorrent.addTorrent(input))
+  ipcMain.handle('torrents:testJackett', () => jackett.testJackett())
+  ipcMain.handle('torrents:testQbittorrent', () => qbittorrent.testQbittorrent())
+
   // ---- global activity (import progress, polled by the Topbar pill) ----
   ipcMain.handle('activity:status', () => getActivity())
 
@@ -238,6 +261,10 @@ export function registerIpc(): void {
   ipcMain.handle('music:artistTracks', (_e, artistId) => musicRepo.artistTracks(artistId))
   ipcMain.handle('music:search', (_e, query) => musicRepo.searchAll(query))
   ipcMain.handle('music:stats', () => musicRepo.stats())
+  // Destructive deletes (rows + files on disk).
+  ipcMain.handle('music:deleteTracks', (_e, ids: number[]) => music.deleteTracks(ids))
+  ipcMain.handle('music:deleteAlbum', (_e, id: number) => music.deleteAlbum(id))
+  ipcMain.handle('music:deleteArtist', (_e, id: number) => music.deleteArtist(id))
   ipcMain.handle('music:playlists', () => musicRepo.listPlaylists())
   ipcMain.handle('music:playlist', (_e, id) => musicRepo.getPlaylist(id))
   ipcMain.handle('music:createPlaylist', (_e, input) => musicRepo.createPlaylist(input))
@@ -298,11 +325,48 @@ export function registerIpc(): void {
     gachaRepo.setGameImage(game, relPath)
   )
 
-  // ---- app (system browser for external links) ----
+  // ---- gacha coach (FGO LLM chat) ----
+  // LLM calls only in coachSend / importCoachDoc; the rest are local DB ops.
+  const todayLocal = (): string => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+  ipcMain.handle('gacha:coachStatus', () => gachaCoach.getCoachStatus())
+  ipcMain.handle('gacha:coachSend', (_e, game, text, attachments) =>
+    gachaCoach.coachSend(game, text, attachments ?? [])
+  )
+  ipcMain.handle('gacha:coachCancel', () => gachaCoach.coachCancel())
+  ipcMain.handle('gacha:coachThread', (_e, game) => coachRepo.activeThread(game))
+  ipcMain.handle('gacha:coachThreads', (_e, game) => coachRepo.listThreads(game))
+  ipcMain.handle('gacha:coachNewThread', (_e, game) => coachRepo.newThread(game))
+  ipcMain.handle('gacha:coachMessages', (_e, threadId) => coachRepo.listMessages(threadId))
+  ipcMain.handle('gacha:saveAttachment', (_e, bytes, ext) => files.saveMediaBytes(bytes, ext))
+  ipcMain.handle('gacha:goals', (_e, game) => coachRepo.listGoals(game))
+  ipcMain.handle('gacha:createGoal', (_e, game, input) => coachRepo.createGoal(game, input))
+  ipcMain.handle('gacha:updateGoal', (_e, id, patch) => coachRepo.updateGoal(id, patch))
+  ipcMain.handle('gacha:completeGoal', (_e, id) => coachRepo.completeGoal(id, todayLocal()))
+  ipcMain.handle('gacha:dropGoal', (_e, id) => coachRepo.dropGoal(id))
+  ipcMain.handle('gacha:dueCounts', () => coachRepo.dueCounts(todayLocal()))
+  ipcMain.handle('gacha:coachNotes', (_e, game) => coachRepo.listNotes(game))
+  ipcMain.handle('gacha:removeCoachNote', (_e, id) => coachRepo.removeNote(id))
+  ipcMain.handle('gacha:coachDocs', (_e, game) => coachRepo.listDocs(game))
+  ipcMain.handle('gacha:importCoachDoc', (_e, game, input) =>
+    gachaCoach.importDoc(game, input.title, input.content)
+  )
+  ipcMain.handle('gacha:removeCoachDoc', (_e, id) => coachRepo.removeDoc(id))
+
+  // ---- PC↔phone sync (LAN server, button-triggered) ----
+  ipcMain.handle('sync:start', (_e, pairing) => sync.startSyncServer(!!pairing))
+  ipcMain.handle('sync:stop', () => sync.stopSyncServer())
+  ipcMain.handle('sync:status', () => sync.getSyncStatus())
+  ipcMain.handle('sync:unpair', () => sync.unpair())
+
+  // ---- app (system browser for external links + text-file picker) ----
   ipcMain.handle('app:openExternal', (_e, url) => {
     if (!/^https?:\/\//i.test(String(url))) throw new Error('Only http(s) links can be opened')
     return shell.openExternal(String(url))
   })
+  ipcMain.handle('app:pickTextFile', () => files.pickTextFile())
 
   // ---- settings ----
   ipcMain.handle('settings:all', () => settingsRepo.all())

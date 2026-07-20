@@ -12,6 +12,7 @@ import type {
   JpLessonDetail,
   JpLessonInput,
   JpLessonKind,
+  JpLessonQuizPool,
   JpMiningInbox,
   JpQuizItem,
   JpQuizScope,
@@ -490,6 +491,34 @@ export function quizPool(scope: JpQuizScope = {}): JpQuizItem[] {
     lessonKind: r.lesson_kind as JpLessonKind,
     lessonTitle: r.lesson_title as string
   }))
+}
+
+// Pool for the end-of-lesson self-check: the lesson's own cards plus up to 40
+// random same-course cards as distractor material. Deliberately NOT gated on
+// learned — the check runs on the lesson page BEFORE it is marked learned.
+export function lessonQuizPool(lessonId: number): JpLessonQuizPool {
+  const db = getSqlite()
+  const select = `SELECT k.*, l.kind AS lesson_kind, l.title AS lesson_title, ${SOURCE_COLS}
+     FROM jp_card k ${SOURCE_JOIN}
+     JOIN jp_lesson l ON l.id = k.lesson_id`
+  const toItems = (rows: Record<string, unknown>[]): JpQuizItem[] =>
+    rows.map((r) => ({
+      ...mapCard(r),
+      lessonKind: r.lesson_kind as JpLessonKind,
+      lessonTitle: r.lesson_title as string
+    }))
+  const items = db
+    .prepare(`${select} WHERE k.lesson_id = ? ORDER BY k.sort_order ASC, k.id ASC`)
+    .all(lessonId) as Record<string, unknown>[]
+  const distractors = db
+    .prepare(
+      `${select}
+       WHERE l.course_id = (SELECT course_id FROM jp_lesson WHERE id = ?)
+         AND k.lesson_id != ?
+       ORDER BY RANDOM() LIMIT 40`
+    )
+    .all(lessonId, lessonId) as Record<string, unknown>[]
+  return { items: toItems(items), distractors: toItems(distractors) }
 }
 
 export function stats(): JpStats {

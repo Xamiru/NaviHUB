@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePlayer } from '../lib/player'
 import { musicTrackId, musicTrackToPlayerTrack } from '../lib/musicTracks'
+import { toast, toastError } from '../lib/toast'
 import CoverImage from './CoverImage'
 import type { MusicTrack } from '@shared/types'
 
@@ -155,6 +156,25 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
     refreshPlaylists()
   }
 
+  async function deleteFromDisk(): Promise<void> {
+    if (
+      !window.confirm(
+        `Delete "${track.title}" from your computer?\n\nThis permanently removes the file from disk — it cannot be undone.`
+      )
+    )
+      return
+    try {
+      await api.music.deleteTracks([track.id])
+      // The file is gone; stop playback if this was the current track so the
+      // player doesn't sit on a dead <audio> src.
+      if (player.track?.id === musicTrackId(track)) player.stop()
+      toast(`Deleted "${track.title}"`)
+      qc.invalidateQueries({ queryKey: qk.music.all })
+    } catch (e) {
+      toastError(e)
+    }
+  }
+
   return (
     <div ref={boxRef} className="relative">
       <button
@@ -209,6 +229,15 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
               ✕ Remove from this playlist
             </button>
           )}
+          <button
+            className="block w-full rounded px-1 py-1.5 text-left text-sm text-red-400 hover:bg-base-700"
+            onClick={() => {
+              setOpen(false)
+              void deleteFromDisk()
+            }}
+          >
+            Delete from computer
+          </button>
           <div className="mt-1 border-t border-base-700 pt-1">
             <div className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
               Playlists
