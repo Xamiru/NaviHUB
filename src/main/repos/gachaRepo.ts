@@ -16,6 +16,7 @@ import type {
   GachaNewsItem,
   GachaNewsPage,
   GachaNewsUpsert,
+  GachaOwnershipPatch,
   GachaUnit,
   GachaUnitDetail,
   GachaUnitFilter,
@@ -204,6 +205,131 @@ export function updateUnit(id: number, patch: Partial<GachaUnitInput>): void {
 export function removeUnit(id: number): void {
   // Builds die via ON DELETE CASCADE.
   getSqlite().prepare('DELETE FROM gacha_unit WHERE id = ?').run(id)
+}
+
+// ---- catalog import (Atlas Academy etc.) ----
+
+// One catalog entry to upsert. Canonical fields only — personal tracking
+// (owned/favorite/level/dupes/notes/data) is never touched by a catalog fetch.
+export interface GachaCatalogUnitUpsert {
+  kind: string
+  externalId: string
+  name: string
+  rarity: number | null
+  element: string | null
+  imagePath: string | null // pre-downloaded by the importer; null on failure
+}
+
+// Seed/refresh catalog rows as owned=0, converging on the unique index
+// (game, kind, external_source, external_id). DO UPDATE deliberately omits
+// every personal column, so a re-fetch refreshes name/rarity/element/image
+// without disturbing the roster. A manual row (NULL externals) with a matching
+// name is ADOPTED (gains externals) rather than duplicated. Owns its
+// transaction so the importer module stays network-only (replaceNews precedent).
+export function upsertCatalogUnits(
+  game: GachaGameId,
+  source: string,
+  units: GachaCatalogUnitUpsert[]
+): { created: number; updated: number } {
+  const db = getSqlite()
+  const tx = db.transaction((): { created: number; updated: number } => {
+    const known = new Set(
+      (
+        db
+          .prepare(
+            'SELECT kind, external_id FROM gacha_unit WHERE game = ? AND external_source = ?'
+          )
+          .all(game, source) as { kind: string; external_id: string }[]
+      ).map((r) => `${r.kind}\n${r.external_id}`)
+    )
+    const findManual = db.prepare(
+      `SELECT id FROM gacha_unit
+       WHERE game = ? AND kind = ? AND external_source IS NULL AND name = ? COLLATE NOCASE
+       LIMIT 1`
+    )
+    const adopt = db.prepare(
+      `UPDATE gacha_unit SET external_source = ?, external_id = ?, name = ?, rarity = ?,
+         element = ?, image_path = COALESCE(?, image_path), updated_at = datetime('now')
+       WHERE id = ?`
+    )
+    const upsert = db.prepare(
+      `INSERT INTO gacha_unit
+         (game, kind, name, rarity, element, image_path, owned, external_source, external_id)
+       VALUES (?, ?, ?, ?, ?, ?, 0, ?, ?)
+       ON CONFLICT(game, kind, external_source, external_id) DO UPDATE SET
+         name = excluded.name,
+         rarity = excluded.rarity,
+         element = excluded.element,
+         image_path = COALESCE(excluded.image_path, image_path),
+         updated_at = datetime('now')`
+    )
+    let created = 0
+    let updated = 0
+    for (const u of units) {
+      const key = `${u.kind}\n${u.externalId}`
+      if (known.has(key)) {
+        upsert.run(game, u.kind, u.name, u.rarity, u.element, u.imagePath, source, u.externalId)
+        updated += 1
+        continue
+      }
+      const manual = findManual.get(game, u.kind, u.name) as { id: number } | undefined
+      if (manual) {
+        adopt.run(source, u.externalId, u.name, u.rarity, u.element, u.imagePath, manual.id)
+        updated += 1
+      } else {
+        upsert.run(game, u.kind, u.name, u.rarity, u.element, u.imagePath, source, u.externalId)
+        created += 1
+      }
+      known.add(key)
+    }
+    return { created, updated }
+  })
+  return tx()
+}
+
+// Apply ownership from an app backup onto existing catalog rows, matched by
+// (game, kind, source, externalId). Requires the catalog to have been imported
+// first. Non-destructive: rows absent from the backup are never touched, so a
+// unit owned in-app but missing from the backup stays owned.
+export function applyOwnership(
+  game: GachaGameId,
+  source: string,
+  patches: GachaOwnershipPatch[]
+): { matched: number; unmatched: number } {
+  const db = getSqlite()
+  const tx = db.transaction((): { matched: number; unmatched: number } => {
+    const count = (
+      db
+        .prepare('SELECT COUNT(*) AS n FROM gacha_unit WHERE game = ? AND external_source = ?')
+        .get(game, source) as { n: number }
+    ).n
+    if (count === 0) {
+      throw new Error('No catalog yet — run the catalog fetch first, then retry the backup.')
+    }
+    const find = db.prepare(
+      'SELECT id, data FROM gacha_unit WHERE game = ? AND kind = ? AND external_source = ? AND external_id = ?'
+    )
+    const apply = db.prepare(
+      `UPDATE gacha_unit SET owned = 1, dupes = ?, level = COALESCE(?, level),
+         data = ?, updated_at = datetime('now') WHERE id = ?`
+    )
+    let matched = 0
+    let unmatched = 0
+    for (const p of patches) {
+      const row = find.get(game, p.kind, source, p.externalId) as
+        | { id: number; data: string | null }
+        | undefined
+      if (!row) {
+        unmatched += 1
+        continue
+      }
+      const merged = { ...(parseJson(row.data) ?? {}), ...(p.dataMerge ?? {}) }
+      apply.run(p.dupes, p.level ?? null, JSON.stringify(merged), row.id)
+      matched += 1
+    }
+    return { matched, unmatched }
+  })
+  return tx()
 }
 
 // ---- builds ----

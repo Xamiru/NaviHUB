@@ -15,7 +15,7 @@ import GachaUnitDialog from '../components/gacha/GachaUnitDialog'
 import GachaBannerDialog from '../components/gacha/GachaBannerDialog'
 import GachaGameImageDialog from '../components/gacha/GachaGameImageDialog'
 
-type Tab = 'roster' | 'banners' | 'news'
+type Tab = 'roster' | 'catalog' | 'banners' | 'news'
 
 export default function GachaGamePage() {
   const { game } = useParams()
@@ -38,12 +38,13 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
 
   const TABS: { key: Tab; label: string }[] = [
     { key: 'roster', label: 'Roster' },
+    ...(cfg.catalog ? [{ key: 'catalog' as Tab, label: 'Catalog' }] : []),
     { key: 'banners', label: 'Banners' },
     { key: 'news', label: 'News' }
   ]
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-6 max-w-[1600px] mx-auto">
       <Link to="/gacha" className="mb-4 inline-block text-sm text-gray-500 hover:text-gray-300">
         ← Gacha
       </Link>
@@ -100,6 +101,7 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
       </div>
 
       {tab === 'roster' && <RosterTab cfg={cfg} />}
+      {tab === 'catalog' && cfg.catalog && <CatalogTab cfg={cfg} />}
       {tab === 'banners' && <BannersTab cfg={cfg} />}
       {tab === 'news' && <NewsTab cfg={cfg} />}
 
@@ -217,7 +219,12 @@ function RosterTab({ cfg }: { cfg: GachaGameCfg }) {
   const [adding, setAdding] = useState(false)
 
   const kind = gachaUnitKind(cfg, kindKey) ?? cfg.unitKinds[0]
-  const filter = { kind: kind.key, search: debouncedSearch }
+  // Catalog games seed thousands of owned=0 rows in the Catalog tab, so the
+  // Roster must stay owned-only. Non-catalog games keep today's exact filter
+  // shape (and cache keys) untouched.
+  const filter = cfg.catalog
+    ? { kind: kind.key, search: debouncedSearch, ownedOnly: true }
+    : { kind: kind.key, search: debouncedSearch }
   const { data: units = [], isLoading } = useQuery({
     queryKey: qk.gacha.units(cfg.id, filter),
     queryFn: () => api.gacha.units(cfg.id, filter)
@@ -277,21 +284,161 @@ function RosterTab({ cfg }: { cfg: GachaGameCfg }) {
   )
 }
 
-function UnitCard({ cfg, unit }: { cfg: GachaGameCfg; unit: GachaUnit }) {
+// ---- catalog (the full servant/CE list from Atlas Academy; owned rows bright,
+// unowned dimmed and claimable) ----
+
+function CatalogTab({ cfg }: { cfg: GachaGameCfg }) {
+  const qc = useQueryClient()
+  const [kindKey, setKindKey] = usePersistedState('gachaCatalogKind', cfg.unitKinds[0].key)
+  const [search, setSearch] = usePersistedState('gachaCatalogSearch', '')
+  const debouncedSearch = useDebouncedValue(search)
+  const [claiming, setClaiming] = useState<GachaUnit | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  const kind = gachaUnitKind(cfg, kindKey) ?? cfg.unitKinds[0]
+  const filter = { kind: kind.key, search: debouncedSearch }
+  const { data: units = [], isLoading } = useQuery({
+    queryKey: qk.gacha.units(cfg.id, filter),
+    queryFn: () => api.gacha.units(cfg.id, filter)
+  })
+  const { visible, sentinelRef } = useIncrementalList(units)
+
+  async function fetchCatalog(): Promise<void> {
+    if (
+      !confirm(
+        `Download the full ${cfg.name} catalog from Atlas Academy?\n\n` +
+          'The first run downloads ~2,500 portraits and can take several minutes ' +
+          '(progress shows in the top bar). Re-running is quick and never touches your roster data.'
+      )
+    )
+      return
+    setBusy(true)
+    try {
+      const res = await api.gacha.importCatalog(cfg.id)
+      await qc.invalidateQueries({ queryKey: qk.gacha.all })
+      const extra = res.imagesFailed ? ` (${res.imagesFailed} images failed)` : ''
+      toast(`${res.created} added, ${res.updated} refreshed${extra}`, 'success')
+    } catch (e) {
+      toastError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function importChaldea(): Promise<void> {
+    setBusy(true)
+    try {
+      const res = await api.gacha.importChaldea(cfg.id)
+      if (!res) return // canceled
+      await qc.invalidateQueries({ queryKey: qk.gacha.all })
+      toast(`${res.servants} servants + ${res.craftEssences} CEs marked owned`, 'success')
+      if (res.unmatched > 0) {
+        toast(`${res.unmatched} entries had no catalog match — re-fetch the catalog`, 'error')
+      }
+    } catch (e) {
+      toastError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const empty = !isLoading && units.length === 0
+
+  return (
+    <div>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {cfg.unitKinds.map((k) => (
+          <button
+            key={k.key}
+            className={`rounded-full px-3 py-1 text-sm ${
+              kind.key === k.key ? 'bg-accent text-white' : 'bg-base-700 text-gray-400 hover:text-white'
+            }`}
+            onClick={() => setKindKey(k.key)}
+          >
+            {k.plural}
+          </button>
+        ))}
+        <input
+          className="input ml-auto max-w-xs"
+          placeholder={`Search all ${kind.plural.toLowerCase()}…`}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <button className="btn-ghost" disabled={busy} onClick={fetchCatalog}>
+          {busy ? 'Working…' : 'Fetch catalog'}
+        </button>
+        {cfg.catalog?.backup === 'chaldea' && (
+          <button
+            className="btn-ghost"
+            disabled={busy}
+            title="Import ownership from your Chaldea app's userdata.json"
+            onClick={importChaldea}
+          >
+            Import Chaldea backup
+          </button>
+        )}
+      </div>
+
+      {isLoading ? (
+        <p className="text-sm text-gray-500">Loading…</p>
+      ) : empty ? (
+        <div className="card p-12 text-center">
+          <p className="text-lg font-medium mb-1">No catalog yet</p>
+          <p className="text-sm text-gray-500 mb-5">
+            Fetch the full {kind.plural.toLowerCase()} list from Atlas Academy, then click any unit
+            to add it to your roster.
+          </p>
+          <button className="btn-primary" disabled={busy} onClick={fetchCatalog}>
+            {busy ? 'Working…' : 'Fetch catalog'}
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+            {visible.map((u) => (
+              <UnitCard key={u.id} cfg={cfg} unit={u} onClaim={setClaiming} />
+            ))}
+          </div>
+          <div ref={sentinelRef} />
+        </>
+      )}
+
+      {claiming && (
+        <GachaUnitDialog game={cfg} unit={claiming} onClose={() => setClaiming(null)} />
+      )}
+    </div>
+  )
+}
+
+// In the Catalog tab an unowned row renders dimmed and opens the claim dialog
+// via `onClaim` instead of linking to the (empty) detail page. Owned rows —
+// everywhere — link to the unit page as usual.
+function UnitCard({
+  cfg,
+  unit,
+  onClaim
+}: {
+  cfg: GachaGameCfg
+  unit: GachaUnit
+  onClaim?: (unit: GachaUnit) => void
+}) {
   const kind = gachaUnitKind(cfg, unit.kind)
   const facets = [unit.element, unit.role].filter(Boolean).join(' · ')
   const dupesText =
     unit.dupes > 0 && kind?.dupesLabel
       ? (kind.formatDupes?.(unit.dupes) ?? `${kind.dupesLabel} ${unit.dupes}`)
       : null
-  return (
-    <Link to={`/gacha/${unit.game}/unit/${unit.id}`} className="group">
+
+  const body = (
+    <>
       <div className="relative">
         <CoverImage
           path={unit.imagePath}
           alt={unit.name}
           rounded="rounded-lg"
-          className="aspect-[3/4] w-full transition-opacity group-hover:opacity-90"
+          className={`aspect-[3/4] w-full transition-opacity group-hover:opacity-90 ${
+            unit.owned ? '' : 'opacity-50'
+          }`}
         />
         {unit.favorite && (
           <span className="absolute right-1.5 top-1.5 text-sm text-amber-400" title="Favorite">
@@ -299,7 +446,9 @@ function UnitCard({ cfg, unit }: { cfg: GachaGameCfg; unit: GachaUnit }) {
           </span>
         )}
       </div>
-      <p className="mt-1.5 truncate text-sm font-medium">{unit.name}</p>
+      <p className={`mt-1.5 truncate text-sm font-medium ${unit.owned ? '' : 'text-gray-500'}`}>
+        {unit.name}
+      </p>
       <p className="truncate text-xs text-gray-500">
         {unit.rarity ? <span className="text-amber-400">{'★'.repeat(unit.rarity)}</span> : null}
         {unit.rarity && facets ? ' · ' : ''}
@@ -312,6 +461,19 @@ function UnitCard({ cfg, unit }: { cfg: GachaGameCfg; unit: GachaUnit }) {
           {dupesText}
         </p>
       )}
+    </>
+  )
+
+  if (onClaim && !unit.owned) {
+    return (
+      <button className="group block w-full text-left" onClick={() => onClaim(unit)} title="Add to roster">
+        {body}
+      </button>
+    )
+  }
+  return (
+    <Link to={`/gacha/${unit.game}/unit/${unit.id}`} className="group">
+      {body}
     </Link>
   )
 }

@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import EntityHeader from '../components/EntityHeader'
+import BackButton from '../components/BackButton'
 import CoverImage from '../components/CoverImage'
 import { pathForMedia } from '../lib/mediaConfig'
 import type { CompanyType } from '@shared/types'
@@ -27,7 +28,8 @@ export default function StudioDetailPage() {
   if (!company) return <div className="p-6 text-gray-500">Loading…</div>
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-[1200px] mx-auto">
+      <BackButton />
       <EntityHeader
         longTextLabel="Notes"
         initial={{

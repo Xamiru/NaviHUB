@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -9,6 +10,8 @@ import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
 import MusicEntityHeader from '../components/MusicEntityHeader'
 import Section from '../components/Section'
+import TorrentSearchDialog from '../components/TorrentSearchDialog'
+import { AUDIO_CATEGORIES, discographyQuery } from '@shared/torrents'
 import { AlbumCard, TrackList } from './MusicLibraryPage'
 
 export default function MusicArtistPage() {
@@ -17,6 +20,7 @@ export default function MusicArtistPage() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const player = usePlayer()
+  const [torrentsOpen, setTorrentsOpen] = useState(false)
 
   const { data: artist, isLoading } = useQuery({
     queryKey: qk.music.artist(artistId),
@@ -86,6 +90,15 @@ export default function MusicArtistPage() {
         onClearArt={clearPhoto}
         onDelete={deleteArtist}
         deleteLabel="Delete artist"
+        extraActions={
+          <button
+            className="btn-ghost"
+            onClick={() => setTorrentsOpen(true)}
+            title="Search Jackett for this artist's discography"
+          >
+            Find torrents
+          </button>
+        }
       />
 
       {artist.topTracks.length > 0 && (
@@ -103,6 +116,15 @@ export default function MusicArtistPage() {
           ))}
         </div>
       </Section>
+
+      {torrentsOpen && (
+        <TorrentSearchDialog
+          heading={artist.name}
+          query={discographyQuery(artist.name)}
+          categories={AUDIO_CATEGORIES}
+          onClose={() => setTorrentsOpen(false)}
+        />
+      )}
     </div>
   )
 }

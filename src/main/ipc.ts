@@ -1,4 +1,5 @@
-import { ipcMain, shell } from 'electron'
+import { ipcMain, shell, BrowserWindow } from 'electron'
+import { clampUiScale } from '@shared/uiScale'
 import * as mediaRepo from './repos/mediaRepo'
 import * as peopleRepo from './repos/peopleRepo'
 import * as companyRepo from './repos/companyRepo'
@@ -30,6 +31,8 @@ import * as musicArt from './musicArt'
 import * as mokuro from './mokuro'
 import * as gacha from './gacha'
 import * as gachaRepo from './repos/gachaRepo'
+import * as atlas from './atlas'
+import * as chaldea from './chaldea'
 import * as gachaCoach from './gachaCoach'
 import * as coachRepo from './repos/coachRepo'
 import * as tokenizer from './tokenizer'
@@ -239,11 +242,15 @@ export function registerIpc(): void {
 
   // ---- torrents (Jackett search + qBittorrent hand-off) ----
   // Button-triggered quick fetches — deliberately NOT withActivity.
-  ipcMain.handle('torrents:search', (_e, query, categories) =>
-    jackett.searchTorrents(query, categories)
+  // Progressive: start a fan-out job, then poll status (no push channel).
+  ipcMain.handle('torrents:startSearch', (_e, query, categories) =>
+    jackett.startSearch(query, categories)
   )
+  ipcMain.handle('torrents:searchStatus', (_e, offset) => jackett.searchStatus(offset))
+  ipcMain.handle('torrents:cancelSearch', (_e, id) => jackett.cancelSearch(id))
   ipcMain.handle('torrents:add', (_e, input) => qbittorrent.addTorrent(input))
   ipcMain.handle('torrents:testJackett', () => jackett.testJackett())
+  ipcMain.handle('torrents:ensureJackett', () => jackett.ensureJackettRunning())
   ipcMain.handle('torrents:testQbittorrent', () => qbittorrent.testQbittorrent())
 
   // ---- global activity (import progress, polled by the Topbar pill) ----
@@ -324,6 +331,12 @@ export function registerIpc(): void {
   ipcMain.handle('gacha:setGameImage', (_e, game, relPath) =>
     gachaRepo.setGameImage(game, relPath)
   )
+  // Catalog import downloads ~2.5k faces — wrap in withActivity so the pill
+  // shows image progress. Chaldea import is a quick local file read, no pill.
+  ipcMain.handle('gacha:importCatalog', (_e, game) =>
+    withActivity('Importing FGO catalog', () => atlas.importCatalog(game))
+  )
+  ipcMain.handle('gacha:importChaldea', (_e, game) => chaldea.importBackup(game))
 
   // ---- gacha coach (FGO LLM chat) ----
   // LLM calls only in coachSend / importCoachDoc; the rest are local DB ops.
@@ -367,6 +380,13 @@ export function registerIpc(): void {
     return shell.openExternal(String(url))
   })
   ipcMain.handle('app:pickTextFile', () => files.pickTextFile())
+  // Applies the UI scale live to every window. Persisting it is the caller's
+  // job (settings:set 'ui.scale'); index.ts re-applies the stored value on load.
+  ipcMain.handle('app:setUiScale', (_e, scale) => {
+    const factor = clampUiScale(Number(scale))
+    for (const win of BrowserWindow.getAllWindows()) win.webContents.setZoomFactor(factor)
+    return factor
+  })
 
   // ---- settings ----
   ipcMain.handle('settings:all', () => settingsRepo.all())

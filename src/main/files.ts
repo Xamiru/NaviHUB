@@ -288,16 +288,28 @@ export function saveMediaBytes(bytes: Uint8Array, ext: string): string {
   return join('media', fileName)
 }
 
-// Native picker for a plain-text/markdown file (importing a prior LLM chat).
-// Returns { name, content } or null on cancel; content is capped to ~2MB.
-export async function pickTextFile(): Promise<{ name: string; content: string } | null> {
+// Native picker for a text file. Defaults match the original chat-log use
+// (txt/md, ~2MB); callers reading larger structured files (e.g. a Chaldea
+// userdata.json backup) pass their own extensions + maxBytes. Returns
+// { name, content } or null on cancel.
+export async function pickTextFile(options?: {
+  title?: string
+  filterName?: string
+  extensions?: string[]
+  maxBytes?: number
+}): Promise<{ name: string; content: string } | null> {
   const res = await dialog.showOpenDialog({
-    title: 'Choose a chat log',
+    title: options?.title ?? 'Choose a chat log',
     properties: ['openFile'],
-    filters: [{ name: 'Text', extensions: ['txt', 'md', 'markdown', 'text'] }]
+    filters: [
+      {
+        name: options?.filterName ?? 'Text',
+        extensions: options?.extensions ?? ['txt', 'md', 'markdown', 'text']
+      }
+    ]
   })
   if (res.canceled || res.filePaths.length === 0) return null
   const src = res.filePaths[0]
-  const content = readFileSync(src, 'utf8').slice(0, 2_000_000)
+  const content = readFileSync(src, 'utf8').slice(0, options?.maxBytes ?? 2_000_000)
   return { name: basename(src), content }
 }

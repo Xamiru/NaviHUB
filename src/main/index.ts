@@ -10,6 +10,8 @@ import { absoluteMediaPath } from './files'
 import { splitArchivePath, readArchiveEntry, mimeFor } from './archive'
 import { parseByteRange } from './httpRange'
 import { killActive as killActiveMusicDownload } from './musicDownload'
+import { get as getSetting } from './repos/settingsRepo'
+import { parseUiScale } from '@shared/uiScale'
 import { abortActiveCoachTurn } from './gachaCoach'
 import { stopSyncServer } from './sync'
 
@@ -42,6 +44,17 @@ function createWindow(): void {
   })
 
   win.on('ready-to-show', () => win.show())
+
+  // Apply the saved UI scale. Zoom is per-webContents and resets on (re)load,
+  // so set it on every did-finish-load rather than once at startup. Guarded:
+  // a zoom failure must never stop the window from coming up.
+  win.webContents.on('did-finish-load', () => {
+    try {
+      win.webContents.setZoomFactor(parseUiScale(getSetting('ui.scale')))
+    } catch {
+      /* fall back to 100% */
+    }
+  })
 
   // No code path may spawn a child BrowserWindow — external links go through
   // the guarded app:openExternal IPC (system browser) instead.

@@ -7,13 +7,21 @@ import { usePersistedState } from '../lib/navState'
 import { qk } from '../lib/queryKeys'
 import { toast } from '../lib/toast'
 import { MEDIA_CONFIGS, type MediaConfig } from '../lib/mediaConfig'
+import {
+  UI_SCALE_DEFAULT,
+  UI_SCALE_STEPS,
+  formatUiScale,
+  parseUiScale
+} from '@shared/uiScale'
 import type { TorrentServiceTestResult, YtDlpDetectResult } from '@shared/types'
+import StartJackettButton from '../components/StartJackettButton'
 
 // Persist a setting and refresh the settings cache. Passed down to every
 // section so they all save the same way.
 type SaveFn = (key: string, value: string) => Promise<void>
 
 const TABS = [
+  { id: 'appearance', label: 'Appearance' },
   { id: 'library', label: 'Library & Tracking' },
   { id: 'importing', label: 'Import Keys' },
   { id: 'folders', label: 'Folders' },
@@ -59,6 +67,7 @@ export default function SettingsPage() {
         </nav>
 
         <div className="min-w-0 flex-1">
+          {tab === 'appearance' && <UiScaleSettings data={data} onSave={setKey} />}
           {tab === 'library' && (
             <>
               {MEDIA_CONFIGS.map((cfg) => (
@@ -143,6 +152,50 @@ function TextSetting({
         </button>
       </div>
       {note && <p className="mt-1 text-xs text-gray-500">{note}</p>}
+    </SettingCard>
+  )
+}
+
+// ---- Appearance -------------------------------------------------------------
+
+// UI scale = Electron's zoom factor. Applied live on click (so the effect is
+// visible while choosing) and persisted, since main re-applies it on load.
+function UiScaleSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+  const [scale, setScale] = useState(UI_SCALE_DEFAULT)
+  useEffect(() => setScale(parseUiScale(data?.['ui.scale'])), [data])
+
+  async function pick(next: number) {
+    setScale(next)
+    // Apply first so the change is instant, then persist for the next launch.
+    await api.app.setUiScale(next)
+    await onSave('ui.scale', String(next))
+  }
+
+  return (
+    <SettingCard
+      title="UI scale"
+      description="Scales the whole interface. Below 100% everything gets smaller and more fits on screen — useful on a smaller or lower-resolution monitor where you'd otherwise scroll a lot. Applies immediately and is remembered."
+    >
+      <div className="flex flex-wrap gap-2">
+        {UI_SCALE_STEPS.map((s) => (
+          <button
+            key={s}
+            onClick={() => pick(s)}
+            className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
+              Math.abs(scale - s) < 0.001
+                ? 'bg-accent text-white'
+                : 'bg-base-700 text-gray-300 hover:bg-base-600'
+            }`}
+          >
+            {formatUiScale(s)}
+            {s === UI_SCALE_DEFAULT && <span className="ml-1 text-xs opacity-70">default</span>}
+          </button>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-gray-500">
+        Currently {formatUiScale(scale)}. Tip: on a 1366×768 screen, 80% gives roughly the room of a
+        1707×960 one.
+      </p>
     </SettingCard>
   )
 }
@@ -595,6 +648,7 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
 function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
   const [jackettUrl, setJackettUrl] = useState('')
   const [jackettKey, setJackettKey] = useState('')
+  const [jackettStart, setJackettStart] = useState('')
   const [jackettCheck, setJackettCheck] = useState<TorrentServiceTestResult | null>(null)
   const [qbUrl, setQbUrl] = useState('')
   const [qbUser, setQbUser] = useState('')
@@ -604,6 +658,7 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
   useEffect(() => {
     setJackettUrl(data?.['jackett.url'] ?? '')
     setJackettKey(data?.['jackett.api_key'] ?? '')
+    setJackettStart(data?.['jackett.start_cmd'] ?? '')
     setQbUrl(data?.['qbittorrent.url'] ?? '')
     setQbUser(data?.['qbittorrent.username'] ?? '')
     setQbPass(data?.['qbittorrent.password'] ?? '')
@@ -613,6 +668,7 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
     setJackettCheck(null)
     await onSave('jackett.url', jackettUrl.trim())
     await onSave('jackett.api_key', jackettKey.trim())
+    await onSave('jackett.start_cmd', jackettStart.trim())
     setJackettCheck(await api.torrents.testJackett())
   }
 
@@ -650,10 +706,26 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
               onChange={(e) => setJackettKey(e.target.value)}
             />
           </div>
+          <div className={field}>
+            <span className="label">Start command</span>
+            <input
+              className="input"
+              value={jackettStart}
+              onChange={(e) => setJackettStart(e.target.value)}
+              placeholder="systemctl start --no-ask-password jackett.service"
+            />
+          </div>
         </div>
-        <button className="btn-ghost mt-3" onClick={testJackett}>
-          Save &amp; test
-        </button>
+        <p className="mt-1 text-xs text-gray-500">
+          Run by the Start Jackett button when Jackett isn&apos;t answering. Leave blank for the
+          default shown above. Run directly, not through a shell — no pipes or quoting.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <button className="btn-ghost" onClick={testJackett}>
+            Save &amp; test
+          </button>
+          <StartJackettButton />
+        </div>
         {jackettCheck && (
           <p className={`mt-3 text-sm ${jackettCheck.ok ? 'text-green-400' : 'text-red-400'}`}>
             {jackettCheck.message}

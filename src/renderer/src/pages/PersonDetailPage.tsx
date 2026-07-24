@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import EntityHeader from '../components/EntityHeader'
+import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import CoverImage from '../components/CoverImage'
 import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
@@ -121,7 +122,8 @@ export default function PersonDetailPage() {
   )
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="p-6 max-w-[1200px] mx-auto">
+      <BackButton />
       <EntityHeader
         rounded="rounded-full"
         longTextLabel="Biography"

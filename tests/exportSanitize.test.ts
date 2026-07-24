@@ -98,6 +98,7 @@ function seed(): void {
       ('pictures.dir', '/media/xamir/Anglo/Pictures'),
       ('jackett.url', 'http://localhost:9117'),
       ('jackett.api_key', 'secret-jackett'),
+      ('jackett.start_cmd', 'systemctl start jackett.service'),
       ('qbittorrent.url', 'http://localhost:8080'),
       ('qbittorrent.username', 'admin'),
       ('qbittorrent.password', 'secret-qbit'),

@@ -41,6 +41,14 @@ export default function GachaUnitPage() {
     navigate(`/gacha/${unit!.game}`, { replace: true })
   }
 
+  // Catalog-sourced rows must not be truly deleted — a re-fetch would resurrect
+  // them. Un-owning returns them to the Catalog tab (builds stay, harmlessly).
+  async function unown(): Promise<void> {
+    await api.gacha.updateUnit(unitId, { owned: false })
+    await qc.invalidateQueries({ queryKey: qk.gacha.all })
+    navigate(`/gacha/${unit!.game}`, { replace: true })
+  }
+
   const facets = [unit.element, unit.role].filter(Boolean).join(' · ')
 
   return (
@@ -95,9 +103,15 @@ export default function GachaUnitPage() {
             <button className="btn-ghost" onClick={() => setEditing(true)}>
               Edit
             </button>
-            <button className="btn-danger" onClick={remove}>
-              Delete
-            </button>
+            {unit.externalSource ? (
+              <button className="btn-danger" onClick={unown}>
+                Remove from roster
+              </button>
+            ) : (
+              <button className="btn-danger" onClick={remove}>
+                Delete
+              </button>
+            )}
           </div>
         </div>
       </div>

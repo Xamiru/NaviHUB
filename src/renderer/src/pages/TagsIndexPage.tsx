@@ -29,7 +29,7 @@ export default function TagsIndexPage() {
   if (isLoading) return <PageStatus>Loading…</PageStatus>
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-6 max-w-[1600px] mx-auto">
       <div className="mb-5 flex flex-wrap items-center gap-3">
         <h1 className="mr-auto text-2xl font-bold">Tags{tags ? ` · ${tags.length}` : ''}</h1>
         <input

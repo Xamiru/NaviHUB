@@ -21,7 +21,7 @@ export default function SearchPage() {
     : 0
 
   return (
-    <div className="p-6 max-w-[1200px] mx-auto">
+    <div className="p-6 max-w-[1600px] mx-auto">
       <h1 className="text-2xl font-bold mb-1">Search</h1>
       <p className="text-sm text-gray-500 mb-6">
         {q ? (

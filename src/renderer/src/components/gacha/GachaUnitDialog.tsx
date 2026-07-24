@@ -37,6 +37,9 @@ export default function GachaUnitDialog({
   const [saving, setSaving] = useState(false)
 
   const kindCfg = gachaUnitKind(game, kindKey) ?? game.unitKinds[0]
+  // Claiming a catalog row (owned=0): the dialog reads "Add to roster" and the
+  // save flips ownership on. Editing an owned unit leaves `owned` untouched.
+  const claiming = !!unit && !unit.owned
 
   async function save(): Promise<void> {
     if (!name.trim()) return
@@ -53,7 +56,8 @@ export default function GachaUnitDialog({
         level: level ? Number(level) : null,
         dupes: dupes ? Number(dupes) : 0,
         obtainedAt: obtainedAt || null,
-        notes: notes.trim() || null
+        notes: notes.trim() || null,
+        ...(claiming ? { owned: true } : {})
       }
       if (unit) await api.gacha.updateUnit(unit.id, input)
       else await api.gacha.createUnit(input)
@@ -77,13 +81,23 @@ export default function GachaUnitDialog({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label={unit ? `Edit ${kindCfg.label.toLowerCase()}` : `Add ${kindCfg.label.toLowerCase()}`}
+        aria-label={
+          claiming
+            ? `Add ${kindCfg.label.toLowerCase()} to roster`
+            : unit
+              ? `Edit ${kindCfg.label.toLowerCase()}`
+              : `Add ${kindCfg.label.toLowerCase()}`
+        }
         tabIndex={-1}
         className="card max-h-full w-full max-w-lg overflow-y-auto p-5"
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">
-            {unit ? `Edit ${kindCfg.label.toLowerCase()}` : `Add ${kindCfg.label.toLowerCase()}`}
+            {claiming
+              ? 'Add to roster'
+              : unit
+                ? `Edit ${kindCfg.label.toLowerCase()}`
+                : `Add ${kindCfg.label.toLowerCase()}`}
           </h2>
           <button className="px-2 text-gray-500 hover:text-white" onClick={onClose} aria-label="Close">
             ✕
@@ -196,7 +210,7 @@ export default function GachaUnitDialog({
             Cancel
           </button>
           <button className="btn-primary" disabled={saving || !name.trim()} onClick={save}>
-            {saving ? 'Saving…' : unit ? 'Save' : 'Add'}
+            {saving ? 'Saving…' : claiming ? 'Add to roster' : unit ? 'Save' : 'Add'}
           </button>
         </div>
       </div>

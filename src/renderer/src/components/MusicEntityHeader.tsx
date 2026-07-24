@@ -15,7 +15,8 @@ export default function MusicEntityHeader({
   onFindArt,
   onClearArt,
   onDelete,
-  deleteLabel
+  deleteLabel,
+  extraActions
 }: {
   coverPath: string | null
   title: string
@@ -28,6 +29,7 @@ export default function MusicEntityHeader({
   onClearArt: () => void
   onDelete?: () => void // permanently deletes from disk (gated by a confirm)
   deleteLabel?: string
+  extraActions?: ReactNode // page-specific buttons, placed before Delete
 }) {
   return (
     <div className={`mb-6 flex gap-5 ${round ? 'items-center' : 'items-end'}`}>
@@ -65,6 +67,7 @@ export default function MusicEntityHeader({
               Find {artNoun}
             </button>
           )}
+          {extraActions}
           {onDelete && (
             <button
               className="btn-danger"

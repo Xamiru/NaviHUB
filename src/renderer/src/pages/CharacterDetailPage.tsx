@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import EntityHeader from '../components/EntityHeader'
+import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import CoverImage from '../components/CoverImage'
 import { pathForMedia } from '../lib/mediaConfig'
@@ -26,6 +27,7 @@ export default function CharacterDetailPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
+      <BackButton />
       <EntityHeader
         rounded="rounded-full"
         longTextLabel="Description"

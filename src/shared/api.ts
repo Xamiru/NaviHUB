@@ -25,8 +25,9 @@ import type {
   ThemeImportSummary,
   ImageKind,
   MediaImage,
+  JackettEnsureResult,
   TorrentAddInput,
-  TorrentSearchResponse,
+  TorrentSearchStatus,
   TorrentServiceTestResult,
   WallpaperSearchPage,
   WallpaperSearchResult,
@@ -79,6 +80,8 @@ import type {
   GachaGameOverview,
   GachaNewsFetchResult,
   GachaNewsPage,
+  GachaCatalogImportResult,
+  GachaBackupImportResult,
   GachaUnit,
   GachaUnitDetail,
   GachaUnitFilter,
@@ -258,13 +261,20 @@ export interface NaviApi {
     remove(imageId: number): Promise<void>
   }
   torrents: {
-    // Jackett aggregate search (main-process — renderer CSP blocks remote fetch).
-    search(query: string, categories: number[]): Promise<TorrentSearchResponse>
+    // Progressive Jackett search (main-process — renderer CSP blocks remote
+    // fetch): start a job that fans out per indexer, then poll searchStatus
+    // with the number of results already held. cancelSearch keeps what's found.
+    startSearch(query: string, categories: number[]): Promise<{ id: string }>
+    searchStatus(offset: number): Promise<TorrentSearchStatus | null>
+    cancelSearch(id: string): Promise<void>
     // Hand a result to qBittorrent (magnet preferred, Jackett link fallback).
     add(input: TorrentAddInput): Promise<void>
     // Settings "Save & test" probes — never reject, result renders inline.
     testJackett(): Promise<TorrentServiceTestResult>
     testQbittorrent(): Promise<TorrentServiceTestResult>
+    // Probe Jackett and, if it's down and local, run its start command and
+    // wait for it to bind. Never rejects.
+    ensureJackett(): Promise<JackettEnsureResult>
   }
   japanese: {
     // Standalone Japanese-learning section: courses → lessons → cards, with a
@@ -420,6 +430,13 @@ export interface NaviApi {
     downloadImage(url: string): Promise<string | null>
     // Hero art for a game's hub card + dashboard header; null clears it.
     setGameImage(game: GachaGameId, relPath: string | null): Promise<void>
+    // ---- catalog import (config-gated by GachaGameCfg.catalog) ----
+    // importCatalog seeds every servant/CE as an owned=0 row with art (runs in
+    // withActivity — the image batch drives the activity pill). importChaldea
+    // opens a native picker for the app's userdata.json and marks ownership;
+    // returns null when the picker is canceled.
+    importCatalog(game: GachaGameId): Promise<GachaCatalogImportResult>
+    importChaldea(game: GachaGameId): Promise<GachaBackupImportResult | null>
     // ---- FGO coach (config-gated by GachaGameCfg.coach) ----
     // The coach chats + acts via tools. LLM calls happen ONLY on coachSend /
     // importCoachDoc (both user actions); everything else is local reads/writes.
@@ -468,6 +485,10 @@ export interface NaviApi {
     openExternal(url: string): Promise<void>
     // Native picker for a .txt/.md file (importing a prior LLM chat).
     pickTextFile(): Promise<{ name: string; content: string } | null>
+    // Applies the UI scale (Electron zoom factor) to every window immediately
+    // and returns the clamped value. Persist it separately as 'ui.scale' —
+    // that's what gets re-applied on the next launch.
+    setUiScale(scale: number): Promise<number>
   }
   activity: {
     // The current long-running main-process task (imports, theme fetches);

@@ -13,6 +13,7 @@ import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
 import MediaImagesSection from '../components/MediaImagesSection'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
+import { torznabCategoriesFor } from '@shared/torrents'
 import Section from '../components/Section'
 import type {
   MediaDetail,
@@ -162,8 +163,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
       {torrentsOpen && (
         <TorrentSearchDialog
-          title={m.title}
-          mediaType={m.mediaType}
+          heading={m.title}
+          query={m.title}
+          categories={torznabCategoriesFor(m.mediaType)}
           onClose={() => setTorrentsOpen(false)}
         />
       )}

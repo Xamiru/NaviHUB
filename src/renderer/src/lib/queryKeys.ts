@@ -79,9 +79,10 @@ export const qk = {
     history: (kind: QuizKind) => ['quiz', 'history', kind] as const
   },
   torrents: {
-    // Jackett searches only — results are ephemeral, nothing invalidates this group.
+    // Jackett searches only — results are ephemeral, nothing invalidates this
+    // group. `status` is the poll key while a fan-out job is running.
     all: ['torrents'] as const,
-    search: (q: string, cats: number[]) => ['torrents', 'search', q, cats.join(',')] as const
+    status: (jobId: string) => ['torrents', 'status', jobId] as const
   },
   pictures: {
     // Wallpapers + fan art per media item, plus the Browse dialog's searches.

@@ -171,7 +171,9 @@ export function buildContextBlock(s: CoachContextSnapshot, cfg = gachaGame('fgo'
 // Gathers the live snapshot from the repos (IO, but no network — safe to call
 // on every send).
 export function gatherSnapshot(game: GachaGameId, today: string, weekday: string): CoachContextSnapshot {
-  const units = gachaRepo.listUnits(game).map((u) => ({
+  // Owned-only: catalog games seed thousands of unowned rows that would swamp
+  // the context caps and mislead the coach about the player's actual box.
+  const units = gachaRepo.listUnits(game, { ownedOnly: true }).map((u) => ({
     id: u.id,
     kind: u.kind,
     name: u.name,
@@ -225,13 +227,19 @@ function findUnit(
   if (typeof input.id === 'number') return { id: input.id }
   const name = String(input.name ?? '').trim()
   if (!name) return { error: 'Provide an id or name.' }
-  const matches = gachaRepo
-    .listUnits(game, { search: name })
+  const owned = gachaRepo
+    .listUnits(game, { search: name, ownedOnly: true })
     .filter((u) => u.name.toLowerCase() === name.toLowerCase())
-  if (matches.length === 0) return { error: `No unit named "${name}".` }
-  if (matches.length > 1)
-    return { error: `Ambiguous "${name}" — ids ${matches.map((m) => m.id).join(', ')}. Use id.` }
-  return { id: matches[0].id }
+  if (owned.length === 1) return { id: owned[0].id }
+  if (owned.length > 1)
+    return { error: `Ambiguous "${name}" — ids ${owned.map((m) => m.id).join(', ')}. Use id.` }
+  // Zero owned: a catalog row with this name exists but isn't owned — steer the
+  // model to add_unit (which flips ownership) instead of editing a catalog row.
+  const anyMatch = gachaRepo
+    .listUnits(game, { search: name })
+    .some((u) => u.name.toLowerCase() === name.toLowerCase())
+  if (anyMatch) return { error: `"${name}" is in the catalog but not owned — use add_unit to add it.` }
+  return { error: `No unit named "${name}".` }
 }
 
 export const COACH_TOOLS: CoachTool[] = [
@@ -247,7 +255,8 @@ export const COACH_TOOLS: CoachTool[] = [
       }
     },
     run: (game, input) => {
-      const filter: { kind?: string; search?: string } = {}
+      // Owned-only: the coach reasons about the player's box, not the catalog.
+      const filter: { kind?: string; search?: string; ownedOnly: boolean } = { ownedOnly: true }
       if (input.kind) filter.kind = String(input.kind)
       if (input.search) filter.search = String(input.search)
       const rows = gachaRepo.listUnits(game, filter).map((u) => ({
@@ -293,23 +302,37 @@ export const COACH_TOOLS: CoachTool[] = [
           : input.limit_break != null
             ? Math.max(0, Math.min(4, Number(input.limit_break)))
             : 0
-      const patch = {
-        rarity: input.rarity != null ? Number(input.rarity) : null,
-        element: kind === 'servant' && input.class ? String(input.class) : null,
-        dupes,
-        level: input.level != null ? Number(input.level) : null,
-        notes: input.notes != null ? String(input.notes) : null
-      }
+      const rarity = input.rarity != null ? Number(input.rarity) : null
+      const element = kind === 'servant' && input.class ? String(input.class) : null
+      const level = input.level != null ? Number(input.level) : null
+      const notes = input.notes != null ? String(input.notes) : null
+
+      // Existing row (owned OR an unowned catalog entry) → own it and fill
+      // personal fields. NEVER overwrite a catalog row's canonical name/rarity/
+      // class (Atlas is authoritative); for a manual row, set them only when
+      // provided so a bare add can't null them out.
       const existing = gachaRepo
         .listUnits(game, { kind, search: name })
         .find((u) => u.name.toLowerCase() === name.toLowerCase())
       if (existing) {
+        const patch: Record<string, unknown> = { owned: true, dupes }
+        if (level != null) patch.level = level
+        if (notes != null) patch.notes = notes
+        if (!existing.externalSource) {
+          if (rarity != null) patch.rarity = rarity
+          if (element != null) patch.element = element
+        }
         gachaRepo.updateUnit(existing.id, patch)
-        const label = `Updated ${name} — ${stars(patch.rarity)} ${patch.element ?? kind}`.trim()
-        return { result: JSON.stringify({ id: existing.id, updated: true }), action: { tool: 'add_unit', label } }
+        const verb = existing.owned ? 'Updated' : 'Added'
+        const label =
+          `${verb} ${existing.name} — ${stars(existing.rarity ?? rarity)} ${existing.element ?? element ?? kindNoun(kind)}`.trim()
+        return {
+          result: JSON.stringify({ id: existing.id, owned: true }),
+          action: { tool: 'add_unit', label }
+        }
       }
-      const id = gachaRepo.createUnit({ game, kind, name, ...patch })
-      const label = `Added ${name} — ${stars(patch.rarity)} ${patch.element ?? kindNoun(kind)}`.trim()
+      const id = gachaRepo.createUnit({ game, kind, name, rarity, element, dupes, level, notes })
+      const label = `Added ${name} — ${stars(rarity)} ${element ?? kindNoun(kind)}`.trim()
       return { result: JSON.stringify({ id, created: true }), action: { tool: 'add_unit', label } }
     }
   },

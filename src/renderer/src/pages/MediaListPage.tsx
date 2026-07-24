@@ -93,7 +93,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   const total = facets?.total ?? Object.values(counts).reduce((a, b) => a + b, 0)
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-6 max-w-[1600px] mx-auto">
       {cfg.listTabs && (
         <div className="flex gap-1 mb-5 border-b border-base-700">
           {cfg.listTabs.map((t) => {

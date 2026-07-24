@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import CoverImage from './CoverImage'
-import BackButton from './BackButton'
 
 interface Fields {
   name: string
@@ -63,7 +62,9 @@ export default function EntityHeader({
 
   return (
     <div>
-      <BackButton />
+      {/* BackButton lives in the PAGE root, not here: `sticky` only holds
+          within its parent's box, so nesting it in this short header would
+          scroll it away. */}
       <div className="grid grid-cols-[160px_1fr] gap-6 mb-8">
         <div>
           <CoverImage path={f.imgPath} alt={f.name || '?'} rounded={rounded} className="w-40 h-40" />

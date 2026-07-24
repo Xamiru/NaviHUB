@@ -120,10 +120,14 @@ const api: NaviApi = {
     remove: (imageId) => ipcRenderer.invoke('pictures:remove', imageId)
   },
   torrents: {
-    search: (query, categories) => ipcRenderer.invoke('torrents:search', query, categories),
+    startSearch: (query, categories) =>
+      ipcRenderer.invoke('torrents:startSearch', query, categories),
+    searchStatus: (offset) => ipcRenderer.invoke('torrents:searchStatus', offset),
+    cancelSearch: (id) => ipcRenderer.invoke('torrents:cancelSearch', id),
     add: (input) => ipcRenderer.invoke('torrents:add', input),
     testJackett: () => ipcRenderer.invoke('torrents:testJackett'),
-    testQbittorrent: () => ipcRenderer.invoke('torrents:testQbittorrent')
+    testQbittorrent: () => ipcRenderer.invoke('torrents:testQbittorrent'),
+    ensureJackett: () => ipcRenderer.invoke('torrents:ensureJackett')
   },
   japanese: {
     listCourses: () => ipcRenderer.invoke('japanese:listCourses'),
@@ -236,6 +240,8 @@ const api: NaviApi = {
     fetchNews: (game) => ipcRenderer.invoke('gacha:fetchNews', game),
     downloadImage: (url) => ipcRenderer.invoke('gacha:downloadImage', url),
     setGameImage: (game, relPath) => ipcRenderer.invoke('gacha:setGameImage', game, relPath),
+    importCatalog: (game) => ipcRenderer.invoke('gacha:importCatalog', game),
+    importChaldea: (game) => ipcRenderer.invoke('gacha:importChaldea', game),
     coachStatus: () => ipcRenderer.invoke('gacha:coachStatus'),
     coachSend: (game, text, attachments) =>
       ipcRenderer.invoke('gacha:coachSend', game, text, attachments),
@@ -265,7 +271,8 @@ const api: NaviApi = {
   },
   app: {
     openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
-    pickTextFile: () => ipcRenderer.invoke('app:pickTextFile')
+    pickTextFile: () => ipcRenderer.invoke('app:pickTextFile'),
+    setUiScale: (scale) => ipcRenderer.invoke('app:setUiScale', scale)
   },
   activity: {
     status: () => ipcRenderer.invoke('activity:status')

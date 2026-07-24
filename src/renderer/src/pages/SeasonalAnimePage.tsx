@@ -73,7 +73,7 @@ export default function SeasonalAnimePage() {
   const yearOptions = years.includes(year) ? years : [...years, year].sort((a, b) => b - a)
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-6 max-w-[1600px] mx-auto">
       <BackButton />
 
       <div className="mb-5 flex flex-wrap items-center gap-3">

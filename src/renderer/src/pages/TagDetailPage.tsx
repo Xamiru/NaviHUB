@@ -31,7 +31,7 @@ export default function TagDetailPage() {
   })).filter((g) => g.items.length > 0)
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-6 max-w-[1600px] mx-auto">
       <BackButton />
       <div className="mb-6 flex items-baseline gap-3">
         <h1 className="text-2xl font-bold">{tag.name}</h1>

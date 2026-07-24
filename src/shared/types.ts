@@ -1267,6 +1267,33 @@ export interface GachaNewsFetchResult {
   total: number
 }
 
+// Result of a catalog import (toast copy). imagesFailed counts faces that
+// failed to download — those rows keep any prior image_path.
+export interface GachaCatalogImportResult {
+  total: number
+  created: number
+  updated: number
+  imagesFailed: number
+}
+
+// Result of an app-backup ownership import (Chaldea). unmatched = backup
+// entries with no catalog row (e.g. JP-only units against the NA catalog).
+export interface GachaBackupImportResult {
+  servants: number
+  craftEssences: number
+  unmatched: number
+}
+
+// One ownership change from an app backup, keyed to a catalog row by
+// (kind, externalId). dataMerge is shallow-merged over the row's existing data.
+export interface GachaOwnershipPatch {
+  kind: string
+  externalId: string
+  dupes: number
+  level?: number | null
+  dataMerge?: Record<string, unknown>
+}
+
 // Hub page card data, one per configured game.
 export interface GachaGameOverview {
   game: GachaGameId
@@ -1507,4 +1534,38 @@ export interface TorrentAddInput {
 export interface TorrentServiceTestResult {
   ok: boolean
   message: string // "qBittorrent v5.0.2" / "Invalid API key" / "Can't reach …"
+}
+
+// "Start Jackett" button: was it already up, did we have to start it, and how
+// did that go. `running` is the only thing the UI gates on.
+export interface JackettEnsureResult {
+  running: boolean
+  started: boolean // true when this call ran the start command
+  message: string
+}
+
+// Progressive search: one job fans out across every configured indexer and the
+// renderer polls this while `running`. `results` holds ONLY the rows after the
+// offset the poller asked for — a full library search returns >1000 rows and
+// re-sending them every 400ms would be wasteful.
+export interface TorrentSearchStatus {
+  id: string
+  query: string
+  running: boolean
+  indexerTotal: number
+  indexerDone: number
+  totalResults: number
+  results: TorrentSearchResult[]
+  errors: string[]
+}
+
+// Client-side narrowing of accumulated results. null/empty = unconstrained,
+// matching the MediaListFilter convention.
+export interface TorrentFilter {
+  text: string // all whitespace-separated words must appear in the title
+  exclude: string // any of these words disqualifies a row
+  minSeeders: number | null
+  minBytes: number | null
+  maxBytes: number | null
+  trackers: string[] // [] = every tracker
 }

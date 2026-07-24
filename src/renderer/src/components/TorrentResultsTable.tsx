@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { api } from '../lib/api'
+import { useIncrementalList } from '../lib/hooks'
 import { toast, toastError } from '../lib/toast'
 import { formatBytes } from '@shared/torrents'
 import type { TorrentSearchResult } from '@shared/types'
@@ -47,6 +48,9 @@ export default function TorrentResultsTable({ results, indexerErrors }: Props): 
     })
   }, [results, sort])
 
+  // A broad Jackett fan-out returns >1000 rows — render them in batches.
+  const { visible, sentinelRef } = useIncrementalList(sorted)
+
   function toggleSort(col: SortCol): void {
     setSort((s) =>
       s.col === col
@@ -90,7 +94,21 @@ export default function TorrentResultsTable({ results, indexerErrors }: Props): 
   return (
     <div>
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        {/* table-fixed is load-bearing: with auto layout a long release title
+            stretches the table past the container and pushes the Add/Details
+            column off-screen. Fixed widths + a truncating title keep the
+            actions visible without horizontal scrolling. */}
+        <table className="w-full table-fixed text-sm">
+          <colgroup>
+            <col />
+            <col className="w-[116px]" />
+            <col className="w-[104px]" />
+            <col className="w-[84px]" />
+            <col className="w-[62px]" />
+            <col className="w-[62px]" />
+            <col className="w-[96px]" />
+            <col className="w-[148px]" />
+          </colgroup>
           <thead>
             <tr className="border-b border-base-700 text-left text-xs uppercase">
               {header('title', 'Title')}
@@ -104,18 +122,26 @@ export default function TorrentResultsTable({ results, indexerErrors }: Props): 
             </tr>
           </thead>
           <tbody>
-            {sorted.map((r) => {
+            {visible.map((r) => {
               const status = pending[r.id]
               const addable = !!(r.magnetUri || r.link)
               return (
                 <tr key={r.id} className="border-b border-base-800 hover:bg-base-800/50">
-                  <td className="px-2 py-1.5 max-w-md">
+                  <td className="px-2 py-1.5">
                     <span className="block truncate" title={r.title}>
                       {r.title}
                     </span>
                   </td>
-                  <td className="px-2 py-1.5 text-gray-400 whitespace-nowrap">{r.tracker}</td>
-                  <td className="px-2 py-1.5 text-gray-400 whitespace-nowrap">{r.category ?? '—'}</td>
+                  <td className="px-2 py-1.5 text-gray-400">
+                    <span className="block truncate" title={r.tracker}>
+                      {r.tracker}
+                    </span>
+                  </td>
+                  <td className="px-2 py-1.5 text-gray-400">
+                    <span className="block truncate" title={r.category ?? undefined}>
+                      {r.category ?? '—'}
+                    </span>
+                  </td>
                   <td className="px-2 py-1.5 text-right tabular-nums whitespace-nowrap">
                     {formatBytes(r.sizeBytes)}
                   </td>
@@ -134,8 +160,9 @@ export default function TorrentResultsTable({ results, indexerErrors }: Props): 
                   </td>
                   <td className="px-2 py-1.5 whitespace-nowrap text-right">
                     <div className="inline-flex gap-1.5">
+                      {/* Fixed width so Add -> Adding… -> Sent doesn't reflow the row. */}
                       <button
-                        className="btn-primary px-2.5 py-1 text-xs"
+                        className="btn-primary w-[58px] px-1.5 py-1 text-xs"
                         disabled={!addable || !!status}
                         title={addable ? 'Send to qBittorrent' : 'No magnet or download link'}
                         onClick={() => void add(r)}
@@ -158,6 +185,12 @@ export default function TorrentResultsTable({ results, indexerErrors }: Props): 
             })}
           </tbody>
         </table>
+        <div ref={sentinelRef} />
+        {visible.length < sorted.length && (
+          <p className="py-2 text-center text-xs text-gray-500">
+            Showing {visible.length} of {sorted.length}…
+          </p>
+        )}
       </div>
       {indexerErrors.length > 0 && (
         <div className="mt-2 text-xs text-gray-500">

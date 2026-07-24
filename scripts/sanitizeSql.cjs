@@ -79,7 +79,7 @@ const SANITIZE_STATEMENTS = [
       'gemini.api_key','anthropic.api_key',
       'vertex.project_id','vertex.region','vertex.credentials_path',
       'sync.token','sync.device','sync.port',
-      'jackett.url','jackett.api_key',
+      'jackett.url','jackett.api_key','jackett.start_cmd',
       'qbittorrent.url','qbittorrent.username','qbittorrent.password')
      OR key LIKE 'japanese.seeded%'`
 ]

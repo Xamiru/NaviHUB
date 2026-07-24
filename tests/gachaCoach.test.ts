@@ -13,6 +13,7 @@ import {
   buildModelParams,
   dupesToNpLevel,
   executeCoachTool,
+  gatherSnapshot,
   npLevelToDupes,
   persistableAssistantBlocks,
   type CoachContextSnapshot
@@ -125,9 +126,9 @@ describe('executeCoachTool against the real DB', () => {
     expect(unit.dupes).toBe(2)
     expect(unit.element).toBe('Saber')
 
-    // Same name again → update, not a second row.
+    // Same name again → update, not a second row. Label uses the stored name.
     const second = executeCoachTool('fgo', 'add_unit', { kind: 'servant', name: 'artoria', np_level: 5 })
-    expect(second.action?.label).toMatch(/^Updated artoria/)
+    expect(second.action?.label).toMatch(/^Updated Artoria/)
     expect(gachaRepo.listUnits('fgo')).toHaveLength(1)
     unit = gachaRepo.listUnits('fgo')[0]
     expect(unit.dupes).toBe(4)
@@ -158,5 +159,47 @@ describe('executeCoachTool against the real DB', () => {
     const out = executeCoachTool('fgo', 'nope', {})
     expect(out.isError).toBe(true)
     expect(out.result).toContain('Unknown tool')
+  })
+})
+
+describe('coach is catalog-aware (owned-only + adoption)', () => {
+  function seedCatalog(): void {
+    gachaRepo.upsertCatalogUnits('fgo', 'atlas', [
+      { kind: 'servant', externalId: '316', name: 'Oberon', rarity: 5, element: 'Pretender', imagePath: 'media/o.png' },
+      { kind: 'servant', externalId: '2', name: 'Altria Pendragon', rarity: 5, element: 'Saber', imagePath: 'media/a.png' }
+    ])
+  }
+
+  it('get_roster and gatherSnapshot exclude unowned catalog rows', () => {
+    seedCatalog()
+    gachaRepo.createUnit({ game: 'fgo', kind: 'servant', name: 'Mash', owned: true })
+
+    const roster = JSON.parse(executeCoachTool('fgo', 'get_roster', {}).result)
+    expect(roster).toHaveLength(1)
+    expect(roster[0].name).toBe('Mash')
+
+    const snap = gatherSnapshot('fgo', '2026-07-21', 'Tuesday')
+    expect(snap.units.map((u) => u.name)).toEqual(['Mash'])
+  })
+
+  it('add_unit flips a catalog row to owned without clobbering canonical fields', () => {
+    seedCatalog()
+    const out = executeCoachTool('fgo', 'add_unit', { kind: 'servant', name: 'Oberon', np_level: 1 })
+    expect(out.action?.label).toMatch(/^Added Oberon/)
+
+    const rows = gachaRepo.listUnits('fgo', { search: 'Oberon' })
+    expect(rows).toHaveLength(1) // no duplicate
+    expect(rows[0].owned).toBe(true)
+    expect(rows[0].rarity).toBe(5) // canonical preserved
+    expect(rows[0].element).toBe('Pretender')
+    expect(rows[0].externalId).toBe('316')
+    expect(rows[0].imagePath).toBe('media/o.png')
+  })
+
+  it('update_unit on an unowned catalog row steers to add_unit', () => {
+    seedCatalog()
+    const out = executeCoachTool('fgo', 'update_unit', { name: 'Altria Pendragon', level: 90 })
+    expect(out.result).toMatch(/not owned/i)
+    expect(gachaRepo.listUnits('fgo', { ownedOnly: true })).toHaveLength(0)
   })
 })

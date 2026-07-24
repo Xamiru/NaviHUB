@@ -24,7 +24,7 @@ export default function GachaHomePage() {
   const byGame = new Map((overview ?? []).map((o) => [o.game, o]))
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-6 max-w-[1600px] mx-auto">
       <div className="mb-5">
         <h1 className="text-2xl font-bold">Gacha</h1>
         <p className="text-sm text-gray-500">

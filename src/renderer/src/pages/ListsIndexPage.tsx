@@ -17,7 +17,7 @@ export default function ListsIndexPage() {
   })
 
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-6 max-w-[1600px] mx-auto">
       <div className="flex items-center justify-between mb-5">
         <div>
           <h1 className="text-2xl font-bold">Lists</h1>

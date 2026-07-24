@@ -24,7 +24,7 @@ const QUIZZES = [
 
 export default function QuizLandingPage() {
   return (
-    <div className="p-6 max-w-[1400px] mx-auto">
+    <div className="p-6 max-w-[1600px] mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold">Quiz</h1>
         <p className="text-sm text-gray-500">Test yourself on the media in your library.</p>

@@ -35,6 +35,11 @@ export interface GachaGameCfg {
   subreddit: string // news source: r/<subreddit> hot feed, fetched on button click
   color: string // per-game accent (hex) for glyph tiles / header tint
   coach?: boolean // enables the AI coaching chat for this game (FGO only for now)
+  // Catalog importer: seeds every servant/CE as an owned=0 row (with art) from
+  // an external source, and optionally accepts an app-backup file to mark
+  // ownership. Both key strings are FROZEN vocabulary — `source` is written to
+  // gacha_unit.external_source. Gates the Catalog tab + import buttons.
+  catalog?: { source: 'atlas'; backup?: 'chaldea' }
   unitKinds: GachaUnitKindCfg[] // [character kind, equipment kind]
   currencies: GachaCurrencyCfg[]
 }
@@ -85,6 +90,7 @@ export const GACHA_GAMES: GachaGameCfg[] = [
     subreddit: 'grandorder',
     color: '#d9b96a',
     coach: true,
+    catalog: { source: 'atlas', backup: 'chaldea' },
     unitKinds: [
       {
         key: 'servant',
