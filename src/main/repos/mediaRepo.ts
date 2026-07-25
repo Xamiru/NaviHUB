@@ -97,10 +97,11 @@ function finite(v: unknown): number | null {
   return typeof v === 'number' && Number.isFinite(v) ? v : null
 }
 
-// WHERE clauses for everything except the media type. Shared by list() and
-// facets() would diverge (facets deliberately ignores the active filters), so
-// this stays local to list().
-function buildWhere(filter: MediaListFilter): { where: string[]; params: unknown[] } {
+// WHERE clauses for everything except the media type. facets() deliberately
+// ignores the active filters, so it doesn't share this. Exported for themeRepo:
+// the Songs page narrows the anime library with the very same filter object, so
+// it must produce byte-identical clauses (alias the media_item table as `m`).
+export function buildWhere(filter: MediaListFilter): { where: string[]; params: unknown[] } {
   const where: string[] = ['m.media_type = ?']
   const params: unknown[] = [filter.mediaType]
 
@@ -179,28 +180,37 @@ function buildWhere(filter: MediaListFilter): { where: string[]; params: unknown
   return { where, params }
 }
 
-export function list(filter: MediaListFilter): MediaItem[] {
-  const db = getSqlite()
-  const { where, params } = buildWhere(filter)
-
+// ORDER BY for a filtered media query. Appends the seed to `params` when the
+// sort is 'random', so callers must pass the same array their WHERE params are
+// in. `randomIdExpr` is the row id the shuffle hashes — themeRepo passes the
+// SONG id so a random Songs page shuffles songs, not whole anime.
+export function buildOrder(
+  filter: MediaListFilter,
+  params: unknown[],
+  randomIdExpr = 'm.id'
+): string {
   const sortCol = SORT_SQL[filter.sort as keyof typeof SORT_SQL] ?? SORT_SQL.updated
   const dir = filter.sortDir === 'asc' ? 'ASC' : 'DESC'
   // NULLs always sort last regardless of direction. 'random' is instead a
   // SEEDED hash of the row id: same seed -> same order, so a refetch (or the
   // renderer's scroll-fed batching) doesn't reshuffle under the user; the
   // renderer bumps the seed to deal a new hand.
-  let order: string
   if (filter.sort === 'random') {
     // Multiplicative hash mod a prime. The MULTIPLIER carries the seed (an
     // additive seed would only rotate the same order) and is folded in JS so
     // `id * mult` can never overflow SQLite's 64-bit integers.
     const seed = Math.abs(Math.trunc(finite(filter.seed) ?? 0))
     const mult = ((seed * 2 + 1) * 2654435761) % 2147483647
-    order = '((m.id * ?) % 2147483647) ASC'
     params.push(mult)
-  } else {
-    order = `(${sortCol} IS NULL) ASC, ${sortCol} ${dir}, m.title ASC`
+    return `((${randomIdExpr} * ?) % 2147483647) ASC`
   }
+  return `(${sortCol} IS NULL) ASC, ${sortCol} ${dir}, m.title ASC`
+}
+
+export function list(filter: MediaListFilter): MediaItem[] {
+  const db = getSqlite()
+  const { where, params } = buildWhere(filter)
+  const order = buildOrder(filter, params)
 
   const rows = db
     .prepare(
@@ -532,7 +542,7 @@ export function get(id: number): MediaDetail | null {
   const themeRows = db
     .prepare(
       `SELECT ts.id AS ts_id, ts.slug, ts.type, ts.sequence, ts.title,
-              ts.audio_url, ts.audio_path, ts.sort_order,
+              ts.audio_url, ts.audio_path, ts.sort_order, ts.favorite,
               p.id AS p_id, p.name AS p_name, p.name_native AS p_name_native,
               p.photo_path AS p_photo_path, p.bio AS p_bio, p.birthday AS p_birthday,
               p.external_source AS p_external_source, p.external_id AS p_external_id,
@@ -558,6 +568,7 @@ export function get(id: number): MediaDetail | null {
         title: (r.title as string) ?? null,
         audioUrl: (r.audio_url as string) ?? null,
         audioPath: (r.audio_path as string) ?? null,
+        favorite: !!r.favorite,
         artists: []
       }
       themeMap.set(tid, t)

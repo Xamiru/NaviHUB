@@ -8,7 +8,8 @@ import type {
   MediaListFilter,
   MediaType,
   QuizKind,
-  QuizSongFilter
+  QuizSongFilter,
+  ThemeSongFilter
 } from '@shared/types'
 
 // Central registry of every React Query key in the app.
@@ -51,6 +52,10 @@ export const qk = {
     detail: (listId: number) => ['lists', 'detail', listId] as const,
     forEntity: (kind: ListKind, entityId: number) => ['lists', 'forEntity', kind, entityId] as const
   },
+  checklist: {
+    all: ['checklist'] as const,
+    status: ['checklist', 'status'] as const
+  },
   entity,
   people: {
     ...entity('people'),
@@ -77,6 +82,14 @@ export const qk = {
     all: ['quiz'] as const,
     songPool: (filter: QuizSongFilter) => ['quiz', 'songPool', filter] as const,
     history: (kind: QuizKind) => ['quiz', 'history', kind] as const
+  },
+  themes: {
+    // Anime OP/ED library (/anime/songs). Hearting a song invalidates the `all`
+    // prefix: `favorite` is denormalized into every row-returning query here and
+    // into the anime detail page's theme rows.
+    all: ['themes'] as const,
+    list: (filter: ThemeSongFilter) => ['themes', 'list', filter] as const,
+    counts: ['themes', 'counts'] as const
   },
   torrents: {
     // Jackett searches only — results are ephemeral, nothing invalidates this

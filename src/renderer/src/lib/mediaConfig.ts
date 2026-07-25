@@ -148,6 +148,7 @@ export const ANIME: MediaConfig = {
   companyPickerPlaceholder: 'Add studio / company…',
   children: [
     { to: '/anime/seasonal', label: 'Seasonal', icon: '❆' },
+    { to: '/anime/songs', label: 'Songs', icon: '♫' },
     { to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' },
     { to: '/artists', label: 'Artists', icon: '♪', role: 'artist' },
     { to: '/studios', label: 'Studios', icon: '⌂' }

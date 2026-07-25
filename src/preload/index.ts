@@ -81,6 +81,16 @@ const api: NaviApi = {
       ipcRenderer.invoke('lists:reorder', listId, orderedItemIds),
     forEntity: (kind, entityId) => ipcRenderer.invoke('lists:forEntity', kind, entityId)
   },
+  checklist: {
+    status: () => ipcRenderer.invoke('checklist:status'),
+    addTask: (key, cadence) => ipcRenderer.invoke('checklist:addTask', key, cadence),
+    removeTask: (id) => ipcRenderer.invoke('checklist:removeTask', id),
+    logMedia: (taskKey, cadence, mediaId) =>
+      ipcRenderer.invoke('checklist:logMedia', taskKey, cadence, mediaId),
+    undoLog: (logId) => ipcRenderer.invoke('checklist:undoLog', logId),
+    tick: (taskKey, cadence) => ipcRenderer.invoke('checklist:tick', taskKey, cadence),
+    untick: (taskKey, cadence) => ipcRenderer.invoke('checklist:untick', taskKey, cadence)
+  },
   anilist: {
     search: (query) => ipcRenderer.invoke('anilist:search', query),
     import: (anilistId) => ipcRenderer.invoke('anilist:import', anilistId)
@@ -106,7 +116,11 @@ const api: NaviApi = {
     import: (rawgId) => ipcRenderer.invoke('rawg:import', rawgId)
   },
   themes: {
-    import: (mediaId) => ipcRenderer.invoke('themes:import', mediaId)
+    import: (mediaId) => ipcRenderer.invoke('themes:import', mediaId),
+    list: (filter) => ipcRenderer.invoke('themes:list', filter),
+    counts: () => ipcRenderer.invoke('themes:counts'),
+    setFavorite: (themeId, favorite) =>
+      ipcRenderer.invoke('themes:setFavorite', themeId, favorite)
   },
   pictures: {
     list: (mediaId, kind) => ipcRenderer.invoke('pictures:list', mediaId, kind),

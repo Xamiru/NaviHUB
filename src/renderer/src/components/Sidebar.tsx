@@ -1,9 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { MEDIA_CONFIGS, configFor, type MediaConfig } from '../lib/mediaConfig'
-import { api } from '../lib/api'
-import { usePlayer, quizSongToTrack } from '../lib/player'
-import { toast } from '../lib/toast'
 import lainAvatar from '../assets/lain.png'
 
 // Active = phosphor indicator bar (inset shadow, no layout shift) + accent
@@ -86,42 +83,6 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
   )
 }
 
-// Kicks off a shuffled queue of every playable theme song in the library —
-// the song pool built for the quiz doubles as the "all music" list. Passing
-// the ordered pool with {shuffle: true} lets the bar's shuffle toggle restore
-// library order when switched off.
-function ShuffleMusicButton() {
-  const player = usePlayer()
-  const [busy, setBusy] = useState(false)
-
-  async function shuffleAll() {
-    if (busy) return
-    setBusy(true)
-    try {
-      const pool = await api.quiz.songPool({})
-      if (pool.length === 0) {
-        toast('No theme songs in the library yet — fetch some from an anime page first.')
-        return
-      }
-      // Random start too — {shuffle: true} keeps the start track first, so a
-      // fixed 0 would always open with the same song.
-      player.playQueue(pool.map(quizSongToTrack), Math.floor(Math.random() * pool.length), {
-        shuffle: true
-      })
-    } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not load the song library')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  return (
-    <button onClick={shuffleAll} disabled={busy} className={`w-full ${linkClass(false)}`}>
-      {busy ? 'Shuffling…' : 'Shuffle Themes'}
-    </button>
-  )
-}
-
 export default function Sidebar() {
   return (
     <aside className="w-60 shrink-0 bg-base-800 border-r border-base-700 flex flex-col">
@@ -137,6 +98,9 @@ export default function Sidebar() {
       <div className="flex-1 overflow-y-auto pt-3 pb-4 px-2">
         <NavLink to="/" end className={({ isActive }) => linkClass(isActive)}>
           Home
+        </NavLink>
+        <NavLink to="/checklist" className={({ isActive }) => linkClass(isActive)}>
+          Checklist
         </NavLink>
 
         <SectionLabel>Library</SectionLabel>
@@ -177,7 +141,6 @@ export default function Sidebar() {
           <NavLink to="/quiz" className={({ isActive }) => linkClass(isActive)}>
             Quiz
           </NavLink>
-          <ShuffleMusicButton />
         </div>
 
         <SectionLabel>Learn</SectionLabel>

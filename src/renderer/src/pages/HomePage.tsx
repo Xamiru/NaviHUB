@@ -82,6 +82,7 @@ export default function HomePage() {
       <div className="mt-8 grid gap-4 lg:grid-cols-[2fr_1fr] items-stretch">
         <Spotlight pool={backlog.length ? backlog : all} fromBacklog={backlog.length > 0} />
         <div className="flex flex-col gap-4">
+          <ChecklistCard />
           <TimeStatsCard />
           <QuizCard />
         </div>
@@ -269,6 +270,47 @@ function Spotlight({ pool, fromBacklog }: { pool: MediaItem[]; fromBacklog: bool
 }
 
 // Door into the cross-library time-spent stats, with a live "days" headline.
+// Today's routine at a glance. staleTime 0 keeps it honest after logging an
+// episode or finishing a review session elsewhere in the app.
+function ChecklistCard() {
+  const { data } = useQuery({
+    queryKey: qk.checklist.status,
+    queryFn: () => api.checklist.status(),
+    staleTime: 0
+  })
+  const daily = data?.daily ?? []
+  const done = daily.filter((t) => t.done).length
+  const streak = data?.streak.current ?? 0
+  return (
+    <Link
+      to="/checklist"
+      className="card group relative overflow-hidden p-5 flex flex-col justify-between bg-gradient-to-br from-accent/25 via-base-800 to-base-800 hover:from-accent/35"
+    >
+      <div>
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">Routine</p>
+        <p className="mt-1 text-xl font-bold">
+          {daily.length === 0 ? 'Checklist' : `${done} of ${daily.length} done today`}
+        </p>
+        <p className="mt-1 text-sm text-gray-400">
+          {daily.length === 0
+            ? 'Set up the things you want to do every day and week.'
+            : 'Your daily and weekly routine, tracked automatically.'}
+        </p>
+      </div>
+      <div className="mt-4 flex items-center justify-between">
+        {streak > 0 && (
+          <span className="text-xs text-gray-500">
+            {streak} day{streak === 1 ? '' : 's'} in a row
+          </span>
+        )}
+        <span className="btn-primary pointer-events-none ml-auto group-hover:brightness-110">
+          Open ▸
+        </span>
+      </div>
+    </Link>
+  )
+}
+
 function TimeStatsCard() {
   const { data: stats } = useQuery({
     queryKey: qk.media.timeStats,

@@ -2,6 +2,8 @@
 // bridge) and the renderer (which consumes it) import this so they never drift.
 
 import type {
+  ChecklistCadence,
+  ChecklistStatus,
   MediaItem,
   MediaType,
   MediaItemInput,
@@ -23,6 +25,9 @@ import type {
   ImportSearchResult,
   ImportSummary,
   ThemeImportSummary,
+  ThemeSongCounts,
+  ThemeSongEntry,
+  ThemeSongFilter,
   ImageKind,
   MediaImage,
   JackettEnsureResult,
@@ -218,6 +223,20 @@ export interface NaviApi {
       entityId: number
     ): Promise<{ id: number; title: string; contains: boolean }[]>
   }
+  checklist: {
+    // Daily/weekly recurring board (/checklist). The item catalog lives in
+    // src/shared/checklist.ts; "today" and every period key are computed in
+    // main from local dates, so no method takes a date.
+    status(): Promise<ChecklistStatus>
+    addTask(key: string, cadence: ChecklistCadence): Promise<number>
+    removeTask(id: number): Promise<void>
+    // mediaLog items: logging performs the tracking write (episode +1 /
+    // mark watched) and records what to restore on undo.
+    logMedia(taskKey: string, cadence: ChecklistCadence, mediaId: number): Promise<number>
+    undoLog(logId: number): Promise<void>
+    tick(taskKey: string, cadence: ChecklistCadence): Promise<number>
+    untick(taskKey: string, cadence: ChecklistCadence): Promise<void>
+  }
   anilist: {
     search(query: string): Promise<ImportSearchResult[]>
     import(anilistId: number): Promise<ImportSummary>
@@ -245,6 +264,13 @@ export interface NaviApi {
   themes: {
     // Fetch an anime's OP/ED songs (+ audio + artists) from AnimeThemes.
     import(mediaId: number): Promise<ThemeImportSummary>
+    // The Songs page (/anime/songs): every theme in the library, narrowed by
+    // the SAME MediaListFilter the anime list page builds plus song-level
+    // filters. Returns the whole matching set — the page queues it as-is.
+    list(filter: ThemeSongFilter): Promise<ThemeSongEntry[]>
+    // Unfiltered totals for the header ("N of M playable · K favorites").
+    counts(): Promise<ThemeSongCounts>
+    setFavorite(themeId: number, favorite: boolean): Promise<void>
   }
   pictures: {
     // Wallpapers + fan art per media item; files live under pictures.dir.

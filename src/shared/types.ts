@@ -254,7 +254,46 @@ export interface ThemeSong {
   title: string | null
   audioUrl: string | null
   audioPath: string | null
+  favorite: boolean // hearted on the Songs page / detail row
   artists: Person[]
+}
+
+// ---- Theme song library (/anime/songs) ----
+// One song flattened with the anime it belongs to, for the cross-library Songs
+// page. Shaped like QuizSong (the quiz's own pool) plus the personal favorite
+// flag and the artist ids the rows link to.
+export interface ThemeSongEntry {
+  themeId: number
+  slug: string | null
+  type: string | null // "OP" | "ED"
+  title: string | null
+  audioUrl: string | null
+  audioPath: string | null
+  favorite: boolean
+  mediaId: number
+  animeTitle: string
+  coverPath: string | null
+  status: string | null
+  artists: { id: number; name: string }[]
+}
+
+// The Songs page's filter. `media` is the SAME MediaListFilter the anime list
+// page builds (statuses, tags, ranges, sort, seed…) so both pages narrow the
+// library identically — the song-level fields below are layered on top of it.
+export interface ThemeSongFilter {
+  media: MediaListFilter // mediaType is always 'anime'
+  search?: string | null // song title, artist or anime title
+  songType?: 'OP' | 'ED' | null // null/omit = both
+  favoriteOnly?: boolean | null // hearted songs only
+  // Songs with no audio at all can't be queued; the page hides them by default.
+  playableOnly?: boolean | null
+}
+
+// Unfiltered library totals for the Songs page header ("N of M").
+export interface ThemeSongCounts {
+  total: number
+  playable: number
+  favorites: number
 }
 
 // A related title on the detail page: another season, or the manga/novel a title
@@ -1568,4 +1607,51 @@ export interface TorrentFilter {
   minBytes: number | null
   maxBytes: number | null
   trackers: string[] // [] = every tracker
+}
+
+// ---- Daily / weekly checklist ----
+// The catalog of possible items is code (src/shared/checklist.ts); these types
+// describe one hydrated board. Every date here is a LOCAL 'YYYY-MM-DD' string
+// computed in the main process — the renderer only formats them, it never
+// derives "today" itself.
+
+export type ChecklistCadence = 'daily' | 'weekly'
+
+// mediaLog: the checklist performs the tracking action (log an episode/film).
+// detected: completion is read from existing activity tables (SRS, manga…).
+// manual: a plain tick, nothing to detect.
+export type ChecklistKind = 'mediaLog' | 'detected' | 'manual'
+
+// One logged event in the current period. `title` falls back to the snapshot
+// cached in the log payload when the media row has since been deleted.
+export interface ChecklistLogEntry {
+  id: number
+  mediaId: number | null
+  title: string | null
+  createdAt: string
+}
+
+// One enabled board row, fully hydrated: def facts are re-sent so the page can
+// render straight from this payload.
+export interface ChecklistTaskStatus {
+  id: number // checklist_task.id — the remove target
+  key: string
+  cadence: ChecklistCadence
+  label: string
+  kind: ChecklistKind
+  route: string | null // detected: where clicking the row goes
+  mediaType: MediaType | null // mediaLog: which picker to open
+  target: number
+  progress: number // within the current period
+  done: boolean
+  entries: ChecklistLogEntry[] // [] for detected kinds
+}
+
+export interface ChecklistStatus {
+  today: string
+  week: { start: string; end: string } // Saturday..Friday
+  daily: ChecklistTaskStatus[]
+  weekly: ChecklistTaskStatus[]
+  streak: { current: number; longest: number } // fully-complete daily boards
+  history: { day: string; count: number }[] // dailies completed per day
 }

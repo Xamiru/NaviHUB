@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -661,13 +661,24 @@ function ThemeRow({ theme, onPlay }: { theme: ThemeSong; onPlay: () => void }) {
   // the row no longer pre-checks the local file (one IPC per row saved).
   const hasAudio = !!(theme.audioPath || theme.audioUrl)
   const player = usePlayer()
+  const qc = useQueryClient()
   const id = `theme-${theme.id}`
   const isCurrent = player.track?.id === id
   const isPlaying = isCurrent && player.isPlaying
 
+  // Same heart as the Songs page (/anime/songs), optimistic then invalidated.
+  const [favorite, setFavorite] = useState(theme.favorite)
+  useEffect(() => setFavorite(theme.favorite), [theme.favorite])
+  async function toggleFavorite(): Promise<void> {
+    const next = !favorite
+    setFavorite(next)
+    await api.themes.setFavorite(theme.id, next)
+    qc.invalidateQueries({ queryKey: qk.themes.all })
+  }
+
   return (
     <div
-      className={`flex items-center gap-3 bg-base-800 rounded-md px-3 py-2.5 ${
+      className={`group flex items-center gap-3 bg-base-800 rounded-md px-3 py-2.5 ${
         isCurrent ? 'ring-1 ring-accent/50' : ''
       }`}
     >
@@ -702,6 +713,16 @@ function ThemeRow({ theme, onPlay }: { theme: ThemeSong; onPlay: () => void }) {
           </p>
         )}
       </div>
+      <button
+        className={`px-1 text-sm ${
+          favorite ? 'text-accent' : 'text-gray-600 opacity-0 group-hover:opacity-100'
+        } hover:text-accent`}
+        title={favorite ? 'Remove from favorites' : 'Add to favorites'}
+        aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+        onClick={toggleFavorite}
+      >
+        {favorite ? '♥' : '♡'}
+      </button>
     </div>
   )
 }

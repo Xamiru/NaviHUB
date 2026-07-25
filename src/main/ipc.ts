@@ -9,8 +9,10 @@ import * as tagRepo from './repos/tagRepo'
 import * as settingsRepo from './repos/settingsRepo'
 import * as searchRepo from './repos/searchRepo'
 import * as quizRepo from './repos/quizRepo'
+import * as themeRepo from './repos/themeRepo'
 import * as tournamentRepo from './repos/tournamentRepo'
 import * as listRepo from './repos/listRepo'
+import * as checklistRepo from './repos/checklistRepo'
 import * as japaneseRepo from './repos/japaneseRepo'
 import * as anilist from './anilist'
 import * as tmdb from './tmdb'
@@ -44,6 +46,14 @@ import * as sync from './sync'
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
 export function registerIpc(): void {
+  // The app's one "today": the LOCAL calendar day. Recurring features (gacha
+  // goals, checklist periods) take it as a parameter so the renderer never
+  // derives a date and tests can pin one.
+  const todayLocal = (): string => {
+    const d = new Date()
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  }
+
   // ---- media ----
   ipcMain.handle('media:list', (_e, filter) => mediaRepo.list(filter))
   ipcMain.handle('media:get', (_e, id) => mediaRepo.get(id))
@@ -125,6 +135,21 @@ export function registerIpc(): void {
     listRepo.reorder(listId, orderedItemIds)
   )
   ipcMain.handle('lists:forEntity', (_e, kind, entityId) => listRepo.forEntity(kind, entityId))
+
+  // ---- checklist (daily / weekly recurring board) ----
+  ipcMain.handle('checklist:status', () => checklistRepo.status(todayLocal()))
+  ipcMain.handle('checklist:addTask', (_e, key, cadence) => checklistRepo.addTask(key, cadence))
+  ipcMain.handle('checklist:removeTask', (_e, id) => checklistRepo.removeTask(id))
+  ipcMain.handle('checklist:logMedia', (_e, taskKey, cadence, mediaId) =>
+    checklistRepo.logMedia(taskKey, cadence, mediaId, todayLocal())
+  )
+  ipcMain.handle('checklist:undoLog', (_e, logId) => checklistRepo.undoLog(logId))
+  ipcMain.handle('checklist:tick', (_e, taskKey, cadence) =>
+    checklistRepo.tick(taskKey, cadence, todayLocal())
+  )
+  ipcMain.handle('checklist:untick', (_e, taskKey, cadence) =>
+    checklistRepo.untick(taskKey, cadence, todayLocal())
+  )
 
   // ---- Japanese learning ----
   ipcMain.handle('japanese:listCourses', () => japaneseRepo.listCourses())
@@ -218,9 +243,14 @@ export function registerIpc(): void {
     withActivity('Importing from RAWG', () => rawg.importGame(rawgId))
   )
 
-  // ---- AnimeThemes import (anime OP/ED songs) ----
+  // ---- AnimeThemes import (anime OP/ED songs) + the Songs library ----
   ipcMain.handle('themes:import', (_e, mediaId) =>
     withActivity('Fetching theme songs', () => themes.importThemes(mediaId))
+  )
+  ipcMain.handle('themes:list', (_e, filter) => themeRepo.list(filter))
+  ipcMain.handle('themes:counts', () => themeRepo.counts())
+  ipcMain.handle('themes:setFavorite', (_e, themeId, favorite) =>
+    themeRepo.setFavorite(themeId, favorite)
   )
 
   // ---- pictures (wallpapers + fan art) ----
@@ -340,10 +370,6 @@ export function registerIpc(): void {
 
   // ---- gacha coach (FGO LLM chat) ----
   // LLM calls only in coachSend / importCoachDoc; the rest are local DB ops.
-  const todayLocal = (): string => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  }
   ipcMain.handle('gacha:coachStatus', () => gachaCoach.getCoachStatus())
   ipcMain.handle('gacha:coachSend', (_e, game, text, attachments) =>
     gachaCoach.coachSend(game, text, attachments ?? [])

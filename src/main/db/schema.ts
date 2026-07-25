@@ -228,6 +228,8 @@ export const themeSong = sqliteTable(
     audioUrl: text('audio_url'),
     audioPath: text('audio_path'),
     sortOrder: integer('sort_order'),
+    // Personal: the Songs page's heart (wiped on export, kept across re-imports).
+    favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
     externalSource: text('external_source'),
     externalId: text('external_id')
   },
@@ -935,3 +937,41 @@ export const syncBatch = sqliteTable('sync_batch', {
     .notNull()
     .default(sql`(datetime('now'))`)
 })
+
+// ---------------------------------------------------------------------------
+// Daily / weekly checklist — enabled board rows + the activity log behind them.
+// The item catalog itself is code (src/shared/checklist.ts), not a table.
+// ---------------------------------------------------------------------------
+export const checklistTask = sqliteTable(
+  'checklist_task',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    taskKey: text('task_key').notNull(),
+    cadence: text('cadence').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    uniq: unique('uniq_checklist_task').on(t.taskKey, t.cadence)
+  })
+)
+
+export const checklistLog = sqliteTable(
+  'checklist_log',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    taskKey: text('task_key').notNull(),
+    cadence: text('cadence').notNull(),
+    periodKey: text('period_key').notNull(),
+    mediaId: integer('media_id'),
+    payload: text('payload'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byTask: index('idx_checklist_log_task').on(t.taskKey, t.cadence, t.periodKey)
+  })
+)

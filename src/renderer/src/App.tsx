@@ -14,6 +14,7 @@ import MediaListPage from './pages/MediaListPage'
 import MediaDetailPage from './pages/MediaDetailPage'
 import MediaFormPage from './pages/MediaFormPage'
 import SeasonalAnimePage from './pages/SeasonalAnimePage'
+import ThemeSongsPage from './pages/ThemeSongsPage'
 import EntityListView from './components/EntityListView'
 import SettingsPage from './pages/SettingsPage'
 import PersonDetailPage from './pages/PersonDetailPage'
@@ -23,6 +24,7 @@ import CharacterDetailPage from './pages/CharacterDetailPage'
 import QuizLandingPage from './pages/QuizLandingPage'
 import SongQuizPage from './pages/SongQuizPage'
 import TournamentPage from './pages/TournamentPage'
+import ChecklistPage from './pages/ChecklistPage'
 import ListsIndexPage from './pages/ListsIndexPage'
 import TorrentsPage from './pages/TorrentsPage'
 import ListFormPage from './pages/ListFormPage'
@@ -97,11 +99,13 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/stats" element={<StatsPage />} />
+            <Route path="/checklist" element={<ChecklistPage />} />
 
             {/* Anime */}
             <Route path="/anime" element={<MediaListPage cfg={ANIME} />} />
             <Route path="/anime/new" element={<MediaFormPage cfg={ANIME} />} />
             <Route path="/anime/seasonal" element={<SeasonalAnimePage />} />
+            <Route path="/anime/songs" element={<ThemeSongsPage />} />
             <Route path="/anime/:id" element={<MediaDetailPage cfg={ANIME} />} />
             <Route path="/anime/:id/edit" element={<MediaFormPage cfg={ANIME} />} />
 

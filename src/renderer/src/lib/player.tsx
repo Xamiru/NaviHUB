@@ -9,7 +9,6 @@ import {
 } from 'react'
 import { api } from './api'
 import { mediaUrl } from '@shared/mediaUrl'
-import type { QuizSong } from '@shared/types'
 
 // A single shared audio element drives all playback, so starting one song
 // automatically stops whatever was playing before, and the now-playing bar can
@@ -85,22 +84,6 @@ export function shuffleArray<T>(arr: T[]): T[] {
     ;[out[i], out[j]] = [out[j], out[i]]
   }
   return out
-}
-
-// Maps a library-wide song-pool entry to a queue track. Uses the same
-// `theme-<id>` id space as the detail page's rows, so a song queued from
-// "Shuffle Music" still highlights (and toggles) on its anime page.
-export function quizSongToTrack(s: QuizSong): Track {
-  return {
-    id: `theme-${s.themeId}`,
-    audioPath: s.audioPath,
-    audioUrl: s.audioUrl,
-    title: s.slug ? `${s.slug} · ${s.title ?? 'Untitled'}` : (s.title ?? 'Untitled'),
-    subtitle: s.artists.join(', ') || null,
-    context: s.animeTitle,
-    coverPath: s.coverPath,
-    mediaId: s.mediaId
-  }
 }
 
 // Persisted playback preferences (volume/repeat/shuffle), ReaderPrefs-style.

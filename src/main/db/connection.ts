@@ -80,6 +80,9 @@ function runMigrations(sqlite: Database.Database): void {
   // these columns).
   ensureColumn(sqlite, 'gacha_news', 'author', 'author TEXT')
   ensureColumn(sqlite, 'gacha_news', 'sort_order', 'sort_order INTEGER NOT NULL DEFAULT 0')
+  // Theme songs got a personal "favorite" flag with the /anime/songs page;
+  // every DB that already imported themes predates it.
+  ensureColumn(sqlite, 'theme_song', 'favorite', 'favorite INTEGER NOT NULL DEFAULT 0')
 
   // Movies used to store "times watched" in the generic `progress` column;
   // it's now unified into `rewatch_count` (the universal times-consumed counter)

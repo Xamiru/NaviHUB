@@ -112,6 +112,7 @@ db.exec(`
     media_id INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
     slug TEXT, type TEXT, sequence INTEGER, title TEXT,
     audio_url TEXT, audio_path TEXT, sort_order INTEGER,
+    favorite INTEGER NOT NULL DEFAULT 0,
     external_source TEXT, external_id TEXT,
     UNIQUE(external_source, external_id)
   );
@@ -1773,6 +1774,14 @@ async function atImportThemes(mediaId, anilistId, animeTitle, { withAudio }) {
   const themes = await atFetchThemes(anilistId)
   if (themes === null) return { songs: 0, artists: 0, audio: 0, catalogued: false }
 
+  // Carry the Songs page's hearts across the clean replace (mirrors themes.ts).
+  const favorited = new Set(
+    db
+      .prepare('SELECT external_id FROM theme_song WHERE media_id=? AND favorite=1')
+      .all(mediaId)
+      .map((r) => r.external_id)
+      .filter(Boolean)
+  )
   db.prepare('DELETE FROM theme_song WHERE media_id=?').run(mediaId)
   db.prepare("DELETE FROM credit WHERE media_id=? AND role='artist'").run(mediaId)
 
@@ -1789,9 +1798,9 @@ async function atImportThemes(mediaId, anilistId, animeTitle, { withAudio }) {
     const themeSongId = Number(
       db.prepare(
         `INSERT INTO theme_song
-         (media_id, slug, type, sequence, title, audio_url, audio_path, sort_order, external_source, external_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-      ).run(mediaId, t.slug, t.type, t.sequence, t.title, t.audioUrl, audioPath, order++, AT_SOURCE, t.externalId).lastInsertRowid
+         (media_id, slug, type, sequence, title, audio_url, audio_path, sort_order, favorite, external_source, external_id)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      ).run(mediaId, t.slug, t.type, t.sequence, t.title, t.audioUrl, audioPath, order++, favorited.has(t.externalId) ? 1 : 0, AT_SOURCE, t.externalId).lastInsertRowid
     )
     songs++
     let aOrder = 0

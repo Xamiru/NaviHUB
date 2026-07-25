@@ -25,6 +25,7 @@ const NAV_ITEMS: PaletteItem[] = [
     to: cfg.basePath
   })),
   { key: 'nav-anime-seasonal', icon: '❆', label: 'Seasonal anime', hint: 'Go to', to: '/anime/seasonal' },
+  { key: 'nav-anime-songs', icon: '♫', label: 'Songs', hint: 'Go to', to: '/anime/songs' },
   { key: 'nav-music', icon: '♪', label: 'Music', hint: 'Go to', to: '/music' },
   { key: 'nav-stats', icon: '⧗', label: 'Stats', hint: 'Go to', to: '/stats' },
   { key: 'nav-lists', icon: '☰', label: 'Lists', hint: 'Go to', to: '/lists' },

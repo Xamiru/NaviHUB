@@ -42,8 +42,11 @@ nsis:
 portable:
   artifactName: ${productName}-${version}-portable.${ext}
 linux:
-  # dir target only — used for smoke-testing packaged mode locally; the real
-  # distribution target is Windows.
-  target: [dir]
+  # AppImage is the distributed artifact (CI publishes it to GitHub Releases).
+  # `npm run pack:linux` passes `--linux dir` on the command line, which
+  # overrides this — that path is still the local packaged-mode smoke test.
+  target: [AppImage]
   icon: assets/icon.png
   category: AudioVideo
+appImage:
+  artifactName: ${productName}-${version}.${ext}

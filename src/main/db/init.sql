@@ -122,6 +122,8 @@ CREATE TABLE IF NOT EXISTS settings (
 
 -- theme_song — an anime's opening/ending songs (from AnimeThemes.moe).
 -- audio_url is the remote .ogg; audio_path is the locally-downloaded copy (if any).
+-- favorite is the only PERSONAL column here (the Songs page's heart) — it is
+-- wiped on export and preserved by re-imports, like media_item.favorite.
 CREATE TABLE IF NOT EXISTS theme_song (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   media_id        INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
@@ -132,6 +134,7 @@ CREATE TABLE IF NOT EXISTS theme_song (
   audio_url       TEXT,
   audio_path      TEXT,
   sort_order      INTEGER,
+  favorite        INTEGER NOT NULL DEFAULT 0,
   external_source TEXT,
   external_id     TEXT,
   UNIQUE(external_source, external_id)
@@ -649,3 +652,38 @@ CREATE TABLE IF NOT EXISTS sync_batch (
   skipped_json TEXT NOT NULL DEFAULT '[]',   -- SyncSkippedOp[] for replayed responses
   applied_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- ---- Daily / weekly checklist ----
+-- The CATALOG of possible items lives in src/shared/checklist.ts
+-- (GACHA_GAMES-style config); these tables only store which items are enabled
+-- and what happened. Weeks run Saturday→Friday; period_key and every "today"
+-- decision are computed in MAIN with local dates (the renderer never derives
+-- today). Both tables are personal → wiped on export (sanitizeSql.cjs).
+
+CREATE TABLE IF NOT EXISTS checklist_task (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_key    TEXT NOT NULL,               -- FROZEN key from shared/checklist.ts
+  cadence     TEXT NOT NULL,               -- 'daily' | 'weekly'
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(task_key, cadence)
+);
+
+-- One row per manual tick / logged episode / logged movie. Deliberately NO FK
+-- to checklist_task (keyed by task_key, so removing + re-adding a task keeps
+-- its history) and none on media_id (jp_card.source_media_id precedent — reads
+-- LEFT JOIN and tolerate deletion; payload caches the title for display).
+-- period_key: the local day for daily rows, the week's Saturday for weekly.
+-- payload JSON: {"title": string, "prior": {"progress": number,
+-- "status": string|null}} — prior is what undo restores on the media row.
+CREATE TABLE IF NOT EXISTS checklist_log (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_key    TEXT NOT NULL,
+  cadence     TEXT NOT NULL,
+  period_key  TEXT NOT NULL,
+  media_id    INTEGER,
+  payload     TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_checklist_log_task
+  ON checklist_log(task_key, cadence, period_key);

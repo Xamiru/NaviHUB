@@ -5,9 +5,10 @@
  *
  * What survives: every canonical/imported table (person, company, character,
  * credit, media_company, media_character, tag, media_tag, theme_song incl.
- * audio_path, theme_artist, media_relation), media_item's canonical columns
- * (title, synopsis, cover_path, metadata, external ids, ...), and harmless
- * preference settings (*.statuses, score.max, theme).
+ * audio_path but NOT its favorite flag, theme_artist, media_relation),
+ * media_item's canonical columns (title, synopsis, cover_path, metadata,
+ * external ids, ...), and harmless preference settings (*.statuses, score.max,
+ * theme).
  */
 
 // Order matters: FK children before parents. list_item.entity_id is polymorphic
@@ -48,6 +49,10 @@ const SANITIZE_STATEMENTS = [
   // Quiz round history (personal scores).
   'DELETE FROM quiz_session',
 
+  // Theme songs themselves are canonical (AnimeThemes data + downloaded audio)
+  // and survive; only the hearts from the Songs page are personal.
+  'UPDATE theme_song SET favorite=0',
+
   // Gacha tracker: everything is personal (owned roster, builds, wallet,
   // banner notes, fetched news, fetch timestamps). Children before parents
   // (gacha_build FKs gacha_unit).
@@ -65,6 +70,11 @@ const SANITIZE_STATEMENTS = [
   'DELETE FROM gacha_goal',
   'DELETE FROM gacha_coach_note',
   'DELETE FROM gacha_coach_doc',
+
+  // Daily/weekly checklist: the enabled board and everything logged against it
+  // are personal (the item catalog itself is code, not data).
+  'DELETE FROM checklist_log',
+  'DELETE FROM checklist_task',
 
   // PC↔phone sync bookkeeping (applied op batches).
   'DELETE FROM sync_batch',

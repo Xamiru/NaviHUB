@@ -28,8 +28,8 @@ function seed(): void {
     INSERT INTO media_character (media_id, character_id) VALUES (1, 1);
     INSERT INTO tag (id, name) VALUES (1, 'Space');
     INSERT INTO media_tag (media_id, tag_id) VALUES (1, 1);
-    INSERT INTO theme_song (id, media_id, slug, type, title, audio_url, audio_path)
-      VALUES (1, 1, 'OP1', 'OP', 'Tank!', 'https://x/tank.ogg', 'audio/tank.ogg');
+    INSERT INTO theme_song (id, media_id, slug, type, title, audio_url, audio_path, favorite)
+      VALUES (1, 1, 'OP1', 'OP', 'Tank!', 'https://x/tank.ogg', 'audio/tank.ogg', 1);
     INSERT INTO theme_artist (theme_song_id, person_id) VALUES (1, 1);
     INSERT INTO media_relation (media_id, relation_type, related_source, related_external_id)
       VALUES (1, 'SEQUEL', 'anilist', '5');
@@ -82,6 +82,10 @@ function seed(): void {
     INSERT INTO gacha_goal (game, kind, title, recur) VALUES ('fgo', 'task', 'Do dailies', 'daily');
     INSERT INTO gacha_coach_note (game, content) VALUES ('fgo', 'Plays on NA server');
     INSERT INTO gacha_coach_doc (game, title, content) VALUES ('fgo', 'ChatGPT log', 'raw text');
+
+    INSERT INTO checklist_task (task_key, cadence) VALUES ('anime-episode', 'daily');
+    INSERT INTO checklist_log (task_key, cadence, period_key, media_id, payload)
+      VALUES ('anime-episode', 'daily', '2026-07-25', 1, '{"title":"Cowboy Bebop"}');
 
     INSERT INTO settings (key, value) VALUES
       ('tmdb.api_key', 'secret-tmdb'),
@@ -148,15 +152,18 @@ describe('export sanitize', () => {
     }
     const theme = db.prepare('SELECT * FROM theme_song WHERE id=1').get() as Record<string, unknown>
     expect(theme.audio_path).toBe('audio/tank.ogg')
+    // …but the heart is personal and goes.
+    expect(theme.favorite).toBe(0)
   })
 
-  it('wipes lists, japanese content+progress, music library, manga chapters, images, quiz history, gacha', () => {
+  it('wipes lists, japanese content+progress, music library, manga chapters, images, quiz history, gacha, checklist', () => {
     for (const t of [
       'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log',
       'music_artist', 'music_album', 'music_track', 'music_playlist',
       'music_playlist_track', 'music_play_log', 'manga_chapter', 'media_image', 'quiz_session',
       'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta',
-      'gacha_chat_thread', 'gacha_chat_message', 'gacha_goal', 'gacha_coach_note', 'gacha_coach_doc'
+      'gacha_chat_thread', 'gacha_chat_message', 'gacha_goal', 'gacha_coach_note', 'gacha_coach_doc',
+      'checklist_task', 'checklist_log'
     ]) {
       expect(count(t), t).toBe(0)
     }

@@ -202,6 +202,18 @@ export async function importThemes(
   // can no longer leave the anime with its themes deleted but not replaced.
   updateActivity({ phase: 'writing' })
   return db.transaction((): ThemeImportSummary => {
+    // `favorite` is the one personal column on theme_song, and this is a clean
+    // replace — carry the hearts across by AnimeThemes id (the rows' dedup key)
+    // so a refresh can't silently empty the Songs page's favorites.
+    const favorited = new Set(
+      (
+        db
+          .prepare('SELECT external_id FROM theme_song WHERE media_id=? AND favorite=1')
+          .all(mediaId) as { external_id: string | null }[]
+      )
+        .map((r) => r.external_id)
+        .filter((id): id is string => !!id)
+    )
     db.prepare('DELETE FROM theme_song WHERE media_id=?').run(mediaId)
     db.prepare("DELETE FROM credit WHERE media_id=? AND role='artist'").run(mediaId)
 
@@ -216,8 +228,8 @@ export async function importThemes(
       const info = db
         .prepare(
           `INSERT INTO theme_song
-           (media_id, slug, type, sequence, title, audio_url, audio_path, sort_order, external_source, external_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           (media_id, slug, type, sequence, title, audio_url, audio_path, sort_order, favorite, external_source, external_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           mediaId,
@@ -228,6 +240,7 @@ export async function importThemes(
           t.audioUrl,
           audioPath,
           order++,
+          favorited.has(t.externalId) ? 1 : 0,
           AT_SOURCE,
           t.externalId
         )
