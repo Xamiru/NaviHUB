@@ -1,16 +1,11 @@
-import { join } from 'path'
 import { setImmediate as yieldToLoop } from 'timers/promises'
 import type Database from 'better-sqlite3'
 import { getSqlite } from './db/connection'
 import { getDictDb } from './dict/dictDb'
-import { mangaRootDir } from './files'
-import { listChapterPages } from './manga'
-import { getChapterOcr } from './mokuro'
-import { isEpubFile, listEpubPages } from './epub'
-import { readArchiveEntry } from './archive'
-import { tokenize } from './tokenizer'
+import { countSeriesWords, isLearnableWord } from './seriesText'
 import { flattenGlossary } from '@shared/dictContent'
 import * as japaneseRepo from './repos/japaneseRepo'
+import * as coverageRepo from './repos/coverageRepo'
 import type { PrepDeckStatus, PrepDeckSummary } from '@shared/types'
 
 // "Series prep deck": tokenize everything readable in a series (mokuro OCR
@@ -46,10 +41,7 @@ export function rankCandidates(
   const out: { word: string; count: number }[] = []
   for (const [word, count] of counts) {
     if (known.has(word)) continue
-    if (word.length < 1) continue
-    // Single kana or Latin/digit-only tokens are noise; single kanji is fine.
-    if (word.length === 1 && !/[一-鿿]/.test(word)) continue
-    if (!/[぀-ヿ一-鿿]/.test(word)) continue
+    if (!isLearnableWord(word)) continue
     out.push({ word, count })
   }
   return out.sort((a, b) => b.count - a.count)
@@ -87,20 +79,83 @@ export function glossFor(
   return { reading: row.reading, gloss }
 }
 
-// Writes the course + lessons-of-25 in one transaction via the real repo fns.
-export function writePrepCourse(
-  mediaId: number,
-  seriesTitle: string,
-  words: { word: string; count: number; reading: string; gloss: string }[]
-): number {
-  const courseId = japaneseRepo.createCourse({
-    title: `Reading prep: ${seriesTitle}`,
-    description:
-      `The ${words.length} most frequent words in "${seriesTitle}" that aren't in your decks yet — ` +
-      'auto-built from its pages. Mark a lesson learned to start reviewing, then go read.',
-    level: null,
-    difficulty: null
-  })
+// Re-orders series candidates by fusing their in-series rank with a global
+// corpus rank (Borda-style: sum of positions). Rank fusion is scale-free, so
+// JPDB's 1–900k ranks and a series' 1–500 counts need no normalizing constant.
+// Words the frequency dictionary doesn't know sink to the end of the global
+// half, and an empty map makes this the identity — no new failure mode when no
+// frequency dictionary is installed.
+export function fuseWithGlobalRank(
+  candidates: { word: string; count: number }[],
+  globalRank: Map<string, number>,
+  weight = 0.5
+): { word: string; count: number }[] {
+  if (globalRank.size === 0) return candidates
+  // Global positions, densely ranked among the candidates we actually have.
+  const known = candidates
+    .filter((c) => globalRank.has(c.word))
+    .sort((a, b) => globalRank.get(a.word)! - globalRank.get(b.word)!)
+  const globalIndex = new Map<string, number>()
+  known.forEach((c, i) => globalIndex.set(c.word, i))
+  const missing = candidates.length
+  return candidates
+    .map((c, seriesIndex) => ({
+      c,
+      seriesIndex,
+      score: seriesIndex + weight * (globalIndex.get(c.word) ?? missing)
+    }))
+    .sort((a, b) => a.score - b.score || a.seriesIndex - b.seriesIndex)
+    .map((x) => x.c)
+}
+
+// Global ranks for a batch of words, from the highest-priority installed
+// frequency dictionary. Empty map when none is installed.
+export function loadGlobalRanks(dictDb: Database.Database, words: string[]): Map<string, number> {
+  const out = new Map<string, number>()
+  if (words.length === 0) return out
+  try {
+    const src = dictDb
+      .prepare(
+        `SELECT f.dict_id AS id FROM freq f JOIN dict d ON d.id = f.dict_id
+         GROUP BY f.dict_id ORDER BY d.priority DESC, d.id DESC LIMIT 1`
+      )
+      .get() as { id: number } | undefined
+    if (!src) return out
+    for (let i = 0; i < words.length; i += 500) {
+      const slice = words.slice(i, i + 500)
+      const placeholders = slice.map(() => '?').join(',')
+      const rows = dictDb
+        .prepare(
+          `SELECT expression, MIN(rank) AS rank FROM freq
+           WHERE dict_id = ? AND expression IN (${placeholders}) GROUP BY expression`
+        )
+        .all(src.id, ...slice) as { expression: string; rank: number }[]
+      for (const r of rows) out.set(r.expression, r.rank)
+    }
+  } catch {
+    return new Map()
+  }
+  return out
+}
+
+// Writes a vocab course as lessons of 25 in one transaction via the real repo
+// fns. Shared by the series prep deck and the core frequency deck — only the
+// titles and per-card notes differ between them.
+export function writeWordCourse(input: {
+  title: string
+  description: string
+  words: {
+    word: string
+    reading: string
+    gloss: string
+    notes: string | null
+    exampleJp?: string | null
+    exampleEn?: string | null
+  }[]
+  sourceMediaId: number | null
+}): number {
+  const { title, description, words, sourceMediaId } = input
+  const courseId = japaneseRepo.createCourse({ title, description, level: null, difficulty: null })
   for (let i = 0; i < words.length; i += WORDS_PER_LESSON) {
     const slice = words.slice(i, i + WORDS_PER_LESSON)
     japaneseRepo.createLesson({
@@ -111,43 +166,37 @@ export function writePrepCourse(
         front: w.word,
         reading: w.reading && w.reading !== w.word ? w.reading : null,
         back: w.gloss,
-        notes: `appears ${w.count}× in this series`,
-        sourceMediaId: mediaId
+        notes: w.notes,
+        exampleJp: w.exampleJp ?? null,
+        exampleEn: w.exampleEn ?? null,
+        sourceMediaId
       }))
     })
   }
   return courseId
 }
 
-// ---- text extraction ----
-
-// Strips tags/entities from EPUB spine XHTML — same spirit as the flattener:
-// crude but safe, feeding a tokenizer rather than a renderer.
-export function stripXhtml(xml: string): string {
-  return xml
-    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' ')
-    .replace(/<rt[\s\S]*?<\/rt>/gi, ' ') // furigana would double-count readings
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&[a-z#0-9]+;/gi, ' ')
-}
-
-async function* chapterTexts(dirPath: string): AsyncGenerator<string> {
-  const abs = join(mangaRootDir(), dirPath)
-  if (isEpubFile(dirPath)) {
-    for (const entry of await listEpubPages(abs)) {
-      const buf = await readArchiveEntry(abs, entry)
-      if (buf) yield stripXhtml(buf.toString('utf8'))
-    }
-    return
-  }
-  const pageFiles = await listChapterPages(abs)
-  if (pageFiles.length === 0) return
-  const ocr = getChapterOcr(abs, pageFiles)
-  if (!ocr) return
-  for (const page of ocr.pages) {
-    if (!page) continue
-    for (const block of page.blocks) yield block.lines.join('')
-  }
+// Writes the course + lessons-of-25 in one transaction via the real repo fns.
+export function writePrepCourse(
+  mediaId: number,
+  seriesTitle: string,
+  words: { word: string; count: number; reading: string; gloss: string; rank?: number | null }[]
+): number {
+  return writeWordCourse({
+    title: `Reading prep: ${seriesTitle}`,
+    description:
+      `The ${words.length} most frequent words in "${seriesTitle}" that aren't in your decks yet — ` +
+      'auto-built from its pages. Mark a lesson learned to start reviewing, then go read.',
+    words: words.map((w) => ({
+      word: w.word,
+      reading: w.reading,
+      gloss: w.gloss,
+      notes:
+        `appears ${w.count}× in this series` +
+        (w.rank ? ` · global rank #${w.rank}` : '')
+    })),
+    sourceMediaId: mediaId
+  })
 }
 
 // ---- the build ----
@@ -173,35 +222,12 @@ export async function buildPrepDeck(mediaId: number, limit = 100): Promise<PrepD
       throw new Error('No offline dictionary installed — add JMdict in Settings first')
     }
 
-    const chapters = db
-      .prepare('SELECT dir_path FROM manga_chapter WHERE media_id = ? ORDER BY sort_order, id')
-      .all(mediaId) as { dir_path: string }[]
-    if (chapters.length === 0) {
-      throw new Error('No chapters attached — link the series folder first')
-    }
-
     // Phase 1: read + tokenize everything, counting dictionary-form frequencies.
-    status.total = chapters.length
-    const counts = new Map<string, number>()
-    let sawText = false
-    for (const ch of chapters) {
-      for await (const text of chapterTexts(ch.dir_path)) {
-        if (!text.trim()) continue
-        sawText = true
-        for (const tok of await tokenize(text)) {
-          if (!tok.wordLike) continue
-          const base = tok.base || tok.surface
-          counts.set(base, (counts.get(base) ?? 0) + 1)
-        }
-      }
-      status.done += 1
-      await yieldToLoop()
-    }
-    if (!sawText) {
-      throw new Error(
-        'No readable text found — manga chapters need mokuro OCR, or attach an EPUB book'
-      )
-    }
+    const scan = await countSeriesWords(mediaId, (done, total) => {
+      status.done = done
+      status.total = total
+    })
+    const { counts } = scan
 
     // Phase 2: rank, drop known words, gloss from the offline dictionaries.
     status.phase = 'glossing'
@@ -211,13 +237,28 @@ export async function buildPrepDeck(mediaId: number, limit = 100): Promise<PrepD
       (db.prepare('SELECT front FROM jp_card').all() as { front: string }[]).map((r) => r.front)
     )
     const candidates = rankCandidates(counts, known)
-    const words: { word: string; count: number; reading: string; gloss: string }[] = []
+    // Blend in global corpus frequency when a frequency dictionary is installed,
+    // so a word that is merely locally repeated doesn't outrank one the learner
+    // will meet everywhere. Capped: the tail is noise either way.
+    const shortlist = candidates.slice(0, 2000)
+    const globalRank = loadGlobalRanks(
+      dictDb,
+      shortlist.map((c) => c.word)
+    )
+    const ordered = [...fuseWithGlobalRank(shortlist, globalRank), ...candidates.slice(2000)]
+    const words: { word: string; count: number; reading: string; gloss: string; rank: number | null }[] =
+      []
     let sinceYield = 0
-    for (const cand of candidates) {
+    for (const cand of ordered) {
       if (words.length >= limit) break
       const glossed = glossFor(dictDb, cand.word)
       if (glossed) {
-        words.push({ word: cand.word, count: cand.count, ...glossed })
+        words.push({
+          word: cand.word,
+          count: cand.count,
+          ...glossed,
+          rank: globalRank.get(cand.word) ?? null
+        })
         status.done = words.length
       }
       if (++sinceYield % 50 === 0) await yieldToLoop()
@@ -226,15 +267,21 @@ export async function buildPrepDeck(mediaId: number, limit = 100): Promise<PrepD
       throw new Error('Nothing new to learn — every frequent word is already in your decks')
     }
 
-    // Phase 3: write the course.
+    // Phase 3: write the course. The scan we just paid for is also exactly what
+    // the comprehension score needs, so snapshot it on the way out.
     status.phase = 'writing'
     const courseId = writePrepCourse(mediaId, media.title, words)
+    try {
+      coverageRepo.saveScan(mediaId, scan)
+    } catch {
+      // A coverage snapshot is a bonus, never a reason to fail the deck build.
+    }
 
     return {
       courseId,
       courseTitle: `Reading prep: ${media.title}`,
       words: words.length,
-      chaptersScanned: chapters.length,
+      chaptersScanned: scan.chaptersScanned,
       uniqueWordsSeen: counts.size
     }
   } catch (err) {

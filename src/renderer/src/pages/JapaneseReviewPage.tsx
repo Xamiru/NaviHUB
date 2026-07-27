@@ -4,9 +4,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { gradeCard, previewIntervals, type SrsState } from '@shared/srs'
+import { gradeCard, LEECH_LAPSES, previewIntervals, type SrsState } from '@shared/srs'
+import { buildTypedPrompt } from '@shared/cloze'
 import CardSourceBadge from '../components/CardSourceBadge'
-import type { JpCard, SrsGrade } from '@shared/types'
+import type { JpReviewCard, SrsGrade } from '@shared/types'
 
 type Phase = 'setup' | 'review' | 'done'
 
@@ -14,11 +15,11 @@ type Phase = 'setup' | 'review' | 'done'
 // the state with the same pure gradeCard() the main process persists with, so
 // requeued cards preview correct next-intervals without refetching.
 interface SessionItem {
-  card: JpCard
+  card: JpReviewCard
   srs: SrsState
 }
 
-function toItem(card: JpCard): SessionItem {
+function toItem(card: JpReviewCard): SessionItem {
   return {
     card,
     srs: {
@@ -49,6 +50,9 @@ const GRADE_LABEL: Record<SrsGrade, string> = {
 export default function JapaneseReviewPage() {
   const qc = useQueryClient()
   const [newLimit, setNewLimit] = usePersistedState<number>('jpNewLimit', 10)
+  // Bunpro-style typed answers. Only suggests a grade — the four buttons still
+  // decide, so SM-2 semantics (and phone sync) are untouched.
+  const [typedMode, setTypedMode] = usePersistedState<boolean>('jpTypedMode', false)
 
   const { data: stats } = useQuery({
     queryKey: qk.japanese.stats,
@@ -63,8 +67,16 @@ export default function JapaneseReviewPage() {
   const [grading, setGrading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  // Typed-answer state for the card on screen.
+  const [typed, setTyped] = useState('')
+  const [checked, setChecked] = useState<{ correct: boolean } | null>(null)
 
   const current = queue[0] ?? null
+  // Null when this card can't produce a good prompt — it just flips as before.
+  const prompt =
+    typedMode && current
+      ? buildTypedPrompt(current.card, current.card.lessonKind, current.card.lessonTitle)
+      : null
 
   async function start() {
     setError(null)
@@ -98,6 +110,8 @@ export default function JapaneseReviewPage() {
         setReviewed((n) => n + 1)
         if (g === 'again') setMisses((n) => n + 1)
         setRevealed(false)
+        setTyped('')
+        setChecked(null)
         setQueue((q) => {
           const rest = q.slice(1)
           // Cards still in a learning step come back later this session
@@ -119,7 +133,8 @@ export default function JapaneseReviewPage() {
     }
   }, [phase, queue.length, qc])
 
-  // Space reveals; 1–4 grade.
+  // Space reveals; 1–4 grade. In typed mode the answer box owns Enter (checking,
+  // then submitting the suggested grade), so events from it are ignored here.
   useEffect(() => {
     if (phase !== 'review') return
     function onKey(e: KeyboardEvent) {
@@ -135,6 +150,16 @@ export default function JapaneseReviewPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [phase, revealed, grade])
+
+  // What the typed answer suggests: got it → Good, missed it → Again. Only a
+  // highlight; the user still picks.
+  const suggested: SrsGrade | null = checked ? (checked.correct ? 'good' : 'again') : null
+
+  function checkTyped(): void {
+    if (!prompt || checked) return
+    setChecked({ correct: prompt.accept(typed) })
+    setRevealed(true)
+  }
 
   if (phase === 'setup') {
     return (
@@ -178,6 +203,24 @@ export default function JapaneseReviewPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={typedMode}
+                onChange={(e) => setTypedMode(e.target.checked)}
+              />
+              <span className="text-sm">
+                Typed answers
+                <span className="block text-xs text-gray-500">
+                  Fill in the blank on grammar cards and type readings on vocabulary. Cards that
+                  can&apos;t be typed just flip as usual.
+                </span>
+              </span>
+            </label>
           </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
@@ -230,6 +273,11 @@ export default function JapaneseReviewPage() {
           {srs.status === 'learning' && (
             <span className="chip bg-amber-500/20 text-amber-300">learning</span>
           )}
+          {srs.lapses >= LEECH_LAPSES && (
+            <span className="chip bg-red-500/20 text-red-300" title={`Lapsed ${srs.lapses} times`}>
+              leech
+            </span>
+          )}
           <button
             className="btn-ghost py-1 px-2 text-xs"
             onClick={() => {
@@ -242,9 +290,27 @@ export default function JapaneseReviewPage() {
       </div>
 
       <div className="card p-8 text-center min-h-[260px] flex flex-col items-center justify-center">
-        <p className="text-3xl leading-relaxed">{card.front}</p>
+        {prompt ? (
+          <>
+            <p className="text-3xl leading-relaxed">{prompt.display}</p>
+            {prompt.hint && <p className="mt-3 text-sm text-gray-400">{prompt.hint}</p>}
+            {checked && (
+              <p
+                className={`mt-3 text-sm ${checked.correct ? 'text-green-300' : 'text-red-300'}`}
+              >
+                {checked.correct ? 'Correct' : `Answer: ${prompt.reveal}`}
+                {!checked.correct && typed.trim() && (
+                  <span className="ml-2 text-gray-500">(you typed {typed.trim()})</span>
+                )}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="text-3xl leading-relaxed">{card.front}</p>
+        )}
         {revealed && (
           <>
+            {prompt && <p className="mt-4 text-2xl leading-relaxed">{card.front}</p>}
             {card.reading && card.reading !== card.front && (
               <p className="mt-3 text-lg text-gray-400">{card.reading}</p>
             )}
@@ -288,7 +354,35 @@ export default function JapaneseReviewPage() {
       </div>
 
       <div className="mt-4">
-        {!revealed ? (
+        {prompt && !checked ? (
+          <div className="flex gap-2">
+            <input
+              className="input flex-1"
+              autoFocus
+              placeholder="Type the missing part — kana or romaji"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  checkTyped()
+                }
+              }}
+            />
+            <button className="btn-primary shrink-0" onClick={checkTyped}>
+              Check
+            </button>
+            <button
+              className="btn-ghost shrink-0"
+              onClick={() => {
+                setChecked({ correct: false })
+                setRevealed(true)
+              }}
+            >
+              Reveal instead
+            </button>
+          </div>
+        ) : !revealed ? (
           <button className="btn-primary w-full" onClick={() => setRevealed(true)}>
             Show answer
           </button>
@@ -299,7 +393,9 @@ export default function JapaneseReviewPage() {
                 key={g}
                 disabled={grading}
                 onClick={() => void grade(g)}
-                className={`rounded-lg border bg-base-800 px-2 py-3 text-center transition-colors ${GRADE_STYLE[g]}`}
+                className={`rounded-lg border bg-base-800 px-2 py-3 text-center transition-colors ${
+                  GRADE_STYLE[g]
+                } ${g === suggested ? 'ring-2 ring-accent' : ''}`}
               >
                 <span className="block text-sm font-semibold">{GRADE_LABEL[g]}</span>
                 <span className="mt-0.5 block text-xs opacity-70">{previews[g]}</span>

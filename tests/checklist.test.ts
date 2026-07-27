@@ -15,7 +15,8 @@ import * as checklistRepo from '../src/main/repos/checklistRepo'
 import {
   addDays,
   CHECKLIST_DEFS,
-  parseStatuses,
+  CHECKLIST_SEED,
+  checklistDef,
   periodKeyFor,
   weekRange,
   weeklyKey
@@ -25,6 +26,10 @@ import {
 const SAT = '2026-07-25'
 const FRI = '2026-07-24'
 
+const ANIME_TASK = { key: 'anime-episode', cadence: 'daily' as const }
+const MOVIE_TASK = { key: 'movie-watch', cadence: 'weekly' as const }
+const MANGA_TASK = { key: 'manga-chapter', cadence: 'daily' as const }
+
 beforeEach(() => {
   db = createTestDb()
 })
@@ -32,19 +37,26 @@ beforeEach(() => {
 function addMedia(
   mediaType: string,
   title: string,
-  extra: { status?: string | null; progress?: number; totalUnits?: number | null } = {}
+  extra: {
+    status?: string | null
+    progress?: number
+    totalUnits?: number | null
+    rewatchCount?: number
+  } = {}
 ): number {
   return Number(
     db
       .prepare(
-        'INSERT INTO media_item (media_type, title, status, progress, total_units) VALUES (?,?,?,?,?)'
+        `INSERT INTO media_item (media_type, title, status, progress, total_units, rewatch_count)
+         VALUES (?,?,?,?,?,?)`
       )
       .run(
         mediaType,
         title,
         extra.status ?? null,
         extra.progress ?? 0,
-        extra.totalUnits ?? null
+        extra.totalUnits ?? null,
+        extra.rewatchCount ?? 0
       ).lastInsertRowid
   )
 }
@@ -54,6 +66,12 @@ function mediaRow(id: number): { status: string | null; progress: number } {
     status: string | null
     progress: number
   }
+}
+
+function rewatchCount(id: number): number {
+  return (
+    db.prepare('SELECT rewatch_count AS n FROM media_item WHERE id = ?').get(id) as { n: number }
+  ).n
 }
 
 // jp_review_log rows need a real card behind them (FKs are ON in the test DB).
@@ -109,12 +127,6 @@ describe('period helpers', () => {
   it('keys daily periods by the day itself', () => {
     expect(periodKeyFor('daily', FRI)).toBe(FRI)
     expect(periodKeyFor('weekly', FRI)).toBe('2026-07-18')
-  })
-
-  it('falls back to the default status list when settings are missing or junk', () => {
-    expect(parseStatuses(null, 'movie')[1]).toBe('Watched')
-    expect(parseStatuses('not json', 'anime')[1]).toBe('Completed')
-    expect(parseStatuses('["A","B"]', 'anime')).toEqual(['A', 'B'])
   })
 })
 
@@ -173,28 +185,67 @@ describe('detection', () => {
     expect(taskByKey(FRI, 'quiz-round').done).toBe(true)
   })
 
-  it('counts manga chapters read in the period and lessons learned in the week', () => {
-    checklistRepo.addTask('manga-chapter', 'daily')
+  it('counts lessons learned in the week', () => {
     checklistRepo.addTask('jp-lesson', 'weekly')
-    const m = addMedia('manga', 'Berserk')
-    db.prepare(
-      "INSERT INTO manga_chapter (media_id, dir_path, title, read_at) VALUES (?, 'c1', 'Ch 1', ?)"
-    ).run(m, `${SAT} 12:00:00`)
-    db.prepare(
-      "INSERT INTO manga_chapter (media_id, dir_path, title, read_at) VALUES (?, 'c2', 'Ch 2', NULL)"
-    ).run(m)
     const courseId = Number(
       db.prepare("INSERT INTO jp_course (title) VALUES ('C')").run().lastInsertRowid
     )
-    db.prepare(
-      `INSERT INTO jp_lesson (course_id, kind, title, learned, learned_at)
-       VALUES (?, 'grammar', 'L', 1, ?)`
-    ).run(courseId, `${SAT} 12:00:00`)
-
-    expect(taskByKey(SAT, 'manga-chapter').progress).toBe(1)
+    const addLesson = (learned: number, at: string | null): void => {
+      db.prepare(
+        `INSERT INTO jp_lesson (course_id, kind, title, learned, learned_at)
+         VALUES (?, 'grammar', 'L', ?, ?)`
+      ).run(courseId, learned, at)
+    }
+    addLesson(1, `${SAT} 12:00:00`)
+    addLesson(1, '2026-07-17 12:00:00') // previous week
+    addLesson(0, null)
     expect(taskByKey(SAT, 'jp-lesson').progress).toBe(1)
-    // A detected item never carries log entries.
-    expect(taskByKey(SAT, 'manga-chapter').entries).toEqual([])
+  })
+
+  // The activity often happens outside NaviHUB, so detection alone must never
+  // be able to strand an item at 0.
+  it('adds hand-made credits on top of what was detected', () => {
+    checklistRepo.addTask('jp-reviews', 'daily')
+    const c = addCard()
+    addReview(c, SAT)
+    expect(taskByKey(SAT, 'jp-reviews')).toMatchObject({ detected: 1, progress: 1 })
+
+    const logId = checklistRepo.credit('jp-reviews', 'daily', SAT)
+    const credited = taskByKey(SAT, 'jp-reviews')
+    expect(credited).toMatchObject({ detected: 1, progress: 2 })
+    expect(credited.entries.map((e) => e.id)).toEqual([logId]) // undoable on its own
+
+    checklistRepo.undoLog(logId)
+    expect(taskByKey(SAT, 'jp-reviews')).toMatchObject({ detected: 1, progress: 1 })
+  })
+
+  it('lets credits alone finish a detected item', () => {
+    checklistRepo.addTask('quiz-round', 'weekly')
+    expect(taskByKey(SAT, 'quiz-round').done).toBe(false)
+    checklistRepo.credit('quiz-round', 'weekly', SAT)
+    expect(taskByKey(SAT, 'quiz-round').done).toBe(true)
+  })
+})
+
+describe('logging a manga chapter', () => {
+  // Was detected from manga_chapter.read_at, which only ever exists for locally
+  // scanned series read in the in-app reader — now it logs like anime.
+  it('is a mediaLog item that bumps chapter progress', () => {
+    expect(checklistDef('manga-chapter')).toMatchObject({ kind: 'mediaLog', mediaType: 'manga' })
+    checklistRepo.addTask('manga-chapter', 'daily')
+    const id = addMedia('manga', 'Berserk', { status: 'Plan to Read', progress: 3 })
+    checklistRepo.logProgress(id, SAT, MANGA_TASK)
+    expect(mediaRow(id)).toEqual({ status: 'Reading', progress: 4 })
+    expect(taskByKey(SAT, 'manga-chapter').done).toBe(true)
+  })
+
+  it('writes no manga_chapter row — those belong to the scanner', () => {
+    checklistRepo.addTask('manga-chapter', 'daily')
+    const id = addMedia('manga', 'Berserk')
+    checklistRepo.logProgress(id, SAT, MANGA_TASK)
+    expect(
+      (db.prepare('SELECT COUNT(*) AS n FROM manga_chapter').get() as { n: number }).n
+    ).toBe(0)
   })
 })
 
@@ -205,7 +256,7 @@ describe('logging an anime episode', () => {
 
   it('bumps progress and promotes a planned title to watching', () => {
     const id = addMedia('anime', 'Bebop', { status: 'Plan to Watch', progress: 3, totalUnits: 26 })
-    checklistRepo.logMedia('anime-episode', 'daily', id, SAT)
+    checklistRepo.logProgress(id, SAT, ANIME_TASK)
     expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 4 })
     const task = taskByKey(SAT, 'anime-episode')
     expect(task.progress).toBe(1)
@@ -214,37 +265,37 @@ describe('logging an anime episode', () => {
 
   it('completes the title when the last episode is logged', () => {
     const id = addMedia('anime', 'Bebop', { status: 'Watching', progress: 25, totalUnits: 26 })
-    checklistRepo.logMedia('anime-episode', 'daily', id, SAT)
+    checklistRepo.logProgress(id, SAT, ANIME_TASK)
     expect(mediaRow(id)).toEqual({ status: 'Completed', progress: 26 })
   })
 
   it('leaves an unknown episode count uncompleted', () => {
     const id = addMedia('anime', 'Ongoing', { status: 'Watching', progress: 5, totalUnits: null })
-    checklistRepo.logMedia('anime-episode', 'daily', id, SAT)
+    checklistRepo.logProgress(id, SAT, ANIME_TASK)
     expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 6 })
   })
 
   it('restores the prior progress and status on undo', () => {
     const id = addMedia('anime', 'Bebop', { status: 'Plan to Watch', progress: 3, totalUnits: 26 })
-    const logId = checklistRepo.logMedia('anime-episode', 'daily', id, SAT)
-    checklistRepo.undoLog(logId)
+    const { logId } = checklistRepo.logProgress(id, SAT, ANIME_TASK)
+    checklistRepo.undoLog(logId!)
     expect(mediaRow(id)).toEqual({ status: 'Plan to Watch', progress: 3 })
     expect(taskByKey(SAT, 'anime-episode').progress).toBe(0)
   })
 
   it('refuses a title of the wrong type', () => {
     const id = addMedia('movie', 'Akira')
-    expect(() => checklistRepo.logMedia('anime-episode', 'daily', id, SAT)).toThrow()
+    expect(() => checklistRepo.logProgress(id, SAT, ANIME_TASK)).toThrow()
   })
 
   it('survives the title being deleted afterwards', () => {
     const id = addMedia('anime', 'Bebop', { progress: 0 })
-    const logId = checklistRepo.logMedia('anime-episode', 'daily', id, SAT)
+    const { logId } = checklistRepo.logProgress(id, SAT, ANIME_TASK)
     db.prepare('DELETE FROM media_item WHERE id = ?').run(id)
     // The cached title still renders the entry…
     expect(taskByKey(SAT, 'anime-episode').entries[0].title).toBe('Bebop')
     // …and undo just drops the row.
-    expect(() => checklistRepo.undoLog(logId)).not.toThrow()
+    expect(() => checklistRepo.undoLog(logId!)).not.toThrow()
     expect(taskByKey(SAT, 'anime-episode').progress).toBe(0)
   })
 })
@@ -256,13 +307,13 @@ describe('logging a movie', () => {
 
   it('marks it watched and restores the prior status on undo', () => {
     const id = addMedia('movie', 'Akira', { status: 'Want to Watch' })
-    const logId = checklistRepo.logMedia('movie-watch', 'weekly', id, FRI)
+    const { logId } = checklistRepo.logProgress(id, FRI, MOVIE_TASK)
     expect(mediaRow(id).status).toBe('Watched')
     // Weekly rows key on the week's Saturday, not the day it happened.
     expect(
-      db.prepare('SELECT period_key FROM checklist_log WHERE id = ?').get(logId)
+      db.prepare('SELECT period_key FROM checklist_log WHERE id = ?').get(logId!)
     ).toEqual({ period_key: '2026-07-18' })
-    checklistRepo.undoLog(logId)
+    checklistRepo.undoLog(logId!)
     expect(mediaRow(id).status).toBe('Want to Watch')
   })
 
@@ -271,16 +322,16 @@ describe('logging a movie', () => {
       '["Viewing","Seen","Parked","Abandoned","Queued"]'
     )
     const id = addMedia('movie', 'Akira', { status: 'Queued' })
-    checklistRepo.logMedia('movie-watch', 'weekly', id, SAT)
+    checklistRepo.logProgress(id, SAT, MOVIE_TASK)
     expect(mediaRow(id).status).toBe('Seen')
   })
 
   it('needs two films for the week', () => {
     const a = addMedia('movie', 'Akira')
     const b = addMedia('movie', 'Perfect Blue')
-    checklistRepo.logMedia('movie-watch', 'weekly', a, SAT)
+    checklistRepo.logProgress(a, SAT, MOVIE_TASK)
     expect(taskByKey(SAT, 'movie-watch').done).toBe(false)
-    checklistRepo.logMedia('movie-watch', 'weekly', b, SAT)
+    checklistRepo.logProgress(b, SAT, MOVIE_TASK)
     expect(taskByKey(SAT, 'movie-watch').done).toBe(true)
   })
 })
@@ -293,6 +344,15 @@ describe('manual items', () => {
     expect(taskByKey(SAT, 'gacha-daily-hsr').progress).toBe(1)
     checklistRepo.untick('gacha-daily-hsr', 'daily', SAT)
     expect(taskByKey(SAT, 'gacha-daily-hsr').done).toBe(false)
+  })
+
+  it('refuses to credit a mediaLog item by hand', () => {
+    checklistRepo.addTask('anime-episode', 'daily')
+    // Crediting one would show the board done with no episode logged, no
+    // media_id, and nothing for undo to restore — logProgress is the only way.
+    expect(() => checklistRepo.credit('anime-episode', 'daily', SAT)).toThrow(/picking a title/i)
+    expect(() => checklistRepo.tick('anime-episode', 'daily', SAT)).toThrow(/picking a title/i)
+    expect(taskByKey(SAT, 'anime-episode').progress).toBe(0)
   })
 
   it('has one item per gacha game', () => {
@@ -381,5 +441,134 @@ describe('status payload', () => {
       route: null
     })
     expect(s.daily[1]).toMatchObject({ kind: 'detected', route: '/japanese/review', target: 20 })
+  })
+})
+
+describe('rewatches', () => {
+  it('wraps a finished series into a new pass and restores it on undo', () => {
+    checklistRepo.addTask('anime-episode', 'daily')
+    const id = addMedia('anime', 'Bebop', { status: 'Completed', progress: 26, totalUnits: 26 })
+    const res = checklistRepo.logProgress(id, SAT, ANIME_TASK)
+    expect(res.startedRewatch).toBe(true)
+    expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 1 })
+    expect(rewatchCount(id)).toBe(2) // 0 already meant "seen once"
+
+    checklistRepo.undoLog(res.logId!)
+    expect(mediaRow(id)).toEqual({ status: 'Completed', progress: 26 })
+    expect(rewatchCount(id)).toBe(0)
+  })
+
+  it('counts another viewing of a film', () => {
+    checklistRepo.addTask('movie-watch', 'weekly')
+    const id = addMedia('movie', 'Akira', { status: 'Watched', totalUnits: 117, rewatchCount: 3 })
+    const res = checklistRepo.logProgress(id, SAT, MOVIE_TASK)
+    expect(res).toMatchObject({ startedRewatch: true, rewatchCount: 4 })
+    expect(mediaRow(id)).toEqual({ status: 'Watched', progress: 0 })
+  })
+})
+
+// The media detail page's log button calls logProgress with no task in hand.
+describe('logging from a media page', () => {
+  it('credits the matching board item, preferring daily', () => {
+    checklistRepo.addTask('anime-episode', 'weekly')
+    checklistRepo.addTask('anime-episode', 'daily')
+    const id = addMedia('anime', 'Bebop', { totalUnits: 26 })
+    const res = checklistRepo.logProgress(id, SAT)
+    expect(res.logId).not.toBeNull()
+    expect(taskByKey(SAT, 'anime-episode').progress).toBe(1)
+    const row = db.prepare('SELECT cadence FROM checklist_log WHERE id = ?').get(res.logId!)
+    expect(row).toEqual({ cadence: 'daily' })
+  })
+
+  it('still advances the media row when nothing on the board covers the type', () => {
+    checklistRepo.addTask('movie-watch', 'weekly')
+    const id = addMedia('anime', 'Bebop', { progress: 4, totalUnits: 26 })
+    const res = checklistRepo.logProgress(id, SAT)
+    expect(res.logId).toBeNull()
+    expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 5 })
+    expect(
+      (db.prepare('SELECT COUNT(*) AS n FROM checklist_log').get() as { n: number }).n
+    ).toBe(0)
+  })
+
+  it('rejects a media id that no longer exists', () => {
+    expect(() => checklistRepo.logProgress(9999, SAT)).toThrow()
+  })
+})
+
+describe('targets', () => {
+  it('overrides the catalog default and resets back to it', () => {
+    const id = checklistRepo.addTask('jp-reviews', 'daily')
+    expect(taskByKey(SAT, 'jp-reviews')).toMatchObject({ target: 20, defaultTarget: 20 })
+
+    checklistRepo.setTarget(id, 5)
+    expect(taskByKey(SAT, 'jp-reviews')).toMatchObject({ target: 5, defaultTarget: 20 })
+
+    const cards = [addCard(), addCard(), addCard(), addCard(), addCard()]
+    for (const c of cards) addReview(c, SAT)
+    expect(taskByKey(SAT, 'jp-reviews').done).toBe(true) // 5/5 under the override
+
+    checklistRepo.setTarget(id, null)
+    expect(taskByKey(SAT, 'jp-reviews')).toMatchObject({ target: 20, done: false })
+  })
+
+  it('ignores a nonsense target', () => {
+    const id = checklistRepo.addTask('movie-watch', 'weekly')
+    checklistRepo.setTarget(id, 0)
+    expect(taskByKey(SAT, 'movie-watch').target).toBe(2)
+  })
+
+  it('clamps a manual tick at the overridden target', () => {
+    const id = checklistRepo.addTask('gacha-daily-hsr', 'daily')
+    checklistRepo.setTarget(id, 3)
+    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
+    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
+    const third = checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
+    expect(checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)).toBe(third)
+    expect(taskByKey(SAT, 'gacha-daily-hsr')).toMatchObject({ progress: 3, done: true })
+  })
+
+  it('is honoured by the streak', () => {
+    const id = checklistRepo.addTask('gacha-daily-hsr', 'daily')
+    checklistRepo.setTarget(id, 2)
+    backdateTasks('2026-07-01')
+    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
+    expect(checklistRepo.status(SAT).streak.current).toBe(0) // 1 of 2
+    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
+    expect(checklistRepo.status(SAT).streak.current).toBe(1)
+  })
+})
+
+describe('reorder', () => {
+  it('rewrites the board order and leaves the other cadence alone', () => {
+    const a = checklistRepo.addTask('anime-episode', 'daily')
+    const b = checklistRepo.addTask('jp-reviews', 'daily')
+    const c = checklistRepo.addTask('gacha-daily-hsr', 'daily')
+    checklistRepo.addTask('movie-watch', 'weekly')
+    expect(checklistRepo.status(SAT).daily.map((t) => t.id)).toEqual([a, b, c])
+
+    checklistRepo.reorder('daily', [c, a, b])
+    expect(checklistRepo.status(SAT).daily.map((t) => t.id)).toEqual([c, a, b])
+    expect(checklistRepo.status(SAT).weekly).toHaveLength(1)
+  })
+
+  it('ignores ids from another cadence', () => {
+    const a = checklistRepo.addTask('anime-episode', 'daily')
+    const w = checklistRepo.addTask('movie-watch', 'weekly')
+    checklistRepo.reorder('daily', [w, a])
+    expect(checklistRepo.status(SAT).daily.map((t) => t.id)).toEqual([a])
+    expect(checklistRepo.status(SAT).weekly.map((t) => t.id)).toEqual([w])
+  })
+})
+
+describe('starter board', () => {
+  it('seeds a routine the catalog actually knows', () => {
+    expect(CHECKLIST_SEED.length).toBeGreaterThan(0)
+    for (const item of CHECKLIST_SEED) expect(checklistDef(item.key)).toBeTruthy()
+    expect(CHECKLIST_SEED.filter((i) => i.cadence === 'weekly').map((i) => i.key)).toEqual([
+      'movie-watch',
+      'jp-lesson',
+      'quiz-round'
+    ])
   })
 })

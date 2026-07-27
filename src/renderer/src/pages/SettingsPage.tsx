@@ -13,8 +13,13 @@ import {
   formatUiScale,
   parseUiScale
 } from '@shared/uiScale'
-import type { TorrentServiceTestResult, YtDlpDetectResult } from '@shared/types'
+import type {
+  TorrentServiceTestResult,
+  UpdateTestResult,
+  YtDlpDetectResult
+} from '@shared/types'
 import StartJackettButton from '../components/StartJackettButton'
+import { useUpdateStatus } from '../lib/useUpdateStatus'
 
 // Persist a setting and refresh the settings cache. Passed down to every
 // section so they all save the same way.
@@ -82,6 +87,7 @@ export default function SettingsPage() {
           {tab === 'ai' && <CoachSettings data={data} onSave={setKey} />}
           {tab === 'tools' && (
             <>
+              <UpdateSettings data={data} onSave={setKey} />
               <YtdlpSettings data={data} onSave={setKey} />
               <TorrentSettings data={data} onSave={setKey} />
               <DictionarySettings />
@@ -866,6 +872,133 @@ function SyncSettings() {
 
 // Offline Japanese dictionaries: install JMdict/KANJIDIC with one click, import
 // any other Yomitan .zip, watch import progress, and remove installed ones.
+// ---- in-app updates -------------------------------------------------------
+// "Save & test" mirrors the Jackett/qBittorrent cards: the test IPC resolves a
+// { ok, message } result instead of rejecting, so it renders inline in
+// green/red. Progress comes from polling update:status via useUpdateStatus —
+// there is no push channel. `environment` explains any build that can't update
+// itself (dev run, portable exe, missing token) rather than failing on click.
+function UpdateSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+  const { status, kick } = useUpdateStatus()
+  const [token, setToken] = useState('')
+  const [check, setCheck] = useState<UpdateTestResult | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => setToken(data?.['github.token'] ?? ''), [data])
+
+  const field = 'grid grid-cols-[110px_1fr] items-center gap-2'
+  const canUpdate = status?.environment === 'ok'
+
+  async function testToken() {
+    setCheck(null)
+    await onSave('github.token', token.trim())
+    setCheck(await api.updates.testToken())
+    await kick()
+  }
+
+  // Every mutation ends in kick(): refetchInterval is false while idle, so the
+  // poll has to be restarted or a running download would never report progress.
+  async function act(fn: () => Promise<unknown>) {
+    setBusy(true)
+    try {
+      await fn()
+    } finally {
+      setBusy(false)
+      await kick()
+    }
+  }
+
+  return (
+    <SettingCard
+      title="Updates"
+      description="Checks GitHub Releases for a newer build. Always manual — nothing checks on launch."
+    >
+      <div className={field}>
+        <span className="label">GitHub token</span>
+        <input
+          className="input"
+          type="password"
+          value={token}
+          onChange={(e) => setToken(e.target.value)}
+          placeholder="github_pat_…"
+        />
+      </div>
+      <p className="mt-2 text-sm text-gray-500">
+        The repository is private, so updates need a token that can read it:
+        <span className="text-gray-400"> repo</span> scope on a classic token, or
+        <span className="text-gray-400"> Contents: read</span> on a fine-grained one.
+      </p>
+      <button className="btn-ghost mt-3" onClick={testToken}>
+        Save &amp; test
+      </button>
+      {check && (
+        <p className={`mt-3 text-sm ${check.ok ? 'text-green-400' : 'text-red-400'}`}>
+          {check.message}
+        </p>
+      )}
+
+      <div className="mt-5 rounded-md border border-base-700 bg-base-800 p-3">
+        <p className="text-sm">
+          Current version <span className="text-gray-400">{status?.currentVersion ?? '—'}</span>
+        </p>
+
+        {status && !canUpdate && status.message && (
+          <p className="mt-2 text-sm text-gray-400">{status.message}</p>
+        )}
+        {status?.state === 'available' && (
+          <p className="mt-2 text-sm">Version {status.version} is available.</p>
+        )}
+        {status?.state === 'upToDate' && (
+          <p className="mt-2 text-sm text-gray-400">You are on the latest version.</p>
+        )}
+        {status?.state === 'error' && status.message && (
+          <p className="mt-2 text-sm text-red-400">{status.message}</p>
+        )}
+        {status?.state === 'downloading' && (
+          <div className="mt-3">
+            <p className="mb-1 text-sm text-gray-400">
+              Downloading {status.version} — {status.percent ?? 0}%
+            </p>
+            <div className="h-1.5 overflow-hidden rounded bg-base-600">
+              <div
+                className="h-full bg-accent transition-all"
+                style={{ width: `${status.percent ?? 0}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="mt-3 flex gap-2">
+          {status?.state === 'downloading' ? (
+            <button className="btn-ghost" onClick={() => act(() => api.updates.cancel())}>
+              Stop
+            </button>
+          ) : status?.state === 'ready' ? (
+            <button className="btn-primary" onClick={() => api.updates.install()}>
+              Restart &amp; install {status.version}
+            </button>
+          ) : (
+            <>
+              <button
+                className="btn-ghost"
+                disabled={!canUpdate || busy}
+                onClick={() => act(() => api.updates.check())}
+              >
+                {busy ? 'Checking…' : 'Check for updates'}
+              </button>
+              {status?.state === 'available' && (
+                <button className="btn-primary" onClick={() => act(() => api.updates.download())}>
+                  Download {status.version}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </SettingCard>
+  )
+}
+
 function DictionarySettings() {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
@@ -879,6 +1012,14 @@ function DictionarySettings() {
     queryKey: qk.dict.importStatus,
     queryFn: () => api.dict.importStatus(),
     refetchInterval: busy ? 400 : false
+  })
+  const { data: sentenceBank } = useQuery({
+    queryKey: qk.dict.sentenceBank,
+    queryFn: () => api.dict.sentenceBank()
+  })
+  const { data: strokeSet } = useQuery({
+    queryKey: qk.dict.strokeSet,
+    queryFn: () => api.dict.strokeSet()
   })
 
   async function run(fn: () => Promise<unknown>) {
@@ -901,7 +1042,10 @@ function DictionarySettings() {
     terms: 'Importing words',
     kanji: 'Importing kanji',
     pitch: 'Importing pitch accent',
+    frequency: 'Importing frequency ranks',
     tags: 'Importing tags',
+    sentences: 'Indexing example sentences',
+    strokes: 'Importing stroke order',
     finalizing: 'Finalizing'
   }
 
@@ -918,33 +1062,57 @@ function DictionarySettings() {
         </>
       }
     >
-      {dicts.length > 0 && (
+      {(dicts.length > 0 || sentenceBank || strokeSet) && (
         <div className="mb-4 space-y-1.5">
           {dicts.map((d) => (
-            <div
+            <PackRow
               key={d.id}
-              className="flex items-center gap-3 rounded-md border border-base-700 bg-base-800 p-2.5"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{d.title}</p>
-                <p className="text-xs text-gray-500">
+              title={d.title}
+              detail={
+                <>
                   {d.termCount > 0 && <span>{d.termCount.toLocaleString()} words</span>}
                   {d.termCount > 0 && d.kanjiCount > 0 && ' · '}
                   {d.kanjiCount > 0 && <span>{d.kanjiCount.toLocaleString()} kanji</span>}
+                  {d.freqCount > 0 && (d.termCount > 0 || d.kanjiCount > 0) && ' · '}
+                  {d.freqCount > 0 && <span>{d.freqCount.toLocaleString()} frequency ranks</span>}
                   {d.revision && <span className="ml-1 text-gray-600">· {d.revision}</span>}
-                </p>
-              </div>
-              <button
-                className="btn-ghost shrink-0 py-1 px-2 text-xs text-gray-500 hover:text-red-400"
-                disabled={busy}
-                onClick={() => {
-                  if (window.confirm(`Remove "${d.title}"?`)) void run(() => api.dict.remove(d.id))
-                }}
-              >
-                Remove
-              </button>
-            </div>
+                </>
+              }
+              busy={busy}
+              onRemove={() => {
+                if (window.confirm(`Remove "${d.title}"?`)) void run(() => api.dict.remove(d.id))
+              }}
+            />
           ))}
+          {sentenceBank && (
+            <PackRow
+              title="Example sentences (Tatoeba)"
+              detail={<span>{sentenceBank.sentenceCount.toLocaleString()} sentence pairs</span>}
+              busy={busy}
+              onRemove={() => {
+                if (window.confirm('Remove the example-sentence bank?')) {
+                  void run(() => api.dict.removeSentences())
+                }
+              }}
+            />
+          )}
+          {strokeSet && (
+            <PackRow
+              title="Stroke order (KanjiVG)"
+              detail={
+                <>
+                  <span>{strokeSet.charCount.toLocaleString()} characters</span>
+                  {strokeSet.revision && <span className="ml-1 text-gray-600">· {strokeSet.revision}</span>}
+                </>
+              }
+              busy={busy}
+              onRemove={() => {
+                if (window.confirm('Remove the stroke-order data?')) {
+                  void run(() => api.dict.removeStrokes())
+                }
+              }}
+            />
+          )}
         </div>
       )}
 
@@ -992,6 +1160,34 @@ function DictionarySettings() {
         <button
           className="btn-ghost"
           disabled={busy}
+          onClick={() => void run(() => api.dict.importPreset('jpdb-freq'))}
+        >
+          Download JPDB frequency
+        </button>
+        <button
+          className="btn-ghost"
+          disabled={busy}
+          onClick={() => void run(() => api.dict.importPreset('bccwj-freq'))}
+        >
+          Download BCCWJ frequency
+        </button>
+        <button
+          className="btn-ghost"
+          disabled={busy}
+          onClick={() => void run(() => api.dict.importSentences())}
+        >
+          Download example sentences
+        </button>
+        <button
+          className="btn-ghost"
+          disabled={busy}
+          onClick={() => void run(() => api.dict.importStrokes())}
+        >
+          Download stroke order
+        </button>
+        <button
+          className="btn-ghost"
+          disabled={busy}
           onClick={() => void run(() => api.dict.importZip())}
         >
           Import Yomitan .zip…
@@ -999,7 +1195,42 @@ function DictionarySettings() {
       </div>
 
       {error && <p className="mt-3 text-sm text-red-400">Import failed: {error}</p>}
+
+      <p className="mt-4 text-xs leading-relaxed text-gray-500">
+        Data credits: JMdict &amp; KANJIDIC © EDRDG (CC BY-SA 4.0) · frequency dictionaries from
+        Kuuuube&apos;s yomitan-dictionaries · example sentences © Tatoeba contributors (CC BY 2.0 FR,
+        per-sentence attribution kept) · stroke order © KanjiVG, Ulrich Apel (CC BY-SA 3.0).
+      </p>
     </SettingCard>
+  )
+}
+
+// One installed pack: dictionary, sentence bank or stroke set.
+function PackRow({
+  title,
+  detail,
+  busy,
+  onRemove
+}: {
+  title: string
+  detail: ReactNode
+  busy: boolean
+  onRemove: () => void
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-md border border-base-700 bg-base-800 p-2.5">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-medium">{title}</p>
+        <p className="text-xs text-gray-500">{detail}</p>
+      </div>
+      <button
+        className="btn-ghost shrink-0 py-1 px-2 text-xs text-gray-500 hover:text-red-400"
+        disabled={busy}
+        onClick={onRemove}
+      >
+        Remove
+      </button>
+    </div>
   )
 }
 

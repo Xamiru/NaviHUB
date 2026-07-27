@@ -47,6 +47,7 @@ export interface MiningDraft {
   pos: string
   notes: string
   exampleJp: string
+  exampleEn: string
 }
 
 export const EMPTY_DRAFT: MiningDraft = {
@@ -55,7 +56,8 @@ export const EMPTY_DRAFT: MiningDraft = {
   back: '',
   pos: '',
   notes: '',
-  exampleJp: ''
+  exampleJp: '',
+  exampleEn: ''
 }
 
 // Draft card state + the save loop (create card → invalidate → toast → reset,
@@ -81,8 +83,21 @@ export function useMiningDraft(opts: { sourceMediaId: number | null; onSaved?: (
       back,
       pos: e.defs[0]?.tags.join(', ') ?? '',
       notes: '',
-      exampleJp: exampleJp ?? d.exampleJp
+      exampleJp: exampleJp ?? d.exampleJp,
+      exampleEn: exampleJp ? '' : d.exampleEn // a new context invalidates the old translation
     }))
+  }
+
+  // Borrows a real sentence from the offline Tatoeba bank when the draft has no
+  // example of its own. Never overwrites context the user already captured —
+  // a sentence from the book you're reading beats a canned one.
+  async function fillExampleFromBank(term: string): Promise<void> {
+    if (!term.trim()) return
+    const [example] = await api.dict.sentences(term.trim(), 1)
+    if (!example) return
+    setDraft((d) =>
+      d.exampleJp.trim() ? d : { ...d, exampleJp: example.jp, exampleEn: example.en }
+    )
   }
 
   async function save(): Promise<boolean> {
@@ -96,6 +111,7 @@ export function useMiningDraft(opts: { sourceMediaId: number | null; onSaved?: (
         pos: draft.pos.trim() || null,
         notes: draft.notes.trim() || null,
         exampleJp: draft.exampleJp.trim() || null,
+        exampleEn: draft.exampleEn.trim() || null,
         sourceMediaId: opts.sourceMediaId
       })
       await qc.invalidateQueries({ queryKey: qk.japanese.all })
@@ -113,6 +129,7 @@ export function useMiningDraft(opts: { sourceMediaId: number | null; onSaved?: (
     draft,
     setDraft,
     fillFromEntry,
+    fillExampleFromBank,
     targetLessonId,
     setLessonId,
     canSave,

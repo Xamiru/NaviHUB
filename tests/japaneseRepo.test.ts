@@ -382,3 +382,167 @@ describe('japaneseRepo — statsDetail', () => {
     expect(jp.statsDetail().dueForecast).toEqual([]) // unlearned lesson filtered
   })
 })
+
+describe('japaneseRepo — review queue lesson context', () => {
+  it('carries the lesson kind and title on every queued card', () => {
+    const courseId = jp.createCourse({ title: 'N4' })
+    const lessonId = jp.createLesson({
+      courseId,
+      kind: 'grammar',
+      title: 'Explanatory ～んです / ～んだ',
+      cards: [{ front: '雨が降ってるんです。', reading: 'あめがふってるんです。', back: "It's raining." }]
+    })
+    jp.setLessonLearned(lessonId, true)
+
+    const fresh = jp.reviewQueue(10).fresh
+    expect(fresh[0].lessonKind).toBe('grammar')
+    expect(fresh[0].lessonTitle).toBe('Explanatory ～んです / ～んだ')
+
+    jp.submitReview(fresh[0].id, 'again')
+    db.prepare(`UPDATE jp_card SET due_at = datetime('now','-1 minute') WHERE id = ?`).run(fresh[0].id)
+    const due = jp.reviewQueue(0).due
+    expect(due[0].lessonKind).toBe('grammar')
+    expect(due[0].lessonTitle).toBe('Explanatory ～んです / ～んだ')
+  })
+})
+
+describe('japaneseRepo — leeches', () => {
+  function cardWithLapses(front: string, lapses: number): number {
+    const courseId = jp.createCourse({ title: `c-${front}` })
+    const lessonId = jp.createLesson({
+      courseId,
+      kind: 'vocab',
+      title: `l-${front}`,
+      cards: [{ front, reading: null, back: 'meaning' }]
+    })
+    jp.setLessonLearned(lessonId, true)
+    const id = (db.prepare('SELECT id FROM jp_card WHERE front = ?').get(front) as { id: number }).id
+    db.prepare('UPDATE jp_card SET lapses = ?, ease = 1.8, status = ? WHERE id = ?').run(
+      lapses,
+      'review',
+      id
+    )
+    return id
+  }
+
+  it('lists cards at or past the threshold, worst first', () => {
+    cardWithLapses('楽', 5) // below threshold (LEECH_LAPSES = 6)
+    cardWithLapses('難', 6)
+    cardWithLapses('罠', 9)
+
+    const leeches = jp.listLeeches()
+    expect(leeches.map((l) => l.front)).toEqual(['罠', '難'])
+    expect(leeches[0].lapses).toBe(9)
+    expect(leeches[0].lessonTitle).toBe('l-罠')
+    expect(leeches[0].courseTitle).toBe('c-罠')
+  })
+
+  it('is empty when nothing has lapsed', () => {
+    seedCourseWithLesson(true)
+    expect(jp.listLeeches()).toEqual([])
+  })
+
+  it('resetCard restores a fresh SRS state and keeps the review history', () => {
+    const id = cardWithLapses('罠', 9)
+    jp.submitReview(id, 'good') // leaves a log row
+    const logsBefore = (
+      db.prepare('SELECT COUNT(*) AS n FROM jp_review_log WHERE card_id = ?').get(id) as { n: number }
+    ).n
+    expect(logsBefore).toBeGreaterThan(0)
+
+    jp.resetCard(id)
+    const card = db.prepare('SELECT * FROM jp_card WHERE id = ?').get(id) as Record<string, unknown>
+    expect(card.status).toBe('new')
+    expect(card.lapses).toBe(0)
+    expect(card.reps).toBe(0)
+    expect(card.interval_days).toBe(0)
+    expect(card.ease).toBe(2.5)
+    expect(card.due_at).toBeNull()
+    expect(jp.listLeeches()).toEqual([])
+
+    // History survives, and the card comes back around as a new card.
+    expect(
+      (db.prepare('SELECT COUNT(*) AS n FROM jp_review_log WHERE card_id = ?').get(id) as { n: number })
+        .n
+    ).toBe(logsBefore)
+    expect(jp.reviewQueue(10).fresh.map((c) => c.id)).toContain(id)
+  })
+})
+
+describe('japaneseRepo — roadmap', () => {
+  function stepCourse(title: string, difficulty: number | null, lessons: number, learned: number): number {
+    const courseId = jp.createCourse({ title, difficulty, level: 'N5' })
+    for (let i = 0; i < lessons; i++) {
+      const lessonId = jp.createLesson({
+        courseId,
+        kind: 'vocab',
+        title: `${title} lesson ${i + 1}`,
+        cards: [{ front: `${title}-${i}`, reading: null, back: 'x' }]
+      })
+      if (i < learned) jp.setLessonLearned(lessonId, true)
+    }
+    return courseId
+  }
+
+  it('orders steps by difficulty and buckets unscheduled courses separately', () => {
+    stepCourse('Step two', 2, 1, 1)
+    stepCourse('Step one', 1, 1, 1)
+    stepCourse('Mining inbox', null, 1, 1)
+
+    const rm = jp.roadmap()
+    expect(rm.steps.map((c) => c.title)).toEqual(['Step one', 'Step two'])
+    expect(rm.unscheduled.map((c) => c.title)).toEqual(['Mining inbox'])
+  })
+
+  it('points at the first incomplete step and its next unlearned lesson', () => {
+    stepCourse('Done', 1, 2, 2)
+    const frontier = stepCourse('In progress', 2, 3, 1)
+    stepCourse('Later', 3, 2, 0)
+
+    const rm = jp.roadmap()
+    expect(rm.frontierCourseId).toBe(frontier)
+    expect(rm.nextLesson).toMatchObject({
+      courseId: frontier,
+      courseTitle: 'In progress',
+      title: 'In progress lesson 2', // respects lesson order
+      kind: 'vocab'
+    })
+  })
+
+  it('has no frontier once every step is learned', () => {
+    stepCourse('Done', 1, 2, 2)
+    const rm = jp.roadmap()
+    expect(rm.frontierCourseId).toBeNull()
+    expect(rm.nextLesson).toBeNull()
+  })
+
+  it('skips empty courses when choosing the frontier', () => {
+    stepCourse('Empty', 1, 0, 0)
+    const real = stepCourse('Real', 2, 1, 0)
+    expect(jp.roadmap().frontierCourseId).toBe(real)
+  })
+
+  it('counts seen and due cards per course', () => {
+    const courseId = jp.createCourse({ title: 'Counting', difficulty: 1 })
+    const lessonId = jp.createLesson({
+      courseId,
+      kind: 'vocab',
+      title: 'L',
+      cards: [
+        { front: 'a', reading: null, back: 'x' },
+        { front: 'b', reading: null, back: 'y' }
+      ]
+    })
+    jp.setLessonLearned(lessonId, true)
+    const cards = jp.getLesson(lessonId)!.cards
+
+    expect(jp.roadmap().steps[0].seenCardCount).toBe(0)
+
+    jp.submitReview(cards[0].id, 'good')
+    expect(jp.roadmap().steps[0].seenCardCount).toBe(1)
+    expect(jp.roadmap().steps[0].dueCardCount).toBe(0) // scheduled into the future
+
+    db.prepare(`UPDATE jp_card SET due_at = datetime('now','-1 minute') WHERE id = ?`).run(cards[0].id)
+    expect(jp.roadmap().steps[0].dueCardCount).toBe(1)
+  })
+})

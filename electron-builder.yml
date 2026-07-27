@@ -24,6 +24,18 @@ asarUnpack:
 # local binary correct for Linux packs; scripts/dist-win.sh swaps in the
 # win32-x64 prebuild explicitly before Windows builds.
 npmRebuild: false
+# Required by the in-app updater (src/main/updater.ts): this block is what makes
+# electron-builder emit latest.yml / latest-linux.yml next to the artifacts AND
+# embed app-update.yml in the asar. Nothing here publishes — CI builds with
+# `--publish never` and uploads via `gh release create`. `private: true` tells
+# electron-updater to resolve releases through the authenticated GitHub API
+# instead of public download URLs (the repo is private; the token comes from the
+# `github.token` setting at runtime).
+publish:
+  provider: github
+  owner: AmirHTaee
+  repo: NaviHUB
+  private: true
 win:
   icon: assets/icon.png
   target:
@@ -48,5 +60,9 @@ linux:
   target: [AppImage]
   icon: assets/icon.png
   category: AudioVideo
+  # Sets the window's WM_CLASS to match package.json `desktopName`, so the running
+  # window associates with the user's own navihub.desktop shortcut instead of
+  # showing as a separate generic taskbar entry.
+  syncDesktopName: true
 appImage:
   artifactName: ${productName}-${version}.${ext}

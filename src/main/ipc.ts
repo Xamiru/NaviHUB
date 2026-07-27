@@ -26,6 +26,7 @@ import * as hltb from './hltb'
 import * as files from './files'
 import * as manga from './manga'
 import { getActivity, withActivity } from './progress'
+import * as updater from './updater'
 import * as music from './music'
 import * as musicRepo from './repos/musicRepo'
 import * as musicDownload from './musicDownload'
@@ -40,7 +41,13 @@ import * as coachRepo from './repos/coachRepo'
 import * as tokenizer from './tokenizer'
 import * as dictImporter from './dict/importer'
 import * as dictLookup from './dict/lookup'
+import * as dictSentences from './dict/sentences'
+import * as dictStrokes from './dict/strokes'
 import * as prepDeck from './prepDeck'
+import * as coreDeck from './coreDeck'
+import * as coverage from './coverage'
+import * as coverageRepo from './repos/coverageRepo'
+import * as analyzeText from './analyzeText'
 import * as sync from './sync'
 
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
@@ -59,6 +66,7 @@ export function registerIpc(): void {
   ipcMain.handle('media:get', (_e, id) => mediaRepo.get(id))
   ipcMain.handle('media:create', (_e, input) => mediaRepo.create(input))
   ipcMain.handle('media:update', (_e, id, input) => mediaRepo.update(id, input))
+  ipcMain.handle('media:logProgress', (_e, id) => checklistRepo.logProgress(id, todayLocal()))
   ipcMain.handle('media:remove', (_e, id) => mediaRepo.remove(id))
   ipcMain.handle('media:removeCharacter', (_e, mediaId, characterId) =>
     linkRepo.removeMediaCharacter(mediaId, characterId)
@@ -140,8 +148,12 @@ export function registerIpc(): void {
   ipcMain.handle('checklist:status', () => checklistRepo.status(todayLocal()))
   ipcMain.handle('checklist:addTask', (_e, key, cadence) => checklistRepo.addTask(key, cadence))
   ipcMain.handle('checklist:removeTask', (_e, id) => checklistRepo.removeTask(id))
+  ipcMain.handle('checklist:setTarget', (_e, id, target) => checklistRepo.setTarget(id, target))
+  ipcMain.handle('checklist:reorder', (_e, cadence, orderedIds) =>
+    checklistRepo.reorder(cadence, orderedIds)
+  )
   ipcMain.handle('checklist:logMedia', (_e, taskKey, cadence, mediaId) =>
-    checklistRepo.logMedia(taskKey, cadence, mediaId, todayLocal())
+    checklistRepo.logProgress(mediaId, todayLocal(), { key: taskKey, cadence })
   )
   ipcMain.handle('checklist:undoLog', (_e, logId) => checklistRepo.undoLog(logId))
   ipcMain.handle('checklist:tick', (_e, taskKey, cadence) =>
@@ -149,6 +161,9 @@ export function registerIpc(): void {
   )
   ipcMain.handle('checklist:untick', (_e, taskKey, cadence) =>
     checklistRepo.untick(taskKey, cadence, todayLocal())
+  )
+  ipcMain.handle('checklist:credit', (_e, taskKey, cadence) =>
+    checklistRepo.credit(taskKey, cadence, todayLocal())
   )
 
   // ---- Japanese learning ----
@@ -179,6 +194,16 @@ export function registerIpc(): void {
   )
   ipcMain.handle('japanese:buildPrepDeck', (_e, mediaId) => prepDeck.buildPrepDeck(mediaId))
   ipcMain.handle('japanese:prepDeckStatus', () => prepDeck.getPrepDeckStatus())
+  ipcMain.handle('japanese:buildCoreDeck', (_e, limit) => coreDeck.buildCoreDeck(limit))
+  ipcMain.handle('japanese:coreDeckStatus', () => coreDeck.getCoreDeckStatus())
+  ipcMain.handle('japanese:scanCoverage', (_e, mediaId) => coverage.scanCoverage(mediaId))
+  ipcMain.handle('japanese:coverageScanStatus', () => coverage.getCoverageScanStatus())
+  ipcMain.handle('japanese:coverage', (_e, mediaId) => coverageRepo.coverageForMedia(mediaId))
+  ipcMain.handle('japanese:coverageList', () => coverageRepo.coverageList())
+  ipcMain.handle('japanese:analyzeText', (_e, text) => analyzeText.analyzeText(text))
+  ipcMain.handle('japanese:roadmap', () => japaneseRepo.roadmap())
+  ipcMain.handle('japanese:listLeeches', () => japaneseRepo.listLeeches())
+  ipcMain.handle('japanese:resetCard', (_e, id) => japaneseRepo.resetCard(id))
   ipcMain.handle('japanese:stats', () => japaneseRepo.stats())
   ipcMain.handle('japanese:statsDetail', () => japaneseRepo.statsDetail())
   ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
@@ -193,6 +218,14 @@ export function registerIpc(): void {
   ipcMain.handle('dict:importZip', () => dictImporter.importZipViaDialog())
   ipcMain.handle('dict:importStatus', () => dictImporter.getImportStatus())
   ipcMain.handle('dict:remove', (_e, id) => dictImporter.removeDictionary(id))
+  ipcMain.handle('dict:sentences', (_e, term, limit) => dictSentences.querySentences(term, limit))
+  ipcMain.handle('dict:importSentences', () => dictSentences.importSentences())
+  ipcMain.handle('dict:sentenceBank', () => dictSentences.getSentenceBankInfo())
+  ipcMain.handle('dict:removeSentences', () => dictSentences.removeSentenceBank())
+  ipcMain.handle('dict:strokes', (_e, char) => dictStrokes.getStrokes(char))
+  ipcMain.handle('dict:importStrokes', () => dictStrokes.importStrokes())
+  ipcMain.handle('dict:strokeSet', () => dictStrokes.getStrokeSetInfo())
+  ipcMain.handle('dict:removeStrokes', () => dictStrokes.removeStrokeSet())
 
   // ---- local manga reader ----
   ipcMain.handle('manga:attachFolder', (_e, mediaId) => manga.attachFolder(mediaId))
@@ -285,6 +318,17 @@ export function registerIpc(): void {
 
   // ---- global activity (import progress, polled by the Topbar pill) ----
   ipcMain.handle('activity:status', () => getActivity())
+
+  // ---- in-app updates ----
+  // Deliberately NOT withActivity: the shared slot has no terminal states and
+  // clears on completion, but the updater must keep 'ready'/'error' readable
+  // after the renderer stops polling. Own status channel, like music downloads.
+  ipcMain.handle('update:status', () => updater.getStatus())
+  ipcMain.handle('update:check', () => updater.checkForUpdate())
+  ipcMain.handle('update:download', () => updater.downloadUpdate())
+  ipcMain.handle('update:cancel', () => updater.cancelUpdate())
+  ipcMain.handle('update:install', () => updater.installUpdate())
+  ipcMain.handle('update:testToken', () => updater.testGithubToken())
 
   // ---- music library ----
   ipcMain.handle('music:pickRoot', () => music.pickRootAndScan())

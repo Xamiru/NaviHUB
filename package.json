@@ -2,6 +2,8 @@
   "name": "navihub",
   "version": "0.2.0",
   "description": "NaviHUB — personal local-only media hub (anime, VN, games, movies, TV)",
+  "//desktopName": "Linux window association (WM_CLASS) — pairs with linux.syncDesktopName in electron-builder.yml. NOT productName, which must stay out of this file so app.getName() remains 'navihub' and userData keeps pointing at ~/.config/navihub.",
+  "desktopName": "navihub.desktop",
   "main": "./out/main/index.js",
   "author": "xamir",
   "license": "MIT",
@@ -29,6 +31,7 @@
     "@google/genai": "^2.12.0",
     "better-sqlite3": "^11.8.1",
     "drizzle-orm": "^0.38.3",
+    "electron-updater": "^6.8.9",
     "kuromoji": "^0.1.2",
     "music-metadata": "^11.13.0",
     "yauzl": "^3.4.0"

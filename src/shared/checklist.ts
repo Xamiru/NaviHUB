@@ -11,8 +11,10 @@ import { GACHA_GAMES } from './gacha'
 import type { ChecklistCadence, ChecklistKind, MediaType } from './types'
 
 // Where a `detected` item reads its completion from. Each maps to one timestamp
-// column the app already writes (see checklistRepo.detectedCount).
-export type ChecklistDetectSource = 'jpReviews' | 'jpLesson' | 'mangaChapter' | 'quizRound'
+// column the app already writes (see checklistRepo's DETECT_SQL). Detection is
+// the primary signal, but every detected item can also be credited by hand —
+// the activity often happens outside the app.
+export type ChecklistDetectSource = 'jpReviews' | 'jpLesson' | 'quizRound'
 
 export interface ChecklistDef {
   key: string
@@ -21,10 +23,11 @@ export interface ChecklistDef {
   kind: ChecklistKind
   defaultCadence: ChecklistCadence
   target: number
-  // mediaLog only: which library type the picker searches, and what logging one
-  // does to the picked row.
+  // mediaLog only: which library type the picker searches. What logging DOES to
+  // the picked row is derived from that type by @shared/mediaProgress
+  // (advanceProgress + isUnitProgress) — the same path the detail page's log
+  // button takes — so it is deliberately not restated per item.
   mediaType?: MediaType
-  mediaAction?: 'incrementProgress' | 'markWatched'
   // detected only: where clicking the row goes, and which activity table proves
   // it was done.
   route?: string
@@ -39,8 +42,7 @@ export const CHECKLIST_DEFS: ChecklistDef[] = [
     kind: 'mediaLog',
     defaultCadence: 'daily',
     target: 1,
-    mediaType: 'anime',
-    mediaAction: 'incrementProgress'
+    mediaType: 'anime'
   },
   {
     key: 'movie-watch',
@@ -49,8 +51,7 @@ export const CHECKLIST_DEFS: ChecklistDef[] = [
     kind: 'mediaLog',
     defaultCadence: 'weekly',
     target: 2,
-    mediaType: 'movie',
-    mediaAction: 'markWatched'
+    mediaType: 'movie'
   },
   {
     key: 'jp-reviews',
@@ -75,12 +76,23 @@ export const CHECKLIST_DEFS: ChecklistDef[] = [
   {
     key: 'manga-chapter',
     label: 'Read a manga chapter',
-    hint: 'Counts chapters marked read in the reader.',
-    kind: 'detected',
+    // Was auto-detected from manga_chapter.read_at, but those rows only exist
+    // for series with a scanned local folder read in the in-app reader — every
+    // other way of reading manga could never tick it.
+    hint: 'Logging one bumps that series’ chapter progress.',
+    kind: 'mediaLog',
     defaultCadence: 'daily',
     target: 1,
-    route: '/manga',
-    source: 'mangaChapter'
+    mediaType: 'manga'
+  },
+  {
+    key: 'tv-episode',
+    label: 'Watch a TV episode',
+    hint: 'Logging one bumps that show’s episode progress.',
+    kind: 'mediaLog',
+    defaultCadence: 'daily',
+    target: 1,
+    mediaType: 'tv'
   },
   {
     key: 'quiz-round',
@@ -159,30 +171,19 @@ export function periodRange(
   return cadence === 'weekly' ? weekRange(date) : { start: date, end: date }
 }
 
-// ---------------------------------------------------------------------------
-// Status-list resolution for the MAIN process. Per-type status lists live in
-// the settings table as JSON arrays and follow the positional convention
-// first = in-progress, second = completed, last = planned (mirrors the
-// renderer's statusesFrom in lib/hooks.ts). The fallbacks duplicate
-// mediaConfig.ts / connection.ts DEFAULT_SETTINGS because main cannot import
-// renderer files — keep the three in step.
-// ---------------------------------------------------------------------------
+// Status-list resolution and the progress/rewatch rules live in
+// @shared/mediaProgress — they're media concerns, shared with the media detail
+// page's log button, not checklist-specific.
 
-export const CHECKLIST_STATUS_FALLBACKS: Partial<Record<MediaType, string[]>> = {
-  anime: ['Watching', 'Completed', 'On Hold', 'Dropped', 'Plan to Watch'],
-  movie: ['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch']
-}
-
-export function parseStatuses(raw: string | null, mediaType: MediaType): string[] {
-  const fallback = CHECKLIST_STATUS_FALLBACKS[mediaType] ?? []
-  if (!raw) return fallback
-  try {
-    const parsed = JSON.parse(raw)
-    if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((s) => typeof s === 'string')) {
-      return parsed as string[]
-    }
-  } catch {
-    /* fall through */
-  }
-  return fallback
-}
+// The board's default shape, seeded once on first launch (connection.ts
+// seedChecklist, gated by the `checklist.seeded` setting). Everything here is
+// removable in-app afterwards.
+export const CHECKLIST_SEED: { key: string; cadence: ChecklistCadence }[] = [
+  { key: 'anime-episode', cadence: 'daily' },
+  { key: 'jp-reviews', cadence: 'daily' },
+  { key: 'manga-chapter', cadence: 'daily' },
+  ...GACHA_GAMES.map((g) => ({ key: `gacha-daily-${g.id}`, cadence: 'daily' as const })),
+  { key: 'movie-watch', cadence: 'weekly' },
+  { key: 'jp-lesson', cadence: 'weekly' },
+  { key: 'quiz-round', cadence: 'weekly' }
+]

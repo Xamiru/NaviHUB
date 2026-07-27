@@ -1,21 +1,29 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import StatTile from '../components/StatTile'
-import type { JpCourseSummary } from '@shared/types'
+import CoreDeckDialog from '../components/japanese/CoreDeckDialog'
 
+// The section's dashboard: where you stand, what to do next, and the way into
+// every tool. The full course list lives on the roadmap page — this stays a
+// place you pass through, not one you browse.
 export default function JapaneseHomePage() {
+  const [coreDeck, setCoreDeck] = useState(false)
+
   const { data: stats } = useQuery({
     queryKey: qk.japanese.stats,
     queryFn: () => api.japanese.stats()
   })
-  const { data: courses = [], isLoading } = useQuery({
-    queryKey: qk.japanese.courses,
-    queryFn: () => api.japanese.listCourses()
+  const { data: roadmap } = useQuery({
+    queryKey: qk.japanese.roadmap,
+    queryFn: () => api.japanese.roadmap()
   })
 
   const reviewable = (stats?.dueCount ?? 0) + (stats?.newAvailableCount ?? 0)
+  const frontier = roadmap?.steps.find((c) => c.id === roadmap.frontierCourseId) ?? null
+  const hasCourses = (roadmap?.steps.length ?? 0) + (roadmap?.unscheduled.length ?? 0) > 0
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
@@ -41,40 +49,52 @@ export default function JapaneseHomePage() {
         <StatTile label="Reviews today" value={stats?.reviewsToday ?? 0} />
       </div>
 
-      <div className="flex flex-wrap gap-2 mb-8">
-        <Link to="/japanese/review" className="btn-primary">
-          ▶ Start review{reviewable > 0 ? ` (${reviewable})` : ''}
-        </Link>
-        <Link to="/japanese/quiz" className="btn-ghost">
-          🎯 Practice quiz
-        </Link>
-        <Link to="/japanese/mine" className="btn-ghost">
-          ⛏ Mine words
-        </Link>
-        <Link to="/japanese/dictionary" className="btn-ghost">
-          辞 Dictionary
-        </Link>
-        <Link to="/japanese/kana" className="btn-ghost">
-          かな Kana drill
-        </Link>
-        <Link to="/japanese/test" className="btn-ghost">
-          検定 JLPT test
-        </Link>
-        <Link to="/japanese/stats" className="btn-ghost">
-          ⧗ Stats
-        </Link>
-      </div>
-
-      <div className="mb-3">
-        <h2 className="text-lg font-semibold">Courses</h2>
-        <p className="text-xs text-gray-500">
-          Ordered by difficulty — start from the top and work your way down.
-        </p>
-      </div>
-      {isLoading ? (
-        <p className="text-gray-500">Loading…</p>
-      ) : courses.length === 0 ? (
-        <div className="card p-12 text-center">
+      {hasCourses ? (
+        <div className="card mb-6 p-4">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">Continue</h2>
+          {frontier ? (
+            <>
+              <p className="text-sm">
+                <Link to={`/japanese/courses/${frontier.id}`} className="font-medium hover:text-accent">
+                  {frontier.title}
+                </Link>
+                <span className="ml-2 text-xs text-gray-500">
+                  Step {frontier.difficulty} · {frontier.learnedLessonCount} / {frontier.lessonCount}{' '}
+                  lessons learned
+                </span>
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link to="/japanese/review" className={reviewable > 0 ? 'btn-primary' : 'btn-ghost'}>
+                  Start review{reviewable > 0 ? ` (${reviewable})` : ''}
+                </Link>
+                {roadmap?.nextLesson && (
+                  <Link to={`/japanese/lessons/${roadmap.nextLesson.id}`} className="btn-ghost">
+                    Next lesson: {roadmap.nextLesson.title}
+                  </Link>
+                )}
+                <Link to="/japanese/roadmap" className="btn-ghost">
+                  See the roadmap
+                </Link>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-gray-400">
+                Every course on the path is learned. Keep the reviews going, or generate a new deck.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link to="/japanese/review" className={reviewable > 0 ? 'btn-primary' : 'btn-ghost'}>
+                  Start review{reviewable > 0 ? ` (${reviewable})` : ''}
+                </Link>
+                <button className="btn-ghost" onClick={() => setCoreDeck(true)}>
+                  Core deck
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="card mb-6 p-12 text-center">
           <p className="text-lg font-medium mb-1">No courses yet</p>
           <p className="text-sm text-gray-500 mb-5">
             A course groups grammar lessons and vocabulary decks. Create one to get started.
@@ -83,42 +103,48 @@ export default function JapaneseHomePage() {
             + Create a course
           </Link>
         </div>
-      ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
-          {courses.map((c) => (
-            <CourseCard key={c.id} course={c} />
-          ))}
-        </div>
       )}
-    </div>
-  )
-}
 
-function CourseCard({ course }: { course: JpCourseSummary }) {
-  const pct = course.lessonCount
-    ? Math.round((course.learnedLessonCount / course.lessonCount) * 100)
-    : 0
-  return (
-    <Link to={`/japanese/courses/${course.id}`} className="card p-4 group">
-      {(course.difficulty != null || course.level) && (
-        <p className="mb-1.5 flex items-center gap-1.5">
-          {course.difficulty != null && (
-            <span className="chip bg-accent/20 text-accent">Step {course.difficulty}</span>
-          )}
-          {course.level && <span className="chip bg-base-700 text-gray-400">{course.level}</span>}
-        </p>
-      )}
-      <p className="font-medium group-hover:text-accent line-clamp-1">{course.title}</p>
-      {course.description && (
-        <p className="mt-1 text-xs text-gray-500 line-clamp-2">{course.description}</p>
-      )}
-      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-base-700">
-        <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+      <div className="flex flex-wrap gap-2">
+        <Link to="/japanese/roadmap" className="btn-ghost">
+          Roadmap
+        </Link>
+        <Link to="/japanese/review" className="btn-ghost">
+          Review
+        </Link>
+        <Link to="/japanese/quiz" className="btn-ghost">
+          Practice quiz
+        </Link>
+        <Link to="/japanese/mine" className="btn-ghost">
+          Mine words
+        </Link>
+        <Link to="/japanese/dictionary" className="btn-ghost">
+          Dictionary
+        </Link>
+        <Link to="/japanese/analyze" className="btn-ghost">
+          Analyze text
+        </Link>
+        <Link to="/japanese/coverage" className="btn-ghost">
+          Comprehension
+        </Link>
+        <Link to="/japanese/kana" className="btn-ghost">
+          Kana drill
+        </Link>
+        <Link to="/japanese/write" className="btn-ghost">
+          Writing drill
+        </Link>
+        <Link to="/japanese/test" className="btn-ghost">
+          JLPT test
+        </Link>
+        <button className="btn-ghost" onClick={() => setCoreDeck(true)}>
+          Core deck
+        </button>
+        <Link to="/japanese/stats" className="btn-ghost">
+          Stats
+        </Link>
       </div>
-      <p className="mt-2 text-xs text-gray-500">
-        {course.learnedLessonCount} / {course.lessonCount}{' '}
-        {course.lessonCount === 1 ? 'lesson' : 'lessons'} learned · {course.cardCount} cards
-      </p>
-    </Link>
+
+      {coreDeck && <CoreDeckDialog onClose={() => setCoreDeck(false)} />}
+    </div>
   )
 }

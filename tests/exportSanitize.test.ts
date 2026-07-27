@@ -106,6 +106,7 @@ function seed(): void {
       ('qbittorrent.url', 'http://localhost:8080'),
       ('qbittorrent.username', 'admin'),
       ('qbittorrent.password', 'secret-qbit'),
+      ('github.token', 'ghp_secret-updater-token'),
       ('japanese.seeded', '1'),
       ('japanese.seeded.n3kanji', '1'),
       ('japanese.seeded.levels', '1'),

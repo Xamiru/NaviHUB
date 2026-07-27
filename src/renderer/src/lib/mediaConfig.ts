@@ -45,6 +45,10 @@ export interface MediaConfig {
   // Off for time-based progress (VN minutes, game hours — playing past the
   // average is normal).
   unitProgress?: boolean
+  // Label for the detail page's one-click progress log, e.g. "+1 episode".
+  // Omit on types where a single sitting isn't a countable unit (VN minutes,
+  // game hours) — the button then only offers the "again" pass.
+  logUnitLabel?: string
   // Movies have no unit progress (you don't track partial episodes/chapters) —
   // hide the progress field entirely. Runtime lives in totalFieldLabel and the
   // watch count in timesConsumedLabel. Defaults to showing progress.
@@ -129,6 +133,7 @@ export const ANIME: MediaConfig = {
   totalFieldLabel: 'Total episodes',
   timesConsumedLabel: 'Times watched',
   unitProgress: true,
+  logUnitLabel: 'episode',
   progressStatLabel: 'Progress',
   formatProgressStat: (m) => `${m.totalUnits != null ? `${m.progress} / ${m.totalUnits}` : m.progress} ep`,
   formatCardSub: (m) => `${m.totalUnits != null ? `${m.progress}/${m.totalUnits}` : m.progress} ep`,
@@ -173,6 +178,7 @@ export const MANGA: MediaConfig = {
   totalFieldLabel: 'Total chapters',
   timesConsumedLabel: 'Times read',
   unitProgress: true,
+  logUnitLabel: 'chapter',
   progressStatLabel: 'Progress',
   formatProgressStat: (m) =>
     `${m.totalUnits != null ? `${m.progress} / ${m.totalUnits}` : m.progress} ch`,
@@ -340,6 +346,7 @@ export const TV: MediaConfig = {
   totalFieldLabel: 'Total episodes',
   timesConsumedLabel: 'Times watched',
   unitProgress: true,
+  logUnitLabel: 'episode',
   progressStatLabel: 'Progress',
   formatProgressStat: (m) =>
     `${m.totalUnits != null ? `${m.progress} / ${m.totalUnits}` : m.progress} ep`,

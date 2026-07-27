@@ -1599,7 +1599,7 @@ export const IDIOMS_COURSE: SeedCourse = {
     'battle-scene set phrases, four-character idioms (四字熟語) and the proverbs fiction quotes. ' +
     'These read as single units — learn them as units and dialogue speeds up dramatically.',
   level: 'N3–N2',
-  difficulty: 18,
+  difficulty: 20,
   lessons: [
     {
       kind: 'vocab',

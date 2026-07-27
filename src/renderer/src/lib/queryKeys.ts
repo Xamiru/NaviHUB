@@ -122,11 +122,19 @@ export const qk = {
     mineTargets: ['japanese', 'mineTargets'] as const,
     course: (id: number) => ['japanese', 'course', id] as const,
     lesson: (id: number) => ['japanese', 'lesson', id] as const,
+    roadmap: ['japanese', 'roadmap'] as const,
+    leeches: ['japanese', 'leeches'] as const,
     stats: ['japanese', 'stats'] as const,
     statsDetail: ['japanese', 'statsDetail'] as const,
     quizPool: (scope: JpQuizScope) => ['japanese', 'quizPool', scope] as const,
     lessonQuizPool: (lessonId: number) => ['japanese', 'lessonQuizPool', lessonId] as const,
     prepDeckStatus: ['japanese', 'prepDeckStatus'] as const,
+    coreDeckStatus: ['japanese', 'coreDeckStatus'] as const,
+    // Comprehension. No key for analyzeText: its argument is up to 200KB of
+    // pasted text and must never become a cache key — it runs as a plain await.
+    coverage: (mediaId: number) => ['japanese', 'coverage', mediaId] as const,
+    coverageList: ['japanese', 'coverageList'] as const,
+    coverageScanStatus: ['japanese', 'coverageScanStatus'] as const,
     // Manga reader mining: tokenized OCR block text + already-mined word check.
     tokens: (text: string) => ['japanese', 'tokens', text] as const,
     minedFronts: (fronts: string[]) => ['japanese', 'minedFronts', fronts] as const
@@ -138,7 +146,13 @@ export const qk = {
     list: ['dict', 'list'] as const,
     lookup: (query: string) => ['dict', 'lookup', query] as const,
     kanji: (text: string) => ['dict', 'kanji', text] as const,
-    importStatus: ['dict', 'importStatus'] as const
+    importStatus: ['dict', 'importStatus'] as const,
+    // Example sentences + stroke order live under `dict` on purpose: installing
+    // or removing a pack invalidates the prefix and drops their caches too.
+    sentences: (term: string) => ['dict', 'sentences', term] as const,
+    sentenceBank: ['dict', 'sentenceBank'] as const,
+    strokes: (char: string) => ['dict', 'strokes', char] as const,
+    strokeSet: ['dict', 'strokeSet'] as const
   },
   music: {
     // Local music library. Mutations (scan, like, playlist edits) invalidate
@@ -188,6 +202,11 @@ export const qk = {
     // PC↔phone sync server (Settings card). Status polls while running.
     all: ['sync'] as const,
     status: ['sync', 'status'] as const
+  },
+  update: {
+    // In-app updater (Settings → Tools). Status polls while checking/downloading.
+    all: ['update'] as const,
+    status: ['update', 'status'] as const
   },
   activity: ['activity'] as const,
   search: (q: string) => ['search', q] as const,

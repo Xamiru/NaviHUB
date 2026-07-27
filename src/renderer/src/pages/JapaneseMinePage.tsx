@@ -90,7 +90,10 @@ export default function JapaneseMinePage() {
                   key={`${r.expression} ${r.reading} ${i}`}
                   entry={r}
                   selected={draft.front === r.expression}
-                  onPick={() => mining.fillFromEntry(r)}
+                  onPick={() => {
+                    mining.fillFromEntry(r)
+                    void mining.fillExampleFromBank(r.expression)
+                  }}
                 />
               ))}
             </div>
@@ -130,6 +133,12 @@ export default function JapaneseMinePage() {
             placeholder="Example sentence (JP, optional)"
             value={draft.exampleJp}
             onChange={(e) => setDraft((d) => ({ ...d, exampleJp: e.target.value }))}
+          />
+          <input
+            className="input"
+            placeholder="Example translation (EN, optional)"
+            value={draft.exampleEn}
+            onChange={(e) => setDraft((d) => ({ ...d, exampleEn: e.target.value }))}
           />
           <input
             className="input"

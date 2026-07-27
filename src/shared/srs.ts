@@ -29,6 +29,13 @@ export const MIN_EASE = 1.3
 export const EASY_BONUS = 1.3
 export const MAX_INTERVAL_DAYS = 365
 
+// A card that has lapsed this many times is a leech: it isn't sticking and
+// repeating it unchanged just burns reviews. Anki's default is 8, but this
+// scheduler relearns through a single 10-minute step (RELEARN_STEPS_MIN), so a
+// lapse costs less here and lapses accrue faster per unit of pain — 6 catches
+// the problem cards a session or two earlier without flagging normal wobble.
+export const LEECH_LAPSES = 6
+
 const DAY_MIN = 1440
 
 // A relearning card is recognized by its non-zero interval: lapsing resets the

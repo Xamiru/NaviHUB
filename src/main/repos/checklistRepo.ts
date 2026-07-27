@@ -11,19 +11,15 @@ import { getSqlite } from '../db/connection'
 import { computeStreaks } from './musicRepo'
 import * as mediaRepo from './mediaRepo'
 import * as settingsRepo from './settingsRepo'
-import {
-  addDays,
-  checklistDef,
-  parseStatuses,
-  periodKeyFor,
-  periodRange
-} from '@shared/checklist'
+import { addDays, checklistDef, periodKeyFor, periodRange } from '@shared/checklist'
+import { advanceProgress, isUnitProgress, parseStatuses } from '@shared/mediaProgress'
 import type { ChecklistDef, ChecklistDetectSource } from '@shared/checklist'
 import type {
   ChecklistCadence,
   ChecklistLogEntry,
   ChecklistStatus,
   ChecklistTaskStatus,
+  MediaProgressLogged,
   MediaType
 } from '@shared/types'
 
@@ -33,6 +29,7 @@ interface TaskRow {
   id: number
   task_key: string
   cadence: ChecklistCadence
+  target: number | null
   sort_order: number
   created_day: string
 }
@@ -49,7 +46,7 @@ interface LogRow {
 // being deleted or edited afterwards.
 interface LogPayload {
   title?: string
-  prior?: { progress: number; status: string | null }
+  prior?: { progress: number; status: string | null; rewatchCount?: number }
 }
 
 function defOrThrow(key: string): ChecklistDef {
@@ -70,6 +67,10 @@ function parsePayload(raw: string | null): LogPayload {
 
 function statusesFor(mediaType: MediaType): string[] {
   return parseStatuses(settingsRepo.get(`${mediaType}.statuses`), mediaType)
+}
+
+function targetFor(row: { target: number | null }, def: ChecklistDef): number {
+  return row.target != null && row.target > 0 ? row.target : def.target
 }
 
 // ---- board ----
@@ -99,69 +100,134 @@ export function removeTask(id: number): void {
   getSqlite().prepare('DELETE FROM checklist_task WHERE id = ?').run(id)
 }
 
+// null clears the override and falls back to the def's target.
+export function setTarget(id: number, target: number | null): void {
+  const clean = target != null && target > 0 ? Math.floor(target) : null
+  getSqlite().prepare('UPDATE checklist_task SET target = ? WHERE id = ?').run(clean, id)
+}
+
+export function reorder(cadence: ChecklistCadence, orderedIds: number[]): void {
+  const db = getSqlite()
+  const upd = db.prepare('UPDATE checklist_task SET sort_order = ? WHERE id = ? AND cadence = ?')
+  db.transaction(() => {
+    orderedIds.forEach((id, i) => upd.run(i, id, cadence))
+  })()
+}
+
 // ---- actions ----
 
-// Logging an episode/film IS the tracking action: it writes the media row and
-// records what that row looked like beforehand, so undoLog can put it back.
-export function logMedia(
-  taskKey: string,
-  cadence: ChecklistCadence,
+// The app's ONE "I watched/read another one" write, shared by the checklist's
+// Log button and the log button on every media detail page. It advances the
+// media row (@shared/mediaProgress owns the rules, rewatches included) and
+// records a checklist credit against `task` — or, when the caller is a media
+// page with no task in hand, against whatever mediaLog item for that type is
+// on the board (daily before weekly). No matching item just means no credit:
+// the media row still moves.
+export function logProgress(
   mediaId: number,
-  today: string
-): number {
+  today: string,
+  task?: { key: string; cadence: ChecklistCadence }
+): MediaProgressLogged {
   const db = getSqlite()
-  const def = defOrThrow(taskKey)
-  if (def.kind !== 'mediaLog' || !def.mediaType) {
-    throw new Error(`Checklist item ${taskKey} does not log media`)
-  }
-  const tx = db.transaction(() => {
+  const tx = db.transaction((): MediaProgressLogged => {
     const media = db
       .prepare(
-        'SELECT id, title, media_type, status, progress, total_units FROM media_item WHERE id = ?'
+        `SELECT id, title, media_type, status, progress, total_units, rewatch_count
+         FROM media_item WHERE id = ?`
       )
       .get(mediaId) as
       | {
           id: number
           title: string
-          media_type: string
+          media_type: MediaType
           status: string | null
           progress: number
           total_units: number | null
+          rewatch_count: number
         }
       | undefined
     if (!media) throw new Error(`Media ${mediaId} not found`)
-    if (media.media_type !== def.mediaType) {
-      throw new Error(`Media ${mediaId} is not a ${def.mediaType}`)
+
+    let target = task
+    if (target) {
+      const def = defOrThrow(target.key)
+      if (def.kind !== 'mediaLog' || !def.mediaType) {
+        throw new Error(`Checklist item ${target.key} does not log media`)
+      }
+      if (media.media_type !== def.mediaType) {
+        throw new Error(`Media ${mediaId} is not a ${def.mediaType}`)
+      }
+    } else {
+      target = mediaLogTaskFor(media.media_type)
     }
 
-    const prior = { progress: media.progress, status: media.status }
-    const statuses = statusesFor(def.mediaType)
-    const inProgress = statuses[0] ?? null
-    const completed = statuses[1] ?? null
-    const planned = statuses.length ? statuses[statuses.length - 1] : null
-
-    if (def.mediaAction === 'incrementProgress') {
-      const next = media.progress + 1
-      let status = media.status
-      if (!status || status === planned) status = inProgress
-      if (media.total_units && next >= media.total_units && completed) status = completed
-      mediaRepo.update(mediaId, { progress: next, status })
-    } else if (def.mediaAction === 'markWatched' && completed) {
-      // Movies are noProgress — total_units is runtime minutes, so only the
-      // status moves.
-      mediaRepo.update(mediaId, { status: completed })
+    const prior = {
+      progress: media.progress,
+      status: media.status,
+      rewatchCount: media.rewatch_count
     }
+    const next = advanceProgress(
+      {
+        progress: media.progress,
+        status: media.status,
+        totalUnits: media.total_units,
+        rewatchCount: media.rewatch_count
+      },
+      statusesFor(media.media_type),
+      isUnitProgress(media.media_type)
+    )
+    mediaRepo.update(mediaId, {
+      progress: next.progress,
+      status: next.status,
+      rewatchCount: next.rewatchCount
+    })
 
-    const payload: LogPayload = { title: media.title, prior }
-    const info = db
-      .prepare(
-        `INSERT INTO checklist_log (task_key, cadence, period_key, media_id, payload)
-         VALUES (?, ?, ?, ?, ?)`
+    let logId: number | null = null
+    if (target) {
+      const payload: LogPayload = { title: media.title, prior }
+      logId = Number(
+        db
+          .prepare(
+            `INSERT INTO checklist_log (task_key, cadence, period_key, media_id, payload)
+             VALUES (?, ?, ?, ?, ?)`
+          )
+          .run(
+            target.key,
+            target.cadence,
+            periodKeyFor(target.cadence, today),
+            mediaId,
+            JSON.stringify(payload)
+          ).lastInsertRowid
       )
-      .run(taskKey, cadence, periodKeyFor(cadence, today), mediaId, JSON.stringify(payload))
-    return Number(info.lastInsertRowid)
+    }
+    return {
+      logId,
+      title: media.title,
+      startedRewatch: next.startedRewatch,
+      rewatchCount: next.rewatchCount,
+      progress: next.progress,
+      status: next.status
+    }
   })
   return tx()
+}
+
+// The board item a media-page log should credit: daily first, then weekly, in
+// board order.
+function mediaLogTaskFor(mediaType: MediaType): { key: string; cadence: ChecklistCadence } | undefined {
+  const rows = getSqlite()
+    .prepare(
+      `SELECT task_key, cadence FROM checklist_task
+       ORDER BY CASE cadence WHEN 'daily' THEN 0 ELSE 1 END, sort_order ASC, id ASC`
+    )
+    .all() as { task_key: string; cadence: ChecklistCadence }[]
+  for (const row of rows) {
+    const def = checklistDef(row.task_key)
+    if (def?.kind === 'mediaLog' && def.mediaType === mediaType) {
+      return { key: row.task_key, cadence: row.cadence }
+    }
+  }
+  return undefined
 }
 
 // Undo restores the snapshot taken when the entry was logged — including any
@@ -178,7 +244,11 @@ export function undoLog(logId: number): void {
     const prior = parsePayload(row.payload).prior
     if (row.media_id != null && prior) {
       // A deleted media row just makes this a zero-row UPDATE.
-      mediaRepo.update(row.media_id, { progress: prior.progress, status: prior.status })
+      mediaRepo.update(row.media_id, {
+        progress: prior.progress,
+        status: prior.status,
+        ...(prior.rewatchCount != null ? { rewatchCount: prior.rewatchCount } : {})
+      })
     }
   })
   tx()
@@ -194,11 +264,16 @@ function periodCount(taskKey: string, cadence: ChecklistCadence, periodKey: stri
   ).n
 }
 
+// Ticking a manual item. Clamped at its target, so a checkbox can't stack up
+// invisible rows — see credit() for the un-clamped form.
 export function tick(taskKey: string, cadence: ChecklistCadence, today: string): number {
   const db = getSqlite()
   const def = defOrThrow(taskKey)
+  const row = db
+    .prepare('SELECT target FROM checklist_task WHERE task_key = ? AND cadence = ?')
+    .get(taskKey, cadence) as { target: number | null } | undefined
   const periodKey = periodKeyFor(cadence, today)
-  if (periodCount(taskKey, cadence, periodKey) >= def.target) {
+  if (periodCount(taskKey, cadence, periodKey) >= targetFor(row ?? { target: null }, def)) {
     return (
       db
         .prepare(
@@ -208,9 +283,23 @@ export function tick(taskKey: string, cadence: ChecklistCadence, today: string):
         .get(taskKey, cadence, periodKey) as { id: number }
     ).id
   }
-  const info = db
+  return credit(taskKey, cadence, today)
+}
+
+// One manual credit toward an item. This is what makes a `detected` item
+// possible to finish when the activity happened outside the app — the credit
+// adds on top of whatever was detected, and is undoable on its own.
+export function credit(taskKey: string, cadence: ChecklistCadence, today: string): number {
+  const def = defOrThrow(taskKey)
+  // A mediaLog item is finished by picking a title (logProgress), which writes
+  // the media_id and prior-state payload undo needs. Crediting one by hand
+  // would mark the board done with no episode logged and nothing to restore.
+  if (def.kind === 'mediaLog') {
+    throw new Error(`Checklist item ${taskKey} is logged by picking a title, not credited by hand`)
+  }
+  const info = getSqlite()
     .prepare('INSERT INTO checklist_log (task_key, cadence, period_key) VALUES (?, ?, ?)')
-    .run(taskKey, cadence, periodKey)
+    .run(taskKey, cadence, periodKeyFor(cadence, today))
   return Number(info.lastInsertRowid)
 }
 
@@ -243,12 +332,6 @@ const DETECT_SQL: Record<ChecklistDetectSource, { count: string; perDay: string 
     perDay: `SELECT date(learned_at, 'localtime') AS day, COUNT(*) AS n FROM jp_lesson
              WHERE learned = 1 AND learned_at IS NOT NULL GROUP BY day`
   },
-  mangaChapter: {
-    count: `SELECT COUNT(*) AS n FROM manga_chapter
-            WHERE read_at IS NOT NULL AND date(read_at, 'localtime') BETWEEN ? AND ?`,
-    perDay: `SELECT date(read_at, 'localtime') AS day, COUNT(*) AS n FROM manga_chapter
-             WHERE read_at IS NOT NULL GROUP BY day`
-  },
   quizRound: {
     count: `SELECT COUNT(*) AS n FROM quiz_session
             WHERE date(played_at, 'localtime') BETWEEN ? AND ?`,
@@ -278,7 +361,8 @@ export function status(today: string): ChecklistStatus {
   // it in the streak/history pass below.
   const rows = db
     .prepare(
-      `SELECT id, task_key, cadence, sort_order, date(created_at, 'localtime') AS created_day
+      `SELECT id, task_key, cadence, target, sort_order,
+              date(created_at, 'localtime') AS created_day
        FROM checklist_task ORDER BY sort_order ASC, id ASC`
     )
     .all() as TaskRow[]
@@ -290,28 +374,23 @@ export function status(today: string): ChecklistStatus {
 
   const hydrate = ({ row, def }: { row: TaskRow; def: ChecklistDef }): ChecklistTaskStatus => {
     const range = periodRange(row.cadence, today)
-    let progress = 0
-    let entries: ChecklistLogEntry[] = []
-    if (def.kind === 'detected' && def.source) {
-      progress = detectedCount(def.source, range.start, range.end)
-    } else {
-      const logs = db
-        .prepare(
-          `SELECT l.id, l.media_id, l.payload, l.created_at, m.title AS live_title
-           FROM checklist_log l
-           LEFT JOIN media_item m ON m.id = l.media_id
-           WHERE l.task_key = ? AND l.cadence = ? AND l.period_key = ?
-           ORDER BY l.id ASC`
-        )
-        .all(row.task_key, row.cadence, periodKeyFor(row.cadence, today)) as LogRow[]
-      progress = logs.length
-      entries = logs.map((l) => ({
-        id: l.id,
-        mediaId: l.media_id,
-        title: l.live_title ?? parsePayload(l.payload).title ?? null,
-        createdAt: l.created_at
-      }))
-    }
+    // Log rows mean different things per kind: the logged episodes/films for a
+    // mediaLog item, the ticks for a manual one, and hand-added credits on top
+    // of detection for a detected one. All three are undoable the same way.
+    const logs = db
+      .prepare(
+        `SELECT l.id, l.media_id, l.payload, l.created_at, m.title AS live_title
+         FROM checklist_log l
+         LEFT JOIN media_item m ON m.id = l.media_id
+         WHERE l.task_key = ? AND l.cadence = ? AND l.period_key = ?
+         ORDER BY l.id ASC`
+      )
+      .all(row.task_key, row.cadence, periodKeyFor(row.cadence, today)) as LogRow[]
+    const detected = def.kind === 'detected' && def.source
+      ? detectedCount(def.source, range.start, range.end)
+      : 0
+    const progress = detected + logs.length
+    const target = targetFor(row, def)
     return {
       id: row.id,
       key: def.key,
@@ -320,10 +399,17 @@ export function status(today: string): ChecklistStatus {
       kind: def.kind,
       route: def.route ?? null,
       mediaType: def.mediaType ?? null,
-      target: def.target,
+      target,
+      defaultTarget: def.target,
+      detected,
       progress,
-      done: progress >= def.target,
-      entries
+      done: progress >= target,
+      entries: logs.map((l) => ({
+        id: l.id,
+        mediaId: l.media_id,
+        title: l.live_title ?? parsePayload(l.payload).title ?? null,
+        createdAt: l.created_at
+      }))
     }
   }
 
@@ -366,11 +452,11 @@ function dailyHistory(
     }
   }
 
+  // Mirrors hydrate(): detected activity plus any hand-added credits.
   const countFor = (t: { row: TaskRow; def: ChecklistDef }, day: string): number => {
-    if (t.def.kind === 'detected' && t.def.source) {
-      return detectDays.get(t.def.source)?.get(day) ?? 0
-    }
-    return logByTask.get(t.row.task_key)?.get(day) ?? 0
+    const detected =
+      t.def.kind === 'detected' && t.def.source ? (detectDays.get(t.def.source)?.get(day) ?? 0) : 0
+    return detected + (logByTask.get(t.row.task_key)?.get(day) ?? 0)
   }
 
   const earliest = dailyTasks.reduce(
@@ -385,7 +471,7 @@ function dailyHistory(
   for (let day = start; day <= today; day = addDays(day, 1)) {
     const active = dailyTasks.filter((t) => t.row.created_day <= day)
     let done = 0
-    for (const t of active) if (countFor(t, day) >= t.def.target) done++
+    for (const t of active) if (countFor(t, day) >= targetFor(t.row, t.def)) done++
     history.push({ day, count: done })
     if (active.length > 0 && done === active.length) completeDaysDesc.unshift(day)
   }

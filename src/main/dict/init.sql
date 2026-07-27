@@ -82,3 +82,69 @@ CREATE VIRTUAL TABLE IF NOT EXISTS gloss_fts USING fts5(
   dict_id UNINDEXED,
   tokenize = 'porter unicode61'
 );
+
+-- Word frequency ranks from term_meta banks (mode='freq'), e.g. the JPDB or
+-- BCCWJ Yomitan dictionaries. One row per (expression, reading) per dictionary;
+-- LOWER rank = more common. Feeds the dictionary page's rank chip, the prep
+-- deck's rank fusion, and the core-frequency-deck generator.
+CREATE TABLE IF NOT EXISTS freq (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  dict_id INTEGER NOT NULL,
+  expression TEXT NOT NULL,
+  reading TEXT NOT NULL DEFAULT '',
+  rank INTEGER NOT NULL,
+  display TEXT                -- displayValue when the bank supplies one
+);
+CREATE INDEX IF NOT EXISTS idx_freq_expr ON freq(expression);
+CREATE INDEX IF NOT EXISTS idx_freq_dict ON freq(dict_id);
+CREATE INDEX IF NOT EXISTS idx_freq_rank ON freq(dict_id, rank);
+
+-- ---- Example sentence bank (Tatoeba pairs) ----
+-- Not a Yomitan format: a TSV of JP/EN pairs imported by dict/sentences.ts.
+-- Registry row is written LAST like `dict`; orphans are swept on startup.
+CREATE TABLE IF NOT EXISTS sentence_bank (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL UNIQUE,          -- 'tatoeba'
+  sentence_count INTEGER NOT NULL DEFAULT 0,
+  imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS sentence (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  bank_id INTEGER NOT NULL,
+  jp TEXT NOT NULL,
+  en TEXT NOT NULL,
+  attribution TEXT                      -- CC-BY per-sentence credit, kept verbatim
+);
+CREATE INDEX IF NOT EXISTS idx_sentence_bank ON sentence(bank_id);
+
+-- Term -> sentence search. `keywords` is the space-joined set of kuromoji BASE
+-- forms plus surface forms of each sentence, tokenized once at import: unicode61
+-- keeps each space-separated CJK token whole, so MATCH '"食べる"' is an exact
+-- token hit that also finds 食べた/食べている. Indexing raw sentence text instead
+-- would be useless — unicode61 cannot segment unsegmented Japanese.
+CREATE VIRTUAL TABLE IF NOT EXISTS sentence_fts USING fts5(
+  keywords,
+  sentence_id UNINDEXED,
+  bank_id UNINDEXED,
+  tokenize = 'unicode61'
+);
+
+-- ---- KanjiVG stroke order ----
+-- strokes = JSON array of SVG path `d` strings in stroke order, in KanjiVG's
+-- 109x109 viewBox space. Stroke numbers are derived from each path's starting
+-- point (shared/strokes.ts:pathStart), not stored.
+CREATE TABLE IF NOT EXISTS stroke_set (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL UNIQUE,          -- 'kanjivg'
+  revision TEXT,                        -- release tag, e.g. 'r20250816'
+  char_count INTEGER NOT NULL DEFAULT 0,
+  imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS stroke (
+  set_id INTEGER NOT NULL,
+  character TEXT NOT NULL,
+  strokes TEXT NOT NULL,                -- JSON string[]
+  PRIMARY KEY (set_id, character)
+) WITHOUT ROWID;

@@ -6,6 +6,12 @@ import {
   SPEECH_COURSE,
   IDIOMS_COURSE
 } from './japaneseSeed2'
+import {
+  N2_VOCAB_COURSE,
+  N2_KANJI_COURSE,
+  N1_VOCAB_COURSE,
+  N1_KANJI_COURSE
+} from './japaneseSeed3'
 
 // Starter content for the Japanese learning section, shipped as independent
 // packs: the N5 foundations course, an N5 kanji course, and a casual/manga-
@@ -3419,7 +3425,7 @@ const N1A_COURSE: SeedCourse = {
     'Advanced patterns chosen for fiction first: the literary, dramatic and archaic ' +
     'grammar that fantasy manga, period pieces and VN narration are written in.',
   level: 'N1',
-  difficulty: 19,
+  difficulty: 21,
   lessons: [
     {
       kind: 'grammar',
@@ -3661,7 +3667,7 @@ const N1B_COURSE: SeedCourse = {
     'The last stretch: emphasis, extremity and formality — はおろか, 極まりない, ' +
     'ならでは and friends. Finish this and no grammar in a manga or VN should stop you.',
   level: 'N1',
-  difficulty: 20,
+  difficulty: 22,
   lessons: [
     {
       kind: 'grammar',
@@ -3992,9 +3998,13 @@ const ALL_PACKS: { flag: string; course: SeedCourse }[] = [
   { flag: 'japanese.seeded.speech', course: SPEECH_COURSE }, // 15
   { flag: 'japanese.seeded.n2a', course: N2A_COURSE }, // 16
   { flag: 'japanese.seeded.n2b', course: N2B_COURSE }, // 17
-  { flag: 'japanese.seeded.idioms', course: IDIOMS_COURSE }, // 18
-  { flag: 'japanese.seeded.n1a', course: N1A_COURSE }, // 19
-  { flag: 'japanese.seeded.n1b', course: N1B_COURSE } // 20
+  { flag: 'japanese.seeded.n2vocab', course: N2_VOCAB_COURSE }, // 18
+  { flag: 'japanese.seeded.n2kanji', course: N2_KANJI_COURSE }, // 19
+  { flag: 'japanese.seeded.idioms', course: IDIOMS_COURSE }, // 20
+  { flag: 'japanese.seeded.n1a', course: N1A_COURSE }, // 21
+  { flag: 'japanese.seeded.n1b', course: N1B_COURSE }, // 22
+  { flag: 'japanese.seeded.n1vocab', course: N1_VOCAB_COURSE }, // 23
+  { flag: 'japanese.seeded.n1kanji', course: N1_KANJI_COURSE } // 24
 ]
 
 // The 2026-07-05 renumbering, applied once to DBs seeded under the old 1–15
@@ -4036,10 +4046,41 @@ function reorderSteps(sqlite: Database.Database): void {
   tx()
 }
 
+// The 2026-07-27 renumbering: the N2 and N1 vocabulary/kanji packs slot in
+// beside their grammar packs, pushing Idioms and the two N1 grammar courses
+// down. Same one-sided policy as STEP_REORDER — matched by ORIGINAL title +
+// OLD step, so a course the user renamed or renumbered is left alone.
+const STEP_REORDER2: [title: string, oldStep: number][] = [
+  ['Idioms & Set Phrases (慣用句)', 18],
+  ['JLPT N1 Grammar I', 19],
+  ['JLPT N1 Grammar II', 20]
+]
+
+function reorderSteps2(sqlite: Database.Database): void {
+  const done = sqlite
+    .prepare('SELECT value FROM settings WHERE key = ?')
+    .get('japanese.seeded.order3')
+  if (done) return
+  const move = sqlite.prepare(
+    'UPDATE jp_course SET difficulty = ? WHERE title = ? AND difficulty = ?'
+  )
+  const tx = sqlite.transaction(() => {
+    // Highest step first: moving Idioms 18→20 before N1 Grammar II leaves 20,
+    // so walking the table in reverse keeps every step unoccupied on arrival.
+    for (const [title, oldStep] of [...STEP_REORDER2].reverse()) {
+      const pack = ALL_PACKS.find((p) => p.course.title === title)
+      if (pack) move.run(pack.course.difficulty, title, oldStep)
+    }
+    sqlite.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('japanese.seeded.order3', '1')
+  })
+  tx()
+}
+
 export function seedJapanese(sqlite: Database.Database): void {
   // Renumber BEFORE seeding so the new packs never share a step with a course
   // still carrying its old number.
   backfillLevels(sqlite)
   reorderSteps(sqlite)
+  reorderSteps2(sqlite)
   for (const p of ALL_PACKS) seedPack(sqlite, p.flag, p.course)
 }

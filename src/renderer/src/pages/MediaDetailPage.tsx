@@ -6,11 +6,19 @@ import { usePersistedState } from '../lib/navState'
 import { useScoreMax } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
 import { usePlayer, type Track } from '../lib/player'
-import { CAST_ROLES, fmtMinutesAsHours, pathForMedia, type MediaConfig } from '../lib/mediaConfig'
+import {
+  CAST_ROLES,
+  fmtMinutesAsHours,
+  isCompletedStatus,
+  pathForMedia,
+  type MediaConfig
+} from '../lib/mediaConfig'
+import { toast, toastError } from '../lib/toast'
 import CoverImage from '../components/CoverImage'
 import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
+import CoverageSection from '../components/japanese/CoverageSection'
 import MediaImagesSection from '../components/MediaImagesSection'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
 import { torznabCategoriesFor } from '@shared/torrents'
@@ -89,6 +97,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               Delete
             </button>
           </div>
+          <LogProgressButton cfg={cfg} m={m} />
           <div className="mt-2">
             <AddToListMenu kind="media" entityId={mediaId} />
           </div>
@@ -153,6 +162,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       <div className="mt-7">
         {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
         {cfg.hasLocalReader && <MangaChaptersSection m={m} />}
+        {cfg.hasLocalReader && <CoverageSection m={m} />}
         <RelatedSection m={m} />
         {cfg.hasThemes && <ThemesSection m={m} onChange={refresh} />}
         <CastSection cfg={cfg} m={m} onChange={refresh} />
@@ -175,6 +185,51 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
 /* ---------------- Companies (studios / production) ---------------- */
 // HowLongToBeat-style time formatting, with "—" for missing values.
+// One-click "I watched/read another one". Main owns the rules
+// (@shared/mediaProgress): progress + status promotion, and a finished title
+// wraps into a fresh pass rather than running past its total. If a checklist
+// item covers this media type, the same call credits today's board.
+function LogProgressButton({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
+  const qc = useQueryClient()
+  const [busy, setBusy] = useState(false)
+
+  const finished = isCompletedStatus(m.status) || (!!m.totalUnits && m.progress >= m.totalUnits)
+  const label = finished
+    ? 'Log another pass'
+    : cfg.logUnitLabel
+      ? `+1 ${cfg.logUnitLabel}`
+      : `Mark ${(cfg.defaultStatuses[1] ?? 'completed').toLowerCase()}`
+
+  async function log(): Promise<void> {
+    setBusy(true)
+    try {
+      const res = await api.media.logProgress(m.id)
+      await qc.invalidateQueries({ queryKey: qk.media.all })
+      await qc.invalidateQueries({ queryKey: qk.checklist.all })
+      if (res.startedRewatch) toast(`${res.title} — pass #${res.rewatchCount} started`, 'success')
+    } catch (e) {
+      toastError(e)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <button
+      className="btn-ghost w-full mt-2"
+      onClick={log}
+      disabled={busy}
+      title={
+        finished
+          ? 'Starts a new pass and counts it in your times-consumed tally'
+          : 'Advances progress, and ticks a matching checklist item if you have one'
+      }
+    >
+      {label}
+    </button>
+  )
+}
+
 function fmtPlaytime(minutes: number | null | undefined): string {
   if (minutes == null || minutes <= 0) return '—'
   return fmtMinutesAsHours(minutes)

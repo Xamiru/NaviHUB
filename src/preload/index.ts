@@ -8,6 +8,7 @@ const api: NaviApi = {
     get: (id) => ipcRenderer.invoke('media:get', id),
     create: (input) => ipcRenderer.invoke('media:create', input),
     update: (id, input) => ipcRenderer.invoke('media:update', id, input),
+    logProgress: (id) => ipcRenderer.invoke('media:logProgress', id),
     remove: (id) => ipcRenderer.invoke('media:remove', id),
     removeCharacter: (mediaId, characterId) =>
       ipcRenderer.invoke('media:removeCharacter', mediaId, characterId),
@@ -85,11 +86,15 @@ const api: NaviApi = {
     status: () => ipcRenderer.invoke('checklist:status'),
     addTask: (key, cadence) => ipcRenderer.invoke('checklist:addTask', key, cadence),
     removeTask: (id) => ipcRenderer.invoke('checklist:removeTask', id),
+    setTarget: (id, target) => ipcRenderer.invoke('checklist:setTarget', id, target),
+    reorder: (cadence, orderedIds) =>
+      ipcRenderer.invoke('checklist:reorder', cadence, orderedIds),
     logMedia: (taskKey, cadence, mediaId) =>
       ipcRenderer.invoke('checklist:logMedia', taskKey, cadence, mediaId),
     undoLog: (logId) => ipcRenderer.invoke('checklist:undoLog', logId),
     tick: (taskKey, cadence) => ipcRenderer.invoke('checklist:tick', taskKey, cadence),
-    untick: (taskKey, cadence) => ipcRenderer.invoke('checklist:untick', taskKey, cadence)
+    untick: (taskKey, cadence) => ipcRenderer.invoke('checklist:untick', taskKey, cadence),
+    credit: (taskKey, cadence) => ipcRenderer.invoke('checklist:credit', taskKey, cadence)
   },
   anilist: {
     search: (query) => ipcRenderer.invoke('anilist:search', query),
@@ -163,6 +168,16 @@ const api: NaviApi = {
     lessonQuizPool: (lessonId) => ipcRenderer.invoke('japanese:lessonQuizPool', lessonId),
     buildPrepDeck: (mediaId) => ipcRenderer.invoke('japanese:buildPrepDeck', mediaId),
     prepDeckStatus: () => ipcRenderer.invoke('japanese:prepDeckStatus'),
+    roadmap: () => ipcRenderer.invoke('japanese:roadmap'),
+    listLeeches: () => ipcRenderer.invoke('japanese:listLeeches'),
+    resetCard: (id) => ipcRenderer.invoke('japanese:resetCard', id),
+    buildCoreDeck: (limit) => ipcRenderer.invoke('japanese:buildCoreDeck', limit),
+    coreDeckStatus: () => ipcRenderer.invoke('japanese:coreDeckStatus'),
+    scanCoverage: (mediaId) => ipcRenderer.invoke('japanese:scanCoverage', mediaId),
+    coverageScanStatus: () => ipcRenderer.invoke('japanese:coverageScanStatus'),
+    coverage: (mediaId) => ipcRenderer.invoke('japanese:coverage', mediaId),
+    coverageList: () => ipcRenderer.invoke('japanese:coverageList'),
+    analyzeText: (text) => ipcRenderer.invoke('japanese:analyzeText', text),
     stats: () => ipcRenderer.invoke('japanese:stats'),
     statsDetail: () => ipcRenderer.invoke('japanese:statsDetail'),
     ensureMiningInbox: () => ipcRenderer.invoke('japanese:ensureMiningInbox'),
@@ -176,7 +191,15 @@ const api: NaviApi = {
     importPreset: (key) => ipcRenderer.invoke('dict:importPreset', key),
     importZip: () => ipcRenderer.invoke('dict:importZip'),
     importStatus: () => ipcRenderer.invoke('dict:importStatus'),
-    remove: (id) => ipcRenderer.invoke('dict:remove', id)
+    remove: (id) => ipcRenderer.invoke('dict:remove', id),
+    sentences: (term, limit) => ipcRenderer.invoke('dict:sentences', term, limit),
+    importSentences: () => ipcRenderer.invoke('dict:importSentences'),
+    sentenceBank: () => ipcRenderer.invoke('dict:sentenceBank'),
+    removeSentences: () => ipcRenderer.invoke('dict:removeSentences'),
+    strokes: (char) => ipcRenderer.invoke('dict:strokes', char),
+    importStrokes: () => ipcRenderer.invoke('dict:importStrokes'),
+    strokeSet: () => ipcRenderer.invoke('dict:strokeSet'),
+    removeStrokes: () => ipcRenderer.invoke('dict:removeStrokes')
   },
   manga: {
     attachFolder: (mediaId) => ipcRenderer.invoke('manga:attachFolder', mediaId),
@@ -290,6 +313,14 @@ const api: NaviApi = {
   },
   activity: {
     status: () => ipcRenderer.invoke('activity:status')
+  },
+  updates: {
+    status: () => ipcRenderer.invoke('update:status'),
+    check: () => ipcRenderer.invoke('update:check'),
+    download: () => ipcRenderer.invoke('update:download'),
+    cancel: () => ipcRenderer.invoke('update:cancel'),
+    install: () => ipcRenderer.invoke('update:install'),
+    testToken: () => ipcRenderer.invoke('update:testToken')
   },
   settings: {
     all: () => ipcRenderer.invoke('settings:all'),

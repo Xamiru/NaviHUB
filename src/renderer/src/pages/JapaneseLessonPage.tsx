@@ -7,6 +7,7 @@ import { toast } from '../lib/toast'
 import { usePersistedState } from '../lib/navState'
 import CardSourceBadge from '../components/CardSourceBadge'
 import LessonCheck from '../components/japanese/LessonCheck'
+import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 import type { JpCard, JpLessonKind } from '@shared/types'
 
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
@@ -263,8 +264,16 @@ function KanjiTable({ cards, practice }: { cards: JpCard[]; practice: boolean })
         <tbody>
           {cards.map((c) => (
             <tr key={c.id} className="border-b border-base-700/50 last:border-0">
-              <td className="px-4 py-2.5 text-3xl">
-                <DictLink text={c.front} />
+              <td className="px-4 py-2.5">
+                <span className="text-3xl">
+                  <DictLink text={c.front} />
+                </span>
+                {/* Renders nothing unless the KanjiVG pack is installed. */}
+                {!practice && [...c.front].length === 1 && (
+                  <span className="mt-1 block">
+                    <StrokeOrderDiagram char={c.front} size={72} />
+                  </span>
+                )}
               </td>
               <td className="px-4 py-2.5 text-gray-200">
                 {practice ? <Reveal value={c.back} /> : c.back}

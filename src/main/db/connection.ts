@@ -4,6 +4,7 @@ import Database from 'better-sqlite3'
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import initSql from './init.sql?raw'
 import { seedJapanese } from './japaneseSeed'
+import { CHECKLIST_SEED } from '@shared/checklist'
 import * as schema from './schema'
 
 export type DB = BetterSQLite3Database<typeof schema>
@@ -60,6 +61,33 @@ function dropColumn(sqlite: Database.Database, table: string, column: string): v
   }
 }
 
+// The checklist starts as a working board rather than an empty page. Gated by
+// a settings flag (the seedJapanese pattern) so removing an item in-app sticks
+// — and wiped on export, so a recipient's board seeds fresh.
+export function seedChecklist(sqlite: Database.Database): void {
+  const seeded = sqlite.prepare("SELECT value FROM settings WHERE key = 'checklist.seeded'").get()
+  if (seeded) return
+  // The checklist shipped before this flag existed, so an established board has
+  // no flag — seeding it would silently re-add items the user had removed and
+  // renumber the rest from 0. A board with rows has already been set up by
+  // definition: adopt it and just record the flag.
+  const existing = (
+    sqlite.prepare('SELECT COUNT(*) AS n FROM checklist_task').get() as { n: number }
+  ).n
+  const ins = sqlite.prepare(
+    'INSERT OR IGNORE INTO checklist_task (task_key, cadence, sort_order) VALUES (?, ?, ?)'
+  )
+  const order = { daily: 0, weekly: 0 }
+  sqlite.transaction(() => {
+    if (existing === 0) {
+      for (const item of CHECKLIST_SEED) ins.run(item.key, item.cadence, order[item.cadence]++)
+    }
+    sqlite
+      .prepare("INSERT OR IGNORE INTO settings (key, value) VALUES ('checklist.seeded', '1')")
+      .run()
+  })()
+}
+
 function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'character', 'external_source', 'external_source TEXT')
   ensureColumn(sqlite, 'character', 'external_id', 'external_id TEXT')
@@ -83,6 +111,8 @@ function runMigrations(sqlite: Database.Database): void {
   // Theme songs got a personal "favorite" flag with the /anime/songs page;
   // every DB that already imported themes predates it.
   ensureColumn(sqlite, 'theme_song', 'favorite', 'favorite INTEGER NOT NULL DEFAULT 0')
+  // Per-board target override arrived one build after the checklist itself.
+  ensureColumn(sqlite, 'checklist_task', 'target', 'target INTEGER')
 
   // Movies used to store "times watched" in the generic `progress` column;
   // it's now unified into `rewatch_count` (the universal times-consumed counter)
@@ -118,6 +148,7 @@ export function initDatabase(): DB {
   })
   seedMany(Object.entries(DEFAULT_SETTINGS))
   seedJapanese(sqlite)
+  seedChecklist(sqlite)
 
   _sqlite = sqlite
   _db = drizzle(sqlite, { schema })

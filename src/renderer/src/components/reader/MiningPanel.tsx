@@ -6,16 +6,16 @@ import { useMiningDraft } from '../../lib/useMining'
 import DictResultRow from '../japanese/DictResultRow'
 import type { DictEntry, JpToken } from '@shared/types'
 
-// The manga reader's word-mining side panel: shows the tapped OCR block as
-// tokenized word chips, looks terms up on Jisho, and saves cards straight into
-// the SRS with this manga as the source. Works with no OCR too — just type.
+// The word-mining side panel: shows a tapped OCR block (or an analyzed
+// paragraph) as tokenized word chips, looks terms up in the dictionary, and
+// saves cards straight into the SRS. Works with no OCR too — just type.
 export default function MiningPanel({
   mediaId,
   blockText,
   initialTerm,
   onClose
 }: {
-  mediaId: number
+  mediaId: number | null // the source manga/book, or null off a reader page
   blockText: string | null // tapped OCR block (joined lines); null = manual mode
   initialTerm: string | null // drag-selected text — pre-fills the term box
   onClose: () => void

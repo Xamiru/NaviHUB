@@ -62,14 +62,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # latest*.yml are the update manifests electron-updater reads to
+          # discover a new release — without them in the release, the in-app
+          # updater has nothing to look at. They come from the `publish` block
+          # in electron-builder.yml, which is why the build still runs with
+          # --publish never (CI publishes via `gh release create` below).
           - os: ubuntu-latest
             platform: linux
             artifact: linux
-            files: dist/*.AppImage
+            manifest: latest-linux.yml
+            files: |
+              dist/*.AppImage
+              dist/latest-linux.yml
           - os: windows-latest
             platform: win
             artifact: windows
-            files: dist/*.exe
+            manifest: latest.yml
+            files: |
+              dist/*.exe
+              dist/latest.yml
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -112,6 +123,13 @@ jobs:
             }
             console.log("better_sqlite3.node: PE binary OK")
           '
+
+      # The upload's if-no-files-found only fires when NOTHING matches, so an
+      # installer present alongside a missing manifest would ship a release the
+      # updater can't read — and that only shows up later as "Unable to find
+      # latest version", far from the cause. Fail here instead.
+      - name: Assert the update manifest was generated
+        run: test -f "dist/${{ matrix.manifest }}"
 
       - uses: actions/upload-artifact@v4
         with:

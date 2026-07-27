@@ -344,3 +344,27 @@ html:not([data-reader]) body::after {
 @keyframes lain-blink {
   50% { opacity: 0; }
 }
+
+/* --- kanji stroke-order diagram (StrokeOrderDiagram.tsx) ---
+   Each stroke draws itself in turn via a 0→1 dash offset (the paths carry
+   pathLength="1", so no length measurement is needed). Under reduced motion the
+   strokes are simply shown complete, and the numbers carry the order instead. */
+.stroke-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.stroke-number {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .stroke-draw {
+    stroke-dashoffset: 1;
+    animation: stroke-draw 0.4s linear forwards;
+  }
+  .stroke-number {
+    opacity: 0.75;
+  }
+}
+@keyframes stroke-draw {
+  to { stroke-dashoffset: 0; }
+}

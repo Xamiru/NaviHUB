@@ -481,7 +481,8 @@ export const jpCard = sqliteTable(
   },
   (t) => ({
     byLesson: index('idx_jp_card_lesson').on(t.lessonId),
-    byDue: index('idx_jp_card_due').on(t.status, t.dueAt)
+    byDue: index('idx_jp_card_due').on(t.status, t.dueAt),
+    byFront: index('idx_jp_card_front').on(t.front)
   })
 )
 
@@ -502,6 +503,32 @@ export const jpReviewLog = sqliteTable(
   (t) => ({
     byCard: index('idx_jp_review_log_card').on(t.cardId),
     byTime: index('idx_jp_review_log_time').on(t.reviewedAt)
+  })
+)
+
+// Series comprehension coverage: a scan's text facts only. The known/learning
+// split is recomputed against jp_card at read time, so these rows never go
+// stale as the user learns. media_id deliberately carries no FK.
+export const jpCoverage = sqliteTable('jp_coverage', {
+  mediaId: integer('media_id').primaryKey(),
+  scannedAt: text('scanned_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  chaptersScanned: integer('chapters_scanned').notNull(),
+  tokenCount: integer('token_count').notNull(),
+  uniqueWords: integer('unique_words').notNull()
+})
+
+export const jpCoverageWord = sqliteTable(
+  'jp_coverage_word',
+  {
+    mediaId: integer('media_id').notNull(),
+    word: text('word').notNull(),
+    count: integer('count').notNull()
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.mediaId, t.word] }),
+    byWord: index('idx_jp_coverage_word_word').on(t.word)
   })
 )
 
@@ -948,6 +975,7 @@ export const checklistTask = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     taskKey: text('task_key').notNull(),
     cadence: text('cadence').notNull(),
+    target: integer('target'),
     sortOrder: integer('sort_order').notNull().default(0),
     createdAt: text('created_at')
       .notNull()

@@ -34,6 +34,10 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-quiz', icon: '♫', label: 'Quiz', hint: 'Go to', to: '/quiz' },
   { key: 'nav-japanese', icon: 'あ', label: 'Japanese', hint: 'Go to', to: '/japanese' },
   { key: 'nav-jp-review', icon: '▶', label: 'Japanese review', hint: 'Go to', to: '/japanese/review' },
+  { key: 'nav-jp-roadmap', icon: '', label: 'Japanese roadmap', hint: 'Go to', to: '/japanese/roadmap' },
+  { key: 'nav-jp-analyze', icon: '', label: 'Analyze Japanese text', hint: 'Go to', to: '/japanese/analyze' },
+  { key: 'nav-jp-coverage', icon: '', label: 'Japanese comprehension', hint: 'Go to', to: '/japanese/coverage' },
+  { key: 'nav-jp-write', icon: '', label: 'Kanji writing drill', hint: 'Go to', to: '/japanese/write' },
   { key: 'nav-jp-stats', icon: '⧗', label: 'Japanese stats', hint: 'Go to', to: '/japanese/stats' },
   { key: 'nav-settings', icon: '⚙', label: 'Settings', hint: 'Go to', to: '/settings' }
 ]

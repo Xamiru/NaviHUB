@@ -382,7 +382,15 @@ export interface QuizSongFilter {
 }
 
 // ---- quiz history (finished rounds of any quiz mode) ----
-export type QuizKind = 'song' | 'japanese' | 'kana' | 'kanji' | 'conjugation' | 'jlpt' | 'tournament'
+export type QuizKind =
+  | 'song'
+  | 'japanese'
+  | 'kana'
+  | 'kanji'
+  | 'conjugation'
+  | 'writing'
+  | 'jlpt'
+  | 'tournament'
 
 export interface QuizSessionInput {
   kind: QuizKind
@@ -613,9 +621,55 @@ export interface JpLessonInput {
 
 // A review session's queue: cards already in rotation that are due, plus up to
 // `newLimit` not-yet-introduced cards (both from learned lessons only).
+// A queued card plus its lesson's kind/title — the typed-review mode derives a
+// grammar cloze target from the lesson title (@shared/cloze).
+export interface JpReviewCard extends JpCard {
+  lessonKind: JpLessonKind
+  lessonTitle: string
+}
+
 export interface JpReviewQueue {
-  due: JpCard[]
-  fresh: JpCard[]
+  due: JpReviewCard[]
+  fresh: JpReviewCard[]
+}
+
+// A card that keeps lapsing (jp_card.lapses >= LEECH_LAPSES). Read-time only —
+// no leech table exists.
+export interface JpLeech {
+  id: number
+  front: string
+  reading: string | null
+  back: string
+  lapses: number
+  ease: number
+  status: SrsStatus
+  intervalDays: number
+  lessonId: number
+  lessonTitle: string
+  courseId: number
+  courseTitle: string
+}
+
+// ---- Roadmap ----
+// The study path: seeded courses in difficulty (step) order, everything else
+// (mined inbox, prep decks, core decks, user courses) unscheduled.
+
+export interface JpRoadmapCourse extends JpCourseSummary {
+  seenCardCount: number // cards past 'new'
+  dueCardCount: number // same due definition as stats()
+}
+
+export interface JpRoadmap {
+  steps: JpRoadmapCourse[]
+  unscheduled: JpRoadmapCourse[]
+  frontierCourseId: number | null // first step course with lessons left
+  nextLesson: {
+    id: number
+    title: string
+    kind: JpLessonKind
+    courseId: number
+    courseTitle: string
+  } | null
 }
 
 // What submitReview reports back — enough for the UI to show the outcome.
@@ -742,6 +796,16 @@ export interface DictEntry {
   isCommon: boolean
   matchedForm: string // the candidate that actually hit (deinflection transparency)
   source: 'offline' | 'jisho'
+  // Corpus frequency rank when a frequency dictionary is installed (lower =
+  // more common). Always null on the jisho.org fallback path.
+  frequency: DictFrequency | null
+}
+
+// A word's rank in one installed frequency dictionary.
+export interface DictFrequency {
+  rank: number
+  display: string | null // bank-supplied display form, e.g. "12345㋕"
+  dictTitle: string
 }
 
 // A kanji's readings and meanings from a KANJIDIC-style dictionary.
@@ -763,14 +827,27 @@ export interface DictInfo {
   priority: number
   termCount: number
   kanjiCount: number
+  freqCount: number // frequency dictionaries have no terms of their own
   importedAt: string
 }
 
 // Live status of a dictionary download/import, polled by the renderer while an
-// import runs (module-level state in the importer, like the music scan).
+// import runs (module-level state in the importer, like the music scan). The
+// sentence bank and stroke set share this status and its one-at-a-time gate.
 export interface DictImportStatus {
   running: boolean
-  phase: 'idle' | 'downloading' | 'reading' | 'terms' | 'kanji' | 'pitch' | 'tags' | 'finalizing'
+  phase:
+    | 'idle'
+    | 'downloading'
+    | 'reading'
+    | 'terms'
+    | 'kanji'
+    | 'pitch'
+    | 'frequency'
+    | 'tags'
+    | 'sentences'
+    | 'strokes'
+    | 'finalizing'
   done: number // downloading: bytes; other phases: rows written in the phase
   total: number // downloading: content-length (0 if unknown); else rows in phase
   dictTitle: string | null // known once index.json is read
@@ -783,6 +860,47 @@ export interface DictImportSummary {
   termCount: number
   kanjiCount: number
   pitchCount: number
+  freqCount: number
+}
+
+// ---- Example sentences (Tatoeba pairs, imported by dict/sentences.ts) ----
+
+export interface SentenceExample {
+  jp: string
+  en: string
+  attribution: string | null // kept verbatim to honour the CC-BY licence
+}
+
+export interface SentenceBankInfo {
+  sentenceCount: number
+  importedAt: string
+}
+
+export interface SentenceImportSummary {
+  sentenceCount: number
+}
+
+// ---- KanjiVG stroke order ----
+// Paths are SVG `d` attributes in KanjiVG's 109x109 coordinate space; the
+// viewBox constant is shared by the diagram renderer and the writing drill's
+// stroke matcher so both normalize into the same space.
+export const KANJIVG_VIEWBOX = '0 0 109 109'
+export const KANJIVG_SIZE = 109
+
+export interface KanjiStrokes {
+  character: string
+  strokes: string[] // ordered SVG path `d` strings
+}
+
+export interface StrokeSetInfo {
+  revision: string | null
+  charCount: number
+  importedAt: string
+}
+
+export interface StrokeImportSummary {
+  charCount: number
+  revision: string | null
 }
 
 // ---- Series prep decks ----
@@ -804,6 +922,82 @@ export interface PrepDeckSummary {
   words: number
   chaptersScanned: number
   uniqueWordsSeen: number
+}
+
+// ---- Series comprehension + text analysis ----
+// How much of a series (or a pasted text) the user can already read. Tiers are
+// derived from jp_card at read time, never stored — see repos/coverageRepo.ts.
+
+// 'unstarted' = a card exists but its lesson isn't learned yet (prep decks
+// create hundreds of these); it counts toward neither known nor unknown.
+export type JpWordTier = 'known' | 'learning' | 'unstarted' | 'unknown'
+
+export interface JpTierCounts {
+  uniqueCount: number
+  tokenCount: number
+}
+
+export interface JpCoverageDetail {
+  mediaId: number
+  scannedAt: string
+  chaptersScanned: number
+  tokenCount: number
+  uniqueWords: number
+  tiers: Record<JpWordTier, JpTierCounts>
+  topUnknown: { word: string; count: number }[]
+}
+
+export interface JpCoverageListRow {
+  mediaId: number
+  title: string // '(deleted)' when the media item is gone
+  coverPath: string | null
+  mediaType: MediaType | null
+  scannedAt: string
+  tokenCount: number
+  uniqueWords: number
+  tiers: Record<JpWordTier, JpTierCounts>
+}
+
+export interface JpCoverageScanStatus {
+  running: boolean
+  mediaId: number | null
+  done: number // chapters processed
+  total: number
+  error: string | null
+}
+
+export interface JpAnalyzedToken {
+  surface: string
+  base: string
+  tier: JpWordTier | 'nonword' // particles, punctuation and Latin runs
+}
+
+export interface JpTextAnalysis {
+  paragraphs: JpAnalyzedToken[][]
+  stats: {
+    tokenCount: number
+    uniqueWords: number
+    tiers: Record<JpWordTier, JpTierCounts>
+  }
+  unknown: { word: string; count: number; reading: string | null; gloss: string | null }[]
+}
+
+// ---- Core frequency deck ----
+
+export interface CoreDeckStatus {
+  running: boolean
+  phase: 'idle' | 'selecting' | 'glossing' | 'writing'
+  done: number
+  total: number
+  error: string | null
+}
+
+export interface CoreDeckSummary {
+  courseId: number
+  courseTitle: string
+  words: number
+  ranksScanned: number
+  skippedKnown: number
 }
 
 // ---- Local manga reader ----
@@ -1076,6 +1270,37 @@ export interface ActivityStatus {
   phase: 'fetching' | 'images' | 'audio' | 'writing'
   done: number // progress within the phase (images/audio only)
   total: number
+}
+
+// ---- In-app updates ----
+// Why a build can't self-update. Kept as one value (not scattered ifs) so the
+// decision is pure and testable; 'ok' means updating is available here.
+//   dev      — not packaged; electron-updater has no app-update.yml to read
+//   portable — the Windows portable .exe target is unsupported by design
+//   no-token — the repo is private, so a github.token setting is required
+export type UpdateEnvironment = 'ok' | 'dev' | 'portable' | 'no-token'
+
+// electron-updater is EventEmitter-based, but this app has no push channel, so
+// src/main/updater.ts collapses its events into this ONE object that the
+// renderer polls via `update:status`. Terminal states (upToDate/ready/error)
+// persist until the next check, which is what lets the renderer stop polling
+// and still render the outcome. `environment` is orthogonal to `state`: a dev
+// build is 'idle' + 'dev', never a special state.
+export interface UpdateStatus {
+  id: string
+  state: 'idle' | 'checking' | 'available' | 'downloading' | 'ready' | 'upToDate' | 'error'
+  currentVersion: string
+  environment: UpdateEnvironment
+  percent: number | null
+  version: string | null // the release being offered / downloaded
+  message: string | null // error text, or why this build can't update
+}
+
+// Result of the Settings "Save & test" button — resolves rather than rejecting
+// so the card can render it inline (mirrors TorrentServiceTestResult).
+export interface UpdateTestResult {
+  ok: boolean
+  message: string
 }
 
 // ---- Music stats page ----
@@ -1618,9 +1843,21 @@ export interface TorrentFilter {
 export type ChecklistCadence = 'daily' | 'weekly'
 
 // mediaLog: the checklist performs the tracking action (log an episode/film).
-// detected: completion is read from existing activity tables (SRS, manga…).
+// detected: completion is read from existing activity tables (SRS, quizzes…),
+//   and can also be credited by hand when the activity happened outside the app.
 // manual: a plain tick, nothing to detect.
 export type ChecklistKind = 'mediaLog' | 'detected' | 'manual'
+
+// What one progress log did, so the caller can say "rewatch #3 started" instead
+// of silently resetting a finished title's progress to 1.
+export interface MediaProgressLogged {
+  logId: number | null // null when no checklist item covers this media type
+  title: string
+  startedRewatch: boolean
+  rewatchCount: number
+  progress: number
+  status: string | null
+}
 
 // One logged event in the current period. `title` falls back to the snapshot
 // cached in the log payload when the media row has since been deleted.
@@ -1641,10 +1878,12 @@ export interface ChecklistTaskStatus {
   kind: ChecklistKind
   route: string | null // detected: where clicking the row goes
   mediaType: MediaType | null // mediaLog: which picker to open
-  target: number
-  progress: number // within the current period
+  target: number // the board's override, or the def's default
+  defaultTarget: number // what "reset" goes back to
+  detected: number // the auto-counted part of `progress` (0 for other kinds)
+  progress: number // detected + logged, within the current period
   done: boolean
-  entries: ChecklistLogEntry[] // [] for detected kinds
+  entries: ChecklistLogEntry[] // logged episodes / ticks / hand-added credits
 }
 
 export interface ChecklistStatus {

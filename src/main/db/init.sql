@@ -322,6 +322,32 @@ CREATE TABLE IF NOT EXISTS jp_review_log (
 CREATE INDEX IF NOT EXISTS idx_jp_review_log_card ON jp_review_log(card_id);
 CREATE INDEX IF NOT EXISTS idx_jp_review_log_time ON jp_review_log(reviewed_at);
 
+-- Speeds the coverage/analyze tier joins (and minedFronts, which predates them).
+CREATE INDEX IF NOT EXISTS idx_jp_card_front ON jp_card(front);
+
+-- ---- Series comprehension coverage ----
+-- "You know 78% of the words in this series." A scan snapshots only TEXT facts
+-- (per-word frequencies, which don't change until the series gains chapters);
+-- the known/learning split is recomputed at read time against jp_card, so the
+-- score self-updates as the user learns and never needs invalidating.
+-- media_id carries NO FK (list_item / jp_card.source_media_id precedent) —
+-- reads LEFT JOIN media_item and tolerate deletion.
+CREATE TABLE IF NOT EXISTS jp_coverage (
+  media_id         INTEGER PRIMARY KEY,
+  scanned_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  chapters_scanned INTEGER NOT NULL,
+  token_count      INTEGER NOT NULL,   -- word-like token occurrences (denominator)
+  unique_words     INTEGER NOT NULL    -- distinct base forms seen, pre-noise-filter
+);
+
+CREATE TABLE IF NOT EXISTS jp_coverage_word (
+  media_id INTEGER NOT NULL,
+  word     TEXT NOT NULL,              -- dictionary (base) form
+  count    INTEGER NOT NULL,
+  PRIMARY KEY (media_id, word)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_jp_coverage_word_word ON jp_coverage_word(word);
+
 -- ---- Music library ----
 -- Standalone local-music section (fully separate from media_item / person —
 -- anime OP/EDs stay in theme_song). Rows are created/updated ONLY by the
@@ -664,6 +690,7 @@ CREATE TABLE IF NOT EXISTS checklist_task (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   task_key    TEXT NOT NULL,               -- FROZEN key from shared/checklist.ts
   cadence     TEXT NOT NULL,               -- 'daily' | 'weekly'
+  target      INTEGER,                     -- per-board override; NULL = the def's default
   sort_order  INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(task_key, cadence)

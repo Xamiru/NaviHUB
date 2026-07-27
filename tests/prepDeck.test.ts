@@ -15,7 +15,8 @@ vi.mock('../src/main/dict/dictDb', () => ({
 vi.mock('../src/main/files', () => ({ mangaRootDir: () => '/nowhere' }))
 vi.mock('../src/main/tokenizer', () => ({ tokenize: async () => [] }))
 
-import { glossFor, rankCandidates, stripXhtml, writePrepCourse } from '../src/main/prepDeck'
+import { fuseWithGlobalRank, glossFor, rankCandidates, writePrepCourse } from '../src/main/prepDeck'
+import { stripXhtml } from '../src/main/seriesText'
 import { importFromReader } from '../src/main/dict/importer'
 import * as jp from '../src/main/repos/japaneseRepo'
 
@@ -41,6 +42,59 @@ describe('rankCandidates', () => {
   it('keeps single-kanji words', () => {
     const ranked = rankCandidates(new Map([['剣', 3]]), new Set())
     expect(ranked).toEqual([{ word: '剣', count: 3 }])
+  })
+})
+
+describe('fuseWithGlobalRank', () => {
+  // In series-frequency order, as rankCandidates returns them.
+  const candidates = [
+    { word: '魔法', count: 30 },
+    { word: '剣', count: 28 },
+    { word: '冒険', count: 26 },
+    { word: '町', count: 24 }
+  ]
+  const words = (list: { word: string }[]): string[] => list.map((c) => c.word)
+
+  it('is the identity when no frequency dictionary is installed', () => {
+    expect(fuseWithGlobalRank(candidates, new Map())).toEqual(candidates)
+  })
+
+  it('keeps series order when the global ranks agree with it', () => {
+    const global = new Map([
+      ['魔法', 1],
+      ['剣', 2],
+      ['冒険', 3],
+      ['町', 4]
+    ])
+    expect(fuseWithGlobalRank(candidates, global)).toEqual(candidates)
+  })
+
+  it('lifts an everyday word over a series-specific one it trails', () => {
+    // 町 is last in this series but the most common word in the language;
+    // 冒険 is series-frequent yet globally rare. The fusion swaps them.
+    const global = new Map([
+      ['町', 40],
+      ['魔法', 3000],
+      ['剣', 5000],
+      ['冒険', 90_000]
+    ])
+    expect(words(fuseWithGlobalRank(candidates, global))).toEqual(['魔法', '剣', '町', '冒険'])
+  })
+
+  it('keeps the series rank dominant — a global #1 does not jump the whole list', () => {
+    const global = new Map([['町', 1]])
+    // 町 rises, but the series' most frequent word still leads the deck.
+    expect(words(fuseWithGlobalRank(candidates, global))[0]).toBe('魔法')
+  })
+
+  it('pushes words the frequency dictionary has never seen down the list', () => {
+    const global = new Map([
+      ['剣', 50],
+      ['冒険', 60],
+      ['町', 70]
+    ])
+    // 魔法 leads the series but is globally unranked, so a known word passes it.
+    expect(words(fuseWithGlobalRank(candidates, global))).toEqual(['剣', '魔法', '冒険', '町'])
   })
 })
 

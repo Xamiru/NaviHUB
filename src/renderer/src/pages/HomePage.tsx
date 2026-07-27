@@ -281,6 +281,7 @@ function ChecklistCard() {
   const daily = data?.daily ?? []
   const done = daily.filter((t) => t.done).length
   const streak = data?.streak.current ?? 0
+  const pct = daily.length ? Math.round((done / daily.length) * 100) : 0
   return (
     <Link
       to="/checklist"
@@ -296,6 +297,11 @@ function ChecklistCard() {
             ? 'Set up the things you want to do every day and week.'
             : 'Your daily and weekly routine, tracked automatically.'}
         </p>
+        {daily.length > 0 && (
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-base-900/60">
+            <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+          </div>
+        )}
       </div>
       <div className="mt-4 flex items-center justify-between">
         {streak > 0 && (

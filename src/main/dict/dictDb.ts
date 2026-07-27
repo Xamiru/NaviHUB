@@ -19,13 +19,17 @@ export function getDictDbPath(): string {
   return join(app.getPath('userData'), 'dictionaries.db')
 }
 
-// Deletes rows left behind by a crash mid-import: the `dict` registry row is
-// written last, so any child rows whose dict_id has no registry entry are
-// orphans from an import that never finished.
+// Deletes rows left behind by a crash mid-import: every registry row (`dict`,
+// `sentence_bank`, `stroke_set`) is written last, so child rows whose parent id
+// has no registry entry are orphans from an import that never finished.
 function sweepOrphans(db: Database.Database): void {
-  for (const table of ['term', 'kanji', 'pitch', 'tag', 'gloss_fts']) {
+  for (const table of ['term', 'kanji', 'pitch', 'tag', 'gloss_fts', 'freq']) {
     db.exec(`DELETE FROM ${table} WHERE dict_id NOT IN (SELECT id FROM dict)`)
   }
+  for (const table of ['sentence', 'sentence_fts']) {
+    db.exec(`DELETE FROM ${table} WHERE bank_id NOT IN (SELECT id FROM sentence_bank)`)
+  }
+  db.exec('DELETE FROM stroke WHERE set_id NOT IN (SELECT id FROM stroke_set)')
 }
 
 function open(): Database.Database {
@@ -39,9 +43,15 @@ function open(): Database.Database {
       DROP TABLE IF EXISTS gloss_fts;
       DROP TABLE IF EXISTS tag;
       DROP TABLE IF EXISTS pitch;
+      DROP TABLE IF EXISTS freq;
       DROP TABLE IF EXISTS kanji;
       DROP TABLE IF EXISTS term;
       DROP TABLE IF EXISTS dict;
+      DROP TABLE IF EXISTS sentence_fts;
+      DROP TABLE IF EXISTS sentence;
+      DROP TABLE IF EXISTS sentence_bank;
+      DROP TABLE IF EXISTS stroke;
+      DROP TABLE IF EXISTS stroke_set;
     `)
   }
   db.exec(initSql)

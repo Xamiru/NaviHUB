@@ -59,14 +59,28 @@ import type {
   DictEntry,
   DictImportStatus,
   DictImportSummary,
+  SentenceExample,
+  SentenceBankInfo,
+  SentenceImportSummary,
+  KanjiStrokes,
+  StrokeSetInfo,
+  StrokeImportSummary,
   KanjiInfo,
   JpLessonQuizPool,
   JpQuizItem,
   JpQuizScope,
   PrepDeckStatus,
   PrepDeckSummary,
+  CoreDeckStatus,
+  CoreDeckSummary,
+  JpCoverageDetail,
+  JpCoverageListRow,
+  JpCoverageScanStatus,
+  JpTextAnalysis,
   JpReviewOutcome,
   JpReviewQueue,
+  JpLeech,
+  JpRoadmap,
   JpStats,
   JpStatsDetail,
   SrsGrade,
@@ -77,6 +91,8 @@ import type {
   MokuroPageOcr,
   JpToken,
   ActivityStatus,
+  UpdateStatus,
+  UpdateTestResult,
   GachaBanner,
   GachaBannerInput,
   GachaBuildInput,
@@ -116,6 +132,7 @@ import type {
   MusicSearchResults,
   MusicStatsDetail,
   MusicTrack,
+  MediaProgressLogged,
   SyncStatus,
   YtDlpDetectResult
 } from './types'
@@ -126,6 +143,11 @@ export interface NaviApi {
     get(id: number): Promise<MediaDetail | null>
     create(input: MediaItemInput): Promise<number>
     update(id: number, input: Partial<MediaItemInput>): Promise<void>
+    // "I watched/read another one": advances progress with status promotion,
+    // and wraps a finished title into a fresh rewatch pass instead of running
+    // past its total. Also credits today's checklist if an item covers this
+    // media type. @shared/mediaProgress owns the rules.
+    logProgress(id: number): Promise<MediaProgressLogged>
     remove(id: number): Promise<void>
     removeCharacter(mediaId: number, characterId: number): Promise<void>
     statusCounts(mediaType: string): Promise<Record<string, number>>
@@ -230,12 +252,22 @@ export interface NaviApi {
     status(): Promise<ChecklistStatus>
     addTask(key: string, cadence: ChecklistCadence): Promise<number>
     removeTask(id: number): Promise<void>
+    // null clears a per-board target override.
+    setTarget(id: number, target: number | null): Promise<void>
+    reorder(cadence: ChecklistCadence, orderedIds: number[]): Promise<void>
     // mediaLog items: logging performs the tracking write (episode +1 /
-    // mark watched) and records what to restore on undo.
-    logMedia(taskKey: string, cadence: ChecklistCadence, mediaId: number): Promise<number>
+    // rewatch / mark watched) and records what to restore on undo.
+    logMedia(
+      taskKey: string,
+      cadence: ChecklistCadence,
+      mediaId: number
+    ): Promise<MediaProgressLogged>
     undoLog(logId: number): Promise<void>
     tick(taskKey: string, cadence: ChecklistCadence): Promise<number>
     untick(taskKey: string, cadence: ChecklistCadence): Promise<void>
+    // One manual credit toward a detected item — un-clamped, undoable, and the
+    // reason nothing on the board can be impossible to finish.
+    credit(taskKey: string, cadence: ChecklistCadence): Promise<number>
   }
   anilist: {
     search(query: string): Promise<ImportSearchResult[]>
@@ -329,6 +361,24 @@ export interface NaviApi {
     // write a "words you'll meet" course. Long-running; poll prepDeckStatus.
     buildPrepDeck(mediaId: number): Promise<PrepDeckSummary>
     prepDeckStatus(): Promise<PrepDeckStatus>
+    // Core frequency deck: the next N most frequent words not yet in any deck,
+    // sourced from an installed frequency dictionary. Poll coreDeckStatus.
+    buildCoreDeck(limit: number): Promise<CoreDeckSummary>
+    coreDeckStatus(): Promise<CoreDeckStatus>
+    // Comprehension: scan a series' text once, then read the score any time —
+    // known/learning splits are recomputed against jp_card on every read.
+    scanCoverage(mediaId: number): Promise<JpCoverageDetail>
+    coverageScanStatus(): Promise<JpCoverageScanStatus>
+    coverage(mediaId: number): Promise<JpCoverageDetail | null>
+    coverageList(): Promise<JpCoverageListRow[]>
+    // Same tiering applied to arbitrary pasted text (one round trip: tokenize,
+    // tier against jp_card, gloss the top unknowns).
+    analyzeText(text: string): Promise<JpTextAnalysis>
+    // The study path: stepped courses + unscheduled decks + "you are here".
+    roadmap(): Promise<JpRoadmap>
+    // Cards that keep lapsing (>= LEECH_LAPSES), and a full SRS reset for one.
+    listLeeches(): Promise<JpLeech[]>
+    resetCard(id: number): Promise<void>
     stats(): Promise<JpStats>
     // Review history (heatmap/streaks/grades) + due forecast for the stats page.
     statsDetail(): Promise<JpStatsDetail>
@@ -347,13 +397,27 @@ export interface NaviApi {
     list(): Promise<DictInfo[]>
     lookup(query: string): Promise<DictEntry[]>
     kanji(text: string): Promise<KanjiInfo[]>
-    // Download + import a freely-hosted preset (JMdict / KANJIDIC).
-    importPreset(key: 'jmdict-en' | 'kanjidic-en'): Promise<DictImportSummary>
+    // Download + import a freely-hosted preset (JMdict / KANJIDIC / frequency).
+    importPreset(
+      key: 'jmdict-en' | 'kanjidic-en' | 'jpdb-freq' | 'bccwj-freq'
+    ): Promise<DictImportSummary>
     // Native picker + import of any Yomitan .zip; null when cancelled.
     importZip(): Promise<DictImportSummary | null>
-    // Live status of the running download/import (polled while it runs).
+    // Live status of the running download/import (polled while it runs). Shared
+    // by the dictionary, sentence-bank and stroke-set imports.
     importStatus(): Promise<DictImportStatus>
     remove(id: number): Promise<void>
+    // Offline example sentences (Tatoeba pairs). [] when no bank is installed.
+    sentences(term: string, limit?: number): Promise<SentenceExample[]>
+    importSentences(): Promise<SentenceImportSummary>
+    sentenceBank(): Promise<SentenceBankInfo | null>
+    removeSentences(): Promise<void>
+    // KanjiVG stroke order; null when the pack isn't installed or the character
+    // isn't covered — every consumer degrades to "no diagram".
+    strokes(char: string): Promise<KanjiStrokes | null>
+    importStrokes(): Promise<StrokeImportSummary>
+    strokeSet(): Promise<StrokeSetInfo | null>
+    removeStrokes(): Promise<void>
   }
   manga: {
     // Local manga reader: chapters are page-image folders under the manga
@@ -520,6 +584,21 @@ export interface NaviApi {
     // The current long-running main-process task (imports, theme fetches);
     // poll while one runs to drive progress UI. active:false when idle.
     status(): Promise<ActivityStatus>
+  }
+  updates: {
+    // In-app updates from GitHub Releases (src/main/updater.ts). Online work is
+    // button-only — nothing checks automatically. The mutations all resolve the
+    // fresh status (like the sync trio) and the renderer polls status() with
+    // refetchInterval while a check/download runs, like music downloads.
+    status(): Promise<UpdateStatus>
+    check(): Promise<UpdateStatus>
+    download(): Promise<UpdateStatus>
+    cancel(): Promise<UpdateStatus>
+    // Quits and relaunches into the downloaded update — resolves only on failure.
+    install(): Promise<void>
+    // Verifies the saved github.token against the Releases API. Resolves a
+    // result (never rejects) so the Settings card renders it inline.
+    testToken(): Promise<UpdateTestResult>
   }
   settings: {
     all(): Promise<SettingsMap>

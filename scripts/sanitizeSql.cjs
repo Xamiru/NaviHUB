@@ -29,6 +29,10 @@ const SANITIZE_STATEMENTS = [
   'DELETE FROM jp_card',
   'DELETE FROM jp_lesson',
   'DELETE FROM jp_course',
+  // Comprehension scans: which series the user reads and how much of each they
+  // understand — personal on both counts.
+  'DELETE FROM jp_coverage_word',
+  'DELETE FROM jp_coverage',
 
   // Music library: scan rows reference files under the exporter's music.dir,
   // so they'd all be dead on arrival; the recipient's first scan rebuilds.
@@ -81,8 +85,9 @@ const SANITIZE_STATEMENTS = [
 
   // Secrets and machine-specific paths. The LIKE clause clears ALL the
   // japanese.seeded* flags (one per seeded course, see db/japaneseSeed.ts) so
-  // the default courses re-seed for the recipient. sync.token is the phone's
-  // bearer token — a secret; sync.device is the paired phone's name.
+  // the default courses re-seed for the recipient, and checklist.seeded so the
+  // starter board seeds too. sync.token is the phone's bearer token — a secret;
+  // sync.device is the paired phone's name.
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','omdb.api_key','ytdlp.path',
       'music.dir','manga.dir','audio.dir','pictures.dir',
@@ -90,7 +95,8 @@ const SANITIZE_STATEMENTS = [
       'vertex.project_id','vertex.region','vertex.credentials_path',
       'sync.token','sync.device','sync.port',
       'jackett.url','jackett.api_key','jackett.start_cmd',
-      'qbittorrent.url','qbittorrent.username','qbittorrent.password')
+      'qbittorrent.url','qbittorrent.username','qbittorrent.password',
+      'github.token','checklist.seeded')
      OR key LIKE 'japanese.seeded%'`
 ]
 

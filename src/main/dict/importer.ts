@@ -29,10 +29,16 @@ const DELETE_CHUNK = 2000
 const UA = 'NaviHUB/1.0 (+https://github.com/yomidevs/jmdict-yomitan)'
 
 // Freely-hosted presets. Other dictionaries (pitch accent, DOJG, 新和英) are
-// imported from a user-picked zip via importZipFile.
+// imported from a user-picked zip via importZipFile. The two frequency
+// dictionaries are ordinary Yomitan zips whose term_meta banks carry mode='freq'
+// rows — they import through exactly the same path as JMdict.
 const PRESETS: Record<string, string> = {
   'jmdict-en': 'https://github.com/yomidevs/jmdict-yomitan/releases/latest/download/JMdict_english.zip',
-  'kanjidic-en': 'https://github.com/yomidevs/jmdict-yomitan/releases/latest/download/KANJIDIC_english.zip'
+  'kanjidic-en': 'https://github.com/yomidevs/jmdict-yomitan/releases/latest/download/KANJIDIC_english.zip',
+  'jpdb-freq':
+    'https://github.com/Kuuuube/yomitan-dictionaries/raw/main/dictionaries/JPDB_v2.2_Frequency_Kana_2024-10-13.zip',
+  'bccwj-freq':
+    'https://github.com/Kuuuube/yomitan-dictionaries/raw/main/dictionaries/BCCWJ_SUW_LUW_combined.zip'
 }
 export type PresetKey = keyof typeof PRESETS
 
@@ -51,6 +57,19 @@ export function getImportStatus(): DictImportStatus {
   return { ...importState }
 }
 
+// Phase/progress setter shared with the sentence and stroke importers, which
+// run through the same one-at-a-time `runImport` gate and the same status poll.
+export function setImportPhase(phase: DictImportStatus['phase'], done = 0, total = 0): void {
+  importState.phase = phase
+  importState.done = done
+  importState.total = total
+}
+
+export function setImportProgress(done: number, total?: number): void {
+  importState.done = done
+  if (total !== undefined) importState.total = total
+}
+
 // ---- zip reader seam (importFromReader is pure of yauzl for testing) ----
 
 export interface YomitanIndex {
@@ -64,6 +83,8 @@ export interface BankReader {
   readIndex(): Promise<YomitanIndex>
   bankNames(): string[]
   readBank(name: string): Promise<unknown[]>
+  // Raw bytes of an entry — the sentence bank ships TSV, not JSON.
+  readRaw(name: string): Promise<Buffer>
 }
 
 interface OpenZip {
@@ -114,6 +135,9 @@ export async function openZipReader(zipPath: string): Promise<BankReader & { clo
     async readBank(name) {
       const buf = await readEntry(name)
       return JSON.parse(buf.toString('utf8'))
+    },
+    readRaw(name) {
+      return readEntry(name)
     },
     close() {
       zipfile.close()
@@ -193,6 +217,46 @@ function mapPitchRow(row: any): PitchRow | null {
   }
 }
 
+interface FreqRow {
+  expression: string
+  reading: string
+  rank: number
+  display: string | null
+}
+
+// term_meta row: [expression, 'freq', data]. `data` comes in four shapes across
+// the freq dictionaries in the wild:
+//   12345                                    bare number
+//   "12345"                                  numeric string
+//   { value, displayValue? }                 ranked value with a display form
+//   { reading, frequency: number | {value, displayValue?} }   reading-specific
+function mapFreqRow(row: any): FreqRow | null {
+  if (!Array.isArray(row) || row[1] !== 'freq' || typeof row[0] !== 'string') return null
+  let data = row[2]
+  let reading = ''
+  if (data && typeof data === 'object' && !Array.isArray(data) && 'frequency' in data) {
+    if (typeof data.reading === 'string') reading = data.reading
+    data = data.frequency
+  }
+  let rank: number | null = null
+  let display: string | null = null
+  if (typeof data === 'number') {
+    rank = data
+  } else if (typeof data === 'string') {
+    const n = Number(data)
+    if (Number.isFinite(n)) rank = n
+    else return null
+  } else if (data && typeof data === 'object' && !Array.isArray(data)) {
+    const value = (data as any).value
+    if (typeof value === 'number') rank = value
+    else if (typeof value === 'string' && Number.isFinite(Number(value))) rank = Number(value)
+    const dv = (data as any).displayValue
+    if (typeof dv === 'string') display = dv
+  }
+  if (rank === null || !Number.isFinite(rank)) return null
+  return { expression: row[0], reading, rank: Math.round(rank), display }
+}
+
 interface TagRow {
   name: string
   category: string
@@ -221,7 +285,7 @@ async function deleteDictRows(db: Database.Database, dictId: number): Promise<vo
   await yieldToLoop()
   db.prepare('DELETE FROM tag WHERE dict_id = ?').run(dictId)
   await yieldToLoop()
-  for (const table of ['term', 'kanji', 'pitch']) {
+  for (const table of ['term', 'kanji', 'pitch', 'freq']) {
     const del = db.prepare(
       `DELETE FROM ${table} WHERE id IN (SELECT id FROM ${table} WHERE dict_id = ? LIMIT ${DELETE_CHUNK})`
     )
@@ -286,6 +350,13 @@ export async function importFromReader(reader: BankReader): Promise<DictImportSu
     for (const r of rows) insPitch.run(newId, r.expression, r.reading, r.pitches)
   })
 
+  const insFreq = db.prepare(
+    'INSERT INTO freq (dict_id, expression, reading, rank, display) VALUES (?, ?, ?, ?, ?)'
+  )
+  const insFreqChunk = db.transaction((rows: FreqRow[]) => {
+    for (const r of rows) insFreq.run(newId, r.expression, r.reading, r.rank, r.display)
+  })
+
   const insTag = db.prepare(
     'INSERT OR REPLACE INTO tag (dict_id, name, category, ord, notes, score) VALUES (?, ?, ?, ?, ?, ?)'
   )
@@ -296,6 +367,7 @@ export async function importFromReader(reader: BankReader): Promise<DictImportSu
   let termCount = 0
   let kanjiCount = 0
   let pitchCount = 0
+  let freqCount = 0
 
   try {
     importState.phase = 'terms'
@@ -325,15 +397,45 @@ export async function importFromReader(reader: BankReader): Promise<DictImportSu
       }
     }
 
+    // term_meta banks carry both pitch and frequency rows; read each bank once
+    // and split it (a freq dictionary is megabytes — re-reading to make two
+    // passes would double the parse cost for no gain).
     importState.phase = 'pitch'
     importState.done = 0
+    importState.total = 0
+    // Rows discovered so far, per kind — the banks are read one at a time, so
+    // the grand total isn't known until the end; a growing denominator still
+    // beats one borrowed from another phase.
+    let pitchTotal = 0
+    let freqTotal = 0
     for (const name of metaBanks) {
-      const rows = (await reader.readBank(name)).map(mapPitchRow).filter((r): r is PitchRow => r !== null)
-      for (let i = 0; i < rows.length; i += CHUNK) {
-        const slice = rows.slice(i, i + CHUNK)
+      const raw = await reader.readBank(name)
+      const pitchRows = raw.map(mapPitchRow).filter((r): r is PitchRow => r !== null)
+      const freqRows = raw.map(mapFreqRow).filter((r): r is FreqRow => r !== null)
+      pitchTotal += pitchRows.length
+      freqTotal += freqRows.length
+      // Each kind owns the progress pair while it runs, so the bar never shows
+      // one counter against the other's total (or against the terms phase's).
+      if (pitchRows.length > 0) {
+        importState.phase = 'pitch'
+        importState.total = pitchTotal
+      }
+      for (let i = 0; i < pitchRows.length; i += CHUNK) {
+        const slice = pitchRows.slice(i, i + CHUNK)
         insPitchChunk(slice)
         pitchCount += slice.length
         importState.done = pitchCount
+        await yieldToLoop()
+      }
+      if (freqRows.length > 0) {
+        importState.phase = 'frequency'
+        importState.total = freqTotal
+      }
+      for (let i = 0; i < freqRows.length; i += CHUNK) {
+        const slice = freqRows.slice(i, i + CHUNK)
+        insFreqChunk(slice)
+        freqCount += slice.length
+        importState.done = freqCount
         await yieldToLoop()
       }
     }
@@ -374,16 +476,19 @@ export async function importFromReader(reader: BankReader): Promise<DictImportSu
     // optimize is advisory
   }
 
-  return { title, termCount, kanjiCount, pitchCount }
+  return { title, termCount, kanjiCount, pitchCount, freqCount }
 }
 
 // ---- registry queries ----
 
 export function listDictionaries(): DictInfo[] {
+  // freq_count is computed rather than stored: a frequency dictionary has no
+  // terms or kanji of its own, so without this its row would read "0 terms".
   const rows = getDictDb()
     .prepare(
-      `SELECT id, title, revision, format, priority, term_count, kanji_count, imported_at
-       FROM dict ORDER BY priority DESC, title ASC`
+      `SELECT d.id, d.title, d.revision, d.format, d.priority, d.term_count, d.kanji_count,
+              d.imported_at, (SELECT COUNT(*) FROM freq f WHERE f.dict_id = d.id) AS freq_count
+       FROM dict d ORDER BY d.priority DESC, d.title ASC`
     )
     .all() as any[]
   return rows.map((r) => ({
@@ -394,6 +499,7 @@ export function listDictionaries(): DictInfo[] {
     priority: r.priority,
     termCount: r.term_count,
     kanjiCount: r.kanji_count,
+    freqCount: r.freq_count,
     importedAt: r.imported_at
   }))
 }
@@ -406,7 +512,9 @@ export async function removeDictionary(id: number): Promise<void> {
 
 // ---- top-level entry points (guarded, with download for presets) ----
 
-async function runImport(fn: () => Promise<DictImportSummary>): Promise<DictImportSummary> {
+// The single import gate: one import at a time across dictionaries, sentence
+// banks and stroke sets, all reporting through the same polled status object.
+export async function runImport<T>(fn: () => Promise<T>): Promise<T> {
   if (importState.running) throw new Error('A dictionary import is already running')
   importState.running = true
   importState.error = null
@@ -425,7 +533,9 @@ async function runImport(fn: () => Promise<DictImportSummary>): Promise<DictImpo
   }
 }
 
-async function downloadToTemp(url: string): Promise<string> {
+// Streams a pack download to a temp file, reporting bytes through the shared
+// status. `ext` covers the non-zip packs (KanjiVG ships a .xml.gz).
+export async function downloadToTemp(url: string, ext = 'zip'): Promise<string> {
   const { app } = await import('electron')
   importState.phase = 'downloading'
   importState.done = 0
@@ -433,7 +543,7 @@ async function downloadToTemp(url: string): Promise<string> {
   const res = await fetchWithRetry(url, { timeoutMs: 10 * 60_000, headers: { 'User-Agent': UA } })
   if (!res.ok || !res.body) throw new Error(`Download failed (HTTP ${res.status})`)
   importState.total = Number(res.headers.get('content-length')) || 0
-  const tmp = join(app.getPath('temp'), `navihub-dict-${Date.now()}.zip`)
+  const tmp = join(app.getPath('temp'), `navihub-dict-${Date.now()}.${ext}`)
   const counter = new Transform({
     transform(chunk, _enc, cb) {
       importState.done += chunk.length

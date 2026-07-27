@@ -28,7 +28,8 @@ function makeReader(index: YomitanIndex, banks: Record<string, unknown[]>): Bank
   return {
     readIndex: async () => index,
     bankNames: () => Object.keys(banks),
-    readBank: async (name) => banks[name]
+    readBank: async (name) => banks[name],
+    readRaw: async (name) => Buffer.from(JSON.stringify(banks[name]))
   }
 }
 
@@ -49,13 +50,19 @@ describe('importFromReader', () => {
         'kanji_bank_1.json': [['猫', 'ビョウ', 'ねこ', 'jouyou', ['cat'], { strokes: '11', grade: '8' }]],
         'term_meta_bank_1.json': [
           ['猫', 'pitch', { reading: 'ねこ', pitches: [{ position: 1 }] }],
-          ['猫', 'freq', { value: 1234 }] // must be skipped
+          ['猫', 'freq', { value: 1234 }] // one bank can carry both kinds
         ],
         'tag_bank_1.json': [['v1', 'partOfSpeech', 0, 'ichidan verb', 0]]
       })
     )
 
-    expect(summary).toEqual({ title: 'Test JMdict', termCount: 2, kanjiCount: 1, pitchCount: 1 })
+    expect(summary).toEqual({
+      title: 'Test JMdict',
+      termCount: 2,
+      kanjiCount: 1,
+      pitchCount: 1,
+      freqCount: 1
+    })
     expect(countTerms()).toBe(2)
     expect((db.prepare('SELECT COUNT(*) AS n FROM pitch').get() as { n: number }).n).toBe(1)
     expect((db.prepare('SELECT COUNT(*) AS n FROM kanji').get() as { n: number }).n).toBe(1)
@@ -143,6 +150,59 @@ describe('importFromReader', () => {
     expect(listDictionaries()).toHaveLength(0)
     expect(countTerms()).toBe(0)
     expect((db.prepare('SELECT COUNT(*) AS n FROM kanji').get() as { n: number }).n).toBe(0)
+  })
+})
+
+describe('frequency dictionaries (term_meta mode=freq)', () => {
+  const FREQ_INDEX: YomitanIndex = { title: 'JPDB Frequency', revision: 'v2', format: 3 }
+
+  function freqRows(): { expression: string; reading: string; rank: number; display: string | null }[] {
+    return db
+      .prepare('SELECT expression, reading, rank, display FROM freq ORDER BY rank')
+      .all() as { expression: string; reading: string; rank: number; display: string | null }[]
+  }
+
+  it('parses every data shape a freq bank uses', async () => {
+    const summary = await importFromReader(
+      makeReader(FREQ_INDEX, {
+        'term_meta_bank_1.json': [
+          ['猫', 'freq', 10], // bare number
+          ['犬', 'freq', '20'], // numeric string
+          ['鳥', 'freq', { value: 30, displayValue: '30㋕' }], // value + display
+          ['魚', 'freq', { reading: 'さかな', frequency: { value: 40, displayValue: '40㋕' } }],
+          ['虫', 'freq', { reading: 'むし', frequency: 50 }], // reading + bare number
+          ['壊', 'freq', { nonsense: true }] // unparseable: dropped
+        ]
+      })
+    )
+
+    expect(summary.freqCount).toBe(5)
+    expect(freqRows()).toEqual([
+      { expression: '猫', reading: '', rank: 10, display: null },
+      { expression: '犬', reading: '', rank: 20, display: null },
+      { expression: '鳥', reading: '', rank: 30, display: '30㋕' },
+      { expression: '魚', reading: 'さかな', rank: 40, display: '40㋕' },
+      { expression: '虫', reading: 'むし', rank: 50, display: null }
+    ])
+  })
+
+  it('reports freqCount in the registry so a freq-only dictionary is not "0 terms"', async () => {
+    await importFromReader(
+      makeReader(FREQ_INDEX, { 'term_meta_bank_1.json': [['猫', 'freq', 10], ['犬', 'freq', 20]] })
+    )
+    const info = listDictionaries()[0]
+    expect(info).toMatchObject({ title: 'JPDB Frequency', termCount: 0, kanjiCount: 0, freqCount: 2 })
+  })
+
+  it('re-import replaces freq rows and removeDictionary clears them', async () => {
+    await importFromReader(makeReader(FREQ_INDEX, { 'term_meta_bank_1.json': [['猫', 'freq', 10]] }))
+    await importFromReader(
+      makeReader(FREQ_INDEX, { 'term_meta_bank_1.json': [['犬', 'freq', 5], ['鳥', 'freq', 6]] })
+    )
+    expect(freqRows().map((r) => r.expression)).toEqual(['犬', '鳥'])
+
+    await removeDictionary(listDictionaries()[0].id)
+    expect(freqRows()).toHaveLength(0)
   })
 })
 

@@ -1,5 +1,5 @@
 import { getSqlite } from '../db/connection'
-import { gradeCard } from '@shared/srs'
+import { gradeCard, LEECH_LAPSES, newCardState } from '@shared/srs'
 import { computeStreaks } from './musicRepo'
 import type {
   JpCard,
@@ -8,6 +8,7 @@ import type {
   JpCourseDetail,
   JpCourseInput,
   JpCourseSummary,
+  JpLeech,
   JpLesson,
   JpLessonDetail,
   JpLessonInput,
@@ -16,8 +17,10 @@ import type {
   JpMiningInbox,
   JpQuizItem,
   JpQuizScope,
+  JpReviewCard,
   JpReviewOutcome,
   JpReviewQueue,
+  JpRoadmap,
   JpStats,
   JpStatsDetail,
   MediaType,
@@ -333,22 +336,35 @@ export function removeCard(id: number): void {
 
 // Cards already in rotation that are due now, plus up to `newLimit` unseen
 // cards — both gated to learned lessons.
+// Review cards carry their lesson's kind and title so the renderer can build a
+// typed cloze prompt without a second round trip per card (the grammar target
+// is derived from the lesson title — see @shared/cloze).
+function mapReviewCard(r: Record<string, unknown>): JpReviewCard {
+  return {
+    ...mapCard(r),
+    lessonKind: r.lesson_kind as JpLessonKind,
+    lessonTitle: (r.lesson_title as string) ?? ''
+  }
+}
+
+const LESSON_COLS = 'l.kind AS lesson_kind, l.title AS lesson_title'
+
 export function reviewQueue(newLimit: number): JpReviewQueue {
   const db = getSqlite()
   const due = (
     db
       .prepare(
-        `SELECT k.*, ${SOURCE_COLS} FROM jp_card k ${SOURCE_JOIN}
+        `SELECT k.*, ${SOURCE_COLS}, ${LESSON_COLS} FROM jp_card k ${SOURCE_JOIN}
          JOIN jp_lesson l ON l.id = k.lesson_id
          WHERE l.learned = 1 AND k.status != 'new' AND k.due_at <= datetime('now')
          ORDER BY k.due_at ASC, k.id ASC`
       )
       .all() as Record<string, unknown>[]
-  ).map(mapCard)
+  ).map(mapReviewCard)
   const fresh = (
     db
       .prepare(
-        `SELECT k.*, ${SOURCE_COLS} FROM jp_card k ${SOURCE_JOIN}
+        `SELECT k.*, ${SOURCE_COLS}, ${LESSON_COLS} FROM jp_card k ${SOURCE_JOIN}
          JOIN jp_lesson l ON l.id = k.lesson_id
          JOIN jp_course c ON c.id = l.course_id
          WHERE l.learned = 1 AND k.status = 'new'
@@ -357,8 +373,124 @@ export function reviewQueue(newLimit: number): JpReviewQueue {
          LIMIT ?`
       )
       .all(Math.max(0, newLimit)) as Record<string, unknown>[]
-  ).map(mapCard)
+  ).map(mapReviewCard)
   return { due, fresh }
+}
+
+// ---- Leeches ----
+// Cards that keep lapsing. No new table: jp_card.lapses/ease already carry the
+// signal and jp_review_log keeps the history, so leech-ness is a read-time
+// predicate and a reset is just an SRS-state UPDATE.
+
+export function listLeeches(): JpLeech[] {
+  const rows = getSqlite()
+    .prepare(
+      `SELECT k.id, k.front, k.reading, k.back, k.lapses, k.ease, k.status, k.interval_days,
+              l.id AS lesson_id, l.title AS lesson_title, c.id AS course_id, c.title AS course_title
+       FROM jp_card k
+       JOIN jp_lesson l ON l.id = k.lesson_id
+       JOIN jp_course c ON c.id = l.course_id
+       WHERE k.lapses >= ?
+       ORDER BY k.lapses DESC, k.ease ASC, k.id ASC
+       LIMIT 100`
+    )
+    .all(LEECH_LAPSES) as Record<string, unknown>[]
+  return rows.map((r) => ({
+    id: r.id as number,
+    front: r.front as string,
+    reading: (r.reading as string) ?? null,
+    back: r.back as string,
+    lapses: r.lapses as number,
+    ease: r.ease as number,
+    status: r.status as SrsStatus,
+    intervalDays: r.interval_days as number,
+    lessonId: r.lesson_id as number,
+    lessonTitle: r.lesson_title as string,
+    courseId: r.course_id as number,
+    courseTitle: r.course_title as string
+  }))
+}
+
+// Puts a card back to square one. The review log is deliberately untouched —
+// the history of how badly it went is worth keeping even after a fresh start.
+export function resetCard(id: number): void {
+  const fresh = newCardState()
+  getSqlite()
+    .prepare(
+      `UPDATE jp_card
+       SET status = ?, learning_step = ?, interval_days = ?, ease = ?, reps = ?, lapses = ?,
+           due_at = NULL, updated_at = datetime('now')
+       WHERE id = ?`
+    )
+    .run(
+      fresh.status,
+      fresh.learningStep,
+      fresh.intervalDays,
+      fresh.ease,
+      fresh.reps,
+      fresh.lapses,
+      id
+    )
+}
+
+// ---- Roadmap ----
+// The section's spine: seeded courses carry a study-order step (difficulty),
+// user/prep/core decks carry none and list separately.
+
+export function roadmap(): JpRoadmap {
+  const rows = getSqlite()
+    .prepare(
+      `SELECT c.*,
+              (SELECT COUNT(*) FROM jp_lesson l WHERE l.course_id = c.id) AS lesson_count,
+              (SELECT COUNT(*) FROM jp_lesson l WHERE l.course_id = c.id AND l.learned = 1) AS learned_count,
+              (SELECT COUNT(*) FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
+               WHERE l.course_id = c.id) AS card_count,
+              (SELECT COUNT(*) FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
+               WHERE l.course_id = c.id AND k.status != 'new') AS seen_count,
+              (SELECT COUNT(*) FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
+               WHERE l.course_id = c.id AND l.learned = 1 AND k.status != 'new'
+                 AND k.due_at <= datetime('now')) AS due_count
+       FROM jp_course c
+       ORDER BY (c.difficulty IS NULL), c.difficulty ASC, c.sort_order ASC, c.id ASC`
+    )
+    .all() as Record<string, unknown>[]
+
+  const courses = rows.map((r) => ({
+    ...mapCourse(r),
+    lessonCount: r.lesson_count as number,
+    learnedLessonCount: r.learned_count as number,
+    cardCount: r.card_count as number,
+    seenCardCount: r.seen_count as number,
+    dueCardCount: r.due_count as number
+  }))
+
+  const steps = courses.filter((c) => c.difficulty !== null)
+  const unscheduled = courses.filter((c) => c.difficulty === null)
+
+  // "You are here": the first step course with lessons still unlearned.
+  const frontier = steps.find((c) => c.lessonCount > 0 && c.learnedLessonCount < c.lessonCount) ?? null
+
+  let nextLesson: JpRoadmap['nextLesson'] = null
+  if (frontier) {
+    const row = getSqlite()
+      .prepare(
+        `SELECT l.id, l.title, l.kind FROM jp_lesson l
+         WHERE l.course_id = ? AND l.learned = 0
+         ORDER BY l.sort_order ASC, l.id ASC LIMIT 1`
+      )
+      .get(frontier.id) as { id: number; title: string; kind: JpLessonKind } | undefined
+    if (row) {
+      nextLesson = {
+        id: row.id,
+        title: row.title,
+        kind: row.kind,
+        courseId: frontier.id,
+        courseTitle: frontier.title
+      }
+    }
+  }
+
+  return { steps, unscheduled, frontierCourseId: frontier?.id ?? null, nextLesson }
 }
 
 export function submitReview(cardId: number, grade: SrsGrade): JpReviewOutcome {

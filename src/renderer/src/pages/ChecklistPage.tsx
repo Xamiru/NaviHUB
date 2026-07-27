@@ -1,36 +1,27 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { toastError } from '../lib/toast'
+import { toast, toastError } from '../lib/toast'
 import { checklistDef } from '@shared/checklist'
 import Section from '../components/Section'
-import StatTile from '../components/StatTile'
 import PageStatus from '../components/PageStatus'
 import CalendarHeatmap from '../components/CalendarHeatmap'
+import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
 import ChecklistTaskRow from '../components/checklist/ChecklistTaskRow'
 import ChecklistAddDialog from '../components/checklist/ChecklistAddDialog'
 import ChecklistMediaPickerDialog from '../components/checklist/ChecklistMediaPickerDialog'
-import type { ChecklistCadence, ChecklistTaskStatus } from '@shared/types'
+import type { ChecklistCadence, ChecklistStatus, ChecklistTaskStatus } from '@shared/types'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 // Formatting only: main sends local 'YYYY-MM-DD' strings, so the parts are read
 // back through UTC accessors. Nothing here derives what day it is.
-function parts(date: string): { weekday: string; day: number; month: string } {
-  const [y, m, d] = date.split('-').map(Number)
-  const utc = new Date(Date.UTC(y, m - 1, d))
-  return { weekday: WEEKDAYS[utc.getUTCDay()], day: d, month: MONTHS[m - 1] }
-}
-
 function fmtDay(date: string): string {
-  const p = parts(date)
-  return `${p.weekday} ${p.day} ${p.month}`
-}
-
-function fmtRange(start: string, end: string): string {
-  return `${fmtDay(start)} – ${fmtDay(end)}`
+  const [y, m, d] = date.split('-').map(Number)
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
+  return `${weekday} ${d} ${MONTHS[m - 1]}`
 }
 
 export default function ChecklistPage() {
@@ -39,8 +30,8 @@ export default function ChecklistPage() {
   const [adding, setAdding] = useState<ChecklistCadence | null>(null)
   const [logging, setLogging] = useState<ChecklistTaskStatus | null>(null)
 
-  // staleTime 0 so coming back from /japanese/review (or the manga reader)
-  // re-detects immediately; the interval catches midnight on a page left open.
+  // staleTime 0 so coming back from /japanese/review (or a media page) re-reads
+  // immediately; the interval catches midnight on a page left open.
   const { data, isLoading } = useQuery({
     queryKey: qk.checklist.status,
     queryFn: () => api.checklist.status(),
@@ -62,43 +53,6 @@ export default function ChecklistPage() {
 
   const doneToday = data.daily.filter((t) => t.done).length
   const doneWeek = data.weekly.filter((t) => t.done).length
-  const enabledKeys = {
-    daily: data.daily.map((t) => t.key),
-    weekly: data.weekly.map((t) => t.key)
-  }
-
-  const board = (cadence: ChecklistCadence, tasks: ChecklistTaskStatus[]) => (
-    <div className="card overflow-hidden">
-      {tasks.length === 0 ? (
-        <p className="px-4 py-6 text-sm text-gray-400">
-          Nothing on this board yet.{' '}
-          <button className="text-accent hover:underline" onClick={() => setAdding(cadence)}>
-            Add an item
-          </button>
-          .
-        </p>
-      ) : (
-        tasks.map((t) => (
-          <ChecklistTaskRow
-            key={`${t.key}-${t.cadence}`}
-            task={t}
-            hint={checklistDef(t.key)?.hint ?? ''}
-            editMode={editMode}
-            onLog={setLogging}
-            onUndo={(logId) => run(() => api.checklist.undoLog(logId), true)}
-            onToggle={(task, done) =>
-              run(() =>
-                done
-                  ? api.checklist.tick(task.key, task.cadence)
-                  : api.checklist.untick(task.key, task.cadence)
-              )
-            }
-            onRemove={(task) => run(() => api.checklist.removeTask(task.id))}
-          />
-        ))
-      )}
-    </div>
-  )
 
   return (
     <div className="mx-auto max-w-[1600px] p-6">
@@ -106,39 +60,37 @@ export default function ChecklistPage() {
         <div>
           <h1 className="text-2xl font-bold">Checklist</h1>
           <p className="text-sm text-gray-500">
-            Your daily and weekly routine. Weeks run Saturday to Friday.
+            Your routine. Weeks run Saturday to Friday; days roll over at midnight.
           </p>
         </div>
-        <div className="flex gap-2">
-          {editMode && (
-            <button className="btn-primary" onClick={() => setAdding('daily')}>
-              + Add item
-            </button>
-          )}
-          <button className="btn-ghost" onClick={() => setEditMode((v) => !v)}>
-            {editMode ? 'Done' : 'Edit'}
-          </button>
-        </div>
+        <button className="btn-ghost" onClick={() => setEditMode((v) => !v)}>
+          {editMode ? 'Done editing' : 'Edit board'}
+        </button>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <StatTile
-          label="Streak"
-          value={data.streak.current}
-          sub={`longest ${data.streak.longest}`}
-          accent={data.streak.current > 0}
-        />
-        <StatTile label="Today" value={`${doneToday} / ${data.daily.length}`} />
-        <StatTile label="This week" value={`${doneWeek} / ${data.weekly.length}`} />
-      </div>
+      <Hero data={data} doneToday={doneToday} doneWeek={doneWeek} />
 
-      <Section title="Daily" subtitle={fmtDay(data.today)}>
-        {board('daily', data.daily)}
-      </Section>
+      <Board
+        cadence="daily"
+        title="Daily"
+        subtitle={fmtDay(data.today)}
+        tasks={data.daily}
+        editMode={editMode}
+        onAdd={() => setAdding('daily')}
+        onLog={setLogging}
+        run={run}
+      />
 
-      <Section title="Weekly" subtitle={fmtRange(data.week.start, data.week.end)}>
-        {board('weekly', data.weekly)}
-      </Section>
+      <Board
+        cadence="weekly"
+        title="Weekly"
+        subtitle={`${fmtDay(data.week.start)} – ${fmtDay(data.week.end)}`}
+        tasks={data.weekly}
+        editMode={editMode}
+        onAdd={() => setAdding('weekly')}
+        onLog={setLogging}
+        run={run}
+      />
 
       {data.history.length > 0 && (
         <Section title="History" subtitle="days with every daily item done">
@@ -151,10 +103,14 @@ export default function ChecklistPage() {
       {adding && (
         <ChecklistAddDialog
           cadence={adding}
-          enabledKeys={enabledKeys}
-          onAdd={async (key, cadence) => {
-            await run(() => api.checklist.addTask(key, cadence))
-            setAdding(null)
+          onCadence={setAdding}
+          enabledKeys={{
+            daily: data.daily.map((t) => t.key),
+            weekly: data.weekly.map((t) => t.key)
+          }}
+          onAdd={(key, cadence) => {
+            setAdding(null) // close first — awaiting the refetch would flicker the list
+            run(() => api.checklist.addTask(key, cadence))
           }}
           onClose={() => setAdding(null)}
         />
@@ -164,13 +120,142 @@ export default function ChecklistPage() {
         <ChecklistMediaPickerDialog
           task={logging}
           mediaType={logging.mediaType}
-          onPick={async (mediaId) => {
-            await run(() => api.checklist.logMedia(logging.key, logging.cadence, mediaId), true)
+          onPick={(mediaId) => {
+            const task = logging
             setLogging(null)
+            run(async () => {
+              const res = await api.checklist.logMedia(task.key, task.cadence, mediaId)
+              if (res.startedRewatch) toast(`${res.title} — pass #${res.rewatchCount} started`, 'success')
+            }, true)
           }}
           onClose={() => setLogging(null)}
         />
       )}
     </div>
+  )
+}
+
+// Today at a glance: the fraction, a bar, and the streak — the StatsPage hero
+// treatment, minus its decorative glyph.
+function Hero({
+  data,
+  doneToday,
+  doneWeek
+}: {
+  data: ChecklistStatus
+  doneToday: number
+  doneWeek: number
+}) {
+  const total = data.daily.length
+  const pct = total ? Math.round((doneToday / total) * 100) : 0
+  return (
+    <div className="relative mb-8 overflow-hidden rounded-lg border border-base-700 bg-gradient-to-br from-accent/25 via-base-800 to-base-800 p-6">
+      <div className="text-xs font-semibold uppercase tracking-widest text-accent">
+        Today · {fmtDay(data.today)}
+      </div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <span className="text-5xl font-bold tabular-nums">{doneToday}</span>
+        <span className="text-2xl font-semibold text-gray-300">
+          / {total} {total === 1 ? 'item' : 'items'}
+        </span>
+        {total > 0 && <span className="ml-auto text-sm tabular-nums text-gray-400">{pct}%</span>}
+      </div>
+      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-base-900/60">
+        <div className="h-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="chip">
+          {data.streak.current} day{data.streak.current === 1 ? '' : 's'} in a row
+        </span>
+        <span className="chip">best {data.streak.longest}</span>
+        <span className="chip">
+          this week {doneWeek} / {data.weekly.length}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+function Board({
+  cadence,
+  title,
+  subtitle,
+  tasks,
+  editMode,
+  onAdd,
+  onLog,
+  run
+}: {
+  cadence: ChecklistCadence
+  title: string
+  subtitle: string
+  tasks: ChecklistTaskStatus[]
+  editMode: boolean
+  onAdd: () => void
+  onLog: (task: ChecklistTaskStatus) => void
+  run: (fn: () => Promise<unknown>, touchesMedia?: boolean) => Promise<void>
+}) {
+  const qc = useQueryClient()
+  // useOptimisticReorder keys on itemId, and re-syncs whenever the source array
+  // identity changes — so this must be memoised, not rebuilt every render.
+  const rows = useMemo(() => tasks.map((t) => ({ ...t, itemId: t.id })), [tasks])
+  const { items, sensors, onDragEnd } = useOptimisticReorder(
+    rows,
+    (next) => api.checklist.reorder(cadence, next.map((t) => t.itemId)),
+    () => void qc.invalidateQueries({ queryKey: qk.checklist.all })
+  )
+
+  const rowProps = (task: ChecklistTaskStatus) => ({
+    task,
+    hint: checklistDef(task.key)?.hint ?? '',
+    editMode,
+    onLog,
+    onCredit: (t: ChecklistTaskStatus) => run(() => api.checklist.credit(t.key, t.cadence)),
+    onUndo: (logId: number) => run(() => api.checklist.undoLog(logId), true),
+    onToggle: (t: ChecklistTaskStatus, done: boolean) =>
+      run(() =>
+        done ? api.checklist.tick(t.key, t.cadence) : api.checklist.untick(t.key, t.cadence)
+      ),
+    onTarget: (t: ChecklistTaskStatus, target: number | null) =>
+      run(() => api.checklist.setTarget(t.id, target)),
+    onRemove: (t: ChecklistTaskStatus) => run(() => api.checklist.removeTask(t.id))
+  })
+
+  return (
+    <Section
+      title={title}
+      subtitle={
+        <span className="flex items-center gap-3">
+          {subtitle}
+          {editMode && (
+            <button className="text-accent hover:underline" onClick={onAdd}>
+              + Add
+            </button>
+          )}
+        </span>
+      }
+    >
+      <div className="card overflow-hidden">
+        {items.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-gray-400">
+            Nothing on this board.{' '}
+            <button className="text-accent hover:underline" onClick={onAdd}>
+              Add an item
+            </button>
+            .
+          </p>
+        ) : editMode ? (
+          <SortableList ids={items.map((t) => t.itemId)} sensors={sensors} onDragEnd={onDragEnd}>
+            {items.map((task) => (
+              <SortableRow key={task.itemId} id={task.itemId}>
+                {(handle) => <ChecklistTaskRow {...rowProps(task)} handle={handle} />}
+              </SortableRow>
+            ))}
+          </SortableList>
+        ) : (
+          items.map((task) => <ChecklistTaskRow key={task.itemId} {...rowProps(task)} />)
+        )}
+      </div>
+    </Section>
   )
 }

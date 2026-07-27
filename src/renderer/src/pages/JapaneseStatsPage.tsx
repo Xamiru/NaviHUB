@@ -1,6 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { toast, toastError } from '../lib/toast'
+import { LEECH_LAPSES } from '@shared/srs'
 import BackButton from '../components/BackButton'
 import BarChart, { type Bar } from '../components/BarChart'
 import CalendarHeatmap from '../components/CalendarHeatmap'
@@ -79,9 +82,69 @@ export default function JapaneseStatsPage() {
           <Section title="Answer breakdown" className="mb-8">
             <GradeBars gradeCounts={detail.gradeCounts} total={answered} />
           </Section>
+
+          <Leeches />
         </>
       )}
     </div>
+  )
+}
+
+// Cards that keep coming back. Resetting one wipes its schedule but keeps its
+// history — the point is a clean second run at a word that isn't sticking.
+function Leeches() {
+  const qc = useQueryClient()
+  const { data: leeches = [] } = useQuery({
+    queryKey: qk.japanese.leeches,
+    queryFn: () => api.japanese.listLeeches(),
+    staleTime: 0
+  })
+  if (leeches.length === 0) return null
+
+  async function reset(id: number, front: string): Promise<void> {
+    if (!window.confirm(`Reset "${front}" to a new card? Its review history is kept.`)) return
+    try {
+      await api.japanese.resetCard(id)
+      await qc.invalidateQueries({ queryKey: qk.japanese.all })
+      toast(`Reset 「${front}」`, 'success')
+    } catch (e) {
+      toastError(e)
+    }
+  }
+
+  return (
+    <Section title="Leeches" subtitle={`lapsed ${LEECH_LAPSES}+ times`} className="mb-8">
+      <div className="card divide-y divide-base-700">
+        {leeches.map((l) => (
+          <div key={l.id} className="flex items-center gap-3 p-2.5 text-sm">
+            <div className="min-w-0 flex-1">
+              <p className="truncate">
+                <span className="font-medium">{l.front}</span>
+                {l.reading && l.reading !== l.front && (
+                  <span className="ml-2 text-xs text-gray-400">{l.reading}</span>
+                )}
+              </p>
+              <p className="truncate text-xs text-gray-500">{l.back}</p>
+            </div>
+            <span className="shrink-0 text-xs text-red-300">{l.lapses} lapses</span>
+            <span className="shrink-0 text-xs text-gray-500">ease {l.ease.toFixed(2)}</span>
+            <Link
+              to={`/japanese/lessons/${l.lessonId}`}
+              className="btn-ghost shrink-0 py-1 px-2 text-xs"
+              title={`${l.courseTitle} · ${l.lessonTitle}`}
+            >
+              Lesson
+            </Link>
+            <button
+              className="btn-ghost shrink-0 py-1 px-2 text-xs text-gray-500 hover:text-red-400"
+              onClick={() => void reset(l.id, l.front)}
+            >
+              Reset
+            </button>
+          </div>
+        ))}
+      </div>
+    </Section>
   )
 }
 

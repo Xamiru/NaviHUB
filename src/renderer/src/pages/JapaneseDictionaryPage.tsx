@@ -8,6 +8,7 @@ import { useDebouncedValue } from '../lib/hooks'
 import { useMiningDraft } from '../lib/useMining'
 import PitchAccent from '../components/japanese/PitchAccent'
 import StructuredContent from '../components/japanese/StructuredContent'
+import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 import { flattenGlossary } from '@shared/dictContent'
 import type { DictEntry, GlossaryItem, KanjiInfo } from '@shared/types'
 
@@ -32,6 +33,13 @@ export default function JapaneseDictionaryPage() {
   const { data: dicts = [] } = useQuery({
     queryKey: qk.dict.list,
     queryFn: () => api.dict.list()
+  })
+
+  // One page-level check: entries only offer an Examples section when a bank
+  // is actually installed.
+  const { data: sentenceBank } = useQuery({
+    queryKey: qk.dict.sentenceBank,
+    queryFn: () => api.dict.sentenceBank()
   })
 
   const { data: entries = [], isFetching } = useQuery({
@@ -80,7 +88,12 @@ export default function JapaneseDictionaryPage() {
           <p className="text-sm text-gray-500">Nothing found for &ldquo;{debounced}&rdquo;.</p>
         ) : (
           entries.map((entry, i) => (
-            <EntryCard key={`${entry.expression} ${entry.reading} ${i}`} entry={entry} onSearch={setQuery} />
+            <EntryCard
+              key={`${entry.expression} ${entry.reading} ${i}`}
+              entry={entry}
+              onSearch={setQuery}
+              hasSentences={!!sentenceBank}
+            />
           ))
         )}
       </div>
@@ -88,8 +101,17 @@ export default function JapaneseDictionaryPage() {
   )
 }
 
-function EntryCard({ entry, onSearch }: { entry: DictEntry; onSearch: (q: string) => void }) {
+function EntryCard({
+  entry,
+  onSearch,
+  hasSentences
+}: {
+  entry: DictEntry
+  onSearch: (q: string) => void
+  hasSentences: boolean
+}) {
   const [showKanji, setShowKanji] = useState(false)
+  const [showExamples, setShowExamples] = useState(false)
   const [mining, setMining] = useState(false)
 
   const kanjiChars = [...entry.expression].filter((ch) => {
@@ -112,6 +134,14 @@ function EntryCard({ entry, onSearch }: { entry: DictEntry; onSearch: (q: string
           </div>
           <div className="mt-1 flex flex-wrap gap-1">
             {entry.isCommon && <span className="chip bg-green-500/20 text-green-300">common</span>}
+            {entry.frequency && (
+              <span
+                className="chip bg-base-700 text-gray-400"
+                title={`Corpus frequency rank, ${entry.frequency.dictTitle}`}
+              >
+                rank {entry.frequency.display ?? `#${entry.frequency.rank.toLocaleString()}`}
+              </span>
+            )}
             {entry.tags.map((t) => (
               <span key={t} className="chip bg-base-700 text-gray-400">
                 {t}
@@ -142,6 +172,18 @@ function EntryCard({ entry, onSearch }: { entry: DictEntry; onSearch: (q: string
           </div>
         ))}
       </div>
+
+      {hasSentences && (
+        <div className="mt-3 border-t border-base-700 pt-2">
+          <button
+            className="text-xs text-gray-500 hover:text-gray-300"
+            onClick={() => setShowExamples((v) => !v)}
+          >
+            {showExamples ? '▾' : '▸'} Examples
+          </button>
+          {showExamples && <ExampleSentences term={entry.expression} />}
+        </div>
+      )}
 
       {kanjiChars.length > 0 && (
         <div className="mt-3 border-t border-base-700 pt-2">
@@ -197,9 +239,33 @@ function KanjiBreakdown({ text }: { text: string }) {
   )
 }
 
+// Real sentences containing the word, from the offline Tatoeba bank. Loaded
+// only when the section is opened — one query per expanded entry.
+function ExampleSentences({ term }: { term: string }) {
+  const { data: sentences = [], isLoading } = useQuery({
+    queryKey: qk.dict.sentences(term),
+    queryFn: () => api.dict.sentences(term, 5)
+  })
+  if (isLoading) return <p className="mt-2 text-xs text-gray-500">Loading…</p>
+  if (sentences.length === 0) {
+    return <p className="mt-2 text-xs text-gray-500">No example sentences for this word.</p>
+  }
+  return (
+    <ul className="mt-2 space-y-2">
+      {sentences.map((s, i) => (
+        <li key={i} title={s.attribution ?? undefined}>
+          <p className="text-sm text-gray-200">{s.jp}</p>
+          <p className="text-xs text-gray-500">{s.en}</p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function KanjiRow({ k }: { k: KanjiInfo }) {
   return (
     <div className="flex gap-3">
+      <StrokeOrderDiagram char={k.character} size={80} />
       <span className="text-3xl leading-none">{k.character}</span>
       <div className="min-w-0 text-sm">
         <p className="text-gray-300">{k.meanings.join(', ')}</p>
@@ -227,9 +293,11 @@ function MineForm({ entry, onDone }: { entry: DictEntry; onDone: () => void }) {
   const mining = useMiningDraft({ sourceMediaId: null, onSaved: onDone })
   const { draft, setDraft, targets, targetLessonId, setLessonId, canSave, saving } = mining
 
-  // Pre-fill the draft from this entry when the form opens.
+  // Pre-fill the draft from this entry when the form opens, then borrow a real
+  // example sentence from the offline bank if one is installed.
   useEffect(() => {
     mining.fillFromEntry(entry)
+    void mining.fillExampleFromBank(entry.expression)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

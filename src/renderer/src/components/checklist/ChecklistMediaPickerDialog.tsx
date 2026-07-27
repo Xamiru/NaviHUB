@@ -35,8 +35,12 @@ export default function ChecklistMediaPickerDialog({
     queryFn: () => api.media.list(filter)
   })
 
-  // Positional status convention: first = in progress, last = planned.
+  // Positional status convention: first = in progress, second = completed,
+  // last = planned. A finished title isn't hidden — logging it just starts the
+  // next pass, which the row labels so it's never a surprise.
   const pinned = mediaType === 'movie' ? statuses[statuses.length - 1] : statuses[0]
+  const finished = (m: MediaItem): boolean =>
+    m.status === statuses[1] || (!!m.totalUnits && m.progress >= m.totalUnits)
   const ordered = useMemo(() => {
     const rank = (m: MediaItem): number => (m.status === pinned ? 0 : 1)
     return [...matches].sort((a, b) => rank(a) - rank(b) || a.title.localeCompare(b.title))
@@ -101,6 +105,11 @@ export default function ChecklistMediaPickerDialog({
                         ` · ${m.progress}${m.totalUnits ? ` / ${m.totalUnits}` : ''}`}
                     </span>
                   </span>
+                  {finished(m) && (
+                    <span className="chip shrink-0 text-[11px]" title="Logging starts a new pass">
+                      Again
+                    </span>
+                  )}
                 </button>
               ))}
               <div ref={sentinelRef} />

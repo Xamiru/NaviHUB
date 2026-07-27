@@ -14,14 +14,14 @@ beforeEach(() => {
 })
 
 describe('seedJapanese', () => {
-  it('seeds twenty courses in study order (Step 1..20) and is idempotent', () => {
+  it('seeds twenty-four courses in study order (Step 1..24) and is idempotent', () => {
     seedJapanese(db)
     seedJapanese(db)
     const courses = jp.listCourses()
-    expect(courses).toHaveLength(20)
+    expect(courses).toHaveLength(24)
     // listCourses orders by difficulty — the seeded packs are the study path.
     expect(courses.map((c) => c.difficulty)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
     ])
     expect(courses[0].title).toContain('N5 Foundations')
     expect(courses[1].title).toContain('Radicals')
@@ -40,9 +40,13 @@ describe('seedJapanese', () => {
     expect(courses[14].title).toContain('Speech Styles')
     expect(courses[15].title).toContain('N2 Grammar I')
     expect(courses[16].title).toContain('N2 Grammar II')
-    expect(courses[17].title).toContain('Idioms')
-    expect(courses[18].title).toContain('N1 Grammar I')
-    expect(courses[19].title).toContain('N1 Grammar II')
+    expect(courses[17].title).toContain('N2 Vocabulary')
+    expect(courses[18].title).toContain('N2 Kanji')
+    expect(courses[19].title).toContain('Idioms')
+    expect(courses[20].title).toContain('N1 Grammar I')
+    expect(courses[21].title).toContain('N1 Grammar II')
+    expect(courses[22].title).toContain('N1 Vocabulary')
+    expect(courses[23].title).toContain('N1 Kanji')
     expect(courses.every((c) => c.level)).toBe(true)
   })
 
@@ -68,8 +72,9 @@ describe('seedJapanese', () => {
     }
     seedJapanese(db)
     const titles = jp.listCourses().map((c) => c.title)
-    // 7 later JLPT packs + the 5 packs of the 2026-07-05 wave.
-    expect(titles).toHaveLength(12)
+    // 7 later JLPT packs + the 5 packs of the 2026-07-05 wave + the 4 packs of
+    // the 2026-07-27 wave (N2/N1 vocabulary and kanji).
+    expect(titles).toHaveLength(16)
     expect(titles.join(' ')).toContain('N3 Grammar II')
     expect(titles.join(' ')).toContain('N3 Vocabulary')
     expect(titles.join(' ')).toContain('N3 Kanji')
@@ -82,9 +87,13 @@ describe('seedJapanese', () => {
     expect(titles.join(' ')).toContain('SFX')
     expect(titles.join(' ')).toContain('Speech Styles')
     expect(titles.join(' ')).toContain('Idioms')
+    expect(titles.join(' ')).toContain('N2 Vocabulary')
+    expect(titles.join(' ')).toContain('N2 Kanji')
+    expect(titles.join(' ')).toContain('N1 Vocabulary')
+    expect(titles.join(' ')).toContain('N1 Kanji')
   })
 
-  it('renumbers a live DB from the old 1–15 layout to the new 20-step path', () => {
+  it('renumbers a live DB from the old 1–15 layout to the current 24-step path', () => {
     // Simulate the pre-2026-07-05 install: all 15 packs seeded under the old
     // step numbers, all flags set (so no pack re-seeds), levels backfilled.
     const OLD: [string, string, number][] = [
@@ -118,10 +127,10 @@ describe('seedJapanese', () => {
     seedJapanese(db)
 
     const courses = jp.listCourses()
-    expect(courses).toHaveLength(20)
-    // Path is contiguous 1..20 with the new packs slotted in.
+    expect(courses).toHaveLength(24)
+    // Path is contiguous 1..24 with both later waves slotted in.
     expect(courses.map((c) => c.difficulty)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
     ])
     const at = (step: number): string => courses[step - 1].title
     expect(at(2)).toContain('Radicals')
@@ -129,8 +138,10 @@ describe('seedJapanese', () => {
     expect(at(5)).toContain('Counters')
     expect(at(9)).toContain('SFX')
     expect(at(15)).toContain('Speech Styles')
-    expect(at(18)).toContain('Idioms')
-    expect(at(20)).toBe('JLPT N1 Grammar II')
+    expect(at(18)).toContain('N2 Vocabulary')
+    expect(at(20)).toContain('Idioms')
+    expect(at(22)).toBe('JLPT N1 Grammar II')
+    expect(at(24)).toBe('JLPT N1 Kanji')
     // The old rows were UPDATEd, not replaced — user data preserved.
     expect(courses[2].description).toBe('old row')
 
@@ -139,6 +150,92 @@ describe('seedJapanese', () => {
     expect(jp.listCourses().map((c) => c.difficulty)).toEqual(
       courses.map((c) => c.difficulty)
     )
+  })
+
+  it('renumbers a live DB from the 20-step layout to the 24-step path', () => {
+    // The 2026-07-27 wave: N2/N1 vocabulary and kanji slot in beside their
+    // grammar packs, pushing Idioms and the N1 grammar courses down.
+    const OLD: [string, string, number][] = [
+      ['japanese.seeded.n2b', 'JLPT N2 Grammar II', 17],
+      ['japanese.seeded.idioms', 'Idioms & Set Phrases (慣用句)', 18],
+      ['japanese.seeded.n1a', 'JLPT N1 Grammar I', 19],
+      ['japanese.seeded.n1b', 'JLPT N1 Grammar II', 20]
+    ]
+    const insertFlag = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)')
+    const insertCourse = db.prepare(
+      `INSERT INTO jp_course (title, description, level, difficulty, sort_order)
+       VALUES (?, 'old row', 'N?', ?, ?)`
+    )
+    OLD.forEach(([flag, title, step], i) => {
+      insertFlag.run(flag, '1')
+      insertCourse.run(title, step, i)
+    })
+    // Everything before step 17 is already seeded and needs no renumbering.
+    for (const flag of [
+      'japanese.seeded',
+      'japanese.seeded.radicals',
+      'japanese.seeded.kanji',
+      'japanese.seeded.casual',
+      'japanese.seeded.counters',
+      'japanese.seeded.n4',
+      'japanese.seeded.n4vocab',
+      'japanese.seeded.n4kanji',
+      'japanese.seeded.sfx',
+      'japanese.seeded.casual2',
+      'japanese.seeded.n3',
+      'japanese.seeded.n3b',
+      'japanese.seeded.n3vocab',
+      'japanese.seeded.n3kanji',
+      'japanese.seeded.speech',
+      'japanese.seeded.n2a',
+      'japanese.seeded.levels',
+      'japanese.seeded.order2'
+    ]) {
+      insertFlag.run(flag, '1')
+    }
+
+    seedJapanese(db)
+
+    const byTitle = new Map(jp.listCourses().map((c) => [c.title, c]))
+    // The moved packs kept their rows (description 'old row') at new steps.
+    expect(byTitle.get('Idioms & Set Phrases (慣用句)')).toMatchObject({
+      difficulty: 20,
+      description: 'old row'
+    })
+    expect(byTitle.get('JLPT N1 Grammar I')).toMatchObject({ difficulty: 21, description: 'old row' })
+    expect(byTitle.get('JLPT N1 Grammar II')).toMatchObject({ difficulty: 22, description: 'old row' })
+    expect(byTitle.get('JLPT N2 Grammar II')!.difficulty).toBe(17) // unmoved
+    // …and the four new packs landed on the freed steps.
+    expect(byTitle.get('JLPT N2 Vocabulary')!.difficulty).toBe(18)
+    expect(byTitle.get('JLPT N2 Kanji')!.difficulty).toBe(19)
+    expect(byTitle.get('JLPT N1 Vocabulary')!.difficulty).toBe(23)
+    expect(byTitle.get('JLPT N1 Kanji')!.difficulty).toBe(24)
+    // No two courses share a step.
+    const steps = jp.listCourses().map((c) => c.difficulty)
+    expect(new Set(steps).size).toBe(steps.length)
+
+    // Idempotent: a second run changes nothing (order3 flag guards it).
+    seedJapanese(db)
+    expect(jp.listCourses().map((c) => c.difficulty)).toEqual(steps)
+  })
+
+  it('the 24-step reorder leaves a renamed or user-renumbered course alone', () => {
+    const insertFlag = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)')
+    // User renamed Idioms and moved N1 Grammar I somewhere of their own.
+    db.prepare(
+      `INSERT INTO jp_course (title, description, level, difficulty) VALUES (?, 'mine', 'N1', ?)`
+    ).run('My idioms deck', 18)
+    db.prepare(
+      `INSERT INTO jp_course (title, description, level, difficulty) VALUES (?, 'mine', 'N1', ?)`
+    ).run('JLPT N1 Grammar I', 99)
+    insertFlag.run('japanese.seeded.idioms', '1')
+    insertFlag.run('japanese.seeded.n1a', '1')
+
+    seedJapanese(db)
+
+    const byTitle = new Map(jp.listCourses().map((c) => [c.title, c]))
+    expect(byTitle.get('My idioms deck')!.difficulty).toBe(18) // untouched
+    expect(byTitle.get('JLPT N1 Grammar I')!.difficulty).toBe(99) // untouched
   })
 
   it('reorder leaves renamed or user-renumbered courses alone', () => {
@@ -208,17 +305,22 @@ describe('seedJapanese', () => {
     expect(jp.quizPool()).toHaveLength(0)
   })
 
-  it('kanji packs: N5 + N4 + N3 cards, valid and with no duplicates across decks', () => {
+  it('kanji packs: N5 → N1 cards, valid and with no duplicates across decks', () => {
     seedJapanese(db)
-    const n5 = jp.listCourses().find((c) => c.title.includes('N5 Kanji'))!
-    const n4 = jp.listCourses().find((c) => c.title.includes('N4 Kanji'))!
-    const n3 = jp.listCourses().find((c) => c.title.includes('N3 Kanji'))!
+    const byTitle = (t: string) => jp.listCourses().find((c) => c.title.includes(t))!
+    const n5 = byTitle('N5 Kanji')
+    const n4 = byTitle('N4 Kanji')
+    const n3 = byTitle('N3 Kanji')
+    const n2 = byTitle('N2 Kanji')
+    const n1 = byTitle('N1 Kanji')
     expect(n5.cardCount).toBeGreaterThanOrEqual(100)
     expect(n4.cardCount).toBeGreaterThanOrEqual(150)
     expect(n3.cardCount).toBeGreaterThanOrEqual(140)
+    expect(n2.cardCount).toBeGreaterThanOrEqual(140)
+    expect(n1.cardCount).toBeGreaterThanOrEqual(130)
 
     const seen = new Set<string>()
-    for (const course of [n5, n4, n3]) {
+    for (const course of [n5, n4, n3, n2, n1]) {
       const detail = jp.getCourse(course.id)!
       expect(detail.lessons.every((l) => l.kind === 'kanji')).toBe(true)
       for (const lesson of detail.lessons) {
@@ -228,7 +330,8 @@ describe('seedJapanese', () => {
           expect(card.back.trim()).not.toBe('')
           expect(card.onyomi || card.kunyomi).toBeTruthy()
           expect(card.exampleJp?.trim()).toBeTruthy()
-          // No duplicate kanji within OR across the two decks.
+          // Kanji fronts are ONE character and unique across every deck.
+          expect([...card.front]).toHaveLength(1)
           expect(seen.has(card.front)).toBe(false)
           seen.add(card.front)
         }
@@ -311,6 +414,42 @@ describe('seedJapanese', () => {
     const detail = jp.getCourse(course.id)!
     expect(detail.lessons.filter((l) => l.kind === 'grammar').length).toBeGreaterThanOrEqual(10)
     expect(detail.lessons.filter((l) => l.kind === 'vocab')).toHaveLength(1)
+  })
+
+  it('N2 + N1 vocabulary packs: pos and a full example triple on every card', () => {
+    seedJapanese(db)
+    const n2 = jp.listCourses().find((c) => c.title.includes('N2 Vocabulary'))!
+    const n1 = jp.listCourses().find((c) => c.title.includes('N1 Vocabulary'))!
+    expect(n2.cardCount).toBeGreaterThanOrEqual(110)
+    expect(n1.cardCount).toBeGreaterThanOrEqual(110)
+
+    const fronts = new Set<string>()
+    for (const course of [n2, n1]) {
+      const detail = jp.getCourse(course.id)!
+      expect(detail.lessons).toHaveLength(8)
+      expect(detail.lessons.every((l) => l.kind === 'vocab')).toBe(true)
+      for (const lesson of detail.lessons) {
+        for (const card of jp.getLesson(lesson.id)!.cards) {
+          expect(card.front.trim()).not.toBe('')
+          expect(card.back.trim()).not.toBe('')
+          expect(card.pos?.trim()).toBeTruthy()
+          // The example triple is what feeds the typed cloze mode in reviews.
+          expect(card.exampleJp?.trim()).toBeTruthy()
+          expect(card.exampleReading?.trim()).toBeTruthy()
+          expect(card.exampleEn?.trim()).toBeTruthy()
+          // The example must actually use the word. Verbs and adjectives show
+          // up inflected (含まれる → 含まれていない), so match on the stem —
+          // that is also exactly when buildTypedPrompt falls back from a cloze
+          // to type-the-reading, which is the intended behaviour.
+          const stem = card.front.slice(0, -1)
+          expect(
+            card.exampleJp!.includes(card.front) || (stem.length > 0 && card.exampleJp!.includes(stem))
+          ).toBe(true)
+          expect(fronts.has(card.front)).toBe(false)
+          fronts.add(card.front)
+        }
+      }
+    }
   })
 
   it('N4 pack: 20 grammar lessons, all with bodies and 3 example cards', () => {
