@@ -1003,3 +1003,37 @@ export const checklistLog = sqliteTable(
     byTask: index('idx_checklist_log_task').on(t.taskKey, t.cadence, t.periodKey)
   })
 )
+
+// ---------------------------------------------------------------------------
+// English dictionary — saved (word, chosen definition) rows. Not part of the
+// jp_* SRS: a plain personal word list.
+// ---------------------------------------------------------------------------
+export const enWord = sqliteTable(
+  'en_word',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    word: text('word').notNull(),
+    phonetic: text('phonetic'),
+    pos: text('pos'),
+    meaning: text('meaning').notNull(),
+    example: text('example'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byWord: index('idx_en_word_word').on(t.word)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// Programming learn section — lesson completion only; the course/lesson content
+// itself is code (src/shared/programming/), not a table.
+// ---------------------------------------------------------------------------
+export const progProgress = sqliteTable('prog_progress', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  lessonKey: text('lesson_key').notNull().unique(),
+  completedAt: text('completed_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})

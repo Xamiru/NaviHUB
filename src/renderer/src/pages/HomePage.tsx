@@ -1,4 +1,6 @@
 import { memo, useMemo, useState } from 'react'
+import DoorCard from '../components/DoorCard'
+import MediaCard from '../components/MediaCard'
 import { Link } from 'react-router-dom'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -283,37 +285,24 @@ function ChecklistCard() {
   const streak = data?.streak.current ?? 0
   const pct = daily.length ? Math.round((done / daily.length) * 100) : 0
   return (
-    <Link
+    <DoorCard
       to="/checklist"
-      className="card group relative overflow-hidden p-5 flex flex-col justify-between bg-gradient-to-br from-accent/25 via-base-800 to-base-800 hover:from-accent/35"
-    >
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">Routine</p>
-        <p className="mt-1 text-xl font-bold">
-          {daily.length === 0 ? 'Checklist' : `${done} of ${daily.length} done today`}
-        </p>
-        <p className="mt-1 text-sm text-gray-400">
-          {daily.length === 0
-            ? 'Set up the things you want to do every day and week.'
-            : 'Your daily and weekly routine, tracked automatically.'}
-        </p>
-        {daily.length > 0 && (
-          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-base-900/60">
+      eyebrow="Routine"
+      title={daily.length === 0 ? 'Checklist' : `${done} of ${daily.length} done today`}
+      body={
+        daily.length === 0
+          ? 'Set up the things you want to do every day and week.'
+          : 'Your daily and weekly routine, tracked automatically.'
+      }
+      value={
+        daily.length > 0 ? (
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-base-900/60">
             <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
           </div>
-        )}
-      </div>
-      <div className="mt-4 flex items-center justify-between">
-        {streak > 0 && (
-          <span className="text-xs text-gray-500">
-            {streak} day{streak === 1 ? '' : 's'} in a row
-          </span>
-        )}
-        <span className="btn-primary pointer-events-none ml-auto group-hover:brightness-110">
-          Open ▸
-        </span>
-      </div>
-    </Link>
+        ) : undefined
+      }
+      meta={streak > 0 ? `${streak} day${streak === 1 ? '' : 's'} in a row` : undefined}
+    />
   )
 }
 
@@ -325,38 +314,19 @@ function TimeStatsCard() {
   const days = stats ? stats.totalMinutes / 1440 : 0
   const hasData = !!stats && stats.consumedCount > 0
   return (
-    <Link
+    <DoorCard
       to="/stats"
-      className="card group relative overflow-hidden p-5 flex flex-col justify-between bg-gradient-to-br from-accent/25 via-base-800 to-base-800 hover:from-accent/35"
-    >
-      <span
-        className="absolute -right-3 -bottom-8 text-[7rem] leading-none opacity-10 select-none"
-        aria-hidden
-      >
-        ⧗
-      </span>
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">Stats</p>
-        <p className="mt-1 text-xl font-bold">
-          {hasData ? `~${days < 10 ? days.toFixed(1) : Math.round(days)} days of your life` : 'Time spent'}
-        </p>
-        <p className="mt-1 text-sm text-gray-400">
-          {hasData
-            ? 'See where the time went, type by type.'
-            : 'Track progress to see your days-watched breakdown.'}
-        </p>
-      </div>
-      <div className="mt-4 flex items-center justify-between">
-        {hasData && (
-          <span className="text-xs text-gray-500">
-            across {stats!.consumedCount} titles
-          </span>
-        )}
-        <span className="btn-primary pointer-events-none ml-auto group-hover:brightness-110">
-          Open ▸
-        </span>
-      </div>
-    </Link>
+      eyebrow="Stats"
+      title={
+        hasData ? `~${days < 10 ? days.toFixed(1) : Math.round(days)} days of your life` : 'Time spent'
+      }
+      body={
+        hasData
+          ? 'See where the time went, type by type.'
+          : 'Track progress to see your days-watched breakdown.'
+      }
+      meta={hasData ? `across ${stats!.consumedCount} titles` : undefined}
+    />
   )
 }
 
@@ -367,29 +337,13 @@ function QuizCard() {
     queryFn: () => api.quiz.songPool({})
   })
   return (
-    <Link
+    <DoorCard
       to="/quiz/song"
-      className="card group relative overflow-hidden p-5 flex flex-col justify-between bg-gradient-to-br from-accent/25 via-base-800 to-base-800 hover:from-accent/35"
-    >
-      <span className="absolute -right-4 -bottom-6 text-[7rem] leading-none opacity-10 select-none" aria-hidden>
-        ♪
-      </span>
-      <div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-accent">Play</p>
-        <p className="mt-1 text-xl font-bold">Song Quiz</p>
-        <p className="mt-1 text-sm text-gray-400">
-          Guess the anime from its openings &amp; endings.
-        </p>
-      </div>
-      <div className="mt-4 flex items-center justify-between">
-        {pool.length > 0 ? (
-          <span className="text-xs text-gray-500">{pool.length} songs ready</span>
-        ) : (
-          <span className="text-xs text-gray-400">Import theme songs to play</span>
-        )}
-        <span className="btn-primary pointer-events-none group-hover:brightness-110">Play ▸</span>
-      </div>
-    </Link>
+      eyebrow="Play"
+      title="Song Quiz"
+      body="Guess the anime from its openings & endings."
+      meta={pool.length > 0 ? `${pool.length} songs ready` : 'Import theme songs to play'}
+    />
   )
 }
 
@@ -469,7 +423,7 @@ function Strip({
     <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
       {items.map((m) => (
         <div key={cardKey(m)} className="w-[150px] shrink-0">
-          <MediaCard item={m} showProgress={showProgress} />
+          <MediaCard item={m} showTypeBadge showProgressBar={showProgress} />
         </div>
       ))}
     </div>
@@ -516,71 +470,21 @@ function GlanceCard({ cfg, total }: { cfg: MediaConfig; total: number }) {
           </p>
         </div>
       </Link>
+      {/* Child destinations live in the sidebar's disclosure tree — the card
+          keeps only the two actions that create things. */}
       <div className="flex flex-wrap gap-2 text-xs">
         {cfg.importSource && (
           <Link to={cfg.basePath} className="chip hover:bg-base-600">
-            ⬇ Import
+            Import
           </Link>
         )}
         <Link to={`${cfg.basePath}/new`} className="chip hover:bg-base-600">
-          + Add {cfg.singular}
+          Add {cfg.singular}
         </Link>
-        {cfg.children.map((c) => (
-          <Link key={c.to} to={c.to} className="chip hover:bg-base-600">
-            {c.icon} {c.label}
-          </Link>
-        ))}
       </div>
     </div>
   )
 }
 
-// A cover card linking to the item's detail page, tagged with its media type.
-// With showProgress, episode-based items get a thin progress bar (Continue
-// watching); the type's own config formats the subtitle either way.
-const MediaCard = memo(function MediaCard({
-  item,
-  showProgress = false
-}: {
-  item: MediaItem
-  showProgress?: boolean
-}) {
-  const cfg = configFor(item.mediaType)
-  const pct =
-    showProgress && item.totalUnits != null && item.totalUnits > 0
-      ? Math.min(100, Math.round((item.progress / item.totalUnits) * 100))
-      : null
 
-  return (
-    <Link to={pathForMedia(item)} className="group block">
-      <div className="relative aspect-[2/3] overflow-hidden rounded-lg">
-        <CoverImage
-          path={item.coverPath}
-          alt={item.title}
-          rounded="rounded-lg"
-          className="h-full w-full transition-transform group-hover:scale-105"
-        />
-        <span className="absolute top-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">
-          {cfg.icon} {cfg.singular}
-        </span>
-        {item.score != null && (
-          <span className="absolute top-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-semibold text-yellow-300">
-            ★ {item.score}
-          </span>
-        )}
-        {pct != null && (
-          <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">
-            <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
-          </div>
-        )}
-      </div>
-      <div className="mt-2">
-        <p className="text-sm font-medium line-clamp-2 group-hover:text-accent">{item.title}</p>
-        <p className="text-xs text-gray-500">
-          {showProgress ? cfg.formatProgressStat(item) : (item.status ?? '')}
-        </p>
-      </div>
-    </Link>
-  )
-})
 

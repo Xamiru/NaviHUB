@@ -55,6 +55,10 @@ import type {
   JpLessonDetail,
   JpLessonInput,
   JpMiningInbox,
+  EnDictEntry,
+  EnWord,
+  EnWordInput,
+  ProgLessonProgress,
   DictInfo,
   DictEntry,
   DictImportStatus,
@@ -418,6 +422,24 @@ export interface NaviApi {
     importStrokes(): Promise<StrokeImportSummary>
     strokeSet(): Promise<StrokeSetInfo | null>
     removeStrokes(): Promise<void>
+  }
+  // English→English dictionary (/english): dictionaryapi.dev lookups (main
+  // process — renderer CSP blocks remote fetch) + a flat saved-word list.
+  english: {
+    // [] for an unknown word; throws on a real network/API failure.
+    lookup(query: string): Promise<EnDictEntry[]>
+    // Idempotent: re-saving an identical (word, meaning) returns the existing id.
+    saveWord(input: EnWordInput): Promise<number>
+    listWords(search?: string): Promise<EnWord[]>
+    removeWord(id: number): Promise<void>
+  }
+  // Programming learn section (/programming). Content is code
+  // (src/shared/programming/); only lesson completion crosses IPC, keyed by
+  // the frozen '<courseKey>/<lessonKey>' strings.
+  programming: {
+    progress(): Promise<ProgLessonProgress[]>
+    complete(lessonKey: string): Promise<void>
+    uncomplete(lessonKey: string): Promise<void>
   }
   manga: {
     // Local manga reader: chapters are page-image folders under the manga

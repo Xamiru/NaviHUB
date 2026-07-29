@@ -37,7 +37,7 @@ export default function MusicLikedPage() {
             disabled={!tracks.length}
             onClick={() => playTracks(player, tracks, { shuffle: true })}
           >
-            ⇄ Shuffle
+            Shuffle
           </button>
         </div>
       </div>

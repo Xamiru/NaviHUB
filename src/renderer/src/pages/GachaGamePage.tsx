@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import Tabs from '../components/Tabs'
+import EmptyState from '../components/EmptyState'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -85,20 +87,13 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
         <CurrencyStrip cfg={cfg} />
       </div>
 
-      <div className="mb-5 flex items-center gap-1">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            className={`rounded-full px-3 py-1 text-sm ${
-              tab === t.key ? 'bg-accent/20 text-white' : 'text-gray-400 hover:bg-base-700'
-            }`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-          </button>
-        ))}
-        {cfg.coach && <CoachTab cfg={cfg} />}
-      </div>
+      <Tabs
+        className="mb-5"
+        value={tab}
+        onChange={setTab}
+        tabs={TABS}
+        actions={cfg.coach ? <CoachTab cfg={cfg} /> : undefined}
+      />
 
       {tab === 'roster' && <RosterTab cfg={cfg} />}
       {tab === 'catalog' && cfg.catalog && <CatalogTab cfg={cfg} />}
@@ -121,11 +116,8 @@ function CoachTab({ cfg }: { cfg: GachaGameCfg }) {
   })
   const n = due?.[cfg.id] ?? 0
   return (
-    <Link
-      to={`/gacha/${cfg.id}/coach`}
-      className="ml-auto flex items-center gap-1.5 rounded-full bg-base-700 px-3 py-1 text-sm text-gray-200 hover:text-white"
-    >
-      <span style={{ color: cfg.color }}>◈</span> Coach
+    <Link to={`/gacha/${cfg.id}/coach`} className="pill">
+      <span style={{ color: cfg.color }}>Coach</span>
       {n > 0 && (
         <span className="rounded-full bg-red-600/90 px-1.5 text-[11px] font-semibold text-white">
           {n}
@@ -237,9 +229,7 @@ function RosterTab({ cfg }: { cfg: GachaGameCfg }) {
         {cfg.unitKinds.map((k) => (
           <button
             key={k.key}
-            className={`rounded-full px-3 py-1 text-sm ${
-              kind.key === k.key ? 'bg-accent text-white' : 'bg-base-700 text-gray-400 hover:text-white'
-            }`}
+            className={kind.key === k.key ? 'pill pill-active' : 'pill'}
             onClick={() => setKindKey(k.key)}
           >
             {k.plural}
@@ -259,15 +249,15 @@ function RosterTab({ cfg }: { cfg: GachaGameCfg }) {
       {isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : units.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-lg font-medium mb-1">No {kind.plural.toLowerCase()} yet</p>
-          <p className="text-sm text-gray-500 mb-5">
-            Track the ones you own — add them one by one for now.
-          </p>
-          <button className="btn-primary" onClick={() => setAdding(true)}>
-            + Add {kind.label.toLowerCase()}
-          </button>
-        </div>
+        <EmptyState
+          title={`No ${kind.plural.toLowerCase()} yet`}
+          body="Track the ones you own — add them one by one for now."
+          action={
+            <button className="btn-primary" onClick={() => setAdding(true)}>
+              Add {kind.label.toLowerCase()}
+            </button>
+          }
+        />
       ) : (
         <>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
@@ -350,9 +340,7 @@ function CatalogTab({ cfg }: { cfg: GachaGameCfg }) {
         {cfg.unitKinds.map((k) => (
           <button
             key={k.key}
-            className={`rounded-full px-3 py-1 text-sm ${
-              kind.key === k.key ? 'bg-accent text-white' : 'bg-base-700 text-gray-400 hover:text-white'
-            }`}
+            className={kind.key === k.key ? 'pill pill-active' : 'pill'}
             onClick={() => setKindKey(k.key)}
           >
             {k.plural}
@@ -382,16 +370,15 @@ function CatalogTab({ cfg }: { cfg: GachaGameCfg }) {
       {isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : empty ? (
-        <div className="card p-12 text-center">
-          <p className="text-lg font-medium mb-1">No catalog yet</p>
-          <p className="text-sm text-gray-500 mb-5">
-            Fetch the full {kind.plural.toLowerCase()} list from Atlas Academy, then click any unit
-            to add it to your roster.
-          </p>
-          <button className="btn-primary" disabled={busy} onClick={fetchCatalog}>
-            {busy ? 'Working…' : 'Fetch catalog'}
-          </button>
-        </div>
+        <EmptyState
+          title="No catalog yet"
+          body={`Fetch the full ${kind.plural.toLowerCase()} list from Atlas Academy, then click any unit to add it to your roster.`}
+          action={
+            <button className="btn-primary" disabled={busy} onClick={fetchCatalog}>
+              {busy ? 'Working…' : 'Fetch catalog'}
+            </button>
+          }
+        />
       ) : (
         <>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
@@ -526,15 +513,15 @@ function BannersTab({ cfg }: { cfg: GachaGameCfg }) {
       {isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : banners.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-lg font-medium mb-1">No banners yet</p>
-          <p className="text-sm text-gray-500 mb-5">
-            Keep the schedule here — what's running now and what's been announced.
-          </p>
-          <button className="btn-primary" onClick={() => setAdding(true)}>
-            + Add banner
-          </button>
-        </div>
+        <EmptyState
+          title="No banners yet"
+          body="Keep the schedule here — what's running now and what's been announced."
+          action={
+            <button className="btn-primary" onClick={() => setAdding(true)}>
+              Add banner
+            </button>
+          }
+        />
       ) : (
         groups.map(
           (g) =>
@@ -661,13 +648,10 @@ function NewsTab({ cfg }: { cfg: GachaGameCfg }) {
       {isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
       ) : items.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-lg font-medium mb-1">No posts yet</p>
-          <p className="text-sm text-gray-500">
-            Press “Fetch posts” to pull what's hot on r/{cfg.subreddit} — nothing updates on its
-            own.
-          </p>
-        </div>
+        <EmptyState
+          title="No posts yet"
+          body={`Press "Fetch posts" to pull what's hot on r/${cfg.subreddit} — nothing updates on its own.`}
+        />
       ) : (
         <div className="space-y-2">
           {items.map((n) => (

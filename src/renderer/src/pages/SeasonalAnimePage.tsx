@@ -125,7 +125,7 @@ export default function SeasonalAnimePage() {
         {SEASONS.map((s) => (
           <button
             key={s}
-            className="rounded-full bg-base-700 px-3 py-1 text-sm text-gray-300 hover:bg-base-600"
+            className="pill"
             onClick={() => scrollToSeason(s)}
           >
             {seasonLabel(s)}

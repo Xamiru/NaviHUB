@@ -48,6 +48,12 @@ import JapaneseDictionaryPage from './pages/JapaneseDictionaryPage'
 import JapaneseKanaPage from './pages/JapaneseKanaPage'
 import JapaneseTestPage from './pages/JapaneseTestPage'
 import JapaneseStatsPage from './pages/JapaneseStatsPage'
+import EnglishDictionaryPage from './pages/EnglishDictionaryPage'
+import ProgrammingHomePage from './pages/ProgrammingHomePage'
+import ProgCoursePage from './pages/ProgCoursePage'
+import ProgLessonPage from './pages/ProgLessonPage'
+import CheatsheetsPage from './pages/CheatsheetsPage'
+import CliPracticePage from './pages/CliPracticePage'
 import MangaReaderPage from './pages/MangaReaderPage'
 import BookReaderPage from './pages/BookReaderPage'
 import MusicLibraryPage from './pages/MusicLibraryPage'
@@ -263,6 +269,17 @@ export default function App() {
             <Route path="/japanese/kana" element={<JapaneseKanaPage />} />
             <Route path="/japanese/test" element={<JapaneseTestPage />} />
             <Route path="/japanese/stats" element={<JapaneseStatsPage />} />
+
+            {/* English dictionary — Learn section, lookup + saved words on one page */}
+            <Route path="/english" element={<EnglishDictionaryPage />} />
+
+            {/* Programming — Learn section; content is code (shared/programming),
+                only lesson completion lives in the DB */}
+            <Route path="/programming" element={<ProgrammingHomePage />} />
+            <Route path="/programming/cheatsheets" element={<CheatsheetsPage />} />
+            <Route path="/programming/practice" element={<CliPracticePage />} />
+            <Route path="/programming/course/:courseKey" element={<ProgCoursePage />} />
+            <Route path="/programming/course/:courseKey/:lessonKey" element={<ProgLessonPage />} />
 
             {/* Gacha — standalone tracker; games/kinds/currencies configured
                 in shared/gacha.ts, one dashboard page per game */}

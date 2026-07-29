@@ -211,8 +211,8 @@ export default function NowPlayingPage() {
 
         {/* Right: the live queue (same rows/rules as the bar's popover) */}
         <div className="min-w-0">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500">
+          <div className="mb-2 flex items-baseline justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500">
               Queue
             </h2>
             <span className="text-xs text-gray-500">

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import PageHeader from '../components/PageHeader'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -29,20 +30,14 @@ export default function JapaneseRoadmapPage() {
 
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <div className="mb-5">
-        <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
-          ← Japanese
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Roadmap</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Every course in study order. Work down the path — or jump anywhere you like.
-        </p>
-      </div>
+      <PageHeader
+        back={{ to: "/japanese", label: "Japanese" }}
+        title="Roadmap"
+        subtitle="Every course in study order. Work down the path — or jump anywhere you like."
+      />
 
-      <div className="card mb-8 p-4">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-          Today&apos;s plan
-        </h2>
+      <Section title="Today's plan" className="mb-8">
+        <div className="card p-4">
         <div className="flex flex-wrap items-center gap-2">
           <Link to="/japanese/review" className={due + fresh > 0 ? 'btn-primary' : 'btn-ghost'}>
             {due + fresh > 0 ? `Review ${due + fresh} cards` : 'Nothing due — review anyway'}
@@ -57,7 +52,8 @@ export default function JapaneseRoadmapPage() {
           {due} due · {fresh} new cards ready
           {roadmap.nextLesson ? ` · you are on "${roadmap.nextLesson.courseTitle}"` : ''}
         </p>
-      </div>
+        </div>
+      </Section>
 
       <Section title="The path">
         <div className="space-y-2">

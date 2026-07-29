@@ -14,6 +14,9 @@ import * as tournamentRepo from './repos/tournamentRepo'
 import * as listRepo from './repos/listRepo'
 import * as checklistRepo from './repos/checklistRepo'
 import * as japaneseRepo from './repos/japaneseRepo'
+import * as english from './english'
+import * as englishRepo from './repos/englishRepo'
+import * as programmingRepo from './repos/programmingRepo'
 import * as anilist from './anilist'
 import * as tmdb from './tmdb'
 import * as vndb from './vndb'
@@ -226,6 +229,19 @@ export function registerIpc(): void {
   ipcMain.handle('dict:importStrokes', () => dictStrokes.importStrokes())
   ipcMain.handle('dict:strokeSet', () => dictStrokes.getStrokeSetInfo())
   ipcMain.handle('dict:removeStrokes', () => dictStrokes.removeStrokeSet())
+
+  // ---- english dictionary ----
+  ipcMain.handle('english:lookup', (_e, query) => english.lookup(query))
+  ipcMain.handle('english:saveWord', (_e, input) => englishRepo.saveWord(input))
+  ipcMain.handle('english:listWords', (_e, search) => englishRepo.listWords(search))
+  ipcMain.handle('english:removeWord', (_e, id) => englishRepo.removeWord(id))
+
+  // ---- programming (learn section; content is code, only completion is data) ----
+  ipcMain.handle('programming:progress', () => programmingRepo.progress())
+  ipcMain.handle('programming:complete', (_e, lessonKey) => programmingRepo.complete(lessonKey))
+  ipcMain.handle('programming:uncomplete', (_e, lessonKey) =>
+    programmingRepo.uncomplete(lessonKey)
+  )
 
   // ---- local manga reader ----
   ipcMain.handle('manga:attachFolder', (_e, mediaId) => manga.attachFolder(mediaId))

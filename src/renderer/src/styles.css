@@ -98,6 +98,31 @@
   .card {
     @apply rounded-lg bg-base-800 border border-base-700;
   }
+  /* Single-select pill (filters, nav-adjacent choices). THE active-pill look —
+     don't invent new ones. Active text is set explicitly because the global
+     inverse-video selector matches literal markup classes, never @apply'd ones. */
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-base-700 px-3 py-1 text-sm
+           text-gray-300 transition-colors hover:bg-base-600 hover:text-white
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .pill-active {
+    @apply bg-accent hover:bg-accent-hover;
+    color: rgb(var(--base-900));
+  }
+  /* Multi-select toggle (check-many grids: kana rows, dojo forms). Square +
+     hairline border on purpose — visually distinct from the choose-one pill. */
+  .chip-toggle {
+    @apply rounded-md border border-base-700 bg-base-800 px-2.5 py-1.5 text-sm
+           text-gray-400 transition-colors hover:border-base-600;
+  }
+  .chip-toggle-active {
+    @apply border-accent bg-accent/10 text-accent;
+  }
+  /* The accent gradient card (Home door cards, Stats/Checklist heroes). */
+  .card-glow {
+    @apply card bg-gradient-to-br from-accent/25 via-base-800 to-base-800;
+  }
 }
 
 /* EPUB book reader (BookContent) — typography for sanitized novel text.

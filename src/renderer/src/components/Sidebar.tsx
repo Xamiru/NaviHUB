@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
+import { GACHA_GAMES } from '@shared/gacha'
 import { MEDIA_CONFIGS, configFor, type MediaConfig } from '../lib/mediaConfig'
 import lainAvatar from '../assets/lain.png'
 
@@ -24,23 +25,29 @@ function SectionLabel({ children }: { children: string }) {
   )
 }
 
-// A media type with its expandable browse children (e.g. Anime → Voice Actors /
-// Studios, Movies → Actors / Directors).
-function MediaSection({ cfg }: { cfg: MediaConfig }) {
+// A top link with an expandable child tree — the one disclosure idiom for
+// every sidebar section that has sub-destinations (media types, Music,
+// Japanese, Gacha).
+function NavGroup({
+  to,
+  label,
+  children,
+  areaPaths = []
+}: {
+  to: string
+  label: string
+  children: { to: string; label: string }[]
+  areaPaths?: string[] // extra routes that count as "inside" (sibling tabs)
+}) {
   const location = useLocation()
-  // Sibling list routes that belong to this same section (e.g. /tv under Movies).
-  const areaPaths = [
-    cfg.basePath,
-    ...(cfg.listTabs ?? []).map((t) => configFor(t.key).basePath),
-    ...cfg.children.map((c) => c.to)
-  ]
-  // Auto-open when on this section's list, a sibling tab, or a child browse
+  const paths = [to, ...areaPaths, ...children.map((c) => c.to)]
+  // Auto-open when on the section's list, a sibling tab, or a child browse
   // page. '/people' needs an EXACT match: /people/:id is one shared detail
   // page (seiyuu, actors, artists and mangaka all land there), so a prefix
   // match would light up every section with a Voice Actors child on any
   // person's page. Unique children (/studios, …) keep prefix matching so
   // their own detail pages still count as "in this section".
-  const onArea = areaPaths.some((p) =>
+  const onArea = paths.some((p) =>
     p === '/people' ? location.pathname === p : location.pathname.startsWith(p)
   )
   const [open, setOpen] = useState(false)
@@ -49,8 +56,8 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
   return (
     <div>
       <div className="flex items-center">
-        <NavLink to={cfg.basePath} className={({ isActive }) => `flex-1 ${linkClass(isActive)}`}>
-          {cfg.sidebarLabel ?? cfg.plural}
+        <NavLink to={to} className={({ isActive }) => `flex-1 ${linkClass(isActive)}`}>
+          {label}
         </NavLink>
         <button
           className="px-2 py-2 text-gray-500 hover:text-white"
@@ -65,7 +72,7 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
 
       {expanded && (
         <div className="ml-3 pl-3 border-l border-accent/15 space-y-0.5 mb-1">
-          {cfg.children.map((c) => (
+          {children.map((c) => (
             <NavLink
               key={c.to}
               to={c.to}
@@ -80,6 +87,17 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
         </div>
       )}
     </div>
+  )
+}
+
+function MediaSection({ cfg }: { cfg: MediaConfig }) {
+  return (
+    <NavGroup
+      to={cfg.basePath}
+      label={cfg.sidebarLabel ?? cfg.plural}
+      children={cfg.children}
+      areaPaths={(cfg.listTabs ?? []).map((t) => configFor(t.key).basePath)}
+    />
   )
 }
 
@@ -110,9 +128,14 @@ export default function Sidebar() {
             <MediaSection key={cfg.key} cfg={cfg} />
           ))}
           {/* Standalone local-music section (not a MediaConfig — own tables/pages) */}
-          <NavLink to="/music" className={({ isActive }) => linkClass(isActive)}>
-            Music
-          </NavLink>
+          <NavGroup
+            to="/music"
+            label="Music"
+            children={[
+              { to: '/music/liked', label: 'Liked' },
+              { to: '/music/stats', label: 'Stats' }
+            ]}
+          />
           {/* Cross-library time-spent stats */}
           <NavLink to="/stats" className={({ isActive }) => linkClass(isActive)}>
             Stats
@@ -127,10 +150,6 @@ export default function Sidebar() {
           <NavLink to="/tags" className={({ isActive }) => linkClass(isActive)}>
             Tags
           </NavLink>
-        </div>
-
-        <SectionLabel>Acquire</SectionLabel>
-        <div className="space-y-0.5">
           <NavLink to="/torrents" className={({ isActive }) => linkClass(isActive)}>
             Torrents
           </NavLink>
@@ -141,17 +160,38 @@ export default function Sidebar() {
           <NavLink to="/quiz" className={({ isActive }) => linkClass(isActive)}>
             Quiz
           </NavLink>
+          <NavGroup
+            to="/gacha"
+            label="Gacha"
+            children={GACHA_GAMES.map((g) => ({ to: `/gacha/${g.id}`, label: g.short }))}
+          />
         </div>
 
         <SectionLabel>Learn</SectionLabel>
-        <NavLink to="/japanese" className={({ isActive }) => linkClass(isActive)}>
-          Japanese
-        </NavLink>
-
-        <SectionLabel>Gacha</SectionLabel>
-        <NavLink to="/gacha" className={({ isActive }) => linkClass(isActive)}>
-          Gacha
-        </NavLink>
+        <div className="space-y-0.5">
+          <NavGroup
+            to="/japanese"
+            label="Japanese"
+            children={[
+              { to: '/japanese/roadmap', label: 'Roadmap' },
+              { to: '/japanese/review', label: 'Review' },
+              { to: '/japanese/dictionary', label: 'Dictionary' },
+              { to: '/japanese/kana', label: 'Drills' }
+            ]}
+          />
+          {/* English dictionary + saved words, one page */}
+          <NavLink to="/english" className={({ isActive }) => linkClass(isActive)}>
+            English
+          </NavLink>
+          <NavGroup
+            to="/programming"
+            label="Programming"
+            children={[
+              { to: '/programming/cheatsheets', label: 'Cheatsheets' },
+              { to: '/programming/practice', label: 'CLI practice' }
+            ]}
+          />
+        </div>
       </div>
 
       <div className="p-2 border-t border-base-700">

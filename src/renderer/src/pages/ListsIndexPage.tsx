@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import EmptyState from '../components/EmptyState'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
@@ -45,15 +46,15 @@ export default function ListsIndexPage() {
       {isLoading ? (
         <p className="text-gray-500">Loading…</p>
       ) : lists.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-lg font-medium mb-1">No lists yet</p>
-          <p className="text-sm text-gray-500 mb-5">
-            Rank your favorites — best anime by opening, favorite actors, worst characters…
-          </p>
-          <Link to="/lists/new" className="btn-primary mx-auto inline-block">
-            + Create your first list
-          </Link>
-        </div>
+        <EmptyState
+          title="No lists yet"
+          body="Rank your favorites — best anime by opening, favorite actors, worst characters…"
+          action={
+            <Link to="/lists/new" className="btn-primary">
+              Create your first list
+            </Link>
+          }
+        />
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
           {lists.map((l) => (
@@ -71,7 +72,7 @@ function ListCard({ list }: { list: ListSummary }) {
     <Link to={`/lists/${list.id}`} className="card overflow-hidden group">
       <div className="grid grid-cols-4 aspect-[16/6] bg-base-700">
         {previews.length === 0 ? (
-          <div className="col-span-4 flex items-center justify-center text-2xl opacity-40">📋</div>
+          <div className="col-span-4 flex items-center justify-center text-xs uppercase tracking-widest text-gray-600">List</div>
         ) : (
           previews.map((p, i) => (
             <CoverImage

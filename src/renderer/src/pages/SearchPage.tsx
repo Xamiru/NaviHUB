@@ -49,7 +49,7 @@ export default function SearchPage() {
 
 function GroupTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+    <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
       {children}
     </h2>
   )

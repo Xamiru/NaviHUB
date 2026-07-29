@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import PageHeader from '../components/PageHeader'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -284,15 +285,12 @@ export default function SongQuizPage() {
   if (phase === 'setup') {
     return (
       <div className="p-6 max-w-3xl mx-auto">
-        <div className="mb-6">
-          <Link to="/quiz" className="text-sm text-gray-500 hover:text-white">
-            ← Quiz
-          </Link>
-          <h1 className="mt-1 text-3xl font-bold">🎵 Song Quiz</h1>
-          <p className="text-base text-gray-500">
-            Guess the anime from its opening or ending theme.
-          </p>
-        </div>
+        <PageHeader
+          back={{ to: "/quiz", label: "Quiz" }}
+          title="Song Quiz"
+          subtitle="Guess the anime from its opening or ending theme."
+          className="mb-6"
+        />
 
         <div className="card p-6 space-y-6">
           <Group label="Song type">
@@ -522,9 +520,7 @@ function Pill({ active, onClick, label }: { active: boolean; onClick: () => void
   return (
     <button
       onClick={onClick}
-      className={`rounded-full px-4 py-1.5 text-base transition-colors ${
-        active ? 'bg-accent text-white' : 'bg-base-700 text-gray-300 hover:bg-base-600'
-      }`}
+      className={active ? 'pill pill-active' : 'pill'}
     >
       {label}
     </button>

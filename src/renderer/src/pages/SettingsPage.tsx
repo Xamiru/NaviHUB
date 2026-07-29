@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
+import Tabs from '../components/Tabs'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -26,20 +27,20 @@ import { useUpdateStatus } from '../lib/useUpdateStatus'
 type SaveFn = (key: string, value: string) => Promise<void>
 
 const TABS = [
-  { id: 'appearance', label: 'Appearance' },
-  { id: 'library', label: 'Library & Tracking' },
-  { id: 'importing', label: 'Import Keys' },
-  { id: 'folders', label: 'Folders' },
-  { id: 'ai', label: 'AI Coach' },
-  { id: 'tools', label: 'Tools' },
-  { id: 'devices', label: 'Devices' }
+  { key: 'general', label: 'General' },
+  { key: 'statuses', label: 'Statuses' },
+  { key: 'data', label: 'Keys & Folders' },
+  { key: 'japanese', label: 'Japanese' },
+  { key: 'ai', label: 'AI Coach' },
+  { key: 'integrations', label: 'Integrations' },
+  { key: 'system', label: 'System' }
 ] as const
-type TabId = (typeof TABS)[number]['id']
+type TabId = (typeof TABS)[number]['key']
 
 export default function SettingsPage() {
   const { data } = useSettings()
   const qc = useQueryClient()
-  const [tab, setTab] = usePersistedState<TabId>('settingsTab', 'library')
+  const [tab, setTab] = usePersistedState<TabId>('settingsTab', 'general')
 
   const setKey: SaveFn = async (key, value) => {
     await api.settings.set(key, value)
@@ -54,46 +55,43 @@ export default function SettingsPage() {
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Section nav — sticky on desktop, wrapping row on narrow screens. */}
         <nav className="shrink-0 md:w-52">
-          <div className="flex flex-wrap gap-1 md:sticky md:top-6 md:flex-col">
-            {TABS.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setTab(t.id)}
-                className={`rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                  tab === t.id
-                    ? 'bg-accent/10 text-accent md:shadow-[inset_2px_0_0_0_rgb(var(--accent))]'
-                    : 'text-gray-400 hover:bg-base-800 hover:text-white'
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="md:sticky md:top-6">
+            <Tabs orientation="vertical" tabs={[...TABS]} value={tab} onChange={setTab} />
           </div>
         </nav>
 
         <div className="min-w-0 flex-1">
-          {tab === 'appearance' && <UiScaleSettings data={data} onSave={setKey} />}
-          {tab === 'library' && (
+          {tab === 'general' && (
             <>
-              {MEDIA_CONFIGS.map((cfg) => (
-                <StatusEditor key={cfg.key} cfg={cfg} data={data} onSave={setKey} />
-              ))}
+              <UiScaleSettings data={data} onSave={setKey} />
               <ScoreSettings data={data} onSave={setKey} />
               <TimeStatsSettings data={data} onSave={setKey} />
             </>
           )}
-          {tab === 'importing' && <ApiKeysSettings data={data} onSave={setKey} />}
-          {tab === 'folders' && <FoldersSettings data={data} onSave={setKey} />}
-          {tab === 'ai' && <CoachSettings data={data} onSave={setKey} />}
-          {tab === 'tools' && (
+          {tab === 'statuses' &&
+            MEDIA_CONFIGS.map((cfg) => (
+              <StatusEditor key={cfg.key} cfg={cfg} data={data} onSave={setKey} />
+            ))}
+          {tab === 'data' && (
             <>
-              <UpdateSettings data={data} onSave={setKey} />
-              <YtdlpSettings data={data} onSave={setKey} />
-              <TorrentSettings data={data} onSave={setKey} />
-              <DictionarySettings />
+              <ApiKeysSettings data={data} onSave={setKey} />
+              <FoldersSettings data={data} onSave={setKey} />
             </>
           )}
-          {tab === 'devices' && <SyncSettings />}
+          {tab === 'japanese' && <DictionarySettings />}
+          {tab === 'ai' && <CoachSettings data={data} onSave={setKey} />}
+          {tab === 'integrations' && (
+            <>
+              <YtdlpSettings data={data} onSave={setKey} />
+              <TorrentSettings data={data} onSave={setKey} />
+            </>
+          )}
+          {tab === 'system' && (
+            <>
+              <UpdateSettings data={data} onSave={setKey} />
+              <SyncSettings />
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -187,11 +185,7 @@ function UiScaleSettings({ data, onSave }: { data?: Record<string, string>; onSa
           <button
             key={s}
             onClick={() => pick(s)}
-            className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-              Math.abs(scale - s) < 0.001
-                ? 'bg-accent text-white'
-                : 'bg-base-700 text-gray-300 hover:bg-base-600'
-            }`}
+            className={Math.abs(scale - s) < 0.001 ? 'pill pill-active' : 'pill'}
           >
             {formatUiScale(s)}
             {s === UI_SCALE_DEFAULT && <span className="ml-1 text-xs opacity-70">default</span>}
@@ -1004,6 +998,11 @@ function DictionarySettings() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Installed-detection for the preset rows: match by title prefix (the zips'
+  // index.json titles start with these).
+  const hasDict = (prefix: string): boolean =>
+    dicts.some((d) => d.title.toLowerCase().startsWith(prefix.toLowerCase()))
+
   const { data: dicts = [] } = useQuery({
     queryKey: qk.dict.list,
     queryFn: () => api.dict.list()
@@ -1062,8 +1061,7 @@ function DictionarySettings() {
         </>
       }
     >
-      {(dicts.length > 0 || sentenceBank || strokeSet) && (
-        <div className="mb-4 space-y-1.5">
+      <div className="mb-4 space-y-1.5">
           {dicts.map((d) => (
             <PackRow
               key={d.id}
@@ -1113,8 +1111,57 @@ function DictionarySettings() {
               }}
             />
           )}
+          {/* Presets not installed yet join the same list as Download rows.
+              Dict presets are matched to installed rows by title prefix. */}
+          {!hasDict('JMdict') && (
+            <PackRow
+              title="JMdict (EN)"
+              detail="The dictionary itself — lookups, mining, deck generators. ~60 MB."
+              busy={busy}
+              onDownload={() => void run(() => api.dict.importPreset('jmdict-en'))}
+            />
+          )}
+          {!hasDict('KANJIDIC') && (
+            <PackRow
+              title="KANJIDIC (EN)"
+              detail="Per-kanji readings and meanings for the kanji breakdown."
+              busy={busy}
+              onDownload={() => void run(() => api.dict.importPreset('kanjidic-en'))}
+            />
+          )}
+          {!hasDict('JPDB') && (
+            <PackRow
+              title="JPDB frequency"
+              detail="Word frequency ranks — rank badges, better prep decks, core decks."
+              busy={busy}
+              onDownload={() => void run(() => api.dict.importPreset('jpdb-freq'))}
+            />
+          )}
+          {!hasDict('BCCWJ') && (
+            <PackRow
+              title="BCCWJ frequency"
+              detail="Alternative frequency corpus (written Japanese)."
+              busy={busy}
+              onDownload={() => void run(() => api.dict.importPreset('bccwj-freq'))}
+            />
+          )}
+          {!sentenceBank && (
+            <PackRow
+              title="Example sentences (Tatoeba)"
+              detail="Real usage examples in the dictionary and on mined cards. Takes a minute to index."
+              busy={busy}
+              onDownload={() => void run(() => api.dict.importSentences())}
+            />
+          )}
+          {!strokeSet && (
+            <PackRow
+              title="Stroke order (KanjiVG)"
+              detail="Animated stroke diagrams and the writing drill. ~4 MB."
+              busy={busy}
+              onDownload={() => void run(() => api.dict.importStrokes())}
+            />
+          )}
         </div>
-      )}
 
       {running && status && (
         <div className="mb-4">
@@ -1142,57 +1189,9 @@ function DictionarySettings() {
         </div>
       )}
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          className="btn-ghost"
-          disabled={busy}
-          onClick={() => void run(() => api.dict.importPreset('jmdict-en'))}
-        >
-          ⬇ Download JMdict (EN)
-        </button>
-        <button
-          className="btn-ghost"
-          disabled={busy}
-          onClick={() => void run(() => api.dict.importPreset('kanjidic-en'))}
-        >
-          ⬇ Download KANJIDIC (EN)
-        </button>
-        <button
-          className="btn-ghost"
-          disabled={busy}
-          onClick={() => void run(() => api.dict.importPreset('jpdb-freq'))}
-        >
-          Download JPDB frequency
-        </button>
-        <button
-          className="btn-ghost"
-          disabled={busy}
-          onClick={() => void run(() => api.dict.importPreset('bccwj-freq'))}
-        >
-          Download BCCWJ frequency
-        </button>
-        <button
-          className="btn-ghost"
-          disabled={busy}
-          onClick={() => void run(() => api.dict.importSentences())}
-        >
-          Download example sentences
-        </button>
-        <button
-          className="btn-ghost"
-          disabled={busy}
-          onClick={() => void run(() => api.dict.importStrokes())}
-        >
-          Download stroke order
-        </button>
-        <button
-          className="btn-ghost"
-          disabled={busy}
-          onClick={() => void run(() => api.dict.importZip())}
-        >
-          Import Yomitan .zip…
-        </button>
-      </div>
+      <button className="btn-ghost" disabled={busy} onClick={() => void run(() => api.dict.importZip())}>
+        Import Yomitan .zip…
+      </button>
 
       {error && <p className="mt-3 text-sm text-red-400">Import failed: {error}</p>}
 
@@ -1205,31 +1204,48 @@ function DictionarySettings() {
   )
 }
 
-// One installed pack: dictionary, sentence bank or stroke set.
+// One pack row: an installed dictionary/bank/set (detail + Remove) or an
+// available preset (description + Download). One list, per-row state — not a
+// wall of download buttons.
 function PackRow({
   title,
   detail,
   busy,
-  onRemove
+  onRemove,
+  onDownload
 }: {
   title: string
   detail: ReactNode
   busy: boolean
-  onRemove: () => void
+  onRemove?: () => void
+  onDownload?: () => void
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-md border border-base-700 bg-base-800 p-2.5">
+    <div
+      className={`flex items-center gap-3 rounded-md border border-base-700 p-2.5 ${
+        onDownload ? 'bg-base-900/40' : 'bg-base-800'
+      }`}
+    >
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{title}</p>
+        <p className={`truncate text-sm font-medium ${onDownload ? 'text-gray-400' : ''}`}>
+          {title}
+        </p>
         <p className="text-xs text-gray-500">{detail}</p>
       </div>
-      <button
-        className="btn-ghost shrink-0 py-1 px-2 text-xs text-gray-500 hover:text-red-400"
-        disabled={busy}
-        onClick={onRemove}
-      >
-        Remove
-      </button>
+      {onRemove && (
+        <button
+          className="btn-ghost shrink-0 py-1 px-2 text-xs text-gray-500 hover:text-red-400"
+          disabled={busy}
+          onClick={onRemove}
+        >
+          Remove
+        </button>
+      )}
+      {onDownload && (
+        <button className="btn-ghost shrink-0 py-1 px-3 text-xs" disabled={busy} onClick={onDownload}>
+          Download
+        </button>
+      )}
     </div>
   )
 }

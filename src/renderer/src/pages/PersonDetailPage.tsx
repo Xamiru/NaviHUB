@@ -89,7 +89,7 @@ export default function PersonDetailPage() {
       const group = [...actingByType.get(type)!.values()]
       return (
         <div key={type} className="mb-8">
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
             {typeLabel(type)} · {group.length}
           </h2>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
@@ -103,7 +103,7 @@ export default function PersonDetailPage() {
 
   const crewSection = staffRoles.length > 0 && (
     <>
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+      <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
         Crew roles · {staffRoles.length}
       </h2>
       <div className="space-y-1.5 mb-8">
@@ -156,7 +156,7 @@ export default function PersonDetailPage() {
 
       {totalActing === 0 && staffRoles.length === 0 && (
         <>
-          <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+          <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
             Roles
           </h2>
           <p className="text-sm text-gray-400 mb-8">

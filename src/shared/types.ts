@@ -391,6 +391,7 @@ export type QuizKind =
   | 'writing'
   | 'jlpt'
   | 'tournament'
+  | 'cli'
 
 export interface QuizSessionInput {
   kind: QuizKind
@@ -1893,4 +1894,50 @@ export interface ChecklistStatus {
   weekly: ChecklistTaskStatus[]
   streak: { current: number; longest: number } // fully-complete daily boards
   history: { day: string; count: number }[] // dailies completed per day
+}
+
+// ---- English dictionary (/english: dictionaryapi.dev lookup + saved words) ----
+
+export interface EnDictDef {
+  definition: string
+  example: string | null
+  synonyms: string[]
+}
+
+export interface EnDictMeaning {
+  partOfSpeech: string
+  definitions: EnDictDef[]
+  synonyms: string[] // meaning-level synonyms (beyond the per-definition ones)
+}
+
+export interface EnDictEntry {
+  word: string
+  phonetic: string | null // IPA, e.g. /ˈsʌn.sɛt/
+  meanings: EnDictMeaning[]
+}
+
+export interface EnWordInput {
+  word: string
+  phonetic?: string | null
+  pos?: string | null
+  meaning: string
+  example?: string | null
+}
+
+export interface EnWord {
+  id: number
+  word: string
+  phonetic: string | null
+  pos: string | null
+  meaning: string
+  example: string | null
+  createdAt: string
+}
+
+// ---- Programming learn section (/programming) ----
+// Content lives in src/shared/programming/; the DB only stores completion.
+
+export interface ProgLessonProgress {
+  lessonKey: string // FROZEN '<courseKey>/<lessonKey>'
+  completedAt: string
 }

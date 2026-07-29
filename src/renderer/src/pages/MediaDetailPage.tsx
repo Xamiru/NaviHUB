@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import Pager from '../components/Pager'
+import StatTile, { StatInline } from '../components/StatTile'
+import ActionMenu from '../components/ActionMenu'
+import Tabs, { type TabDef } from '../components/Tabs'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
@@ -31,6 +35,8 @@ import type {
   HltbTimes
 } from '@shared/types'
 
+type DetailTab = 'overview' | 'cast' | 'media' | 'art'
+
 export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const { id } = useParams()
   const mediaId = Number(id)
@@ -38,6 +44,24 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const qc = useQueryClient()
   const scoreMax = useScoreMax()
   const [torrentsOpen, setTorrentsOpen] = useState(false)
+
+  // The type's tab set. `mediaTabLabel` names the type-specific middle tab
+  // (Theme Songs / Chapters / Playtime); absent = the type has no media tab
+  // (movies, TV). ?tab= deep-links a tab (the Comprehension page uses
+  // ?tab=media); the one-shot read seeds history-scoped state so Back from a
+  // reader chapter still restores where you were.
+  const tabs: TabDef<DetailTab>[] = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'cast', label: cfg.castSectionTitle },
+    ...(cfg.mediaTabLabel ? [{ key: 'media' as DetailTab, label: cfg.mediaTabLabel }] : []),
+    { key: 'art', label: 'Art' }
+  ]
+  const [params] = useSearchParams()
+  const requested = params.get('tab') as DetailTab | null
+  const [tab, setTab] = usePersistedState<DetailTab>(
+    'detailTab',
+    requested && tabs.some((t) => t.key === requested) ? requested : 'overview'
+  )
 
   const { data: m, isLoading } = useQuery({
     queryKey: qk.media.detail(mediaId),
@@ -89,21 +113,22 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
             rounded="rounded-xl"
             className="w-full aspect-[2/3]"
           />
-          <div className="flex gap-2 mt-3">
-            <Link to={`${cfg.basePath}/${m.id}/edit`} className="btn-ghost flex-1">
+          {/* One filled action per screen: logging progress is the everyday
+              one. Delete lives behind More, away from Edit's elbow. */}
+          <div className="mt-3 space-y-2">
+            <LogProgressButton cfg={cfg} m={m} />
+            <Link to={`${cfg.basePath}/${m.id}/edit`} className="btn-ghost w-full">
               Edit
             </Link>
-            <button className="btn-danger" onClick={del}>
-              Delete
+            <AddToListMenu kind="media" entityId={mediaId} fullWidth />
+            <button className="btn-ghost w-full" onClick={() => setTorrentsOpen(true)}>
+              Find torrents
             </button>
+            <ActionMenu
+              buttonClassName="btn-ghost w-full"
+              items={[{ label: 'Delete…', danger: true, onSelect: del }]}
+            />
           </div>
-          <LogProgressButton cfg={cfg} m={m} />
-          <div className="mt-2">
-            <AddToListMenu kind="media" entityId={mediaId} />
-          </div>
-          <button className="btn-ghost w-full mt-2" onClick={() => setTorrentsOpen(true)}>
-            Find torrents
-          </button>
         </div>
 
         <div className="min-w-0">
@@ -118,16 +143,20 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           {m.titleOriginal && <p className="text-gray-500 mb-4">{m.titleOriginal}</p>}
 
           <div className="flex flex-wrap gap-6 my-5">
-            <Stat label="Status" value={m.status ?? '—'} />
-            <Stat label="My Score" value={m.score != null ? `${m.score} / ${scoreMax}` : '—'} />
-            {anilistAvg != null && <Stat label="AniList Avg" value={`${anilistAvg} / ${scoreMax}`} />}
-            {vndbScore != null && <Stat label="VNDB" value={`${vndbScore} / ${scoreMax}`} />}
-            {imdb != null && <Stat label="IMDb" value={`${imdb} / ${scoreMax}`} />}
-            {rottenTomatoes != null && <Stat label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />}
-            {metacritic != null && <Stat label="Metacritic" value={`${metacritic} / 100`} />}
-            <Stat label={cfg.progressStatLabel} value={cfg.formatProgressStat(m)} />
-            <Stat label={cfg.timesConsumedLabel} value={String(m.rewatchCount)} />
-            <Stat label="Released" value={m.releaseDate ?? '—'} />
+            <StatInline label="Status" value={m.status ?? '—'} />
+            <StatInline label="My Score" value={m.score != null ? `${m.score} / ${scoreMax}` : '—'} />
+            {anilistAvg != null && (
+              <StatInline label="AniList Avg" value={`${anilistAvg} / ${scoreMax}`} />
+            )}
+            {vndbScore != null && <StatInline label="VNDB" value={`${vndbScore} / ${scoreMax}`} />}
+            {imdb != null && <StatInline label="IMDb" value={`${imdb} / ${scoreMax}`} />}
+            {rottenTomatoes != null && (
+              <StatInline label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />
+            )}
+            {metacritic != null && <StatInline label="Metacritic" value={`${metacritic} / 100`} />}
+            <StatInline label={cfg.progressStatLabel} value={cfg.formatProgressStat(m)} />
+            <StatInline label={cfg.timesConsumedLabel} value={String(m.rewatchCount)} />
+            <StatInline label="Released" value={m.releaseDate ?? '—'} />
           </div>
 
           {m.tags.length > 0 && (
@@ -139,7 +168,13 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               ))}
             </div>
           )}
+        </div>
+      </div>
 
+      <Tabs className="mt-4 mb-6" value={tab} onChange={setTab} tabs={tabs} />
+
+      {tab === 'overview' && (
+        <>
           {m.synopsis && (
             <Section className="mb-6" title="Synopsis">
               <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -147,29 +182,38 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               </p>
             </Section>
           )}
-
           {m.notes && (
             <Section className="mb-6" title="My notes">
               <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{m.notes}</p>
             </Section>
           )}
-
           <CompaniesSection cfg={cfg} m={m} onChange={refresh} />
-        </div>
-      </div>
+          <RelatedSection m={m} />
+        </>
+      )}
 
-      {/* Full-width below the cover/info, using the space under the Edit button */}
-      <div className="mt-7">
-        {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
-        {cfg.hasLocalReader && <MangaChaptersSection m={m} />}
-        {cfg.hasLocalReader && <CoverageSection m={m} />}
-        <RelatedSection m={m} />
-        {cfg.hasThemes && <ThemesSection m={m} onChange={refresh} />}
-        <CastSection cfg={cfg} m={m} onChange={refresh} />
-        {cfg.hasCrew !== false && <StaffSection cfg={cfg} m={m} onChange={refresh} />}
-        <MediaImagesSection m={m} kind="wallpaper" />
-        {cfg.hasFanArt && <MediaImagesSection m={m} kind="fanart" />}
-      </div>
+      {tab === 'cast' && (
+        <>
+          <CastSection cfg={cfg} m={m} onChange={refresh} />
+          {cfg.hasCrew !== false && <StaffSection cfg={cfg} m={m} onChange={refresh} />}
+        </>
+      )}
+
+      {tab === 'media' && (
+        <>
+          {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
+          {cfg.hasLocalReader && <MangaChaptersSection m={m} />}
+          {cfg.hasLocalReader && <CoverageSection m={m} />}
+          {cfg.hasThemes && <ThemesSection m={m} onChange={refresh} />}
+        </>
+      )}
+
+      {tab === 'art' && (
+        <>
+          <MediaImagesSection m={m} kind="wallpaper" />
+          {cfg.hasFanArt && <MediaImagesSection m={m} kind="fanart" />}
+        </>
+      )}
 
       {torrentsOpen && (
         <TorrentSearchDialog
@@ -285,17 +329,13 @@ function PlaytimeSection({ m, onChange }: { m: MediaDetail; onChange: () => void
       {boxes.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
           {boxes.map((b) => (
-            <div key={b.label} className="card p-4 text-center">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                {b.label}
-              </p>
-              <p
-                className={`mt-1 text-2xl font-bold ${b.minutes ? 'text-accent' : 'text-gray-600'}`}
-              >
-                {fmtPlaytime(b.minutes)}
-              </p>
-              {b.sub && <p className="mt-0.5 text-[11px] text-gray-500">{b.sub}</p>}
-            </div>
+            <StatTile
+              key={b.label}
+              label={b.label}
+              value={fmtPlaytime(b.minutes)}
+              sub={b.sub ?? undefined}
+              accent={!!b.minutes}
+            />
           ))}
         </div>
       ) : (
@@ -423,27 +463,9 @@ function CastSection({
               )
             )}
           </div>
-          {pageCount > 1 && (
-            <div className="flex items-center justify-center gap-3 mb-4 text-sm">
-              <button
-                className="btn-ghost py-1 px-3"
-                disabled={current === 0}
-                onClick={() => setPage(current - 1)}
-              >
-                ← Prev
-              </button>
-              <span className="text-gray-500">
-                Page {current + 1} of {pageCount}
-              </span>
-              <button
-                className="btn-ghost py-1 px-3"
-                disabled={current >= pageCount - 1}
-                onClick={() => setPage(current + 1)}
-              >
-                Next →
-              </button>
-            </div>
-          )}
+          <div className="mb-4 flex justify-center">
+            <Pager page={current} pageCount={pageCount} onChange={setPage} />
+          </div>
         </>
       )}
     </Section>
@@ -676,28 +698,14 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
           <ThemeRow key={t.id} theme={t} onPlay={() => playTheme(t)} />
         ))}
       </div>
-      {pageCount > 1 && (
-        <div className="flex items-center justify-center gap-3 mb-3 text-sm">
-          <button
-            className="btn-ghost py-1 px-3"
-            disabled={current === 0}
-            onClick={() => setPage(current - 1)}
-          >
-            ← Prev
-          </button>
-          <span className="text-gray-500">
-            {current * THEMES_PAGE_SIZE + 1}–{current * THEMES_PAGE_SIZE + shown.length} of{' '}
-            {themes.length}
-          </span>
-          <button
-            className="btn-ghost py-1 px-3"
-            disabled={current >= pageCount - 1}
-            onClick={() => setPage(current + 1)}
-          >
-            Next →
-          </button>
-        </div>
-      )}
+      <div className="mb-3 flex justify-center">
+        <Pager
+          page={current}
+          pageCount={pageCount}
+          onChange={setPage}
+          label={`${current * THEMES_PAGE_SIZE + 1}–${current * THEMES_PAGE_SIZE + shown.length} of ${themes.length}`}
+        />
+      </div>
       {canFetch && (
         <div className="flex items-center gap-3">
           <button className="btn-ghost py-1 px-3 text-sm" disabled={busy} onClick={fetchThemes}>
@@ -927,12 +935,5 @@ function StaffSection({
 }
 
 /* ---------------- small helpers ---------------- */
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-[10px] uppercase tracking-widest text-gray-500">{label}</div>
-      <div className="text-sm font-medium text-gray-200 mt-0.5">{value}</div>
-    </div>
-  )
-}
+
 

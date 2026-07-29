@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import PageHeader from '../components/PageHeader'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -50,15 +51,11 @@ export default function JapaneseDictionaryPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-5">
-        <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
-          ← Japanese
-        </Link>
-        <h1 className="mt-1 text-2xl font-bold">辞 Dictionary</h1>
-        <p className="text-sm text-gray-500">
-          Offline lookup across every dictionary you&apos;ve installed. Type Japanese or English.
-        </p>
-      </div>
+      <PageHeader
+        back={{ to: "/japanese", label: "Japanese" }}
+        title="辞 Dictionary"
+        subtitle="Offline lookup across every dictionary you&apos;ve installed. Type Japanese or English."
+      />
 
       {dicts.length === 0 && (
         <div className="card mb-4 p-4 text-sm text-gray-400">
@@ -153,7 +150,7 @@ function EntryCard({
           </div>
         </div>
         <button className="btn-ghost shrink-0 text-sm" onClick={() => setMining((v) => !v)}>
-          {mining ? '✕' : '⛏ Mine'}
+          {mining ? 'Close' : 'Mine'}
         </button>
       </div>
 

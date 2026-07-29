@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import PageHeader from '../components/PageHeader'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -35,15 +36,11 @@ export default function JapaneseWritingPage() {
 
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <div className="mb-5">
-        <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
-          ← Japanese
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Writing drill</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Draw each kanji from memory. Strokes are checked in order.
-        </p>
-      </div>
+      <PageHeader
+        back={{ to: "/japanese", label: "Japanese" }}
+        title="Writing drill"
+        subtitle="Draw each kanji from memory. Strokes are checked in order."
+      />
 
       {items && items.length > 0 ? (
         <Drill items={items} onExit={() => setItems(null)} />

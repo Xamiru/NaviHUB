@@ -92,7 +92,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
 
   return (
     <div className="mb-6">
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-2">
+      <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-2">
         Chapters{chapters.length ? ` · ${readCount}/${chapters.length} read` : ''}
       </h2>
 

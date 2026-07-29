@@ -201,6 +201,17 @@ const api: NaviApi = {
     strokeSet: () => ipcRenderer.invoke('dict:strokeSet'),
     removeStrokes: () => ipcRenderer.invoke('dict:removeStrokes')
   },
+  english: {
+    lookup: (query) => ipcRenderer.invoke('english:lookup', query),
+    saveWord: (input) => ipcRenderer.invoke('english:saveWord', input),
+    listWords: (search) => ipcRenderer.invoke('english:listWords', search),
+    removeWord: (id) => ipcRenderer.invoke('english:removeWord', id)
+  },
+  programming: {
+    progress: () => ipcRenderer.invoke('programming:progress'),
+    complete: (lessonKey) => ipcRenderer.invoke('programming:complete', lessonKey),
+    uncomplete: (lessonKey) => ipcRenderer.invoke('programming:uncomplete', lessonKey)
+  },
   manga: {
     attachFolder: (mediaId) => ipcRenderer.invoke('manga:attachFolder', mediaId),
     rescan: (mediaId) => ipcRenderer.invoke('manga:rescan', mediaId),

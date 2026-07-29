@@ -714,3 +714,28 @@ CREATE TABLE IF NOT EXISTS checklist_log (
 );
 CREATE INDEX IF NOT EXISTS idx_checklist_log_task
   ON checklist_log(task_key, cadence, period_key);
+
+-- ---- English dictionary (saved words) ----
+-- One row per saved (word, chosen definition) from the English dictionary page.
+-- Deliberately NOT part of the jp_* SRS — a plain personal word list ("save it
+-- for me, just that"). Personal → wiped on export (sanitizeSql.cjs).
+CREATE TABLE IF NOT EXISTS en_word (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  word        TEXT NOT NULL,
+  phonetic    TEXT,                          -- IPA, e.g. /ˈsʌn.sɛt/
+  pos         TEXT,                          -- part of speech of the chosen sense
+  meaning     TEXT NOT NULL,                 -- the one definition the user chose
+  example     TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_en_word_word ON en_word(word);
+
+-- ---- Programming learn section ----
+-- Course/lesson CONTENT is code (src/shared/programming/, the checklist.ts
+-- idiom) so app updates update it; only completion lives here. lesson_key is
+-- the FROZEN '<courseKey>/<lessonKey>' string. Personal → wiped on export.
+CREATE TABLE IF NOT EXISTS prog_progress (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  lesson_key   TEXT NOT NULL UNIQUE,
+  completed_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

@@ -1,14 +1,17 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import PageHeader from '../components/PageHeader'
+import Section from '../components/Section'
 import StatTile from '../components/StatTile'
+import EmptyState from '../components/EmptyState'
 import CoreDeckDialog from '../components/japanese/CoreDeckDialog'
 
-// The section's dashboard: where you stand, what to do next, and the way into
-// every tool. The full course list lives on the roadmap page — this stays a
-// place you pass through, not one you browse.
+// The section's dashboard: where you stand, what to do next, and one card per
+// tool — grouped, with a line each on what it's for (the QuizLandingPage
+// pattern). The full course list lives on the roadmap page.
 export default function JapaneseHomePage() {
   const [coreDeck, setCoreDeck] = useState(false)
 
@@ -21,26 +24,35 @@ export default function JapaneseHomePage() {
     queryFn: () => api.japanese.roadmap()
   })
 
-  const reviewable = (stats?.dueCount ?? 0) + (stats?.newAvailableCount ?? 0)
+  const due = stats?.dueCount ?? 0
+  const reviewable = due + (stats?.newAvailableCount ?? 0)
   const frontier = roadmap?.steps.find((c) => c.id === roadmap.frontierCourseId) ?? null
   const hasCourses = (roadmap?.steps.length ?? 0) + (roadmap?.unscheduled.length ?? 0) > 0
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold">Japanese</h1>
-          <p className="text-sm text-gray-500">
-            Study lessons, mark them as learned, then practice with reviews and quizzes.
-          </p>
-        </div>
-        <Link to="/japanese/courses/new" className="btn-primary">
-          + New course
-        </Link>
-      </div>
+      <PageHeader
+        title="Japanese"
+        subtitle="Study lessons, mark them as learned, then practice with reviews and quizzes."
+        actions={
+          <>
+            <Link to="/japanese/guide" className="btn-ghost">
+              Guide
+            </Link>
+            <Link to="/japanese/stats" className="btn-ghost">
+              Stats
+            </Link>
+            {hasCourses && (
+              <Link to="/japanese/courses/new" className="btn-primary">
+                New course
+              </Link>
+            )}
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
-        <StatTile label="Due for review" value={stats?.dueCount ?? 0} accent={(stats?.dueCount ?? 0) > 0} />
+        <StatTile label="Due for review" value={due} accent={due > 0} />
         <StatTile label="New cards ready" value={stats?.newAvailableCount ?? 0} />
         <StatTile
           label="Lessons learned"
@@ -50,8 +62,10 @@ export default function JapaneseHomePage() {
       </div>
 
       {hasCourses ? (
-        <div className="card mb-6 p-4">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">Continue</h2>
+        <div className="card mb-8 p-4">
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
+            Continue
+          </h2>
           {frontier ? (
             <>
               <p className="text-sm">
@@ -72,82 +86,127 @@ export default function JapaneseHomePage() {
                     Next lesson: {roadmap.nextLesson.title}
                   </Link>
                 )}
-                <Link to="/japanese/roadmap" className="btn-ghost">
-                  See the roadmap
-                </Link>
               </div>
             </>
           ) : (
             <>
               <p className="text-sm text-gray-400">
-                Every course on the path is learned. Keep the reviews going, or generate a new deck.
+                Every course on the path is learned. Keep the reviews going, or generate a new deck
+                below.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link to="/japanese/review" className={reviewable > 0 ? 'btn-primary' : 'btn-ghost'}>
                   Start review{reviewable > 0 ? ` (${reviewable})` : ''}
                 </Link>
-                <button className="btn-ghost" onClick={() => setCoreDeck(true)}>
-                  Core deck
-                </button>
               </div>
             </>
           )}
         </div>
       ) : (
-        <div className="card mb-6 p-12 text-center">
-          <p className="text-lg font-medium mb-1">No courses yet</p>
-          <p className="text-sm text-gray-500 mb-5">
-            A course groups grammar lessons and vocabulary decks. Create one to get started.
-          </p>
-          <Link to="/japanese/courses/new" className="btn-primary mx-auto inline-block">
-            + Create a course
-          </Link>
-        </div>
+        <EmptyState
+          className="card mb-8 p-12 text-center"
+          title="No courses yet"
+          body="A course groups grammar lessons and vocabulary decks. Create one to get started."
+          action={
+            <Link to="/japanese/courses/new" className="btn-primary">
+              Create a course
+            </Link>
+          }
+        />
       )}
 
-      <div className="flex flex-wrap gap-2">
-        <Link to="/japanese/roadmap" className="btn-ghost">
-          Roadmap
-        </Link>
-        <Link to="/japanese/review" className="btn-ghost">
-          Review
-        </Link>
-        <Link to="/japanese/quiz" className="btn-ghost">
-          Practice quiz
-        </Link>
-        <Link to="/japanese/mine" className="btn-ghost">
-          Mine words
-        </Link>
-        <Link to="/japanese/dictionary" className="btn-ghost">
-          Dictionary
-        </Link>
-        <Link to="/japanese/analyze" className="btn-ghost">
-          Analyze text
-        </Link>
-        <Link to="/japanese/coverage" className="btn-ghost">
-          Comprehension
-        </Link>
-        <Link to="/japanese/kana" className="btn-ghost">
-          Kana drill
-        </Link>
-        <Link to="/japanese/write" className="btn-ghost">
-          Writing drill
-        </Link>
-        <Link to="/japanese/test" className="btn-ghost">
-          JLPT test
-        </Link>
-        <button className="btn-ghost" onClick={() => setCoreDeck(true)}>
-          Core deck
-        </button>
-        <Link to="/japanese/stats" className="btn-ghost">
-          Stats
-        </Link>
-        <Link to="/japanese/guide" className="btn-ghost">
-          Guide
-        </Link>
-      </div>
+      <Section title="Study">
+        <HubGrid>
+          <HubCard to="/japanese/roadmap" title="Roadmap" desc="The course path, step by step." />
+          <HubCard
+            to="/japanese/review"
+            title="Review"
+            desc="Spaced repetition over everything learned."
+            badge={due > 0 ? `${due} due` : undefined}
+          />
+          <HubButton
+            onClick={() => setCoreDeck(true)}
+            title="Core deck"
+            desc="Generate the next most-frequent words you don't know."
+          />
+        </HubGrid>
+      </Section>
+
+      <Section title="Practice">
+        <HubGrid>
+          <HubCard to="/japanese/quiz" title="Practice quiz" desc="Multiple choice, no scheduling." />
+          <HubCard
+            to="/japanese/kana"
+            title="Kana & conjugation drills"
+            desc="Kana, kanji readings, verb forms."
+          />
+          <HubCard to="/japanese/write" title="Writing drill" desc="Draw kanji stroke by stroke." />
+          <HubCard to="/japanese/test" title="JLPT test" desc="Timed 30-question checkpoint." />
+        </HubGrid>
+      </Section>
+
+      <Section title="Read & mine">
+        <HubGrid>
+          <HubCard to="/japanese/mine" title="Mine words" desc="Capture words into the SRS." />
+          <HubCard to="/japanese/analyze" title="Analyze text" desc="How much of a paste can you read?" />
+          <HubCard
+            to="/japanese/coverage"
+            title="Comprehension"
+            desc="Known-word scores for your series."
+          />
+        </HubGrid>
+      </Section>
+
+      <Section title="Reference">
+        <HubGrid>
+          <HubCard
+            to="/japanese/dictionary"
+            title="Dictionary"
+            desc="Offline lookup, examples, stroke order."
+          />
+        </HubGrid>
+      </Section>
 
       {coreDeck && <CoreDeckDialog onClose={() => setCoreDeck(false)} />}
     </div>
+  )
+}
+
+function HubGrid({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">{children}</div>
+  )
+}
+
+function HubCard({
+  to,
+  title,
+  desc,
+  badge
+}: {
+  to: string
+  title: string
+  desc: string
+  badge?: string
+}) {
+  return (
+    <Link to={to} className="card group p-4 transition-colors hover:border-accent">
+      <p className="font-semibold transition-colors group-hover:text-accent">
+        {title}
+        {badge && <span className="ml-2 text-xs font-normal text-accent">{badge}</span>}
+      </p>
+      <p className="mt-1 text-xs text-gray-500">{desc}</p>
+    </Link>
+  )
+}
+
+// Same card, but it opens a dialog — placed honestly inside a group instead of
+// masquerading as navigation in a link row.
+function HubButton({ onClick, title, desc }: { onClick: () => void; title: string; desc: string }) {
+  return (
+    <button onClick={onClick} className="card group p-4 text-left transition-colors hover:border-accent">
+      <p className="font-semibold transition-colors group-hover:text-accent">{title}</p>
+      <p className="mt-1 text-xs text-gray-500">{desc}</p>
+    </button>
   )
 }

@@ -139,6 +139,19 @@ export const qk = {
     tokens: (text: string) => ['japanese', 'tokens', text] as const,
     minedFronts: (fronts: string[]) => ['japanese', 'minedFronts', fronts] as const
   },
+  english: {
+    // English dictionary (/english). Saving/removing a word invalidates the
+    // `all` prefix; lookups are keyed by query like qk.dict.lookup.
+    all: ['english'] as const,
+    lookup: (query: string) => ['english', 'lookup', query] as const,
+    words: (search: string) => ['english', 'words', search] as const
+  },
+  programming: {
+    // Programming learn section (/programming): lesson completion only — the
+    // course/cheatsheet content is code, never fetched.
+    all: ['programming'] as const,
+    progress: ['programming', 'progress'] as const
+  },
   dict: {
     // Offline dictionaries. Import/delete invalidate the `all` prefix, which also
     // drops cached lookups (definitions changed).

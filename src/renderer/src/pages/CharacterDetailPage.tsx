@@ -56,7 +56,7 @@ export default function CharacterDetailPage() {
         actions={<AddToListMenu kind="character" entityId={characterId} />}
       />
 
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+      <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
         Appears in · {roles.length}
       </h2>
       {roles.length === 0 ? (

@@ -1,4 +1,7 @@
 import { useState, type ReactNode } from 'react'
+import EmptyState from '../components/EmptyState'
+import ActionMenu from '../components/ActionMenu'
+import Tabs from '../components/Tabs'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -9,6 +12,7 @@ import { useDebouncedValue, useIncrementalList, useSettings } from '../lib/hooks
 import { usePersistedState } from '../lib/navState'
 import { toast, toastError } from '../lib/toast'
 import CoverImage from '../components/CoverImage'
+import Section from '../components/Section'
 import MusicTrackRow, { formatLongDuration } from '../components/MusicTrackRow'
 import MusicDownloadDialog, { DownloadPill } from '../components/MusicDownloadDialog'
 import type { MusicAlbumSummary, MusicArtist, MusicPlaylistSummary, MusicTrack } from '@shared/types'
@@ -22,6 +26,7 @@ export default function MusicLibraryPage() {
   const [search, setSearch] = usePersistedState('musicSearch', '')
   const query = useDebouncedValue(search.trim())
   const [dlOpen, setDlOpen] = useState(false)
+  const art = useArtFetch()
   const [scanning, setScanning] = useState(false)
 
   const { data: settings } = useSettings()
@@ -76,22 +81,26 @@ export default function MusicLibraryPage() {
   if (stats != null && empty && !scanning) {
     return (
       <div className="flex h-full items-center justify-center p-6">
-        <div className="card max-w-md p-8 text-center">
-          <p className="text-4xl">♪</p>
-          <h1 className="mt-2 text-xl font-bold">Your music library</h1>
-          <p className="mt-2 text-sm text-gray-400">
-            Pick the folder that holds your music — artists as folders, albums inside them.
-            NaviHUB scans it in place; nothing is moved or copied.
-          </p>
-          <button className="btn-primary mt-5" onClick={() => runScan(!hasRoot)}>
-            {hasRoot ? 'Scan music folder' : 'Choose music folder…'}
-          </button>
-          {hasRoot && (
-            <p className="mt-3 text-xs text-gray-500">
-              Current folder: {settings?.['music.dir']} (change it in Settings)
-            </p>
-          )}
-        </div>
+        <EmptyState
+          className="card max-w-md p-8 text-center"
+          title="Your music library"
+          body={
+            <>
+              Pick the folder that holds your music — artists as folders, albums inside them.
+              NaviHUB scans it in place; nothing is moved or copied.
+              {hasRoot && (
+                <span className="mt-3 block text-xs text-gray-500">
+                  Current folder: {settings?.['music.dir']} (change it in Settings)
+                </span>
+              )}
+            </>
+          }
+          action={
+            <button className="btn-primary" onClick={() => runScan(!hasRoot)}>
+              {hasRoot ? 'Scan music folder' : 'Choose music folder…'}
+            </button>
+          }
+        />
       </div>
     )
   }
@@ -109,19 +118,29 @@ export default function MusicLibraryPage() {
           )}
         </div>
         <DownloadPill />
-        <ArtFetchButton />
-        <button className="btn-ghost" disabled={scanning} onClick={() => runScan(false)}>
-          {scanning ? 'Scanning…' : '⟳ Rescan'}
-        </button>
-        <button className="btn-ghost" onClick={() => setDlOpen(true)}>
-          ⬇ Download
-        </button>
+        {art.running && (
+          <button className="pill" onClick={art.cancel} title="Cancel art fetch">
+            Art {art.status ? `${art.status.done}/${art.status.total}` : '…'} — cancel
+          </button>
+        )}
+        {scanning && <span className="pill">Scanning…</span>}
         <button className="btn-ghost" onClick={() => playAll(false)}>
-          ▶ Play all
+          Play all
         </button>
         <button className="btn-primary" onClick={() => playAll(true)}>
-          ⇄ Shuffle
+          Shuffle
         </button>
+        <ActionMenu
+          items={[
+            {
+              label: 'Rescan library',
+              disabled: scanning,
+              onSelect: () => runScan(false)
+            },
+            { label: 'Find missing art', disabled: art.running, onSelect: () => void art.run() },
+            { label: 'Download from URL…', onSelect: () => setDlOpen(true) }
+          ]}
+        />
       </div>
 
       {scanning && scanStatus && (
@@ -165,41 +184,19 @@ export default function MusicLibraryPage() {
         <SearchResults query={query} />
       ) : (
         <>
-          <div className="mb-4 flex gap-2">
-            {(
-              [
-                ['artists', 'Artists'],
-                ['albums', 'Albums'],
-                ['tracks', 'Tracks'],
-                ['playlists', 'Playlists']
-              ] as [Tab, string][]
-            ).map(([key, label]) => (
-              <button
-                key={key}
-                className={`rounded-full px-3 py-1 text-sm ${
-                  tab === key ? 'bg-accent/20 text-white' : 'text-gray-400 hover:bg-base-700'
-                }`}
-                onClick={() => setTab(key)}
-              >
-                {label}
-              </button>
-            ))}
-            {/* Navigation links, not tabs — bordered + separated so they read
-                as "go somewhere else" rather than a fifth in-page tab. */}
-            <span className="mx-1 self-center h-4 w-px bg-base-600" />
-            <Link
-              to="/music/liked"
-              className="rounded-full border border-base-600 px-3 py-1 text-sm text-gray-400 hover:bg-base-700 hover:text-white"
-            >
-              ♥ Liked
-            </Link>
-            <Link
-              to="/music/stats"
-              className="rounded-full border border-base-600 px-3 py-1 text-sm text-gray-400 hover:bg-base-700 hover:text-white"
-            >
-              Stats
-            </Link>
-          </div>
+          {/* Liked and Stats are destinations, not views of this page — they
+              live under Music in the sidebar now. */}
+          <Tabs
+            className="mb-4"
+            value={tab}
+            onChange={setTab}
+            tabs={[
+              { key: 'artists', label: 'Artists' },
+              { key: 'albums', label: 'Albums' },
+              { key: 'tracks', label: 'Tracks' },
+              { key: 'playlists', label: 'Playlists' }
+            ]}
+          />
           {tab === 'artists' && <ArtistsTab />}
           {tab === 'albums' && <AlbumsTab />}
           {tab === 'tracks' && <TracksTab />}
@@ -214,7 +211,9 @@ export default function MusicLibraryPage() {
 
 // "Find missing art" — kicks the bulk Deezer/iTunes job and shows its progress
 // while it runs (polled, like the scanner).
-function ArtFetchButton() {
+// Art-fetch job state, lifted so the trigger lives in the header's More menu
+// while a progress pill (with cancel) appears only while it runs.
+function useArtFetch() {
   const qc = useQueryClient()
   const [running, setRunning] = useState(false)
   const { data: status } = useQuery({
@@ -237,18 +236,7 @@ function ArtFetchButton() {
     }
   }
 
-  if (running) {
-    return (
-      <button className="btn-ghost" onClick={() => api.music.artCancel()}>
-        🎨 {status ? `${status.done}/${status.total}` : '…'} — cancel
-      </button>
-    )
-  }
-  return (
-    <button className="btn-ghost" title="Fetch missing covers/photos online" onClick={run}>
-      🎨 Find art
-    </button>
-  )
+  return { running, status, run, cancel: () => api.music.artCancel() }
 }
 
 export function ArtistCard({ artist }: { artist: MusicArtist }) {
@@ -451,36 +439,27 @@ function SearchResults({ query }: { query: string }) {
   return (
     <div className="space-y-6">
       {data.artists.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-            Artists
-          </h2>
+        <Section title="Artists" className="">
           <div className={GRID}>
             {data.artists.slice(0, 6).map((a) => (
               <ArtistCard key={a.id} artist={a} />
             ))}
           </div>
-        </section>
+        </Section>
       )}
       {data.albums.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-            Albums
-          </h2>
+        <Section title="Albums" className="">
           <div className={GRID}>
             {data.albums.slice(0, 6).map((a) => (
               <AlbumCard key={a.id} album={a} />
             ))}
           </div>
-        </section>
+        </Section>
       )}
       {data.tracks.length > 0 && (
-        <section>
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-            Tracks
-          </h2>
+        <Section title="Tracks" className="">
           <TrackList tracks={data.tracks} />
-        </section>
+        </Section>
       )}
     </div>
   )

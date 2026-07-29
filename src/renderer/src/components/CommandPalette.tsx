@@ -40,6 +40,10 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-jp-coverage', icon: '', label: 'Japanese comprehension', hint: 'Go to', to: '/japanese/coverage' },
   { key: 'nav-jp-write', icon: '', label: 'Kanji writing drill', hint: 'Go to', to: '/japanese/write' },
   { key: 'nav-jp-stats', icon: '⧗', label: 'Japanese stats', hint: 'Go to', to: '/japanese/stats' },
+  { key: 'nav-english', icon: '', label: 'English dictionary', hint: 'Go to', to: '/english' },
+  { key: 'nav-programming', icon: '', label: 'Programming', hint: 'Go to', to: '/programming' },
+  { key: 'nav-prog-cheatsheets', icon: '', label: 'Cheatsheets', hint: 'Go to', to: '/programming/cheatsheets' },
+  { key: 'nav-prog-practice', icon: '', label: 'CLI practice', hint: 'Go to', to: '/programming/practice' },
   { key: 'nav-settings', icon: '⚙', label: 'Settings', hint: 'Go to', to: '/settings' }
 ]
 

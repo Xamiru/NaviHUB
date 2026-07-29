@@ -39,7 +39,7 @@ export default function JapaneseCoursePage() {
 
   return (
     <div className="p-6 max-w-[900px] mx-auto">
-      <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
+      <Link to="/japanese" className="text-sm text-gray-500 hover:text-gray-300">
         ← Japanese
       </Link>
 

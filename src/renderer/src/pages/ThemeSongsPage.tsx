@@ -153,11 +153,7 @@ export default function ThemeSongsPage(): JSX.Element {
       <div className="flex flex-wrap gap-2 mb-4">
         <button
           onClick={() => setSelStatuses([])}
-          className={`rounded-full px-3 py-1 text-sm transition-colors ${
-            selStatuses.length === 0
-              ? 'bg-accent text-white'
-              : 'bg-base-700 text-gray-300 hover:bg-base-600'
-          }`}
+          className={selStatuses.length === 0 ? 'pill pill-active' : 'pill'}
         >
           All
         </button>
@@ -167,11 +163,7 @@ export default function ThemeSongsPage(): JSX.Element {
             onClick={() =>
               setSelStatuses((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]))
             }
-            className={`rounded-full px-3 py-1 text-sm transition-colors ${
-              selStatuses.includes(s)
-                ? 'bg-accent text-white'
-                : 'bg-base-700 text-gray-300 hover:bg-base-600'
-            }`}
+            className={selStatuses.includes(s) ? 'pill pill-active' : 'pill'}
           >
             {s}
           </button>

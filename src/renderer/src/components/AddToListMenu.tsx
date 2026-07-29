@@ -10,11 +10,13 @@ import type { ListKind } from '@shared/types'
 export default function AddToListMenu({
   kind,
   entityId,
-  label
+  label,
+  fullWidth = false
 }: {
   kind: ListKind
   entityId: number
   label?: string
+  fullWidth?: boolean // detail-page action column stacks full-width buttons
 }) {
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
@@ -63,8 +65,8 @@ export default function AddToListMenu({
 
   return (
     <div ref={boxRef} className="relative">
-      <button className="btn-ghost" onClick={() => setOpen((v) => !v)}>
-        📋 {label ?? 'Add to list'}
+      <button className={`btn-ghost ${fullWidth ? 'w-full' : ''}`} onClick={() => setOpen((v) => !v)}>
+        {label ?? 'Add to list'}
       </button>
       {open && (
         <div className="absolute right-0 z-30 mt-1 w-64 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg">

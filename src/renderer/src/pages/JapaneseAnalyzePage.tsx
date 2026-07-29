@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import PageHeader from '../components/PageHeader'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
 import { useIncrementalList } from '../lib/hooks'
 import { toastError } from '../lib/toast'
 import StatTile from '../components/StatTile'
+import Section from '../components/Section'
 import MiningPanel from '../components/reader/MiningPanel'
 import CoverageBar, {
   knownShare,
@@ -49,15 +51,11 @@ export default function JapaneseAnalyzePage() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      <div className="mb-5">
-        <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
-          ← Japanese
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Analyze text</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          Paste any Japanese text to see how much of it you can read.
-        </p>
-      </div>
+      <PageHeader
+        back={{ to: "/japanese", label: "Japanese" }}
+        title="Analyze text"
+        subtitle="Paste any Japanese text to see how much of it you can read."
+      />
 
       <textarea
         className="input min-h-[140px] w-full font-normal"
@@ -150,16 +148,15 @@ function AnalysisView({
       </div>
 
       {result.unknown.length > 0 && (
-        <div className="mt-6">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-            Unknown words
-            {result.unknown.length < stats.tiers.unknown.uniqueCount && (
-              <span className="ml-2 normal-case tracking-normal text-gray-600">
-                top {result.unknown.length.toLocaleString()} of{' '}
-                {stats.tiers.unknown.uniqueCount.toLocaleString()}
-              </span>
-            )}
-          </h2>
+        <Section
+          title="Unknown words"
+          className="mt-6"
+          subtitle={
+            result.unknown.length < stats.tiers.unknown.uniqueCount
+              ? `top ${result.unknown.length.toLocaleString()} of ${stats.tiers.unknown.uniqueCount.toLocaleString()}`
+              : undefined
+          }
+        >
           <div className="card divide-y divide-base-700">
             {unknownVisible.map((u) => (
               <div key={u.word} className="flex items-center gap-3 p-2.5 text-sm">
@@ -177,7 +174,7 @@ function AnalysisView({
             ))}
             <div ref={unknownSentinel} />
           </div>
-        </div>
+        </Section>
       )}
     </>
   )

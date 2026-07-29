@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import PageHeader from '../components/PageHeader'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -20,15 +21,11 @@ export default function JapaneseCoveragePage() {
 
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <div className="mb-5">
-        <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
-          ← Japanese
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Comprehension</h1>
-        <p className="mt-1 text-sm text-gray-400">
-          How much of each scanned series you can already read, hardest last.
-        </p>
-      </div>
+      <PageHeader
+        back={{ to: "/japanese", label: "Japanese" }}
+        title="Comprehension"
+        subtitle="How much of each scanned series you can already read, hardest last."
+      />
 
       {!rows || rows.length === 0 ? (
         <div className="card p-4 text-sm text-gray-400">
@@ -57,7 +54,7 @@ export default function JapaneseCoveragePage() {
                     <Link
                       // Route paths come from MediaConfig.basePath ('/movies',
                       // '/visual-novels'), not the raw media type.
-                      to={pathForMedia({ id: row.mediaId, mediaType: row.mediaType })}
+                      to={`${pathForMedia({ id: row.mediaId, mediaType: row.mediaType })}?tab=media`}
                       className="truncate font-medium hover:text-accent"
                     >
                       {row.title}

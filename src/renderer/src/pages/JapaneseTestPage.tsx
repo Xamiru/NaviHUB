@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import PageHeader from '../components/PageHeader'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -217,16 +218,11 @@ export default function JapaneseTestPage() {
   if (questions === null) {
     return (
       <div className="p-6 max-w-2xl mx-auto">
-        <div className="mb-6">
-          <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
-            ← Japanese
-          </Link>
-          <h1 className="mt-1 text-2xl font-bold">JLPT Checkpoint</h1>
-          <p className="text-sm text-gray-500">
-            A timed 30-question mock over everything at a level — learned or not. Score 80% and
-            you own the level; time limit is {SECONDS_PER_QUESTION}s per question.
-          </p>
-        </div>
+        <PageHeader
+          back={{ to: "/japanese", label: "Japanese" }}
+          title="JLPT Checkpoint"
+          subtitle={<>A timed 30-question mock over everything at a level — learned or not. Score 80% and you own the level; time limit is {SECONDS_PER_QUESTION}s per question.</>}
+        />
 
         <div className="card p-5">
           <div className="label mb-2">Level</div>
@@ -235,9 +231,7 @@ export default function JapaneseTestPage() {
               <button
                 key={l}
                 onClick={() => setLevel(l)}
-                className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-                  level === l ? 'bg-accent text-white' : 'bg-base-700 text-gray-300 hover:bg-base-600'
-                }`}
+                className={level === l ? 'pill pill-active' : 'pill'}
               >
                 {l}
               </button>

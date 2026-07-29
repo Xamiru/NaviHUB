@@ -1,4 +1,6 @@
 import { Link } from 'react-router-dom'
+import PageHeader from '../components/PageHeader'
+import Section from '../components/Section'
 
 // A crib sheet for this section: what each feature is and when to use it.
 // Static text on purpose — it's a reference, not a tour.
@@ -139,13 +141,12 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
 export default function JapaneseGuidePage() {
   return (
     <div className="mx-auto max-w-3xl p-6">
-      <div className="mb-6">
-        <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
-          ← Japanese
-        </Link>
-        <h1 className="mt-1 text-2xl font-semibold">Guide</h1>
-        <p className="mt-1 text-sm text-gray-400">What everything in this section is for.</p>
-      </div>
+      <PageHeader
+        back={{ to: "/japanese", label: "Japanese" }}
+        title="Guide"
+        subtitle="What everything in this section is for."
+        className="mb-6"
+      />
 
       <div className="card mb-8 p-4">
         <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
@@ -159,10 +160,7 @@ export default function JapaneseGuidePage() {
       </div>
 
       {GROUPS.map((group) => (
-        <section key={group.title} className="mb-8">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-widest text-gray-500">
-            {group.title}
-          </h2>
+        <Section key={group.title} title={group.title}>
           <dl className="space-y-4">
             {group.entries.map((e) => (
               <div key={e.name}>
@@ -179,7 +177,7 @@ export default function JapaneseGuidePage() {
               </div>
             ))}
           </dl>
-        </section>
+        </Section>
       ))}
     </div>
   )

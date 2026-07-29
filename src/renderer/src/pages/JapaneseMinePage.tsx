@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import PageHeader from '../components/PageHeader'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -46,16 +47,11 @@ export default function JapaneseMinePage() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-6">
-        <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
-          ← Japanese
-        </Link>
-        <h1 className="mt-1 text-2xl font-bold">⛏ Mine words</h1>
-        <p className="text-sm text-gray-500">
-          Hit a word while reading? Look it up, tweak it, save it — it goes straight into your
-          review queue.
-        </p>
-      </div>
+      <PageHeader
+        back={{ to: "/japanese", label: "Japanese" }}
+        title="Mine words"
+        subtitle="Hit a word while reading? Look it up, tweak it, save it — it goes straight into your review queue."
+      />
 
       <div className="card p-5 space-y-5">
         <div>

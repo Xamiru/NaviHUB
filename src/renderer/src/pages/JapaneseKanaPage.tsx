@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import PageHeader from '../components/PageHeader'
+import Tabs from '../components/Tabs'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -535,37 +537,22 @@ export default function JapaneseKanaPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-5">
-        <Link to="/japanese" className="text-sm text-gray-500 hover:text-white">
-          ← Japanese
-        </Link>
-        <h1 className="mt-1 text-2xl font-bold">Kana, Kanji & Conjugation Drill</h1>
-        <p className="text-sm text-gray-500">
-          Pick your sets, get flashed a prompt, type the answer. Misses come back around until
-          you clear them.
-        </p>
-      </div>
+      <PageHeader
+        back={{ to: "/japanese", label: "Japanese" }}
+        title="Kana, Kanji & Conjugation Drill"
+        subtitle="Pick your sets, get flashed a prompt, type the answer. Misses come back around until you clear them."
+      />
 
-      <div className="mb-5 flex gap-2">
-        <button
-          className={tab === 'kana' ? 'btn-primary' : 'btn-ghost'}
-          onClick={() => setTab('kana')}
-        >
-          かな Kana
-        </button>
-        <button
-          className={tab === 'kanji' ? 'btn-primary' : 'btn-ghost'}
-          onClick={() => setTab('kanji')}
-        >
-          漢字 Kanji readings
-        </button>
-        <button
-          className={tab === 'conjugation' ? 'btn-primary' : 'btn-ghost'}
-          onClick={() => setTab('conjugation')}
-        >
-          活用 Conjugation
-        </button>
-      </div>
+      <Tabs
+        className="mb-5"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { key: 'kana', label: 'Kana' },
+          { key: 'kanji', label: 'Kanji readings' },
+          { key: 'conjugation', label: 'Conjugation' }
+        ]}
+      />
 
       {tab === 'kana' ? <KanaDrillSetup /> : tab === 'kanji' ? <KanjiDrillSetup /> : <DojoSetup />}
     </div>
@@ -631,11 +618,7 @@ function DojoSetup() {
           <button
             key={f}
             onClick={() => toggleForm(f)}
-            className={`rounded-md border px-2.5 py-1.5 text-sm transition-colors ${
-              formSet.has(f)
-                ? 'border-accent bg-accent/10 text-accent'
-                : 'border-base-700 bg-base-800 text-gray-400 hover:border-base-600'
-            }`}
+            className={formSet.has(f) ? 'chip-toggle chip-toggle-active' : 'chip-toggle'}
           >
             {FORM_LABELS[f]}
           </button>
@@ -651,11 +634,7 @@ function DojoSetup() {
             <button
               key={n}
               onClick={() => setLength(n)}
-              className={`rounded-md border px-2.5 py-1.5 text-sm ${
-                length === n
-                  ? 'border-accent bg-accent/10 text-accent'
-                  : 'border-base-700 bg-base-800 text-gray-400 hover:border-base-600'
-              }`}
+              className={length === n ? 'pill pill-active' : 'pill'}
             >
               {n}
             </button>
@@ -725,11 +704,9 @@ function KanaDrillSetup() {
                 <button
                   key={row.key}
                   onClick={() => toggle(row.key)}
-                  className={`rounded-md border px-2.5 py-1.5 text-sm transition-colors ${
-                    selectedSet.has(row.key)
-                      ? 'border-accent bg-accent/10 text-accent'
-                      : 'border-base-700 bg-base-800 text-gray-400 hover:border-base-600'
-                  }`}
+                  className={
+                    selectedSet.has(row.key) ? 'chip-toggle chip-toggle-active' : 'chip-toggle'
+                  }
                 >
                   {row.label}
                 </button>

@@ -87,6 +87,9 @@ export interface MediaConfig {
   importSource?: ImportSourceCfg
   // OP/ED theme songs (anime only) — shows the Theme Songs section + import.
   hasThemes?: boolean
+  // Label for the detail page's type-specific media tab (Theme Songs /
+  // Chapters / Playtime). Absent = no media tab (movies, TV).
+  mediaTabLabel?: string
   // HowLongToBeat-style play-time panel (games + VNs) — shows length estimate
   // boxes on the detail page plus a manual HLTB fetch/refresh button.
   hasPlaytimes?: boolean
@@ -160,6 +163,7 @@ export const ANIME: MediaConfig = {
   ],
   importSource: { key: 'anilist', label: 'AniList', placeholder: 'Search AniList (e.g. Frieren)…' },
   hasThemes: true,
+  mediaTabLabel: 'Theme Songs',
   hasFanArt: true,
   hasSeasonal: true
 }
@@ -205,6 +209,7 @@ export const MANGA: MediaConfig = {
     placeholder: 'Search AniList manga (e.g. Berserk)…'
   },
   hasLocalReader: true,
+  mediaTabLabel: 'Chapters',
   hasFanArt: true
 }
 
@@ -247,6 +252,7 @@ export const VISUAL_NOVEL: MediaConfig = {
   children: [{ to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' }],
   importSource: { key: 'vndb', label: 'VNDB', placeholder: 'Search VNDB (e.g. Steins;Gate)…' },
   hasPlaytimes: true,
+  mediaTabLabel: 'Playtime',
   hasFanArt: true
 }
 
@@ -288,6 +294,7 @@ export const GAME: MediaConfig = {
   children: [{ to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' }],
   importSource: { key: 'rawg', label: 'RAWG', placeholder: 'Search RAWG (e.g. Persona 5)…' },
   hasPlaytimes: true,
+  mediaTabLabel: 'Playtime',
   hasFanArt: true
 }
 

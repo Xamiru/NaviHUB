@@ -19,3 +19,24 @@ export default function StatTile({
     </div>
   )
 }
+
+// Compact card-less variant for dense stat rows (a detail page can show ten of
+// these in one line — full tiles would drown the header).
+export function StatInline({
+  label,
+  value,
+  accent = false
+}: {
+  label: string
+  value: number | string
+  accent?: boolean
+}) {
+  return (
+    <div>
+      <p className="text-[10px] uppercase tracking-widest text-gray-500">{label}</p>
+      <p className={`mt-0.5 text-sm font-medium ${accent ? 'text-accent' : 'text-gray-200'}`}>
+        {value}
+      </p>
+    </div>
+  )
+}

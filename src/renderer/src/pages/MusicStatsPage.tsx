@@ -85,9 +85,7 @@ export default function MusicStatsPage() {
         {PERIODS.map((p) => (
           <button
             key={p.label}
-            className={`rounded-full px-3 py-1 text-sm ${
-              days === p.days ? 'bg-accent/20 text-white' : 'text-gray-400 hover:bg-base-700'
-            }`}
+            className={days === p.days ? 'pill pill-active' : 'pill'}
             onClick={() => setDays(p.days)}
           >
             {p.label}

@@ -80,6 +80,11 @@ const SANITIZE_STATEMENTS = [
   'DELETE FROM checklist_log',
   'DELETE FROM checklist_task',
 
+  // English dictionary saved words + programming lesson completion — both
+  // personal (the programming course content itself is code, not data).
+  'DELETE FROM en_word',
+  'DELETE FROM prog_progress',
+
   // PC↔phone sync bookkeeping (applied op batches).
   'DELETE FROM sync_batch',
 

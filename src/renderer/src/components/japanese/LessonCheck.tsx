@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
+import Section from '../Section'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
 
 // End-of-lesson self-check: a short multiple-choice quiz over THIS lesson's
@@ -135,17 +136,11 @@ export default function LessonCheck({
 
   return (
     <div className="card mt-6 p-5">
-      <div className="mb-1 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500">
-          Check yourself
-        </h2>
-        {questions && !finished && (
-          <span className="text-xs text-gray-500">
-            {index + 1} / {questions.length}
-          </span>
-        )}
-      </div>
-
+      <Section
+        title="Check yourself"
+        className=""
+        subtitle={questions && !finished ? `${index + 1} / ${questions.length}` : undefined}
+      >
       {questions === null ? (
         <div>
           <p className="mb-3 text-sm text-gray-400">
@@ -213,6 +208,7 @@ export default function LessonCheck({
           )}
         </div>
       ) : null}
+      </Section>
     </div>
   )
 }

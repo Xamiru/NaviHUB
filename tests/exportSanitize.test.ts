@@ -87,6 +87,9 @@ function seed(): void {
     INSERT INTO checklist_log (task_key, cadence, period_key, media_id, payload)
       VALUES ('anime-episode', 'daily', '2026-07-25', 1, '{"title":"Cowboy Bebop"}');
 
+    INSERT INTO en_word (word, meaning, pos) VALUES ('ephemeral', 'Lasting a short time.', 'adjective');
+    INSERT INTO prog_progress (lesson_key) VALUES ('go-from-python/why-go');
+
     INSERT INTO settings (key, value) VALUES
       ('tmdb.api_key', 'secret-tmdb'),
       ('rawg.api_key', 'secret-rawg'),
@@ -164,7 +167,7 @@ describe('export sanitize', () => {
       'music_playlist_track', 'music_play_log', 'manga_chapter', 'media_image', 'quiz_session',
       'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta',
       'gacha_chat_thread', 'gacha_chat_message', 'gacha_goal', 'gacha_coach_note', 'gacha_coach_doc',
-      'checklist_task', 'checklist_log'
+      'checklist_task', 'checklist_log', 'en_word', 'prog_progress'
     ]) {
       expect(count(t), t).toBe(0)
     }

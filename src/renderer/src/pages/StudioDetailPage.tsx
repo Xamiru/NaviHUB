@@ -75,7 +75,7 @@ export default function StudioDetailPage() {
         }}
       />
 
-      <h2 className="text-xs font-semibold uppercase tracking-widest text-gray-500 mb-3">
+      <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
         Works · {works.length}
       </h2>
       {works.length === 0 ? (
