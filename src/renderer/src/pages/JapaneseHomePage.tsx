@@ -142,6 +142,9 @@ export default function JapaneseHomePage() {
         <Link to="/japanese/stats" className="btn-ghost">
           Stats
         </Link>
+        <Link to="/japanese/guide" className="btn-ghost">
+          Guide
+        </Link>
       </div>
 
       {coreDeck && <CoreDeckDialog onClose={() => setCoreDeck(false)} />}

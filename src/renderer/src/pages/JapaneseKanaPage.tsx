@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -316,6 +316,216 @@ function Drill({
   )
 }
 
+// ---- kana drill (DJT semantics) ----
+
+// The kana tab is a faithful port of the DJT kana tool's loop, which differs
+// from the generic Drill above in every way that matters for typing romaji:
+//   · the answer is checked on EVERY keystroke, so a correct reading advances
+//     without pressing anything;
+//   · the moment what you've typed can no longer become a correct answer, the
+//     kana and its reading appear in red and STAY there while you backspace and
+//     fix it in place — no separate "correct answer" screen to dismiss;
+//   · Enter on an empty box means "I don't know" (shows the answer); Enter once
+//     the answer is showing skips it and re-queues it 3 and 13 kana later;
+//   · it never ends — you stop when you're done, and the round is logged then.
+interface KanaItem {
+  kana: string
+  answers: string[] // accepted romaji; [0] is the one shown on a miss
+}
+
+function KanaDrill({
+  chars,
+  settings,
+  onExit
+}: {
+  chars: string[]
+  settings: Record<string, unknown>
+  onExit: () => void
+}) {
+  const qc = useQueryClient()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const items = useMemo<KanaItem[]>(
+    () => chars.map((kana) => ({ kana, answers: acceptedRomaji(kana) })),
+    [chars]
+  )
+
+  const [queue, setQueue] = useState<KanaItem[]>(() => shuffle(items))
+  const [input, setInput] = useState('')
+  const [wrong, setWrong] = useState(false) // this showing has been missed
+  const [correct, setCorrect] = useState(0)
+  const [answered, setAnswered] = useState(0)
+  const [streak, setStreak] = useState(0)
+  const [bestStreak, setBestStreak] = useState(0)
+  const [missed, setMissed] = useState<Set<string>>(new Set())
+  const [stopped, setStopped] = useState(false)
+  const loggedRef = useRef(false)
+
+  const current = queue[0] ?? null
+
+  // Stopping IS the end of the round here (there's no natural finish), so that
+  // is where the quiz_session row goes — guarded like the other quiz pages.
+  useEffect(() => {
+    if (!stopped || loggedRef.current || answered === 0) return
+    loggedRef.current = true
+    void api.quiz
+      .logSession({ kind: 'kana', score: correct, total: answered, bestStreak, settings })
+      .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('kana') }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stopped])
+
+  // Moves to the next kana. `requeue` re-inserts the one just shown a few and
+  // then a dozen places ahead (DJT splices at 3 and 13) so a missed character
+  // comes back soon and again later.
+  function advance(requeue: boolean): void {
+    setQueue((q) => {
+      const shown = q[0]
+      const out = q.slice(1)
+      if (requeue && shown) {
+        // Only when there's room ahead — on a short queue the reshuffle below
+        // brings it back soon enough, and pushing would show it again instantly.
+        if (out.length > 3) out.splice(3, 0, shown)
+        if (out.length > 13) out.splice(13, 0, shown)
+      }
+      if (out.length > 0) return out
+      // Endless: deal a fresh shuffle, rotating so the same kana never repeats
+      // back-to-back across the seam.
+      const next = shuffle(items)
+      if (next.length > 1 && shown && next[0].kana === shown.kana) {
+        return [...next.slice(1), next[0]]
+      }
+      return next
+    })
+    setInput('')
+    setWrong(false)
+    inputRef.current?.focus()
+  }
+
+  function miss(): void {
+    if (wrong || !current) return
+    setWrong(true)
+    setStreak(0)
+    setMissed((m) => new Set(m).add(current.kana))
+  }
+
+  function onType(value: string): void {
+    setInput(value)
+    if (!current) return
+    const typed = value.toLowerCase().trim()
+    if (!typed) return
+    if (current.answers.includes(typed)) {
+      setAnswered((n) => n + 1)
+      // Only a clean first try counts toward the score and the streak.
+      if (!wrong) {
+        setCorrect((n) => n + 1)
+        const s = streak + 1
+        setStreak(s)
+        setBestStreak((b) => Math.max(b, s))
+      }
+      advance(false)
+      return
+    }
+    // Still a prefix of some accepted spelling ("s" → "shi")? Keep waiting.
+    if (!current.answers.some((a) => a.startsWith(typed))) miss()
+  }
+
+  function onEnter(): void {
+    if (!current) return
+    if (!wrong) {
+      // Enter with nothing typed = "show me". A partial-but-valid prefix does
+      // nothing, exactly as in the original.
+      if (!input.trim()) miss()
+      return
+    }
+    setAnswered((n) => n + 1) // skipped: counted as answered, never as correct
+    advance(true)
+  }
+
+  if (stopped) {
+    const pct = answered ? Math.round((correct / answered) * 100) : 0
+    return (
+      <div className="card p-6 text-center">
+        <p className="text-3xl font-bold">
+          {correct} / {answered}
+        </p>
+        <p className="mt-1 text-sm text-gray-400">
+          {answered === 0
+            ? 'Nothing answered.'
+            : pct === 100
+              ? 'Flawless.'
+              : `${pct}% on the first try · best streak ${bestStreak}`}
+        </p>
+        {missed.size > 0 && (
+          <p className="mt-3 text-lg text-gray-300">
+            <span className="mr-2 text-xs uppercase tracking-widest text-gray-500">Missed</span>
+            {[...missed].join('　')}
+          </p>
+        )}
+        <div className="mt-5 flex justify-center gap-2">
+          <button className="btn-primary" onClick={onExit}>
+            Back to setup
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="card p-6">
+      <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
+        <span className="tabular-nums">
+          {correct} / {answered}
+        </span>
+        <span>
+          streak {streak}
+          <button
+            className="btn-ghost ml-3 px-2 py-0.5 text-xs"
+            onClick={() => setStopped(true)}
+          >
+            Stop
+          </button>
+        </span>
+      </div>
+
+      <p className="text-center text-7xl leading-none">{current?.kana}</p>
+
+      <div className="mx-auto mt-6 max-w-xs">
+        <input
+          ref={inputRef}
+          className="input w-full text-center text-lg"
+          placeholder="type the reading…"
+          value={input}
+          autoFocus
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          onChange={(e) => onType(e.target.value)}
+          onKeyDown={(e) => {
+            // Space can never be part of a romaji reading, so the original
+            // treats it as a second Enter rather than letting it be typed.
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onEnter()
+            }
+          }}
+        />
+      </div>
+
+      {/* Held until the kana is answered or skipped, so it's still on screen
+          while you correct the typing. */}
+      <p className="mt-4 text-center text-sm">
+        {wrong && current ? (
+          <span className="text-red-400">
+            {current.kana} = {current.answers[0]}
+            <span className="ml-2 text-xs text-gray-500">Enter to skip</span>
+          </span>
+        ) : (
+          <span>&nbsp;</span>
+        )}
+      </p>
+    </div>
+  )
+}
+
 // ---- page ----
 
 type Tab = 'kana' | 'kanji' | 'conjugation'
@@ -488,22 +698,8 @@ function KanaDrillSetup() {
   }
 
   if (running) {
-    const items: DrillItem[] = chars.map((kana) => {
-      const answers = acceptedRomaji(kana)
-      return {
-        prompt: kana,
-        sub: null,
-        accept: (input) => answers.includes(input.toLowerCase().trim()),
-        reveal: answers[0] ?? ''
-      }
-    })
     return (
-      <Drill
-        items={items}
-        kind="kana"
-        settings={{ rows: selected }}
-        onExit={() => setRunning(false)}
-      />
+      <KanaDrill chars={chars} settings={{ rows: selected }} onExit={() => setRunning(false)} />
     )
   }
 

@@ -33,6 +33,7 @@ import TagsIndexPage from './pages/TagsIndexPage'
 import TagDetailPage from './pages/TagDetailPage'
 import JapaneseHomePage from './pages/JapaneseHomePage'
 import JapaneseRoadmapPage from './pages/JapaneseRoadmapPage'
+import JapaneseGuidePage from './pages/JapaneseGuidePage'
 import JapaneseAnalyzePage from './pages/JapaneseAnalyzePage'
 import JapaneseCoveragePage from './pages/JapaneseCoveragePage'
 import JapaneseWritingPage from './pages/JapaneseWritingPage'
@@ -245,6 +246,7 @@ export default function App() {
             {/* Japanese learning — standalone section (courses, SRS review, quiz) */}
             <Route path="/japanese" element={<JapaneseHomePage />} />
             <Route path="/japanese/roadmap" element={<JapaneseRoadmapPage />} />
+            <Route path="/japanese/guide" element={<JapaneseGuidePage />} />
             <Route path="/japanese/analyze" element={<JapaneseAnalyzePage />} />
             <Route path="/japanese/coverage" element={<JapaneseCoveragePage />} />
             <Route path="/japanese/write" element={<JapaneseWritingPage />} />
