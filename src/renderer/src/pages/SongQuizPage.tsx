@@ -10,6 +10,7 @@ import { usePlayer } from '../lib/player'
 import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
+import { Group, Pill } from '../components/PillGroup'
 import { ERAS } from '@shared/era'
 import type { QuizSong, QuizSongFilter } from '@shared/types'
 
@@ -364,9 +365,9 @@ export default function SongQuizPage() {
           </p>
           <div className="mt-4 flex justify-center gap-6 text-base text-gray-400">
             <span>{accuracy}% correct</span>
-            <span>🔥 Best streak {stats.best}</span>
+            <span>Best streak {stats.best}</span>
           </div>
-          {newBest && <p className="mt-3 text-sm font-semibold text-accent">★ New personal best!</p>}
+          {newBest && <p className="mt-3 text-sm font-semibold text-accent">New personal best.</p>}
           <div className="mt-6 flex gap-2">
             <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
               Play again
@@ -399,9 +400,9 @@ export default function SongQuizPage() {
           <span>
             Score {stats.score}/{stats.total}
           </span>
-          <span>🔥 {stats.streak}</span>
+          <span>Streak {stats.streak}</span>
           <button className="btn-ghost py-1 px-2 text-sm" onClick={endGame}>
-            ✕ End quiz
+            End quiz
           </button>
         </div>
       </div>
@@ -418,21 +419,20 @@ export default function SongQuizPage() {
       )}
 
       <div className="card p-8 text-center">
-        <div className="text-6xl">🎧</div>
         <p className="mt-3 text-2xl font-semibold">Which anime is this theme from?</p>
         <div className="mt-5 flex items-center justify-center gap-3">
           <button
             className="btn-ghost px-5 py-2.5 text-base"
             onClick={() => (isOurs ? player.toggle() : current && void playSong(current))}
           >
-            {playing ? '⏸ Pause' : '▶ Play'}
+            {playing ? 'Pause' : 'Play'}
           </button>
           <button
             className="btn-ghost px-5 py-2.5 text-base"
             disabled={!isOurs}
             onClick={() => player.seek(0)}
           >
-            ↻ Replay
+            Replay
           </button>
         </div>
       </div>
@@ -456,7 +456,7 @@ export default function SongQuizPage() {
             >
               <CoverImage path={o.coverPath} alt={o.animeTitle} className="h-24 w-16 shrink-0" />
               <span className="line-clamp-2 text-base font-medium">{o.animeTitle}</span>
-              <kbd className="ml-auto shrink-0 rounded bg-base-700/70 px-1.5 text-xs text-gray-600">
+              <kbd className="kbd ml-auto shrink-0">
                 {i + 1}
               </kbd>
             </button>
@@ -473,7 +473,7 @@ export default function SongQuizPage() {
                 picked === current.mediaId ? 'text-green-400' : 'text-red-400'
               }`}
             >
-              {picked === current.mediaId ? 'Correct!' : picked === null ? 'Time / skipped' : 'Incorrect'}
+              {picked === current.mediaId ? 'Correct' : picked === null ? 'Time / skipped' : 'Incorrect'}
             </p>
             <p className="truncate text-2xl font-semibold">{current.animeTitle}</p>
             <p className="text-base text-gray-400">
@@ -495,35 +495,15 @@ export default function SongQuizPage() {
         {answered &&
           (isLast ? (
             <button className="btn-primary px-5 py-2.5 text-base" onClick={endGame}>
-              See results →
+              See results (Enter)
             </button>
           ) : (
             <button className="btn-primary px-5 py-2.5 text-base" onClick={advance}>
-              Next →
+              Next (Enter)
             </button>
           ))}
       </div>
     </div>
-  )
-}
-
-function Group({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="label mb-2">{label}</div>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  )
-}
-
-function Pill({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={active ? 'pill pill-active' : 'pill'}
-    >
-      {label}
-    </button>
   )
 }
 

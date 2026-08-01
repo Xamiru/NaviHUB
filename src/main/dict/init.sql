@@ -148,3 +148,170 @@ CREATE TABLE IF NOT EXISTS stroke (
   strokes TEXT NOT NULL,                -- JSON string[]
   PRIMARY KEY (set_id, character)
 ) WITHOUT ROWID;
+
+-- ---- English dictionary (WordNet 3.0 + CMUdict pronunciations) ----
+-- Not a Yomitan format: parsed from WordNet's own database files by
+-- dict/wordnet.ts. Registry row is written LAST like `dict`; orphans swept on
+-- startup. One bank per source ('wordnet'), re-import replaces it.
+CREATE TABLE IF NOT EXISTS en_dict (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL UNIQUE,          -- 'wordnet'
+  version TEXT,                         -- '3.0'
+  lemma_count INTEGER NOT NULL DEFAULT 0,
+  synset_count INTEGER NOT NULL DEFAULT 0,
+  pron_count INTEGER NOT NULL DEFAULT 0,
+  imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- One row per (lemma, part of speech), from WordNet's index.{noun,verb,adj,adv}.
+-- `offsets` is a JSON number[] of synset offsets IN WORDNET'S SENSE ORDER (most
+-- frequent first) — that ordering is the whole reason to keep the index files
+-- rather than deriving lemmas from the data files.
+CREATE TABLE IF NOT EXISTS en_lemma (
+  bank_id INTEGER NOT NULL,
+  lemma TEXT NOT NULL,
+  pos TEXT NOT NULL,                    -- 'n' | 'v' | 'a' | 'r'
+  offsets TEXT NOT NULL                 -- JSON number[]
+);
+CREATE INDEX IF NOT EXISTS idx_en_lemma_lemma ON en_lemma(lemma);
+CREATE INDEX IF NOT EXISTS idx_en_lemma_bank ON en_lemma(bank_id);
+
+-- One row per synset, from data.{noun,verb,adj,adv}. `words` are the synset's
+-- members (underscores already converted to spaces) = the synonym set;
+-- `examples` are the quoted usages split out of the raw gloss.
+CREATE TABLE IF NOT EXISTS en_synset (
+  bank_id INTEGER NOT NULL,
+  pos TEXT NOT NULL,                    -- data-file pos ('a' also covers 's')
+  offset INTEGER NOT NULL,
+  def TEXT NOT NULL,
+  examples TEXT NOT NULL DEFAULT '[]',  -- JSON string[]
+  words TEXT NOT NULL DEFAULT '[]',     -- JSON string[]
+  PRIMARY KEY (bank_id, pos, offset)
+) WITHOUT ROWID;
+
+-- WordNet's morphological exception lists ({noun,verb,adj,adv}.exc): the
+-- irregular inflections Morphy's suffix rules can never produce (ran -> run,
+-- better -> good/well).
+CREATE TABLE IF NOT EXISTS en_exc (
+  bank_id INTEGER NOT NULL,
+  form TEXT NOT NULL,
+  pos TEXT NOT NULL,
+  lemmas TEXT NOT NULL                  -- JSON string[]
+);
+CREATE INDEX IF NOT EXISTS idx_en_exc_form ON en_exc(form);
+CREATE INDEX IF NOT EXISTS idx_en_exc_bank ON en_exc(bank_id);
+
+-- CMUdict pronunciations, ARPABET converted to IPA at import time. WordNet has
+-- no phonetics, so this is what keeps the dictionary page's /ɪpə/ line working
+-- offline. Only the first (unparenthesized) variant of each word is kept.
+CREATE TABLE IF NOT EXISTS en_pron (
+  bank_id INTEGER NOT NULL,
+  word TEXT NOT NULL,
+  ipa TEXT NOT NULL,
+  PRIMARY KEY (bank_id, word)
+) WITHOUT ROWID;
+
+-- ---- KRADFILE kanji components ----
+-- Not a Yomitan format: krad.json + krad_components.json from the
+-- krad-unicode conversion of EDRDG's KRADFILE, imported by dict/krad.ts.
+-- krad_part is the radkfile inversion (component -> kanji), computed at import
+-- so search-by-parts is one GROUP BY.
+CREATE TABLE IF NOT EXISTS krad_set (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL UNIQUE,          -- 'kradfile'
+  revision TEXT,                        -- pinned commit sha (short)
+  kanji_count INTEGER NOT NULL DEFAULT 0,
+  component_count INTEGER NOT NULL DEFAULT 0,
+  imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS krad (
+  set_id INTEGER NOT NULL,
+  kanji TEXT NOT NULL,
+  components TEXT NOT NULL,             -- JSON string[] in kradfile order
+  PRIMARY KEY (set_id, kanji)
+) WITHOUT ROWID;
+
+CREATE TABLE IF NOT EXISTS krad_part (
+  set_id INTEGER NOT NULL,
+  component TEXT NOT NULL,
+  kanji TEXT NOT NULL,
+  PRIMARY KEY (set_id, component, kanji)
+) WITHOUT ROWID;
+
+CREATE TABLE IF NOT EXISTS krad_component (
+  set_id INTEGER NOT NULL,
+  component TEXT NOT NULL,
+  strokes INTEGER,
+  PRIMARY KEY (set_id, component)
+) WITHOUT ROWID;
+
+-- ---- Grammar library (hanabira.org N5-N1 grammar points) ----
+-- Five JSON files imported by dict/grammar.ts. examples is a JSON array of
+-- {jp, romaji, en, clozeJp, clozeAnswer} — the cloze fields are pre-computed
+-- at import via @shared/cloze so the drill's pool filter is trivial.
+CREATE TABLE IF NOT EXISTS grammar_bank (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL UNIQUE,          -- 'hanabira'
+  point_count INTEGER NOT NULL DEFAULT 0,
+  imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS grammar_point (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  bank_id INTEGER NOT NULL,
+  level TEXT NOT NULL,                  -- 'N5'..'N1'
+  title TEXT NOT NULL,
+  meaning TEXT NOT NULL,                -- short explanation
+  explanation TEXT,                     -- long explanation
+  formation TEXT,
+  examples TEXT NOT NULL DEFAULT '[]',  -- JSON GrammarExample[]
+  sort INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_grammar_level ON grammar_point(level);
+CREATE INDEX IF NOT EXISTS idx_grammar_bank ON grammar_point(bank_id);
+
+-- ---- Tatoeba per-sentence audio ----
+-- Clip files live under userData/jpaudio/tatoeba/ (served via navimg://); rows
+-- are the metadata. `jp` (exact sentence text) is the join key onto the
+-- sentence bank — re-importing the bank rebuilds sentence ids, text survives.
+-- license is NOT NULL by design: unlicensed clips are skipped at import.
+CREATE TABLE IF NOT EXISTS audio_bank (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL UNIQUE,          -- 'tatoeba-audio'
+  clip_count INTEGER NOT NULL DEFAULT 0,
+  imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS sentence_audio (
+  bank_id INTEGER NOT NULL,
+  audio_id INTEGER NOT NULL,
+  tatoeba_id INTEGER NOT NULL,
+  jp TEXT NOT NULL,
+  path TEXT NOT NULL,                   -- 'jpaudio/tatoeba/<audio_id>.mp3'
+  license TEXT NOT NULL,
+  attribution TEXT,
+  PRIMARY KEY (bank_id, audio_id)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_sentence_audio_jp ON sentence_audio(jp);
+
+-- ---- Pitch minimal pairs (kotu.io backup pack) ----
+-- Audio decoded out of the repo's base64 JSON blobs into
+-- userData/jpaudio/pairs/<pair_id>/; rows carry the notation metadata. items is
+-- a JSON array of {pron, position, moraCount, audioPath}.
+CREATE TABLE IF NOT EXISTS pair_set (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL UNIQUE,          -- 'kotu-minimal-pairs'
+  revision TEXT,                        -- pinned commit sha (short)
+  pair_count INTEGER NOT NULL DEFAULT 0,
+  imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS minimal_pair (
+  set_id INTEGER NOT NULL,
+  pair_id TEXT NOT NULL,
+  buckets TEXT NOT NULL,                -- JSON string[] ('pitch0'.., 'devoiced')
+  kana TEXT NOT NULL,
+  items TEXT NOT NULL,                  -- JSON MinimalPairItem[]
+  PRIMARY KEY (set_id, pair_id)
+) WITHOUT ROWID;

@@ -3,6 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
+import PageHeader from '../components/PageHeader'
+import Section from '../components/Section'
+import EmptyState from '../components/EmptyState'
 import { pathForMedia } from '../lib/mediaConfig'
 import type { GlobalSearchResults } from '@shared/types'
 
@@ -22,21 +25,25 @@ export default function SearchPage() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <h1 className="text-2xl font-bold mb-1">Search</h1>
-      <p className="text-sm text-gray-500 mb-6">
-        {q ? (
-          <>
-            {isLoading ? 'Searching' : total} {!isLoading && 'results'} for “{q}”
-          </>
-        ) : (
-          'Type in the bar above to search everything.'
-        )}
-      </p>
+      <PageHeader
+        title="Search"
+        subtitle={
+          q ? (
+            <>
+              {isLoading ? 'Searching…' : `${total} results`} for “{q}”
+            </>
+          ) : (
+            'Results from your library: titles, people, characters, studios.'
+          )
+        }
+      />
 
-      {data && total === 0 && !isLoading && <p className="text-gray-400">No matches.</p>}
+      {data && total === 0 && !isLoading && (
+        <EmptyState title="No matches" body={<>Nothing in the library matches “{q}”.</>} />
+      )}
 
       {data && (
-        <div className="space-y-8">
+        <div>
           <MediaGroup data={data} />
           <PeopleGroup data={data} />
           <CompanyGroup data={data} />
@@ -47,19 +54,10 @@ export default function SearchPage() {
   )
 }
 
-function GroupTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
-      {children}
-    </h2>
-  )
-}
-
 function MediaGroup({ data }: { data: GlobalSearchResults }) {
   if (!data.media.length) return null
   return (
-    <section>
-      <GroupTitle>Titles · {data.media.length}</GroupTitle>
+    <Section title={`Titles · ${data.media.length}`}>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">
         {data.media.map((m) => (
           <Link key={m.id} to={pathForMedia(m)} className="group">
@@ -77,15 +75,14 @@ function MediaGroup({ data }: { data: GlobalSearchResults }) {
           </Link>
         ))}
       </div>
-    </section>
+    </Section>
   )
 }
 
 function PeopleGroup({ data }: { data: GlobalSearchResults }) {
   if (!data.people.length) return null
   return (
-    <section>
-      <GroupTitle>Voice Actors & Staff · {data.people.length}</GroupTitle>
+    <Section title={`People · ${data.people.length}`}>
       <Avatars
         items={data.people.map((p) => ({
           id: p.id,
@@ -94,15 +91,14 @@ function PeopleGroup({ data }: { data: GlobalSearchResults }) {
           to: `/people/${p.id}`
         }))}
       />
-    </section>
+    </Section>
   )
 }
 
 function CharacterGroup({ data }: { data: GlobalSearchResults }) {
   if (!data.characters.length) return null
   return (
-    <section>
-      <GroupTitle>Characters · {data.characters.length}</GroupTitle>
+    <Section title={`Characters · ${data.characters.length}`}>
       <Avatars
         items={data.characters.map((c) => ({
           id: c.id,
@@ -111,15 +107,14 @@ function CharacterGroup({ data }: { data: GlobalSearchResults }) {
           to: `/characters/${c.id}`
         }))}
       />
-    </section>
+    </Section>
   )
 }
 
 function CompanyGroup({ data }: { data: GlobalSearchResults }) {
   if (!data.companies.length) return null
   return (
-    <section>
-      <GroupTitle>Studios · {data.companies.length}</GroupTitle>
+    <Section title={`Studios · ${data.companies.length}`}>
       <div className="flex flex-wrap gap-2">
         {data.companies.map((c) => (
           <Link key={c.id} to={`/studios/${c.id}`} className="chip hover:text-accent">
@@ -127,7 +122,7 @@ function CompanyGroup({ data }: { data: GlobalSearchResults }) {
           </Link>
         ))}
       </div>
-    </section>
+    </Section>
   )
 }
 

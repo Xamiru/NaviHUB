@@ -25,16 +25,16 @@ export default function Topbar() {
 
   return (
     <header className="h-14 shrink-0 border-b border-base-700 bg-base-800/60 backdrop-blur flex items-center gap-4 px-5">
-      <form onSubmit={submit} className="w-full max-w-xl">
+      <form onSubmit={submit} role="search" className="w-full max-w-xl">
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm">⌕</span>
           <input
-            className="input pl-8 pr-16"
-            placeholder="Search anime, voice actors, studios, characters…"
+            className="input pr-16"
+            placeholder="Search titles, people, characters, studios…"
+            aria-label="Search library"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
-          <kbd className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded bg-base-700/70 px-1.5 py-0.5 text-[10px] text-gray-600">
+          <kbd className="kbd pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
             Ctrl K
           </kbd>
         </div>

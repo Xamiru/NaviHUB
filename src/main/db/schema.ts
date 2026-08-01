@@ -952,20 +952,6 @@ export const gachaCoachDoc = sqliteTable(
 )
 
 // ---------------------------------------------------------------------------
-// PC↔phone sync — applied op batches (dedup for re-POSTed batches).
-// ---------------------------------------------------------------------------
-export const syncBatch = sqliteTable('sync_batch', {
-  batchId: text('batch_id').primaryKey(),
-  device: text('device').notNull(),
-  applied: integer('applied').notNull(),
-  skipped: integer('skipped').notNull(),
-  skippedJson: text('skipped_json').notNull().default('[]'),
-  appliedAt: text('applied_at')
-    .notNull()
-    .default(sql`(datetime('now'))`)
-})
-
-// ---------------------------------------------------------------------------
 // Daily / weekly checklist — enabled board rows + the activity log behind them.
 // The item catalog itself is code (src/shared/checklist.ts), not a table.
 // ---------------------------------------------------------------------------

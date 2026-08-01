@@ -48,12 +48,20 @@ import JapaneseDictionaryPage from './pages/JapaneseDictionaryPage'
 import JapaneseKanaPage from './pages/JapaneseKanaPage'
 import JapaneseTestPage from './pages/JapaneseTestPage'
 import JapaneseStatsPage from './pages/JapaneseStatsPage'
+import JapanesePitchPage from './pages/JapanesePitchPage'
+import JapaneseKanjiPartsPage from './pages/JapaneseKanjiPartsPage'
+import JapaneseKanjiQuizPage from './pages/JapaneseKanjiQuizPage'
+import JapaneseGrammarPage from './pages/JapaneseGrammarPage'
+import JapaneseGrammarQuizPage from './pages/JapaneseGrammarQuizPage'
+import JapaneseListenPage from './pages/JapaneseListenPage'
+import JapaneseShiritoriPage from './pages/JapaneseShiritoriPage'
 import EnglishDictionaryPage from './pages/EnglishDictionaryPage'
 import ProgrammingHomePage from './pages/ProgrammingHomePage'
 import ProgCoursePage from './pages/ProgCoursePage'
 import ProgLessonPage from './pages/ProgLessonPage'
 import CheatsheetsPage from './pages/CheatsheetsPage'
 import CliPracticePage from './pages/CliPracticePage'
+import ProgrammingQuizPage from './pages/ProgrammingQuizPage'
 import MangaReaderPage from './pages/MangaReaderPage'
 import BookReaderPage from './pages/BookReaderPage'
 import MusicLibraryPage from './pages/MusicLibraryPage'
@@ -224,6 +232,7 @@ export default function App() {
             <Route path="/quiz" element={<QuizLandingPage />} />
             <Route path="/quiz/song" element={<SongQuizPage />} />
             <Route path="/quiz/tournament" element={<TournamentPage />} />
+            <Route path="/quiz/programming" element={<ProgrammingQuizPage />} />
 
             {/* Lists — user-curated, type-scoped collections */}
             <Route path="/torrents" element={<TorrentsPage />} />
@@ -267,6 +276,13 @@ export default function App() {
             <Route path="/japanese/mine" element={<JapaneseMinePage />} />
             <Route path="/japanese/dictionary" element={<JapaneseDictionaryPage />} />
             <Route path="/japanese/kana" element={<JapaneseKanaPage />} />
+            <Route path="/japanese/pitch" element={<JapanesePitchPage />} />
+            <Route path="/japanese/kanji" element={<JapaneseKanjiPartsPage />} />
+            <Route path="/japanese/kanji/quiz" element={<JapaneseKanjiQuizPage />} />
+            <Route path="/japanese/grammar" element={<JapaneseGrammarPage />} />
+            <Route path="/japanese/grammar/quiz" element={<JapaneseGrammarQuizPage />} />
+            <Route path="/japanese/listen" element={<JapaneseListenPage />} />
+            <Route path="/japanese/shiritori" element={<JapaneseShiritoriPage />} />
             <Route path="/japanese/test" element={<JapaneseTestPage />} />
             <Route path="/japanese/stats" element={<JapaneseStatsPage />} />
 
@@ -289,7 +305,7 @@ export default function App() {
             <Route path="/gacha/:game/coach" element={<GachaCoachPage />} />
 
             <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/anime" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
           </ErrorBoundary>
         </main>

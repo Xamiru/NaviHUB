@@ -1,14 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
-import { createTestDb } from './helpers'
+import { createDictTestDb, createTestDb } from './helpers'
 
 let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({
   getSqlite: () => db
 }))
+// The saved-word repo lives in navihub.db; the offline dictionary lives in
+// dictionaries.db. These tests cover the online half, so the dict handle is a
+// bare in-memory DB with no en_dict row — lookup() then falls through to the API.
+vi.mock('../src/main/dict/dictDb', () => ({
+  getDictDb: () => dictDb,
+  closeDictDb: () => {}
+}))
 
 import { parseEnglishEntries } from '../src/main/english'
 import * as englishRepo from '../src/main/repos/englishRepo'
+
+const dictDb = createDictTestDb()
 
 // A trimmed but shape-faithful dictionaryapi.dev payload: top-level phonetic
 // missing (only phonetics[] has text), two meanings, definition-level and

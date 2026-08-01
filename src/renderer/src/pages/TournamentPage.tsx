@@ -10,6 +10,7 @@ import { usePlayer } from '../lib/player'
 import { ANIME, MEDIA_CONFIGS } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import StatTile from '../components/StatTile'
+import { Group, Pill } from '../components/PillGroup'
 import {
   bracketProgress,
   championOf,
@@ -54,7 +55,7 @@ export default function TournamentPage() {
   const [peopleRole, setPeopleRole] = usePersistedState<'voice_actor' | null>('tourneyRole', 'voice_actor')
   const [listPick, setListPick] = usePersistedState<Pick | null>('tourneyList', null)
   const [size, setSize] = usePersistedState<number | null>('tourneySize', 16)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = usePersistedState('tourneySearch', '')
   const debouncedSearch = useDebouncedValue(search.trim())
 
   // ---- game state ----
@@ -512,7 +513,7 @@ export default function TournamentPage() {
       </div>
 
       <p className="mt-4 text-center text-sm text-gray-500">
-        Click a card (or press 1 / 2) to send it through. Backspace undoes the last pick.
+        Click a card (or press 1 / 2, ← / →) to send it through. Backspace undoes the last pick; Space plays or pauses.
       </p>
     </div>
   )
@@ -571,7 +572,7 @@ function ContenderCard({
             {playing ? 'Pause' : loaded ? 'Resume' : 'Play'}
           </span>
         )}
-        <kbd className="rounded bg-base-700/70 px-1.5 text-xs text-gray-600">{keyHint}</kbd>
+        <kbd className="kbd">{keyHint}</kbd>
       </div>
     </button>
   )
@@ -735,25 +736,5 @@ function ListPicker({ value, onChange }: { value: Pick | null; onChange: (p: Pic
         />
       </div>
     </Group>
-  )
-}
-
-function Group({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="label mb-2">{label}</div>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  )
-}
-
-function Pill({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={active ? 'pill pill-active' : 'pill'}
-    >
-      {label}
-    </button>
   )
 }

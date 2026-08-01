@@ -17,6 +17,15 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
     listRef.current?.scrollTo({ top: 0 })
   }, [index])
 
+  // Popover convention: Escape closes (dialogs get this from useDialog).
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
+
   const current = queue[index]
   // Memoized so the slice's identity only changes when the queue really does —
   // usePlayer() re-renders on every timeupdate tick, and a fresh array each

@@ -392,6 +392,15 @@ export type QuizKind =
   | 'jlpt'
   | 'tournament'
   | 'cli'
+  | 'programming'
+  | 'pitch' // pitch-pattern quiz (Kanjium data)
+  | 'pairs' // minimal-pairs listening drill
+  | 'components' // build-a-kanji from kradfile components
+  | 'grammar' // N5-N1 grammar cloze drill (grammar pack)
+  | 'names' // JMnedict name-reading drill
+  | 'numbers' // generated numbers & counters typing drill
+  | 'dictation' // Tatoeba audio dictation
+  | 'shiritori' // word chain vs the dictionary
 
 export interface QuizSessionInput {
   kind: QuizKind
@@ -797,6 +806,9 @@ export interface DictEntry {
   isCommon: boolean
   matchedForm: string // the candidate that actually hit (deinflection transparency)
   source: 'offline' | 'jisho'
+  // True when every def comes from a names dictionary (JMnedict) — the
+  // renderer groups these under a collapsed Names section.
+  isName?: boolean
   // Corpus frequency rank when a frequency dictionary is installed (lower =
   // more common). Always null on the jisho.org fallback path.
   frequency: DictFrequency | null
@@ -817,6 +829,7 @@ export interface KanjiInfo {
   meanings: string[]
   stats: Record<string, string> // grade, strokes, jlpt, freq, …
   dictTitle: string
+  components: string[] // kradfile decomposition; [] when the pack is absent
 }
 
 // A row in the installed-dictionaries registry (Settings list).
@@ -829,6 +842,7 @@ export interface DictInfo {
   termCount: number
   kanjiCount: number
   freqCount: number // frequency dictionaries have no terms of their own
+  pitchCount: number // pitch-accent dictionaries (Kanjium) have only these
   importedAt: string
 }
 
@@ -848,6 +862,12 @@ export interface DictImportStatus {
     | 'tags'
     | 'sentences'
     | 'strokes'
+    | 'english' // WordNet lemmas/synsets
+    | 'pronunciations' // CMUdict
+    | 'components' // kradfile kanji decompositions
+    | 'grammar' // N5-N1 grammar points
+    | 'audio' // Tatoeba per-sentence clips (done/total = files)
+    | 'pairs' // minimal-pairs clips
     | 'finalizing'
   done: number // downloading: bytes; other phases: rows written in the phase
   total: number // downloading: content-length (0 if unknown); else rows in phase
@@ -870,6 +890,9 @@ export interface SentenceExample {
   jp: string
   en: string
   attribution: string | null // kept verbatim to honour the CC-BY licence
+  // navimg-relative clip path when the sentence-audio pack has a recording of
+  // this exact sentence (joined on jp text), else null.
+  audioPath: string | null
 }
 
 export interface SentenceBankInfo {
@@ -902,6 +925,157 @@ export interface StrokeSetInfo {
 export interface StrokeImportSummary {
   charCount: number
   revision: string | null
+}
+
+// ---- Kanjium pitch accents (imported into the pitch table) ----
+
+export interface KanjiumImportSummary {
+  pitchCount: number
+}
+
+// One word's attested pitch positions, for the pitch-pattern quiz pool.
+export interface PitchWordEntry {
+  expression: string
+  reading: string // '' when identical to the expression
+  positions: number[] // every attested downstep position, primary first
+}
+
+// A pitch-quiz question candidate assembled in main (jp_card × pitch, topped
+// up from frequency rows).
+export interface PitchPoolItem {
+  term: string
+  reading: string
+  positions: number[]
+  fromCards: boolean // came from the user's learned cards vs the freq top-up
+}
+
+// ---- KRADFILE kanji components ----
+
+export interface KradSetInfo {
+  revision: string | null
+  kanjiCount: number
+  componentCount: number
+  importedAt: string
+}
+
+export interface KradImportSummary {
+  kanjiCount: number
+  componentCount: number
+}
+
+export interface KradComponent {
+  component: string
+  strokes: number | null
+  kanjiCount: number // how many kanji contain it (drives the picker grid)
+}
+
+export interface KanjiComponents {
+  kanji: string
+  components: { char: string; strokes: number | null }[]
+}
+
+// One build-a-kanji question assembled in main: real components + decoys.
+export interface ComponentQuizItem {
+  kanji: string
+  meaning: string | null
+  reading: string | null
+  components: { char: string; strokes: number | null }[]
+  decoys: { char: string; strokes: number | null }[]
+}
+
+// ---- Grammar library (hanabira N5-N1 points) ----
+
+export interface GrammarBankInfo {
+  pointCount: number
+  importedAt: string
+}
+
+export interface GrammarImportSummary {
+  pointCount: number
+}
+
+export interface GrammarExample {
+  jp: string
+  romaji: string | null
+  en: string
+  // Pre-computed at import via @shared/cloze: the sentence with the grammar
+  // point blanked, and the blanked string. null = not clozeable (reference
+  // display only, never enters the drill).
+  clozeJp: string | null
+  clozeAnswer: string | null
+}
+
+export interface GrammarPointSummary {
+  id: number
+  level: string // 'N5'..'N1'
+  title: string
+  meaning: string // short explanation
+}
+
+export interface GrammarPoint extends GrammarPointSummary {
+  explanation: string | null // long explanation
+  formation: string | null
+  examples: GrammarExample[]
+}
+
+// ---- JMnedict name sampling (names drill) ----
+
+export type NameKind = 'surname' | 'given' | 'both'
+
+export interface NameQuizItem {
+  expression: string
+  kind: 'surname' | 'given'
+  readings: string[] // every attested reading, most common first
+}
+
+// ---- Tatoeba sentence audio ----
+
+export interface SentenceAudioBankInfo {
+  clipCount: number
+  importedAt: string
+}
+
+export interface SentenceAudioImportSummary {
+  clipCount: number
+  skippedUnlicensed: number
+  skippedUnmatched: number
+  failed: number
+}
+
+// One playable sentence for the dictation drill.
+export interface AudioSentence {
+  jp: string
+  en: string
+  audioPath: string // navimg-relative (jpaudio/tatoeba/…)
+  attribution: string | null // per-clip contributor credit (license requires it)
+}
+
+// ---- Minimal pairs (kotu.io backup pack) ----
+
+export interface PairSetInfo {
+  revision: string | null
+  pairCount: number
+  importedAt: string
+}
+
+export interface PairImportSummary {
+  pairCount: number
+  clipCount: number
+}
+
+// One recorded variant of a pair word.
+export interface MinimalPairItem {
+  pron: string // kana pronunciation as recorded
+  position: number // downstep position of this recording
+  moraCount: number
+  audioPath: string // navimg-relative (jpaudio/pairs/…)
+}
+
+export interface MinimalPair {
+  pairId: string
+  buckets: string[] // pattern buckets ('pitch0'…'pitch4', 'devoiced')
+  kana: string // the shared segmental string
+  items: MinimalPairItem[]
 }
 
 // ---- Series prep decks ----
@@ -1396,6 +1570,17 @@ export interface LibraryTimeStats {
   mostRevisited: (TimeStatsItem & { times: number }) | null // max rewatch_count, null if < 2
 }
 
+// Japanese-roadmap immersion milestones, counted from the real library.
+// "Completed" resolves positionally from the user's status settings (index 1),
+// so renamed statuses keep working. Novels = manga-type items backed by an
+// EPUB chapter (light novels read in the book reader); everything else
+// manga-type counts as manga.
+export interface JpMilestones {
+  animeCompleted: number
+  mangaCompleted: number
+  novelsCompleted: number
+}
+
 // ---- Gacha tracker ----
 // Standalone section for live-service gacha games. The game list and each
 // game's unit kinds / currencies / display labels live in src/shared/gacha.ts;
@@ -1659,116 +1844,6 @@ export interface GachaCoachDoc {
 
 export type GachaCoachDueCounts = Partial<Record<GachaGameId, number>>
 
-// ---- PC↔phone sync (LAN server behind the Settings sync card) ----
-// The phone's DB is always derived from a PC snapshot ("oplog + snapshot
-// rebase"), so ops reference PC row ids directly and carry a human-readable
-// check field to catch id drift (a row deleted + re-imported between syncs).
-// Every `ts` is a UTC 'YYYY-MM-DD HH:MM:SS' string — the same format as the
-// DB's datetime('now') — so timestamps compare lexicographically.
-
-// Bump when an op's shape or the HTTP surface changes incompatibly; the phone
-// refuses to sync across a mismatch instead of corrupting either side.
-export const SYNC_PROTOCOL_VERSION = 1
-
-export type SyncOp =
-  | {
-      kind: 'media.update'
-      mediaId: number
-      title: string // sanity check against the PC row
-      ts: string
-      // Personal tracking only — canonical fields (title, cover, …) never sync
-      // phone → PC. Absent keys are left untouched.
-      fields: {
-        status?: string | null
-        score?: number | null
-        progress?: number
-        rewatchCount?: number
-        favorite?: boolean
-        notes?: string | null
-      }
-    }
-  | {
-      kind: 'manga.progress'
-      chapterId: number
-      dirPath: string // manga_chapter identity check
-      ts: string
-      lastReadPage: number
-    }
-  | { kind: 'manga.setRead'; chapterId: number; dirPath: string; ts: string; read: boolean }
-  | {
-      kind: 'jp.review'
-      cardId: number
-      front: string // card identity check
-      ts: string // when the review happened on the phone (= log reviewed_at)
-      grade: SrsGrade
-      // The RESULTING state (the phone runs the same shared/srs.ts gradeCard),
-      // applied verbatim so due dates honor the review time, not the sync time.
-      state: {
-        status: SrsStatus
-        learningStep: number
-        intervalDays: number
-        ease: number
-        reps: number
-        lapses: number
-        dueAt: string
-      }
-    }
-  | { kind: 'jp.lessonLearned'; lessonId: number; ts: string; learned: boolean }
-  | { kind: 'music.setLiked'; trackId: number; filePath: string; ts: string; liked: boolean }
-  | { kind: 'music.logPlay'; trackId: number; filePath: string; ts: string }
-  | { kind: 'list.addItem'; listId: number; entityId: number; ts: string; note?: string | null }
-  | { kind: 'list.removeItem'; listId: number; entityId: number; ts: string }
-  | { kind: 'quiz.session'; ts: string; session: QuizSessionInput }
-
-export type SyncOpKind = SyncOp['kind']
-
-export interface SyncOpsRequest {
-  batchId: string // phone-generated unique id; re-POSTing the same batch is a no-op
-  device: string
-  ops: SyncOp[]
-}
-
-export interface SyncSkippedOp {
-  index: number
-  kind: string
-  reason: string
-}
-
-export interface SyncOpsResult {
-  applied: number
-  skipped: SyncSkippedOp[]
-  alreadyApplied: boolean // true when batchId had been applied before (dedup hit)
-}
-
-export interface SyncManifestEntry {
-  path: string // stored relative path ("media/dl-….jpg"), servable via GET /file
-  size: number
-}
-
-export interface SyncManifest {
-  scope: 'covers'
-  files: SyncManifestEntry[]
-}
-
-export interface SyncInfo {
-  app: 'navihub'
-  protocol: number
-  appVersion: string
-  device: string | null // paired device name, null before first pairing
-  dbBytes: number
-}
-
-// Live server state, polled by the Settings sync card while the server runs.
-export interface SyncStatus {
-  running: boolean
-  port: number | null
-  addresses: string[] // "http://192.168.…:port" candidates to type into the phone
-  pairingCode: string | null // 6 digits, non-null only while pairing mode is armed
-  pairedDevice: string | null
-  lastSync: { at: string; device: string; applied: number; skipped: number } | null
-  error: string | null
-}
-
 // ---- Torrents (Jackett search + qBittorrent hand-off) ----
 
 export interface TorrentSearchResult {
@@ -1914,6 +1989,18 @@ export interface EnDictEntry {
   word: string
   phonetic: string | null // IPA, e.g. /ˈsʌn.sɛt/
   meanings: EnDictMeaning[]
+  source: 'offline' | 'online' // offline = installed WordNet, online = dictionaryapi.dev
+}
+
+// The installed offline English dictionary (WordNet + CMUdict), or null when
+// lookups still go online. Mirrors SentenceBankInfo.
+export interface EnglishDictInfo {
+  source: string // 'wordnet'
+  version: string | null
+  lemmaCount: number
+  synsetCount: number
+  pronCount: number
+  importedAt: string
 }
 
 export interface EnWordInput {

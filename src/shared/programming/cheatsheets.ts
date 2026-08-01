@@ -593,6 +593,317 @@ export const CHEAT_SHEETS: CheatSheet[] = [
     ]
   },
   {
+    key: 'docker',
+    title: 'Docker',
+    entries: [
+      {
+        cmd: 'docker run -it --rm',
+        desc: 'Run a container interactively and delete it on exit',
+        example: 'docker run -it --rm debian:bookworm bash',
+        answers: ['docker run -it --rm', 'docker run --rm -it', 'docker run -ti --rm']
+      },
+      {
+        cmd: 'docker run -d -p 8080:80',
+        desc: 'Run detached, publishing host port 8080 to container port 80',
+        answers: ['docker run -d -p 8080:80', 'docker run -p 8080:80 -d']
+      },
+      {
+        cmd: 'docker run -v $PWD:/app',
+        desc: 'Run with the current directory bind-mounted into the container',
+        example: 'docker run -v $PWD:/app -w /app node:22 npm ci',
+        answers: ['docker run -v $PWD:/app', 'docker run -v ${PWD}:/app', 'docker run -v .:/app']
+      },
+      {
+        cmd: 'docker ps -a',
+        desc: 'List all containers, stopped ones included',
+        answers: ['docker ps -a', 'docker ps --all', 'docker container ls -a']
+      },
+      {
+        cmd: 'docker images',
+        desc: 'List local images',
+        answers: ['docker images', 'docker image ls', 'docker images ls']
+      },
+      {
+        cmd: 'docker exec -it <container> bash',
+        desc: 'Open a shell inside a running container',
+        answers: ['docker exec -it bash', 'docker exec -ti bash']
+      },
+      {
+        cmd: 'docker logs -f',
+        desc: "Follow a container's logs as they arrive",
+        answers: ['docker logs -f', 'docker logs --follow']
+      },
+      {
+        cmd: 'docker build -t name:tag .',
+        desc: 'Build an image from the Dockerfile here and tag it',
+        answers: ['docker build -t name:tag .', 'docker build -t name .', 'docker build .']
+      },
+      {
+        cmd: 'docker stop',
+        desc: 'Ask a container to exit (SIGTERM, then SIGKILL after the grace period)',
+        answers: ['docker stop']
+      },
+      {
+        cmd: 'docker rm -f',
+        desc: 'Force-remove a container even if it is still running',
+        answers: ['docker rm -f', 'docker rm --force']
+      },
+      {
+        cmd: 'docker cp',
+        desc: 'Copy a file between the host and a container',
+        example: 'docker cp mycontainer:/var/log/app.log ./app.log',
+        answers: ['docker cp']
+      },
+      {
+        cmd: 'docker inspect',
+        desc: 'Dump a container or image’s full JSON metadata',
+        example: "docker inspect --format '{{.State.ExitCode}}' mycontainer",
+        answers: ['docker inspect']
+      },
+      {
+        cmd: 'docker compose up -d',
+        desc: 'Start every service in the compose file in the background',
+        answers: ['docker compose up -d', 'docker-compose up -d']
+      },
+      {
+        cmd: 'docker compose down -v',
+        desc: 'Stop the compose stack and delete its named volumes too',
+        answers: ['docker compose down -v', 'docker-compose down -v']
+      },
+      {
+        cmd: 'docker compose logs -f',
+        desc: 'Follow the logs of every compose service',
+        answers: ['docker compose logs -f', 'docker-compose logs -f']
+      },
+      {
+        cmd: 'docker system prune -a',
+        desc: 'Reclaim disk: delete stopped containers, unused networks and ALL unused images',
+        answers: ['docker system prune -a', 'docker system prune --all']
+      },
+      {
+        cmd: 'docker system df',
+        desc: 'Show how much disk images, containers and volumes are using',
+        answers: ['docker system df']
+      },
+      {
+        cmd: 'docker image history',
+        desc: 'Show an image’s layers and what each one added to its size',
+        answers: ['docker image history', 'docker history']
+      }
+    ]
+  },
+  {
+    key: 'tmux',
+    title: 'tmux',
+    entries: [
+      {
+        cmd: 'tmux new -s <name>',
+        desc: 'Start a new named session',
+        example: 'tmux new -s navihub',
+        answers: ['tmux new -s', 'tmux new-session -s']
+      },
+      {
+        cmd: 'tmux ls',
+        desc: 'List running sessions',
+        answers: ['tmux ls', 'tmux list-sessions']
+      },
+      {
+        cmd: 'tmux attach -t <name>',
+        desc: 'Re-attach to an existing session by name',
+        answers: ['tmux attach -t', 'tmux a -t', 'tmux attach-session -t']
+      },
+      {
+        cmd: 'tmux kill-session -t <name>',
+        desc: 'Kill one session by name',
+        answers: ['tmux kill-session -t']
+      },
+      {
+        cmd: 'tmux kill-server',
+        desc: 'Kill every session and the tmux server itself',
+        answers: ['tmux kill-server']
+      },
+      {
+        cmd: 'tmux new -d -s <name> <cmd>',
+        desc: 'Start a detached session running a command (scripts, long jobs)',
+        example: 'tmux new -d -s build "npm run build"',
+        answers: ['tmux new -d -s', 'tmux new-session -d -s']
+      },
+      {
+        cmd: 'tmux source-file ~/.tmux.conf',
+        desc: 'Reload the config without restarting the server',
+        answers: ['tmux source-file ~/.tmux.conf', 'tmux source ~/.tmux.conf']
+      },
+      // Key bindings are reference-only: they are keystrokes, not commands, so
+      // they carry no `answers` and never enter the typing drill.
+      { cmd: 'prefix d', desc: 'Detach from the session (default prefix is Ctrl-b)' },
+      { cmd: 'prefix c', desc: 'Create a new window' },
+      { cmd: 'prefix n / prefix p', desc: 'Next / previous window' },
+      { cmd: 'prefix <n>', desc: 'Jump straight to window number n' },
+      { cmd: 'prefix %', desc: 'Split the pane vertically (side by side)' },
+      { cmd: 'prefix "', desc: 'Split the pane horizontally (top and bottom)' },
+      { cmd: 'prefix arrow', desc: 'Move focus between panes' },
+      { cmd: 'prefix z', desc: 'Zoom the current pane to full screen, and back' },
+      { cmd: 'prefix x', desc: 'Kill the current pane' },
+      { cmd: 'prefix ,', desc: 'Rename the current window' },
+      { cmd: 'prefix [', desc: 'Enter copy/scroll mode (q to leave)' },
+      { cmd: 'prefix ?', desc: 'List every key binding' }
+    ]
+  },
+  {
+    key: 'node',
+    title: 'Node & npm',
+    entries: [
+      {
+        cmd: 'npm ci',
+        desc: 'Install exactly what the lockfile says (the CI/reproducible install)',
+        answers: ['npm ci', 'npm clean-install']
+      },
+      {
+        cmd: 'npm i -D',
+        desc: 'Install a package as a dev dependency',
+        answers: ['npm i -D', 'npm install -D', 'npm i --save-dev', 'npm install --save-dev']
+      },
+      {
+        cmd: 'npm run',
+        desc: 'Run a script from package.json',
+        example: 'npm run typecheck',
+        answers: ['npm run']
+      },
+      {
+        cmd: 'npm outdated',
+        desc: 'Show which dependencies have newer versions',
+        answers: ['npm outdated']
+      },
+      {
+        cmd: 'npm ls <pkg>',
+        desc: 'Show why a package is installed and which version resolved',
+        example: 'npm ls better-sqlite3',
+        answers: ['npm ls']
+      },
+      {
+        cmd: 'npm audit fix',
+        desc: 'Apply the non-breaking security fixes npm audit found',
+        answers: ['npm audit fix']
+      },
+      {
+        cmd: 'npx',
+        desc: 'Run a package binary without installing it globally',
+        example: 'npx tsc --noEmit',
+        answers: ['npx']
+      },
+      {
+        cmd: 'npm pkg get version',
+        desc: "Read a field out of package.json without opening it",
+        answers: ['npm pkg get version']
+      },
+      {
+        cmd: 'npm version patch --no-git-tag-version',
+        desc: 'Bump the version in package.json without creating a git tag',
+        answers: ['npm version patch --no-git-tag-version']
+      },
+      {
+        cmd: 'node --watch',
+        desc: 'Run a script and restart it whenever a file changes (no nodemon needed)',
+        answers: ['node --watch']
+      },
+      {
+        cmd: 'node --test',
+        desc: "Run Node's built-in test runner",
+        answers: ['node --test']
+      },
+      {
+        cmd: 'node -e',
+        desc: 'Evaluate a snippet of JavaScript straight from the shell',
+        example: `node -e "console.log(process.versions.node)"`,
+        answers: ['node -e']
+      },
+      {
+        cmd: 'npm publish --dry-run',
+        desc: 'Show exactly what would be published without publishing it',
+        answers: ['npm publish --dry-run']
+      }
+    ]
+  },
+  {
+    key: 'python',
+    title: 'Python tooling',
+    entries: [
+      {
+        cmd: 'python3 -m venv .venv',
+        desc: 'Create a virtual environment in .venv',
+        answers: ['python3 -m venv .venv', 'python -m venv .venv']
+      },
+      {
+        cmd: 'source .venv/bin/activate',
+        desc: 'Activate the virtual environment in this shell',
+        answers: ['source .venv/bin/activate', '. .venv/bin/activate']
+      },
+      {
+        cmd: 'pip install -e .',
+        desc: 'Install the current project in editable mode',
+        answers: ['pip install -e .', 'pip install --editable .', 'python -m pip install -e .']
+      },
+      {
+        cmd: 'pip install -r requirements.txt',
+        desc: 'Install every pinned dependency from a requirements file',
+        answers: ['pip install -r requirements.txt']
+      },
+      {
+        cmd: 'pip freeze > requirements.txt',
+        desc: 'Write the current environment’s exact versions to a requirements file',
+        answers: ['pip freeze > requirements.txt']
+      },
+      {
+        cmd: 'pip list --outdated',
+        desc: 'Show installed packages that have newer releases',
+        answers: ['pip list --outdated', 'pip list -o']
+      },
+      {
+        cmd: 'pip show <pkg>',
+        desc: 'Show a package’s version, location and dependencies',
+        answers: ['pip show']
+      },
+      {
+        cmd: 'pytest -x',
+        desc: 'Stop the test run at the first failure',
+        answers: ['pytest -x', 'pytest --exitfirst']
+      },
+      {
+        cmd: 'pytest -k',
+        desc: 'Run only the tests whose names match an expression',
+        example: 'pytest -k "parse and not slow"',
+        answers: ['pytest -k']
+      },
+      {
+        cmd: 'pytest -q',
+        desc: 'Quiet output (one character per test)',
+        answers: ['pytest -q', 'pytest --quiet']
+      },
+      {
+        cmd: 'python -m pdb',
+        desc: 'Run a script under the debugger',
+        example: 'python -m pdb script.py',
+        answers: ['python -m pdb', 'python3 -m pdb']
+      },
+      {
+        cmd: 'python -m json.tool',
+        desc: 'Pretty-print JSON from stdin with no extra tools installed',
+        answers: ['python -m json.tool', 'python3 -m json.tool']
+      },
+      {
+        cmd: 'python -m timeit',
+        desc: 'Micro-benchmark a snippet from the shell',
+        example: `python -m timeit "sum(range(1000))"`,
+        answers: ['python -m timeit', 'python3 -m timeit']
+      },
+      {
+        cmd: 'ruff check .',
+        desc: 'Lint the project (the fast modern replacement for flake8)',
+        answers: ['ruff check .', 'ruff check']
+      }
+    ]
+  },
+  {
     key: 'go',
     title: 'Go toolchain',
     entries: [

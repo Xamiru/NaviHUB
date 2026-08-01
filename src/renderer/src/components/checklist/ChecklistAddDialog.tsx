@@ -27,7 +27,7 @@ export default function ChecklistAddDialog({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -58,11 +58,7 @@ export default function ChecklistAddDialog({
           {(['daily', 'weekly'] as const).map((c) => (
             <button
               key={c}
-              className={
-                cadence === c
-                  ? 'rounded-full bg-accent/20 px-3 py-1 text-sm text-white'
-                  : 'rounded-full px-3 py-1 text-sm text-gray-400 hover:bg-base-700'
-              }
+              className={cadence === c ? 'pill pill-active' : 'pill'}
               onClick={() => onCadence(c)}
             >
               {c === 'daily' ? 'Daily' : 'Weekly'}

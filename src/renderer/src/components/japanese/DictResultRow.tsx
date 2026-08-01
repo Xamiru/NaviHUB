@@ -37,6 +37,7 @@ export default function DictResultRow({
         </span>
       )}
       {mined && <span className="chip ml-2 bg-green-500/20 text-green-300">✓ mined</span>}
+      {entry.isName && <span className="chip ml-1 bg-base-700 text-gray-400">name</span>}
       {entry.isCommon && <span className="chip ml-1 bg-green-500/20 text-green-300">common</span>}
       {entry.source === 'jisho' && (
         <span className="chip ml-1 bg-base-700 text-gray-400">jisho</span>

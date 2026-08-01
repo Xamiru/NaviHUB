@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import CoverImage from './CoverImage'
+import ActionMenu from './ActionMenu'
 
 // Hero header shared by the album and artist pages: art + title + meta line +
 // Play/Shuffle + find/clear-art actions. `round` switches to the artist look
@@ -45,10 +46,10 @@ export default function MusicEntityHeader({
         <p className="mt-1 text-sm text-gray-400">{meta}</p>
         <div className="mt-3 flex flex-wrap gap-2">
           <button className="btn-primary" onClick={onPlay}>
-            ▶ Play
+            Play
           </button>
           <button className="btn-ghost" onClick={onShuffle}>
-            ⇄ Shuffle
+            Shuffle
           </button>
           {coverPath ? (
             <button
@@ -69,13 +70,16 @@ export default function MusicEntityHeader({
           )}
           {extraActions}
           {onDelete && (
-            <button
-              className="btn-danger"
-              onClick={onDelete}
-              title="Permanently delete from your computer"
-            >
-              {deleteLabel ?? 'Delete'}
-            </button>
+            <ActionMenu
+              items={[
+                {
+                  label: deleteLabel ? `${deleteLabel}…` : 'Delete…',
+                  danger: true,
+                  title: 'Permanently delete from your computer',
+                  onSelect: onDelete
+                }
+              ]}
+            />
           )}
         </div>
       </div>

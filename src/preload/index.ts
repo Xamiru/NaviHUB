@@ -14,7 +14,8 @@ const api: NaviApi = {
       ipcRenderer.invoke('media:removeCharacter', mediaId, characterId),
     statusCounts: (mediaType) => ipcRenderer.invoke('media:statusCounts', mediaType),
     facets: (mediaType) => ipcRenderer.invoke('media:facets', mediaType),
-    timeStats: () => ipcRenderer.invoke('media:timeStats')
+    timeStats: () => ipcRenderer.invoke('media:timeStats'),
+    jpMilestones: () => ipcRenderer.invoke('media:jpMilestones')
   },
   people: {
     list: (search, role, mediaType) => ipcRenderer.invoke('people:list', search, role, mediaType),
@@ -182,7 +183,9 @@ const api: NaviApi = {
     statsDetail: () => ipcRenderer.invoke('japanese:statsDetail'),
     ensureMiningInbox: () => ipcRenderer.invoke('japanese:ensureMiningInbox'),
     tokenize: (text) => ipcRenderer.invoke('japanese:tokenize', text),
-    minedFronts: (fronts) => ipcRenderer.invoke('japanese:minedFronts', fronts)
+    minedFronts: (fronts) => ipcRenderer.invoke('japanese:minedFronts', fronts),
+    pitchQuizPool: (req) => ipcRenderer.invoke('japanese:pitchQuizPool', req),
+    componentQuizPool: (req) => ipcRenderer.invoke('japanese:componentQuizPool', req)
   },
   dict: {
     list: () => ipcRenderer.invoke('dict:list'),
@@ -199,10 +202,35 @@ const api: NaviApi = {
     strokes: (char) => ipcRenderer.invoke('dict:strokes', char),
     importStrokes: () => ipcRenderer.invoke('dict:importStrokes'),
     strokeSet: () => ipcRenderer.invoke('dict:strokeSet'),
-    removeStrokes: () => ipcRenderer.invoke('dict:removeStrokes')
+    removeStrokes: () => ipcRenderer.invoke('dict:removeStrokes'),
+    importKanjium: () => ipcRenderer.invoke('dict:importKanjium'),
+    importKrad: () => ipcRenderer.invoke('dict:importKrad'),
+    kradSet: () => ipcRenderer.invoke('dict:kradSet'),
+    removeKrad: () => ipcRenderer.invoke('dict:removeKrad'),
+    kradComponents: () => ipcRenderer.invoke('dict:kradComponents'),
+    kradSearch: (parts) => ipcRenderer.invoke('dict:kradSearch', parts),
+    importGrammar: () => ipcRenderer.invoke('dict:importGrammar'),
+    grammarBank: () => ipcRenderer.invoke('dict:grammarBank'),
+    removeGrammar: () => ipcRenderer.invoke('dict:removeGrammar'),
+    grammarList: () => ipcRenderer.invoke('dict:grammarList'),
+    grammarGet: (id) => ipcRenderer.invoke('dict:grammarGet', id),
+    grammarRandom: (count, levels) => ipcRenderer.invoke('dict:grammarRandom', count, levels),
+    nameSample: (req) => ipcRenderer.invoke('dict:nameSample', req),
+    shiritoriNext: (req) => ipcRenderer.invoke('dict:shiritoriNext', req),
+    importPairs: () => ipcRenderer.invoke('dict:importPairs'),
+    pairSet: () => ipcRenderer.invoke('dict:pairSet'),
+    removePairs: () => ipcRenderer.invoke('dict:removePairs'),
+    minimalPairs: () => ipcRenderer.invoke('dict:minimalPairs'),
+    importSentenceAudio: () => ipcRenderer.invoke('dict:importSentenceAudio'),
+    sentenceAudioBank: () => ipcRenderer.invoke('dict:sentenceAudioBank'),
+    removeSentenceAudio: () => ipcRenderer.invoke('dict:removeSentenceAudio'),
+    audioSample: (req) => ipcRenderer.invoke('dict:audioSample', req)
   },
   english: {
     lookup: (query) => ipcRenderer.invoke('english:lookup', query),
+    dictInfo: () => ipcRenderer.invoke('english:dictInfo'),
+    importDict: () => ipcRenderer.invoke('english:importDict'),
+    removeDict: () => ipcRenderer.invoke('english:removeDict'),
     saveWord: (input) => ipcRenderer.invoke('english:saveWord', input),
     listWords: (search) => ipcRenderer.invoke('english:listWords', search),
     removeWord: (id) => ipcRenderer.invoke('english:removeWord', id)
@@ -310,12 +338,6 @@ const api: NaviApi = {
     coachDocs: (game) => ipcRenderer.invoke('gacha:coachDocs', game),
     importCoachDoc: (game, input) => ipcRenderer.invoke('gacha:importCoachDoc', game, input),
     removeCoachDoc: (id) => ipcRenderer.invoke('gacha:removeCoachDoc', id)
-  },
-  sync: {
-    start: (pairing) => ipcRenderer.invoke('sync:start', pairing),
-    stop: () => ipcRenderer.invoke('sync:stop'),
-    status: () => ipcRenderer.invoke('sync:status'),
-    unpair: () => ipcRenderer.invoke('sync:unpair')
   },
   app: {
     openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),

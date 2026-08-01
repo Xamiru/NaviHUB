@@ -6,7 +6,9 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue } from '../lib/hooks'
 import { configFor } from '../lib/mediaConfig'
+import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
+import EmptyState from '../components/EmptyState'
 import type { TagWithCounts } from '@shared/types'
 
 // Browse every tag in the library with per-type usage counts; clicking one
@@ -30,20 +32,24 @@ export default function TagsIndexPage() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-2xl font-bold">Tags{tags ? ` · ${tags.length}` : ''}</h1>
-        <input
-          className="input max-w-xs"
-          placeholder="Filter tags…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
+      <PageHeader
+        title="Tags"
+        subtitle={tags ? `${tags.length} tags` : undefined}
+        actions={
+          <input
+            className="input max-w-xs"
+            placeholder="Filter tags…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        }
+      />
 
       {shown.length === 0 ? (
-        <div className="card p-10 text-center text-gray-400">
-          {q ? 'No tags match that filter.' : 'No tags yet — imports add them automatically.'}
-        </div>
+        <EmptyState
+          title={q ? 'No tags match that filter.' : 'No tags yet.'}
+          body={q ? undefined : 'Imports add them automatically.'}
+        />
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
           {shown.map((t) => (

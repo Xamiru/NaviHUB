@@ -1,10 +1,13 @@
 import { Link } from 'react-router-dom'
 import { usePersistedState } from '../lib/navState'
+import PageHeader from '../components/PageHeader'
+import Section from '../components/Section'
 import { CHEAT_SHEETS } from '@shared/programming/cheatsheets'
 import type { CheatEntry, CheatSheet } from '@shared/programming/types'
 
-// Command-line cheatsheets: one tab per sheet, or a cross-sheet filter when
-// searching. Pure static content from the code catalog — no queries at all.
+// Command-line cheatsheets: one sheet at a time (pill switcher — 13 sheets need
+// a wrapping row, which the underline Tabs rail can't do), or a cross-sheet
+// filter when searching. Pure static content from the code catalog — no queries.
 export default function CheatsheetsPage() {
   const [sheetKey, setSheetKey] = usePersistedState('cheatSheetTab', CHEAT_SHEETS[0].key)
   const [search, setSearch] = usePersistedState('cheatSheetSearch', '')
@@ -19,20 +22,16 @@ export default function CheatsheetsPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-5 flex items-start justify-between gap-3">
-        <div>
-          <Link to="/programming" className="text-sm text-gray-500 hover:text-white">
-            ← Programming
+      <PageHeader
+        back={{ to: '/programming', label: 'Programming' }}
+        title="Command-line cheatsheets"
+        subtitle="Command reference. Search cuts across every sheet."
+        actions={
+          <Link to="/programming/practice" className="btn-primary shrink-0">
+            Practice these
           </Link>
-          <h1 className="mt-1 text-2xl font-bold">Command-line cheatsheets</h1>
-          <p className="text-sm text-gray-500">
-            The commands worth having in your fingers. Search cuts across every sheet.
-          </p>
-        </div>
-        <Link to="/programming/practice" className="btn-primary shrink-0">
-          Practice these
-        </Link>
-      </div>
+        }
+      />
 
       <input
         className="input mb-4 w-full"
@@ -58,11 +57,7 @@ export default function CheatsheetsPage() {
             {CHEAT_SHEETS.map((s) => (
               <button
                 key={s.key}
-                className={`chip ${
-                  s.key === active.key
-                    ? 'bg-accent/15 text-accent'
-                    : 'bg-base-700 text-gray-400 hover:text-white'
-                }`}
+                className={s.key === active.key ? 'pill pill-active' : 'pill'}
                 onClick={() => setSheetKey(s.key)}
               >
                 {s.title}
@@ -85,13 +80,19 @@ function SheetBlock({
   entries: CheatEntry[]
   showTitle?: boolean
 }) {
+  if (showTitle) {
+    return (
+      <Section title={sheet.title} className="mb-6">
+        <Entries entries={entries} />
+      </Section>
+    )
+  }
+  return <Entries entries={entries} />
+}
+
+function Entries({ entries }: { entries: CheatEntry[] }) {
   return (
     <div>
-      {showTitle && (
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-          {sheet.title}
-        </h2>
-      )}
       <ul className="space-y-1.5">
         {entries.map((e) => (
           <li key={e.cmd} className="card p-3">

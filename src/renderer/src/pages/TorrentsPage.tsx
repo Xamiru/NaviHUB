@@ -5,6 +5,7 @@ import { useTorrentSearch } from '../lib/useTorrentSearch'
 import { TORRENT_CATEGORY_OPTIONS } from '@shared/torrents'
 import TorrentResultsPanel from '../components/TorrentResultsPanel'
 import StartJackettButton from '../components/StartJackettButton'
+import PageHeader from '../components/PageHeader'
 
 // Free-form Jackett search for anything not tied to a library item (music,
 // software, one-offs). Results stream in per indexer via useTorrentSearch.
@@ -22,15 +23,11 @@ export default function TorrentsPage(): React.JSX.Element {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <div className="mb-5 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold mb-1">Torrents</h1>
-          <p className="text-sm text-gray-400">
-            Search your Jackett indexers and send results to qBittorrent.
-          </p>
-        </div>
-        <StartJackettButton />
-      </div>
+      <PageHeader
+        title="Torrents"
+        subtitle="Search your Jackett indexers and send results to qBittorrent."
+        actions={<StartJackettButton />}
+      />
 
       {!configured ? (
         <div className="card p-5 text-sm text-gray-400">

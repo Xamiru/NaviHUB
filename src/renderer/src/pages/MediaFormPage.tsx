@@ -5,6 +5,8 @@ import { api } from '../lib/api'
 import { useStatuses, useScoreMax, useImageUrl } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
 import { isCompletedStatus, type MediaConfig } from '../lib/mediaConfig'
+import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
 import type { MediaItemInput, Tag } from '@shared/types'
 
 interface FormState {
@@ -161,18 +163,16 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
   const [coverFailed, setCoverFailed] = useState(false)
   useEffect(() => setCoverFailed(false), [coverUrl])
 
-  if (!loaded) return <div className="p-6 text-gray-500">Loading…</div>
+  if (!loaded) return <PageStatus>Loading…</PageStatus>
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">
-          {editing ? `Edit ${cfg.singular}` : `Add ${cfg.singular}`}
-        </h1>
-        <button className="btn-ghost" onClick={() => navigate(-1)}>
-          Cancel
-        </button>
-      </div>
+      {/* Back/Esc is cancel — the forms convention, no Cancel button */}
+      <PageHeader
+        back="history"
+        title={editing ? `Edit ${cfg.singular}` : `Add ${cfg.singular}`}
+        className="mb-6"
+      />
 
       <div className="grid grid-cols-[180px_1fr] gap-6">
         {/* Cover */}
@@ -207,7 +207,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
         {/* Fields */}
         <div className="space-y-4">
           <div>
-            <label className="label">Title *</label>
+            <label className="label">Title</label>
             <input
               className="input"
               value={form.title}
@@ -334,8 +334,12 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
             />
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button className="btn-primary" disabled={saving || !form.title.trim()} onClick={save}>
+          <div className="pt-2">
+            <button
+              className="btn-primary w-full"
+              disabled={saving || !form.title.trim()}
+              onClick={save}
+            >
               {saving ? 'Saving…' : editing ? 'Save changes' : 'Add to library'}
             </button>
           </div>

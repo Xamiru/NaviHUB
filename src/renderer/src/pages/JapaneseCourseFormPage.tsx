@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import BackButton from '../components/BackButton'
+import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
 
 export default function JapaneseCourseFormPage() {
   const { id } = useParams()
@@ -55,16 +56,15 @@ export default function JapaneseCourseFormPage() {
     else navigate(`/japanese/courses/${targetId}`, { replace: true })
   }
 
-  if (!loaded) return <p className="p-6 text-gray-500">Loading…</p>
+  if (!loaded) return <PageStatus>Loading…</PageStatus>
 
   return (
     <div className="p-6 max-w-xl mx-auto">
-      <BackButton />
-      <h1 className="text-2xl font-bold mb-5">{editing ? 'Edit course' : 'New course'}</h1>
+      <PageHeader back="history" title={editing ? 'Edit course' : 'New course'} />
 
       <div className="space-y-4">
         <div>
-          <div className="label mb-1">Title</div>
+          <label className="label">Title</label>
           <input
             className="input"
             placeholder="e.g. JLPT N4 Grammar"
@@ -75,7 +75,7 @@ export default function JapaneseCourseFormPage() {
         </div>
 
         <div>
-          <div className="label mb-1">Description</div>
+          <label className="label">Description</label>
           <textarea
             className="input min-h-[80px]"
             placeholder="Optional — what this course covers"
@@ -86,7 +86,7 @@ export default function JapaneseCourseFormPage() {
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <div className="label mb-1">Level</div>
+            <label className="label">Level</label>
             <input
               className="input"
               placeholder="e.g. N4, N4–N3"
@@ -95,7 +95,7 @@ export default function JapaneseCourseFormPage() {
             />
           </div>
           <div>
-            <div className="label mb-1">Study-order step</div>
+            <label className="label">Study-order step</label>
             <input
               className="input"
               type="number"

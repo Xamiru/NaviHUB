@@ -52,7 +52,7 @@ export default function JapaneseReviewPage() {
   const qc = useQueryClient()
   const [newLimit, setNewLimit] = usePersistedState<number>('jpNewLimit', 10)
   // Bunpro-style typed answers. Only suggests a grade — the four buttons still
-  // decide, so SM-2 semantics (and phone sync) are untouched.
+  // decide, so SM-2 semantics are untouched.
   const [typedMode, setTypedMode] = usePersistedState<boolean>('jpTypedMode', false)
 
   const { data: stats } = useQuery({
@@ -277,7 +277,7 @@ export default function JapaneseReviewPage() {
               setQueue([])
             }}
           >
-            ✕ End session
+            End session
           </button>
         </div>
       </div>
@@ -381,7 +381,7 @@ export default function JapaneseReviewPage() {
           </button>
         ) : (
           <div className="grid grid-cols-4 gap-2">
-            {(['again', 'hard', 'good', 'easy'] as SrsGrade[]).map((g) => (
+            {(['again', 'hard', 'good', 'easy'] as SrsGrade[]).map((g, i) => (
               <button
                 key={g}
                 disabled={grading}
@@ -390,7 +390,10 @@ export default function JapaneseReviewPage() {
                   GRADE_STYLE[g]
                 } ${g === suggested ? 'ring-2 ring-accent' : ''}`}
               >
-                <span className="block text-sm font-semibold">{GRADE_LABEL[g]}</span>
+                <span className="block text-sm font-semibold">
+                  <kbd className="kbd mr-1">{i + 1}</kbd>
+                  {GRADE_LABEL[g]}
+                </span>
                 <span className="mt-0.5 block text-xs opacity-70">{previews[g]}</span>
               </button>
             ))}

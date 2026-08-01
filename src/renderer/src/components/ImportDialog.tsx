@@ -56,7 +56,9 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-8 overflow-y-auto"
-      onMouseDown={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
     >
       <div
         ref={panelRef}
@@ -65,12 +67,15 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
         aria-label={`Import from ${source.label}`}
         tabIndex={-1}
         className="card w-full max-w-2xl p-5 mt-8"
-        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">Import from {source.label}</h2>
-          <button className="text-gray-500 hover:text-white text-xl leading-none" onClick={onClose}>
-            ×
+          <button
+            className="text-gray-500 hover:text-white text-xl leading-none"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            ✕
           </button>
         </div>
 

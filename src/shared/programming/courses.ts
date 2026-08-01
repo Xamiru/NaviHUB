@@ -3,11 +3,20 @@ import { GO_COURSE } from './goCourse'
 import { REGEX_COURSE } from './regexCourse'
 import { GIT_COURSE } from './gitCourse'
 import { SQL_COURSE } from './sqlCourse'
+import { SHELL_COURSE } from './shellCourse'
+import { DOCKER_COURSE } from './dockerCourse'
 
 // The course catalog. Adding a course = one file exporting a ProgCourseDef +
 // an entry here; the DB (prog_progress) only ever sees the frozen keys.
 
-export const PROG_COURSES: ProgCourseDef[] = [GO_COURSE, REGEX_COURSE, GIT_COURSE, SQL_COURSE]
+export const PROG_COURSES: ProgCourseDef[] = [
+  GO_COURSE,
+  SHELL_COURSE,
+  DOCKER_COURSE,
+  REGEX_COURSE,
+  GIT_COURSE,
+  SQL_COURSE
+]
 
 export function progCourse(key: string): ProgCourseDef | null {
   return PROG_COURSES.find((c) => c.key === key) ?? null

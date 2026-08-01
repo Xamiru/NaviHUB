@@ -4,6 +4,7 @@ import { usePlayer } from '../lib/player'
 import { useIncrementalList } from '../lib/hooks'
 import CoverImage from '../components/CoverImage'
 import BackButton from '../components/BackButton'
+import Section from '../components/Section'
 import { formatTime } from '../components/NowPlayingBar'
 import { QueueRow, EditButton } from '../components/QueuePanel'
 
@@ -211,59 +212,57 @@ export default function NowPlayingPage() {
 
         {/* Right: the live queue (same rows/rules as the bar's popover) */}
         <div className="min-w-0">
-          <div className="mb-2 flex items-baseline justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500">
-              Queue
-            </h2>
-            <span className="text-xs text-gray-500">
-              {upNext.length === 0 ? 'Nothing up next' : `${upNext.length} up next`}
-            </span>
-          </div>
-          <QueueRow track={track} active playing={isPlaying} onClick={toggle} />
-          {upNext.length > 0 && (
-            <>
-              <p className="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                Next up
-              </p>
-              {visible.map((t, i) => {
-                const abs = index + 1 + i // absolute queue position, always > index
-                return (
-                  <QueueRow
-                    key={`${abs}-${t.id}`}
-                    track={t}
-                    onClick={() => playAt(abs)}
-                    actions={
-                      <>
-                        <EditButton
-                          label="Move up in queue"
-                          disabled={i === 0}
-                          onClick={() => moveInQueue(abs, abs - 1)}
-                        >
-                          ▲
-                        </EditButton>
-                        <EditButton
-                          label="Move down in queue"
-                          disabled={i === upNext.length - 1}
-                          onClick={() => moveInQueue(abs, abs + 1)}
-                        >
-                          ▼
-                        </EditButton>
-                        <EditButton label="Remove from queue" onClick={() => removeFromQueue(abs)}>
-                          ×
-                        </EditButton>
-                      </>
-                    }
-                  />
-                )
-              })}
-              <div ref={sentinelRef} />
-              {hasMore && (
-                <p className="py-1 text-center text-[10px] text-gray-500">
-                  {visible.length} of {upNext.length} — scroll for more
+          <Section
+            title="Queue"
+            subtitle={upNext.length === 0 ? 'Nothing up next' : `${upNext.length} up next`}
+            className=""
+          >
+            <QueueRow track={track} active playing={isPlaying} onClick={toggle} />
+            {upNext.length > 0 && (
+              <>
+                <p className="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+                  Next up
                 </p>
-              )}
-            </>
-          )}
+                {visible.map((t, i) => {
+                  const abs = index + 1 + i // absolute queue position, always > index
+                  return (
+                    <QueueRow
+                      key={`${abs}-${t.id}`}
+                      track={t}
+                      onClick={() => playAt(abs)}
+                      actions={
+                        <>
+                          <EditButton
+                            label="Move up in queue"
+                            disabled={i === 0}
+                            onClick={() => moveInQueue(abs, abs - 1)}
+                          >
+                            ▲
+                          </EditButton>
+                          <EditButton
+                            label="Move down in queue"
+                            disabled={i === upNext.length - 1}
+                            onClick={() => moveInQueue(abs, abs + 1)}
+                          >
+                            ▼
+                          </EditButton>
+                          <EditButton label="Remove from queue" onClick={() => removeFromQueue(abs)}>
+                            ×
+                          </EditButton>
+                        </>
+                      }
+                    />
+                  )
+                })}
+                <div ref={sentinelRef} />
+                {hasMore && (
+                  <p className="py-1 text-center text-[10px] text-gray-500">
+                    {visible.length} of {upNext.length} — scroll for more
+                  </p>
+                )}
+              </>
+            )}
+          </Section>
         </div>
       </div>
     </div>

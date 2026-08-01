@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import Tabs from '../components/Tabs'
+import PageHeader from '../components/PageHeader'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -30,7 +31,9 @@ const TABS = [
   { key: 'general', label: 'General' },
   { key: 'statuses', label: 'Statuses' },
   { key: 'data', label: 'Keys & Folders' },
-  { key: 'japanese', label: 'Japanese' },
+  // Key stays 'japanese' (persisted in nav state); the tab now holds every
+  // offline dictionary, English included.
+  { key: 'japanese', label: 'Dictionaries' },
   { key: 'ai', label: 'AI Coach' },
   { key: 'integrations', label: 'Integrations' },
   { key: 'system', label: 'System' }
@@ -50,7 +53,7 @@ export default function SettingsPage() {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Settings</h1>
+      <PageHeader title="Settings" className="mb-6" />
 
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Section nav — sticky on desktop, wrapping row on narrow screens. */}
@@ -78,7 +81,12 @@ export default function SettingsPage() {
               <FoldersSettings data={data} onSave={setKey} />
             </>
           )}
-          {tab === 'japanese' && <DictionarySettings />}
+          {tab === 'japanese' && (
+            <>
+              <DictionarySettings />
+              <EnglishDictionarySettings />
+            </>
+          )}
           {tab === 'ai' && <CoachSettings data={data} onSave={setKey} />}
           {tab === 'integrations' && (
             <>
@@ -86,12 +94,7 @@ export default function SettingsPage() {
               <TorrentSettings data={data} onSave={setKey} />
             </>
           )}
-          {tab === 'system' && (
-            <>
-              <UpdateSettings data={data} onSave={setKey} />
-              <SyncSettings />
-            </>
-          )}
+          {tab === 'system' && <UpdateSettings data={data} onSave={setKey} />}
         </div>
       </div>
     </div>
@@ -781,89 +784,6 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
   )
 }
 
-// PC↔phone sync: a LAN server the Android companion connects to. Button-only
-// like every online feature — it listens ONLY while started here, and pairing
-// shows a 6-digit code the phone must echo back.
-function SyncSettings() {
-  const qc = useQueryClient()
-  const { data: status } = useQuery({
-    queryKey: qk.sync.status,
-    queryFn: () => api.sync.status(),
-    // Poll while the server runs so pairing success and sync results show live.
-    refetchInterval: (q) => (q.state.data?.running ? 1500 : false)
-  })
-
-  async function refresh() {
-    await qc.invalidateQueries({ queryKey: qk.sync.all })
-  }
-
-  return (
-    <SettingCard
-      title="Phone sync"
-      description="LAN server for the NaviHUB Android app. Start it, open the app on the phone (same Wi-Fi), and press Sync there. Pairing a phone shows a 6-digit code here that the phone asks for once. The server only runs while started — stop it when you're done."
-    >
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        {status?.running ? (
-          <button className="btn-ghost" onClick={async () => (await api.sync.stop(), refresh())}>
-            Stop server
-          </button>
-        ) : (
-          <button
-            className="btn-primary"
-            onClick={async () => (await api.sync.start(false), refresh())}
-          >
-            Start server
-          </button>
-        )}
-        <button className="btn-ghost" onClick={async () => (await api.sync.start(true), refresh())}>
-          Pair a phone
-        </button>
-        {status?.pairedDevice && (
-          <button className="btn-ghost" onClick={async () => (await api.sync.unpair(), refresh())}>
-            Unpair
-          </button>
-        )}
-      </div>
-
-      {status?.running && (
-        <div className="text-sm space-y-1 mb-3">
-          <p className="text-green-400">
-            Listening on{' '}
-            {status.addresses.length ? status.addresses.join(' · ') : `port ${status.port}`}
-          </p>
-          {status.pairingCode && (
-            <p>
-              <span className="text-gray-400">Pairing code: </span>
-              <span className="text-accent text-xl tracking-[0.3em]">{status.pairingCode}</span>
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="text-sm text-gray-400 space-y-1">
-        <p>
-          Paired phone:{' '}
-          {status?.pairedDevice ? (
-            <span className="text-gray-200">{status.pairedDevice}</span>
-          ) : (
-            <span className="text-gray-500">none yet</span>
-          )}
-        </p>
-        {status?.lastSync && (
-          <p>
-            Last sync: {status.lastSync.device} · {status.lastSync.applied} applied
-            {status.lastSync.skipped > 0 && (
-              <span className="text-yellow-400"> · {status.lastSync.skipped} skipped</span>
-            )}{' '}
-            · {new Date(status.lastSync.at).toLocaleString()}
-          </p>
-        )}
-        {status?.error && <p className="text-red-400">{status.error}</p>}
-      </div>
-    </SettingCard>
-  )
-}
-
 // Offline Japanese dictionaries: install JMdict/KANJIDIC with one click, import
 // any other Yomitan .zip, watch import progress, and remove installed ones.
 // ---- in-app updates -------------------------------------------------------
@@ -1010,7 +930,10 @@ function DictionarySettings() {
   const { data: status } = useQuery({
     queryKey: qk.dict.importStatus,
     queryFn: () => api.dict.importStatus(),
-    refetchInterval: busy ? 400 : false
+    // Self-gating off the polled data as well as local busy: the sentence-audio
+    // pack downloads for ~20 minutes, and navigating away+back must resume the
+    // progress display (updater.ts idiom).
+    refetchInterval: (q) => (busy || q.state.data?.running ? 400 : false)
   })
   const { data: sentenceBank } = useQuery({
     queryKey: qk.dict.sentenceBank,
@@ -1019,6 +942,22 @@ function DictionarySettings() {
   const { data: strokeSet } = useQuery({
     queryKey: qk.dict.strokeSet,
     queryFn: () => api.dict.strokeSet()
+  })
+  const { data: kradSet } = useQuery({
+    queryKey: qk.dict.kradSet,
+    queryFn: () => api.dict.kradSet()
+  })
+  const { data: grammarBank } = useQuery({
+    queryKey: qk.dict.grammarBank,
+    queryFn: () => api.dict.grammarBank()
+  })
+  const { data: pairSet } = useQuery({
+    queryKey: qk.dict.pairSet,
+    queryFn: () => api.dict.pairSet()
+  })
+  const { data: sentenceAudio } = useQuery({
+    queryKey: qk.dict.sentenceAudioBank,
+    queryFn: () => api.dict.sentenceAudioBank()
   })
 
   async function run(fn: () => Promise<unknown>) {
@@ -1034,19 +973,8 @@ function DictionarySettings() {
     }
   }
 
-  const running = busy && status?.running
-  const phaseLabel: Record<string, string> = {
-    downloading: 'Downloading',
-    reading: 'Reading',
-    terms: 'Importing words',
-    kanji: 'Importing kanji',
-    pitch: 'Importing pitch accent',
-    frequency: 'Importing frequency ranks',
-    tags: 'Importing tags',
-    sentences: 'Indexing example sentences',
-    strokes: 'Importing stroke order',
-    finalizing: 'Finalizing'
-  }
+  const running = !!status?.running
+  const blocked = busy || running
 
   return (
     <SettingCard
@@ -1073,10 +1001,13 @@ function DictionarySettings() {
                   {d.kanjiCount > 0 && <span>{d.kanjiCount.toLocaleString()} kanji</span>}
                   {d.freqCount > 0 && (d.termCount > 0 || d.kanjiCount > 0) && ' · '}
                   {d.freqCount > 0 && <span>{d.freqCount.toLocaleString()} frequency ranks</span>}
+                  {d.pitchCount > 0 && d.termCount === 0 && d.kanjiCount === 0 && (
+                    <span>{d.pitchCount.toLocaleString()} pitch accents</span>
+                  )}
                   {d.revision && <span className="ml-1 text-gray-600">· {d.revision}</span>}
                 </>
               }
-              busy={busy}
+              busy={blocked}
               onRemove={() => {
                 if (window.confirm(`Remove "${d.title}"?`)) void run(() => api.dict.remove(d.id))
               }}
@@ -1086,7 +1017,7 @@ function DictionarySettings() {
             <PackRow
               title="Example sentences (Tatoeba)"
               detail={<span>{sentenceBank.sentenceCount.toLocaleString()} sentence pairs</span>}
-              busy={busy}
+              busy={blocked}
               onRemove={() => {
                 if (window.confirm('Remove the example-sentence bank?')) {
                   void run(() => api.dict.removeSentences())
@@ -1103,10 +1034,71 @@ function DictionarySettings() {
                   {strokeSet.revision && <span className="ml-1 text-gray-600">· {strokeSet.revision}</span>}
                 </>
               }
-              busy={busy}
+              busy={blocked}
               onRemove={() => {
                 if (window.confirm('Remove the stroke-order data?')) {
                   void run(() => api.dict.removeStrokes())
+                }
+              }}
+            />
+          )}
+          {sentenceAudio && (
+            <PackRow
+              title="Sentence audio (Tatoeba)"
+              detail={<span>{sentenceAudio.clipCount.toLocaleString()} recorded sentences</span>}
+              busy={blocked}
+              onRemove={() => {
+                if (window.confirm('Remove the sentence audio (and its clip files)?')) {
+                  void run(() => api.dict.removeSentenceAudio())
+                }
+              }}
+            />
+          )}
+          {pairSet && (
+            <PackRow
+              title="Pitch minimal pairs (kotu)"
+              detail={
+                <>
+                  <span>{pairSet.pairCount.toLocaleString()} pairs with audio</span>
+                  {pairSet.revision && <span className="ml-1 text-gray-600">· {pairSet.revision}</span>}
+                </>
+              }
+              busy={blocked}
+              onRemove={() => {
+                if (window.confirm('Remove the minimal-pairs pack (and its audio files)?')) {
+                  void run(() => api.dict.removePairs())
+                }
+              }}
+            />
+          )}
+          {grammarBank && (
+            <PackRow
+              title="Grammar library (N5–N1)"
+              detail={<span>{grammarBank.pointCount.toLocaleString()} grammar points</span>}
+              busy={blocked}
+              onRemove={() => {
+                if (window.confirm('Remove the grammar library?')) {
+                  void run(() => api.dict.removeGrammar())
+                }
+              }}
+            />
+          )}
+          {kradSet && (
+            <PackRow
+              title="Kanji components (KRADFILE)"
+              detail={
+                <>
+                  <span>
+                    {kradSet.kanjiCount.toLocaleString()} kanji ·{' '}
+                    {kradSet.componentCount.toLocaleString()} components
+                  </span>
+                  {kradSet.revision && <span className="ml-1 text-gray-600">· {kradSet.revision}</span>}
+                </>
+              }
+              busy={blocked}
+              onRemove={() => {
+                if (window.confirm('Remove the kanji-components data?')) {
+                  void run(() => api.dict.removeKrad())
                 }
               }}
             />
@@ -1117,7 +1109,7 @@ function DictionarySettings() {
             <PackRow
               title="JMdict (EN)"
               detail="The dictionary itself — lookups, mining, deck generators. ~60 MB."
-              busy={busy}
+              busy={blocked}
               onDownload={() => void run(() => api.dict.importPreset('jmdict-en'))}
             />
           )}
@@ -1125,7 +1117,7 @@ function DictionarySettings() {
             <PackRow
               title="KANJIDIC (EN)"
               detail="Per-kanji readings and meanings for the kanji breakdown."
-              busy={busy}
+              busy={blocked}
               onDownload={() => void run(() => api.dict.importPreset('kanjidic-en'))}
             />
           )}
@@ -1133,7 +1125,7 @@ function DictionarySettings() {
             <PackRow
               title="JPDB frequency"
               detail="Word frequency ranks — rank badges, better prep decks, core decks."
-              busy={busy}
+              busy={blocked}
               onDownload={() => void run(() => api.dict.importPreset('jpdb-freq'))}
             />
           )}
@@ -1141,15 +1133,31 @@ function DictionarySettings() {
             <PackRow
               title="BCCWJ frequency"
               detail="Alternative frequency corpus (written Japanese)."
-              busy={busy}
+              busy={blocked}
               onDownload={() => void run(() => api.dict.importPreset('bccwj-freq'))}
+            />
+          )}
+          {!hasDict('Kanjium') && (
+            <PackRow
+              title="Kanjium pitch accents"
+              detail="Pitch contours in the dictionary + the pitch-pattern quiz. ~3 MB."
+              busy={blocked}
+              onDownload={() => void run(() => api.dict.importKanjium())}
+            />
+          )}
+          {!hasDict('JMnedict') && (
+            <PackRow
+              title="Names (JMnedict)"
+              detail="People, places, companies — the #1 lookup miss in manga. ~740k entries, ~11 MB, takes a few minutes."
+              busy={blocked}
+              onDownload={() => void run(() => api.dict.importPreset('jmnedict'))}
             />
           )}
           {!sentenceBank && (
             <PackRow
               title="Example sentences (Tatoeba)"
               detail="Real usage examples in the dictionary and on mined cards. Takes a minute to index."
-              busy={busy}
+              busy={blocked}
               onDownload={() => void run(() => api.dict.importSentences())}
             />
           )}
@@ -1157,8 +1165,44 @@ function DictionarySettings() {
             <PackRow
               title="Stroke order (KanjiVG)"
               detail="Animated stroke diagrams and the writing drill. ~4 MB."
-              busy={busy}
+              busy={blocked}
               onDownload={() => void run(() => api.dict.importStrokes())}
+            />
+          )}
+          {!kradSet && (
+            <PackRow
+              title="Kanji components (KRADFILE)"
+              detail="Kanji broken into parts — search by what you can see, build-a-kanji drill. <1 MB."
+              busy={blocked}
+              onDownload={() => void run(() => api.dict.importKrad())}
+            />
+          )}
+          {!grammarBank && (
+            <PackRow
+              title="Grammar library (N5–N1)"
+              detail="Every JLPT grammar point with formation and examples — the library page + cloze drill. ~2 MB."
+              busy={blocked}
+              onDownload={() => void run(() => api.dict.importGrammar())}
+            />
+          )}
+          {!pairSet && (
+            <PackRow
+              title="Pitch minimal pairs (kotu)"
+              detail="Native recordings for the pitch perception drill — hear the difference between 箸 and 橋. ~18 MB."
+              busy={blocked}
+              onDownload={() => void run(() => api.dict.importPairs())}
+            />
+          )}
+          {!sentenceAudio && (
+            <PackRow
+              title="Sentence audio (Tatoeba)"
+              detail={
+                sentenceBank
+                  ? 'Native recordings for the dictation drill and example playback. Thousands of small downloads — 15-30 min, safe to interrupt (re-running resumes).'
+                  : 'Native recordings for the dictation drill. Install the example sentences first — the audio attaches to them.'
+              }
+              busy={blocked || !sentenceBank}
+              onDownload={() => void run(() => api.dict.importSentenceAudio())}
             />
           )}
         </div>
@@ -1166,7 +1210,7 @@ function DictionarySettings() {
       {running && status && (
         <div className="mb-4">
           <p className="mb-1 text-xs text-gray-400">
-            {phaseLabel[status.phase] ?? status.phase}
+            {phaseLabelFor(status.phase)}
             {status.dictTitle ? ` · ${status.dictTitle}` : ''}
             {status.phase === 'downloading' && status.total > 0
               ? ` · ${Math.round((status.done / status.total) * 100)}%`
@@ -1196,12 +1240,141 @@ function DictionarySettings() {
       {error && <p className="mt-3 text-sm text-red-400">Import failed: {error}</p>}
 
       <p className="mt-4 text-xs leading-relaxed text-gray-500">
-        Data credits: JMdict &amp; KANJIDIC © EDRDG (CC BY-SA 4.0) · frequency dictionaries from
-        Kuuuube&apos;s yomitan-dictionaries · example sentences © Tatoeba contributors (CC BY 2.0 FR,
-        per-sentence attribution kept) · stroke order © KanjiVG, Ulrich Apel (CC BY-SA 3.0).
+        Data credits: JMdict, KANJIDIC, JMnedict &amp; KRADFILE © EDRDG (CC BY-SA 4.0) · frequency
+        dictionaries from Kuuuube&apos;s yomitan-dictionaries · example sentences © Tatoeba
+        contributors (CC BY 2.0 FR, per-sentence attribution kept) · sentence audio © its Tatoeba
+        contributors (per-clip licenses kept) · stroke order © KanjiVG, Ulrich Apel (CC BY-SA 3.0)
+        · pitch accents © Kanjium (CC BY-SA 4.0) · grammar points © hanabira.org (MIT) · minimal
+        pairs from Kuuuube&apos;s kotu.io backup.
       </p>
     </SettingCard>
   )
+}
+
+// The offline English dictionary (WordNet + CMUdict). Separate card, same
+// download/progress mechanics — it shares the single import gate and the polled
+// dict:importStatus, so its progress renders through the same block.
+function EnglishDictionarySettings() {
+  const qc = useQueryClient()
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const { data: info } = useQuery({
+    queryKey: qk.english.dictInfo,
+    queryFn: () => api.english.dictInfo()
+  })
+  const { data: status } = useQuery({
+    queryKey: qk.dict.importStatus,
+    queryFn: () => api.dict.importStatus(),
+    refetchInterval: busy ? 400 : false
+  })
+
+  async function run(fn: () => Promise<unknown>) {
+    setError(null)
+    setBusy(true)
+    try {
+      await fn()
+      await qc.invalidateQueries({ queryKey: qk.english.all })
+      await qc.invalidateQueries({ queryKey: qk.dict.all })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const running = !!status?.running
+  const blocked = busy || running
+
+  return (
+    <SettingCard
+      title="English dictionary"
+      description={
+        <>
+          Offline definitions, examples and synonyms for the English section, from Princeton
+          WordNet, plus pronunciations from CMUdict. One ~14&nbsp;MB download; lookups then work with
+          no network. Without it the section falls back to the online dictionaryapi.dev.
+        </>
+      }
+    >
+      <div className="mb-4 space-y-1.5">
+        {info ? (
+          <PackRow
+            title={`WordNet ${info.version ?? ''}`.trim()}
+            detail={`${info.lemmaCount.toLocaleString()} words · ${info.synsetCount.toLocaleString()} senses · ${info.pronCount.toLocaleString()} pronunciations`}
+            busy={blocked}
+            onRemove={() => {
+              if (window.confirm('Remove the offline English dictionary? Lookups will go online.')) {
+                void run(() => api.english.removeDict())
+              }
+            }}
+          />
+        ) : (
+          <PackRow
+            title="WordNet 3.0 + pronunciations"
+            detail="Definitions, usage examples, synonyms and IPA. ~14 MB, takes a minute to index."
+            busy={blocked}
+            onDownload={() => void run(() => api.english.importDict())}
+          />
+        )}
+      </div>
+
+      {running && status && (
+        <div className="mb-4">
+          <p className="mb-1 text-xs text-gray-400">
+            {phaseLabelFor(status.phase)}
+            {status.phase === 'downloading' && status.total > 0
+              ? ` · ${Math.round((status.done / status.total) * 100)}%`
+              : status.done > 0
+                ? ` · ${status.done.toLocaleString()}`
+                : ''}
+          </p>
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-base-700">
+            <div
+              className="h-full bg-accent transition-all"
+              style={{
+                width:
+                  status.phase === 'downloading' && status.total > 0
+                    ? `${(status.done / status.total) * 100}%`
+                    : '100%',
+                opacity: status.phase === 'downloading' ? 1 : 0.5
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {error && <p className="mt-3 text-sm text-red-400">Import failed: {error}</p>}
+
+      <p className="mt-4 text-xs leading-relaxed text-gray-500">
+        Data credits: WordNet 3.0 © Princeton University (WordNet License) · CMU Pronouncing
+        Dictionary © Carnegie Mellon University (BSD-2-Clause).
+      </p>
+    </SettingCard>
+  )
+}
+
+// Shared by both dictionary cards — they poll the same import status object.
+function phaseLabelFor(phase: string): string {
+  const labels: Record<string, string> = {
+    downloading: 'Downloading',
+    reading: 'Reading',
+    terms: 'Importing words',
+    kanji: 'Importing kanji',
+    pitch: 'Importing pitch accent',
+    frequency: 'Importing frequency ranks',
+    tags: 'Importing tags',
+    sentences: 'Indexing example sentences',
+    strokes: 'Importing stroke order',
+    english: 'Importing English words',
+    pronunciations: 'Importing pronunciations',
+    components: 'Importing kanji components',
+    grammar: 'Importing grammar points',
+    audio: 'Downloading sentence audio',
+    pairs: 'Importing minimal pairs',
+    finalizing: 'Finalizing'
+  }
+  return labels[phase] ?? phase
 }
 
 // One pack row: an installed dictionary/bank/set (detail + Remove) or an

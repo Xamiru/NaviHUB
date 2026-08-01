@@ -35,7 +35,9 @@ export default function Lightbox({
   return (
     <div
       className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-      onMouseDown={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
     >
       <div
         ref={panelRef}
@@ -44,7 +46,6 @@ export default function Lightbox({
         aria-label={img.alt ?? 'Image viewer'}
         tabIndex={-1}
         className="relative w-full h-full flex items-center justify-center p-4 outline-none"
-        onMouseDown={(e) => e.stopPropagation()}
       >
         <img
           src={img.url}
@@ -59,7 +60,7 @@ export default function Lightbox({
           aria-label="Close viewer"
           title="Close (Esc)"
         >
-          ×
+          ✕
         </button>
 
         {count > 1 && (

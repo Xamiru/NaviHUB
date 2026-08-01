@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import { progCourse, progLessonKey } from '@shared/programming/courses'
 
@@ -25,13 +26,11 @@ export default function ProgCoursePage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-5">
-        <Link to="/programming" className="text-sm text-gray-500 hover:text-white">
-          ← Programming
-        </Link>
-        <h1 className="mt-1 text-2xl font-bold">{course.title}</h1>
-        <p className="text-sm text-gray-500">{course.description}</p>
-      </div>
+      <PageHeader
+        back={{ to: '/programming', label: 'Programming' }}
+        title={course.title}
+        subtitle={course.description}
+      />
 
       <div className="card mb-5 flex items-center justify-between gap-3 p-4">
         <p className="text-sm text-gray-400">

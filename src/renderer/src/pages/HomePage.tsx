@@ -8,6 +8,7 @@ import { MEDIA_CONFIGS, configFor, pathForMedia, type MediaConfig } from '../lib
 import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
+import EmptyState from '../components/EmptyState'
 import { statusesFrom, useSettings } from '../lib/hooks'
 import lainIcon from '../assets/lain.png'
 import type { MediaItem, SettingsMap } from '@shared/types'
@@ -94,23 +95,23 @@ export default function HomePage() {
 
       <Section className="mt-8" title="Recently added">
         {isLoading ? (
-          <p className="text-gray-500">Loading…</p>
+          <p className="text-sm text-gray-500">Loading…</p>
         ) : recent.length === 0 ? (
-          <div className="card p-10 text-center">
-            <p className="font-medium mb-1">Nothing here yet</p>
-            <p className="text-sm text-gray-500 mb-5">
-              Add or import your first title to see it show up here.
-            </p>
-            <Link to="/anime" className="btn-primary mx-auto">
-              Go to your library
-            </Link>
-          </div>
+          <EmptyState
+            title="Nothing here yet"
+            body="Add or import your first title to see it show up here."
+            action={
+              <Link to="/anime" className="btn-primary">
+                Go to your library
+              </Link>
+            }
+          />
         ) : (
           <Strip items={recent} />
         )}
       </Section>
 
-      {favorites.length > 0 && <Strip title="★ Favorites" items={favorites} />}
+      {favorites.length > 0 && <Strip title="Favorites" items={favorites} />}
 
       <LibraryGlance />
     </div>
@@ -202,7 +203,7 @@ function Hero({
                 <span className="chip bg-base-800/80">{stats.completed} finished</span>
               )}
               {stats.favorites > 0 && (
-                <span className="chip bg-base-800/80">★ {stats.favorites} favorites</span>
+                <span className="chip bg-base-800/80">{stats.favorites} favorites</span>
               )}
               {stats.avgScore && (
                 <span className="chip bg-base-800/80">Ø score {stats.avgScore}</span>
@@ -249,7 +250,7 @@ function Spotlight({ pool, fromBacklog }: { pool: MediaItem[]; fromBacklog: bool
           {pick.title}
         </Link>
         <p className="mt-1 text-xs text-gray-500">
-          {[`${cfg.icon} ${cfg.singular}`, year, pick.status].filter(Boolean).join(' · ')}
+          {[cfg.singular, year, pick.status].filter(Boolean).join(' · ')}
         </p>
         {pick.synopsis && (
           <p className="mt-2 text-sm text-gray-400 line-clamp-3">{pick.synopsis}</p>
@@ -263,7 +264,7 @@ function Spotlight({ pool, fromBacklog }: { pool: MediaItem[]; fromBacklog: bool
             onClick={() => setSeed((s) => s + 1 + Math.floor(Math.random() * 97))}
             title="Pick something else"
           >
-            ↻ Reroll
+            Reroll
           </button>
         </div>
       </div>
@@ -458,9 +459,6 @@ function GlanceCard({ cfg, total }: { cfg: MediaConfig; total: number }) {
   return (
     <div className="card p-4 flex flex-col gap-3">
       <Link to={cfg.basePath} className="flex items-center gap-3 group">
-        <span className="flex h-10 w-10 items-center justify-center rounded-md bg-accent/15 text-lg text-accent">
-          {cfg.icon}
-        </span>
         <div className="min-w-0">
           <p className="font-medium group-hover:text-accent truncate">
             {cfg.sidebarLabel ?? cfg.plural}

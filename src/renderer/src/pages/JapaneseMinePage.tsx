@@ -68,8 +68,9 @@ export default function JapaneseMinePage() {
                 if (e.key === 'Enter') search()
               }}
             />
-            <button className="btn-primary" disabled={searching || !term.trim()} onClick={search}>
-              {searching ? '…' : 'Search'}
+            {/* Ghost on purpose: the screen's one filled action is "+ Add card" */}
+            <button className="btn-ghost" disabled={searching || !term.trim()} onClick={search}>
+              {searching ? 'Searching…' : 'Search'}
             </button>
           </div>
         </div>
@@ -152,6 +153,7 @@ export default function JapaneseMinePage() {
                 <button
                   className="btn-ghost py-1 px-2 text-xs text-gray-500 hover:text-red-400"
                   onClick={() => setSource(null)}
+                  aria-label="Clear source"
                 >
                   ✕
                 </button>

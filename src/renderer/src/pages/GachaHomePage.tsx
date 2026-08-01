@@ -1,8 +1,9 @@
-import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { Link } from 'react-router-dom'
 import { GACHA_GAMES, type GachaGameCfg } from '@shared/gacha'
+import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import CoverImage from '../components/CoverImage'
 import type { GachaGameOverview } from '@shared/types'
@@ -25,12 +26,10 @@ export default function GachaHomePage() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold">Gacha</h1>
-        <p className="text-sm text-gray-500">
-          The live-service games you play: roster, builds, wallet, banners and news per game.
-        </p>
-      </div>
+      <PageHeader
+        title="Gacha"
+        subtitle="The live-service games you play: roster, builds, wallet, banners and news per game."
+      />
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
         {GACHA_GAMES.map((g) => (
@@ -51,6 +50,9 @@ function GameCard({
   due: number
 }) {
   const amounts = new Map((overview?.currencies ?? []).map((c) => [c.key, c.amount]))
+  // Not a HubCard: these carry the user's per-game hero art (gacha_meta image),
+  // so they keep the image-hero treatment — the media-card exception in the hub
+  // family.
   return (
     <Link
       to={`/gacha/${cfg.id}`}
@@ -66,13 +68,9 @@ function GameCard({
           />
         ) : (
           <div
-            className="flex h-full w-full items-center justify-center"
+            className="h-full w-full"
             style={{ background: `linear-gradient(135deg, ${cfg.color}2e, transparent 75%)` }}
-          >
-            <span className="text-5xl opacity-70" style={{ color: cfg.color }}>
-              {cfg.glyph}
-            </span>
-          </div>
+          />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/20 to-transparent" />
         {cfg.coach && due > 0 && (
@@ -83,10 +81,7 @@ function GameCard({
             {due} due
           </span>
         )}
-        <div className="absolute bottom-2 left-4 right-4 flex items-baseline gap-2">
-          <span className="text-lg drop-shadow" style={{ color: cfg.color }}>
-            {cfg.glyph}
-          </span>
+        <div className="absolute bottom-2 left-4 right-4">
           <p className="truncate text-lg font-semibold drop-shadow">{cfg.name}</p>
         </div>
       </div>

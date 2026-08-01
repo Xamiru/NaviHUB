@@ -13,7 +13,6 @@ import { killActive as killActiveMusicDownload } from './musicDownload'
 import { get as getSetting } from './repos/settingsRepo'
 import { parseUiScale } from '@shared/uiScale'
 import { abortActiveCoachTurn } from './gachaCoach'
-import { stopSyncServer } from './sync'
 import { killActiveUpdate } from './updater'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
@@ -163,8 +162,6 @@ app.on('before-quit', () => {
   // and resume on the next try.
   killActiveMusicDownload()
   abortActiveCoachTurn()
-  // Sockets are destroyed synchronously — the LAN socket can't outlive the app.
-  void stopSyncServer()
   // A half-downloaded update is resumable; don't let it outlive the app.
   killActiveUpdate()
   closeDatabase()

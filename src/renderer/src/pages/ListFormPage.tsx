@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
 import { KIND_LABEL } from '../lib/listLinks'
 import type { ListKind } from '@shared/types'
 
@@ -60,18 +62,15 @@ export default function ListFormPage() {
     else navigate(`/lists/${targetId}`, { replace: true })
   }
 
-  if (!loaded) return <p className="p-6 text-gray-500">Loading…</p>
+  if (!loaded) return <PageStatus>Loading…</PageStatus>
 
   return (
     <div className="p-6 max-w-xl mx-auto">
-      <button className="text-sm text-gray-500 hover:text-gray-300 mb-4" onClick={() => navigate(-1)}>
-        ← Back
-      </button>
-      <h1 className="text-2xl font-bold mb-5">{editing ? 'Edit list' : 'New list'}</h1>
+      <PageHeader back="history" title={editing ? 'Edit list' : 'New list'} />
 
       <div className="space-y-4">
         <div>
-          <div className="label mb-1">Title</div>
+          <label className="label">Title</label>
           <input
             className="input"
             placeholder="e.g. Best anime by opening"
@@ -82,7 +81,7 @@ export default function ListFormPage() {
         </div>
 
         <div>
-          <div className="label mb-1">Description</div>
+          <label className="label">Description</label>
           <textarea
             className="input min-h-[80px]"
             placeholder="Optional — what this list is about"
@@ -92,7 +91,7 @@ export default function ListFormPage() {
         </div>
 
         <div>
-          <div className="label mb-1">Kind</div>
+          <label className="label">Kind</label>
           {editing ? (
             <p className="text-sm text-gray-400">{KIND_LABEL[kind]} (can’t be changed)</p>
           ) : (

@@ -1,42 +1,61 @@
-import { Link } from 'react-router-dom'
+import PageHeader from '../components/PageHeader'
+import HubCard from '../components/HubCard'
 
 // A quiz type shown as a card on the hub. Add entries here as new quizzes land.
 const QUIZZES = [
   {
     to: '/quiz/song',
-    icon: '🎵',
     title: 'Song Quiz',
     desc: 'A random anime opening or ending plays — guess which anime it belongs to from 4 options.'
   },
   {
     to: '/japanese/quiz',
-    icon: 'あ',
     title: 'Japanese Quiz',
     desc: 'Multiple choice over the lessons you have marked as learned — vocab, kanji and grammar.'
   },
   {
+    to: '/japanese/pitch',
+    title: 'Pitch Accent',
+    desc: 'See a word and pick its pitch contour, or hear a recording and pick which contour was said.'
+  },
+  {
+    to: '/japanese/grammar/quiz',
+    title: 'Grammar Drill',
+    desc: 'A real sentence with the grammar point blanked out — pick what fills the blank, N5 to N1.'
+  },
+  {
+    to: '/japanese/listen',
+    title: 'Dictation',
+    desc: 'A native recording plays — type what you heard, then compare against the transcript.'
+  },
+  {
     to: '/quiz/tournament',
-    icon: 'VS',
     title: 'Tournament',
     desc: 'World-cup bracket over your library — songs, characters, anime or people go head-to-head until one champion remains.'
+  },
+  {
+    to: '/quiz/programming',
+    title: 'Programming Quiz',
+    desc: "Multiple choice over the Programming section — the courses' own questions, or which command does what."
+  },
+  {
+    to: '/programming/practice',
+    title: 'CLI Typing Drill',
+    desc: 'Read the task, type the command. Checked as you type; misses come back around until you stop.'
   }
 ]
 
 export default function QuizLandingPage() {
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Quiz</h1>
-        <p className="text-sm text-gray-500">Test yourself on the media in your library.</p>
-      </div>
+      <PageHeader
+        title="Quiz"
+        subtitle="Test yourself on the media in your library, and on what you are learning."
+      />
 
       <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
         {QUIZZES.map((q) => (
-          <Link key={q.to} to={q.to} className="card p-5 hover:border-accent transition-colors group">
-            <div className="text-3xl mb-3">{q.icon}</div>
-            <p className="text-lg font-semibold group-hover:text-accent">{q.title}</p>
-            <p className="mt-1 text-sm text-gray-500">{q.desc}</p>
-          </Link>
+          <HubCard key={q.to} to={q.to} title={q.title} body={q.desc} />
         ))}
       </div>
     </div>

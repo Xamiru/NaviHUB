@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import CoverImage from './CoverImage'
+import ActionMenu from './ActionMenu'
 
 interface Fields {
   name: string
@@ -98,15 +99,18 @@ export default function EntityHeader({
             <button className="btn-primary" disabled={!dirty || saving} onClick={save}>
               {saving ? 'Saving…' : 'Save'}
             </button>
-            <button
-              className="btn-danger"
-              onClick={async () => {
-                if (confirm('Delete this entry? Links to it will be removed.')) await onDelete()
-              }}
-            >
-              Delete
-            </button>
             {actions}
+            <ActionMenu
+              items={[
+                {
+                  label: 'Delete…',
+                  danger: true,
+                  onSelect: async () => {
+                    if (confirm('Delete this entry? Links to it will be removed.')) await onDelete()
+                  }
+                }
+              ]}
+            />
           </div>
         </div>
       </div>

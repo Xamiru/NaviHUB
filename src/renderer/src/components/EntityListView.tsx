@@ -6,6 +6,9 @@ import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue, useIncrementalList } from '../lib/hooks'
 import { qk, type EntityNamespace } from '../lib/queryKeys'
 import CoverImage from './CoverImage'
+import PageHeader from './PageHeader'
+import PageStatus from './PageStatus'
+import EmptyState from './EmptyState'
 import type { CreditRole, MediaType } from '@shared/types'
 
 type Kind = 'person' | 'company' | 'character'
@@ -99,8 +102,7 @@ export default function EntityListView({
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <h1 className="text-2xl font-bold mb-1">{title}</h1>
-      <p className="text-sm text-gray-500 mb-5">{rows.length} entries</p>
+      <PageHeader title={title} subtitle={`${rows.length} entries`} />
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
         <input
@@ -124,9 +126,9 @@ export default function EntityListView({
       </div>
 
       {isLoading ? (
-        <p className="text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">Loading…</p>
       ) : rows.length === 0 ? (
-        <p className="text-gray-400">Nothing here yet.</p>
+        <EmptyState title="Nothing here yet" />
       ) : (
         <>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(140px,1fr))] gap-4">

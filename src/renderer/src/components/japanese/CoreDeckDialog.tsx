@@ -46,11 +46,17 @@ export default function CoreDeckDialog({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
       <div
         ref={dialogRef}
         role="dialog"
-        aria-modal
+        aria-modal="true"
+        aria-label="Core frequency deck"
         tabIndex={-1}
         className="card w-full max-w-md p-5"
       >

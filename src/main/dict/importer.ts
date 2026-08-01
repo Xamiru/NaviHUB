@@ -38,9 +38,20 @@ const PRESETS: Record<string, string> = {
   'jpdb-freq':
     'https://github.com/Kuuuube/yomitan-dictionaries/raw/main/dictionaries/JPDB_v2.2_Frequency_Kana_2024-10-13.zip',
   'bccwj-freq':
-    'https://github.com/Kuuuube/yomitan-dictionaries/raw/main/dictionaries/BCCWJ_SUW_LUW_combined.zip'
+    'https://github.com/Kuuuube/yomitan-dictionaries/raw/main/dictionaries/BCCWJ_SUW_LUW_combined.zip',
+  jmnedict: 'https://github.com/yomidevs/jmdict-yomitan/releases/latest/download/JMnedict.zip'
 }
 export type PresetKey = keyof typeof PRESETS
+
+// Per-preset import options. JMnedict is ~740k proper names:
+//  · glossFts:false keeps its romaji glosses OUT of the English search —
+//    searchEnglish ranks purely by FTS score, so names would swamp real words
+//    (it also roughly halves the import time and DB growth);
+//  · defaultPriority:-10 sinks name-only groups below every word group in
+//    lookupJapanese's sort, so names never crowd out words in lookups.
+const PRESET_OPTS: Record<string, ImportOpts> = {
+  jmnedict: { glossFts: false, defaultPriority: -10 }
+}
 
 // ---- live status (module-level, polled via dict:importStatus) ----
 
@@ -299,7 +310,18 @@ async function deleteDictRows(db: Database.Database, dictId: number): Promise<vo
 
 // ---- core import (pure of zip/network IO — the unit-test entry point) ----
 
-export async function importFromReader(reader: BankReader): Promise<DictImportSummary> {
+export interface ImportOpts {
+  // false skips the gloss_fts rows (JMnedict — see PRESET_OPTS).
+  glossFts?: boolean
+  // Priority for a FRESH install; an existing same-title dict's priority
+  // always wins on re-import.
+  defaultPriority?: number
+}
+
+export async function importFromReader(
+  reader: BankReader,
+  opts: ImportOpts = {}
+): Promise<DictImportSummary> {
   const db = getDictDb()
   const index = await reader.readIndex()
   const title = (index?.title ?? '').trim()
@@ -332,8 +354,10 @@ export async function importFromReader(reader: BankReader): Promise<DictImportSu
         r.sequence,
         r.termTags
       )
-      const gloss = flattenGlossary(r.glossary)
-      if (gloss) insFts.run(gloss, info.lastInsertRowid as number, newId)
+      if (opts.glossFts !== false) {
+        const gloss = flattenGlossary(r.glossary)
+        if (gloss) insFts.run(gloss, info.lastInsertRowid as number, newId)
+      }
     }
   })
 
@@ -461,7 +485,7 @@ export async function importFromReader(reader: BankReader): Promise<DictImportSu
   const old = db.prepare('SELECT id, priority FROM dict WHERE title = ?').get(title) as
     | { id: number; priority: number }
     | undefined
-  const priority = old?.priority ?? 0
+  const priority = old?.priority ?? opts.defaultPriority ?? 0
   if (old) {
     await deleteDictRows(db, old.id)
     db.prepare('DELETE FROM dict WHERE id = ?').run(old.id)
@@ -482,12 +506,14 @@ export async function importFromReader(reader: BankReader): Promise<DictImportSu
 // ---- registry queries ----
 
 export function listDictionaries(): DictInfo[] {
-  // freq_count is computed rather than stored: a frequency dictionary has no
-  // terms or kanji of its own, so without this its row would read "0 terms".
+  // freq_count / pitch_count are computed rather than stored: a frequency or
+  // pitch dictionary (Kanjium) has no terms or kanji of its own, so without
+  // these its row would read "0 terms".
   const rows = getDictDb()
     .prepare(
       `SELECT d.id, d.title, d.revision, d.format, d.priority, d.term_count, d.kanji_count,
-              d.imported_at, (SELECT COUNT(*) FROM freq f WHERE f.dict_id = d.id) AS freq_count
+              d.imported_at, (SELECT COUNT(*) FROM freq f WHERE f.dict_id = d.id) AS freq_count,
+              (SELECT COUNT(*) FROM pitch p WHERE p.dict_id = d.id) AS pitch_count
        FROM dict d ORDER BY d.priority DESC, d.title ASC`
     )
     .all() as any[]
@@ -500,6 +526,7 @@ export function listDictionaries(): DictInfo[] {
     termCount: r.term_count,
     kanjiCount: r.kanji_count,
     freqCount: r.freq_count,
+    pitchCount: r.pitch_count,
     importedAt: r.imported_at
   }))
 }
@@ -562,7 +589,7 @@ export function importPreset(key: PresetKey): Promise<DictImportSummary> {
     try {
       const reader = await openZipReader(tmp)
       try {
-        return await importFromReader(reader)
+        return await importFromReader(reader, PRESET_OPTS[key])
       } finally {
         reader.close()
       }

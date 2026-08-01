@@ -5,6 +5,8 @@ import { qk } from '../lib/queryKeys'
 import EntityHeader from '../components/EntityHeader'
 import BackButton from '../components/BackButton'
 import CoverImage from '../components/CoverImage'
+import PageStatus from '../components/PageStatus'
+import Section from '../components/Section'
 import { pathForMedia } from '../lib/mediaConfig'
 import type { CompanyType } from '@shared/types'
 
@@ -25,7 +27,7 @@ export default function StudioDetailPage() {
     queryFn: () => api.companies.media(companyId)
   })
 
-  if (!company) return <div className="p-6 text-gray-500">Loading…</div>
+  if (!company) return <PageStatus>Loading…</PageStatus>
 
   return (
     <div className="p-6 max-w-[1200px] mx-auto">
@@ -75,32 +77,31 @@ export default function StudioDetailPage() {
         }}
       />
 
-      <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
-        Works · {works.length}
-      </h2>
-      {works.length === 0 ? (
-        <p className="text-sm text-gray-400">
-          No works linked yet. Add this company from a title&apos;s page.
-        </p>
-      ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
-          {works.map((m) => (
-            <Link key={m.id} to={pathForMedia(m)} className="group">
-              <div className="aspect-[2/3] rounded-lg overflow-hidden">
-                <CoverImage
-                  path={m.coverPath}
-                  alt={m.title}
-                  rounded="rounded-lg"
-                  className="h-full w-full transition-transform group-hover:scale-105"
-                />
-              </div>
-              <p className="mt-2 text-sm font-medium line-clamp-2 group-hover:text-accent">
-                {m.title}
-              </p>
-            </Link>
-          ))}
-        </div>
-      )}
+      <Section title={`Works · ${works.length}`}>
+        {works.length === 0 ? (
+          <p className="text-sm text-gray-400">
+            No works linked yet. Add this company from a title&apos;s page.
+          </p>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+            {works.map((m) => (
+              <Link key={m.id} to={pathForMedia(m)} className="group">
+                <div className="aspect-[2/3] rounded-lg overflow-hidden">
+                  <CoverImage
+                    path={m.coverPath}
+                    alt={m.title}
+                    rounded="rounded-lg"
+                    className="h-full w-full transition-transform group-hover:scale-105"
+                  />
+                </div>
+                <p className="mt-2 text-sm font-medium line-clamp-2 group-hover:text-accent">
+                  {m.title}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </Section>
     </div>
   )
 }

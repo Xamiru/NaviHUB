@@ -11,6 +11,7 @@ import PitchAccent from '../components/japanese/PitchAccent'
 import StructuredContent from '../components/japanese/StructuredContent'
 import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 import { flattenGlossary } from '@shared/dictContent'
+import { mediaUrl } from '@shared/mediaUrl'
 import type { DictEntry, GlossaryItem, KanjiInfo } from '@shared/types'
 
 // Standalone offline dictionary: search JMdict / KANJIDIC / pitch / grammar dicts
@@ -53,7 +54,7 @@ export default function JapaneseDictionaryPage() {
     <div className="p-6 max-w-3xl mx-auto">
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
-        title="辞 Dictionary"
+        title="Dictionary"
         subtitle="Offline lookup across every dictionary you&apos;ve installed. Type Japanese or English."
       />
 
@@ -84,17 +85,65 @@ export default function JapaneseDictionaryPage() {
         ) : entries.length === 0 ? (
           <p className="text-sm text-gray-500">Nothing found for &ldquo;{debounced}&rdquo;.</p>
         ) : (
-          entries.map((entry, i) => (
-            <EntryCard
-              key={`${entry.expression} ${entry.reading} ${i}`}
-              entry={entry}
-              onSearch={setQuery}
-              hasSentences={!!sentenceBank}
-            />
-          ))
+          <ResultsList entries={entries} onSearch={setQuery} hasSentences={!!sentenceBank} />
         )}
       </div>
     </div>
+  )
+}
+
+// Words render as always; JMnedict-only results group under a collapsed Names
+// disclosure — auto-expanded when names are ALL there is, which is the whole
+// point (name lookups stop being misses without burying real words).
+function ResultsList({
+  entries,
+  onSearch,
+  hasSentences
+}: {
+  entries: DictEntry[]
+  onSearch: (q: string) => void
+  hasSentences: boolean
+}) {
+  const words = entries.filter((e) => !e.isName)
+  const names = entries.filter((e) => e.isName)
+  const [showNames, setShowNames] = useState(false)
+  const namesOpen = showNames || words.length === 0
+
+  return (
+    <>
+      {words.map((entry, i) => (
+        <EntryCard
+          key={`${entry.expression} ${entry.reading} ${i}`}
+          entry={entry}
+          onSearch={onSearch}
+          hasSentences={hasSentences}
+        />
+      ))}
+      {names.length > 0 && (
+        <div>
+          {words.length > 0 && (
+            <button
+              className="mb-2 text-sm text-gray-500 hover:text-gray-300"
+              onClick={() => setShowNames(!showNames)}
+            >
+              {namesOpen ? '▾' : '▸'} Names ({names.length})
+            </button>
+          )}
+          {namesOpen && (
+            <div className="space-y-4">
+              {names.map((entry, i) => (
+                <EntryCard
+                  key={`${entry.expression} ${entry.reading} n${i}`}
+                  entry={entry}
+                  onSearch={onSearch}
+                  hasSentences={hasSentences}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </>
   )
 }
 
@@ -130,6 +179,7 @@ function EntryCard({
             ))}
           </div>
           <div className="mt-1 flex flex-wrap gap-1">
+            {entry.isName && <span className="chip bg-base-700 text-gray-400">name</span>}
             {entry.isCommon && <span className="chip bg-green-500/20 text-green-300">common</span>}
             {entry.frequency && (
               <span
@@ -237,7 +287,18 @@ function KanjiBreakdown({ text }: { text: string }) {
 }
 
 // Real sentences containing the word, from the offline Tatoeba bank. Loaded
-// only when the section is opened — one query per expanded entry.
+// only when the section is opened — one query per expanded entry. Sentences
+// with a recording (sentence-audio pack) get a Play button through a
+// module-scoped Audio element — deliberately not the global player queue.
+let exampleAudio: HTMLAudioElement | null = null
+function playExample(path: string): void {
+  exampleAudio?.pause()
+  const url = mediaUrl(path)
+  if (!url) return
+  exampleAudio = new Audio(url)
+  void exampleAudio.play().catch(() => {})
+}
+
 function ExampleSentences({ term }: { term: string }) {
   const { data: sentences = [], isLoading } = useQuery({
     queryKey: qk.dict.sentences(term),
@@ -251,7 +312,18 @@ function ExampleSentences({ term }: { term: string }) {
     <ul className="mt-2 space-y-2">
       {sentences.map((s, i) => (
         <li key={i} title={s.attribution ?? undefined}>
-          <p className="text-sm text-gray-200">{s.jp}</p>
+          <p className="text-sm text-gray-200">
+            {s.jp}
+            {s.audioPath && (
+              <button
+                className="btn-ghost ml-2 px-1.5 py-0 text-xs"
+                onClick={() => playExample(s.audioPath!)}
+                aria-label="Play recording"
+              >
+                Play
+              </button>
+            )}
+          </p>
           <p className="text-xs text-gray-500">{s.en}</p>
         </li>
       ))}
@@ -277,6 +349,21 @@ function KanjiRow({ k }: { k: KanjiInfo }) {
             {k.stats.strokes && <span>{k.stats.strokes} strokes</span>}
             {k.stats.strokes && k.stats.grade && ' · '}
             {k.stats.grade && <span>grade {k.stats.grade}</span>}
+          </p>
+        )}
+        {k.components.length > 0 && (
+          <p className="mt-1 flex flex-wrap items-center gap-1">
+            <span className="text-xs text-gray-600">parts</span>
+            {k.components.map((c) => (
+              <Link
+                key={c}
+                to={`/japanese/kanji?c=${encodeURIComponent(c)}`}
+                className="chip bg-base-700 text-gray-400 hover:text-accent"
+                title="Find kanji with this part"
+              >
+                {c}
+              </Link>
+            ))}
           </p>
         )}
       </div>

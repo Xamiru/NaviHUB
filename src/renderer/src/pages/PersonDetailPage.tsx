@@ -7,6 +7,8 @@ import EntityHeader from '../components/EntityHeader'
 import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import CoverImage from '../components/CoverImage'
+import PageStatus from '../components/PageStatus'
+import Section from '../components/Section'
 import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
 import type { PersonCredit, MediaType } from '@shared/types'
 
@@ -69,7 +71,7 @@ export default function PersonDetailPage() {
     return { staffRoles, actingByType, actingTypes, totalActing }
   }, [credits])
 
-  if (!person) return <div className="p-6 text-gray-500">Loading…</div>
+  if (!person) return <PageStatus>Loading…</PageStatus>
 
   const typeLabel = (t: MediaType): string =>
     MEDIA_CONFIGS.find((cfg) => cfg.key === t)?.plural ?? t.replace(/_/g, ' ')
@@ -88,25 +90,19 @@ export default function PersonDetailPage() {
     actingTypes.map((type) => {
       const group = [...actingByType.get(type)!.values()]
       return (
-        <div key={type} className="mb-8">
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
-            {typeLabel(type)} · {group.length}
-          </h2>
+        <Section key={type} title={`${typeLabel(type)} · ${group.length}`}>
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
             {group.map(({ credit, titles }) => (
               <RoleCard key={credit.character!.id} c={credit} titles={titles} />
             ))}
           </div>
-        </div>
+        </Section>
       )
     })
 
   const crewSection = staffRoles.length > 0 && (
-    <>
-      <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
-        Crew roles · {staffRoles.length}
-      </h2>
-      <div className="space-y-1.5 mb-8">
+    <Section title={`Crew roles · ${staffRoles.length}`}>
+      <div className="space-y-1.5">
         {orderedStaff.map((c) => (
           <Link
             key={c.creditId}
@@ -118,7 +114,7 @@ export default function PersonDetailPage() {
           </Link>
         ))}
       </div>
-    </>
+    </Section>
   )
 
   return (
@@ -155,14 +151,11 @@ export default function PersonDetailPage() {
       />
 
       {totalActing === 0 && staffRoles.length === 0 && (
-        <>
-          <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-3">
-            Roles
-          </h2>
-          <p className="text-sm text-gray-400 mb-8">
+        <Section title="Roles">
+          <p className="text-sm text-gray-400">
             No roles yet. Add this person to a title&apos;s cast from its page.
           </p>
-        </>
+        </Section>
       )}
 
       {crewFirst ? (

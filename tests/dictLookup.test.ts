@@ -184,6 +184,47 @@ describe('frequency attachment', () => {
   })
 })
 
+describe('names dictionary (JMnedict semantics)', () => {
+  async function seedNames(): Promise<void> {
+    await importFromReader(
+      {
+        readIndex: async () => ({ title: 'JMnedict (English)', revision: 'r', format: 3 }),
+        bankNames: () => ['term_bank_1.json'],
+        readBank: async () => [
+          // 猫 also exists as a (fictional) surname — merges into the word group.
+          ['猫', 'ねこ', 'surname', '', 0, ['Neko (surname)'], 1, ''],
+          ['中田', 'なかた', 'surname', '', 0, ['Nakata'], 2, ''],
+          ['中田', 'なかだ', 'surname', '', 0, ['Nakada'], 2, '']
+        ],
+        readRaw: async () => Buffer.alloc(0)
+      },
+      { glossFts: false, defaultPriority: -10 }
+    )
+  }
+
+  it('name-only entries carry isName and sort after word groups', async () => {
+    await seedNames()
+    const r = await lookupWord('なかた')
+    const nakata = r.find((e) => e.expression === '中田')!
+    expect(nakata.isName).toBe(true)
+  })
+
+  it('a merged word+name group is NOT flagged and lists the word dict first', async () => {
+    await seedNames()
+    const r = await lookupWord('猫')
+    const neko = r.find((e) => e.expression === '猫')!
+    // JMdict def must come first despite JMnedict's higher dict id.
+    expect(neko.defs[0].dictTitle).toBe('JMdict')
+    expect(neko.isName).toBe(false)
+  })
+
+  it('name glosses are absent from the English search', async () => {
+    await seedNames()
+    const r = await lookupWord('Nakata')
+    expect(r.some((e) => e.expression === '中田')).toBe(false)
+  })
+})
+
 describe('lookupKanji', () => {
   it('returns kanji breakdowns for the CJK characters in the text', () => {
     const k = lookupKanji('猫')

@@ -5,7 +5,8 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { ANIME, isCompletedStatus } from '../lib/mediaConfig'
-import BackButton from '../components/BackButton'
+import PageHeader from '../components/PageHeader'
+import EmptyState from '../components/EmptyState'
 import Section from '../components/Section'
 import { MediaCard } from './MediaListPage'
 import {
@@ -74,50 +75,51 @@ export default function SeasonalAnimePage() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <BackButton />
-
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <div className="mr-auto">
-          <h1 className="text-2xl font-bold">Seasonal anime</h1>
-          <p className="text-sm text-gray-500">Your library by airing season</p>
-        </div>
-        <button
-          className="btn-ghost py-1.5"
-          onClick={() => {
-            setYear(now.year)
-            // Let the year switch render before scrolling to the season.
-            requestAnimationFrame(() => scrollToSeason(now.season))
-          }}
-        >
-          Now: {seasonLabel(now.season)} {now.year}
-        </button>
-        <button
-          className="btn-ghost py-1.5"
-          onClick={() => setYear(year - 1)}
-          aria-label="Previous year"
-        >
-          ◀
-        </button>
-        <select
-          className="input w-auto py-1.5"
-          value={year}
-          onChange={(e) => setYear(Number(e.target.value))}
-          aria-label="Year"
-        >
-          {yearOptions.map((y) => (
-            <option key={y} value={y}>
-              {y} · {seasonCount(byYear.get(y))}
-            </option>
-          ))}
-        </select>
-        <button
-          className="btn-ghost py-1.5"
-          onClick={() => setYear(year + 1)}
-          aria-label="Next year"
-        >
-          ▶
-        </button>
-      </div>
+      <PageHeader
+        back="history"
+        title="Seasonal anime"
+        subtitle="Your library by airing season"
+        actions={
+          <>
+            <button
+              className="btn-ghost py-1.5"
+              onClick={() => {
+                setYear(now.year)
+                // Let the year switch render before scrolling to the season.
+                requestAnimationFrame(() => scrollToSeason(now.season))
+              }}
+            >
+              Now: {seasonLabel(now.season)} {now.year}
+            </button>
+            <button
+              className="btn-ghost py-1.5"
+              onClick={() => setYear(year - 1)}
+              aria-label="Previous year"
+            >
+              Prev
+            </button>
+            <select
+              className="input w-auto py-1.5"
+              value={year}
+              onChange={(e) => setYear(Number(e.target.value))}
+              aria-label="Year"
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y} · {seasonCount(byYear.get(y))}
+                </option>
+              ))}
+            </select>
+            <button
+              className="btn-ghost py-1.5"
+              onClick={() => setYear(year + 1)}
+              aria-label="Next year"
+            >
+              Next
+            </button>
+          </>
+        }
+      />
 
       {/* Quick-nav to a season's shelf. Imperative scroll on purpose —
           href="#…" anchors don't survive HashRouter. */}
@@ -135,17 +137,17 @@ export default function SeasonalAnimePage() {
       </div>
 
       {isLoading ? (
-        <p className="text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">Loading…</p>
       ) : items.length === 0 ? (
-        <div className="card p-12 text-center">
-          <p className="text-lg font-medium mb-1">No anime in your library yet</p>
-          <p className="text-sm text-gray-500 mb-5">
-            Add or import some anime and they&apos;ll fall into their airing seasons here.
-          </p>
-          <Link to="/anime" className="btn-primary mx-auto inline-block">
-            Go to Anime
-          </Link>
-        </div>
+        <EmptyState
+          title="No anime in your library yet"
+          body="Add or import some anime and they'll fall into their airing seasons here."
+          action={
+            <Link to="/anime" className="btn-primary">
+              Go to Anime
+            </Link>
+          }
+        />
       ) : (
         SEASONS.map((s) => {
           const list = buckets[s]

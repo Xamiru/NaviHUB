@@ -1,3 +1,4 @@
+import PageHeader from '../components/PageHeader'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -128,26 +129,26 @@ export default function ThemeSongsPage(): JSX.Element {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold">Songs</h1>
-          <p className="text-sm text-gray-500">
-            {counts
-              ? `${counts.playable} playable theme${counts.playable === 1 ? '' : 's'}${
-                  counts.total > counts.playable ? ` of ${counts.total}` : ''
-                } · ${counts.favorites} favorite${counts.favorites === 1 ? '' : 's'}`
-              : 'Anime openings and endings from your library'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button className="btn-ghost" disabled={songs.length === 0} onClick={() => playAt(0)}>
-            ▶ Play all
-          </button>
-          <button className="btn-primary" disabled={songs.length === 0} onClick={shuffleAll}>
-            ⇄ Shuffle
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Songs"
+        subtitle={
+          counts
+            ? `${counts.playable} playable theme${counts.playable === 1 ? '' : 's'}${
+                counts.total > counts.playable ? ` of ${counts.total}` : ''
+              } · ${counts.favorites} favorite${counts.favorites === 1 ? '' : 's'}`
+            : 'Anime openings and endings from your library'
+        }
+        actions={
+          <>
+            <button className="btn-ghost" disabled={songs.length === 0} onClick={() => playAt(0)}>
+              Play all
+            </button>
+            <button className="btn-primary" disabled={songs.length === 0} onClick={shuffleAll}>
+              Shuffle
+            </button>
+          </>
+        }
+      />
 
       {/* Anime status pills — multi-select, "All" clears (MediaListPage idiom) */}
       <div className="flex flex-wrap gap-2 mb-4">
@@ -218,7 +219,7 @@ export default function ThemeSongsPage(): JSX.Element {
           onClick={() => setFavAnime((v) => !v)}
           title="Songs from your favorite anime only"
         >
-          ★ Favorite anime
+          Favorite anime
         </button>
         <div className="flex items-center gap-2 ml-auto text-sm">
           <span className="text-gray-500">Sort</span>

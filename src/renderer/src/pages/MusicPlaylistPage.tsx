@@ -8,6 +8,7 @@ import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
 import { useDebouncedValue } from '../lib/hooks'
 import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
+import ActionMenu from '../components/ActionMenu'
 import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
 import MusicTrackRow from '../components/MusicTrackRow'
 
@@ -108,7 +109,7 @@ export default function MusicPlaylistPage() {
         </div>
         <div className="flex shrink-0 gap-2">
           <button className="btn-primary" onClick={() => playFrom(0)} disabled={!items.length}>
-            ▶ Play
+            Play
           </button>
           <button
             className="btn-ghost"
@@ -121,11 +122,9 @@ export default function MusicPlaylistPage() {
               )
             }
           >
-            ⇄ Shuffle
+            Shuffle
           </button>
-          <button className="btn-danger" onClick={del}>
-            Delete
-          </button>
+          <ActionMenu items={[{ label: 'Delete playlist…', danger: true, onSelect: del }]} />
         </div>
       </div>
 

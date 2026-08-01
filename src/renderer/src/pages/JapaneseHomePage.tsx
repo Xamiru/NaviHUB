@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
 import StatTile from '../components/StatTile'
 import EmptyState from '../components/EmptyState'
+import HubCard from '../components/HubCard'
 import CoreDeckDialog from '../components/japanese/CoreDeckDialog'
 
 // The section's dashboard: where you stand, what to do next, and one card per
@@ -42,8 +43,9 @@ export default function JapaneseHomePage() {
             <Link to="/japanese/stats" className="btn-ghost">
               Stats
             </Link>
+            {/* Ghost on purpose: the page's one filled action is Start review below */}
             {hasCourses && (
-              <Link to="/japanese/courses/new" className="btn-primary">
+              <Link to="/japanese/courses/new" className="btn-ghost">
                 New course
               </Link>
             )}
@@ -62,10 +64,8 @@ export default function JapaneseHomePage() {
       </div>
 
       {hasCourses ? (
-        <div className="card mb-8 p-4">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-            Continue
-          </h2>
+        <Section title="Continue">
+          <div className="card p-4">
           {frontier ? (
             <>
               <p className="text-sm">
@@ -101,12 +101,13 @@ export default function JapaneseHomePage() {
               </div>
             </>
           )}
-        </div>
+          </div>
+        </Section>
       ) : (
         <EmptyState
           className="card mb-8 p-12 text-center"
           title="No courses yet"
-          body="A course groups grammar lessons and vocabulary decks. Create one to get started."
+          body="A course groups grammar lessons and vocabulary decks. Create one."
           action={
             <Link to="/japanese/courses/new" className="btn-primary">
               Create a course
@@ -117,42 +118,68 @@ export default function JapaneseHomePage() {
 
       <Section title="Study">
         <HubGrid>
-          <HubCard to="/japanese/roadmap" title="Roadmap" desc="The course path, step by step." />
+          <HubCard to="/japanese/roadmap" title="Roadmap" body="The course path, step by step." />
           <HubCard
             to="/japanese/review"
             title="Review"
-            desc="Spaced repetition over everything learned."
+            body="Spaced repetition over everything learned."
             badge={due > 0 ? `${due} due` : undefined}
           />
-          <HubButton
+          {/* onClick variant — opens a dialog, honestly placed inside the group */}
+          <HubCard
             onClick={() => setCoreDeck(true)}
             title="Core deck"
-            desc="Generate the next most-frequent words you don't know."
+            body="Generate the next most-frequent words you don't know."
           />
         </HubGrid>
       </Section>
 
       <Section title="Practice">
         <HubGrid>
-          <HubCard to="/japanese/quiz" title="Practice quiz" desc="Multiple choice, no scheduling." />
+          <HubCard to="/japanese/quiz" title="Practice quiz" body="Multiple choice, no scheduling." />
           <HubCard
             to="/japanese/kana"
-            title="Kana & conjugation drills"
-            desc="Kana, kanji readings, verb forms."
+            title="Typing drills"
+            body="Kana, kanji readings, verb forms, numbers, names."
           />
-          <HubCard to="/japanese/write" title="Writing drill" desc="Draw kanji stroke by stroke." />
-          <HubCard to="/japanese/test" title="JLPT test" desc="Timed 30-question checkpoint." />
+          <HubCard to="/japanese/write" title="Writing drill" body="Draw kanji stroke by stroke." />
+          <HubCard to="/japanese/test" title="JLPT test" body="Timed 30-question checkpoint." />
+          <HubCard
+            to="/japanese/pitch"
+            title="Pitch accent"
+            body="Learn the patterns, then hear them."
+          />
+          <HubCard
+            to="/japanese/listen"
+            title="Dictation"
+            body="Hear a real sentence, type it back."
+          />
+          <HubCard
+            to="/japanese/grammar/quiz"
+            title="Grammar drill"
+            body="Fill the blank across N5-N1 points."
+          />
+          <HubCard
+            to="/japanese/kanji/quiz"
+            title="Build-a-kanji"
+            body="Assemble kanji from their parts."
+          />
+          <HubCard
+            to="/japanese/shiritori"
+            title="Shiritori"
+            body="Word chain against the dictionary."
+          />
         </HubGrid>
       </Section>
 
       <Section title="Read & mine">
         <HubGrid>
-          <HubCard to="/japanese/mine" title="Mine words" desc="Capture words into the SRS." />
-          <HubCard to="/japanese/analyze" title="Analyze text" desc="How much of a paste can you read?" />
+          <HubCard to="/japanese/mine" title="Mine words" body="Capture words into the SRS." />
+          <HubCard to="/japanese/analyze" title="Analyze text" body="How much of a paste can you read?" />
           <HubCard
             to="/japanese/coverage"
             title="Comprehension"
-            desc="Known-word scores for your series."
+            body="Known-word scores for your series."
           />
         </HubGrid>
       </Section>
@@ -162,7 +189,17 @@ export default function JapaneseHomePage() {
           <HubCard
             to="/japanese/dictionary"
             title="Dictionary"
-            desc="Offline lookup, examples, stroke order."
+            body="Offline lookup, examples, stroke order."
+          />
+          <HubCard
+            to="/japanese/grammar"
+            title="Grammar"
+            body="Every N5-N1 grammar point, searchable."
+          />
+          <HubCard
+            to="/japanese/kanji"
+            title="Kanji by parts"
+            body="Find a kanji from the pieces you can see."
           />
         </HubGrid>
       </Section>
@@ -178,35 +215,3 @@ function HubGrid({ children }: { children: ReactNode }) {
   )
 }
 
-function HubCard({
-  to,
-  title,
-  desc,
-  badge
-}: {
-  to: string
-  title: string
-  desc: string
-  badge?: string
-}) {
-  return (
-    <Link to={to} className="card group p-4 transition-colors hover:border-accent">
-      <p className="font-semibold transition-colors group-hover:text-accent">
-        {title}
-        {badge && <span className="ml-2 text-xs font-normal text-accent">{badge}</span>}
-      </p>
-      <p className="mt-1 text-xs text-gray-500">{desc}</p>
-    </Link>
-  )
-}
-
-// Same card, but it opens a dialog — placed honestly inside a group instead of
-// masquerading as navigation in a link row.
-function HubButton({ onClick, title, desc }: { onClick: () => void; title: string; desc: string }) {
-  return (
-    <button onClick={onClick} className="card group p-4 text-left transition-colors hover:border-accent">
-      <p className="font-semibold transition-colors group-hover:text-accent">{title}</p>
-      <p className="mt-1 text-xs text-gray-500">{desc}</p>
-    </button>
-  )
-}

@@ -100,7 +100,7 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -115,7 +115,7 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Download music</h2>
-          <button className="px-2 text-gray-500 hover:text-white" onClick={onClose}>
+          <button className="px-2 text-gray-500 hover:text-white" aria-label="Close" onClick={onClose}>
             ✕
           </button>
         </div>

@@ -79,7 +79,9 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
   return (
     <div
       className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-8 overflow-y-auto"
-      onMouseDown={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
     >
       <div
         ref={panelRef}
@@ -88,14 +90,17 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
         aria-label={`Browse ${kind === 'wallpaper' ? 'wallpapers' : 'fan art'}`}
         tabIndex={-1}
         className="card w-full max-w-4xl p-5 mt-4"
-        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">
             Browse {kind === 'wallpaper' ? 'wallpapers' : 'fan art'} — {m.title}
           </h2>
-          <button className="text-gray-500 hover:text-white text-xl leading-none" onClick={onClose}>
-            ×
+          <button
+            className="text-gray-500 hover:text-white text-xl leading-none"
+            aria-label="Close"
+            onClick={onClose}
+          >
+            ✕
           </button>
         </div>
 
@@ -197,7 +202,7 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
               disabled={page <= 1 || active.isFetching}
               onClick={() => setPage((p) => Math.max(1, p - 1))}
             >
-              ← Prev
+              Prev
             </button>
             <span className="text-gray-400 tabular-nums">
               {page} / {lastPage}
@@ -207,7 +212,7 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
               disabled={page >= lastPage || active.isFetching}
               onClick={() => setPage((p) => Math.min(lastPage, p + 1))}
             >
-              Next →
+              Next
             </button>
           </div>
         )}

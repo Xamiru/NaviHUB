@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react'
 import EmptyState from '../components/EmptyState'
 import ActionMenu from '../components/ActionMenu'
+import PageHeader from '../components/PageHeader'
 import Tabs from '../components/Tabs'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -106,42 +107,47 @@ export default function MusicLibraryPage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="mr-auto">
-          <h1 className="text-2xl font-bold">Music</h1>
-          {stats && stats.tracks > 0 && (
-            <p className="text-xs text-gray-500">
-              {stats.artists} artists · {stats.albums} albums · {stats.tracks} tracks ·{' '}
-              {formatLongDuration(stats.totalDuration)}
-            </p>
-          )}
-        </div>
-        <DownloadPill />
-        {art.running && (
-          <button className="pill" onClick={art.cancel} title="Cancel art fetch">
-            Art {art.status ? `${art.status.done}/${art.status.total}` : '…'} — cancel
-          </button>
-        )}
-        {scanning && <span className="pill">Scanning…</span>}
-        <button className="btn-ghost" onClick={() => playAll(false)}>
-          Play all
-        </button>
-        <button className="btn-primary" onClick={() => playAll(true)}>
-          Shuffle
-        </button>
-        <ActionMenu
-          items={[
-            {
-              label: 'Rescan library',
-              disabled: scanning,
-              onSelect: () => runScan(false)
-            },
-            { label: 'Find missing art', disabled: art.running, onSelect: () => void art.run() },
-            { label: 'Download from URL…', onSelect: () => setDlOpen(true) }
-          ]}
-        />
-      </div>
+    <div className="p-6 max-w-[1600px] mx-auto">
+      <PageHeader
+        title="Music"
+        subtitle={
+          stats && stats.tracks > 0
+            ? `${stats.artists} artists · ${stats.albums} albums · ${stats.tracks} tracks · ${formatLongDuration(stats.totalDuration)}`
+            : undefined
+        }
+        actions={
+          <>
+            <DownloadPill />
+            {art.running && (
+              <button className="pill" onClick={art.cancel} title="Cancel art fetch">
+                Art {art.status ? `${art.status.done}/${art.status.total}` : '…'} — cancel
+              </button>
+            )}
+            {scanning && <span className="pill">Scanning…</span>}
+            <button className="btn-ghost" onClick={() => playAll(false)}>
+              Play all
+            </button>
+            <button className="btn-primary" onClick={() => playAll(true)}>
+              Shuffle
+            </button>
+            <ActionMenu
+              items={[
+                {
+                  label: 'Rescan library',
+                  disabled: scanning,
+                  onSelect: () => runScan(false)
+                },
+                {
+                  label: 'Find missing art',
+                  disabled: art.running,
+                  onSelect: () => void art.run()
+                },
+                { label: 'Download from URL…', onSelect: () => setDlOpen(true) }
+              ]}
+            />
+          </>
+        }
+      />
 
       {scanning && scanStatus && (
         <div className="card mb-4 p-3 text-sm">
@@ -392,12 +398,12 @@ function PlaylistsTab() {
             }
           }}
         />
-        <button className="btn-primary" disabled={!newTitle.trim()} onClick={create}>
+        <button className="btn-ghost" disabled={!newTitle.trim()} onClick={create}>
           Create
         </button>
       </div>
       {playlists.length === 0 ? (
-        <p className="text-sm text-gray-500">No playlists yet — create one above.</p>
+        <EmptyState title="No playlists yet" body="Create one above." />
       ) : (
         <div className={GRID}>
           {playlists.map((p) => (

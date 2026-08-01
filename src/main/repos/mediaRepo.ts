@@ -17,8 +17,10 @@ import type {
   MediaType,
   LibraryTimeStats,
   TimeStatsItem,
-  TimeStatsByType
+  TimeStatsByType,
+  JpMilestones
 } from '@shared/types'
+import { parseStatuses } from '@shared/mediaProgress'
 
 // Columns that map 1:1 from MediaItemInput -> media_item (excluding tags).
 const COL = {
@@ -675,4 +677,41 @@ export function update(id: number, input: Partial<MediaItemInput>): void {
 export function remove(id: number): void {
   listRepo.removeEntityFromLists('media', id)
   getSqlite().prepare('DELETE FROM media_item WHERE id = ?').run(id)
+}
+
+// Japanese-roadmap immersion milestones (TheMoeWay targets). "Completed" is the
+// POSITIONAL second status per type — parseStatuses is the checklist's proven
+// path for resolving user-renamed statuses in main. Novels = manga-type items
+// backed by an EPUB chapter (light novels read in the book reader); AniList
+// light novels without a local EPUB honestly count as manga.
+export function jpMilestones(): JpMilestones {
+  const db = getSqlite()
+  const completedOf = (type: MediaType): string =>
+    parseStatuses(settingsRepo.get(`${type}.statuses`), type)[1] ?? 'completed'
+
+  const animeCompleted = (
+    db
+      .prepare(`SELECT COUNT(*) AS n FROM media_item WHERE media_type = 'anime' AND status = ?`)
+      .get(completedOf('anime')) as { n: number }
+  ).n
+
+  const mangaDone = completedOf('manga')
+  const novelsCompleted = (
+    db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM media_item m
+         WHERE m.media_type = 'manga' AND m.status = ?
+           AND EXISTS (SELECT 1 FROM manga_chapter c
+                       WHERE c.media_id = m.id AND lower(c.dir_path) LIKE '%.epub')`
+      )
+      .get(mangaDone) as { n: number }
+  ).n
+  const mangaCompleted =
+    (
+      db
+        .prepare(`SELECT COUNT(*) AS n FROM media_item WHERE media_type = 'manga' AND status = ?`)
+        .get(mangaDone) as { n: number }
+    ).n - novelsCompleted
+
+  return { animeCompleted, mangaCompleted, novelsCompleted }
 }

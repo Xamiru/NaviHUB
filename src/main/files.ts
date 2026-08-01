@@ -50,6 +50,14 @@ export function picturesDir(): string {
   return custom && custom.length ? custom : join(app.getPath('userData'), 'pictures')
 }
 
+// Japanese learning audio (Tatoeba sentence clips, pitch minimal pairs) —
+// written by the dict/ audio pack importers, served via the "jpaudio/" navimg
+// prefix. Always under userData (the packs are small and rebuildable), no
+// setting.
+export function jpAudioDir(): string {
+  return join(app.getPath('userData'), 'jpaudio')
+}
+
 let counter = 0
 function uniqueName(srcPath: string): string {
   // Avoid Date.now()/Math.random(): derive from a process-lifetime counter
@@ -114,6 +122,9 @@ export function absoluteMediaPath(relPath: string): string {
   if (norm.startsWith('manga/')) return join(mangaRootDir(), norm.slice('manga/'.length))
   if (norm.startsWith('music/')) return join(musicRootDir(), norm.slice('music/'.length))
   if (norm.startsWith('pictures/')) return join(picturesDir(), norm.slice('pictures/'.length))
+  // "jpaudio/" would resolve identically through the default branch (it lives
+  // under userData) — the explicit line documents the prefix contract.
+  if (norm.startsWith('jpaudio/')) return join(jpAudioDir(), norm.slice('jpaudio/'.length))
   return join(app.getPath('userData'), norm)
 }
 

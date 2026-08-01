@@ -18,7 +18,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Roadmap',
         to: '/japanese/roadmap',
-        text: 'Every course in study order, 24 steps N5 → N1. "You are here" marks the first course with lessons left. Nothing is locked — jump wherever you like. Decks you or the app generated sit under Unscheduled.'
+        text: 'Every course in study order, 24 steps N5 → N1. "You are here" marks the first course with lessons left. Nothing is locked — jump wherever you like. The strip up top is the daily loop (reviews, lesson, immersion — a bit of each, in parallel), and Milestones track finished anime and books against the long-term targets. Decks you or the app generated sit under Unscheduled.'
       },
       {
         name: 'Lessons',
@@ -59,6 +59,41 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
         text: 'Word → target form, you produce it. Reading teaches you to recognise forms; this makes recognition instant.'
       },
       {
+        name: 'Numbers & counters',
+        to: '/japanese/kana?tab=numbers',
+        text: 'Generated numbers, times, dates, prices and counter phrases, typed as you hear them in your head. さんぼん and ろっぴゃく only stick through reps. Endless, no download.'
+      },
+      {
+        name: 'Name readings',
+        to: '/japanese/kana?tab=names',
+        text: 'Random surnames and given names from the names dictionary — any attested reading counts. Names are the reading trap manga sets for you. Needs the JMnedict pack.'
+      },
+      {
+        name: 'Pitch accent',
+        to: '/japanese/pitch',
+        text: 'Two halves: see a word and pick its contour (Kanjium pack), and the kotu-style minimal pairs — hear a recording, say which of two contours it was (pairs pack). Optional per TheMoeWay, decisive if you care how you sound.'
+      },
+      {
+        name: 'Dictation',
+        to: '/japanese/listen',
+        text: 'A native Tatoeba recording plays; type what you heard. Graded on readings, so kanji or kana both count — the per-character diff is the real feedback. Needs the sentence-audio pack.'
+      },
+      {
+        name: 'Grammar drill',
+        to: '/japanese/grammar/quiz',
+        text: 'A real sentence with its grammar point blanked; pick what fills it from four. Runs over the N5-N1 catalog, not your cards — good for meeting points before the roadmap reaches them.'
+      },
+      {
+        name: 'Build-a-kanji',
+        to: '/japanese/kanji/quiz',
+        text: 'The kanji is shown; assemble it from component chips (decoys included). Production beats recognition for telling 待 from 持 apart. Needs the components pack.'
+      },
+      {
+        name: 'Shiritori',
+        to: '/japanese/shiritori',
+        text: 'Word chain against the dictionary — your word must start with the last kana of its word, ん loses. Every app reply comes glossed, so losing is still studying.'
+      },
+      {
         name: 'Writing drill',
         to: '/japanese/write',
         text: 'Draw the kanji from its meaning and readings. Strokes are checked in order — start point and direction, not neatness. Three misses on one stroke reveals it and moves on. Needs the stroke-order pack.'
@@ -81,7 +116,17 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Dictionary',
         to: '/japanese/dictionary',
-        text: 'Offline lookup across everything installed. Handles conjugated forms and English → Japanese. Expand an entry for example sentences, kanji breakdown and stroke diagrams, or mine it straight into a deck.'
+        text: 'Offline lookup across everything installed. Handles conjugated forms and English → Japanese. Expand an entry for example sentences, kanji breakdown and stroke diagrams, or mine it straight into a deck. Name-only matches group under a collapsed Names row so they never bury real words.'
+      },
+      {
+        name: 'Grammar library',
+        to: '/japanese/grammar',
+        text: 'Every JLPT grammar point with formation and real examples, offline. Search it when a lesson name-drops a form you half-remember; filter by level before a test. Needs the grammar pack.'
+      },
+      {
+        name: 'Kanji by parts',
+        to: '/japanese/kanji',
+        text: 'Saw a kanji you can’t type? Toggle the pieces you can see and watch the grid narrow. Click a match to land in the dictionary. Needs the components pack.'
       },
       {
         name: 'Mining',
@@ -133,6 +178,30 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Stroke order (KanjiVG)',
         text: 'Animated stroke diagrams, and the writing drill. Without it the diagrams simply don’t appear.'
+      },
+      {
+        name: 'Kanjium pitch accents',
+        text: 'Pitch contours on dictionary entries and the pattern quiz. 3 MB; the app already knew how to draw them, this is the data.'
+      },
+      {
+        name: 'Kanji components (KRADFILE)',
+        text: 'Kanji → parts. Powers the components row in the kanji breakdown, the by-parts search and build-a-kanji.'
+      },
+      {
+        name: 'Grammar points (N5–N1)',
+        text: 'The grammar library and its drill. Tiny download, whole reference.'
+      },
+      {
+        name: 'Names (JMnedict)',
+        text: 'People and places. Lookups that used to come back empty now say "it’s a surname" — grouped under Names so they never bury real words. Big import, worth it if you read manga.'
+      },
+      {
+        name: 'Sentence audio (Tatoeba)',
+        text: 'Native recordings for dictation and Play buttons on examples. Thousands of small downloads — start it and walk away; interrupting is safe, re-running resumes.'
+      },
+      {
+        name: 'Minimal pairs (kotu)',
+        text: 'The pitch perception drill’s audio. 18 MB of very short clips.'
       }
     ]
   }
@@ -148,16 +217,15 @@ export default function JapaneseGuidePage() {
         className="mb-6"
       />
 
-      <div className="card mb-8 p-4">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-          A day
-        </h2>
-        <ol className="list-inside list-decimal space-y-1 text-sm text-gray-300">
-          <li>Clear your reviews.</li>
-          <li>Learn the next lesson on the roadmap, if you have the attention for it.</li>
-          <li>Read something and mine what you don&apos;t know. This is the part that matters.</li>
-        </ol>
-      </div>
+      <Section title="A day">
+        <div className="card p-4">
+          <ol className="list-inside list-decimal space-y-1 text-sm text-gray-300">
+            <li>Clear your reviews.</li>
+            <li>Learn the next lesson on the roadmap, if you have the attention for it.</li>
+            <li>Read something and mine what you don&apos;t know. This is the part that matters.</li>
+          </ol>
+        </div>
+      </Section>
 
       {GROUPS.map((group) => (
         <Section key={group.title} title={group.title}>

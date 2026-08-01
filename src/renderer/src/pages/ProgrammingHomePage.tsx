@@ -2,7 +2,10 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import PageHeader from '../components/PageHeader'
+import Section from '../components/Section'
 import StatTile from '../components/StatTile'
+import HubCard from '../components/HubCard'
 import { PROG_COURSES, progLessonKey } from '@shared/programming/courses'
 import { CHEAT_SHEETS } from '@shared/programming/cheatsheets'
 
@@ -32,13 +35,23 @@ export default function ProgrammingHomePage() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold">Programming</h1>
-        <p className="text-sm text-gray-500">
-          Courses for the working engineer, command-line cheatsheets, and a typing drill to make
-          them stick.
-        </p>
-      </div>
+      <PageHeader
+        title="Programming"
+        subtitle="Courses, CLI cheatsheets, and a typing drill."
+        actions={
+          <>
+            <Link to="/programming/cheatsheets" className="btn-ghost">
+              Cheatsheets
+            </Link>
+            <Link to="/programming/practice" className="btn-ghost">
+              CLI practice
+            </Link>
+            <Link to="/quiz/programming" className="btn-ghost">
+              Quiz
+            </Link>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
         <StatTile
@@ -59,39 +72,35 @@ export default function ProgrammingHomePage() {
         />
       </div>
 
-      <div className="mb-6 flex flex-wrap gap-2">
-        <Link to="/programming/cheatsheets" className="btn-ghost">
-          Cheatsheets
-        </Link>
-        <Link to="/programming/practice" className="btn-ghost">
-          CLI practice
-        </Link>
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-2">
-        {PROG_COURSES.map((c) => {
-          const n = doneByCourse.get(c.key) ?? 0
-          const pct = c.lessons.length > 0 ? Math.round((n / c.lessons.length) * 100) : 0
-          return (
-            <Link key={c.key} to={`/programming/course/${c.key}`} className="card block p-4 hover:bg-base-700/50">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="font-semibold">{c.title}</h2>
-                <span className="shrink-0 text-xs text-gray-500">
-                  {n} / {c.lessons.length} lessons
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-gray-400">{c.description}</p>
-              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-base-700">
-                <div
-                  className="h-full rounded-full bg-accent"
-                  style={{ width: `${pct}%` }}
-                  aria-hidden="true"
-                />
-              </div>
-            </Link>
-          )
-        })}
-      </div>
+      <Section title="Courses">
+        <div className="grid gap-3 sm:grid-cols-2">
+          {PROG_COURSES.map((c) => {
+            const n = doneByCourse.get(c.key) ?? 0
+            const pct = c.lessons.length > 0 ? Math.round((n / c.lessons.length) * 100) : 0
+            return (
+              <HubCard
+                key={c.key}
+                to={`/programming/course/${c.key}`}
+                title={c.title}
+                body={c.description}
+              >
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-base-700">
+                    <div
+                      className="h-full rounded-full bg-accent"
+                      style={{ width: `${pct}%` }}
+                      aria-hidden="true"
+                    />
+                  </div>
+                  <span className="shrink-0 text-xs text-gray-500">
+                    {n} / {c.lessons.length}
+                  </span>
+                </div>
+              </HubCard>
+            )
+          })}
+        </div>
+      </Section>
     </div>
   )
 }

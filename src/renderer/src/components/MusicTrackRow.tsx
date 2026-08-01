@@ -209,14 +209,14 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
             to={`/music/artists/${track.artistId}`}
             onClick={() => setOpen(false)}
           >
-            👤 Go to artist
+            Go to artist
           </Link>
           <Link
             className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
             to={`/music/albums/${track.albumId}`}
             onClick={() => setOpen(false)}
           >
-            💿 Go to album
+            Go to album
           </Link>
           {onRemove && (
             <button

@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { BLANK, buildTypedPrompt, grammarCandidates } from '../src/shared/cloze'
+import {
+  BLANK,
+  buildTypedPrompt,
+  clozeGrammarExample,
+  grammarCandidates,
+  grammarPointCandidates
+} from '../src/shared/cloze'
 import type { JpCard } from '../src/shared/types'
 
 type CardBits = Pick<JpCard, 'front' | 'reading' | 'back' | 'exampleJp'>
@@ -104,6 +110,42 @@ describe('buildTypedPrompt — vocab', () => {
 
   it('falls back to a flip for a card with neither example nor reading', () => {
     expect(buildTypedPrompt(card({ front: 'ネコ', back: 'cat' }), 'vocab', 'Nouns')).toBeNull()
+  })
+})
+
+describe('grammarPointCandidates / clozeGrammarExample', () => {
+  it('unions title and formation candidates, longest first', () => {
+    // Shapes matching the hanabira grammar pack (title + formation string).
+    expect(grammarPointCandidates('～てしまう', 'Verb-て form + しまう')).toEqual([
+      'てしまう',
+      'しまう'
+    ])
+    expect(grammarPointCandidates('～たら', null)).toEqual(['たら'])
+  })
+
+  it('drops kanji-bearing and single-character segments from formations', () => {
+    // 意向形 carries kanji, と is a single char; する survives as a kana run.
+    expect(grammarPointCandidates('Volitional', '意向形 + と + する')).toEqual(['する'])
+    expect(grammarPointCandidates('Volitional', '意向形 + と')).toEqual([])
+  })
+
+  it('blanks the first candidate found in the example', () => {
+    const c = clozeGrammarExample(['てしまう', 'しまう'], '宿題を忘れてしまった。')
+    // てしまう is conjugated in the sentence (てしまった) so the raw form does
+    // not appear — the helper is honest about that and skips to nothing.
+    expect(c).toBeNull()
+    const c2 = clozeGrammarExample(['てしまう', 'しまう'], '食べてしまうかもしれない。')
+    expect(c2).toEqual({ clozeJp: `食べ${BLANK}かもしれない。`, answer: 'てしまう' })
+  })
+
+  it('returns null when no candidate appears', () => {
+    expect(clozeGrammarExample(['たら'], '雨が降っている。')).toBeNull()
+    expect(clozeGrammarExample([], '雨が降ったら帰る。')).toBeNull()
+  })
+
+  it('blanks only the first occurrence', () => {
+    const c = clozeGrammarExample(['ながら'], '歩きながら話しながら食べる。')
+    expect(c!.clozeJp).toBe(`歩き${BLANK}話しながら食べる。`)
   })
 })
 

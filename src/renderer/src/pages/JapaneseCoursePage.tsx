@@ -3,6 +3,11 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toast } from '../lib/toast'
+import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
+import Section from '../components/Section'
+import EmptyState from '../components/EmptyState'
+import ActionMenu from '../components/ActionMenu'
 import type { JpLessonKind, JpLessonSummary } from '@shared/types'
 
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
@@ -31,40 +36,37 @@ export default function JapaneseCoursePage() {
     navigate('/japanese')
   }
 
-  if (isLoading) return <p className="p-6 text-gray-500">Loading…</p>
-  if (!course) return <p className="p-6 text-gray-500">Course not found.</p>
+  if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (!course) return <PageStatus>Course not found.</PageStatus>
 
   const learned = course.lessons.filter((l) => l.learned).length
   const pct = course.lessons.length ? Math.round((learned / course.lessons.length) * 100) : 0
 
   return (
     <div className="p-6 max-w-[900px] mx-auto">
-      <Link to="/japanese" className="text-sm text-gray-500 hover:text-gray-300">
-        ← Japanese
-      </Link>
-
-      <div className="mt-2 flex items-start justify-between gap-4 mb-4">
-        <div className="min-w-0">
-          {(course.difficulty != null || course.level) && (
-            <p className="mb-1 flex items-center gap-1.5">
+      <PageHeader
+        back={{ to: '/japanese', label: 'Japanese' }}
+        title={course.title}
+        subtitle={course.description}
+        eyebrow={
+          course.difficulty != null || course.level ? (
+            <>
               {course.difficulty != null && (
                 <span className="chip bg-accent/20 text-accent">Step {course.difficulty}</span>
               )}
               {course.level && <span className="chip bg-base-700 text-gray-400">{course.level}</span>}
-            </p>
-          )}
-          <h1 className="text-2xl font-bold">{course.title}</h1>
-          {course.description && <p className="mt-1 text-sm text-gray-500">{course.description}</p>}
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <Link to={`/japanese/courses/${courseId}/edit`} className="btn-ghost">
-            Edit
-          </Link>
-          <button className="btn-danger" onClick={removeCourse}>
-            Delete
-          </button>
-        </div>
-      </div>
+            </>
+          ) : undefined
+        }
+        actions={
+          <>
+            <Link to={`/japanese/courses/${courseId}/edit`} className="btn-ghost">
+              Edit
+            </Link>
+            <ActionMenu items={[{ label: 'Delete course…', onSelect: removeCourse, danger: true }]} />
+          </>
+        }
+      />
 
       <div className="mb-1 h-1.5 w-full overflow-hidden rounded-full bg-base-700">
         <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
@@ -73,43 +75,41 @@ export default function JapaneseCoursePage() {
         {learned} / {course.lessons.length} lessons learned
       </p>
 
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold">Lessons</h2>
-        <div className="flex gap-2">
-          <Link
-            to={`/japanese/lessons/new?courseId=${courseId}&kind=grammar`}
-            className="btn-ghost text-sm"
-          >
-            + Grammar lesson
-          </Link>
-          <Link
-            to={`/japanese/lessons/new?courseId=${courseId}&kind=vocab`}
-            className="btn-ghost text-sm"
-          >
-            + Vocab lesson
-          </Link>
-          <Link
-            to={`/japanese/lessons/new?courseId=${courseId}&kind=kanji`}
-            className="btn-ghost text-sm"
-          >
-            + Kanji lesson
-          </Link>
-        </div>
-      </div>
-
-      {course.lessons.length === 0 ? (
-        <div className="card p-10 text-center">
-          <p className="text-sm text-gray-500">
-            No lessons yet — add a grammar lesson or a vocabulary deck.
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-1.5">
-          {course.lessons.map((lesson, i) => (
-            <LessonRow key={lesson.id} lesson={lesson} index={i} />
-          ))}
-        </div>
-      )}
+      <Section
+        title="Lessons"
+        subtitle={
+          <span className="flex gap-2">
+            <Link
+              to={`/japanese/lessons/new?courseId=${courseId}&kind=grammar`}
+              className="btn-ghost text-sm"
+            >
+              + Grammar lesson
+            </Link>
+            <Link
+              to={`/japanese/lessons/new?courseId=${courseId}&kind=vocab`}
+              className="btn-ghost text-sm"
+            >
+              + Vocab lesson
+            </Link>
+            <Link
+              to={`/japanese/lessons/new?courseId=${courseId}&kind=kanji`}
+              className="btn-ghost text-sm"
+            >
+              + Kanji lesson
+            </Link>
+          </span>
+        }
+      >
+        {course.lessons.length === 0 ? (
+          <EmptyState title="No lessons yet" body="Add a grammar lesson or a vocabulary deck." />
+        ) : (
+          <div className="space-y-1.5">
+            {course.lessons.map((lesson, i) => (
+              <LessonRow key={lesson.id} lesson={lesson} index={i} />
+            ))}
+          </div>
+        )}
+      </Section>
     </div>
   )
 }

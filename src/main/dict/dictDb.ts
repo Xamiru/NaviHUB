@@ -30,6 +30,15 @@ function sweepOrphans(db: Database.Database): void {
     db.exec(`DELETE FROM ${table} WHERE bank_id NOT IN (SELECT id FROM sentence_bank)`)
   }
   db.exec('DELETE FROM stroke WHERE set_id NOT IN (SELECT id FROM stroke_set)')
+  for (const table of ['en_lemma', 'en_synset', 'en_exc', 'en_pron']) {
+    db.exec(`DELETE FROM ${table} WHERE bank_id NOT IN (SELECT id FROM en_dict)`)
+  }
+  for (const table of ['krad', 'krad_part', 'krad_component']) {
+    db.exec(`DELETE FROM ${table} WHERE set_id NOT IN (SELECT id FROM krad_set)`)
+  }
+  db.exec('DELETE FROM grammar_point WHERE bank_id NOT IN (SELECT id FROM grammar_bank)')
+  db.exec('DELETE FROM sentence_audio WHERE bank_id NOT IN (SELECT id FROM audio_bank)')
+  db.exec('DELETE FROM minimal_pair WHERE set_id NOT IN (SELECT id FROM pair_set)')
 }
 
 function open(): Database.Database {
@@ -52,6 +61,21 @@ function open(): Database.Database {
       DROP TABLE IF EXISTS sentence_bank;
       DROP TABLE IF EXISTS stroke;
       DROP TABLE IF EXISTS stroke_set;
+      DROP TABLE IF EXISTS en_lemma;
+      DROP TABLE IF EXISTS en_synset;
+      DROP TABLE IF EXISTS en_exc;
+      DROP TABLE IF EXISTS en_pron;
+      DROP TABLE IF EXISTS en_dict;
+      DROP TABLE IF EXISTS krad;
+      DROP TABLE IF EXISTS krad_part;
+      DROP TABLE IF EXISTS krad_component;
+      DROP TABLE IF EXISTS krad_set;
+      DROP TABLE IF EXISTS grammar_point;
+      DROP TABLE IF EXISTS grammar_bank;
+      DROP TABLE IF EXISTS sentence_audio;
+      DROP TABLE IF EXISTS audio_bank;
+      DROP TABLE IF EXISTS minimal_pair;
+      DROP TABLE IF EXISTS pair_set;
     `)
   }
   db.exec(initSql)

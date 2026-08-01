@@ -324,7 +324,7 @@ export default function JapaneseTestPage() {
               }`}
             >
               <span className="text-sm font-medium">{opt}</span>
-              <kbd className="float-right rounded bg-base-700/70 px-1.5 text-xs text-gray-600">
+              <kbd className="kbd float-right">
                 {i + 1}
               </kbd>
             </button>

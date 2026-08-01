@@ -42,6 +42,27 @@ function clozeOf(sentence: string, target: string): string {
   return sentence.replace(target, BLANK)
 }
 
+// Grammar-library variant of grammarCandidates: the imported N5-N1 points
+// carry both a title ("～てしまう") and a formation string ("Verb-て form +
+// しまう"), and either may hold the kana frame worth blanking. Union of both,
+// longest first, so the grammar pack importer can pre-compute cloze fields.
+export function grammarPointCandidates(title: string, formation: string | null): string[] {
+  const all = [...grammarCandidates(title), ...(formation ? grammarCandidates(formation) : [])]
+  return [...new Set(all)].sort((a, b) => b.length - a.length)
+}
+
+// Blank the first candidate that actually appears in the example sentence.
+// null when none does — the example stays readable reference material but
+// never enters the cloze drill.
+export function clozeGrammarExample(
+  candidates: string[],
+  exampleJp: string
+): { clozeJp: string; answer: string } | null {
+  const target = candidates.find((c) => exampleJp.includes(c))
+  if (!target) return null
+  return { clozeJp: clozeOf(exampleJp, target), answer: target }
+}
+
 // Builds the typed prompt for a card, or null when it should just flip.
 export function buildTypedPrompt(
   card: Pick<JpCard, 'front' | 'reading' | 'back' | 'exampleJp'>,

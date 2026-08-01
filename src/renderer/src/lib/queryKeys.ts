@@ -39,7 +39,9 @@ export const qk = {
     detail: (mediaId: number) => ['media', 'detail', mediaId] as const,
     home: (mediaType: MediaType) => ['media', { mediaType, home: true }] as const,
     // Under the ['media'] prefix on purpose: every media mutation invalidates it.
-    timeStats: ['media', 'timeStats'] as const
+    timeStats: ['media', 'timeStats'] as const,
+    // Same rationale — logging an episode should refresh the roadmap milestones.
+    jpMilestones: ['media', 'jpMilestones'] as const
   },
   mediaCounts: {
     all: ['media-counts'] as const,
@@ -144,7 +146,10 @@ export const qk = {
     // `all` prefix; lookups are keyed by query like qk.dict.lookup.
     all: ['english'] as const,
     lookup: (query: string) => ['english', 'lookup', query] as const,
-    words: (search: string) => ['english', 'words', search] as const
+    words: (search: string) => ['english', 'words', search] as const,
+    // Installed offline dictionary (WordNet). Import/remove invalidate the
+    // `all` prefix, which also drops cached lookups (results changed source).
+    dictInfo: ['english', 'dictInfo'] as const
   },
   programming: {
     // Programming learn section (/programming): lesson completion only — the
@@ -165,7 +170,20 @@ export const qk = {
     sentences: (term: string) => ['dict', 'sentences', term] as const,
     sentenceBank: ['dict', 'sentenceBank'] as const,
     strokes: (char: string) => ['dict', 'strokes', char] as const,
-    strokeSet: ['dict', 'strokeSet'] as const
+    strokeSet: ['dict', 'strokeSet'] as const,
+    // KRADFILE components. kanjiByComponents callers pass a SORTED copy of the
+    // parts array or every toggle-order permutation caches separately.
+    kradSet: ['dict', 'kradSet'] as const,
+    kradComponents: ['dict', 'kradComponents'] as const,
+    kanjiByComponents: (parts: string[]) => ['dict', 'kanjiByComponents', parts] as const,
+    // Grammar library (hanabira N5-N1 points).
+    grammarBank: ['dict', 'grammarBank'] as const,
+    grammarList: ['dict', 'grammarList'] as const,
+    grammarPoint: (id: number) => ['dict', 'grammarPoint', id] as const,
+    // Audio packs.
+    sentenceAudioBank: ['dict', 'sentenceAudioBank'] as const,
+    pairSet: ['dict', 'pairSet'] as const,
+    minimalPairs: ['dict', 'minimalPairs'] as const
   },
   music: {
     // Local music library. Mutations (scan, like, playlist edits) invalidate
@@ -210,11 +228,6 @@ export const qk = {
     coachNotes: (game: GachaGameId) => ['gacha', 'coachNotes', game] as const,
     coachDocs: (game: GachaGameId) => ['gacha', 'coachDocs', game] as const,
     dueCounts: ['gacha', 'dueCounts'] as const
-  },
-  sync: {
-    // PC↔phone sync server (Settings card). Status polls while running.
-    all: ['sync'] as const,
-    status: ['sync', 'status'] as const
   },
   update: {
     // In-app updater (Settings → Tools). Status polls while checking/downloading.

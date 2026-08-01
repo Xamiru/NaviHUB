@@ -3,8 +3,9 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { MEDIA_CONFIGS, configFor } from '../lib/mediaConfig'
-import BackButton from '../components/BackButton'
+import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
+import EmptyState from '../components/EmptyState'
 import Section from '../components/Section'
 import { MediaCard } from './MediaListPage'
 
@@ -32,17 +33,19 @@ export default function TagDetailPage() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <BackButton />
-      <div className="mb-6 flex items-baseline gap-3">
-        <h1 className="text-2xl font-bold">{tag.name}</h1>
-        {tag.category && <span className="chip">{tag.category}</span>}
-        <span className="text-sm text-gray-500">
-          {items.length} {items.length === 1 ? 'title' : 'titles'}
-        </span>
-      </div>
+      <PageHeader
+        back="history"
+        title={
+          <>
+            {tag.name}
+            {tag.category && <span className="chip ml-3 align-middle">{tag.category}</span>}
+          </>
+        }
+        subtitle={`${items.length} ${items.length === 1 ? 'title' : 'titles'}`}
+      />
 
       {groups.length === 0 ? (
-        <div className="card p-10 text-center text-gray-400">Nothing carries this tag yet.</div>
+        <EmptyState title="Nothing carries this tag yet." />
       ) : (
         groups.map(({ cfg, items: group }) => (
           <Section key={cfg.key} title={`${cfg.plural} · ${group.length}`} className="mb-8">

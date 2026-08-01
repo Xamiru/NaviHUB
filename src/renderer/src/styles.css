@@ -123,6 +123,10 @@
   .card-glow {
     @apply card bg-gradient-to-br from-accent/25 via-base-800 to-base-800;
   }
+  /* Keyboard hint (quiz options, shortcut lines). Call sites add positioning. */
+  .kbd {
+    @apply rounded bg-base-700/70 px-1.5 py-0.5 text-[10px] text-gray-600;
+  }
 }
 
 /* EPUB book reader (BookContent) — typography for sanitized novel text.

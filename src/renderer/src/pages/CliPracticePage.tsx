@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
+import PageHeader from '../components/PageHeader'
 import QuizRecord from '../components/QuizRecord'
 import {
   CHEAT_SHEETS,
@@ -54,41 +55,33 @@ export default function CliPracticePage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-5">
-        <Link to="/programming" className="text-sm text-gray-500 hover:text-white">
-          ← Programming
-        </Link>
-        <h1 className="mt-1 text-2xl font-bold">CLI practice</h1>
-        <p className="text-sm text-gray-500">
-          Read the task, type the command. Checked as you type; misses come back around until you
-          stop. Flags matter, file names don&apos;t.
-        </p>
-      </div>
+      <PageHeader
+        back={{ to: '/programming', label: 'Programming' }}
+        title="CLI practice"
+        subtitle="Read the task, type the command. Checked as you type; misses come back around until you stop. Flags matter, file names don't."
+      />
 
       <div className="card p-4">
         <p className="label mb-2">Sheets ({selected.length === 0 ? 'all' : selected.length})</p>
+        {/* Multi-select toggle grid — empty selection means every sheet, shown
+            as all chips unselected (selecting one narrows the pool to it). */}
         <div className="flex flex-wrap gap-1.5">
-          {CHEAT_SHEETS.map((s) => {
-            const on = selected.length === 0 || selected.includes(s.key)
-            return (
-              <button
-                key={s.key}
-                className={`chip ${
-                  on ? 'bg-accent/15 text-accent' : 'bg-base-700 text-gray-500 hover:text-white'
-                }`}
-                onClick={() => toggle(s.key)}
-              >
-                {s.title}
-              </button>
-            )
-          })}
+          {CHEAT_SHEETS.map((s) => (
+            <button
+              key={s.key}
+              className={`chip-toggle ${selected.includes(s.key) ? 'chip-toggle-active' : ''}`}
+              onClick={() => toggle(s.key)}
+            >
+              {s.title}
+            </button>
+          ))}
         </div>
         <div className="mt-4 flex items-center gap-3">
           <button className="btn-primary" disabled={pool.length === 0} onClick={() => setPlaying(true)}>
             Start ({pool.length} commands)
           </button>
           <Link to="/programming/cheatsheets" className="btn-ghost">
-            Study the sheets first
+            Cheatsheets
           </Link>
         </div>
       </div>
@@ -273,7 +266,7 @@ function Drill({
             <span className="ml-2 text-xs text-gray-500">Enter to skip</span>
           </span>
         ) : (
-          <span>&nbsp;</span>
+          <span className="text-xs text-gray-600">Enter reveals the answer</span>
         )}
       </p>
     </div>

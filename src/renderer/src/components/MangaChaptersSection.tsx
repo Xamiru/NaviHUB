@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { readerPath, isBookChapter } from '../lib/readerPath'
 import { toast, toastError } from '../lib/toast'
+import Section from './Section'
 import type { MangaChapter, MediaDetail } from '@shared/types'
 
 // Local manga reader entry point on the manga detail page: attach a series
@@ -91,11 +92,10 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
   const openReader = (ch: MangaChapter) => navigate(readerPath(m.id, ch))
 
   return (
-    <div className="mb-6">
-      <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500 mb-2">
-        Chapters{chapters.length ? ` · ${readCount}/${chapters.length} read` : ''}
-      </h2>
-
+    <Section
+      title={`Chapters${chapters.length ? ` · ${readCount}/${chapters.length} read` : ''}`}
+      className="mb-6"
+    >
       {!data?.localDir ? (
         <div className="flex items-center gap-3">
           <button className="btn-ghost py-1 px-3 text-sm" disabled={busy} onClick={attach}>
@@ -114,7 +114,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
               </button>
             )}
             <button className="btn-ghost py-1 px-3" disabled={busy} onClick={rescan}>
-              ↻ Rescan
+              Rescan
             </button>
             <button
               className="btn-ghost py-1 px-3"
@@ -144,7 +144,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
           </div>
         </>
       )}
-    </div>
+    </Section>
   )
 }
 

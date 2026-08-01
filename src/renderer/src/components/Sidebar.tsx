@@ -63,6 +63,8 @@ function NavGroup({
           className="px-2 py-2 text-gray-500 hover:text-white"
           onClick={() => setOpen((v) => !v)}
           title={expanded ? 'Collapse' : 'Expand'}
+          aria-expanded={expanded}
+          aria-label={`${expanded ? 'Collapse' : 'Expand'} ${label}`}
         >
           <span className={`inline-block transition-transform ${expanded ? 'rotate-90' : ''}`}>
             ›
@@ -120,6 +122,10 @@ export default function Sidebar() {
         <NavLink to="/checklist" className={({ isActive }) => linkClass(isActive)}>
           Checklist
         </NavLink>
+        {/* Cross-library time-spent stats — daily/overview trio with Home + Checklist */}
+        <NavLink to="/stats" className={({ isActive }) => linkClass(isActive)}>
+          Stats
+        </NavLink>
 
         <SectionLabel>Library</SectionLabel>
 
@@ -133,25 +139,14 @@ export default function Sidebar() {
             label="Music"
             children={[
               { to: '/music/liked', label: 'Liked' },
-              { to: '/music/stats', label: 'Stats' }
+              { to: '/music/stats', label: 'Listening stats' }
             ]}
           />
-          {/* Cross-library time-spent stats */}
-          <NavLink to="/stats" className={({ isActive }) => linkClass(isActive)}>
-            Stats
-          </NavLink>
-        </div>
-
-        <SectionLabel>Curate</SectionLabel>
-        <div className="space-y-0.5">
           <NavLink to="/lists" className={({ isActive }) => linkClass(isActive)}>
             Lists
           </NavLink>
           <NavLink to="/tags" className={({ isActive }) => linkClass(isActive)}>
             Tags
-          </NavLink>
-          <NavLink to="/torrents" className={({ isActive }) => linkClass(isActive)}>
-            Torrents
           </NavLink>
         </div>
 
@@ -203,6 +198,10 @@ export default function Sidebar() {
           <span className="wired-dot inline-block w-1.5 h-1.5 rounded-full bg-accent" />
           Connected to the Wired
         </div>
+        {/* Acquisition + system utilities live in the footer, off the browse tree */}
+        <NavLink to="/torrents" className={({ isActive }) => linkClass(isActive)}>
+          Torrents
+        </NavLink>
         <NavLink to="/settings" className={({ isActive }) => linkClass(isActive)}>
           Settings
         </NavLink>

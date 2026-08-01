@@ -7,6 +7,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import CardSourceBadge from '../components/CardSourceBadge'
 import QuizRecord from '../components/QuizRecord'
+import { Group, Pill } from '../components/PillGroup'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
 
 type Phase = 'setup' | 'play' | 'summary'
@@ -78,10 +79,20 @@ function pickDistractors(pool: JpQuizItem[], target: JpQuizItem, dir: Direction)
   return out
 }
 
+const DIRECTION_LABELS: Record<Direction, string> = {
+  jp2en: '日本語 → English',
+  en2jp: 'English → 日本語',
+  jp2reading: '日本語 → Reading',
+  cloze: 'Fill the blank'
+}
+
 export default function JapaneseQuizPage() {
   const [courseId, setCourseId] = usePersistedState<number | null>('jpQuizCourse', null)
   const [kind, setKind] = usePersistedState<JpLessonKind | null>('jpQuizKind', null)
-  const [direction, setDirection] = usePersistedState<Direction>('jpQuizDirection', 'jp2en')
+  // Multi-select: each question is asked in a random enabled direction the
+  // card supports (renshuu's "vector" idea). New key on purpose — the old
+  // single-direction 'jpQuizDirection' value would crash a .includes().
+  const [directions, setDirections] = usePersistedState<Direction[]>('jpQuizDirections', ['jp2en'])
   const [length, setLength] = usePersistedState<number>('jpQuizLength', 10) // 0 = endless
 
   const qc = useQueryClient()
@@ -104,49 +115,57 @@ export default function JapaneseQuizPage() {
   const [loading, setLoading] = useState(false)
   const [newBest, setNewBest] = useState(false)
 
-  const poolRef = useRef<JpQuizItem[]>([])
   const deckRef = useRef<JpQuizItem[]>([])
   const statsRef = useRef<Stats>(ZERO)
   const lengthRef = useRef(0)
-  const dirRef = useRef<Direction>('jp2en')
+  // Per-direction sub-pools (a card only enters a direction it supports) and
+  // their id sets for the per-question direction pick.
+  const dirPoolsRef = useRef<Map<Direction, JpQuizItem[]>>(new Map())
+  const dirIdsRef = useRef<Map<Direction, Set<number>>>(new Map())
+  const [qDir, setQDir] = useState<Direction>('jp2en')
   const loggedRef = useRef(false)
 
   async function startGame() {
     setError(null)
     setLoading(true)
     try {
-      let pool = await api.japanese.quizPool({ courseId, kind })
-      // Reading mode only makes sense for cards whose written form differs
-      // from its kana reading — kana-only words have nothing to quiz.
-      if (direction === 'jp2reading') {
-        pool = pool.filter((i) => i.reading && i.reading !== i.front)
+      const base = await api.japanese.quizPool({ courseId, kind })
+      const pools = new Map<Direction, JpQuizItem[]>()
+      for (const d of directions) {
+        let pool = base
+        // Reading mode only makes sense for cards whose written form differs
+        // from its kana reading — kana-only words have nothing to quiz.
+        if (d === 'jp2reading') pool = base.filter((i) => i.reading && i.reading !== i.front)
+        // Cloze needs an example sentence containing the word to blank out.
+        if (d === 'cloze') pool = base.filter(clozable)
+        // A direction needs 4 distinct answers for 4 options; ones that fall
+        // short are silently dropped unless nothing survives.
+        const distinct = new Set(pool.map((i) => answerOf(i, d))).size
+        if (pool.length > 0 && distinct >= 4) pools.set(d, pool)
       }
-      // Cloze needs an example sentence containing the word to blank out.
-      if (direction === 'cloze') {
-        pool = pool.filter(clozable)
-      }
-      const distinct = new Set(pool.map((i) => answerOf(i, direction))).size
-      if (pool.length === 0) {
+      if (pools.size === 0) {
+        const only = directions.length === 1 ? directions[0] : null
         setError(
-          direction === 'jp2reading'
-            ? 'No learned cards with a kanji form + reading match these filters. Learn kanji or vocab lessons first.'
-            : direction === 'cloze'
-              ? 'No learned cards with example sentences match these filters — cloze needs cards whose example contains the word.'
-              : 'No learned cards match these filters. Mark some lessons as learned first.'
+          base.length === 0
+            ? 'No learned cards match these filters. Mark some lessons as learned first.'
+            : only === 'jp2reading'
+              ? 'No learned cards with a kanji form + reading match these filters. Learn kanji or vocab lessons first.'
+              : only === 'cloze'
+                ? 'No learned cards with example sentences match these filters — cloze needs cards whose example contains the word.'
+                : 'Not enough cards for the selected directions — each needs at least 4 cards with different answers. Learn more lessons or widen the filters.'
         )
         return
       }
-      if (distinct < 4) {
-        setError(
-          `Need at least 4 cards with different answers for 4 options — found ${distinct}. Learn more lessons or widen the filters.`
-        )
-        return
-      }
-      poolRef.current = pool
-      deckRef.current = shuffle(pool)
+      dirPoolsRef.current = pools
+      dirIdsRef.current = new Map(
+        [...pools.entries()].map(([d, p]) => [d, new Set(p.map((i) => i.id))])
+      )
+      // The deck holds every card usable in at least one enabled direction.
+      const byId = new Map<number, JpQuizItem>()
+      for (const p of pools.values()) for (const i of p) byId.set(i.id, i)
+      deckRef.current = shuffle([...byId.values()])
       statsRef.current = ZERO
       lengthRef.current = length
-      dirRef.current = direction
       loggedRef.current = false
       setNewBest(false)
       setStats(ZERO)
@@ -158,9 +177,19 @@ export default function JapaneseQuizPage() {
   }
 
   function nextQuestion() {
-    if (deckRef.current.length === 0) deckRef.current = shuffle(poolRef.current)
+    if (deckRef.current.length === 0) {
+      const byId = new Map<number, JpQuizItem>()
+      for (const p of dirPoolsRef.current.values()) for (const i of p) byId.set(i.id, i)
+      deckRef.current = shuffle([...byId.values()])
+    }
     const item = deckRef.current.pop()!
-    const distractors = pickDistractors(poolRef.current, item, dirRef.current)
+    // Random enabled direction this card supports (non-empty by construction).
+    const supported = [...dirPoolsRef.current.keys()].filter((d) =>
+      dirIdsRef.current.get(d)!.has(item.id)
+    )
+    const dir = supported[Math.floor(Math.random() * supported.length)]
+    const distractors = pickDistractors(dirPoolsRef.current.get(dir)!, item, dir)
+    setQDir(dir)
     setCurrent(item)
     setOptions(shuffle([item, ...distractors]))
     setPicked(null)
@@ -198,7 +227,7 @@ export default function JapaneseQuizPage() {
           score: s.score,
           total: s.total,
           bestStreak: s.best,
-          settings: { courseId, kind, direction, length }
+          settings: { courseId, kind, directions, length }
         })
         .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('japanese') }))
         .catch(() => {})
@@ -239,7 +268,7 @@ export default function JapaneseQuizPage() {
       <div className="p-6 max-w-2xl mx-auto">
         <PageHeader
           back={{ to: "/japanese", label: "Japanese" }}
-          title="🎯 Practice Quiz"
+          title="Practice Quiz"
           subtitle="Multiple choice over the lessons you have marked as learned."
         />
 
@@ -263,27 +292,22 @@ export default function JapaneseQuizPage() {
             <Pill active={kind === 'grammar'} onClick={() => setKind('grammar')} label="Grammar sentences" />
           </Group>
 
-          <Group label="Direction">
-            <Pill
-              active={direction === 'jp2en'}
-              onClick={() => setDirection('jp2en')}
-              label="日本語 → English"
-            />
-            <Pill
-              active={direction === 'en2jp'}
-              onClick={() => setDirection('en2jp')}
-              label="English → 日本語"
-            />
-            <Pill
-              active={direction === 'jp2reading'}
-              onClick={() => setDirection('jp2reading')}
-              label="日本語 → Reading"
-            />
-            <Pill
-              active={direction === 'cloze'}
-              onClick={() => setDirection('cloze')}
-              label="Fill the blank"
-            />
+          <Group label="Directions">
+            {(Object.keys(DIRECTION_LABELS) as Direction[]).map((d) => (
+              <button
+                key={d}
+                onClick={() =>
+                  setDirections(
+                    directions.includes(d)
+                      ? directions.filter((x) => x !== d)
+                      : [...directions, d]
+                  )
+                }
+                className={directions.includes(d) ? 'chip-toggle chip-toggle-active' : 'chip-toggle'}
+              >
+                {DIRECTION_LABELS[d]}
+              </button>
+            ))}
           </Group>
 
           <Group label="Length">
@@ -294,7 +318,11 @@ export default function JapaneseQuizPage() {
 
           {error && <p className="text-sm text-red-400">{error}</p>}
 
-          <button className="btn-primary w-full" disabled={loading} onClick={startGame}>
+          <button
+            className="btn-primary w-full"
+            disabled={loading || directions.length === 0}
+            onClick={startGame}
+          >
             {loading ? 'Loading…' : 'Start quiz'}
           </button>
         </div>
@@ -316,9 +344,9 @@ export default function JapaneseQuizPage() {
           </p>
           <div className="mt-4 flex justify-center gap-6 text-sm text-gray-400">
             <span>{accuracy}% correct</span>
-            <span>🔥 Best streak {stats.best}</span>
+            <span>Best streak {stats.best}</span>
           </div>
-          {newBest && <p className="mt-3 text-sm font-semibold text-accent">★ New personal best!</p>}
+          {newBest && <p className="mt-3 text-sm font-semibold text-accent">New personal best.</p>}
           <div className="mt-6 flex gap-2">
             <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
               Play again
@@ -334,7 +362,7 @@ export default function JapaneseQuizPage() {
 
   // ---- play phase ----
   if (!current) return null
-  const dir = dirRef.current
+  const dir = qDir
   const jpPrompt = dir !== 'en2jp' // prompt is Japanese → render it big
   const qNum = answered ? stats.total : stats.total + 1
   const isLast = lengthRef.current > 0 && stats.total >= lengthRef.current
@@ -350,9 +378,9 @@ export default function JapaneseQuizPage() {
           <span>
             Score {stats.score}/{stats.total}
           </span>
-          <span>🔥 {stats.streak}</span>
+          <span>Streak {stats.streak}</span>
           <button className="btn-ghost py-1 px-2 text-xs" onClick={endGame}>
-            ✕ End quiz
+            End quiz
           </button>
         </div>
       </div>
@@ -399,7 +427,7 @@ export default function JapaneseQuizPage() {
               <span className={`${dir === 'jp2en' ? 'text-sm' : 'text-lg'} font-medium`}>
                 {answerOf(o, dir)}
               </span>
-              <kbd className="float-right rounded bg-base-700/70 px-1.5 text-xs text-gray-600">
+              <kbd className="kbd float-right">
                 {i + 1}
               </kbd>
             </button>
@@ -414,7 +442,7 @@ export default function JapaneseQuizPage() {
               picked === current.id ? 'text-green-400' : 'text-red-400'
             }`}
           >
-            {picked === current.id ? 'Correct!' : picked === null ? 'Skipped' : 'Incorrect'}
+            {picked === current.id ? 'Correct' : picked === null ? 'Skipped' : 'Incorrect'}
           </p>
           <p className="mt-1 text-lg">
             {current.front}
@@ -454,36 +482,14 @@ export default function JapaneseQuizPage() {
         {answered &&
           (isLast ? (
             <button className="btn-primary" onClick={endGame}>
-              See results →
+              See results (Enter)
             </button>
           ) : (
             <button className="btn-primary" onClick={advance}>
-              Next →
+              Next (Enter)
             </button>
           ))}
       </div>
     </div>
-  )
-}
-
-function Group({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <div className="label mb-2">{label}</div>
-      <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
-  )
-}
-
-function Pill({ active, onClick, label }: { active: boolean; onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-full px-3 py-1 text-sm transition-colors ${
-        active ? 'bg-accent text-white' : 'bg-base-700 text-gray-300 hover:bg-base-600'
-      }`}
-    >
-      {label}
-    </button>
   )
 }

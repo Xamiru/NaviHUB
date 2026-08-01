@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import EmptyState from '../components/EmptyState'
+import PageHeader from '../components/PageHeader'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
@@ -19,24 +20,24 @@ export default function ListsIndexPage() {
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold">Lists</h1>
-          <p className="text-sm text-gray-500">Your curated collections.</p>
-        </div>
-        <Link to="/lists/new" className="btn-primary">
-          + New list
-        </Link>
-      </div>
+      <PageHeader
+        title="Lists"
+        subtitle="Your curated collections."
+        actions={
+          !isLoading && lists.length === 0 ? undefined : (
+            <Link to="/lists/new" className="btn-primary">
+              + New list
+            </Link>
+          )
+        }
+      />
 
       <div className="flex flex-wrap gap-2 mb-6">
         {KIND_FILTERS.map((k) => (
           <button
             key={k ?? 'all'}
             onClick={() => setKind(k)}
-            className={`rounded-full px-3 py-1 text-sm transition-colors ${
-              kind === k ? 'bg-accent text-white' : 'bg-base-700 text-gray-300 hover:bg-base-600'
-            }`}
+            className={`pill ${kind === k ? 'pill-active' : ''}`}
           >
             {k ? KIND_LABEL[k] : 'All'}
           </button>
@@ -44,7 +45,7 @@ export default function ListsIndexPage() {
       </div>
 
       {isLoading ? (
-        <p className="text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">Loading…</p>
       ) : lists.length === 0 ? (
         <EmptyState
           title="No lists yet"

@@ -5,6 +5,8 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
+import RoadmapDailyLoop from '../components/japanese/RoadmapDailyLoop'
+import RoadmapMilestones from '../components/japanese/RoadmapMilestones'
 import type { JpRoadmapCourse } from '@shared/types'
 
 // The study path, start to finish. Seeded courses carry a step number and lay
@@ -36,23 +38,8 @@ export default function JapaneseRoadmapPage() {
         subtitle="Every course in study order. Work down the path — or jump anywhere you like."
       />
 
-      <Section title="Today's plan" className="mb-8">
-        <div className="card p-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <Link to="/japanese/review" className={due + fresh > 0 ? 'btn-primary' : 'btn-ghost'}>
-            {due + fresh > 0 ? `Review ${due + fresh} cards` : 'Nothing due — review anyway'}
-          </Link>
-          {roadmap.nextLesson && (
-            <Link to={`/japanese/lessons/${roadmap.nextLesson.id}`} className="btn-ghost">
-              Next lesson: {roadmap.nextLesson.title}
-            </Link>
-          )}
-        </div>
-        <p className="mt-2 text-xs text-gray-500">
-          {due} due · {fresh} new cards ready
-          {roadmap.nextLesson ? ` · you are on "${roadmap.nextLesson.courseTitle}"` : ''}
-        </p>
-        </div>
+      <Section title="Daily loop">
+        <RoadmapDailyLoop due={due} fresh={fresh} nextLesson={roadmap.nextLesson} />
       </Section>
 
       <Section title="The path">
@@ -73,6 +60,10 @@ export default function JapaneseRoadmapPage() {
             />
           ))}
         </div>
+      </Section>
+
+      <Section title="Milestones">
+        <RoadmapMilestones />
       </Section>
 
       <Section

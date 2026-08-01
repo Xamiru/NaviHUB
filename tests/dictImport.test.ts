@@ -78,6 +78,28 @@ describe('importFromReader', () => {
     expect(dicts[0]).toMatchObject({ title: 'Test JMdict', termCount: 2, kanjiCount: 1 })
   })
 
+  it('JMnedict opts: glossFts:false writes no FTS rows, defaultPriority applies fresh only', async () => {
+    const names: YomitanIndex = { title: 'JMnedict (English)', revision: 'r', format: 3 }
+    const bank = {
+      'term_bank_1.json': [
+        ['中田', 'なかた', 'surname', '', 0, ['Nakata'], 1, ''],
+        ['中田', 'なかだ', 'surname', '', 0, ['Nakada'], 1, '']
+      ]
+    }
+    await importFromReader(makeReader(names, bank), { glossFts: false, defaultPriority: -10 })
+    // Zero gloss_fts rows: 740k romaji name glosses must never enter the
+    // English search index.
+    expect((db.prepare('SELECT COUNT(*) AS n FROM gloss_fts').get() as { n: number }).n).toBe(0)
+    let row = listDictionaries().find((d) => d.title.startsWith('JMnedict'))!
+    expect(row.priority).toBe(-10)
+
+    // Re-import inherits the (possibly user-adjusted) priority, not the default.
+    db.prepare('UPDATE dict SET priority = 3 WHERE id = ?').run(row.id)
+    await importFromReader(makeReader(names, bank), { glossFts: false, defaultPriority: -10 })
+    row = listDictionaries().find((d) => d.title.startsWith('JMnedict'))!
+    expect(row.priority).toBe(3)
+  })
+
   it('normalizes a legacy format-1 glossary (strings spread from index 5)', async () => {
     await importFromReader(
       makeReader(

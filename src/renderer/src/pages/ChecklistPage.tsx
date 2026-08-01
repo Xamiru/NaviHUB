@@ -5,6 +5,7 @@ import { qk } from '../lib/queryKeys'
 import { toast, toastError } from '../lib/toast'
 import { checklistDef } from '@shared/checklist'
 import Section from '../components/Section'
+import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import CalendarHeatmap from '../components/CalendarHeatmap'
 import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
@@ -56,17 +57,15 @@ export default function ChecklistPage() {
 
   return (
     <div className="mx-auto max-w-[1600px] p-6">
-      <div className="mb-5 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Checklist</h1>
-          <p className="text-sm text-gray-500">
-            Your routine. Weeks run Saturday to Friday; days roll over at midnight.
-          </p>
-        </div>
-        <button className="btn-ghost" onClick={() => setEditMode((v) => !v)}>
-          {editMode ? 'Done editing' : 'Edit board'}
-        </button>
-      </div>
+      <PageHeader
+        title="Checklist"
+        subtitle="Your routine. Weeks run Saturday to Friday; days roll over at midnight."
+        actions={
+          <button className="btn-ghost" onClick={() => setEditMode((v) => !v)}>
+            {editMode ? 'Done editing' : 'Edit board'}
+          </button>
+        }
+      />
 
       <Hero data={data} doneToday={doneToday} doneWeek={doneWeek} />
 
@@ -136,7 +135,7 @@ export default function ChecklistPage() {
 }
 
 // Today at a glance: the fraction, a bar, and the streak — the StatsPage hero
-// treatment, minus its decorative glyph.
+// treatment (.card-glow).
 function Hero({
   data,
   doneToday,
@@ -149,7 +148,7 @@ function Hero({
   const total = data.daily.length
   const pct = total ? Math.round((doneToday / total) * 100) : 0
   return (
-    <div className="relative mb-8 overflow-hidden rounded-lg border border-base-700 bg-gradient-to-br from-accent/25 via-base-800 to-base-800 p-6">
+    <div className="card-glow relative mb-8 overflow-hidden p-6">
       <div className="text-xs font-semibold uppercase tracking-widest text-accent">
         Today · {fmtDay(data.today)}
       </div>

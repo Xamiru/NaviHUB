@@ -41,7 +41,9 @@ export default function TorrentSearchDialog({
   return (
     <div
       className="fixed inset-0 z-50 bg-black/60 flex items-start justify-center p-8 overflow-y-auto"
-      onMouseDown={onClose}
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
     >
       <div
         ref={panelRef}
@@ -50,7 +52,6 @@ export default function TorrentSearchDialog({
         aria-label={`Find torrents — ${heading}`}
         tabIndex={-1}
         className="card w-full max-w-5xl p-5 mt-4"
-        onMouseDown={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-bold">Find torrents — {heading}</h2>
@@ -59,7 +60,7 @@ export default function TorrentSearchDialog({
             aria-label="Close"
             onClick={onClose}
           >
-            ×
+            ✕
           </button>
         </div>
 

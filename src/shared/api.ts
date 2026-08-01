@@ -56,6 +56,7 @@ import type {
   JpLessonInput,
   JpMiningInbox,
   EnDictEntry,
+  EnglishDictInfo,
   EnWord,
   EnWordInput,
   ProgLessonProgress,
@@ -70,6 +71,25 @@ import type {
   StrokeSetInfo,
   StrokeImportSummary,
   KanjiInfo,
+  KanjiumImportSummary,
+  PitchPoolItem,
+  KradSetInfo,
+  KradImportSummary,
+  KradComponent,
+  ComponentQuizItem,
+  GrammarBankInfo,
+  GrammarImportSummary,
+  GrammarPoint,
+  GrammarPointSummary,
+  NameKind,
+  NameQuizItem,
+  PairSetInfo,
+  PairImportSummary,
+  MinimalPair,
+  SentenceAudioBankInfo,
+  SentenceAudioImportSummary,
+  AudioSentence,
+  JpMilestones,
   JpLessonQuizPool,
   JpQuizItem,
   JpQuizScope,
@@ -137,7 +157,6 @@ import type {
   MusicStatsDetail,
   MusicTrack,
   MediaProgressLogged,
-  SyncStatus,
   YtDlpDetectResult
 } from './types'
 
@@ -157,6 +176,9 @@ export interface NaviApi {
     statusCounts(mediaType: string): Promise<Record<string, number>>
     facets(mediaType: string): Promise<MediaListFacets>
     timeStats(): Promise<LibraryTimeStats>
+    // Japanese-roadmap immersion milestones (anime/manga/novels completed,
+    // statuses resolved positionally so renames keep working).
+    jpMilestones(): Promise<JpMilestones>
   }
   people: {
     // role filters the browse list to people with that kind of credit (and
@@ -394,6 +416,18 @@ export interface NaviApi {
     // Which of the given card fronts already exist anywhere in jp_card — the
     // reader marks them as already-mined.
     minedFronts(fronts: string[]): Promise<string[]>
+    // Pool for the pitch-pattern quiz: learned cards joined against installed
+    // pitch data (Kanjium), topped up from frequency rows. Sampled per round —
+    // plain await from the Start handler, never cached.
+    pitchQuizPool(req: {
+      source: 'cards' | 'frequency' | 'both'
+      limit: number
+    }): Promise<PitchPoolItem[]>
+    // Pool for the build-a-kanji drill: kanji + real components + decoys.
+    componentQuizPool(req: {
+      source: { kind: 'cards' } | { kind: 'level'; level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' }
+      limit: number
+    }): Promise<ComponentQuizItem[]>
   }
   // Offline Yomitan dictionaries (see src/main/dict/). Lookups run offline first
   // and fall back to jisho.org; every result is a DictEntry. Nothing throws.
@@ -401,9 +435,10 @@ export interface NaviApi {
     list(): Promise<DictInfo[]>
     lookup(query: string): Promise<DictEntry[]>
     kanji(text: string): Promise<KanjiInfo[]>
-    // Download + import a freely-hosted preset (JMdict / KANJIDIC / frequency).
+    // Download + import a freely-hosted preset (JMdict / KANJIDIC / frequency /
+    // JMnedict names).
     importPreset(
-      key: 'jmdict-en' | 'kanjidic-en' | 'jpdb-freq' | 'bccwj-freq'
+      key: 'jmdict-en' | 'kanjidic-en' | 'jpdb-freq' | 'bccwj-freq' | 'jmnedict'
     ): Promise<DictImportSummary>
     // Native picker + import of any Yomitan .zip; null when cancelled.
     importZip(): Promise<DictImportSummary | null>
@@ -422,12 +457,61 @@ export interface NaviApi {
     importStrokes(): Promise<StrokeImportSummary>
     strokeSet(): Promise<StrokeSetInfo | null>
     removeStrokes(): Promise<void>
+    // Kanjium pitch accents — imports into the shared pitch table under a dict
+    // registry row (shows in list(), removed via remove()).
+    importKanjium(): Promise<KanjiumImportSummary>
+    // KRADFILE kanji components. Components also ride KanjiInfo.components;
+    // these power the by-parts search page and the build-a-kanji drill.
+    importKrad(): Promise<KradImportSummary>
+    kradSet(): Promise<KradSetInfo | null>
+    removeKrad(): Promise<void>
+    kradComponents(): Promise<KradComponent[]>
+    kradSearch(parts: string[]): Promise<{ character: string; strokeCount: number | null }[]>
+    // Grammar library (N5-N1 points). grammarList returns ALL summaries in one
+    // call — the renderer filters client-side; grammarRandom feeds the cloze
+    // drill (only points with a clozeable example).
+    importGrammar(): Promise<GrammarImportSummary>
+    grammarBank(): Promise<GrammarBankInfo | null>
+    removeGrammar(): Promise<void>
+    grammarList(): Promise<GrammarPointSummary[]>
+    grammarGet(id: number): Promise<GrammarPoint | null>
+    grammarRandom(count: number, levels?: string[] | null): Promise<GrammarPoint[]>
+    // Random person names from an installed JMnedict, readings aggregated per
+    // expression. [] when the names dictionary isn't installed.
+    nameSample(req: { kind: NameKind; limit: number }): Promise<NameQuizItem[]>
+    // The app's shiritori reply — a common noun starting with `kana`, not in
+    // `exclude`, never ending ん. null = the app is out of words (user wins).
+    shiritoriNext(req: {
+      kana: string
+      exclude: string[]
+    }): Promise<{ expression: string; reading: string; gloss: string | null } | null>
+    // Pitch minimal pairs (kotu.io backup). minimalPairs returns the WHOLE
+    // pack (~4k small rows) — the drill filters/samples client-side.
+    importPairs(): Promise<PairImportSummary>
+    pairSet(): Promise<PairSetInfo | null>
+    removePairs(): Promise<void>
+    minimalPairs(): Promise<MinimalPair[]>
+    // Tatoeba sentence audio: thousands of small throttled downloads
+    // (~15-30 min first run; interrupting is safe — a re-run resumes from the
+    // files already on disk). Requires the sentence bank. audioSample feeds
+    // the dictation drill.
+    importSentenceAudio(): Promise<SentenceAudioImportSummary>
+    sentenceAudioBank(): Promise<SentenceAudioBankInfo | null>
+    removeSentenceAudio(): Promise<void>
+    audioSample(req: { limit: number; maxChars?: number }): Promise<AudioSentence[]>
   }
   // English→English dictionary (/english): dictionaryapi.dev lookups (main
   // process — renderer CSP blocks remote fetch) + a flat saved-word list.
   english: {
-    // [] for an unknown word; throws on a real network/API failure.
+    // Offline WordNet first when installed, else dictionaryapi.dev. [] for an
+    // unknown word; throws on a real network/API failure.
     lookup(query: string): Promise<EnDictEntry[]>
+    // The installed offline dictionary (WordNet + CMUdict), null when lookups
+    // still go online. Import is long-running — poll dict.importStatus (the
+    // shared dictionary-import status) while it runs.
+    dictInfo(): Promise<EnglishDictInfo | null>
+    importDict(): Promise<EnglishDictInfo>
+    removeDict(): Promise<void>
     // Idempotent: re-saving an identical (word, meaning) returns the existing id.
     saveWord(input: EnWordInput): Promise<number>
     listWords(search?: string): Promise<EnWord[]>
@@ -579,17 +663,6 @@ export interface NaviApi {
     coachDocs(game: GachaGameId): Promise<GachaCoachDoc[]>
     importCoachDoc(game: GachaGameId, input: { title: string; content: string }): Promise<number>
     removeCoachDoc(id: number): Promise<void>
-  }
-  sync: {
-    // LAN sync server for the Android companion app (src/main/sync.ts). Online
-    // is button-only: it listens ONLY between start() and stop(), and pairing
-    // mode (start(true)) shows a 6-digit code that the phone must echo back.
-    // Poll status() with refetchInterval while running, like music downloads.
-    start(pairing?: boolean): Promise<SyncStatus>
-    stop(): Promise<SyncStatus>
-    status(): Promise<SyncStatus>
-    // Forgets the paired phone (clears its token); re-pair to sync again.
-    unpair(): Promise<SyncStatus>
   }
   app: {
     // Opens an http(s) URL in the system browser (gacha news links). Never

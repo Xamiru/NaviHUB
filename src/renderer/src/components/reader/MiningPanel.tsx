@@ -163,7 +163,7 @@ export default function MiningPanel({
             disabled={searching || !term.trim()}
             onClick={() => void search(term)}
           >
-            {searching ? '…' : '🔍'}
+            {searching ? '…' : 'Search'}
           </button>
         </div>
       </div>

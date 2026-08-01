@@ -4,10 +4,11 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toast, toastError } from '../lib/toast'
 import { LEECH_LAPSES } from '@shared/srs'
-import BackButton from '../components/BackButton'
+import PageHeader from '../components/PageHeader'
 import BarChart, { type Bar } from '../components/BarChart'
 import CalendarHeatmap from '../components/CalendarHeatmap'
 import PageStatus from '../components/PageStatus'
+import EmptyState from '../components/EmptyState'
 import Section from '../components/Section'
 import StatTile from '../components/StatTile'
 import type { JpStatsDetail, SrsGrade } from '@shared/types'
@@ -49,13 +50,10 @@ export default function JapaneseStatsPage() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      <BackButton />
-      <h1 className="mb-5 text-2xl font-bold">Review stats</h1>
+      <PageHeader back={{ to: '/japanese', label: 'Japanese' }} title="Japanese stats" />
 
       {answered === 0 ? (
-        <div className="card p-8 text-center text-gray-400">
-          No reviews yet — grade some cards and this page fills in.
-        </div>
+        <EmptyState title="No reviews yet — grade some cards and this page fills in." />
       ) : (
         <>
           <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -166,7 +164,7 @@ function ForecastChart({ detail }: { detail: JpStatsDetail }) {
     })
   }
   if (bars.every((b) => b.value === 0)) {
-    return <p className="text-sm text-gray-500">Nothing due in the next two weeks. 🎉</p>
+    return <p className="text-sm text-gray-500">Nothing due in the next two weeks.</p>
   }
   return <BarChart bars={bars} />
 }

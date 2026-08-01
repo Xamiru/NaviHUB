@@ -8,6 +8,7 @@ import type { GachaBuild, GachaUnitDetail, GachaUnitInput } from '@shared/types'
 import PageStatus from '../components/PageStatus'
 import BackButton from '../components/BackButton'
 import Section from '../components/Section'
+import ActionMenu from '../components/ActionMenu'
 import CoverImage from '../components/CoverImage'
 import GachaUnitDialog from '../components/gacha/GachaUnitDialog'
 
@@ -103,15 +104,15 @@ export default function GachaUnitPage() {
             <button className="btn-ghost" onClick={() => setEditing(true)}>
               Edit
             </button>
-            {unit.externalSource ? (
-              <button className="btn-danger" onClick={unown}>
-                Remove from roster
-              </button>
-            ) : (
-              <button className="btn-danger" onClick={remove}>
-                Delete
-              </button>
-            )}
+            <ActionMenu
+              items={[
+                // Catalog rows get unowned (re-import would resurrect a delete);
+                // manual rows get deleted outright.
+                unit.externalSource
+                  ? { label: 'Remove from roster…', onSelect: unown, danger: true }
+                  : { label: 'Delete…', onSelect: remove, danger: true }
+              ]}
+            />
           </div>
         </div>
       </div>
@@ -233,7 +234,7 @@ function BuildsSection({ unit }: { unit: GachaUnitDetail }) {
   }
 
   return (
-    <Section title="Builds" subtitle="freeform for now — a proper build editor comes with this game's detail pass">
+    <Section title="Builds">
       <div className="mb-3 flex gap-2">
         <input
           className="input max-w-xs"

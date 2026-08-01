@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
+import Section from '../components/Section'
 import Markdown from '../components/Markdown'
 import { progCourse, progLessonKey } from '@shared/programming/courses'
 import type { ProgQuestion } from '@shared/programming/types'
@@ -25,6 +27,9 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
   const fullKey = progLessonKey(course.key, lesson.key)
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
+  // 1-4 answer the first unanswered question (the quiz pages' keyboard idiom).
+  const [answered, setAnswered] = useState<ReadonlySet<number>>(new Set())
+  const activeQ = lesson.questions.findIndex((_, i) => !answered.has(i))
 
   const { data: progress = [] } = useQuery({
     queryKey: qk.programming.progress,
@@ -48,33 +53,34 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-5">
-        <Link to={`/programming/course/${course.key}`} className="text-sm text-gray-500 hover:text-white">
-          ← {course.title}
-        </Link>
-        <div className="mt-1 flex items-baseline justify-between gap-3">
-          <h1 className="text-2xl font-bold">{lesson.title}</h1>
-          <span className="shrink-0 text-xs text-gray-500">
+      <PageHeader
+        back={{ to: `/programming/course/${course.key}`, label: course.title }}
+        title={lesson.title}
+        actions={
+          <span className="text-xs text-gray-500">
             Lesson {index + 1} of {course.lessons.length}
           </span>
-        </div>
-      </div>
+        }
+      />
 
       <div className="card p-5">
         <Markdown text={lesson.body} />
       </div>
 
       {lesson.questions.length > 0 && (
-        <div className="mt-6">
-          <h2 className="mb-2 text-sm font-semibold uppercase tracking-widest text-gray-500">
-            Check understanding
-          </h2>
+        <Section title="Check understanding" className="mt-6 mb-0">
           <div className="space-y-3">
             {lesson.questions.map((q, i) => (
-              <Question key={i} q={q} n={i + 1} />
+              <Question
+                key={i}
+                q={q}
+                n={i + 1}
+                active={i === activeQ}
+                onAnswered={() => setAnswered((s) => new Set(s).add(i))}
+              />
             ))}
           </div>
-        </div>
+        </Section>
       )}
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
@@ -84,12 +90,12 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
         <span className="flex-1" />
         {prev && (
           <Link to={`/programming/course/${course.key}/${prev.key}`} className="btn-ghost">
-            ← {prev.title}
+            Prev: {prev.title}
           </Link>
         )}
         {next && (
           <Link to={`/programming/course/${course.key}/${next.key}`} className="btn-ghost">
-            {next.title} →
+            Next: {next.title}
           </Link>
         )}
       </div>
@@ -97,9 +103,40 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
   )
 }
 
-function Question({ q, n }: { q: ProgQuestion; n: number }) {
+function Question({
+  q,
+  n,
+  active,
+  onAnswered
+}: {
+  q: ProgQuestion
+  n: number
+  active: boolean
+  onAnswered: () => void
+}) {
   const [picked, setPicked] = useState<number | null>(null)
   const answered = picked !== null
+
+  function pick(i: number): void {
+    if (picked !== null) return
+    setPicked(i)
+    onAnswered()
+  }
+
+  useEffect(() => {
+    if (!active || answered) return
+    function onKey(e: KeyboardEvent) {
+      const num = Number(e.key)
+      if (!Number.isInteger(num) || num < 1 || num > q.options.length) return
+      const t = e.target as HTMLElement
+      if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)
+        return
+      pick(num - 1)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active, answered])
 
   return (
     <div className="card p-4">
@@ -120,8 +157,9 @@ function Question({ q, n }: { q: ProgQuestion; n: number }) {
               key={i}
               className={`block w-full rounded-md border px-3 py-1.5 text-left text-sm transition-colors ${cls}`}
               disabled={answered}
-              onClick={() => setPicked(i)}
+              onClick={() => pick(i)}
             >
+              {active && !answered && <kbd className="kbd float-right">{i + 1}</kbd>}
               {opt}
             </button>
           )

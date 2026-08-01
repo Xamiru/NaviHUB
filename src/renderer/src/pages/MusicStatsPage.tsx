@@ -4,11 +4,12 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import BackButton from '../components/BackButton'
+import PageHeader from '../components/PageHeader'
 import BarChart, { type Bar } from '../components/BarChart'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
 import StatTile from '../components/StatTile'
+import EmptyState from '../components/EmptyState'
 import CoverImage from '../components/CoverImage'
 import { formatDuration, formatLongDuration } from '../components/MusicTrackRow'
 import { TrackList } from './MusicLibraryPage'
@@ -78,20 +79,23 @@ export default function MusicStatsPage() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      <BackButton />
-
-      <div className="mb-5 flex flex-wrap items-center gap-3">
-        <h1 className="mr-auto text-2xl font-bold">Listening stats</h1>
-        {PERIODS.map((p) => (
-          <button
-            key={p.label}
-            className={days === p.days ? 'pill pill-active' : 'pill'}
-            onClick={() => setDays(p.days)}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
+      <PageHeader
+        back="history"
+        title="Listening stats"
+        actions={
+          <>
+            {PERIODS.map((p) => (
+              <button
+                key={p.label}
+                className={days === p.days ? 'pill pill-active' : 'pill'}
+                onClick={() => setDays(p.days)}
+              >
+                {p.label}
+              </button>
+            ))}
+          </>
+        }
+      />
 
       {neverPlayed ? (
         <>
@@ -102,10 +106,14 @@ export default function MusicStatsPage() {
         </>
       ) : periodEmpty ? (
         <>
-          <div className="card mb-6 p-5 text-sm text-gray-500">
-            No plays in this period yet.
-            {!hasLog && ' Day-by-day stats start recording from today — All time shows your totals so far.'}
-          </div>
+          <EmptyState
+            className="card mb-6 p-12 text-center"
+            title="No plays in this period yet"
+            body={
+              !hasLog &&
+              'Day-by-day stats start recording from today — All time shows your totals so far.'
+            }
+          />
           <LibraryFactsCard library={stats.library} />
           <RecentSection tracks={recent} />
         </>

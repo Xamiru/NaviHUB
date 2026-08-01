@@ -165,6 +165,25 @@ export function importSentenceFile(path: string): Promise<SentenceImportSummary>
 
 // ---- queries ----
 
+interface ExampleRow {
+  jp: string
+  en: string
+  attribution: string | null
+  audio_path?: string | null
+}
+
+const toExample = (r: ExampleRow): SentenceExample => ({
+  jp: r.jp,
+  en: r.en,
+  attribution: r.attribution ?? null,
+  audioPath: r.audio_path ?? null
+})
+
+// A recording of this exact sentence, when the sentence-audio pack has one.
+// The audio_bank join keeps staged rows from a crashed import invisible.
+const AUDIO_SUBSELECT = `(SELECT sa.path FROM sentence_audio sa
+    JOIN audio_bank ab ON ab.id = sa.bank_id WHERE sa.jp = s.jp LIMIT 1) AS audio_path`
+
 // Example sentences containing `term`. Exact-surface matches come first, then
 // shortest — short sentences make the best cards and cloze prompts. Never
 // throws (a malformed FTS query must not break a lookup).
@@ -175,22 +194,23 @@ export function querySentences(term: string, limit = 5): SentenceExample[] {
   try {
     const rows = db
       .prepare(
-        `SELECT s.jp, s.en, s.attribution FROM sentence_fts f
+        `SELECT s.jp, s.en, s.attribution, ${AUDIO_SUBSELECT} FROM sentence_fts f
          JOIN sentence s ON s.id = f.sentence_id
          WHERE f.keywords MATCH ?
          ORDER BY (instr(s.jp, ?) > 0) DESC, length(s.jp) ASC
          LIMIT ?`
       )
-      .all(`"${q}"`, q, limit) as { jp: string; en: string; attribution: string | null }[]
-    if (rows.length > 0) return rows.map((r) => ({ jp: r.jp, en: r.en, attribution: r.attribution ?? null }))
+      .all(`"${q}"`, q, limit) as ExampleRow[]
+    if (rows.length > 0) return rows.map(toExample)
     // Rare fallback: a sentence whose tokenization missed the term still
     // contains it literally.
     const like = db
       .prepare(
-        `SELECT jp, en, attribution FROM sentence WHERE jp LIKE ? ORDER BY length(jp) ASC LIMIT ?`
+        `SELECT s.jp, s.en, s.attribution, ${AUDIO_SUBSELECT}
+         FROM sentence s WHERE s.jp LIKE ? ORDER BY length(s.jp) ASC LIMIT ?`
       )
-      .all(`%${q}%`, limit) as { jp: string; en: string; attribution: string | null }[]
-    return like.map((r) => ({ jp: r.jp, en: r.en, attribution: r.attribution ?? null }))
+      .all(`%${q}%`, limit) as ExampleRow[]
+    return like.map(toExample)
   } catch {
     return []
   }

@@ -12,12 +12,15 @@ import BackButton from './BackButton'
 export default function PageHeader({
   title,
   subtitle,
+  eyebrow,
   back,
   actions,
   className = 'mb-5'
 }: {
   title: ReactNode
   subtitle?: ReactNode
+  /** Small row above the title (chip rows on course/lesson pages). */
+  eyebrow?: ReactNode
   back?: 'history' | { to: string; label: string }
   actions?: ReactNode
   className?: string
@@ -31,8 +34,13 @@ export default function PageHeader({
             ← {back.label}
           </Link>
         )}
+        {eyebrow && (
+          <div className={`flex flex-wrap items-center gap-1.5 ${back && back !== 'history' ? 'mt-1' : ''}`}>
+            {eyebrow}
+          </div>
+        )}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className={`text-2xl font-bold ${back && back !== 'history' ? 'mt-1' : ''}`}>
+          <h1 className={`text-2xl font-bold ${(back && back !== 'history') || eyebrow ? 'mt-1' : ''}`}>
             {title}
           </h1>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

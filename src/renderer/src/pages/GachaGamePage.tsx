@@ -12,6 +12,7 @@ import { gachaGame, gachaUnitKind, type GachaGameCfg } from '@shared/gacha'
 import type { GachaBanner, GachaGameId, GachaUnit } from '@shared/types'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
+import ActionMenu from '../components/ActionMenu'
 import CoverImage from '../components/CoverImage'
 import GachaUnitDialog from '../components/gacha/GachaUnitDialog'
 import GachaBannerDialog from '../components/gacha/GachaBannerDialog'
@@ -69,9 +70,6 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
           />
         )}
         <div className="absolute bottom-3 left-4 flex items-center gap-3">
-          <span className="text-3xl drop-shadow" style={{ color: cfg.color }}>
-            {cfg.glyph}
-          </span>
           <h1 className="text-2xl font-bold drop-shadow">{cfg.name}</h1>
         </div>
         <button
@@ -79,7 +77,7 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
           title="Set this game's artwork"
           onClick={() => setEditingImage(true)}
         >
-          ✎ Artwork
+          Artwork
         </button>
       </div>
 
@@ -223,27 +221,24 @@ function RosterTab({ cfg }: { cfg: GachaGameCfg }) {
   })
   const { visible, sentinelRef } = useIncrementalList(units)
 
+  const showEmpty = !isLoading && units.length === 0
+
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        {cfg.unitKinds.map((k) => (
-          <button
-            key={k.key}
-            className={kind.key === k.key ? 'pill pill-active' : 'pill'}
-            onClick={() => setKindKey(k.key)}
-          >
-            {k.plural}
-          </button>
-        ))}
+        <KindSwitcher cfg={cfg} active={kind.key} onChange={setKindKey} />
         <input
           className="input ml-auto max-w-xs"
           placeholder={`Search ${kind.plural.toLowerCase()}…`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <button className="btn-primary" onClick={() => setAdding(true)}>
-          + Add {kind.label.toLowerCase()}
-        </button>
+        {/* Hidden while the EmptyState below carries the same filled action */}
+        {!showEmpty && (
+          <button className="btn-primary" onClick={() => setAdding(true)}>
+            + Add {kind.label.toLowerCase()}
+          </button>
+        )}
       </div>
 
       {isLoading ? (
@@ -271,6 +266,31 @@ function RosterTab({ cfg }: { cfg: GachaGameCfg }) {
 
       {adding && <GachaUnitDialog game={cfg} kind={kind.key} onClose={() => setAdding(false)} />}
     </div>
+  )
+}
+
+// The kind switcher shared by the Roster and Catalog tabs (single-select pills).
+function KindSwitcher({
+  cfg,
+  active,
+  onChange
+}: {
+  cfg: GachaGameCfg
+  active: string
+  onChange: (key: string) => void
+}) {
+  return (
+    <>
+      {cfg.unitKinds.map((k) => (
+        <button
+          key={k.key}
+          className={active === k.key ? 'pill pill-active' : 'pill'}
+          onClick={() => onChange(k.key)}
+        >
+          {k.plural}
+        </button>
+      ))}
+    </>
   )
 }
 
@@ -337,15 +357,7 @@ function CatalogTab({ cfg }: { cfg: GachaGameCfg }) {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        {cfg.unitKinds.map((k) => (
-          <button
-            key={k.key}
-            className={kind.key === k.key ? 'pill pill-active' : 'pill'}
-            onClick={() => setKindKey(k.key)}
-          >
-            {k.plural}
-          </button>
-        ))}
+        <KindSwitcher cfg={cfg} active={kind.key} onChange={setKindKey} />
         <input
           className="input ml-auto max-w-xs"
           placeholder={`Search all ${kind.plural.toLowerCase()}…`}
@@ -495,18 +507,23 @@ function BannersTab({ cfg }: { cfg: GachaGameCfg }) {
     { title: 'Ended', items: banners.filter((b) => bannerState(b, today) === 'ended') }
   ]
 
+  const showEmpty = !isLoading && banners.length === 0
+
   return (
     <div>
       <div className="mb-4 flex items-center gap-2">
-        <button className="btn-primary" onClick={() => setAdding(true)}>
-          + Add banner
-        </button>
+        {/* Hidden while the EmptyState below carries the same filled action */}
+        {!showEmpty && (
+          <button className="btn-primary" onClick={() => setAdding(true)}>
+            + Add banner
+          </button>
+        )}
         <button
           className="btn-ghost"
           disabled
           title={`Banner fetching for ${cfg.name} arrives in a later phase — add banners manually for now`}
         >
-          ⇣ Fetch banners
+          Fetch banners
         </button>
       </div>
 
@@ -571,9 +588,7 @@ function BannerRow({ banner, onEdit }: { banner: GachaBanner; onEdit: () => void
         <button className="btn-ghost" onClick={onEdit}>
           Edit
         </button>
-        <button className="btn-danger" onClick={remove}>
-          Delete
-        </button>
+        <ActionMenu items={[{ label: 'Delete banner…', onSelect: remove, danger: true }]} />
       </div>
     </div>
   )
@@ -629,14 +644,14 @@ function NewsTab({ cfg }: { cfg: GachaGameCfg }) {
           title={`Pull the hot posts from r/${cfg.subreddit} now`}
           onClick={fetchNow}
         >
-          {busy ? 'Fetching…' : '⇣ Fetch posts'}
+          {busy ? 'Fetching…' : 'Fetch posts'}
         </button>
         <button
           className="chip hover:text-white"
           title="Open the subreddit in your browser"
           onClick={() => api.app.openExternal(`https://www.reddit.com/r/${cfg.subreddit}/`)}
         >
-          r/{cfg.subreddit} ↗
+          r/{cfg.subreddit}
         </button>
         {data?.fetchedAt && (
           <span className="text-xs text-gray-500">

@@ -5,46 +5,62 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useDebouncedValue, useDialog } from '../lib/hooks'
 import { MEDIA_CONFIGS, configFor, pathForMedia } from '../lib/mediaConfig'
+import { GACHA_GAMES } from '@shared/gacha'
 
 interface PaletteItem {
   key: string
-  icon: string
   label: string
   hint: string // right-aligned kind/section hint
   to: string
 }
 
 // Static jump-to-section commands, substring-filtered by the query.
+// Text-only rows (no icon column) — same idiom as the sidebar.
 const NAV_ITEMS: PaletteItem[] = [
-  { key: 'nav-home', icon: '⌂', label: 'Home', hint: 'Go to', to: '/' },
+  { key: 'nav-home', label: 'Home', hint: 'Go to', to: '/' },
+  { key: 'nav-checklist', label: 'Checklist', hint: 'Go to', to: '/checklist' },
+  { key: 'nav-stats', label: 'Stats', hint: 'Go to', to: '/stats' },
   ...MEDIA_CONFIGS.map((cfg) => ({
     key: `nav-${cfg.key}`,
-    icon: cfg.icon,
     label: cfg.plural,
     hint: 'Go to',
     to: cfg.basePath
   })),
-  { key: 'nav-anime-seasonal', icon: '❆', label: 'Seasonal anime', hint: 'Go to', to: '/anime/seasonal' },
-  { key: 'nav-anime-songs', icon: '♫', label: 'Songs', hint: 'Go to', to: '/anime/songs' },
-  { key: 'nav-music', icon: '♪', label: 'Music', hint: 'Go to', to: '/music' },
-  { key: 'nav-stats', icon: '⧗', label: 'Stats', hint: 'Go to', to: '/stats' },
-  { key: 'nav-lists', icon: '☰', label: 'Lists', hint: 'Go to', to: '/lists' },
-  { key: 'nav-torrents', icon: '·', label: 'Torrents', hint: 'Go to', to: '/torrents' },
-  { key: 'nav-tags', icon: '#', label: 'Tags', hint: 'Go to', to: '/tags' },
-  { key: 'nav-quiz', icon: '♫', label: 'Quiz', hint: 'Go to', to: '/quiz' },
-  { key: 'nav-japanese', icon: 'あ', label: 'Japanese', hint: 'Go to', to: '/japanese' },
-  { key: 'nav-jp-review', icon: '▶', label: 'Japanese review', hint: 'Go to', to: '/japanese/review' },
-  { key: 'nav-jp-roadmap', icon: '', label: 'Japanese roadmap', hint: 'Go to', to: '/japanese/roadmap' },
-  { key: 'nav-jp-guide', icon: '', label: 'Japanese guide', hint: 'Go to', to: '/japanese/guide' },
-  { key: 'nav-jp-analyze', icon: '', label: 'Analyze Japanese text', hint: 'Go to', to: '/japanese/analyze' },
-  { key: 'nav-jp-coverage', icon: '', label: 'Japanese comprehension', hint: 'Go to', to: '/japanese/coverage' },
-  { key: 'nav-jp-write', icon: '', label: 'Kanji writing drill', hint: 'Go to', to: '/japanese/write' },
-  { key: 'nav-jp-stats', icon: '⧗', label: 'Japanese stats', hint: 'Go to', to: '/japanese/stats' },
-  { key: 'nav-english', icon: '', label: 'English dictionary', hint: 'Go to', to: '/english' },
-  { key: 'nav-programming', icon: '', label: 'Programming', hint: 'Go to', to: '/programming' },
-  { key: 'nav-prog-cheatsheets', icon: '', label: 'Cheatsheets', hint: 'Go to', to: '/programming/cheatsheets' },
-  { key: 'nav-prog-practice', icon: '', label: 'CLI practice', hint: 'Go to', to: '/programming/practice' },
-  { key: 'nav-settings', icon: '⚙', label: 'Settings', hint: 'Go to', to: '/settings' }
+  { key: 'nav-anime-seasonal', label: 'Seasonal anime', hint: 'Go to', to: '/anime/seasonal' },
+  { key: 'nav-anime-songs', label: 'Songs', hint: 'Go to', to: '/anime/songs' },
+  { key: 'nav-music', label: 'Music', hint: 'Go to', to: '/music' },
+  { key: 'nav-music-liked', label: 'Liked songs', hint: 'Go to', to: '/music/liked' },
+  { key: 'nav-music-stats', label: 'Listening stats', hint: 'Go to', to: '/music/stats' },
+  { key: 'nav-lists', label: 'Lists', hint: 'Go to', to: '/lists' },
+  { key: 'nav-tags', label: 'Tags', hint: 'Go to', to: '/tags' },
+  { key: 'nav-torrents', label: 'Torrents', hint: 'Go to', to: '/torrents' },
+  { key: 'nav-quiz', label: 'Quiz', hint: 'Go to', to: '/quiz' },
+  { key: 'nav-gacha', label: 'Gacha', hint: 'Go to', to: '/gacha' },
+  ...GACHA_GAMES.map((g) => ({
+    key: `nav-gacha-${g.id}`,
+    label: g.name,
+    hint: 'Gacha',
+    to: `/gacha/${g.id}`
+  })),
+  { key: 'nav-japanese', label: 'Japanese', hint: 'Go to', to: '/japanese' },
+  { key: 'nav-jp-review', label: 'Japanese review', hint: 'Go to', to: '/japanese/review' },
+  { key: 'nav-jp-roadmap', label: 'Japanese roadmap', hint: 'Go to', to: '/japanese/roadmap' },
+  { key: 'nav-jp-guide', label: 'Japanese guide', hint: 'Go to', to: '/japanese/guide' },
+  { key: 'nav-jp-analyze', label: 'Analyze Japanese text', hint: 'Go to', to: '/japanese/analyze' },
+  { key: 'nav-jp-coverage', label: 'Japanese comprehension', hint: 'Go to', to: '/japanese/coverage' },
+  { key: 'nav-jp-write', label: 'Kanji writing drill', hint: 'Go to', to: '/japanese/write' },
+  { key: 'nav-jp-stats', label: 'Japanese stats', hint: 'Go to', to: '/japanese/stats' },
+  { key: 'nav-jp-grammar', label: 'Japanese grammar library', hint: 'Go to', to: '/japanese/grammar' },
+  { key: 'nav-jp-kanji', label: 'Kanji by parts', hint: 'Go to', to: '/japanese/kanji' },
+  { key: 'nav-jp-pitch', label: 'Pitch accent drills', hint: 'Go to', to: '/japanese/pitch' },
+  { key: 'nav-jp-listen', label: 'Japanese dictation', hint: 'Go to', to: '/japanese/listen' },
+  { key: 'nav-jp-shiritori', label: 'Shiritori', hint: 'Go to', to: '/japanese/shiritori' },
+  { key: 'nav-english', label: 'English dictionary', hint: 'Go to', to: '/english' },
+  { key: 'nav-programming', label: 'Programming', hint: 'Go to', to: '/programming' },
+  { key: 'nav-prog-cheatsheets', label: 'Cheatsheets', hint: 'Go to', to: '/programming/cheatsheets' },
+  { key: 'nav-prog-practice', label: 'CLI practice', hint: 'Go to', to: '/programming/practice' },
+  { key: 'nav-prog-quiz', label: 'Programming quiz', hint: 'Go to', to: '/quiz/programming' },
+  { key: 'nav-settings', label: 'Settings', hint: 'Go to', to: '/settings' }
 ]
 
 // Ctrl/Cmd+K (or / outside inputs) overlay: jump-to-section commands + global
@@ -106,25 +122,23 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
       for (const m of results.media.slice(0, 6)) {
         found.push({
           key: `media-${m.mediaType}-${m.id}`,
-          icon: configFor(m.mediaType).icon,
           label: m.title,
           hint: configFor(m.mediaType).singular,
           to: pathForMedia(m)
         })
       }
       for (const p of results.people.slice(0, 4)) {
-        found.push({ key: `person-${p.id}`, icon: '☻', label: p.name, hint: 'Person', to: `/people/${p.id}` })
+        found.push({ key: `person-${p.id}`, label: p.name, hint: 'Person', to: `/people/${p.id}` })
       }
       for (const c of results.companies.slice(0, 3)) {
-        found.push({ key: `company-${c.id}`, icon: '⌂', label: c.name, hint: 'Studio', to: `/studios/${c.id}` })
+        found.push({ key: `company-${c.id}`, label: c.name, hint: 'Studio', to: `/studios/${c.id}` })
       }
       for (const c of results.characters.slice(0, 4)) {
-        found.push({ key: `char-${c.id}`, icon: '☺', label: c.name, hint: 'Character', to: `/characters/${c.id}` })
+        found.push({ key: `char-${c.id}`, label: c.name, hint: 'Character', to: `/characters/${c.id}` })
       }
     }
     found.push({
       key: 'search-all',
-      icon: '⌕',
       label: `Search everywhere for “${query.trim()}”`,
       hint: 'Search',
       to: `/search?q=${encodeURIComponent(query.trim())}`
@@ -201,9 +215,6 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
                 onMouseMove={() => setSel(i)}
                 onClick={() => go(item)}
               >
-                <span className="w-4 shrink-0 text-center opacity-80" aria-hidden>
-                  {item.icon}
-                </span>
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
                 <span className="shrink-0 text-xs text-gray-500">{item.hint}</span>
               </button>
@@ -211,7 +222,7 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
           )}
         </div>
         <div className="border-t border-base-700 px-4 py-1.5 text-[10px] text-gray-500">
-          ↑↓ navigate · ↵ open · esc close
+          ↑↓ navigate · ↵ open · esc close · / also opens
         </div>
       </div>
     </div>

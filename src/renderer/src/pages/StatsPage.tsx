@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import BackButton from '../components/BackButton'
+import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
 import StatTile from '../components/StatTile'
+import EmptyState from '../components/EmptyState'
 import CoverImage from '../components/CoverImage'
 import { configFor, fmtMinutesAsHours, pathForMedia } from '../lib/mediaConfig'
 import type { LibraryTimeStats, TimeStatsByType, TimeStatsItem, MediaType } from '@shared/types'
@@ -83,13 +84,12 @@ export default function StatsPage() {
 
   return (
     <div className="mx-auto max-w-4xl p-6">
-      <BackButton />
-      <h1 className="mb-6 text-2xl font-bold">Time spent</h1>
+      <PageHeader title="Time spent" />
       {stats.consumedCount === 0 ? (
-        <div className="card p-8 text-center text-gray-400">
-          Nothing logged yet. Set progress, watch counts, or a completed status on your titles and
-          this page fills in.
-        </div>
+        <EmptyState
+          title="Nothing logged yet"
+          body="Set progress, watch counts, or a completed status on your titles and this page fills in."
+        />
       ) : (
         <StatsContent stats={stats} />
       )}
@@ -115,10 +115,7 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
   return (
     <>
       {/* Hero */}
-      <div className="relative overflow-hidden rounded-lg border border-base-700 bg-gradient-to-br from-accent/25 via-base-800 to-base-800 p-6">
-        <span className="pointer-events-none absolute -right-4 -top-8 select-none text-[10rem] leading-none text-white opacity-10">
-          ⧗
-        </span>
+      <div className="card-glow relative mb-8 overflow-hidden p-6">
         <div className="relative">
           <div className="text-xs font-semibold uppercase tracking-widest text-accent">
             Time spent
@@ -145,7 +142,7 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
       </div>
 
       {/* Split bar */}
-      <Section title="Where the time went" className="mt-8">
+      <Section title="Where the time went">
         <div className="flex h-5 w-full gap-[2px] overflow-hidden rounded-full bg-base-800">
           {nonzero.map((t) => {
             const pct = (t.minutes / stats.totalMinutes) * 100
@@ -178,7 +175,6 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
                   className="h-3 w-3 shrink-0 rounded-sm"
                   style={{ background: TYPE_COLORS[t.mediaType] }}
                 />
-                <span className="opacity-80">{cfg.icon}</span>
                 <span>{cfg.plural}</span>
                 <span className="text-gray-500">
                   {t.estimated ? '≈ ' : ''}
@@ -191,7 +187,8 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
       </Section>
 
       {/* Headline tiles */}
-      <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <Section title="Highlights">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatTile label="Total time" value={fmtHours(stats.totalMinutes)} accent sub="normalized" />
         <StatTile
           label="Titles consumed"
@@ -212,17 +209,20 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
             sub={`${stats.mostRevisited.times}× consumed`}
           />
         )}
-      </div>
+        </div>
+      </Section>
 
       {/* Per-type leaderboards */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        {nonzero.map((t) => (
-          <TypeLeaderboard key={t.mediaType} t={t} />
-        ))}
-      </div>
+      <Section title="Top titles by type">
+        <div className="grid gap-6 lg:grid-cols-2">
+          {nonzero.map((t) => (
+            <TypeLeaderboard key={t.mediaType} t={t} />
+          ))}
+        </div>
+      </Section>
 
       {/* Footnote */}
-      <p className="mt-8 text-xs text-gray-400">
+      <p className="text-xs text-gray-400">
         ≈ Anime, TV and manga are estimates — episodes/chapters × per-unit minutes (real per-title
         runtimes from AniList/TMDB when available, otherwise the defaults you set in{' '}
         <Link to="/settings" className="text-accent hover:underline">
@@ -242,12 +242,7 @@ function TypeLeaderboard({ t }: { t: TimeStatsByType }) {
   return (
     <div id={`type-${t.mediaType}`} className="card p-4">
       <div className="mb-3 flex items-center gap-3">
-        <span
-          className="flex h-9 w-9 items-center justify-center rounded-md text-lg"
-          style={{ background: `${color}22`, color }}
-        >
-          {cfg.icon}
-        </span>
+        <span className="h-3 w-3 shrink-0 rounded-sm" style={{ background: color }} />
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="font-semibold">{cfg.plural}</h3>

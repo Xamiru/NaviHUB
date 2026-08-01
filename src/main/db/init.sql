@@ -666,19 +666,6 @@ CREATE TABLE IF NOT EXISTS gacha_coach_doc (
 );
 CREATE INDEX IF NOT EXISTS idx_gacha_coach_doc_game ON gacha_coach_doc(game);
 
--- ---- PC↔phone sync ----
--- One row per op batch applied by the LAN sync server (src/main/sync.ts). A
--- phone that never saw the response re-POSTs the same batch_id and gets the
--- stored outcome back instead of a double apply. Personal → wiped on export.
-CREATE TABLE IF NOT EXISTS sync_batch (
-  batch_id     TEXT PRIMARY KEY,
-  device       TEXT NOT NULL,
-  applied      INTEGER NOT NULL,
-  skipped      INTEGER NOT NULL,
-  skipped_json TEXT NOT NULL DEFAULT '[]',   -- SyncSkippedOp[] for replayed responses
-  applied_at   TEXT NOT NULL DEFAULT (datetime('now'))
-);
-
 -- ---- Daily / weekly checklist ----
 -- The CATALOG of possible items lives in src/shared/checklist.ts
 -- (GACHA_GAMES-style config); these tables only store which items are enabled

@@ -85,14 +85,17 @@ const SANITIZE_STATEMENTS = [
   'DELETE FROM en_word',
   'DELETE FROM prog_progress',
 
-  // PC↔phone sync bookkeeping (applied op batches).
+  // Legacy: the PC↔phone sync server was removed (2026-08-01), but a DB that
+  // ran an older build still has its table. sanitizeDb skips tables the DB
+  // doesn't have, so this is a no-op on a fresh one — keep it until the
+  // orphaned table is gone for good.
   'DELETE FROM sync_batch',
 
   // Secrets and machine-specific paths. The LIKE clause clears ALL the
   // japanese.seeded* flags (one per seeded course, see db/japaneseSeed.ts) so
   // the default courses re-seed for the recipient, and checklist.seeded so the
-  // starter board seeds too. sync.token is the phone's bearer token — a secret;
-  // sync.device is the paired phone's name.
+  // starter board seeds too. The sync.* keys are likewise legacy leftovers of
+  // the removed phone sync (a bearer token, a device name and a port).
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','omdb.api_key','ytdlp.path',
       'music.dir','manga.dir','audio.dir','pictures.dir',

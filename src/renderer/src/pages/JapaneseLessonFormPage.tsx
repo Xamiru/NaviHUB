@@ -3,7 +3,8 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import BackButton from '../components/BackButton'
+import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
 import { toast } from '../lib/toast'
 import type { JpCardInput, JpLessonKind } from '@shared/types'
 
@@ -168,25 +169,25 @@ export default function JapaneseLessonFormPage() {
     }
   }
 
-  if (!loaded) return <p className="p-6 text-gray-500">Loading…</p>
+  if (!loaded) return <PageStatus>Loading…</PageStatus>
 
   return (
     <div className="p-6 max-w-[900px] mx-auto">
-      <BackButton />
-      <h1 className="text-2xl font-bold mb-1">
-        {editing ? 'Edit lesson' : `New ${kind} lesson`}
-      </h1>
-      <p className="text-sm text-gray-500 mb-5">
-        {isGrammar
-          ? 'An explanation plus example sentences (each sentence becomes a reviewable card).'
-          : kind === 'kanji'
-            ? 'A deck of kanji cards with on/kun readings and an example word.'
-            : 'A deck of vocabulary cards.'}
-      </p>
+      <PageHeader
+        back="history"
+        title={editing ? 'Edit lesson' : `New ${kind} lesson`}
+        subtitle={
+          isGrammar
+            ? 'An explanation plus example sentences (each sentence becomes a reviewable card).'
+            : kind === 'kanji'
+              ? 'A deck of kanji cards with on/kun readings and an example word.'
+              : 'A deck of vocabulary cards.'
+        }
+      />
 
       <div className="space-y-4">
         <div>
-          <div className="label mb-1">Title</div>
+          <label className="label">Title</label>
           <input
             className="input"
             placeholder={isGrammar ? 'e.g. The particle が' : 'e.g. Weather words'}
@@ -198,7 +199,7 @@ export default function JapaneseLessonFormPage() {
 
         {isGrammar && (
           <div>
-            <div className="label mb-1">Explanation</div>
+            <label className="label">Explanation</label>
             <textarea
               className="input min-h-[180px] leading-relaxed"
               placeholder="Explain the grammar point — patterns, usage, pitfalls…"
@@ -241,6 +242,7 @@ export default function JapaneseLessonFormPage() {
                   <button
                     className="btn-ghost px-3 text-gray-500 hover:text-red-400"
                     title="Remove card"
+                    aria-label="Remove card"
                     onClick={() => removeRow(row.key)}
                   >
                     ✕

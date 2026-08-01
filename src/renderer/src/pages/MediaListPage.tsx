@@ -1,5 +1,6 @@
 import { memo, useState } from 'react'
 import Tabs from '../components/Tabs'
+import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -108,27 +109,30 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
           }))}
         />
       )}
-      <div className="flex items-center justify-between mb-5">
-        <div>
-          <h1 className="text-2xl font-bold">{cfg.plural}</h1>
-          <p className="text-sm text-gray-500">{total} titles in your library</p>
-        </div>
-        <div className="flex gap-2">
-          {cfg.hasSeasonal && (
-            <Link to={`${cfg.basePath}/seasonal`} className="btn-ghost">
-              ❆ Seasonal
-            </Link>
-          )}
-          {cfg.importSource && (
-            <button className="btn-ghost" onClick={() => setShowImport(true)}>
-              ⬇ Import from {cfg.importSource.label}
-            </button>
-          )}
-          <Link to={`${cfg.basePath}/new`} className="btn-primary">
-            + Add {cfg.singular}
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title={cfg.plural}
+        subtitle={`${total} titles in your library`}
+        actions={
+          <>
+            {cfg.hasSeasonal && (
+              <Link to={`${cfg.basePath}/seasonal`} className="btn-ghost">
+                Seasonal
+              </Link>
+            )}
+            {cfg.importSource && (
+              <button className="btn-ghost" onClick={() => setShowImport(true)}>
+                Import from {cfg.importSource.label}
+              </button>
+            )}
+            {/* Hidden while the empty state below carries the same filled action */}
+            {total > 0 && (
+              <Link to={`${cfg.basePath}/new`} className="btn-primary">
+                + Add {cfg.singular}
+              </Link>
+            )}
+          </>
+        }
+      />
 
       {showImport && cfg.importSource && (
         <ImportDialog
@@ -184,7 +188,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
           onClick={() => setFavOnly((v) => !v)}
           title="Show favorites only"
         >
-          ★ Favorites
+          Favorites
         </button>
         <div className="flex items-center gap-2 ml-auto text-sm">
           <span className="text-gray-500">Sort</span>
@@ -295,7 +299,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
       )}
 
       {isLoading ? (
-        <p className="text-gray-500">Loading…</p>
+        <p className="text-sm text-gray-500">Loading…</p>
       ) : items.length === 0 ? (
         nFilters > 0 || debouncedSearch.trim() ? (
           <EmptyState

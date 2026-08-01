@@ -5,9 +5,15 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toast } from '../lib/toast'
 import { usePersistedState } from '../lib/navState'
+import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
+import Section from '../components/Section'
+import EmptyState from '../components/EmptyState'
+import ActionMenu from '../components/ActionMenu'
 import CardSourceBadge from '../components/CardSourceBadge'
 import LessonCheck from '../components/japanese/LessonCheck'
 import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
+import { grammarCandidates } from '@shared/cloze'
 import type { JpCard, JpLessonKind } from '@shared/types'
 
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
@@ -37,7 +43,7 @@ export default function JapaneseLessonPage() {
     toast(
       lesson.learned
         ? 'Lesson unmarked — its cards leave review and quiz'
-        : 'Lesson learned! Its cards are now in review and quiz',
+        : 'Lesson learned — its cards are now in review and quiz',
       'success'
     )
   }
@@ -52,79 +58,72 @@ export default function JapaneseLessonPage() {
     navigate(`/japanese/courses/${courseId}`)
   }
 
-  if (isLoading) return <p className="p-6 text-gray-500">Loading…</p>
-  if (!lesson) return <p className="p-6 text-gray-500">Lesson not found.</p>
+  if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (!lesson) return <PageStatus>Lesson not found.</PageStatus>
 
   const isGrammar = lesson.kind === 'grammar'
 
   return (
     <div className="p-6 max-w-[900px] mx-auto">
-      <Link
-        to={`/japanese/courses/${lesson.courseId}`}
-        className="text-sm text-gray-500 hover:text-white"
-      >
-        ← {lesson.courseTitle}
-      </Link>
-
-      <div className="mt-2 flex items-start justify-between gap-4 mb-6">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
+      <PageHeader
+        back={{ to: `/japanese/courses/${lesson.courseId}`, label: lesson.courseTitle }}
+        title={lesson.title}
+        eyebrow={
+          <>
             <span className={`chip ${KIND_CHIP[lesson.kind].cls}`}>
               {KIND_CHIP[lesson.kind].label}
             </span>
             {lesson.learned && <span className="chip bg-green-500/20 text-green-300">✓ Learned</span>}
-          </div>
-          <h1 className="mt-2 text-2xl font-bold">{lesson.title}</h1>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <Link to={`/japanese/lessons/${lessonId}/edit`} className="btn-ghost">
-            Edit
-          </Link>
-          <button className="btn-danger" onClick={removeLesson}>
-            Delete
-          </button>
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Link to={`/japanese/lessons/${lessonId}/edit`} className="btn-ghost">
+              Edit
+            </Link>
+            <ActionMenu items={[{ label: 'Delete lesson…', onSelect: removeLesson, danger: true }]} />
+          </>
+        }
+      />
 
       {isGrammar && lesson.body && (
         <div className="card mb-6 p-5">
           <p className="whitespace-pre-wrap text-[15px] leading-relaxed text-gray-200">
             {lesson.body}
           </p>
+          <GrammarLibraryLink lessonTitle={lesson.title} />
         </div>
       )}
 
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">
-          {isGrammar ? 'Example sentences' : lesson.kind === 'kanji' ? 'Kanji' : 'Vocabulary'}{' '}
-          <span className="text-sm font-normal text-gray-500">({lesson.cards.length})</span>
-        </h2>
-        {!isGrammar && lesson.cards.length > 0 && (
-          <button
-            className={`btn-ghost text-sm ${practice ? 'text-accent' : ''}`}
-            onClick={() => setPractice(!practice)}
-            title="Hide readings and meanings — click a cell to reveal it"
-          >
-            {practice ? 'Practice mode: on' : 'Practice mode'}
-          </button>
+      <Section
+        title={`${isGrammar ? 'Example sentences' : lesson.kind === 'kanji' ? 'Kanji' : 'Vocabulary'} · ${lesson.cards.length}`}
+        subtitle={
+          !isGrammar && lesson.cards.length > 0 ? (
+            <button
+              className={`btn-ghost text-sm ${practice ? 'text-accent' : ''}`}
+              onClick={() => setPractice(!practice)}
+              title="Hide readings and meanings — click a cell to reveal it"
+            >
+              {practice ? 'Practice mode: on' : 'Practice mode'}
+            </button>
+          ) : undefined
+        }
+        className="mb-0"
+      >
+        {lesson.cards.length === 0 ? (
+          <EmptyState title="No cards yet" body="Add some in Edit." />
+        ) : isGrammar ? (
+          <div className="space-y-2">
+            {lesson.cards.map((c) => (
+              <SentenceCard key={c.id} card={c} />
+            ))}
+          </div>
+        ) : lesson.kind === 'kanji' ? (
+          <KanjiTable cards={lesson.cards} practice={practice} />
+        ) : (
+          <VocabTable cards={lesson.cards} practice={practice} />
         )}
-      </div>
-
-      {lesson.cards.length === 0 ? (
-        <div className="card p-8 text-center">
-          <p className="text-sm text-gray-500">No cards yet — add some in Edit.</p>
-        </div>
-      ) : isGrammar ? (
-        <div className="space-y-2">
-          {lesson.cards.map((c) => (
-            <SentenceCard key={c.id} card={c} />
-          ))}
-        </div>
-      ) : lesson.kind === 'kanji' ? (
-        <KanjiTable cards={lesson.cards} practice={practice} />
-      ) : (
-        <VocabTable cards={lesson.cards} practice={practice} />
-      )}
+      </Section>
 
       <LessonCheck
         lessonId={lessonId}
@@ -139,7 +138,7 @@ export default function JapaneseLessonPage() {
           className={lesson.learned ? 'btn-ghost' : 'btn-primary'}
           onClick={toggleLearned}
         >
-          {lesson.learned ? '↩ Unmark as learned' : '✓ Mark as learned'}
+          {lesson.learned ? 'Unmark as learned' : 'Mark as learned'}
         </button>
         {!lesson.learned && (
           <p className="mt-2 text-xs text-gray-500">
@@ -322,5 +321,27 @@ function KanjiTable({ cards, practice }: { cards: JpCard[]; practice: boolean })
         </tbody>
       </table>
     </div>
+  )
+}
+
+// Quiet link into the offline grammar library, shown only when the pack is
+// installed. The search term is the lesson title's kana grammar point
+// (@shared/cloze's extraction), falling back to the raw title.
+function GrammarLibraryLink({ lessonTitle }: { lessonTitle: string }) {
+  const { data: bank } = useQuery({
+    queryKey: qk.dict.grammarBank,
+    queryFn: () => api.dict.grammarBank()
+  })
+  if (!bank) return null
+  const target = grammarCandidates(lessonTitle)[0] ?? lessonTitle
+  return (
+    <p className="mt-3">
+      <Link
+        to={`/japanese/grammar?q=${encodeURIComponent(target)}`}
+        className="text-xs text-gray-500 hover:text-accent"
+      >
+        Look up in grammar library
+      </Link>
+    </p>
   )
 }

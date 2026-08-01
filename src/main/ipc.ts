@@ -15,6 +15,14 @@ import * as listRepo from './repos/listRepo'
 import * as checklistRepo from './repos/checklistRepo'
 import * as japaneseRepo from './repos/japaneseRepo'
 import * as english from './english'
+import * as wordnet from './dict/wordnet'
+import * as dictKanjium from './dict/kanjium'
+import * as dictKrad from './dict/krad'
+import * as dictGrammar from './dict/grammar'
+import * as dictNames from './dict/names'
+import * as dictPairs from './dict/minimalPairs'
+import * as dictAudio from './dict/tatoebaAudio'
+import * as jpDrills from './jpDrills'
 import * as englishRepo from './repos/englishRepo'
 import * as programmingRepo from './repos/programmingRepo'
 import * as anilist from './anilist'
@@ -51,7 +59,6 @@ import * as coreDeck from './coreDeck'
 import * as coverage from './coverage'
 import * as coverageRepo from './repos/coverageRepo'
 import * as analyzeText from './analyzeText'
-import * as sync from './sync'
 
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
@@ -77,6 +84,7 @@ export function registerIpc(): void {
   ipcMain.handle('media:statusCounts', (_e, mediaType) => mediaRepo.statusCounts(mediaType))
   ipcMain.handle('media:facets', (_e, mediaType) => mediaRepo.facets(mediaType))
   ipcMain.handle('media:timeStats', () => mediaRepo.timeStats())
+  ipcMain.handle('media:jpMilestones', () => mediaRepo.jpMilestones())
 
   // ---- people ----
   ipcMain.handle('people:list', (_e, search, role, mediaType) =>
@@ -212,6 +220,8 @@ export function registerIpc(): void {
   ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
   ipcMain.handle('japanese:tokenize', (_e, text) => tokenizer.tokenize(text))
   ipcMain.handle('japanese:minedFronts', (_e, fronts) => japaneseRepo.minedFronts(fronts))
+  ipcMain.handle('japanese:pitchQuizPool', (_e, req) => jpDrills.pitchQuizPool(req))
+  ipcMain.handle('japanese:componentQuizPool', (_e, req) => jpDrills.componentQuizPool(req))
 
   // ---- offline dictionaries ----
   ipcMain.handle('dict:list', () => dictImporter.listDictionaries())
@@ -229,9 +239,36 @@ export function registerIpc(): void {
   ipcMain.handle('dict:importStrokes', () => dictStrokes.importStrokes())
   ipcMain.handle('dict:strokeSet', () => dictStrokes.getStrokeSetInfo())
   ipcMain.handle('dict:removeStrokes', () => dictStrokes.removeStrokeSet())
+  ipcMain.handle('dict:importKanjium', () => dictKanjium.importKanjium())
+  ipcMain.handle('dict:importKrad', () => dictKrad.importKrad())
+  ipcMain.handle('dict:kradSet', () => dictKrad.getKradSetInfo())
+  ipcMain.handle('dict:removeKrad', () => dictKrad.removeKradSet())
+  ipcMain.handle('dict:kradComponents', () => dictKrad.kradComponents())
+  ipcMain.handle('dict:kradSearch', (_e, parts) => dictKrad.kradSearch(parts))
+  ipcMain.handle('dict:importGrammar', () => dictGrammar.importGrammar())
+  ipcMain.handle('dict:grammarBank', () => dictGrammar.getGrammarBankInfo())
+  ipcMain.handle('dict:removeGrammar', () => dictGrammar.removeGrammarBank())
+  ipcMain.handle('dict:grammarList', () => dictGrammar.listGrammar())
+  ipcMain.handle('dict:grammarGet', (_e, id) => dictGrammar.getGrammarPoint(id))
+  ipcMain.handle('dict:grammarRandom', (_e, count, levels) =>
+    dictGrammar.randomGrammar(count, levels)
+  )
+  ipcMain.handle('dict:nameSample', (_e, req) => dictNames.nameSample(req))
+  ipcMain.handle('dict:shiritoriNext', (_e, req) => jpDrills.shiritoriNext(req))
+  ipcMain.handle('dict:importPairs', () => dictPairs.importPairs())
+  ipcMain.handle('dict:pairSet', () => dictPairs.getPairSetInfo())
+  ipcMain.handle('dict:removePairs', () => dictPairs.removePairSet())
+  ipcMain.handle('dict:minimalPairs', () => dictPairs.listMinimalPairs())
+  ipcMain.handle('dict:importSentenceAudio', () => dictAudio.importSentenceAudio())
+  ipcMain.handle('dict:sentenceAudioBank', () => dictAudio.getAudioBankInfo())
+  ipcMain.handle('dict:removeSentenceAudio', () => dictAudio.removeAudioBank())
+  ipcMain.handle('dict:audioSample', (_e, req) => dictAudio.sampleAudioSentences(req))
 
   // ---- english dictionary ----
   ipcMain.handle('english:lookup', (_e, query) => english.lookup(query))
+  ipcMain.handle('english:dictInfo', () => wordnet.getEnglishDictInfo())
+  ipcMain.handle('english:importDict', () => wordnet.importEnglishDict())
+  ipcMain.handle('english:removeDict', () => wordnet.removeEnglishDict())
   ipcMain.handle('english:saveWord', (_e, input) => englishRepo.saveWord(input))
   ipcMain.handle('english:listWords', (_e, search) => englishRepo.listWords(search))
   ipcMain.handle('english:removeWord', (_e, id) => englishRepo.removeWord(id))
@@ -453,12 +490,6 @@ export function registerIpc(): void {
     gachaCoach.importDoc(game, input.title, input.content)
   )
   ipcMain.handle('gacha:removeCoachDoc', (_e, id) => coachRepo.removeDoc(id))
-
-  // ---- PC↔phone sync (LAN server, button-triggered) ----
-  ipcMain.handle('sync:start', (_e, pairing) => sync.startSyncServer(!!pairing))
-  ipcMain.handle('sync:stop', () => sync.stopSyncServer())
-  ipcMain.handle('sync:status', () => sync.getSyncStatus())
-  ipcMain.handle('sync:unpair', () => sync.unpair())
 
   // ---- app (system browser for external links + text-file picker) ----
   ipcMain.handle('app:openExternal', (_e, url) => {

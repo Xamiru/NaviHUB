@@ -346,7 +346,7 @@ function PlaytimeSection({ m, onChange }: { m: MediaDetail; onChange: () => void
           {busy
             ? 'Fetching…'
             : hltb
-              ? '↻ Refresh from HowLongToBeat'
+              ? 'Refresh from HowLongToBeat'
               : '⏱ Fetch from HowLongToBeat'}
         </button>
         {/* Surface the matched entry so a wrong match is easy to catch */}
@@ -709,10 +709,10 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
       {canFetch && (
         <div className="flex items-center gap-3">
           <button className="btn-ghost py-1 px-3 text-sm" disabled={busy} onClick={fetchThemes}>
-            {busy ? 'Fetching…' : themes.length ? '↻ Refresh from AnimeThemes' : '⬇ Fetch theme songs'}
+            {busy ? 'Fetching…' : themes.length ? 'Refresh from AnimeThemes' : 'Fetch theme songs'}
           </button>
           {note && <span className="text-xs text-gray-500">{note}</span>}
-          {error && <span className="text-xs text-red-400">⚠ {error}</span>}
+          {error && <span className="text-xs text-red-400">{error}</span>}
         </div>
       )}
     </Section>

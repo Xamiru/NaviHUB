@@ -7,6 +7,7 @@ import { useSettings } from '../lib/hooks'
 import { toast, toastError } from '../lib/toast'
 import { gachaGame, type GachaGameCfg } from '@shared/gacha'
 import type { GachaChatAction, GachaChatMessage } from '@shared/types'
+import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import CoverImage from '../components/CoverImage'
 import Markdown from '../components/Markdown'
@@ -127,22 +128,13 @@ function Coach({ cfg }: { cfg: GachaGameCfg }) {
 
   return (
     <div className="p-6 max-w-[1400px] mx-auto">
-      <Link
-        to={`/gacha/${cfg.id}`}
-        className="mb-4 inline-block text-sm text-gray-500 hover:text-gray-300"
-      >
-        ← {cfg.name}
-      </Link>
+      <PageHeader
+        back={{ to: `/gacha/${cfg.id}`, label: cfg.name }}
+        title={`${cfg.name} Coach`}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
         <div className="flex min-h-[70vh] flex-col">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="text-2xl" style={{ color: cfg.color }}>
-              {cfg.glyph}
-            </span>
-            <h1 className="text-xl font-bold">FGO Coach</h1>
-          </div>
-
           {!configured && (
             <div className="card mb-4 border-amber-500/40 p-4 text-sm">
               <p className="mb-2 font-medium">The coach needs a model provider.</p>
@@ -179,7 +171,7 @@ function Coach({ cfg }: { cfg: GachaGameCfg }) {
             )}
 
             {messages.map((m) => (
-              <MessageBubble key={m.id} message={m} price={price} accent={cfg.color} />
+              <MessageBubble key={m.id} message={m} price={price} />
             ))}
 
             {running && (
@@ -275,14 +267,7 @@ function ActionChip({ action }: { action: GachaChatAction }) {
   return <span className="chip bg-accent/15 text-accent">{action.label}</span>
 }
 
-function MessageBubble({
-  message,
-  price
-}: {
-  message: GachaChatMessage
-  price: number
-  accent: string
-}) {
+function MessageBubble({ message, price }: { message: GachaChatMessage; price: number }) {
   const isUser = message.role === 'user'
   const cost =
     message.usageIn != null && message.usageOut != null

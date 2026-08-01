@@ -5,8 +5,10 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { pathForEntity, KIND_LABEL, KIND_NOUN } from '../lib/listLinks'
 import CoverImage from '../components/CoverImage'
-import BackButton from '../components/BackButton'
+import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
+import EmptyState from '../components/EmptyState'
+import ActionMenu from '../components/ActionMenu'
 import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
 import UniversalPicker, { type PickedEntity } from '../components/UniversalPicker'
 import type { ListEntry, ListKind } from '@shared/types'
@@ -69,26 +71,25 @@ export default function ListDetailPage() {
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
-      <BackButton />
-
-      <div className="flex items-start justify-between gap-4 mb-5">
-        <div className="min-w-0">
-          <h1 className="text-2xl font-bold">{list.title}</h1>
-          {list.description && <p className="mt-1 text-sm text-gray-400">{list.description}</p>}
-          <p className="mt-1 text-xs text-gray-500">
+      <PageHeader
+        back="history"
+        title={list.title}
+        subtitle={
+          <>
+            {list.description && <span className="block text-gray-400">{list.description}</span>}
             {KIND_LABEL[kind]} · {items.length} {items.length === 1 ? 'item' : 'items'}
             {list.ranked && ' · Ranked'}
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <Link to={`/lists/${listId}/edit`} className="btn-ghost">
-            Edit
-          </Link>
-          <button className="btn-danger" onClick={del}>
-            Delete
-          </button>
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Link to={`/lists/${listId}/edit`} className="btn-ghost">
+              Edit
+            </Link>
+            <ActionMenu items={[{ label: 'Delete…', onSelect: del, danger: true }]} />
+          </>
+        }
+      />
 
       <div className="mb-5">
         <UniversalPicker
@@ -99,9 +100,7 @@ export default function ListDetailPage() {
       </div>
 
       {items.length === 0 ? (
-        <p className="text-sm text-gray-400">
-          No entries yet — search above to add a {KIND_NOUN[kind]}.
-        </p>
+        <EmptyState title={`No entries yet — search above to add a ${KIND_NOUN[kind]}.`} />
       ) : (
         <SortableList
           ids={items.map((i) => i.itemId)}
@@ -177,6 +176,7 @@ function ListRow({
             className="px-2 text-gray-500 hover:text-red-400"
             onClick={() => onRemove(item.itemId)}
             title="Remove from list"
+            aria-label="Remove"
           >
             ✕
           </button>
