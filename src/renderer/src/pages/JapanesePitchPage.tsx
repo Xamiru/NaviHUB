@@ -12,20 +12,21 @@ import { usePersistedState } from '../lib/navState'
 import { splitMora, toHiragana } from '@shared/kana'
 import type { PitchPoolItem } from '@shared/types'
 import MinimalPairsDrill from '../components/japanese/MinimalPairsDrill'
+import SpeakDrill from '../components/japanese/SpeakDrill'
 
 // Pitch accent training, TheMoeWay's optional-but-recommended pillar. Two
 // halves: the KNOWLEDGE quiz (see a word, pick its contour — Kanjium data) and
 // the PERCEPTION drill (hear a word, pick which contour was said — the
 // kotu.io minimal-pairs pack).
 
-type Tab = 'patterns' | 'pairs'
+type Tab = 'patterns' | 'pairs' | 'speak'
 
 export default function JapanesePitchPage() {
   const [params] = useSearchParams()
   const seeded = params.get('tab') as Tab | null
   const [tab, setTab] = usePersistedState<Tab>(
     'jpPitchTab',
-    seeded === 'pairs' ? 'pairs' : 'patterns'
+    seeded === 'pairs' || seeded === 'speak' ? seeded : 'patterns'
   )
 
   return (
@@ -33,7 +34,7 @@ export default function JapanesePitchPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Pitch Accent"
-        subtitle="Learn the patterns, then learn to hear them."
+        subtitle="Learn the patterns, hear them, then produce them."
       />
 
       <Tabs
@@ -42,11 +43,18 @@ export default function JapanesePitchPage() {
         onChange={setTab}
         tabs={[
           { key: 'patterns', label: 'Patterns' },
-          { key: 'pairs', label: 'Minimal pairs' }
+          { key: 'pairs', label: 'Minimal pairs' },
+          { key: 'speak', label: 'Speak' }
         ]}
       />
 
-      {tab === 'patterns' ? <PatternQuizSetup /> : <MinimalPairsDrill />}
+      {tab === 'patterns' ? (
+        <PatternQuizSetup />
+      ) : tab === 'pairs' ? (
+        <MinimalPairsDrill />
+      ) : (
+        <SpeakDrill />
+      )}
     </div>
   )
 }

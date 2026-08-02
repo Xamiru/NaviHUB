@@ -18,6 +18,7 @@ import {
 import type {
   TorrentServiceTestResult,
   UpdateTestResult,
+  VideoToolsResult,
   YtDlpDetectResult
 } from '@shared/types'
 import StartJackettButton from '../components/StartJackettButton'
@@ -91,6 +92,7 @@ export default function SettingsPage() {
           {tab === 'integrations' && (
             <>
               <YtdlpSettings data={data} onSave={setKey} />
+              <VideoToolsSettings data={data} onSave={setKey} />
               <TorrentSettings data={data} onSave={setKey} />
             </>
           )}
@@ -641,6 +643,104 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
           )}
         </p>
       )}
+    </SettingCard>
+  )
+}
+
+// ffmpeg/ffprobe for the video player: probing files and converting the ones
+// Chromium can't demux (MKV) or decode (HEVC, AC3) into a cached playable copy.
+// Same posture as yt-dlp — user-installed, never bundled.
+function VideoToolsSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+  const [ffmpegPath, setFfmpegPath] = useState('')
+  const [ffprobePath, setFfprobePath] = useState('')
+  const [check, setCheck] = useState<VideoToolsResult | null>(null)
+  const [clearing, setClearing] = useState(false)
+  useEffect(() => {
+    setFfmpegPath(data?.['ffmpeg.path'] ?? '')
+    setFfprobePath(data?.['ffprobe.path'] ?? '')
+  }, [data])
+
+  const { data: cache, refetch } = useQuery({
+    queryKey: qk.video.cacheStats,
+    queryFn: () => api.video.cacheStats()
+  })
+
+  async function test() {
+    setCheck(null)
+    await onSave('ffmpeg.path', ffmpegPath.trim())
+    await onSave('ffprobe.path', ffprobePath.trim())
+    setCheck(await api.video.tools())
+  }
+
+  async function clearCache() {
+    setClearing(true)
+    try {
+      await api.video.clearCache()
+      await refetch()
+    } finally {
+      setClearing(false)
+    }
+  }
+
+  const gb = (bytes: number): string => `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
+
+  return (
+    <SettingCard
+      title="ffmpeg (video player)"
+      description={
+        <>
+          The player uses ffprobe to inspect files and ffmpeg to convert the ones this app
+          can&apos;t play natively — MKV containers, HEVC video, AC3/DTS audio — into a cached copy.
+          Without ffmpeg only .mp4 and .webm play. Install it yourself (your package manager); leave
+          the fields blank to use PATH.
+        </>
+      }
+    >
+      <div className="space-y-2">
+        <div className="flex items-center gap-2">
+          <input
+            className="input"
+            type="text"
+            value={ffmpegPath}
+            onChange={(e) => setFfmpegPath(e.target.value)}
+            placeholder="ffmpeg"
+            aria-label="ffmpeg path"
+          />
+          <input
+            className="input"
+            type="text"
+            value={ffprobePath}
+            onChange={(e) => setFfprobePath(e.target.value)}
+            placeholder="ffprobe"
+            aria-label="ffprobe path"
+          />
+          <button className="btn-ghost shrink-0" onClick={test}>
+            Save &amp; test
+          </button>
+        </div>
+        {check && (
+          <p className={`text-sm ${check.ffmpeg && check.ffprobe ? 'text-green-400' : 'text-red-400'}`}>
+            {check.ffmpeg && check.ffprobe
+              ? `✓ ${check.ffmpegVersion ?? 'ffmpeg found'}`
+              : `${check.ffmpeg ? 'ffmpeg found' : 'ffmpeg not found'} · ${check.ffprobe ? 'ffprobe found' : 'ffprobe not found'}`}
+          </p>
+        )}
+        {cache && (
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <span>
+              Converted copies: {cache.entries} file{cache.entries === 1 ? '' : 's'} ·{' '}
+              {gb(cache.bytes)} of {gb(cache.capBytes)}
+            </span>
+            <button
+              className="btn-ghost px-2 py-0.5 text-xs"
+              disabled={clearing || cache.entries === 0}
+              onClick={clearCache}
+            >
+              Clear
+            </button>
+          </div>
+        )}
+      </div>
     </SettingCard>
   )
 }
@@ -1263,6 +1363,10 @@ function EnglishDictionarySettings() {
     queryKey: qk.english.dictInfo,
     queryFn: () => api.english.dictInfo()
   })
+  const { data: freqInfo } = useQuery({
+    queryKey: qk.english.freqInfo,
+    queryFn: () => api.english.freqInfo()
+  })
   const { data: status } = useQuery({
     queryKey: qk.dict.importStatus,
     queryFn: () => api.dict.importStatus(),
@@ -1293,7 +1397,9 @@ function EnglishDictionarySettings() {
         <>
           Offline definitions, examples and synonyms for the English section, from Princeton
           WordNet, plus pronunciations from CMUdict. One ~14&nbsp;MB download; lookups then work with
-          no network. Without it the section falls back to the online dictionaryapi.dev.
+          no network. Without it the section falls back to the online dictionaryapi.dev. The
+          frequency pack ranks 50k words by commonness — it is what the vocab and spelling tests
+          build their difficulty bands from.
         </>
       }
     >
@@ -1315,6 +1421,25 @@ function EnglishDictionarySettings() {
             detail="Definitions, usage examples, synonyms and IPA. ~14 MB, takes a minute to index."
             busy={blocked}
             onDownload={() => void run(() => api.english.importDict())}
+          />
+        )}
+        {freqInfo ? (
+          <PackRow
+            title="Word frequency (OpenSubtitles)"
+            detail={`${freqInfo.wordCount.toLocaleString()} ranked words`}
+            busy={blocked}
+            onRemove={() => {
+              if (window.confirm('Remove the frequency pack? The vocab/spelling band sources will stop working.')) {
+                void run(() => api.english.removeFreq())
+              }
+            }}
+          />
+        ) : (
+          <PackRow
+            title="Word frequency (OpenSubtitles)"
+            detail="50k ranked words for the vocab and spelling tests' difficulty bands. ~1 MB."
+            busy={blocked}
+            onDownload={() => void run(() => api.english.importFreq())}
           />
         )}
       </div>
@@ -1348,7 +1473,8 @@ function EnglishDictionarySettings() {
 
       <p className="mt-4 text-xs leading-relaxed text-gray-500">
         Data credits: WordNet 3.0 © Princeton University (WordNet License) · CMU Pronouncing
-        Dictionary © Carnegie Mellon University (BSD-2-Clause).
+        Dictionary © Carnegie Mellon University (BSD-2-Clause) · word frequency from
+        hermitdave/FrequencyWords, OpenSubtitles 2018 (CC BY-SA 4.0).
       </p>
     </SettingCard>
   )

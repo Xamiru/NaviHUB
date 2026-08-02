@@ -1,9 +1,12 @@
 import { splitMora } from '@shared/kana'
+import { targetLevels } from '@shared/pitchTrack'
 
 // Renders a kana reading with its pitch-accent contour, Yomitan-style: an
 // overline over the high morae and a downstep mark (right border) on the last
 // high mora before the pitch drops. `position` is the downstep mora (0 = heiban,
-// no drop; 1 = atamadaka; ≥2 = nakadaka/odaka).
+// no drop; 1 = atamadaka; ≥2 = nakadaka/odaka). The H/L mapping lives in
+// @shared/pitchTrack:targetLevels — the ONE truth this renderer and the Speak
+// drill's grader share.
 export default function PitchAccent({
   reading,
   position
@@ -14,11 +17,8 @@ export default function PitchAccent({
   const morae = splitMora(reading)
   if (morae.length === 0) return null
 
-  const isHigh = (i: number): boolean => {
-    if (position === 0) return i !== 0 // heiban: low, then high and stays high
-    if (position === 1) return i === 0 // atamadaka: high, then low
-    return i !== 0 && i < position // naka/odaka: low, high up to the drop
-  }
+  const levels = targetLevels(position, morae.length)
+  const isHigh = (i: number): boolean => levels[i] ?? position === 0
 
   return (
     <span className="inline-flex items-end align-middle" title={`pitch [${position}]`}>

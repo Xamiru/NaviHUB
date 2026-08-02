@@ -171,6 +171,24 @@ describe('detection', () => {
     expect(taskByKey(SAT, 'jp-reviews').progress).toBe(2)
   })
 
+  it('detects distinct English words reviewed (enReviews)', () => {
+    checklistRepo.addTask('english-reviews', 'daily')
+    const wordId = Number(
+      db
+        .prepare("INSERT INTO en_word (word, meaning) VALUES ('ephemeral', 'Short-lived.')")
+        .run().lastInsertRowid
+    )
+    const addEnReview = (day: string): void => {
+      db.prepare(
+        "INSERT INTO en_review_log (word_id, grade, reviewed_at, interval_days, ease) VALUES (?, 'good', ?, 1, 2.5)"
+      ).run(wordId, `${day} 12:00:00`)
+    }
+    addEnReview(SAT)
+    addEnReview(SAT) // learning-step repeat — same word
+    addEnReview(FRI) // yesterday
+    expect(taskByKey(SAT, 'english-reviews').progress).toBe(1)
+  })
+
   it('scopes weekly detection to the Saturday→Friday window', () => {
     checklistRepo.addTask('quiz-round', 'weekly')
     const add = (day: string): void => {

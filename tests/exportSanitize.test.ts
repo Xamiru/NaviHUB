@@ -44,6 +44,7 @@ function seed(): void {
       interval_days, ease, reps, lapses, last_reviewed_at)
       VALUES (1, 1, '猫', 'cat', 'review', 2, '2025-06-10', 12, 2.1, 9, 1, '2025-06-01');
     INSERT INTO jp_review_log (card_id, grade, interval_days, ease) VALUES (1, 'good', 12, 2.1);
+    INSERT INTO jp_ghost (card_id, remaining) VALUES (1, 2);
 
     INSERT INTO music_artist (id, name, dir_path) VALUES (1, 'Radiohead', 'Radiohead');
     INSERT INTO music_album (id, artist_id, title, dir_path)
@@ -88,6 +89,9 @@ function seed(): void {
       VALUES ('anime-episode', 'daily', '2026-07-25', 1, '{"title":"Cowboy Bebop"}');
 
     INSERT INTO en_word (word, meaning, pos) VALUES ('ephemeral', 'Lasting a short time.', 'adjective');
+    INSERT INTO en_review_log (word_id, grade, interval_days, ease) VALUES (1, 'good', 1, 2.5);
+    INSERT INTO en_writing (prompt_key, prompt_title, submission, feedback, score)
+      VALUES ('opinion-remote-work', 'Remote work', 'My essay text.', '{"scores":{}}', 7.5);
     INSERT INTO prog_progress (lesson_key) VALUES ('go-from-python/why-go');
 
     INSERT INTO settings (key, value) VALUES
@@ -162,12 +166,12 @@ describe('export sanitize', () => {
 
   it('wipes lists, japanese content+progress, music library, manga chapters, images, quiz history, gacha, checklist', () => {
     for (const t of [
-      'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log',
+      'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log', 'jp_ghost',
       'music_artist', 'music_album', 'music_track', 'music_playlist',
       'music_playlist_track', 'music_play_log', 'manga_chapter', 'media_image', 'quiz_session',
       'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta',
       'gacha_chat_thread', 'gacha_chat_message', 'gacha_goal', 'gacha_coach_note', 'gacha_coach_doc',
-      'checklist_task', 'checklist_log', 'en_word', 'prog_progress'
+      'checklist_task', 'checklist_log', 'en_word', 'en_review_log', 'en_writing', 'prog_progress'
     ]) {
       expect(count(t), t).toBe(0)
     }

@@ -401,6 +401,17 @@ export type QuizKind =
   | 'numbers' // generated numbers & counters typing drill
   | 'dictation' // Tatoeba audio dictation
   | 'shiritori' // word chain vs the dictionary
+  | 'englishVocab' // WordNet+frequency MCQ (word/def/synonyms)
+  | 'englishSpelling' // typed spelling drill (definition + IPA -> word)
+  | 'englishReading' // authored passage comprehension
+  | 'englishMechanics' // articles/punctuation/boundaries/confusables/register
+  | 'lookalike' // pick the right kanji among visual look-alikes
+  | 'transitivity' // transitive/intransitive pair discrimination
+  | 'homophone' // same-reading word discrimination
+  | 'loanword' // katakana loanword recognition
+  | 'keigo' // honorific/humble/polite transform drill
+  | 'leech' // leech isolation drill (no SRS writes)
+  | 'speak' // pitch production drill (record + contour match)
 
 export interface QuizSessionInput {
   kind: QuizKind
@@ -578,7 +589,9 @@ export interface JpCard {
   exampleEn: string | null
   onyomi: string | null // kanji cards: on'yomi, comma-separated
   kunyomi: string | null // kanji cards: kun'yomi, comma-separated
-  sourceMediaId: number | null // mined cards: the manga/VN it came from
+  sourceMediaId: number | null // mined cards: the manga/VN/anime it came from
+  audioPath: string | null // sentence audio clipped from a video ("jpaudio/mining/…")
+  imagePath: string | null // the frame it was mined on ("media/mining/…")
   // Resolved from source_media_id at read time (LEFT JOIN; null if the media
   // item was deleted). Read-only — never part of JpCardInput.
   sourceTitle: string | null
@@ -619,6 +632,8 @@ export interface JpCardInput {
   onyomi?: string | null
   kunyomi?: string | null
   sourceMediaId?: number | null
+  audioPath?: string | null
+  imagePath?: string | null
 }
 
 export interface JpLessonInput {
@@ -728,7 +743,76 @@ export interface JpStatsDetail {
   gradeCounts: Record<SrsGrade, number>
   totalReviews: number
   firstReviewAt: string | null // UTC timestamp of the earliest log row
-  dueForecast: { day: string; due: number }[] // next 14 days; overdue folds into today
+  dueForecast: { day: string; due: number }[] // next 30 days; overdue folds into today
+  // True retention: Anki's default counts Hard as a pass (lenient); the strict
+  // number is Good/Easy only. null until any reviews exist in the window.
+  // Mature-only retention is NOT computable honestly — the log doesn't record
+  // the card's pre-review status (upgrade path: a flagged column, not taken).
+  retention: {
+    strict: number | null
+    lenient: number | null
+    strict30: number | null
+    lenient30: number | null
+  }
+  // The "N hours of Japanese" retrospective, derived passively — never a
+  // manually-logged number (the AJATT lesson).
+  journey: {
+    distinctCardsReviewed: number
+    wordsMined: number
+    lessonsLearned: number
+    chaptersRead: number
+    quizRounds: number
+  }
+}
+
+// Ghost reviews: a lapsed review-state card echoes into future sessions until
+// answered correctly GHOST_STEPS times (independent of its real SM-2 state).
+export interface JpGhostCard extends JpReviewCard {
+  ghostRemaining: number
+}
+export interface JpGhostOutcome {
+  remaining: number
+  dissolved: boolean
+}
+
+// "You may be confusing X with Y": static overlap analysis over lapsing cards
+// (same reading / shared kanji / similar components).
+export interface JpConfusableCardRef {
+  id: number
+  front: string
+  reading: string | null
+  back: string
+  lapses: number
+}
+export interface JpConfusablePair {
+  a: JpConfusableCardRef
+  b: JpConfusableCardRef
+  reasons: ('reading' | 'kanji' | 'components')[]
+}
+
+// ---- i+1 sentence feed ----
+export interface JpFeedRequest {
+  includeLearning: boolean // count learning-tier cards as known
+  unknowns: 0 | 1 // 0 = pure reading flood, 1 = exactly one new word
+  limit?: number
+}
+export interface JpFeedItem {
+  sentenceId: number
+  jp: string
+  en: string
+  audioPath: string | null
+  attribution: string | null
+  unknownWord: string | null // base form; null in flood mode
+  unknownSurface: string | null // as it appears in jp — the highlight target
+  unknownTier: 'unknown' | 'unstarted' | 'learning' | null
+  unknownRank: number | null // corpus frequency rank when available
+}
+export interface JpFeed {
+  items: JpFeedItem[]
+  scanned: number // sentences considered in the coarse pass
+  eligible: number // sentences surviving the exact pass
+  builtAt: string
+  fromCache: boolean
 }
 
 // One dictionary hit from jisho.org, mapped for the mining page.
@@ -1078,6 +1162,59 @@ export interface MinimalPair {
   items: MinimalPairItem[]
 }
 
+// ---- Confusables wave (similar kanji, look-alike/homophone/transitivity/loanword drills) ----
+
+// One visually-similar candidate for a kanji (kradfile × KANJIDIC scoring).
+export interface SimilarKanji {
+  character: string
+  score: number
+  sharedComponents: string[]
+  strokes: number | null
+}
+
+// Look-alike drill question: pick the RIGHT kanji among visual neighbors.
+export interface LookalikeQuizItem {
+  kanji: string
+  meaning: string | null
+  reading: string | null
+  decoys: string[] // 3 look-alike characters
+}
+
+// Transitivity drill question; the renderer joins pairKey back to
+// @shared/transitivity for options and the reveal.
+export interface TransitivityQuestion {
+  pairKey: string
+  side: 'trans' | 'intrans' // which member the sentence uses
+  jp: string
+  surface: string // the conjugated form blanked out of jp
+  en: string
+  source: 'tatoeba' | 'authored'
+}
+
+export interface HomophoneGroupMember {
+  expression: string
+  gloss: string
+  rank: number | null
+}
+
+// Homophone drill question: same reading, pick the right spelling.
+export interface HomophoneQuizItem {
+  reading: string
+  target: string // the correct expression
+  options: HomophoneGroupMember[] // 2-4, includes the target
+  group: HomophoneGroupMember[] // the FULL group, for the reveal
+  jp: string | null // sentence with the target rendered as kana (sentence mode)
+  en: string | null
+  mode: 'sentence' | 'gloss'
+}
+
+// Katakana loanword drill item.
+export interface LoanwordQuizItem {
+  word: string
+  gloss: string
+  rank: number | null
+}
+
 // ---- Series prep decks ----
 // Builds a "words you'll meet in this series" vocab course by tokenizing a
 // series' mokuro OCR / EPUB text, frequency-ranking it, dropping words already
@@ -1112,6 +1249,14 @@ export interface JpTierCounts {
   tokenCount: number
 }
 
+// One cumulative step of the jpdb-style projection: "learn the top
+// `learnWords` not-yet-known words of this series → running-text coverage
+// becomes `share`". Same denominator as the tiers (tested invariant).
+export interface JpCoverageStep {
+  learnWords: number
+  share: number
+}
+
 export interface JpCoverageDetail {
   mediaId: number
   scannedAt: string
@@ -1120,6 +1265,7 @@ export interface JpCoverageDetail {
   uniqueWords: number
   tiers: Record<JpWordTier, JpTierCounts>
   topUnknown: { word: string; count: number }[]
+  projection: JpCoverageStep[]
 }
 
 export interface JpCoverageListRow {
@@ -1234,6 +1380,157 @@ export interface ScannedChapter {
   title: string
   number: number | null
   pageCount: number
+}
+
+// ---- "Open with NaviHUB" ----
+// A file handed to the app by the OS (startup argv, a second-instance launch,
+// macOS open-file). It is ad-hoc: read through a session token, never scanned,
+// never attached to a media item, nothing persisted.
+
+export type OpenKind = 'video' | 'book' | 'manga' | 'audio'
+
+export interface OpenTarget {
+  kind: OpenKind
+  token: string // the "open/<token>" segment; carries the original extension
+  relPath: string // "open/<token>" — feed to mediaUrl()
+  title: string // the file's base name, for the window/player label
+  route: string // where the renderer should go; '' for audio (no page)
+}
+
+// ---- Local video player ----
+// Episodes/films attached to an anime/movie/tv media_item, plus the playback
+// contract the player page consumes. The player is SOURCE-AGNOSTIC: it speaks
+// only VideoSource, so a library row and an ad-hoc "open this file" session
+// drive exactly the same page.
+
+// Which video to play. 'file' is a video_file row (progress is persisted);
+// 'adhoc' is a session token minted by the native picker (nothing persists —
+// see files.ts:registerOpenedFile).
+export type VideoSourceRef = { kind: 'file'; fileId: number } | { kind: 'adhoc'; token: string }
+
+// How Chromium can get at this file. 'direct' plays the source as-is;
+// 'cached' plays an already-converted copy; 'needsPrepare' requires an ffmpeg
+// pass first; 'unsupported' can't be played (and says why in `reason`).
+export type VideoPlayAction = 'direct' | 'cached' | 'needsPrepare' | 'unsupported'
+export type VideoPlanAction = 'direct' | 'remux' | 'transcode' | 'unsupported'
+
+export interface VideoFile {
+  id: number
+  mediaId: number
+  filePath: string // relative to the video root, e.g. "Frieren/S01E03.mkv"
+  title: string
+  number: number | null
+  season: number | null
+  sortOrder: number
+  duration: number | null // seconds; null until ffprobe has seen it
+  width: number | null
+  height: number | null
+  videoCodec: string | null
+  audioCodec: string | null
+  container: string | null
+  playability: VideoPlanAction | null
+  resumeSeconds: number | null
+  watchedAt: string | null // non-null = watched
+}
+
+export interface VideoLibrary {
+  localDir: string | null // attached folder (relative to root); null = not attached
+  files: VideoFile[]
+}
+
+export interface VideoAttachResult {
+  ok: boolean
+  error?: string
+  fileCount?: number
+}
+
+export interface VideoScanStatus {
+  running: boolean
+  phase: 'idle' | 'walking' | 'probing' | 'writing'
+  done: number
+  total: number
+  error: string | null
+}
+
+// One selectable subtitle track. Sidecar files and tracks extracted out of a
+// container are delivered identically — as a navimg:// URL the renderer fetches
+// and parses with @shared/subtitles. A native <track> is deliberately never
+// used: it renders text the renderer can't reach, which defeats word mining.
+export interface VideoSubtitleTrack {
+  id: string // 'sidecar:<hash>' | 'embedded:<streamIndex>'
+  label: string
+  lang: 'ja' | 'en' | 'other'
+  format: 'srt' | 'vtt' | 'ass'
+  url: string | null // null = textual but not yet extracted (needs ffmpeg)
+  signs: boolean
+  forced: boolean
+  textual: boolean // false = a bitmap track (PGS/VobSub) that can never be text
+}
+
+export interface VideoAudioTrack {
+  index: number // absolute ffprobe stream index
+  label: string
+  lang: string | null
+  codec: string
+  channels: number | null
+  isDefault: boolean
+}
+
+export interface VideoSource {
+  ref: VideoSourceRef
+  title: string
+  seriesTitle: string | null
+  mediaId: number | null // null for ad-hoc — mining still works, nothing persists
+  mediaType: MediaType | null // with mediaId, enough to link back to the detail page
+  fileId: number | null
+  action: VideoPlayAction
+  url: string | null // navimg:// URL for <video src>; null when a prepare is needed
+  reason: string | null // human sentence for needsPrepare/unsupported
+  warnings: string[]
+  plan: VideoPlanAction | null
+  durationSeconds: number | null
+  resumeSeconds: number | null
+  watchedAt: string | null
+  audioTracks: VideoAudioTrack[]
+  subtitles: VideoSubtitleTrack[]
+  prev: { fileId: number; title: string } | null
+  next: { fileId: number; title: string } | null
+}
+
+export interface VideoPrepareStatus {
+  id: string
+  sourceLabel: string
+  state: 'probing' | 'converting' | 'finalizing' | 'done' | 'error' | 'cancelled'
+  action: 'remux' | 'transcode' | null
+  percent: number | null
+  speed: number | null
+  etaSec: number | null
+  outputRelPath: string | null // "videocache/<key>.mp4"; only when done
+  message: string | null
+}
+
+export interface VideoToolsResult {
+  ffmpeg: boolean
+  ffprobe: boolean
+  ffmpegVersion: string | null
+}
+
+export interface VideoCacheStats {
+  entries: number
+  bytes: number
+  capBytes: number
+}
+
+// Scanner output for one discovered video (filePath relative to the ATTACHED
+// folder). The probe half is filled in separately and stays null without
+// ffprobe — a .mp4 still plays.
+export interface ScannedVideo {
+  filePath: string
+  title: string
+  number: number | null
+  season: number | null
+  mtimeMs: number
+  size: number
 }
 
 // ---- Mokuro OCR sidecars ----
@@ -2018,6 +2315,111 @@ export interface EnWord {
   pos: string | null
   meaning: string
   example: string | null
+  createdAt: string
+  // SRS state — every saved word is a card in the /english/review deck.
+  status: SrsStatus
+  learningStep: number
+  dueAt: string | null
+  intervalDays: number
+  ease: number
+  reps: number
+  lapses: number
+  lastReviewedAt: string | null
+}
+
+export interface EnReviewQueue {
+  due: EnWord[]
+  fresh: EnWord[] // 'new' cards, oldest saves first
+}
+
+export interface EnReviewOutcome {
+  wordId: number
+  status: SrsStatus
+  intervalDays: number
+  dueAt: string
+}
+
+export interface EnSrsStats {
+  dueCount: number
+  newCount: number
+  totalCount: number
+  reviewedToday: number // distinct words reviewed today (local)
+}
+
+// ---- English tests (/english/vocab, /english/spelling) ----
+// Pools built in main (src/main/englishDrills.ts) from the WordNet +
+// frequency packs in dictionaries.db, or from the user's saved words.
+
+export type EnBand = 'upper' | 'advanced' | 'rare'
+export type EnVocabMode = 'word2def' | 'def2word' | 'synonyms'
+export type EnPoolSource = { kind: 'band'; band: EnBand } | { kind: 'myWords' }
+
+export interface EnVocabPoolRequest {
+  mode: EnVocabMode
+  source: EnPoolSource
+  limit: number
+}
+
+// One ready question; the renderer shuffles answer + distractors into options.
+export interface EnVocabQuestion {
+  word: string
+  pos: string | null
+  def: string
+  ipa: string | null
+  rank: number | null // frequency rank (null for myWords)
+  prompt: string
+  answer: string
+  distractors: string[] // exactly 3
+}
+
+export interface EnSpellingPoolRequest {
+  source: EnPoolSource
+  limit: number
+}
+
+export interface EnSpellingItem {
+  word: string
+  def: string
+  ipa: string | null
+  pos: string | null
+  rank: number | null
+}
+
+// The installed English frequency pack (OpenSubtitles ranks), or null.
+export interface EnFreqInfo {
+  source: string // 'opensubtitles'
+  revision: string | null
+  wordCount: number
+  importedAt: string
+}
+
+// ---- English writing practice (/english/writing) ----
+
+export interface EnWritingCorrection {
+  before: string
+  after: string
+  why: string
+}
+
+export interface EnWritingFeedback {
+  scores: {
+    grammar: number // 0-10
+    vocabulary: number
+    coherence: number
+    register: number
+  }
+  corrections: EnWritingCorrection[]
+  modelRewrite: string
+  overall: string
+}
+
+export interface EnWritingEntry {
+  id: number
+  promptKey: string
+  promptTitle: string
+  submission: string
+  feedback: EnWritingFeedback
+  score: number | null // mean of the four rubric scores
   createdAt: string
 }
 

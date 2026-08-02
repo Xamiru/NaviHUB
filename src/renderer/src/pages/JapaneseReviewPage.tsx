@@ -8,6 +8,7 @@ import { usePersistedState } from '../lib/navState'
 import { gradeCard, LEECH_LAPSES, previewIntervals, type SrsState } from '@shared/srs'
 import { buildTypedPrompt } from '@shared/cloze'
 import CardSourceBadge from '../components/CardSourceBadge'
+import CardAttachments from '../components/japanese/CardAttachments'
 import type { JpReviewCard, SrsGrade } from '@shared/types'
 
 type Phase = 'setup' | 'review' | 'done'
@@ -18,6 +19,9 @@ type Phase = 'setup' | 'review' | 'done'
 interface SessionItem {
   card: JpReviewCard
   srs: SrsState
+  // Ghost review (Bunpro echo): graded Missed/Got it via ghostAnswer, never
+  // through SM-2 — see japaneseRepo.ghostAnswer.
+  ghost?: boolean
 }
 
 function toItem(card: JpReviewCard): SessionItem {
@@ -54,6 +58,12 @@ export default function JapaneseReviewPage() {
   // Bunpro-style typed answers. Only suggests a grade — the four buttons still
   // decide, so SM-2 semantics are untouched.
   const [typedMode, setTypedMode] = usePersistedState<boolean>('jpTypedMode', false)
+  // Backlog forgiveness: cap today's due cards (0 = no cap). The repo orders
+  // most-overdue-first, so a plain slice takes the right ones; the rest just
+  // stay due — SM-2 handles lateness natively, nothing is postponed.
+  const [dueCap, setDueCap] = usePersistedState<number>('jpDueCap', 0)
+  // Ghost reviews: lapsed cards echo back until answered 3x correctly.
+  const [ghostsOn, setGhostsOn] = usePersistedState<boolean>('jpGhosts', true)
 
   const { data: stats } = useQuery({
     queryKey: qk.japanese.stats,
@@ -84,7 +94,16 @@ export default function JapaneseReviewPage() {
     setLoading(true)
     try {
       const { due, fresh } = await api.japanese.reviewQueue(newLimit)
-      const items = [...due, ...fresh].map(toItem)
+      const cappedDue = dueCap > 0 ? due.slice(0, dueCap) : due
+      const items: SessionItem[] = [...cappedDue, ...fresh].map(toItem)
+      if (ghostsOn) {
+        const ghosts = await api.japanese.ghostQueue(5)
+        for (const g of ghosts) {
+          // Interleave, never first — a session should open with a real review.
+          const at = items.length > 0 ? 1 + Math.floor(Math.random() * items.length) : 0
+          items.splice(at, 0, { ...toItem(g), ghost: true })
+        }
+      }
       if (items.length === 0) {
         setError(
           'Nothing to review. Mark lessons as learned to introduce their cards, or come back when scheduled cards are due.'
@@ -126,6 +145,30 @@ export default function JapaneseReviewPage() {
     [current, grading]
   )
 
+  const answerGhost = useCallback(
+    async (correct: boolean) => {
+      if (!current || grading) return
+      setGrading(true)
+      try {
+        await api.japanese.ghostAnswer(current.card.id, correct)
+        setReviewed((n) => n + 1)
+        if (!correct) setMisses((n) => n + 1)
+        setRevealed(false)
+        setTyped('')
+        setChecked(null)
+        setQueue((q) => {
+          const rest = q.slice(1)
+          // A missed echo must end on a success — it returns at the end of
+          // this session (main already reset its counter).
+          return correct ? rest : [...rest, current]
+        })
+      } finally {
+        setGrading(false)
+      }
+    },
+    [current, grading]
+  )
+
   // Session over when the queue drains.
   useEffect(() => {
     if (phase === 'review' && queue.length === 0) {
@@ -143,6 +186,14 @@ export default function JapaneseReviewPage() {
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
         setRevealed(true)
+      } else if (revealed && current?.ghost) {
+        if (e.key === '1') {
+          e.preventDefault()
+          void answerGhost(false)
+        } else if (e.key === '2') {
+          e.preventDefault()
+          void answerGhost(true)
+        }
       } else if (revealed && GRADE_KEYS[e.key]) {
         e.preventDefault()
         void grade(GRADE_KEYS[e.key])
@@ -150,7 +201,7 @@ export default function JapaneseReviewPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [phase, revealed, grade])
+  }, [phase, revealed, grade, current, answerGhost])
 
   // What the typed answer suggests: got it → Good, missed it → Again. Only a
   // highlight; the user still picks.
@@ -196,6 +247,45 @@ export default function JapaneseReviewPage() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div>
+            <div className="label mb-2">Cap due cards today</div>
+            <div className="flex flex-wrap gap-2">
+              {[0, 25, 50, 100].map((n) => (
+                <button
+                  key={n}
+                  onClick={() => setDueCap(n)}
+                  className={dueCap === n ? 'pill pill-active' : 'pill'}
+                >
+                  {n === 0 ? 'No cap' : n}
+                </button>
+              ))}
+            </div>
+            {dueCap > 0 && (stats?.dueCount ?? 0) > dueCap && (
+              <p className="mt-1.5 text-xs text-gray-500">
+                Taking the {dueCap} most overdue of {stats?.dueCount}. The rest keep — nothing
+                is postponed, they simply stay due.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="flex cursor-pointer items-start gap-2.5">
+              <input
+                type="checkbox"
+                className="mt-0.5"
+                checked={ghostsOn}
+                onChange={(e) => setGhostsOn(e.target.checked)}
+              />
+              <span className="text-sm">
+                Ghost reviews
+                <span className="block text-xs text-gray-500">
+                  A lapsed card echoes into future sessions until answered correctly 3 times —
+                  without touching its real schedule.
+                </span>
+              </span>
+            </label>
           </div>
 
           <div>
@@ -262,7 +352,15 @@ export default function JapaneseReviewPage() {
         <span>{queue.length} left</span>
         <div className="flex items-center gap-3">
           <span>{reviewed} reviewed</span>
-          {srs.status === 'new' && <span className="chip bg-sky-500/20 text-sky-300">new</span>}
+          {current.ghost && (
+            <span
+              className="chip bg-base-700 text-gray-400"
+              title="Ghost — answer correctly 3 times across sessions to dissolve"
+            >
+              echo
+            </span>
+          )}
+          {srs.status === 'new' && !current.ghost && <span className="chip bg-sky-500/20 text-sky-300">new</span>}
           {srs.status === 'learning' && (
             <span className="chip bg-amber-500/20 text-amber-300">learning</span>
           )}
@@ -337,6 +435,7 @@ export default function JapaneseReviewPage() {
                 {card.exampleEn && <p className="mt-0.5 text-xs text-gray-500">{card.exampleEn}</p>}
               </div>
             )}
+            <CardAttachments card={card} className="mt-4" />
             {card.sourceTitle && (
               <div className="mt-3">
                 <CardSourceBadge card={card} />
@@ -379,6 +478,35 @@ export default function JapaneseReviewPage() {
           <button className="btn-primary w-full" onClick={() => setRevealed(true)}>
             Show answer
           </button>
+        ) : current.ghost ? (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              disabled={grading}
+              onClick={() => void answerGhost(false)}
+              className={`rounded-lg border bg-base-800 px-2 py-3 text-center transition-colors ${GRADE_STYLE.again} ${
+                suggested === 'again' ? 'ring-2 ring-accent' : ''
+              }`}
+            >
+              <span className="block text-sm font-semibold">
+                <kbd className="kbd mr-1">1</kbd>
+                Missed
+              </span>
+              <span className="mt-0.5 block text-xs opacity-70">echo resets</span>
+            </button>
+            <button
+              disabled={grading}
+              onClick={() => void answerGhost(true)}
+              className={`rounded-lg border bg-base-800 px-2 py-3 text-center transition-colors ${GRADE_STYLE.good} ${
+                suggested === 'good' ? 'ring-2 ring-accent' : ''
+              }`}
+            >
+              <span className="block text-sm font-semibold">
+                <kbd className="kbd mr-1">2</kbd>
+                Got it
+              </span>
+              <span className="mt-0.5 block text-xs opacity-70">no schedule change</span>
+            </button>
+          </div>
         ) : (
           <div className="grid grid-cols-4 gap-2">
             {(['again', 'hard', 'good', 'easy'] as SrsGrade[]).map((g, i) => (

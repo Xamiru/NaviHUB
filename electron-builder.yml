@@ -36,6 +36,40 @@ publish:
   owner: AmirHTaee
   repo: NaviHUB
   private: true
+# "Open with NaviHUB" for the PACKAGED builds. On Windows the NSIS installer
+# writes the registry entries (the `portable` target can't register anything —
+# it has no installer); on Linux this becomes MimeType= in the AppImage's
+# generated .desktop, which only reaches the system if the AppImage is
+# desktop-integrated. The local dev launcher is handled separately by
+# scripts/install-desktop.sh.
+#
+# Keep this list in step with src/main/openFile.ts:classifyPath — that function
+# decides what the app does with a file, this decides what the OS offers it for,
+# and a mismatch means a file the OS hands us gets silently ignored.
+#
+# No per-extension `icon:` keys: electron-builder falls back to the app icon,
+# which is the honest result anyway (there is no distinct NaviHUB document type).
+fileAssociations:
+  - ext: [mkv, mp4, m4v, webm, avi, mov, ts, m2ts, mts, wmv, flv, mpg, mpeg, ogv, divx]
+    name: Video
+    description: Video
+    mimeType: video/x-matroska
+    role: Viewer
+  - ext: [epub]
+    name: EPUB Book
+    description: EPUB book
+    mimeType: application/epub+zip
+    role: Viewer
+  - ext: [cbz]
+    name: Comic Archive
+    description: Comic book archive
+    mimeType: application/vnd.comicbook+zip
+    role: Viewer
+  - ext: [mp3, flac, m4a, aac, ogg, opus, wav]
+    name: Audio
+    description: Audio
+    mimeType: audio/mpeg
+    role: Viewer
 win:
   icon: assets/icon.png
   target:

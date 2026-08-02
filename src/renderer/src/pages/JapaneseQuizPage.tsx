@@ -8,6 +8,7 @@ import { usePersistedState } from '../lib/navState'
 import CardSourceBadge from '../components/CardSourceBadge'
 import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
+import { confusableTier } from '@shared/confusables'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
 
 type Phase = 'setup' | 'play' | 'summary'
@@ -58,9 +59,11 @@ function answerOf(item: JpQuizItem, dir: Direction): string {
 function pickDistractors(pool: JpQuizItem[], target: JpQuizItem, dir: Direction): JpQuizItem[] {
   const taken = new Set([answerOf(target, dir)])
   const out: JpQuizItem[] = []
-  // Prefer same-kind (and for vocab same part-of-speech) distractors — they
-  // are the plausible ones; fall back to anything to keep 4 options.
+  // Tier-0: REAL confusables (transitivity partner, homophones, shared kanji
+  // — @shared/confusables) make the wrong options the ones that actually trip
+  // people up; then same-kind/pos, same-kind, anything.
   const tiers = [
+    confusableTier(pool, target, dir),
     pool.filter(
       (i) => i.lessonKind === target.lessonKind && (target.pos == null || i.pos === target.pos)
     ),

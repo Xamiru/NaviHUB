@@ -211,6 +211,26 @@ CREATE TABLE IF NOT EXISTS en_pron (
   PRIMARY KEY (bank_id, word)
 ) WITHOUT ROWID;
 
+-- ---- English word frequency (OpenSubtitles ranks) ----
+-- hermitdave/FrequencyWords en_50k, imported by dict/enFreq.ts. Rank = 1-based
+-- position after filtering to plain lowercase word tokens. Joined against
+-- en_lemma by the vocab/spelling pools to tier "advanced" words — never shown
+-- as content on its own. Registry row written LAST (dict-table idiom).
+CREATE TABLE IF NOT EXISTS en_freq_set (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  source TEXT NOT NULL UNIQUE,          -- 'opensubtitles'
+  revision TEXT,                        -- pinned commit sha (short)
+  word_count INTEGER NOT NULL DEFAULT 0,
+  imported_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS en_freq (
+  bank_id INTEGER NOT NULL,
+  word TEXT NOT NULL,
+  rank INTEGER NOT NULL,
+  PRIMARY KEY (bank_id, word)
+) WITHOUT ROWID;
+CREATE INDEX IF NOT EXISTS idx_en_freq_rank ON en_freq(bank_id, rank);
+
 -- ---- KRADFILE kanji components ----
 -- Not a Yomitan format: krad.json + krad_components.json from the
 -- krad-unicode conversion of EDRDG's KRADFILE, imported by dict/krad.ts.

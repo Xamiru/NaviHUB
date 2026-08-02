@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -10,7 +10,9 @@ import CalendarHeatmap from '../components/CalendarHeatmap'
 import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
 import Section from '../components/Section'
-import StatTile from '../components/StatTile'
+import StatTile, { StatInline } from '../components/StatTile'
+import { Group, Pill } from '../components/PillGroup'
+import { usePersistedState } from '../lib/navState'
 import type { JpStatsDetail, SrsGrade } from '@shared/types'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -56,7 +58,7 @@ export default function JapaneseStatsPage() {
         <EmptyState title="No reviews yet — grade some cards and this page fills in." />
       ) : (
         <>
-          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-6">
             <StatTile
               label="Streak"
               value={`${detail.streak.current} ${detail.streak.current === 1 ? 'day' : 'days'}`}
@@ -66,6 +68,15 @@ export default function JapaneseStatsPage() {
             <StatTile label="Reviews today" value={stats.reviewsToday} />
             <StatTile label="Total reviews" value={detail.totalReviews} />
             <StatTile label="Accuracy" value={`${accuracy}%`} sub="graded Hard or better" />
+            <StatTile
+              label="Retention 30d"
+              value={
+                detail.retention.strict30 != null
+                  ? `${Math.round(detail.retention.strict30 * 100)}%`
+                  : '—'
+              }
+              sub="strict: Good/Easy only"
+            />
             <StatTile label="Due now" value={stats.dueCount} accent={stats.dueCount > 0} />
           </div>
 
@@ -73,12 +84,33 @@ export default function JapaneseStatsPage() {
             <CalendarHeatmap days={detail.reviewsPerDay} unit="reviews" />
           </Section>
 
-          <Section title="Due forecast" subtitle="next 14 days" className="mb-8">
-            <ForecastChart detail={detail} />
-          </Section>
+          <ForecastSection detail={detail} />
 
           <Section title="Answer breakdown" className="mb-8">
             <GradeBars gradeCounts={detail.gradeCounts} total={answered} />
+          </Section>
+
+          <Section
+            title="Journey"
+            subtitle="everything below is derived — nothing is hand-logged"
+            className="mb-8"
+          >
+            <div className="card grid grid-cols-2 gap-x-6 gap-y-3 p-4 sm:grid-cols-4">
+              <StatInline
+                label="Started"
+                value={detail.firstReviewAt ? detail.firstReviewAt.slice(0, 10) : '—'}
+              />
+              <StatInline label="Total reviews" value={detail.totalReviews.toLocaleString()} />
+              <StatInline
+                label="Distinct cards"
+                value={detail.journey.distinctCardsReviewed.toLocaleString()}
+              />
+              <StatInline label="Words mined" value={detail.journey.wordsMined.toLocaleString()} />
+              <StatInline label="Lessons learned" value={detail.journey.lessonsLearned} />
+              <StatInline label="Chapters read" value={detail.journey.chaptersRead} />
+              <StatInline label="Quiz rounds" value={detail.journey.quizRounds} />
+              <StatInline label="Longest streak" value={`${detail.streak.longest} days`} />
+            </div>
           </Section>
 
           <Leeches />
@@ -90,14 +122,21 @@ export default function JapaneseStatsPage() {
 
 // Cards that keep coming back. Resetting one wipes its schedule but keeps its
 // history — the point is a clean second run at a word that isn't sticking.
+// "Drill these" grinds them WITHOUT touching intervals (/japanese/leeches/drill).
 function Leeches() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const { data: leeches = [] } = useQuery({
     queryKey: qk.japanese.leeches,
     queryFn: () => api.japanese.listLeeches(),
     staleTime: 0
   })
-  if (leeches.length === 0) return null
+  const { data: confusables = [] } = useQuery({
+    queryKey: qk.japanese.confusables,
+    queryFn: () => api.japanese.confusables(),
+    staleTime: 0
+  })
+  if (leeches.length === 0 && confusables.length === 0) return null
 
   async function reset(id: number, front: string): Promise<void> {
     if (!window.confirm(`Reset "${front}" to a new card? Its review history is kept.`)) return
@@ -110,8 +149,75 @@ function Leeches() {
     }
   }
 
+  const REASON_LABEL: Record<'reading' | 'kanji' | 'components', string> = {
+    reading: 'same reading',
+    kanji: 'shared kanji',
+    components: 'similar parts'
+  }
+
   return (
-    <Section title="Leeches" subtitle={`lapsed ${LEECH_LAPSES}+ times`} className="mb-8">
+    <Section
+      title="Leeches"
+      subtitle={
+        leeches.length >= 2 ? (
+          <button
+            className="btn-ghost py-1 px-2 text-xs"
+            onClick={() =>
+              navigate('/japanese/leeches/drill', {
+                state: {
+                  items: leeches.map((l) => ({
+                    id: l.id,
+                    front: l.front,
+                    reading: l.reading,
+                    back: l.back
+                  }))
+                }
+              })
+            }
+          >
+            Drill these
+          </button>
+        ) : (
+          `lapsed ${LEECH_LAPSES}+ times`
+        )
+      }
+      className="mb-8"
+    >
+      {confusables.length > 0 && (
+        <div className="card mb-3 divide-y divide-base-700">
+          <p className="p-2.5 text-xs uppercase tracking-wide text-gray-500">
+            Possibly confused — lapsing cards with a look-alike in your deck
+          </p>
+          {confusables.map((pair) => (
+            <div key={`${pair.a.id}-${pair.b.id}`} className="flex items-center gap-3 p-2.5 text-sm">
+              <div className="min-w-0 flex-1">
+                <p className="truncate">
+                  <span className="font-medium">{pair.a.front}</span>
+                  <span className="mx-2 text-gray-600">×</span>
+                  <span className="font-medium">{pair.b.front}</span>
+                </p>
+                <p className="truncate text-xs text-gray-500">
+                  {pair.a.back} · {pair.b.back}
+                </p>
+              </div>
+              {pair.reasons.map((r) => (
+                <span key={r} className="chip shrink-0 bg-base-700 text-gray-400">
+                  {REASON_LABEL[r]}
+                </span>
+              ))}
+              <button
+                className="btn-ghost shrink-0 py-1 px-2 text-xs"
+                onClick={() =>
+                  navigate('/japanese/leeches/drill', { state: { items: [pair.a, pair.b] } })
+                }
+              >
+                Drill pair
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      {leeches.length > 0 && (
       <div className="card divide-y divide-base-700">
         {leeches.map((l) => (
           <div key={l.id} className="flex items-center gap-3 p-2.5 text-sm">
@@ -142,31 +248,49 @@ function Leeches() {
           </div>
         ))}
       </div>
+      )}
     </Section>
   )
 }
 
-// Dense 14-day series from the sparse repo rows (zeros filled) so the chart
-// always shows the full fortnight.
-function ForecastChart({ detail }: { detail: JpStatsDetail }) {
+// Dense N-day series from the sparse repo rows (zeros filled); the repo now
+// supplies 30 days and the pills pick the window.
+function ForecastSection({ detail }: { detail: JpStatsDetail }) {
+  const [days, setDays] = usePersistedState<number>('jpForecastDays', 14)
   const byDay = new Map(detail.dueForecast.map((d) => [d.day, d.due]))
   const today = new Date()
   today.setHours(0, 0, 0, 0)
+  const labelEvery = Math.max(2, Math.ceil(days / 14))
   const bars: Bar[] = []
-  for (let i = 0; i < 14; i++) {
+  for (let i = 0; i < days; i++) {
     const day = localDayString(new Date(today.getTime() + i * DAY_MS))
     const due = byDay.get(day) ?? 0
     bars.push({
       key: day,
-      label: i === 0 ? 'Today' : i % 2 === 0 ? shortDay(day) : undefined,
+      label: i === 0 ? 'Today' : i % labelEvery === 0 ? shortDay(day) : undefined,
       value: due,
       title: `${day} · ${due} due`
     })
   }
-  if (bars.every((b) => b.value === 0)) {
-    return <p className="text-sm text-gray-500">Nothing due in the next two weeks.</p>
-  }
-  return <BarChart bars={bars} />
+  return (
+    <Section
+      title="Due forecast"
+      subtitle={
+        <Group label="">
+          {[7, 14, 30].map((n) => (
+            <Pill key={n} active={days === n} onClick={() => setDays(n)} label={`${n}d`} />
+          ))}
+        </Group>
+      }
+      className="mb-8"
+    >
+      {bars.every((b) => b.value === 0) ? (
+        <p className="text-sm text-gray-500">Nothing due in this window.</p>
+      ) : (
+        <BarChart bars={bars} />
+      )}
+    </Section>
+  )
 }
 
 // One proportional accent bar per grade (TopArtists-style single-hue rows).

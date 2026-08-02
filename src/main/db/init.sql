@@ -240,6 +240,56 @@ CREATE TABLE IF NOT EXISTS manga_chapter (
 );
 CREATE INDEX IF NOT EXISTS idx_manga_chapter_media ON manga_chapter(media_id);
 
+-- video_file — a locally-playable episode/film of an anime/movie/tv media_item,
+-- discovered by scanning the attached folder (media_item.local_dir, reused —
+-- an anime row is never also a manga row). file_path is relative to the video
+-- library root (settings key video.dir).
+--
+-- Column groups, deliberately: identity + freshness (file_path/file_mtime/
+-- file_size, the rescan fast path), the ffprobe snapshot (all NULL when ffprobe
+-- isn't installed — .mp4/.webm still play), then user state that the SCANNER
+-- NEVER WRITES so a rescan can't wipe a resume position.
+CREATE TABLE IF NOT EXISTS video_file (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id       INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  file_path      TEXT NOT NULL,
+  title          TEXT NOT NULL,
+  number         REAL,
+  season         INTEGER,
+  sort_order     INTEGER NOT NULL DEFAULT 0,
+  file_mtime     INTEGER,
+  file_size      INTEGER,
+  duration       REAL,
+  width          INTEGER,
+  height         INTEGER,
+  video_codec    TEXT,
+  audio_codec    TEXT,
+  container      TEXT,
+  playability    TEXT,
+  resume_seconds REAL,
+  watched_at     TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(media_id, file_path)
+);
+CREATE INDEX IF NOT EXISTS idx_video_file_media ON video_file(media_id);
+
+-- video_cache — index of remuxed/transcoded playback copies under
+-- userData/videocache. A real table rather than reading the directory because
+-- eviction needs last_used_at and filesystem atime is unreliable (relatime/
+-- noatime mounts). cache_key covers path+mtime+size+plan, so a re-downloaded
+-- file or a different audio-track choice produces a different entry.
+CREATE TABLE IF NOT EXISTS video_cache (
+  cache_key    TEXT PRIMARY KEY,
+  file_name    TEXT NOT NULL,
+  source_path  TEXT NOT NULL,
+  action       TEXT NOT NULL,
+  bytes        INTEGER NOT NULL,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  last_used_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_video_cache_used ON video_cache(last_used_at);
+
 -- ---- Japanese learning ----
 -- Standalone section, unrelated to the media tables. Courses hold ordered
 -- lessons; a lesson is 'grammar' (body = explanation, cards = example
@@ -296,6 +346,10 @@ CREATE TABLE IF NOT EXISTS jp_card (
   onyomi           TEXT,
   kunyomi          TEXT,
   source_media_id  INTEGER,
+  -- Mined from the video player: the sentence's audio clipped out of the
+  -- source ("jpaudio/mining/…") and the frame it was said on ("media/mining/…").
+  audio_path       TEXT,
+  image_path       TEXT,
   -- SRS state; written only by submitReview (see src/shared/srs.ts)
   status           TEXT NOT NULL DEFAULT 'new',
   learning_step    INTEGER NOT NULL DEFAULT 0,
@@ -702,10 +756,11 @@ CREATE TABLE IF NOT EXISTS checklist_log (
 CREATE INDEX IF NOT EXISTS idx_checklist_log_task
   ON checklist_log(task_key, cadence, period_key);
 
--- ---- English dictionary (saved words) ----
--- One row per saved (word, chosen definition) from the English dictionary page.
--- Deliberately NOT part of the jp_* SRS — a plain personal word list ("save it
--- for me, just that"). Personal → wiped on export (sanitizeSql.cjs).
+-- ---- English words (saved list = the SRS deck) ----
+-- One row per saved (word, chosen definition) from the English dictionary
+-- page / video mining / vocab-quiz misses. Since 2026-08 every saved word IS
+-- an SRS card (status 'new' until first review) — the deck for
+-- /english/review. Personal → wiped on export (sanitizeSql.cjs).
 CREATE TABLE IF NOT EXISTS en_word (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
   word        TEXT NOT NULL,
@@ -713,9 +768,47 @@ CREATE TABLE IF NOT EXISTS en_word (
   pos         TEXT,                          -- part of speech of the chosen sense
   meaning     TEXT NOT NULL,                 -- the one definition the user chose
   example     TEXT,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  -- SRS state; written only by submitReview (see src/shared/srs.ts).
+  -- Added post-ship → every column here needs its ensureColumn (connection.ts).
+  status           TEXT NOT NULL DEFAULT 'new',
+  learning_step    INTEGER NOT NULL DEFAULT 0,
+  due_at           TEXT,
+  interval_days    REAL NOT NULL DEFAULT 0,
+  ease             REAL NOT NULL DEFAULT 2.5,
+  reps             INTEGER NOT NULL DEFAULT 0,
+  lapses           INTEGER NOT NULL DEFAULT 0,
+  last_reviewed_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_en_word_word ON en_word(word);
+CREATE INDEX IF NOT EXISTS idx_en_word_due ON en_word(status, due_at);
+
+CREATE TABLE IF NOT EXISTS en_review_log (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  word_id       INTEGER NOT NULL REFERENCES en_word(id) ON DELETE CASCADE,
+  grade         TEXT NOT NULL,
+  reviewed_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  interval_days REAL NOT NULL,
+  ease          REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_en_review_log_word ON en_review_log(word_id);
+CREATE INDEX IF NOT EXISTS idx_en_review_log_time ON en_review_log(reviewed_at);
+
+-- ---- English writing practice ----
+-- One row per graded submission (/english/writing). Prompt CONTENT is code
+-- (src/shared/english/writingPrompts.ts); prompt_title is cached so history
+-- survives prompt removal. feedback = JSON EnWritingFeedback (shared/types),
+-- score = mean of its four rubric scores. Personal → wiped on export.
+CREATE TABLE IF NOT EXISTS en_writing (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  prompt_key   TEXT NOT NULL,
+  prompt_title TEXT NOT NULL,
+  submission   TEXT NOT NULL,
+  feedback     TEXT NOT NULL,
+  score        REAL,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_en_writing_time ON en_writing(created_at);
 
 -- ---- Programming learn section ----
 -- Course/lesson CONTENT is code (src/shared/programming/, the checklist.ts
@@ -725,4 +818,16 @@ CREATE TABLE IF NOT EXISTS prog_progress (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   lesson_key   TEXT NOT NULL UNIQUE,
   completed_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ---- Ghost reviews (Bunpro-style echoes of lapsed cards) ----
+-- A review-state card graded Again spawns a ghost: the same card must be
+-- answered correctly `remaining` more times in FUTURE sessions, independent of
+-- its real SM-2 state. No FK (house style) — removeCard/resetCard clean up,
+-- removeLesson/removeCourse sweep orphans, and ghostQueue JOINs jp_card so an
+-- orphan never serves. Personal → wiped on export (sanitizeSql.cjs).
+CREATE TABLE IF NOT EXISTS jp_ghost (
+  card_id    INTEGER PRIMARY KEY,
+  remaining  INTEGER NOT NULL DEFAULT 3,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );

@@ -124,15 +124,64 @@ export function coverageForMedia(mediaId: number): JpCoverageDetail | null {
     )
     .all(mediaId) as { word: string; count: number }[]
 
+  const tiers = tiersFromRows(tierRows)
+
+  // jpdb-style projection: "learn the top N not-yet-KNOWN words (by in-series
+  // count) → running-text coverage becomes X". Candidates are every tier below
+  // known — learning/unstarted words will graduate anyway; the projection asks
+  // what knowing them buys. Shares use the SAME denominator as `tiers` (the
+  // tested invariant).
+  const projectionCandidates = db
+    .prepare(
+      `${TIER_CTE}
+       SELECT w.count AS count FROM jp_coverage_word w LEFT JOIN tiers t ON t.word = w.word
+       WHERE w.media_id = ? AND (t.tier IS NULL OR t.tier < 3)
+       ORDER BY w.count DESC, w.word LIMIT 500`
+    )
+    .all(mediaId) as { count: number }[]
+  const totalTokens =
+    tiers.known.tokenCount +
+    tiers.learning.tokenCount +
+    tiers.unstarted.tokenCount +
+    tiers.unknown.tokenCount
+  const projection: { learnWords: number; share: number }[] = []
+  if (totalTokens > 0) {
+    let cum = 0
+    let idx = 0
+    for (const step of [10, 20, 50, 100, 200, 500]) {
+      if (idx >= projectionCandidates.length) break
+      while (idx < step && idx < projectionCandidates.length) {
+        cum += projectionCandidates[idx].count
+        idx++
+      }
+      projection.push({
+        learnWords: idx,
+        share: Math.min(1, (tiers.known.tokenCount + cum) / totalTokens)
+      })
+      if (idx < step) break // ran out of candidates before the step size
+    }
+  }
+
   return {
     mediaId: row.media_id,
     scannedAt: row.scanned_at,
     chaptersScanned: row.chapters_scanned,
     tokenCount: row.token_count,
     uniqueWords: row.unique_words,
-    tiers: tiersFromRows(tierRows),
-    topUnknown
+    tiers,
+    topUnknown,
+    projection
   }
+}
+
+// The known-word set for the i+1 feed: every distinct card front at or above
+// `minTier` (3 = known only, 2 = known + learning).
+export function knownWordSet(minTier: 2 | 3): Set<string> {
+  const db = getSqlite()
+  const rows = db
+    .prepare(`${TIER_CTE} SELECT word FROM tiers WHERE tier >= ?`)
+    .all(minTier) as { word: string }[]
+  return new Set(rows.map((r) => r.word))
 }
 
 // Every scanned series, best-understood first — the "what can I read next" list.

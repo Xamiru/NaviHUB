@@ -58,6 +58,61 @@ export function jpAudioDir(): string {
   return join(app.getPath('userData'), 'jpaudio')
 }
 
+// Local video library root (settings key `video.dir`, bootstrapped from the
+// first folder attach like manga.dir). DB rows and navimg URLs use a virtual
+// "video/" prefix, mirroring the manga/ scheme above.
+export function videoRootDir(): string {
+  const custom = getSetting('video.dir')?.trim()
+  return custom && custom.length ? custom : join(app.getPath('userData'), 'video')
+}
+
+// Remuxed/transcoded playback copies and subtitle tracks extracted out of
+// containers. Always under userData: it's derived, rebuildable data, and
+// dropping a cache on the user's media drive would surprise them.
+export function videoCacheDir(): string {
+  const dir = join(app.getPath('userData'), 'videocache')
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  return dir
+}
+
+// Ad-hoc "open any file": a file at /mnt/usb/movie.mkv has no virtual prefix
+// and therefore no navimg URL. Rather than widen absoluteMediaPath into a
+// general absolute-path server — which would destroy the `..` guarantee that
+// makes the whole prefix table safe — we mint an opaque token here and the
+// "open/" prefix resolves it. Process-lifetime only: a file opened this way is
+// readable for the session it was opened in, nothing more.
+//
+// The token KEEPS the original extension (`<hex>.cbz`), which is not cosmetic:
+// archive.ts:splitArchivePath finds the container by scanning path segments for
+// a ziplike extension, so a bare hex token would make an ad-hoc CBZ or EPUB
+// unstreamable. mimeFor() reads the real path, so it is unaffected either way.
+const OPENED_MAX = 32
+const openedFiles = new Map<string, string>()
+
+export function registerOpenedFile(abs: string): string {
+  const hex = createHash('sha1').update(abs).digest('hex').slice(0, 16)
+  // Deterministic per path, so re-opening the same file is idempotent and its
+  // URL is stable. delete-then-set is an LRU touch (Map keeps insertion order).
+  openedFiles.delete(hex)
+  openedFiles.set(hex, abs)
+  while (openedFiles.size > OPENED_MAX) {
+    const oldest = openedFiles.keys().next().value
+    if (oldest === undefined) break
+    openedFiles.delete(oldest)
+  }
+  const ext = extname(abs).toLowerCase().replace(/[^a-z0-9.]/g, '')
+  return `open/${hex}${ext}`
+}
+
+export function openedFilePath(token: string): string {
+  // One opaque segment: hex plus an optional extension. Refusing separators is
+  // what keeps this branch as escape-proof as the plain prefix lines below.
+  if (!/^[0-9a-f]{1,64}(\.[a-z0-9]{1,8})?$/.test(token)) throw new Error('Bad file token')
+  const abs = openedFiles.get(token.split('.')[0])
+  if (!abs) throw new Error('That file is no longer open')
+  return abs
+}
+
 let counter = 0
 function uniqueName(srcPath: string): string {
   // Avoid Date.now()/Math.random(): derive from a process-lifetime counter
@@ -122,9 +177,16 @@ export function absoluteMediaPath(relPath: string): string {
   if (norm.startsWith('manga/')) return join(mangaRootDir(), norm.slice('manga/'.length))
   if (norm.startsWith('music/')) return join(musicRootDir(), norm.slice('music/'.length))
   if (norm.startsWith('pictures/')) return join(picturesDir(), norm.slice('pictures/'.length))
-  // "jpaudio/" would resolve identically through the default branch (it lives
-  // under userData) — the explicit line documents the prefix contract.
+  if (norm.startsWith('video/')) return join(videoRootDir(), norm.slice('video/'.length))
+  // "jpaudio/" and "videocache/" would resolve identically through the default
+  // branch (both live under userData) — the explicit lines document the prefix
+  // contract.
   if (norm.startsWith('jpaudio/')) return join(jpAudioDir(), norm.slice('jpaudio/'.length))
+  if (norm.startsWith('videocache/')) {
+    return join(videoCacheDir(), norm.slice('videocache/'.length))
+  }
+  // The one stateful branch: a session token, not a path. See registerOpenedFile.
+  if (norm.startsWith('open/')) return openedFilePath(norm.slice('open/'.length))
   return join(app.getPath('userData'), norm)
 }
 
@@ -287,16 +349,22 @@ export async function pickImageFiles(): Promise<string[]> {
   return res.filePaths
 }
 
-// Writes raw bytes (a pasted screenshot) into userData/media and returns the
-// stored relative path. `ext` is validated against the image whitelist.
-export function saveMediaBytes(bytes: Uint8Array, ext: string): string {
+// Writes raw bytes (a pasted screenshot, or a frame grabbed off the video
+// player) into userData/media and returns the stored relative path. `ext` is
+// validated against the image whitelist. `subdir` keeps a caller's output in
+// its own folder — mined video frames go to media/mining so a library export
+// can skip them wholesale.
+export function saveMediaBytes(bytes: Uint8Array, ext: string, subdir?: string): string {
   const clean = (ext || 'png').replace(/^\./, '').toLowerCase()
   const allowed = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'bmp']
   const safeExt = allowed.includes(clean) ? clean : 'png'
+  const safeDir = (subdir ?? '').replace(/[^a-z0-9_-]+/gi, '')
   counter += 1
   const fileName = `paste-${process.pid}-${counter}.${safeExt}`
-  writeFileSync(join(mediaDir(), fileName), Buffer.from(bytes))
-  return join('media', fileName)
+  const dir = safeDir ? join(mediaDir(), safeDir) : mediaDir()
+  if (safeDir && !existsSync(dir)) mkdirSync(dir, { recursive: true })
+  writeFileSync(join(dir, fileName), Buffer.from(bytes))
+  return safeDir ? join('media', safeDir, fileName) : join('media', fileName)
 }
 
 // Native picker for a text file. Defaults match the original chat-log use

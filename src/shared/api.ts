@@ -56,9 +56,18 @@ import type {
   JpLessonInput,
   JpMiningInbox,
   EnDictEntry,
+  EnFreqInfo,
   EnglishDictInfo,
+  EnReviewOutcome,
+  EnReviewQueue,
+  EnSpellingItem,
+  EnSpellingPoolRequest,
+  EnSrsStats,
+  EnVocabPoolRequest,
+  EnVocabQuestion,
   EnWord,
   EnWordInput,
+  EnWritingEntry,
   ProgLessonProgress,
   DictInfo,
   DictEntry,
@@ -90,6 +99,16 @@ import type {
   SentenceAudioImportSummary,
   AudioSentence,
   JpMilestones,
+  SimilarKanji,
+  LookalikeQuizItem,
+  TransitivityQuestion,
+  HomophoneQuizItem,
+  LoanwordQuizItem,
+  JpConfusablePair,
+  JpGhostCard,
+  JpGhostOutcome,
+  JpFeed,
+  JpFeedRequest,
   JpLessonQuizPool,
   JpQuizItem,
   JpQuizScope,
@@ -113,6 +132,15 @@ import type {
   MangaPages,
   ChapterOcrStatus,
   MokuroPageOcr,
+  OpenTarget,
+  VideoAttachResult,
+  VideoCacheStats,
+  VideoLibrary,
+  VideoPrepareStatus,
+  VideoScanStatus,
+  VideoSource,
+  VideoSourceRef,
+  VideoToolsResult,
   JpToken,
   ActivityStatus,
   UpdateStatus,
@@ -428,6 +456,25 @@ export interface NaviApi {
       source: { kind: 'cards' } | { kind: 'level'; level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' }
       limit: number
     }): Promise<ComponentQuizItem[]>
+    // Pool for the look-alike drill: pick the right kanji among visual
+    // neighbors (same source shape as componentQuizPool).
+    lookalikePool(req: {
+      source: { kind: 'cards' } | { kind: 'level'; level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1' }
+      limit: number
+    }): Promise<LookalikeQuizItem[]>
+    // Pool for the homophone drill (same-reading discrimination).
+    homophonePool(req: {
+      source: 'cards' | 'frequency' | 'both'
+      limit: number
+    }): Promise<HomophoneQuizItem[]>
+    // "You may be confusing X with Y" over the user's lapsing cards.
+    confusables(): Promise<JpConfusablePair[]>
+    // Ghost reviews: echoes of lapsed cards served inside review sessions.
+    // ghostAnswer never touches SM-2 state or the review log.
+    ghostQueue(limit: number): Promise<JpGhostCard[]>
+    ghostAnswer(cardId: number, correct: boolean): Promise<JpGhostOutcome>
+    // The i+1 sentence feed (built ~2-3s cold, cached by knowledge state).
+    feed(req: JpFeedRequest): Promise<JpFeed>
   }
   // Offline Yomitan dictionaries (see src/main/dict/). Lookups run offline first
   // and fall back to jisho.org; every result is a DictEntry. Nothing throws.
@@ -485,6 +532,13 @@ export interface NaviApi {
       kana: string
       exclude: string[]
     }): Promise<{ expression: string; reading: string; gloss: string | null } | null>
+    // Visually-similar kanji for the dictionary's kanji breakdown chips.
+    similarKanji(char: string): Promise<SimilarKanji[]>
+    // Transitivity-pair drill questions (Tatoeba sentence or authored fallback
+    // — never gated on a pack).
+    transitivityPool(req: { limit: number }): Promise<TransitivityQuestion[]>
+    // Common katakana loanwords for the loanword drill.
+    loanwordSample(req: { limit: number }): Promise<LoanwordQuizItem[]>
     // Pitch minimal pairs (kotu.io backup). minimalPairs returns the WHOLE
     // pack (~4k small rows) — the drill filters/samples client-side.
     importPairs(): Promise<PairImportSummary>
@@ -514,8 +568,27 @@ export interface NaviApi {
     removeDict(): Promise<void>
     // Idempotent: re-saving an identical (word, meaning) returns the existing id.
     saveWord(input: EnWordInput): Promise<number>
+    // Batch save in one transaction (vocab-quiz misses). Returns rows added.
+    saveWords(inputs: EnWordInput[]): Promise<number>
     listWords(search?: string): Promise<EnWord[]>
     removeWord(id: number): Promise<void>
+    // ---- SRS (/english/review) — every saved word is a card ----
+    reviewQueue(newLimit: number): Promise<EnReviewQueue>
+    submitReview(wordId: number, grade: SrsGrade): Promise<EnReviewOutcome>
+    srsStats(): Promise<EnSrsStats>
+    // ---- test pools (main joins dictionaries.db packs + saved words) ----
+    vocabPool(req: EnVocabPoolRequest): Promise<EnVocabQuestion[]>
+    spellingPool(req: EnSpellingPoolRequest): Promise<EnSpellingItem[]>
+    // ---- frequency pack (OpenSubtitles ranks; enables the band sources) ----
+    freqInfo(): Promise<EnFreqInfo | null>
+    importFreq(): Promise<EnFreqInfo>
+    removeFreq(): Promise<void>
+    // ---- writing practice (/english/writing) ----
+    // One-shot LLM grading (coach provider settings); resolves with the saved
+    // entry. Slow (~10-20s) — plain await, the button disables meanwhile.
+    writingFeedback(req: { promptKey: string; text: string }): Promise<EnWritingEntry>
+    listWritings(): Promise<EnWritingEntry[]>
+    removeWriting(id: number): Promise<void>
   }
   // Programming learn section (/programming). Content is code
   // (src/shared/programming/); only lesson completion crosses IPC, keyed by
@@ -538,6 +611,53 @@ export interface NaviApi {
     // Mokuro OCR sidecars (null / hasOcr:false when the user hasn't run mokuro).
     ocrStatus(chapterId: number): Promise<ChapterOcrStatus>
     ocrPage(chapterId: number, pageIndex: number): Promise<MokuroPageOcr | null>
+    // A .cbz/.epub the OS handed us, with no chapter row and no library folder.
+    // Same MangaPages shape; chapterId/mediaId come back as 0 so the readers
+    // can tell an ad-hoc session from a real one and skip persisting.
+    adhocPages(token: string): Promise<MangaPages | null>
+  }
+  video: {
+    // Local video player. Episodes are attached PER TITLE, mirroring manga:
+    // a folder under the video root (settings key video.dir, bootstrapped from
+    // the first attach) becomes video_file rows on an anime/movie/tv item.
+    attachFolder(mediaId: number): Promise<VideoAttachResult>
+    rescan(mediaId: number): Promise<VideoAttachResult>
+    detach(mediaId: number): Promise<void>
+    files(mediaId: number): Promise<VideoLibrary>
+    // Long-running; poll while attachFolder/rescan is pending.
+    scanStatus(): Promise<VideoScanStatus>
+
+    // Playback. `source` never converts anything — it reports what Chromium
+    // can do with the file (direct / an already-cached copy / needs an ffmpeg
+    // pass / unsupported) plus the track lists. null = no such file row.
+    source(ref: VideoSourceRef, opts?: { audioStream?: number | null }): Promise<VideoSource | null>
+    // Native picker for the ad-hoc path: returns a SESSION token, so the file
+    // is playable until the app restarts and nothing is persisted about it.
+    pickFile(): Promise<VideoSourceRef | null>
+
+    // Conversion (action:'needsPrepare'). Fire-and-poll like the music
+    // downloader — prepare returns as soon as ffmpeg is spawned, then poll
+    // prepareStatus. One job at a time; prepare throws if another is running.
+    prepare(ref: VideoSourceRef, opts?: { audioStream?: number | null }): Promise<{ id: string }>
+    prepareStatus(): Promise<VideoPrepareStatus | null>
+    prepareCancel(id: string): Promise<void>
+    // Whether ffmpeg/ffprobe are on PATH (or at their configured paths).
+    tools(): Promise<VideoToolsResult>
+    cacheStats(): Promise<VideoCacheStats>
+    clearCache(): Promise<VideoCacheStats>
+
+    // Mining extras: clip one subtitle line's audio out of the source for the
+    // card. null = ffmpeg missing or the clip failed — the card still saves.
+    clipAudio(req: {
+      ref: VideoSourceRef
+      startSec: number
+      endSec: number
+    }): Promise<{ audioPath: string } | null>
+
+    // Called ~every 5s while playing; `markWatched` also advances the media
+    // item's own progress and credits the checklist the first time.
+    markProgress(fileId: number, seconds: number): Promise<void>
+    markWatched(fileId: number, watched: boolean): Promise<void>
   }
   music: {
     // Standalone local-music library (<root>/<Artist>/<Album>/<tracks>).
@@ -674,6 +794,11 @@ export interface NaviApi {
     // and returns the clamped value. Persist it separately as 'ui.scale' —
     // that's what gets re-applied on the next launch.
     setUiScale(scale: number): Promise<number>
+    // "Open with NaviHUB": files the OS handed us (startup argv, a
+    // second-instance launch, macOS open-file). RETURNS AND CLEARS — this app
+    // has no push channel, so the renderer polls, and a peek-without-clear
+    // would reopen the same file every tick.
+    pendingOpen(): Promise<OpenTarget[]>
   }
   activity: {
     // The current long-running main-process task (imports, theme fetches);
@@ -706,5 +831,9 @@ export interface NaviApi {
     pickImage(): Promise<string | null>
     // Resolves a stored relative path to a file:// URL the renderer can show.
     resolveUrl(relPath: string | null): Promise<string | null>
+    // Writes raw image bytes (a pasted screenshot, a frame grabbed off the
+    // video player) into userData/media and returns the stored relative path.
+    // `subdir` keeps a caller's output in its own folder.
+    saveBytes(bytes: Uint8Array, ext: string, subdir?: string): Promise<string>
   }
 }

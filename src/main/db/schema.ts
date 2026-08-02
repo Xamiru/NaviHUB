@@ -398,6 +398,62 @@ export const mangaChapter = sqliteTable(
   })
 )
 
+export const videoFile = sqliteTable(
+  'video_file',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    filePath: text('file_path').notNull(),
+    title: text('title').notNull(),
+    number: real('number'),
+    season: integer('season'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    fileMtime: integer('file_mtime'),
+    fileSize: integer('file_size'),
+    duration: real('duration'),
+    width: integer('width'),
+    height: integer('height'),
+    videoCodec: text('video_codec'),
+    audioCodec: text('audio_codec'),
+    container: text('container'),
+    playability: text('playability'),
+    resumeSeconds: real('resume_seconds'),
+    watchedAt: text('watched_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byMedia: index('idx_video_file_media').on(t.mediaId),
+    uniq: unique('uniq_video_file_path').on(t.mediaId, t.filePath)
+  })
+)
+
+export const videoCache = sqliteTable(
+  'video_cache',
+  {
+    cacheKey: text('cache_key').primaryKey(),
+    fileName: text('file_name').notNull(),
+    sourcePath: text('source_path').notNull(),
+    action: text('action').notNull(),
+    bytes: integer('bytes').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    lastUsedAt: text('last_used_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byUsed: index('idx_video_cache_used').on(t.lastUsedAt)
+  })
+)
+
 // ---------------------------------------------------------------------------
 // Japanese learning — standalone section (courses → lessons → cards). A lesson
 // is 'grammar' (body = explanation, cards = example sentences) or 'vocab'
@@ -463,6 +519,8 @@ export const jpCard = sqliteTable(
     kunyomi: text('kunyomi'),
     // media_item.id a mined card came from; no FK — reads tolerate deletion
     sourceMediaId: integer('source_media_id'),
+    audioPath: text('audio_path'),
+    imagePath: text('image_path'),
     // SRS state; written only by submitReview (see src/shared/srs.ts)
     status: text('status').notNull().default('new'),
     learningStep: integer('learning_step').notNull().default(0),
@@ -1005,10 +1063,60 @@ export const enWord = sqliteTable(
     example: text('example'),
     createdAt: text('created_at')
       .notNull()
+      .default(sql`(datetime('now'))`),
+    // SRS state; written only by submitReview (see src/shared/srs.ts)
+    status: text('status').notNull().default('new'),
+    learningStep: integer('learning_step').notNull().default(0),
+    dueAt: text('due_at'),
+    intervalDays: real('interval_days').notNull().default(0),
+    ease: real('ease').notNull().default(2.5),
+    reps: integer('reps').notNull().default(0),
+    lapses: integer('lapses').notNull().default(0),
+    lastReviewedAt: text('last_reviewed_at')
+  },
+  (t) => ({
+    byWord: index('idx_en_word_word').on(t.word),
+    byDue: index('idx_en_word_due').on(t.status, t.dueAt)
+  })
+)
+
+export const enReviewLog = sqliteTable(
+  'en_review_log',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    wordId: integer('word_id')
+      .notNull()
+      .references(() => enWord.id, { onDelete: 'cascade' }),
+    grade: text('grade').notNull(),
+    reviewedAt: text('reviewed_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    intervalDays: real('interval_days').notNull(),
+    ease: real('ease').notNull()
+  },
+  (t) => ({
+    byWord: index('idx_en_review_log_word').on(t.wordId),
+    byTime: index('idx_en_review_log_time').on(t.reviewedAt)
+  })
+)
+
+// English writing practice: one row per graded submission. feedback = JSON
+// EnWritingFeedback; prompt content is code (src/shared/english/).
+export const enWriting = sqliteTable(
+  'en_writing',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    promptKey: text('prompt_key').notNull(),
+    promptTitle: text('prompt_title').notNull(),
+    submission: text('submission').notNull(),
+    feedback: text('feedback').notNull(),
+    score: real('score'),
+    createdAt: text('created_at')
+      .notNull()
       .default(sql`(datetime('now'))`)
   },
   (t) => ({
-    byWord: index('idx_en_word_word').on(t.word)
+    byTime: index('idx_en_writing_time').on(t.createdAt)
   })
 )
 
@@ -1020,6 +1128,18 @@ export const progProgress = sqliteTable('prog_progress', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   lessonKey: text('lesson_key').notNull().unique(),
   completedAt: text('completed_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})
+
+// ---------------------------------------------------------------------------
+// Ghost reviews — echoes of lapsed cards (see japaneseRepo ghostQueue). No FK
+// by design; cleanup is manual (the jp_card.source_media_id precedent).
+// ---------------------------------------------------------------------------
+export const jpGhost = sqliteTable('jp_ghost', {
+  cardId: integer('card_id').primaryKey(),
+  remaining: integer('remaining').notNull().default(3),
+  createdAt: text('created_at')
     .notNull()
     .default(sql`(datetime('now'))`)
 })

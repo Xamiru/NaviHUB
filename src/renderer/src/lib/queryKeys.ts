@@ -3,6 +3,7 @@ import type {
   GachaGameId,
   GachaUnitFilter,
   ImageKind,
+  JpFeedRequest,
   JpQuizScope,
   ListKind,
   MediaListFilter,
@@ -113,12 +114,34 @@ export const qk = {
     pages: (chapterId: number) => ['manga', 'pages', chapterId] as const,
     // One EPUB spine document's raw XHTML (fetched from navimg://, immutable).
     bookDoc: (chapterId: number, page: number) => ['manga', 'bookDoc', chapterId, page] as const,
+    // A .cbz/.epub opened from outside the library ("open with"), keyed by its
+    // session token rather than a chapter id.
+    adhocPages: (token: string) => ['manga', 'adhocPages', token] as const,
     ocrStatus: (chapterId: number) => ['manga', 'ocrStatus', chapterId] as const,
     ocrPage: (chapterId: number, pageIndex: number) =>
       ['manga', 'ocrPage', chapterId, pageIndex] as const
   },
+  video: {
+    // Local video player: attached episodes, the playback contract, and parsed
+    // subtitle cues. Progress/watched writes invalidate the `all` prefix —
+    // watched state is denormalized into both the episode list and the source.
+    all: ['video'] as const,
+    library: (mediaId: number) => ['video', 'library', mediaId] as const,
+    source: (kind: string, ref: string) => ['video', 'source', kind, ref] as const,
+    scanStatus: ['video', 'scanStatus'] as const,
+    prepareStatus: ['video', 'prepareStatus'] as const,
+    cacheStats: ['video', 'cacheStats'] as const,
+    // One subtitle track's parsed cues, keyed by its navimg URL (immutable).
+    cues: (url: string) => ['video', 'cues', url] as const
+  },
   japanese: {
     all: ['japanese'] as const,
+    // "You may be confusing X with Y" (stats page) — under the ['japanese']
+    // prefix so reviews/card edits invalidate it.
+    confusables: ['japanese', 'confusables'] as const,
+    // The i+1 sentence feed; main caches by knowledge fingerprint, the page
+    // pins staleTime so mining mid-session never triggers a rebuild.
+    feed: (req: JpFeedRequest) => ['japanese', 'feed', req] as const,
     courses: ['japanese', 'courses'] as const,
     // Mining page: the flattened vocab-lesson list + ensured inbox target.
     mineTargets: ['japanese', 'mineTargets'] as const,
@@ -149,7 +172,14 @@ export const qk = {
     words: (search: string) => ['english', 'words', search] as const,
     // Installed offline dictionary (WordNet). Import/remove invalidate the
     // `all` prefix, which also drops cached lookups (results changed source).
-    dictInfo: ['english', 'dictInfo'] as const
+    dictInfo: ['english', 'dictInfo'] as const,
+    // Installed frequency pack (powers the vocab/spelling band sources).
+    freqInfo: ['english', 'freqInfo'] as const,
+    // SRS deck (/english/review): queue + the hub/review header stats.
+    reviewQueue: ['english', 'reviewQueue'] as const,
+    srsStats: ['english', 'srsStats'] as const,
+    // Writing practice history (/english/writing).
+    writings: ['english', 'writings'] as const
   },
   programming: {
     // Programming learn section (/programming): lesson completion only — the
@@ -183,7 +213,9 @@ export const qk = {
     // Audio packs.
     sentenceAudioBank: ['dict', 'sentenceAudioBank'] as const,
     pairSet: ['dict', 'pairSet'] as const,
-    minimalPairs: ['dict', 'minimalPairs'] as const
+    minimalPairs: ['dict', 'minimalPairs'] as const,
+    // Visually-similar kanji chips (kradfile × KANJIDIC, computed on demand).
+    similar: (char: string) => ['dict', 'similar', char] as const
   },
   music: {
     // Local music library. Mutations (scan, like, playlist edits) invalidate

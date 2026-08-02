@@ -174,10 +174,15 @@ export default function Sidebar() {
               { to: '/japanese/kana', label: 'Drills' }
             ]}
           />
-          {/* English dictionary + saved words, one page */}
-          <NavLink to="/english" className={({ isActive }) => linkClass(isActive)}>
-            English
-          </NavLink>
+          <NavGroup
+            to="/english"
+            label="English"
+            children={[
+              { to: '/english/dictionary', label: 'Dictionary' },
+              { to: '/english/review', label: 'Review' },
+              { to: '/english/writing', label: 'Writing' }
+            ]}
+          />
           <NavGroup
             to="/programming"
             label="Programming"

@@ -14,6 +14,7 @@ import QuizRecord from '../components/QuizRecord'
 import TypedDrill, { shuffle, type DrillItem } from '../components/japanese/TypedDrill'
 import NumbersDrillSetup from '../components/japanese/NumbersDrill'
 import NamesDrillSetup from '../components/japanese/NamesDrill'
+import KeigoDrillSetup from '../components/japanese/KeigoDrill'
 import type { JpCard } from '@shared/types'
 
 // Kana & kanji reading drill, modeled on the DJT kana practice tool: pick the
@@ -367,8 +368,8 @@ function KanaDrill({
 
 // ---- page ----
 
-type Tab = 'kana' | 'kanji' | 'conjugation' | 'numbers' | 'names'
-const TAB_KEYS: Tab[] = ['kana', 'kanji', 'conjugation', 'numbers', 'names']
+type Tab = 'kana' | 'kanji' | 'conjugation' | 'numbers' | 'names' | 'keigo'
+const TAB_KEYS: Tab[] = ['kana', 'kanji', 'conjugation', 'numbers', 'names', 'keigo']
 
 export default function JapaneseKanaPage() {
   // ?tab= seeds the persisted tab so hub cards can deep-link a specific drill.
@@ -396,7 +397,8 @@ export default function JapaneseKanaPage() {
           { key: 'kanji', label: 'Kanji readings' },
           { key: 'conjugation', label: 'Conjugation' },
           { key: 'numbers', label: 'Numbers & counters' },
-          { key: 'names', label: 'Names' }
+          { key: 'names', label: 'Names' },
+          { key: 'keigo', label: 'Keigo' }
         ]}
       />
 
@@ -408,8 +410,10 @@ export default function JapaneseKanaPage() {
         <DojoSetup />
       ) : tab === 'numbers' ? (
         <NumbersDrillSetup />
-      ) : (
+      ) : tab === 'names' ? (
         <NamesDrillSetup />
+      ) : (
+        <KeigoDrillSetup />
       )}
     </div>
   )

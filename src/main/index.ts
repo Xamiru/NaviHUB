@@ -14,6 +14,8 @@ import { get as getSetting } from './repos/settingsRepo'
 import { parseUiScale } from '@shared/uiScale'
 import { abortActiveCoachTurn } from './gachaCoach'
 import { killActiveUpdate } from './updater'
+import { killActivePrepare } from './video/session'
+import { parseArgvFiles, queueOpen } from './openFile'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
 protocol.registerSchemesAsPrivileged([
@@ -22,6 +24,45 @@ protocol.registerSchemesAsPrivileged([
     privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true }
   }
 ])
+
+// SINGLE INSTANCE — load-bearing, not politeness. Everything about this app is
+// one better-sqlite3 connection to one WAL database plus process-lifetime state
+// (the video prepare session, the dictionary handle, the ad-hoc token map). A
+// second process opening the same DB is a corruption risk and would silently
+// run its own conversions. It matters now because file associations mean the OS
+// launches the app again for every double-clicked file.
+//
+// The loser hands its argv to the winner via 'second-instance' and exits before
+// touching the database.
+const gotTheLock = app.requestSingleInstanceLock()
+if (!gotTheLock) {
+  app.quit()
+}
+
+let mainWindow: BrowserWindow | null = null
+
+// Brings the running window forward and puts the files it was given in the
+// queue the renderer polls.
+function receiveOpen(paths: string[]): void {
+  const accepted = queueOpen(paths)
+  if (accepted === 0) return
+  if (!mainWindow) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+app.on('second-instance', (_event, argv, workingDirectory) => {
+  receiveOpen(parseArgvFiles(argv, workingDirectory || process.cwd()))
+})
+
+// macOS delivers opens as an event rather than argv, and can fire it BEFORE the
+// app is ready. queueOpen just parks the target, so an early one is fine — the
+// renderer collects it whenever it first polls.
+app.on('open-file', (event, filePath) => {
+  event.preventDefault()
+  receiveOpen([filePath])
+})
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -41,6 +82,11 @@ function createWindow(): void {
       sandbox: false,
       contextIsolation: true
     }
+  })
+
+  mainWindow = win
+  win.on('closed', () => {
+    if (mainWindow === win) mainWindow = null
   })
 
   win.on('ready-to-show', () => win.show())
@@ -98,7 +144,14 @@ app.whenReady().then(() => {
   protocol.handle('navimg', async (request) => {
     const url = new URL(request.url)
     const relPath = decodeURIComponent(url.host + url.pathname)
-    const archived = relPath.startsWith('manga/') ? splitArchivePath(relPath) : null
+    // Entry streaming is limited to the two prefixes that can legitimately hold
+    // a container: the manga library, and a file the OS handed us via "open
+    // with" (open/<token>.cbz — the token keeps its extension precisely so
+    // splitArchivePath can still find the container segment).
+    const archived =
+      relPath.startsWith('manga/') || relPath.startsWith('open/')
+        ? splitArchivePath(relPath)
+        : null
     if (archived) {
       const data = await readArchiveEntry(absoluteMediaPath(archived.archiveRel), archived.entryName)
       if (!data) return new Response('Not found', { status: 404 })
@@ -118,7 +171,17 @@ app.whenReady().then(() => {
     } catch {
       return new Response('Not found', { status: 404 })
     }
-    const baseHeaders = { 'content-type': mimeFor(absPath), 'accept-ranges': 'bytes' }
+    const baseHeaders = {
+      'content-type': mimeFor(absPath),
+      'accept-ranges': 'bytes',
+      // navimg:// is a different origin from the renderer page, so a <video>
+      // loaded from it TAINTS a canvas and the video player's frame-grab
+      // (screenshot-on-a-mined-card) throws SecurityError. With this header and
+      // crossOrigin="anonymous" on the element the read is allowed. Safe: the
+      // scheme is privileged, local-only, and already supportFetchAPI.
+      'access-control-allow-origin': '*',
+      'access-control-expose-headers': 'content-length, content-range'
+    }
     const range = parseByteRange(request.headers.get('range'), size)
     if (range === 'unsatisfiable') {
       return new Response(null, {
@@ -144,6 +207,10 @@ app.whenReady().then(() => {
 
   createWindow()
 
+  // A cold start FROM a double-click: the file is in our own argv. Queued (not
+  // pushed) like every other open — the renderer collects it on first poll.
+  queueOpen(parseArgvFiles(process.argv, process.cwd()))
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
@@ -164,6 +231,9 @@ app.on('before-quit', () => {
   abortActiveCoachTurn()
   // A half-downloaded update is resumable; don't let it outlive the app.
   killActiveUpdate()
+  // A half-converted video is NOT resumable — kill it and drop the .part, or a
+  // truncated file could be mistaken for a cache hit next launch.
+  killActivePrepare()
   closeDatabase()
   closeDictDb()
 })

@@ -98,6 +98,10 @@ function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'jp_card', 'onyomi', 'onyomi TEXT')
   ensureColumn(sqlite, 'jp_card', 'kunyomi', 'kunyomi TEXT')
   ensureColumn(sqlite, 'jp_card', 'source_media_id', 'source_media_id INTEGER')
+  // 2026-08: cards mined from the video player carry the sentence's audio and
+  // the frame it was said on.
+  ensureColumn(sqlite, 'jp_card', 'audio_path', 'audio_path TEXT')
+  ensureColumn(sqlite, 'jp_card', 'image_path', 'image_path TEXT')
   ensureColumn(sqlite, 'jp_course', 'level', 'level TEXT')
   ensureColumn(sqlite, 'jp_course', 'difficulty', 'difficulty INTEGER')
   // Manga reader: series folder attached to a manga entry (written only by
@@ -113,6 +117,16 @@ function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'theme_song', 'favorite', 'favorite INTEGER NOT NULL DEFAULT 0')
   // Per-board target override arrived one build after the checklist itself.
   ensureColumn(sqlite, 'checklist_task', 'target', 'target INTEGER')
+  // English saved words became the /english/review SRS deck (2026-08); every
+  // DB with saved words predates the SRS columns.
+  ensureColumn(sqlite, 'en_word', 'status', "status TEXT NOT NULL DEFAULT 'new'")
+  ensureColumn(sqlite, 'en_word', 'learning_step', 'learning_step INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(sqlite, 'en_word', 'due_at', 'due_at TEXT')
+  ensureColumn(sqlite, 'en_word', 'interval_days', 'interval_days REAL NOT NULL DEFAULT 0')
+  ensureColumn(sqlite, 'en_word', 'ease', 'ease REAL NOT NULL DEFAULT 2.5')
+  ensureColumn(sqlite, 'en_word', 'reps', 'reps INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(sqlite, 'en_word', 'lapses', 'lapses INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(sqlite, 'en_word', 'last_reviewed_at', 'last_reviewed_at TEXT')
 
   // Movies used to store "times watched" in the generic `progress` column;
   // it's now unified into `rewatch_count` (the universal times-consumed counter)

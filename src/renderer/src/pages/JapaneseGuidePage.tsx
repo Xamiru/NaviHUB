@@ -27,7 +27,11 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Review',
         to: '/japanese/review',
-        text: 'The SRS. Again resets the card, Hard shortens the next gap, Good keeps the schedule, Easy stretches it. Grade honestly; the numbers under the buttons are the real next intervals. Do these before anything else.'
+        text: 'The SRS. Again resets the card, Hard shortens the next gap, Good keeps the schedule, Easy stretches it. Grade honestly; the numbers under the buttons are the real next intervals. Do these before anything else. A big backlog? Cap the session on the setup screen — nothing gets postponed, the rest simply stay due.'
+      },
+      {
+        name: 'Ghost reviews',
+        text: 'A lapsed card echoes into future sessions until you answer it right 3 times — extra reps without touching the real schedule. On by default; toggle it on the review setup. Echoes wear an "echo" chip and grade Missed / Got it.'
       },
       {
         name: 'Typed answers',
@@ -94,6 +98,31 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
         text: 'Word chain against the dictionary — your word must start with the last kana of its word, ん loses. Every app reply comes glossed, so losing is still studying.'
       },
       {
+        name: 'Confusables',
+        to: '/japanese/confusables',
+        text: 'Three tabs, one skill: pick the right kanji among computed look-alikes（末/未）, the right half of a transitivity pair inside a real sentence（開く/開ける — watch the を/が）, and the right spelling of a homophone（かえる ×4）. The wrong options are the ones you would actually pick.'
+      },
+      {
+        name: 'Loanwords',
+        to: '/japanese/loanwords',
+        text: 'ミシン is "machine", アルバイト is German. Recognizing drifted katakana is a skill nobody drills — this does. Needs JMdict.'
+      },
+      {
+        name: 'Keigo',
+        to: '/japanese/kana?tab=keigo',
+        text: 'Plain verb → 尊敬語/謙譲語/丁寧語, typed. The suppletives（行く→いらっしゃる・参る）are memorized; regular verbs train お〜になる／お〜する.'
+      },
+      {
+        name: 'Speak (pitch)',
+        to: '/japanese/pitch?tab=speak',
+        text: 'Say the word into the mic; your pitch curve lands on the target pattern — local signal processing, nothing leaves the machine. Shape check only: it can hear your pitch, not your consonants.'
+      },
+      {
+        name: 'Leech drill',
+        to: '/japanese/stats',
+        text: 'From the stats page: grind your stuck cards without touching their schedule, and see "possibly confused" pairs the app detected from your own lapses.'
+      },
+      {
         name: 'Writing drill',
         to: '/japanese/write',
         text: 'Draw the kanji from its meaning and readings. Strokes are checked in order — start point and direction, not neatness. Three misses on one stroke reveals it and moves on. Needs the stroke-order pack.'
@@ -144,6 +173,11 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
         text: 'The same thing for anything you paste. Words are coloured by whether you know them; click any one to mine it.'
       },
       {
+        name: 'Sentence feed',
+        to: '/japanese/feed',
+        text: 'Sentences from the bank where you know every word except one — comprehensible input on tap, and the unknown is one click from your deck. Recomputes as you learn; flood mode drops the unknown entirely for pure reading reps.'
+      },
+      {
         name: 'Prep deck',
         text: 'On a manga/book detail page: builds a vocab course from that series’ most frequent words you don’t know yet. Learn it, then go read that book.'
       },
@@ -155,7 +189,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Stats',
         to: '/japanese/stats',
-        text: 'Review heatmap, streak, grade mix and what’s coming due over the next fortnight. Check the forecast before starting a big new deck.'
+        text: 'Review heatmap, streak, grade mix, true retention (strict counts only Good/Easy — the honest number), a 7/14/30-day due forecast, and the Journey block — your whole run, derived automatically, never hand-logged.'
       }
     ]
   },

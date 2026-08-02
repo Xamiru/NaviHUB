@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { useReaderSource } from '../lib/readerSource'
 import { readerPath } from '../lib/readerPath'
 import BookContent from '../components/reader/BookContent'
 import MiningPanel from '../components/reader/MiningPanel'
@@ -48,23 +49,12 @@ function splitBookRelPath(relPath: string): { prefix: string; entryPath: string 
 }
 
 export default function BookReaderPage() {
-  const { id, chapterId: chapterIdParam } = useParams()
-  const mediaId = Number(id)
-  const chapterId = Number(chapterIdParam)
+  const { doc, library, chapterId, mediaId, adhoc } = useReaderSource()
   const navigate = useNavigate()
   const location = useLocation()
   const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const viewportRef = useRef<HTMLDivElement>(null)
-
-  const { data: doc } = useQuery({
-    queryKey: qk.manga.pages(chapterId),
-    queryFn: () => api.manga.pages(chapterId)
-  })
-  const { data: library } = useQuery({
-    queryKey: qk.manga.chapters(mediaId),
-    queryFn: () => api.manga.chapters(mediaId)
-  })
 
   const pages = doc?.pages ?? []
   const sectionCount = pages.length
@@ -166,7 +156,8 @@ export default function BookReaderPage() {
   const exitToDetail = useCallback(() => {
     // Same history contract as the manga reader: unwind, don't re-push detail.
     if (location.key !== 'default') navigate(-1)
-    else navigate(`/manga/${mediaId}`)
+    // An ad-hoc book has no series page to go back to.
+    else navigate(adhoc ? '/' : `/manga/${mediaId}`)
   }, [navigate, mediaId, location.key])
 
   const goToChapter = useCallback(
@@ -225,7 +216,7 @@ export default function BookReaderPage() {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
       const s = saveRef.current
-      if (s) void api.manga.markProgress(s.chapterId, s.page)
+      if (s && s.chapterId > 0) void api.manga.markProgress(s.chapterId, s.page)
       saveRef.current = null
     }, 800)
     return () => {
@@ -235,7 +226,7 @@ export default function BookReaderPage() {
   useEffect(() => {
     return () => {
       const s = saveRef.current
-      if (s) void api.manga.markProgress(s.chapterId, s.page)
+      if (s && s.chapterId > 0) void api.manga.markProgress(s.chapterId, s.page)
       qc.invalidateQueries({ queryKey: qk.manga.all })
       qc.invalidateQueries({ queryKey: qk.media.detail(mediaId) })
     }

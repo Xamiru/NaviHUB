@@ -131,6 +131,11 @@ export default function JapaneseHomePage() {
             title="Core deck"
             body="Generate the next most-frequent words you don't know."
           />
+          <HubCard
+            to="/japanese/feed"
+            title="Sentence feed"
+            body="Read sentences one new word at a time."
+          />
         </HubGrid>
       </Section>
 
@@ -140,14 +145,24 @@ export default function JapaneseHomePage() {
           <HubCard
             to="/japanese/kana"
             title="Typing drills"
-            body="Kana, kanji readings, verb forms, numbers, names."
+            body="Kana, kanji readings, verb forms, numbers, names, keigo."
           />
           <HubCard to="/japanese/write" title="Writing drill" body="Draw kanji stroke by stroke." />
           <HubCard to="/japanese/test" title="JLPT test" body="Timed 30-question checkpoint." />
           <HubCard
             to="/japanese/pitch"
             title="Pitch accent"
-            body="Learn the patterns, then hear them."
+            body="Learn the patterns, hear them, say them."
+          />
+          <HubCard
+            to="/japanese/confusables"
+            title="Confusables"
+            body="Look-alike kanji, verb pairs, homophones."
+          />
+          <HubCard
+            to="/japanese/loanwords"
+            title="Loanwords"
+            body="Katakana words you secretly already know."
           />
           <HubCard
             to="/japanese/listen"

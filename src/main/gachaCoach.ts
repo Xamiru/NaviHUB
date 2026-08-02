@@ -7,11 +7,18 @@
 // (coachSend / importDoc).
 
 import { nativeImage } from 'electron'
-import { GoogleGenAI } from '@google/genai'
-import Anthropic from '@anthropic-ai/sdk'
-import { AnthropicVertex } from '@anthropic-ai/vertex-sdk'
-import { get as getSetting } from './repos/settingsRepo'
+import type { GoogleGenAI } from '@google/genai'
+import type Anthropic from '@anthropic-ai/sdk'
+import type { AnthropicVertex } from '@anthropic-ai/vertex-sdk'
 import * as coachRepo from './repos/coachRepo'
+import {
+  completeOnce,
+  coachModel,
+  friendlyError,
+  makeAnthropic,
+  makeGemini,
+  resolveProvider
+} from './llm'
 import { absoluteMediaPath } from './files'
 import {
   buildContextBlock,
@@ -24,14 +31,10 @@ import {
 } from './coachTools'
 import type { GachaChatAction, GachaCoachStatus, GachaGameId } from '@shared/types'
 
-const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
-const DEFAULT_CLAUDE_MODEL = 'claude-opus-4-8'
 const MAX_TOKENS = 32_000
 const MAX_ITERATIONS = 8
 const MAX_IMAGE_EDGE = 1568
 const MAX_IMAGE_BYTES = 4_500_000
-
-type Provider = 'gemini' | 'anthropic' | 'vertex'
 
 const SYSTEM_PROMPT = `You are the player's personal Fate/Grand Order coach: a blunt, experienced veteran who wants this beginner to spend efficiently and pull smart. You have tools that let you act directly in their tracker app.
 
@@ -55,55 +58,6 @@ Each message carries an app-generated <context> block: today's date, their full 
 
 # Formatting
 Short, skimmable markdown: headings, bold, bullet lists, inline code. No tables. No emoji. Lead with the answer, then the reasoning.`
-
-// ---- provider + clients ----
-
-function resolveProvider(): Provider {
-  const p = (getSetting('coach.provider') || 'gemini').trim()
-  return p === 'anthropic' || p === 'vertex' ? p : 'gemini'
-}
-
-function coachModel(provider: Provider): string {
-  const m = getSetting('coach.model')?.trim()
-  if (m) return m
-  return provider === 'gemini' ? DEFAULT_GEMINI_MODEL : DEFAULT_CLAUDE_MODEL
-}
-
-function makeGemini(): GoogleGenAI {
-  const apiKey = getSetting('gemini.api_key')?.trim()
-  if (!apiKey) throw new Error('Add your Gemini API key in Settings to use the coach.')
-  return new GoogleGenAI({ apiKey })
-}
-
-function makeAnthropic(provider: Provider): Anthropic | AnthropicVertex {
-  if (provider === 'anthropic') {
-    const apiKey = getSetting('anthropic.api_key')?.trim()
-    if (!apiKey) throw new Error('Add your Anthropic API key in Settings to use the coach.')
-    return new Anthropic({ apiKey })
-  }
-  const projectId = getSetting('vertex.project_id')?.trim()
-  if (!projectId) throw new Error('Set your Google Cloud project id in Settings to use the coach.')
-  const credsPath = getSetting('vertex.credentials_path')?.trim()
-  if (credsPath) process.env.GOOGLE_APPLICATION_CREDENTIALS = credsPath
-  const region = getSetting('vertex.region')?.trim() || 'global'
-  return new AnthropicVertex({ projectId, region })
-}
-
-function friendlyError(e: unknown): string {
-  if (e instanceof Anthropic.AuthenticationError)
-    return 'Authentication failed — check your API key / credentials in Settings.'
-  if (e instanceof Anthropic.PermissionDeniedError)
-    return 'Permission denied — is Claude enabled in your Vertex project (Model Garden)?'
-  if (e instanceof Anthropic.RateLimitError) return 'Rate limited — wait a moment and try again.'
-  if (e instanceof Anthropic.APIConnectionError)
-    return 'Could not reach the model — check your connection.'
-  const msg = (e as Error)?.message ?? String(e)
-  if (/api[_ ]?key|unauthenticated|permission|invalid.*key|401|403/i.test(msg))
-    return 'Authentication failed — check your API key in Settings.'
-  if (/quota|rate|429|resource_?exhausted/i.test(msg))
-    return "Hit the model's free-tier rate limit — wait a minute and try again."
-  return msg
-}
 
 // ---- vision ----
 
@@ -505,32 +459,10 @@ export async function importDoc(game: GachaGameId, title: string, content: strin
   const raw = content.slice(0, 200_000)
   const id = coachRepo.createDoc(game, title.trim() || 'Imported chat', raw)
   try {
-    const provider = resolveProvider()
-    const model = coachModel(provider)
-    const sys = 'You condense a chat log about Fate/Grand Order into durable facts for a coach.'
-    const prompt = `Extract the durable facts from this chat as a short bulleted list (server, roster, goals, spending rules, plans). Skip pleasantries.\n\n${raw}`
-    let summary = ''
-    if (provider === 'gemini') {
-      const res = await makeGemini().models.generateContent({
-        model,
-        contents: prompt,
-        config: { systemInstruction: sys, maxOutputTokens: 1024 }
-      })
-      summary = (res.text ?? '').trim()
-    } else {
-      const res = await makeAnthropic(provider).messages.create({
-        model,
-        max_tokens: 1024,
-        ...buildModelParams(model),
-        system: sys,
-        messages: [{ role: 'user', content: prompt }]
-      } as never)
-      summary = (res.content as { type: string; text?: string }[])
-        .filter((b) => b.type === 'text')
-        .map((b) => b.text ?? '')
-        .join('')
-        .trim()
-    }
+    const summary = await completeOnce({
+      system: 'You condense a chat log about Fate/Grand Order into durable facts for a coach.',
+      prompt: `Extract the durable facts from this chat as a short bulleted list (server, roster, goals, spending rules, plans). Skip pleasantries.\n\n${raw}`
+    })
     if (summary) coachRepo.setDocSummary(id, summary)
   } catch {
     // Digest is best-effort; the raw doc is kept and the context falls back to it.

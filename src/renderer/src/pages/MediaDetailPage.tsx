@@ -22,6 +22,7 @@ import CoverImage from '../components/CoverImage'
 import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
+import VideoEpisodesSection from '../components/VideoEpisodesSection'
 import CoverageSection from '../components/japanese/CoverageSection'
 import MediaImagesSection from '../components/MediaImagesSection'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
@@ -35,7 +36,7 @@ import type {
   HltbTimes
 } from '@shared/types'
 
-type DetailTab = 'overview' | 'cast' | 'media' | 'art'
+type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'art'
 
 export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const { id } = useParams()
@@ -53,6 +54,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const tabs: TabDef<DetailTab>[] = [
     { key: 'overview', label: 'Overview' },
     { key: 'cast', label: cfg.castSectionTitle },
+    ...(cfg.hasVideoLibrary
+      ? [{ key: 'video' as DetailTab, label: cfg.videoTabLabel ?? 'Video' }]
+      : []),
     ...(cfg.mediaTabLabel ? [{ key: 'media' as DetailTab, label: cfg.mediaTabLabel }] : []),
     { key: 'art', label: 'Art' }
   ]
@@ -196,6 +200,16 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
         <>
           <CastSection cfg={cfg} m={m} onChange={refresh} />
           {cfg.hasCrew !== false && <StaffSection cfg={cfg} m={m} onChange={refresh} />}
+        </>
+      )}
+
+      {tab === 'video' && (
+        <>
+          <VideoEpisodesSection m={m} />
+          {/* Subtitle text feeds the same comprehension scan / prep deck as
+              manga OCR (seriesText.ts:seriesCorpus), so anime gets it free —
+              but only where a Japanese track is plausible. */}
+          {cfg.key === 'anime' && <CoverageSection m={m} />}
         </>
       )}
 

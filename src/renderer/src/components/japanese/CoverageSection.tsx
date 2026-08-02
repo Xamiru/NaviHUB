@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { toast, toastError } from '../../lib/toast'
-import CoverageBar, { knownShare, learningShare, pct, uniqueKnownShare } from './CoverageBar'
+import CoverageBar, { knownShare, learningShare, lookupInterval, pct, uniqueKnownShare } from './CoverageBar'
 import Section from '../Section'
 import type { MediaDetail } from '@shared/types'
 
@@ -92,6 +92,33 @@ export default function CoverageSection({ m }: { m: MediaDetail }) {
           </div>
 
           <CoverageBar tiers={coverage.tiers} className="mt-3" />
+          {lookupInterval(coverage.tiers) != null && (
+            <p className="mt-1.5 text-xs text-gray-500">
+              about 1 unknown word every{' '}
+              <span className="text-gray-300">{lookupInterval(coverage.tiers)}</span> words of text
+            </p>
+          )}
+
+          {coverage.projection.length > 0 && knownShare(coverage.tiers) < 0.98 && (
+            <div className="mt-3">
+              <p className="mb-1.5 text-[11px] uppercase tracking-widest text-gray-500">
+                What learning buys you
+              </p>
+              <div className="space-y-0.5 text-sm">
+                {coverage.projection
+                  .filter(
+                    (step, i, arr) =>
+                      i === 0 || Math.round(step.share * 100) > Math.round(arr[i - 1].share * 100)
+                  )
+                  .map((step) => (
+                    <p key={step.learnWords} className="text-gray-400">
+                      learn the top {step.learnWords} unknown →{' '}
+                      <span className="text-green-300">{pct(step.share)}</span>
+                    </p>
+                  ))}
+              </div>
+            </div>
+          )}
 
           {coverage.topUnknown.length > 0 && (
             <div className="mt-3">

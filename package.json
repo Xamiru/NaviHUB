@@ -14,6 +14,7 @@
     "pack:linux": "npm run build && electron-builder --linux dir",
     "dist:win": "bash scripts/dist-win.sh",
     "export:library": "ELECTRON_RUN_AS_NODE=1 electron scripts/export-library.cjs",
+    "install:desktop": "bash scripts/install-desktop.sh",
     "rebuild": "electron-rebuild -f -w better-sqlite3",
     "postinstall": "electron-rebuild -f -w better-sqlite3",
     "db:generate": "drizzle-kit generate",

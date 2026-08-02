@@ -1,12 +1,17 @@
 import { join } from 'path'
+import { readFileSync } from 'fs'
 import { setImmediate as yieldToLoop } from 'timers/promises'
 import { getSqlite } from './db/connection'
-import { mangaRootDir } from './files'
+import { absoluteMediaPath, mangaRootDir, videoRootDir } from './files'
 import { listChapterPages } from './manga'
 import { getChapterOcr } from './mokuro'
 import { isEpubFile, listEpubPages } from './epub'
 import { readArchiveEntry } from './archive'
 import { tokenize } from './tokenizer'
+import { probeFile } from './video/ffmpeg'
+import * as videoSubs from './video/subtitles'
+import { dialogueText, parseSubtitles } from '@shared/subtitles'
+import type { VideoSubtitleTrack } from '@shared/types'
 
 // Reading a whole series as text: mokuro OCR blocks for manga, spine XHTML for
 // EPUB books. Extracted from prepDeck.ts so the prep deck and the comprehension
@@ -53,6 +58,81 @@ export async function* chapterTexts(dirPath: string): AsyncGenerator<string> {
   }
 }
 
+// One readable unit of a series: a manga chapter (OCR / EPUB spine) or a video
+// file (its best Japanese subtitle track). The two formats meet here so the
+// comprehension scan and the prep deck light up for anime with NO change to
+// coverage.ts or prepDeck.ts.
+export interface CorpusUnit {
+  kind: 'chapter' | 'video'
+  path: string
+  label: string
+}
+
+export function seriesCorpus(mediaId: number): CorpusUnit[] {
+  const db = getSqlite()
+  const chapters = db
+    .prepare('SELECT dir_path, title FROM manga_chapter WHERE media_id = ? ORDER BY sort_order, id')
+    .all(mediaId) as { dir_path: string; title: string }[]
+  // Manga wins when both exist: a series with scanned chapters AND an attached
+  // video folder is being READ, and OCR text is the richer corpus.
+  if (chapters.length > 0) {
+    return chapters.map((c) => ({ kind: 'chapter', path: c.dir_path, label: c.title }))
+  }
+  const videos = db
+    .prepare('SELECT file_path, title FROM video_file WHERE media_id = ? ORDER BY sort_order, id')
+    .all(mediaId) as { file_path: string; title: string }[]
+  return videos.map((v) => ({ kind: 'video', path: v.file_path, label: v.title }))
+}
+
+// Subtitle lines of one video, dialogue only. A file with no textual track
+// contributes nothing and the scan carries on — a season with three subbed
+// episodes still produces a usable corpus.
+export async function* videoTexts(filePath: string): AsyncGenerator<string> {
+  const abs = join(videoRootDir(), filePath)
+  const relPath = `video/${filePath}`
+  let tracks: Awaited<ReturnType<typeof videoSubs.extractAll>>
+  try {
+    const probe = await probeFile(abs)
+    tracks = await videoSubs.extractAll(abs, videoSubs.listTracks(abs, relPath, probe))
+  } catch {
+    return
+  }
+  const track = pickCorpusTrack(tracks)
+  if (!track?.url) return
+  let raw: string
+  try {
+    raw = readFileSync(absoluteMediaPath(urlToRelPath(track.url)), 'utf8')
+  } catch {
+    return
+  }
+  for (const line of dialogueText(parseSubtitles(raw, track.format))) yield line
+}
+
+// navimg://a/b -> "a/b". The URL is percent-encoded per segment by mediaUrl.
+function urlToRelPath(url: string): string {
+  const u = new URL(url)
+  return decodeURIComponent(u.host + u.pathname)
+}
+
+// Which track becomes the corpus. Textual only, Japanese preferred, and signs
+// and forced tracks pushed DOWN — a "Signs & Songs" track is thirty lines of
+// sign translations and would report absurd comprehension.
+export function pickCorpusTrack(tracks: VideoSubtitleTrack[]): VideoSubtitleTrack | null {
+  let best: VideoSubtitleTrack | null = null
+  let bestScore = -Infinity
+  for (const t of tracks) {
+    if (!t.textual) continue
+    let score = t.lang === 'ja' ? 100 : t.lang === 'other' ? 10 : 0
+    if (t.signs) score -= 60
+    if (t.forced) score -= 30
+    if (score > bestScore) {
+      bestScore = score
+      best = t
+    }
+  }
+  return best
+}
+
 export interface SeriesWordCounts {
   counts: Map<string, number> // dictionary (base) form -> occurrences
   tokenCount: number // total word-like token occurrences (coverage denominator)
@@ -66,21 +146,19 @@ export async function countSeriesWords(
   mediaId: number,
   onProgress?: (done: number, total: number) => void
 ): Promise<SeriesWordCounts> {
-  const db = getSqlite()
-  const chapters = db
-    .prepare('SELECT dir_path FROM manga_chapter WHERE media_id = ? ORDER BY sort_order, id')
-    .all(mediaId) as { dir_path: string }[]
-  if (chapters.length === 0) {
-    throw new Error('No chapters attached — link the series folder first')
+  const units = seriesCorpus(mediaId)
+  if (units.length === 0) {
+    throw new Error('No chapters or episodes attached — link the folder first')
   }
 
   const counts = new Map<string, number>()
   let tokenCount = 0
   let sawText = false
   let done = 0
-  onProgress?.(0, chapters.length)
-  for (const ch of chapters) {
-    for await (const text of chapterTexts(ch.dir_path)) {
+  onProgress?.(0, units.length)
+  for (const unit of units) {
+    const stream = unit.kind === 'chapter' ? chapterTexts(unit.path) : videoTexts(unit.path)
+    for await (const text of stream) {
       if (!text.trim()) continue
       sawText = true
       for (const tok of await tokenize(text)) {
@@ -91,11 +169,15 @@ export async function countSeriesWords(
       }
     }
     done += 1
-    onProgress?.(done, chapters.length)
+    onProgress?.(done, units.length)
     await yieldToLoop()
   }
   if (!sawText) {
-    throw new Error('No readable text found — manga chapters need mokuro OCR, or attach an EPUB book')
+    throw new Error(
+      'No readable text found — manga chapters need mokuro OCR, attach an EPUB book, or put subtitle files next to the episodes'
+    )
   }
-  return { counts, tokenCount, chaptersScanned: chapters.length }
+  // chaptersScanned now means "units scanned" (jp_coverage.chapters_scanned
+  // keeps its name — renaming it would be a migration for cosmetics).
+  return { counts, tokenCount, chaptersScanned: units.length }
 }

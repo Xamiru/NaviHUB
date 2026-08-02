@@ -69,13 +69,44 @@ const AUDIO_MIME: Record<string, string> = {
   '.aac': 'audio/aac',
   '.ogg': 'audio/ogg',
   '.opus': 'audio/ogg',
-  '.wav': 'audio/wav',
-  '.webm': 'audio/webm'
+  '.wav': 'audio/wav'
+}
+
+// Local video files and their sidecar subtitle tracks. Kept separate from MIME
+// for the same reason as the two maps above (listArchivePages keys off MIME to
+// decide what counts as a CBZ page), and consulted BEFORE audio because .webm
+// is a video container that happens to also carry audio-only files — a video
+// .webm served as audio/webm never gets a picture. Nothing in the app produces
+// an audio .webm (music.ts:AUDIO_EXTS excludes it, AnimeThemes serves .ogg, and
+// yt-dlp is constrained to opus|m4a|mp3), and <audio> plays video/webm anyway.
+//
+// Chromium can only DECODE mp4/webm; the rest are here so the ffmpeg tier can
+// stream a source file for probing and the player can name what it found.
+const VIDEO_MIME: Record<string, string> = {
+  '.mp4': 'video/mp4',
+  '.m4v': 'video/mp4',
+  '.mov': 'video/quicktime',
+  '.webm': 'video/webm',
+  '.mkv': 'video/x-matroska',
+  '.avi': 'video/x-msvideo',
+  '.ogv': 'video/ogg',
+  '.ts': 'video/mp2t',
+  '.m2ts': 'video/mp2t',
+  '.wmv': 'video/x-ms-wmv',
+  '.flv': 'video/x-flv',
+  '.mpg': 'video/mpeg',
+  '.mpeg': 'video/mpeg',
+  '.srt': 'text/plain; charset=utf-8',
+  '.vtt': 'text/vtt; charset=utf-8',
+  '.ass': 'text/plain; charset=utf-8',
+  '.ssa': 'text/plain; charset=utf-8'
 }
 
 export function mimeFor(name: string): string {
   const ext = extname(name).toLowerCase()
-  return MIME[ext] ?? EPUB_MIME[ext] ?? AUDIO_MIME[ext] ?? 'application/octet-stream'
+  return (
+    MIME[ext] ?? EPUB_MIME[ext] ?? VIDEO_MIME[ext] ?? AUDIO_MIME[ext] ?? 'application/octet-stream'
+  )
 }
 
 interface OpenArchive {

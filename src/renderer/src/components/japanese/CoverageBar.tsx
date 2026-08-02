@@ -46,6 +46,14 @@ export function knownShare(tiers: Record<JpWordTier, JpTierCounts>): number {
   return tokens > 0 ? tiers.known.tokenCount / tokens : 0
 }
 
+// ~1 unknown word every N running words at the current known share; null at
+// (effectively) full coverage.
+export function lookupInterval(tiers: Record<JpWordTier, JpTierCounts>): number | null {
+  const share = knownShare(tiers)
+  if (share >= 0.995) return null
+  return Math.max(1, Math.round(1 / (1 - share)))
+}
+
 export function learningShare(tiers: Record<JpWordTier, JpTierCounts>): number {
   const { tokens } = tierTotals(tiers)
   return tokens > 0 ? tiers.learning.tokenCount / tokens : 0

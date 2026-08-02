@@ -1,12 +1,24 @@
 import { getSqlite } from './db/connection'
 import { getDictDb } from './dict/dictDb'
 import { pitchForWords } from './dict/kanjium'
-import { kradComponents, kradFor, kradSample } from './dict/krad'
+import { componentsFor, kradComponents, kradFor, kradSample } from './dict/krad'
 import { lookupKanji } from './dict/lookup'
+import { rankFor } from './dict/similarKanji'
+import { tokenize } from './tokenizer'
 import { isKanaOnly, splitMora, toHiragana } from '@shared/kana'
 import { chainKana } from '@shared/shiritori'
 import { flattenGlossary } from '@shared/dictContent'
-import type { ComponentQuizItem, GlossaryItem, PitchPoolItem } from '@shared/types'
+import { isLoanwordCandidate, kanjiChars } from '@shared/confusables'
+import { TRANSITIVITY_PAIRS } from '@shared/transitivity'
+import type {
+  ComponentQuizItem,
+  GlossaryItem,
+  HomophoneQuizItem,
+  LoanwordQuizItem,
+  LookalikeQuizItem,
+  PitchPoolItem,
+  TransitivityQuestion
+} from '@shared/types'
 
 // Question pools for the Japanese drills that need BOTH databases (the
 // coreDeck.ts pattern: navihub.db for the user's cards, dictionaries.db for
@@ -139,55 +151,64 @@ export interface ComponentPoolRequest {
 const OLD_JLPT: Record<string, string> = { N5: '4', N4: '3', N3: '2', N2: '2', N1: '1' }
 const NEW_JLPT: Record<string, string> = { N5: '5', N4: '4', N3: '3', N2: '2', N1: '1' }
 
+// Single-character kanji from the user's kanji-KIND lessons (by lesson kind,
+// not the old title heuristic).
+function kanjiFromCards(): string[] {
+  const db = getSqlite()
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT c.front FROM jp_card c
+       JOIN jp_lesson l ON l.id = c.lesson_id
+       WHERE l.kind = 'kanji'`
+    )
+    .all() as { front: string }[]
+  return rows.map((r) => r.front).filter((f) => [...f].length === 1)
+}
+
+// KANJIDIC kanji at an N level. KANJIDIC's jlpt stat uses the OLD 1-4 levels;
+// some dicts carry jlpt_new 1-5 — accept either via the maps above.
+function kanjiByLevel(level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1'): string[] {
+  const out: string[] = []
+  try {
+    const dictDb = getDictDb()
+    const rows = dictDb
+      .prepare('SELECT character, stats FROM kanji')
+      .all() as { character: string; stats: string | null }[]
+    for (const row of rows) {
+      try {
+        const stats = JSON.parse(row.stats ?? '{}') as Record<string, unknown>
+        const jlptNew = String(stats.jlpt_new ?? '')
+        const jlptOld = String(stats.jlpt ?? '')
+        if (jlptNew === NEW_JLPT[level] || (!jlptNew && jlptOld === OLD_JLPT[level])) {
+          out.push(row.character)
+        }
+      } catch {
+        /* skip unparseable stats */
+      }
+    }
+  } catch {
+    /* pack absent */
+  }
+  return out
+}
+
+function componentCandidates(req: ComponentPoolRequest, limit: number): string[] {
+  if (req.source.kind === 'cards') return kanjiFromCards()
+  const byLevel = kanjiByLevel(req.source.level)
+  // No KANJIDIC (or no jlpt stats at all): random decomposable kanji so the
+  // drill still works, just unleveled.
+  return byLevel.length > 0 ? byLevel : kradSample(limit * 3).map((e) => e.kanji)
+}
+
 // Kanji for the build-a-kanji drill: the char, its meaning/reading (KANJIDIC),
-// its real components, and stroke-similar decoys. Empty when kradfile is
-// missing; the renderer explains which pack to install.
+// its real components, and decoys. Empty when kradfile is missing; the
+// renderer explains which pack to install.
 export function componentQuizPool(req: ComponentPoolRequest): ComponentQuizItem[] {
   const limit = Math.max(1, Math.min(100, req.limit))
   const allComponents = kradComponents()
   if (allComponents.length === 0) return []
 
-  // Candidate kanji characters per source.
-  let candidates: string[] = []
-  if (req.source.kind === 'cards') {
-    const db = getSqlite()
-    // Kanji-kind lessons by LESSON KIND — not the old title heuristic.
-    const rows = db
-      .prepare(
-        `SELECT DISTINCT c.front FROM jp_card c
-         JOIN jp_lesson l ON l.id = c.lesson_id
-         WHERE l.kind = 'kanji'`
-      )
-      .all() as { front: string }[]
-    candidates = rows.map((r) => r.front).filter((f) => [...f].length === 1)
-  } else {
-    try {
-      const dictDb = getDictDb()
-      const level = req.source.level
-      const rows = dictDb
-        .prepare('SELECT character, stats FROM kanji')
-        .all() as { character: string; stats: string | null }[]
-      for (const row of rows) {
-        try {
-          const stats = JSON.parse(row.stats ?? '{}') as Record<string, unknown>
-          const jlptNew = String(stats.jlpt_new ?? '')
-          const jlptOld = String(stats.jlpt ?? '')
-          if (jlptNew === NEW_JLPT[level] || (!jlptNew && jlptOld === OLD_JLPT[level])) {
-            candidates.push(row.character)
-          }
-        } catch {
-          /* skip unparseable stats */
-        }
-      }
-    } catch {
-      candidates = []
-    }
-    // No KANJIDIC (or no jlpt stats at all): random decomposable kanji so the
-    // drill still works, just unleveled.
-    if (candidates.length === 0) {
-      candidates = kradSample(limit * 3).map((e) => e.kanji)
-    }
-  }
+  const candidates = componentCandidates(req, limit)
 
   const picked: ComponentQuizItem[] = []
   const kanjiInfo = new Map(
@@ -198,20 +219,34 @@ export function componentQuizPool(req: ComponentPoolRequest): ComponentQuizItem[
     const decomposition = kradFor(kanji)
     if (!decomposition || decomposition.components.length === 0) continue
     const inKanji = new Set(decomposition.components.map((c) => c.char))
-    // Decoys: real components not in this kanji, biased toward similar stroke
-    // counts so they're plausible.
+    // MEANER decoys first: components of this kanji's top look-alikes that
+    // aren't in the kanji itself — the parts you'd pick if you were confusing
+    // it with its visual neighbor.
+    const decoyChars: { char: string; strokes: number | null }[] = []
+    const taken = new Set<string>()
+    for (const lookalike of rankFor(kanji, { limit: 2 })) {
+      for (const part of componentsFor(lookalike.character)) {
+        if (decoyChars.length >= 3) break
+        if (inKanji.has(part) || taken.has(part)) continue
+        taken.add(part)
+        const known = allComponents.find((c) => c.component === part)
+        decoyChars.push({ char: part, strokes: known?.strokes ?? null })
+      }
+    }
+    // Top up to 6 with stroke-count-biased random components.
     const targetStrokes =
       decomposition.components.reduce((sum, c) => sum + (c.strokes ?? 3), 0) /
       decomposition.components.length
-    const decoys = allComponents
-      .filter((c) => !inKanji.has(c.component))
+    const fill = allComponents
+      .filter((c) => !inKanji.has(c.component) && !taken.has(c.component))
       .map((c) => ({
         c,
         score: Math.abs((c.strokes ?? 3) - targetStrokes) + Math.random() * 4
       }))
       .sort((a, b) => a.score - b.score)
-      .slice(0, 6)
+      .slice(0, 6 - decoyChars.length)
       .map(({ c }) => ({ char: c.component, strokes: c.strokes }))
+    const decoys = [...decoyChars, ...fill]
     const info = kanjiInfo.get(kanji)
     picked.push({
       kanji,
@@ -222,6 +257,316 @@ export function componentQuizPool(req: ComponentPoolRequest): ComponentQuizItem[
     })
   }
   return picked
+}
+
+// Look-alike drill pool: pick the RIGHT kanji among its visual neighbors.
+// Decoys are real look-alikes with two fairness exclusions: never a decoy
+// sharing a meaning string (variant kanji would make two options correct) and
+// — since the prompt shows the reading — never one sharing that exact reading.
+export function lookalikePool(req: ComponentPoolRequest): LookalikeQuizItem[] {
+  const limit = Math.max(1, Math.min(100, req.limit))
+  const candidates = [...new Set(componentCandidates(req, limit))]
+  if (candidates.length === 0) return []
+
+  const infoByChar = new Map(
+    lookupKanji(candidates.slice(0, 400).join('')).map((k) => [k.character, k])
+  )
+  const out: LookalikeQuizItem[] = []
+  for (const kanji of shuffle(candidates)) {
+    if (out.length >= limit) break
+    const info = infoByChar.get(kanji)
+    const meaning = info?.meanings.slice(0, 3).join(', ') || null
+    const reading = info?.kunyomi[0] ?? info?.onyomi[0] ?? null
+    if (!meaning && !reading) continue // nothing to prompt with
+    const ranked = rankFor(kanji, { limit: 10 })
+    if (ranked.length === 0) continue
+    const targetMeanings = new Set((info?.meanings ?? []).map((m) => m.toLowerCase()))
+    const targetReadings = new Set([...(info?.kunyomi ?? []), ...(info?.onyomi ?? [])])
+    const decoyInfo = new Map(
+      lookupKanji(ranked.map((r) => r.character).join('')).map((k) => [k.character, k])
+    )
+    const decoys: string[] = []
+    for (const cand of ranked) {
+      if (decoys.length >= 3) break
+      const dInfo = decoyInfo.get(cand.character)
+      if (dInfo) {
+        if (dInfo.meanings.some((m) => targetMeanings.has(m.toLowerCase()))) continue
+        if ([...dInfo.kunyomi, ...dInfo.onyomi].some((r) => targetReadings.has(r))) continue
+      }
+      decoys.push(cand.character)
+    }
+    if (decoys.length < 3) continue
+    out.push({ kanji, meaning, reading, decoys })
+  }
+  return out
+}
+
+// ---- transitivity drill pool ----
+
+export interface TransitivityPoolRequest {
+  limit: number
+}
+
+// Real Tatoeba sentences first, the pair's authored example as the always-
+// present fallback — the drill needs no pack gating at all. A sentence is
+// accepted only when it contains EXACTLY one verb token of the chosen member
+// and none of the partner (both present = ambiguous question).
+export async function transitivityPool(req: TransitivityPoolRequest): Promise<TransitivityQuestion[]> {
+  const limit = Math.max(1, Math.min(50, req.limit))
+  const out: TransitivityQuestion[] = []
+  for (const pairDef of shuffle([...TRANSITIVITY_PAIRS]).slice(0, limit)) {
+    const side: 'trans' | 'intrans' = Math.random() < 0.5 ? 'trans' : 'intrans'
+    out.push(await buildTransitivityQuestion(pairDef, side))
+  }
+  return out
+}
+
+// One question for one pair+side — exported so tests hit both paths
+// deterministically.
+export async function buildTransitivityQuestion(
+  pairDef: (typeof TRANSITIVITY_PAIRS)[number],
+  side: 'trans' | 'intrans'
+): Promise<TransitivityQuestion> {
+  const member = side === 'trans' ? pairDef.trans : pairDef.intrans
+  const other = side === 'trans' ? pairDef.intrans : pairDef.trans
+
+  try {
+    const db = getDictDb()
+    const rows = db
+      .prepare(
+        `SELECT s.jp, s.en FROM sentence_fts f JOIN sentence s ON s.id = f.sentence_id
+         WHERE f.keywords MATCH ? ORDER BY length(s.jp) ASC LIMIT 8`
+      )
+      .all(`"${member}"`) as { jp: string; en: string }[]
+    for (const row of rows) {
+      const tokens = await tokenize(row.jp)
+      if (tokens.length === 0) break // tokenizer unavailable
+      const verbTokens = tokens.filter((t) => t.pos === '動詞' && t.base === member)
+      const otherPresent = tokens.some((t) => t.base === other)
+      if (verbTokens.length === 1 && !otherPresent) {
+        return {
+          pairKey: pairDef.key,
+          side,
+          jp: row.jp,
+          surface: verbTokens[0].surface,
+          en: row.en,
+          source: 'tatoeba'
+        }
+      }
+    }
+  } catch {
+    /* no sentence bank — authored fallback below */
+  }
+  return {
+    pairKey: pairDef.key,
+    side,
+    jp: side === 'trans' ? pairDef.exampleTrans : pairDef.exampleIntrans,
+    surface: side === 'trans' ? pairDef.exampleTransSurface : pairDef.exampleIntransSurface,
+    en: side === 'trans' ? pairDef.exampleTransEn : pairDef.exampleIntransEn,
+    source: 'authored'
+  }
+}
+
+// ---- homophone drill pool ----
+
+export interface HomophonePoolRequest {
+  source: 'cards' | 'frequency' | 'both'
+  limit: number
+}
+
+interface HomophoneRow {
+  expression: string
+  reading: string
+  glossary: string
+  rank: number | null
+}
+
+// Same-reading, different-kanji groups from common vocabulary (driven from the
+// frequency table so the whole term table is never scanned). Sentence mode
+// renders the target as its KANA in place — okurigana differs across members
+// (帰った vs 変えた), so a literal blank is unworkable.
+export async function homophonePool(req: HomophonePoolRequest): Promise<HomophoneQuizItem[]> {
+  const limit = Math.max(1, Math.min(50, req.limit))
+  let rows: HomophoneRow[] = []
+  try {
+    const db = getDictDb()
+    const src = db
+      .prepare(
+        `SELECT f.dict_id AS id FROM freq f JOIN dict d ON d.id = f.dict_id
+         GROUP BY f.dict_id ORDER BY d.priority DESC, d.id DESC LIMIT 1`
+      )
+      .get() as { id: number } | undefined
+    if (!src) return [] // gating: the pool needs a frequency dictionary
+    rows = db
+      .prepare(
+        `SELECT t.expression, t.reading, t.glossary, MIN(f.rank) AS rank
+         FROM freq f JOIN term t ON t.expression = f.expression
+         JOIN dict d ON d.id = t.dict_id
+         WHERE f.dict_id = ? AND f.rank <= 30000 AND d.priority >= 0 AND t.reading != ''
+         GROUP BY t.expression, t.reading`
+      )
+      .all(src.id) as HomophoneRow[]
+  } catch {
+    return []
+  }
+
+  // Group kanji-bearing expressions by hiragana reading.
+  const groups = new Map<string, HomophoneRow[]>()
+  for (const row of rows) {
+    if (kanjiChars(row.expression).length === 0) continue
+    const key = toHiragana(row.reading)
+    const list = groups.get(key) ?? []
+    if (!list.some((r) => r.expression === row.expression)) list.push(row)
+    groups.set(key, list)
+  }
+  let eligible = [...groups.entries()].filter(([, members]) => members.length >= 2)
+  for (const [, members] of eligible) {
+    members.sort((a, b) => (a.rank ?? 99999) - (b.rank ?? 99999))
+    members.splice(5) // cap group size
+  }
+
+  if (req.source !== 'frequency') {
+    // Cards mode: keep groups whose reading matches a learned card's.
+    const db = getSqlite()
+    const cardReadings = new Set(
+      (
+        db
+          .prepare(
+            `SELECT DISTINCT c.reading FROM jp_card c
+             JOIN jp_lesson l ON l.id = c.lesson_id
+             WHERE l.learned = 1 AND c.reading IS NOT NULL AND c.reading != ''`
+          )
+          .all() as { reading: string }[]
+      ).map((r) => toHiragana(r.reading))
+    )
+    const fromCards = eligible.filter(([reading]) => cardReadings.has(reading))
+    eligible =
+      req.source === 'cards' ? fromCards : [...fromCards, ...eligible.filter(([r]) => !cardReadings.has(r))]
+  }
+
+  const glossOf = (row: HomophoneRow): string => {
+    try {
+      return flattenGlossary(JSON.parse(row.glossary) as GlossaryItem[], 80) || ''
+    } catch {
+      return ''
+    }
+  }
+  const firstGlossToken = (gloss: string): string =>
+    gloss.split(/[,;(/]| to /)[0]?.trim().toLowerCase().replace(/^to /, '') ?? ''
+
+  const out: HomophoneQuizItem[] = []
+  for (const [reading, members] of req.source === 'cards' || req.source === 'both'
+    ? eligible
+    : shuffle(eligible)) {
+    if (out.length >= limit) break
+    const withGloss = members.map((m) => ({
+      expression: m.expression,
+      gloss: glossOf(m),
+      rank: m.rank
+    }))
+    if (withGloss.some((m) => !m.gloss)) continue
+    const target = withGloss[Math.floor(Math.random() * withGloss.length)]
+    // Near-synonym spellings (変える/換える) are unfair as OPTIONS; they stay
+    // in the reveal group.
+    const targetToken = firstGlossToken(target.gloss)
+    const options = [
+      target,
+      ...withGloss.filter(
+        (m) => m.expression !== target.expression && firstGlossToken(m.gloss) !== targetToken
+      )
+    ].slice(0, 4)
+    if (options.length < 2) continue
+
+    // Sentence mode: shortest bank sentence containing the target, its surface
+    // swapped for the kana reading.
+    let jp: string | null = null
+    let en: string | null = null
+    try {
+      const db = getDictDb()
+      const sentences = db
+        .prepare(
+          `SELECT s.jp, s.en FROM sentence_fts f JOIN sentence s ON s.id = f.sentence_id
+           WHERE f.keywords MATCH ?
+           ORDER BY (instr(s.jp, ?) > 0) DESC, length(s.jp) ASC LIMIT 3`
+        )
+        .all(`"${target.expression}"`, target.expression) as { jp: string; en: string }[]
+      for (const sentence of sentences) {
+        const tokens = await tokenize(sentence.jp)
+        if (tokens.length === 0) break
+        let offset = 0
+        for (const tok of tokens) {
+          const idx = sentence.jp.indexOf(tok.surface, offset)
+          if (idx === -1) break
+          if (tok.base === target.expression || tok.surface === target.expression) {
+            const kana = toHiragana(tok.reading ?? target.expression)
+            jp = sentence.jp.slice(0, idx) + kana + sentence.jp.slice(idx + tok.surface.length)
+            en = sentence.en
+            break
+          }
+          offset = idx + tok.surface.length
+        }
+        if (jp) break
+      }
+    } catch {
+      /* gloss mode below */
+    }
+
+    out.push({
+      reading,
+      target: target.expression,
+      options: shuffle(options),
+      group: withGloss,
+      jp,
+      en,
+      mode: jp ? 'sentence' : 'gloss'
+    })
+  }
+  return out
+}
+
+// ---- katakana loanword pool ----
+
+export interface LoanwordPoolRequest {
+  limit: number
+}
+
+// Common all-katakana words (the reading='' kana-only convention) — the drill
+// asks what they mean, which is harder than it sounds once phonetic drift
+// kicks in (ミシン ← machine).
+export function loanwordSample(req: LoanwordPoolRequest): LoanwordQuizItem[] {
+  const limit = Math.max(4, Math.min(200, req.limit))
+  try {
+    const db = getDictDb()
+    const rows = db
+      .prepare(
+        `SELECT t.expression, t.term_tags, t.glossary,
+                (SELECT MIN(f.rank) FROM freq f WHERE f.expression = t.expression) AS rank
+         FROM term t JOIN dict d ON d.id = t.dict_id
+         WHERE d.priority >= 0 AND t.reading = ''
+         GROUP BY t.expression`
+      )
+      .all() as { expression: string; term_tags: string | null; glossary: string; rank: number | null }[]
+    const candidates: { item: LoanwordQuizItem; score: number }[] = []
+    for (const row of rows) {
+      const tags = (row.term_tags ?? '').split(/\s+/).filter(Boolean)
+      if (!isLoanwordCandidate(row.expression, tags, row.rank)) continue
+      let gloss = ''
+      try {
+        gloss = flattenGlossary(JSON.parse(row.glossary) as GlossaryItem[], 80) || ''
+      } catch {
+        continue
+      }
+      if (!gloss) continue
+      candidates.push({
+        item: { word: row.expression, gloss, rank: row.rank },
+        score: (row.rank ?? 60000) + Math.random() * 30000
+      })
+    }
+    candidates.sort((a, b) => a.score - b.score)
+    return candidates.slice(0, limit).map((c) => c.item)
+  } catch {
+    return []
+  }
 }
 
 export interface ShiritoriNextRequest {

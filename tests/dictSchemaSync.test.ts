@@ -34,6 +34,7 @@ describe('dict schema lists stay in sync', () => {
       'sentence_bank',
       'stroke_set',
       'en_dict',
+      'en_freq_set',
       'krad_set',
       'grammar_bank',
       'audio_bank',

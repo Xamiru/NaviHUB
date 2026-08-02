@@ -11,6 +11,7 @@ import Section from '../components/Section'
 import EmptyState from '../components/EmptyState'
 import ActionMenu from '../components/ActionMenu'
 import CardSourceBadge from '../components/CardSourceBadge'
+import CardAttachments from '../components/japanese/CardAttachments'
 import LessonCheck from '../components/japanese/LessonCheck'
 import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 import { grammarCandidates } from '@shared/cloze'
@@ -315,6 +316,7 @@ function KanjiTable({ cards, practice }: { cards: JpCard[]; practice: boolean })
                     )}
                   </>
                 )}
+                <CardAttachments card={c} className="mt-2" />
               </td>
             </tr>
           ))}

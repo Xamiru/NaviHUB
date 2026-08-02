@@ -96,6 +96,13 @@ export interface MediaConfig {
   // Local manga reader (manga only) — shows the Chapters section (attach a
   // local folder, read in-app) on the detail page.
   hasLocalReader?: boolean
+  // Local video player (anime, movies, TV) — shows a Video tab holding the
+  // Episodes section (attach a folder, watch in-app with mineable subtitles).
+  // Its own tab rather than folding into the media tab: ?tab=media keeps
+  // meaning Theme Songs / Chapters, and movies/TV have no media tab at all.
+  hasVideoLibrary?: boolean
+  // Label for that tab — 'Episodes' for anime/TV, 'Video' for a single film.
+  videoTabLabel?: string
   // Fan Art section on the detail page (everything except movies/TV, where
   // official TMDB backdrops cover the need). Wallpapers show for ALL types.
   hasFanArt?: boolean
@@ -164,6 +171,8 @@ export const ANIME: MediaConfig = {
   importSource: { key: 'anilist', label: 'AniList', placeholder: 'Search AniList (e.g. Frieren)…' },
   hasThemes: true,
   mediaTabLabel: 'Theme Songs',
+  hasVideoLibrary: true,
+  videoTabLabel: 'Episodes',
   hasFanArt: true,
   hasSeasonal: true
 }
@@ -332,6 +341,8 @@ export const MOVIE: MediaConfig = {
     { to: '/directors', label: 'Directors', icon: '✪', role: 'director' }
   ],
   sidebarLabel: 'Movies / TV', // short enough not to wrap in the mono sidebar
+  hasVideoLibrary: true,
+  videoTabLabel: 'Video',
   listTabs: [
     { key: 'movie', label: 'Movies' },
     { key: 'tv', label: 'TV Shows' }
@@ -375,6 +386,8 @@ export const TV: MediaConfig = {
   companyPickerPlaceholder: 'Add network / company…',
   children: [],
   hideFromSidebar: true,
+  hasVideoLibrary: true,
+  videoTabLabel: 'Episodes',
   listTabs: [
     { key: 'movie', label: 'Movies' },
     { key: 'tv', label: 'TV Shows' }

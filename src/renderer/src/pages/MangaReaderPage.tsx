@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams, useSearchParams } from 'react-rout
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { useReaderSource } from '../lib/readerSource'
 import { readerPath } from '../lib/readerPath'
 import OcrOverlay from '../components/reader/OcrOverlay'
 import MiningPanel from '../components/reader/MiningPanel'
@@ -46,25 +47,17 @@ function loadPrefs(): ReaderPrefs {
 const FIT_CYCLE: Fit[] = ['height', 'width', 'original']
 
 export default function MangaReaderPage() {
-  const { id, chapterId: chapterIdParam } = useParams()
-  const mediaId = Number(id)
-  const chapterId = Number(chapterIdParam)
+  const { doc, library, chapterId, mediaId, adhoc } = useReaderSource()
   const navigate = useNavigate()
   const location = useLocation()
   const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const { data: doc } = useQuery({
-    queryKey: qk.manga.pages(chapterId),
-    queryFn: () => api.manga.pages(chapterId)
-  })
-  const { data: library } = useQuery({
-    queryKey: qk.manga.chapters(mediaId),
-    queryFn: () => api.manga.chapters(mediaId)
-  })
   const { data: ocrStatus } = useQuery({
     queryKey: qk.manga.ocrStatus(chapterId),
     queryFn: () => api.manga.ocrStatus(chapterId),
+    // Mokuro sidecars are found via the chapter row; an ad-hoc file has none.
+    enabled: !adhoc,
     staleTime: 60_000
   })
 
@@ -250,7 +243,8 @@ export default function MangaReaderPage() {
   // page; the location.key check covers a deep link / refresh with no history.
   const exitToDetail = useCallback(() => {
     if (location.key !== 'default') navigate(-1)
-    else navigate(`/manga/${mediaId}`)
+    // An ad-hoc archive has no series page to go back to.
+    else navigate(adhoc ? '/' : `/manga/${mediaId}`)
   }, [navigate, mediaId, location.key])
 
   const goToChapter = useCallback(
@@ -318,7 +312,7 @@ export default function MangaReaderPage() {
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
       const s = saveRef.current
-      if (s) void api.manga.markProgress(s.chapterId, s.page)
+      if (s && s.chapterId > 0) void api.manga.markProgress(s.chapterId, s.page)
       saveRef.current = null
     }, 800)
     return () => {
@@ -328,7 +322,7 @@ export default function MangaReaderPage() {
   useEffect(() => {
     return () => {
       const s = saveRef.current
-      if (s) void api.manga.markProgress(s.chapterId, s.page)
+      if (s && s.chapterId > 0) void api.manga.markProgress(s.chapterId, s.page)
       qc.invalidateQueries({ queryKey: qk.manga.all })
       qc.invalidateQueries({ queryKey: qk.media.detail(mediaId) })
     }

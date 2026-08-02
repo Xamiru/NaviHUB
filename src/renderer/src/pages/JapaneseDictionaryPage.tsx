@@ -12,6 +12,7 @@ import StructuredContent from '../components/japanese/StructuredContent'
 import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 import { flattenGlossary } from '@shared/dictContent'
 import { mediaUrl } from '@shared/mediaUrl'
+import { transitivityPartner } from '@shared/transitivity'
 import type { DictEntry, GlossaryItem, KanjiInfo } from '@shared/types'
 
 // Standalone offline dictionary: search JMdict / KANJIDIC / pitch / grammar dicts
@@ -181,6 +182,22 @@ function EntryCard({
           <div className="mt-1 flex flex-wrap gap-1">
             {entry.isName && <span className="chip bg-base-700 text-gray-400">name</span>}
             {entry.isCommon && <span className="chip bg-green-500/20 text-green-300">common</span>}
+            {(() => {
+              // Pure shared lookup, no IPC: the classic transitivity partner.
+              const hit = transitivityPartner(entry.expression)
+              if (!hit) return null
+              return (
+                <button
+                  className="chip bg-base-700 text-gray-300 hover:text-accent"
+                  onClick={() => onSearch(hit.partner)}
+                  title={`${entry.expression} is ${hit.role}; ${hit.partner} is its ${
+                    hit.role === 'transitive' ? 'intransitive' : 'transitive'
+                  } partner`}
+                >
+                  pairs with {hit.partner}（{hit.role === 'transitive' ? '自動詞' : '他動詞'}）
+                </button>
+              )
+            })()}
             {entry.frequency && (
               <span
                 className="chip bg-base-700 text-gray-400"
@@ -366,8 +383,38 @@ function KanjiRow({ k }: { k: KanjiInfo }) {
             ))}
           </p>
         )}
+        <SimilarKanjiRow char={k.character} />
       </div>
     </div>
+  )
+}
+
+// Visual look-alikes (kradfile × KANJIDIC, computed on demand). Renders
+// nothing when the packs are missing or nothing clears the threshold.
+function SimilarKanjiRow({ char }: { char: string }) {
+  const { data: similar = [] } = useQuery({
+    queryKey: qk.dict.similar(char),
+    queryFn: () => api.dict.similarKanji(char)
+  })
+  if (similar.length === 0) return null
+  return (
+    <p className="mt-1 flex flex-wrap items-center gap-1">
+      <span className="text-xs text-gray-600">looks like</span>
+      {similar.map((s) => (
+        <Link
+          key={s.character}
+          to={`/japanese/dictionary?q=${encodeURIComponent(s.character)}`}
+          className="chip bg-base-700 text-gray-400 hover:text-accent"
+          title={
+            s.sharedComponents.length > 0
+              ? `shares ${s.sharedComponents.join(' ')}`
+              : 'classic confusion pair'
+          }
+        >
+          {s.character}
+        </Link>
+      ))}
+    </p>
   )
 }
 

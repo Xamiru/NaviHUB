@@ -55,7 +55,18 @@ import JapaneseGrammarPage from './pages/JapaneseGrammarPage'
 import JapaneseGrammarQuizPage from './pages/JapaneseGrammarQuizPage'
 import JapaneseListenPage from './pages/JapaneseListenPage'
 import JapaneseShiritoriPage from './pages/JapaneseShiritoriPage'
+import JapaneseConfusablesPage from './pages/JapaneseConfusablesPage'
+import JapaneseLoanwordsPage from './pages/JapaneseLoanwordsPage'
+import JapaneseFeedPage from './pages/JapaneseFeedPage'
+import JapaneseLeechDrillPage from './pages/JapaneseLeechDrillPage'
 import EnglishDictionaryPage from './pages/EnglishDictionaryPage'
+import EnglishHomePage from './pages/EnglishHomePage'
+import EnglishReviewPage from './pages/EnglishReviewPage'
+import EnglishVocabQuizPage from './pages/EnglishVocabQuizPage'
+import EnglishSpellingPage from './pages/EnglishSpellingPage'
+import EnglishReadingPage from './pages/EnglishReadingPage'
+import EnglishMechanicsPage from './pages/EnglishMechanicsPage'
+import EnglishWritingPage from './pages/EnglishWritingPage'
 import ProgrammingHomePage from './pages/ProgrammingHomePage'
 import ProgCoursePage from './pages/ProgCoursePage'
 import ProgLessonPage from './pages/ProgLessonPage'
@@ -64,6 +75,9 @@ import CliPracticePage from './pages/CliPracticePage'
 import ProgrammingQuizPage from './pages/ProgrammingQuizPage'
 import MangaReaderPage from './pages/MangaReaderPage'
 import BookReaderPage from './pages/BookReaderPage'
+import VideoPlayerPage from './pages/VideoPlayerPage'
+import OpenFileHandler from './components/OpenFileHandler'
+import WatchLandingPage from './pages/WatchLandingPage'
 import MusicLibraryPage from './pages/MusicLibraryPage'
 import MusicArtistPage from './pages/MusicArtistPage'
 import MusicAlbumPage from './pages/MusicAlbumPage'
@@ -82,10 +96,15 @@ export default function App() {
   const location = useLocation()
   useScrollRestoration(mainRef)
 
-  // The manga/book readers are immersive: no sidebar/topbar/now-playing
-  // chrome, full-bleed. Audio keeps playing — the <audio> element lives in
-  // AudioPlayerProvider, not in the (unmounted) NowPlayingBar.
-  const isReader = /^\/manga\/\d+\/(read|book)\//.test(location.pathname)
+  // The manga/book readers and the video player are immersive: no
+  // sidebar/topbar/now-playing chrome, full-bleed. Audio keeps playing — the
+  // <audio> element lives in AudioPlayerProvider, not in the (unmounted)
+  // NowPlayingBar. Note the trailing "/" on the /watch branches: the bare
+  // /watch landing page is a picker and deliberately keeps the shell.
+  const isReader =
+    /^\/manga\/\d+\/(read|book)\/|^\/watch\/(file|adhoc)\/|^\/read\/(manga|book)\//.test(
+      location.pathname
+    )
 
   // The lain theme's CRT overlay (styles.css) keys off this attribute so
   // scanlines never sit over the readers. Layout effect: no scanline frame
@@ -101,7 +120,15 @@ export default function App() {
         <Routes>
           <Route path="/manga/:id/read/:chapterId" element={<MangaReaderPage />} />
           <Route path="/manga/:id/book/:chapterId" element={<BookReaderPage />} />
+          <Route path="/watch/file/:fileId" element={<VideoPlayerPage />} />
+          <Route path="/watch/adhoc/:token" element={<VideoPlayerPage />} />
+          {/* "Open with NaviHUB" — a .cbz/.epub from outside the library. */}
+          <Route path="/read/manga/:token" element={<MangaReaderPage />} />
+          <Route path="/read/book/:token" element={<BookReaderPage />} />
         </Routes>
+        {/* Mounted in BOTH branches: a file opened while you're already in a
+            reader still has to land somewhere. */}
+        <OpenFileHandler />
         <Toaster />
       </ErrorBoundary>
     )
@@ -235,6 +262,7 @@ export default function App() {
             <Route path="/quiz/programming" element={<ProgrammingQuizPage />} />
 
             {/* Lists — user-curated, type-scoped collections */}
+            <Route path="/watch" element={<WatchLandingPage />} />
             <Route path="/torrents" element={<TorrentsPage />} />
 
             <Route path="/lists" element={<ListsIndexPage />} />
@@ -283,11 +311,23 @@ export default function App() {
             <Route path="/japanese/grammar/quiz" element={<JapaneseGrammarQuizPage />} />
             <Route path="/japanese/listen" element={<JapaneseListenPage />} />
             <Route path="/japanese/shiritori" element={<JapaneseShiritoriPage />} />
+            <Route path="/japanese/confusables" element={<JapaneseConfusablesPage />} />
+            <Route path="/japanese/loanwords" element={<JapaneseLoanwordsPage />} />
+            <Route path="/japanese/feed" element={<JapaneseFeedPage />} />
+            <Route path="/japanese/leeches/drill" element={<JapaneseLeechDrillPage />} />
             <Route path="/japanese/test" element={<JapaneseTestPage />} />
             <Route path="/japanese/stats" element={<JapaneseStatsPage />} />
 
-            {/* English dictionary — Learn section, lookup + saved words on one page */}
-            <Route path="/english" element={<EnglishDictionaryPage />} />
+            {/* English — Learn section: hub, dictionary, SRS review, and the
+                advanced tests (vocab/spelling/reading/mechanics/writing) */}
+            <Route path="/english" element={<EnglishHomePage />} />
+            <Route path="/english/dictionary" element={<EnglishDictionaryPage />} />
+            <Route path="/english/review" element={<EnglishReviewPage />} />
+            <Route path="/english/vocab" element={<EnglishVocabQuizPage />} />
+            <Route path="/english/spelling" element={<EnglishSpellingPage />} />
+            <Route path="/english/reading" element={<EnglishReadingPage />} />
+            <Route path="/english/mechanics" element={<EnglishMechanicsPage />} />
+            <Route path="/english/writing" element={<EnglishWritingPage />} />
 
             {/* Programming — Learn section; content is code (shared/programming),
                 only lesson completion lives in the DB */}
@@ -313,6 +353,7 @@ export default function App() {
         <Toaster />
       </div>
       <CommandPalette />
+      <OpenFileHandler />
     </div>
   )
 }

@@ -226,3 +226,60 @@ describe('removeScan / tiersForWords', () => {
     expect(coverageRepo.tiersForWords([]).size).toBe(0)
   })
 })
+
+describe('projection (jpdb-style "what learning buys you")', () => {
+  it('cumulates not-yet-known words by count, same denominator as tiers', () => {
+    const mediaId = insertMedia('Berserk')
+    lesson({ courseTitle: 'C', learned: true, cards: [{ front: '魔法', back: 'magic' }] })
+    graduate('魔法') // known: 30 of 50 learnable tokens
+    coverageRepo.saveScan(mediaId, SCAN)
+
+    const detail = coverageRepo.coverageForMedia(mediaId)!
+    const totalTokens =
+      detail.tiers.known.tokenCount +
+      detail.tiers.learning.tokenCount +
+      detail.tiers.unstarted.tokenCount +
+      detail.tiers.unknown.tokenCount
+    expect(totalTokens).toBe(50)
+    // 3 not-known words (剣 12, 冒険 5, 竜 3) -> one step covering all of them.
+    expect(detail.projection).toHaveLength(1)
+    expect(detail.projection[0]).toEqual({ learnWords: 3, share: 1 })
+  })
+
+  it('projection shares are monotonic and bounded by 1', () => {
+    const mediaId = insertMedia('Vinland')
+    const counts = new Map<string, number>()
+    for (let i = 0; i < 30; i++) counts.set(`言葉${i}`, 30 - i)
+    coverageRepo.saveScan(mediaId, {
+      counts,
+      tokenCount: [...counts.values()].reduce((a, b) => a + b, 0),
+      chaptersScanned: 1
+    })
+    const detail = coverageRepo.coverageForMedia(mediaId)!
+    expect(detail.projection.length).toBeGreaterThan(1)
+    let prev = 0
+    for (const step of detail.projection) {
+      expect(step.share).toBeGreaterThanOrEqual(prev)
+      expect(step.share).toBeLessThanOrEqual(1)
+      prev = step.share
+    }
+    // First step = top 10 words by count.
+    expect(detail.projection[0].learnWords).toBe(10)
+  })
+})
+
+describe('knownWordSet', () => {
+  it('honors the tier floor', () => {
+    lesson({
+      courseTitle: 'K',
+      learned: true,
+      cards: [
+        { front: '魔法', back: 'magic' },
+        { front: '剣', back: 'sword' }
+      ]
+    })
+    graduate('魔法') // known(3); 剣 stays learning-tier(2)
+    expect(coverageRepo.knownWordSet(3)).toEqual(new Set(['魔法']))
+    expect(coverageRepo.knownWordSet(2)).toEqual(new Set(['魔法', '剣']))
+  })
+})

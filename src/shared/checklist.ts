@@ -14,7 +14,7 @@ import type { ChecklistCadence, ChecklistKind, MediaType } from './types'
 // column the app already writes (see checklistRepo's DETECT_SQL). Detection is
 // the primary signal, but every detected item can also be credited by hand —
 // the activity often happens outside the app.
-export type ChecklistDetectSource = 'jpReviews' | 'jpLesson' | 'quizRound'
+export type ChecklistDetectSource = 'jpReviews' | 'jpLesson' | 'quizRound' | 'enReviews'
 
 export interface ChecklistDef {
   key: string
@@ -62,6 +62,16 @@ export const CHECKLIST_DEFS: ChecklistDef[] = [
     target: 20,
     route: '/japanese/review',
     source: 'jpReviews'
+  },
+  {
+    key: 'english-reviews',
+    label: 'English reviews',
+    hint: 'Counts distinct words reviewed in the English SRS.',
+    kind: 'detected',
+    defaultCadence: 'daily',
+    target: 10,
+    route: '/english/review',
+    source: 'enReviews'
   },
   {
     key: 'jp-lesson',

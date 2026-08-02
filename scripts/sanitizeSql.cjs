@@ -25,6 +25,7 @@ const SANITIZE_STATEMENTS = [
 
   // Japanese learning: content AND progress go — the default courses re-seed on
   // the recipient's first launch once the japanese.seeded% flags are cleared.
+  'DELETE FROM jp_ghost',
   'DELETE FROM jp_review_log',
   'DELETE FROM jp_card',
   'DELETE FROM jp_lesson',
@@ -45,6 +46,12 @@ const SANITIZE_STATEMENTS = [
 
   // Local-manga scan cache (tied to the exporter's manga.dir + local_dir).
   'DELETE FROM manga_chapter',
+
+  // Local-video scan cache (tied to the exporter's video.dir + local_dir), plus
+  // the remux cache index, whose files live under the exporter's userData —
+  // both would be dead rows on arrival, and resume positions are personal.
+  'DELETE FROM video_file',
+  'DELETE FROM video_cache',
 
   // Wallpapers/fan art: rows point at files under the exporter's pictures.dir,
   // which isn't part of the bundle — they'd all be dead links on arrival.
@@ -80,9 +87,12 @@ const SANITIZE_STATEMENTS = [
   'DELETE FROM checklist_log',
   'DELETE FROM checklist_task',
 
-  // English dictionary saved words + programming lesson completion — both
-  // personal (the programming course content itself is code, not data).
+  // English section (saved words = the SRS deck, its review log, graded
+  // writing submissions) + programming lesson completion — all personal (the
+  // test/course content itself is code, not data). Children before parents.
+  'DELETE FROM en_review_log',
   'DELETE FROM en_word',
+  'DELETE FROM en_writing',
   'DELETE FROM prog_progress',
 
   // Legacy: the PC↔phone sync server was removed (2026-08-01), but a DB that
@@ -98,7 +108,8 @@ const SANITIZE_STATEMENTS = [
   // the removed phone sync (a bearer token, a device name and a port).
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','omdb.api_key','ytdlp.path',
-      'music.dir','manga.dir','audio.dir','pictures.dir',
+      'music.dir','manga.dir','audio.dir','pictures.dir','video.dir',
+      'ffmpeg.path','ffprobe.path',
       'gemini.api_key','anthropic.api_key',
       'vertex.project_id','vertex.region','vertex.credentials_path',
       'sync.token','sync.device','sync.port',

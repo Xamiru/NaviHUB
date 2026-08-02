@@ -42,6 +42,36 @@ const QUIZZES = [
     to: '/programming/practice',
     title: 'CLI Typing Drill',
     desc: 'Read the task, type the command. Checked as you type; misses come back around until you stop.'
+  },
+  {
+    to: '/english/vocab',
+    title: 'English Vocabulary',
+    desc: 'Advanced words by frequency band or from your saved list — meanings, reverse lookup, synonyms.'
+  },
+  {
+    to: '/english/spelling',
+    title: 'English Spelling',
+    desc: 'The definition and IPA are shown — type the word exactly. Misses feed your review deck.'
+  },
+  {
+    to: '/english/reading',
+    title: 'English Reading',
+    desc: 'A C1/C2 passage, then questions on inference, tone and vocabulary in context.'
+  },
+  {
+    to: '/english/mechanics',
+    title: 'English Mechanics',
+    desc: 'Pick the correct sentence — articles, punctuation, run-ons, confusables and register.'
+  },
+  {
+    to: '/japanese/confusables',
+    title: 'Confusables',
+    desc: 'Look-alike kanji, transitive/intransitive pairs and homophones — pick the right one every time.'
+  },
+  {
+    to: '/japanese/loanwords',
+    title: 'Loanwords',
+    desc: 'Katakana words that are secretly words you already know — if you can survive the phonetic drift.'
   }
 ]
 

@@ -185,7 +185,13 @@ const api: NaviApi = {
     tokenize: (text) => ipcRenderer.invoke('japanese:tokenize', text),
     minedFronts: (fronts) => ipcRenderer.invoke('japanese:minedFronts', fronts),
     pitchQuizPool: (req) => ipcRenderer.invoke('japanese:pitchQuizPool', req),
-    componentQuizPool: (req) => ipcRenderer.invoke('japanese:componentQuizPool', req)
+    componentQuizPool: (req) => ipcRenderer.invoke('japanese:componentQuizPool', req),
+    lookalikePool: (req) => ipcRenderer.invoke('japanese:lookalikePool', req),
+    homophonePool: (req) => ipcRenderer.invoke('japanese:homophonePool', req),
+    confusables: () => ipcRenderer.invoke('japanese:confusables'),
+    ghostQueue: (limit) => ipcRenderer.invoke('japanese:ghostQueue', limit),
+    ghostAnswer: (cardId, correct) => ipcRenderer.invoke('japanese:ghostAnswer', cardId, correct),
+    feed: (req) => ipcRenderer.invoke('japanese:feed', req)
   },
   dict: {
     list: () => ipcRenderer.invoke('dict:list'),
@@ -217,6 +223,9 @@ const api: NaviApi = {
     grammarRandom: (count, levels) => ipcRenderer.invoke('dict:grammarRandom', count, levels),
     nameSample: (req) => ipcRenderer.invoke('dict:nameSample', req),
     shiritoriNext: (req) => ipcRenderer.invoke('dict:shiritoriNext', req),
+    similarKanji: (char) => ipcRenderer.invoke('dict:similarKanji', char),
+    transitivityPool: (req) => ipcRenderer.invoke('dict:transitivityPool', req),
+    loanwordSample: (req) => ipcRenderer.invoke('dict:loanwordSample', req),
     importPairs: () => ipcRenderer.invoke('dict:importPairs'),
     pairSet: () => ipcRenderer.invoke('dict:pairSet'),
     removePairs: () => ipcRenderer.invoke('dict:removePairs'),
@@ -232,8 +241,20 @@ const api: NaviApi = {
     importDict: () => ipcRenderer.invoke('english:importDict'),
     removeDict: () => ipcRenderer.invoke('english:removeDict'),
     saveWord: (input) => ipcRenderer.invoke('english:saveWord', input),
+    saveWords: (inputs) => ipcRenderer.invoke('english:saveWords', inputs),
     listWords: (search) => ipcRenderer.invoke('english:listWords', search),
-    removeWord: (id) => ipcRenderer.invoke('english:removeWord', id)
+    removeWord: (id) => ipcRenderer.invoke('english:removeWord', id),
+    reviewQueue: (newLimit) => ipcRenderer.invoke('english:reviewQueue', newLimit),
+    submitReview: (wordId, grade) => ipcRenderer.invoke('english:submitReview', wordId, grade),
+    srsStats: () => ipcRenderer.invoke('english:srsStats'),
+    vocabPool: (req) => ipcRenderer.invoke('english:vocabPool', req),
+    spellingPool: (req) => ipcRenderer.invoke('english:spellingPool', req),
+    freqInfo: () => ipcRenderer.invoke('english:freqInfo'),
+    importFreq: () => ipcRenderer.invoke('english:importFreq'),
+    removeFreq: () => ipcRenderer.invoke('english:removeFreq'),
+    writingFeedback: (req) => ipcRenderer.invoke('english:writingFeedback', req),
+    listWritings: () => ipcRenderer.invoke('english:listWritings'),
+    removeWriting: (id) => ipcRenderer.invoke('english:removeWriting', id)
   },
   programming: {
     progress: () => ipcRenderer.invoke('programming:progress'),
@@ -250,7 +271,26 @@ const api: NaviApi = {
     markChapterRead: (chapterId, read) =>
       ipcRenderer.invoke('manga:markChapterRead', chapterId, read),
     ocrStatus: (chapterId) => ipcRenderer.invoke('manga:ocrStatus', chapterId),
-    ocrPage: (chapterId, pageIndex) => ipcRenderer.invoke('manga:ocrPage', chapterId, pageIndex)
+    ocrPage: (chapterId, pageIndex) => ipcRenderer.invoke('manga:ocrPage', chapterId, pageIndex),
+    adhocPages: (token) => ipcRenderer.invoke('manga:adhocPages', token)
+  },
+  video: {
+    attachFolder: (mediaId) => ipcRenderer.invoke('video:attachFolder', mediaId),
+    rescan: (mediaId) => ipcRenderer.invoke('video:rescan', mediaId),
+    detach: (mediaId) => ipcRenderer.invoke('video:detach', mediaId),
+    files: (mediaId) => ipcRenderer.invoke('video:files', mediaId),
+    scanStatus: () => ipcRenderer.invoke('video:scanStatus'),
+    source: (ref, opts) => ipcRenderer.invoke('video:source', ref, opts),
+    pickFile: () => ipcRenderer.invoke('video:pickFile'),
+    prepare: (ref, opts) => ipcRenderer.invoke('video:prepare', ref, opts),
+    prepareStatus: () => ipcRenderer.invoke('video:prepareStatus'),
+    prepareCancel: (id) => ipcRenderer.invoke('video:prepareCancel', id),
+    tools: () => ipcRenderer.invoke('video:tools'),
+    cacheStats: () => ipcRenderer.invoke('video:cacheStats'),
+    clearCache: () => ipcRenderer.invoke('video:clearCache'),
+    clipAudio: (req) => ipcRenderer.invoke('video:clipAudio', req),
+    markProgress: (fileId, seconds) => ipcRenderer.invoke('video:markProgress', fileId, seconds),
+    markWatched: (fileId, watched) => ipcRenderer.invoke('video:markWatched', fileId, watched)
   },
   music: {
     pickRoot: () => ipcRenderer.invoke('music:pickRoot'),
@@ -342,7 +382,8 @@ const api: NaviApi = {
   app: {
     openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
     pickTextFile: () => ipcRenderer.invoke('app:pickTextFile'),
-    setUiScale: (scale) => ipcRenderer.invoke('app:setUiScale', scale)
+    setUiScale: (scale) => ipcRenderer.invoke('app:setUiScale', scale),
+    pendingOpen: () => ipcRenderer.invoke('app:pendingOpen')
   },
   activity: {
     status: () => ipcRenderer.invoke('activity:status')
@@ -362,7 +403,8 @@ const api: NaviApi = {
   },
   files: {
     pickImage: () => ipcRenderer.invoke('files:pickImage'),
-    resolveUrl: (relPath) => ipcRenderer.invoke('files:resolveUrl', relPath)
+    resolveUrl: (relPath) => ipcRenderer.invoke('files:resolveUrl', relPath),
+    saveBytes: (bytes, ext, subdir) => ipcRenderer.invoke('files:saveBytes', bytes, ext, subdir)
   }
 }
 

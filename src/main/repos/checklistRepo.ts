@@ -332,6 +332,12 @@ const DETECT_SQL: Record<ChecklistDetectSource, { count: string; perDay: string 
     perDay: `SELECT date(learned_at, 'localtime') AS day, COUNT(*) AS n FROM jp_lesson
              WHERE learned = 1 AND learned_at IS NOT NULL GROUP BY day`
   },
+  enReviews: {
+    count: `SELECT COUNT(DISTINCT word_id) AS n FROM en_review_log
+            WHERE date(reviewed_at, 'localtime') BETWEEN ? AND ?`,
+    perDay: `SELECT date(reviewed_at, 'localtime') AS day, COUNT(DISTINCT word_id) AS n
+             FROM en_review_log GROUP BY day`
+  },
   quizRound: {
     count: `SELECT COUNT(*) AS n FROM quiz_session
             WHERE date(played_at, 'localtime') BETWEEN ? AND ?`,

@@ -4,7 +4,7 @@ import { existsSync, readdirSync } from 'fs'
 import { readdir } from 'fs/promises'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
-import { mangaRootDir } from './files'
+import { absoluteMediaPath, mangaRootDir } from './files'
 import { isArchiveFile, listArchivePages } from './archive'
 import { isEpubFile, epubSpineCount, listEpubPages, epubToc } from './epub'
 import { mediaUrl } from '@shared/mediaUrl'
@@ -297,6 +297,40 @@ export async function pages(chapterId: number): Promise<MangaPages | null> {
     pages: files.map((f) => {
       const relPath = `manga/${ch.dirPath}/${f}`
       // relPath is never empty, so mediaUrl can't return null here.
+      return { relPath, url: mediaUrl(relPath)! }
+    }),
+    ...(isBook ? { isBook: true, toc: await epubToc(abs) } : {})
+  }
+}
+
+// The same thing for a file the OS handed us via "open with", which has no
+// chapter row and lives nowhere near the manga root. Everything below the DB
+// read in pages() was already path-only, so this is that half reused verbatim
+// against an `open/<token>.cbz` prefix.
+//
+// chapterId/mediaId come back as 0: the type wants numbers, and 0 is the
+// sentinel the readers guard on before saving progress (a genuine row id is
+// always >= 1). markProgress(0, …) is a no-op anyway — its SELECT finds
+// nothing — so the guard is belt and braces.
+export async function adhocPages(token: string): Promise<MangaPages | null> {
+  const relDir = `open/${token}`
+  let abs: string
+  try {
+    abs = absoluteMediaPath(relDir)
+  } catch {
+    return null
+  }
+  if (!existsSync(abs)) return null
+  const files = await listChapterPages(abs)
+  if (files.length === 0) return null
+  const isBook = isEpubFile(abs)
+  return {
+    chapterId: 0,
+    mediaId: 0,
+    title: basename(abs, extname(abs)),
+    number: null,
+    pages: files.map((f) => {
+      const relPath = `${relDir}/${f}`
       return { relPath, url: mediaUrl(relPath)! }
     }),
     ...(isBook ? { isBook: true, toc: await epubToc(abs) } : {})

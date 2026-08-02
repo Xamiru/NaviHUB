@@ -16,6 +16,9 @@ import * as checklistRepo from './repos/checklistRepo'
 import * as japaneseRepo from './repos/japaneseRepo'
 import * as english from './english'
 import * as wordnet from './dict/wordnet'
+import * as enFreq from './dict/enFreq'
+import * as englishDrills from './englishDrills'
+import * as englishWriting from './englishWriting'
 import * as dictKanjium from './dict/kanjium'
 import * as dictKrad from './dict/krad'
 import * as dictGrammar from './dict/grammar'
@@ -23,6 +26,9 @@ import * as dictNames from './dict/names'
 import * as dictPairs from './dict/minimalPairs'
 import * as dictAudio from './dict/tatoebaAudio'
 import * as jpDrills from './jpDrills'
+import * as jpConfusables from './jpConfusables'
+import * as jpFeed from './jpFeed'
+import * as dictSimilarKanji from './dict/similarKanji'
 import * as englishRepo from './repos/englishRepo'
 import * as programmingRepo from './repos/programmingRepo'
 import * as anilist from './anilist'
@@ -36,6 +42,8 @@ import * as qbittorrent from './qbittorrent'
 import * as hltb from './hltb'
 import * as files from './files'
 import * as manga from './manga'
+import * as video from './video'
+import * as openFile from './openFile'
 import { getActivity, withActivity } from './progress'
 import * as updater from './updater'
 import * as music from './music'
@@ -63,6 +71,11 @@ import * as analyzeText from './analyzeText'
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
 export function registerIpc(): void {
+  // Hands the video scanner its real ffprobe implementation. scan.ts keeps the
+  // injectable seam (the music.ts:TagReader pattern) so its tests never spawn
+  // a binary; this is the one place the two halves meet.
+  video.installProber()
+
   // The app's one "today": the LOCAL calendar day. Recurring features (gacha
   // goals, checklist periods) take it as a parameter so the renderer never
   // derives a date and tests can pin one.
@@ -222,6 +235,14 @@ export function registerIpc(): void {
   ipcMain.handle('japanese:minedFronts', (_e, fronts) => japaneseRepo.minedFronts(fronts))
   ipcMain.handle('japanese:pitchQuizPool', (_e, req) => jpDrills.pitchQuizPool(req))
   ipcMain.handle('japanese:componentQuizPool', (_e, req) => jpDrills.componentQuizPool(req))
+  ipcMain.handle('japanese:lookalikePool', (_e, req) => jpDrills.lookalikePool(req))
+  ipcMain.handle('japanese:homophonePool', (_e, req) => jpDrills.homophonePool(req))
+  ipcMain.handle('japanese:confusables', () => jpConfusables.listConfusables())
+  ipcMain.handle('japanese:ghostQueue', (_e, limit) => japaneseRepo.ghostQueue(limit))
+  ipcMain.handle('japanese:ghostAnswer', (_e, cardId, correct) =>
+    japaneseRepo.ghostAnswer(cardId, correct)
+  )
+  ipcMain.handle('japanese:feed', (_e, req) => jpFeed.getFeed(req))
 
   // ---- offline dictionaries ----
   ipcMain.handle('dict:list', () => dictImporter.listDictionaries())
@@ -255,6 +276,9 @@ export function registerIpc(): void {
   )
   ipcMain.handle('dict:nameSample', (_e, req) => dictNames.nameSample(req))
   ipcMain.handle('dict:shiritoriNext', (_e, req) => jpDrills.shiritoriNext(req))
+  ipcMain.handle('dict:similarKanji', (_e, char) => dictSimilarKanji.similarKanji(char))
+  ipcMain.handle('dict:transitivityPool', (_e, req) => jpDrills.transitivityPool(req))
+  ipcMain.handle('dict:loanwordSample', (_e, req) => jpDrills.loanwordSample(req))
   ipcMain.handle('dict:importPairs', () => dictPairs.importPairs())
   ipcMain.handle('dict:pairSet', () => dictPairs.getPairSetInfo())
   ipcMain.handle('dict:removePairs', () => dictPairs.removePairSet())
@@ -270,8 +294,22 @@ export function registerIpc(): void {
   ipcMain.handle('english:importDict', () => wordnet.importEnglishDict())
   ipcMain.handle('english:removeDict', () => wordnet.removeEnglishDict())
   ipcMain.handle('english:saveWord', (_e, input) => englishRepo.saveWord(input))
+  ipcMain.handle('english:saveWords', (_e, inputs) => englishRepo.saveWords(inputs))
   ipcMain.handle('english:listWords', (_e, search) => englishRepo.listWords(search))
   ipcMain.handle('english:removeWord', (_e, id) => englishRepo.removeWord(id))
+  ipcMain.handle('english:reviewQueue', (_e, newLimit) => englishRepo.reviewQueue(newLimit))
+  ipcMain.handle('english:submitReview', (_e, wordId, grade) =>
+    englishRepo.submitReview(wordId, grade)
+  )
+  ipcMain.handle('english:srsStats', () => englishRepo.srsStats())
+  ipcMain.handle('english:vocabPool', (_e, req) => englishDrills.vocabQuizPool(req))
+  ipcMain.handle('english:spellingPool', (_e, req) => englishDrills.spellingPool(req))
+  ipcMain.handle('english:freqInfo', () => enFreq.getEnFreqInfo())
+  ipcMain.handle('english:importFreq', () => enFreq.importEnFreq())
+  ipcMain.handle('english:removeFreq', () => enFreq.removeEnFreq())
+  ipcMain.handle('english:writingFeedback', (_e, req) => englishWriting.getWritingFeedback(req))
+  ipcMain.handle('english:listWritings', () => englishRepo.listWritings())
+  ipcMain.handle('english:removeWriting', (_e, id) => englishRepo.removeWriting(id))
 
   // ---- programming (learn section; content is code, only completion is data) ----
   ipcMain.handle('programming:progress', () => programmingRepo.progress())
@@ -294,6 +332,34 @@ export function registerIpc(): void {
   )
   ipcMain.handle('manga:ocrStatus', (_e, chapterId) => mokuro.status(chapterId))
   ipcMain.handle('manga:ocrPage', (_e, chapterId, pageIndex) => mokuro.page(chapterId, pageIndex))
+  ipcMain.handle('manga:adhocPages', (_e, token) => manga.adhocPages(token))
+
+  // ---- local video player ----
+  ipcMain.handle('video:attachFolder', (_e, mediaId) => video.attachFolder(mediaId))
+  ipcMain.handle('video:rescan', (_e, mediaId) => video.rescan(mediaId))
+  ipcMain.handle('video:detach', (_e, mediaId) => video.detach(mediaId))
+  ipcMain.handle('video:files', (_e, mediaId) => video.files(mediaId))
+  ipcMain.handle('video:scanStatus', () => video.getScanStatus())
+  ipcMain.handle('video:source', (_e, ref, opts) => video.source(ref, opts))
+  ipcMain.handle('video:pickFile', () => video.pickFile())
+  ipcMain.handle('video:prepare', (_e, ref, opts) => video.prepare(ref, opts))
+  ipcMain.handle('video:prepareStatus', () => video.getPrepareStatus())
+  ipcMain.handle('video:prepareCancel', (_e, id) => video.cancelPrepare(id))
+  ipcMain.handle('video:tools', () => video.detectTools())
+  ipcMain.handle('video:cacheStats', () => video.cacheStats())
+  ipcMain.handle('video:clearCache', () => video.clearCache())
+  ipcMain.handle('video:clipAudio', (_e, req) => video.clipAudio(req))
+  ipcMain.handle('video:markProgress', (_e, fileId, seconds) =>
+    video.markProgress(fileId, seconds)
+  )
+  // Finishing an episode is a media-progress event, so the FIRST time a file
+  // becomes watched it goes through checklistRepo.logProgress — the app's one
+  // "I watched another one" write (status promotion, rewatch wrap, checklist
+  // credit). markWatched itself never touches media_item.progress.
+  ipcMain.handle('video:markWatched', (_e, fileId, watched) => {
+    const res = video.markWatched(fileId, watched)
+    if (res?.firstTime) checklistRepo.logProgress(res.mediaId, todayLocal())
+  })
 
   // ---- AniList import (anime + manga) ----
   // Imports run inside withActivity so the renderer can poll activity:status
@@ -499,6 +565,7 @@ export function registerIpc(): void {
   ipcMain.handle('app:pickTextFile', () => files.pickTextFile())
   // Applies the UI scale live to every window. Persisting it is the caller's
   // job (settings:set 'ui.scale'); index.ts re-applies the stored value on load.
+  ipcMain.handle('app:pendingOpen', () => openFile.takePending())
   ipcMain.handle('app:setUiScale', (_e, scale) => {
     const factor = clampUiScale(Number(scale))
     for (const win of BrowserWindow.getAllWindows()) win.webContents.setZoomFactor(factor)
@@ -513,4 +580,7 @@ export function registerIpc(): void {
   // ---- files ----
   ipcMain.handle('files:pickImage', () => files.pickImage())
   ipcMain.handle('files:resolveUrl', (_e, relPath) => files.resolveUrl(relPath))
+  ipcMain.handle('files:saveBytes', (_e, bytes, ext, subdir) =>
+    files.saveMediaBytes(bytes, ext, subdir)
+  )
 }

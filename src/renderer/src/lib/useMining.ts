@@ -48,6 +48,10 @@ export interface MiningDraft {
   notes: string
   exampleJp: string
   exampleEn: string
+  // Captured off the video player: the frame and the line's audio. Not part of
+  // the dictionary pick, which is why fillFromEntry must leave them alone.
+  imagePath: string | null
+  audioPath: string | null
 }
 
 export const EMPTY_DRAFT: MiningDraft = {
@@ -57,7 +61,9 @@ export const EMPTY_DRAFT: MiningDraft = {
   pos: '',
   notes: '',
   exampleJp: '',
-  exampleEn: ''
+  exampleEn: '',
+  imagePath: null,
+  audioPath: null
 }
 
 // Draft card state + the save loop (create card → invalidate → toast → reset,
@@ -84,7 +90,11 @@ export function useMiningDraft(opts: { sourceMediaId: number | null; onSaved?: (
       pos: e.defs[0]?.tags.join(', ') ?? '',
       notes: '',
       exampleJp: exampleJp ?? d.exampleJp,
-      exampleEn: exampleJp ? '' : d.exampleEn // a new context invalidates the old translation
+      exampleEn: exampleJp ? '' : d.exampleEn, // a new context invalidates the old translation
+      // Attachments outlive the dictionary pick: you capture the frame first,
+      // THEN look the word up.
+      imagePath: d.imagePath,
+      audioPath: d.audioPath
     }))
   }
 
@@ -112,7 +122,9 @@ export function useMiningDraft(opts: { sourceMediaId: number | null; onSaved?: (
         notes: draft.notes.trim() || null,
         exampleJp: draft.exampleJp.trim() || null,
         exampleEn: draft.exampleEn.trim() || null,
-        sourceMediaId: opts.sourceMediaId
+        sourceMediaId: opts.sourceMediaId,
+        imagePath: draft.imagePath,
+        audioPath: draft.audioPath
       })
       await qc.invalidateQueries({ queryKey: qk.japanese.all })
       toast(`Added 「${draft.front.trim()}」`, 'success')

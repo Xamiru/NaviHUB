@@ -1,5 +1,5 @@
 import { getSqlite } from '../db/connection'
-import { gradeCard, LEECH_LAPSES, newCardState } from '@shared/srs'
+import { GHOST_STEPS, gradeCard, LEECH_LAPSES, newCardState } from '@shared/srs'
 import { computeStreaks } from './musicRepo'
 import type {
   JpCard,
@@ -23,6 +23,8 @@ import type {
   JpRoadmap,
   JpStats,
   JpStatsDetail,
+  JpGhostCard,
+  JpGhostOutcome,
   MediaType,
   SrsGrade,
   SrsStatus
@@ -76,6 +78,8 @@ function mapCard(r: Record<string, unknown>): JpCard {
     onyomi: (r.onyomi as string) ?? null,
     kunyomi: (r.kunyomi as string) ?? null,
     sourceMediaId: (r.source_media_id as number) ?? null,
+    audioPath: (r.audio_path as string) ?? null,
+    imagePath: (r.image_path as string) ?? null,
     sourceTitle: (r.source_title as string) ?? null,
     sourceMediaType: (r.source_media_type as MediaType) ?? null,
     sourceCoverPath: (r.source_cover_path as string) ?? null,
@@ -172,7 +176,10 @@ export function updateCourse(id: number, input: Partial<JpCourseInput>): void {
 }
 
 export function removeCourse(id: number): void {
-  getSqlite().prepare('DELETE FROM jp_course WHERE id = ?').run(id)
+  const db = getSqlite()
+  db.prepare('DELETE FROM jp_course WHERE id = ?').run(id)
+  // Card rows cascaded away silently — sweep their ghosts.
+  db.prepare('DELETE FROM jp_ghost WHERE card_id NOT IN (SELECT id FROM jp_card)').run()
 }
 
 // ---- Lessons ----
@@ -239,7 +246,10 @@ export function updateLesson(
 }
 
 export function removeLesson(id: number): void {
-  getSqlite().prepare('DELETE FROM jp_lesson WHERE id = ?').run(id)
+  const db = getSqlite()
+  db.prepare('DELETE FROM jp_lesson WHERE id = ?').run(id)
+  // Card rows cascaded away silently — sweep their ghosts.
+  db.prepare('DELETE FROM jp_ghost WHERE card_id NOT IN (SELECT id FROM jp_card)').run()
 }
 
 // Flips availability only — SRS state on the lesson's cards is left intact, so
@@ -261,8 +271,8 @@ function insertCards(lessonId: number, cards: JpCardInput[], startOrder: number)
   const stmt = getSqlite().prepare(
     `INSERT INTO jp_card (lesson_id, sort_order, front, reading, back, pos, notes,
                           example_jp, example_reading, example_en,
-                          onyomi, kunyomi, source_media_id)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                          onyomi, kunyomi, source_media_id, audio_path, image_path)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   )
   cards.forEach((c, i) => {
     stmt.run(
@@ -278,7 +288,9 @@ function insertCards(lessonId: number, cards: JpCardInput[], startOrder: number)
       c.exampleEn ?? null,
       c.onyomi ?? null,
       c.kunyomi ?? null,
-      c.sourceMediaId ?? null
+      c.sourceMediaId ?? null,
+      c.audioPath ?? null,
+      c.imagePath ?? null
     )
   })
 }
@@ -309,7 +321,9 @@ const CARD_COLS: Record<keyof JpCardInput, string> = {
   exampleEn: 'example_en',
   onyomi: 'onyomi',
   kunyomi: 'kunyomi',
-  sourceMediaId: 'source_media_id'
+  sourceMediaId: 'source_media_id',
+  audioPath: 'audio_path',
+  imagePath: 'image_path'
 }
 
 export function updateCard(id: number, patch: Partial<JpCardInput>): void {
@@ -329,7 +343,9 @@ export function updateCard(id: number, patch: Partial<JpCardInput>): void {
 }
 
 export function removeCard(id: number): void {
-  getSqlite().prepare('DELETE FROM jp_card WHERE id = ?').run(id)
+  const db = getSqlite()
+  db.prepare('DELETE FROM jp_ghost WHERE card_id = ?').run(id)
+  db.prepare('DELETE FROM jp_card WHERE id = ?').run(id)
 }
 
 // ---- Review (SRS) ----
@@ -413,24 +429,73 @@ export function listLeeches(): JpLeech[] {
 
 // Puts a card back to square one. The review log is deliberately untouched —
 // the history of how badly it went is worth keeping even after a fresh start.
+// A fresh start also dissolves any ghost (the echo belongs to the old run).
 export function resetCard(id: number): void {
   const fresh = newCardState()
-  getSqlite()
-    .prepare(
-      `UPDATE jp_card
+  const db = getSqlite()
+  db.prepare('DELETE FROM jp_ghost WHERE card_id = ?').run(id)
+  db.prepare(
+    `UPDATE jp_card
        SET status = ?, learning_step = ?, interval_days = ?, ease = ?, reps = ?, lapses = ?,
            due_at = NULL, updated_at = datetime('now')
        WHERE id = ?`
+  ).run(
+    fresh.status,
+    fresh.learningStep,
+    fresh.intervalDays,
+    fresh.ease,
+    fresh.reps,
+    fresh.lapses,
+    id
+  )
+}
+
+// ---- Ghost reviews (Bunpro-style echoes of lapsed cards) ----
+
+// Ghosts due for serving: never a card that's ALSO in the real due list (it
+// would appear twice), only learned lessons, oldest echo first. The jp_card
+// JOIN doubles as orphan protection — a row whose card vanished never serves.
+export function ghostQueue(limit: number): JpGhostCard[] {
+  const db = getSqlite()
+  const rows = db
+    .prepare(
+      `SELECT k.*, ${SOURCE_COLS}, ${LESSON_COLS}, g.remaining AS ghost_remaining
+       FROM jp_ghost g JOIN jp_card k ON k.id = g.card_id
+       ${SOURCE_JOIN}
+       JOIN jp_lesson l ON l.id = k.lesson_id
+       WHERE l.learned = 1
+         AND NOT (k.status != 'new' AND k.due_at IS NOT NULL AND k.due_at <= datetime('now'))
+       ORDER BY g.created_at ASC, g.card_id ASC LIMIT ?`
     )
-    .run(
-      fresh.status,
-      fresh.learningStep,
-      fresh.intervalDays,
-      fresh.ease,
-      fresh.reps,
-      fresh.lapses,
-      id
-    )
+    .all(Math.max(0, limit)) as Record<string, unknown>[]
+  return rows.map((r) => ({
+    ...mapReviewCard(r),
+    ghostRemaining: r.ghost_remaining as number
+  }))
+}
+
+// One ghost answer. Correct decrements toward dissolution; a miss resets the
+// counter to GHOST_STEPS. Writes NOTHING to jp_review_log — the log is the
+// SM-2 history feeding retention/accuracy/heatmap/streaks, and ghost reps are
+// extra-schedule practice (flagged rows would force every aggregate to
+// filter; if ghost work should ever count, add a flagged column then).
+export function ghostAnswer(cardId: number, correct: boolean): JpGhostOutcome {
+  const db = getSqlite()
+  const row = db.prepare('SELECT remaining FROM jp_ghost WHERE card_id = ?').get(cardId) as
+    | { remaining: number }
+    | undefined
+  if (!row) return { remaining: 0, dissolved: true }
+  if (!correct) {
+    db.prepare('UPDATE jp_ghost SET remaining = ? WHERE card_id = ?').run(GHOST_STEPS, cardId)
+    return { remaining: GHOST_STEPS, dissolved: false }
+  }
+  const remaining = row.remaining - 1
+  if (remaining <= 0) {
+    db.prepare('DELETE FROM jp_ghost WHERE card_id = ?').run(cardId)
+    return { remaining: 0, dissolved: true }
+  }
+  db.prepare('UPDATE jp_ghost SET remaining = ? WHERE card_id = ?').run(remaining, cardId)
+  return { remaining, dissolved: false }
 }
 
 // ---- Roadmap ----
@@ -531,6 +596,19 @@ export function submitReview(cardId: number, grade: SrsGrade): JpReviewOutcome {
     db.prepare(
       'INSERT INTO jp_review_log (card_id, grade, interval_days, ease) VALUES (?, ?, ?, ?)'
     ).run(cardId, grade, next.intervalDays, next.ease)
+    // A LAPSE (review-state card graded Again — a miss during learning steps
+    // isn't one, matching gradeCard semantics) spawns a ghost: the card must
+    // be answered correctly GHOST_STEPS more times in future sessions,
+    // independent of its real SM-2 state. Spawned unconditionally — the
+    // review page's toggle governs SERVING, so turning it on later works
+    // retroactively.
+    if (card.status === 'review' && grade === 'again') {
+      db.prepare(
+        `INSERT INTO jp_ghost (card_id, remaining) VALUES (?, ?)
+         ON CONFLICT(card_id) DO UPDATE SET remaining = excluded.remaining,
+                                            created_at = datetime('now')`
+      ).run(cardId, GHOST_STEPS)
+    }
     const dueAt = (
       db.prepare('SELECT due_at FROM jp_card WHERE id = ?').get(cardId) as { due_at: string }
     ).due_at
@@ -543,6 +621,14 @@ export function submitReview(cardId: number, grade: SrsGrade): JpReviewOutcome {
 
 const INBOX_COURSE = 'Mining inbox'
 const INBOX_LESSON = 'Mined words'
+
+// Every Japanese-section QuizKind — the journey's "quiz rounds" count.
+const JP_QUIZ_KINDS = [
+  'japanese', 'kana', 'kanji', 'conjugation', 'writing', 'jlpt',
+  'pitch', 'pairs', 'components', 'grammar', 'names', 'numbers',
+  'dictation', 'shiritori', 'lookalike', 'transitivity', 'homophone',
+  'loanword', 'keigo', 'leech', 'speak'
+]
 
 // Find-or-create the capture target for mined words. Looked up by title (not a
 // flag) so deleting the inbox just regenerates a fresh one on the next mine.
@@ -716,9 +802,10 @@ export function statsDetail(): JpStatsDetail {
     .prepare(`SELECT COUNT(*) AS n, MIN(reviewed_at) AS first FROM jp_review_log`)
     .get() as { n: number; first: string | null }
 
-  // Due forecast over the next 14 local days, same due-card definition as
-  // stats()/reviewQueue (learned lesson, not 'new'); anything overdue counts
-  // toward today so the first bar reads "what a review session clears now".
+  // Due forecast over the next 30 local days (the page offers 7/14/30 views),
+  // same due-card definition as stats()/reviewQueue (learned lesson, not
+  // 'new'); anything overdue counts toward today so the first bar reads "what
+  // a review session clears now".
   const dueForecast = db
     .prepare(
       `SELECT CASE WHEN k.due_at <= datetime('now') THEN date('now', 'localtime')
@@ -726,10 +813,70 @@ export function statsDetail(): JpStatsDetail {
               COUNT(*) AS due
        FROM jp_card k JOIN jp_lesson l ON l.id = k.lesson_id
        WHERE l.learned = 1 AND k.status != 'new' AND k.due_at IS NOT NULL
-         AND date(k.due_at, 'localtime') <= date('now', 'localtime', '+13 days')
+         AND date(k.due_at, 'localtime') <= date('now', 'localtime', '+29 days')
        GROUP BY day ORDER BY day ASC`
     )
     .all() as { day: string; due: number }[]
+
+  // True retention, overall and last-30-days. Lenient counts Hard as a pass
+  // (Anki's default framing); strict is Good/Easy only. Mature-only retention
+  // is NOT computable honestly — the log doesn't record the card's pre-review
+  // status (upgrade path: a flagged column via ensureColumn, not taken now).
+  const retentionRows = db
+    .prepare(
+      `SELECT CASE WHEN reviewed_at >= datetime('now', '-30 days') THEN 1 ELSE 0 END AS recent,
+              grade, COUNT(*) AS n
+       FROM jp_review_log GROUP BY recent, grade`
+    )
+    .all() as { recent: number; grade: string; n: number }[]
+  const retentionOf = (rows: { grade: string; n: number }[]): {
+    strict: number | null
+    lenient: number | null
+  } => {
+    const total = rows.reduce((s, r) => s + r.n, 0)
+    if (total === 0) return { strict: null, lenient: null }
+    const of = (grades: string[]): number =>
+      rows.filter((r) => grades.includes(r.grade)).reduce((s, r) => s + r.n, 0) / total
+    return { strict: of(['good', 'easy']), lenient: of(['hard', 'good', 'easy']) }
+  }
+  const overall = retentionOf(retentionRows)
+  const last30 = retentionOf(retentionRows.filter((r) => r.recent === 1))
+
+  // The passive "N hours of Japanese" retrospective — every number derived
+  // from what the app already records, never hand-logged (the AJATT lesson).
+  const journey = {
+    distinctCardsReviewed: (
+      db.prepare('SELECT COUNT(DISTINCT card_id) AS n FROM jp_review_log').get() as { n: number }
+    ).n,
+    // Mined = captured from reading: a source media link OR living in the
+    // mining inbox (single COUNT with OR — no double counting).
+    wordsMined: (
+      db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM jp_card c
+           WHERE c.source_media_id IS NOT NULL
+              OR c.lesson_id IN (
+                SELECT l.id FROM jp_lesson l JOIN jp_course co ON co.id = l.course_id
+                WHERE co.title = ?)`
+        )
+        .get(INBOX_COURSE) as { n: number }
+    ).n,
+    lessonsLearned: (
+      db.prepare('SELECT COUNT(*) AS n FROM jp_lesson WHERE learned = 1').get() as { n: number }
+    ).n,
+    chaptersRead: (
+      db.prepare('SELECT COUNT(*) AS n FROM manga_chapter WHERE read_at IS NOT NULL').get() as {
+        n: number
+      }
+    ).n,
+    quizRounds: (
+      db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM quiz_session WHERE kind IN (${JP_QUIZ_KINDS.map(() => '?').join(',')})`
+        )
+        .get(...JP_QUIZ_KINDS) as { n: number }
+    ).n
+  }
 
   return {
     reviewsPerDay,
@@ -737,6 +884,13 @@ export function statsDetail(): JpStatsDetail {
     gradeCounts,
     totalReviews: agg.n,
     firstReviewAt: agg.first,
-    dueForecast
+    dueForecast,
+    retention: {
+      strict: overall.strict,
+      lenient: overall.lenient,
+      strict30: last30.strict,
+      lenient30: last30.lenient
+    },
+    journey
   }
 }
