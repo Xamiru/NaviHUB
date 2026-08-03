@@ -468,13 +468,22 @@ export async function homophonePool(req: HomophonePoolRequest): Promise<Homophon
     const target = withGloss[Math.floor(Math.random() * withGloss.length)]
     // Near-synonym spellings (変える/換える) are unfair as OPTIONS; they stay
     // in the reveal group.
-    const targetToken = firstGlossToken(target.gloss)
-    const options = [
-      target,
-      ...withGloss.filter(
-        (m) => m.expression !== target.expression && firstGlossToken(m.gloss) !== targetToken
-      )
-    ].slice(0, 4)
+    // Deduped by first gloss token across ALL options, not merely against the
+    // target: with target 買える, both 変える and 換える would otherwise survive
+    // as options, and two choices that both mean "to change" is a question
+    // with two defensible answers. (The target being random made this a
+    // coin-flip CI failure before it was a fairness bug.)
+    const seenTokens = new Set([firstGlossToken(target.gloss)])
+    const options = [target]
+    for (const m of withGloss) {
+      if (options.length >= 4) break
+      if (m.expression === target.expression) continue
+      const token = firstGlossToken(m.gloss)
+      // An unparseable gloss ('') never blocks another one.
+      if (token && seenTokens.has(token)) continue
+      if (token) seenTokens.add(token)
+      options.push(m)
+    }
     if (options.length < 2) continue
 
     // Sentence mode: shortest bank sentence containing the target, its surface
