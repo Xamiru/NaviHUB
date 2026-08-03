@@ -45,17 +45,38 @@ TARGET="${1:-}"
 
 if [ -z "$TARGET" ]; then
   # An installed AppImage wins over the dev checkout: it is the build that can
-  # self-update, so it's the one being used day to day.
+  # self-update, so it's the one in day-to-day use. People keep it anywhere, so
+  # check the usual spots and then sweep $HOME shallowly rather than giving up
+  # and silently falling back to the dev build.
   for dir in "$HOME/Applications" "$HOME/.local/bin" "$HOME/Apps" "$HOME/bin" \
-             "$HOME/Downloads" "$HOME/Desktop" "/opt"; do
+             "$HOME/Downloads" "$HOME/Desktop" "$HOME/Documents" "/opt"; do
     [ -d "$dir" ] || continue
     found="$(find "$dir" -maxdepth 1 -iname '*navihub*.AppImage' -type f 2>/dev/null | sort | tail -1)"
     if [ -n "$found" ]; then TARGET="$found"; break; fi
   done
 fi
 
+if [ -z "$TARGET" ]; then
+  # Bounded sweep: deep enough to find it in a subfolder, shallow enough not to
+  # crawl a whole media library. -prune skips dotdirs (caches, trash, Steam).
+  found="$(find "$HOME" -maxdepth 3 \( -name '.*' -prune \) -o \
+           -iname '*navihub*.AppImage' -type f -print 2>/dev/null | sort | tail -1)"
+  [ -n "$found" ] && TARGET="$found"
+fi
+
 if [ -z "$TARGET" ] && [ -f "$REPO/launch.sh" ]; then
   TARGET="$REPO/launch.sh"
+  echo
+  echo "WARNING: no AppImage found — falling back to the DEV launcher"
+  echo "  $TARGET"
+  echo "  That runs whatever is in $REPO/out, which is only as fresh as the last"
+  echo "  'npm run build', and it CANNOT self-update (Settings → Updates is"
+  echo "  disabled for unpackaged builds). If you normally run an AppImage, stop"
+  echo "  and re-run with its path:"
+  echo "      bash scripts/install-desktop.sh /path/to/NaviHUB.AppImage"
+  echo
+  read -r -p "Use the dev launcher anyway? [y/N] " reply
+  [[ "$reply" =~ ^[Yy]$ ]] || exit 1
 fi
 
 if [ -z "$TARGET" ] || [ ! -e "$TARGET" ]; then
@@ -94,6 +115,9 @@ if [[ "$BASE" == *.AppImage ]] && [[ "$BASE" =~ [0-9]+\.[0-9]+\.[0-9]+ ]]; then
     mv -f "$TARGET" "$STABLE"
     TARGET="$STABLE"
     echo "Renamed → $TARGET"
+    echo "NOTE: this entry is updated automatically, but any OTHER launcher you"
+    echo "      have (a dock pin, a panel shortcut, a second .desktop) still"
+    echo "      points at the old filename and must be repointed by hand."
   else
     echo "Left as-is — re-run this script after any update."
   fi

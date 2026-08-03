@@ -34,9 +34,15 @@ protocol.registerSchemesAsPrivileged([
 //
 // The loser hands its argv to the winner via 'second-instance' and exits before
 // touching the database.
-const gotTheLock = app.requestSingleInstanceLock()
-if (!gotTheLock) {
-  app.quit()
+//
+// app.exit(0), NOT app.quit(): quit() is graceful and asynchronous, so module
+// evaluation carries straight on into whenReady → initDatabase() → a window —
+// the losing instance opens the database and flashes a window before dying,
+// which is indistinguishable from a crash. exit() terminates now. The guard at
+// the top of whenReady is the belt to this braces.
+const isPrimaryInstance = app.requestSingleInstanceLock()
+if (!isPrimaryInstance) {
+  app.exit(0)
 }
 
 let mainWindow: BrowserWindow | null = null
@@ -133,6 +139,11 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  // A second instance must never reach the database. app.exit(0) above should
+  // already have ended this process; this makes it impossible rather than
+  // merely likely.
+  if (!isPrimaryInstance) return
+
   initDatabase()
   registerIpc()
 

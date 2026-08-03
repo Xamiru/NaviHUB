@@ -781,7 +781,12 @@ CREATE TABLE IF NOT EXISTS en_word (
   last_reviewed_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_en_word_word ON en_word(word);
-CREATE INDEX IF NOT EXISTS idx_en_word_due ON en_word(status, due_at);
+-- idx_en_word_due lives in connection.ts:runMigrations, NOT here. Its columns
+-- (status, due_at) are ensureColumn migrations, and init.sql runs BEFORE
+-- migrations — so on a live DB whose en_word predates the SRS columns, creating
+-- the index here crashes the whole app at startup ("no such column: status";
+-- the 0.x English-SRS release shipped exactly that). Rule: an index may only
+-- live in this file if every column it touches is in the CREATE TABLE above it.
 
 CREATE TABLE IF NOT EXISTS en_review_log (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,

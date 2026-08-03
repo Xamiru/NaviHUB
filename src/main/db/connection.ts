@@ -88,7 +88,9 @@ export function seedChecklist(sqlite: Database.Database): void {
   })()
 }
 
-function runMigrations(sqlite: Database.Database): void {
+// Exported for tests/initLegacyDb.test.ts, which replays a pre-SRS live DB
+// against the real init.sql + migrations.
+export function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'character', 'external_source', 'external_source TEXT')
   ensureColumn(sqlite, 'character', 'external_id', 'external_id TEXT')
   ensureColumn(sqlite, 'credit', 'importance', 'importance INTEGER')
@@ -127,6 +129,11 @@ function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'en_word', 'reps', 'reps INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'en_word', 'lapses', 'lapses INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'en_word', 'last_reviewed_at', 'last_reviewed_at TEXT')
+  // The review-queue index MUST be created here, after the columns it touches,
+  // never in init.sql — init.sql runs first, so on a pre-SRS DB the index would
+  // reference columns that don't exist yet and the app dies at startup ("no
+  // such column: status"). tests/initLegacyDb.test.ts replays that DB shape.
+  sqlite.exec('CREATE INDEX IF NOT EXISTS idx_en_word_due ON en_word(status, due_at)')
 
   // Movies used to store "times watched" in the generic `progress` column;
   // it's now unified into `rewatch_count` (the universal times-consumed counter)
