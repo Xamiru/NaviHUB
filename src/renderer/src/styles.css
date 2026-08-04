@@ -130,9 +130,53 @@
 }
 
 /* EPUB book reader (BookContent) — typography for sanitized novel text.
-   Font size / line height / measure come inline from BookReaderPage prefs. */
+   Font size / line height / measure come inline from BookReaderPage prefs.
+
+   Reading-surface themes: `data-book-theme` on the reader viewport scopes a
+   set of --book-* vars. These are CONTENT-level colors (deliberately literal,
+   like StatsPage TYPE_COLORS) — the Lain :root palette is app chrome and the
+   HUD bars stay chrome-dark in every theme. --book-bg paints the viewport
+   (and is the text background in vertical/full-bleed mode); --book-sheet is
+   the floating page surface in horizontal mode, so the two must stay close in
+   tone per theme. */
+.book-surface[data-book-theme='dark'] {
+  --book-bg: rgb(var(--base-900));
+  --book-sheet: rgb(var(--base-800) / 0.55);
+  --book-border: rgb(var(--base-700));
+  --book-fg: rgb(var(--gray-200));
+  --book-muted: rgb(var(--gray-400));
+  --book-rule: rgb(var(--base-600));
+  --book-mining: rgb(var(--accent) / 0.12);
+}
+.book-surface[data-book-theme='black'] {
+  --book-bg: #000000;
+  --book-sheet: #0b0b0b;
+  --book-border: #1f1f1f;
+  --book-fg: #d6d6d2;
+  --book-muted: #8d8d87;
+  --book-rule: #2b2b2b;
+  --book-mining: rgb(var(--accent) / 0.14);
+}
+.book-surface[data-book-theme='sepia'] {
+  --book-bg: #efe4cd;
+  --book-sheet: #f6eeda;
+  --book-border: #d9c9a6;
+  --book-fg: #43382a;
+  --book-muted: #7c6b51;
+  --book-rule: #cdbc98;
+  --book-mining: rgb(74 124 58 / 0.18);
+}
+.book-surface[data-book-theme='paper'] {
+  --book-bg: #dfe0dc;
+  --book-sheet: #ecedea;
+  --book-border: #c4c6c0;
+  --book-fg: #24261f;
+  --book-muted: #62655c;
+  --book-rule: #b8bab2;
+  --book-mining: rgb(45 110 45 / 0.16);
+}
 .book-content {
-  color: theme('colors.gray.200');
+  color: var(--book-fg, rgb(var(--gray-200)));
 }
 .book-content p {
   margin: 0.85em 0;
@@ -150,9 +194,51 @@
 .book-content h2 { font-size: 1.3em; }
 .book-content h3 { font-size: 1.15em; }
 .book-content blockquote {
-  border-inline-start: 2px solid theme('colors.base.600');
+  border-inline-start: 2px solid var(--book-rule, rgb(var(--base-600)));
   padding-inline-start: 1em;
-  color: theme('colors.gray.400');
+  color: var(--book-muted, rgb(var(--gray-400)));
+}
+.book-content em,
+.book-content i {
+  font-style: italic;
+}
+.book-content strong,
+.book-content b {
+  font-weight: 700;
+}
+.book-content code {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  background: var(--book-mining, rgb(var(--accent) / 0.12));
+  border-radius: 3px;
+  padding: 0.1em 0.35em;
+}
+.book-content pre {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  border: 1px solid var(--book-rule, rgb(var(--base-600)));
+  border-radius: 4px;
+  padding: 0.8em 1em;
+  margin: 1em 0;
+  overflow-x: auto;
+}
+.book-content pre code {
+  background: none;
+  padding: 0;
+}
+.book-content figcaption {
+  font-size: 0.8em;
+  color: var(--book-muted, rgb(var(--gray-400)));
+  text-align: center;
+  margin-top: -0.6em;
+  margin-bottom: 1.2em;
+}
+.book-content small {
+  font-size: 0.85em;
+}
+.book-content sup,
+.book-content sub {
+  font-size: 0.7em;
 }
 .book-content ul,
 .book-content ol {
@@ -162,12 +248,12 @@
 .book-content ul { list-style: disc; }
 .book-content ol { list-style: decimal; }
 .book-content hr {
-  border-color: theme('colors.base.700');
+  border-color: var(--book-rule, rgb(var(--base-700)));
   margin: 1.5em 0;
 }
 .book-content rt {
   font-size: 0.45em;
-  color: theme('colors.gray.400');
+  color: var(--book-muted, rgb(var(--gray-400)));
 }
 .book-content .book-img {
   display: block;
@@ -182,13 +268,37 @@
   max-height: 100%;
   max-width: 80vw;
 }
-/* Mining mode: paragraphs advertise their tappability. */
+/* Mining mode: every tappable block advertises it (the full BLOCK_SELECTOR
+   list from BookContent — headings/cells/captions are hit-targets too). */
 .book-mining p:hover,
 .book-mining li:hover,
-.book-mining blockquote:hover {
+.book-mining blockquote:hover,
+.book-mining h1:hover,
+.book-mining h2:hover,
+.book-mining h3:hover,
+.book-mining h4:hover,
+.book-mining h5:hover,
+.book-mining h6:hover,
+.book-mining td:hover,
+.book-mining figcaption:hover,
+.book-mining pre:hover {
   cursor: pointer;
-  background: rgb(var(--accent) / 0.12); /* accent @ 12% */
+  background: var(--book-mining, rgb(var(--accent) / 0.12));
   border-radius: 4px;
+}
+
+/* Reader side panels (MiningPanel): a short slide-in so the panel doesn't pop.
+   Defined only under no-preference — reduced motion gets an instant mount. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: translateX(16px);
+    }
+  }
+  .panel-in {
+    animation: panel-in 0.15s ease-out;
+  }
 }
 
 /* ============================ WIRED CHROME ============================

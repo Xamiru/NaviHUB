@@ -1,7 +1,7 @@
 // Shared types — the contract between the main process (DB) and the renderer (UI).
 // Kept framework-free so both sides can import it.
 
-export type MediaType = 'anime' | 'manga' | 'visual_novel' | 'game' | 'movie' | 'tv'
+export type MediaType = 'anime' | 'manga' | 'visual_novel' | 'game' | 'movie' | 'tv' | 'book'
 
 export type CompanyType = 'studio' | 'publisher' | 'developer' | 'other'
 
@@ -503,8 +503,9 @@ export type SettingsMap = Record<string, string>
 // ---- External import (AniList for anime, TMDB for movies) ----
 // One result shape covers both sources. For movies, `native` is the original
 // title, `format` is e.g. "Movie", and `episodes` is left null.
+// `id` is a string for sources with non-numeric ids (Open Library "OL…W").
 export interface ImportSearchResult {
-  id: number
+  id: number | string
   title: string
   native: string | null
   year: number | null
@@ -732,6 +733,10 @@ export interface JpStats {
   totalLessons: number
   totalCards: number
   reviewsToday: number
+  // Cards whose FIRST jp_review_log row is today (localtime) — the honest
+  // "new cards introduced today" count. Ghost answers write no log rows, so
+  // they can't inflate it.
+  introducedToday: number
 }
 
 // Everything the Japanese stats page needs in one invoke: review history off
@@ -1554,6 +1559,35 @@ export interface ChapterOcrStatus {
   hasOcr: boolean
   matchedPages: number
   totalPages: number
+}
+
+// Sidecar presence per chapter, for the Chapters tab ("which volumes are
+// minable" chips + the Run OCR button's missing count). ocrEligible is false
+// for EPUB chapters — they are text already, mokuro never applies.
+export interface ChapterOcrOverview {
+  chapterId: number
+  hasSidecar: boolean
+  ocrEligible: boolean
+}
+
+// One in-app mokuro run over every eligible-but-missing volume of a series
+// (mokuroRun.ts). Polled via manga:ocrRunStatus; terminal states persist until
+// the next run so the renderer can stop polling and still show the outcome.
+export interface MangaOcrRunStatus {
+  id: string
+  state: 'starting' | 'running' | 'done' | 'error' | 'cancelled'
+  volumeIndex: number | null // "volume 2 of 5" (1-based)
+  volumeCount: number | null
+  volumeTitle: string | null
+  percent: number | null // within the current volume, from mokuro's page bar
+  okCount: number | null // volumes processed successfully (final summary)
+  message: string | null
+}
+
+export interface MokuroDetectResult {
+  ok: boolean
+  version: string | null
+  error: string | null
 }
 
 // One token from morphological analysis (kuromoji) of an OCR'd text block.

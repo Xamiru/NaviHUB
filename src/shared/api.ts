@@ -131,6 +131,9 @@ import type {
   MangaLibrary,
   MangaPages,
   ChapterOcrStatus,
+  ChapterOcrOverview,
+  MangaOcrRunStatus,
+  MokuroDetectResult,
   MokuroPageOcr,
   OpenTarget,
   VideoAttachResult,
@@ -346,6 +349,11 @@ export interface NaviApi {
   rawg: {
     search(query: string): Promise<ImportSearchResult[]>
     import(rawgId: number): Promise<ImportSummary>
+  }
+  openlibrary: {
+    search(query: string): Promise<ImportSearchResult[]>
+    // Open Library work ids are strings ("OL45883W").
+    import(olId: string): Promise<ImportSummary>
   }
   themes: {
     // Fetch an anime's OP/ED songs (+ audio + artists) from AnimeThemes.
@@ -608,9 +616,19 @@ export interface NaviApi {
     pages(chapterId: number): Promise<MangaPages | null>
     markProgress(chapterId: number, page: number): Promise<void>
     markChapterRead(chapterId: number, read: boolean): Promise<void>
-    // Mokuro OCR sidecars (null / hasOcr:false when the user hasn't run mokuro).
+    // Mokuro OCR sidecars (hasOcr:false / null when no sidecar exists yet —
+    // run mokuro by hand or via ocrRun below).
     ocrStatus(chapterId: number): Promise<ChapterOcrStatus>
     ocrPage(chapterId: number, pageIndex: number): Promise<MokuroPageOcr | null>
+    // In-app mokuro runs (mokuroRun.ts): one spawn of the user-installed
+    // binary over every eligible volume missing a sidecar. Fire-and-poll,
+    // musicDownload-style; ocrRun throws synchronously on user-fixable
+    // problems (already running / nothing to do / no local folder).
+    ocrRun(mediaId: number): Promise<{ id: string }>
+    ocrRunStatus(): Promise<MangaOcrRunStatus | null>
+    ocrRunCancel(id: string): Promise<void>
+    ocrDetect(): Promise<MokuroDetectResult>
+    ocrOverview(mediaId: number): Promise<ChapterOcrOverview[]>
     // A .cbz/.epub the OS handed us, with no chapter row and no library folder.
     // Same MangaPages shape; chapterId/mediaId come back as 0 so the readers
     // can tell an ad-hoc session from a real one and skip persisting.

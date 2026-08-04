@@ -119,7 +119,12 @@ export const qk = {
     adhocPages: (token: string) => ['manga', 'adhocPages', token] as const,
     ocrStatus: (chapterId: number) => ['manga', 'ocrStatus', chapterId] as const,
     ocrPage: (chapterId: number, pageIndex: number) =>
-      ['manga', 'ocrPage', chapterId, pageIndex] as const
+      ['manga', 'ocrPage', chapterId, pageIndex] as const,
+    // The in-app mokuro run poll + per-chapter sidecar presence. Both live
+    // under the ['manga'] prefix on purpose: MangaChaptersSection's refresh()
+    // invalidates qk.manga.all, which kicks these too.
+    ocrRunStatus: ['manga', 'ocrRunStatus'] as const,
+    ocrOverview: (mediaId: number) => ['manga', 'ocrOverview', mediaId] as const
   },
   video: {
     // Local video player: attached episodes, the playback contract, and parsed

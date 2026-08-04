@@ -15,6 +15,7 @@ import { parseUiScale } from '@shared/uiScale'
 import { abortActiveCoachTurn } from './gachaCoach'
 import { killActiveUpdate } from './updater'
 import { killActivePrepare } from './video/session'
+import { killActiveOcr } from './mokuroRun'
 import { parseArgvFiles, queueOpen } from './openFile'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
@@ -155,12 +156,12 @@ app.whenReady().then(() => {
   protocol.handle('navimg', async (request) => {
     const url = new URL(request.url)
     const relPath = decodeURIComponent(url.host + url.pathname)
-    // Entry streaming is limited to the two prefixes that can legitimately hold
-    // a container: the manga library, and a file the OS handed us via "open
-    // with" (open/<token>.cbz — the token keeps its extension precisely so
-    // splitArchivePath can still find the container segment).
+    // Entry streaming is limited to the prefixes that can legitimately hold a
+    // container: the manga and books libraries, and a file the OS handed us via
+    // "open with" (open/<token>.cbz — the token keeps its extension precisely
+    // so splitArchivePath can still find the container segment).
     const archived =
-      relPath.startsWith('manga/') || relPath.startsWith('open/')
+      relPath.startsWith('manga/') || relPath.startsWith('books/') || relPath.startsWith('open/')
         ? splitArchivePath(relPath)
         : null
     if (archived) {
@@ -245,6 +246,9 @@ app.on('before-quit', () => {
   // A half-converted video is NOT resumable — kill it and drop the .part, or a
   // truncated file could be mistaken for a cache hit next launch.
   killActivePrepare()
+  // A killed mokuro run loses nothing durable — finished volumes keep their
+  // sidecars, and mokuro's own _ocr cache resumes the interrupted one.
+  killActiveOcr()
   closeDatabase()
   closeDictDb()
 })

@@ -247,6 +247,16 @@ export default function JapaneseReviewPage() {
                 </button>
               ))}
             </div>
+            {(stats?.introducedToday ?? 0) > 0 && (
+              <p className="mt-1.5 text-xs text-gray-500">
+                {stats!.introducedToday} new {stats!.introducedToday === 1 ? 'card' : 'cards'}{' '}
+                already introduced today
+                {newLimit > 0 && stats!.introducedToday >= newLimit
+                  ? ' — that is a full day; consider None'
+                  : ''}
+                .
+              </p>
+            )}
           </div>
 
           <div>

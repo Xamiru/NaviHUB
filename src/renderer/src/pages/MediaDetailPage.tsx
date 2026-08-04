@@ -104,6 +104,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const vndbScore = vndbRaw != null ? ((vndbRaw / 100) * scoreMax).toFixed(1) : null
   // Metacritic (games, via RAWG) stays its familiar 0–100 score.
   const metacritic = metaNum('metacritic')
+  // Open Library rating stored pre-scaled to 0–100 (stars × 20) at import.
+  const olRaw = metaNum('olRating')
+  const olScore = olRaw != null ? ((olRaw / 100) * scoreMax).toFixed(1) : null
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -158,6 +161,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               <StatInline label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />
             )}
             {metacritic != null && <StatInline label="Metacritic" value={`${metacritic} / 100`} />}
+            {olScore != null && <StatInline label="Open Library" value={`${olScore} / ${scoreMax}`} />}
             <StatInline label={cfg.progressStatLabel} value={cfg.formatProgressStat(m)} />
             <StatInline label={cfg.timesConsumedLabel} value={String(m.rewatchCount)} />
             <StatInline label="Released" value={m.releaseDate ?? '—'} />
@@ -217,7 +221,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
         <>
           {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
           {cfg.hasLocalReader && <MangaChaptersSection m={m} />}
-          {cfg.hasLocalReader && <CoverageSection m={m} />}
+          {/* Comprehension coverage is a Japanese-learning feature — manga only,
+              not every type with a local reader (books are English reading). */}
+          {cfg.key === 'manga' && <CoverageSection m={m} />}
           {cfg.hasThemes && <ThemesSection m={m} onChange={refresh} />}
         </>
       )}

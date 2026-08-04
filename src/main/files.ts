@@ -33,6 +33,14 @@ export function mangaRootDir(): string {
   return custom && custom.length ? custom : join(app.getPath('userData'), 'manga')
 }
 
+// Books (EPUB novels etc.) live in their own user-chosen root (settings key
+// `books.dir`, auto-set on the first folder attach like manga.dir). DB rows and
+// navimg URLs use a virtual "books/" prefix, mirroring the manga/ scheme above.
+export function booksRootDir(): string {
+  const custom = getSetting('books.dir')?.trim()
+  return custom && custom.length ? custom : join(app.getPath('userData'), 'books')
+}
+
 // Local music library root (settings key `music.dir`, set from the Music page's
 // folder picker or Settings). DB rows and navimg URLs use a virtual "music/"
 // prefix, mirroring the manga/ scheme above.
@@ -175,6 +183,7 @@ export function absoluteMediaPath(relPath: string): string {
   if (norm.split('/').includes('..')) throw new Error(`Path escapes media root: ${relPath}`)
   if (norm.startsWith('audio/')) return join(audioDir(), norm.slice('audio/'.length))
   if (norm.startsWith('manga/')) return join(mangaRootDir(), norm.slice('manga/'.length))
+  if (norm.startsWith('books/')) return join(booksRootDir(), norm.slice('books/'.length))
   if (norm.startsWith('music/')) return join(musicRootDir(), norm.slice('music/'.length))
   if (norm.startsWith('pictures/')) return join(picturesDir(), norm.slice('pictures/'.length))
   if (norm.startsWith('video/')) return join(videoRootDir(), norm.slice('video/'.length))

@@ -7,34 +7,48 @@ import { useReaderSource } from '../lib/readerSource'
 import { readerPath } from '../lib/readerPath'
 import BookContent from '../components/reader/BookContent'
 import MiningPanel from '../components/reader/MiningPanel'
+import BarButton from '../components/reader/BarButton'
+import ShortcutHelp from '../components/reader/ShortcutHelp'
+import BookSettingsPopover, {
+  BOOK_DEFAULTS,
+  BOOK_SERIF_STACK,
+  type BookPrefs
+} from '../components/reader/BookSettingsPopover'
 import type { EpubTocEntry, MangaChapter } from '@shared/types'
+// Mincho face for the serif reading option — unicode-range split woff2s, so
+// only the glyphs actually rendered are fetched (self-origin, CSP-safe).
+import '@fontsource/noto-serif-jp/400.css'
+import '@fontsource/noto-serif-jp/600.css'
 
 // Immersive EPUB (light novel) reader — the book sibling of MangaReaderPage,
 // routed chrome-free from App.tsx. "Pages" are the book's spine documents,
 // fetched as XHTML from navimg:// and rendered sanitized (BookContent).
 // Horizontal or vertical (tategaki) layout, TOC jump, persisted typography
-// prefs, and the same mine-to-SRS panel as the manga reader: toggle ⛏, tap a
-// paragraph, save the word with this novel as its source.
-
-interface BookPrefs {
-  fontSize: number // px
-  lineHeight: number
-  maxWidth: number // px, horizontal mode text measure
-  vertical: boolean
-}
+// prefs (incl. reading theme + serif — BookSettingsPopover), and the same
+// mine-to-SRS panel as the manga reader: toggle ⛏, tap a paragraph, save the
+// word with this novel as its source.
 
 const PREFS_KEY = 'book.readerPrefs'
-const DEFAULTS: BookPrefs = { fontSize: 18, lineHeight: 1.9, maxWidth: 700, vertical: false }
-const LINE_HEIGHTS = [1.6, 1.9, 2.2]
-const WIDTHS = [600, 700, 850, 1100]
 
 function loadPrefs(): BookPrefs {
   try {
-    return { ...DEFAULTS, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }
+    return { ...BOOK_DEFAULTS, ...JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') }
   } catch {
-    return DEFAULTS
+    return BOOK_DEFAULTS
   }
 }
+
+const SHORTCUTS = [
+  { keys: ['←', '→'], label: 'Previous / next section' },
+  { keys: ['Space'], label: 'Scroll a screenful (Shift = back)' },
+  { keys: ['↑', '↓'], label: 'Scroll a little' },
+  { keys: ['Home', 'End'], label: 'First / last section' },
+  { keys: ['T'], label: 'Table of contents' },
+  { keys: ['V'], label: 'Vertical ↔ horizontal text' },
+  { keys: ['+', '−'], label: 'Text size' },
+  { keys: ['M'], label: 'Mine words (then tap a paragraph)' },
+  { keys: ['Esc'], label: 'Close panels / back to series' }
+]
 
 // "manga/<dir>/<Book>.epub/<entry>" → the navimg prefix up to the epub + the
 // in-zip entry path (mirrors the main process's splitArchivePath).
@@ -73,7 +87,7 @@ export default function BookReaderPage() {
       return next
     })
   }, [])
-  const { fontSize, lineHeight, maxWidth, vertical } = prefs
+  const { fontSize, lineHeight, maxWidth, vertical, theme, font } = prefs
 
   // ---- current section (same init contract as the manga reader) ----
   const [section, setSection] = useState(0)
@@ -153,12 +167,16 @@ export default function BookReaderPage() {
     if (section > 0) gotoSection(section - 1)
   }, [section, gotoSection])
 
+  // The same reader serves /manga and /books routes; the URL says which
+  // section this item lives in, so exits and volume switches stay inside it.
+  const basePath = location.pathname.startsWith('/books') ? ('/books' as const) : ('/manga' as const)
+
   const exitToDetail = useCallback(() => {
     // Same history contract as the manga reader: unwind, don't re-push detail.
     if (location.key !== 'default') navigate(-1)
     // An ad-hoc book has no series page to go back to.
-    else navigate(adhoc ? '/' : `/manga/${mediaId}`)
-  }, [navigate, mediaId, location.key])
+    else navigate(adhoc ? '/' : `${basePath}/${mediaId}`)
+  }, [navigate, mediaId, location.key, basePath])
 
   const goToChapter = useCallback(
     (ch: MangaChapter) => {
@@ -166,9 +184,9 @@ export default function BookReaderPage() {
       setShowEnd(false)
       // replace: a whole reading session stays ONE history entry. readerPath
       // routes image chapters back into the manga reader.
-      navigate(`${readerPath(mediaId, ch)}?page=0`, { replace: true })
+      navigate(`${readerPath(basePath, mediaId, ch)}?page=0`, { replace: true })
     },
-    [navigate, mediaId]
+    [navigate, mediaId, basePath]
   )
 
   // Scroll a screenful along the reading axis; cross into the neighbour
@@ -233,10 +251,12 @@ export default function BookReaderPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ---- mining + TOC popover ----
+  // ---- mining + popovers ----
   const [panelOpen, setPanelOpen] = useState(false)
   const [blockText, setBlockText] = useState<string | null>(null)
   const [tocOpen, setTocOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
   const onBlockText = useCallback((text: string) => {
     setBlockText(text)
@@ -299,9 +319,14 @@ export default function BookReaderPage() {
         case 'm':
           setPanelOpen((v) => !v)
           break
+        case '?':
+          setHelpOpen((v) => !v)
+          break
         case 'Escape':
         case 'Backspace':
-          if (tocOpen) setTocOpen(false)
+          if (helpOpen) setHelpOpen(false)
+          else if (tocOpen) setTocOpen(false)
+          else if (settingsOpen) setSettingsOpen(false)
           else if (showEnd) setShowEnd(false)
           else if (panelOpen) setPanelOpen(false)
           else exitToDetail()
@@ -310,7 +335,7 @@ export default function BookReaderPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [vertical, fontSize, nextSection, prevSection, scrollForward, gotoSection, sectionCount, tocOpen, showEnd, panelOpen, setPref, exitToDetail])
+  }, [vertical, fontSize, nextSection, prevSection, scrollForward, gotoSection, sectionCount, tocOpen, settingsOpen, helpOpen, showEnd, panelOpen, setPref, exitToDetail])
 
   if (!doc || !library) return <div className="h-screen bg-base-900 p-6 text-gray-500">Loading…</div>
 
@@ -318,7 +343,7 @@ export default function BookReaderPage() {
     <div className="h-screen bg-base-900 flex">
       <div className="relative flex-1 min-w-0 flex flex-col">
         {/* top bar */}
-        <div className="shrink-0 z-20 bg-base-900/95 border-b border-base-800 px-4 py-2 flex items-center gap-3">
+        <div className="shrink-0 z-20 bg-base-900/95 backdrop-blur border-b border-base-800 px-4 py-2 flex items-center gap-3">
           <button className="btn-ghost py-1 px-3 text-sm" onClick={exitToDetail}>
             ← Back
           </button>
@@ -331,20 +356,37 @@ export default function BookReaderPage() {
           </span>
         </div>
 
-        {/* content */}
+        {/* content — the themed reading surface (data-book-theme scopes the
+            --book-* vars; horizontal mode floats a sheet on the backdrop,
+            vertical stays full-bleed because a sheet fights vertical-rl). */}
         <div
           ref={viewportRef}
-          className={`flex-1 min-h-0 ${vertical ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto'}`}
+          data-book-theme={theme}
+          className={`book-surface flex-1 min-h-0 ${vertical ? 'overflow-x-auto overflow-y-hidden' : 'overflow-y-auto'}`}
+          style={{ background: 'var(--book-bg)' }}
         >
           {docLoading || !html ? (
-            <p className="p-8 text-sm text-gray-500">Loading section…</p>
+            <p className="p-8 text-sm" style={{ color: 'var(--book-muted)' }}>
+              Loading section…
+            </p>
           ) : (
             <div
-              className={vertical ? 'book-vertical h-full py-8 px-10' : 'mx-auto px-8 py-10'}
+              className={
+                vertical
+                  ? 'book-vertical h-full py-8 px-10'
+                  : 'mx-auto my-8 rounded-lg border px-10 py-12 shadow-xl shadow-black/30'
+              }
               style={{
                 fontSize,
                 lineHeight,
-                ...(vertical ? { writingMode: 'vertical-rl' as const } : { maxWidth })
+                ...(font === 'serif' ? { fontFamily: BOOK_SERIF_STACK } : {}),
+                ...(vertical
+                  ? { writingMode: 'vertical-rl' as const }
+                  : {
+                      maxWidth,
+                      background: 'var(--book-sheet)',
+                      borderColor: 'var(--book-border)'
+                    })
               }}
             >
               {split && (
@@ -355,11 +397,11 @@ export default function BookReaderPage() {
                   onBlockText={panelOpen ? onBlockText : undefined}
                 />
               )}
-              {/* end-of-section footer */}
+              {/* end-of-section footer — font size reset so the buttons stop
+                  scaling with the prose */}
               <div
-                className={`flex items-center gap-3 text-sm text-gray-500 ${
-                  vertical ? 'mr-8' : 'mt-10 mb-4'
-                }`}
+                className={`flex items-center gap-3 ${vertical ? 'mr-8' : 'mt-10 mb-2'}`}
+                style={{ fontSize: '0.875rem', lineHeight: 1.5, color: 'var(--book-muted)' }}
               >
                 {section > 0 && (
                   <button className="btn-ghost" onClick={prevSection}>
@@ -376,7 +418,10 @@ export default function BookReaderPage() {
 
         {/* end-of-book overlay */}
         {showEnd && (
-          <div className="absolute inset-0 z-30 flex items-center justify-center bg-black/70">
+          <div
+            className="absolute inset-0 z-30 flex items-center justify-center bg-black/70"
+            onMouseDown={(e) => e.target === e.currentTarget && setShowEnd(false)}
+          >
             <div className="card p-8 text-center max-w-sm">
               <p className="text-lg font-semibold">Book finished</p>
               <p className="mt-1 text-sm text-gray-400">{doc.title}</p>
@@ -395,7 +440,7 @@ export default function BookReaderPage() {
         )}
 
         {/* bottom bar */}
-        <div className="shrink-0 z-20 bg-base-900/95 border-t border-base-800 px-4 py-2 flex items-center gap-3">
+        <div className="shrink-0 z-20 bg-base-900/95 backdrop-blur border-t border-base-800 px-4 py-2 flex items-center gap-3">
           <button
             className="btn-ghost py-1 px-2 text-xs"
             disabled={!prevChapter}
@@ -432,7 +477,7 @@ export default function BookReaderPage() {
             max={Math.max(0, sectionCount - 1)}
             value={section}
             onChange={(e) => gotoSection(Number(e.target.value))}
-            className="flex-1 accent-current"
+            className="flex-1 accent-accent"
             aria-label="Section"
           />
           <button
@@ -444,54 +489,33 @@ export default function BookReaderPage() {
           >
             ⏭
           </button>
-          <div className="flex items-center gap-1 shrink-0 text-xs">
-            <BarBtn
-              label="A−"
-              title="Smaller text (-)"
-              onClick={() => setPref('fontSize', Math.max(12, fontSize - 1))}
+          <div className="relative flex items-center gap-1 shrink-0 text-xs">
+            <BarButton
+              label="Aa"
+              active={settingsOpen}
+              title="Typography & theme"
+              onClick={() => setSettingsOpen((v) => !v)}
             />
-            <span className="w-8 text-center text-gray-500">{fontSize}px</span>
-            <BarBtn
-              label="A+"
-              title="Larger text (+)"
-              onClick={() => setPref('fontSize', Math.min(28, fontSize + 1))}
-            />
-            <span className="w-px h-4 bg-base-700 mx-1" />
-            <BarBtn
-              label="↕"
-              title={`Line height: ${lineHeight}`}
-              onClick={() =>
-                setPref(
-                  'lineHeight',
-                  LINE_HEIGHTS[(LINE_HEIGHTS.indexOf(lineHeight) + 1) % LINE_HEIGHTS.length] ??
-                    DEFAULTS.lineHeight
-                )
-              }
-            />
-            {!vertical && (
-              <BarBtn
-                label="⇔"
-                title={`Text width: ${maxWidth}px`}
-                onClick={() =>
-                  setPref('maxWidth', WIDTHS[(WIDTHS.indexOf(maxWidth) + 1) % WIDTHS.length] ?? DEFAULTS.maxWidth)
-                }
+            {settingsOpen && (
+              <BookSettingsPopover
+                prefs={prefs}
+                setPref={setPref}
+                onClose={() => setSettingsOpen(false)}
               />
             )}
-            <BarBtn
-              label={vertical ? '縦' : '横'}
-              active={vertical}
-              title={vertical ? 'Vertical text — switch to horizontal (V)' : 'Horizontal text — switch to vertical (V)'}
-              onClick={() => setPref('vertical', !vertical)}
-            />
-            <span className="w-px h-4 bg-base-700 mx-1" />
-            <BarBtn
+            <BarButton
               label="⛏"
               active={panelOpen}
               title="Mine words (M) — then tap a paragraph"
               onClick={() => setPanelOpen((v) => !v)}
             />
+            <BarButton label="?" title="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)} />
           </div>
         </div>
+
+        {helpOpen && (
+          <ShortcutHelp title="Reader shortcuts" rows={SHORTCUTS} onClose={() => setHelpOpen(false)} />
+        )}
       </div>
 
       {/* mining panel */}
@@ -504,30 +528,6 @@ export default function BookReaderPage() {
         />
       )}
     </div>
-  )
-}
-
-function BarBtn({
-  label,
-  title,
-  active = false,
-  onClick
-}: {
-  label: string
-  title: string
-  active?: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      className={`rounded px-2 py-1 ${active ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
-      title={title}
-      aria-label={title}
-      aria-pressed={active}
-      onClick={onClick}
-    >
-      {label}
-    </button>
   )
 }
 

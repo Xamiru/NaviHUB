@@ -108,8 +108,8 @@ const SANITIZE_STATEMENTS = [
   // the removed phone sync (a bearer token, a device name and a port).
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','omdb.api_key','ytdlp.path',
-      'music.dir','manga.dir','audio.dir','pictures.dir','video.dir',
-      'ffmpeg.path','ffprobe.path',
+      'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','video.dir',
+      'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
       'vertex.project_id','vertex.region','vertex.credentials_path',
       'sync.token','sync.device','sync.port',

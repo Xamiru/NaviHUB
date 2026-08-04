@@ -9,6 +9,7 @@ import StatTile from '../components/StatTile'
 import EmptyState from '../components/EmptyState'
 import HubCard from '../components/HubCard'
 import CoreDeckDialog from '../components/japanese/CoreDeckDialog'
+import SetupChecklist from '../components/japanese/SetupChecklist'
 
 // The section's dashboard: where you stand, what to do next, and one card per
 // tool — grouped, with a line each on what it's for (the QuizLandingPage
@@ -115,6 +116,8 @@ export default function JapaneseHomePage() {
           }
         />
       )}
+
+      <SetupChecklist />
 
       <Section title="Study">
         <HubGrid>

@@ -171,7 +171,8 @@ export default function Sidebar() {
               { to: '/japanese/roadmap', label: 'Roadmap' },
               { to: '/japanese/review', label: 'Review' },
               { to: '/japanese/dictionary', label: 'Dictionary' },
-              { to: '/japanese/kana', label: 'Drills' }
+              { to: '/japanese/kana', label: 'Drills' },
+              { to: '/japanese/guide', label: 'Guide' }
             ]}
           />
           <NavGroup

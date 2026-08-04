@@ -43,7 +43,7 @@ export default function MiningPanel(props: MiningPanelProps) {
   }, [lang])
 
   return (
-    <div className="w-[360px] shrink-0 h-full overflow-y-auto bg-base-900 border-l border-base-700 p-4 space-y-4">
+    <div className="panel-in w-[360px] shrink-0 h-full overflow-y-auto bg-base-900 border-l border-base-700 p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-sm font-semibold text-gray-300">Mine words</h2>
         <div className="flex items-center gap-2">

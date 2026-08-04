@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import Tabs from '../components/Tabs'
 import PageHeader from '../components/PageHeader'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { useSettings } from '../lib/hooks'
@@ -19,7 +19,8 @@ import type {
   TorrentServiceTestResult,
   UpdateTestResult,
   VideoToolsResult,
-  YtDlpDetectResult
+  YtDlpDetectResult,
+  MokuroDetectResult
 } from '@shared/types'
 import StartJackettButton from '../components/StartJackettButton'
 import { useUpdateStatus } from '../lib/useUpdateStatus'
@@ -44,7 +45,15 @@ type TabId = (typeof TABS)[number]['key']
 export default function SettingsPage() {
   const { data } = useSettings()
   const qc = useQueryClient()
-  const [tab, setTab] = usePersistedState<TabId>('settingsTab', 'general')
+  // ?tab= deep-links a section (the Japanese hub's Set up list uses
+  // ?tab=japanese); one-shot seed of history-scoped state, the MediaDetailPage
+  // idiom — Back into an old Settings entry still restores what it had.
+  const [params] = useSearchParams()
+  const requested = params.get('tab') as TabId | null
+  const [tab, setTab] = usePersistedState<TabId>(
+    'settingsTab',
+    requested && TABS.some((t) => t.key === requested) ? requested : 'general'
+  )
 
   const setKey: SaveFn = async (key, value) => {
     await api.settings.set(key, value)
@@ -93,6 +102,7 @@ export default function SettingsPage() {
             <>
               <YtdlpSettings data={data} onSave={setKey} />
               <VideoToolsSettings data={data} onSave={setKey} />
+              <MokuroSettings data={data} onSave={setKey} />
               <TorrentSettings data={data} onSave={setKey} />
             </>
           )}
@@ -235,11 +245,13 @@ function TimeStatsSettings({ data, onSave }: { data?: Record<string, string>; on
   const [animeEpMin, setAnimeEpMin] = useState('24')
   const [tvEpMin, setTvEpMin] = useState('40')
   const [mangaChMin, setMangaChMin] = useState('5')
+  const [bookPageMin, setBookPageMin] = useState('1.5')
   useEffect(() => {
     if (!data) return
     setAnimeEpMin(data['stats.animeEpMinutes'] ?? '24')
     setTvEpMin(data['stats.tvEpMinutes'] ?? '40')
     setMangaChMin(data['stats.mangaChapterMinutes'] ?? '5')
+    setBookPageMin(data['stats.bookPageMinutes'] ?? '1.5')
   }, [data])
 
   return (
@@ -251,7 +263,7 @@ function TimeStatsSettings({ data, onSave }: { data?: Record<string, string>; on
           <Link to="/stats" className="text-accent hover:underline">
             Stats
           </Link>{' '}
-          page to estimate time spent on anime, TV and manga. Only used as a fallback when a title
+          page to estimate time spent on anime, TV, manga and books. Only used as a fallback when a title
           has no real runtime from AniList/TMDB — re-import to fill those in. Games and visual novels
           use your logged playtime directly (no estimate).
         </>
@@ -292,6 +304,20 @@ function TimeStatsSettings({ data, onSave }: { data?: Record<string, string>; on
             onChange={(e) => setMangaChMin(e.target.value)}
             onBlur={() =>
               onSave('stats.mangaChapterMinutes', String(Math.max(1, Number(mangaChMin) || 5)))
+            }
+          />
+        </label>
+        <label className="block">
+          <span className="label mb-1 block">Books · min / page</span>
+          <input
+            className="input"
+            type="number"
+            min={0.1}
+            step={0.1}
+            value={bookPageMin}
+            onChange={(e) => setBookPageMin(e.target.value)}
+            onBlur={() =>
+              onSave('stats.bookPageMinutes', String(Math.max(0.1, Number(bookPageMin) || 1.5)))
             }
           />
         </label>
@@ -374,6 +400,14 @@ function FoldersSettings({ data, onSave }: { data?: Record<string, string>; onSa
         title="Manga library folder"
         placeholder="/home/you/Manga"
         description="The root folder your manga lives in. Set automatically the first time you link a series folder from a manga page; chapter paths are stored relative to this root, so if you move the library, just update this to the new location."
+      />
+      <TextSetting
+        settingKey="books.dir"
+        data={data}
+        onSave={onSave}
+        title="Books library folder"
+        placeholder="/home/you/Books"
+        description="The root folder your books (EPUBs) live in. Set automatically the first time you link a book's folder from a book page; volume paths are stored relative to this root, so if you move the library, just update this to the new location."
       />
       <TextSetting
         settingKey="music.dir"
@@ -641,6 +675,51 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
               downloads fail.
             </span>
           )}
+        </p>
+      )}
+    </SettingCard>
+  )
+}
+
+function MokuroSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+  const [mokuroPath, setMokuroPath] = useState('')
+  const [check, setCheck] = useState<MokuroDetectResult | null>(null)
+  useEffect(() => setMokuroPath(data?.['mokuro.path'] ?? ''), [data])
+
+  async function test() {
+    setCheck(null)
+    await onSave('mokuro.path', mokuroPath.trim())
+    setCheck(await api.manga.ocrDetect())
+  }
+
+  return (
+    <SettingCard
+      title="mokuro (manga OCR)"
+      description={
+        <>
+          Powers the Run OCR button on a manga&apos;s Chapters tab: mokuro reads speech bubbles so
+          the reader can overlay tappable text for dictionary lookups and mining. Install it
+          yourself (<span className="text-gray-400">pipx install mokuro</span>); its first run
+          downloads ~450 MB of OCR models. Leave blank to use{' '}
+          <span className="text-gray-400">mokuro</span> from PATH, or set a full binary path.
+        </>
+      }
+    >
+      <div className="flex items-center gap-2">
+        <input
+          className="input"
+          type="text"
+          value={mokuroPath}
+          onChange={(e) => setMokuroPath(e.target.value)}
+          placeholder="mokuro"
+        />
+        <button className="btn-ghost shrink-0" onClick={test}>
+          Save &amp; test
+        </button>
+      </div>
+      {check && (
+        <p className={`mt-3 text-sm ${check.ok ? 'text-green-400' : 'text-red-400'}`}>
+          {check.ok ? `✓ mokuro ${check.version}` : (check.error ?? 'mokuro not found')}
         </p>
       )}
     </SettingCard>

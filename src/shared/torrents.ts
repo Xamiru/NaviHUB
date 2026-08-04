@@ -22,6 +22,9 @@ export function torznabCategoriesFor(mediaType: MediaType): number[] {
       return [2000]
     case 'tv':
       return [5000]
+    case 'book':
+      // 7020 Books/EBook first; 7000 parent catches indexers with no subcats.
+      return [7020, 7000]
   }
 }
 

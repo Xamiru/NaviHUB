@@ -54,6 +54,7 @@ const COMMUNITY_SQL = `COALESCE(
   json_extract(m.metadata, '$.averageScore'),
   json_extract(m.metadata, '$.metacritic'),
   json_extract(m.metadata, '$.vndbRating'),
+  json_extract(m.metadata, '$.olRating'),
   json_extract(m.metadata, '$.imdbRating') * 10
 )`
 
@@ -268,8 +269,8 @@ export function statusCounts(mediaType: string): Record<string, number> {
 // branch on type / completed-status / metadata / settings, which reads far
 // clearer here than in a SQL CASE). Mirrors musicRepo.statsDetail's shape.
 
-const STAT_TYPES: MediaType[] = ['anime', 'manga', 'visual_novel', 'game', 'movie', 'tv']
-const ESTIMATED_TYPES = new Set<MediaType>(['anime', 'manga', 'tv'])
+const STAT_TYPES: MediaType[] = ['anime', 'manga', 'visual_novel', 'game', 'movie', 'tv', 'book']
+const ESTIMATED_TYPES = new Set<MediaType>(['anime', 'manga', 'tv', 'book'])
 
 // Must stay in sync with isCompletedStatus() in renderer/src/lib/mediaConfig.ts —
 // main can't import renderer code, so the rule is duplicated (and mirrored in SQL
@@ -302,7 +303,8 @@ function rowMinutes(
   r: StatRow,
   animeEp: number,
   tvEp: number,
-  mangaCh: number
+  mangaCh: number,
+  bookPage: number
 ): { minutes: number; estimated: boolean } {
   const passes = Math.max(r.rewatch_count, 1)
   const completed = isCompleted(r.status)
@@ -333,6 +335,11 @@ function rowMinutes(
       const chapters = completed && r.total_units != null ? r.total_units : r.progress
       return { minutes: chapters * mangaCh * passes, estimated: true }
     }
+    case 'book': {
+      // progress = current page; total_units = page count
+      const pages = completed && r.total_units != null ? r.total_units : r.progress
+      return { minutes: pages * bookPage * passes, estimated: true }
+    }
     default:
       return { minutes: 0, estimated: false }
   }
@@ -343,6 +350,7 @@ export function timeStats(): LibraryTimeStats {
   const animeEp = num('stats.animeEpMinutes', 24)
   const tvEp = num('stats.tvEpMinutes', 40)
   const mangaCh = num('stats.mangaChapterMinutes', 5)
+  const bookPage = num('stats.bookPageMinutes', 1.5)
 
   const placeholders = STAT_TYPES.map(() => '?').join(',')
   const rows = db
@@ -371,7 +379,7 @@ export function timeStats(): LibraryTimeStats {
   let mostRevisited: (TimeStatsItem & { times: number }) | null = null
 
   for (const r of rows) {
-    const { minutes, estimated } = rowMinutes(r, animeEp, tvEp, mangaCh)
+    const { minutes, estimated } = rowMinutes(r, animeEp, tvEp, mangaCh, bookPage)
     const item: TimeStatsItem = {
       id: r.id,
       mediaType: r.media_type,

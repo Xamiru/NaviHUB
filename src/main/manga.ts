@@ -4,7 +4,7 @@ import { existsSync, readdirSync } from 'fs'
 import { readdir } from 'fs/promises'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
-import { absoluteMediaPath, mangaRootDir } from './files'
+import { absoluteMediaPath, mangaRootDir, booksRootDir } from './files'
 import { isArchiveFile, listArchivePages } from './archive'
 import { isEpubFile, epubSpineCount, listEpubPages, epubToc } from './epub'
 import { mediaUrl } from '@shared/mediaUrl'
@@ -150,6 +150,27 @@ function rowToChapter(r: Record<string, unknown>): MangaChapter {
   }
 }
 
+// Book-type media reuse this whole module (same manga_chapter table, same
+// scanners, same readers) but live under their own library root. The media
+// row's type is the single discriminator — manga_chapter carries no root
+// column. Everything path-shaped below resolves through here.
+interface RootInfo {
+  root: string
+  prefix: 'manga' | 'books'
+  settingKey: 'manga.dir' | 'books.dir'
+  label: 'manga' | 'books'
+}
+
+function rootInfoFor(mediaId: number): RootInfo {
+  const row = getSqlite().prepare('SELECT media_type FROM media_item WHERE id = ?').get(mediaId) as
+    | { media_type: string }
+    | undefined
+  if (row?.media_type === 'book') {
+    return { root: booksRootDir(), prefix: 'books', settingKey: 'books.dir', label: 'books' }
+  }
+  return { root: mangaRootDir(), prefix: 'manga', settingKey: 'manga.dir', label: 'manga' }
+}
+
 function localDirOf(mediaId: number): string | null {
   const row = getSqlite().prepare('SELECT local_dir FROM media_item WHERE id = ?').get(mediaId) as
     | { local_dir: string | null }
@@ -208,10 +229,11 @@ export async function attachFolder(mediaId: number): Promise<MangaAttachResult> 
     | { title: string }
     | undefined
   if (!media) return { ok: false, error: 'Media item not found' }
+  const info = rootInfoFor(mediaId)
 
   const res = await dialog.showOpenDialog({
     title: 'Choose the series folder',
-    defaultPath: getSetting('manga.dir')?.trim() || undefined,
+    defaultPath: getSetting(info.settingKey)?.trim() || undefined,
     properties: ['openDirectory']
   })
   if (res.canceled || res.filePaths.length === 0) return { ok: false }
@@ -220,16 +242,16 @@ export async function attachFolder(mediaId: number): Promise<MangaAttachResult> 
   // First attach bootstraps the library root as the picked folder's parent;
   // afterwards every attached series must live under that root so stored paths
   // stay relative and the library stays relocatable.
-  let root = getSetting('manga.dir')?.trim()
+  let root = getSetting(info.settingKey)?.trim()
   if (!root) {
     root = dirname(picked)
-    setSetting('manga.dir', root)
+    setSetting(info.settingKey, root)
   }
   const rel = relative(root, picked)
   if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
     return {
       ok: false,
-      error: `Folder must be inside the manga library root (${root} — change it in Settings)`
+      error: `Folder must be inside the ${info.label} library root (${root} — change it in Settings)`
     }
   }
   const localDir = rel.split('\\').join('/')
@@ -244,9 +266,10 @@ export async function attachFolder(mediaId: number): Promise<MangaAttachResult> 
 export async function rescan(mediaId: number): Promise<MangaAttachResult> {
   const localDir = localDirOf(mediaId)
   if (!localDir) return { ok: false, error: 'No folder attached' }
-  const abs = join(mangaRootDir(), localDir)
+  const info = rootInfoFor(mediaId)
+  const abs = join(info.root, localDir)
   if (!existsSync(abs)) {
-    return { ok: false, error: `Folder not found: ${abs} — is the manga root set correctly?` }
+    return { ok: false, error: `Folder not found: ${abs} — is the ${info.label} root set correctly?` }
   }
   const media = getSqlite().prepare('SELECT title FROM media_item WHERE id = ?').get(mediaId) as {
     title: string
@@ -280,7 +303,8 @@ export async function pages(chapterId: number): Promise<MangaPages | null> {
     | undefined
   if (!row) return null
   const ch = rowToChapter(row)
-  const abs = join(mangaRootDir(), ch.dirPath)
+  const info = rootInfoFor(ch.mediaId)
+  const abs = join(info.root, ch.dirPath)
   const files = await listChapterPages(abs)
   if (files.length !== ch.pageCount) {
     db.prepare(
@@ -295,7 +319,7 @@ export async function pages(chapterId: number): Promise<MangaPages | null> {
     title: ch.title,
     number: ch.number,
     pages: files.map((f) => {
-      const relPath = `manga/${ch.dirPath}/${f}`
+      const relPath = `${info.prefix}/${ch.dirPath}/${f}`
       // relPath is never empty, so mediaUrl can't return null here.
       return { relPath, url: mediaUrl(relPath)! }
     }),
@@ -343,6 +367,13 @@ export async function adhocPages(token: string): Promise<MangaPages | null> {
 // chapters read outside the app must survive.
 function syncMediaProgress(mediaId: number): void {
   const db = getSqlite()
+  // Book-type media track progress in PAGES (hand-managed on the detail page),
+  // not chapters — a finished EPUB volume must never slam a page count down to
+  // the volume count. read_at/last_read_page still persist on the chapter row.
+  const media = db.prepare('SELECT media_type FROM media_item WHERE id = ?').get(mediaId) as
+    | { media_type: string }
+    | undefined
+  if (media?.media_type === 'book') return
   const agg = db
     .prepare(
       `SELECT COUNT(*) AS readCount, MAX(number) AS maxNumber

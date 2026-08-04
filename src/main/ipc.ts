@@ -35,6 +35,7 @@ import * as anilist from './anilist'
 import * as tmdb from './tmdb'
 import * as vndb from './vndb'
 import * as rawg from './rawg'
+import * as openlibrary from './openlibrary'
 import * as themes from './themes'
 import * as pictures from './pictures'
 import * as jackett from './jackett'
@@ -51,6 +52,7 @@ import * as musicRepo from './repos/musicRepo'
 import * as musicDownload from './musicDownload'
 import * as musicArt from './musicArt'
 import * as mokuro from './mokuro'
+import * as mokuroRun from './mokuroRun'
 import * as gacha from './gacha'
 import * as gachaRepo from './repos/gachaRepo'
 import * as atlas from './atlas'
@@ -332,6 +334,11 @@ export function registerIpc(): void {
   )
   ipcMain.handle('manga:ocrStatus', (_e, chapterId) => mokuro.status(chapterId))
   ipcMain.handle('manga:ocrPage', (_e, chapterId, pageIndex) => mokuro.page(chapterId, pageIndex))
+  ipcMain.handle('manga:ocrRun', (_e, mediaId) => mokuroRun.startOcr(mediaId))
+  ipcMain.handle('manga:ocrRunStatus', () => mokuroRun.getOcrStatus())
+  ipcMain.handle('manga:ocrRunCancel', (_e, id) => mokuroRun.cancelOcr(id))
+  ipcMain.handle('manga:ocrDetect', () => mokuroRun.detectBinary())
+  ipcMain.handle('manga:ocrOverview', (_e, mediaId) => mokuroRun.ocrOverview(mediaId))
   ipcMain.handle('manga:adhocPages', (_e, token) => manga.adhocPages(token))
 
   // ---- local video player ----
@@ -393,6 +400,12 @@ export function registerIpc(): void {
   ipcMain.handle('rawg:search', (_e, query) => rawg.search(query))
   ipcMain.handle('rawg:import', (_e, rawgId) =>
     withActivity('Importing from RAWG', () => rawg.importGame(rawgId))
+  )
+
+  // ---- Open Library import (books) ----
+  ipcMain.handle('openlibrary:search', (_e, query) => openlibrary.search(query))
+  ipcMain.handle('openlibrary:import', (_e, olId) =>
+    withActivity('Importing from Open Library', () => openlibrary.importBook(olId))
   )
 
   // ---- AnimeThemes import (anime OP/ED songs) + the Songs library ----

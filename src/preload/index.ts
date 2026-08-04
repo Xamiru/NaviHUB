@@ -121,6 +121,10 @@ const api: NaviApi = {
     search: (query) => ipcRenderer.invoke('rawg:search', query),
     import: (rawgId) => ipcRenderer.invoke('rawg:import', rawgId)
   },
+  openlibrary: {
+    search: (query) => ipcRenderer.invoke('openlibrary:search', query),
+    import: (olId) => ipcRenderer.invoke('openlibrary:import', olId)
+  },
   themes: {
     import: (mediaId) => ipcRenderer.invoke('themes:import', mediaId),
     list: (filter) => ipcRenderer.invoke('themes:list', filter),
@@ -272,6 +276,11 @@ const api: NaviApi = {
       ipcRenderer.invoke('manga:markChapterRead', chapterId, read),
     ocrStatus: (chapterId) => ipcRenderer.invoke('manga:ocrStatus', chapterId),
     ocrPage: (chapterId, pageIndex) => ipcRenderer.invoke('manga:ocrPage', chapterId, pageIndex),
+    ocrRun: (mediaId) => ipcRenderer.invoke('manga:ocrRun', mediaId),
+    ocrRunStatus: () => ipcRenderer.invoke('manga:ocrRunStatus'),
+    ocrRunCancel: (id) => ipcRenderer.invoke('manga:ocrRunCancel', id),
+    ocrDetect: () => ipcRenderer.invoke('manga:ocrDetect'),
+    ocrOverview: (mediaId) => ipcRenderer.invoke('manga:ocrOverview', mediaId),
     adhocPages: (token) => ipcRenderer.invoke('manga:adhocPages', token)
   },
   video: {

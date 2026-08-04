@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { readerPath, isBookChapter } from '../lib/readerPath'
 import { toast, toastError } from '../lib/toast'
+import { useOcrRun } from '../lib/useOcrRun'
 import Section from './Section'
 import type { MangaChapter, MediaDetail } from '@shared/types'
 
@@ -18,6 +19,12 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
   const [buildingDeck, setBuildingDeck] = useState(false)
+
+  // Book-type media reuse this section under /books with their own library
+  // root; the Japanese-mining extras (mokuro OCR, vocab prep deck) stay
+  // manga-only — an English novel has no OCR sidecars or JP corpus.
+  const isBookMedia = m.mediaType === 'book'
+  const basePath = isBookMedia ? ('/books' as const) : ('/manga' as const)
 
   // Live progress while a prep deck is being built (main-process scan).
   const { data: deckStatus } = useQuery({
@@ -45,6 +52,28 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
     queryKey: qk.manga.chapters(m.id),
     queryFn: () => api.manga.chapters(m.id)
   })
+
+  // Mokuro sidecar presence per chapter (OCR chips + the Run OCR count) and
+  // the shared in-app run poll. The run is main-process and one-at-a-time, so
+  // the status survives navigating away — busy state derives from it, never
+  // from a local flag.
+  const { data: ocrOverview } = useQuery({
+    queryKey: qk.manga.ocrOverview(m.id),
+    queryFn: () => api.manga.ocrOverview(m.id),
+    enabled: !!data?.localDir && !isBookMedia
+  })
+  const ocr = useOcrRun()
+  const ocrByChapter = new Map((ocrOverview ?? []).map((o) => [o.chapterId, o]))
+  const ocrMissing = (ocrOverview ?? []).filter((o) => o.ocrEligible && !o.hasSidecar).length
+
+  async function startOcr() {
+    try {
+      await api.manga.ocrRun(m.id)
+      await ocr.kick()
+    } catch (e) {
+      toastError(e)
+    }
+  }
 
   const refresh = () => {
     qc.invalidateQueries({ queryKey: qk.manga.all })
@@ -89,11 +118,11 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
     chapters.find((c) => c.lastReadPage != null && !c.readAt) ?? chapters.find((c) => !c.readAt)
   const readCount = chapters.filter((c) => c.readAt).length
 
-  const openReader = (ch: MangaChapter) => navigate(readerPath(m.id, ch))
+  const openReader = (ch: MangaChapter) => navigate(readerPath(basePath, m.id, ch))
 
   return (
     <Section
-      title={`Chapters${chapters.length ? ` · ${readCount}/${chapters.length} read` : ''}`}
+      title={`${isBookMedia ? 'Volumes' : 'Chapters'}${chapters.length ? ` · ${readCount}/${chapters.length} read` : ''}`}
       className="mb-6"
     >
       {!data?.localDir ? (
@@ -102,7 +131,8 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
             ⊕ Link local folder
           </button>
           <span className="text-xs text-gray-400">
-            Point at this manga's folder in your library to read it here.
+            Point at this {isBookMedia ? "book's" : "manga's"} folder in your library to read it
+            here.
           </span>
         </div>
       ) : (
@@ -116,20 +146,53 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
             <button className="btn-ghost py-1 px-3" disabled={busy} onClick={rescan}>
               Rescan
             </button>
-            <button
-              className="btn-ghost py-1 px-3"
-              disabled={busy || buildingDeck}
-              title="Frequency-scan this series' text (mokuro OCR / EPUB) and build a 'words you'll meet' course"
-              onClick={() => void buildDeck()}
-            >
-              {buildingDeck
-                ? deckStatus?.phase === 'reading'
-                  ? `Scanning ${deckStatus.done}/${deckStatus.total}…`
-                  : deckStatus?.phase === 'glossing'
-                    ? `Glossing ${deckStatus.done}/${deckStatus.total}…`
-                    : 'Building…'
-                : 'Vocab deck'}
-            </button>
+            {!isBookMedia && ocr.running ? (
+              <>
+                <span className="chip bg-accent/20 text-accent text-[11px] shrink-0">
+                  {ocr.status?.state === 'starting'
+                    ? 'OCR: loading model…'
+                    : `OCR ${ocr.status?.volumeIndex ?? '…'}/${ocr.status?.volumeCount ?? '…'}${
+                        ocr.status?.percent != null ? ` · ${ocr.status.percent}%` : ''
+                      }`}
+                </span>
+                <button
+                  className="btn-ghost py-1 px-3"
+                  onClick={() => {
+                    if (ocr.status) void api.manga.ocrRunCancel(ocr.status.id).then(ocr.kick)
+                  }}
+                >
+                  Stop
+                </button>
+              </>
+            ) : (
+              !isBookMedia &&
+              ocrMissing > 0 && (
+                <button
+                  className="btn-ghost py-1 px-3"
+                  disabled={busy}
+                  title="Run mokuro on every volume without OCR, so its text becomes tappable in the reader (needs mokuro installed — see Settings → Integrations)"
+                  onClick={() => void startOcr()}
+                >
+                  Run OCR ({ocrMissing})
+                </button>
+              )
+            )}
+            {!isBookMedia && (
+              <button
+                className="btn-ghost py-1 px-3"
+                disabled={busy || buildingDeck}
+                title="Frequency-scan this series' text (mokuro OCR / EPUB) and build a 'words you'll meet' course"
+                onClick={() => void buildDeck()}
+              >
+                {buildingDeck
+                  ? deckStatus?.phase === 'reading'
+                    ? `Scanning ${deckStatus.done}/${deckStatus.total}…`
+                    : deckStatus?.phase === 'glossing'
+                      ? `Glossing ${deckStatus.done}/${deckStatus.total}…`
+                      : 'Building…'
+                  : 'Vocab deck'}
+              </button>
+            )}
             <button className="btn-ghost py-1 px-3" disabled={busy} onClick={detach}>
               ✕ Unlink
             </button>
@@ -139,7 +202,13 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
           </div>
           <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
             {chapters.map((ch) => (
-              <ChapterRow key={ch.id} ch={ch} onOpen={() => openReader(ch)} onChange={refresh} />
+              <ChapterRow
+                key={ch.id}
+                ch={ch}
+                hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
+                onOpen={() => openReader(ch)}
+                onChange={refresh}
+              />
             ))}
           </div>
         </>
@@ -150,10 +219,12 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
 
 function ChapterRow({
   ch,
+  hasOcr,
   onOpen,
   onChange
 }: {
   ch: MangaChapter
+  hasOcr: boolean
   onOpen: () => void
   onChange: () => void
 }) {
@@ -189,6 +260,14 @@ function ChapterRow({
       {isBookChapter(ch) && (
         <span className="chip text-[11px] px-1.5 py-0.5 shrink-0" title="EPUB book">
           本
+        </span>
+      )}
+      {hasOcr && (
+        <span
+          className="chip bg-accent/20 text-accent text-[11px] px-1.5 py-0.5 shrink-0"
+          title="Mokuro OCR available — text is tappable in the reader"
+        >
+          OCR
         </span>
       )}
       {inProgress && (

@@ -757,6 +757,15 @@ export function stats(): JpStats {
     reviewsToday: one(
       `SELECT COUNT(*) AS n FROM jp_review_log
        WHERE date(reviewed_at, 'localtime') = date('now', 'localtime')`
+    ),
+    // newLimit is a per-SESSION renderer pref, so nothing else notices a second
+    // session dealing another batch — this count is the pacing guardrail.
+    introducedToday: one(
+      `SELECT COUNT(*) AS n FROM (
+         SELECT card_id FROM jp_review_log
+         GROUP BY card_id
+         HAVING date(MIN(reviewed_at), 'localtime') = date('now', 'localtime')
+       )`
     )
   }
 }

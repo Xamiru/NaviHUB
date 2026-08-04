@@ -143,11 +143,12 @@ describe('status resolution', () => {
 describe('unit types', () => {
   it('counts units for anime, manga and TV only', () => {
     expect(['anime', 'manga', 'tv'].every(isUnitProgress)).toBe(true)
-    expect(['movie', 'game', 'visual_novel'].some(isUnitProgress)).toBe(false)
+    // Books track pages, not sittings — deliberately NOT unit-progress.
+    expect(['movie', 'game', 'visual_novel', 'book'].some(isUnitProgress)).toBe(false)
   })
 
   it('covers every media type with a fallback status list', () => {
-    for (const type of ['anime', 'manga', 'visual_novel', 'game', 'movie', 'tv'] as const) {
+    for (const type of ['anime', 'manga', 'visual_novel', 'game', 'movie', 'tv', 'book'] as const) {
       expect(STATUS_FALLBACKS[type].length).toBeGreaterThan(2)
     }
   })

@@ -105,6 +105,7 @@ function seed(): void {
       ('ytdlp.path', '/usr/local/bin/yt-dlp'),
       ('music.dir', '/media/xamir/Anglo/Music'),
       ('manga.dir', '/media/xamir/Nihon/Manga'),
+      ('books.dir', '/media/xamir/Anglo/Books'),
       ('audio.dir', '/media/xamir/Anglo/Anime'),
       ('pictures.dir', '/media/xamir/Anglo/Pictures'),
       ('jackett.url', 'http://localhost:9117'),

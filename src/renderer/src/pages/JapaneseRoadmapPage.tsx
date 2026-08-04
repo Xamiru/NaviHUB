@@ -44,6 +44,7 @@ export default function JapaneseRoadmapPage() {
 
       <Section title="The path">
         <div className="space-y-2">
+          <KanaStepRow />
           {roadmap.steps.map((course, i) => (
             <StepRow
               key={course.id}
@@ -83,6 +84,33 @@ export default function JapaneseRoadmapPage() {
         )}
       </Section>
     </div>
+  )
+}
+
+// Step 00: kana. Not a course — the typing drill is the whole curriculum — but
+// the path silently assumes it, so it belongs on the path. "Practiced" (never
+// "Cleared") because an endless drill has no honest done-state; the signal is
+// simply that kana rounds have been logged.
+function KanaStepRow() {
+  const { data: history } = useQuery({
+    queryKey: qk.quiz.history('kana'),
+    queryFn: () => api.quiz.history('kana')
+  })
+  const practiced = (history?.totalSessions ?? 0) > 0
+  return (
+    <Link to="/japanese/kana" className="card group block border-l-2 border-l-base-700 p-3">
+      <div className="flex items-baseline gap-2">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-gray-600">
+          Step 00
+        </span>
+        {practiced && <span className="chip bg-green-500/20 text-green-300">Practiced</span>}
+      </div>
+      <p className="mt-1 font-medium group-hover:text-accent">Kana</p>
+      <p className="mt-1.5 text-xs text-gray-500">
+        Hiragana and katakana in the typing drill — grind until reading them is automatic. Not a
+        course; everything after assumes it.
+      </p>
+    </Link>
   )
 }
 

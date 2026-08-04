@@ -17,13 +17,14 @@ import type { LibraryTimeStats, TimeStatsByType, TimeStatsItem, MediaType } from
 // Fixed per-type hues (color follows the entity, never rank); validated for
 // contrast + CVD on the base-800 card surface. Estimated types (anime/tv/manga)
 // are labeled with a leading ≈ throughout.
-const TYPE_COLORS: Record<MediaType, string> = {
+export const TYPE_COLORS: Record<MediaType, string> = {
   anime: '#7c5cff', // the app accent
   tv: '#3987e5',
   movie: '#e66767',
   game: '#199e70',
   manga: '#c98500',
-  visual_novel: '#d55181'
+  visual_novel: '#d55181',
+  book: '#3aa6a6'
 }
 
 const MINUTES_PER_DAY = 1440
@@ -63,6 +64,10 @@ function detailLine(it: TimeStatsItem): string {
       return fmtMinutesAsHours(it.progress > 0 ? it.progress : (it.totalUnits ?? 0))
     case 'movie':
       return `${it.totalUnits ?? 0} min${times('watched')}`
+    case 'book': {
+      const p = it.progress > 0 ? it.progress : (it.totalUnits ?? 0)
+      return `${p} p${times('read')}`
+    }
     default:
       return ''
   }

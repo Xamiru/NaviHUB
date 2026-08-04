@@ -13,9 +13,11 @@ export interface ChildNav {
 }
 
 export interface ImportSourceCfg {
-  key: 'anilist' | 'anilistManga' | 'tmdb' | 'tmdbTv' | 'vndb' | 'rawg'
-  label: string // "AniList" / "TMDB" / "VNDB" / "RAWG"
+  key: 'anilist' | 'anilistManga' | 'tmdb' | 'tmdbTv' | 'vndb' | 'rawg' | 'openlibrary'
+  label: string // "AniList" / "TMDB" / "VNDB" / "RAWG" / "Open Library"
   placeholder: string
+  // Noun for a result's unit count in the search dialog ("352 pages"); "ep" default.
+  unitNoun?: string
 }
 
 // A tab shown on the list page that links to a sibling media type's list (e.g.
@@ -395,8 +397,54 @@ export const TV: MediaConfig = {
   importSource: { key: 'tmdbTv', label: 'TMDB', placeholder: 'Search TMDB TV (e.g. Breaking Bad)…' }
 }
 
+// Books track pages, not sittings: progress = current page (hand-edited or from
+// a physical bookmark), total_units = page count from Open Library. No
+// unitProgress — "+1 page" is not a meaningful log action, so the detail-page
+// log button falls back to mark-completed / read-again. Local EPUBs attach via
+// the manga chapter machinery under the books.dir root (each .epub = a volume).
+export const BOOK: MediaConfig = {
+  key: 'book',
+  singular: 'Book',
+  plural: 'Books',
+  basePath: '/books',
+  icon: '▣',
+  statusesKey: 'book.statuses',
+  defaultStatuses: ['Reading', 'Completed', 'On Hold', 'Dropped', 'Plan to Read'],
+  progressFieldLabel: 'Progress (pages read)',
+  totalFieldLabel: 'Total pages',
+  timesConsumedLabel: 'Times read',
+  progressStatLabel: 'Progress',
+  formatProgressStat: (m) =>
+    `${m.totalUnits != null ? `${m.progress} / ${m.totalUnits}` : m.progress} p`,
+  formatCardSub: (m) => `${m.totalUnits != null ? `${m.progress}/${m.totalUnits}` : m.progress} p`,
+  // Like manga: characters exist only as hand-added entries, nobody voices them.
+  castRole: 'voice_actor',
+  castSectionTitle: 'Characters',
+  castPersonLabel: 'Character',
+  castShowLanguage: false,
+  castLayout: 'character-only',
+  crewTitle: 'Authors',
+  companyTitle: 'Publishers',
+  companyRoles: [
+    { value: 'publisher', label: 'Publisher' },
+    { value: 'other', label: 'Other' }
+  ],
+  companyDefaultRole: 'publisher',
+  companyPickerPlaceholder: 'Add publisher…',
+  children: [{ to: '/authors', label: 'Authors', icon: '✎', role: 'writer' }],
+  importSource: {
+    key: 'openlibrary',
+    label: 'Open Library',
+    placeholder: 'Search Open Library (e.g. The Hobbit)…',
+    unitNoun: 'pages'
+  },
+  hasLocalReader: true,
+  mediaTabLabel: 'Volumes',
+  hasFanArt: true
+}
+
 // Media types with a live UI, in sidebar order.
-export const MEDIA_CONFIGS: MediaConfig[] = [ANIME, MANGA, VISUAL_NOVEL, GAME, MOVIE, TV]
+export const MEDIA_CONFIGS: MediaConfig[] = [ANIME, MANGA, VISUAL_NOVEL, GAME, BOOK, MOVIE, TV]
 
 const BY_KEY: Record<string, MediaConfig> = Object.fromEntries(
   MEDIA_CONFIGS.map((c) => [c.key, c])

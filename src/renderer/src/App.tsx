@@ -89,7 +89,7 @@ import GachaHomePage from './pages/GachaHomePage'
 import GachaGamePage from './pages/GachaGamePage'
 import GachaUnitPage from './pages/GachaUnitPage'
 import GachaCoachPage from './pages/GachaCoachPage'
-import { ANIME, MANGA, VISUAL_NOVEL, GAME, MOVIE, TV } from './lib/mediaConfig'
+import { ANIME, MANGA, VISUAL_NOVEL, GAME, BOOK, MOVIE, TV } from './lib/mediaConfig'
 
 export default function App() {
   const mainRef = useRef<HTMLElement>(null)
@@ -102,7 +102,7 @@ export default function App() {
   // NowPlayingBar. Note the trailing "/" on the /watch branches: the bare
   // /watch landing page is a picker and deliberately keeps the shell.
   const isReader =
-    /^\/manga\/\d+\/(read|book)\/|^\/watch\/(file|adhoc)\/|^\/read\/(manga|book)\//.test(
+    /^\/(manga|books)\/\d+\/(read|book)\/|^\/watch\/(file|adhoc)\/|^\/read\/(manga|book)\//.test(
       location.pathname
     )
 
@@ -120,6 +120,9 @@ export default function App() {
         <Routes>
           <Route path="/manga/:id/read/:chapterId" element={<MangaReaderPage />} />
           <Route path="/manga/:id/book/:chapterId" element={<BookReaderPage />} />
+          {/* Books reuse the same readers; a books folder may hold CBZ volumes too. */}
+          <Route path="/books/:id/read/:chapterId" element={<MangaReaderPage />} />
+          <Route path="/books/:id/book/:chapterId" element={<BookReaderPage />} />
           <Route path="/watch/file/:fileId" element={<VideoPlayerPage />} />
           <Route path="/watch/adhoc/:token" element={<VideoPlayerPage />} />
           {/* "Open with NaviHUB" — a .cbz/.epub from outside the library. */}
@@ -173,6 +176,12 @@ export default function App() {
             <Route path="/games/:id" element={<MediaDetailPage cfg={GAME} />} />
             <Route path="/games/:id/edit" element={<MediaFormPage cfg={GAME} />} />
 
+            {/* Books (Open Library) — pages progress; local EPUBs via the reader */}
+            <Route path="/books" element={<MediaListPage cfg={BOOK} />} />
+            <Route path="/books/new" element={<MediaFormPage cfg={BOOK} />} />
+            <Route path="/books/:id" element={<MediaDetailPage cfg={BOOK} />} />
+            <Route path="/books/:id/edit" element={<MediaFormPage cfg={BOOK} />} />
+
             {/* Movies + TV (shared section: same actors, separate lists) */}
             <Route path="/movies" element={<MediaListPage cfg={MOVIE} />} />
             <Route path="/movies/new" element={<MediaFormPage cfg={MOVIE} />} />
@@ -220,6 +229,19 @@ export default function App() {
                   basePath="/people"
                   personRole="director"
                   mediaType="movie"
+                />
+              }
+            />
+            <Route
+              path="/authors"
+              element={
+                <EntityListView
+                  kind="person"
+                  title="Authors"
+                  basePath="/people"
+                  personRole="writer"
+                  // Scoped to books so movie/TV writer credits can't bleed in.
+                  mediaType="book"
                 />
               }
             />

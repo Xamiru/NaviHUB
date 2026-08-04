@@ -7,6 +7,9 @@ import { useReaderSource } from '../lib/readerSource'
 import { readerPath } from '../lib/readerPath'
 import OcrOverlay from '../components/reader/OcrOverlay'
 import MiningPanel from '../components/reader/MiningPanel'
+import BarButton from '../components/reader/BarButton'
+import ShortcutHelp from '../components/reader/ShortcutHelp'
+import { PopoverRow, PopoverOption } from '../components/reader/BookSettingsPopover'
 import type { MangaChapter, MokuroBlock } from '@shared/types'
 
 // Immersive local manga reader (routed chrome-free from App.tsx).
@@ -45,6 +48,20 @@ function loadPrefs(): ReaderPrefs {
 }
 
 const FIT_CYCLE: Fit[] = ['height', 'width', 'original']
+
+const SHORTCUTS = [
+  { keys: ['←', '→'], label: 'Turn page (direction-aware)' },
+  { keys: ['Space'], label: 'Next page (Shift = previous)' },
+  { keys: ['Home', 'End'], label: 'First / last page' },
+  { keys: ['S', 'D', 'V'], label: 'Single / double / scroll mode' },
+  { keys: ['F'], label: 'Cycle fit: height, width, original' },
+  { keys: ['R'], label: 'Reading direction RTL ↔ LTR' },
+  { keys: ['C'], label: 'Cover page alone (double mode)' },
+  { keys: ['O'], label: 'OCR overlay on/off' },
+  { keys: ['M'], label: 'Mine words (tap a speech bubble)' },
+  { keys: ['+', '−', '0'], label: 'Zoom in / out / reset' },
+  { keys: ['Esc'], label: 'Close panels / back to series' }
+]
 
 export default function MangaReaderPage() {
   const { doc, library, chapterId, mediaId, adhoc } = useReaderSource()
@@ -241,11 +258,15 @@ export default function MangaReaderPage() {
   // otherwise detail's own "← Back" (navigate(-1)) bounces straight back here.
   // The reader is only ever entered from the detail page, so -1 is the detail
   // page; the location.key check covers a deep link / refresh with no history.
+  // The same reader serves /manga and /books routes (a books folder can hold
+  // CBZ volumes); the URL says which section exits and switches stay inside.
+  const basePath = location.pathname.startsWith('/books') ? ('/books' as const) : ('/manga' as const)
+
   const exitToDetail = useCallback(() => {
     if (location.key !== 'default') navigate(-1)
     // An ad-hoc archive has no series page to go back to.
-    else navigate(adhoc ? '/' : `/manga/${mediaId}`)
-  }, [navigate, mediaId, location.key])
+    else navigate(adhoc ? '/' : `${basePath}/${mediaId}`)
+  }, [navigate, mediaId, location.key, basePath])
 
   const goToChapter = useCallback(
     (ch: MangaChapter) => {
@@ -255,9 +276,9 @@ export default function MangaReaderPage() {
       // replace: a whole reading session stays ONE history entry, so exiting
       // lands on the detail page no matter how many chapters were read.
       // readerPath routes EPUB volumes into the book reader (mixed series).
-      navigate(`${readerPath(mediaId, ch)}?page=0`, { replace: true })
+      navigate(`${readerPath(basePath, mediaId, ch)}?page=0`, { replace: true })
     },
-    [navigate, mediaId]
+    [navigate, mediaId, basePath]
   )
 
   // ---- mining panel + OCR overlay state ----
@@ -333,6 +354,10 @@ export default function MangaReaderPage() {
   const [chapterListOpen, setChapterListOpen] = useState(false)
   const chapterListOpenRef = useRef(false)
   chapterListOpenRef.current = chapterListOpen
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const settingsOpenRef = useRef(false)
+  settingsOpenRef.current = settingsOpen
+  const [helpOpen, setHelpOpen] = useState(false)
 
   // ---- auto-hiding bars ----
   const [barsVisible, setBarsVisible] = useState(true)
@@ -341,8 +366,8 @@ export default function MangaReaderPage() {
     setBarsVisible(true)
     if (barsTimer.current) clearTimeout(barsTimer.current)
     barsTimer.current = setTimeout(() => {
-      // Never hide the bar under an open chapter list.
-      if (!chapterListOpenRef.current) setBarsVisible(false)
+      // Never hide the bar under an open chapter list or settings popover.
+      if (!chapterListOpenRef.current && !settingsOpenRef.current) setBarsVisible(false)
     }, 2500)
   }, [])
   useEffect(() => {
@@ -416,6 +441,9 @@ export default function MangaReaderPage() {
         case 'm':
           setPanelOpen((v) => !v)
           break
+        case '?':
+          setHelpOpen((v) => !v)
+          break
         case '+':
         case '=':
           zoomBy(1.25)
@@ -429,7 +457,9 @@ export default function MangaReaderPage() {
           break
         case 'Escape':
         case 'Backspace':
-          if (chapterListOpen) setChapterListOpen(false)
+          if (helpOpen) setHelpOpen(false)
+          else if (chapterListOpen) setChapterListOpen(false)
+          else if (settingsOpen) setSettingsOpen(false)
           else if (showEnd) setShowEnd(false)
           else if (panelOpen) setPanelOpen(false)
           else exitToDetail()
@@ -438,7 +468,7 @@ export default function MangaReaderPage() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [direction, fit, coverOffset, mode, goNext, goPrev, gotoPage, pageCount, panelOpen, showEnd, chapterListOpen, setPref, exitToDetail, zoomBy])
+  }, [direction, fit, coverOffset, mode, goNext, goPrev, gotoPage, pageCount, panelOpen, showEnd, chapterListOpen, settingsOpen, helpOpen, setPref, exitToDetail, zoomBy])
 
   // ---- click zones (single/double): edges turn pages, centre toggles bars ----
   function onViewportClick(e: React.MouseEvent) {
@@ -519,7 +549,7 @@ export default function MangaReaderPage() {
     )
   }
 
-  const perPageWidth = mode === 'double' ? Math.floor((vp.w - 8) / 2) : vp.w
+  const perPageWidth = mode === 'double' ? Math.floor(vp.w / 2) : vp.w
   const imgStyle = (index: number): React.CSSProperties => {
     if (fit === 'height') {
       return {
@@ -534,7 +564,7 @@ export default function MangaReaderPage() {
     return nat && zoom !== 1 ? { width: nat.w * zoom } : {}
   }
 
-  const barCls = `absolute left-0 right-0 z-20 bg-base-900/90 backdrop-blur px-4 py-2 flex items-center gap-3 transition-opacity duration-300 ${
+  const barCls = `absolute left-0 right-0 z-20 bg-base-900/90 backdrop-blur border-base-800 px-4 py-2 flex items-center gap-3 transition-opacity duration-300 motion-reduce:transition-none ${
     barsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
   }`
 
@@ -543,7 +573,7 @@ export default function MangaReaderPage() {
       {/* main reading column */}
       <div className="relative flex-1 min-w-0 flex flex-col">
         {/* top bar */}
-        <div className={`${barCls} top-0`}>
+        <div className={`${barCls} top-0 border-b`}>
           <button className="btn-ghost py-1 px-3 text-sm" onClick={exitToDetail}>
             ← Back
           </button>
@@ -575,9 +605,10 @@ export default function MangaReaderPage() {
             onMouseMove={onPanMove}
           >
             {/* m-auto (not justify-center) so an overflowing zoomed page can
-                scroll to every edge instead of clipping one side */}
+                scroll to every edge instead of clipping one side. gap-0: a
+                double spread's artwork joins across the seam. */}
             <div
-              className={`m-auto flex items-center justify-center gap-2 ${
+              className={`m-auto flex items-center justify-center ${
                 mode === 'double' && direction === 'rtl' ? 'flex-row-reverse' : ''
               }`}
             >
@@ -644,6 +675,11 @@ export default function MangaReaderPage() {
           <div className="absolute inset-0 z-30 bg-black/70 flex items-center justify-center" onClick={() => setShowEnd(false)}>
             <div className="card p-6 text-center space-y-4" onClick={(e) => e.stopPropagation()}>
               <p className="text-lg text-gray-200">End of {doc.title}</p>
+              {chapters.length > 1 && chIndex >= 0 && (
+                <p className="text-xs text-gray-500">
+                  Chapter {chIndex + 1} of {chapters.length}
+                </p>
+              )}
               <div className="flex items-center justify-center gap-2">
                 {nextChapter && (
                   <button className="btn-primary" onClick={() => goToChapter(nextChapter)}>
@@ -659,7 +695,7 @@ export default function MangaReaderPage() {
         )}
 
         {/* bottom bar */}
-        <div className={`${barCls} bottom-0`}>
+        <div className={`${barCls} bottom-0 border-t`}>
           <button
             className="btn-ghost py-1 px-2 text-xs"
             disabled={!prevChapter}
@@ -698,7 +734,7 @@ export default function MangaReaderPage() {
             max={Math.max(0, pageCount - 1)}
             value={page}
             onChange={(e) => gotoPage(Number(e.target.value))}
-            className="flex-1 accent-current"
+            className="flex-1 accent-accent"
             style={{ direction: direction === 'rtl' && mode !== 'vertical' ? 'rtl' : 'ltr' }}
             aria-label="Page"
           />
@@ -711,33 +747,8 @@ export default function MangaReaderPage() {
           >
             ⏭
           </button>
-          <div className="flex items-center gap-1 shrink-0 text-xs">
-            <BarToggle label="S" active={mode === 'single'} title="Single page (S)" onClick={() => setPref('mode', 'single')} />
-            <BarToggle label="D" active={mode === 'double'} title="Double spread (D)" onClick={() => setPref('mode', 'double')} />
-            <BarToggle label="V" active={mode === 'vertical'} title="Vertical scroll (V)" onClick={() => setPref('mode', 'vertical')} />
-            <span className="w-px h-4 bg-base-700 mx-1" />
-            <BarToggle
-              label={fit === 'height' ? '↕' : fit === 'width' ? '↔' : '1:1'}
-              active
-              title={`Fit: ${fit} (F cycles)`}
-              onClick={() => setPref('fit', FIT_CYCLE[(FIT_CYCLE.indexOf(fit) + 1) % FIT_CYCLE.length])}
-            />
-            <BarToggle
-              label={direction === 'rtl' ? '←' : '→'}
-              active
-              title={`Reading direction: ${direction.toUpperCase()} (R)`}
-              onClick={() => setPref('direction', direction === 'rtl' ? 'ltr' : 'rtl')}
-            />
-            {mode === 'double' && (
-              <BarToggle
-                label="⇥"
-                active={coverOffset}
-                title="Cover page alone (C)"
-                onClick={() => setPref('coverOffset', !coverOffset)}
-              />
-            )}
-            <span className="w-px h-4 bg-base-700 mx-1" />
-            <BarToggle label="−" active={false} title="Zoom out (-)" onClick={() => zoomBy(1 / 1.25)} />
+          <div className="relative flex items-center gap-1 shrink-0 text-xs">
+            <BarButton label="−" title="Zoom out (-)" onClick={() => zoomBy(1 / 1.25)} />
             <button
               className={`w-11 text-center text-xs ${zoom !== 1 ? 'text-accent' : 'text-gray-500'} hover:text-gray-200`}
               title="Reset zoom (0) · Ctrl+scroll to zoom"
@@ -746,11 +757,35 @@ export default function MangaReaderPage() {
             >
               {Math.round(zoom * 100)}%
             </button>
-            <BarToggle label="+" active={false} title="Zoom in (+, Ctrl+scroll)" onClick={() => zoomBy(1.25)} />
+            <BarButton label="+" title="Zoom in (+, Ctrl+scroll)" onClick={() => zoomBy(1.25)} />
             <span className="w-px h-4 bg-base-700 mx-1" />
-            <BarToggle label="⛏" active={panelOpen} title="Mine words (M)" onClick={() => setPanelOpen((v) => !v)} />
+            <BarButton
+              label={mode === 'single' ? 'Single' : mode === 'double' ? 'Double' : 'Scroll'}
+              active={settingsOpen}
+              title="Display settings — mode, fit, direction"
+              onClick={() => {
+                setSettingsOpen((v) => !v)
+                pokeBar()
+              }}
+            />
+            {settingsOpen && (
+              <DisplayPopover
+                mode={mode}
+                fit={fit}
+                direction={direction}
+                coverOffset={coverOffset}
+                setPref={setPref}
+                onClose={() => setSettingsOpen(false)}
+              />
+            )}
+            <BarButton label="⛏" active={panelOpen} title="Mine words (M)" onClick={() => setPanelOpen((v) => !v)} />
+            <BarButton label="?" title="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)} />
           </div>
         </div>
+
+        {helpOpen && (
+          <ShortcutHelp title="Reader shortcuts" rows={SHORTCUTS} onClose={() => setHelpOpen(false)} />
+        )}
       </div>
 
       {/* mining panel */}
@@ -820,27 +855,70 @@ function ChapterListPopover({
   )
 }
 
-function BarToggle({
-  label,
-  active,
-  title,
-  onClick
+// Display settings popover (BookSettingsPopover's manga sibling): labelled
+// segmented rows for what used to be five cryptic letter/arrow buttons.
+function DisplayPopover({
+  mode,
+  fit,
+  direction,
+  coverOffset,
+  setPref,
+  onClose
 }: {
-  label: string
-  active: boolean
-  title: string
-  onClick: () => void
+  mode: Mode
+  fit: Fit
+  direction: Direction
+  coverOffset: boolean
+  setPref: <K extends keyof ReaderPrefs>(k: K, v: ReaderPrefs[K]) => void
+  onClose: () => void
 }) {
   return (
-    <button
-      className={`rounded px-2 py-1 ${active ? 'bg-accent/20 text-accent' : 'text-gray-500 hover:text-gray-300'}`}
-      title={title}
-      aria-label={title}
-      aria-pressed={active}
-      onClick={onClick}
-    >
-      {label}
-    </button>
+    <>
+      <div className="fixed inset-0 z-20" onMouseDown={onClose} />
+      <div className="absolute bottom-full right-0 z-30 mb-2 w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-lg border border-base-700 bg-base-900/95 p-3 shadow-xl shadow-black/40 backdrop-blur">
+        <PopoverRow label="Mode">
+          <PopoverOption active={mode === 'single'} title="S" onClick={() => setPref('mode', 'single')}>
+            Single
+          </PopoverOption>
+          <PopoverOption active={mode === 'double'} title="D" onClick={() => setPref('mode', 'double')}>
+            Double
+          </PopoverOption>
+          <PopoverOption active={mode === 'vertical'} title="V" onClick={() => setPref('mode', 'vertical')}>
+            Scroll
+          </PopoverOption>
+        </PopoverRow>
+        <PopoverRow label="Fit">
+          <PopoverOption active={fit === 'height'} title="F cycles" onClick={() => setPref('fit', 'height')}>
+            Height
+          </PopoverOption>
+          <PopoverOption active={fit === 'width'} title="F cycles" onClick={() => setPref('fit', 'width')}>
+            Width
+          </PopoverOption>
+          <PopoverOption active={fit === 'original'} title="F cycles" onClick={() => setPref('fit', 'original')}>
+            Original
+          </PopoverOption>
+        </PopoverRow>
+        <PopoverRow label="Direction">
+          <PopoverOption active={direction === 'rtl'} title="R toggles" onClick={() => setPref('direction', 'rtl')}>
+            ← Right to left
+          </PopoverOption>
+          <PopoverOption active={direction === 'ltr'} title="R toggles" onClick={() => setPref('direction', 'ltr')}>
+            Left to right →
+          </PopoverOption>
+        </PopoverRow>
+        {mode === 'double' && (
+          <PopoverRow label="Spreads">
+            <PopoverOption
+              active={coverOffset}
+              title="C toggles"
+              onClick={() => setPref('coverOffset', !coverOffset)}
+            >
+              Cover page alone
+            </PopoverOption>
+          </PopoverRow>
+        )}
+      </div>
+    </>
   )
 }
 
@@ -915,9 +993,11 @@ function VerticalBlock({
         children
       ) : (
         <div
-          className="w-full bg-base-900"
+          className="flex w-full items-center justify-center bg-base-900 motion-safe:animate-pulse"
           style={{ aspectRatio: natural ? `${natural.w} / ${natural.h}` : undefined, height: natural ? undefined : '80vh' }}
-        />
+        >
+          <span className="text-xs text-gray-600 tabular-nums">{index + 1}</span>
+        </div>
       )}
     </div>
   )

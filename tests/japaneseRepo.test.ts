@@ -286,7 +286,8 @@ describe('japaneseRepo — review flow', () => {
       learnedLessons: 1,
       totalLessons: 2,
       totalCards: 3,
-      reviewsToday: 0
+      reviewsToday: 0,
+      introducedToday: 0
     })
 
     const card = jp.getLesson(lessonId)!.cards[0]
@@ -297,6 +298,18 @@ describe('japaneseRepo — review flow', () => {
     expect(s.dueCount).toBe(1)
     expect(s.newAvailableCount).toBe(2)
     expect(s.reviewsToday).toBe(1)
+    expect(s.introducedToday).toBe(1)
+
+    // A second review of the same card is not a second introduction.
+    jp.submitReview(card.id, 'good')
+    expect(jp.stats().introducedToday).toBe(1)
+
+    // A card first reviewed on an earlier day doesn't count today, even if
+    // reviewed again today (its FIRST log row is what decides).
+    db.prepare(`UPDATE jp_review_log SET reviewed_at = datetime('now', '-2 days')`).run()
+    expect(jp.stats().introducedToday).toBe(0)
+    jp.submitReview(card.id, 'good')
+    expect(jp.stats().introducedToday).toBe(0)
   })
 })
 

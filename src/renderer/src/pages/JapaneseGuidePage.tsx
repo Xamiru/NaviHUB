@@ -258,6 +258,26 @@ export default function JapaneseGuidePage() {
             <li>Learn the next lesson on the roadmap, if you have the attention for it.</li>
             <li>Read something and mine what you don&apos;t know. This is the part that matters.</li>
           </ol>
+          <dl className="mt-4 space-y-3">
+            <div>
+              <dt className="font-medium">One hour</dt>
+              <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
+                A split that works: ~20 minutes of reviews, ~15 on the next lesson, ~25 reading —
+                manga with the mining panel, or the sentence feed. Short on time? Reviews, then
+                reading; the lesson keeps.
+              </dd>
+            </div>
+            <div>
+              <dt className="font-medium">Starting out (kana done)</dt>
+              <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
+                Install the core packs first (the Set up list on the Japanese page), keep the kana
+                drill in rotation until reading it is automatic, and start Step 01 at ~10 new cards
+                a day. Reading starts week one, not after grammar — the sentence feed works from
+                your very first learned words, and around Step 03 an easy manga plus its Vocab deck
+                takes over.
+              </dd>
+            </div>
+          </dl>
         </div>
       </Section>
 

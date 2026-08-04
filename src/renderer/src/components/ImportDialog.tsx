@@ -5,7 +5,7 @@ import { qk } from '../lib/queryKeys'
 import { useDialog } from '../lib/hooks'
 import { useActivity, activityText } from './ActivityIndicator'
 import type { MediaConfig } from '../lib/mediaConfig'
-import type { ImportSearchResult } from '@shared/types'
+import type { ImportSearchResult, ImportSummary } from '@shared/types'
 
 interface Props {
   cfg: MediaConfig
@@ -19,11 +19,16 @@ interface Props {
 export default function ImportDialog({ cfg, onClose, onImported }: Props) {
   const qc = useQueryClient()
   const source = cfg.importSource!
-  const client = api[source.key]
+  // The union of importer groups intersects import's parameter to never (ids
+  // are number for most sources, string for Open Library) — flatten it once.
+  const client = api[source.key] as {
+    search(query: string): Promise<ImportSearchResult[]>
+    import(id: number | string): Promise<ImportSummary>
+  }
 
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState('')
-  const [importingId, setImportingId] = useState<number | null>(null)
+  const [importingId, setImportingId] = useState<number | string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const panelRef = useDialog(onClose)
@@ -119,7 +124,7 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
                 <p className="text-sm font-medium truncate">{r.title}</p>
                 {r.native && <p className="text-xs text-gray-500 truncate">{r.native}</p>}
                 <p className="text-xs text-gray-500">
-                  {[r.format, r.year, r.episodes ? `${r.episodes} ep` : null]
+                  {[r.format, r.year, r.episodes ? `${r.episodes} ${source.unitNoun ?? 'ep'}` : null]
                     .filter(Boolean)
                     .join(' · ')}
                 </p>

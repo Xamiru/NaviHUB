@@ -151,8 +151,16 @@ export function decidePlayback(input: {
   const action: VideoPlanAction =
     videoCodec === 'copy' && audioCodec !== 'aac' ? 'remux' : 'transcode'
 
-  if (videoCodec === 'h264' && /^(hevc|h265)$/.test(vCodec)) {
-    warnings.push('10-bit/HDR video is flattened to SDR 8-bit — colours may look washed out.')
+  // Honest colour warnings, tiered by what the probe actually saw. True HDR
+  // (a PQ/HLG transfer) really does wash out when flattened to SDR; plain
+  // 10-bit — the normal anime encode, used against banding, not for HDR — just
+  // risks slight banding after the 8-bit convert; 8-bit HEVC loses nothing.
+  if (videoCodec === 'h264') {
+    if (video.colorTransfer && /^(smpte2084|arib-std-b67)$/.test(video.colorTransfer)) {
+      warnings.push('HDR video is flattened to SDR — colours may look washed out.')
+    } else if (video.pixFmt && /10[lb]e$/.test(video.pixFmt)) {
+      warnings.push('10-bit video is converted to 8-bit — slight banding in gradients is possible.')
+    }
   }
   if (tooTall) warnings.push(`Downscaling to ${input.maxHeight}p.`)
 

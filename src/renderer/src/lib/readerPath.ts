@@ -8,6 +8,14 @@ export function isBookChapter(ch: Pick<MangaChapter, 'dirPath'>): boolean {
   return ch.dirPath.toLowerCase().endsWith('.epub')
 }
 
-export function readerPath(mediaId: number, ch: Pick<MangaChapter, 'id' | 'dirPath'>): string {
-  return isBookChapter(ch) ? `/manga/${mediaId}/book/${ch.id}` : `/manga/${mediaId}/read/${ch.id}`
+// basePath: the section the media item lives in — '/manga' or '/books' (books
+// reuse the whole chapter/reader machinery under their own routes).
+export function readerPath(
+  basePath: '/manga' | '/books',
+  mediaId: number,
+  ch: Pick<MangaChapter, 'id' | 'dirPath'>
+): string {
+  return isBookChapter(ch)
+    ? `${basePath}/${mediaId}/book/${ch.id}`
+    : `${basePath}/${mediaId}/read/${ch.id}`
 }

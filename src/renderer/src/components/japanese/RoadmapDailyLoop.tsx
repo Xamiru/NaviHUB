@@ -46,9 +46,11 @@ export default function RoadmapDailyLoop({
     },
     {
       eyebrow: '03 IMMERSE',
-      to: reading ? `/manga/${reading.id}` : '/manga',
-      title: reading ? `Continue ${reading.title}` : 'Read something',
-      sub: reading ? 'reading beats everything' : 'any native content counts',
+      // No manga in progress → the sentence feed, not a bare library page:
+      // i+1 sentences ARE the immersion until a series is underway.
+      to: reading ? `/manga/${reading.id}` : '/japanese/feed',
+      title: reading ? `Continue ${reading.title}` : 'Sentence feed',
+      sub: reading ? 'reading beats everything' : 'i+1 sentences from your known words',
       hot: false
     }
   ]

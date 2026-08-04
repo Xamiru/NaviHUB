@@ -51,8 +51,18 @@ const VP9_OPUS = probeJson([
   stream({ index: 1, codec_type: 'audio', codec_name: 'opus', disposition: { default: 1 } })
 ])
 
+// True HDR: PQ transfer + 10-bit. The common anime case is 10-bit WITHOUT the
+// HDR transfer (Hi10/main10 against banding) — a separate fixture below.
 const HEVC_AC3 = probeJson([
-  stream({ index: 0, codec_type: 'video', codec_name: 'hevc', width: 3840, height: 2160 }),
+  stream({
+    index: 0,
+    codec_type: 'video',
+    codec_name: 'hevc',
+    width: 3840,
+    height: 2160,
+    pix_fmt: 'yuv420p10le',
+    color_transfer: 'smpte2084'
+  }),
   stream({ index: 1, codec_type: 'audio', codec_name: 'ac3', channels: 6, disposition: { default: 1 } })
 ])
 
@@ -181,7 +191,34 @@ describe('decidePlayback — transcode cases', () => {
     const plan = decidePlayback({ ext: '.mkv', probe: parse(HEVC_AC3) })
     expect(plan).toMatchObject({ action: 'transcode', videoCodec: 'h264', audioCodec: 'aac' })
     expect(plan.reason).toMatch(/takes a while/)
-    expect(plan.warnings.join(' ')).toMatch(/SDR/)
+    expect(plan.warnings.join(' ')).toMatch(/washed out/)
+  })
+
+  it('tiers the colour warning by what the probe actually saw', () => {
+    // 10-bit WITHOUT an HDR transfer — the normal anime encode. Flattening to
+    // 8-bit risks slight banding, nothing more; a washed-out warning here would
+    // scare people off files that convert perfectly.
+    const hi10 = probeJson([
+      stream({ index: 0, codec_type: 'video', codec_name: 'hevc', pix_fmt: 'yuv420p10le' }),
+      stream({ index: 1, codec_type: 'audio', codec_name: 'aac', disposition: { default: 1 } })
+    ])
+    const hi10Plan = decidePlayback({ ext: '.mkv', probe: parse(hi10) })
+    expect(hi10Plan.warnings.join(' ')).toMatch(/banding/)
+    expect(hi10Plan.warnings.join(' ')).not.toMatch(/washed out/)
+
+    // 8-bit HEVC: the re-encode loses nothing colour-wise — no warning at all.
+    const flat = probeJson([
+      stream({ index: 0, codec_type: 'video', codec_name: 'hevc', pix_fmt: 'yuv420p' }),
+      stream({ index: 1, codec_type: 'audio', codec_name: 'aac', disposition: { default: 1 } })
+    ])
+    expect(decidePlayback({ ext: '.mkv', probe: parse(flat) }).warnings).toEqual([])
+
+    // HLG (broadcast HDR) counts as true HDR too.
+    const hlg = probeJson([
+      stream({ index: 0, codec_type: 'video', codec_name: 'hevc', pix_fmt: 'yuv420p10le', color_transfer: 'arib-std-b67' }),
+      stream({ index: 1, codec_type: 'audio', codec_name: 'aac', disposition: { default: 1 } })
+    ])
+    expect(decidePlayback({ ext: '.mkv', probe: parse(hlg) }).warnings.join(' ')).toMatch(/washed out/)
   })
 
   it('copies playable video while re-encoding only the audio', () => {

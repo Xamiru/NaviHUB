@@ -29,6 +29,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
     'Dropped',
     'Plan to Play'
   ]),
+  'book.statuses': JSON.stringify(['Reading', 'Completed', 'On Hold', 'Dropped', 'Plan to Read']),
   'score.max': '10',
   theme: 'dark'
 }

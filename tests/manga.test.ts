@@ -8,18 +8,20 @@ import { createTestDb } from './helpers'
 
 let db: Database.Database
 let root: string
+let booksRoot: string
 const showOpenDialog = vi.fn()
 
 vi.mock('../src/main/db/connection', () => ({
   getSqlite: () => db
 }))
-// manga.ts pulls dialog from electron and the library root from files.ts —
-// both replaced so the module runs under plain Node against a temp dir.
+// manga.ts pulls dialog from electron and the library roots from files.ts —
+// both replaced so the module runs under plain Node against temp dirs.
 vi.mock('electron', () => ({
   dialog: { showOpenDialog: (...args: unknown[]) => showOpenDialog(...args) }
 }))
 vi.mock('../src/main/files', () => ({
-  mangaRootDir: () => root
+  mangaRootDir: () => root,
+  booksRootDir: () => booksRoot
 }))
 
 import * as manga from '../src/main/manga'
@@ -27,11 +29,13 @@ import * as manga from '../src/main/manga'
 beforeEach(() => {
   db = createTestDb()
   root = mkdtempSync(join(os.tmpdir(), 'navihub-manga-'))
+  booksRoot = mkdtempSync(join(os.tmpdir(), 'navihub-books-'))
   showOpenDialog.mockReset()
 })
 
 afterEach(() => {
   rmSync(root, { recursive: true, force: true })
+  rmSync(booksRoot, { recursive: true, force: true })
 })
 
 function makeSeries(name: string, chapters: Record<string, number>): string {
@@ -274,9 +278,8 @@ describe('reading progress', () => {
   })
 })
 
-describe('EPUB books in the manga section', () => {
-  // Minimal-but-valid EPUB: container → OPF → two spine documents + nav TOC.
-  function makeEpub(absPath: string): void {
+// Minimal-but-valid EPUB: container → OPF → two spine documents + nav TOC.
+function makeEpub(absPath: string): void {
     const zip = new AdmZip()
     zip.addFile('mimetype', Buffer.from('application/epub+zip'))
     zip.addFile(
@@ -308,8 +311,9 @@ describe('EPUB books in the manga section', () => {
     zip.addFile('OEBPS/ch1.xhtml', Buffer.from('<html><body><p>一</p></body></html>'))
     zip.addFile('OEBPS/ch2.xhtml', Buffer.from('<html><body><p>二</p></body></html>'))
     zip.writeZip(absPath)
-  }
+}
 
+describe('EPUB books in the manga section', () => {
   it('scanner discovers .epub volumes alongside image chapters, pageCount = spine length', async () => {
     const dir = makeSeries('Mixed', { 'Ch 001': 2 })
     makeEpub(join(dir, 'Vol 2.epub'))
@@ -372,5 +376,85 @@ describe('EPUB books in the manga section', () => {
     const pages = await manga.pages(ch.id)
     expect(pages!.isBook).toBeUndefined()
     expect(pages!.toc).toBeUndefined()
+  })
+})
+
+describe('book-type media (the Books section reusing the chapter machinery)', () => {
+  function makeBookMedia(title = 'The Hobbit', progress = 0): number {
+    const info = db
+      .prepare(`INSERT INTO media_item (media_type, title, progress) VALUES ('book', ?, ?)`)
+      .run(title, progress)
+    return Number(info.lastInsertRowid)
+  }
+  const mediaProgress = (id: number) =>
+    (db.prepare('SELECT progress FROM media_item WHERE id = ?').get(id) as { progress: number })
+      .progress
+
+  it('attaches under the books root and serves pages with the books/ prefix', async () => {
+    const mediaId = makeBookMedia()
+    const dir = join(booksRoot, 'The Hobbit')
+    mkdirSync(dir)
+    makeEpub(join(dir, 'Vol 1.epub'))
+
+    const res = await attachViaDialog(mediaId, dir)
+    expect(res).toMatchObject({ ok: true, chapterCount: 1 })
+    // First attach bootstraps books.dir (not manga.dir).
+    expect(db.prepare(`SELECT value FROM settings WHERE key='books.dir'`).get()).toEqual({
+      value: booksRoot
+    })
+    expect(db.prepare(`SELECT value FROM settings WHERE key='manga.dir'`).get()).toBeUndefined()
+
+    const ch = manga.chapters(mediaId).chapters[0]
+    const doc = (await manga.pages(ch.id))!
+    expect(doc.isBook).toBe(true)
+    expect(doc.pages.map((p) => p.relPath)).toEqual([
+      'books/The Hobbit/Vol 1.epub/OEBPS/ch1.xhtml',
+      'books/The Hobbit/Vol 1.epub/OEBPS/ch2.xhtml'
+    ])
+  })
+
+  it('rescan resolves against the books root', async () => {
+    const mediaId = makeBookMedia()
+    const dir = join(booksRoot, 'Series')
+    mkdirSync(dir)
+    makeEpub(join(dir, 'Vol 1.epub'))
+    await attachViaDialog(mediaId, dir)
+
+    makeEpub(join(dir, 'Vol 2.epub'))
+    expect((await manga.rescan(mediaId)).ok).toBe(true)
+    expect(manga.chapters(mediaId).chapters.map((c) => c.dirPath)).toEqual([
+      'Series/Vol 1.epub',
+      'Series/Vol 2.epub'
+    ])
+  })
+
+  it('finishing a volume marks it read but NEVER touches page-based media progress', async () => {
+    const mediaId = makeBookMedia('The Hobbit', 120) // 120 pages in
+    const dir = join(booksRoot, 'The Hobbit')
+    mkdirSync(dir)
+    makeEpub(join(dir, 'Vol 1.epub'))
+    await attachViaDialog(mediaId, dir)
+    const ch = manga.chapters(mediaId).chapters[0]
+
+    manga.markProgress(ch.id, 1) // last spine section → volume completes
+    const after = manga.chapters(mediaId).chapters[0]
+    expect(after.readAt).not.toBeNull()
+    expect(after.lastReadPage).toBe(1)
+    // syncMediaProgress would have slammed 120 down to 1 without the guard.
+    expect(mediaProgress(mediaId)).toBe(120)
+
+    manga.markChapterRead(ch.id, true)
+    expect(mediaProgress(mediaId)).toBe(120)
+  })
+
+  it('manga rows are unaffected by the book root derivation (regression)', async () => {
+    const mediaId = makeMedia('Berserk', 0)
+    const dir = makeSeries('Berserk', { 'Ch 001': 2 })
+    await attachViaDialog(mediaId, dir)
+    const ch = manga.chapters(mediaId).chapters[0]
+    const doc = (await manga.pages(ch.id))!
+    expect(doc.pages[0].relPath).toBe('manga/Berserk/Ch 001/p001.png')
+    manga.markChapterRead(ch.id, true)
+    expect(mediaProgress(mediaId)).toBe(1)
   })
 })

@@ -331,6 +331,20 @@ describe('mediaRepo.timeStats', () => {
     expect(minutesFor('manga')).toBe(1000) // 100 ch × 5 × 2
   })
 
+  it('book estimate uses pages × per-page minutes × rereads', () => {
+    mediaRepo.create({
+      mediaType: 'book',
+      title: 'The Hobbit',
+      status: 'Completed',
+      totalUnits: 300,
+      progress: 120,
+      rewatchCount: 2
+    })
+    expect(minutesFor('book')).toBe(900) // 300 p (total, completed) × 1.5 × 2 passes
+    mediaRepo.create({ mediaType: 'book', title: 'Mid-read', progress: 100 })
+    expect(minutesFor('book')).toBe(1050) // + 100 p × 1.5 (in progress → current page)
+  })
+
   it('completed game/VN with no logged progress falls back to average length', () => {
     mediaRepo.create({ mediaType: 'game', title: 'ShortGame', status: 'Completed', totalUnits: 8, progress: 0 })
     mediaRepo.create({ mediaType: 'visual_novel', title: 'ShortVN', status: 'Completed', totalUnits: 300, progress: 0 })
@@ -338,12 +352,12 @@ describe('mediaRepo.timeStats', () => {
     expect(minutesFor('visual_novel')).toBe(300) // minutes as-is
   })
 
-  it('aggregates: total, six types, estimate flags, top sorting, longest & mostRevisited', () => {
+  it('aggregates: total, seven types, estimate flags, top sorting, longest & mostRevisited', () => {
     mediaRepo.create({ mediaType: 'game', title: 'G1', progress: 10 }) // 600
     mediaRepo.create({ mediaType: 'game', title: 'G2', progress: 5, rewatchCount: 4 }) // 300, revisited
     mediaRepo.create({ mediaType: 'movie', title: 'M1', totalUnits: 120, rewatchCount: 1 }) // 120
     const s = mediaRepo.timeStats()
-    expect(s.byType).toHaveLength(6)
+    expect(s.byType).toHaveLength(7)
     expect(s.totalMinutes).toBe(1020)
     expect(s.byType.find((t) => t.mediaType === 'anime')!.estimated).toBe(true)
     expect(s.byType.find((t) => t.mediaType === 'game')!.estimated).toBe(false)

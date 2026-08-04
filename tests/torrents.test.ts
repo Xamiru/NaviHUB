@@ -18,7 +18,7 @@ import type { MediaType, TorrentFilter, TorrentSearchResult } from '../src/share
 // byte formatter used by the results table.
 
 describe('torznabCategoriesFor', () => {
-  const ALL: MediaType[] = ['anime', 'manga', 'visual_novel', 'game', 'movie', 'tv']
+  const ALL: MediaType[] = ['anime', 'manga', 'visual_novel', 'game', 'movie', 'tv', 'book']
 
   it('returns a non-empty category list for every media type', () => {
     for (const t of ALL) expect(torznabCategoriesFor(t).length).toBeGreaterThan(0)
@@ -32,6 +32,7 @@ describe('torznabCategoriesFor', () => {
     expect(torznabCategoriesFor('tv')).toEqual([5000])
     expect(torznabCategoriesFor('game')).toEqual([4050])
     expect(torznabCategoriesFor('visual_novel')).toEqual([4050])
+    expect(torznabCategoriesFor('book')).toEqual([7020, 7000])
   })
 })
 

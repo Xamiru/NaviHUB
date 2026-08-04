@@ -1,4 +1,4 @@
-import { memo, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import DoorCard from '../components/DoorCard'
 import MediaCard from '../components/MediaCard'
 import { Link } from 'react-router-dom'
@@ -10,6 +10,10 @@ import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import EmptyState from '../components/EmptyState'
 import { statusesFrom, useSettings } from '../lib/hooks'
+import { usePlayer } from '../lib/player'
+import { playTracks } from '../lib/musicTracks'
+import { TYPE_COLORS } from './StatsPage'
+import { GACHA_GAMES } from '@shared/gacha'
 import lainIcon from '../assets/lain.png'
 import type { MediaItem, SettingsMap } from '@shared/types'
 
@@ -78,16 +82,24 @@ export default function HomePage() {
     <div className="p-6 max-w-[1600px] mx-auto">
       <Hero items={all} stats={stats} />
 
+      {/* Today: the learn/play surfaces with a daily pulse, in one band.
+          (This band IS Home's DoorCard rail — the glow stays Home-exclusive.) */}
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <ChecklistCard />
+        <JapaneseCard />
+        <EnglishCard />
+        <PlayCard />
+      </div>
+
       {continuing.length > 0 && (
-        <Strip title="Continue" items={continuing} showProgress />
+        <Strip title="Continue" items={continuing.slice(0, 12)} showProgress />
       )}
 
       <div className="mt-8 grid gap-4 lg:grid-cols-[2fr_1fr] items-stretch">
         <Spotlight pool={backlog.length ? backlog : all} fromBacklog={backlog.length > 0} />
         <div className="flex flex-col gap-4">
-          <ChecklistCard />
           <TimeStatsCard />
-          <QuizCard />
+          <MusicCard />
         </div>
       </div>
 
@@ -111,7 +123,7 @@ export default function HomePage() {
         )}
       </Section>
 
-      {favorites.length > 0 && <Strip title="Favorites" items={favorites} />}
+      {favorites.length > 0 && <Strip title="Favorites" items={favorites.slice(0, 12)} />}
 
       <LibraryGlance />
     </div>
@@ -161,6 +173,13 @@ function Hero({
     [items]
   )
   const greeting = greetingFor(new Date().getHours())
+  // Same key ChecklistCard polls — one fetch, shared cache entry.
+  const { data: checklist } = useQuery({
+    queryKey: qk.checklist.status,
+    queryFn: () => api.checklist.status(),
+    staleTime: 0
+  })
+  const streak = checklist?.streak.current ?? 0
 
   return (
     <div className="relative overflow-hidden rounded-2xl">
@@ -194,7 +213,7 @@ function Hero({
             <p className="mt-5 text-sm text-gray-400">
               {greeting} — {stats.inProgress > 0 ? 'picking up where you left off?' : 'what are we into today?'}
             </p>
-            <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs">
+            <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs tabular-nums">
               <span className="chip bg-base-800/80">{stats.titles} titles</span>
               {stats.inProgress > 0 && (
                 <span className="chip bg-base-800/80">{stats.inProgress} in progress</span>
@@ -208,6 +227,11 @@ function Hero({
               {stats.avgScore && (
                 <span className="chip bg-base-800/80">Ø score {stats.avgScore}</span>
               )}
+              {streak > 1 && (
+                <span className="chip bg-base-800/80 text-accent">
+                  {streak}-day streak
+                </span>
+              )}
             </div>
           </>
         )}
@@ -218,9 +242,16 @@ function Hero({
 
 // A backlog roulette: one random title you said you'd get to, with a reroll.
 // Falls back to the whole library when the backlog is empty; hidden entirely
-// when the library is.
+// when the library is. The initial seed hashes today's date so "Tonight's
+// pick" stays put across navigations within a day — Reroll still randomizes.
+function daySeed(): number {
+  let h = 0
+  for (const c of new Date().toDateString()) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return h
+}
+
 function Spotlight({ pool, fromBacklog }: { pool: MediaItem[]; fromBacklog: boolean }) {
-  const [seed, setSeed] = useState(() => Math.floor(Math.random() * 1_000_000))
+  const [seed, setSeed] = useState(daySeed)
   if (pool.length === 0) return null
   const pick = pool[seed % pool.length]
   const cfg = configFor(pick.mediaType)
@@ -307,6 +338,93 @@ function ChecklistCard() {
   )
 }
 
+// Japanese SRS at a glance: cards due now, today's pulse in the meta line.
+function JapaneseCard() {
+  const { data } = useQuery({
+    queryKey: qk.japanese.stats,
+    queryFn: () => api.japanese.stats(),
+    staleTime: 0
+  })
+  const started = (data?.totalCards ?? 0) > 0
+  const due = data?.dueCount ?? 0
+  return (
+    <DoorCard
+      to={started ? '/japanese/review' : '/japanese'}
+      eyebrow="Japanese"
+      title={!started ? 'Start the deck' : due > 0 ? `${due} cards due` : 'All clear'}
+      body={
+        started
+          ? 'Reviews first — everything else is optional.'
+          : 'Lessons, mining and SRS reviews live here.'
+      }
+      meta={
+        started && data
+          ? `${data.reviewsToday} reviewed · ${data.introducedToday} new today`
+          : undefined
+      }
+    />
+  )
+}
+
+// English deck (en_word IS the deck — dictionary/mining saves feed it).
+function EnglishCard() {
+  const { data } = useQuery({
+    queryKey: qk.english.srsStats,
+    queryFn: () => api.english.srsStats(),
+    staleTime: 0
+  })
+  const started = (data?.totalCount ?? 0) > 0
+  const due = data?.dueCount ?? 0
+  return (
+    <DoorCard
+      to={started ? '/english/review' : '/english'}
+      eyebrow="English"
+      title={!started ? 'English' : due > 0 ? `${due} words due` : 'All clear'}
+      body={
+        started
+          ? 'Saved words come back on schedule.'
+          : 'Save words from the dictionary to build a deck.'
+      }
+      meta={started && data ? `${data.reviewedToday} reviewed today` : undefined}
+    />
+  )
+}
+
+// Play surface: gacha dailies waiting when there are any, else the song quiz.
+function PlayCard() {
+  const { data: due } = useQuery({
+    queryKey: qk.gacha.dueCounts,
+    queryFn: () => api.gacha.dueCounts(),
+    staleTime: 0
+  })
+  const { data: pool = [] } = useQuery({
+    queryKey: qk.quiz.songPool({}),
+    queryFn: () => api.quiz.songPool({})
+  })
+  const entries = Object.entries(due ?? {}).filter(([, n]) => (n ?? 0) > 0)
+  const total = entries.reduce((a, [, n]) => a + (n ?? 0), 0)
+  const gameNames = entries
+    .map(([id]) => GACHA_GAMES.find((g) => g.id === id)?.name ?? id)
+    .join(' · ')
+  return total > 0 ? (
+    <DoorCard
+      to="/gacha"
+      eyebrow="Play"
+      title={`${total} game task${total === 1 ? '' : 's'} waiting`}
+      body="Dailies and goals your coach is tracking."
+      meta={gameNames}
+    />
+  ) : (
+    <DoorCard
+      to="/quiz"
+      eyebrow="Play"
+      title="Quiz corner"
+      body="Song quiz, tournaments, drills and more."
+      meta={pool.length > 0 ? `${pool.length} songs ready` : undefined}
+    />
+  )
+}
+
 function TimeStatsCard() {
   const { data: stats } = useQuery({
     queryKey: qk.media.timeStats,
@@ -314,6 +432,7 @@ function TimeStatsCard() {
   })
   const days = stats ? stats.totalMinutes / 1440 : 0
   const hasData = !!stats && stats.consumedCount > 0
+  const split = hasData ? stats!.byType.filter((t) => t.minutes > 0) : []
   return (
     <DoorCard
       to="/stats"
@@ -326,25 +445,63 @@ function TimeStatsCard() {
           ? 'See where the time went, type by type.'
           : 'Track progress to see your days-watched breakdown.'
       }
+      value={
+        split.length > 0 ? (
+          <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-base-900/60">
+            {split.map((t) => (
+              <div
+                key={t.mediaType}
+                style={{
+                  width: `${(t.minutes / stats!.totalMinutes) * 100}%`,
+                  background: TYPE_COLORS[t.mediaType]
+                }}
+                title={configFor(t.mediaType).plural}
+              />
+            ))}
+          </div>
+        ) : undefined
+      }
       meta={hasData ? `across ${stats!.consumedCount} titles` : undefined}
     />
   )
 }
 
-// Door into the song quiz, with a live count of playable themes.
-function QuizCard() {
-  const { data: pool = [] } = useQuery({
-    queryKey: qk.quiz.songPool({}),
-    queryFn: () => api.quiz.songPool({})
+// Recent listening with a one-click way back into it. Plain card, not a
+// DoorCard — it holds real controls, and the glow stays on the Today band.
+function MusicCard() {
+  const player = usePlayer()
+  const { data: tracks = [] } = useQuery({
+    queryKey: qk.music.recent,
+    queryFn: () => api.music.recent(5)
   })
+  if (tracks.length === 0) return null
   return (
-    <DoorCard
-      to="/quiz/song"
-      eyebrow="Play"
-      title="Song Quiz"
-      body="Guess the anime from its openings & endings."
-      meta={pool.length > 0 ? `${pool.length} songs ready` : 'Import theme songs to play'}
-    />
+    <div className="card flex-1 p-4">
+      <div className="mb-2 flex items-center">
+        <p className="flex-1 text-[10px] font-semibold uppercase tracking-widest text-accent">
+          Recently played
+        </p>
+        <button
+          className="btn-ghost py-0.5 px-2.5 text-xs"
+          onClick={() => playTracks(player, tracks)}
+        >
+          Play
+        </button>
+      </div>
+      <div className="space-y-1">
+        {tracks.map((t) => (
+          <div key={t.id} className="flex items-baseline gap-2 text-sm">
+            <span className="min-w-0 flex-1 truncate text-gray-200">{t.title}</span>
+            <span className="max-w-[40%] shrink-0 truncate text-xs text-gray-500">
+              {t.artistName}
+            </span>
+          </div>
+        ))}
+      </div>
+      <Link to="/music" className="mt-3 inline-block text-xs text-gray-500 hover:text-accent">
+        Music library →
+      </Link>
+    </div>
   )
 }
 
@@ -432,24 +589,24 @@ function Strip({
   return title ? <Section className="mt-8" title={title}>{row}</Section> : row
 }
 
-// Per-type total + the section's quick links. Reuses the same status-count
-// endpoint the list pages use, so the numbers always agree.
+// Per-type total + the section's quick links. facets().total is the honest
+// count (statusCounts drops NULL-status rows and undercounts) and matches the
+// number each list page's filter panel reports.
 function LibraryGlance() {
   const sections = MEDIA_CONFIGS.filter((c) => !c.hideFromSidebar)
   const counts = useQueries({
     queries: sections.map((cfg) => ({
-      queryKey: qk.mediaCounts.byType(cfg.key),
-      queryFn: () => api.media.statusCounts(cfg.key)
+      queryKey: qk.mediaCounts.facets(cfg.key),
+      queryFn: () => api.media.facets(cfg.key)
     }))
   })
 
   return (
     <Section className="mt-8" title="Browse & add">
       <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-        {sections.map((cfg, i) => {
-          const total = Object.values(counts[i].data ?? {}).reduce((a, b) => a + b, 0)
-          return <GlanceCard key={cfg.key} cfg={cfg} total={total} />
-        })}
+        {sections.map((cfg, i) => (
+          <GlanceCard key={cfg.key} cfg={cfg} total={counts[i].data?.total ?? 0} />
+        ))}
       </div>
     </Section>
   )
@@ -483,6 +640,3 @@ function GlanceCard({ cfg, total }: { cfg: MediaConfig; total: number }) {
     </div>
   )
 }
-
-
-

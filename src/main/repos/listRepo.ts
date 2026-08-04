@@ -28,7 +28,8 @@ const MEDIA_LABEL: Record<string, string> = {
   visual_novel: 'Visual Novel',
   game: 'Game',
   movie: 'Movie',
-  tv: 'TV'
+  tv: 'TV',
+  book: 'Book'
 }
 
 function mapList(r: Record<string, unknown>): List {

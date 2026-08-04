@@ -26,7 +26,8 @@ export const STATUS_FALLBACKS: Record<MediaType, string[]> = {
   visual_novel: ['Playing', 'Completed', 'On Hold', 'Dropped', 'Plan to Play'],
   game: ['Playing', 'Completed', 'On Hold', 'Dropped', 'Plan to Play'],
   movie: ['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch'],
-  tv: ['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch']
+  tv: ['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch'],
+  book: ['Reading', 'Completed', 'On Hold', 'Dropped', 'Plan to Read']
 }
 
 export function parseStatuses(raw: string | null, mediaType: MediaType): string[] {

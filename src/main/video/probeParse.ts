@@ -12,6 +12,8 @@ export interface ProbeStream {
   width: number | null
   height: number | null
   channels: number | null
+  pixFmt: string | null // 'yuv420p10le' etc — 10-bit detection
+  colorTransfer: string | null // 'smpte2084'/'arib-std-b67' = true HDR
   isDefault: boolean
   isForced: boolean
   isAttachedPic: boolean
@@ -32,6 +34,8 @@ interface RawStream {
   width?: number
   height?: number
   channels?: number
+  pix_fmt?: string
+  color_transfer?: string
   tags?: Record<string, string>
   disposition?: Record<string, number>
 }
@@ -76,6 +80,8 @@ export function parseProbeJson(raw: string): MediaProbe | null {
       width: num(s.width),
       height: num(s.height),
       channels: num(s.channels),
+      pixFmt: s.pix_fmt ?? null,
+      colorTransfer: s.color_transfer ?? null,
       isDefault: disp.default === 1,
       isForced: disp.forced === 1,
       isAttachedPic: disp.attached_pic === 1
