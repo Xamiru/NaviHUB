@@ -44,6 +44,8 @@ import type {
   TournamentEntry,
   TournamentSource,
   HltbTimes,
+  GameLaunchOverview,
+  GameLaunchStatus,
   ListDetail,
   ListInput,
   ListKind,
@@ -278,9 +280,25 @@ export interface NaviApi {
   }
   hltb: {
     // Looks the item's title up on HowLongToBeat and stores the main / extra /
-    // completionist times under metadata.hltb. Null when no match was found
-    // (games imported via RAWG get this automatically at import time).
+    // completionist times under metadata.hltb — and, for games, writes the
+    // Main Story hours to total_units (HLTB is the authoritative game length;
+    // a miss never touches it). Null when no match was found (games imported
+    // via RAWG get this automatically at import time).
     fetch(mediaId: number): Promise<HltbTimes | null>
+  }
+  games: {
+    // Launch-from-app + playtime tracking for games/VNs (gameLaunch.ts).
+    // Fire-and-poll, mokuroRun-style: launch throws synchronously on
+    // user-fixable problems (not Windows / already tracking / no exe linked /
+    // exe missing) and the session is polled via sessionStatus — EXCEPT that
+    // the game child is never killed: no cancel channel, and at quit the
+    // session is finalized while the game keeps running.
+    overview(mediaId: number): Promise<GameLaunchOverview>
+    // Main-side file picker; persists the choice and returns it (null = cancel).
+    pickExe(mediaId: number): Promise<string | null>
+    clearExe(mediaId: number): Promise<void>
+    launch(mediaId: number): Promise<{ id: string }>
+    sessionStatus(): Promise<GameLaunchStatus | null>
   }
   lists: {
     // Curated, ordered, type-scoped collections. `kind` filters the index.
@@ -812,6 +830,12 @@ export interface NaviApi {
     // and returns the clamped value. Persist it separately as 'ui.scale' —
     // that's what gets re-applied on the next launch.
     setUiScale(scale: number): Promise<number>
+    // Ctrl+wheel zoom: steps ui.scale by 0.1 (clamped), applies live AND
+    // persists in main — one call per wheel notch, returns the new factor.
+    bumpUiScale(direction: 1 | -1): Promise<number>
+    // Shows/hides the native menu bar on every window. Persist 'ui.menuBar'
+    // ('1' = shown) separately; hidden menus keep their accelerators.
+    setMenuBarVisible(visible: boolean): Promise<void>
     // "Open with NaviHUB": files the OS handed us (startup argv, a
     // second-instance launch, macOS open-file). RETURNS AND CLEARS — this app
     // has no push channel, so the renderer polls, and a peek-without-clear

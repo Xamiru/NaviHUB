@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { usePlayer } from '../lib/player'
 import { useIncrementalList } from '../lib/hooks'
 import CoverImage from './CoverImage'
+import { PlayIcon, PauseIcon } from './PlayerIcons'
 
 // Spotify-style "queue" popover anchored above the now-playing bar: the current
 // song plus everything still to come. Clicking a row jumps straight to it;
@@ -181,7 +182,7 @@ export function QueueRow({
       )}
       {active && (
         <span className="shrink-0 text-accent text-xs" aria-hidden>
-          {playing ? '▮▮▮' : '❚❚'}
+          {playing ? <PlayIcon /> : <PauseIcon />}
         </span>
       )}
     </div>

@@ -16,6 +16,7 @@ import { abortActiveCoachTurn } from './gachaCoach'
 import { killActiveUpdate } from './updater'
 import { killActivePrepare } from './video/session'
 import { killActiveOcr } from './mokuroRun'
+import { finalizeActiveGameSession } from './gameLaunch'
 import { parseArgvFiles, queueOpen } from './openFile'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
@@ -95,6 +96,16 @@ function createWindow(): void {
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null
   })
+
+  // Native menu bar hidden unless opted in (Settings → General). The default
+  // menu STAYS the application menu, so its accelerators (Ctrl+R, F11,
+  // Ctrl+Shift+I, zoom keys) work either way; Ctrl+wheel zoom is the app's
+  // own (App.tsx → app:bumpUiScale).
+  try {
+    win.setMenuBarVisibility(getSetting('ui.menuBar') === '1')
+  } catch {
+    /* a bad setting must never block the window */
+  }
 
   win.on('ready-to-show', () => win.show())
 
@@ -249,6 +260,10 @@ app.on('before-quit', () => {
   // A killed mokuro run loses nothing durable — finished volumes keep their
   // sidecars, and mokuro's own _ocr cache resumes the interrupted one.
   killActiveOcr()
+  // The one child that is NOT killed: record the in-flight play session and
+  // let the game outlive the app (it was spawned detached for exactly this).
+  // Must run before closeDatabase() — it writes the session row.
+  finalizeActiveGameSession()
   closeDatabase()
   closeDictDb()
 })

@@ -14,11 +14,11 @@ function seed(): void {
   db.exec(`
     INSERT INTO media_item (id, media_type, title, title_original, synopsis, cover_path,
       release_date, total_units, status, score, progress,
-      rewatch_count, notes, favorite, metadata, external_source, external_id, local_dir)
+      rewatch_count, notes, favorite, metadata, external_source, external_id, local_dir, exe_path)
     VALUES (1, 'anime', 'Cowboy Bebop', 'カウボーイビバップ', 'Space bounty hunters.',
       'media/dl-abc.jpg', '1998-04-03', 26, 'Completed', 9.5, 26,
       2, 'my private notes', 1, '{"communityScore":8.8}', 'anilist', '1',
-      'Cowboy Bebop');
+      'Cowboy Bebop', 'C:\\Games\\Bebop\\bebop.exe');
 
     INSERT INTO person (id, name, photo_path) VALUES (1, 'Megumi Hayashibara', 'media/dl-p.jpg');
     INSERT INTO character (id, name, image_path) VALUES (1, 'Faye Valentine', 'media/dl-c.jpg');
@@ -66,6 +66,9 @@ function seed(): void {
 
     INSERT INTO quiz_session (kind, score, total, best_streak, settings)
       VALUES ('song', 8, 10, 5, '{"songType":"OP"}');
+
+    INSERT INTO game_session (media_id, started_at, ended_at, duration)
+      VALUES (1, '2026-08-01 20:00:00', '2026-08-01 21:00:00', 3600);
 
     INSERT INTO gacha_unit (id, game, kind, name, rarity, element, role, level, dupes, notes, data)
       VALUES (1, 'hsr', 'character', 'Kafka', 5, 'Lightning', 'Nihility', 80, 2,
@@ -143,6 +146,7 @@ describe('export sanitize', () => {
     expect(row.notes).toBeNull()
     expect(row.favorite).toBe(0)
     expect(row.local_dir).toBeNull()
+    expect(row.exe_path).toBeNull()
     // canonical data intact
     expect(row.title).toBe('Cowboy Bebop')
     expect(row.title_original).toBe('カウボーイビバップ')
@@ -170,6 +174,7 @@ describe('export sanitize', () => {
       'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log', 'jp_ghost',
       'music_artist', 'music_album', 'music_track', 'music_playlist',
       'music_playlist_track', 'music_play_log', 'manga_chapter', 'media_image', 'quiz_session',
+      'game_session',
       'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta',
       'gacha_chat_thread', 'gacha_chat_message', 'gacha_goal', 'gacha_coach_note', 'gacha_coach_doc',
       'checklist_task', 'checklist_log', 'en_word', 'en_review_log', 'en_writing', 'prog_progress'

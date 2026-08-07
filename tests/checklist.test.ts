@@ -203,6 +203,24 @@ describe('detection', () => {
     expect(taskByKey(FRI, 'quiz-round').done).toBe(true)
   })
 
+  it('detects game sessions launched from the app, and stacks manual credit', () => {
+    checklistRepo.addTask('game-session', 'daily')
+    const gameId = addMedia('game', 'Persona 5')
+    const addSession = (day: string): void => {
+      db.prepare(
+        `INSERT INTO game_session (media_id, started_at, ended_at, duration)
+         VALUES (?, ?, ?, 1800)`
+      ).run(gameId, `${day} 12:00:00`, `${day} 12:30:00`)
+    }
+    addSession(SAT)
+    addSession(FRI) // yesterday — outside today's daily window
+    expect(taskByKey(SAT, 'game-session')).toMatchObject({ detected: 1, progress: 1, done: true })
+
+    // Played outside NaviHUB → hand credit stacks on top of detection.
+    checklistRepo.credit('game-session', 'daily', SAT)
+    expect(taskByKey(SAT, 'game-session')).toMatchObject({ detected: 1, progress: 2 })
+  })
+
   it('counts lessons learned in the week', () => {
     checklistRepo.addTask('jp-lesson', 'weekly')
     const courseId = Number(

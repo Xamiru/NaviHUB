@@ -14,6 +14,7 @@ import BookSettingsPopover, {
   BOOK_SERIF_STACK,
   type BookPrefs
 } from '../components/reader/BookSettingsPopover'
+import { PrevIcon, NextIcon } from '../components/PlayerIcons'
 import type { EpubTocEntry, MangaChapter } from '@shared/types'
 // Mincho face for the serif reading option — unicode-range split woff2s, so
 // only the glyphs actually rendered are fetched (self-origin, CSP-safe).
@@ -448,7 +449,7 @@ export default function BookReaderPage() {
             title="Previous volume"
             aria-label="Previous volume"
           >
-            ⏮
+            <PrevIcon />
           </button>
           <button
             className="max-w-48 shrink-0 truncate text-xs text-gray-400 hover:text-white"
@@ -487,7 +488,7 @@ export default function BookReaderPage() {
             title="Next volume"
             aria-label="Next volume"
           >
-            ⏭
+            <NextIcon />
           </button>
           <div className="relative flex items-center gap-1 shrink-0 text-xs">
             <BarButton

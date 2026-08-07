@@ -7,6 +7,7 @@ import { usePlayer } from '../lib/player'
 import { musicTrackId, musicTrackToPlayerTrack } from '../lib/musicTracks'
 import { toast, toastError } from '../lib/toast'
 import CoverImage from './CoverImage'
+import { NextIcon } from './PlayerIcons'
 import type { MusicTrack } from '@shared/types'
 
 export function formatDuration(seconds: number | null): string {
@@ -193,7 +194,7 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
               setOpen(false)
             }}
           >
-            ⏭ Play next
+            <NextIcon className="mr-1 inline align-[-0.1em]" /> Play next
           </button>
           <button
             className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"

@@ -4,6 +4,7 @@ import type { VideoSubtitleTrack } from '@shared/types'
 import { PLAYBACK_RATES } from '../../lib/videoPrefs'
 import SubtitleTrackMenu from './SubtitleTrackMenu'
 import VideoTimeline from './VideoTimeline'
+import { PlayIcon, PauseIcon, PrevIcon, NextIcon } from '../PlayerIcons'
 
 // Toggle in the reader-bar style (MangaReaderPage's BarToggle). Text labels,
 // not glyphs — the app's rule is that only transport controls get symbols.
@@ -95,15 +96,15 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
           disabled={!props.hasPrev}
           onClick={props.onPrevEpisode}
         >
-          ⏮
+          <PrevIcon />
         </button>
         <button
-          className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-sm text-accent hover:bg-accent/30"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-accent/20 text-base text-accent hover:bg-accent/30"
           title={props.playing ? 'Pause' : 'Play'}
           aria-label={props.playing ? 'Pause' : 'Play'}
           onClick={props.onToggle}
         >
-          {props.playing ? '❚❚' : '▶'}
+          {props.playing ? <PauseIcon /> : <PlayIcon />}
         </button>
         <button
           className="flex h-8 w-8 items-center justify-center rounded-full text-sm text-gray-400 hover:bg-base-700 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent"
@@ -112,7 +113,7 @@ export default function VideoControls(props: VideoControlsProps): JSX.Element {
           disabled={!props.hasNext}
           onClick={props.onNextEpisode}
         >
-          ⏭
+          <NextIcon />
         </button>
 
         <span className="shrink-0 text-xs tabular-nums text-gray-400">

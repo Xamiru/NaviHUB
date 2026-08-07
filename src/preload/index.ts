@@ -67,6 +67,13 @@ const api: NaviApi = {
   hltb: {
     fetch: (mediaId) => ipcRenderer.invoke('hltb:fetch', mediaId)
   },
+  games: {
+    overview: (mediaId) => ipcRenderer.invoke('games:overview', mediaId),
+    pickExe: (mediaId) => ipcRenderer.invoke('games:pickExe', mediaId),
+    clearExe: (mediaId) => ipcRenderer.invoke('games:clearExe', mediaId),
+    launch: (mediaId) => ipcRenderer.invoke('games:launch', mediaId),
+    sessionStatus: () => ipcRenderer.invoke('games:sessionStatus')
+  },
   lists: {
     list: (kind) => ipcRenderer.invoke('lists:list', kind),
     get: (id) => ipcRenderer.invoke('lists:get', id),
@@ -392,6 +399,8 @@ const api: NaviApi = {
     openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
     pickTextFile: () => ipcRenderer.invoke('app:pickTextFile'),
     setUiScale: (scale) => ipcRenderer.invoke('app:setUiScale', scale),
+    bumpUiScale: (direction) => ipcRenderer.invoke('app:bumpUiScale', direction),
+    setMenuBarVisible: (visible) => ipcRenderer.invoke('app:setMenuBarVisible', visible),
     pendingOpen: () => ipcRenderer.invoke('app:pendingOpen')
   },
   activity: {

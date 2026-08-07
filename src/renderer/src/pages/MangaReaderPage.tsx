@@ -9,6 +9,7 @@ import OcrOverlay from '../components/reader/OcrOverlay'
 import MiningPanel from '../components/reader/MiningPanel'
 import BarButton from '../components/reader/BarButton'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
+import { PrevIcon, NextIcon } from '../components/PlayerIcons'
 import { PopoverRow, PopoverOption } from '../components/reader/BookSettingsPopover'
 import type { MangaChapter, MokuroBlock } from '@shared/types'
 
@@ -703,7 +704,7 @@ export default function MangaReaderPage() {
             title="Previous chapter"
             aria-label="Previous chapter"
           >
-            ⏮
+            <PrevIcon />
           </button>
           <button
             className="max-w-48 shrink-0 truncate text-xs text-gray-400 hover:text-white"
@@ -745,7 +746,7 @@ export default function MangaReaderPage() {
             title="Next chapter"
             aria-label="Next chapter"
           >
-            ⏭
+            <NextIcon />
           </button>
           <div className="relative flex items-center gap-1 shrink-0 text-xs">
             <BarButton label="−" title="Zoom out (-)" onClick={() => zoomBy(1 / 1.25)} />

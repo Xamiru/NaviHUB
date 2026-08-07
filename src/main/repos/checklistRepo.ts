@@ -343,6 +343,12 @@ const DETECT_SQL: Record<ChecklistDetectSource, { count: string; perDay: string 
             WHERE date(played_at, 'localtime') BETWEEN ? AND ?`,
     perDay: `SELECT date(played_at, 'localtime') AS day, COUNT(*) AS n FROM quiz_session
              GROUP BY day`
+  },
+  gameSession: {
+    count: `SELECT COUNT(*) AS n FROM game_session
+            WHERE date(started_at, 'localtime') BETWEEN ? AND ?`,
+    perDay: `SELECT date(started_at, 'localtime') AS day, COUNT(*) AS n FROM game_session
+             GROUP BY day`
   }
 }
 

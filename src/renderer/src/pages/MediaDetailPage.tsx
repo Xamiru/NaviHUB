@@ -22,6 +22,8 @@ import CoverImage from '../components/CoverImage'
 import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
+import GameLaunchSection from '../components/GameLaunchSection'
+import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import VideoEpisodesSection from '../components/VideoEpisodesSection'
 import CoverageSection from '../components/japanese/CoverageSection'
 import MediaImagesSection from '../components/MediaImagesSection'
@@ -219,6 +221,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
       {tab === 'media' && (
         <>
+          {cfg.hasGameLaunch && <GameLaunchSection m={m} />}
           {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
           {cfg.hasLocalReader && <MangaChaptersSection m={m} />}
           {/* Comprehension coverage is a Japanese-learning feature — manga only,
@@ -367,7 +370,7 @@ function PlaytimeSection({ m, onChange }: { m: MediaDetail; onChange: () => void
             ? 'Fetching…'
             : hltb
               ? 'Refresh from HowLongToBeat'
-              : '⏱ Fetch from HowLongToBeat'}
+              : 'Fetch from HowLongToBeat'}
         </button>
         {/* Surface the matched entry so a wrong match is easy to catch */}
         {hltb && hltb.name && hltb.name.toLowerCase() !== m.title.toLowerCase() && (
@@ -769,9 +772,9 @@ function ThemeRow({ theme, onPlay }: { theme: ThemeSong; onPlay: () => void }) {
         onClick={() => (isCurrent ? player.toggle() : onPlay())}
         disabled={!hasAudio}
         title={!hasAudio ? 'No audio available' : isPlaying ? 'Pause' : 'Play'}
-        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs bg-accent/15 text-accent hover:bg-accent/30 disabled:opacity-30 disabled:hover:bg-accent/15"
+        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm bg-accent/15 text-accent hover:bg-accent/30 disabled:opacity-30 disabled:hover:bg-accent/15"
       >
-        {isPlaying ? '❚❚' : '▶'}
+        {isPlaying ? <PauseIcon /> : <PlayIcon />}
       </button>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">

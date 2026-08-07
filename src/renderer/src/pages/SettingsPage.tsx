@@ -77,6 +77,7 @@ export default function SettingsPage() {
           {tab === 'general' && (
             <>
               <UiScaleSettings data={data} onSave={setKey} />
+              <MenuBarSettings data={data} onSave={setKey} />
               <ScoreSettings data={data} onSave={setKey} />
               <TimeStatsSettings data={data} onSave={setKey} />
             </>
@@ -209,8 +210,36 @@ function UiScaleSettings({ data, onSave }: { data?: Record<string, string>; onSa
       </div>
       <p className="mt-3 text-xs text-gray-500">
         Currently {formatUiScale(scale)}. Tip: on a 1366×768 screen, 80% gives roughly the room of a
-        1707×960 one.
+        1707×960 one. Ctrl+scroll zooms from anywhere.
       </p>
+    </SettingCard>
+  )
+}
+
+// Native File/Edit/View bar. Hidden by default — zoom lives on Ctrl+scroll
+// (and Ctrl+= / Ctrl+-), and the hidden menu's other shortcuts keep working.
+function MenuBarSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+  const shown = data?.['ui.menuBar'] === '1'
+
+  async function pick(next: boolean) {
+    // Apply first so the change is instant, then persist for the next launch.
+    await api.app.setMenuBarVisible(next)
+    await onSave('ui.menuBar', next ? '1' : '0')
+  }
+
+  return (
+    <SettingCard
+      title="Menu bar"
+      description="The native File / Edit / View bar above the app. Hidden by default — zoom works with Ctrl+scroll, and keyboard shortcuts (Ctrl+R, F11, Ctrl+= / Ctrl+-) keep working while it's hidden."
+    >
+      <div className="flex gap-2">
+        <button className={!shown ? 'pill pill-active' : 'pill'} onClick={() => pick(false)}>
+          Hidden
+        </button>
+        <button className={shown ? 'pill pill-active' : 'pill'} onClick={() => pick(true)}>
+          Shown
+        </button>
+      </div>
     </SettingCard>
   )
 }

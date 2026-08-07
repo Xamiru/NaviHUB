@@ -110,6 +110,9 @@ export function runMigrations(sqlite: Database.Database): void {
   // Manga reader: series folder attached to a manga entry (written only by
   // src/main/manga.ts — deliberately absent from mediaRepo's column map).
   ensureColumn(sqlite, 'media_item', 'local_dir', 'local_dir TEXT')
+  // Game/VN launcher: per-title executable (written only by src/main/gameLaunch.ts,
+  // same deliberate absence from mediaRepo's column map as local_dir).
+  ensureColumn(sqlite, 'media_item', 'exe_path', 'exe_path TEXT')
   // Gacha news moved to subreddit feeds right after first shipping: post
   // author + the feed's hot-rank ordering (DBs from the day-one build lack
   // these columns).

@@ -1,5 +1,5 @@
 import { ipcMain, shell, BrowserWindow } from 'electron'
-import { clampUiScale } from '@shared/uiScale'
+import { clampUiScale, parseUiScale } from '@shared/uiScale'
 import * as mediaRepo from './repos/mediaRepo'
 import * as peopleRepo from './repos/peopleRepo'
 import * as companyRepo from './repos/companyRepo'
@@ -41,6 +41,8 @@ import * as pictures from './pictures'
 import * as jackett from './jackett'
 import * as qbittorrent from './qbittorrent'
 import * as hltb from './hltb'
+import * as gameLaunch from './gameLaunch'
+import * as gameSessionRepo from './repos/gameSessionRepo'
 import * as files from './files'
 import * as manga from './manga'
 import * as video from './video'
@@ -150,6 +152,16 @@ export function registerIpc(): void {
 
   // ---- HowLongToBeat times (games + VNs) ----
   ipcMain.handle('hltb:fetch', (_e, mediaId) => hltb.fetchForMedia(mediaId))
+
+  // ---- games (launch + playtime) ----
+  ipcMain.handle('games:overview', (_e, mediaId) => ({
+    supported: process.platform === 'win32',
+    ...gameSessionRepo.overview(mediaId)
+  }))
+  ipcMain.handle('games:pickExe', (_e, mediaId) => gameLaunch.pickExeFor(mediaId))
+  ipcMain.handle('games:clearExe', (_e, mediaId) => gameLaunch.clearExe(mediaId))
+  ipcMain.handle('games:launch', (_e, mediaId) => gameLaunch.startSession(mediaId))
+  ipcMain.handle('games:sessionStatus', () => gameLaunch.getLaunchStatus())
 
   // ---- lists ----
   ipcMain.handle('lists:list', (_e, kind) => listRepo.list(kind))
@@ -583,6 +595,23 @@ export function registerIpc(): void {
     const factor = clampUiScale(Number(scale))
     for (const win of BrowserWindow.getAllWindows()) win.webContents.setZoomFactor(factor)
     return factor
+  })
+  // Ctrl+wheel UI zoom (App.tsx global listener): steps the SAME persisted
+  // ui.scale the Settings pills write — applied live AND persisted here, so
+  // the two controls can't drift and the zoom survives a restart.
+  ipcMain.handle('app:bumpUiScale', (_e, direction) => {
+    const cur = parseUiScale(settingsRepo.get('ui.scale'))
+    const next = clampUiScale(Math.round((cur + (Number(direction) > 0 ? 0.1 : -0.1)) * 100) / 100)
+    for (const win of BrowserWindow.getAllWindows()) win.webContents.setZoomFactor(next)
+    settingsRepo.set('ui.scale', String(next))
+    return next
+  })
+  // Native menu bar (File/Edit/View…), hidden by default — the menu object
+  // stays the application menu either way, so its accelerators (Ctrl+R, F11,
+  // Ctrl+Shift+I, Ctrl+= / Ctrl+-) keep working while the bar is invisible.
+  // Persisting ui.menuBar is the caller's job (the setUiScale contract).
+  ipcMain.handle('app:setMenuBarVisible', (_e, visible) => {
+    for (const win of BrowserWindow.getAllWindows()) win.setMenuBarVisibility(!!visible)
   })
 
   // ---- settings ----

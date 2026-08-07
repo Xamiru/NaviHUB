@@ -40,6 +40,9 @@ export const mediaItem = sqliteTable(
     // Manga reader: attached series folder relative to the manga library root
     // (settings key manga.dir). Written only by src/main/manga.ts.
     localDir: text('local_dir'),
+    // Game/VN launcher: absolute path to the title's executable. Written only
+    // by src/main/gameLaunch.ts.
+    exePath: text('exe_path'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -50,6 +53,28 @@ export const mediaItem = sqliteTable(
   (t) => ({
     byType: index('idx_media_type').on(t.mediaType),
     byExternal: index('idx_media_external').on(t.externalSource, t.externalId)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// game_session — one finished play session of a game/VN launched from the app
+// (gameLaunch.ts). Source of truth for tracked time; media_item.progress moves
+// by the delta of the rounded cumulative on each insert.
+// ---------------------------------------------------------------------------
+export const gameSession = sqliteTable(
+  'game_session',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    startedAt: text('started_at').notNull(), // UTC
+    endedAt: text('ended_at').notNull(), // UTC
+    duration: integer('duration').notNull() // seconds
+  },
+  (t) => ({
+    byMedia: index('idx_game_session_media').on(t.mediaId),
+    byStarted: index('idx_game_session_started').on(t.startedAt)
   })
 )
 

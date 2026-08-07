@@ -271,6 +271,13 @@ export const qk = {
     all: ['update'] as const,
     status: ['update', 'status'] as const
   },
+  games: {
+    // Game/VN launcher + playtime tracking. sessionStatus polls while a
+    // tracked session runs (useGameSession).
+    all: ['games'] as const,
+    sessionStatus: ['games', 'sessionStatus'] as const,
+    overview: (mediaId: number) => ['games', 'overview', mediaId] as const
+  },
   activity: ['activity'] as const,
   search: (q: string) => ['search', q] as const,
   // External import-source search: the source key ('anilist', 'tmdb', …) is the

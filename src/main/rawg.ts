@@ -2,7 +2,7 @@ import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { fetchWithRetry } from './http'
-import { fetchPlaytimes } from './hltb'
+import { fetchPlaytimes, hltbLengthHours } from './hltb'
 import * as settingsRepo from './repos/settingsRepo'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
 
@@ -72,6 +72,10 @@ export async function importGame(rawgId: number): Promise<ImportSummary> {
   // HowLongToBeat main/extra/completionist times — best-effort; a failed or
   // missing lookup never blocks the import (the panel offers a manual fetch).
   const hltbTimes = await fetchPlaytimes(g.name ?? '', yearOf(g.released))
+  // HLTB Main Story is the authoritative length; RAWG's playtime (a crowd
+  // average that mixes play styles) is only the fallback when HLTB misses.
+  const lengthHours =
+    (hltbTimes ? hltbLengthHours(hltbTimes) : null) ?? (g.playtime > 0 ? g.playtime : null)
 
   const db = getSqlite()
   updateActivity({ phase: 'writing' })
@@ -97,7 +101,7 @@ export async function importGame(rawgId: number): Promise<ImportSummary> {
         native,
         g.description_raw || null,
         coverPath,
-        g.playtime > 0 ? g.playtime : null,
+        lengthHours,
         g.released || null,
         mediaId
       )
@@ -114,7 +118,7 @@ export async function importGame(rawgId: number): Promise<ImportSummary> {
           native,
           g.description_raw || null,
           coverPath,
-          g.playtime > 0 ? g.playtime : null,
+          lengthHours,
           g.released || null,
           SOURCE,
           String(g.id)

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { usePlayer } from '../lib/player'
 import CoverImage from './CoverImage'
 import QueuePanel from './QueuePanel'
+import { PlayIcon, PauseIcon, PrevIcon, NextIcon } from './PlayerIcons'
 
 // Elapsed/total clock ("3:07"); shared with the full-page now-playing view.
 export function formatTime(t: number): string {
@@ -106,15 +107,15 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           title="Previous"
           aria-label="Previous"
         >
-          ⏮
+          <PrevIcon />
         </button>
         <button
           onClick={toggle}
-          className="w-9 h-9 rounded-full bg-accent/20 text-accent hover:bg-accent/30 flex items-center justify-center text-sm"
+          className="w-9 h-9 rounded-full bg-accent/20 text-accent hover:bg-accent/30 flex items-center justify-center text-base"
           title={isPlaying ? 'Pause' : 'Play'}
           aria-label={isPlaying ? 'Pause' : 'Play'}
         >
-          {isPlaying ? '❚❚' : '▶'}
+          {isPlaying ? <PauseIcon /> : <PlayIcon />}
         </button>
         <button
           onClick={next}
@@ -123,7 +124,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           title="Next"
           aria-label="Next"
         >
-          ⏭
+          <NextIcon />
         </button>
       </div>
 

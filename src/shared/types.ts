@@ -482,6 +482,47 @@ export interface HltbTimes {
   allStylesCount?: number
 }
 
+// One finished play session of a game/VN launched from the app (game_session
+// row). Timestamps are UTC; duration is wall-clock process lifetime.
+export interface GameSessionRow {
+  id: number
+  mediaId: number
+  startedAt: string
+  endedAt: string
+  durationSec: number
+}
+
+// The Playtime tab's launcher panel in one invoke. `supported` is false off
+// Windows (linking still works there; launching throws). exe_path deliberately
+// rides here instead of MediaItem — the local_dir posture: machine-local state
+// stays out of the shared media shape.
+export interface GameLaunchOverview {
+  supported: boolean
+  exePath: string | null
+  totalSeconds: number
+  sessionCount: number
+  sessions: GameSessionRow[]
+}
+
+// The tracked-session poll (gameLaunch.ts). Terminal states persist until the
+// next launch so the renderer can stop polling and still show the outcome.
+// elapsedSec is wall clock computed at poll time. On 'ended': durationSec is
+// set, and either discarded (under the minimum — no row written) or
+// progressDelta (whole hours/minutes added to media_item.progress).
+export interface GameLaunchStatus {
+  id: string
+  state: 'running' | 'ended' | 'error'
+  mediaId: number
+  mediaType: string // 'game' | 'visual_novel' — picks the progress unit label
+  title: string
+  startedAt: string
+  elapsedSec: number
+  durationSec: number | null
+  discarded: boolean
+  progressDelta: number | null
+  message: string | null
+}
+
 // One row of a voice actor's filmography (powers the VA -> anime page)
 export interface PersonCredit {
   creditId: number

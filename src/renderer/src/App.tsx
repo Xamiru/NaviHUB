@@ -1,6 +1,7 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useScrollRestoration } from './lib/navState'
+import { api } from './lib/api'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import NowPlayingBar from './components/NowPlayingBar'
@@ -112,6 +113,27 @@ export default function App() {
   useLayoutEffect(() => {
     if (isReader) document.documentElement.dataset.reader = 'true'
     else delete document.documentElement.dataset.reader
+  }, [isReader])
+
+  // Ctrl+wheel = UI zoom (Electron has no built-in handler for it). Steps the
+  // same persisted ui.scale the Settings pills write, via app:bumpUiScale.
+  // Readers are excluded: the manga reader owns Ctrl+wheel for page zoom, and
+  // an accidental UI re-scale mid-chapter is disorienting. deltaY accumulates
+  // so high-resolution wheels/trackpads step once per ~notch, not per event.
+  useEffect(() => {
+    if (isReader) return
+    let acc = 0
+    const onWheel = (e: WheelEvent): void => {
+      if (!e.ctrlKey || e.defaultPrevented) return
+      e.preventDefault()
+      acc += e.deltaY
+      if (Math.abs(acc) < 50) return
+      const direction = acc < 0 ? 1 : -1
+      acc = 0
+      void api.app.bumpUiScale(direction)
+    }
+    window.addEventListener('wheel', onWheel, { passive: false })
+    return () => window.removeEventListener('wheel', onWheel)
   }, [isReader])
 
   if (isReader) {

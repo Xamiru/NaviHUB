@@ -23,11 +23,31 @@ CREATE TABLE IF NOT EXISTS media_item (
   external_source TEXT,
   external_id     TEXT,
   local_dir       TEXT,
+  -- Absolute path to a game/VN executable ("Play" on the Playtime tab). A
+  -- machine-local path like local_dir, so it stays out of exports. Written
+  -- only by src/main/gameLaunch.ts — deliberately absent from mediaRepo's
+  -- column map.
+  exe_path        TEXT,
   created_at      TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_media_type ON media_item(media_type);
 CREATE INDEX IF NOT EXISTS idx_media_external ON media_item(external_source, external_id);
+
+-- One finished play session of a game/VN launched from the app (gameLaunch.ts;
+-- sessions under a minute are never recorded). Source of truth for TRACKED
+-- time — media_item.progress moves by the delta of the rounded cumulative on
+-- each insert (gameLaunchCore.foldedProgress), so hand-entered hours survive.
+-- Rows die with the title (CASCADE), the music_play_log lifetime rule.
+CREATE TABLE IF NOT EXISTS game_session (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id   INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  started_at TEXT NOT NULL,   -- UTC, like all timestamps
+  ended_at   TEXT NOT NULL,   -- UTC
+  duration   INTEGER NOT NULL -- seconds of wall-clock process lifetime
+);
+CREATE INDEX IF NOT EXISTS idx_game_session_media   ON game_session(media_id);
+CREATE INDEX IF NOT EXISTS idx_game_session_started ON game_session(started_at);
 
 CREATE TABLE IF NOT EXISTS person (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,

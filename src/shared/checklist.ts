@@ -14,7 +14,12 @@ import type { ChecklistCadence, ChecklistKind, MediaType } from './types'
 // column the app already writes (see checklistRepo's DETECT_SQL). Detection is
 // the primary signal, but every detected item can also be credited by hand —
 // the activity often happens outside the app.
-export type ChecklistDetectSource = 'jpReviews' | 'jpLesson' | 'quizRound' | 'enReviews'
+export type ChecklistDetectSource =
+  | 'jpReviews'
+  | 'jpLesson'
+  | 'quizRound'
+  | 'enReviews'
+  | 'gameSession'
 
 export interface ChecklistDef {
   key: string
@@ -113,6 +118,18 @@ export const CHECKLIST_DEFS: ChecklistDef[] = [
     target: 1,
     route: '/quiz',
     source: 'quizRound'
+  },
+  {
+    key: 'game-session',
+    label: 'Play a game',
+    // Only sessions launched through NaviHUB are detected — the credit button
+    // covers everything played outside it (the detected-kind design note).
+    hint: 'Counts play sessions launched from NaviHUB; credit by hand for sessions elsewhere.',
+    kind: 'detected',
+    defaultCadence: 'daily',
+    target: 1,
+    route: '/games',
+    source: 'gameSession'
   },
   ...GACHA_GAMES.map(
     (g): ChecklistDef => ({

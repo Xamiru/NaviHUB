@@ -19,9 +19,19 @@ vi.mock('../src/main/files', () => ({
   downloadImage: async () => null
 }))
 
+// URL-routed: RAWG calls get the game fixture; HLTB's init/search get their
+// own stage. The defaults keep HLTB inert (no token → no creds → no lookup),
+// which is what pins the RAWG-playtime fallback in the older tests below.
 let fixture: Record<string, unknown>
+let hltbInit: Record<string, unknown>
+let hltbSearch: Record<string, unknown>
 vi.mock('../src/main/http', () => ({
-  fetchWithRetry: async () => ({ ok: true, status: 200, json: async () => fixture })
+  fetchWithRetry: async (url: string) => ({
+    ok: true,
+    status: 200,
+    json: async () =>
+      url.includes('/api/bleed/init') ? hltbInit : url.includes('/api/bleed') ? hltbSearch : fixture
+  })
 }))
 
 // settingsRepo would hit the (mocked) db for the API key; give it one directly.
@@ -49,6 +59,8 @@ function gameFixture(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   db = createTestDb()
   fixture = gameFixture()
+  hltbInit = {}
+  hltbSearch = { data: [] }
 })
 
 describe('importGame', () => {
@@ -124,6 +136,30 @@ describe('importGame', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM character').get()).toEqual({ n: 1 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM credit').get()).toEqual({ n: 1 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM media_character').get()).toEqual({ n: 1 })
+  })
+
+  it('HLTB Main Story beats RAWG playtime as the length (hours)', async () => {
+    hltbInit = { token: 't', hpKey: 'k', hpVal: 'v' }
+    hltbSearch = {
+      data: [
+        {
+          game_id: 1,
+          game_name: 'Persona 5',
+          release_world: 2016,
+          comp_main: 90_000, // seconds → 25 h; RAWG's playtime says 97
+          comp_all: 120_000,
+          comp_main_count: 800
+        }
+      ]
+    }
+    await importGame(3328)
+    const media = db
+      .prepare(`SELECT * FROM media_item WHERE external_source='rawg' AND external_id='3328'`)
+      .get() as Record<string, unknown>
+    expect(media.total_units).toBe(25)
+    const meta = JSON.parse(media.metadata as string)
+    expect(meta.metacritic).toBe(93)
+    expect(meta.hltb.main).toBe(1500)
   })
 
   it('rolls back the whole import if a write fails mid-transaction (atomicity)', async () => {

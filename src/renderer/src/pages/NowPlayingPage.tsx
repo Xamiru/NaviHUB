@@ -7,6 +7,7 @@ import BackButton from '../components/BackButton'
 import Section from '../components/Section'
 import { formatTime } from '../components/NowPlayingBar'
 import { QueueRow, EditButton } from '../components/QueuePanel'
+import { PlayIcon, PauseIcon, PrevIcon, NextIcon } from '../components/PlayerIcons'
 
 // Spotify-style full-page view of the current track: big artwork, transport
 // controls and the live queue side by side. Pure view over usePlayer() — no
@@ -154,15 +155,15 @@ export default function NowPlayingPage() {
               title="Previous"
               aria-label="Previous"
             >
-              ⏮
+              <PrevIcon />
             </button>
             <button
               onClick={toggle}
-              className="w-14 h-14 rounded-full bg-accent/20 text-accent hover:bg-accent/30 flex items-center justify-center text-xl"
+              className="w-14 h-14 rounded-full bg-accent/20 text-accent hover:bg-accent/30 flex items-center justify-center text-2xl"
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? '❚❚' : '▶'}
+              {isPlaying ? <PauseIcon /> : <PlayIcon />}
             </button>
             <button
               onClick={next}
@@ -171,7 +172,7 @@ export default function NowPlayingPage() {
               title="Next"
               aria-label="Next"
             >
-              ⏭
+              <NextIcon />
             </button>
             <button
               onClick={cycleRepeat}

@@ -165,6 +165,15 @@ function toTimes(g: any): HltbTimes {
   }
 }
 
+// HLTB's Main Story time as whole hours — the authoritative game length for
+// media_item.total_units (games store hours). allStyles covers titles where
+// HLTB has no per-style split; max(1,…) keeps a sub-30-minute game from
+// rounding to a 0-hour length.
+export function hltbLengthHours(t: HltbTimes): number | null {
+  const min = t.main ?? t.allStyles
+  return min != null ? Math.max(1, Math.round(min / 60)) : null
+}
+
 // Best-effort lookup by title (+ release year). Falls back to the pre-colon
 // part of the title ("Persona 5: The Phantom X" -> "Persona 5") when the full
 // title finds nothing. Null on no match or any network trouble.
@@ -184,12 +193,20 @@ export async function fetchPlaytimes(
 
 // The detail page's "fetch from HLTB" button: look the item's title up, stash
 // the times under metadata.hltb (merged, so other keys survive), return them.
+// For games it also makes HLTB the authoritative length (total_units, hours) —
+// the button is how existing rows with RAWG's crowd-average length get fixed.
+// A miss never writes: the previous length always survives.
 export async function fetchForMedia(mediaId: number): Promise<HltbTimes | null> {
   const db = getSqlite()
   const row = db
-    .prepare('SELECT title, title_original, release_date FROM media_item WHERE id = ?')
+    .prepare('SELECT media_type, title, title_original, release_date FROM media_item WHERE id = ?')
     .get(mediaId) as
-    | { title: string; title_original: string | null; release_date: string | null }
+    | {
+        media_type: string
+        title: string
+        title_original: string | null
+        release_date: string | null
+      }
     | undefined
   if (!row) return null
 
@@ -214,5 +231,12 @@ export async function fetchForMedia(mediaId: number): Promise<HltbTimes | null> 
   }
   meta.hltb = times
   db.prepare('UPDATE media_item SET metadata = ? WHERE id = ?').run(JSON.stringify(meta), mediaId)
+
+  // Games only: VN lengths stay VNDB's community minutes (different unit, and
+  // already good data).
+  const hours = hltbLengthHours(times)
+  if (row.media_type === 'game' && hours != null) {
+    db.prepare('UPDATE media_item SET total_units = ? WHERE id = ?').run(hours, mediaId)
+  }
   return times
 }

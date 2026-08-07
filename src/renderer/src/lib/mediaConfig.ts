@@ -111,6 +111,9 @@ export interface MediaConfig {
   // Seasonal browse page (anime) — year picker + Winter/Spring/Summer/Fall
   // shelves at `${basePath}/seasonal`, linked from the sidebar + list header.
   hasSeasonal?: boolean
+  // Launch-from-app + playtime tracking (games + VNs) — shows the launcher
+  // section (link an executable, Play, session history) on the Playtime tab.
+  hasGameLaunch?: boolean
 }
 
 // Roles that represent "playing/voicing a character" (vs. crew). Used to split
@@ -264,7 +267,8 @@ export const VISUAL_NOVEL: MediaConfig = {
   importSource: { key: 'vndb', label: 'VNDB', placeholder: 'Search VNDB (e.g. Steins;Gate)…' },
   hasPlaytimes: true,
   mediaTabLabel: 'Playtime',
-  hasFanArt: true
+  hasFanArt: true,
+  hasGameLaunch: true
 }
 
 // Games come from RAWG (metadata, cover, developers/publishers, genres — it has
@@ -282,7 +286,8 @@ export const GAME: MediaConfig = {
   statusesKey: 'game.statuses',
   defaultStatuses: ['Playing', 'Completed', 'On Hold', 'Dropped', 'Plan to Play'],
   progressFieldLabel: 'Progress (hours played)',
-  totalFieldLabel: 'Average length (hours)',
+  // HLTB Main Story hours since 2026-08 (RAWG's crowd average is the fallback).
+  totalFieldLabel: 'Length (hours)',
   timesConsumedLabel: 'Times played',
   progressStatLabel: 'Playtime',
   formatProgressStat: (m) =>
@@ -306,7 +311,8 @@ export const GAME: MediaConfig = {
   importSource: { key: 'rawg', label: 'RAWG', placeholder: 'Search RAWG (e.g. Persona 5)…' },
   hasPlaytimes: true,
   mediaTabLabel: 'Playtime',
-  hasFanArt: true
+  hasFanArt: true,
+  hasGameLaunch: true
 }
 
 export const MOVIE: MediaConfig = {

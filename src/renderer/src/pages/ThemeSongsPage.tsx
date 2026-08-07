@@ -9,6 +9,7 @@ import { useStatuses, useDebouncedValue, useIncrementalList } from '../lib/hooks
 import { usePlayer, type Track } from '../lib/player'
 import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
+import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import MediaFilterPanel, {
   EMPTY_FILTERS,
   activeCount,
@@ -399,9 +400,9 @@ function SongRow({ song, onPlay }: { song: ThemeSongEntry; onPlay: () => void })
       <button
         onClick={() => (isCurrent ? player.toggle() : onPlay())}
         title={isPlaying ? 'Pause' : 'Play'}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs text-accent hover:bg-accent/30"
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/15 text-sm text-accent hover:bg-accent/30"
       >
-        {isPlaying ? '❚❚' : '▶'}
+        {isPlaying ? <PauseIcon /> : <PlayIcon />}
       </button>
       <Link to={`/anime/${song.mediaId}`} className="shrink-0">
         <CoverImage path={song.coverPath} alt={song.animeTitle} className="h-10 w-10" />
