@@ -385,7 +385,13 @@ interface HomophoneRow {
 // frequency table so the whole term table is never scanned). Sentence mode
 // renders the target as its KANA in place — okurigana differs across members
 // (帰った vs 変えた), so a literal blank is unworkable.
-export async function homophonePool(req: HomophonePoolRequest): Promise<HomophoneQuizItem[]> {
+// rng is injectable (the buildVocabPool pattern) so tests can force which
+// group member becomes the target instead of praying over Math.random — the
+// sentence-mode test flaked in CI exactly that way.
+export async function homophonePool(
+  req: HomophonePoolRequest,
+  rng: () => number = Math.random
+): Promise<HomophoneQuizItem[]> {
   const limit = Math.max(1, Math.min(50, req.limit))
   let rows: HomophoneRow[] = []
   try {
@@ -465,7 +471,7 @@ export async function homophonePool(req: HomophonePoolRequest): Promise<Homophon
       rank: m.rank
     }))
     if (withGloss.some((m) => !m.gloss)) continue
-    const target = withGloss[Math.floor(Math.random() * withGloss.length)]
+    const target = withGloss[Math.floor(rng() * withGloss.length)]
     // Near-synonym spellings (変える/換える) are unfair as OPTIONS; they stay
     // in the reveal group.
     // Deduped by first gloss token across ALL options, not merely against the

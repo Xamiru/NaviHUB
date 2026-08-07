@@ -233,11 +233,12 @@ describe('homophonePool', () => {
       tok('。', '。', null, '記号')
     ]
     await importSentenceText('I went home.\t家に帰った。\tcc')
-    // Run a few times: the target member is random; when 帰る is the target
-    // the sentence must appear in kana form.
+    // The target member is rng-picked: drive the injectable rng across every
+    // member slot so 帰る is GUARANTEED to come up. (This used to loop 20
+    // times over Math.random and flaked in CI at 0.75^20.)
     let sawSentenceMode = false
-    for (let i = 0; i < 20 && !sawSentenceMode; i++) {
-      const pool = await homophonePool({ source: 'frequency', limit: 10 })
+    for (let i = 0; i < 4 && !sawSentenceMode; i++) {
+      const pool = await homophonePool({ source: 'frequency', limit: 10 }, () => i / 4)
       const q = pool.find((item) => item.reading === 'かえる')
       if (q && q.target === '帰る') {
         expect(q.mode).toBe('sentence')
