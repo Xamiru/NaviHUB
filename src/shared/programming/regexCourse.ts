@@ -64,7 +64,7 @@ re.FindAllString("widths 3.5 and 10.25", -1) // ["3.5", "10.25"]
             'The "A" and the newline — any single character not a lowercase letter, newlines included',
             'Only the "A" — negated classes never match newline',
             'Nothing — ^ anchors the class to the start of the string',
-            'The whole string, because negation applies to the entire input'
+            'The whole string, because the negation applies to the entire input rather than one character'
           ],
           correct: 0,
           explain:
@@ -85,8 +85,8 @@ re.FindAllString("widths 3.5 and 10.25", -1) // ["3.5", "10.25"]
         {
           prompt: 'Why does the pattern \\d+ often behave differently when written without a raw string in Python?',
           options: [
-            'It does not — Python treats "\\d" and r"\\d" identically in all cases',
-            'String-literal escaping consumes backslashes first, so sequences like "\\b" or "\\n" reach re as control characters',
+            'It does not — Python treats "\\d" and r"\\d" identically, so the prefix is a style choice',
+            'String-literal escaping runs first, so sequences like "\\b" reach re as control characters',
             'Non-raw strings disable Unicode matching',
             'The re module rejects non-raw strings with a SyntaxError'
           ],
@@ -145,9 +145,9 @@ PCRE, Java, and Python 3.11+ add possessive quantifiers (\`*+\`, \`++\`, \`?+\`)
           prompt: 'Why is <[^>]*> generally preferred over the lazy <.*?> for matching tags?',
           options: [
             'Lazy quantifiers are not supported in Python',
-            'The negated class matches across newlines while lazy dot does not',
+            'The negated class matches across newlines while the lazy dot stops at the first one it sees',
             'They match different tag names',
-            'It encodes the real invariant, cannot creep past a boundary, needs no backtracking, and also works in RE2/Go'
+            'It encodes the real invariant, cannot creep past a boundary, and needs no backtracking'
           ],
           correct: 3,
           explain:
@@ -158,7 +158,7 @@ PCRE, Java, and Python 3.11+ add possessive quantifiers (\`*+\`, \`++\`, \`?+\`)
           options: [
             'Nothing — a*+ consumes all three characters and never backtracks, leaving the final a unmatchable',
             '"aaa", same as a*a',
-            '"aa" — possessive quantifiers reserve one character',
+            'It matches "aa" — a possessive quantifier always reserves one character for whatever follows it next',
             'It is a syntax error in every flavor'
           ],
           correct: 0,
@@ -168,7 +168,7 @@ PCRE, Java, and Python 3.11+ add possessive quantifiers (\`*+\`, \`++\`, \`?+\`)
         {
           prompt: 'What does ab{2,3} match?',
           options: [
-            '"abab" or "ababab" — two or three repetitions of "ab"',
+            '"abab" or "ababab" — that is two or three repetitions of the whole two-character group',
             '"ab" followed by two or three of any character',
             '"a" followed by two or three "b"s — the quantifier binds only to the preceding atom',
             'Exactly the literal string "ab{2,3}"'
@@ -336,7 +336,7 @@ The Go gotcha is worth stars in the margin: in \`ReplaceAllString\`, \`$1x\` is 
         {
           prompt: 'Why does Go\'s regexp reject backreferences like \\1 entirely?',
           options: [
-            'They are deprecated in modern regex flavors',
+            'They are deprecated in modern regex flavors, so RE2 dropped them when it targeted linear-time matching',
             'Go strings cannot contain the \\1 escape',
             'RE2 guarantees linear-time matching, and backreference support is incompatible with that guarantee',
             'SubexpNames() replaces the need for them'
@@ -435,7 +435,7 @@ A final honesty check: lookarounds make patterns powerful and dense at the same 
           options: [
             'Go requires (?P<=...) for lookbehind',
             'RE2 supports no lookarounds at all — capture version=(\\S+) and read the group instead',
-            'Go lookbehind must be fixed-width, and \\S+ is variable',
+            'Go lookbehind must be fixed-width, and \\S+ is variable, so the compiler rejects it',
             '\\S is not valid RE2 syntax'
           ],
           correct: 1,
@@ -491,7 +491,7 @@ Rule of thumb: write in the POSIX-safe subset (\`[0-9]\`, explicit groups) when 
           options: [
             'grep requires the -o flag to match digits',
             'BRE has no \\d shorthand and + is literal there — use grep -E \'[0-9]+\' or grep -P \'\\d+\'',
-            'The shell strips the backslash before grep sees it',
+            'The shell strips the backslash before grep ever sees the pattern, leaving just a bare d',
             'grep only matches whole lines by default'
           ],
           correct: 1,
@@ -501,10 +501,10 @@ Rule of thumb: write in the POSIX-safe subset (\`[0-9]\`, explicit groups) when 
         {
           prompt: 'What does Python\'s re.VERBOSE flag change?',
           options: [
-            'It prints a trace of the engine\'s matching steps',
+            'It prints a trace of the engine\'s matching steps, which is why patterns look reformatted',
             'It enables named groups and lookbehind',
             'It makes . match newlines',
-            'Unescaped whitespace in the pattern is ignored and # starts a comment, allowing multi-line annotated patterns'
+            'Unescaped whitespace is ignored and # starts a comment, allowing annotated patterns'
           ],
           correct: 3,
           explain:
@@ -585,8 +585,8 @@ Nested or recursive structure is the hard line: HTML, JSON, balanced parentheses
         {
           prompt: 'Why does matching (a+)+$ against "aaaaaaaaaaaaaaaaaaaaaaaaaaab" take exponential time in Python?',
           options: [
-            'The failing $ forces the engine to try every way of splitting the a-run between the inner and outer quantifiers — about 2^n combinations',
-            'The + quantifier is implemented recursively and overflows the stack',
+            'The failing $ forces the engine to try every split of the a-run — about 2^n of them',
+            'The + quantifier is implemented recursively, so a long a-run overflows the parser stack',
             'Anchors disable the regex cache, forcing recompilation per attempt',
             'Group capture allocates memory per repetition'
           ],
@@ -597,7 +597,7 @@ Nested or recursive structure is the hard line: HTML, JSON, balanced parentheses
         {
           prompt: 'How does RE2 avoid catastrophic backtracking?',
           options: [
-            'It caps backtracking at a fixed depth and fails matches beyond it',
+            'It caps backtracking at a fixed depth and simply fails any match that runs past that limit here',
             'It rewrites dangerous patterns into safe ones at compile time',
             'It simulates the automaton over sets of states in a single pass, so no backtracking ever occurs',
             'It runs the match in a goroutine with a timeout'

@@ -15,7 +15,9 @@ const api: NaviApi = {
     statusCounts: (mediaType) => ipcRenderer.invoke('media:statusCounts', mediaType),
     facets: (mediaType) => ipcRenderer.invoke('media:facets', mediaType),
     timeStats: () => ipcRenderer.invoke('media:timeStats'),
-    jpMilestones: () => ipcRenderer.invoke('media:jpMilestones')
+    jpMilestones: () => ipcRenderer.invoke('media:jpMilestones'),
+    resumePoints: () => ipcRenderer.invoke('media:resumePoints'),
+    activityHeatmap: () => ipcRenderer.invoke('media:activityHeatmap')
   },
   people: {
     list: (search, role, mediaType) => ipcRenderer.invoke('people:list', search, role, mediaType),
@@ -34,17 +36,14 @@ const api: NaviApi = {
   characters: {
     list: (search) => ipcRenderer.invoke('characters:list', search),
     get: (id) => ipcRenderer.invoke('characters:get', id),
-    cast: (id) => ipcRenderer.invoke('characters:cast', id),
     roles: (id) => ipcRenderer.invoke('characters:roles', id),
     upsert: (input) => ipcRenderer.invoke('characters:upsert', input),
     remove: (id) => ipcRenderer.invoke('characters:remove', id)
   },
   credits: {
-    add: (input) => ipcRenderer.invoke('credits:add', input),
     remove: (creditId) => ipcRenderer.invoke('credits:remove', creditId)
   },
   mediaCompanies: {
-    add: (input) => ipcRenderer.invoke('mediaCompanies:add', input),
     remove: (id) => ipcRenderer.invoke('mediaCompanies:remove', id)
   },
   tags: {
@@ -192,7 +191,10 @@ const api: NaviApi = {
     analyzeText: (text) => ipcRenderer.invoke('japanese:analyzeText', text),
     stats: () => ipcRenderer.invoke('japanese:stats'),
     statsDetail: () => ipcRenderer.invoke('japanese:statsDetail'),
+    addGrammarPoints: (ids) => ipcRenderer.invoke('japanese:addGrammarPoints', ids),
+    addGrammarLevel: (level) => ipcRenderer.invoke('japanese:addGrammarLevel', level),
     ensureMiningInbox: () => ipcRenderer.invoke('japanese:ensureMiningInbox'),
+    markWordsKnown: (words) => ipcRenderer.invoke('japanese:markWordsKnown', words),
     tokenize: (text) => ipcRenderer.invoke('japanese:tokenize', text),
     minedFronts: (fronts) => ipcRenderer.invoke('japanese:minedFronts', fronts),
     pitchQuizPool: (req) => ipcRenderer.invoke('japanese:pitchQuizPool', req),
@@ -265,7 +267,8 @@ const api: NaviApi = {
     removeFreq: () => ipcRenderer.invoke('english:removeFreq'),
     writingFeedback: (req) => ipcRenderer.invoke('english:writingFeedback', req),
     listWritings: () => ipcRenderer.invoke('english:listWritings'),
-    removeWriting: (id) => ipcRenderer.invoke('english:removeWriting', id)
+    removeWriting: (id) => ipcRenderer.invoke('english:removeWriting', id),
+    errorTally: () => ipcRenderer.invoke('english:errorTally')
   },
   programming: {
     progress: () => ipcRenderer.invoke('programming:progress'),
@@ -295,7 +298,6 @@ const api: NaviApi = {
     rescan: (mediaId) => ipcRenderer.invoke('video:rescan', mediaId),
     detach: (mediaId) => ipcRenderer.invoke('video:detach', mediaId),
     files: (mediaId) => ipcRenderer.invoke('video:files', mediaId),
-    scanStatus: () => ipcRenderer.invoke('video:scanStatus'),
     source: (ref, opts) => ipcRenderer.invoke('video:source', ref, opts),
     pickFile: () => ipcRenderer.invoke('video:pickFile'),
     prepare: (ref, opts) => ipcRenderer.invoke('video:prepare', ref, opts),
@@ -416,7 +418,6 @@ const api: NaviApi = {
   },
   settings: {
     all: () => ipcRenderer.invoke('settings:all'),
-    get: (key) => ipcRenderer.invoke('settings:get', key),
     set: (key, value) => ipcRenderer.invoke('settings:set', key, value)
   },
   files: {

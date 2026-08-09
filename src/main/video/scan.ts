@@ -115,6 +115,9 @@ export function setProber(p: Prober): void {
 // Scan status (polled — this app has no push channel)
 // ---------------------------------------------------------------------------
 
+// Written but not currently read: the video:scanStatus channel was removed as
+// dead. Kept because it is exactly what a progress poll needs — a large
+// video-folder scan is still the one scan in the app with no progress UI.
 const scanState: VideoScanStatus = {
   running: false,
   phase: 'idle',
@@ -123,9 +126,6 @@ const scanState: VideoScanStatus = {
   error: null
 }
 
-export function getScanStatus(): VideoScanStatus {
-  return { ...scanState }
-}
 
 // ---------------------------------------------------------------------------
 // Rows

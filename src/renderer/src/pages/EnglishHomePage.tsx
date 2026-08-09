@@ -10,6 +10,46 @@ import HubCard from '../components/HubCard'
 // The English section's dashboard (the JapaneseHomePage pattern): deck stats,
 // then one quiet card per tool. Tests target C1/C2 — this section is
 // deliberately test-first, not course-first.
+const CATEGORY_LABEL: Record<string, string> = {
+  articles: 'article slips',
+  punctuation: 'punctuation',
+  boundaries: 'run-ons and comma splices',
+  confusables: 'confusables',
+  register: 'register',
+  spelling: 'spelling'
+}
+
+// Your own graded writing, read back. en_writing has always stored a
+// corrections array and nothing ever looked at it again — which made it the
+// most valuable data in the section and the only write-only data in the app.
+// The mechanics drill weights itself off the same tally.
+function ErrorLog() {
+  const { data } = useQuery({
+    queryKey: qk.english.errorTally,
+    queryFn: () => api.english.errorTally()
+  })
+  if (!data || data.corrections === 0) return null
+  const top = data.byCategory.slice(0, 4)
+  if (top.length === 0) return null
+  return (
+    <Section title="What you keep getting wrong" subtitle={`last ${data.submissions} submissions`}>
+      <div className="card p-4">
+        <div className="flex flex-wrap gap-2">
+          {top.map((c) => (
+            <span key={c.category} className="chip">
+              {c.count} {CATEGORY_LABEL[c.category] ?? c.category}
+            </span>
+          ))}
+        </div>
+        <p className="mt-3 text-xs text-gray-500">
+          Counted from the corrections on your graded writing. The mechanics drill draws these
+          categories more often.
+        </p>
+      </div>
+    </Section>
+  )
+}
+
 export default function EnglishHomePage() {
   const { data: stats } = useQuery({
     queryKey: qk.english.srsStats,
@@ -32,6 +72,8 @@ export default function EnglishHomePage() {
         <StatTile label="Saved words" value={stats?.totalCount ?? 0} />
         <StatTile label="Reviewed today" value={stats?.reviewedToday ?? 0} />
       </div>
+
+      <ErrorLog />
 
       <Section title="Study">
         <HubGrid>

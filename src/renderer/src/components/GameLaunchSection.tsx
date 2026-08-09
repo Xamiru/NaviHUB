@@ -10,10 +10,10 @@ import StatTile from './StatTile'
 import type { MediaDetail, HltbTimes } from '@shared/types'
 
 // Launch-from-app + tracked playtime for games/VNs (cfg.hasGameLaunch), on the
-// Playtime tab beside the HLTB estimates. Link a per-title executable, Play
-// spawns it (Windows only — gameLaunch.ts), and the session records itself
-// when the process exits; busy state derives from the polled status, never a
-// local flag (the MangaChaptersSection rule).
+// Playtime tab beside the HLTB estimates: link a per-title executable, see the
+// tracked totals and the session history. Launching itself is NOT here —
+// GameLaunchButton in the detail page's action column owns it, so Play is
+// reachable from every tab and exists exactly once.
 
 // UTC "YYYY-MM-DD HH:MM:SS" → local "Aug 6, 21:40" style line.
 function fmtSessionStart(utc: string): string {
@@ -68,15 +68,6 @@ export default function GameLaunchSection({ m }: { m: MediaDetail }) {
     }
   }
 
-  async function play(): Promise<void> {
-    try {
-      await api.games.launch(m.id)
-      await session.kick()
-    } catch (e) {
-      toastError(e)
-    }
-  }
-
   if (!ov) return <p className="text-sm text-gray-500">Loading…</p>
 
   return (
@@ -104,37 +95,23 @@ export default function GameLaunchSection({ m }: { m: MediaDetail }) {
         </p>
       )}
 
-      {/* Play / running state */}
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        {runningHere ? (
-          <span className="chip">
-            Playing · {fmtDurationSec(session.status?.elapsedSec ?? 0)} — closes when the game
-            exits
-          </span>
-        ) : (
-          <button
-            className="btn-primary"
-            onClick={play}
-            disabled={!ov.supported || !ov.exePath || session.running}
-            title={
-              !ov.supported
-                ? 'Windows only'
-                : !ov.exePath
-                  ? 'Link the executable first'
-                  : runningElsewhere
-                    ? 'Another session is being tracked'
-                    : 'Launch and start tracking'
-            }
-          >
-            Play
-          </button>
-        )}
-        {runningElsewhere && (
-          <span className="text-xs text-gray-500">
-            Already tracking “{session.status?.title}” — one session at a time.
-          </span>
-        )}
-      </div>
+      {/* Session state only — Play itself lives in the detail page's action
+          column (GameLaunchButton), so it is reachable from every tab and
+          there is exactly one of it. */}
+      {(runningHere || runningElsewhere) && (
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          {runningHere ? (
+            <span className="chip">
+              Playing · {fmtDurationSec(session.status?.elapsedSec ?? 0)} — closes when the game
+              exits
+            </span>
+          ) : (
+            <span className="text-xs text-gray-500">
+              Already tracking “{session.status?.title}” — one session at a time.
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Tracked totals vs the HLTB estimate */}
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">

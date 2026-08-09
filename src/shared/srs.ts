@@ -41,8 +41,18 @@ export const GHOST_STEPS = 3
 
 const DAY_MIN = 1440
 
-// A relearning card is recognized by its non-zero interval: lapsing resets the
-// interval to 1 day, while a genuinely new card starts at 0.
+// A lapse keeps this share of the old interval instead of dropping to 1 day.
+// Anki's own default is 0%, and it is the default every modern scheduler
+// changed: one miss should not cost a 200-day card ten successful reviews.
+export const LAPSE_NEW_INTERVAL = 0.4
+
+// ±5%. Deterministic intervals keep a cohort a cohort forever, and this app
+// introduces cards in cohorts BY DESIGN — buildCoreDeck dumps 500 words,
+// buildPrepDeck 100, and setLessonLearned flips a whole lesson at once.
+export const FUZZ_RATIO = 0.1
+
+// A relearning card is recognized by its non-zero interval: lapsing keeps a
+// fraction of the interval, while a genuinely new card starts at 0.
 function isRelearning(s: SrsState): boolean {
   return s.intervalDays > 0
 }
@@ -51,8 +61,15 @@ function capDays(days: number): number {
   return Math.min(MAX_INTERVAL_DAYS, Math.max(1, days))
 }
 
-function graduate(s: SrsState, days: number): SrsResult {
-  const intervalDays = capDays(days)
+// Applied to review-length intervals only: fuzzing a 1-day step would round
+// straight back to 1 and just add noise to the learning ladder.
+function fuzz(days: number, rng: () => number): number {
+  if (days < 2) return days
+  return capDays(Math.round(days * (1 + (rng() - 0.5) * FUZZ_RATIO)))
+}
+
+function graduate(s: SrsState, days: number, rng: () => number): SrsResult {
+  const intervalDays = fuzz(capDays(days), rng)
   return {
     ...s,
     status: 'review',
@@ -62,8 +79,26 @@ function graduate(s: SrsState, days: number): SrsResult {
   }
 }
 
-export function gradeCard(state: SrsState, grade: SrsGrade): SrsResult {
+export type GradeOptions = {
+  // Days the card was overdue when answered (0 when answered on time). SM-2
+  // does NOT handle lateness on its own: without this an 8-day-late and an
+  // 80-day-late card schedule identically, so every backlog you clear
+  // under-grows its intervals and comes back sooner than it earned.
+  elapsedDays?: number
+  // Injected so previewIntervals and the tests stay deterministic.
+  rng?: () => number
+}
+
+export function gradeCard(
+  state: SrsState,
+  grade: SrsGrade,
+  opts: GradeOptions = {}
+): SrsResult {
+  const rng = opts.rng ?? Math.random
   const s: SrsState = { ...state, reps: state.reps + 1 }
+  // The multiplier base: a card answered late has demonstrably survived the
+  // longer gap, so that gap — not the scheduled interval — is what it earned.
+  const base = Math.max(s.intervalDays, Math.max(0, Math.floor(opts.elapsedDays ?? 0)))
 
   if (s.status !== 'review') {
     // 'new' and 'learning' share the step ladder; a new card is step 0.
@@ -79,45 +114,58 @@ export function gradeCard(state: SrsState, grade: SrsGrade): SrsResult {
         const next = step + 1
         if (next >= steps.length) {
           // Graduation: fresh cards start at 1 day; relearning cards resume
-          // their (reset) interval.
-          return graduate(s, isRelearning(s) ? s.intervalDays : GRADUATING_DAYS)
+          // the interval their lapse left them with.
+          return graduate(s, isRelearning(s) ? s.intervalDays : GRADUATING_DAYS, rng)
         }
         return { ...s, status: 'learning', learningStep: next, dueInMinutes: steps[next] }
       }
       case 'easy':
-        return graduate(s, isRelearning(s) ? s.intervalDays : EASY_DAYS)
+        // Easy used to call graduate(s, s.intervalDays) exactly like good, so
+        // on a relearning card it was a byte-identical no-op — a button that
+        // implied a reward it never gave.
+        return graduate(
+          s,
+          isRelearning(s) ? Math.round(s.intervalDays * EASY_BONUS) : EASY_DAYS,
+          rng
+        )
     }
   }
 
   switch (grade) {
     case 'again':
-      // Lapse: back to relearning with a penalized ease and the interval reset.
+      // Lapse: back to relearning with a penalized ease, keeping a fraction of
+      // the interval rather than dropping a mature card all the way to 1 day.
       return {
         ...s,
         status: 'learning',
         learningStep: 0,
         lapses: s.lapses + 1,
         ease: Math.max(MIN_EASE, s.ease - 0.2),
-        intervalDays: 1,
+        intervalDays: Math.max(1, Math.round(s.intervalDays * LAPSE_NEW_INTERVAL)),
         dueInMinutes: RELEARN_STEPS_MIN[0]
       }
     case 'hard': {
+      // Hard deliberately does NOT take the overdue base: the answer says the
+      // longer gap was too long, so rewarding it with the gap is backwards.
       const ease = Math.max(MIN_EASE, s.ease - 0.15)
-      const intervalDays = capDays(
-        Math.max(s.intervalDays + 1, Math.round(s.intervalDays * 1.2))
+      const intervalDays = fuzz(
+        capDays(Math.max(s.intervalDays + 1, Math.round(s.intervalDays * 1.2))),
+        rng
       )
       return { ...s, ease, intervalDays, dueInMinutes: intervalDays * DAY_MIN }
     }
     case 'good': {
-      const intervalDays = capDays(
-        Math.max(s.intervalDays + 1, Math.round(s.intervalDays * s.ease))
+      const intervalDays = fuzz(
+        capDays(Math.max(s.intervalDays + 1, Math.round(base * s.ease))),
+        rng
       )
       return { ...s, intervalDays, dueInMinutes: intervalDays * DAY_MIN }
     }
     case 'easy': {
       const ease = s.ease + 0.15
-      const intervalDays = capDays(
-        Math.max(s.intervalDays + 1, Math.round(s.intervalDays * ease * EASY_BONUS))
+      const intervalDays = fuzz(
+        capDays(Math.max(s.intervalDays + 1, Math.round(base * ease * EASY_BONUS))),
+        rng
       )
       return { ...s, ease, intervalDays, dueInMinutes: intervalDays * DAY_MIN }
     }
@@ -133,11 +181,25 @@ export function formatDueIn(minutes: number): string {
   return `${(days / 365).toFixed(1)}y`
 }
 
-// "1m / 10m / 1d / 4d" labels for the four review buttons.
-export function previewIntervals(state: SrsState): Record<SrsGrade, string> {
+// Days a card is overdue, from its stored due_at ('YYYY-MM-DD HH:MM:SS', UTC).
+// The renderer needs this so the grade buttons can preview the SAME interval
+// main will persist: submitReview passes the gap into gradeCard, and without it
+// a 10-day card answered 40 days late advertised 25d and was written as 100d.
+export function overdueDays(dueAt: string | null | undefined, now = Date.now()): number {
+  if (!dueAt) return 0
+  const due = Date.parse(dueAt.includes('T') ? dueAt : `${dueAt.replace(' ', 'T')}Z`)
+  if (!Number.isFinite(due)) return 0
+  return Math.max(0, Math.floor((now - due) / 86_400_000))
+}
+
+// "1m / 10m / 1d / 4d" labels for the four review buttons. rng is pinned to the
+// midpoint so the preview shows the un-fuzzed interval — the button must not
+// flicker between renders, and Anki shows the same unfuzzed number.
+export function previewIntervals(state: SrsState, elapsedDays = 0): Record<SrsGrade, string> {
   const grades: SrsGrade[] = ['again', 'hard', 'good', 'easy']
+  const opts: GradeOptions = { elapsedDays, rng: () => 0.5 }
   return Object.fromEntries(
-    grades.map((g) => [g, formatDueIn(gradeCard(state, g).dueInMinutes)])
+    grades.map((g) => [g, formatDueIn(gradeCard(state, g, opts).dueInMinutes)])
   ) as Record<SrsGrade, string>
 }
 

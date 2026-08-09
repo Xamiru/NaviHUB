@@ -103,6 +103,8 @@ export default function MusicTrackRow({
           liked ? 'text-accent' : 'text-gray-600 opacity-0 group-hover:opacity-100'
         } hover:text-accent`}
         title={liked ? 'Remove from Liked Songs' : 'Add to Liked Songs'}
+        aria-label={liked ? 'Remove from Liked Songs' : 'Add to Liked Songs'}
+        aria-pressed={liked}
         onClick={toggleLike}
       >
         {liked ? '♥' : '♡'}

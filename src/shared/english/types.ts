@@ -34,6 +34,17 @@ export type EnMechanicsCategory =
   | 'register'
   | 'spelling'
 
+// The category list as a value, so the writing grader can constrain the model
+// to it and the mechanics drill can weight itself by it.
+export const EN_MECHANICS_CATEGORIES = [
+  'articles',
+  'punctuation',
+  'boundaries',
+  'confusables',
+  'register',
+  'spelling'
+] as const satisfies readonly EnMechanicsCategory[]
+
 // Error-spot / correction MCQ. Key convention: '<category>-<nn>'.
 export interface EnMechanicsItem {
   key: string // FROZEN

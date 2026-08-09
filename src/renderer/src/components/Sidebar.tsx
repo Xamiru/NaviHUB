@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { GACHA_GAMES } from '@shared/gacha'
 import { MEDIA_CONFIGS, configFor, type MediaConfig } from '../lib/mediaConfig'
@@ -50,8 +50,15 @@ function NavGroup({
   const onArea = paths.some((p) =>
     p === '/people' ? location.pathname === p : location.pathname.startsWith(p)
   )
-  const [open, setOpen] = useState(false)
-  const expanded = open || onArea
+  // `null` = follow the auto behaviour; true/false = the user's explicit choice.
+  // It used to be `open || onArea`, which made the chevron a no-op for the one
+  // section you were actually inside: onArea pinned it open no matter what the
+  // button set. The override is cleared whenever you enter or leave the area,
+  // so collapsing a section stays collapsed while you are in it, and coming
+  // back later still auto-opens.
+  const [override, setOverride] = useState<boolean | null>(null)
+  const expanded = override ?? onArea
+  useEffect(() => setOverride(null), [onArea])
 
   return (
     <div>
@@ -61,7 +68,7 @@ function NavGroup({
         </NavLink>
         <button
           className="px-2 py-2 text-gray-500 hover:text-white"
-          onClick={() => setOpen((v) => !v)}
+          onClick={() => setOverride(!expanded)}
           title={expanded ? 'Collapse' : 'Expand'}
           aria-expanded={expanded}
           aria-label={`${expanded ? 'Collapse' : 'Expand'} ${label}`}

@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { usePlayer } from '../lib/player'
 import { useIncrementalList } from '../lib/hooks'
+import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
+import { toastError } from '../lib/toast'
 import CoverImage from './CoverImage'
 import { PlayIcon, PauseIcon } from './PlayerIcons'
 
@@ -10,6 +14,7 @@ import { PlayIcon, PauseIcon } from './PlayerIcons'
 // itself is never editable, which keeps the player's index bookkeeping trivial.
 export default function QueuePanel({ onClose }: { onClose: () => void }) {
   const { queue, index, isPlaying, playAt, toggle, removeFromQueue, moveInQueue } = usePlayer()
+  const likedIds = useLikedTrackIds()
   const listRef = useRef<HTMLDivElement>(null)
 
   // A jump (or auto-advance) reshapes "Next up"; snap back to the top so the
@@ -53,7 +58,7 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
               <p className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
                 Now playing
               </p>
-              <QueueRow track={current} active playing={isPlaying} onClick={toggle} />
+              <QueueRow track={current} active playing={isPlaying} onClick={toggle} likedIds={likedIds} />
             </>
           )}
           {upNext.length > 0 && (
@@ -67,6 +72,7 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
                   <QueueRow
                     key={`${abs}-${t.id}`}
                     track={t}
+                    likedIds={likedIds}
                     onClick={() => playAt(abs)}
                     actions={
                       <>
@@ -134,19 +140,91 @@ export function EditButton({
   )
 }
 
+// The heart, on a queue row. Only library tracks have one: the queue also
+// carries `theme-` / `quiz-` / `tourney-` / `file-` ids, none of which have a
+// music_track row to like. Returns the numeric id, or null for those.
+function musicIdOf(trackId: string): number | null {
+  // Anchored digits, not Number(): Number('') is 0 and passes isFinite, so a
+  // bare `music-` id would have rendered a heart writing against track 0.
+  const m = /^music-(\d+)$/.exec(trackId)
+  return m ? Number(m[1]) : null
+}
+
+// One Set for every row. Each row used to run its own useQuery and an O(liked)
+// `.some()`; the panel re-renders on every playback tick (see the memo note
+// above), so with 96 visible rows and a few thousand liked tracks that was
+// hundreds of thousands of comparisons a second. The query is still the shared
+// cache entry MusicLikedPage populates, and setLiked's broad invalidation
+// refreshes it.
+export function useLikedTrackIds(): Set<number> {
+  const { data } = useQuery({
+    queryKey: qk.music.tracks(LIKED_ONLY),
+    queryFn: () => api.music.tracks(LIKED_ONLY)
+  })
+  return useMemo(() => new Set((data ?? []).map((t) => t.id)), [data])
+}
+
+function QueueLikeButton({ trackId, likedIds }: { trackId: number; likedIds: Set<number> }) {
+  const qc = useQueryClient()
+  const source = likedIds.has(trackId)
+  const [liked, setLiked] = useState(source)
+  useEffect(() => setLiked(source), [source])
+
+  async function toggle(e: React.MouseEvent): Promise<void> {
+    e.stopPropagation() // the row itself jumps playback
+    const next = !liked
+    setLiked(next)
+    try {
+      await api.music.setLiked(trackId, next)
+      // Deliberately the broad prefix, matching MusicTrackRow: likedAt is
+      // denormalized into every track-returning query.
+      await qc.invalidateQueries({ queryKey: qk.music.all })
+    } catch (err) {
+      setLiked(!next)
+      toastError(err)
+    }
+  }
+
+  const label = liked ? 'Remove from Liked Songs' : 'Add to Liked Songs'
+  return (
+    <button
+      className={`px-1 text-sm ${
+        liked ? 'text-accent' : 'text-gray-600 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+      } hover:text-accent`}
+      title={label}
+      aria-label={label}
+      aria-pressed={liked}
+      onClick={(e) => void toggle(e)}
+    >
+      {liked ? '♥' : '♡'}
+    </button>
+  )
+}
+
+const LIKED_ONLY = { likedOnly: true }
+
 export function QueueRow({
   track,
   active = false,
   playing = false,
   onClick,
-  actions
+  actions,
+  likedIds
 }: {
-  track: { title: string; subtitle?: string | null; context?: string | null; coverPath?: string | null }
+  track: {
+    id: string
+    title: string
+    subtitle?: string | null
+    context?: string | null
+    coverPath?: string | null
+  }
   active?: boolean
   playing?: boolean
   onClick: () => void
   actions?: React.ReactNode
+  likedIds: Set<number>
 }) {
+  const musicId = musicIdOf(track.id)
   const sub = [track.context, track.subtitle].filter(Boolean).join(' · ')
   return (
     <div
@@ -175,6 +253,7 @@ export function QueueRow({
         </p>
         {sub && <p className="text-xs text-gray-500 truncate leading-tight mt-0.5">{sub}</p>}
       </div>
+      {musicId != null && <QueueLikeButton trackId={musicId} likedIds={likedIds} />}
       {actions && (
         <div className="hidden shrink-0 items-center group-hover:flex group-focus-within:flex">
           {actions}

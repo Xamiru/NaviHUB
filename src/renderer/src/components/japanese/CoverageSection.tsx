@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { toast, toastError } from '../../lib/toast'
+import { useSettings } from '../../lib/hooks'
 import CoverageBar, { knownShare, learningShare, lookupInterval, pct, uniqueKnownShare } from './CoverageBar'
 import Section from '../Section'
 import type { MediaDetail } from '@shared/types'
@@ -14,6 +15,11 @@ import type { MediaDetail } from '@shared/types'
 export default function CoverageSection({ m }: { m: MediaDetail }) {
   const qc = useQueryClient()
   const [scanning, setScanning] = useState(false)
+  // Surfaced next to the percentage on purpose: a comprehension figure that
+  // silently assumes 2,000 words is a different kind of lie from one that
+  // ignores everything you knew before installing the app.
+  const { data: settings } = useSettings()
+  const baseline = Number(settings?.['jp.knownBaseline'] ?? 0) || 0
 
   const { data: coverage, isLoading } = useQuery({
     queryKey: qk.japanese.coverage(m.id),
@@ -34,6 +40,18 @@ export default function CoverageSection({ m }: { m: MediaDetail }) {
     queryFn: () => api.japanese.prepDeckStatus(),
     refetchInterval: 1000
   })
+
+  // Files the word as a review-status card so every knowledge-derived number
+  // (this bar, the i+1 feed, the coverage list) stops calling it unknown.
+  async function markKnown(word: string): Promise<void> {
+    try {
+      const added = await api.japanese.markWordsKnown([{ front: word }])
+      await qc.invalidateQueries({ queryKey: qk.japanese.all })
+      toast(added > 0 ? `Marked 「${word}」 as known` : `「${word}」 already has a card`, 'success')
+    } catch (e) {
+      toastError(e)
+    }
+  }
 
   async function scan() {
     setScanning(true)
@@ -88,6 +106,7 @@ export default function CoverageSection({ m }: { m: MediaDetail }) {
             <p className="text-xs text-gray-500">
               {pct(uniqueKnownShare(coverage.tiers))} of {coverage.uniqueWords.toLocaleString()} unique
               words · {coverage.chaptersScanned} chapters
+              {baseline > 0 && ` · assumes top ${baseline.toLocaleString()} known`}
             </p>
           </div>
 
@@ -127,13 +146,25 @@ export default function CoverageSection({ m }: { m: MediaDetail }) {
               </p>
               <div className="flex flex-wrap gap-1">
                 {coverage.topUnknown.slice(0, 20).map((w) => (
-                  <Link
-                    key={w.word}
-                    to={`/japanese/dictionary?q=${encodeURIComponent(w.word)}`}
-                    className="chip bg-base-700 text-gray-300 hover:text-accent"
-                  >
-                    {w.word} <span className="text-gray-500">×{w.count}</span>
-                  </Link>
+                  <span key={w.word} className="group inline-flex items-center">
+                    <Link
+                      to={`/japanese/dictionary?q=${encodeURIComponent(w.word)}`}
+                      className="chip bg-base-700 text-gray-300 hover:text-accent"
+                    >
+                      {w.word} <span className="text-gray-500">×{w.count}</span>
+                    </Link>
+                    {/* This list is exactly "words this series uses that you do
+                        not know", so it is the highest-value place to correct
+                        the ones you actually do. */}
+                    <button
+                      className="ml-0.5 hidden rounded px-1 py-0.5 text-[10px] text-gray-500 hover:text-accent group-hover:block group-focus-within:block"
+                      title={`I already know ${w.word}`}
+                      aria-label={`I already know ${w.word}`}
+                      onClick={() => void markKnown(w.word)}
+                    >
+                      ✓
+                    </button>
+                  </span>
                 ))}
               </div>
             </div>

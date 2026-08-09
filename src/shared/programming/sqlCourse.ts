@@ -186,8 +186,8 @@ Both are correct and modern planners execute them near-identically. In form 1, t
         {
           prompt: 'Why is NOT IN (SELECT col ...) dangerous as an anti-join?',
           options: [
-            'It cannot use an index on col',
-            'If the subquery returns any NULL, the whole predicate is never true and zero rows come back',
+            'It cannot use an index on col, so the anti-join degrades into a full scan every time',
+            'If the subquery returns any NULL, the predicate is never true and zero rows come back',
             'It compares by rowid rather than by value',
             'It is limited to 999 values in SQLite'
           ],
@@ -298,9 +298,9 @@ GROUP BY media_type
           prompt: 'Why should a plain row-level filter live in WHERE rather than HAVING, even though SQLite accepts both?',
           options: [
             'HAVING cannot use indexes at all',
-            'WHERE runs before grouping, so groups are built from less data; HAVING filters after the work is done',
+            'WHERE runs before grouping, so groups are built from less data',
             'HAVING silently skips NULL rows',
-            'HAVING may only contain aggregate functions'
+            'HAVING may only contain aggregate functions, so a row-level test there is rejected outright'
           ],
           correct: 1,
           explain: 'Both give the same rows here, but WHERE shrinks the input to GROUP BY. HAVING is for predicates over aggregates, which cannot exist before grouping.'
@@ -426,10 +426,10 @@ SELECT * FROM subtree ORDER BY depth
         {
           prompt: 'What does AS MATERIALIZED on a CTE do?',
           options: [
-            'Forces the CTE to be computed once into a transient table, acting as an optimization fence against inlining',
+            'Forces the CTE to be computed once into a transient table — an optimization fence',
             'Writes the CTE to a permanent table for later sessions',
             'Enables recursion within the CTE',
-            'Caches the CTE result across separate query executions'
+            'Caches the CTE result across separate query executions on the same open connection'
           ],
           correct: 0,
           explain: 'MATERIALIZED guarantees compute-once semantics but blocks predicate pushdown into the CTE; NOT MATERIALIZED requests inlining. By default SQLite chooses based on how many times the CTE is referenced.'
@@ -626,10 +626,10 @@ WHERE m.media_type = 'anime'
         {
           prompt: "Why can't WHERE lower(title) = 'akira' use a plain index on title?",
           options: [
-            'lower() is not deterministic in SQLite',
+            'lower() is not deterministic in SQLite, so the planner will not use an index with it',
             'Indexes never apply to TEXT columns',
             'String functions force a temp B-tree',
-            'The index stores title values, not lower(title) values, so sorted order says nothing about the expression'
+            'The index stores title values, not lower(title) values, so its order says nothing'
           ],
           correct: 3,
           explain: 'The predicate is over a computed expression the index does not contain. An expression index on lower(title), or COLLATE NOCASE, restores index use.'
@@ -648,8 +648,8 @@ WHERE m.media_type = 'anime'
         {
           prompt: 'What does ANALYZE actually do?',
           options: [
-            'Rewrites queries into a canonical optimized form',
-            'Collects statistics into sqlite_stat1 so the planner can estimate costs with real cardinalities',
+            'Rewrites stored queries into a canonical optimized form that the planner can cost directly',
+            'Collects statistics into sqlite_stat1 so the planner can estimate real cardinalities',
             'Defragments indexes like VACUUM',
             'Prints the query plan for the last statement'
           ],
@@ -743,8 +743,8 @@ Every statement runs in its own implicit transaction; wrap multi-statement work 
         {
           prompt: 'What changes when a SQLite database switches to WAL journal mode?',
           options: [
-            'Multiple writers can commit concurrently',
-            'Readers no longer block on a writer — they read a consistent snapshot while the writer appends to the log',
+            'Multiple writers can commit concurrently, since each appends to its own log',
+            'Readers no longer block on a writer — they read a snapshot while it appends',
             'Transactions become durable without any fsync',
             'The database file becomes read-only until a checkpoint'
           ],

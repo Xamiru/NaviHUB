@@ -79,10 +79,29 @@ export default function MediaImagesSection({
       {images.length > 0 && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3 mb-3">
           {images.map((img, i) => (
+            // The tile was a bare <div onClick>, so opening an image had no
+            // keyboard path at all. role+tabIndex rather than a real <button>
+            // because the Remove control lives inside it, and a button may not
+            // contain another button.
             <div
               key={img.id}
+              role="button"
+              tabIndex={0}
+              aria-label={`View ${label.toLowerCase()} ${i + 1}`}
               className="group relative aspect-video overflow-hidden rounded-lg cursor-zoom-in"
               onClick={() => setLightboxAt(i)}
+              onKeyDown={(e) => {
+                // Only when the tile ITSELF has focus. Without this the handler
+                // also caught Enter on the Remove button nested inside it,
+                // preventDefault cancelled that button's activation, and the
+                // lightbox opened instead of the image being deleted — leaving
+                // Remove less reachable than before it was made focusable.
+                if (e.target !== e.currentTarget) return
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  setLightboxAt(i)
+                }
+              }}
             >
               <CoverImage
                 path={img.filePath}
@@ -96,7 +115,7 @@ export default function MediaImagesSection({
                 </span>
               )}
               <button
-                className="absolute top-1.5 right-1.5 hidden group-hover:block rounded bg-black/70 px-1.5 py-0.5 text-sm text-gray-300 hover:text-red-400"
+                className="absolute top-1.5 right-1.5 hidden group-hover:block group-focus-within:block rounded bg-black/70 px-1.5 py-0.5 text-sm text-gray-300 hover:text-red-400"
                 onClick={(e) => {
                   e.stopPropagation()
                   void remove(img.id)

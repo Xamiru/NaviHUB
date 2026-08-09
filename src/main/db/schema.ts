@@ -1099,9 +1099,12 @@ export const enWord = sqliteTable(
     lapses: integer('lapses').notNull().default(0),
     lastReviewedAt: text('last_reviewed_at')
   },
+  // idx_en_word_due is deliberately ABSENT here, matching init.sql:804: it must
+  // be created only by runMigrations (connection.ts:140), after the 8 SRS
+  // columns are ensured. Creating it alongside the table is the exact shape
+  // that crashed live pre-SRS databases on the English-SRS release.
   (t) => ({
-    byWord: index('idx_en_word_word').on(t.word),
-    byDue: index('idx_en_word_due').on(t.status, t.dueAt)
+    byWord: index('idx_en_word_word').on(t.word)
   })
 )
 

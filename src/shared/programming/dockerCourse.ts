@@ -67,10 +67,10 @@ Hold onto one sentence: *an image is a frozen filesystem recipe; a container is 
         {
           prompt: 'Why pull an image by digest instead of by tag?',
           options: [
-            'Digests download faster because they skip manifest resolution',
-            'Registries delete tags after a retention period',
-            'Digests include a cryptographic signature from the publisher',
-            'A tag can be repointed to different content over time; a digest names one immutable image',
+            'Digests download faster because the daemon can skip the manifest resolution round trip',
+            'Registries delete tags after a retention period, so only digests survive long term',
+            'Digests carry a cryptographic signature from the publisher that the daemon verifies',
+            'A tag can be repointed to different content; a digest names one immutable image',
           ],
           correct: 3,
           explain: 'Tags are mutable pointers, so node:20 can silently change. A digest is the content address of a specific manifest and always resolves to the same bytes.',
@@ -257,9 +257,9 @@ The final image contains only what the last stage keeps — compilers, devDepend
         {
           prompt: 'Why is shell-form CMD (CMD node server.js) a problem for a long-running service?',
           options: [
-            'It cannot reference environment variables',
-            'It only works on alpine-based images',
-            'It adds an extra layer to the image',
+            'The shell re-expands environment variables on every restart, so a changed ENV silently rewrites the command',
+            'It runs before ENTRYPOINT resolves, so any --entrypoint override is ignored at run time',
+            'It adds one image layer per argument, counting against the 127-layer limit',
             'PID 1 becomes /bin/sh, which does not forward SIGTERM, so docker stop always ends in SIGKILL',
           ],
           correct: 3,
@@ -268,10 +268,10 @@ The final image contains only what the last stage keeps — compilers, devDepend
         {
           prompt: 'Why COPY the dependency manifests and install before copying the rest of the source?',
           options: [
-            'So a source edit only invalidates the layers after the install — dependencies come from cache instead of reinstalling',
-            'Because COPY . . refuses to include package.json',
-            'Because npm ci fails when source files are already present',
-            'It reduces the size of the final image',
+            'So a source edit only invalidates layers after the install — dependencies come from cache',
+            'Because npm ci deletes anything in node_modules it cannot match to the lockfile, including your source',
+            'Because COPY . . cannot be cached at all, so it has to come last in every Dockerfile',
+            'It reduces the size of the final image by keeping the manifests out of the last layer',
           ],
           correct: 0,
           explain: 'The cache breaks at the first changed instruction. Isolating the manifests means code changes never touch the expensive install layer.',
@@ -280,7 +280,7 @@ The final image contains only what the last stage keeps — compilers, devDepend
           prompt: 'In docker build -t app ., what does the . mean?',
           options: [
             'The directory the built image is written into',
-            'The location of the Dockerfile, and nothing else',
+            'The directory holding the Dockerfile, which is the only path that -f is able to override',
             'The build context: the tree sent to the daemon and the boundary COPY can reach',
             'The working directory inside the container',
           ],
@@ -290,7 +290,7 @@ The final image contains only what the last stage keeps — compilers, devDepend
         {
           prompt: 'What is the main win of a multi-stage build?',
           options: [
-            'Layers from all stages are merged into the final image',
+            'Layers from all stages are merged into the final image, which is what keeps the total size down',
             'The final image contains only what you COPY --from earlier stages — build toolchains stay out',
             'It disables caching for intermediate stages',
             'It lets one Dockerfile produce several tags in a single build',
@@ -357,9 +357,9 @@ docker volume prune
           prompt: 'How does --mount differ usefully from -v for bind mounts?',
           options: [
             '--mount errors when the bind source is missing; -v silently creates an empty host directory',
-            '--mount only works with named volumes',
-            '-v cannot create bind mounts at all',
-            'They differ only in syntax; behavior is identical',
+            '--mount reuses the host page cache, so repeated reads through a bind mount avoid a second copy',
+            '-v cannot express read-only binds, which is why --mount grew the ro option',
+            'They differ only in syntax; the daemon parses both into the same mount spec',
           ],
           correct: 0,
           explain: 'The silent directory creation of -v turns a typo into an apparently empty dataset. --mount fails loudly, which is what you want in scripts.',
@@ -437,10 +437,10 @@ docker inspect --format '{{json .NetworkSettings.Ports}}' web
         {
           prompt: 'What does EXPOSE 3000 in a Dockerfile do at runtime?',
           options: [
-            'Opens port 3000 in the host firewall',
+            'Opens port 3000 in the host firewall for the lifetime of the container',
             'Nothing — it is documentation and metadata; only -p actually publishes ports',
-            'Publishes port 3000 on a random host port',
-            'Restricts which ports -p is allowed to map',
+            'Publishes port 3000 on a random host port, which docker ps then reports back to you',
+            'Restricts which ports -p is allowed to map, rejecting anything not declared',
           ],
           correct: 1,
           explain: 'EXPOSE records intent for humans and tooling. Without -p (or -P), no host port is touched.',
@@ -553,9 +553,9 @@ Compose automatically merges \`compose.override.yaml\` over \`compose.yaml\` whe
           prompt: 'What does a plain depends_on: [db] guarantee for the web service?',
           options: [
             'Only startup ordering — db\'s container was started, not that its process is ready',
-            'That db has passed its healthcheck before web starts',
-            'That web restarts whenever db restarts',
-            'That web and db share a private network link',
+            'That db has passed its healthcheck before web is allowed to start its own process',
+            'That web is restarted automatically whenever db restarts, keeping the pair in step',
+            'That web and db share a private network link that other services cannot reach',
           ],
           correct: 0,
           explain: 'Plain depends_on is start ordering only. Readiness gating requires condition: service_healthy plus a healthcheck on the dependency.',
@@ -585,10 +585,10 @@ Compose automatically merges \`compose.override.yaml\` over \`compose.yaml\` whe
         {
           prompt: 'What is the standard role of compose.override.yaml?',
           options: [
-            'It replaces compose.yaml wholesale when present',
-            'It is only read when a profile is activated',
-            'It is only read in production deployments',
-            'It is merged over compose.yaml by default — the place for dev-only bind mounts, ports and services',
+            'It replaces compose.yaml wholesale whenever it is present in the working directory',
+            'It is read only once a matching profile is activated with --profile on the command line',
+            'It is the file compose writes itself, recording the resolved config of the last up',
+            'It is merged over compose.yaml by default — the place for dev-only mounts and ports',
           ],
           correct: 3,
           explain: 'The override merges automatically for local runs. Production passes -f explicitly to skip it, keeping the base file clean.',
@@ -654,9 +654,9 @@ Smaller buys faster pulls and less attack surface — but only after correctness
         {
           prompt: 'A container exited with code 137. What does that mean?',
           options: [
-            'Segmentation fault',
-            'Command not found',
-            'Clean exit after handling SIGTERM',
+            'A segmentation fault in the main process, reported as 128+9 by the runtime',
+            'The entrypoint was not found on PATH, which the daemon reports as 137',
+            'A clean exit after the process handled SIGTERM and shut itself down in time',
             '128+9: killed by SIGKILL — the OOM killer, or a stop whose grace period ran out',
           ],
           correct: 3,
@@ -665,10 +665,10 @@ Smaller buys faster pulls and less attack surface — but only after correctness
         {
           prompt: 'Why does RUN rm -rf /big in a later layer not shrink the image?',
           options: [
-            'Layers are append-only: a later layer only hides files, the bytes still ship in the earlier layer',
-            'rm is not permitted inside RUN instructions',
-            'The build cache restores deleted files on rebuild',
-            'Deletion only works with ADD, not COPY',
+            'Layers are append-only: a later layer only hides the files, the bytes still ship',
+            'rm inside RUN runs in a throwaway container whose filesystem is discarded at commit',
+            'The build cache restores deleted paths on the next rebuild, undoing the removal',
+            'Deletion only takes effect for paths added with ADD, never for paths added with COPY',
           ],
           correct: 0,
           explain: 'Each layer is an immutable diff. Deletion records a whiteout on top; the original layer still travels with the image. Clean up in the same RUN or use multi-stage.',
@@ -676,10 +676,10 @@ Smaller buys faster pulls and less attack surface — but only after correctness
         {
           prompt: 'Why should secrets not be passed as ENV?',
           options: [
-            'ENV values are encrypted and become unrecoverable',
-            'ENV variables are limited to 128 bytes',
-            'They show in docker inspect, leak to child processes, and build-time ENV persists in the image config',
-            'Processes inside containers cannot read ENV at runtime',
+            'ENV values are encrypted at build time and become unrecoverable to the running process',
+            'ENV variables are capped at 128 bytes, so anything longer is silently truncated',
+            'They show in docker inspect, leak to child processes, and persist in the image config',
+            'Processes inside the container cannot read ENV at runtime, only at build time',
           ],
           correct: 2,
           explain: 'Environment variables are plaintext, widely inherited, and (when baked at build) permanent image metadata. Secret mounts and runtime files avoid all three leaks.',
@@ -687,10 +687,10 @@ Smaller buys faster pulls and less attack surface — but only after correctness
         {
           prompt: 'What is the trade-off of a distroless base image?',
           options: [
-            'It is larger than alpine but easier to debug',
+            'It is larger than alpine but ships a debugger, so you trade size for observability',
             'Minimal attack surface, but no shell — you cannot simply exec in to poke around',
-            'It only supports Go binaries',
-            'It requires patches to the host kernel',
+            'It only supports statically linked Go binaries, so interpreted runtimes are out',
+            'It requires a patched host kernel, which is why it is rare outside managed clusters',
           ],
           correct: 1,
           explain: 'Distroless strips the shell and package manager. Great for production hardening, but interactive debugging needs ephemeral containers or extra tooling.',
@@ -698,10 +698,10 @@ Smaller buys faster pulls and less attack surface — but only after correctness
         {
           prompt: 'How do you confirm a container was killed by its memory limit?',
           options: [
-            'docker inspect --format on .State.OOMKilled — true means the cgroup memory kill fired',
-            'docker logs prints an out-of-memory banner',
-            'docker ps -a shows the status OOM',
-            'Only dmesg on the host can tell',
+            'docker inspect --format on .State.OOMKilled — true means the cgroup kill fired',
+            'docker logs prints an out-of-memory banner ahead of the final application output',
+            'docker ps -a reports the status as OOMKilled instead of the usual Exited (137)',
+            'Only dmesg on the host can tell, because the daemon does not record the reason',
           ],
           correct: 0,
           explain: 'Docker records the OOM flag in the container state, cleanly separating a memory-limit kill from any other SIGKILL with the same 137 exit code.',

@@ -240,11 +240,14 @@ app.whenReady().then(() => {
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    closeDatabase()
-    closeDictDb()
-    app.quit()
-  }
+  // Teardown belongs to before-quit ALONE, which app.quit() fires below. This
+  // handler used to close both databases first, and before-quit then ran the
+  // whole list again — including finalizeActiveGameSession(), whose comment
+  // says it must run BEFORE closeDatabase(). It only worked because
+  // closeDatabase() nulls the handle and getSqlite() lazily re-runs init.sql +
+  // migrations + seeds to insert one row. The day that stops reopening, every
+  // normal quit silently drops the final play session.
+  if (process.platform !== 'darwin') app.quit()
 })
 
 app.on('before-quit', () => {

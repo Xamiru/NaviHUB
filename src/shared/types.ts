@@ -300,6 +300,35 @@ export interface ThemeSongCounts {
 // was adapted from. `media` is set when the related work is in the library (so
 // the card links to it); otherwise only the AniList title/type is known and it's
 // shown greyed out as a hint of what to import next.
+// The unified /stats activity grid: one bucket per dated log the app keeps,
+// plus their day-wise sum. Bounded to the 52 weeks the grid renders.
+export type ActivitySourceKey =
+  | 'jpReviews'
+  | 'enReviews'
+  | 'progress'
+  | 'music'
+  | 'quiz'
+  | 'games'
+
+export interface ActivityHeatmap {
+  combined: { day: string; count: number }[]
+  sources: { key: ActivitySourceKey; label: string; days: { day: string; count: number }[] }[]
+}
+
+// One saved reading/watching position, for Home's "pick up where you left off".
+// `position` is a page index for a chapter and whole seconds for a video;
+// `dirPath` is what readerPath() reads to choose the image or book reader.
+export interface ResumePoint {
+  kind: 'chapter' | 'video'
+  refId: number // manga_chapter.id or video_file.id
+  media: MediaItem
+  dirPath: string
+  partTitle: string
+  position: number
+  total: number | null
+  updatedAt: string
+}
+
 export interface MediaRelation {
   relationType: string // 'PREQUEL' | 'SEQUEL' | 'SIDE_STORY' | 'SOURCE' | …
   media: MediaItem | null // the local item, or null if not imported yet
@@ -809,6 +838,9 @@ export interface JpStatsDetail {
     chaptersRead: number
     quizRounds: number
   }
+  // Mined cards grouped by the title they were captured from, biggest first.
+  // title falls back to 'Unknown' for a source that has since been deleted.
+  miningSources: { mediaId: number; title: string; mediaType: MediaType | null; count: number }[]
 }
 
 // Ghost reviews: a lapsed review-state card echoes into future sessions until
@@ -1146,6 +1178,14 @@ export interface GrammarPoint extends GrammarPointSummary {
   explanation: string | null // long explanation
   formation: string | null
   examples: GrammarExample[]
+}
+
+// Result of filing grammar points into the SRS deck. `skipped` counts points
+// whose cards were already there — "add all N5" is safe to re-run.
+export interface GrammarDeckResult {
+  lessonId: number
+  added: number
+  skipped: number
 }
 
 // ---- JMnedict name sampling (names drill) ----
@@ -2474,14 +2514,29 @@ export interface EnWritingCorrection {
   before: string
   after: string
   why: string
+  // Constrained to the six EnMechanicsCategory keys so the error log is a
+  // tally over a controlled vocabulary rather than a keyword-match guess.
+  // null when the model returned something outside the set.
+  category: string | null
+}
+
+// Tally of graded writing corrections by mechanics category — "your last 20
+// submissions: 14 comma splices, 9 article slips".
+export interface EnErrorTally {
+  submissions: number
+  corrections: number
+  byCategory: { category: string; count: number }[]
 }
 
 export interface EnWritingFeedback {
+  // null = the model returned nothing usable for that dimension. Reported as
+  // "—" rather than 0, and excluded from the row's mean: a missing score is
+  // not a bad score, and it must not cost the learner their graded essay.
   scores: {
-    grammar: number // 0-10
-    vocabulary: number
-    coherence: number
-    register: number
+    grammar: number | null // 0-10
+    vocabulary: number | null
+    coherence: number | null
+    register: number | null
   }
   corrections: EnWritingCorrection[]
   modelRewrite: string

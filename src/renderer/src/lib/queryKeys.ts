@@ -42,7 +42,9 @@ export const qk = {
     // Under the ['media'] prefix on purpose: every media mutation invalidates it.
     timeStats: ['media', 'timeStats'] as const,
     // Same rationale — logging an episode should refresh the roadmap milestones.
-    jpMilestones: ['media', 'jpMilestones'] as const
+    jpMilestones: ['media', 'jpMilestones'] as const,
+    resumePoints: ['media', 'resumePoints'] as const,
+    activityHeatmap: ['media', 'activityHeatmap'] as const
   },
   mediaCounts: {
     all: ['media-counts'] as const,
@@ -184,7 +186,9 @@ export const qk = {
     reviewQueue: ['english', 'reviewQueue'] as const,
     srsStats: ['english', 'srsStats'] as const,
     // Writing practice history (/english/writing).
-    writings: ['english', 'writings'] as const
+    writings: ['english', 'writings'] as const,
+    // Graded corrections tallied by category — drives the mechanics weighting.
+    errorTally: ['english', 'errorTally'] as const
   },
   programming: {
     // Programming learn section (/programming): lesson completion only — the

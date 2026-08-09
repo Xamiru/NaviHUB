@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue, useIncrementalList } from '../lib/hooks'
+import { toast, toastError } from '../lib/toast'
 
 // The offline grammar library: every N5-N1 point, searchable, with formation
 // and real examples. Reference, not SRS — the cloze drill lives at
@@ -19,6 +20,11 @@ type LevelFilter = (typeof LEVELS)[number]
 const norm = (s: string): string => s.toLowerCase().replace(/[～〜\s]+/g, '')
 
 export default function JapaneseGrammarPage() {
+  // Grammar used to be the one thing you could study and then forget on
+  // purpose: a library plus a one-shot drill, with nothing scheduling a point
+  // for review. These file cards into the SAME queue as everything else.
+  const qc = useQueryClient()
+  const [adding, setAdding] = useState(false)
   const [params, setParams] = useSearchParams()
   const [level, setLevel] = usePersistedState<LevelFilter>('jpGrammarLevel', 'all')
   const [query, setQuery] = usePersistedState<string>('jpGrammarQuery', '')
@@ -55,6 +61,30 @@ export default function JapaneseGrammarPage() {
 
   const { visible, sentinelRef, hasMore } = useIncrementalList(filtered)
 
+  async function addLevel(level: string): Promise<void> {
+    setAdding(true)
+    try {
+      const res = await api.japanese.addGrammarLevel(level)
+      await qc.invalidateQueries({ queryKey: qk.japanese.all })
+      if (res.available === 0) {
+        // No points at that level at all — almost always a missing bank, and
+        // claiming "already in your deck" there was a flat lie.
+        toast(`No ${level} grammar points are installed`, 'error')
+      } else {
+        toast(
+          res.added > 0
+            ? `Added ${res.added} ${level} grammar card${res.added === 1 ? '' : 's'} to your reviews`
+            : `Every clozeable ${level} point is already in your deck`,
+          'success'
+        )
+      }
+    } catch (e) {
+      toastError(e)
+    } finally {
+      setAdding(false)
+    }
+  }
+
   return (
     <div className="p-6 max-w-3xl mx-auto">
       <PageHeader
@@ -66,9 +96,16 @@ export default function JapaneseGrammarPage() {
             : 'Every JLPT grammar point, offline.'
         }
         actions={
-          <Link to="/japanese/grammar/quiz" className="btn-ghost">
-            Grammar drill
-          </Link>
+          <>
+            {level !== 'all' && bank && (
+              <button className="btn-ghost" disabled={adding} onClick={() => void addLevel(level)}>
+                {adding ? 'Adding…' : `Add ${level} to reviews`}
+              </button>
+            )}
+            <Link to="/japanese/grammar/quiz" className="btn-ghost">
+              Grammar drill
+            </Link>
+          </>
         }
       />
 

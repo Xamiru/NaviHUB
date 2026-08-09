@@ -64,6 +64,11 @@ function seed(): void {
       VALUES (1, 'wallpaper', 'pictures/Cowboy Bebop (anime)/wallpapers/wallhaven-x1.jpg',
         'https://w.wallhaven.cc/full/x1.jpg', 'wallhaven', 1920, 1080);
 
+    INSERT INTO video_file (media_id, file_path, title, number, watched_at, resume_seconds)
+      VALUES (1, 'Cowboy Bebop/ep01.mkv', 'Session 1', 1, '2026-08-01 22:00:00', 431);
+    INSERT INTO video_cache (cache_key, file_name, source_path, action, bytes)
+      VALUES ('sha1-abc', 'sha1-abc.mp4', '/media/x/ep01.mkv', 'remux', 812345678);
+
     INSERT INTO quiz_session (kind, score, total, best_streak, settings)
       VALUES ('song', 8, 10, 5, '{"songType":"OP"}');
 
@@ -118,6 +123,16 @@ function seed(): void {
       ('qbittorrent.username', 'admin'),
       ('qbittorrent.password', 'secret-qbit'),
       ('github.token', 'ghp_secret-updater-token'),
+      ('video.dir', '/media/xamir/Anglo/Video'),
+      ('ffmpeg.path', '/usr/bin/ffmpeg'),
+      ('ffprobe.path', '/usr/bin/ffprobe'),
+      ('mokuro.path', '/home/xamir/.local/bin/mokuro'),
+      ('vertex.region', 'us-east5'),
+      ('sync.token', 'secret-sync'),
+      ('sync.device', 'pixel-8'),
+      ('sync.port', '8787'),
+      ('checklist.seeded', '1'),
+      ('jp.knownBaseline', '2000'),
       ('japanese.seeded', '1'),
       ('japanese.seeded.n3kanji', '1'),
       ('japanese.seeded.levels', '1'),
@@ -177,7 +192,11 @@ describe('export sanitize', () => {
       'game_session',
       'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta',
       'gacha_chat_thread', 'gacha_chat_message', 'gacha_goal', 'gacha_coach_note', 'gacha_coach_doc',
-      'checklist_task', 'checklist_log', 'en_word', 'en_review_log', 'en_writing', 'prog_progress'
+      'checklist_task', 'checklist_log', 'en_word', 'en_review_log', 'en_writing', 'prog_progress',
+      // Scan cache + remux index: rows point at the exporter's own userData,
+      // and resume positions are personal. sanitizeSql.cjs has always deleted
+      // these two; nothing ever seeded them, so the guard had a hole.
+      'video_file', 'video_cache'
     ]) {
       expect(count(t), t).toBe(0)
     }

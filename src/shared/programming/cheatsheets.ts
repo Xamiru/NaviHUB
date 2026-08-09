@@ -129,7 +129,9 @@ export const CHEAT_SHEETS: CheatSheet[] = [
         cmd: "awk '{print $2}'",
         desc: 'Print the second whitespace-separated column of each line',
         example: "ps aux | awk '{print $2}'",
-        answers: ["awk '{print $2}'", 'awk {print $2}']
+        // Unquoted `awk {print $2}` is NOT an alternate: the shell expands $2 to
+        // empty and splits the program in two, so awk exits 1.
+        answers: ["awk '{print $2}'"]
       },
       {
         cmd: 'sort | uniq -c | sort -rn',
@@ -177,7 +179,9 @@ export const CHEAT_SHEETS: CheatSheet[] = [
         cmd: "tr -d '\\r'",
         desc: 'Strip carriage returns (fix CRLF line endings from Windows)',
         example: "tr -d '\\r' < dos.txt > unix.txt",
-        answers: ["tr -d '\\r'", 'tr -d \\r']
+        // Unquoted `tr -d \r` deletes the LETTER r and leaves every carriage
+        // return in place — the exact opposite of this entry.
+        answers: ["tr -d '\\r'"]
       },
       {
         cmd: 'jq .',
@@ -194,7 +198,10 @@ export const CHEAT_SHEETS: CheatSheet[] = [
       {
         cmd: "find . -name '*.log'",
         desc: 'Find files by name pattern, recursively from here',
-        answers: ["find . -name '*.log'", 'find . -name *.log', 'find -name *.log']
+        // The glob MUST stay quoted: unquoted, the shell expands it before find
+        // runs, so the search silently covers only what matched in this one
+        // directory. shellCourse.ts:336 teaches exactly this.
+        answers: ["find . -name '*.log'", "find -name '*.log'"]
       },
       {
         cmd: 'find . -type d',
@@ -214,7 +221,8 @@ export const CHEAT_SHEETS: CheatSheet[] = [
       {
         cmd: "find . -name '*.tmp' -delete",
         desc: 'Find files by pattern and delete them',
-        answers: ["find . -name '*.tmp' -delete", 'find . -name *.tmp -delete']
+        // Same quoting rule, this time with a destructive flag attached.
+        answers: ["find . -name '*.tmp' -delete", "find -name '*.tmp' -delete"]
       },
       {
         cmd: 'find . -type f -exec chmod 644 {} +',
@@ -252,7 +260,9 @@ export const CHEAT_SHEETS: CheatSheet[] = [
         cmd: 'pgrep -f',
         desc: 'Find PIDs whose full command line matches a pattern',
         example: 'pgrep -f electron',
-        answers: ['pgrep -f', 'pgrep']
+        // Bare `pgrep` matches the ~15-char process NAME, not the full command
+        // line this entry describes. -f is what makes the description true.
+        answers: ['pgrep -f']
       },
       {
         cmd: 'kill -9',
@@ -262,7 +272,8 @@ export const CHEAT_SHEETS: CheatSheet[] = [
       {
         cmd: 'pkill -f',
         desc: 'Kill every process whose command line matches a pattern',
-        answers: ['pkill -f', 'pkill', 'killall']
+        // Same as pgrep; `killall` additionally needs an exact name, not a pattern.
+        answers: ['pkill -f']
       },
       {
         cmd: 'htop',
@@ -512,7 +523,8 @@ export const CHEAT_SHEETS: CheatSheet[] = [
       {
         cmd: 'git status -sb',
         desc: 'Status, short form: branch line + one line per change',
-        answers: ['git status -sb', 'git status -s']
+        // -s alone never prints the branch line this entry promises; -b does.
+        answers: ['git status -sb']
       },
       {
         cmd: 'git add -p',
@@ -621,7 +633,8 @@ export const CHEAT_SHEETS: CheatSheet[] = [
       {
         cmd: 'docker images',
         desc: 'List local images',
-        answers: ['docker images', 'docker image ls', 'docker images ls']
+        // `docker images ls` parses ls as a repository filter and lists nothing.
+        answers: ['docker images', 'docker image ls']
       },
       {
         cmd: 'docker exec -it <container> bash',

@@ -9,6 +9,7 @@ import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
 import { PROG_COURSES } from '@shared/programming/courses'
 import { CHEAT_SHEETS } from '@shared/programming/cheatsheets'
+import type { CheatEntry } from '@shared/programming/types'
 
 // Multiple-choice quiz over the programming section, in the Quiz hub. Two
 // pools, both built entirely in the renderer from the code catalog (no IPC —
@@ -73,15 +74,34 @@ function courseQuestions(courseKey: string | null): Question[] {
 // "Which command does X?" — the answer is the entry's command, distractors are
 // other commands from the same sheet (falling back to every sheet for the
 // short ones), deduped by rendered text.
+//
+// Distractors are drawn from entries of the SAME KIND as the answer, where the
+// presence of `answers` is the signal: entries that carry one are real CLI
+// invocations, entries without one are keystrokes (tmux's `prefix d` and
+// friends, left answers-less on purpose so they never enter the typing drill).
+// Mixing the two made a CLI prompt offer three chord-shaped options that are
+// eliminable on sight — and vice versa.
+const isCommand = (e: CheatEntry): boolean => !!e.answers?.length
+
 function commandQuestions(sheetKey: string | null): Question[] {
   const sheets = sheetKey ? CHEAT_SHEETS.filter((s) => s.key === sheetKey) : CHEAT_SHEETS
-  const allCmds = CHEAT_SHEETS.flatMap((s) => s.entries.map((e) => e.cmd))
+  // Precomputed once per call, not once per entry: rebuilding these inside the
+  // loop made the whole pool O(entries²) over ~180 entries.
+  const allByKind = {
+    true: CHEAT_SHEETS.flatMap((s) => s.entries.filter(isCommand).map((e) => e.cmd)),
+    false: CHEAT_SHEETS.flatMap((s) => s.entries.filter((e) => !isCommand(e)).map((e) => e.cmd))
+  }
   const out: Question[] = []
   for (const sheet of sheets) {
+    const sheetByKind = {
+      true: sheet.entries.filter(isCommand).map((e) => e.cmd),
+      false: sheet.entries.filter((e) => !isCommand(e)).map((e) => e.cmd)
+    }
     for (const entry of sheet.entries) {
+      const kind = String(isCommand(entry)) as 'true' | 'false'
       const taken = new Set([entry.cmd])
       const distractors: string[] = []
-      for (const pool of [sheet.entries.map((e) => e.cmd), allCmds]) {
+      for (const pool of [sheetByKind[kind], allByKind[kind]]) {
         for (const cmd of shuffle(pool)) {
           if (distractors.length >= 3) break
           if (taken.has(cmd)) continue

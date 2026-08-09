@@ -1,7 +1,7 @@
 import { setImmediate as yieldToLoop } from 'timers/promises'
 import { getSqlite } from './db/connection'
 import { getDictDb } from './dict/dictDb'
-import { knownWordSet, tiersForWords } from './repos/coverageRepo'
+import { baselineSize, knownWordSet, tiersForWords } from './repos/coverageRepo'
 import { tokenize } from './tokenizer'
 import { isLearnableWord } from './seriesText'
 import type { JpFeed, JpFeedItem, JpFeedRequest, JpToken } from '@shared/types'
@@ -181,15 +181,29 @@ function shuffle<T>(arr: T[]): T[] {
 // the page shows a loading state, no status object.
 const cache = new Map<string, { fingerprint: string; feed: JpFeed }>()
 
+// Fingerprints what changes the KNOWN SET, not what changes any card row.
+// MAX(updated_at) used to be in here, and submitReview writes updated_at on
+// every single grade — so one review invalidated the whole feed and the next
+// visit re-loaded sentence_fts and re-tokenized up to 4000 sentences (~2-3s).
+// A card only enters/leaves the known set by being created, deleted, or
+// crossing into 'review' status, and a lesson by being marked learned.
 function knowledgeFingerprint(): string {
   const db = getSqlite()
   const cards = db
-    .prepare(`SELECT COUNT(*) AS c, COALESCE(MAX(updated_at), '') AS u FROM jp_card`)
-    .get() as { c: number; u: string }
+    .prepare(
+      `SELECT COUNT(*) AS c,
+              COUNT(*) FILTER (WHERE status = 'review') AS r
+       FROM jp_card`
+    )
+    .get() as { c: number; r: number }
   const learned = db.prepare(`SELECT COUNT(*) AS n FROM jp_lesson WHERE learned = 1`).get() as {
     n: number
   }
-  return `${cards.c}|${cards.u}|${learned.n}`
+  // The baseline belongs here too: knownWordSet() UNIONs the assumed-known
+  // frequency words in at tier 3, so without this, turning "Assumed known
+  // words" on in Settings left the feed serving its pre-baseline cache — on the
+  // one page the setting exists to fix.
+  return `${cards.c}|${cards.r}|${learned.n}|${baselineSize()}`
 }
 
 function realDeps(req: JpFeedRequest): FeedDeps {

@@ -4,11 +4,13 @@ import { existsSync, readdirSync } from 'fs'
 import { readdir } from 'fs/promises'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
+import { isUnitProgress } from '@shared/mediaProgress'
 import { absoluteMediaPath, mangaRootDir, booksRootDir } from './files'
 import { isArchiveFile, listArchivePages } from './archive'
 import { isEpubFile, epubSpineCount, listEpubPages, epubToc } from './epub'
 import { mediaUrl } from '@shared/mediaUrl'
 import type {
+  MediaType,
   MangaAttachResult,
   MangaChapter,
   MangaLibrary,
@@ -387,11 +389,44 @@ function syncMediaProgress(mediaId: number): void {
   ).run(candidate, mediaId, candidate)
 }
 
-export function markProgress(chapterId: number, page: number): void {
+// syncMediaProgress is the SOLE writer of media_item.progress on every chapter
+// path, and `firstTime` is only a signal for ipc.ts to credit the checklist —
+// it never moves progress.
+//
+// This was briefly the other way round, with checklistRepo.logProgress owning
+// the write, and all three failures came from the same mismatch: logProgress
+// means "one more unit" (+1, wrapping a finished title into a fresh pass) while
+// this path means "you have now read up to chapter N". Reading chapter 1 of a
+// completed 150-chapter manga reset it to 1/Reading/pass 2; ticking chapter 60
+// on a fresh series wrote 1 instead of 60; and un-tick then re-tick counted
+// twice. The monotonic `UPDATE … WHERE progress < ?` has none of those
+// problems, because it is absolute rather than incremental.
+//
+// Known and unchanged from before that experiment: after a deliberate "Read
+// again" from the detail page wraps progress to 1, the next chapter write
+// raises it back to the highest read chapter — read_at flags are pass-agnostic,
+// so a fresh pass would need them cleared to hold.
+export type ChapterRead = { mediaId: number; firstTime: boolean }
+
+// Books are never credited: they track progress in PAGES and are not a
+// unit-progress type. Asking the shared list rather than spelling out "not
+// book" means a future page-based type is excluded by default instead of
+// silently opted in.
+function creditable(mediaType: string | null): boolean {
+  return mediaType != null && isUnitProgress(mediaType as MediaType)
+}
+
+export function markProgress(chapterId: number, page: number): ChapterRead | undefined {
   const db = getSqlite()
   const row = db
-    .prepare('SELECT media_id, page_count, read_at FROM manga_chapter WHERE id = ?')
-    .get(chapterId) as { media_id: number; page_count: number; read_at: string | null } | undefined
+    .prepare(
+      `SELECT c.media_id, c.page_count, c.read_at, m.media_type
+       FROM manga_chapter c LEFT JOIN media_item m ON m.id = c.media_id
+       WHERE c.id = ?`
+    )
+    .get(chapterId) as
+    | { media_id: number; page_count: number; read_at: string | null; media_type: string | null }
+    | undefined
   if (!row) return
   const finished = row.page_count > 0 && page >= row.page_count - 1
   db.prepare(
@@ -400,13 +435,21 @@ export function markProgress(chapterId: number, page: number): void {
        updated_at = datetime('now')
      WHERE id = ?`
   ).run(page, finished ? 1 : 0, chapterId)
+  const firstTime = finished && !row.read_at && creditable(row.media_type)
   if (finished && !row.read_at) syncMediaProgress(row.media_id)
+  return { mediaId: row.media_id, firstTime }
 }
 
-export function markChapterRead(chapterId: number, read: boolean): void {
+export function markChapterRead(chapterId: number, read: boolean): ChapterRead | undefined {
   const db = getSqlite()
-  const row = db.prepare('SELECT media_id FROM manga_chapter WHERE id = ?').get(chapterId) as
-    | { media_id: number }
+  const row = db
+    .prepare(
+      `SELECT c.media_id, c.read_at, m.media_type
+       FROM manga_chapter c LEFT JOIN media_item m ON m.id = c.media_id
+       WHERE c.id = ?`
+    )
+    .get(chapterId) as
+    | { media_id: number; read_at: string | null; media_type: string | null }
     | undefined
   if (!row) return
   if (read) {
@@ -420,5 +463,9 @@ export function markChapterRead(chapterId: number, read: boolean): void {
          updated_at = datetime('now') WHERE id = ?`
     ).run(chapterId)
   }
+  const firstTime = read && !row.read_at && creditable(row.media_type)
+  // Unconditional: the sync is idempotent (it only raises), so ticking,
+  // un-ticking and re-ticking the same chapter all settle on the same number.
   syncMediaProgress(row.media_id)
+  return { mediaId: row.media_id, firstTime }
 }

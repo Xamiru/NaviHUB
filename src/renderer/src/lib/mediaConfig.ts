@@ -7,7 +7,6 @@ import type { MediaItem, MediaType, CreditRole, MediaCompanyRole } from '@shared
 export interface ChildNav {
   to: string
   label: string
-  icon: string
   // Person browse pages pass a role so the list filters + ranks by it.
   role?: CreditRole
 }
@@ -32,7 +31,6 @@ export interface MediaConfig {
   singular: string // "Anime" / "Movie"
   plural: string // "Anime" / "Movies"
   basePath: string // "/anime" / "/movies"
-  icon: string
   // statuses
   statusesKey: string // settings key, e.g. "anime.statuses"
   defaultStatuses: string[]
@@ -141,7 +139,6 @@ export const ANIME: MediaConfig = {
   singular: 'Anime',
   plural: 'Anime',
   basePath: '/anime',
-  icon: '▶',
   statusesKey: 'anime.statuses',
   defaultStatuses: ['Watching', 'Completed', 'On Hold', 'Dropped', 'Plan to Watch'],
   progressFieldLabel: 'Progress (episodes watched)',
@@ -167,11 +164,11 @@ export const ANIME: MediaConfig = {
   companyDefaultRole: 'animation_studio',
   companyPickerPlaceholder: 'Add studio / company…',
   children: [
-    { to: '/anime/seasonal', label: 'Seasonal', icon: '❆' },
-    { to: '/anime/songs', label: 'Songs', icon: '♫' },
-    { to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' },
-    { to: '/artists', label: 'Artists', icon: '♪', role: 'artist' },
-    { to: '/studios', label: 'Studios', icon: '⌂' }
+    { to: '/anime/seasonal', label: 'Seasonal' },
+    { to: '/anime/songs', label: 'Songs' },
+    { to: '/people', label: 'Voice Actors', role: 'voice_actor' },
+    { to: '/artists', label: 'Artists', role: 'artist' },
+    { to: '/studios', label: 'Studios' }
   ],
   importSource: { key: 'anilist', label: 'AniList', placeholder: 'Search AniList (e.g. Frieren)…' },
   hasThemes: true,
@@ -189,7 +186,6 @@ export const MANGA: MediaConfig = {
   singular: 'Manga',
   plural: 'Manga',
   basePath: '/manga',
-  icon: '▤',
   statusesKey: 'manga.statuses',
   defaultStatuses: ['Reading', 'Completed', 'On Hold', 'Dropped', 'Plan to Read'],
   progressFieldLabel: 'Progress (chapters read)',
@@ -216,7 +212,7 @@ export const MANGA: MediaConfig = {
   ],
   companyDefaultRole: 'publisher',
   companyPickerPlaceholder: 'Add publisher…',
-  children: [{ to: '/mangaka', label: 'Mangaka', icon: '✎', role: 'mangaka' }],
+  children: [{ to: '/mangaka', label: 'Mangaka', role: 'mangaka' }],
   importSource: {
     key: 'anilistManga',
     label: 'AniList',
@@ -237,7 +233,6 @@ export const VISUAL_NOVEL: MediaConfig = {
   singular: 'Visual Novel',
   plural: 'Visual Novels',
   basePath: '/visual-novels',
-  icon: '✦',
   statusesKey: 'visual_novel.statuses',
   defaultStatuses: ['Playing', 'Completed', 'On Hold', 'Dropped', 'Plan to Play'],
   progressFieldLabel: 'Progress (minutes)',
@@ -263,7 +258,7 @@ export const VISUAL_NOVEL: MediaConfig = {
   ],
   companyDefaultRole: 'developer',
   companyPickerPlaceholder: 'Add developer / publisher…',
-  children: [{ to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' }],
+  children: [{ to: '/people', label: 'Voice Actors', role: 'voice_actor' }],
   importSource: { key: 'vndb', label: 'VNDB', placeholder: 'Search VNDB (e.g. Steins;Gate)…' },
   hasPlaytimes: true,
   mediaTabLabel: 'Playtime',
@@ -282,7 +277,6 @@ export const GAME: MediaConfig = {
   singular: 'Game',
   plural: 'Games',
   basePath: '/games',
-  icon: '❖',
   statusesKey: 'game.statuses',
   defaultStatuses: ['Playing', 'Completed', 'On Hold', 'Dropped', 'Plan to Play'],
   progressFieldLabel: 'Progress (hours played)',
@@ -307,7 +301,7 @@ export const GAME: MediaConfig = {
   ],
   companyDefaultRole: 'developer',
   companyPickerPlaceholder: 'Add developer / publisher…',
-  children: [{ to: '/people', label: 'Voice Actors', icon: '☻', role: 'voice_actor' }],
+  children: [{ to: '/people', label: 'Voice Actors', role: 'voice_actor' }],
   importSource: { key: 'rawg', label: 'RAWG', placeholder: 'Search RAWG (e.g. Persona 5)…' },
   hasPlaytimes: true,
   mediaTabLabel: 'Playtime',
@@ -320,7 +314,6 @@ export const MOVIE: MediaConfig = {
   singular: 'Movie',
   plural: 'Movies',
   basePath: '/movies',
-  icon: '⬚',
   statusesKey: 'movie.statuses',
   defaultStatuses: ['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch'],
   progressFieldLabel: 'Progress', // unused: movies hide progress (noProgress)
@@ -345,8 +338,8 @@ export const MOVIE: MediaConfig = {
   companyDefaultRole: 'production_studio',
   companyPickerPlaceholder: 'Add production company…',
   children: [
-    { to: '/actors', label: 'Actors', icon: '☻', role: 'actor' },
-    { to: '/directors', label: 'Directors', icon: '✪', role: 'director' }
+    { to: '/actors', label: 'Actors', role: 'actor' },
+    { to: '/directors', label: 'Directors', role: 'director' }
   ],
   sidebarLabel: 'Movies / TV', // short enough not to wrap in the mono sidebar
   hasVideoLibrary: true,
@@ -365,7 +358,6 @@ export const TV: MediaConfig = {
   singular: 'TV Show',
   plural: 'TV Shows',
   basePath: '/tv',
-  icon: '▦',
   statusesKey: 'tv.statuses',
   defaultStatuses: ['Watching', 'Watched', 'On Hold', 'Dropped', 'Want to Watch'],
   progressFieldLabel: 'Progress (episodes watched)',
@@ -413,7 +405,6 @@ export const BOOK: MediaConfig = {
   singular: 'Book',
   plural: 'Books',
   basePath: '/books',
-  icon: '▣',
   statusesKey: 'book.statuses',
   defaultStatuses: ['Reading', 'Completed', 'On Hold', 'Dropped', 'Plan to Read'],
   progressFieldLabel: 'Progress (pages read)',
@@ -437,7 +428,7 @@ export const BOOK: MediaConfig = {
   ],
   companyDefaultRole: 'publisher',
   companyPickerPlaceholder: 'Add publisher…',
-  children: [{ to: '/authors', label: 'Authors', icon: '✎', role: 'writer' }],
+  children: [{ to: '/authors', label: 'Authors', role: 'writer' }],
   importSource: {
     key: 'openlibrary',
     label: 'Open Library',

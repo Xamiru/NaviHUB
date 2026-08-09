@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { MAX_TAKE_SECONDS } from '@shared/pitchTrack'
 
 // Mic capture for the Speak drill. Deliberately ScriptProcessor, not
 // AudioWorklet: worklet module fetch breaks on file:// documents (production
@@ -153,16 +152,6 @@ export function usePitchRecorder(): {
     node.connect(ctx.destination)
     node.start()
   }, [])
-
-  // Auto-stop cap: the drill polls `seconds` and calls stop(); this is only a
-  // safety for a stuck recording (belt over braces).
-  useEffect(() => {
-    if (status !== 'recording') return
-    const t = window.setTimeout(() => {
-      // The drill normally stops first; this just flips state if it didn't.
-    }, MAX_TAKE_SECONDS * 1000 + 500)
-    return () => window.clearTimeout(t)
-  }, [status])
 
   return { status, level, seconds, start, stop, replay }
 }

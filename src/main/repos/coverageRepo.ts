@@ -1,4 +1,6 @@
 import { getSqlite } from '../db/connection'
+import { getDictDb } from '../dict/dictDb'
+import * as settingsRepo from './settingsRepo'
 import { isLearnableWord } from '../seriesText'
 import type {
   JpCoverageDetail,
@@ -15,6 +17,80 @@ import type {
 // so a score updates the moment a card graduates — no invalidation, no stale
 // percentages, no rescan needed unless the series itself gains chapters.
 
+// The deck is not the whole of what you know. Without a baseline, a learner who
+// already reads some Japanese is told they understand 3% of a series they can
+// mostly follow, and jpFeed's exactly-one-unknown filter finds nothing for
+// months. `jp.knownBaseline` = "assume the top N frequency words are known"
+// (0 = off, the default, so no number ever changes silently).
+//
+// The word list lives in dictionaries.db, a SEPARATE database, so it cannot be
+// joined directly. It is materialized into a TEMP table instead — per
+// connection, never written to navihub.db, so there is no schema change, no
+// migration and nothing new to strip on export.
+const BASELINE_KEY = 'jp.knownBaseline'
+let builtFor: { db: unknown; size: number } | null = null
+
+export function baselineSize(): number {
+  const n = Number(settingsRepo.get(BASELINE_KEY))
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0
+}
+
+function ensureBaseline(): void {
+  const db = getSqlite()
+  const n = baselineSize()
+  db.exec('CREATE TEMP TABLE IF NOT EXISTS jp_known_baseline (word TEXT PRIMARY KEY)')
+  // Keyed on the CONNECTION as well as the size. A TEMP table belongs to its
+  // connection, so a reopened database (closeDatabase then a lazy getSqlite, and
+  // every test's fresh in-memory db) starts empty while a module-level cache
+  // still claims it is built — but keying on the row count instead made the
+  // guard unsatisfiable whenever the baseline was on and the frequency pack was
+  // absent (0 words is the correct answer, and `have > 0` can never hold), so
+  // every call rebuilt: a DELETE plus a cross-database GROUP BY, up to eight
+  // times for one analyzeText paste. Identity of the handle settles both.
+  if (builtFor?.db === db && builtFor.size === n) return
+  db.exec('DELETE FROM jp_known_baseline')
+  if (n > 0) {
+    const ins = db.prepare('INSERT OR IGNORE INTO jp_known_baseline (word) VALUES (?)')
+    const words = topFrequencyWords(n)
+    db.transaction(() => {
+      for (const w of words) ins.run(w)
+    })()
+  }
+  builtFor = { db, size: n }
+}
+
+// Called when the installed frequency data changes: the pack itself is not part
+// of the cache key (its size is unrelated to the setting), so an import or a
+// removal would otherwise keep serving the old words until the next restart.
+export function invalidateBaseline(): void {
+  builtFor = null
+}
+
+// Highest-priority installed frequency bank, top N by rank. Returns [] when no
+// frequency pack is installed — the baseline then simply does nothing.
+function topFrequencyWords(n: number): string[] {
+  try {
+    const dictDb = getDictDb()
+    const src = dictDb
+      .prepare(
+        `SELECT f.dict_id AS id FROM freq f JOIN dict d ON d.id = f.dict_id
+         GROUP BY f.dict_id ORDER BY d.priority DESC, d.id DESC LIMIT 1`
+      )
+      .get() as { id: number } | undefined
+    if (!src) return []
+    return (
+      dictDb
+        .prepare(
+          `SELECT expression, MIN(rank) AS rank FROM freq WHERE dict_id = ?
+           GROUP BY expression ORDER BY rank ASC LIMIT ?`
+        )
+        .all(src.id, n) as { expression: string }[]
+    ).map((r) => r.expression)
+  } catch {
+    return [] /* no dictionaries.db yet */
+  }
+}
+
 // Tier of each distinct card front, worst-to-best collapsed with MAX so a word
 // that exists in both a learned and an unlearned lesson counts as the better:
 //   3 known      — lesson learned AND the card graduated out of learning steps
@@ -25,16 +101,26 @@ import type {
 // The `unstarted` tier is load-bearing: buildPrepDeck creates hundreds of cards
 // in UNLEARNED lessons, so counting "a card exists" as known would make every
 // prep deck instantly report ~100% comprehension.
-const TIER_CTE = `
+// Call before any query using tierCte(). MAX over the union keeps the
+// worst-to-best collapse: a baseline word that also has a card takes whichever
+// tier is higher, so the baseline can only ever raise a word, never lower it.
+function tierCte(): string {
+  ensureBaseline()
+  return `
   WITH tiers AS (
-    SELECT c.front AS word,
-           MAX(CASE WHEN l.learned = 1 AND c.status = 'review' THEN 3
-                    WHEN l.learned = 1 THEN 2
-                    ELSE 1 END) AS tier
-    FROM jp_card c JOIN jp_lesson l ON l.id = c.lesson_id
-    GROUP BY c.front
+    SELECT word, MAX(tier) AS tier FROM (
+      SELECT c.front AS word,
+             CASE WHEN l.learned = 1 AND c.status = 'review' THEN 3
+                  WHEN l.learned = 1 THEN 2
+                  ELSE 1 END AS tier
+      FROM jp_card c JOIN jp_lesson l ON l.id = c.lesson_id
+      UNION ALL
+      SELECT word, 3 AS tier FROM jp_known_baseline
+    )
+    GROUP BY word
   )
 `
+}
 
 const EMPTY_TIERS = (): Record<JpWordTier, JpTierCounts> => ({
   known: { uniqueCount: 0, tokenCount: 0 },
@@ -108,7 +194,7 @@ export function coverageForMedia(mediaId: number): JpCoverageDetail | null {
 
   const tierRows = db
     .prepare(
-      `${TIER_CTE}
+      `${tierCte()}
        SELECT t.tier AS tier, COUNT(*) AS uniq, SUM(w.count) AS tokens
        FROM jp_coverage_word w LEFT JOIN tiers t ON t.word = w.word
        WHERE w.media_id = ? GROUP BY t.tier`
@@ -117,7 +203,7 @@ export function coverageForMedia(mediaId: number): JpCoverageDetail | null {
 
   const topUnknown = db
     .prepare(
-      `${TIER_CTE}
+      `${tierCte()}
        SELECT w.word, w.count FROM jp_coverage_word w LEFT JOIN tiers t ON t.word = w.word
        WHERE w.media_id = ? AND t.tier IS NULL
        ORDER BY w.count DESC, w.word LIMIT 50`
@@ -133,7 +219,7 @@ export function coverageForMedia(mediaId: number): JpCoverageDetail | null {
   // tested invariant).
   const projectionCandidates = db
     .prepare(
-      `${TIER_CTE}
+      `${tierCte()}
        SELECT w.count AS count FROM jp_coverage_word w LEFT JOIN tiers t ON t.word = w.word
        WHERE w.media_id = ? AND (t.tier IS NULL OR t.tier < 3)
        ORDER BY w.count DESC, w.word LIMIT 500`
@@ -179,7 +265,7 @@ export function coverageForMedia(mediaId: number): JpCoverageDetail | null {
 export function knownWordSet(minTier: 2 | 3): Set<string> {
   const db = getSqlite()
   const rows = db
-    .prepare(`${TIER_CTE} SELECT word FROM tiers WHERE tier >= ?`)
+    .prepare(`${tierCte()} SELECT word FROM tiers WHERE tier >= ?`)
     .all(minTier) as { word: string }[]
   return new Set(rows.map((r) => r.word))
 }
@@ -207,7 +293,7 @@ export function coverageList(): JpCoverageListRow[] {
 
   const tierRows = db
     .prepare(
-      `${TIER_CTE}
+      `${tierCte()}
        SELECT w.media_id, t.tier AS tier, COUNT(*) AS uniq, SUM(w.count) AS tokens
        FROM jp_coverage_word w LEFT JOIN tiers t ON t.word = w.word
        GROUP BY w.media_id, t.tier`
@@ -261,7 +347,7 @@ export function tiersForWords(words: string[]): Map<string, JpWordTier> {
     const slice = words.slice(i, i + 500)
     const placeholders = slice.map(() => '?').join(',')
     const rows = db
-      .prepare(`${TIER_CTE} SELECT word, tier FROM tiers WHERE word IN (${placeholders})`)
+      .prepare(`${tierCte()} SELECT word, tier FROM tiers WHERE word IN (${placeholders})`)
       .all(...slice) as { word: string; tier: number }[]
     for (const r of rows) out.set(r.word, TIER_NAMES[r.tier] ?? 'unknown')
   }

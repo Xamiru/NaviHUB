@@ -1,5 +1,9 @@
-import { memo } from 'react'
+import { memo, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
+import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
+import { toastError } from '../lib/toast'
 import { configFor, pathForMedia, type MediaConfig } from '../lib/mediaConfig'
 import CoverImage from './CoverImage'
 import type { MediaItem } from '@shared/types'
@@ -9,17 +13,45 @@ import type { MediaItem } from '@shared/types'
 //   default            — score top-right, status bottom-left, formatCardSub line
 //   showTypeBadge      — cross-type strips: type label top-left, status hidden
 //   showProgressBar    — thin bottom bar + formatProgressStat line (Continue)
+//   showFavorite       — hover/focus heart that writes straight through, so a
+//                        grid can be curated without opening anything
 const MediaCard = memo(function MediaCard({
   item,
   cfg,
   showTypeBadge = false,
-  showProgressBar = false
+  showProgressBar = false,
+  showFavorite = false
 }: {
   item: MediaItem
   cfg?: MediaConfig
   showTypeBadge?: boolean
   showProgressBar?: boolean
+  showFavorite?: boolean
 }) {
+  const qc = useQueryClient()
+  // Optimistic, re-synced from props — the ThemeRow contract, so an unrelated
+  // refetch cannot leave the heart showing the wrong state.
+  const [favorite, setFavorite] = useState(item.favorite)
+  useEffect(() => setFavorite(item.favorite), [item.favorite])
+  async function toggleFavorite(e: React.MouseEvent): Promise<void> {
+    // The card IS a link; the heart must not navigate.
+    e.preventDefault()
+    e.stopPropagation()
+    const next = !favorite
+    setFavorite(next)
+    try {
+      await api.media.update(item.id, { favorite: next })
+      // Scoped, not the whole ['media'] prefix: on Home that prefix matches
+      // seven full-library queries plus timeStats, resumePoints and the
+      // activity heatmap — about nine reads for one boolean, on an interaction
+      // designed to be rapid. Only this type's lists can show the change.
+      await qc.invalidateQueries({ queryKey: qk.media.home(item.mediaType) })
+      await qc.invalidateQueries({ queryKey: qk.media.detail(item.id) })
+    } catch (err) {
+      setFavorite(!next)
+      toastError(err)
+    }
+  }
   const config = cfg ?? configFor(item.mediaType)
   const pct =
     showProgressBar && item.totalUnits != null && item.totalUnits > 0
@@ -50,6 +82,23 @@ const MediaCard = memo(function MediaCard({
           <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">
             {item.status}
           </span>
+        )}
+        {showFavorite && (
+          <button
+            // ♥, not ★: the glyph rule reserves ★ for score/rarity badges —
+            // and the real one sits a few pixels away in the same yellow.
+            className={`absolute bottom-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs ${
+              favorite
+                ? 'text-accent'
+                : 'hidden text-gray-300 hover:text-accent group-hover:block group-focus-within:block'
+            }`}
+            title={favorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+            aria-pressed={favorite}
+            onClick={(e) => void toggleFavorite(e)}
+          >
+            {favorite ? '♥' : '♡'}
+          </button>
         )}
         {pct != null && (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">

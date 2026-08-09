@@ -7,11 +7,12 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
-import { useScoreMax } from '../lib/hooks'
+import { useScoreMax, useStatuses } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
 import { usePlayer, type Track } from '../lib/player'
 import {
   CAST_ROLES,
+  configFor,
   fmtMinutesAsHours,
   isCompletedStatus,
   pathForMedia,
@@ -23,13 +24,16 @@ import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
 import GameLaunchSection from '../components/GameLaunchSection'
+import GameLaunchButton, { useHasLaunchTarget } from '../components/GameLaunchButton'
 import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import VideoEpisodesSection from '../components/VideoEpisodesSection'
 import CoverageSection from '../components/japanese/CoverageSection'
 import MediaImagesSection from '../components/MediaImagesSection'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
+import ImportDialog from '../components/ImportDialog'
 import { torznabCategoriesFor } from '@shared/torrents'
 import Section from '../components/Section'
+import PageStatus from '../components/PageStatus'
 import type {
   MediaDetail,
   MediaCharacterEntry,
@@ -47,6 +51,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const qc = useQueryClient()
   const scoreMax = useScoreMax()
   const [torrentsOpen, setTorrentsOpen] = useState(false)
+  // Drives which action is the filled one (see the action column below).
+  const hasLaunch = useHasLaunchTarget(mediaId, !!cfg.hasGameLaunch)
 
   // The type's tab set. `mediaTabLabel` names the type-specific middle tab
   // (Theme Songs / Chapters / Playtime); absent = the type has no media tab
@@ -85,8 +91,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
     navigate(cfg.basePath)
   }
 
-  if (isLoading) return <div className="p-6 text-gray-500">Loading…</div>
-  if (!m) return <div className="p-6 text-gray-500">Not found.</div>
+  if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (!m) return <PageStatus>Not found.</PageStatus>
 
   // Community scores captured into metadata at import time. AniList's averageScore
   // is 0–100, IMDb's is 0–10 — both scaled to the user's score range so they read
@@ -122,10 +128,13 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
             rounded="rounded-xl"
             className="w-full aspect-[2/3]"
           />
-          {/* One filled action per screen: logging progress is the everyday
-              one. Delete lives behind More, away from Edit's elbow. */}
+          {/* One filled action per screen. For a game/VN with a linked
+              executable that is Play — you launch far more often than you log
+              an hour — and the log button steps down to ghost. Delete lives
+              behind More, away from Edit's elbow. */}
           <div className="mt-3 space-y-2">
-            <LogProgressButton cfg={cfg} m={m} />
+            {cfg.hasGameLaunch && <GameLaunchButton mediaId={m.id} />}
+            <LogProgressButton cfg={cfg} m={m} demoted={hasLaunch} />
             <Link to={`${cfg.basePath}/${m.id}/edit`} className="btn-ghost w-full">
               Edit
             </Link>
@@ -151,9 +160,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           </div>
           {m.titleOriginal && <p className="text-gray-500 mb-4">{m.titleOriginal}</p>}
 
+          <QuickEdit cfg={cfg} m={m} />
+
           <div className="flex flex-wrap gap-6 my-5">
-            <StatInline label="Status" value={m.status ?? '—'} />
-            <StatInline label="My Score" value={m.score != null ? `${m.score} / ${scoreMax}` : '—'} />
             {anilistAvg != null && (
               <StatInline label="AniList Avg" value={`${anilistAvg} / ${scoreMax}`} />
             )}
@@ -198,7 +207,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
             </Section>
           )}
           <CompaniesSection cfg={cfg} m={m} onChange={refresh} />
-          <RelatedSection m={m} />
+          <RelatedSection cfg={cfg} m={m} />
         </>
       )}
 
@@ -252,11 +261,123 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
 /* ---------------- Companies (studios / production) ---------------- */
 // HowLongToBeat-style time formatting, with "—" for missing values.
+// Status, score and favorite, editable in place. api.media.update had exactly
+// ONE caller in the whole renderer — the 13-field edit form — so rating
+// something you just finished cost two pure-navigation hops for one value, on
+// the two actions a tracker performs most. Optimistic like ThemeRow's heart,
+// re-synced from props so an unrelated refetch cannot leave it stale.
+function QuickEdit({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
+  const qc = useQueryClient()
+  const scoreMax = useScoreMax()
+  const statuses = useStatuses(cfg)
+  const [status, setStatus] = useState(m.status)
+  const [score, setScore] = useState(m.score)
+  const [favorite, setFavorite] = useState(m.favorite)
+  useEffect(() => setStatus(m.status), [m.status])
+  useEffect(() => setScore(m.score), [m.score])
+  useEffect(() => setFavorite(m.favorite), [m.favorite])
+
+  // Roll back on failure, like MediaCard's heart and the queue's — an optimistic
+  // pill that stays lit after a failed write is showing a value the database
+  // does not hold. One invalidation: qk.media.all is a prefix of the detail key.
+  async function patch(
+    input: Parameters<typeof api.media.update>[1],
+    revert: () => void
+  ): Promise<void> {
+    try {
+      await api.media.update(m.id, input)
+      await qc.invalidateQueries({ queryKey: qk.media.all })
+    } catch (e) {
+      revert()
+      toastError(e)
+    }
+  }
+
+  // Clicking the active status clears it; clicking the active score clears it.
+  // Both are legitimate states (a title with no opinion yet) and the form is
+  // otherwise the only way back to them.
+  const pickStatus = (s: string): void => {
+    const prev = status
+    const next = status === s ? null : s
+    setStatus(next)
+    void patch({ status: next }, () => setStatus(prev))
+  }
+  const pickScore = (n: number): void => {
+    const prev = score
+    const next = score === n ? null : n
+    setScore(next)
+    void patch({ score: next }, () => setScore(prev))
+  }
+
+  return (
+    <div className="mt-4 space-y-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {/* A status written before the user renamed their list still shows. */}
+        {status != null && !statuses.includes(status) && (
+          <span className="chip" title="Not in your configured status list">
+            {status}
+          </span>
+        )}
+        {statuses.map((s) => (
+          <button
+            key={s}
+            className={status === s ? 'pill pill-active' : 'pill'}
+            onClick={() => pickStatus(s)}
+          >
+            {s}
+          </button>
+        ))}
+        <button
+          className="pill ml-1"
+          title={favorite ? 'Remove from favorites' : 'Add to favorites'}
+          aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
+          aria-pressed={favorite}
+          onClick={() => {
+            const next = !favorite
+            setFavorite(next)
+            void patch({ favorite: next }, () => setFavorite(!next))
+          }}
+        >
+          {/* ♥ for a like toggle; ★ is reserved for score/rarity badges. */}
+          <span className={favorite ? 'text-accent' : 'text-gray-500'}>{favorite ? '♥' : '♡'}</span>
+        </button>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="label mr-1">Score</span>
+        {/* The pills are whole numbers 1..scoreMax, but the form accepts 0 and
+            half points — so anything they cannot light is shown as text rather
+            than silently reading as "unrated" and being overwritten. */}
+        {score != null && !Number.isInteger(score) && (
+          <span className="chip">{score} / {scoreMax}</span>
+        )}
+        {score === 0 && <span className="chip">0 / {scoreMax}</span>}
+        {Array.from({ length: scoreMax }, (_, i) => i + 1).map((n) => (
+          <button
+            key={n}
+            className={score === n ? 'pill pill-active' : 'pill'}
+            onClick={() => pickScore(n)}
+          >
+            {n}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // One-click "I watched/read another one". Main owns the rules
 // (@shared/mediaProgress): progress + status promotion, and a finished title
 // wraps into a fresh pass rather than running past its total. If a checklist
 // item covers this media type, the same call credits today's board.
-function LogProgressButton({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
+function LogProgressButton({
+  cfg,
+  m,
+  demoted = false
+}: {
+  cfg: MediaConfig
+  m: MediaDetail
+  demoted?: boolean
+}) {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
 
@@ -283,7 +404,7 @@ function LogProgressButton({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
 
   return (
     <button
-      className="btn-ghost w-full mt-2"
+      className={`${demoted ? 'btn-ghost' : 'btn-primary'} w-full mt-2`}
       onClick={log}
       disabled={busy}
       title={
@@ -537,9 +658,10 @@ function ActorCard({
       </Link>
       {onRemove && (
         <button
-          className="absolute top-1 right-1 hidden group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
+          className="absolute top-1 right-1 hidden group-hover:flex group-focus-within:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
           onClick={onRemove}
           title="Remove cast member"
+          aria-label="Remove cast member"
         >
           ×
         </button>
@@ -607,9 +729,10 @@ function CharacterCard({
       </div>
       {onRemove && (
         <button
-          className="absolute top-1 left-1/2 -translate-x-1/2 hidden group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
+          className="absolute top-1 left-1/2 -translate-x-1/2 hidden group-hover:flex group-focus-within:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
           onClick={onRemove}
           title="Remove character"
+          aria-label="Remove character"
         >
           ×
         </button>
@@ -643,9 +766,10 @@ function CharacterOnlyCard({
       </Link>
       {onRemove && (
         <button
-          className="absolute top-1 right-1 hidden group-hover:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
+          className="absolute top-1 right-1 hidden group-hover:flex group-focus-within:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
           onClick={onRemove}
           title="Remove character"
+          aria-label="Remove character"
         >
           ×
         </button>
@@ -842,7 +966,14 @@ const RELATION_ORDER = [
 // shown; the cap trims only the greyed ones, with a "+N more" note.
 const GREYED_CAP = 8
 
-function RelatedSection({ m }: { m: MediaDetail }) {
+function RelatedSection({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
+  const navigate = useNavigate()
+  // The relation being imported — its OWN config, not this page's. SOURCE and
+  // ADAPTATION edges are inherently cross-type (the source of an anime is a
+  // manga), and AniList's searches are type-scoped, so importing through the
+  // current page's importer searched the wrong catalogue entirely and could
+  // only ever re-import the title you were already looking at.
+  const [importing, setImporting] = useState<{ title: string; cfg: MediaConfig } | null>(null)
   if (m.relations.length === 0) return null
   // Order each group by relation type so the season chain reads top-to-bottom
   // instead of following AniList's arbitrary edge order.
@@ -856,11 +987,27 @@ function RelatedSection({ m }: { m: MediaDetail }) {
     <Section className="mb-6" title={`Related · ${shown.length}`}>
       <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-3">
         {shown.map((r, i) => (
-          <RelatedCard key={i} r={r} />
+          <RelatedCard
+            key={i}
+            r={r}
+            onImport={() => setImporting({ title: r.title, cfg: configFor(r.mediaType ?? cfg.key) })}
+          />
         ))}
       </div>
       {hidden > 0 && (
         <p className="mt-2 text-xs text-gray-400">+{hidden} more not in your library</p>
+      )}
+      {importing != null && importing.cfg.importSource && (
+        <ImportDialog
+          cfg={importing.cfg}
+          initialQuery={importing.title}
+          onClose={() => setImporting(null)}
+          onImported={(mediaId) => {
+            const target = importing.cfg
+            setImporting(null)
+            navigate(`${target.basePath}/${mediaId}`)
+          }}
+        />
       )}
     </Section>
   )
@@ -868,7 +1015,9 @@ function RelatedSection({ m }: { m: MediaDetail }) {
 
 // A related title: links to the local item when imported, otherwise a greyed,
 // non-clickable placeholder that hints at what to import next.
-function RelatedCard({ r }: { r: MediaRelation }) {
+function RelatedCard({ r, onImport }: { r: MediaRelation; onImport: () => void }) {
+  // No importer for that type = no Import affordance, rather than a dead click.
+  const importable = !!configFor(r.mediaType ?? 'anime').importSource
   const label = RELATION_LABELS[r.relationType] ?? r.relationType.toLowerCase().replace(/_/g, ' ')
   const body = (
     <>
@@ -893,10 +1042,27 @@ function RelatedCard({ r }: { r: MediaRelation }) {
       </Link>
     )
   }
+  if (!importable) {
+    return (
+      <div className="opacity-45" title="Not in your library yet">
+        {body}
+      </div>
+    )
+  }
+  // Not imported: the card itself is the import affordance rather than a dead
+  // placeholder. Still visibly greyed, so the two states never read alike.
   return (
-    <div className="opacity-45" title="Not in your library yet">
+    <button
+      type="button"
+      className="group block w-full text-left opacity-45 hover:opacity-100"
+      title={`Import "${r.title}"`}
+      onClick={onImport}
+    >
       {body}
-    </div>
+      <p className="text-[10px] uppercase tracking-widest text-gray-500 group-hover:text-accent">
+        Import
+      </p>
+    </button>
   )
 }
 

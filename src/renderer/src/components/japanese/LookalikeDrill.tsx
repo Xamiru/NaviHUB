@@ -16,6 +16,18 @@ import type { LookalikeQuizItem } from '@shared/types'
 type Source = 'cards' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
 const LEVELS: Source[] = ['N5', 'N4', 'N3', 'N2', 'N1']
 
+// Fisher-Yates. A `.sort(() => Math.random() - 0.5)` comparator is not a
+// uniform shuffle, and with the answer at index 0 it left the correct kanji in
+// slot 1 ~36% of the time — a free tell in a discrimination drill.
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function LookalikeDrill() {
   const [source, setSource] = usePersistedState<Source>('jpLookalikeSource', 'cards')
   const [length, setLength] = usePersistedState<number>('jpLookalikeLength', 10)
@@ -45,7 +57,7 @@ export default function LookalikeDrill() {
 
   function buildQuestion(item: LookalikeQuizItem): McQuestion<LookalikeQuizItem> | null {
     const glyphs = [item.kanji, ...item.decoys]
-    const shuffled = [...glyphs].sort(() => Math.random() - 0.5)
+    const shuffled = shuffle(glyphs)
     return {
       item,
       options: shuffled.map((g) => ({

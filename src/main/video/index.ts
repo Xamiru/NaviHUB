@@ -27,7 +27,6 @@ export {
   attachFolder,
   detach,
   files,
-  getScanStatus,
   markProgress,
   markWatched,
   rescan

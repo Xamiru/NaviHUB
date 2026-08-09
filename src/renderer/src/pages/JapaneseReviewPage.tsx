@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
 import PageHeader from '../components/PageHeader'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { gradeCard, LEECH_LAPSES, previewIntervals, type SrsState } from '@shared/srs'
+import { gradeCard, LEECH_LAPSES, overdueDays, previewIntervals, type SrsState } from '@shared/srs'
 import { buildTypedPrompt } from '@shared/cloze'
 import CardSourceBadge from '../components/CardSourceBadge'
 import CardAttachments from '../components/japanese/CardAttachments'
@@ -54,13 +54,16 @@ const GRADE_LABEL: Record<SrsGrade, string> = {
 
 export default function JapaneseReviewPage() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [newLimit, setNewLimit] = usePersistedState<number>('jpNewLimit', 10)
   // Bunpro-style typed answers. Only suggests a grade — the four buttons still
   // decide, so SM-2 semantics are untouched.
   const [typedMode, setTypedMode] = usePersistedState<boolean>('jpTypedMode', false)
   // Backlog forgiveness: cap today's due cards (0 = no cap). The repo orders
   // most-overdue-first, so a plain slice takes the right ones; the rest just
-  // stay due — SM-2 handles lateness natively, nothing is postponed.
+  // stay due — nothing is postponed. Lateness is not free either: submitReview
+  // passes the overdue gap into gradeCard, which uses it as the multiplier base
+  // for Good/Easy, so a card cleared late is scheduled for what it survived.
   const [dueCap, setDueCap] = usePersistedState<number>('jpDueCap', 0)
   // Ghost reviews: lapsed cards echo back until answered 3x correctly.
   const [ghostsOn, setGhostsOn] = usePersistedState<boolean>('jpGhosts', true)
@@ -343,9 +346,11 @@ export default function JapaneseReviewPage() {
             <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
               Review more
             </button>
-            <Link to="/japanese" className="btn-ghost flex-1 text-center">
+            {/* Back where you came from: the two common entries are the
+                Checklist row and Home's Japanese card, not the hub. */}
+            <button className="btn-ghost flex-1" onClick={() => navigate(-1)}>
               Done
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -354,7 +359,9 @@ export default function JapaneseReviewPage() {
 
   if (!current) return null
   const { card, srs } = current
-  const previews = previewIntervals(srs)
+  // The real overdue gap, so the buttons cannot advertise a schedule the
+  // scheduler will not use (submitReview passes the same number to gradeCard).
+  const previews = previewIntervals(srs, overdueDays(card.dueAt))
 
   return (
     <div className="p-6 max-w-2xl mx-auto">

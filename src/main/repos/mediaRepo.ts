@@ -18,7 +18,10 @@ import type {
   LibraryTimeStats,
   TimeStatsItem,
   TimeStatsByType,
-  JpMilestones
+  JpMilestones,
+  ResumePoint,
+  ActivityHeatmap,
+  ActivitySourceKey
 } from '@shared/types'
 import { parseStatuses } from '@shared/mediaProgress'
 
@@ -722,4 +725,113 @@ export function jpMilestones(): JpMilestones {
     ).n - novelsCompleted
 
   return { animeCompleted, mangaCompleted, novelsCompleted }
+}
+
+// "Pick up where you left off" — the four resume positions the app already
+// stores, in one list. This is NOT the Continue strip: Continue is "in progress
+// by status", this is "you were literally on page 143", so it links straight
+// into the reader/player instead of the detail page.
+//
+// A chapter/file counts as in-flight when it has a saved position and has NOT
+// been finished. dir_path rides along so the renderer can pick the image reader
+// or the book reader through readerPath() — the one place that decision lives.
+export function resumePoints(limit = 8): ResumePoint[] {
+  const db = getSqlite()
+  const rows = db
+    .prepare(
+      `SELECT * FROM (
+         SELECT 'chapter' AS kind, c.id AS ref_id, c.media_id, c.dir_path, c.title AS part_title,
+                c.last_read_page AS position, c.page_count AS total, c.updated_at AS at
+         FROM manga_chapter c
+         WHERE c.last_read_page IS NOT NULL AND c.last_read_page > 0 AND c.read_at IS NULL
+         UNION ALL
+         SELECT 'video', f.id, f.media_id, f.file_path, f.title,
+                CAST(f.resume_seconds AS INTEGER), CAST(f.duration AS INTEGER), f.updated_at
+         FROM video_file f
+         WHERE f.resume_seconds IS NOT NULL AND f.resume_seconds > 0 AND f.watched_at IS NULL
+       )
+       ORDER BY at DESC LIMIT ?`
+    )
+    .all(limit) as {
+    kind: 'chapter' | 'video'
+    ref_id: number
+    media_id: number
+    dir_path: string
+    part_title: string
+    position: number
+    total: number | null
+    at: string
+  }[]
+  if (rows.length === 0) return []
+  // One extra query rather than a join per row; the media rows are the same
+  // shape every card in the app renders.
+  const byId = new Map<number, MediaItem>()
+  const ids = [...new Set(rows.map((r) => r.media_id))]
+  for (const row of db
+    .prepare(`SELECT * FROM media_item WHERE id IN (${ids.map(() => '?').join(',')})`)
+    .all(...ids) as Record<string, unknown>[]) {
+    const item = mapMedia(row)
+    byId.set(item.id, item)
+  }
+  return rows.flatMap((r) => {
+    const media = byId.get(r.media_id)
+    if (!media) return []
+    return [
+      {
+        kind: r.kind,
+        refId: r.ref_id,
+        media,
+        dirPath: r.dir_path,
+        partTitle: r.part_title,
+        position: r.position,
+        total: r.total,
+        updatedAt: r.at
+      }
+    ]
+  })
+}
+
+// One "what did I actually do" grid over every dated log the app keeps. Five
+// separate histories existed and /stats rendered a calendar for none of them.
+//
+// Every query is bounded to the rendered window: the grid draws 52 weeks either
+// way, so an unbounded GROUP BY would read all of history and grow forever
+// while the output did not (the same bound checklistRepo's perDay set uses).
+// Compared against the RAW column, never date(col,'localtime'): wrapping the
+// column in a function makes idx_jp_review_log_time, idx_en_review_log_time,
+// idx_music_play_log_played and idx_game_session_started unusable, so all six
+// queries degraded to full scans of the largest tables in the database. The
+// bound is generous (UTC vs local, plus the grid's first column can reach 369
+// days back) — bucketing still happens in local time in the SELECT.
+const ACTIVITY_WINDOW = `>= datetime('now', '-371 days')`
+
+const ACTIVITY_SOURCES: { key: ActivitySourceKey; label: string; sql: string }[] = [
+  { key: 'jpReviews', label: 'Japanese reviews', sql: activitySql('jp_review_log', 'reviewed_at') },
+  { key: 'enReviews', label: 'English reviews', sql: activitySql('en_review_log', 'reviewed_at') },
+  { key: 'progress', label: 'Progress logged', sql: activitySql('checklist_log', 'created_at') },
+  { key: 'music', label: 'Tracks played', sql: activitySql('music_play_log', 'played_at') },
+  { key: 'quiz', label: 'Quiz rounds', sql: activitySql('quiz_session', 'played_at') },
+  { key: 'games', label: 'Play sessions', sql: activitySql('game_session', 'started_at') }
+]
+
+function activitySql(table: string, column: string): string {
+  return `SELECT date(${column}, 'localtime') AS day, COUNT(*) AS n FROM ${table}
+          WHERE ${column} ${ACTIVITY_WINDOW} GROUP BY day`
+}
+
+export function activityHeatmap(): ActivityHeatmap {
+  const db = getSqlite()
+  const totals = new Map<string, number>()
+  const sources = ACTIVITY_SOURCES.map((src) => {
+    const days = db.prepare(src.sql).all() as { day: string; count?: number; n: number }[]
+    const mapped = days.map((d) => ({ day: d.day, count: d.n }))
+    for (const d of mapped) totals.set(d.day, (totals.get(d.day) ?? 0) + d.count)
+    return { key: src.key, label: src.label, days: mapped }
+  })
+  return {
+    combined: [...totals.entries()]
+      .map(([day, count]) => ({ day, count }))
+      .sort((a, b) => a.day.localeCompare(b.day)),
+    sources
+  }
 }

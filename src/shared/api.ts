@@ -70,6 +70,7 @@ import type {
   EnWord,
   EnWordInput,
   EnWritingEntry,
+  EnErrorTally,
   ProgLessonProgress,
   DictInfo,
   DictEntry,
@@ -92,6 +93,7 @@ import type {
   GrammarImportSummary,
   GrammarPoint,
   GrammarPointSummary,
+  GrammarDeckResult,
   NameKind,
   NameQuizItem,
   PairSetInfo,
@@ -101,6 +103,8 @@ import type {
   SentenceAudioImportSummary,
   AudioSentence,
   JpMilestones,
+  ResumePoint,
+  ActivityHeatmap,
   SimilarKanji,
   LookalikeQuizItem,
   TransitivityQuestion,
@@ -142,7 +146,6 @@ import type {
   VideoCacheStats,
   VideoLibrary,
   VideoPrepareStatus,
-  VideoScanStatus,
   VideoSource,
   VideoSourceRef,
   VideoToolsResult,
@@ -212,6 +215,10 @@ export interface NaviApi {
     // Japanese-roadmap immersion milestones (anime/manga/novels completed,
     // statuses resolved positionally so renames keep working).
     jpMilestones(): Promise<JpMilestones>
+    // Saved reading/watching positions for Home's resume strip.
+    resumePoints(): Promise<ResumePoint[]>
+    // Every dated log, day-bucketed, for the /stats activity grid.
+    activityHeatmap(): Promise<ActivityHeatmap>
   }
   people: {
     // role filters the browse list to people with that kind of credit (and
@@ -234,23 +241,14 @@ export interface NaviApi {
   characters: {
     list(search?: string): Promise<Character[]>
     get(id: number): Promise<Character | null>
-    cast(id: number): Promise<CastEntry[]>
     roles(id: number): Promise<CharacterAppearance[]>
     upsert(input: Partial<Character> & { name: string }): Promise<number>
     remove(id: number): Promise<void>
   }
   credits: {
-    add(input: {
-      mediaId: number
-      personId: number
-      characterId?: number | null
-      role: CreditRole
-      language?: string | null
-    }): Promise<number>
     remove(creditId: number): Promise<void>
   }
   mediaCompanies: {
-    add(input: { mediaId: number; companyId: number; role: string }): Promise<number>
     remove(id: number): Promise<void>
   }
   tags: {
@@ -463,7 +461,16 @@ export interface NaviApi {
     // Review history (heatmap/streaks/grades) + due forecast for the stats page.
     statsDetail(): Promise<JpStatsDetail>
     // Vocab mining: find-or-create the capture course/lesson.
+    // Grammar points as SRS cards in the ordinary review queue (one lesson per
+    // JLPT level under a shared course). Idempotent by card front.
+    addGrammarPoints(ids: number[]): Promise<GrammarDeckResult>
+    addGrammarLevel(level: string): Promise<GrammarDeckResult & { available: number }>
     ensureMiningInbox(): Promise<JpMiningInbox>
+    // "I already know this": files words as review-status cards in a pre-learned
+    // lesson, so they count as known everywhere (comprehension, the i+1 feed,
+    // coverage) without ever queueing as something to study. Returns how many
+    // were new — a word that already has a card anywhere is left alone.
+    markWordsKnown(words: { front: string; reading?: string | null }[]): Promise<number>
     // Morphological analysis (kuromoji) of an OCR'd text block; [] on failure
     // so callers fall back to manual selection.
     tokenize(text: string): Promise<JpToken[]>
@@ -615,6 +622,9 @@ export interface NaviApi {
     writingFeedback(req: { promptKey: string; text: string }): Promise<EnWritingEntry>
     listWritings(): Promise<EnWritingEntry[]>
     removeWriting(id: number): Promise<void>
+    // Graded corrections tallied by mechanics category — the personal error log
+    // the writing feature has always produced and never read back.
+    errorTally(): Promise<EnErrorTally>
   }
   // Programming learn section (/programming). Content is code
   // (src/shared/programming/); only lesson completion crosses IPC, keyed by
@@ -660,8 +670,6 @@ export interface NaviApi {
     rescan(mediaId: number): Promise<VideoAttachResult>
     detach(mediaId: number): Promise<void>
     files(mediaId: number): Promise<VideoLibrary>
-    // Long-running; poll while attachFolder/rescan is pending.
-    scanStatus(): Promise<VideoScanStatus>
 
     // Playback. `source` never converts anything — it reports what Chromium
     // can do with the file (direct / an already-cached copy / needs an ffmpeg
@@ -864,7 +872,6 @@ export interface NaviApi {
   }
   settings: {
     all(): Promise<SettingsMap>
-    get(key: string): Promise<string | null>
     set(key: string, value: string): Promise<void>
   }
   files: {

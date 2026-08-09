@@ -6,7 +6,7 @@ import CoverImage from '../components/CoverImage'
 import BackButton from '../components/BackButton'
 import Section from '../components/Section'
 import { formatTime } from '../components/NowPlayingBar'
-import { QueueRow, EditButton } from '../components/QueuePanel'
+import { QueueRow, EditButton, useLikedTrackIds } from '../components/QueuePanel'
 import { PlayIcon, PauseIcon, PrevIcon, NextIcon } from '../components/PlayerIcons'
 
 // Spotify-style full-page view of the current track: big artwork, transport
@@ -40,6 +40,7 @@ export default function NowPlayingPage() {
   // ticks) and revealed in scroll batches — queues can hold thousands of
   // tracks. Hooks run before the early return below to keep their order stable.
   const upNext = useMemo(() => queue.slice(index + 1), [queue, index])
+  const likedIds = useLikedTrackIds()
   const { visible, sentinelRef, hasMore } = useIncrementalList(upNext)
 
   if (!track) {
@@ -218,7 +219,7 @@ export default function NowPlayingPage() {
             subtitle={upNext.length === 0 ? 'Nothing up next' : `${upNext.length} up next`}
             className=""
           >
-            <QueueRow track={track} active playing={isPlaying} onClick={toggle} />
+            <QueueRow track={track} active playing={isPlaying} onClick={toggle} likedIds={likedIds} />
             {upNext.length > 0 && (
               <>
                 <p className="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
@@ -228,6 +229,7 @@ export default function NowPlayingPage() {
                   const abs = index + 1 + i // absolute queue position, always > index
                   return (
                     <QueueRow
+                    likedIds={likedIds}
                       key={`${abs}-${t.id}`}
                       track={t}
                       onClick={() => playAt(abs)}

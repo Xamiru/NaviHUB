@@ -2,7 +2,7 @@ import { memo, useState } from 'react'
 import Tabs from '../components/Tabs'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
@@ -54,7 +54,10 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   const [favOnly, setFavOnly] = usePersistedState('favOnly', false)
   const [filters, setFilters] = usePersistedState<MediaFilters>('filters', EMPTY_FILTERS)
   const [showFilters, setShowFilters] = usePersistedState('showFilters', false)
-  const [showImport, setShowImport] = useState(false)
+  // `?import=1` opens the dialog on arrival (the one-shot `?tab=` idiom), so
+  // Home's Import chip lands on the importer instead of just this list.
+  const [params] = useSearchParams()
+  const [showImport, setShowImport] = useState(params.get('import') === '1')
 
   // Debounce the search box so each keystroke doesn't refire the media query;
   // the <input> stays bound to `search` for instant visual feedback.
@@ -78,7 +81,13 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
     seed: sort === 'random' ? seed : null,
     ...toListFilter(filters)
   }
-  const nFilters = activeCount(filters) + (favOnly ? 1 : 0) + (selStatuses.length ? 1 : 0)
+  // The search box counts: without it, searching for a typo renders an empty
+  // state that says "clear a chip" while "Clear all" is gated off screen.
+  const nFilters =
+    activeCount(filters) +
+    (favOnly ? 1 : 0) +
+    (selStatuses.length ? 1 : 0) +
+    (debouncedSearch.trim() ? 1 : 0)
 
   const { data: items = [], isLoading } = useQuery({
     queryKey: qk.media.list(filter),
@@ -291,6 +300,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
               setFilters(EMPTY_FILTERS)
               setSelStatuses([])
               setFavOnly(false)
+              setSearch('')
             }}
           >
             Clear all
@@ -326,7 +336,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
           )}
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
             {visible.map((m) => (
-              <MediaCard key={m.id} cfg={cfg} item={m} />
+              <MediaCard key={m.id} cfg={cfg} item={m} showFavorite />
             ))}
           </div>
           <div ref={sentinelRef} />

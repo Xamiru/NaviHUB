@@ -212,6 +212,46 @@ export function logProgress(
   return tx()
 }
 
+// Credit the board WITHOUT touching media_item.progress.
+//
+// logProgress below is "I consumed one more unit" — it advances progress and,
+// on a finished title, wraps into a fresh pass. That is right for a button the
+// user presses, and wrong for the manga reader, which fires automatically when
+// you turn the last page: re-reading chapter 1 of a completed series must not
+// silently reset it to 1. There, manga.ts:syncMediaProgress owns progress (it
+// only ever raises, to the highest chapter number actually read) and this
+// records the fact that reading happened.
+//
+// No `prior` in the payload, so undoing the credit removes the row and leaves
+// progress alone — which is correct, since logging it never moved progress.
+export function creditMediaLog(mediaId: number, today: string): number | null {
+  const db = getSqlite()
+  const tx = db.transaction((): number | null => {
+    const media = db
+      .prepare('SELECT id, title, media_type FROM media_item WHERE id = ?')
+      .get(mediaId) as { id: number; title: string; media_type: MediaType } | undefined
+    if (!media) return null
+    const target = mediaLogTaskFor(media.media_type)
+    if (!target) return null
+    const payload: LogPayload = { title: media.title }
+    return Number(
+      db
+        .prepare(
+          `INSERT INTO checklist_log (task_key, cadence, period_key, media_id, payload)
+           VALUES (?, ?, ?, ?, ?)`
+        )
+        .run(
+          target.key,
+          target.cadence,
+          periodKeyFor(target.cadence, today),
+          mediaId,
+          JSON.stringify(payload)
+        ).lastInsertRowid
+    )
+  })
+  return tx()
+}
+
 // The board item a media-page log should credit: daily first, then weekly, in
 // board order.
 function mediaLogTaskFor(mediaType: MediaType): { key: string; cadence: ChecklistCadence } | undefined {
@@ -318,37 +358,48 @@ export function untick(taskKey: string, cadence: ChecklistCadence, today: string
 
 // Every source stores UTC timestamps, so days are grouped through
 // date(col,'localtime') — the japaneseRepo.stats() idiom.
+//
+// Every perDay query is bounded to the rendered window. The heatmap draws 52
+// weeks either way, so an unbounded GROUP BY read all of history on every
+// checklist:status call and grew forever while the output did not — the same
+// bound japaneseRepo.statsDetail already applies.
+const HEATMAP_WINDOW = `>= date('now', 'localtime', '-364 days')`
+
 const DETECT_SQL: Record<ChecklistDetectSource, { count: string; perDay: string }> = {
   jpReviews: {
     count: `SELECT COUNT(DISTINCT card_id) AS n FROM jp_review_log
             WHERE date(reviewed_at, 'localtime') BETWEEN ? AND ?`,
     perDay: `SELECT date(reviewed_at, 'localtime') AS day, COUNT(DISTINCT card_id) AS n
-             FROM jp_review_log GROUP BY day`
+             FROM jp_review_log WHERE date(reviewed_at, 'localtime') ${HEATMAP_WINDOW}
+             GROUP BY day`
   },
   jpLesson: {
     count: `SELECT COUNT(*) AS n FROM jp_lesson
             WHERE learned = 1 AND learned_at IS NOT NULL
               AND date(learned_at, 'localtime') BETWEEN ? AND ?`,
     perDay: `SELECT date(learned_at, 'localtime') AS day, COUNT(*) AS n FROM jp_lesson
-             WHERE learned = 1 AND learned_at IS NOT NULL GROUP BY day`
+             WHERE learned = 1 AND learned_at IS NOT NULL
+               AND date(learned_at, 'localtime') ${HEATMAP_WINDOW}
+             GROUP BY day`
   },
   enReviews: {
     count: `SELECT COUNT(DISTINCT word_id) AS n FROM en_review_log
             WHERE date(reviewed_at, 'localtime') BETWEEN ? AND ?`,
     perDay: `SELECT date(reviewed_at, 'localtime') AS day, COUNT(DISTINCT word_id) AS n
-             FROM en_review_log GROUP BY day`
+             FROM en_review_log WHERE date(reviewed_at, 'localtime') ${HEATMAP_WINDOW}
+             GROUP BY day`
   },
   quizRound: {
     count: `SELECT COUNT(*) AS n FROM quiz_session
             WHERE date(played_at, 'localtime') BETWEEN ? AND ?`,
     perDay: `SELECT date(played_at, 'localtime') AS day, COUNT(*) AS n FROM quiz_session
-             GROUP BY day`
+             WHERE date(played_at, 'localtime') ${HEATMAP_WINDOW} GROUP BY day`
   },
   gameSession: {
     count: `SELECT COUNT(*) AS n FROM game_session
             WHERE date(started_at, 'localtime') BETWEEN ? AND ?`,
     perDay: `SELECT date(started_at, 'localtime') AS day, COUNT(*) AS n FROM game_session
-             GROUP BY day`
+             WHERE date(started_at, 'localtime') ${HEATMAP_WINDOW} GROUP BY day`
   }
 }
 

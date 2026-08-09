@@ -9,6 +9,9 @@ import Section from '../components/Section'
 import StatTile from '../components/StatTile'
 import EmptyState from '../components/EmptyState'
 import CoverImage from '../components/CoverImage'
+import CalendarHeatmap from '../components/CalendarHeatmap'
+import { Group, Pill } from '../components/PillGroup'
+import { usePersistedState } from '../lib/navState'
 import { configFor, fmtMinutesAsHours, pathForMedia } from '../lib/mediaConfig'
 import type { LibraryTimeStats, TimeStatsByType, TimeStatsItem, MediaType } from '@shared/types'
 
@@ -76,6 +79,42 @@ function detailLine(it: TimeStatsItem): string {
 // Plain anchors would rewrite the HashRouter route; scroll imperatively instead.
 function scrollToType(mediaType: string): void {
   document.getElementById(`type-${mediaType}`)?.scrollIntoView({ behavior: 'smooth' })
+}
+
+// Five dated logs existed and this page rendered a calendar for none of them.
+// One grid over all of it, with a per-source switch — the honest answer to
+// "where did this year go", built from data already being written.
+function ActivitySection() {
+  const [source, setSource] = usePersistedState<string>('statsActivitySource', 'all')
+  const { data } = useQuery({
+    queryKey: qk.media.activityHeatmap,
+    queryFn: () => api.media.activityHeatmap()
+  })
+  if (!data) return null
+  const active = data.sources.find((s) => s.key === source)
+  const days = active ? active.days : data.combined
+  const total = days.reduce((n, d) => n + d.count, 0)
+  if (total === 0) return null
+  // Sources with nothing in the window would be dead pills.
+  const shown = data.sources.filter((s) => s.days.length > 0)
+  return (
+    <Section title="Activity" subtitle="last 12 months" className="mb-8">
+      <div className="mb-3">
+        <Group label="Show">
+          <Pill label="Everything" active={source === 'all'} onClick={() => setSource('all')} />
+          {shown.map((s) => (
+            <Pill
+              key={s.key}
+              label={s.label}
+              active={source === s.key}
+              onClick={() => setSource(s.key)}
+            />
+          ))}
+        </Group>
+      </div>
+      <CalendarHeatmap days={days} unit={active ? active.label.toLowerCase() : 'things done'} />
+    </Section>
+  )
 }
 
 export default function StatsPage() {
@@ -147,6 +186,8 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
       </div>
 
       {/* Split bar */}
+      <ActivitySection />
+
       <Section title="Where the time went">
         <div className="flex h-5 w-full gap-[2px] overflow-hidden rounded-full bg-base-800">
           {nonzero.map((t) => {

@@ -77,10 +77,14 @@ export async function completeOnce(req: CompleteRequest): Promise<string> {
   const model = coachModel(provider)
   const maxTokens = req.maxTokens ?? 1024
   if (provider === 'gemini') {
+    // temperature 0: a one-shot completion is graded/parsed, not chatted with,
+    // and re-grading the same essay twice should not move the rubric. Gemini
+    // only — the Anthropic path sets thinking:{type:'adaptive'} via
+    // buildModelParams, which requires temperature 1.
     const res = await makeGemini().models.generateContent({
       model,
       contents: req.prompt,
-      config: { systemInstruction: req.system, maxOutputTokens: maxTokens }
+      config: { systemInstruction: req.system, maxOutputTokens: maxTokens, temperature: 0 }
     })
     return (res.text ?? '').trim()
   }

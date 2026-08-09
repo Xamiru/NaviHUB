@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import ActivityIndicator from './ActivityIndicator'
+import GameSessionIndicator from './GameSessionIndicator'
 
 // Persistent top bar with a global search box (submitting navigates to
-// /search) and the global import-progress pill.
+// /search), the global import-progress pill, and the tracked-play-session pill.
 export default function Topbar() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -39,7 +40,8 @@ export default function Topbar() {
           </kbd>
         </div>
       </form>
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <GameSessionIndicator />
         <ActivityIndicator />
       </div>
     </header>

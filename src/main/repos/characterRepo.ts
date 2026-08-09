@@ -1,7 +1,7 @@
 import { getSqlite } from '../db/connection'
 import { mapCharacter, mapPerson, mapMedia } from './mappers'
 import * as listRepo from './listRepo'
-import type { Character, CastEntry, CreditRole, CharacterAppearance } from '@shared/types'
+import type { Character, CreditRole, CharacterAppearance } from '@shared/types'
 
 export function list(search?: string): Character[] {
   const db = getSqlite()
@@ -19,25 +19,6 @@ export function get(id: number): Character | null {
   return row ? mapCharacter(row) : null
 }
 
-// Who voiced this character (across works).
-export function cast(id: number): CastEntry[] {
-  const db = getSqlite()
-  const rows = db
-    .prepare(
-      `SELECT cr.id AS credit_id, cr.role AS credit_role, cr.language AS credit_language, p.*
-       FROM credit cr JOIN person p ON p.id = cr.person_id
-       WHERE cr.character_id = ?
-       ORDER BY p.name`
-    )
-    .all(id) as Record<string, unknown>[]
-  return rows.map((r) => ({
-    creditId: r.credit_id as number,
-    role: r.credit_role as CreditRole,
-    language: (r.credit_language as string) ?? null,
-    person: mapPerson(r),
-    character: null
-  }))
-}
 
 // Where this character appears, grouped by work so a show with multiple voice
 // actors for the character (e.g. young/adult) shows up once with both VAs.

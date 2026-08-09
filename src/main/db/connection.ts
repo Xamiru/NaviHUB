@@ -30,8 +30,7 @@ const DEFAULT_SETTINGS: Record<string, string> = {
     'Plan to Play'
   ]),
   'book.statuses': JSON.stringify(['Reading', 'Completed', 'On Hold', 'Dropped', 'Plan to Read']),
-  'score.max': '10',
-  theme: 'dark'
+  'score.max': '10'
 }
 
 export function getDbPath(): string {

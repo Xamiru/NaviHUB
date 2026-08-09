@@ -94,6 +94,7 @@ export default function SettingsPage() {
           )}
           {tab === 'japanese' && (
             <>
+              <KnownBaselineSettings data={data} onSave={setKey} />
               <DictionarySettings />
               <EnglishDictionarySettings />
             </>
@@ -180,6 +181,46 @@ function TextSetting({
 
 // UI scale = Electron's zoom factor. Applied live on click (so the effect is
 // visible while choosing) and persisted, since main re-applies it on load.
+// "Assume the top N frequency words are known." Without it, everything the
+// section calls known comes from the deck alone, so a learner who already reads
+// some Japanese is told they understand ~3% of a series they can mostly follow,
+// and the i+1 feed (which keeps only exactly-one-unknown sentences) finds
+// nothing for months. Off by default so no number ever changes silently.
+const BASELINE_STEPS = [0, 500, 1000, 2000, 3000, 5000]
+
+function KnownBaselineSettings({
+  data,
+  onSave
+}: {
+  data?: Record<string, string>
+  onSave: SaveFn
+}) {
+  const current = Number(data?.['jp.knownBaseline'] ?? 0) || 0
+  return (
+    <SettingCard
+      title="Assumed known words"
+      description="Counts the most common N Japanese words as already known, on top of your deck. This feeds comprehension percentages, the i+1 feed and the coverage list. Needs a frequency dictionary installed below."
+    >
+      <div className="flex flex-wrap gap-2">
+        {BASELINE_STEPS.map((n) => (
+          <button
+            key={n}
+            onClick={() => void onSave('jp.knownBaseline', String(n))}
+            className={current === n ? 'pill pill-active' : 'pill'}
+          >
+            {n === 0 ? 'Off' : `Top ${n.toLocaleString()}`}
+          </button>
+        ))}
+      </div>
+      <p className="mt-3 text-xs text-gray-500">
+        {current === 0
+          ? 'Off — only cards in your deck count as known.'
+          : `Your deck plus the top ${current.toLocaleString()} words. Set it to what you can honestly read, not what you would like to: every comprehension number is built on it.`}
+      </p>
+    </SettingCard>
+  )
+}
+
 function UiScaleSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
   const [scale, setScale] = useState(UI_SCALE_DEFAULT)
   useEffect(() => setScale(parseUiScale(data?.['ui.scale'])), [data])

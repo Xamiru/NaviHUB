@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { gradeCard, LEECH_LAPSES, previewIntervals, type SrsState } from '@shared/srs'
+import { gradeCard, LEECH_LAPSES, overdueDays, previewIntervals, type SrsState } from '@shared/srs'
 import type { EnWord, SrsGrade } from '@shared/types'
 
 // SRS review over the saved English words (the JapaneseReviewPage port, minus
@@ -211,7 +211,9 @@ export default function EnglishReviewPage() {
 
   if (!current) return null
   const { word, srs } = current
-  const previews = previewIntervals(srs)
+  // See JapaneseReviewPage: the preview must carry the overdue gap that
+  // submitReview will feed to gradeCard.
+  const previews = previewIntervals(srs, overdueDays(word.dueAt))
 
   return (
     <div className="p-6 max-w-2xl mx-auto">

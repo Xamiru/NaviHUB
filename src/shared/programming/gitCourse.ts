@@ -53,7 +53,7 @@ Hold onto one sentence: *git is a content-addressed object store, and everything
           options: [
             'A diff against its parent commit',
             'One tree (the full root snapshot) plus zero or more parent commits',
-            'A list of the blobs that changed in that commit',
+            'A list of the blobs that changed in that commit, plus its parent commit',
             'The branch it was committed on',
           ],
           correct: 1,
@@ -84,7 +84,7 @@ Hold onto one sentence: *git is a content-addressed object store, and everything
         {
           prompt: 'Why does rewriting an old commit necessarily change the SHAs of every commit after it?',
           options: [
-            'Git re-signs each descendant with a new timestamp',
+            'Git re-signs each descendant with a new timestamp, and the timestamp is part of the hash',
             'Each commit hash covers its parent hashes, so a changed ancestor cascades through all descendants',
             'The branch ref stores a checksum over the whole history',
             'Packfiles must be rebuilt, which assigns new object ids',
@@ -95,7 +95,7 @@ Hold onto one sentence: *git is a content-addressed object store, and everything
         {
           prompt: 'What is a blob, precisely?',
           options: [
-            'File content plus its path and permission bits',
+            'File content plus the path and permission bits recorded for it',
             'A compressed diff hunk stored in a packfile',
             'File content only — names and modes live in tree entries',
             'A pointer from the index to the working tree',
@@ -155,7 +155,7 @@ Once you see refs as pointer files, git's "scary" operations deflate. A force-pu
           options: [
             'A ref file under refs/heads containing one commit SHA, moved forward on commit',
             'A linked list of the commits made on that branch',
-            'A copy-on-write clone of the tree it branched from',
+            'A copy-on-write clone of the tree it branched from, materialized on first commit',
             'A tag object that git updates automatically',
           ],
           correct: 0,
@@ -166,7 +166,7 @@ Once you see refs as pointer files, git's "scary" operations deflate. A force-pu
           options: [
             'The SHA of the latest commit',
             'The text ref: refs/heads/<branch> — a symbolic ref',
-            'A list of recently checked-out branches',
+            'A list of recently checked-out branches, newest first',
             'The SHA of the current tree object',
           ],
           correct: 1,
@@ -176,7 +176,7 @@ Once you see refs as pointer files, git's "scary" operations deflate. A force-pu
           prompt: 'You made two commits in detached HEAD, then switched to main. What is true?',
           options: [
             'The commits were deleted when you switched',
-            'Git refuses to switch until you create a branch',
+            'Git refuses to switch away until you either create a branch for them or discard them explicitly',
             'The commits are unreferenced but reachable via the reflog, and a new branch can still capture them',
             'Git silently merged them into main',
           ],
@@ -187,7 +187,7 @@ Once you see refs as pointer files, git's "scary" operations deflate. A force-pu
           prompt: 'What does origin/main actually represent?',
           options: [
             'A live view of the branch on the server',
-            'The branch your pushes go to, updated on every commit',
+            'The branch your pushes go to, which git updates on every local commit',
             'A protected mirror branch that only CI can move',
             'Your local record of where main was on origin at your last fetch',
           ],
@@ -259,7 +259,7 @@ The crucial consequence: replaying creates **new commit objects with new SHAs**.
         {
           prompt: 'When does a fast-forward merge happen?',
           options: [
-            'When both branches changed disjoint sets of files',
+            'When both branches changed disjoint sets of files, so no three-way merge is needed',
             'When merge.ff is set to always in config',
             'When the merged branch strictly descends from your tip, so your ref just moves forward',
             'When the merge completes with zero conflicts',
@@ -270,7 +270,7 @@ The crucial consequence: replaying creates **new commit objects with new SHAs**.
         {
           prompt: 'Why do rebased commits always get new SHAs?',
           options: [
-            'Git bumps the committer timestamp, and only the timestamp',
+            'Git bumps the committer timestamp on every replay, and that timestamp is hashed into it',
             'Rebase re-signs commits with your current GPG key',
             'The rebase todo file is hashed into each commit',
             'Each replayed commit has a new parent, and parent hashes are part of the commit hash',
@@ -282,7 +282,7 @@ The crucial consequence: replaying creates **new commit objects with new SHAs**.
           prompt: 'Which action violates the golden rule of rebasing?',
           options: [
             'Rebasing a shared branch that teammates have based work on, then force-pushing it',
-            'Rebasing your local unpushed commits onto origin/main',
+            'Rebasing your local unpushed commits onto origin/main before opening a pull request',
             'Force-pushing your own PR branch with --force-with-lease after a rebase',
             'Running git pull --rebase on your feature branch',
           ],
@@ -350,8 +350,8 @@ If a rebase goes sideways: \`git rebase --abort\` during, \`git reflog\` plus \`
           prompt: 'What is the difference between squash and fixup in a rebase todo?',
           options: [
             'squash keeps both commits in history; fixup deletes one',
-            'Both meld into the previous commit, but squash combines messages while fixup discards the folded commit\'s message',
-            'fixup melds forward into the next commit instead of the previous one',
+            'Both meld into the previous commit; squash combines the messages, fixup discards one',
+            'fixup melds forward into the next commit in the todo list instead of the previous one',
             'squash requires --autosquash; fixup works everywhere',
           ],
           correct: 1,
@@ -360,7 +360,7 @@ If a rebase goes sideways: \`git rebase --abort\` during, \`git reflog\` plus \`
         {
           prompt: 'What does git commit --fixup=abc123 do?',
           options: [
-            'Immediately melds the staged changes into commit abc123',
+            'Immediately melds the staged changes into commit abc123 and rewrites everything after it',
             'Reverts abc123 and stages the inverse changes',
             'Creates a normal commit whose fixup! message lets a later --autosquash rebase fold it into abc123',
             'Amends abc123 in place if it is unpushed',
@@ -373,7 +373,7 @@ If a rebase goes sideways: \`git rebase --abort\` during, \`git reflog\` plus \`
           options: [
             'To discard the commit\'s changes and start over',
             'To move the commit onto the previous branch',
-            'To detach HEAD so new commits do not move the branch',
+            'To detach HEAD so that the new commits you make do not move the branch ref along',
             'To un-commit while keeping its changes in the working tree, ready to re-stage in pieces',
           ],
           correct: 3,
@@ -384,7 +384,7 @@ If a rebase goes sideways: \`git rebase --abort\` during, \`git reflog\` plus \`
           options: [
             'A new commit whose parent is the old commit\'s parent, with the branch ref moved to it',
             'An in-place edit of the existing commit object',
-            'A child commit of the old one containing only the delta',
+            'A child commit of the old one containing only the delta you just staged on top',
             'A fixup! commit scheduled for the next rebase',
           ],
           correct: 0,
@@ -458,7 +458,7 @@ The honest danger list is short: uncommitted changes clobbered by \`reset --hard
         {
           prompt: 'After git reset --soft HEAD~3, what state are you in?',
           options: [
-            'The last three commits\' changes are gone from your files',
+            'The last three commits and all of their changes are gone from your files entirely',
             'The branch moved back three commits; all their changes sit staged in the index',
             'HEAD is detached at HEAD~3 with a clean worktree',
             'The three commits are squashed into one automatically',
@@ -492,7 +492,7 @@ The honest danger list is short: uncommitted changes clobbered by \`reset --hard
           prompt: 'You ran git reset --hard HEAD~5 on the wrong branch. Best recovery?',
           options: [
             'git pull to restore the commits from the remote',
-            'git fsck --full and cherry-pick from lost-found',
+            'git fsck --full and then cherry-pick whatever turns up in the lost-found report',
             'The commits are permanently gone after a hard reset',
             'git reflog to find the pre-reset tip, then git reset --hard HEAD@{1}',
           ],
@@ -504,7 +504,7 @@ The honest danger list is short: uncommitted changes clobbered by \`reset --hard
           options: [
             'A branch deleted with git branch -D',
             'Uncommitted working-tree changes clobbered by git reset --hard',
-            'Commits abandoned by a bad interactive rebase',
+            'Commits abandoned by a bad interactive rebase you ran this morning',
             'A commit orphaned by git commit --amend',
           ],
           correct: 1,
@@ -604,7 +604,7 @@ The difference is subtle but useful: \`-S\` fires only when the number of occurr
         {
           prompt: 'Why add -w -C to git blame?',
           options: [
-            'To blame the working tree instead of HEAD',
+            'To blame the working tree instead of HEAD, so uncommitted edits are attributed rather than skipped',
             'To include commits from all branches',
             'To skip whitespace-only commits and trace lines moved or copied from elsewhere to their true origin',
             'To colorize the output by commit age',
@@ -615,10 +615,10 @@ The difference is subtle but useful: \`-S\` fires only when the number of occurr
         {
           prompt: 'What is the key difference between git log -S and -G?',
           options: [
-            '-S searches commit messages while -G searches diffs',
+            '-S searches commit messages while -G searches the diff text of every commit it walks',
             '-S is case-insensitive; -G is case-sensitive',
             '-G follows renames; -S does not',
-            '-S fires only when the string\'s occurrence count changes; -G matches any changed line against a regex',
+            '-S fires only when the string\'s occurrence count changes; -G matches any changed line',
           ],
           correct: 3,
           explain: '-S (the pickaxe) detects additions and removals of a string, ignoring pure moves; -G is a regex over every changed line, so it also catches edits and relocations.',
@@ -677,7 +677,7 @@ Commit \`.githooks/\` and every configured clone runs the same checks (each deve
         {
           prompt: 'What is a stash entry, at the object level?',
           options: [
-            'A patch file stored under .git/stash',
+            'A patch file stored under .git/stash, replayed with git apply when you pop it',
             'A merge commit (parents: HEAD and an index commit) hanging off the refs/stash reflog',
             'A hidden branch named stash/<n>',
             'A tag pointing at the pre-stash worktree state',
@@ -689,7 +689,7 @@ Commit \`.githooks/\` and every configured clone runs the same checks (each deve
           prompt: 'You want to stash only your debug print statements and keep the real change in the worktree. Which command?',
           options: [
             'git stash push --keep-index',
-            'git stash push --include-untracked',
+            'git stash push --keep-index --include-untracked -q',
             'git stash push -p and select just the debug hunks',
             'git stash pop -p',
           ],
@@ -701,7 +701,7 @@ Commit \`.githooks/\` and every configured clone runs the same checks (each deve
           options: [
             'Each worktree holds only the files that differ from main',
             'Worktrees use filesystem snapshots when available',
-            'Files in extra worktrees are hardlinks into the first one',
+            'Files in extra worktrees are hardlinks into the first one, so edits are copy-on-write',
             'All worktrees share the one .git object database; only the checked-out files are duplicated',
           ],
           correct: 3,
@@ -711,7 +711,7 @@ Commit \`.githooks/\` and every configured clone runs the same checks (each deve
           prompt: 'Why can the same branch not be checked out in two worktrees at once?',
           options: [
             'Both worktrees would move the same ref as you commit, corrupting each other\'s state, so git forbids it',
-            'The index file format only supports one checkout per branch',
+            'The index file format only supports one checkout per branch, so the second would overwrite it',
             'It would double-count commits in git log',
             'It is allowed, but only with --force on both sides',
           ],

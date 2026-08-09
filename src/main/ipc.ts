@@ -28,6 +28,7 @@ import * as dictAudio from './dict/tatoebaAudio'
 import * as jpDrills from './jpDrills'
 import * as jpConfusables from './jpConfusables'
 import * as jpFeed from './jpFeed'
+import * as jpGrammarDeck from './jpGrammarDeck'
 import * as dictSimilarKanji from './dict/similarKanji'
 import * as englishRepo from './repos/englishRepo'
 import * as programmingRepo from './repos/programmingRepo'
@@ -102,6 +103,8 @@ export function registerIpc(): void {
   ipcMain.handle('media:facets', (_e, mediaType) => mediaRepo.facets(mediaType))
   ipcMain.handle('media:timeStats', () => mediaRepo.timeStats())
   ipcMain.handle('media:jpMilestones', () => mediaRepo.jpMilestones())
+  ipcMain.handle('media:resumePoints', () => mediaRepo.resumePoints())
+  ipcMain.handle('media:activityHeatmap', () => mediaRepo.activityHeatmap())
 
   // ---- people ----
   ipcMain.handle('people:list', (_e, search, role, mediaType) =>
@@ -122,15 +125,12 @@ export function registerIpc(): void {
   // ---- characters ----
   ipcMain.handle('characters:list', (_e, search) => characterRepo.list(search))
   ipcMain.handle('characters:get', (_e, id) => characterRepo.get(id))
-  ipcMain.handle('characters:cast', (_e, id) => characterRepo.cast(id))
   ipcMain.handle('characters:roles', (_e, id) => characterRepo.roles(id))
   ipcMain.handle('characters:upsert', (_e, input) => characterRepo.upsert(input))
   ipcMain.handle('characters:remove', (_e, id) => characterRepo.remove(id))
 
   // ---- credits & media-company links ----
-  ipcMain.handle('credits:add', (_e, input) => linkRepo.addCredit(input))
   ipcMain.handle('credits:remove', (_e, id) => linkRepo.removeCredit(id))
-  ipcMain.handle('mediaCompanies:add', (_e, input) => linkRepo.addMediaCompany(input))
   ipcMain.handle('mediaCompanies:remove', (_e, id) => linkRepo.removeMediaCompany(id))
 
   // ---- tags ----
@@ -245,6 +245,9 @@ export function registerIpc(): void {
   ipcMain.handle('japanese:stats', () => japaneseRepo.stats())
   ipcMain.handle('japanese:statsDetail', () => japaneseRepo.statsDetail())
   ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
+  ipcMain.handle('japanese:markWordsKnown', (_e, words) => japaneseRepo.markWordsKnown(words))
+  ipcMain.handle('japanese:addGrammarPoints', (_e, ids) => jpGrammarDeck.addGrammarPoints(ids))
+  ipcMain.handle('japanese:addGrammarLevel', (_e, level) => jpGrammarDeck.addGrammarLevel(level))
   ipcMain.handle('japanese:tokenize', (_e, text) => tokenizer.tokenize(text))
   ipcMain.handle('japanese:minedFronts', (_e, fronts) => japaneseRepo.minedFronts(fronts))
   ipcMain.handle('japanese:pitchQuizPool', (_e, req) => jpDrills.pitchQuizPool(req))
@@ -262,10 +265,21 @@ export function registerIpc(): void {
   ipcMain.handle('dict:list', () => dictImporter.listDictionaries())
   ipcMain.handle('dict:lookup', (_e, query) => dictLookup.lookupWord(query))
   ipcMain.handle('dict:kanji', (_e, text) => dictLookup.lookupKanji(text))
-  ipcMain.handle('dict:importPreset', (_e, key) => dictImporter.importPreset(key))
+  // Any change to the installed dictionaries can change the frequency bank the
+  // known-word baseline is built from, and that bank is not part of its cache
+  // key — so drop it and let the next read rebuild.
+  ipcMain.handle('dict:importPreset', async (_e, key) => {
+    const res = await dictImporter.importPreset(key)
+    coverageRepo.invalidateBaseline()
+    return res
+  })
   ipcMain.handle('dict:importZip', () => dictImporter.importZipViaDialog())
   ipcMain.handle('dict:importStatus', () => dictImporter.getImportStatus())
-  ipcMain.handle('dict:remove', (_e, id) => dictImporter.removeDictionary(id))
+  ipcMain.handle('dict:remove', (_e, id) => {
+    const res = dictImporter.removeDictionary(id)
+    coverageRepo.invalidateBaseline()
+    return res
+  })
   ipcMain.handle('dict:sentences', (_e, term, limit) => dictSentences.querySentences(term, limit))
   ipcMain.handle('dict:importSentences', () => dictSentences.importSentences())
   ipcMain.handle('dict:sentenceBank', () => dictSentences.getSentenceBankInfo())
@@ -324,6 +338,7 @@ export function registerIpc(): void {
   ipcMain.handle('english:writingFeedback', (_e, req) => englishWriting.getWritingFeedback(req))
   ipcMain.handle('english:listWritings', () => englishRepo.listWritings())
   ipcMain.handle('english:removeWriting', (_e, id) => englishRepo.removeWriting(id))
+  ipcMain.handle('english:errorTally', () => englishRepo.writingErrorTally())
 
   // ---- programming (learn section; content is code, only completion is data) ----
   ipcMain.handle('programming:progress', () => programmingRepo.progress())
@@ -338,12 +353,18 @@ export function registerIpc(): void {
   ipcMain.handle('manga:detach', (_e, mediaId) => manga.detach(mediaId))
   ipcMain.handle('manga:chapters', (_e, mediaId) => manga.chapters(mediaId))
   ipcMain.handle('manga:pages', (_e, chapterId) => manga.pages(chapterId))
-  ipcMain.handle('manga:markProgress', (_e, chapterId, page) =>
-    manga.markProgress(chapterId, page)
-  )
-  ipcMain.handle('manga:markChapterRead', (_e, chapterId, read) =>
-    manga.markChapterRead(chapterId, read)
-  )
+  // Finishing a chapter credits the checklist, but does NOT log progress:
+  // manga.ts owns media_item.progress via its monotonic sync, and logProgress
+  // would additionally wrap a finished series into a fresh pass — silently, on
+  // an autosave the user never asked for. See manga.ts:markProgress.
+  ipcMain.handle('manga:markProgress', (_e, chapterId, page) => {
+    const res = manga.markProgress(chapterId, page)
+    if (res?.firstTime) checklistRepo.creditMediaLog(res.mediaId, todayLocal())
+  })
+  ipcMain.handle('manga:markChapterRead', (_e, chapterId, read) => {
+    const res = manga.markChapterRead(chapterId, read)
+    if (res?.firstTime) checklistRepo.creditMediaLog(res.mediaId, todayLocal())
+  })
   ipcMain.handle('manga:ocrStatus', (_e, chapterId) => mokuro.status(chapterId))
   ipcMain.handle('manga:ocrPage', (_e, chapterId, pageIndex) => mokuro.page(chapterId, pageIndex))
   ipcMain.handle('manga:ocrRun', (_e, mediaId) => mokuroRun.startOcr(mediaId))
@@ -358,7 +379,6 @@ export function registerIpc(): void {
   ipcMain.handle('video:rescan', (_e, mediaId) => video.rescan(mediaId))
   ipcMain.handle('video:detach', (_e, mediaId) => video.detach(mediaId))
   ipcMain.handle('video:files', (_e, mediaId) => video.files(mediaId))
-  ipcMain.handle('video:scanStatus', () => video.getScanStatus())
   ipcMain.handle('video:source', (_e, ref, opts) => video.source(ref, opts))
   ipcMain.handle('video:pickFile', () => video.pickFile())
   ipcMain.handle('video:prepare', (_e, ref, opts) => video.prepare(ref, opts))
@@ -616,7 +636,6 @@ export function registerIpc(): void {
 
   // ---- settings ----
   ipcMain.handle('settings:all', () => settingsRepo.all())
-  ipcMain.handle('settings:get', (_e, key) => settingsRepo.get(key))
   ipcMain.handle('settings:set', (_e, key, value) => settingsRepo.set(key, value))
 
   // ---- files ----

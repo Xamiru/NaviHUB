@@ -8,7 +8,8 @@ import type {
   EnWord,
   EnWordInput,
   EnWritingEntry,
-  EnWritingFeedback
+  EnWritingFeedback,
+  EnErrorTally
 } from '@shared/types'
 
 // Saved English words (/english). Since 2026-08 the saved list IS the SRS
@@ -105,7 +106,7 @@ export function reviewQueue(newLimit: number): EnReviewQueue {
     db
       .prepare(
         `SELECT * FROM en_word
-         WHERE status != 'new' AND due_at <= datetime('now')
+         WHERE status IN ('learning','review') AND due_at <= datetime('now')
          ORDER BY due_at ASC, id ASC`
       )
       .all() as Record<string, unknown>[]
@@ -125,9 +126,14 @@ export function reviewQueue(newLimit: number): EnReviewQueue {
 export function submitReview(wordId: number, grade: SrsGrade): EnReviewOutcome {
   const db = getSqlite()
   const tx = db.transaction((): EnReviewOutcome => {
-    const row = db.prepare('SELECT * FROM en_word WHERE id = ?').get(wordId) as
-      | Record<string, unknown>
-      | undefined
+    // See japaneseRepo.submitReview: the overdue gap feeds gradeCard so a
+    // cleared backlog is not scheduled as if every card were answered on time.
+    const row = db
+      .prepare(
+        `SELECT *, MAX(0, julianday('now') - julianday(due_at)) AS overdue_days
+         FROM en_word WHERE id = ?`
+      )
+      .get(wordId) as Record<string, unknown> | undefined
     if (!row) throw new Error(`Word ${wordId} not found`)
     const card = mapRow(row)
     const next = gradeCard(
@@ -139,7 +145,8 @@ export function submitReview(wordId: number, grade: SrsGrade): EnReviewOutcome {
         reps: card.reps,
         lapses: card.lapses
       },
-      grade
+      grade,
+      { elapsedDays: Number(row.overdue_days ?? 0) }
     )
     db.prepare(
       `UPDATE en_word
@@ -173,7 +180,7 @@ export function srsStats(): EnSrsStats {
   const one = (sql: string): number => (db.prepare(sql).get() as { n: number }).n
   return {
     dueCount: one(
-      `SELECT COUNT(*) AS n FROM en_word WHERE status != 'new' AND due_at <= datetime('now')`
+      `SELECT COUNT(*) AS n FROM en_word WHERE status IN ('learning','review') AND due_at <= datetime('now')`
     ),
     newCount: one(`SELECT COUNT(*) AS n FROM en_word WHERE status = 'new'`),
     totalCount: one('SELECT COUNT(*) AS n FROM en_word'),
@@ -192,7 +199,7 @@ function mapWriting(r: Record<string, unknown>): EnWritingEntry {
     feedback = JSON.parse(r.feedback as string) as EnWritingFeedback
   } catch {
     feedback = {
-      scores: { grammar: 0, vocabulary: 0, coherence: 0, register: 0 },
+      scores: { grammar: null, vocabulary: null, coherence: null, register: null },
       corrections: [],
       modelRewrite: '',
       overall: ''
@@ -244,4 +251,36 @@ export function listWritings(limit = 50): EnWritingEntry[] {
 
 export function removeWriting(id: number): void {
   getSqlite().prepare('DELETE FROM en_writing WHERE id = ?').run(id)
+}
+
+// The one personal error log the app collects, finally read back. Every
+// en_writing row already stores its corrections; this tallies them by category
+// so the mechanics drill can weight itself toward what the user actually gets
+// wrong, instead of shuffling all 100 items uniformly forever.
+export function writingErrorTally(limit = 20): EnErrorTally {
+  const rows = getSqlite()
+    .prepare('SELECT feedback FROM en_writing ORDER BY created_at DESC, id DESC LIMIT ?')
+    .all(limit) as { feedback: string }[]
+  const counts = new Map<string, number>()
+  let corrections = 0
+  for (const row of rows) {
+    let parsed: EnWritingFeedback
+    try {
+      parsed = JSON.parse(row.feedback) as EnWritingFeedback
+    } catch {
+      continue // a malformed row must not sink the tally
+    }
+    for (const c of parsed.corrections ?? []) {
+      corrections++
+      if (!c.category) continue
+      counts.set(c.category, (counts.get(c.category) ?? 0) + 1)
+    }
+  }
+  return {
+    submissions: rows.length,
+    corrections,
+    byCategory: [...counts.entries()]
+      .map(([category, count]) => ({ category, count }))
+      .sort((a, b) => b.count - a.count)
+  }
 }

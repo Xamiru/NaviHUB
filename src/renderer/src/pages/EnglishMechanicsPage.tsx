@@ -54,6 +54,21 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
+// A shuffle biased toward what the LLM writing grader keeps catching you doing,
+// WITHOUT duplicating entries: an earlier version pushed 2-3 copies of an item
+// into the pool, so one 10-question round could ask the same prompt twice (with
+// independently shuffled options, so it did not even read as a repeat) while
+// the setup screen counted the unweighted pool. Efraimidis-Spirakis weighted
+// sampling without replacement — a heavier category drifts earlier in the deck,
+// every item still appears exactly once, and the count stays honest.
+function orderDeck(pool: Question[], weights?: Map<string, number>): Question[] {
+  if (!weights || weights.size === 0) return shuffle(pool)
+  return [...pool]
+    .map((q) => ({ q, key: Math.random() ** (1 / (1 + (weights.get(q.category) ?? 0))) }))
+    .sort((a, b) => b.key - a.key)
+    .map((x) => x.q)
+}
+
 function buildPool(category: Category): Question[] {
   const items = category === 'all' ? EN_MECHANICS : EN_MECHANICS.filter((m) => m.category === category)
   return items.map((m) => {
@@ -74,6 +89,12 @@ export default function EnglishMechanicsPage() {
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')
   const [category, setCategory] = usePersistedState<Category>('enMechCategory', 'all')
+  // Read once for the round; a tally that arrives mid-round must not reshuffle.
+  const { data: tally } = useQuery({
+    queryKey: qk.english.errorTally,
+    queryFn: () => api.english.errorTally()
+  })
+  const weights = new Map((tally?.byCategory ?? []).map((c) => [c.category, c.count]))
   const [length, setLength] = usePersistedState<number>('enMechLength', 10)
 
   const [current, setCurrent] = useState<Question | null>(null)
@@ -97,7 +118,7 @@ export default function EnglishMechanicsPage() {
   function startGame(): void {
     const pool = buildPool(category)
     poolRef.current = pool
-    deckRef.current = shuffle(pool)
+    deckRef.current = orderDeck(pool, category === 'all' ? weights : undefined)
     statsRef.current = ZERO
     lengthRef.current = length
     loggedRef.current = false

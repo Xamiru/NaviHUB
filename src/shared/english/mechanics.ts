@@ -65,7 +65,7 @@ export const EN_MECHANICS: EnMechanicsItem[] = [
     options: ['a', 'the', 'no article', 'an'],
     correct: 1,
     explain:
-      'An abstract noun takes no article when general (collapse is rarely sudden), but an of-phrase makes it specific and the definite article becomes obligatory.'
+      'An abstract noun takes no article when general ("collapse is common in ancient trade networks"), but an of-phrase makes it specific ("the collapse of the Bronze Age trading system") and the definite article becomes obligatory.'
   },
   {
     key: 'articles-07',

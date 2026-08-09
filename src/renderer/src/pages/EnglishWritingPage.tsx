@@ -29,7 +29,7 @@ const wordCount = (text: string): number => text.split(/\s+/).filter(Boolean).le
 
 function ScoreTiles({ entry }: { entry: EnWritingEntry }) {
   const s = entry.feedback.scores
-  const tiles: [string, number][] = [
+  const tiles: [string, number | null][] = [
     ['Grammar', s.grammar],
     ['Vocabulary', s.vocabulary],
     ['Coherence', s.coherence],
@@ -40,7 +40,7 @@ function ScoreTiles({ entry }: { entry: EnWritingEntry }) {
       {tiles.map(([label, v]) => (
         <div key={label} className="card p-3 text-center">
           <p className="text-2xl font-bold tabular-nums">
-            {v}
+            {v ?? '—'}
             <span className="text-sm font-normal text-gray-500">/10</span>
           </p>
           <p className="mt-0.5 text-xs uppercase tracking-widest text-gray-500">{label}</p>

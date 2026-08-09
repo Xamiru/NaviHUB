@@ -110,6 +110,9 @@ const SANITIZE_STATEMENTS = [
   // the default courses re-seed for the recipient, and checklist.seeded so the
   // starter board seeds too. The sync.* keys are likewise legacy leftovers of
   // the removed phone sync (a bearer token, a device name and a port).
+  // jp.knownBaseline is personal knowledge, not a preference: exporting it
+  // hands the recipient an empty deck plus a standing claim that they already
+  // know the top N Japanese words, inflating every comprehension figure.
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','omdb.api_key','ytdlp.path',
       'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','video.dir',
@@ -119,7 +122,7 @@ const SANITIZE_STATEMENTS = [
       'sync.token','sync.device','sync.port',
       'jackett.url','jackett.api_key','jackett.start_cmd',
       'qbittorrent.url','qbittorrent.username','qbittorrent.password',
-      'github.token','checklist.seeded')
+      'github.token','checklist.seeded','jp.knownBaseline')
      OR key LIKE 'japanese.seeded%'`
 ]
 

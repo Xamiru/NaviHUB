@@ -11,12 +11,15 @@ interface Props {
   cfg: MediaConfig
   onClose: () => void
   onImported: (mediaId: number) => void
+  // Prefills and auto-runs the search — used when the caller already knows what
+  // the user is after (a greyed relation on a detail page).
+  initialQuery?: string
 }
 
 // Search an external source (AniList for anime, TMDB for movies) and import a
 // title — cover, companies, cast, crew — in one click. The source comes from
 // the media type's config, so this dialog is type-agnostic.
-export default function ImportDialog({ cfg, onClose, onImported }: Props) {
+export default function ImportDialog({ cfg, onClose, onImported, initialQuery }: Props) {
   const qc = useQueryClient()
   const source = cfg.importSource!
   // The union of importer groups intersects import's parameter to never (ids
@@ -26,8 +29,10 @@ export default function ImportDialog({ cfg, onClose, onImported }: Props) {
     import(id: number | string): Promise<ImportSummary>
   }
 
-  const [query, setQuery] = useState('')
-  const [submitted, setSubmitted] = useState('')
+  const [query, setQuery] = useState(initialQuery ?? '')
+  // Auto-run when the caller supplied the query: the user already chose what
+  // to import, so making them press Search again is pure ceremony.
+  const [submitted, setSubmitted] = useState(initialQuery ?? '')
   const [importingId, setImportingId] = useState<number | string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)

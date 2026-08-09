@@ -25,6 +25,9 @@ vi.mock('../src/main/files', () => ({
 }))
 
 import * as manga from '../src/main/manga'
+// Imported to check the OTHER half of what ipc.ts does on a first read: the
+// checklist credit, which deliberately does not touch media_item.progress.
+import * as checklistRepo from '../src/main/repos/checklistRepo'
 
 beforeEach(() => {
   db = createTestDb()
@@ -239,17 +242,60 @@ describe('reading progress', () => {
     (db.prepare('SELECT progress FROM media_item WHERE id = ?').get(id) as { progress: number })
       .progress
 
-  it('reaching the last page completes the chapter and raises media progress', async () => {
+  it('reaching the last page completes the chapter, raises progress and reports a first read', async () => {
     const { mediaId, chapters } = await setup()
-    manga.markProgress(chapters[0].id, 0)
+    expect(manga.markProgress(chapters[0].id, 0)?.firstTime).toBe(false)
     expect(manga.chapters(mediaId).chapters[0].readAt).toBeNull()
     expect(mediaProgress(mediaId)).toBe(0)
 
-    manga.markProgress(chapters[0].id, 1) // last page of a 2-page chapter
+    const res = manga.markProgress(chapters[0].id, 1) // last page of a 2-page chapter
     const ch = manga.chapters(mediaId).chapters[0]
     expect(ch.readAt).not.toBeNull()
     expect(ch.lastReadPage).toBe(1)
-    expect(mediaProgress(mediaId)).toBe(1) // max read chapter number
+    // firstTime is ONLY a checklist signal; the progress write is the sync's.
+    expect(res).toEqual({ mediaId, firstTime: true })
+    expect(mediaProgress(mediaId)).toBe(1)
+
+    // Re-reading the same chapter is not a new read.
+    expect(manga.markProgress(chapters[0].id, 1)?.firstTime).toBe(false)
+  })
+
+  // The bug this ordering exists to prevent. checklistRepo.logProgress means
+  // "one more unit" and WRAPS a finished title into a fresh pass; the manga
+  // reader fires automatically on the last page, so routing it through
+  // logProgress reset a completed 150-chapter series to 1 just for opening it.
+  it('reading a chapter of a COMPLETED series never resets its progress', async () => {
+    const { mediaId, chapters } = await setup()
+    db.prepare(`UPDATE media_item SET progress = 150, total_units = 150, status = 'Completed',
+                rewatch_count = 1 WHERE id = ?`).run(mediaId)
+
+    manga.markProgress(chapters[0].id, 1)
+    const row = db
+      .prepare('SELECT progress, status, rewatch_count FROM media_item WHERE id = ?')
+      .get(mediaId)
+    expect(row).toEqual({ progress: 150, status: 'Completed', rewatch_count: 1 })
+  })
+
+  // Ticking one chapter says "I have read up to here", not "+1".
+  it('ticking a mid-series chapter floors progress at that chapter number', async () => {
+    const mediaId = makeMedia('Long', 0)
+    const dir = makeSeries('Long', { 'Ch 001': 2, 'Ch 060': 2 })
+    await attachViaDialog(mediaId, dir)
+    const chs = manga.chapters(mediaId).chapters
+    const ch60 = chs.find((c) => c.title.includes('060'))!
+    expect(manga.markChapterRead(ch60.id, true)?.firstTime).toBe(true)
+    expect(mediaProgress(mediaId)).toBe(60)
+  })
+
+  // The sync only ever raises, so the round trip is idempotent — the old
+  // +1 path counted the re-tick as a second chapter.
+  it('un-ticking then re-ticking a chapter does not double-count', async () => {
+    const { mediaId, chapters } = await setup()
+    manga.markChapterRead(chapters[1].id, true) // Ch 002
+    expect(mediaProgress(mediaId)).toBe(2)
+    manga.markChapterRead(chapters[1].id, false)
+    manga.markChapterRead(chapters[1].id, true)
+    expect(mediaProgress(mediaId)).toBe(2)
   })
 
   it('uses the highest read chapter number, and never lowers progress', async () => {
@@ -272,9 +318,35 @@ describe('reading progress', () => {
     const dir = makeSeries('Oneshots', { Prologue: 2, Epilogue: 2 })
     await attachViaDialog(mediaId, dir)
     const chs = manga.chapters(mediaId).chapters
-    manga.markChapterRead(chs[0].id, true)
-    manga.markChapterRead(chs[1].id, true)
+    for (const ch of chs) manga.markChapterRead(ch.id, true)
     expect(mediaProgress(mediaId)).toBe(2)
+  })
+
+  // Reading credits the board without moving progress — the two are separate
+  // concerns, which is what lets a completed series be re-read safely.
+  it('a first read credits the checklist without a progress write of its own', async () => {
+    const { mediaId, chapters } = await setup()
+    db.prepare(`INSERT INTO checklist_task (task_key, cadence) VALUES ('manga-chapter', 'daily')`).run()
+    const res = manga.markChapterRead(chapters[0].id, true)
+    expect(res?.firstTime).toBe(true)
+    const logId = checklistRepo.creditMediaLog(mediaId, '2026-08-08')
+    expect(logId).not.toBeNull()
+
+    const logs = db.prepare('SELECT payload FROM checklist_log').all() as { payload: string }[]
+    expect(logs).toHaveLength(1)
+    // No `prior`: undoing the credit must not rewrite progress it never set.
+    expect(JSON.parse(logs[0].payload).prior).toBeUndefined()
+    checklistRepo.undoLog(logId!)
+    expect(mediaProgress(mediaId)).toBe(1) // the sync's number, untouched by undo
+  })
+
+  it('never lowers progress — imported counts and reading done elsewhere survive', async () => {
+    const { mediaId, chapters } = await setup()
+    db.prepare('UPDATE media_item SET progress = 50 WHERE id = ?').run(mediaId)
+    manga.markChapterRead(chapters[1].id, true) // Ch 002: 2 < 50, no change
+    expect(mediaProgress(mediaId)).toBe(50)
+    manga.markChapterRead(chapters[1].id, false)
+    expect(mediaProgress(mediaId)).toBe(50)
   })
 })
 
@@ -443,7 +515,10 @@ describe('book-type media (the Books section reusing the chapter machinery)', ()
     // syncMediaProgress would have slammed 120 down to 1 without the guard.
     expect(mediaProgress(mediaId)).toBe(120)
 
-    manga.markChapterRead(ch.id, true)
+    // And a book NEVER reports a creditable read: book is not a unit-progress
+    // type, so advanceProgress would mark the whole multi-volume book completed
+    // on finishing volume one.
+    expect(manga.markChapterRead(ch.id, true)?.firstTime).toBe(false)
     expect(mediaProgress(mediaId)).toBe(120)
   })
 
@@ -454,7 +529,9 @@ describe('book-type media (the Books section reusing the chapter machinery)', ()
     const ch = manga.chapters(mediaId).chapters[0]
     const doc = (await manga.pages(ch.id))!
     expect(doc.pages[0].relPath).toBe('manga/Berserk/Ch 001/p001.png')
-    manga.markChapterRead(ch.id, true)
+    // Manga IS creditable, unlike the book row above, and its progress syncs.
+    const res = manga.markChapterRead(ch.id, true)
+    expect(res?.firstTime).toBe(true)
     expect(mediaProgress(mediaId)).toBe(1)
   })
 })

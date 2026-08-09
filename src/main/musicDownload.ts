@@ -187,11 +187,15 @@ export function startDownload(input: MusicDownloadInput): { id: string } {
       status.status = 'error'
       status.message = `Could not run "${ytDlpBin()}" — install yt-dlp or set its path in Settings (${e.message})`
     }
-    active = null
+    // Guarded like the status writes above: a stale event from a dead child
+    // must not clear a NEWER download's slot, which would make cancelDownload
+    // a no-op and let a second yt-dlp start. video/session.ts:106-107 does the
+    // same on both handlers.
+    if (active?.id === id) active = null
   })
   proc.on('close', (code) => {
-    const wasCancelled = active?.cancelled ?? false
-    active = null
+    const wasCancelled = active?.id === id ? active.cancelled : false
+    if (active?.id === id) active = null
     if (!status || status.id !== id || status.status === 'error') return
     if (wasCancelled) {
       status.status = 'cancelled'

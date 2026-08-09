@@ -14,6 +14,18 @@ import type { LoanwordQuizItem } from '@shared/types'
 // dishonest: glosses are multi-token and the source isn't always English —
 // アルバイト is German).
 
+// Fisher-Yates. A `.sort(() => Math.random() - 0.5)` comparator is not a
+// uniform shuffle, and with the answer at index 0 it left the correct gloss in
+// slot 1 ~36% of the time — a free tell in a discrimination drill.
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
 export default function JapaneseLoanwordsPage() {
   const [length, setLength] = usePersistedState<number>('jpLoanwordLength', 10)
   const [items, setItems] = useState<LoanwordQuizItem[] | null>(null)
@@ -43,7 +55,7 @@ export default function JapaneseLoanwordsPage() {
     if (!items) return null
     const taken = new Set([firstToken(item.gloss)])
     const distractors: LoanwordQuizItem[] = []
-    for (const other of [...items].sort(() => Math.random() - 0.5)) {
+    for (const other of shuffle(items)) {
       if (distractors.length >= 3) break
       if (other.word === item.word) continue
       const token = firstToken(other.gloss)
@@ -52,7 +64,7 @@ export default function JapaneseLoanwordsPage() {
       distractors.push(other)
     }
     if (distractors.length < 3) return null
-    const options = [item, ...distractors].sort(() => Math.random() - 0.5)
+    const options = shuffle([item, ...distractors])
     return {
       item,
       options: options.map((o) => ({

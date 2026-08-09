@@ -4,7 +4,7 @@ import MediaCard from '../components/MediaCard'
 import { Link } from 'react-router-dom'
 import { useQueries, useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { MEDIA_CONFIGS, configFor, pathForMedia, type MediaConfig } from '../lib/mediaConfig'
+import { MEDIA_CONFIGS, configFor, pathForMedia } from '../lib/mediaConfig'
 import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
@@ -15,7 +15,8 @@ import { playTracks } from '../lib/musicTracks'
 import { TYPE_COLORS } from './StatsPage'
 import { GACHA_GAMES } from '@shared/gacha'
 import lainIcon from '../assets/lain.png'
-import type { MediaItem, SettingsMap } from '@shared/types'
+import { readerPath } from '../lib/readerPath'
+import type { MediaItem, ResumePoint, SettingsMap } from '@shared/types'
 
 // The status that marks an item as in-progress is the FIRST status of its
 // media type's *configured* list ("Watching" for anime/TV, "Playing" for VNs
@@ -91,6 +92,8 @@ export default function HomePage() {
         <PlayCard />
       </div>
 
+      <ResumeStrip />
+
       {continuing.length > 0 && (
         <Strip title="Continue" items={continuing.slice(0, 12)} showProgress />
       )}
@@ -125,7 +128,6 @@ export default function HomePage() {
 
       {favorites.length > 0 && <Strip title="Favorites" items={favorites.slice(0, 12)} />}
 
-      <LibraryGlance />
     </div>
   )
 }
@@ -316,6 +318,9 @@ function ChecklistCard() {
   const done = daily.filter((t) => t.done).length
   const streak = data?.streak.current ?? 0
   const pct = daily.length ? Math.round((done / daily.length) * 100) : 0
+  // The weekly half rides the same query and was simply never shown, so a card
+  // reading "3 of 5 done today" gave no hint that a weekly item was still open.
+  const weeklyOpen = (data?.weekly ?? []).filter((t) => !t.done).length
   return (
     <DoorCard
       to="/checklist"
@@ -333,7 +338,14 @@ function ChecklistCard() {
           </div>
         ) : undefined
       }
-      meta={streak > 0 ? `${streak} day${streak === 1 ? '' : 's'} in a row` : undefined}
+      meta={
+        [
+          streak > 0 ? `${streak} day${streak === 1 ? '' : 's'} in a row` : null,
+          weeklyOpen > 0 ? `${weeklyOpen} weekly open` : null
+        ]
+          .filter(Boolean)
+          .join(' · ') || undefined
+      }
     />
   )
 }
@@ -568,6 +580,63 @@ function TopPeople() {
 // A horizontally-scrolling row of covers — used for the shelf sections
 // (Continue watching, Recently added, Favorites). Without a title it renders
 // just the row, for embedding inside another Section.
+// "You were on page 143." Deliberately distinct from Continue below it, which
+// is "in progress by status": these link STRAIGHT into the reader or player at
+// the saved position, skipping the detail page entirely. Capped at 4 so it
+// stays a shortcut rather than a second library.
+function ResumeStrip() {
+  const { data: points = [] } = useQuery({
+    queryKey: qk.media.resumePoints,
+    queryFn: () => api.media.resumePoints()
+  })
+  const shown = points.slice(0, 4)
+  if (shown.length === 0) return null
+  return (
+    <Section className="mt-8" title="Pick up where you left off">
+      <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
+        {shown.map((p) => (
+          <Link
+            key={`${p.kind}-${p.refId}`}
+            to={resumeHref(p)}
+            className="group flex w-[280px] shrink-0 gap-3 rounded-lg bg-base-800 p-2 hover:bg-base-700"
+          >
+            <CoverImage
+              path={p.media.coverPath}
+              alt={p.media.title}
+              rounded="rounded"
+              className="h-[84px] w-[56px] shrink-0"
+            />
+            <div className="min-w-0 self-center">
+              <p className="truncate text-sm font-medium group-hover:text-accent">
+                {p.media.title}
+              </p>
+              <p className="truncate text-xs text-gray-400">{p.partTitle}</p>
+              <p className="text-xs text-gray-500">{resumeLabel(p)}</p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </Section>
+  )
+}
+
+// Chapters carry a page index; videos carry whole seconds.
+function resumeLabel(p: ResumePoint): string {
+  if (p.kind === 'video') {
+    const m = Math.floor(p.position / 60)
+    const s = p.position % 60
+    return `at ${m}:${String(s).padStart(2, '0')}`
+  }
+  // last_read_page is a 0-based index into the pages/spine.
+  return p.total ? `page ${p.position + 1} of ${p.total}` : `page ${p.position + 1}`
+}
+
+function resumeHref(p: ResumePoint): string {
+  if (p.kind === 'video') return `/watch/file/${p.refId}`
+  const basePath = p.media.mediaType === 'book' ? '/books' : '/manga'
+  return readerPath(basePath, p.media.id, { id: p.refId, dirPath: p.dirPath })
+}
+
 function Strip({
   title,
   items,
@@ -581,7 +650,7 @@ function Strip({
     <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
       {items.map((m) => (
         <div key={cardKey(m)} className="w-[150px] shrink-0">
-          <MediaCard item={m} showTypeBadge showProgressBar={showProgress} />
+          <MediaCard item={m} showTypeBadge showProgressBar={showProgress} showFavorite />
         </div>
       ))}
     </div>
@@ -589,54 +658,3 @@ function Strip({
   return title ? <Section className="mt-8" title={title}>{row}</Section> : row
 }
 
-// Per-type total + the section's quick links. facets().total is the honest
-// count (statusCounts drops NULL-status rows and undercounts) and matches the
-// number each list page's filter panel reports.
-function LibraryGlance() {
-  const sections = MEDIA_CONFIGS.filter((c) => !c.hideFromSidebar)
-  const counts = useQueries({
-    queries: sections.map((cfg) => ({
-      queryKey: qk.mediaCounts.facets(cfg.key),
-      queryFn: () => api.media.facets(cfg.key)
-    }))
-  })
-
-  return (
-    <Section className="mt-8" title="Browse & add">
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
-        {sections.map((cfg, i) => (
-          <GlanceCard key={cfg.key} cfg={cfg} total={counts[i].data?.total ?? 0} />
-        ))}
-      </div>
-    </Section>
-  )
-}
-
-function GlanceCard({ cfg, total }: { cfg: MediaConfig; total: number }) {
-  return (
-    <div className="card p-4 flex flex-col gap-3">
-      <Link to={cfg.basePath} className="flex items-center gap-3 group">
-        <div className="min-w-0">
-          <p className="font-medium group-hover:text-accent truncate">
-            {cfg.sidebarLabel ?? cfg.plural}
-          </p>
-          <p className="text-xs text-gray-500">
-            {total} {total === 1 ? 'title' : 'titles'}
-          </p>
-        </div>
-      </Link>
-      {/* Child destinations live in the sidebar's disclosure tree — the card
-          keeps only the two actions that create things. */}
-      <div className="flex flex-wrap gap-2 text-xs">
-        {cfg.importSource && (
-          <Link to={cfg.basePath} className="chip hover:bg-base-600">
-            Import
-          </Link>
-        )}
-        <Link to={`${cfg.basePath}/new`} className="chip hover:bg-base-600">
-          Add {cfg.singular}
-        </Link>
-      </div>
-    </div>
-  )
-}

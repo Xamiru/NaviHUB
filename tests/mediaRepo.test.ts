@@ -239,6 +239,37 @@ describe('mediaRepo create/get/update', () => {
     expect(after!.tags).toEqual([])
   })
 
+  // update writes only the keys present in the input, and REPLACES metadata
+  // wholesale when it is one of them. The edit form's episode-length field is
+  // the first UI that writes metadata, so both halves of that are pinned here.
+  it('leaves metadata untouched when the input omits it', () => {
+    const id = addAnime('Frieren', { metadata: { averageScore: 91, season: 'fall' } })
+    mediaRepo.update(id, { score: 8 })
+    expect(mediaRepo.get(id)!.metadata).toEqual({ averageScore: 91, season: 'fall' })
+  })
+
+  it('replaces metadata wholesale when it IS present — so callers must merge', () => {
+    const id = addAnime('Frieren', { metadata: { averageScore: 91, season: 'fall' } })
+    // What a naive "just set the one field" write would do:
+    mediaRepo.update(id, { metadata: { epDuration: 47 } })
+    expect(mediaRepo.get(id)!.metadata).toEqual({ epDuration: 47 })
+
+    // What the form actually does — read, spread, write.
+    const current = mediaRepo.get(id)!.metadata ?? {}
+    mediaRepo.update(id, { metadata: { ...current, averageScore: 91, season: 'fall' } })
+    expect(mediaRepo.get(id)!.metadata).toEqual({
+      epDuration: 47,
+      averageScore: 91,
+      season: 'fall'
+    })
+  })
+
+  it('accepts a null metadata, clearing the column', () => {
+    const id = addAnime('Frieren', { metadata: { averageScore: 91 } })
+    mediaRepo.update(id, { metadata: null })
+    expect(mediaRepo.get(id)!.metadata).toBeNull()
+  })
+
   it('statusCounts groups by status and skips NULL', () => {
     addAnime('A', { status: 'Watching' })
     addAnime('B', { status: 'Watching' })

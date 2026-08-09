@@ -22,7 +22,8 @@ The language is deliberately small. Where Python accumulated four ways to format
 ## The toolchain replaces half your Python stack
 
 - \`go run .\` — run the current package (like \`python main.py\`, but it compiles first)
-- \`go build ./...\` — compile everything; the binary lands in the current directory
+- \`go build .\` — compile this package; the binary lands in the current directory
+- \`go build ./...\` — compile *everything* as a check. Building several packages, or one that isn't \`main\`, throws the result away — it tells you it compiles, it does not give you a binary
 - \`go test ./...\` — the test runner is built in; no pytest to install
 - \`go fmt ./...\` — THE formatter. There is exactly one Go style and nobody argues about it
 - \`go vet ./...\` — built-in static analysis
@@ -168,7 +169,7 @@ Case is not style in Go, it is visibility: \`Exported\` identifiers (capital fir
             'int32 cannot hold 5 on 64-bit platforms',
             ':= cannot mix integer widths on one line',
             'Go never converts numeric types implicitly — you must convert one side explicitly',
-            'It compiles; the result is int64'
+            'It compiles; the result is int64 because Go widens the narrower operand automatically'
           ],
           correct: 2,
           explain:
@@ -190,7 +191,7 @@ Case is not style in Go, it is visibility: \`Exported\` identifiers (capital fir
           options: [
             'A random seed for the package',
             'An auto-incrementing counter inside a const block — Go\'s enum idiom',
-            'The index variable of range loops',
+            'The index variable of range loops, which is why it resets each iteration',
             'A pointer to the current goroutine'
           ],
           correct: 1,
@@ -278,7 +279,7 @@ One gotcha versus \`with\`: defer is function-scoped, not block-scoped. Opening 
           options: [
             'Maps rehash on every read',
             'The runtime randomizes map iteration order on purpose so code cannot depend on it',
-            'It is a known bug kept for compatibility',
+            'It is a known bug that was kept for backward compatibility with pre-1.0 Go programs',
             'Only maps with pointer keys do this'
           ],
           correct: 1,
@@ -449,7 +450,7 @@ Handle an error ONCE. Either handle it (retry, default, log-and-degrade) or retu
           options: [
             'Formats the error with its stack trace',
             'Wraps the error so errors.Is/errors.As can still find it through the new one',
-            'Writes the error to stderr as a side effect',
+            'Writes the error to stderr as a side effect, in addition to formatting the message',
             'Marks the error as fatal'
           ],
           correct: 1,
@@ -482,7 +483,7 @@ Handle an error ONCE. Either handle it (retry, default, log-and-degrade) or retu
         {
           prompt: 'What is wrong with logging an error AND returning it?',
           options: [
-            'Nothing — it is the recommended belt-and-braces style',
+            'Nothing — it is the recommended belt-and-braces style for long-running production services',
             'The compiler rejects it',
             'Every layer doing both means each failure gets reported multiple times — handle once',
             'log calls are not allowed outside main'
@@ -556,7 +557,7 @@ The \`slices\` package (1.21+) covers the rest of the list toolkit: \`slices.Con
         {
           prompt: 'Why must append\'s result be assigned back (s = append(s, x))?',
           options: [
-            'Style only — append mutates s either way',
+            'Style only — append mutates s in place either way, so the assignment back is redundant',
             'append may allocate a new backing array, and only the returned header points at it',
             'Because slices are immutable',
             'To increment the reference count'
@@ -776,7 +777,7 @@ Struct tags (metadata strings like json field names on struct fields) round out 
           options: [
             'When the type has unexported fields',
             'When any method mutates the receiver (and then be consistent everywhere)',
-            'When the type will be stored in a map',
+            'When the type will be stored in a map, since map values are not addressable',
             'When the type has more than one method'
           ],
           correct: 1,
@@ -929,7 +930,7 @@ Every Go developer hits this once. The fix: return the literal \`nil\`, never a 
             'Declare "implements InterfaceName"',
             'Embed the interface in its struct',
             'Simply have all the interface\'s methods — satisfaction is implicit and structural',
-            'Be registered in the same package as the interface'
+            'Be registered in the same package as the interface, which is what the compiler checks'
           ],
           correct: 2,
           explain:
@@ -953,7 +954,7 @@ Every Go developer hits this once. The fix: return the literal \`nil\`, never a 
             'true — p is nil',
             'false — the interface holds (type *PathErr, value nil), and a typed interface is never == nil',
             'It panics',
-            'true, but only because PathErr is an error'
+            'true, but only because PathErr implements error and the inner pointer happens to be nil'
           ],
           correct: 1,
           explain:
@@ -1037,7 +1038,7 @@ Package-level \`var\`s initialize in dependency order, then each package's \`ini
           options: [
             'Hides it from godoc only',
             'Compiler-enforced privacy: only the subtree above internal/ can import it',
-            'Marks it as unstable API in tooling',
+            'Marks it as unstable API in tooling, which is why go vet warns about importing it',
             'Nothing — it is convention only'
           ],
           correct: 1,
@@ -1059,7 +1060,7 @@ Package-level \`var\`s initialize in dependency order, then each package's \`ini
         {
           prompt: 'How do you document an exported function for go doc / pkg.go.dev?',
           options: [
-            'A """docstring""" as the first statement',
+            'A """docstring""" as the first statement in the function body, exactly as in Python',
             'A @doc annotation',
             'A regular comment immediately above it, conventionally starting with its name',
             'A separate .md file per package'
@@ -1133,7 +1134,7 @@ The verdict tool is built in: \`go test -race\` / \`go run -race\` instruments t
         {
           prompt: 'Why can Go handle 100k concurrent goroutines where 100k Python threads would fall over?',
           options: [
-            'Goroutines cannot block, so they never hold resources',
+            'Goroutines cannot block at all, so they never hold an OS thread hostage while waiting on IO',
             'Goroutines are runtime-scheduled with tiny growable stacks, multiplexed onto few OS threads',
             'Go limits each goroutine to 1ms timeslices',
             'It cannot — the practical ceiling is similar'
@@ -1351,7 +1352,7 @@ Producer feeds the channel and closes it; N workers range until it drains; WaitG
           options: [
             'defer makes the unlock atomic',
             'So every return path (and panic) releases the lock — no leak on early return',
-            'Because Unlock must run on the same line count',
+            'Because Unlock must run on the same line count as Lock for the race detector',
             'It is required by the compiler for RWMutex'
           ],
           correct: 1,
@@ -1457,6 +1458,8 @@ func BenchmarkSlugify(b *testing.B) {
 }
 \`\`\`
 
+\`b.Loop()\` is Go 1.24+. Before that the idiom was \`for range b.N\` (or \`for i := 0; i < b.N; i++\`), which you will still see everywhere.
+
 \`go test -bench .\` runs it, reporting ns/op (add \`-benchmem\` for allocations). Fuzzing is built in too: \`func FuzzSlugify(f *testing.F)\` + \`go test -fuzz\` generates adversarial inputs — no hypothesis dependency.
 
 Design note you already live by in this codebase: pure functions with injectable IO test without mocks. Go's version of that discipline is accepting small interfaces (\`io.Reader\`, your own \`Storer\`) so tests pass in fakes — no monkeypatching exists, and its absence is a feature: if it is hard to test, the design says so at compile time.`,
@@ -1476,7 +1479,7 @@ Design note you already live by in this codebase: pure functions with injectable
         {
           prompt: 'What does t.Run give a table-driven test?',
           options: [
-            'Parallel execution by default',
+            'Parallel execution by default, so every row of the table runs on its own goroutine',
             'Named subtests — failures identify the row, and -run can target one case',
             'Automatic retry of flaky rows',
             'Nothing; it is legacy API'
@@ -1491,7 +1494,7 @@ Design note you already live by in this codebase: pure functions with injectable
             'The testing/mock stdlib package',
             'Build-tag-swapped implementations',
             'It does not patch: code accepts small interfaces, tests pass fake implementations',
-            'Reflection-based stubbing of package functions'
+            'Reflection-based stubbing of package-level functions, provided by the testing package'
           ],
           correct: 2,
           explain:
@@ -1584,7 +1587,7 @@ Coming from Python's TypeVar-everywhere culture, resist decorating every helper 
         {
           prompt: 'A function takes one argument and only calls its .Close() method. Generic type parameter or interface?',
           options: [
-            'Generic — [T io.Closer] is more reusable',
+            'Generic — [T io.Closer] is more reusable because it keeps the concrete type around',
             'Interface — func f(c io.Closer); generics add nothing without a type relationship',
             'Either is equally idiomatic',
             'Neither — take *os.File concretely'
@@ -1640,7 +1643,7 @@ Read real code: the stdlib itself is readable (go doc -src strings.Builder), and
         {
           prompt: 'Why is ts.Format("%Y-%m-%d") wrong in Go?',
           options: [
-            'Format takes an enum of layout constants only',
+            'Format takes an enum of layout constants only, so arbitrary strings are rejected',
             'Go layouts use the literal reference time 2006-01-02 15:04:05 instead of % verbs',
             'strftime verbs need a leading 0 in Go',
             'It is right — Go supports strftime'
@@ -1665,7 +1668,7 @@ Read real code: the stdlib itself is readable (go doc -src strings.Builder), and
           options: [
             'A compile error: err is redeclared',
             'The block creates a NEW err; the outer one stays nil and later checks pass wrongly',
-            'The outer err is overwritten unexpectedly',
+            'The outer err is overwritten unexpectedly, so an earlier failure is silently lost here',
             ':= cannot appear inside if blocks'
           ],
           correct: 1,

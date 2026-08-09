@@ -13,6 +13,7 @@ import Section from '../components/Section'
 import StatTile, { StatInline } from '../components/StatTile'
 import { Group, Pill } from '../components/PillGroup'
 import { usePersistedState } from '../lib/navState'
+import { configFor } from '../lib/mediaConfig'
 import type { JpStatsDetail, SrsGrade } from '@shared/types'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -111,6 +112,35 @@ export default function JapaneseStatsPage() {
               <StatInline label="Quiz rounds" value={detail.journey.quizRounds} />
               <StatInline label="Longest streak" value={`${detail.streak.longest} days`} />
             </div>
+            {detail.miningSources.length > 0 && (
+              <div className="card mt-3 p-4">
+                <p className="label mb-2">Mined from</p>
+                <div className="flex flex-wrap gap-2">
+                  {detail.miningSources.map((s) => {
+                    const chip = (
+                      <>
+                        {s.title} <span className="text-gray-500">{s.count}</span>
+                      </>
+                    )
+                    // Straight to that title's comprehension view, which is
+                    // the question the number provokes.
+                    return s.mediaType ? (
+                      <Link
+                        key={s.mediaId}
+                        to={`${configFor(s.mediaType).basePath}/${s.mediaId}?tab=media`}
+                        className="chip hover:bg-base-600"
+                      >
+                        {chip}
+                      </Link>
+                    ) : (
+                      <span key={s.mediaId} className="chip opacity-60">
+                        {chip}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </Section>
 
           <Leeches />

@@ -196,6 +196,21 @@ describe('japaneseRepo — review flow', () => {
     expect(jp.reviewQueue(0).fresh).toHaveLength(0)
   })
 
+  // The mining inbox is created at MAX(sort_order)+1 — dead last — so ordering
+  // fresh cards by course alone parked a word captured tonight behind every
+  // lesson already marked learned.
+  it('reviewQueue puts mined words ahead of the curriculum', () => {
+    seedCourseWithLesson(true)
+    const inbox = jp.ensureMiningInbox()
+    jp.createCard(inbox.lessonId, { front: '拉致', reading: 'らち', back: 'abduction' })
+
+    const queue = jp.reviewQueue(10)
+    expect(queue.fresh[0].front).toBe('拉致')
+    expect(queue.fresh.map((c) => c.front)).toEqual(['拉致', 'こんにちは', '犬', '猫'])
+    // And it still wins when the cap would otherwise exclude it entirely.
+    expect(jp.reviewQueue(1).fresh.map((c) => c.front)).toEqual(['拉致'])
+  })
+
   it('kanji lessons: on/kun round-trip and quizPool kind filter', () => {
     const { courseId } = seedCourseWithLesson(true)
     const kanjiId = jp.createLesson({
@@ -383,6 +398,39 @@ describe('japaneseRepo — statsDetail', () => {
     expect(d.dueForecast.find((f) => f.day === today)?.due).toBe(1) // overdue → today
   })
 
+  // jp_card.source_media_id is written by every mine and was never grouped by.
+  it('miningSources groups mined cards by their title, biggest first', () => {
+    const { lessonId } = seedCourseWithLesson(true)
+    const media = (title: string): number =>
+      Number(
+        db
+          .prepare(`INSERT INTO media_item (media_type, title) VALUES ('manga', ?)`)
+          .run(title).lastInsertRowid
+      )
+    const berserk = media('Berserk')
+    const steins = media('Steins;Gate')
+    const gone = media('Deleted Series')
+    const mine = (mediaId: number, front: string): void => {
+      const id = jp.createCard(lessonId, { front, reading: front, back: 'x' })
+      db.prepare('UPDATE jp_card SET source_media_id = ? WHERE id = ?').run(mediaId, id)
+    }
+    mine(berserk, '剣')
+    mine(berserk, '鎧')
+    mine(steins, '時間')
+    mine(gone, '幽霊')
+    // The column has no FK, so a deleted source must not drop its cards.
+    db.prepare('DELETE FROM media_item WHERE id = ?').run(gone)
+
+    const sources = jp.statsDetail().miningSources
+    expect(sources.map((s) => [s.title, s.count])).toEqual([
+      ['Berserk', 2],
+      ['Steins;Gate', 1],
+      ['Unknown', 1]
+    ])
+    expect(sources.find((s) => s.title === 'Unknown')?.mediaType).toBeNull()
+    expect(sources.find((s) => s.title === 'Berserk')?.mediaType).toBe('manga')
+  })
+
   it('excludes new cards and unlearned lessons from the forecast', () => {
     const { lessonId } = seedCourseWithLesson(true)
     const cards = jp.getLesson(lessonId)!.cards
@@ -557,5 +605,43 @@ describe('japaneseRepo — roadmap', () => {
 
     db.prepare(`UPDATE jp_card SET due_at = datetime('now','-1 minute') WHERE id = ?`).run(cards[0].id)
     expect(jp.roadmap().steps[0].dueCardCount).toBe(1)
+  })
+})
+
+// Grammar points enter the SAME review queue as everything else — one SM-2
+// implementation, not a second scheduler.
+describe('addGrammarCards', () => {
+  const point = (level: string, title: string, fronts: string[]) => ({
+    level,
+    title,
+    cards: fronts.map((front) => ({ front, back: `${title} — meaning`, notes: null }))
+  })
+
+  it('files cards into one learned lesson per level, ready to review', () => {
+    const res = jp.addGrammarCards('Grammar', [
+      point('N5', 'ている', ['彼は___。']),
+      point('N4', ' so-и', ['雨が___。'])
+    ])
+    expect(res.added).toBe(2)
+    const courses = jp.listCourses()
+    const grammar = courses.find((c) => c.title === 'Grammar')!
+    expect(grammar.lessonCount).toBe(2)
+    expect(grammar.learnedLessonCount).toBe(2) // learned on creation, so they queue
+    const detail = jp.getCourse(grammar.id)!
+    expect(detail.lessons.map((l) => l.title)).toEqual(['N5', 'N4'])
+    expect(detail.lessons.every((l) => l.kind === 'grammar')).toBe(true)
+    // They are ordinary new cards in the shared queue.
+    expect(jp.reviewQueue(10).fresh).toHaveLength(2)
+  })
+
+  it('is idempotent, so "add all N5" can be re-run as the bank grows', () => {
+    jp.addGrammarCards('Grammar', [point('N5', 'ている', ['彼は___。'])])
+    const again = jp.addGrammarCards('Grammar', [
+      point('N5', 'ている', ['彼は___。']),
+      point('N5', 'ながら', ['歩き___。'])
+    ])
+    expect(again.added).toBe(1)
+    expect(again.skipped).toBe(1)
+    expect(jp.listCourses().find((c) => c.title === 'Grammar')!.cardCount).toBe(2)
   })
 })
