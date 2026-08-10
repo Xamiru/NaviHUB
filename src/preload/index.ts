@@ -127,6 +127,10 @@ const api: NaviApi = {
     search: (query) => ipcRenderer.invoke('rawg:search', query),
     import: (rawgId) => ipcRenderer.invoke('rawg:import', rawgId)
   },
+  igdb: {
+    search: (query) => ipcRenderer.invoke('igdb:search', query),
+    import: (igdbId) => ipcRenderer.invoke('igdb:import', igdbId)
+  },
   openlibrary: {
     search: (query) => ipcRenderer.invoke('openlibrary:search', query),
     import: (olId) => ipcRenderer.invoke('openlibrary:import', olId)

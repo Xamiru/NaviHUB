@@ -39,17 +39,9 @@ export default function ProgrammingHomePage() {
         title="Programming"
         subtitle="Courses, CLI cheatsheets, and a typing drill."
         actions={
-          <>
-            <Link to="/programming/cheatsheets" className="btn-ghost">
-              Cheatsheets
-            </Link>
-            <Link to="/programming/practice" className="btn-ghost">
-              CLI practice
-            </Link>
-            <Link to="/quiz/programming" className="btn-ghost">
-              Quiz
-            </Link>
-          </>
+          <Link to="/programming/cheatsheets" className="btn-ghost">
+            Cheatsheets
+          </Link>
         }
       />
 
@@ -71,6 +63,27 @@ export default function ProgrammingHomePage() {
           sub={`${CHEAT_SHEETS.length} sheets`}
         />
       </div>
+
+      {/* The section owns its own drills — the Quiz hub is library-only */}
+      <Section title="Practice">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
+          <HubCard
+            to="/programming/quiz"
+            title="Quiz"
+            body="Multiple choice over the courses' questions, or which command does what."
+          />
+          <HubCard
+            to="/programming/practice"
+            title="CLI typing drill"
+            body="Read the task, type the command. Misses come back around."
+          />
+          <HubCard
+            to="/programming/cheatsheets"
+            title="Cheatsheets"
+            body="Every command on one page, searchable across sheets."
+          />
+        </div>
+      </Section>
 
       <Section title="Courses">
         <div className="grid gap-3 sm:grid-cols-2">

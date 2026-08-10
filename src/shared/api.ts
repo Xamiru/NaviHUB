@@ -363,8 +363,15 @@ export interface NaviApi {
     import(vndbId: number): Promise<ImportSummary>
   }
   rawg: {
+    // Legacy games source (RAWG's chronic outages) — kept so existing 'rawg'
+    // rows stay re-importable if it recovers; the UI imports via igdb now.
     search(query: string): Promise<ImportSearchResult[]>
     import(rawgId: number): Promise<ImportSummary>
+  }
+  igdb: {
+    // Games source since 2026-08 (Twitch OAuth: igdb.client_id/secret settings).
+    search(query: string): Promise<ImportSearchResult[]>
+    import(igdbId: number): Promise<ImportSummary>
   }
   openlibrary: {
     search(query: string): Promise<ImportSearchResult[]>

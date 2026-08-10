@@ -12,7 +12,7 @@ export interface ChildNav {
 }
 
 export interface ImportSourceCfg {
-  key: 'anilist' | 'anilistManga' | 'tmdb' | 'tmdbTv' | 'vndb' | 'rawg' | 'openlibrary'
+  key: 'anilist' | 'anilistManga' | 'tmdb' | 'tmdbTv' | 'vndb' | 'rawg' | 'igdb' | 'openlibrary'
   label: string // "AniList" / "TMDB" / "VNDB" / "RAWG" / "Open Library"
   placeholder: string
   // Noun for a result's unit count in the search dialog ("352 pages"); "ep" default.
@@ -302,7 +302,7 @@ export const GAME: MediaConfig = {
   companyDefaultRole: 'developer',
   companyPickerPlaceholder: 'Add developer / publisher…',
   children: [{ to: '/people', label: 'Voice Actors', role: 'voice_actor' }],
-  importSource: { key: 'rawg', label: 'RAWG', placeholder: 'Search RAWG (e.g. Persona 5)…' },
+  importSource: { key: 'igdb', label: 'IGDB', placeholder: 'Search IGDB (e.g. Persona 5)…' },
   hasPlaytimes: true,
   mediaTabLabel: 'Playtime',
   hasFanArt: true,

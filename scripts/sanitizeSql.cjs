@@ -114,7 +114,7 @@ const SANITIZE_STATEMENTS = [
   // hands the recipient an empty deck plus a standing claim that they already
   // know the top N Japanese words, inflating every comprehension figure.
   `DELETE FROM settings WHERE key IN
-     ('tmdb.api_key','rawg.api_key','omdb.api_key','ytdlp.path',
+     ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path',
       'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','video.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',

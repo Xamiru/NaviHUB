@@ -6,6 +6,7 @@ import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
 import NowPlayingBar from './components/NowPlayingBar'
 import CommandPalette from './components/CommandPalette'
+import PlayerShortcuts from './components/PlayerShortcuts'
 import Toaster from './components/Toaster'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
@@ -299,11 +300,13 @@ export default function App() {
 
             <Route path="/characters/:id" element={<CharacterDetailPage />} />
 
-            {/* Quiz — a hub of quizzes over the library (song quiz is the first) */}
+            {/* Quiz — quizzes over the LIBRARY only; study drills live in their
+                own Learn section (Japanese / English / Programming) */}
             <Route path="/quiz" element={<QuizLandingPage />} />
             <Route path="/quiz/song" element={<SongQuizPage />} />
             <Route path="/quiz/tournament" element={<TournamentPage />} />
-            <Route path="/quiz/programming" element={<ProgrammingQuizPage />} />
+            {/* moved into the Programming section — old link may be in history */}
+            <Route path="/quiz/programming" element={<Navigate to="/programming/quiz" replace />} />
 
             {/* Lists — user-curated, type-scoped collections */}
             <Route path="/watch" element={<WatchLandingPage />} />
@@ -378,6 +381,7 @@ export default function App() {
             <Route path="/programming" element={<ProgrammingHomePage />} />
             <Route path="/programming/cheatsheets" element={<CheatsheetsPage />} />
             <Route path="/programming/practice" element={<CliPracticePage />} />
+            <Route path="/programming/quiz" element={<ProgrammingQuizPage />} />
             <Route path="/programming/course/:courseKey" element={<ProgCoursePage />} />
             <Route path="/programming/course/:courseKey/:lessonKey" element={<ProgLessonPage />} />
 
@@ -397,6 +401,7 @@ export default function App() {
         <Toaster />
       </div>
       <CommandPalette />
+      <PlayerShortcuts />
       <OpenFileHandler />
     </div>
   )

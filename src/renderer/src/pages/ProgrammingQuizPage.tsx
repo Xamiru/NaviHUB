@@ -248,7 +248,7 @@ export default function ProgrammingQuizPage() {
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <PageHeader
-          back={{ to: '/quiz', label: 'Quiz' }}
+          back={{ to: '/programming', label: 'Programming' }}
           title="Programming Quiz"
           subtitle="Multiple choice over the courses' questions and the command cheatsheets."
         />

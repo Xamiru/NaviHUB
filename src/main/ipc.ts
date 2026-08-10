@@ -36,6 +36,7 @@ import * as anilist from './anilist'
 import * as tmdb from './tmdb'
 import * as vndb from './vndb'
 import * as rawg from './rawg'
+import * as igdb from './igdb'
 import * as openlibrary from './openlibrary'
 import * as themes from './themes'
 import * as pictures from './pictures'
@@ -429,6 +430,10 @@ export function registerIpc(): void {
   )
 
   // ---- RAWG import (games) ----
+  ipcMain.handle('igdb:search', (_e, query) => igdb.search(query))
+  ipcMain.handle('igdb:import', (_e, igdbId) =>
+    withActivity('Importing from IGDB', () => igdb.importGame(igdbId))
+  )
   ipcMain.handle('rawg:search', (_e, query) => rawg.search(query))
   ipcMain.handle('rawg:import', (_e, rawgId) =>
     withActivity('Importing from RAWG', () => rawg.importGame(rawgId))

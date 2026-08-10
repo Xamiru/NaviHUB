@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { usePlayer } from '../lib/player'
+import { playerShortcutsEnabled } from '../lib/playerShortcuts'
 import CoverImage from './CoverImage'
 import QueuePanel from './QueuePanel'
 import { PlayIcon, PauseIcon, PrevIcon, NextIcon } from './PlayerIcons'
@@ -38,6 +39,10 @@ export default function NowPlayingBar(): React.JSX.Element | null {
     stop
   } = usePlayer()
   const [queueOpen, setQueueOpen] = useState(false)
+  // The study/quiz sections bind these keys themselves, so only promise them
+  // where PlayerShortcuts is actually listening.
+  const { pathname } = useLocation()
+  const keys = playerShortcutsEnabled(pathname)
   if (!track) return null
 
   const sub = [track.context, track.subtitle].filter(Boolean).join(' · ')
@@ -104,7 +109,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
         <button
           onClick={previous}
           className="w-8 h-8 rounded-full text-gray-400 hover:text-white hover:bg-base-700 flex items-center justify-center text-sm"
-          title="Previous"
+          title={keys ? 'Previous (PageUp)' : 'Previous'}
           aria-label="Previous"
         >
           <PrevIcon />
@@ -112,7 +117,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
         <button
           onClick={toggle}
           className="w-9 h-9 rounded-full bg-accent/20 text-accent hover:bg-accent/30 flex items-center justify-center text-base"
-          title={isPlaying ? 'Pause' : 'Play'}
+          title={`${isPlaying ? 'Pause' : 'Play'}${keys ? ' (Space)' : ''}`}
           aria-label={isPlaying ? 'Pause' : 'Play'}
         >
           {isPlaying ? <PauseIcon /> : <PlayIcon />}
@@ -121,7 +126,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           onClick={next}
           disabled={!hasNext}
           className="w-8 h-8 rounded-full text-gray-400 hover:text-white hover:bg-base-700 flex items-center justify-center text-sm disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
-          title="Next"
+          title={keys ? 'Next (PageDown)' : 'Next'}
           aria-label="Next"
         >
           <NextIcon />

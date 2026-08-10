@@ -70,10 +70,14 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-english-dict', label: 'English dictionary', hint: 'Go to', to: '/english/dictionary' },
   { key: 'nav-english-review', label: 'English review', hint: 'Go to', to: '/english/review' },
   { key: 'nav-english-writing', label: 'English writing', hint: 'Go to', to: '/english/writing' },
+  { key: 'nav-english-vocab', label: 'English vocabulary test', hint: 'Go to', to: '/english/vocab' },
+  { key: 'nav-english-spelling', label: 'English spelling test', hint: 'Go to', to: '/english/spelling' },
+  { key: 'nav-english-reading', label: 'English reading test', hint: 'Go to', to: '/english/reading' },
+  { key: 'nav-english-mechanics', label: 'English mechanics test', hint: 'Go to', to: '/english/mechanics' },
   { key: 'nav-programming', label: 'Programming', hint: 'Go to', to: '/programming' },
   { key: 'nav-prog-cheatsheets', label: 'Cheatsheets', hint: 'Go to', to: '/programming/cheatsheets' },
   { key: 'nav-prog-practice', label: 'CLI practice', hint: 'Go to', to: '/programming/practice' },
-  { key: 'nav-prog-quiz', label: 'Programming quiz', hint: 'Go to', to: '/quiz/programming' },
+  { key: 'nav-prog-quiz', label: 'Programming quiz', hint: 'Go to', to: '/programming/quiz' },
   { key: 'nav-settings', label: 'Settings', hint: 'Go to', to: '/settings' }
 ]
 

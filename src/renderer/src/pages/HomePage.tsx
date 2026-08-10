@@ -431,7 +431,7 @@ function PlayCard() {
       to="/quiz"
       eyebrow="Play"
       title="Quiz corner"
-      body="Song quiz, tournaments, drills and more."
+      body="Song quiz and tournaments over your library."
       meta={pool.length > 0 ? `${pool.length} songs ready` : undefined}
     />
   )

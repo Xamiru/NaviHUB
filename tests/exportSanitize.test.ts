@@ -105,6 +105,8 @@ function seed(): void {
     INSERT INTO settings (key, value) VALUES
       ('tmdb.api_key', 'secret-tmdb'),
       ('rawg.api_key', 'secret-rawg'),
+      ('igdb.client_id', 'secret-igdb-id'),
+      ('igdb.client_secret', 'secret-igdb-secret'),
       ('omdb.api_key', 'secret-omdb'),
       ('gemini.api_key', 'secret-gemini'),
       ('anthropic.api_key', 'secret-anthropic'),

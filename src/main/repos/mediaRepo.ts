@@ -56,6 +56,7 @@ function normalize(key: string, value: unknown): unknown {
 const COMMUNITY_SQL = `COALESCE(
   json_extract(m.metadata, '$.averageScore'),
   json_extract(m.metadata, '$.metacritic'),
+  json_extract(m.metadata, '$.igdbRating'),
   json_extract(m.metadata, '$.vndbRating'),
   json_extract(m.metadata, '$.olRating'),
   json_extract(m.metadata, '$.imdbRating') * 10

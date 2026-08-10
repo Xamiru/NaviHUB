@@ -432,17 +432,31 @@ function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSa
         }
       />
       <TextSetting
-        settingKey="rawg.api_key"
+        settingKey="igdb.client_id"
         data={data}
         onSave={onSave}
-        title="RAWG API key"
-        type="password"
-        placeholder="Paste your RAWG API key…"
+        title="IGDB Client ID"
+        placeholder="Paste your Twitch app Client ID…"
         description={
           <>
-            Required to import games. Get a free key at{' '}
-            <span className="text-gray-400">rawg.io/apidocs</span>. Stored locally on this machine
-            only.
+            Required to import games (IGDB is Twitch-owned). Create a free app at{' '}
+            <span className="text-gray-400">dev.twitch.tv/console/apps</span> (category: Application
+            Integration, redirect URL <span className="text-gray-400">http://localhost</span>) and
+            paste its Client ID here. Stored locally on this machine only.
+          </>
+        }
+      />
+      <TextSetting
+        settingKey="igdb.client_secret"
+        data={data}
+        onSave={onSave}
+        title="IGDB Client Secret"
+        type="password"
+        placeholder="Paste your Twitch app Client Secret…"
+        description={
+          <>
+            The same app&apos;s &quot;New Secret&quot; value. Both fields are needed — the app
+            exchanges them for an access token automatically.
           </>
         }
       />
