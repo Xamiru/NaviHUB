@@ -1213,9 +1213,10 @@ export const wrestlingMatch = sqliteTable(
   'wrestling_match',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    eventId: integer('event_id')
-      .notNull()
-      .references(() => wrestlingEvent.id, { onDelete: 'cascade' }),
+    // Nullable: a loose match is one you own with no PPV behind it.
+    eventId: integer('event_id').references(() => wrestlingEvent.id, { onDelete: 'cascade' }),
+    showLabel: text('show_label'),
+    matchDate: text('match_date'),
     sortOrder: integer('sort_order').notNull().default(0),
     // Denormalized "X vs. Y" — list_item renders through a fixed name column.
     title: text('title').notNull(),
@@ -1224,6 +1225,8 @@ export const wrestlingMatch = sqliteTable(
     championship: text('championship'),
     durationSeconds: integer('duration_seconds'),
     outcome: text('outcome').notNull().default('unknown'),
+    // How it ended ("pinfall", "submission"), from the results cell's own tail.
+    method: text('method'),
     cardSlot: text('card_slot'),
     // The results table's |caption ("Night 1") — a multi-night event is two
     // adjacent tables flattened into one card.
@@ -1305,6 +1308,21 @@ export const wrestlingMatchParticipant = sqliteTable(
   })
 )
 
+// Championships and accomplishments, straight off the wrestler's article.
+export const wrestlingHonour = sqliteTable(
+  'wrestling_honour',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    wrestlerId: integer('wrestler_id')
+      .notNull()
+      .references(() => wrestlingWrestler.id, { onDelete: 'cascade' }),
+    org: text('org').notNull(),
+    title: text('title').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({ byWrestler: index('idx_wrestling_honour_wrestler').on(t.wrestlerId) })
+)
+
 export const wrestlingStable = sqliteTable('wrestling_stable', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
@@ -1344,9 +1362,8 @@ export const wrestlingVideo = sqliteTable(
   'wrestling_video',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    eventId: integer('event_id')
-      .notNull()
-      .references(() => wrestlingEvent.id, { onDelete: 'cascade' }),
+    // NULL for a loose match's file.
+    eventId: integer('event_id').references(() => wrestlingEvent.id, { onDelete: 'cascade' }),
     filePath: text('file_path').notNull(),
     title: text('title').notNull(),
     number: real('number'),

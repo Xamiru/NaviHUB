@@ -31,7 +31,8 @@ export interface VideoScope {
   settingKey: 'video.dir' | 'wrestling.dir'
   root: () => string
   label: string // used in error copy ("... the video library root")
-  owner: (ownerId: number) => VideoScopeOwner | null
+  // ownerId is null for a LOOSE wrestling file (a rip with no PPV behind it).
+  owner: (ownerId: number | null) => VideoScopeOwner | null
 }
 
 export const VIDEO_SCOPES: Record<VideoScopeId, VideoScope> = {
@@ -45,6 +46,7 @@ export const VIDEO_SCOPES: Record<VideoScopeId, VideoScope> = {
     root: videoRootDir,
     label: 'video',
     owner: (ownerId) => {
+      if (ownerId == null) return null
       const row = getSqlite()
         .prepare('SELECT title, media_type FROM media_item WHERE id = ?')
         .get(ownerId) as { title: string; media_type: MediaType } | undefined
@@ -67,6 +69,15 @@ export const VIDEO_SCOPES: Record<VideoScopeId, VideoScope> = {
     root: wrestlingRootDir,
     label: 'wrestling',
     owner: (ownerId) => {
+      // A loose match's file belongs to no event; Back goes to the collection.
+      if (ownerId == null) {
+        return {
+          title: 'Loose match',
+          backPath: '/wrestling/collection',
+          mediaId: null,
+          mediaType: null
+        }
+      }
       const row = getSqlite()
         .prepare('SELECT name FROM wrestling_event WHERE id = ?')
         .get(ownerId) as { name: string } | undefined

@@ -78,7 +78,8 @@ export type ParsedOutcome = 'decision' | 'draw' | 'nocontest' | 'unknown'
 export interface ParsedMatch {
   participants: ParsedParticipant[]
   outcome: ParsedOutcome
-  title: string // "A & B vs. C & D", or the plain result text when unsplittable
+  method: string | null // "pinfall", "submission", … from the cell's own tail
+  title: string // "A vs. B", or the plain result text when unsplittable
 }
 
 // ---------------------------------------------------------------------------
@@ -385,19 +386,45 @@ function iso(y: number, m: number, d: number): string | null {
   return `${String(y).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`
 }
 
-// Handles the three forms live articles use: {{start date|2001|4|1}} (with or
-// without |df=y), "April 1, 2001", and "1 April 2001".
+// Flattens an infobox date field to searchable text. stripMarkup is wrong here
+// on two counts: it deletes a template WITH its contents, which throws away
+// "{{Plainlist|*Night 1: April 16, 2025 …}}" entirely, and it keeps the
+// footnote that trails a two-night date.
+function dateText(raw: string): string {
+  // Everything from the first footnote on is commentary, not the date.
+  let s = raw.split(/\{\{\s*efn/i)[0].split(/<ref/i)[0]
+  // Unwrap remaining templates but KEEP their content (Plainlist, nowrap, …).
+  s = s.replace(/\{\{[^|}]*\|/g, ' ').replace(/\{\{|\}\}/g, ' ')
+  s = s.replace(/\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/g, (_a, t: string, l?: string) => l || t)
+  s = s.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ')
+  return s.replace(/\s+/g, ' ').trim()
+}
+
+// A two-night event stores a RANGE — "April 1–2, 2023", or across a month
+// boundary "August 31 – September 1, 2024". We take the FIRST night, which is
+// what event_date means everywhere else (the chronology, the year rails).
+// Optional range part, so single dates still match.
+const MDY_RE =
+  /([A-Za-z]+)\s+(\d{1,2})(?:\s*[–—−-]\s*(?:[A-Za-z]+\s+)?\d{1,2})?(?:\s*,)?\s*(\d{4})/
+const DMY_RE = /(\d{1,2})(?:\s*[–—−-]\s*\d{1,2})?\s+([A-Za-z]+)\s+(\d{4})/
+
+// Handles every form live articles use: {{start date|2001|4|1}} (with or
+// without |df=y), "April 1, 2001", "1 April 2001", the two-night ranges above,
+// and a {{Plainlist}} of nights.
 export function parseInfoboxDate(raw: string | null | undefined): string | null {
   if (!raw) return null
   const s = String(raw)
-  const tpl = /\{\{\s*start[ _]date[^}|]*\|\s*(\d{4})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})/i.exec(s)
+  // {{start date|Y|M|D}} and {{dts|Y|M|D}} (the sortable-date template the In
+  // Your House articles use) share a shape.
+  const tpl =
+    /\{\{\s*(?:start[ _]date|dts)[^}|]*\|\s*(\d{4})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})/i.exec(s)
   if (tpl) return iso(Number(tpl[1]), Number(tpl[2]), Number(tpl[3]))
-  const plain = stripMarkup(s)
-  const mdy = /([A-Za-z]+)\s+(\d{1,2}),\s*(\d{4})/.exec(plain)
+  const plain = dateText(s)
+  const mdy = MDY_RE.exec(plain)
   if (mdy && MONTHS[mdy[1].toLowerCase()]) {
     return iso(Number(mdy[3]), MONTHS[mdy[1].toLowerCase()], Number(mdy[2]))
   }
-  const dmy = /(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})/.exec(plain)
+  const dmy = DMY_RE.exec(plain)
   if (dmy && MONTHS[dmy[2].toLowerCase()]) {
     return iso(Number(dmy[3]), MONTHS[dmy[2].toLowerCase()], Number(dmy[1]))
   }
@@ -529,6 +556,56 @@ function preClean(cell: string): string {
   return s.trim()
 }
 
+// A results cell does not end at the last wrestler: it carries a tail saying
+// HOW the match ended and what it was for —
+//   "[[Bianca Belair]] (c) defeated [[Becky Lynch]] by [[pinfall]]"
+// Reading that tail as participants is how "pinfall" became a wrestler with its
+// own page: it is a wikilink, so it looked exactly like a name. Everything from
+// the first top-level tail marker onward is stripped and the method kept.
+const TAIL_RE =
+  /\s(?:by|in a|in an|via|to win|to retain|to become|to determine|after|when|following)\s/i
+
+function splitTail(side: string): { text: string; tail: string | null } {
+  let bracket = 0
+  let paren = 0
+  let brace = 0
+  for (let i = 0; i < side.length; i++) {
+    const two = side.slice(i, i + 2)
+    if (two === '[[') { bracket++; i++; continue }
+    if (two === ']]') { bracket--; i++; continue }
+    if (two === '{{') { brace++; i++; continue }
+    if (two === '}}') { brace--; i++; continue }
+    if (side[i] === '(') { paren++; continue }
+    if (side[i] === ')') { paren--; continue }
+    if (bracket > 0 || paren > 0 || brace > 0) continue
+    const m = TAIL_RE.exec(side.slice(i))
+    if (m && m.index === 0) {
+      return { text: side.slice(0, i), tail: side.slice(i + m[0].length) }
+    }
+  }
+  return { text: side, tail: null }
+}
+
+const METHODS = [
+  'pinfall',
+  'submission',
+  'disqualification',
+  'count-out',
+  'countout',
+  'knockout',
+  'technical knockout',
+  'referee stoppage',
+  'stoppage',
+  'forfeit'
+]
+
+function methodFrom(tail: string | null): string | null {
+  if (!tail) return null
+  const plain = stripMarkup(tail).toLowerCase()
+  for (const m of METHODS) if (plain.includes(m)) return m === 'countout' ? 'count-out' : m
+  return null
+}
+
 type Token =
   | { kind: 'link'; link: WikiLink }
   | { kind: 'group'; inner: string }
@@ -580,6 +657,15 @@ function tokenize(s: string): Token[] {
 
 const CONNECTOR = /^(?:and|,|&|,\s*and|with|the)?[\s,&]*$/i
 
+// Splits an unlinked run of names — "Kane, Yoshi Tatsu and CM Punk" — into the
+// individual wrestlers.
+function splitNameRun(text: string): string[] {
+  return text
+    .split(/\s*,\s*|\s+and\s+|\s*&\s*/i)
+    .map((x) => x.replace(/^[,&\s]+|[,&\s]+$/g, '').trim())
+    .filter((x) => x.length > 0 && !CONNECTOR.test(x))
+}
+
 // Turns one side of a result into participants, resolving the two grouping
 // forms live articles use:
 //   X-Factor ([[X-Pac]] and [[Justin Credible]])      -> team name is plain text
@@ -600,7 +686,11 @@ function participantsOfSide(side: string, sideIndex: number, won: boolean): Pars
 
     // A following paren group that contains links makes this token a team.
     if (next && next.kind === 'group') {
-      const inner = parseWikiLinks(next.inner)
+      // Same piped-conjunction trick can appear INSIDE a team's roster:
+      //   The O.C. ([[AJ Styles]], [[Luke Gallows]], [[Good Brothers|and]] [[Karl Anderson]])
+      const inner = parseWikiLinks(next.inner).filter(
+        (l) => !CONNECTOR.test(l.display.trim())
+      )
       if (inner.length > 0) {
         const champ = isChampionMarker(tokens[i + 2])
         for (const link of inner) {
@@ -619,6 +709,12 @@ function participantsOfSide(side: string, sideIndex: number, won: boolean): Pars
     }
 
     if (tok.kind === 'link') {
+      // Editors sometimes pipe the CONJUNCTION itself to a stable's article:
+      //   [[Axiom]] [[Fraxiom|and]] [[Nathan Frazer]]
+      //   [[Bron Breakker]] [[The Vision (professional wrestling)|and]] [[Bronson Reed]]
+      // That is a stylistic link, not a competitor — reading it as one produced
+      // a wrestler literally named "and".
+      if (CONNECTOR.test(tok.link.display.trim())) continue
       const champ = isChampionMarker(next)
       out.push({
         link: tok.link,
@@ -632,14 +728,16 @@ function participantsOfSide(side: string, sideIndex: number, won: boolean): Pars
       continue
     }
 
-    // Bare text that isn't a connector: a wrestler with no article. Keep the
-    // name so the card reads correctly; it just won't be a link.
-    const name = ownerName.replace(/^[,&\s]+|[,&\s]+$/g, '')
-    if (name && !CONNECTOR.test(name)) {
-      const champ = isChampionMarker(next)
-      out.push({ link: null, name, side: sideIndex, won, isChampion: champ, teamName: null })
-      if (champ) i++
+    // Bare text: wrestlers with no articles. A whole side can be unlinked —
+    // "Kane, Yoshi Tatsu, Vance Archer, Matt Hardy and CM Punk" is ONE text
+    // run, and taking it whole made a single 90-character "wrestler".
+    const champ = isChampionMarker(next)
+    let pushed = false
+    for (const part of splitNameRun(ownerName)) {
+      out.push({ link: null, name: part, side: sideIndex, won, isChampion: champ, teamName: null })
+      pushed = true
     }
+    if (pushed && champ) i++
   }
   return out
 }
@@ -660,6 +758,7 @@ export function parseResultCell(cell: string): ParsedMatch {
 
   let outcome: ParsedOutcome = 'unknown'
   let sides: string[] = []
+  let method: string | null = null
 
   if (NC_RE.test(raw)) {
     outcome = 'nocontest'
@@ -686,15 +785,24 @@ export function parseResultCell(cell: string): ParsedMatch {
 
   const participants: ParsedParticipant[] = []
   sides.forEach((side, i) => {
-    participants.push(...participantsOfSide(side, i, outcome === 'decision' && i === 0))
+    const { text, tail } = splitTail(side)
+    method = method ?? methodFrom(tail)
+    participants.push(...participantsOfSide(text, i, outcome === 'decision' && i === 0))
   })
 
-  return { participants, outcome, title: buildTitle(participants, plain) }
+  return { participants, outcome, method, title: buildTitle(participants, plain) }
 }
 
 function splitSidesNoResult(s: string): string[] {
   const vs = splitAt(s, VS_RE)
   return vs ? [vs[0], vs[1]] : [s]
+}
+
+// Wrestling cards read "A, B and C", never "A & B & C".
+export function joinNames(names: string[]): string {
+  if (names.length <= 1) return names[0] ?? ''
+  if (names.length === 2) return `${names[0]} and ${names[1]}`
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
 }
 
 function buildTitle(participants: ParsedParticipant[], fallback: string): string {
@@ -707,12 +815,14 @@ function buildTitle(participants: ParsedParticipant[], fallback: string): string
   if (bySide.size >= 2) {
     return [...bySide.entries()]
       .sort((a, b) => a[0] - b[0])
-      .map(([, names]) => names.join(' & '))
+      .map(([, names]) => joinNames(names))
       .join(' vs. ')
   }
   // One side (a rumble) or nothing parsed: the prose reads better than a
   // lone name, so fall back to it, trimmed.
-  const t = fallback.trim()
+  // One side (a rumble) or nothing parsed: strip the method tail off the prose
+  // too, so a fallback title doesn't read "… by pinfall".
+  const t = stripMarkup(splitTail(fallback).text).trim()
   return t.length > 160 ? `${t.slice(0, 157)}…` : t || 'Match'
 }
 
@@ -802,6 +912,54 @@ export function parseWrestlerArticle(wikitext: string): ParsedWrestler {
     height: val('height'),
     bio: extractLead(wikitext) || null
   }
+}
+
+export interface HonourGroup {
+  org: string // "WWE", "Pro Wrestling Illustrated"
+  items: string[] // "WWE Championship (6 times)"
+}
+
+// Wrestler articles carry a "Championships and accomplishments" section as a
+// two-level bullet list: a bold (sometimes bold-italic) organisation header,
+// then its accomplishments. Verified on real articles; refs and the trailing
+// <small> notes are the only noise.
+const HONOURS_SECTION =
+  /\n==+\s*Championships and accomplishments\s*==+\s*\n([\s\S]*?)(?=\n==[^=])/i
+
+const MAX_GROUPS = 30
+const MAX_ITEMS = 40
+
+export function parseHonours(wikitext: string): HonourGroup[] {
+  const sec = HONOURS_SECTION.exec(wikitext)
+  if (!sec) return []
+  const out: HonourGroup[] = []
+  let current: HonourGroup | null = null
+
+  for (const line of sec[1].split('\n')) {
+    const t = line.trimEnd()
+    // Two stars (or more) = an accomplishment under the current org.
+    const item = /^\*{2,}\s*(.+)$/.exec(t)
+    if (item) {
+      if (!current || current.items.length >= MAX_ITEMS) continue
+      // <small> notes ("vs. Bret Hart at WrestleMania 13") are the interesting
+      // half of an award line, so the tag goes and the text stays.
+      const text = stripMarkup(item[1].replace(/<\/?small>/gi, '')).trim()
+      if (text) current.items.push(text)
+      continue
+    }
+    const head = /^\*\s*(.+)$/.exec(t)
+    if (head) {
+      const org = stripMarkup(head[1]).replace(/^[''\s]+|[''\s]+$/g, '').trim()
+      if (!org || out.length >= MAX_GROUPS) {
+        current = null
+        continue
+      }
+      current = { org, items: [] }
+      out.push(current)
+    }
+  }
+  // A header with nothing under it is a stray bullet, not an honour.
+  return out.filter((g) => g.items.length > 0)
 }
 
 // The results template's noteN= marker: 'pre' (pre-show) / 'dark'. Anything

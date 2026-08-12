@@ -291,6 +291,8 @@ export const qk = {
     // Callers pass a SORTED title list or every ordering caches separately.
     links: (titles: string[]) => ['wrestling', 'links', titles] as const,
     files: (eventId: number) => ['wrestling', 'files', eventId] as const,
+    loose: ['wrestling', 'loose'] as const,
+    recent: ['wrestling', 'recent'] as const,
     importStatus: ['wrestling', 'importStatus'] as const
   },
   update: {

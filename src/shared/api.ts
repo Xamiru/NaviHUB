@@ -206,11 +206,13 @@ import type {
   WrestlingFavoriteKind,
   WrestlingImportStatus,
   WrestlingLinkTarget,
+  WrestlingLooseMatchInput,
   WrestlingMatchWithEvent,
   WrestlingOverview,
   WrestlingVideo,
   WrestlingPromotionId,
   WrestlingWrestler,
+  WrestlingWrestlerDetail,
   YtDlpDetectResult
 } from './types'
 
@@ -919,7 +921,8 @@ export interface NaviApi {
     yearCounts(promotion: WrestlingPromotionId): Promise<{ year: number; count: number }[]>
     // Every year the library covers, across all promotions — the year page.
     allYears(): Promise<{ year: number; count: number }[]>
-    wrestler(id: number): Promise<WrestlingWrestler | null>
+    // Bio + honours + career record in one read — the wrestler page.
+    wrestler(id: number): Promise<WrestlingWrestlerDetail | null>
     // Always paginated — a career can run to thousands of matches.
     wrestlerMatches(
       id: number,
@@ -943,6 +946,18 @@ export interface NaviApi {
     attachFolder(eventId: number): Promise<VideoAttachResult>
     rescan(eventId: number): Promise<VideoAttachResult>
     detach(eventId: number): Promise<void>
+
+    // Loose matches: a rip you own with no PPV behind it. Stored as a match
+    // with no event, so ratings/hearts/lists/wrestler pages all apply.
+    looseMatches(): Promise<WrestlingMatchWithEvent[]>
+    addLooseMatch(input?: Partial<WrestlingLooseMatchInput>): Promise<{
+      ok: boolean
+      error?: string
+      matchId?: number
+    }>
+    updateLooseMatch(matchId: number, input: WrestlingLooseMatchInput): Promise<void>
+    removeLooseMatch(matchId: number): Promise<void>
+    recentlyAdded(): Promise<{ events: WrestlingEvent[]; loose: WrestlingMatchWithEvent[] }>
 
     startImport(opts?: {
       promotions?: WrestlingPromotionId[]

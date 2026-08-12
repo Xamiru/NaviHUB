@@ -8,6 +8,7 @@ vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
 import * as repo from '../src/main/repos/wrestlingRepo'
 import * as listRepo from '../src/main/repos/listRepo'
 import { buildEvent, eventImageName } from '../src/main/wrestling/importRun'
+import { parseHonours } from '../src/main/wrestling/wikitext'
 import * as importRun from '../src/main/wrestling/importRun'
 
 // A minimal but real-shaped event article. The point of these tests is the
@@ -586,5 +587,215 @@ describe('review regressions', () => {
     // Beta had no article; marking it checked keeps it out of future passes.
     repo.markWrestlersChecked(['Beta'])
     expect(repo.stubWrestlers()).toHaveLength(0)
+  })
+})
+
+describe('honours and career record', () => {
+  it('parses the accomplishments section into grouped honours', () => {
+    // Shape verified against real articles: a bold org header, then its items.
+    const article = `'''X''' is a wrestler.
+
+==Championships and accomplishments==
+* '''''[[Pro Wrestling Illustrated]]'''''
+** [[PWI Match of the Year|Match of the Year]] (1997)<small> vs. [[Bret Hart]]</small><ref name="a"/>
+** Ranked No. 1 (1998)<ref>{{cite web|url=http://x}}</ref>
+*'''[[WWE]]'''
+**[[WWE Championship]] (6 times)
+**[[Royal Rumble]] (1997, 1998)
+* '''Empty Org'''
+
+==Other section==
+Not an honour.`
+    const groups = parseHonours(article)
+    expect(groups.map((g) => g.org)).toEqual(['Pro Wrestling Illustrated', 'WWE'])
+    expect(groups[0].items).toEqual([
+      'Match of the Year (1997) vs. Bret Hart',
+      'Ranked No. 1 (1998)'
+    ])
+    expect(groups[1].items).toEqual(['WWE Championship (6 times)', 'Royal Rumble (1997, 1998)'])
+    // Citations go, the <small> qualifier stays (it's the useful half), a
+    // header with nothing under it is a stray bullet, and the section stops at
+    // the next heading.
+    expect(groups.some((g) => g.org === 'Empty Org')).toBe(false)
+  })
+
+  it('returns nothing for an article with no such section', () => {
+    expect(parseHonours('just prose')).toEqual([])
+  })
+
+  it('stores honours per wrestler and replaces them on re-import', () => {
+    repo.saveEvent(
+      buildEvent('wwe', 'E', article({ name: 'E', date: '2001|4|1', matches: ['[[Alpha]] defeated [[Beta]]'] }), null)!
+    )
+    const alpha = repo.searchWrestlers('Alpha')[0]
+    repo.saveHonours(alpha.id, [{ org: 'WWE', items: ['A title (2 times)', 'Another'] }])
+    expect(repo.honoursFor(alpha.id)).toEqual([
+      { org: 'WWE', items: ['A title (2 times)', 'Another'] }
+    ])
+    // Canonical data, replaced wholesale — no duplicates on a second run.
+    repo.saveHonours(alpha.id, [{ org: 'WWE', items: ['A title (3 times)'] }])
+    expect(repo.honoursFor(alpha.id)).toEqual([{ org: 'WWE', items: ['A title (3 times)'] }])
+  })
+
+  it('computes a career record that counts draws separately', () => {
+    const card = (title: string, outcome: 'decision' | 'draw', aWon: boolean) => ({
+      sortOrder: 0,
+      title,
+      resultText: null,
+      stipulation: null,
+      championship: title === 'Title match' ? 'WWE Championship' : null,
+      durationSeconds: null,
+      outcome,
+      method: null,
+      cardSlot: null,
+      cardLabel: null,
+      participants: [
+        { wikiTitle: 'Alpha', name: 'Alpha', side: 0, won: aWon, isChampion: false, teamName: null },
+        { wikiTitle: 'Beta', name: 'Beta', side: 1, won: false, isChampion: false, teamName: null }
+      ]
+    })
+    repo.saveEvent({
+      promotion: 'wwe', name: 'E1', wikiTitle: 'E1', eventDate: '2001-01-01',
+      matches: [card('Title match', 'decision', true)]
+    })
+    repo.saveEvent({
+      promotion: 'wwe', name: 'E2', wikiTitle: 'E2', eventDate: '2002-01-01',
+      matches: [card('Draw match', 'draw', false)]
+    })
+    const alpha = repo.searchWrestlers('Alpha')[0]
+    const beta = repo.searchWrestlers('Beta')[0]
+    // A draw is neither a win nor a loss for either side.
+    expect(repo.recordFor(alpha.id)).toEqual({ wins: 1, losses: 0, draws: 1, total: 2 })
+    expect(repo.recordFor(beta.id)).toEqual({ wins: 0, losses: 1, draws: 1, total: 2 })
+    expect(repo.championshipsFor(alpha.id)).toEqual(['WWE Championship'])
+    expect(repo.championshipsFor(beta.id)).toEqual([])
+  })
+
+  it('cascades honours away with the wrestler', () => {
+    repo.saveEvent(
+      buildEvent('wwe', 'E', article({ name: 'E', date: '2001|4|1', matches: ['[[Alpha]] defeated [[Beta]]'] }), null)!
+    )
+    const alpha = repo.searchWrestlers('Alpha')[0]
+    repo.saveHonours(alpha.id, [{ org: 'WWE', items: ['A'] }])
+    db.prepare('DELETE FROM wrestling_wrestler WHERE id = ?').run(alpha.id)
+    expect(
+      db.prepare('SELECT COUNT(*) AS n FROM wrestling_honour').get() as { n: number }
+    ).toEqual({ n: 0 })
+  })
+})
+
+describe('loose matches', () => {
+  // A loose match is one you own with no PPV behind it. It is modelled as a
+  // match with no event so that everything else — participants, ratings,
+  // hearts, lists, wrestler pages, the career record — applies unchanged.
+  function seedWrestlers(): { alpha: number; beta: number } {
+    repo.saveEvent(
+      buildEvent('wwe', 'E', article({ name: 'E', date: '2001|4|1', matches: ['[[Alpha]] defeated [[Beta]]'] }), null)!
+    )
+    return {
+      alpha: repo.searchWrestlers('Alpha')[0].id,
+      beta: repo.searchWrestlers('Beta')[0].id
+    }
+  }
+
+  it('creates one with its own show and date, and no event', () => {
+    const { alpha, beta } = seedWrestlers()
+    const videoId = repo.addLooseVideo('Raw/1997-03-17 main.mkv', '1997-03-17 main')
+    const id = repo.createLooseMatch(
+      {
+        title: 'Alpha vs. Beta',
+        showLabel: 'Raw',
+        matchDate: '1997-03-17',
+        wrestlerIds: [alpha, beta],
+        winnerIds: [alpha]
+      },
+      videoId
+    )
+    const rows = repo.looseMatches()
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({
+      id,
+      eventId: null,
+      showLabel: 'Raw',
+      matchDate: '1997-03-17',
+      outcome: 'decision',
+      videoId
+    })
+    // Winner lands on side 0 so the row reads "A def. B" like an imported one.
+    const winner = rows[0].participants.find((p) => p.won)
+    expect(winner?.name).toBe('Alpha')
+    expect(winner?.side).toBe(0)
+    expect(rows[0].participants.find((p) => !p.won)?.side).toBe(1)
+  })
+
+  it('shows up on the wrestler page and in the career record', () => {
+    const { alpha, beta } = seedWrestlers()
+    repo.createLooseMatch(
+      { title: 'Alpha vs. Beta', showLabel: 'Raw', matchDate: '1999-01-04', wrestlerIds: [alpha, beta], winnerIds: [alpha] },
+      null
+    )
+    // The imported PPV match plus the loose one.
+    const matches = repo.wrestlerMatches(alpha)
+    expect(matches).toHaveLength(2)
+    // A LEFT JOIN is what keeps the loose one here; an inner join drops it.
+    expect(matches.map((m) => m.eventName)).toContain('Raw')
+    expect(repo.recordFor(alpha)).toMatchObject({ wins: 2, losses: 0, total: 2 })
+  })
+
+  it('carries ratings and hearts like any other match', () => {
+    const { alpha, beta } = seedWrestlers()
+    const id = repo.createLooseMatch(
+      { title: 'Alpha vs. Beta', showLabel: 'Nitro', wrestlerIds: [alpha, beta], winnerIds: [beta] },
+      null
+    )
+    repo.rateMatch(id, 5)
+    repo.setFavorite('match', id, true)
+    const top = repo.topRatedMatches()
+    expect(top).toHaveLength(1)
+    expect(top[0]).toMatchObject({ id, rating: 5, favorite: true, eventName: 'Nitro' })
+  })
+
+  it('edits in place, replacing participants', () => {
+    const { alpha, beta } = seedWrestlers()
+    const id = repo.createLooseMatch({ title: 'Old', wrestlerIds: [alpha], winnerIds: [] }, null)
+    repo.updateLooseMatch(id, {
+      title: 'New title',
+      showLabel: 'SmackDown',
+      matchDate: '2002-05-01',
+      wrestlerIds: [alpha, beta],
+      winnerIds: [beta]
+    })
+    const m = repo.looseMatches()[0]
+    expect(m).toMatchObject({ title: 'New title', showLabel: 'SmackDown', outcome: 'decision' })
+    expect(m.participants).toHaveLength(2)
+    expect(m.participants.find((p) => p.won)?.name).toBe('Beta')
+  })
+
+  it('removes the match and its video row, and only a LOOSE one', () => {
+    const { alpha } = seedWrestlers()
+    const videoId = repo.addLooseVideo('a.mkv', 'a')
+    const id = repo.createLooseMatch({ title: 'X', wrestlerIds: [alpha] }, videoId)
+    repo.removeLooseMatch(id)
+    expect(repo.looseMatches()).toHaveLength(0)
+    expect(
+      db.prepare('SELECT COUNT(*) AS n FROM wrestling_video WHERE event_id IS NULL').get() as { n: number }
+    ).toEqual({ n: 0 })
+
+    // An imported PPV match must be untouchable through this path.
+    const ppvMatch = repo.getEvent(repo.listEvents()[0].id)!.matches[0]
+    repo.removeLooseMatch(ppvMatch.id)
+    expect(repo.getEvent(repo.listEvents()[0].id)!.matches).toHaveLength(1)
+  })
+
+  it('does not duplicate a video row for the same file', () => {
+    const a = repo.addLooseVideo('same.mkv', 'same')
+    expect(repo.addLooseVideo('same.mkv', 'same')).toBe(a)
+  })
+
+  it('keeps loose matches out of an event card', () => {
+    const { alpha } = seedWrestlers()
+    repo.createLooseMatch({ title: 'Loose', wrestlerIds: [alpha] }, null)
+    const eventId = repo.listEvents()[0].id
+    expect(repo.getEvent(eventId)!.matches.map((m) => m.title)).toEqual(['Alpha vs. Beta'])
   })
 })

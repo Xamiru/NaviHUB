@@ -51,6 +51,33 @@ function ensureColumn(
   }
 }
 
+// SQLite cannot relax a NOT NULL column, so dropping the constraint means the
+// full copy-and-rename dance. Guarded on the current shape, so it runs at most
+// once per DB and is a no-op on a fresh install (init.sql already emits the
+// nullable form).
+function dropNotNull(
+  sqlite: Database.Database,
+  table: string,
+  column: string,
+  createNew: string,
+  columns: string
+): void {
+  const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as {
+    name: string
+    notnull: number
+  }[]
+  const target = cols.find((c) => c.name === column)
+  if (!target || target.notnull === 0) return
+  sqlite.exec('PRAGMA foreign_keys = OFF')
+  sqlite.transaction(() => {
+    sqlite.exec(createNew)
+    sqlite.exec(`INSERT INTO ${table}__new (${columns}) SELECT ${columns} FROM ${table}`)
+    sqlite.exec(`DROP TABLE ${table}`)
+    sqlite.exec(`ALTER TABLE ${table}__new RENAME TO ${table}`)
+  })()
+  sqlite.exec('PRAGMA foreign_keys = ON')
+}
+
 // Drops a column that init.sql no longer defines, if a pre-existing DB still
 // has it. SQLite (3.35+) supports ALTER TABLE DROP COLUMN; guarded so it only
 // runs when the column is actually present.
@@ -132,6 +159,53 @@ export function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'en_word', 'reps', 'reps INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'en_word', 'lapses', 'lapses INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'en_word', 'last_reviewed_at', 'last_reviewed_at TEXT')
+  // Shipped one build after the wrestling section, so live DBs already have the
+  // table without it.
+  ensureColumn(sqlite, 'wrestling_match', 'method', 'method TEXT')
+  // Loose matches (a standalone rip with no PPV behind it) need these; the
+  // tables shipped before the feature, so both need the migration.
+  ensureColumn(sqlite, 'wrestling_match', 'show_label', 'show_label TEXT')
+  ensureColumn(sqlite, 'wrestling_match', 'match_date', 'match_date TEXT')
+  dropNotNull(
+    sqlite,
+    'wrestling_match',
+    'event_id',
+    `CREATE TABLE wrestling_match__new (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       event_id INTEGER REFERENCES wrestling_event(id) ON DELETE CASCADE,
+       show_label TEXT, match_date TEXT,
+       sort_order INTEGER NOT NULL DEFAULT 0, title TEXT NOT NULL,
+       result_text TEXT, stipulation TEXT, championship TEXT,
+       duration_seconds INTEGER, outcome TEXT NOT NULL DEFAULT 'unknown',
+       method TEXT, card_slot TEXT, card_label TEXT, rating REAL,
+       favorite INTEGER NOT NULL DEFAULT 0, video_id INTEGER,
+       created_at TEXT NOT NULL DEFAULT (datetime('now')),
+       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+     )`,
+    `id, event_id, show_label, match_date, sort_order, title, result_text,
+     stipulation, championship, duration_seconds, outcome, method, card_slot,
+     card_label, rating, favorite, video_id, created_at, updated_at`
+  )
+  dropNotNull(
+    sqlite,
+    'wrestling_video',
+    'event_id',
+    `CREATE TABLE wrestling_video__new (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       event_id INTEGER REFERENCES wrestling_event(id) ON DELETE CASCADE,
+       file_path TEXT NOT NULL, title TEXT NOT NULL, number REAL, season INTEGER,
+       sort_order INTEGER NOT NULL DEFAULT 0, file_mtime INTEGER, file_size INTEGER,
+       duration REAL, width INTEGER, height INTEGER, video_codec TEXT,
+       audio_codec TEXT, container TEXT, playability TEXT, resume_seconds REAL,
+       watched_at TEXT,
+       created_at TEXT NOT NULL DEFAULT (datetime('now')),
+       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+       UNIQUE(event_id, file_path)
+     )`,
+    `id, event_id, file_path, title, number, season, sort_order, file_mtime,
+     file_size, duration, width, height, video_codec, audio_codec, container,
+     playability, resume_seconds, watched_at, created_at, updated_at`
+  )
   // The review-queue index MUST be created here, after the columns it touches,
   // never in init.sql — init.sql runs first, so on a pre-SRS DB the index would
   // reference columns that don't exist yet and the app dies at startup ("no

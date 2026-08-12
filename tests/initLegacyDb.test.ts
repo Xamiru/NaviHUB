@@ -83,3 +83,92 @@ describe('a live DB that predates newer columns', () => {
     expect(offenders).toEqual([])
   })
 })
+describe('a live wrestling DB imported before loose matches existed', () => {
+  it('relaxes the NOT NULL event links without losing a row', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    // Exactly the shape the first wrestling release created: event_id NOT NULL
+    // on both tables, and no show_label/match_date/method.
+    db.exec(`
+      CREATE TABLE wrestling_event (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, promotion TEXT NOT NULL, name TEXT NOT NULL,
+        wiki_title TEXT UNIQUE, series TEXT, event_date TEXT, venue TEXT, city TEXT,
+        attendance INTEGER, buyrate TEXT, tagline TEXT, poster_path TEXT, lead TEXT,
+        local_dir TEXT, favorite INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE TABLE wrestling_match (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL REFERENCES wrestling_event(id) ON DELETE CASCADE,
+        sort_order INTEGER NOT NULL DEFAULT 0, title TEXT NOT NULL, result_text TEXT,
+        stipulation TEXT, championship TEXT, duration_seconds INTEGER,
+        outcome TEXT NOT NULL DEFAULT 'unknown', card_slot TEXT, card_label TEXT,
+        rating REAL, favorite INTEGER NOT NULL DEFAULT 0, video_id INTEGER,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+      CREATE TABLE wrestling_video (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL REFERENCES wrestling_event(id) ON DELETE CASCADE,
+        file_path TEXT NOT NULL, title TEXT NOT NULL, number REAL, season INTEGER,
+        sort_order INTEGER NOT NULL DEFAULT 0, file_mtime INTEGER, file_size INTEGER,
+        duration REAL, width INTEGER, height INTEGER, video_codec TEXT, audio_codec TEXT,
+        container TEXT, playability TEXT, resume_seconds REAL, watched_at TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+        UNIQUE(event_id, file_path)
+      );
+      INSERT INTO wrestling_event (id, promotion, name, wiki_title, event_date)
+        VALUES (1, 'wwe', 'WrestleMania X-Seven', 'WrestleMania X-Seven', '2001-04-01');
+      INSERT INTO wrestling_match (id, event_id, sort_order, title, rating, favorite)
+        VALUES (7, 1, 0, 'Austin vs. The Rock', 5, 1);
+      INSERT INTO wrestling_video (id, event_id, file_path, title, resume_seconds)
+        VALUES (3, 1, 'WM17/main.mkv', 'Main event', 1234);
+    `)
+
+    db.exec(initSql)
+    runMigrations(db)
+
+    // The personal layer is exactly where it was — this migration rewrites both
+    // tables, so a lost rating or resume position would be silent data loss.
+    expect(db.prepare('SELECT * FROM wrestling_match WHERE id = 7').get()).toMatchObject({
+      id: 7,
+      event_id: 1,
+      title: 'Austin vs. The Rock',
+      rating: 5,
+      favorite: 1
+    })
+    expect(db.prepare('SELECT * FROM wrestling_video WHERE id = 3').get()).toMatchObject({
+      id: 3,
+      event_id: 1,
+      file_path: 'WM17/main.mkv',
+      resume_seconds: 1234
+    })
+
+    // And the constraint is gone, so a loose match can exist.
+    const notNull = (t: string): number =>
+      (db.prepare(`PRAGMA table_info(${t})`).all() as { name: string; notnull: number }[]).find(
+        (c) => c.name === 'event_id'
+      )!.notnull
+    expect(notNull('wrestling_match')).toBe(0)
+    expect(notNull('wrestling_video')).toBe(0)
+    expect(() =>
+      db
+        .prepare(
+          `INSERT INTO wrestling_match (event_id, show_label, sort_order, title)
+           VALUES (NULL, 'Raw', 0, 'A loose one')`
+        )
+        .run()
+    ).not.toThrow()
+
+    // Re-running is a no-op rather than a second rebuild.
+    runMigrations(db)
+    expect(db.prepare('SELECT COUNT(*) AS n FROM wrestling_match').get()).toEqual({ n: 2 })
+
+    // The FK still bites: deleting the event takes its card, not the loose one.
+    db.prepare('DELETE FROM wrestling_event WHERE id = 1').run()
+    expect(db.prepare('SELECT COUNT(*) AS n FROM wrestling_match').get()).toEqual({ n: 1 })
+    db.close()
+  })
+})

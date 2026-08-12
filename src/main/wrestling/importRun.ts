@@ -27,6 +27,7 @@ import {
   parseIntLoose,
   parseResultCell,
   parseResultsCard,
+  parseHonours,
   parseWrestlerArticle,
   stripMarkup
 } from './wikitext'
@@ -82,6 +83,7 @@ export function buildEvent(
       championship: extractChampionship(raw.stip),
       durationSeconds: parseDuration(raw.time),
       outcome: parsed.outcome,
+      method: parsed.method,
       cardSlot: parseCardSlot(raw.note),
       cardLabel: raw.card,
       participants: parsed.participants.map((p) => ({
@@ -361,17 +363,22 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
             const photos = await download([...portraits.values()]).catch(
               () => new Map<string, string | null>()
             )
-            repo.saveWrestlerDetails(
-              result.pages.map((page) => {
-                const parsed = parseWrestlerArticle(page.wikitext)
-                const remote = portraits.get(page.title)
-                return {
-                  ...parsed,
-                  wikiTitle: page.title,
-                  photoPath: (remote ? photos.get(remote) : null) ?? null
-                }
-              })
-            )
+            const detailRows = result.pages.map((page) => {
+              const parsed = parseWrestlerArticle(page.wikitext)
+              const remote = portraits.get(page.title)
+              return {
+                ...parsed,
+                wikiTitle: page.title,
+                photoPath: (remote ? photos.get(remote) : null) ?? null,
+                honours: parseHonours(page.wikitext)
+              }
+            })
+            repo.saveWrestlerDetails(detailRows)
+            // Honours need the row to exist, so they land after the details.
+            for (const row of detailRows) {
+              const w = repo.wrestlerIdByTitle(row.wikiTitle)
+              if (w != null) repo.saveHonours(w, row.honours)
+            }
             status = { ...status, wrestlers: status.wrestlers + result.pages.length }
           } catch {
             status = { ...status, failed: status.failed + titles.length }
@@ -382,6 +389,13 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
           status = { ...status, done: status.done + titles.length }
           if (delay > 0) await sleep(delay)
         }
+      }
+
+      // Sweep wrestler rows the refreshed cards no longer reference.
+      try {
+        repo.pruneOrphanWrestlers()
+      } catch {
+        // Housekeeping only.
       }
 
       if (status.id === id) status = { ...status, state: 'done', message: null }

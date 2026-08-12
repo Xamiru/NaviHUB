@@ -18,8 +18,14 @@ function fmtDuration(seconds: number | null): string | null {
   return `${m}:${String(s).padStart(2, '0')}`
 }
 
-// Groups a side's participants by team so "The Steiner Brothers (Rick & Scott)"
-// reads the way the card does.
+// Cards read "A, B and C" — never "A & B & C". The separator before item i of n
+// is ", " except before the last, which is " and ".
+function sep(i: number, n: number): string {
+  return i === n - 1 ? ' and ' : ', '
+}
+
+// Groups a side's participants by team so "The Steiner Brothers (Rick and
+// Scott)" reads the way the card does.
 function Side({ people }: { people: WrestlingParticipant[] }): JSX.Element {
   const teams: { name: string | null; members: WrestlingParticipant[] }[] = []
   for (const p of people) {
@@ -31,11 +37,11 @@ function Side({ people }: { people: WrestlingParticipant[] }): JSX.Element {
     <>
       {teams.map((team, ti) => (
         <Fragment key={ti}>
-          {ti > 0 && <span className="text-gray-600"> &amp; </span>}
+          {ti > 0 && <span className="text-gray-500">{sep(ti, teams.length)}</span>}
           {team.name && <span className="text-gray-400">{team.name} (</span>}
           {team.members.map((p, i) => (
             <Fragment key={p.wrestlerId}>
-              {i > 0 && <span className="text-gray-600"> &amp; </span>}
+              {i > 0 && <span className="text-gray-500">{sep(i, team.members.length)}</span>}
               <Link
                 to={`/wrestling/wrestler/${p.wrestlerId}`}
                 className="hover:text-accent hover:underline"
@@ -90,14 +96,23 @@ export default function WrestlingMatchRow({
       <div className="flex items-baseline justify-between gap-4">
         <div className="min-w-0 text-sm">
           {sides.length > 0 ? (
-            sides.map((side, i) => (
-              <Fragment key={side}>
-                {i > 0 && <span className="mx-1.5 text-gray-600">vs.</span>}
-                <span className={side === 0 && match.outcome === 'decision' ? 'text-white' : ''}>
-                  <Side people={match.participants.filter((p) => p.side === side)} />
-                </span>
-              </Fragment>
-            ))
+            sides.map((side, i) => {
+              const decided = match.outcome === 'decision'
+              const isWinner = decided && side === 0
+              return (
+                <Fragment key={side}>
+                  {i > 0 && (
+                    // Say who won in words rather than relying on colour alone.
+                    <span className="mx-1.5 font-medium text-gray-400">
+                      {decided ? 'def.' : 'vs.'}
+                    </span>
+                  )}
+                  <span className={isWinner ? 'font-semibold text-white' : 'text-gray-400'}>
+                    <Side people={match.participants.filter((p) => p.side === side)} />
+                  </span>
+                </Fragment>
+              )
+            })
           ) : (
             // No linked participants (an unlinked card, or a battle royal whose
             // entrants we deliberately don't store) — the prose still reads.
@@ -122,6 +137,7 @@ export default function WrestlingMatchRow({
       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500">
         {match.cardSlot && <span className="chip">{match.cardSlot === 'pre' ? 'Pre-show' : 'Dark'}</span>}
         {match.stipulation && <span>{match.stipulation}</span>}
+        {match.method && <span className="text-gray-400">by {match.method}</span>}
         {match.championship && <span className="text-gray-400">for the {match.championship}</span>}
         {match.outcome === 'draw' && <span className="text-gray-400">Draw</span>}
         {match.outcome === 'nocontest' && <span className="text-gray-400">No contest</span>}

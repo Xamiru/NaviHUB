@@ -69,6 +69,7 @@ import * as gachaCoach from './gachaCoach'
 import * as coachRepo from './repos/coachRepo'
 import * as wrestlingRepo from './repos/wrestlingRepo'
 import * as wrestlingImport from './wrestling/importRun'
+import * as looseMatch from './wrestling/looseMatch'
 import * as scan from './video/scan'
 import type { VideoSourceRef } from '@shared/types'
 import { VIDEO_SCOPES, type VideoScope } from './video/scope'
@@ -674,7 +675,7 @@ export function registerIpc(): void {
   ipcMain.handle('wrestling:chronology', (_e, id) => wrestlingRepo.chronology(id))
   ipcMain.handle('wrestling:yearCounts', (_e, promotion) => wrestlingRepo.yearCounts(promotion))
   ipcMain.handle('wrestling:allYears', () => wrestlingRepo.allYears())
-  ipcMain.handle('wrestling:wrestler', (_e, id) => wrestlingRepo.getWrestler(id))
+  ipcMain.handle('wrestling:wrestler', (_e, id) => wrestlingRepo.getWrestlerDetail(id))
   ipcMain.handle('wrestling:wrestlerMatches', (_e, id, opts) =>
     wrestlingRepo.wrestlerMatches(id, opts ?? {})
   )
@@ -704,6 +705,13 @@ export function registerIpc(): void {
   ipcMain.handle('wrestling:detach', (_e, eventId) =>
     scan.detachIn(VIDEO_SCOPES.wrestling, eventId)
   )
+  ipcMain.handle('wrestling:looseMatches', () => wrestlingRepo.looseMatches())
+  ipcMain.handle('wrestling:addLooseMatch', (_e, input) => looseMatch.pickAndCreate(input))
+  ipcMain.handle('wrestling:updateLooseMatch', (_e, id, input) =>
+    wrestlingRepo.updateLooseMatch(id, input)
+  )
+  ipcMain.handle('wrestling:removeLooseMatch', (_e, id) => wrestlingRepo.removeLooseMatch(id))
+  ipcMain.handle('wrestling:recentlyAdded', () => wrestlingRepo.recentlyAdded())
   ipcMain.handle('wrestling:startImport', (_e, opts) => wrestlingImport.start(opts ?? {}))
   ipcMain.handle('wrestling:importStatus', () => wrestlingImport.getStatus())
   ipcMain.handle('wrestling:cancelImport', () => wrestlingImport.cancel())

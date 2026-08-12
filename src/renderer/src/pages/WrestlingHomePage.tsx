@@ -19,6 +19,10 @@ export default function WrestlingHomePage(): JSX.Element {
     queryKey: qk.wrestling.overview,
     queryFn: () => api.wrestling.overview()
   })
+  const { data: recent } = useQuery({
+    queryKey: qk.wrestling.recent,
+    queryFn: () => api.wrestling.recentlyAdded()
+  })
   const { data: years } = useQuery({
     queryKey: qk.wrestling.allYears,
     queryFn: () => api.wrestling.allYears()
@@ -63,6 +67,32 @@ export default function WrestlingHomePage(): JSX.Element {
             <div className="mb-8">
               <WrestlingImportPanel installed onDone={() => undefined} />
             </div>
+          )}
+
+          {(recent?.events.length || recent?.loose.length) && (
+            <Section
+              title="Recently added"
+              subtitle={<Link to="/wrestling/collection" className="hover:text-accent">Collection →</Link>}
+            >
+              <div className="flex flex-wrap gap-2">
+                {recent!.events.slice(0, 6).map((e) => (
+                  <Link key={`e${e.id}`} to={`/wrestling/event/${e.id}`} className="chip hover:text-accent">
+                    {e.name}
+                    <span className="ml-1 text-gray-500">{e.videoCount}</span>
+                  </Link>
+                ))}
+                {recent!.loose.slice(0, 6).map((m) => (
+                  <Link
+                    key={`m${m.id}`}
+                    to="/wrestling/collection"
+                    className="chip hover:text-accent"
+                    title={m.showLabel ?? 'Loose match'}
+                  >
+                    {m.title}
+                  </Link>
+                ))}
+              </div>
+            </Section>
           )}
 
           <Section title="Promotions">

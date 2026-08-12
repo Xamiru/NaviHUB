@@ -184,7 +184,7 @@ export function files(mediaId: number): VideoLibrary {
 // from.
 export interface ScopedFileRow {
   id: number
-  ownerId: number
+  ownerId: number | null
   filePath: string
   title: string
   sortOrder: number
@@ -200,7 +200,7 @@ export function scopedFileById(scope: VideoScope, fileId: number): ScopedFileRow
   if (!r) return null
   return {
     id: r.id as number,
-    ownerId: r[scope.ownerCol] as number,
+    ownerId: (r[scope.ownerCol] ?? null) as number | null,
     filePath: r.file_path as string,
     title: r.title as string,
     sortOrder: r.sort_order as number,
@@ -514,8 +514,9 @@ export function neighboursIn(
   const db = getSqlite()
   const row = db
     .prepare(`SELECT ${scope.ownerCol} AS owner_id, sort_order FROM ${scope.table} WHERE id = ?`)
-    .get(fileId) as { owner_id: number; sort_order: number } | undefined
-  if (!row) return { prev: null, next: null }
+    .get(fileId) as { owner_id: number | null; sort_order: number } | undefined
+  // A loose file has no owner and therefore no card to step through.
+  if (!row || row.owner_id == null) return { prev: null, next: null }
   const pick = (order: 'DESC' | 'ASC', cmp: '<' | '>'): { fileId: number; title: string } | null => {
     const r = db
       .prepare(

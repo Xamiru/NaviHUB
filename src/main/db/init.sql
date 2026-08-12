@@ -899,9 +899,16 @@ CREATE INDEX IF NOT EXISTS idx_wrestling_event_promo ON wrestling_event(promotio
 -- rating/favorite are the personal layer (0-5 stars, Meltzer style) and survive
 -- re-import. video_id is a SOFT link to wrestling_video — no FK, so detaching a
 -- folder can't cascade away the wiki row (the list_item / jp_card precedent).
+-- event_id is NULLABLE: a LOOSE match is one you own as a standalone rip with
+-- no PPV behind it (a Raw main event, a one-off). Modelling it as a match
+-- without an event rather than as its own concept means participants, ratings,
+-- hearts, lists, wrestler pages and the career record all work on it unchanged.
+-- show_label/match_date carry what the event row would otherwise have said.
 CREATE TABLE IF NOT EXISTS wrestling_match (
   id               INTEGER PRIMARY KEY AUTOINCREMENT,
-  event_id         INTEGER NOT NULL REFERENCES wrestling_event(id) ON DELETE CASCADE,
+  event_id         INTEGER REFERENCES wrestling_event(id) ON DELETE CASCADE,
+  show_label       TEXT,
+  match_date       TEXT,
   sort_order       INTEGER NOT NULL DEFAULT 0,
   title            TEXT NOT NULL,
   result_text      TEXT,
@@ -909,6 +916,7 @@ CREATE TABLE IF NOT EXISTS wrestling_match (
   championship     TEXT,
   duration_seconds INTEGER,
   outcome          TEXT NOT NULL DEFAULT 'unknown',
+  method           TEXT,
   card_slot        TEXT,
   card_label       TEXT,
   rating           REAL,
@@ -968,6 +976,18 @@ CREATE TABLE IF NOT EXISTS wrestling_match_participant (
 CREATE INDEX IF NOT EXISTS idx_wrestling_participant_match ON wrestling_match_participant(match_id);
 CREATE INDEX IF NOT EXISTS idx_wrestling_participant_wrestler ON wrestling_match_participant(wrestler_id);
 
+-- "Championships and accomplishments" off the wrestler's own article: an org
+-- header ("WWE", "Pro Wrestling Illustrated") and the honours under it.
+-- Canonical wiki data — replaced wholesale on re-import, nothing personal.
+CREATE TABLE IF NOT EXISTS wrestling_honour (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  wrestler_id INTEGER NOT NULL REFERENCES wrestling_wrestler(id) ON DELETE CASCADE,
+  org         TEXT NOT NULL,
+  title       TEXT NOT NULL,
+  sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_wrestling_honour_wrestler ON wrestling_honour(wrestler_id);
+
 CREATE TABLE IF NOT EXISTS wrestling_stable (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
   name       TEXT NOT NULL,
@@ -1004,7 +1024,8 @@ CREATE TABLE IF NOT EXISTS wrestling_stable_member (
 -- cheaper than a second copy of the sync logic.
 CREATE TABLE IF NOT EXISTS wrestling_video (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
-  event_id       INTEGER NOT NULL REFERENCES wrestling_event(id) ON DELETE CASCADE,
+  -- NULL for a loose match's file (see wrestling_match.event_id).
+  event_id       INTEGER REFERENCES wrestling_event(id) ON DELETE CASCADE,
   file_path      TEXT NOT NULL,
   title          TEXT NOT NULL,
   number         REAL,

@@ -97,6 +97,7 @@ import WrestlingWrestlerPage from './pages/WrestlingWrestlerPage'
 import WrestlingRatedPage from './pages/WrestlingRatedPage'
 import WrestlingYearPage from './pages/WrestlingYearPage'
 import WrestlingMatchRedirect from './pages/WrestlingMatchRedirect'
+import WrestlingCollectionPage from './pages/WrestlingCollectionPage'
 import GachaGamePage from './pages/GachaGamePage'
 import GachaUnitPage from './pages/GachaUnitPage'
 import GachaCoachPage from './pages/GachaCoachPage'
@@ -415,6 +416,7 @@ export default function App() {
                 segment can never be mistaken for an :id. */}
             <Route path="/wrestling" element={<WrestlingHomePage />} />
             <Route path="/wrestling/rated" element={<WrestlingRatedPage />} />
+            <Route path="/wrestling/collection" element={<WrestlingCollectionPage />} />
             <Route path="/wrestling/year/:year" element={<WrestlingYearPage />} />
             <Route path="/wrestling/match/:id" element={<WrestlingMatchRedirect />} />
             <Route path="/wrestling/p/:promo" element={<WrestlingPromotionPage />} />

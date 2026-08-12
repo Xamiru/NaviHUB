@@ -2697,7 +2697,11 @@ export interface WrestlingParticipant {
 
 export interface WrestlingMatch {
   id: number
-  eventId: number
+  // null = a LOOSE match: a standalone rip with no PPV behind it, which names
+  // its own show and date instead.
+  eventId: number | null
+  showLabel: string | null
+  matchDate: string | null
   sortOrder: number
   title: string // denormalized "X vs. Y" — lists, search, and list_item display
   resultText: string | null // original results cell, markup stripped
@@ -2705,6 +2709,7 @@ export interface WrestlingMatch {
   championship: string | null
   durationSeconds: number | null
   outcome: WrestlingOutcome
+  method: string | null // "pinfall", "submission", … null when the cell didn't say
   cardSlot: WrestlingCardSlot
   cardLabel: string | null // the results table's |caption ("Night 1")
   rating: number | null // personal 0-5 stars; null = unrated
@@ -2729,6 +2734,27 @@ export interface WrestlingWrestler {
   matchCount: number
 }
 
+// One organisation's worth of honours, as the article groups them.
+export interface WrestlingHonourGroup {
+  org: string
+  items: string[]
+}
+
+// A wrestler's win/loss record over the matches we hold. Draws and no-contests
+// count in neither column, which is why they are reported separately.
+export interface WrestlingRecord {
+  wins: number
+  losses: number
+  draws: number
+  total: number
+}
+
+export interface WrestlingWrestlerDetail extends WrestlingWrestler {
+  honours: WrestlingHonourGroup[]
+  record: WrestlingRecord
+  championships: string[] // distinct titles held in matches they won
+}
+
 export interface WrestlingStable {
   id: number
   name: string
@@ -2744,7 +2770,7 @@ export interface WrestlingStable {
 // media/season fields; playback goes through the shared video pipeline.
 export interface WrestlingVideo {
   id: number
-  eventId: number
+  eventId: number | null
   filePath: string // relative to the wrestling root
   title: string
   number: number | null
@@ -2813,6 +2839,17 @@ export interface WrestlingOverview {
     ownedCount: number // events with at least one attached local file
   }[]
   totals: { events: number; matches: number; wrestlers: number; rated: number }
+}
+
+// Creating/editing a loose match: the file is picked in main, the rest is
+// what the user types.
+export interface WrestlingLooseMatchInput {
+  title: string
+  showLabel?: string | null
+  matchDate?: string | null
+  stipulation?: string | null
+  wrestlerIds?: number[] // side 0 first; winner is whoever `winnerIds` names
+  winnerIds?: number[]
 }
 
 export interface WrestlingEventFilter {

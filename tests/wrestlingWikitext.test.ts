@@ -12,6 +12,7 @@ import {
   parseResultCell,
   parseResultsCard,
   parseWikiLinks,
+  joinNames,
   parseWrestlerArticle,
   stripMarkup,
   titleToKey
@@ -302,7 +303,7 @@ describe('result cells', () => {
       '"Stone Cold" Steve Austin vs. The Rock'
     )
     expect(parseResultCell(parseResultsCard(WM17)[0].match).title).toBe(
-      'X-Pac & Justin Credible vs. Steve Blackman & Grand Master Sexay'
+      'X-Pac and Justin Credible vs. Steve Blackman and Grand Master Sexay'
     )
   })
 
@@ -316,6 +317,145 @@ describe('result cells', () => {
     const m = parseResultCell('[[A]] vs. [[B]] ended in a no contest')
     expect(m.outcome).toBe('nocontest')
     expect(m.participants.some((p) => p.won)).toBe(false)
+  })
+})
+
+describe('result tails', () => {
+  // These are verbatim cells from Backlash (2023) and SummerSlam (2022). The
+  // original fixtures had no "by pinfall" tail at all, which is exactly why 28
+  // green tests sat on top of a parser that turned the method into a wrestler.
+  it('never reads the method as a participant', () => {
+    const m = parseResultCell('[[Bianca Belair]] (c) defeated [[Becky Lynch]] by [[pinfall]]')
+    // [[pinfall]] is a WIKILINK, so it looked exactly like a name and got its
+    // own wrestler row with its own page.
+    expect(m.participants.map((p) => p.name)).toEqual(['Bianca Belair', 'Becky Lynch'])
+    expect(m.method).toBe('pinfall')
+    expect(m.title).toBe('Bianca Belair vs. Becky Lynch')
+  })
+
+  it('handles the unlinked tail form too', () => {
+    const m = parseResultCell('[[A]] defeated [[B]] by pinfall')
+    expect(m.participants.map((p) => p.name)).toEqual(['A', 'B'])
+    expect(m.method).toBe('pinfall')
+  })
+
+  it('reads submission, disqualification and count-out', () => {
+    expect(
+      parseResultCell(
+        '[[Bobby Lashley]] (c) defeated [[Austin Theory|Theory]] by [[Submission (professional wrestling)|submission]]'
+      ).method
+    ).toBe('submission')
+    expect(parseResultCell('[[A]] defeated [[B]] by disqualification').method).toBe('disqualification')
+    expect(parseResultCell('[[A]] defeated [[B]] by count-out').method).toBe('count-out')
+  })
+
+  it('drops the other trailing clauses a cell can carry', () => {
+    const m = parseResultCell('[[A]] defeated [[B]] to win the [[WWE Championship]]')
+    expect(m.participants.map((p) => p.name)).toEqual(['A', 'B'])
+    const n = parseResultCell('[[A]] defeated [[B]] in a [[Ladder match]]')
+    expect(n.participants.map((p) => p.name)).toEqual(['A', 'B'])
+  })
+
+  it('keeps a tail INSIDE a link or a paren group', () => {
+    // "(with X)" is stripped separately; a link whose text contains "by" must
+    // not truncate the side.
+    const m = parseResultCell('[[Stand Back|Song by Vince]] defeated [[B]] by pinfall')
+    expect(m.participants.map((p) => p.name)).toEqual(['Song by Vince', 'B'])
+    expect(m.method).toBe('pinfall')
+  })
+
+  it('reports no method when the cell gives none', () => {
+    expect(parseResultCell('[[A]] defeated [[B]]').method).toBeNull()
+  })
+})
+
+describe('name joining', () => {
+  it('reads like a card, not like a boolean expression', () => {
+    expect(joinNames(['A'])).toBe('A')
+    expect(joinNames(['A', 'B'])).toBe('A and B')
+    expect(joinNames(['A', 'B', 'C'])).toBe('A, B and C')
+  })
+
+  it('titles a six-man tag correctly', () => {
+    const m = parseResultCell(
+      '[[Randy Savage]], [[Scott Norton]] and [[Virgil (wrestler)|Vincent]] defeated [[Big Boss Man (wrestler)|Ray Traylor]] and [[The Steiner Brothers]] ([[Rick Steiner]] and [[Scott Steiner]])'
+    )
+    expect(m.title).toBe(
+      'Randy Savage, Scott Norton and Vincent vs. Ray Traylor, Rick Steiner and Scott Steiner'
+    )
+  })
+})
+
+describe('editor conventions the fixtures missed', () => {
+  // Every case here is a verbatim cell found by sweeping 150 real WWE events.
+  // They are not exotic: each broke on a normal card.
+  it('ignores a conjunction that was piped to a stable article', () => {
+    // SummerSlam (2025) and NXT No Mercy (2024) both do this — the word "and"
+    // is a LINK to the team's page, which made a wrestler named "and".
+    const m = parseResultCell(
+      '[[Roman Reigns]] and [[Jey Uso]] defeated [[Bron Breakker]] [[The Vision (professional wrestling)|and]] [[Bronson Reed]] (with [[Paul Heyman]]) by [[pinfall]]'
+    )
+    expect(m.participants.map((p) => p.name)).toEqual([
+      'Roman Reigns',
+      'Jey Uso',
+      'Bron Breakker',
+      'Bronson Reed'
+    ])
+  })
+
+  it('ignores a piped conjunction inside a team roster too', () => {
+    // Hell in a Cell (2019) — the same trick, but nested in the paren group,
+    // which the first fix did not cover.
+    const m = parseResultCell(
+      '[[Braun Strowman]] and [[The Viking Raiders]] ([[Erik (wrestler)|Erik]] and [[Ivar (wrestler)|Ivar]]) defeated [[The O.C. (professional wrestling)|The O.C.]] ([[AJ Styles]], [[Luke Gallows]], [[Good Brothers (professional wrestling)|and]] [[Karl Anderson]]) by [[Disqualification (professional wrestling)|disqualification]]'
+    )
+    expect(m.participants.map((p) => p.name)).toEqual([
+      'Braun Strowman',
+      'Erik',
+      'Ivar',
+      'AJ Styles',
+      'Luke Gallows',
+      'Karl Anderson'
+    ])
+    expect(m.method).toBe('disqualification')
+  })
+
+  it('splits an entirely unlinked side into individual wrestlers', () => {
+    // Royal Rumble (2010): no links at all, so the whole side arrived as one
+    // 90-character "wrestler".
+    const m = parseResultCell(
+      'Ezekiel Jackson defeated Kane, Yoshi Tatsu, Vance Archer, Matt Hardy, Evan Bourne, Shelton Benjamin and CM Punk'
+    )
+    expect(m.participants.map((p) => p.name)).toEqual([
+      'Ezekiel Jackson',
+      'Kane',
+      'Yoshi Tatsu',
+      'Vance Archer',
+      'Matt Hardy',
+      'Evan Bourne',
+      'Shelton Benjamin',
+      'CM Punk'
+    ])
+  })
+
+  it('reads a two-night date range as its first night', () => {
+    // WrestleMania 39 / XL and SummerSlam 2025 are two-night events, and the
+    // en-dash range matched none of the single-date patterns — so they had no
+    // year anywhere in the app.
+    expect(parseInfoboxDate('April 1–2, 2023{{efn|originally one night}}')).toBe('2023-04-01')
+    expect(parseInfoboxDate('April 6–7, 2024')).toBe('2024-04-06')
+    expect(parseInfoboxDate('August 2–3, 2025')).toBe('2025-08-02')
+    // Across a month boundary the first night still wins.
+    expect(parseInfoboxDate('August 31 – September 1, 2024')).toBe('2024-08-31')
+  })
+
+  it('reads the {{dts}} and {{Plainlist}} date forms', () => {
+    // In Your House articles use {{dts}}; a per-night Plainlist was being
+    // deleted wholesale as "a template".
+    expect(parseInfoboxDate('{{dts|1997|5|11}}<ref name=x>cite</ref>')).toBe('1997-05-11')
+    expect(
+      parseInfoboxDate('{{Plainlist|\n*Night 1: April 16, 2025\n*Night 2: April 18, 2025}}')
+    ).toBe('2025-04-16')
   })
 })
 
