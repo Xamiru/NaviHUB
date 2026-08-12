@@ -37,6 +37,8 @@ import * as tmdb from './tmdb'
 import * as vndb from './vndb'
 import * as rawg from './rawg'
 import * as igdb from './igdb'
+import * as steam from './steam'
+import * as gamesCatalog from './gamesCatalog'
 import * as openlibrary from './openlibrary'
 import * as themes from './themes'
 import * as pictures from './pictures'
@@ -430,6 +432,22 @@ export function registerIpc(): void {
   )
 
   // ---- RAWG import (games) ----
+  ipcMain.handle('steam:search', (_e, query) => steam.search(query))
+  ipcMain.handle('steam:import', (_e, appId) =>
+    withActivity('Importing from Steam', () => steam.importGame(appId))
+  )
+  // ---- offline games catalog (RAWG's final dump; console coverage) ----
+  ipcMain.handle('rawgCatalog:search', (_e, query) => gamesCatalog.search(query))
+  ipcMain.handle('rawgCatalog:import', (_e, catalogId) =>
+    withActivity('Importing from the games catalog', () => gamesCatalog.importGame(catalogId))
+  )
+  ipcMain.handle('rawgCatalog:status', () => gamesCatalog.status())
+  ipcMain.handle('rawgCatalog:install', () =>
+    withActivity('Downloading the games catalog', () => gamesCatalog.install())
+  )
+  ipcMain.handle('rawgCatalog:bulkImport', (_e, count) =>
+    withActivity('Importing top games', () => gamesCatalog.bulkImport(count))
+  )
   ipcMain.handle('igdb:search', (_e, query) => igdb.search(query))
   ipcMain.handle('igdb:import', (_e, igdbId) =>
     withActivity('Importing from IGDB', () => igdb.importGame(igdbId))

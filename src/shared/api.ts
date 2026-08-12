@@ -22,6 +22,7 @@ import type {
   CharacterAppearance,
   CreditRole,
   GlobalSearchResults,
+  GamesCatalogStatus,
   ImportSearchResult,
   ImportSummary,
   ThemeImportSummary,
@@ -369,9 +370,32 @@ export interface NaviApi {
     import(rawgId: number): Promise<ImportSummary>
   }
   igdb: {
-    // Games source since 2026-08 (Twitch OAuth: igdb.client_id/secret settings).
+    // Shelved games source (needs Twitch 2FA the user's phone region can't
+    // enroll in) — kept alongside rawg for existing rows / a future revival.
     search(query: string): Promise<ImportSearchResult[]>
     import(igdbId: number): Promise<ImportSummary>
+  }
+  steam: {
+    // Games source since 2026-08-10: Steam's storefront API — keyless, no
+    // account. No length data (HLTB is the only length source) and no cast.
+    search(query: string): Promise<ImportSearchResult[]>
+    import(appId: number): Promise<ImportSummary>
+  }
+  rawgCatalog: {
+    // The OFFLINE games catalog (console coverage): RAWG's final CC0 dump as
+    // a local FTS-searchable pack, downloaded once from this repo's
+    // games-catalog prerelease (github.token, the updater's token). Imports
+    // write external_source 'rawg' so API-era rows match instead of
+    // duplicating. search throws a friendly error until installed.
+    search(query: string): Promise<ImportSearchResult[]>
+    import(catalogId: number): Promise<ImportSummary>
+    status(): Promise<GamesCatalogStatus>
+    install(): Promise<GamesCatalogStatus>
+    // Top-N most-tracked games in one run. Skips titles already in the
+    // library (which also makes an interrupted run resumable by re-running)
+    // and deliberately skips HLTB — lengths use the dump's playtime; the
+    // detail page's Fetch button refreshes any title later.
+    bulkImport(count: number): Promise<{ imported: number; skipped: number; failed: number }>
   }
   openlibrary: {
     search(query: string): Promise<ImportSearchResult[]>

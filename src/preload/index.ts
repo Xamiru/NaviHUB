@@ -131,6 +131,17 @@ const api: NaviApi = {
     search: (query) => ipcRenderer.invoke('igdb:search', query),
     import: (igdbId) => ipcRenderer.invoke('igdb:import', igdbId)
   },
+  steam: {
+    search: (query) => ipcRenderer.invoke('steam:search', query),
+    import: (appId) => ipcRenderer.invoke('steam:import', appId)
+  },
+  rawgCatalog: {
+    search: (query) => ipcRenderer.invoke('rawgCatalog:search', query),
+    import: (catalogId) => ipcRenderer.invoke('rawgCatalog:import', catalogId),
+    status: () => ipcRenderer.invoke('rawgCatalog:status'),
+    install: () => ipcRenderer.invoke('rawgCatalog:install'),
+    bulkImport: (count) => ipcRenderer.invoke('rawgCatalog:bulkImport', count)
+  },
   openlibrary: {
     search: (query) => ipcRenderer.invoke('openlibrary:search', query),
     import: (olId) => ipcRenderer.invoke('openlibrary:import', olId)

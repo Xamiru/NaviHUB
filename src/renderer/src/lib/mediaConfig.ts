@@ -12,7 +12,17 @@ export interface ChildNav {
 }
 
 export interface ImportSourceCfg {
-  key: 'anilist' | 'anilistManga' | 'tmdb' | 'tmdbTv' | 'vndb' | 'rawg' | 'igdb' | 'openlibrary'
+  key:
+    | 'anilist'
+    | 'anilistManga'
+    | 'tmdb'
+    | 'tmdbTv'
+    | 'vndb'
+    | 'rawg'
+    | 'igdb'
+    | 'steam'
+    | 'rawgCatalog'
+    | 'openlibrary'
   label: string // "AniList" / "TMDB" / "VNDB" / "RAWG" / "Open Library"
   placeholder: string
   // Noun for a result's unit count in the search dialog ("352 pages"); "ep" default.
@@ -85,6 +95,11 @@ export interface MediaConfig {
   listTabs?: ListTab[]
   // external import
   importSource?: ImportSourceCfg
+  // Additional sources shown as pills in ImportDialog (games: Steam for
+  // current PC releases + the offline catalog for console/back-catalog).
+  // importSource stays the default/first; the gates on list/detail pages only
+  // check importSource, so a type with extras needs no other changes.
+  importSources?: ImportSourceCfg[]
   // OP/ED theme songs (anime only) — shows the Theme Songs section + import.
   hasThemes?: boolean
   // Label for the detail page's type-specific media tab (Theme Songs /
@@ -286,7 +301,17 @@ export const GAME: MediaConfig = {
   progressStatLabel: 'Playtime',
   formatProgressStat: (m) =>
     m.totalUnits != null ? `${m.progress} / ~${m.totalUnits} h` : `${m.progress} h`,
-  formatCardSub: (m) => (m.totalUnits != null ? `~${m.totalUnits} h` : ''),
+  // Length + Metacritic ("~25 h · MC 92") — every games source writes
+  // metadata.metacritic, and the user wants it visible per card.
+  formatCardSub: (m) => {
+    const mc = m.metadata?.['metacritic']
+    return [
+      m.totalUnits != null ? `~${m.totalUnits} h` : null,
+      typeof mc === 'number' && mc > 0 ? `MC ${mc}` : null
+    ]
+      .filter(Boolean)
+      .join(' · ')
+  },
   castRole: 'voice_actor',
   castSectionTitle: 'Characters',
   castPersonLabel: 'Voice actor',
@@ -302,7 +327,15 @@ export const GAME: MediaConfig = {
   companyDefaultRole: 'developer',
   companyPickerPlaceholder: 'Add developer / publisher…',
   children: [{ to: '/people', label: 'Voice Actors', role: 'voice_actor' }],
-  importSource: { key: 'igdb', label: 'IGDB', placeholder: 'Search IGDB (e.g. Persona 5)…' },
+  importSource: { key: 'steam', label: 'Steam', placeholder: 'Search Steam (e.g. Persona 5)…' },
+  importSources: [
+    { key: 'steam', label: 'Steam', placeholder: 'Search Steam (e.g. Persona 5)…' },
+    {
+      key: 'rawgCatalog',
+      label: 'Catalog (offline)',
+      placeholder: 'Search the offline catalog (consoles too)…'
+    }
+  ],
   hasPlaytimes: true,
   mediaTabLabel: 'Playtime',
   hasFanArt: true,

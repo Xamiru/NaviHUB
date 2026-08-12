@@ -574,6 +574,13 @@ export type SettingsMap = Record<string, string>
 // One result shape covers both sources. For movies, `native` is the original
 // title, `format` is e.g. "Movie", and `episodes` is left null.
 // `id` is a string for sources with non-numeric ids (Open Library "OL…W").
+// The offline games catalog's install state (gamesCatalog.ts).
+export interface GamesCatalogStatus {
+  installed: boolean
+  gameCount: number
+  snapshot: string | null // dataset date, e.g. '2026-06-27'
+}
+
 export interface ImportSearchResult {
   id: number | string
   title: string

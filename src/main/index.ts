@@ -17,6 +17,7 @@ import { killActiveUpdate } from './updater'
 import { killActivePrepare } from './video/session'
 import { killActiveOcr } from './mokuroRun'
 import { finalizeActiveGameSession } from './gameLaunch'
+import { closeCatalogDb } from './gamesCatalogDb'
 import { parseArgvFiles, queueOpen } from './openFile'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
@@ -268,5 +269,6 @@ app.on('before-quit', () => {
   // Must run before closeDatabase() — it writes the session row.
   finalizeActiveGameSession()
   closeDatabase()
+  closeCatalogDb()
   closeDictDb()
 })

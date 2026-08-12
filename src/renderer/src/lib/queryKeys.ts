@@ -282,6 +282,11 @@ export const qk = {
     sessionStatus: ['games', 'sessionStatus'] as const,
     overview: (mediaId: number) => ['games', 'overview', mediaId] as const
   },
+  gamesCatalog: {
+    // The offline RAWG catalog's install state (ImportDialog's catalog pill).
+    all: ['gamesCatalog'] as const,
+    status: ['gamesCatalog', 'status'] as const
+  },
   activity: ['activity'] as const,
   search: (q: string) => ['search', q] as const,
   // External import-source search: the source key ('anilist', 'tmdb', …) is the

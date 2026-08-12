@@ -18,15 +18,66 @@ interface Props {
 
 // Search an external source (AniList for anime, TMDB for movies) and import a
 // title — cover, companies, cast, crew — in one click. The source comes from
-// the media type's config, so this dialog is type-agnostic.
+// the media type's config, so this dialog is type-agnostic. A type with
+// several sources (games: Steam + the offline catalog) gets a pill switcher;
+// the search cache is already per-source (qk.importSearch keys on source.key).
 export default function ImportDialog({ cfg, onClose, onImported, initialQuery }: Props) {
   const qc = useQueryClient()
-  const source = cfg.importSource!
+  const sources = cfg.importSources ?? [cfg.importSource!]
+  const [source, setSource] = useState(sources[0])
   // The union of importer groups intersects import's parameter to never (ids
   // are number for most sources, string for Open Library) — flatten it once.
   const client = api[source.key] as {
     search(query: string): Promise<ImportSearchResult[]>
     import(id: number | string): Promise<ImportSummary>
+  }
+
+  // The offline catalog is a one-time download — until it's installed, its
+  // pill shows an install panel instead of a search that can only error.
+  const isCatalog = source.key === 'rawgCatalog'
+  const { data: catalogStatus } = useQuery({
+    queryKey: qk.gamesCatalog.status,
+    queryFn: () => api.rawgCatalog.status(),
+    enabled: isCatalog
+  })
+  const [installing, setInstalling] = useState(false)
+  const catalogMissing = isCatalog && catalogStatus != null && !catalogStatus.installed
+
+  async function installCatalog() {
+    setInstalling(true)
+    setError(null)
+    try {
+      await api.rawgCatalog.install()
+      await qc.invalidateQueries({ queryKey: qk.gamesCatalog.status })
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Catalog install failed')
+    } finally {
+      setInstalling(false)
+    }
+  }
+
+  // Bulk "top games" shelf — a long run (covers download per title), safely
+  // re-runnable: already-imported titles are skipped, so an interrupted run
+  // resumes by pressing the button again.
+  const [bulkCount, setBulkCount] = useState('2000')
+  const [bulkBusy, setBulkBusy] = useState(false)
+
+  async function runBulk() {
+    setBulkBusy(true)
+    setError(null)
+    setDone(null)
+    try {
+      const res = await api.rawgCatalog.bulkImport(Number(bulkCount) || 0)
+      await qc.invalidateQueries({ queryKey: qk.media.all })
+      await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
+      setDone(
+        `Bulk import finished — ${res.imported} imported, ${res.skipped} already in the library${res.failed ? `, ${res.failed} failed` : ''}.`
+      )
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Bulk import failed')
+    } finally {
+      setBulkBusy(false)
+    }
   }
 
   const [query, setQuery] = useState(initialQuery ?? '')
@@ -41,7 +92,7 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
   const { data: results = [], isFetching } = useQuery({
     queryKey: qk.importSearch(source.key, submitted),
     queryFn: () => client.search(submitted),
-    enabled: submitted.trim().length > 0
+    enabled: submitted.trim().length > 0 && !catalogMissing
   })
 
   async function doImport(r: ImportSearchResult) {
@@ -89,6 +140,40 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
           </button>
         </div>
 
+        {sources.length > 1 && (
+          <div className="mb-3 flex flex-wrap gap-2">
+            {sources.map((s) => (
+              <button
+                key={s.key}
+                className={s.key === source.key ? 'pill pill-active' : 'pill'}
+                onClick={() => {
+                  setSource(s)
+                  setError(null)
+                }}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {catalogMissing && (
+          <div className="mb-4 rounded-md bg-base-700/60 p-4">
+            <p className="text-sm text-gray-300">
+              The offline catalog is a one-time ~55 MB download (RAWG&apos;s final dataset,
+              ~120k games incl. consoles). Search is instant and local afterwards.
+            </p>
+            <button
+              className="btn-primary mt-3"
+              onClick={installCatalog}
+              disabled={installing}
+            >
+              {installing ? 'Downloading…' : 'Install catalog'}
+            </button>
+            {installing && <ImportProgress />}
+          </div>
+        )}
+
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -108,9 +193,32 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
           </button>
         </form>
 
+        {isCatalog && catalogStatus?.installed && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
+            <span className="text-gray-500">Bulk: import the top</span>
+            <input
+              type="number"
+              className="input w-24"
+              min={1}
+              max={10000}
+              value={bulkCount}
+              onChange={(e) => setBulkCount(e.target.value)}
+              disabled={bulkBusy}
+              aria-label="Bulk import count"
+            />
+            <span className="text-gray-500">most popular games</span>
+            <button className="btn-ghost" onClick={runBulk} disabled={bulkBusy || importingId !== null}>
+              {bulkBusy ? 'Importing…' : 'Run'}
+            </button>
+            <span className="text-xs text-gray-500">
+              Skips titles you already have — safe to re-run if interrupted.
+            </span>
+          </div>
+        )}
+
         {error && <p className="text-sm text-red-400 mb-3">⚠ {error}</p>}
         {done && <p className="text-sm text-green-400 mb-3">✓ {done}</p>}
-        {importingId !== null && <ImportProgress />}
+        {(importingId !== null || bulkBusy) && <ImportProgress />}
         {isFetching && <p className="text-sm text-gray-500">Searching {source.label}…</p>}
 
         {!isFetching && submitted && results.length === 0 && (
