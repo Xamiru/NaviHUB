@@ -23,7 +23,31 @@ interface Props {
 
 // Reads the matching bucket of the global search results for a list's kind and
 // normalizes it to a PickedEntity. Studios use the 'company' bucket.
+//
+// Wrestling entities are NOT in the global search buckets (they're a standalone
+// section), so they get their own lookups. Matches have no search of their own
+// yet — they're added from an event's card, not from here.
 async function search(kind: ListKind, q: string): Promise<PickedEntity[]> {
+  if (kind === 'wrestlingWrestler') {
+    const rows = await api.wrestling.searchWrestlers(q)
+    return rows.map((w) => ({
+      entityId: w.id,
+      name: w.name,
+      imagePath: w.photoPath,
+      mediaType: null
+    }))
+  }
+  if (kind === 'wrestlingEvent') {
+    const rows = await api.wrestling.events({ search: q })
+    return rows.slice(0, 40).map((e) => ({
+      entityId: e.id,
+      name: e.name,
+      imagePath: e.posterPath,
+      mediaType: null
+    }))
+  }
+  if (kind === 'wrestlingMatch') return []
+
   const r = await api.search.global(q)
   switch (kind) {
     case 'media':

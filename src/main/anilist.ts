@@ -2,7 +2,12 @@ import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { fetchWithRetry } from './http'
-import type { AniListSearchResult, AniListImportSummary } from '@shared/types'
+import type {
+  AniListSearchResult,
+  AniListImportSummary,
+  BulkListParams,
+  BulkPreviewItem
+} from '@shared/types'
 
 // AniList public GraphQL API — no auth needed for reads.
 const ENDPOINT = 'https://graphql.anilist.co'
@@ -282,6 +287,100 @@ export async function searchManga(query: string): Promise<AniListSearchResult[]>
   })
 }
 
+// ---------------- Top lists (the /bulk page) ----------------
+// One query serves anime and manga: type, sort and every filter are variables.
+// GraphQL omits an argument whose variable is absent, so buildTopVariables only
+// sets the keys a filter actually uses — passing season: null would FILTER on
+// null instead of skipping the filter.
+const TOP_QUERY = `
+query ($type: MediaType, $sort: [MediaSort], $page: Int, $perPage: Int,
+       $season: MediaSeason, $seasonYear: Int, $genres: [String],
+       $startFrom: FuzzyDateInt, $startTo: FuzzyDateInt) {
+  Page(page: $page, perPage: $perPage) {
+    pageInfo { hasNextPage }
+    media(type: $type, sort: $sort, season: $season, seasonYear: $seasonYear,
+          genre_in: $genres, startDate_greater: $startFrom, startDate_lesser: $startTo,
+          isAdult: false) {
+      id
+      title { romaji english native }
+      startDate { year }
+      averageScore
+      coverImage { medium large }
+    }
+  }
+}`
+
+const TOP_SORTS: Record<string, string> = {
+  popular: 'POPULARITY_DESC',
+  rated: 'SCORE_DESC',
+  trending: 'TRENDING_DESC'
+}
+
+// Pure + exported for tests. FuzzyDateInt is yyyymmdd as a number, so a year
+// bound becomes yyyy0000: `> 20190000` admits 2019-01-01 onward, and the upper
+// bound uses (yearTo+1)0000 so 2019-12-31 stays inside "to 2019".
+export function buildTopVariables(
+  params: BulkListParams,
+  page: number,
+  perPage: number
+): Record<string, unknown> {
+  const sort = TOP_SORTS[params.sort]
+  if (!sort) throw new Error(`Unknown AniList sort: ${params.sort}`)
+  const vars: Record<string, unknown> = {
+    type: params.source === 'manga' ? 'MANGA' : 'ANIME',
+    sort: [sort],
+    page,
+    perPage
+  }
+  if (params.source === 'anime' && params.season && params.seasonYear) {
+    vars.season = params.season.toUpperCase()
+    vars.seasonYear = params.seasonYear
+  }
+  if (params.genre) vars.genres = [params.genre]
+  if (params.yearFrom) vars.startFrom = params.yearFrom * 10_000
+  if (params.yearTo) vars.startTo = (params.yearTo + 1) * 10_000
+  return vars
+}
+
+// A full preview can be 40 pages (count 2000 / perPage 50) — back-to-back
+// that blows AniList's ~30 req/min budget, so pages are spaced like the import
+// loop's throttle. And if a later page still fails (429 waits exhausted, net
+// drop), the pages already fetched are returned as a PARTIAL list instead of
+// thrown away — the page header shows the real count, so a short list is
+// visible, not silent. pageDelayMs is injectable for tests only.
+export async function topList(
+  params: BulkListParams,
+  pageDelayMs = 2100
+): Promise<BulkPreviewItem[]> {
+  const perPage = 50 // AniList's Page maximum
+  const out: BulkPreviewItem[] = []
+  let page = 1
+  for (;;) {
+    let data: any
+    try {
+      data = await gql(TOP_QUERY, buildTopVariables(params, page, perPage))
+    } catch (e) {
+      if (out.length > 0) return out
+      throw e
+    }
+    const media = data?.Page?.media ?? []
+    for (const m of media) {
+      out.push({
+        sourceId: m.id,
+        title: pickTitle(m.title).title,
+        year: m.startDate?.year ?? null,
+        coverUrl: m.coverImage?.large || m.coverImage?.medium || null,
+        score: m.averageScore ?? null,
+        inLibrary: false
+      })
+      if (out.length >= params.count) return out
+    }
+    if (!data?.Page?.pageInfo?.hasNextPage || media.length === 0) return out
+    page++
+    if (pageDelayMs > 0) await new Promise((r) => setTimeout(r, pageDelayMs))
+  }
+}
+
 // AniList relation types we surface on the detail page: the season chain plus
 // the manga/novel a title was adapted from (SOURCE) or that adapts it
 // (ADAPTATION). The rest (CHARACTER, SUMMARY, OTHER…) are noise for a seasons
@@ -376,7 +475,14 @@ query ($id: Int, $page: Int) {
 // Two phases: all network work first (GraphQL pages + every image), then every
 // DB write inside one transaction — a failure mid-import can't leave half a
 // title behind, and re-import stays authoritative or doesn't happen at all.
-export async function importAnime(anilistId: number): Promise<AniListImportSummary> {
+// opts.liteCharacters is the bulk path: keep DETAIL_QUERY's first 25 characters
+// but skip the CHARS_QUERY pagination — at AniList's ~30 req/min budget, five
+// requests per title would turn a 1000-title run into hours. A later re-import
+// from the detail page fetches the full cast.
+export async function importAnime(
+  anilistId: number,
+  opts: { liteCharacters?: boolean } = {}
+): Promise<AniListImportSummary> {
   const data = await gql(DETAIL_QUERY, { id: anilistId })
   const m = data?.Media
   if (!m) throw new Error('Anime not found on AniList')
@@ -386,7 +492,7 @@ export async function importAnime(anilistId: number): Promise<AniListImportSumma
   // up to the first 125 — keep VA-less characters too so the list matches the site.
   const MAX_CHARACTERS = 125 // 5 pages of 25
   const charEdges: any[] = [...(m.characters?.edges ?? [])]
-  let hasNext = !!m.characters?.pageInfo?.hasNextPage
+  let hasNext = !opts.liteCharacters && !!m.characters?.pageInfo?.hasNextPage
   let page = 1
   while (hasNext && charEdges.length < MAX_CHARACTERS) {
     page++
@@ -578,7 +684,11 @@ query ($id: Int, $page: Int) {
 }`
 
 // Same two-phase shape as importAnime: fetch everything, then write atomically.
-export async function importManga(anilistId: number): Promise<AniListImportSummary> {
+// opts.liteCharacters as on importAnime — first page only, for bulk runs.
+export async function importManga(
+  anilistId: number,
+  opts: { liteCharacters?: boolean } = {}
+): Promise<AniListImportSummary> {
   const data = await gql(DETAIL_QUERY_MANGA, { id: anilistId })
   const m = data?.Media
   if (!m) throw new Error('Manga not found on AniList')
@@ -586,7 +696,7 @@ export async function importManga(anilistId: number): Promise<AniListImportSumma
   // ---- characters (no voice actors for manga) ----
   const MAX_CHARACTERS = 125
   const charEdges: any[] = [...(m.characters?.edges ?? [])]
-  let hasNext = !!m.characters?.pageInfo?.hasNextPage
+  let hasNext = !opts.liteCharacters && !!m.characters?.pageInfo?.hasNextPage
   let page = 1
   while (hasNext && charEdges.length < MAX_CHARACTERS) {
     page++

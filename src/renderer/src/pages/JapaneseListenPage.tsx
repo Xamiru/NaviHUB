@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
+import JpKeyboardInput from '../components/japanese/keyboard/JpKeyboardInput'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
@@ -262,18 +263,14 @@ function DictationRound({ items, onExit }: { items: AudioSentence[]; onExit: () 
 
       {!answered ? (
         <div className="mt-4">
-          <input
-            ref={inputRef}
-            className="input w-full text-center text-lg"
+          <JpKeyboardInput
+            inputRef={inputRef}
+            className="w-full text-center text-lg"
             placeholder="type what you heard…"
             value={input}
             autoFocus
-            autoComplete="off"
-            spellCheck={false}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void submit()
-            }}
+            onChange={setInput}
+            onEnter={() => void submit()}
           />
           <div className="mt-3 flex justify-center">
             <button

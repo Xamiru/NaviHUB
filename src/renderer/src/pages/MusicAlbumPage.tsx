@@ -11,6 +11,7 @@ import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
 import MusicEntityHeader from '../components/MusicEntityHeader'
 import MusicTrackRow, { formatDuration } from '../components/MusicTrackRow'
+import { confirmDialog } from '../lib/confirm'
 
 export default function MusicAlbumPage() {
   const { id } = useParams()
@@ -58,12 +59,11 @@ export default function MusicAlbumPage() {
 
   async function deleteAlbum(): Promise<void> {
     if (!album) return
-    if (
-      !window.confirm(
-        `Delete "${album.title}" by ${album.artistName} from your computer?\n\nThis permanently removes all ${tracks.length} track file(s) from disk — it cannot be undone.`
-      )
+    const ok = await confirmDialog(
+      `Delete "${album.title}" by ${album.artistName} from your computer?\n\nThis permanently removes all ${tracks.length} track file(s) from disk — it cannot be undone.`,
+      { confirmLabel: 'Delete', danger: true }
     )
-      return
+    if (!ok) return
     const artistId = album.artistId
     try {
       await api.music.deleteAlbum(albumId)

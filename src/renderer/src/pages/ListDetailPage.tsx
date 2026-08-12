@@ -12,6 +12,7 @@ import ActionMenu from '../components/ActionMenu'
 import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
 import UniversalPicker, { type PickedEntity } from '../components/UniversalPicker'
 import type { ListEntry, ListKind } from '@shared/types'
+import { confirmDialog } from '../lib/confirm'
 
 export default function ListDetailPage() {
   const { id } = useParams()
@@ -63,7 +64,11 @@ export default function ListDetailPage() {
   }
 
   async function del() {
-    if (!confirm(`Delete the list “${listTitle}”? This can’t be undone.`)) return
+    const ok = await confirmDialog(`Delete the list “${listTitle}”? This can’t be undone.`, {
+      confirmLabel: 'Delete',
+      danger: true
+    })
+    if (!ok) return
     await api.lists.remove(listId)
     invalidate()
     navigate('/lists')

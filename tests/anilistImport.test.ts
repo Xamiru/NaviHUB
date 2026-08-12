@@ -138,6 +138,19 @@ describe('importAnime', () => {
     ])
   })
 
+  it('liteCharacters (the bulk path) never paginates even when more pages exist', async () => {
+    // hasNextPage=true would normally trigger a CHARS_QUERY page-2 request —
+    // which the http mock rejects (it asserts variables.page is undefined).
+    fixture = animeFixture({
+      characters: {
+        pageInfo: { hasNextPage: true },
+        edges: [charEdge('MAIN', 201, 'Alice', 301, 'Seiyuu A')]
+      }
+    })
+    const summary = await importAnime(101, { liteCharacters: true })
+    expect(summary.cast).toBe(1) // the first page's characters still import
+  })
+
   it('re-import updates canonical fields but preserves personal tracking', async () => {
     const { mediaId } = await importAnime(101)
     db.prepare(

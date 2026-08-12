@@ -9,6 +9,7 @@ import CoverImage from './CoverImage'
 import Lightbox from './Lightbox'
 import ImageBrowseDialog from './ImageBrowseDialog'
 import type { ImageKind, MediaDetail } from '@shared/types'
+import { confirmDialog } from '../lib/confirm'
 
 // One gallery section powers both "Wallpapers" and "Fan Art" (kind prop).
 // Images come from its own query (not MediaDetail) so add/remove only refetch
@@ -64,12 +65,17 @@ export default function MediaImagesSection({
       toast('Image added', 'success')
     })
 
-  const remove = (imageId: number) =>
-    run(async () => {
-      if (!confirm('Remove this image? The file is deleted from disk too.')) return
+  const remove = async (imageId: number): Promise<void> => {
+    const ok = await confirmDialog('Remove this image? The file is deleted from disk too.', {
+      confirmLabel: 'Remove',
+      danger: true
+    })
+    if (!ok) return
+    await run(async () => {
       await api.pictures.remove(imageId)
       setLightboxAt(null)
     })
+  }
 
   return (
     <Section

@@ -180,7 +180,17 @@ export interface GlobalSearchResults {
 // ---- Lists (user-curated collections) ----
 
 // A list is type-scoped: it holds one kind of entity. 'company' == studios.
-export type ListKind = 'media' | 'person' | 'character' | 'company'
+// Wrestling entities are list-able too: "Top 25 matches ever" is the canonical
+// wrestling-fan artifact, and ranked lists already exist — rebuilding them
+// inside the section would be pure duplication.
+export type ListKind =
+  | 'media'
+  | 'person'
+  | 'character'
+  | 'company'
+  | 'wrestlingEvent'
+  | 'wrestlingMatch'
+  | 'wrestlingWrestler'
 
 export interface List {
   id: number
@@ -603,6 +613,51 @@ export interface ImportSummary {
 // Back-compat aliases (the AniList client predates the generic names).
 export type AniListSearchResult = ImportSearchResult
 export type AniListImportSummary = ImportSummary
+
+// ---- Bulk import (/bulk) ----
+// Sort/filter vocabulary lives in @shared/bulkImport.ts (BULK_SOURCES); these
+// are the wire shapes. Preview returns the resolved top-N list; the renderer
+// sends back the SELECTION to import, so what you saw is what runs.
+export interface BulkListParams {
+  source: import('./bulkImport').BulkSourceKey
+  sort: string
+  count: number
+  yearFrom?: number | null
+  yearTo?: number | null
+  genre?: string | null
+  // Anime only: AniList season filter (winter|spring|summer|fall + year).
+  season?: string | null
+  seasonYear?: number | null
+}
+
+export interface BulkPreviewItem {
+  sourceId: number
+  title: string
+  year: number | null
+  coverUrl: string | null
+  // Source-native community score on its own scale (AniList 0-100, VNDB 10-100,
+  // TMDB 0-10, catalog Metacritic 0-100 or RAWG 0-5 depending on sort).
+  score: number | null
+  inLibrary: boolean
+}
+
+export interface BulkStartPayload {
+  source: import('./bulkImport').BulkSourceKey
+  items: { sourceId: number; title: string }[]
+}
+
+export interface BulkRunStatus {
+  id: number
+  state: 'idle' | 'running' | 'done' | 'cancelled' | 'error'
+  label: string
+  done: number
+  total: number
+  imported: number
+  skipped: number
+  failed: number
+  // Current title while running; the failure/resume hint on 'error'.
+  message: string | null
+}
 
 // ---- Japanese learning ----
 // Standalone section: courses → lessons → cards. A lesson is 'grammar'
@@ -1255,6 +1310,16 @@ export interface MinimalPair {
   items: MinimalPairItem[]
 }
 
+// One conversion candidate for the on-screen keyboard's IME bar: pick it to
+// commit `text`. 'exact' = reading matches the buffer, 'prediction' = the
+// buffer is a prefix of the reading.
+export interface ImeCandidate {
+  text: string
+  reading: string
+  gloss: string | null
+  kind: 'exact' | 'prediction'
+}
+
 // ---- Confusables wave (similar kanji, look-alike/homophone/transitivity/loanword drills) ----
 
 // One visually-similar candidate for a kanji (kradfile × KANJIDIC scoring).
@@ -1499,7 +1564,15 @@ export interface OpenTarget {
 // Which video to play. 'file' is a video_file row (progress is persisted);
 // 'adhoc' is a session token minted by the native picker (nothing persists —
 // see files.ts:registerOpenedFile).
-export type VideoSourceRef = { kind: 'file'; fileId: number } | { kind: 'adhoc'; token: string }
+// Which library a playable file came from. 'file' is the media library
+// (video_file), 'wrestling' the wrestling collection (wrestling_video), 'adhoc'
+// a file opened from the OS with no row at all. Everything downstream of
+// resolving it — playability tiering, the ffmpeg cache, subtitles, mining — is
+// path-only and scope-blind.
+export type VideoSourceRef =
+  | { kind: 'file'; fileId: number }
+  | { kind: 'wrestling'; fileId: number }
+  | { kind: 'adhoc'; token: string }
 
 // How Chromium can get at this file. 'direct' plays the source as-is;
 // 'cached' plays an already-converted copy; 'needsPrepare' requires an ffmpeg
@@ -1573,8 +1646,11 @@ export interface VideoSource {
   ref: VideoSourceRef
   title: string
   seriesTitle: string | null
-  mediaId: number | null // null for ad-hoc — mining still works, nothing persists
+  mediaId: number | null // null for ad-hoc and wrestling — mining still works
   mediaType: MediaType | null // with mediaId, enough to link back to the detail page
+  // Where the player's Back should go, built in main so a new scope needs no
+  // player change (the openFile.ts:routeFor precedent). null = the picker.
+  backPath: string | null
   fileId: number | null
   action: VideoPlayAction
   url: string | null // navimg:// URL for <video src>; null when a prepare is needed
@@ -2566,4 +2642,203 @@ export interface EnWritingEntry {
 export interface ProgLessonProgress {
   lessonKey: string // FROZEN '<courseKey>/<lessonKey>'
   completedAt: string
+}
+
+// ---- Wrestling section (/wrestling) ----
+// A Wikipedia-sourced wiki (events / matches / wrestlers / stables) plus a
+// local collection of video files attached per event. Promotion vocabulary is
+// code — src/shared/wrestling.ts; the tables are promotion-agnostic.
+
+export type WrestlingPromotionId = 'wwe' | 'wcw' | 'ecw' | 'tna' | 'roh' | 'njpw' | 'aew'
+
+// How a match ended. 'decision' covers every match with a winning side (pin,
+// submission, DQ, countout, rumble); the distinction the wiki actually needs is
+// "is there a winner", and the prose in `resultText` keeps the detail.
+export type WrestlingOutcome = 'decision' | 'draw' | 'nocontest' | 'unknown'
+
+// Where a match sat on the card. null = main card; the values mirror the
+// results template's noteN= markers.
+export type WrestlingCardSlot = 'pre' | 'dark' | null
+
+export interface WrestlingEvent {
+  id: number
+  promotion: WrestlingPromotionId
+  name: string
+  wikiTitle: string | null // canonical article title — the dedup key
+  series: string | null
+  eventDate: string | null // ISO yyyy-mm-dd
+  venue: string | null
+  city: string | null
+  attendance: number | null
+  buyrate: string | null
+  tagline: string | null
+  posterPath: string | null
+  // Cleaned lead prose as MARKDOWN, with wikilinks normalized to
+  // [label](wiki:Target_Title) at import. That form already parses with the
+  // existing shared/markdown.ts alternation, so only the renderer's link
+  // resolver is new. Targets MUST be underscored — parseInline's href class is
+  // [^)\s]+, so a space silently degrades the link to plain text.
+  lead: string | null
+  localDir: string | null // attached folder, relative to the wrestling root
+  favorite: boolean
+  matchCount: number
+  videoCount: number
+}
+
+export interface WrestlingParticipant {
+  wrestlerId: number
+  name: string
+  side: number // 0 = winning side when the match had one
+  won: boolean
+  isChampion: boolean // the (c) marker
+  teamName: string | null
+  sortOrder: number
+}
+
+export interface WrestlingMatch {
+  id: number
+  eventId: number
+  sortOrder: number
+  title: string // denormalized "X vs. Y" — lists, search, and list_item display
+  resultText: string | null // original results cell, markup stripped
+  stipulation: string | null
+  championship: string | null
+  durationSeconds: number | null
+  outcome: WrestlingOutcome
+  cardSlot: WrestlingCardSlot
+  cardLabel: string | null // the results table's |caption ("Night 1")
+  rating: number | null // personal 0-5 stars; null = unrated
+  favorite: boolean
+  videoId: number | null
+  participants: WrestlingParticipant[]
+}
+
+export interface WrestlingWrestler {
+  id: number
+  name: string
+  wikiTitle: string | null
+  realName: string | null
+  birthDate: string | null
+  debutYear: number | null
+  billedFrom: string | null
+  height: string | null
+  photoPath: string | null
+  bio: string | null
+  detailFetchedAt: string | null // null = stub created from a link, never fetched
+  favorite: boolean
+  matchCount: number
+}
+
+export interface WrestlingStable {
+  id: number
+  name: string
+  wikiTitle: string | null
+  promotion: WrestlingPromotionId | null
+  lead: string | null
+  imagePath: string | null
+  favorite: boolean
+  members: { wrestlerId: number; name: string; sortOrder: number }[]
+}
+
+// A local video attached to an event. Mirrors VideoFile's shape minus the
+// media/season fields; playback goes through the shared video pipeline.
+export interface WrestlingVideo {
+  id: number
+  eventId: number
+  filePath: string // relative to the wrestling root
+  title: string
+  number: number | null
+  sortOrder: number
+  duration: number | null
+  width: number | null
+  height: number | null
+  videoCodec: string | null
+  audioCodec: string | null
+  container: string | null
+  playability: VideoPlanAction | null
+  resumeSeconds: number | null
+  // Set automatically when a file plays to the end. Deliberately has NO toggle
+  // in the UI (the user asked for no watched-marks) — it exists to drive the
+  // event page's "continue where you left off" row.
+  watchedAt: string | null
+}
+
+export interface WrestlingEventDetail extends WrestlingEvent {
+  matches: WrestlingMatch[]
+  videos: WrestlingVideo[]
+}
+
+// A match carrying its event's identity — the cross-event browse rows
+// (a wrestler's career, the top-rated list).
+export interface WrestlingMatchWithEvent extends WrestlingMatch {
+  eventName: string
+  eventDate: string | null
+}
+
+export type WrestlingFavoriteKind = 'event' | 'match' | 'wrestler' | 'stable'
+
+// Wikipedia's two chronologies, derived from the library rather than from the
+// article's own lastevent/nextevent links so a neighbour is never a dead link
+// to an event that was never imported.
+export interface WrestlingNeighbour {
+  id: number
+  name: string
+  eventDate: string | null
+}
+
+export interface WrestlingChronology {
+  prev: WrestlingNeighbour | null // previous show this promotion ran
+  next: WrestlingNeighbour | null
+  seriesName: string | null // "WrestleMania", "Starrcade"
+  seriesPrev: WrestlingNeighbour | null // the same show, a year earlier
+  seriesNext: WrestlingNeighbour | null
+}
+
+// One resolved wiki link. Lead prose carries [label](wiki:Target_Title); this
+// says whether that target is something we actually hold, so the renderer can
+// link it or grey it out (the RelatedSection resolved-vs-greyed precedent).
+// Shaped as the generic form an app-wide wiki would reuse unchanged.
+export interface WrestlingLinkTarget {
+  title: string // the wiki: target, underscored, exactly as it appeared
+  kind: 'event' | 'wrestler' | null // null = we don't have it
+  id: number | null
+}
+
+export interface WrestlingOverview {
+  promotions: {
+    promotion: WrestlingPromotionId
+    eventCount: number
+    firstYear: number | null
+    lastYear: number | null
+    ownedCount: number // events with at least one attached local file
+  }[]
+  totals: { events: number; matches: number; wrestlers: number; rated: number }
+}
+
+export interface WrestlingEventFilter {
+  promotion?: WrestlingPromotionId | null
+  search?: string | null
+  yearFrom?: number | null
+  yearTo?: number | null
+  favoriteOnly?: boolean
+  ownedOnly?: boolean // has at least one attached video
+  sort?: 'date' | 'dateAsc' | 'name' | 'rating'
+  limit?: number
+  offset?: number
+}
+
+// Import runner status — the musicDownload/bulkImport singleton shape, polled
+// via wrestling:importStatus (there is no push channel).
+export interface WrestlingImportStatus {
+  id: number
+  state: 'idle' | 'running' | 'done' | 'error' | 'cancelled'
+  phase: 'enumerating' | 'fetching' | 'writing' | 'wrestlers'
+  promotion: WrestlingPromotionId | null
+  done: number
+  total: number
+  events: number
+  matches: number
+  wrestlers: number
+  failed: number
+  message: string | null
 }

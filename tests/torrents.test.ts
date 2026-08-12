@@ -10,6 +10,8 @@ import {
   titleMatchesQuery,
   torrentFilterActiveCount,
   torznabCategoriesFor,
+  WRESTLING_CATEGORIES,
+  wrestlingTorrentQuery,
   TORRENT_CATEGORY_OPTIONS
 } from '../src/shared/torrents'
 import type { MediaType, TorrentFilter, TorrentSearchResult } from '../src/shared/types'
@@ -248,5 +250,24 @@ describe('indexersForCategories', () => {
   it('falls back to all indexers when scoping would select nobody', () => {
     // Audio-only pool, but a movie search matches none -> don't search zero.
     expect(indexersForCategories([audio], [2000])).toEqual([audio])
+  })
+})
+
+describe('wrestling torrent queries', () => {
+  it('prefixes the promotion, because trackers file events under it', () => {
+    expect(wrestlingTorrentQuery('WWF', 'WrestleMania X-Seven')).toBe('WWF WrestleMania X-Seven')
+    expect(wrestlingTorrentQuery('WCW', 'Starrcade')).toBe('WCW Starrcade')
+  })
+
+  it('does not repeat a promotion the event name already carries', () => {
+    expect(wrestlingTorrentQuery('AEW', 'AEW All Out')).toBe('AEW All Out')
+    // Case-insensitively — the name comes from an infobox, not from us.
+    expect(wrestlingTorrentQuery('NJPW', 'njpw Wrestle Kingdom')).toBe('njpw Wrestle Kingdom')
+  })
+
+  it('scopes to sport/TV categories', () => {
+    // Wrestling events are not media_item rows, so they never reach
+    // torznabCategoriesFor's MediaType switch.
+    expect(WRESTLING_CATEGORIES).toEqual([5060, 5000])
   })
 })

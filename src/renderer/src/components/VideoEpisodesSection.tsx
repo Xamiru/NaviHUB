@@ -7,6 +7,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toast, toastError } from '../lib/toast'
 import Section from './Section'
+import { confirmDialog } from '../lib/confirm'
 
 // Local video player entry point on an anime/movie/tv detail page. Mirrors
 // MangaChaptersSection: attach a folder from the video library, list what was
@@ -54,11 +55,16 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
       else if (res.error) toast(res.error)
     })
 
-  const detach = (): Promise<void> =>
-    run(async () => {
-      if (!confirm('Unlink the local folder? Resume positions will be forgotten.')) return
+  const detach = async (): Promise<void> => {
+    const ok = await confirmDialog('Unlink the local folder? Resume positions will be forgotten.', {
+      confirmLabel: 'Unlink',
+      danger: true
+    })
+    if (!ok) return
+    await run(async () => {
       await api.video.detach(m.id)
     })
+  }
 
   const files = data?.files ?? []
   // Continue = the file mid-watch, else the first unwatched one.
@@ -124,7 +130,7 @@ function EpisodeRow({
 
   async function toggleWatched(): Promise<void> {
     try {
-      await api.video.markWatched(f.id, !f.watchedAt)
+      await api.video.markWatched({ kind: 'file', fileId: f.id }, !f.watchedAt)
       onChange()
     } catch (e) {
       toastError(e)

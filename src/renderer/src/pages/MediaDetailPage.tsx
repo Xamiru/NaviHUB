@@ -41,6 +41,7 @@ import type {
   MediaRelation,
   HltbTimes
 } from '@shared/types'
+import { confirmDialog } from '../lib/confirm'
 
 type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'art'
 
@@ -83,8 +84,11 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const refresh = () => qc.invalidateQueries({ queryKey: qk.media.detail(mediaId) })
 
   async function del() {
-    if (!confirm(`Delete this ${cfg.singular.toLowerCase()} from your library? This cannot be undone.`))
-      return
+    const ok = await confirmDialog(
+      `Delete this ${cfg.singular.toLowerCase()} from your library? This cannot be undone.`,
+      { confirmLabel: 'Delete', danger: true }
+    )
+    if (!ok) return
     await api.media.remove(mediaId)
     await qc.invalidateQueries({ queryKey: qk.media.all })
     await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })

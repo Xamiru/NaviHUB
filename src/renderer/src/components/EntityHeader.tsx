@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import CoverImage from './CoverImage'
 import ActionMenu from './ActionMenu'
+import { confirmDialog } from '../lib/confirm'
 
 interface Fields {
   name: string
@@ -106,7 +107,11 @@ export default function EntityHeader({
                   label: 'Delete…',
                   danger: true,
                   onSelect: async () => {
-                    if (confirm('Delete this entry? Links to it will be removed.')) await onDelete()
+                    const ok = await confirmDialog(
+                      'Delete this entry? Links to it will be removed.',
+                      { confirmLabel: 'Delete', danger: true }
+                    )
+                    if (ok) await onDelete()
                   }
                 }
               ]}

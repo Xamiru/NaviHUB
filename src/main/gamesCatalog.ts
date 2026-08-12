@@ -7,7 +7,13 @@ import { updateActivity } from './progress'
 import { fetchWithRetry } from './http'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
 import { get as getSetting } from './repos/settingsRepo'
-import type { GamesCatalogStatus, ImportSearchResult, ImportSummary } from '@shared/types'
+import type {
+  BulkListParams,
+  BulkPreviewItem,
+  GamesCatalogStatus,
+  ImportSearchResult,
+  ImportSummary
+} from '@shared/types'
 
 // The OFFLINE games catalog — RAWG's final public dataset (CC0 dump from
 // 2026-06, filtered to games at least one RAWG user ever tracked, ~120k rows)
@@ -292,46 +298,68 @@ export async function importGame(
   })()
 }
 
-// Bulk "top games" shelf: the N most-tracked catalog games (RAWG's `added`),
-// imported through the normal path minus HLTB (see importGame). Already-
-// imported titles are SKIPPED, never overwritten — which doubles as resume:
-// an interrupted run picks up where it stopped when re-run. One title's
-// failure (usually a cover download) never sinks the batch.
-export async function bulkImport(
-  count: number
-): Promise<{ imported: number; skipped: number; failed: number }> {
+// ---------------- Top lists (the /bulk page) ----------------
+// Local SQL, so every sort is free. Floors keep each list honest: 'rating'
+// needs real votes behind it, and 'newest' needs a popularity floor or the
+// dump's daily shovelware tops the shelf (the added>=1 pack filter is no bar
+// at all for brand-new junk). Genre matches the JSON array with the quotes
+// included so "Card" can't substring-match "Board Games"… or anything else.
+export function buildCatalogQuery(params: BulkListParams): { sql: string; args: unknown[] } {
+  const where: string[] = []
+  const args: unknown[] = []
+  let order: string
+  switch (params.sort) {
+    case 'popular':
+      order = 'added DESC, id'
+      break
+    case 'metacritic':
+      where.push('metacritic IS NOT NULL')
+      order = 'metacritic DESC, added DESC, id'
+      break
+    case 'rating':
+      where.push('rating IS NOT NULL', 'ratings_count >= 50')
+      order = 'rating DESC, ratings_count DESC, id'
+      break
+    case 'newest':
+      where.push('released IS NOT NULL', 'added >= 5')
+      order = 'released DESC, added DESC, id'
+      break
+    default:
+      throw new Error(`Unknown catalog sort: ${params.sort}`)
+  }
+  if (params.yearFrom) {
+    where.push('released >= ?')
+    args.push(`${params.yearFrom}-01-01`)
+  }
+  if (params.yearTo) {
+    where.push('released <= ?')
+    args.push(`${params.yearTo}-12-31`)
+  }
+  if (params.genre) {
+    where.push('genres LIKE ?')
+    args.push(`%"${params.genre}"%`)
+  }
+  const sql = `SELECT * FROM catalog_game${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY ${order} LIMIT ?`
+  args.push(params.count)
+  return { sql, args }
+}
+
+export function listTop(params: BulkListParams): BulkPreviewItem[] {
   const db = getCatalogDb()
   if (!db) throw new Error('The offline games catalog is not installed yet.')
-  const n = Math.max(1, Math.min(10_000, Math.floor(Number(count) || 0)))
-  const ids = (
-    db.prepare('SELECT id FROM catalog_game ORDER BY added DESC, id LIMIT ?').all(n) as {
-      id: number
-    }[]
-  ).map((r) => r.id)
-
-  const have = new Set(
-    (
-      getSqlite()
-        .prepare(`SELECT external_id FROM media_item WHERE external_source = 'rawg'`)
-        .all() as { external_id: string }[]
-    ).map((r) => String(r.external_id))
-  )
-
-  let imported = 0
-  let skipped = 0
-  let failed = 0
-  for (let i = 0; i < ids.length; i++) {
-    updateActivity({ phase: 'images', done: i + 1, total: ids.length })
-    if (have.has(String(ids[i]))) {
-      skipped++
-      continue
-    }
-    try {
-      await importGame(ids[i], { skipHltb: true })
-      imported++
-    } catch {
-      failed++
-    }
-  }
-  return { imported, skipped, failed }
+  const { sql, args } = buildCatalogQuery(params)
+  const rows = db.prepare(sql).all(...args) as CatalogRow[]
+  return rows.map((g) => ({
+    sourceId: g.id,
+    title: g.name,
+    year: g.released ? Number(g.released.slice(0, 4)) || null : null,
+    coverUrl: g.image_url,
+    score:
+      params.sort === 'metacritic'
+        ? g.metacritic
+        : params.sort === 'rating'
+          ? g.rating
+          : (g.metacritic ?? g.rating),
+    inLibrary: false
+  }))
 }

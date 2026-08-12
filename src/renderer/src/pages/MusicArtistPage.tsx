@@ -13,6 +13,7 @@ import Section from '../components/Section'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
 import { AUDIO_CATEGORIES, discographyQuery } from '@shared/torrents'
 import { AlbumCard, TrackList } from './MusicLibraryPage'
+import { confirmDialog } from '../lib/confirm'
 
 export default function MusicArtistPage() {
   const { id } = useParams()
@@ -48,12 +49,11 @@ export default function MusicArtistPage() {
 
   async function deleteArtist(): Promise<void> {
     if (!artist) return
-    if (
-      !window.confirm(
-        `Delete ${artist.name} from your computer?\n\nThis permanently removes the artist folder and all ${artist.trackCount} track(s) from disk — it cannot be undone.`
-      )
+    const ok = await confirmDialog(
+      `Delete ${artist.name} from your computer?\n\nThis permanently removes the artist folder and all ${artist.trackCount} track(s) from disk — it cannot be undone.`,
+      { confirmLabel: 'Delete', danger: true }
     )
-      return
+    if (!ok) return
     try {
       await api.music.deleteArtist(artistId)
       // A now-dead track still in the queue is skipped by the player's onError

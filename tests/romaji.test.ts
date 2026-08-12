@@ -23,6 +23,14 @@ describe('acceptedRomaji', () => {
   it('unknown input yields []', () => {
     expect(acceptedRomaji('漢')).toEqual([])
   })
+
+  it('covers standalone small kana and extended combos', () => {
+    expect(acceptedRomaji('っ')).toContain('xtu')
+    expect(acceptedRomaji('ゃ')).toContain('lya')
+    expect(acceptedRomaji('ふぁ')).toEqual(['fa'])
+    expect(acceptedRomaji('ティ')).toEqual(['thi'])
+    expect(acceptedRomaji('ゔ')).toEqual(['vu'])
+  })
 })
 
 describe('kanaToRomaji', () => {
@@ -64,6 +72,28 @@ describe('romajiToHiragana', () => {
     expect(romajiToHiragana('honn')).toBe('ほん')
     expect(romajiToHiragana("kin'en")).toBe('きんえん')
     expect(romajiToHiragana('nani')).toBe('なに') // n + vowel = な row
+  })
+
+  it('handles x/l small kana', () => {
+    expect(romajiToHiragana('xtu')).toBe('っ')
+    expect(romajiToHiragana('ltsu')).toBe('っ')
+    expect(romajiToHiragana('xya')).toBe('ゃ')
+    expect(romajiToHiragana('la')).toBe('ぁ')
+    expect(romajiToHiragana('kya')).toBe('きゃ') // full digraphs never shadowed by x/l entries
+  })
+
+  it('handles extended combos', () => {
+    expect(romajiToHiragana('faito')).toBe('ふぁいと')
+    expect(romajiToHiragana('thi')).toBe('てぃ')
+    expect(romajiToHiragana('dhi')).toBe('でぃ')
+    expect(romajiToHiragana('twu')).toBe('とぅ')
+    expect(romajiToHiragana('wisukii')).toBe('うぃすきい')
+    expect(romajiToHiragana('she')).toBe('しぇ')
+    expect(romajiToHiragana('che')).toBe('ちぇ')
+    expect(romajiToHiragana('je')).toBe('じぇ')
+    expect(romajiToHiragana('vu')).toBe('ゔ')
+    expect(romajiToHiragana('va')).toBe('ゔぁ')
+    expect(romajiToHiragana('ffa')).toBe('っふぁ') // sokuon composes with extended units
   })
 })
 

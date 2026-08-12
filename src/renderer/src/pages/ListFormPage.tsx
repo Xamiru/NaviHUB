@@ -8,7 +8,7 @@ import PageStatus from '../components/PageStatus'
 import { KIND_LABEL } from '../lib/listLinks'
 import type { ListKind } from '@shared/types'
 
-const KINDS: ListKind[] = ['media', 'person', 'character', 'company']
+const KINDS: ListKind[] = ['media', 'person', 'character', 'company', 'wrestlingEvent', 'wrestlingWrestler', 'wrestlingMatch']
 
 export default function ListFormPage() {
   const { id } = useParams()

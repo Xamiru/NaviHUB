@@ -133,14 +133,20 @@ const api: NaviApi = {
   },
   steam: {
     search: (query) => ipcRenderer.invoke('steam:search', query),
-    import: (appId) => ipcRenderer.invoke('steam:import', appId)
+    import: (appId) => ipcRenderer.invoke('steam:import', appId),
+    backfillMetacritic: () => ipcRenderer.invoke('steam:backfillMetacritic')
   },
   rawgCatalog: {
     search: (query) => ipcRenderer.invoke('rawgCatalog:search', query),
     import: (catalogId) => ipcRenderer.invoke('rawgCatalog:import', catalogId),
     status: () => ipcRenderer.invoke('rawgCatalog:status'),
-    install: () => ipcRenderer.invoke('rawgCatalog:install'),
-    bulkImport: (count) => ipcRenderer.invoke('rawgCatalog:bulkImport', count)
+    install: () => ipcRenderer.invoke('rawgCatalog:install')
+  },
+  bulk: {
+    preview: (params) => ipcRenderer.invoke('bulk:preview', params),
+    start: (payload) => ipcRenderer.invoke('bulk:start', payload),
+    status: () => ipcRenderer.invoke('bulk:status'),
+    cancel: () => ipcRenderer.invoke('bulk:cancel')
   },
   openlibrary: {
     search: (query) => ipcRenderer.invoke('openlibrary:search', query),
@@ -252,6 +258,7 @@ const api: NaviApi = {
     nameSample: (req) => ipcRenderer.invoke('dict:nameSample', req),
     shiritoriNext: (req) => ipcRenderer.invoke('dict:shiritoriNext', req),
     similarKanji: (char) => ipcRenderer.invoke('dict:similarKanji', char),
+    readingCandidates: (kana) => ipcRenderer.invoke('dict:readingCandidates', kana),
     transitivityPool: (req) => ipcRenderer.invoke('dict:transitivityPool', req),
     loanwordSample: (req) => ipcRenderer.invoke('dict:loanwordSample', req),
     importPairs: () => ipcRenderer.invoke('dict:importPairs'),
@@ -322,8 +329,8 @@ const api: NaviApi = {
     cacheStats: () => ipcRenderer.invoke('video:cacheStats'),
     clearCache: () => ipcRenderer.invoke('video:clearCache'),
     clipAudio: (req) => ipcRenderer.invoke('video:clipAudio', req),
-    markProgress: (fileId, seconds) => ipcRenderer.invoke('video:markProgress', fileId, seconds),
-    markWatched: (fileId, watched) => ipcRenderer.invoke('video:markWatched', fileId, watched)
+    markProgress: (ref, seconds) => ipcRenderer.invoke('video:markProgress', ref, seconds),
+    markWatched: (ref, watched) => ipcRenderer.invoke('video:markWatched', ref, watched)
   },
   music: {
     pickRoot: () => ipcRenderer.invoke('music:pickRoot'),
@@ -411,6 +418,30 @@ const api: NaviApi = {
     coachDocs: (game) => ipcRenderer.invoke('gacha:coachDocs', game),
     importCoachDoc: (game, input) => ipcRenderer.invoke('gacha:importCoachDoc', game, input),
     removeCoachDoc: (id) => ipcRenderer.invoke('gacha:removeCoachDoc', id)
+  },
+  wrestling: {
+    overview: () => ipcRenderer.invoke('wrestling:overview'),
+    events: (filter) => ipcRenderer.invoke('wrestling:events', filter),
+    event: (id) => ipcRenderer.invoke('wrestling:event', id),
+    chronology: (id) => ipcRenderer.invoke('wrestling:chronology', id),
+    eventIdOfMatch: (matchId) => ipcRenderer.invoke('wrestling:eventIdOfMatch', matchId),
+    yearCounts: (promotion) => ipcRenderer.invoke('wrestling:yearCounts', promotion),
+    allYears: () => ipcRenderer.invoke('wrestling:allYears'),
+    wrestler: (id) => ipcRenderer.invoke('wrestling:wrestler', id),
+    wrestlerMatches: (id, opts) => ipcRenderer.invoke('wrestling:wrestlerMatches', id, opts),
+    searchWrestlers: (query) => ipcRenderer.invoke('wrestling:searchWrestlers', query),
+    topRatedMatches: (limit) => ipcRenderer.invoke('wrestling:topRatedMatches', limit),
+    resolveLinks: (titles) => ipcRenderer.invoke('wrestling:resolveLinks', titles),
+    rateMatch: (matchId, stars) => ipcRenderer.invoke('wrestling:rateMatch', matchId, stars),
+    setFavorite: (kind, id, favorite) =>
+      ipcRenderer.invoke('wrestling:setFavorite', kind, id, favorite),
+    files: (eventId) => ipcRenderer.invoke('wrestling:files', eventId),
+    attachFolder: (eventId) => ipcRenderer.invoke('wrestling:attachFolder', eventId),
+    rescan: (eventId) => ipcRenderer.invoke('wrestling:rescan', eventId),
+    detach: (eventId) => ipcRenderer.invoke('wrestling:detach', eventId),
+    startImport: (opts) => ipcRenderer.invoke('wrestling:startImport', opts),
+    importStatus: () => ipcRenderer.invoke('wrestling:importStatus'),
+    cancelImport: () => ipcRenderer.invoke('wrestling:cancelImport')
   },
   app: {
     openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),

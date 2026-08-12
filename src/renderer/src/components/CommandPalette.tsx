@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { useDebouncedValue, useDialog } from '../lib/hooks'
 import { MEDIA_CONFIGS, configFor, pathForMedia } from '../lib/mediaConfig'
 import { GACHA_GAMES } from '@shared/gacha'
+import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 
 interface PaletteItem {
   key: string
@@ -42,6 +43,14 @@ const NAV_ITEMS: PaletteItem[] = [
     label: g.name,
     hint: 'Gacha',
     to: `/gacha/${g.id}`
+  })),
+  { key: 'nav-wrestling', label: 'Wrestling', hint: 'Go to', to: '/wrestling' },
+  { key: 'nav-wrestling-rated', label: 'Highest-rated matches', hint: 'Wrestling', to: '/wrestling/rated' },
+  ...WRESTLING_PROMOTIONS.map((p) => ({
+    key: `nav-wrestling-${p.id}`,
+    label: p.name,
+    hint: 'Wrestling',
+    to: `/wrestling/p/${p.id}`
   })),
   { key: 'nav-japanese', label: 'Japanese', hint: 'Go to', to: '/japanese' },
   { key: 'nav-jp-review', label: 'Japanese review', hint: 'Go to', to: '/japanese/review' },

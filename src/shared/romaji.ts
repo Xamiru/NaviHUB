@@ -21,7 +21,13 @@ const BASE: Record<string, string[]> = {
   ざ: ['za'], じ: ['ji', 'zi'], ず: ['zu'], ぜ: ['ze'], ぞ: ['zo'],
   だ: ['da'], ぢ: ['ji', 'di'], づ: ['zu', 'du'], で: ['de'], ど: ['do'],
   ば: ['ba'], び: ['bi'], ぶ: ['bu'], べ: ['be'], ぼ: ['bo'],
-  ぱ: ['pa'], ぴ: ['pi'], ぷ: ['pu'], ぺ: ['pe'], ぽ: ['po']
+  ぱ: ['pa'], ぴ: ['pi'], ぷ: ['pu'], ぺ: ['pe'], ぽ: ['po'],
+  ゔ: ['vu'],
+  // Standalone small kana via the MS-IME x/l prefixes (the on-screen keyboard
+  // and any drill answer can spell them explicitly).
+  ぁ: ['xa', 'la'], ぃ: ['xi', 'li'], ぅ: ['xu', 'lu'], ぇ: ['xe', 'le'], ぉ: ['xo', 'lo'],
+  ゃ: ['xya', 'lya'], ゅ: ['xyu', 'lyu'], ょ: ['xyo', 'lyo'],
+  っ: ['xtu', 'ltu', 'xtsu', 'ltsu'], ゎ: ['xwa', 'lwa']
 }
 
 // Digraphs (yōon). Derived: consonant of the い-column kana + ya/yu/yo, with
@@ -38,7 +44,14 @@ const DIGRAPHS: Record<string, string[]> = {
   じゃ: ['ja', 'jya', 'zya'], じゅ: ['ju', 'jyu', 'zyu'], じょ: ['jo', 'jyo', 'zyo'],
   ぢゃ: ['ja', 'dya'], ぢゅ: ['ju', 'dyu'], ぢょ: ['jo', 'dyo'],
   びゃ: ['bya'], びゅ: ['byu'], びょ: ['byo'],
-  ぴゃ: ['pya'], ぴゅ: ['pyu'], ぴょ: ['pyo']
+  ぴゃ: ['pya'], ぴゅ: ['pyu'], ぴょ: ['pyo'],
+  // Katakana-extended combos (stored as hiragana units — toHiragana folds the
+  // query, toKatakana restores the script): ファ ティ ドゥ ウィ シェ ヴァ etc.
+  ふぁ: ['fa'], ふぃ: ['fi'], ふぇ: ['fe'], ふぉ: ['fo'],
+  てぃ: ['thi'], でぃ: ['dhi'], とぅ: ['twu'], どぅ: ['dwu'],
+  うぃ: ['wi'], うぇ: ['we'], うぉ: ['who'],
+  しぇ: ['she'], ちぇ: ['che'], じぇ: ['je'],
+  ゔぁ: ['va'], ゔぃ: ['vi'], ゔぇ: ['ve'], ゔぉ: ['vo']
 }
 
 const ALL: Record<string, string[]> = { ...BASE, ...DIGRAPHS }

@@ -1,7 +1,7 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, sleep } from './http'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
 
@@ -193,6 +193,105 @@ export async function importGame(appId: number): Promise<ImportSummary> {
     // Steam has no cast/staff data — those stay hand-curated.
     return { mediaId, title, studios, cast: 0, staff: 0, created }
   })()
+}
+
+// ---------------- Metacritic backfill ----------------
+// RAWG's Metacritic sync went stale in its final years, so catalog imports of
+// 2023+ releases often have no score — but Steam's appdetails carries the
+// REAL publisher-linked Metacritic. This walks game rows missing one, finds
+// each on Steam by EXACT normalized name (a fuzzy match writing a wrong score
+// is worse than no score), and merges it into metadata. Definitive misses are
+// stamped metacriticChecked so re-runs skip them — which makes an interrupted
+// run resumable, exactly the bulk-import contract.
+
+// Exported for the bulk importer's cross-source games dedup (a Steam-owned
+// title has a different id space than a catalog row — the name is the bridge).
+export function normTitle(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+export async function lookupMetacritic(title: string): Promise<number | null> {
+  const target = normTitle(title)
+  // A title with no Latin/digit content (all-CJK, symbols) normalizes to '' —
+  // matching on that would let any equally-empty storesearch name through,
+  // writing an unrelated game's score. No usable name = a definitive miss.
+  if (!target) return null
+  const data = await steamGet('/storesearch/', { term: title })
+  const match = (data?.items ?? []).find(
+    (it: any) => it?.type === 'app' && it?.id && normTitle(String(it.name ?? '')) === target
+  )
+  if (!match) return null
+  const payload = await steamGet('/appdetails', { appids: String(match.id) })
+  const entry = payload?.[String(match.id)]
+  const score = entry?.success ? entry.data?.metacritic?.score : null
+  return typeof score === 'number' && score > 0 ? score : null
+}
+
+// appdetails is rate-limited (~200 requests / 5 min / IP) — the delay keeps a
+// long run under it; ten consecutive network failures = Steam stopped
+// answering, so bail with a resume hint instead of grinding out misses.
+// `missed` counts only DEFINITIVE "Steam has no score" titles (stamped, never
+// re-asked); transient network failures count as `failed` (unstamped — the
+// next run retries them), so the summary can't overstate permanent misses.
+export async function backfillMetacritic(
+  opts: { delayMs?: number } = {}
+): Promise<{ scanned: number; updated: number; missed: number; failed: number }> {
+  const delayMs = opts.delayMs ?? 1600
+  const db = getSqlite()
+  const rows = db
+    .prepare(
+      `SELECT id, title, metadata FROM media_item
+       WHERE media_type = 'game'
+         AND (metadata IS NULL OR (json_extract(metadata, '$.metacritic') IS NULL
+              AND json_extract(metadata, '$.metacriticChecked') IS NULL))
+       ORDER BY id`
+    )
+    .all() as { id: number; title: string; metadata: string | null }[]
+
+  let updated = 0
+  let missed = 0
+  let failed = 0
+  let consecutiveFailures = 0
+  for (let i = 0; i < rows.length; i++) {
+    updateActivity({ phase: 'fetching', done: i + 1, total: rows.length })
+    const row = rows[i]
+    let score: number | null = null
+    try {
+      score = await lookupMetacritic(row.title)
+      consecutiveFailures = 0
+    } catch {
+      failed++
+      consecutiveFailures++
+      if (consecutiveFailures >= 10) {
+        throw new Error(
+          `Steam stopped answering after ${i + 1}/${rows.length} titles (likely rate-limited) — run this again later to continue where it stopped.`
+        )
+      }
+      continue
+    }
+    let meta: Record<string, unknown> = {}
+    try {
+      meta = row.metadata ? JSON.parse(row.metadata) || {} : {}
+    } catch {
+      meta = {}
+    }
+    if (score != null) {
+      meta.metacritic = score
+      updated++
+    } else {
+      // A real "Steam has no score for this exact title" — remember it so the
+      // next run doesn't burn its rate budget re-asking.
+      meta.metacriticChecked = true
+      missed++
+    }
+    db.prepare(`UPDATE media_item SET metadata = ? WHERE id = ?`).run(JSON.stringify(meta), row.id)
+    if (i < rows.length - 1 && delayMs > 0) await sleep(delayMs)
+  }
+  return { scanned: rows.length, updated, missed, failed }
 }
 
 // Steam company entries are bare strings, so the dedup key IS the name

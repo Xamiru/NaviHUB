@@ -1,4 +1,5 @@
 import type {
+  WrestlingEventFilter,
   CreditRole,
   GachaGameId,
   GachaUnitFilter,
@@ -224,7 +225,8 @@ export const qk = {
     pairSet: ['dict', 'pairSet'] as const,
     minimalPairs: ['dict', 'minimalPairs'] as const,
     // Visually-similar kanji chips (kradfile × KANJIDIC, computed on demand).
-    similar: (char: string) => ['dict', 'similar', char] as const
+    similar: (char: string) => ['dict', 'similar', char] as const,
+    imeCandidates: (kana: string) => ['dict', 'imeCandidates', kana] as const
   },
   music: {
     // Local music library. Mutations (scan, like, playlist edits) invalidate
@@ -270,6 +272,27 @@ export const qk = {
     coachDocs: (game: GachaGameId) => ['gacha', 'coachDocs', game] as const,
     dueCounts: ['gacha', 'dueCounts'] as const
   },
+  wrestling: {
+    // Wiki + personal layer. Ratings/favorites are denormalized into every
+    // row-returning query, so mutations invalidate the `all` prefix — the
+    // music/gacha posture.
+    all: ['wrestling'] as const,
+    overview: ['wrestling', 'overview'] as const,
+    events: (filter: WrestlingEventFilter) => ['wrestling', 'events', filter] as const,
+    event: (id: number) => ['wrestling', 'event', id] as const,
+    match: (id: number) => ['wrestling', 'match', id] as const,
+    chronology: (id: number) => ['wrestling', 'chronology', id] as const,
+    yearCounts: (promotion: string) => ['wrestling', 'yearCounts', promotion] as const,
+    allYears: ['wrestling', 'allYears'] as const,
+    wrestler: (id: number) => ['wrestling', 'wrestler', id] as const,
+    wrestlerMatches: (id: number) => ['wrestling', 'wrestlerMatches', id] as const,
+    searchWrestlers: (q: string) => ['wrestling', 'searchWrestlers', q] as const,
+    topRated: (limit: number) => ['wrestling', 'topRated', limit] as const,
+    // Callers pass a SORTED title list or every ordering caches separately.
+    links: (titles: string[]) => ['wrestling', 'links', titles] as const,
+    files: (eventId: number) => ['wrestling', 'files', eventId] as const,
+    importStatus: ['wrestling', 'importStatus'] as const
+  },
   update: {
     // In-app updater (Settings → Tools). Status polls while checking/downloading.
     all: ['update'] as const,
@@ -286,6 +309,13 @@ export const qk = {
     // The offline RAWG catalog's install state (ImportDialog's catalog pill).
     all: ['gamesCatalog'] as const,
     status: ['gamesCatalog', 'status'] as const
+  },
+  bulk: {
+    // The /bulk page's run status poll. Previews are deliberately NOT a query
+    // (a plain await in the button handler — an enabled query would refire the
+    // whole multi-page crawl on remount), so no preview key exists.
+    all: ['bulk'] as const,
+    status: ['bulk', 'status'] as const
   },
   activity: ['activity'] as const,
   search: (q: string) => ['search', q] as const,

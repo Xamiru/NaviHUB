@@ -12,14 +12,36 @@ import type {
 // Per-kind resolution: which table an item's entity_id points at, and the
 // columns to read for its name / thumbnail / subtitle. Table + column names come
 // from this fixed map (never user input), so interpolating them is safe.
+//
+// imageCol is a full SQL expression, not a bare column, so a kind with no
+// artwork of its own (a wrestling match) can say NULL.
 const KIND: Record<
   ListKind,
   { table: string; nameCol: string; imageCol: string; subCol: string }
 > = {
-  media: { table: 'media_item', nameCol: 'title', imageCol: 'cover_path', subCol: 'media_type' },
-  person: { table: 'person', nameCol: 'name', imageCol: 'photo_path', subCol: 'name_native' },
-  character: { table: 'character', nameCol: 'name', imageCol: 'image_path', subCol: 'name_native' },
-  company: { table: 'company', nameCol: 'name', imageCol: 'logo_path', subCol: 'type' }
+  media: { table: 'media_item', nameCol: 'title', imageCol: 'e.cover_path', subCol: 'media_type' },
+  person: { table: 'person', nameCol: 'name', imageCol: 'e.photo_path', subCol: 'name_native' },
+  character: { table: 'character', nameCol: 'name', imageCol: 'e.image_path', subCol: 'name_native' },
+  company: { table: 'company', nameCol: 'name', imageCol: 'e.logo_path', subCol: 'type' },
+  // wrestling_match has no image of its own; NULL keeps the shape uniform.
+  wrestlingEvent: {
+    table: 'wrestling_event',
+    nameCol: 'name',
+    imageCol: 'e.poster_path',
+    subCol: 'promotion'
+  },
+  wrestlingMatch: {
+    table: 'wrestling_match',
+    nameCol: 'title',
+    imageCol: 'NULL',
+    subCol: 'stipulation'
+  },
+  wrestlingWrestler: {
+    table: 'wrestling_wrestler',
+    nameCol: 'name',
+    imageCol: 'e.photo_path',
+    subCol: 'billed_from'
+  }
 }
 
 const MEDIA_LABEL: Record<string, string> = {
@@ -90,7 +112,7 @@ export function list(kind?: ListKind | null): ListSummary[] {
     const previews = db
       .prepare(
         `SELECT list_id, image FROM (
-           SELECT li.list_id AS list_id, e.${meta.imageCol} AS image,
+           SELECT li.list_id AS list_id, ${meta.imageCol} AS image,
                   ROW_NUMBER() OVER (PARTITION BY li.list_id ORDER BY li.sort_order ASC, li.id ASC) AS rn
            FROM list_item li JOIN ${meta.table} e ON e.id = li.entity_id
            WHERE li.list_id IN (${holes})
@@ -124,7 +146,7 @@ export function get(id: number): ListDetail | null {
     db
       .prepare(
         `SELECT li.id AS item_id, li.sort_order, li.note, li.entity_id,
-                e.${k.nameCol} AS name, e.${k.imageCol} AS image, e.${k.subCol} AS sub
+                e.${k.nameCol} AS name, ${k.imageCol} AS image, e.${k.subCol} AS sub
          FROM list_item li JOIN ${k.table} e ON e.id = li.entity_id
          WHERE li.list_id = ?
          ORDER BY li.sort_order ASC, li.id ASC`

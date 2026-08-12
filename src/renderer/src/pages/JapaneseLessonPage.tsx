@@ -16,6 +16,7 @@ import LessonCheck from '../components/japanese/LessonCheck'
 import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 import { grammarCandidates } from '@shared/cloze'
 import type { JpCard, JpLessonKind } from '@shared/types'
+import { confirmDialog } from '../lib/confirm'
 
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
   grammar: { cls: 'bg-purple-500/20 text-purple-300', label: '文法 Grammar' },
@@ -51,7 +52,11 @@ export default function JapaneseLessonPage() {
 
   async function removeLesson() {
     if (!lesson) return
-    if (!window.confirm(`Delete "${lesson.title}" and its ${lesson.cards.length} cards?`)) return
+    const ok = await confirmDialog(
+      `Delete "${lesson.title}" and its ${lesson.cards.length} cards?`,
+      { confirmLabel: 'Delete', danger: true }
+    )
+    if (!ok) return
     const courseId = lesson.courseId
     await api.japanese.removeLesson(lessonId)
     await qc.invalidateQueries({ queryKey: qk.japanese.all })

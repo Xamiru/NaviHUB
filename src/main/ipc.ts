@@ -30,6 +30,7 @@ import * as jpConfusables from './jpConfusables'
 import * as jpFeed from './jpFeed'
 import * as jpGrammarDeck from './jpGrammarDeck'
 import * as dictSimilarKanji from './dict/similarKanji'
+import * as imeCandidates from './dict/imeCandidates'
 import * as englishRepo from './repos/englishRepo'
 import * as programmingRepo from './repos/programmingRepo'
 import * as anilist from './anilist'
@@ -39,6 +40,7 @@ import * as rawg from './rawg'
 import * as igdb from './igdb'
 import * as steam from './steam'
 import * as gamesCatalog from './gamesCatalog'
+import * as bulkImport from './bulkImport'
 import * as openlibrary from './openlibrary'
 import * as themes from './themes'
 import * as pictures from './pictures'
@@ -65,6 +67,11 @@ import * as atlas from './atlas'
 import * as chaldea from './chaldea'
 import * as gachaCoach from './gachaCoach'
 import * as coachRepo from './repos/coachRepo'
+import * as wrestlingRepo from './repos/wrestlingRepo'
+import * as wrestlingImport from './wrestling/importRun'
+import * as scan from './video/scan'
+import type { VideoSourceRef } from '@shared/types'
+import { VIDEO_SCOPES, type VideoScope } from './video/scope'
 import * as tokenizer from './tokenizer'
 import * as dictImporter from './dict/importer'
 import * as dictLookup from './dict/lookup'
@@ -308,6 +315,7 @@ export function registerIpc(): void {
   ipcMain.handle('dict:nameSample', (_e, req) => dictNames.nameSample(req))
   ipcMain.handle('dict:shiritoriNext', (_e, req) => jpDrills.shiritoriNext(req))
   ipcMain.handle('dict:similarKanji', (_e, char) => dictSimilarKanji.similarKanji(char))
+  ipcMain.handle('dict:readingCandidates', (_e, kana) => imeCandidates.readingCandidates(kana))
   ipcMain.handle('dict:transitivityPool', (_e, req) => jpDrills.transitivityPool(req))
   ipcMain.handle('dict:loanwordSample', (_e, req) => jpDrills.loanwordSample(req))
   ipcMain.handle('dict:importPairs', () => dictPairs.importPairs())
@@ -378,6 +386,15 @@ export function registerIpc(): void {
   ipcMain.handle('manga:adhocPages', (_e, token) => manga.adhocPages(token))
 
   // ---- local video player ----
+  // A ref names both the table and the row; 'adhoc' has no row, so nothing to
+  // persist against.
+  const videoScopeFor = (ref: VideoSourceRef): VideoScope | null =>
+    ref.kind === 'file'
+      ? VIDEO_SCOPES.video
+      : ref.kind === 'wrestling'
+        ? VIDEO_SCOPES.wrestling
+        : null
+
   ipcMain.handle('video:attachFolder', (_e, mediaId) => video.attachFolder(mediaId))
   ipcMain.handle('video:rescan', (_e, mediaId) => video.rescan(mediaId))
   ipcMain.handle('video:detach', (_e, mediaId) => video.detach(mediaId))
@@ -391,16 +408,29 @@ export function registerIpc(): void {
   ipcMain.handle('video:cacheStats', () => video.cacheStats())
   ipcMain.handle('video:clearCache', () => video.clearCache())
   ipcMain.handle('video:clipAudio', (_e, req) => video.clipAudio(req))
-  ipcMain.handle('video:markProgress', (_e, fileId, seconds) =>
-    video.markProgress(fileId, seconds)
-  )
+  // Both take a VideoSourceRef, not a bare id: the same player drives the media
+  // library and the wrestling collection, and a file id is only unique WITHIN
+  // its table.
+  ipcMain.handle('video:markProgress', (_e, ref, seconds) => {
+    const scope = videoScopeFor(ref)
+    if (scope) video.markProgressIn(scope, ref.fileId, seconds)
+  })
   // Finishing an episode is a media-progress event, so the FIRST time a file
   // becomes watched it goes through checklistRepo.logProgress — the app's one
   // "I watched another one" write (status promotion, rewatch wrap, checklist
   // credit). markWatched itself never touches media_item.progress.
-  ipcMain.handle('video:markWatched', (_e, fileId, watched) => {
-    const res = video.markWatched(fileId, watched)
-    if (res?.firstTime) checklistRepo.logProgress(res.mediaId, todayLocal())
+  //
+  // The scope guard is load-bearing: a wrestling row's owner is an EVENT id,
+  // and handing that to logProgress would silently advance whatever media_item
+  // happens to share the number. Wrestling events are not media items and log
+  // nothing.
+  ipcMain.handle('video:markWatched', (_e, ref, watched) => {
+    const scope = videoScopeFor(ref)
+    if (!scope) return
+    const res = video.markWatchedIn(scope, ref.fileId, watched)
+    if (res?.firstTime && scope.id === 'video') {
+      checklistRepo.logProgress(res.ownerId, todayLocal())
+    }
   })
 
   // ---- AniList import (anime + manga) ----
@@ -436,6 +466,9 @@ export function registerIpc(): void {
   ipcMain.handle('steam:import', (_e, appId) =>
     withActivity('Importing from Steam', () => steam.importGame(appId))
   )
+  ipcMain.handle('steam:backfillMetacritic', () =>
+    withActivity('Filling Metacritic scores from Steam', () => steam.backfillMetacritic())
+  )
   // ---- offline games catalog (RAWG's final dump; console coverage) ----
   ipcMain.handle('rawgCatalog:search', (_e, query) => gamesCatalog.search(query))
   ipcMain.handle('rawgCatalog:import', (_e, catalogId) =>
@@ -444,9 +477,6 @@ export function registerIpc(): void {
   ipcMain.handle('rawgCatalog:status', () => gamesCatalog.status())
   ipcMain.handle('rawgCatalog:install', () =>
     withActivity('Downloading the games catalog', () => gamesCatalog.install())
-  )
-  ipcMain.handle('rawgCatalog:bulkImport', (_e, count) =>
-    withActivity('Importing top games', () => gamesCatalog.bulkImport(count))
   )
   ipcMain.handle('igdb:search', (_e, query) => igdb.search(query))
   ipcMain.handle('igdb:import', (_e, igdbId) =>
@@ -462,6 +492,14 @@ export function registerIpc(): void {
   ipcMain.handle('openlibrary:import', (_e, olId) =>
     withActivity('Importing from Open Library', () => openlibrary.importBook(olId))
   )
+
+  // ---- bulk import (/bulk — top-N lists per media type) ----
+  // start is NOT withActivity: the run has its own polled status (with cancel),
+  // and each title's importer still feeds the activity pill on its own.
+  ipcMain.handle('bulk:preview', (_e, params) => bulkImport.preview(params))
+  ipcMain.handle('bulk:start', (_e, payload) => bulkImport.start(payload))
+  ipcMain.handle('bulk:status', () => bulkImport.getStatus())
+  ipcMain.handle('bulk:cancel', () => bulkImport.cancel())
 
   // ---- AnimeThemes import (anime OP/ED songs) + the Songs library ----
   ipcMain.handle('themes:import', (_e, mediaId) =>
@@ -624,6 +662,51 @@ export function registerIpc(): void {
     gachaCoach.importDoc(game, input.title, input.content)
   )
   ipcMain.handle('gacha:removeCoachDoc', (_e, id) => coachRepo.removeDoc(id))
+
+  // ---- wrestling (Wikipedia-sourced wiki + per-event local video) ----
+  // Standalone section: NOT media_item rows. startImport is fire-and-forget and
+  // deliberately NOT withActivity — the run needs a cancel button and a
+  // readable done state, so it brackets itself with begin/endActivity instead.
+  ipcMain.handle('wrestling:overview', () => wrestlingRepo.overview())
+  ipcMain.handle('wrestling:events', (_e, filter) => wrestlingRepo.listEvents(filter ?? {}))
+  ipcMain.handle('wrestling:event', (_e, id) => wrestlingRepo.getEvent(id))
+  ipcMain.handle('wrestling:eventIdOfMatch', (_e, id) => wrestlingRepo.eventIdOfMatch(id))
+  ipcMain.handle('wrestling:chronology', (_e, id) => wrestlingRepo.chronology(id))
+  ipcMain.handle('wrestling:yearCounts', (_e, promotion) => wrestlingRepo.yearCounts(promotion))
+  ipcMain.handle('wrestling:allYears', () => wrestlingRepo.allYears())
+  ipcMain.handle('wrestling:wrestler', (_e, id) => wrestlingRepo.getWrestler(id))
+  ipcMain.handle('wrestling:wrestlerMatches', (_e, id, opts) =>
+    wrestlingRepo.wrestlerMatches(id, opts ?? {})
+  )
+  ipcMain.handle('wrestling:searchWrestlers', (_e, q) => wrestlingRepo.searchWrestlers(q))
+  ipcMain.handle('wrestling:topRatedMatches', (_e, limit) =>
+    wrestlingRepo.topRatedMatches(limit ?? 50)
+  )
+  ipcMain.handle('wrestling:resolveLinks', (_e, titles) => wrestlingRepo.resolveLinks(titles ?? []))
+  ipcMain.handle('wrestling:rateMatch', (_e, matchId, stars) =>
+    wrestlingRepo.rateMatch(matchId, stars)
+  )
+  ipcMain.handle('wrestling:setFavorite', (_e, kind, id, favorite) =>
+    wrestlingRepo.setFavorite(kind, id, favorite)
+  )
+  // The collection half: per-event folder attach, straight into the generalized
+  // scanner. There is no wrestling-specific file code.
+  ipcMain.handle('wrestling:files', (_e, eventId) => ({
+    localDir: scan.localDirFor(VIDEO_SCOPES.wrestling, eventId),
+    files: wrestlingRepo.videosFor(eventId)
+  }))
+  ipcMain.handle('wrestling:attachFolder', (_e, eventId) =>
+    scan.attachFolderIn(VIDEO_SCOPES.wrestling, eventId)
+  )
+  ipcMain.handle('wrestling:rescan', (_e, eventId) =>
+    scan.rescanIn(VIDEO_SCOPES.wrestling, eventId)
+  )
+  ipcMain.handle('wrestling:detach', (_e, eventId) =>
+    scan.detachIn(VIDEO_SCOPES.wrestling, eventId)
+  )
+  ipcMain.handle('wrestling:startImport', (_e, opts) => wrestlingImport.start(opts ?? {}))
+  ipcMain.handle('wrestling:importStatus', () => wrestlingImport.getStatus())
+  ipcMain.handle('wrestling:cancelImport', () => wrestlingImport.cancel())
 
   // ---- app (system browser for external links + text-file picker) ----
   ipcMain.handle('app:openExternal', (_e, url) => {

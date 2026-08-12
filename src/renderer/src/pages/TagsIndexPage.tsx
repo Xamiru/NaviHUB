@@ -13,6 +13,7 @@ import ActionMenu from '../components/ActionMenu'
 import { Group, Pill } from '../components/PillGroup'
 import { toastError } from '../lib/toast'
 import type { TagWithCounts } from '@shared/types'
+import { confirmDialog } from '../lib/confirm'
 
 // Browse every tag in the library with per-type usage counts; clicking one
 // shows everything tagged with it across media types (/tags/:id).
@@ -47,7 +48,11 @@ export default function TagsIndexPage() {
       tag.total === 0
         ? 'It is not used by any title.'
         : `It is still on ${tag.total} title${tag.total === 1 ? '' : 's'}, which will lose it.`
-    if (!confirm(`Delete the tag "${tag.name}"? ${used} This cannot be undone.`)) return
+    const ok = await confirmDialog(`Delete the tag "${tag.name}"? ${used} This cannot be undone.`, {
+      confirmLabel: 'Delete',
+      danger: true
+    })
+    if (!ok) return
     try {
       await api.tags.remove(tag.id)
       await qc.invalidateQueries({ queryKey: qk.tags.all })

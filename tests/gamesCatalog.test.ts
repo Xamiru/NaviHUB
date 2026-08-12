@@ -45,7 +45,8 @@ vi.mock('../src/main/repos/settingsRepo', () => ({
 }))
 
 import { CATALOG_DDL } from '../src/main/gamesCatalogSchema'
-import { bulkImport, ftsQueryFor, importGame, search, status } from '../src/main/gamesCatalog'
+import { buildCatalogQuery, ftsQueryFor, importGame, listTop, search, status } from '../src/main/gamesCatalog'
+import type { BulkListParams } from '../src/shared/types'
 
 function catalogRow(overrides: Record<string, unknown> = {}) {
   return {
@@ -214,42 +215,91 @@ describe('importGame', () => {
   })
 })
 
-describe('bulkImport', () => {
-  it('imports top-N by popularity, skips existing, survives one failure, never hits HLTB', async () => {
-    seedCatalog([
-      catalogRow(), // added 22635 — already in the library below → skipped
-      catalogRow({ id: 2, name: 'The Witcher 3', added: 20000, alt: '' }),
-      // A poison row: object genre breaks its import, but only its own.
-      catalogRow({ id: 3, name: 'Broken Row', added: 15000, alt: '', genres: JSON.stringify([{ bad: 1 }]) }),
-      catalogRow({ id: 4, name: 'Portal 2', added: 14000, alt: '' }),
-      catalogRow({ id: 5, name: 'Below The Cut', added: 10, alt: '' })
-    ])
-    db.prepare(
-      `INSERT INTO media_item (media_type, title, status, external_source, external_id)
-       VALUES ('game', 'GTA V (mine)', 'Playing', 'rawg', '3498')`
-    ).run()
-
-    const res = await bulkImport(4) // top 4 by added — 'Below The Cut' excluded
-    expect(res).toEqual({ imported: 2, skipped: 1, failed: 1 })
-
-    const titles = db
-      .prepare(`SELECT title FROM media_item ORDER BY title`)
-      .all()
-      .map((r) => (r as { title: string }).title)
-    // The pre-existing row was NOT overwritten (bulk skips, never re-imports).
-    expect(titles).toEqual(['GTA V (mine)', 'Portal 2', 'The Witcher 3'])
-
-    // Lengths came from the dump's playtime — HLTB must never be called in bulk.
-    expect(httpCalls.filter((u) => u.includes('/api/bleed'))).toEqual([])
-    expect(
-      (db.prepare(`SELECT total_units FROM media_item WHERE title='Portal 2'`).get() as {
-        total_units: number
-      }).total_units
-    ).toBe(74)
+describe('listTop (the /bulk page)', () => {
+  const params = (over: Partial<BulkListParams> = {}): BulkListParams => ({
+    source: 'game',
+    sort: 'popular',
+    count: 10,
+    ...over
   })
 
-  it('throws before any work when the pack is not installed', async () => {
+  function seedVariety(): void {
+    seedCatalog([
+      catalogRow(), // added 22635, MC 92, rating 4.47/7409, 2013, Action
+      catalogRow({
+        id: 2,
+        name: 'Hidden Gem',
+        added: 300,
+        metacritic: 95,
+        rating: 4.9,
+        ratings_count: 60,
+        released: '2021-03-01',
+        genres: JSON.stringify(['RPG']),
+        alt: ''
+      }),
+      catalogRow({
+        id: 3,
+        name: 'Unscored Indie',
+        added: 5000,
+        metacritic: null,
+        rating: 4.8,
+        ratings_count: 20, // below the rating floor
+        released: '2024-06-01',
+        genres: JSON.stringify(['Indie', 'Card']),
+        alt: ''
+      }),
+      catalogRow({
+        id: 4,
+        name: 'New Shovelware',
+        added: 2, // below the newest floor
+        metacritic: null,
+        rating: null,
+        ratings_count: 0,
+        released: '2026-05-01',
+        genres: JSON.stringify(['Board Games']),
+        alt: ''
+      })
+    ])
+  }
+
+  it('popular = added DESC; metacritic excludes unscored; rating needs votes; newest needs traction', () => {
+    seedVariety()
+    expect(listTop(params()).map((r) => r.sourceId)).toEqual([3498, 3, 2, 4])
+    expect(listTop(params({ sort: 'metacritic' })).map((r) => r.sourceId)).toEqual([2, 3498])
+    // id 3 has the best rating but only 20 votes; id 4 has none at all.
+    expect(listTop(params({ sort: 'rating' })).map((r) => r.sourceId)).toEqual([2, 3498])
+    // Newest: id 4 (2026) is freshest but added=2 < 5 → floored out.
+    expect(listTop(params({ sort: 'newest' })).map((r) => r.sourceId)).toEqual([3, 2, 3498])
+  })
+
+  it('scores follow the sort (metacritic vs rating vs best-available)', () => {
+    seedVariety()
+    expect(listTop(params({ sort: 'metacritic' }))[0].score).toBe(95)
+    expect(listTop(params({ sort: 'rating' }))[0].score).toBe(4.9)
+    // popular: metacritic if present, else rating (id 3 has no MC).
+    const popular = listTop(params())
+    expect(popular.find((r) => r.sourceId === 3498)?.score).toBe(92)
+    expect(popular.find((r) => r.sourceId === 3)?.score).toBe(4.8)
+  })
+
+  it('year and genre filters narrow; genre matches whole quoted names only', () => {
+    seedVariety()
+    expect(listTop(params({ yearFrom: 2020 })).map((r) => r.sourceId)).toEqual([3, 2, 4])
+    expect(listTop(params({ yearTo: 2015 })).map((r) => r.sourceId)).toEqual([3498])
+    expect(listTop(params({ genre: 'RPG' })).map((r) => r.sourceId)).toEqual([2])
+    // 'Card' must not substring-match 'Board Games'… and vice versa.
+    expect(listTop(params({ genre: 'Card' })).map((r) => r.sourceId)).toEqual([3])
+    expect(listTop(params({ genre: 'Board Games' })).map((r) => r.sourceId)).toEqual([4])
+  })
+
+  it('count caps the list and unknown sorts throw', () => {
+    seedVariety()
+    expect(listTop(params({ count: 2 })).map((r) => r.sourceId)).toEqual([3498, 3])
+    expect(() => buildCatalogQuery(params({ sort: 'bogus' }))).toThrow(/Unknown catalog sort/)
+  })
+
+  it('throws before any work when the pack is not installed', () => {
     catalog = null
-    await expect(bulkImport(100)).rejects.toThrow(/not installed/)
+    expect(() => listTop(params())).toThrow(/not installed/)
   })
 })

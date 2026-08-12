@@ -40,7 +40,13 @@ const EMPTY_TRACK: CueTrack = { cues: [], maxEnd: [] }
 // persistence path is guarded on `fileId`, so an ad-hoc session simply saves
 // nothing — mining still works fully, since MiningPanel already accepts a null
 // mediaId.
-export default function VideoPlayerPage(): JSX.Element {
+export default function VideoPlayerPage({
+  refKind = 'file'
+}: {
+  // Both /watch/file/:fileId and /watch/wrestling/:fileId fill the same param,
+  // so the route has to say which table the id belongs to.
+  refKind?: 'file' | 'wrestling'
+} = {}): JSX.Element {
   const { fileId: fileIdParam, token } = useParams()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
@@ -48,7 +54,7 @@ export default function VideoPlayerPage(): JSX.Element {
   const player = usePlayer()
 
   const ref: VideoSourceRef = fileIdParam
-    ? { kind: 'file', fileId: Number(fileIdParam) }
+    ? { kind: refKind, fileId: Number(fileIdParam) }
     : { kind: 'adhoc', token: token ?? '' }
 
   const { data: source, isLoading } = useQuery({
@@ -197,9 +203,9 @@ export default function VideoPlayerPage(): JSX.Element {
 
   const flushProgress = useCallback(() => {
     const s = saveRef.current
-    if (s) void api.video.markProgress(s.fileId, s.seconds)
+    if (s) void api.video.markProgress({ kind: refKind, fileId: s.fileId }, s.seconds)
     saveRef.current = null
-  }, [])
+  }, [refKind])
 
   const bucket = Math.floor(uiTime / 5)
   useEffect(() => {
@@ -240,11 +246,18 @@ export default function VideoPlayerPage(): JSX.Element {
   const markWatched = useCallback(async () => {
     if (fileId == null || watchedRef.current) return
     watchedRef.current = true
-    await api.video.markWatched(fileId, true)
-    qc.invalidateQueries({ queryKey: qk.video.all })
-    qc.invalidateQueries({ queryKey: qk.media.all })
-    qc.invalidateQueries({ queryKey: qk.checklist.all })
-  }, [fileId, qc])
+    await api.video.markWatched({ kind: refKind, fileId }, true)
+    // Invalidate the library this file actually belongs to: a wrestling row can
+    // change nothing in the media library or the checklist (main refuses to log
+    // progress for it), and its own queries live under qk.wrestling.
+    if (refKind === 'wrestling') {
+      qc.invalidateQueries({ queryKey: qk.wrestling.all })
+    } else {
+      qc.invalidateQueries({ queryKey: qk.video.all })
+      qc.invalidateQueries({ queryKey: qk.media.all })
+      qc.invalidateQueries({ queryKey: qk.checklist.all })
+    }
+  }, [fileId, qc, refKind])
 
   // ---- music interop ----
   // Stop rather than pause: a queue resuming under a two-hour episode is worse
@@ -416,12 +429,15 @@ export default function VideoPlayerPage(): JSX.Element {
 
   // ---- navigation ----
   const exitPlayer = useCallback(() => {
+    // Main builds backPath, so a new library scope needs no player change.
     if (source?.mediaId && source.mediaType) {
       navigate(`${pathForMedia({ id: source.mediaId, mediaType: source.mediaType })}?tab=video`)
+    } else if (source?.backPath) {
+      navigate(source.backPath)
     } else {
       navigate('/watch')
     }
-  }, [navigate, source?.mediaId, source?.mediaType])
+  }, [navigate, source?.mediaId, source?.mediaType, source?.backPath])
 
   const goToEpisode = useCallback(
     (id: number) => {
@@ -430,7 +446,7 @@ export default function VideoPlayerPage(): JSX.Element {
       setEnded(false)
       // replace: a whole binge stays ONE history entry, so Back lands on the
       // detail page rather than walking every episode in reverse.
-      navigate(`/watch/file/${id}`, { replace: true })
+      navigate(`/watch/${refKind === 'wrestling' ? 'wrestling' : 'file'}/${id}`, { replace: true })
     },
     [navigate]
   )

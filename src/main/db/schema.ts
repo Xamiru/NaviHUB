@@ -1171,3 +1171,209 @@ export const jpGhost = sqliteTable('jp_ghost', {
     .notNull()
     .default(sql`(datetime('now'))`)
 })
+
+// ---------------------------------------------------------------------------
+// Wrestling — a Wikipedia-sourced wiki (events / matches / wrestlers / stables)
+// plus a local collection of files attached per event. Deliberately NOT
+// media_item rows: this is reference data at a scale a personal library
+// shouldn't absorb. Promotion vocabulary is code (src/shared/wrestling.ts).
+// ---------------------------------------------------------------------------
+export const wrestlingEvent = sqliteTable(
+  'wrestling_event',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    promotion: text('promotion').notNull(),
+    name: text('name').notNull(),
+    // Canonical article title AFTER redirect resolution — the dedup key.
+    wikiTitle: text('wiki_title').unique(),
+    series: text('series'),
+    eventDate: text('event_date'),
+    venue: text('venue'),
+    city: text('city'),
+    attendance: integer('attendance'),
+    buyrate: text('buyrate'),
+    tagline: text('tagline'),
+    posterPath: text('poster_path'),
+    lead: text('lead'),
+    localDir: text('local_dir'),
+    favorite: integer('favorite').notNull().default(0),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byPromo: index('idx_wrestling_event_promo').on(t.promotion, t.eventDate)
+  })
+)
+
+export const wrestlingMatch = sqliteTable(
+  'wrestling_match',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    eventId: integer('event_id')
+      .notNull()
+      .references(() => wrestlingEvent.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+    // Denormalized "X vs. Y" — list_item renders through a fixed name column.
+    title: text('title').notNull(),
+    resultText: text('result_text'),
+    stipulation: text('stipulation'),
+    championship: text('championship'),
+    durationSeconds: integer('duration_seconds'),
+    outcome: text('outcome').notNull().default('unknown'),
+    cardSlot: text('card_slot'),
+    // The results table's |caption ("Night 1") — a multi-night event is two
+    // adjacent tables flattened into one card.
+    cardLabel: text('card_label'),
+    // Personal layer: 0-5 stars, survives re-import.
+    rating: real('rating'),
+    favorite: integer('favorite').notNull().default(0),
+    // Soft link to wrestling_video — no FK, so a detach can't cascade the wiki row.
+    videoId: integer('video_id'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byEvent: index('idx_wrestling_match_event').on(t.eventId, t.sortOrder),
+    byRating: index('idx_wrestling_match_rating').on(t.rating)
+  })
+)
+
+export const wrestlingWrestler = sqliteTable(
+  'wrestling_wrestler',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    wikiTitle: text('wiki_title').unique(),
+    realName: text('real_name'),
+    birthDate: text('birth_date'),
+    debutYear: integer('debut_year'),
+    billedFrom: text('billed_from'),
+    height: text('height'),
+    photoPath: text('photo_path'),
+    bio: text('bio'),
+    // null = stub created from a card link, never fetched.
+    detailFetchedAt: text('detail_fetched_at'),
+    favorite: integer('favorite').notNull().default(0),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byName: index('idx_wrestling_wrestler_name').on(t.name)
+  })
+)
+
+// The redirect memo for events AND wrestlers: every title ever seen -> its
+// canonical article title. Not keyed to a row, because aliases are learned
+// before the rows they point at exist.
+export const wrestlingAlias = sqliteTable('wrestling_alias', {
+  aliasTitle: text('alias_title').primaryKey(),
+  canonicalTitle: text('canonical_title').notNull()
+})
+
+export const wrestlingMatchParticipant = sqliteTable(
+  'wrestling_match_participant',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    matchId: integer('match_id')
+      .notNull()
+      .references(() => wrestlingMatch.id, { onDelete: 'cascade' }),
+    wrestlerId: integer('wrestler_id')
+      .notNull()
+      .references(() => wrestlingWrestler.id, { onDelete: 'cascade' }),
+    // 0 = winning side when the match had one.
+    side: integer('side').notNull().default(0),
+    won: integer('won').notNull().default(0),
+    isChampion: integer('is_champion').notNull().default(0),
+    teamName: text('team_name'),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    byMatch: index('idx_wrestling_participant_match').on(t.matchId),
+    byWrestler: index('idx_wrestling_participant_wrestler').on(t.wrestlerId)
+  })
+)
+
+export const wrestlingStable = sqliteTable('wrestling_stable', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  wikiTitle: text('wiki_title').unique(),
+  promotion: text('promotion'),
+  lead: text('lead'),
+  imagePath: text('image_path'),
+  favorite: integer('favorite').notNull().default(0),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})
+
+export const wrestlingStableMember = sqliteTable(
+  'wrestling_stable_member',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    stableId: integer('stable_id')
+      .notNull()
+      .references(() => wrestlingStable.id, { onDelete: 'cascade' }),
+    wrestlerId: integer('wrestler_id')
+      .notNull()
+      .references(() => wrestlingWrestler.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    uniq: unique('uniq_wrestling_stable_member').on(t.stableId, t.wrestlerId)
+  })
+)
+
+// Mirrors video_file's column grouping: identity + freshness / ffprobe
+// snapshot / user state the scanner never writes. Personal → dropped on export.
+export const wrestlingVideo = sqliteTable(
+  'wrestling_video',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    eventId: integer('event_id')
+      .notNull()
+      .references(() => wrestlingEvent.id, { onDelete: 'cascade' }),
+    filePath: text('file_path').notNull(),
+    title: text('title').notNull(),
+    number: real('number'),
+    // Unused for wrestling — kept so the generalized scanner shares one upsert
+    // with video_file rather than forking it.
+    season: integer('season'),
+    sortOrder: integer('sort_order').notNull().default(0),
+    fileMtime: integer('file_mtime'),
+    fileSize: integer('file_size'),
+    duration: real('duration'),
+    width: integer('width'),
+    height: integer('height'),
+    videoCodec: text('video_codec'),
+    audioCodec: text('audio_codec'),
+    container: text('container'),
+    playability: text('playability'),
+    resumeSeconds: real('resume_seconds'),
+    watchedAt: text('watched_at'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byEvent: index('idx_wrestling_video_event').on(t.eventId),
+    uniq: unique('uniq_wrestling_video_path').on(t.eventId, t.filePath)
+  })
+)

@@ -26,7 +26,10 @@ vi.mock('../src/main/repos/settingsRepo', () => ({
   }
 }))
 vi.mock('../src/main/files', () => ({
-  videoRootDir: () => root
+  videoRootDir: () => root,
+  // The scanner is shared with the wrestling collection (video/scope.ts), so
+  // both roots have to exist even though these tests only use the media one.
+  wrestlingRootDir: () => root
 }))
 
 import * as scan from '../src/main/video/scan'

@@ -9,6 +9,7 @@ import { toast, toastError } from '../lib/toast'
 import CoverImage from './CoverImage'
 import { NextIcon } from './PlayerIcons'
 import type { MusicTrack } from '@shared/types'
+import { confirmDialog } from '../lib/confirm'
 
 export function formatDuration(seconds: number | null): string {
   if (seconds == null || !Number.isFinite(seconds)) return '–:––'
@@ -160,12 +161,11 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
   }
 
   async function deleteFromDisk(): Promise<void> {
-    if (
-      !window.confirm(
-        `Delete "${track.title}" from your computer?\n\nThis permanently removes the file from disk — it cannot be undone.`
-      )
+    const ok = await confirmDialog(
+      `Delete "${track.title}" from your computer?\n\nThis permanently removes the file from disk — it cannot be undone.`,
+      { confirmLabel: 'Delete', danger: true }
     )
-      return
+    if (!ok) return
     try {
       await api.music.deleteTracks([track.id])
       // The file is gone; stop playback if this was the current track so the

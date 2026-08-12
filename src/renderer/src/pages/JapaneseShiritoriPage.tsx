@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
+import JpKeyboardInput from '../components/japanese/keyboard/JpKeyboardInput'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toHiragana } from '@shared/kana'
@@ -188,18 +189,15 @@ export default function JapaneseShiritoriPage() {
             <span className="ml-3 text-xs text-gray-600">chain {userWords}</span>
           </p>
           <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              className="input flex-1 text-center text-lg"
+            <JpKeyboardInput
+              inputRef={inputRef}
+              wrapClassName="flex-1"
+              className="w-full text-center text-lg"
               placeholder="kana, kanji or romaji…"
               value={input}
               autoFocus
-              autoComplete="off"
-              spellCheck={false}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void submit()
-              }}
+              onChange={setInput}
+              onEnter={() => void submit()}
             />
             <button className="btn-primary shrink-0" disabled={busy} onClick={() => void submit()}>
               {busy ? '…' : 'Play'}

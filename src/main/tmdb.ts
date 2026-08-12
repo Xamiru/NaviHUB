@@ -1,9 +1,16 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, sleep } from './http'
 import * as settingsRepo from './repos/settingsRepo'
-import type { ImportSearchResult, ImportSummary, MediaType } from '@shared/types'
+import type {
+  BulkListParams,
+  BulkPreviewItem,
+  ImportSearchResult,
+  ImportSummary,
+  MediaType
+} from '@shared/types'
+import { bulkSourceCfg } from '@shared/bulkImport'
 
 // The Movie Database (TMDB) — the free, standard source for movie + TV data.
 // Requires a personal API key (free from themoviedb.org), stored in settings
@@ -127,6 +134,94 @@ export async function searchTv(query: string): Promise<ImportSearchResult[]> {
     episodes: null,
     coverUrl: posterUrl(m.poster_path, 'w185')
   }))
+}
+
+// ---------------- Top lists (the /bulk page) ----------------
+// /discover with server-side sort + filters, 20 results a page (page <= 500).
+// "Top rated" needs a vote floor or a 10.0-rated film with 3 votes tops the
+// list; TV gets a lower floor (episode-vote pools run smaller than movies').
+const DISCOVER_SORTS: Record<string, string> = {
+  popular: 'popularity.desc',
+  rated: 'vote_average.desc'
+}
+
+// Pure + exported for tests.
+export function buildDiscoverParams(
+  kind: 'movie' | 'tv',
+  params: BulkListParams,
+  page: number
+): Record<string, string> {
+  const sort = DISCOVER_SORTS[params.sort]
+  if (!sort) throw new Error(`Unknown TMDB sort: ${params.sort}`)
+  const dateField = kind === 'movie' ? 'primary_release_date' : 'first_air_date'
+  const out: Record<string, string> = {
+    sort_by: sort,
+    include_adult: 'false',
+    page: String(page)
+  }
+  if (params.sort === 'rated') out['vote_count.gte'] = kind === 'movie' ? '300' : '150'
+  if (params.yearFrom) out[`${dateField}.gte`] = `${params.yearFrom}-01-01`
+  if (params.yearTo) out[`${dateField}.lte`] = `${params.yearTo}-12-31`
+  if (params.genre) {
+    const id = bulkSourceCfg(kind).genreIds?.[params.genre]
+    if (!id) throw new Error(`Unknown TMDB genre: ${params.genre}`)
+    out.with_genres = String(id)
+  }
+  return out
+}
+
+// Standing user directive (the old bulk-import.cjs --exclude-langs flag, now
+// always on): Indian releases dominate TMDB's popularity lists via regional
+// traffic, and the user wants none on a bulk shelf. Discover has no
+// without_original_language param, so rows are dropped by original_language
+// after the fetch — the paging loop keeps crawling until count is filled.
+// Importing an individual title through the normal dialog is unaffected.
+export const EXCLUDED_ORIGINAL_LANGS = new Set([
+  'hi', // Hindi
+  'ta', // Tamil
+  'te', // Telugu
+  'ml', // Malayalam
+  'kn', // Kannada
+  'bn', // Bengali
+  'mr', // Marathi
+  'pa', // Punjabi
+  'gu' // Gujarati
+])
+
+export async function discoverTop(
+  kind: 'movie' | 'tv',
+  params: BulkListParams,
+  pageDelayMs = 300
+): Promise<BulkPreviewItem[]> {
+  const out: BulkPreviewItem[] = []
+  const maxPage = 500 // TMDB rejects deeper pages
+  for (let page = 1; page <= maxPage; page++) {
+    let data: Awaited<ReturnType<typeof tmdbGet>>
+    try {
+      data = await tmdbGet(`/discover/${kind}`, buildDiscoverParams(kind, params, page))
+    } catch (e) {
+      // A page mid-crawl failing must not discard everything already fetched —
+      // return the partial list (the anilist.topList posture).
+      if (out.length > 0) return out
+      throw e
+    }
+    const results = data?.results ?? []
+    for (const m of results) {
+      if (EXCLUDED_ORIGINAL_LANGS.has(String(m.original_language ?? ''))) continue
+      out.push({
+        sourceId: m.id,
+        title: (kind === 'movie' ? m.title || m.original_title : m.name || m.original_name) || 'Untitled',
+        year: yearOf(kind === 'movie' ? m.release_date : m.first_air_date),
+        coverUrl: posterUrl(m.poster_path, 'w185'),
+        score: typeof m.vote_average === 'number' ? m.vote_average : null,
+        inLibrary: false
+      })
+      if (out.length >= params.count) return out
+    }
+    if (results.length === 0 || page >= (data?.total_pages ?? 1)) return out
+    if (pageDelayMs > 0) await sleep(pageDelayMs)
+  }
+  return out
 }
 
 // ---------------- Shared persistence ----------------
@@ -393,7 +488,12 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
 }
 
 // ---------------- Import ----------------
-export async function importMovie(tmdbId: number): Promise<ImportSummary> {
+// opts.skipOmdb is the bulk path: OMDb free keys allow 1000 requests/day, which
+// one big bulk run would burn through. Detail-page re-import enriches later.
+export async function importMovie(
+  tmdbId: number,
+  opts: { skipOmdb?: boolean } = {}
+): Promise<ImportSummary> {
   const m = await tmdbGet(`/movie/${tmdbId}`, { append_to_response: 'credits' })
   if (!m?.id) throw new Error('Movie not found on TMDB')
   const title = m.title || m.original_title || 'Untitled'
@@ -410,11 +510,14 @@ export async function importMovie(tmdbId: number): Promise<ImportSummary> {
     genres: m.genres ?? [],
     cast: m.credits?.cast ?? [],
     crew: m.credits?.crew ?? [],
-    extraMeta: await fetchOmdb(m.imdb_id) // TMDB movies carry imdb_id directly
+    extraMeta: opts.skipOmdb ? null : await fetchOmdb(m.imdb_id) // TMDB movies carry imdb_id directly
   })
 }
 
-export async function importTv(tmdbId: number): Promise<ImportSummary> {
+export async function importTv(
+  tmdbId: number,
+  opts: { skipOmdb?: boolean } = {}
+): Promise<ImportSummary> {
   // external_ids gives us the IMDb id (TV details omit it otherwise) for OMDb.
   const m = await tmdbGet(`/tv/${tmdbId}`, { append_to_response: 'aggregate_credits,external_ids' })
   if (!m?.id) throw new Error('TV show not found on TMDB')
@@ -428,7 +531,7 @@ export async function importTv(tmdbId: number): Promise<ImportSummary> {
   const epDuration = runTimes.length
     ? Math.round(runTimes.reduce((a, b) => a + b, 0) / runTimes.length)
     : (m.last_episode_to_air?.runtime ?? null)
-  const omdb = await fetchOmdb(m.external_ids?.imdb_id)
+  const omdb = opts.skipOmdb ? null : await fetchOmdb(m.external_ids?.imdb_id)
   const extraMeta =
     epDuration && epDuration > 0 ? { ...(omdb ?? {}), epDuration } : omdb
   return persistTitle({

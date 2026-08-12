@@ -45,6 +45,23 @@ export const TORRENT_CATEGORY_OPTIONS: { label: string; cats: number[] }[] = [
 // so the artist "discography" search passes these explicitly.
 export const AUDIO_CATEGORIES = [3000]
 
+// Wrestling events are wrestling_event rows, not media_item rows, so they sit
+// outside torznabCategoriesFor's MediaType switch and the event page passes
+// these explicitly. 5060 is TV/Sport; 5000 (TV) is the catch-all for indexers
+// with no sport subcategory.
+export const WRESTLING_CATEGORIES = [5060, 5000]
+
+// Trackers file an event under the promotion's name AT THE TIME, which is why
+// this takes a name rather than deriving one: a 2001 WWE show is "WWF" on every
+// tracker, and querying "WWE WrestleMania X-Seven" returns nothing.
+export function wrestlingTorrentQuery(promotionName: string, eventName: string): string {
+  const name = eventName.trim()
+  // Don't repeat the promotion when the event name already carries it.
+  return name.toLowerCase().startsWith(promotionName.toLowerCase())
+    ? name
+    : `${promotionName} ${name}`
+}
+
 // Torrent releases of an artist's full catalogue are conventionally named
 // "<Artist> Discography" — the dialog's query box stays editable from there.
 export function discographyQuery(artist: string): string {

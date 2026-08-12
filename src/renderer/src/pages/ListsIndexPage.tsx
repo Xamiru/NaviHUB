@@ -9,7 +9,16 @@ import { KIND_LABEL } from '../lib/listLinks'
 import CoverImage from '../components/CoverImage'
 import type { ListKind, ListSummary } from '@shared/types'
 
-const KIND_FILTERS: (ListKind | null)[] = [null, 'media', 'person', 'character', 'company']
+const KIND_FILTERS: (ListKind | null)[] = [
+  null,
+  'media',
+  'person',
+  'character',
+  'company',
+  'wrestlingEvent',
+  'wrestlingWrestler',
+  'wrestlingMatch'
+]
 
 export default function ListsIndexPage() {
   const [kind, setKind] = usePersistedState<ListKind | null>('listKind', null)

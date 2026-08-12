@@ -1,0 +1,413 @@
+import { useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
+import { useIncrementalList } from '../lib/hooks'
+import { usePersistedState } from '../lib/navState'
+import { useBulkRun } from '../lib/useBulkRun'
+import PageHeader from '../components/PageHeader'
+import { Group, Pill } from '../components/PillGroup'
+import { BULK_SOURCES, bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
+import type { BulkListParams, BulkPreviewItem } from '@shared/types'
+
+const SEASONS = ['winter', 'spring', 'summer', 'fall'] as const
+
+// Scores arrive on each source's native scale (TMDB 0-10 with long decimals,
+// AniList/Metacritic 0-100, RAWG 0-5) — just trim, don't rescale.
+function fmtScore(score: number): string {
+  return Number.isInteger(score) ? String(score) : score.toFixed(1)
+}
+
+// Bulk import: top-N lists per media type, previewed before anything runs.
+// Preview is a plain await in the button handler (NOT useQuery — an enabled
+// query refetches on remount, and 20 AniList pages per visit is exactly the
+// auto-run traffic the Torrents page's comment warns about). The run itself
+// lives in main (bulkImport.ts singleton) and is followed via useBulkRun.
+export default function BulkImportPage(): React.JSX.Element {
+  const qc = useQueryClient()
+  const [sourceKey, setSourceKey] = usePersistedState<BulkSourceKey>('bulk.source', 'anime')
+  const [sortByType, setSortByType] = usePersistedState<Record<string, string>>('bulk.sort', {})
+  const [count, setCount] = usePersistedState('bulk.count', '100')
+  const [yearFrom, setYearFrom] = usePersistedState('bulk.yearFrom', '')
+  const [yearTo, setYearTo] = usePersistedState('bulk.yearTo', '')
+  // Keyed by source (the sortByType shape): 'Horror' picked for Movies must not
+  // silently ride into Anime just because both genre lists contain the name.
+  const [genreByType, setGenreByType] = usePersistedState<Record<string, string>>('bulk.genre', {})
+  const [season, setSeason] = usePersistedState('bulk.season', '')
+  const [seasonYear, setSeasonYear] = usePersistedState('bulk.seasonYear', '')
+
+  const cfg = bulkSourceCfg(sourceKey)
+  const sort = cfg.sorts.some((s) => s.key === sortByType[sourceKey])
+    ? sortByType[sourceKey]
+    : cfg.sorts[0].key
+  const genreOptions = cfg.genres ?? (cfg.genreIds ? Object.keys(cfg.genreIds) : [])
+  const genre = genreByType[sourceKey] ?? ''
+  const activeGenre = cfg.hasGenre && genreOptions.includes(genre) ? genre : null
+
+  // The offline games catalog must be installed before its lists exist.
+  const { data: catalogStatus } = useQuery({
+    queryKey: qk.gamesCatalog.status,
+    queryFn: () => api.rawgCatalog.status(),
+    enabled: !!cfg.offline
+  })
+  const catalogMissing = !!cfg.offline && catalogStatus != null && !catalogStatus.installed
+  const [installing, setInstalling] = useState(false)
+
+  const [previewing, setPreviewing] = useState(false)
+  // Persisted (the filters convention): a preview can cost ~80s of throttled
+  // AniList paging, so Back into a detail page must not throw it away — nor
+  // the per-row selection clicks made on it.
+  const [preview, setPreview] = usePersistedState<{
+    params: BulkListParams
+    items: BulkPreviewItem[]
+  } | null>('bulk.preview', null)
+  const [deselected, setDeselected] = usePersistedState<Set<number>>('bulk.deselected', new Set())
+
+  const run = useBulkRun()
+  const runStatus = run.status
+
+  function switchSource(key: BulkSourceKey): void {
+    setSourceKey(key)
+    setPreview(null)
+  }
+
+  function buildParams(): BulkListParams {
+    const params: BulkListParams = {
+      source: sourceKey,
+      sort,
+      count: Math.max(1, Math.min(cfg.maxCount, Math.floor(Number(count) || 0) || 100))
+    }
+    if (Number(yearFrom)) params.yearFrom = Number(yearFrom)
+    if (Number(yearTo)) params.yearTo = Number(yearTo)
+    if (activeGenre) params.genre = activeGenre
+    if (cfg.hasSeason && season && Number(seasonYear)) {
+      params.season = season
+      params.seasonYear = Number(seasonYear)
+    }
+    return params
+  }
+
+  async function runPreview(): Promise<void> {
+    setPreviewing(true)
+    try {
+      const params = buildParams()
+      const items = await api.bulk.preview(params)
+      setPreview({ params, items })
+      // Already-in-library rows start deselected — they'd only be skipped.
+      setDeselected(new Set(items.filter((it) => it.inLibrary).map((it) => it.sourceId)))
+    } finally {
+      setPreviewing(false)
+    }
+  }
+
+  async function startImport(): Promise<void> {
+    if (!preview) return
+    const items = preview.items
+      .filter((it) => !deselected.has(it.sourceId))
+      .map((it) => ({ sourceId: it.sourceId, title: it.title }))
+    await api.bulk.start({ source: preview.params.source, items })
+    setPreview(null)
+    await run.kick()
+  }
+
+  async function stopRun(): Promise<void> {
+    await api.bulk.cancel()
+    await run.kick()
+  }
+
+  async function installCatalog(): Promise<void> {
+    setInstalling(true)
+    try {
+      await api.rawgCatalog.install()
+      await qc.invalidateQueries({ queryKey: qk.gamesCatalog.status })
+    } finally {
+      setInstalling(false)
+    }
+  }
+
+  const selectedCount = preview ? preview.items.length - deselected.size : 0
+
+  return (
+    <div className="p-6 max-w-6xl mx-auto">
+      <PageHeader
+        title="Bulk Import"
+        subtitle="Fill a shelf in one run — preview a top list, then import the whole selection."
+      />
+
+      <div className="card p-5 space-y-4 mb-6">
+        <Group label="Type">
+          {BULK_SOURCES.map((s) => (
+            <Pill key={s.key} active={s.key === sourceKey} onClick={() => switchSource(s.key)} label={s.label} />
+          ))}
+        </Group>
+
+        <Group label="List">
+          {cfg.sorts.map((s) => (
+            <Pill
+              key={s.key}
+              active={s.key === sort}
+              onClick={() => setSortByType({ ...sortByType, [sourceKey]: s.key })}
+              label={s.label}
+            />
+          ))}
+        </Group>
+
+        {catalogMissing ? (
+          <div className="rounded-md bg-base-700/60 p-4">
+            <p className="text-sm text-gray-300">
+              The offline games catalog is a one-time ~55 MB download (RAWG&apos;s final dataset, ~120k
+              games incl. consoles). Lists are instant and local afterwards.
+            </p>
+            <button className="btn-primary mt-3" onClick={installCatalog} disabled={installing}>
+              {installing ? 'Downloading…' : 'Install catalog'}
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="flex flex-wrap items-end gap-4">
+              <label className="block">
+                <span className="label">Top</span>
+                <input
+                  type="number"
+                  className="input w-24"
+                  min={1}
+                  max={cfg.maxCount}
+                  value={count}
+                  onChange={(e) => setCount(e.target.value)}
+                />
+              </label>
+              <label className="block">
+                <span className="label">Year from</span>
+                <input
+                  type="number"
+                  className="input w-24"
+                  placeholder="any"
+                  value={yearFrom}
+                  onChange={(e) => setYearFrom(e.target.value)}
+                />
+              </label>
+              <label className="block">
+                <span className="label">Year to</span>
+                <input
+                  type="number"
+                  className="input w-24"
+                  placeholder="any"
+                  value={yearTo}
+                  onChange={(e) => setYearTo(e.target.value)}
+                />
+              </label>
+              {cfg.hasGenre && (
+                <label className="block">
+                  <span className="label">Genre</span>
+                  <select
+                    className="input w-auto"
+                    value={activeGenre ?? ''}
+                    onChange={(e) => setGenreByType({ ...genreByType, [sourceKey]: e.target.value })}
+                  >
+                    <option value="">Any</option>
+                    {genreOptions.map((g) => (
+                      <option key={g} value={g}>
+                        {g}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </div>
+
+            {(sourceKey === 'movie' || sourceKey === 'tv') && (
+              <p className="text-xs text-gray-500">
+                Indian releases are excluded from these lists (your standing rule — importing one
+                individually still works).
+              </p>
+            )}
+
+            {cfg.hasSeason && (
+              <div className="flex flex-wrap items-end gap-4">
+                <Group label="Season (optional)">
+                  <Pill active={season === ''} onClick={() => setSeason('')} label="Any" />
+                  {SEASONS.map((s) => (
+                    <Pill
+                      key={s}
+                      active={season === s}
+                      onClick={() => setSeason(s)}
+                      label={s[0].toUpperCase() + s.slice(1)}
+                    />
+                  ))}
+                </Group>
+                {season && (
+                  <label className="block">
+                    <span className="label">Season year</span>
+                    <input
+                      type="number"
+                      className="input w-24"
+                      placeholder="2024"
+                      value={seasonYear}
+                      onChange={(e) => setSeasonYear(e.target.value)}
+                    />
+                  </label>
+                )}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              {!preview && (
+                <button className="btn-primary" onClick={runPreview} disabled={previewing || run.running}>
+                  {previewing ? 'Fetching list…' : 'Preview'}
+                </button>
+              )}
+              {preview && (
+                <>
+                  <button className="btn-primary" onClick={startImport} disabled={selectedCount === 0 || run.running}>
+                    Import {selectedCount} title{selectedCount === 1 ? '' : 's'}
+                  </button>
+                  <button className="btn-ghost" onClick={runPreview} disabled={previewing || run.running}>
+                    {previewing ? 'Fetching list…' : 'Refresh preview'}
+                  </button>
+                  <button className="btn-ghost" onClick={() => setPreview(null)}>
+                    Clear
+                  </button>
+                </>
+              )}
+              {preview && (
+                <span className="text-xs text-gray-500">
+                  Already-imported titles are pre-deselected — importing them again only skips.
+                </span>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {runStatus && runStatus.state !== 'idle' && <RunCard status={runStatus} onStop={stopRun} />}
+
+      {preview && (
+        <PreviewList
+          items={preview.items}
+          deselected={deselected}
+          onToggle={(id) => {
+            const next = new Set(deselected)
+            if (next.has(id)) next.delete(id)
+            else next.add(id)
+            setDeselected(next)
+          }}
+          onAll={() => setDeselected(new Set())}
+          onNone={() => setDeselected(new Set(preview.items.map((it) => it.sourceId)))}
+        />
+      )}
+    </div>
+  )
+}
+
+function RunCard({
+  status,
+  onStop
+}: {
+  status: NonNullable<ReturnType<typeof useBulkRun>['status']>
+  onStop: () => Promise<void>
+}) {
+  const pct = status.total > 0 ? Math.round((status.done / status.total) * 100) : 0
+  const running = status.state === 'running'
+  const headline = running
+    ? `Importing ${status.label.toLowerCase()} — ${status.done}/${status.total}`
+    : status.state === 'done'
+      ? 'Bulk import finished'
+      : status.state === 'cancelled'
+        ? 'Bulk import stopped'
+        : 'Bulk import failed'
+  return (
+    <div className="card p-4 mb-6">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-medium">{headline}</p>
+          <p className="text-xs text-gray-400 truncate">
+            {running && status.message ? (
+              status.message
+            ) : (
+              <>
+                {status.imported} imported · {status.skipped} skipped · {status.failed} failed
+              </>
+            )}
+          </p>
+        </div>
+        {running && (
+          <button className="btn-ghost shrink-0" onClick={onStop}>
+            Stop
+          </button>
+        )}
+      </div>
+      {running && (
+        <div className="h-1.5 overflow-hidden rounded bg-base-600">
+          <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+      {status.state === 'error' && status.message && (
+        <p className="mt-2 text-xs text-red-400">{status.message}</p>
+      )}
+    </div>
+  )
+}
+
+function PreviewList({
+  items,
+  deselected,
+  onToggle,
+  onAll,
+  onNone
+}: {
+  items: BulkPreviewItem[]
+  deselected: Set<number>
+  onToggle: (id: number) => void
+  onAll: () => void
+  onNone: () => void
+}) {
+  const { visible, sentinelRef, hasMore } = useIncrementalList(items)
+  return (
+    <div>
+      <div className="mb-2 flex items-center gap-3 text-xs text-gray-400">
+        <span>
+          {items.length} title{items.length === 1 ? '' : 's'} · {items.length - deselected.size} selected
+        </span>
+        <button className="text-accent hover:underline" onClick={onAll}>
+          Select all
+        </button>
+        <button className="text-accent hover:underline" onClick={onNone}>
+          Select none
+        </button>
+      </div>
+      <div className="space-y-1">
+        {visible.map((it, i) => {
+          const off = deselected.has(it.sourceId)
+          return (
+            <button
+              key={it.sourceId}
+              className={`flex w-full items-center gap-3 rounded-md p-2 text-left ${
+                off ? 'bg-base-800 opacity-50' : 'bg-base-700'
+              }`}
+              onClick={() => onToggle(it.sourceId)}
+            >
+              <span className="w-8 shrink-0 text-right text-xs tabular-nums text-gray-500">{i + 1}</span>
+              {it.coverUrl ? (
+                <img src={it.coverUrl} alt="" loading="lazy" className="h-14 w-10 shrink-0 rounded object-cover" />
+              ) : (
+                <div className="h-14 w-10 shrink-0 rounded bg-base-600" />
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">{it.title}</span>
+                <span className="block text-xs text-gray-500">
+                  {[it.year, it.score != null ? `★ ${fmtScore(it.score)}` : null]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              </span>
+              <span className="shrink-0 text-xs text-gray-500">
+                {it.inLibrary ? '✓ in library' : off ? '○' : '✓'}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      {hasMore && <div ref={sentinelRef} className="h-8" />}
+    </div>
+  )
+}

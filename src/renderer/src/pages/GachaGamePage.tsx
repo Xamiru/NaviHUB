@@ -17,6 +17,7 @@ import CoverImage from '../components/CoverImage'
 import GachaUnitDialog from '../components/gacha/GachaUnitDialog'
 import GachaBannerDialog from '../components/gacha/GachaBannerDialog'
 import GachaGameImageDialog from '../components/gacha/GachaGameImageDialog'
+import { confirmDialog } from '../lib/confirm'
 
 type Tab = 'roster' | 'catalog' | 'banners' | 'news'
 
@@ -314,14 +315,13 @@ function CatalogTab({ cfg }: { cfg: GachaGameCfg }) {
   const { visible, sentinelRef } = useIncrementalList(units)
 
   async function fetchCatalog(): Promise<void> {
-    if (
-      !confirm(
-        `Download the full ${cfg.name} catalog from Atlas Academy?\n\n` +
-          'The first run downloads ~2,500 portraits and can take several minutes ' +
-          '(progress shows in the top bar). Re-running is quick and never touches your roster data.'
-      )
+    const ok = await confirmDialog(
+      `Download the full ${cfg.name} catalog from Atlas Academy?\n\n` +
+        'The first run downloads ~2,500 portraits and can take several minutes ' +
+        '(progress shows in the top bar). Re-running is quick and never touches your roster data.',
+      { confirmLabel: 'Download' }
     )
-      return
+    if (!ok) return
     setBusy(true)
     try {
       const res = await api.gacha.importCatalog(cfg.id)
@@ -564,7 +564,11 @@ function BannerRow({ banner, onEdit }: { banner: GachaBanner; onEdit: () => void
   const qc = useQueryClient()
 
   async function remove(): Promise<void> {
-    if (!confirm(`Delete banner "${banner.name}"?`)) return
+    const ok = await confirmDialog(`Delete banner "${banner.name}"?`, {
+      confirmLabel: 'Delete',
+      danger: true
+    })
+    if (!ok) return
     await api.gacha.removeBanner(banner.id)
     await qc.invalidateQueries({ queryKey: qk.gacha.all })
   }

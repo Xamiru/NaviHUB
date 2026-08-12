@@ -32,12 +32,20 @@ let searchPayload: Record<string, unknown>
 let detailsPayload: Record<string, unknown>
 let hltbInit: Record<string, unknown>
 let hltbSearch: Record<string, unknown>
+let searchFails = 0 // > 0: the next N storesearch calls throw (transient network)
 vi.mock('../src/main/http', () => ({
+  sleep: async () => {},
   fetchWithRetry: async (url: string) => ({
     ok: true,
     status: 200,
     json: async () => {
-      if (url.includes('/storesearch/')) return searchPayload
+      if (url.includes('/storesearch/')) {
+        if (searchFails > 0) {
+          searchFails--
+          throw new Error('network down (test)')
+        }
+        return searchPayload
+      }
       if (url.includes('/appdetails')) return detailsPayload
       if (url.includes('/api/bleed/init')) return hltbInit
       if (url.includes('/api/bleed')) return hltbSearch
@@ -46,7 +54,7 @@ vi.mock('../src/main/http', () => ({
   })
 }))
 
-import { importGame, parseSteamDate, search } from '../src/main/steam'
+import { backfillMetacritic, importGame, lookupMetacritic, parseSteamDate, search } from '../src/main/steam'
 
 function detailsFixture(overrides: Record<string, unknown> = {}) {
   return {
@@ -231,5 +239,65 @@ describe('search', () => {
 
   it('empty query short-circuits without a request', async () => {
     expect(await search('   ')).toEqual([])
+  })
+})
+
+describe('metacritic backfill', () => {
+  const addGame = (title: string, metadata: string | null = null): number =>
+    Number(
+      db
+        .prepare(`INSERT INTO media_item (media_type, title, metadata) VALUES ('game', ?, ?)`)
+        .run(title, metadata).lastInsertRowid
+    )
+  const metaOf = (id: number): Record<string, unknown> =>
+    JSON.parse(
+      ((db.prepare('SELECT metadata FROM media_item WHERE id=?').get(id) as {
+        metadata: string | null
+      }).metadata ?? '{}')
+    )
+
+  it('lookupMetacritic requires an EXACT normalized name match', async () => {
+    // storesearch returns 'Persona 5 Royal'; a lookup for the base game must
+    // NOT take the Royal edition's score.
+    expect(await lookupMetacritic('Persona 5')).toBeNull()
+    expect(await lookupMetacritic('Persona 5 Royal')).toBe(94)
+    expect(await lookupMetacritic('PERSONA 5: royal')).toBe(94) // punctuation/case-insensitive
+  })
+
+  it('a title that normalizes to nothing is a miss, never an empty-vs-empty match', async () => {
+    // Both the all-CJK title and this symbols-only app name normalize to '' —
+    // without the guard they'd "exactly match" and merge a stranger's score.
+    searchPayload = {
+      total: 1,
+      items: [{ type: 'app', id: 777, name: '★☆★', tiny_image: null }]
+    }
+    expect(await lookupMetacritic('人喰いの大鷲トリコ')).toBeNull()
+  })
+
+  it('fills missing scores, stamps definitive misses, leaves scored rows alone', async () => {
+    const hit = addGame('Persona 5 Royal') // exact match in the fixture → 94
+    const miss = addGame('Bloodborne') // not in the storesearch fixture
+    const scored = addGame('Old Game', '{"metacritic":80,"hltb":{"main":100}}')
+
+    const res = await backfillMetacritic({ delayMs: 0 })
+    expect(res).toEqual({ scanned: 2, updated: 1, missed: 1, failed: 0 })
+    expect(metaOf(hit)).toEqual({ metacritic: 94 })
+    expect(metaOf(miss)).toEqual({ metacriticChecked: true })
+    expect(metaOf(scored)).toEqual({ metacritic: 80, hltb: { main: 100 } }) // untouched
+
+    // Re-run: the stamped miss is skipped, nothing left to scan.
+    const again = await backfillMetacritic({ delayMs: 0 })
+    expect(again).toEqual({ scanned: 0, updated: 0, missed: 0, failed: 0 })
+  })
+
+  it('a transient network failure counts as failed, not missed, and stays unstamped', async () => {
+    const flaky = addGame('Persona 5 Royal')
+    searchFails = 1 // first storesearch call throws, then the fixture answers
+    const res = await backfillMetacritic({ delayMs: 0 })
+    expect(res).toEqual({ scanned: 1, updated: 0, missed: 0, failed: 1 })
+    expect(metaOf(flaky)).toEqual({}) // unstamped — the next run retries it
+    searchFails = 0
+    const retry = await backfillMetacritic({ delayMs: 0 })
+    expect(retry).toEqual({ scanned: 1, updated: 1, missed: 0, failed: 0 })
   })
 })

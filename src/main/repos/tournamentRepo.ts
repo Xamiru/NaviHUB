@@ -4,7 +4,23 @@ import * as mediaRepo from './mediaRepo'
 import * as musicRepo from './musicRepo'
 import * as peopleRepo from './peopleRepo'
 import * as quizRepo from './quizRepo'
-import type { MusicTrack, TournamentEntry, TournamentSource } from '@shared/types'
+import type {
+  MusicTrack,
+  TournamentEntry,
+  TournamentEntryKind,
+  TournamentSource
+} from '@shared/types'
+
+// The kinds the bracket knows how to render. ListKind is wider (it also covers
+// wrestling entities), so a list of those falls back to a plain entry.
+const TOURNAMENT_KINDS = new Set<TournamentEntryKind>([
+  'music',
+  'theme',
+  'media',
+  'character',
+  'person',
+  'company'
+])
 
 // The tournament contender pool: one source description in, a normalized
 // entry list out, so the bracket UI never cares where contenders came from.
@@ -134,9 +150,16 @@ export function tournamentPool(source: TournamentSource): TournamentEntry[] {
     case 'list': {
       const detail = listRepo.get(source.listId)
       if (!detail) return []
+      // A list can now hold wrestling entities, which the bracket has no
+      // renderer for; they play as plain image/name entries.
+      const entryKind: TournamentEntryKind = TOURNAMENT_KINDS.has(
+        detail.kind as TournamentEntryKind
+      )
+        ? (detail.kind as TournamentEntryKind)
+        : 'media'
       return detail.items.map((e) => ({
         key: `${detail.kind}-${e.entityId}`,
-        entryKind: detail.kind,
+        entryKind,
         name: e.name,
         subtitle: e.subtitle,
         imagePath: e.imagePath,

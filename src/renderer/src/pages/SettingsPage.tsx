@@ -24,10 +24,15 @@ import type {
 } from '@shared/types'
 import StartJackettButton from '../components/StartJackettButton'
 import { useUpdateStatus } from '../lib/useUpdateStatus'
+import { confirmDialog } from '../lib/confirm'
 
 // Persist a setting and refresh the settings cache. Passed down to every
 // section so they all save the same way.
 type SaveFn = (key: string, value: string) => Promise<void>
+
+// Every PackRow's Remove asks the same way.
+const confirmRemove = (message: string): Promise<boolean> =>
+  confirmDialog(message, { confirmLabel: 'Remove', danger: true })
 
 const TABS = [
   { key: 'general', label: 'General' },
@@ -466,6 +471,14 @@ function FoldersSettings({ data, onSave }: { data?: Record<string, string>; onSa
         title="Books library folder"
         placeholder="/home/you/Books"
         description="The root folder your books (EPUBs) live in. Set automatically the first time you link a book's folder from a book page; volume paths are stored relative to this root, so if you move the library, just update this to the new location."
+      />
+      <TextSetting
+        settingKey="wrestling.dir"
+        data={data}
+        onSave={onSave}
+        title="Wrestling library folder"
+        placeholder="/home/you/Wrestling"
+        description="The root folder your PPV and match rips live in. Set automatically the first time you attach a folder from an event page; file paths are stored relative to this root, so if you move the library, just update this and rescan."
       />
       <TextSetting
         settingKey="music.dir"
@@ -1245,8 +1258,8 @@ function DictionarySettings() {
                 </>
               }
               busy={blocked}
-              onRemove={() => {
-                if (window.confirm(`Remove "${d.title}"?`)) void run(() => api.dict.remove(d.id))
+              onRemove={async () => {
+                if (await confirmRemove(`Remove "${d.title}"?`)) void run(() => api.dict.remove(d.id))
               }}
             />
           ))}
@@ -1255,8 +1268,8 @@ function DictionarySettings() {
               title="Example sentences (Tatoeba)"
               detail={<span>{sentenceBank.sentenceCount.toLocaleString()} sentence pairs</span>}
               busy={blocked}
-              onRemove={() => {
-                if (window.confirm('Remove the example-sentence bank?')) {
+              onRemove={async () => {
+                if (await confirmRemove('Remove the example-sentence bank?')) {
                   void run(() => api.dict.removeSentences())
                 }
               }}
@@ -1272,8 +1285,8 @@ function DictionarySettings() {
                 </>
               }
               busy={blocked}
-              onRemove={() => {
-                if (window.confirm('Remove the stroke-order data?')) {
+              onRemove={async () => {
+                if (await confirmRemove('Remove the stroke-order data?')) {
                   void run(() => api.dict.removeStrokes())
                 }
               }}
@@ -1284,8 +1297,8 @@ function DictionarySettings() {
               title="Sentence audio (Tatoeba)"
               detail={<span>{sentenceAudio.clipCount.toLocaleString()} recorded sentences</span>}
               busy={blocked}
-              onRemove={() => {
-                if (window.confirm('Remove the sentence audio (and its clip files)?')) {
+              onRemove={async () => {
+                if (await confirmRemove('Remove the sentence audio (and its clip files)?')) {
                   void run(() => api.dict.removeSentenceAudio())
                 }
               }}
@@ -1301,8 +1314,8 @@ function DictionarySettings() {
                 </>
               }
               busy={blocked}
-              onRemove={() => {
-                if (window.confirm('Remove the minimal-pairs pack (and its audio files)?')) {
+              onRemove={async () => {
+                if (await confirmRemove('Remove the minimal-pairs pack (and its audio files)?')) {
                   void run(() => api.dict.removePairs())
                 }
               }}
@@ -1313,8 +1326,8 @@ function DictionarySettings() {
               title="Grammar library (N5–N1)"
               detail={<span>{grammarBank.pointCount.toLocaleString()} grammar points</span>}
               busy={blocked}
-              onRemove={() => {
-                if (window.confirm('Remove the grammar library?')) {
+              onRemove={async () => {
+                if (await confirmRemove('Remove the grammar library?')) {
                   void run(() => api.dict.removeGrammar())
                 }
               }}
@@ -1333,8 +1346,8 @@ function DictionarySettings() {
                 </>
               }
               busy={blocked}
-              onRemove={() => {
-                if (window.confirm('Remove the kanji-components data?')) {
+              onRemove={async () => {
+                if (await confirmRemove('Remove the kanji-components data?')) {
                   void run(() => api.dict.removeKrad())
                 }
               }}
@@ -1546,8 +1559,8 @@ function EnglishDictionarySettings() {
             title={`WordNet ${info.version ?? ''}`.trim()}
             detail={`${info.lemmaCount.toLocaleString()} words · ${info.synsetCount.toLocaleString()} senses · ${info.pronCount.toLocaleString()} pronunciations`}
             busy={blocked}
-            onRemove={() => {
-              if (window.confirm('Remove the offline English dictionary? Lookups will go online.')) {
+            onRemove={async () => {
+              if (await confirmRemove('Remove the offline English dictionary? Lookups will go online.')) {
                 void run(() => api.english.removeDict())
               }
             }}
@@ -1565,8 +1578,12 @@ function EnglishDictionarySettings() {
             title="Word frequency (OpenSubtitles)"
             detail={`${freqInfo.wordCount.toLocaleString()} ranked words`}
             busy={blocked}
-            onRemove={() => {
-              if (window.confirm('Remove the frequency pack? The vocab/spelling band sources will stop working.')) {
+            onRemove={async () => {
+              if (
+                await confirmRemove(
+                  'Remove the frequency pack? The vocab/spelling band sources will stop working.'
+                )
+              ) {
                 void run(() => api.english.removeFreq())
               }
             }}

@@ -11,6 +11,7 @@ import PageStatus from '../components/PageStatus'
 import ActionMenu from '../components/ActionMenu'
 import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
 import MusicTrackRow from '../components/MusicTrackRow'
+import { confirmDialog } from '../lib/confirm'
 
 export default function MusicPlaylistPage() {
   const { id } = useParams()
@@ -67,7 +68,11 @@ export default function MusicPlaylistPage() {
   }
 
   async function del(): Promise<void> {
-    if (!confirm(`Delete the playlist “${playlist?.title}”? This can’t be undone.`)) return
+    const ok = await confirmDialog(
+      `Delete the playlist “${playlist?.title}”? This can’t be undone.`,
+      { confirmLabel: 'Delete', danger: true }
+    )
+    if (!ok) return
     await api.music.removePlaylist(playlistId)
     qc.invalidateQueries({ queryKey: qk.music.playlists })
     navigate('/music')

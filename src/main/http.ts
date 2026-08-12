@@ -53,6 +53,7 @@ export async function fetchWithRetry(
   }
 }
 
-function sleep(ms: number): Promise<void> {
+// Shared by the throttled crawlers (bulk import, steam backfill) too.
+export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms))
 }

@@ -15,6 +15,7 @@ import { Group, Pill } from '../components/PillGroup'
 import { usePersistedState } from '../lib/navState'
 import { configFor } from '../lib/mediaConfig'
 import type { JpStatsDetail, SrsGrade } from '@shared/types'
+import { confirmDialog } from '../lib/confirm'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const DAY_MS = 86_400_000
@@ -169,7 +170,11 @@ function Leeches() {
   if (leeches.length === 0 && confusables.length === 0) return null
 
   async function reset(id: number, front: string): Promise<void> {
-    if (!window.confirm(`Reset "${front}" to a new card? Its review history is kept.`)) return
+    const ok = await confirmDialog(`Reset "${front}" to a new card? Its review history is kept.`, {
+      confirmLabel: 'Reset',
+      danger: true
+    })
+    if (!ok) return
     try {
       await api.japanese.resetCard(id)
       await qc.invalidateQueries({ queryKey: qk.japanese.all })

@@ -1,7 +1,7 @@
 import { dialog } from 'electron'
 import { basename, extname, join } from 'path'
 import { existsSync, statSync } from 'fs'
-import { absoluteMediaPath, registerOpenedFile, videoRootDir } from '../files'
+import { absoluteMediaPath, registerOpenedFile } from '../files'
 import { mediaUrl } from '@shared/mediaUrl'
 import { VIDEO_EXTS, cleanTitle } from './names'
 import { decidePlayback, type PlaybackPlan } from './playability'
@@ -11,6 +11,7 @@ import * as cache from './cache'
 import * as session from './session'
 import * as subs from './subtitles'
 import * as scan from './scan'
+import { VIDEO_SCOPES, type VideoScope } from './scope'
 import * as mine from './mine'
 import type {
   VideoAudioTrack,
@@ -25,11 +26,16 @@ import type {
 
 export {
   attachFolder,
+  attachFolderIn,
   detach,
+  detachIn,
   files,
   markProgress,
+  markProgressIn,
   markWatched,
-  rescan
+  markWatchedIn,
+  rescan,
+  rescanIn
 } from './scan'
 export { detectTools } from './ffmpeg'
 export { cancelPrepare, getPrepareStatus, killActivePrepare } from './session'
@@ -55,6 +61,13 @@ export function installProber(): void {
   })
 }
 
+// The scope a ref reads from; null for ad-hoc, which has no row.
+function scopeOf(ref: VideoSourceRef): VideoScope | null {
+  if (ref.kind === 'file') return VIDEO_SCOPES.video
+  if (ref.kind === 'wrestling') return VIDEO_SCOPES.wrestling
+  return null
+}
+
 function resolvePaths(ref: VideoSourceRef): { relPath: string; absPath: string } | null {
   if (ref.kind === 'adhoc') {
     const relPath = `open/${ref.token}`
@@ -65,10 +78,11 @@ function resolvePaths(ref: VideoSourceRef): { relPath: string; absPath: string }
       return null
     }
   }
-  const row = scan.fileById(ref.fileId)
+  const scope = scopeOf(ref)!
+  const row = scan.scopedFileById(scope, ref.fileId)
   if (!row) return null
-  const relPath = `video/${row.filePath}`
-  const absPath = join(videoRootDir(), row.filePath)
+  const relPath = `${scope.prefix}/${row.filePath}`
+  const absPath = join(scope.root(), row.filePath)
   return existsSync(absPath) ? { relPath, absPath } : null
 }
 
@@ -94,17 +108,19 @@ export async function source(
   ref: VideoSourceRef,
   opts?: SourceOptions
 ): Promise<VideoSource | null> {
-  const row = ref.kind === 'file' ? scan.fileById(ref.fileId) : null
-  if (ref.kind === 'file' && !row) return null
+  const scope = scopeOf(ref)
+  const row = scope && ref.kind !== 'adhoc' ? scan.scopedFileById(scope, ref.fileId) : null
+  if (scope && !row) return null
   const paths = resolvePaths(ref)
-  const series = row ? scan.seriesOf(row.mediaId) : null
+  const owner = scope && row ? scope.owner(row.ownerId) : null
 
   const base = {
     ref,
     title: row?.title ?? (paths ? cleanTitle(basename(paths.absPath)) : 'Video'),
-    seriesTitle: series?.title ?? null,
-    mediaId: row?.mediaId ?? null,
-    mediaType: series?.mediaType ?? null,
+    seriesTitle: owner?.title ?? null,
+    mediaId: owner?.mediaId ?? null,
+    mediaType: owner?.mediaType ?? null,
+    backPath: owner?.backPath ?? null,
     fileId: row?.id ?? null,
     durationSeconds: row?.duration ?? null,
     resumeSeconds: row?.resumeSeconds ?? null,
@@ -112,7 +128,7 @@ export async function source(
     audioTracks: [] as VideoAudioTrack[],
     subtitles: [] as VideoSubtitleTrack[],
     warnings: [] as string[],
-    ...(row ? scan.neighbours(row.id) : { prev: null, next: null })
+    ...(scope && row ? scan.neighboursIn(scope, row.id) : { prev: null, next: null })
   }
 
   if (!paths) {
@@ -124,7 +140,7 @@ export async function source(
       reason:
         ref.kind === 'adhoc'
           ? 'That file is no longer open — pick it again.'
-          : 'File not found on disk. Rescan the folder, or check the video library root in Settings.'
+          : `File not found on disk. Rescan the folder, or check the ${scope?.label ?? 'video'} library root in Settings.`
     }
   }
 

@@ -8,6 +8,7 @@ import NowPlayingBar from './components/NowPlayingBar'
 import CommandPalette from './components/CommandPalette'
 import PlayerShortcuts from './components/PlayerShortcuts'
 import Toaster from './components/Toaster'
+import ConfirmHost from './components/ConfirmHost'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -29,6 +30,7 @@ import TournamentPage from './pages/TournamentPage'
 import ChecklistPage from './pages/ChecklistPage'
 import ListsIndexPage from './pages/ListsIndexPage'
 import TorrentsPage from './pages/TorrentsPage'
+import BulkImportPage from './pages/BulkImportPage'
 import ListFormPage from './pages/ListFormPage'
 import ListDetailPage from './pages/ListDetailPage'
 import TagsIndexPage from './pages/TagsIndexPage'
@@ -88,6 +90,13 @@ import MusicLikedPage from './pages/MusicLikedPage'
 import MusicStatsPage from './pages/MusicStatsPage'
 import NowPlayingPage from './pages/NowPlayingPage'
 import GachaHomePage from './pages/GachaHomePage'
+import WrestlingHomePage from './pages/WrestlingHomePage'
+import WrestlingPromotionPage from './pages/WrestlingPromotionPage'
+import WrestlingEventPage from './pages/WrestlingEventPage'
+import WrestlingWrestlerPage from './pages/WrestlingWrestlerPage'
+import WrestlingRatedPage from './pages/WrestlingRatedPage'
+import WrestlingYearPage from './pages/WrestlingYearPage'
+import WrestlingMatchRedirect from './pages/WrestlingMatchRedirect'
 import GachaGamePage from './pages/GachaGamePage'
 import GachaUnitPage from './pages/GachaUnitPage'
 import GachaCoachPage from './pages/GachaCoachPage'
@@ -104,7 +113,7 @@ export default function App() {
   // NowPlayingBar. Note the trailing "/" on the /watch branches: the bare
   // /watch landing page is a picker and deliberately keeps the shell.
   const isReader =
-    /^\/(manga|books)\/\d+\/(read|book)\/|^\/watch\/(file|adhoc)\/|^\/read\/(manga|book)\//.test(
+    /^\/(manga|books)\/\d+\/(read|book)\/|^\/watch\/(file|wrestling|adhoc)\/|^\/read\/(manga|book)\//.test(
       location.pathname
     )
 
@@ -147,6 +156,12 @@ export default function App() {
           <Route path="/books/:id/read/:chapterId" element={<MangaReaderPage />} />
           <Route path="/books/:id/book/:chapterId" element={<BookReaderPage />} />
           <Route path="/watch/file/:fileId" element={<VideoPlayerPage />} />
+          {/* Same player, different table — the wrestling collection's rows
+              live in wrestling_video, so the route names the scope. */}
+          <Route
+            path="/watch/wrestling/:fileId"
+            element={<VideoPlayerPage refKind="wrestling" />}
+          />
           <Route path="/watch/adhoc/:token" element={<VideoPlayerPage />} />
           {/* "Open with NaviHUB" — a .cbz/.epub from outside the library. */}
           <Route path="/read/manga/:token" element={<MangaReaderPage />} />
@@ -156,6 +171,7 @@ export default function App() {
             reader still has to land somewhere. */}
         <OpenFileHandler />
         <Toaster />
+        <ConfirmHost />
       </ErrorBoundary>
     )
   }
@@ -311,6 +327,7 @@ export default function App() {
             {/* Lists — user-curated, type-scoped collections */}
             <Route path="/watch" element={<WatchLandingPage />} />
             <Route path="/torrents" element={<TorrentsPage />} />
+            <Route path="/bulk" element={<BulkImportPage />} />
 
             <Route path="/lists" element={<ListsIndexPage />} />
             <Route path="/lists/new" element={<ListFormPage />} />
@@ -392,6 +409,18 @@ export default function App() {
             <Route path="/gacha/:game/unit/:id" element={<GachaUnitPage />} />
             <Route path="/gacha/:game/coach" element={<GachaCoachPage />} />
 
+            {/* Wrestling — standalone section: a Wikipedia-sourced wiki plus a
+                local collection. Promotions configured in shared/wrestling.ts.
+                Sub-paths are namespaced (/p/, /event/, /wrestler/) so a static
+                segment can never be mistaken for an :id. */}
+            <Route path="/wrestling" element={<WrestlingHomePage />} />
+            <Route path="/wrestling/rated" element={<WrestlingRatedPage />} />
+            <Route path="/wrestling/year/:year" element={<WrestlingYearPage />} />
+            <Route path="/wrestling/match/:id" element={<WrestlingMatchRedirect />} />
+            <Route path="/wrestling/p/:promo" element={<WrestlingPromotionPage />} />
+            <Route path="/wrestling/event/:id" element={<WrestlingEventPage />} />
+            <Route path="/wrestling/wrestler/:id" element={<WrestlingWrestlerPage />} />
+
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -399,6 +428,7 @@ export default function App() {
         </main>
         <NowPlayingBar />
         <Toaster />
+        <ConfirmHost />
       </div>
       <CommandPalette />
       <PlayerShortcuts />

@@ -41,6 +41,16 @@ export function booksRootDir(): string {
   return custom && custom.length ? custom : join(app.getPath('userData'), 'books')
 }
 
+// Wrestling collection root (settings key `wrestling.dir`, auto-set on the
+// first per-event folder attach like books.dir). Separate from video.dir on
+// purpose: PPV rips are their own library and shouldn't be forced onto the same
+// drive as the anime one. DB rows and navimg URLs use a virtual "wrestling/"
+// prefix.
+export function wrestlingRootDir(): string {
+  const custom = getSetting('wrestling.dir')?.trim()
+  return custom && custom.length ? custom : join(app.getPath('userData'), 'wrestling')
+}
+
 // Local music library root (settings key `music.dir`, set from the Music page's
 // folder picker or Settings). DB rows and navimg URLs use a virtual "music/"
 // prefix, mirroring the manga/ scheme above.
@@ -187,6 +197,9 @@ export function absoluteMediaPath(relPath: string): string {
   if (norm.startsWith('music/')) return join(musicRootDir(), norm.slice('music/'.length))
   if (norm.startsWith('pictures/')) return join(picturesDir(), norm.slice('pictures/'.length))
   if (norm.startsWith('video/')) return join(videoRootDir(), norm.slice('video/'.length))
+  if (norm.startsWith('wrestling/')) {
+    return join(wrestlingRootDir(), norm.slice('wrestling/'.length))
+  }
   // "jpaudio/" and "videocache/" would resolve identically through the default
   // branch (both live under userData) — the explicit lines document the prefix
   // contract.

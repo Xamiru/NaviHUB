@@ -22,6 +22,10 @@ import type {
   CharacterAppearance,
   CreditRole,
   GlobalSearchResults,
+  BulkListParams,
+  BulkPreviewItem,
+  BulkRunStatus,
+  BulkStartPayload,
   GamesCatalogStatus,
   ImportSearchResult,
   ImportSummary,
@@ -107,6 +111,7 @@ import type {
   ResumePoint,
   ActivityHeatmap,
   SimilarKanji,
+  ImeCandidate,
   LookalikeQuizItem,
   TransitivityQuestion,
   HomophoneQuizItem,
@@ -194,6 +199,18 @@ import type {
   MusicStatsDetail,
   MusicTrack,
   MediaProgressLogged,
+  WrestlingChronology,
+  WrestlingEvent,
+  WrestlingEventDetail,
+  WrestlingEventFilter,
+  WrestlingFavoriteKind,
+  WrestlingImportStatus,
+  WrestlingLinkTarget,
+  WrestlingMatchWithEvent,
+  WrestlingOverview,
+  WrestlingVideo,
+  WrestlingPromotionId,
+  WrestlingWrestler,
   YtDlpDetectResult
 } from './types'
 
@@ -380,6 +397,18 @@ export interface NaviApi {
     // account. No length data (HLTB is the only length source) and no cast.
     search(query: string): Promise<ImportSearchResult[]>
     import(appId: number): Promise<ImportSummary>
+    // Fills REAL Metacritic scores into game rows missing one (RAWG's sync
+    // went stale for 2023+ releases) by exact-name lookup on Steam. Throttled
+    // for Steam's rate limits; misses are stamped so re-runs skip them, which
+    // also makes an interrupted run resumable.
+    // missed = definitive "no score on Steam" (stamped, skipped on re-runs);
+    // failed = transient network failures (unstamped — a re-run retries them).
+    backfillMetacritic(): Promise<{
+      scanned: number
+      updated: number
+      missed: number
+      failed: number
+    }>
   }
   rawgCatalog: {
     // The OFFLINE games catalog (console coverage): RAWG's final CC0 dump as
@@ -391,11 +420,19 @@ export interface NaviApi {
     import(catalogId: number): Promise<ImportSummary>
     status(): Promise<GamesCatalogStatus>
     install(): Promise<GamesCatalogStatus>
-    // Top-N most-tracked games in one run. Skips titles already in the
-    // library (which also makes an interrupted run resumable by re-running)
-    // and deliberately skips HLTB — lengths use the dump's playtime; the
-    // detail page's Fetch button refreshes any title later.
-    bulkImport(count: number): Promise<{ imported: number; skipped: number; failed: number }>
+  }
+  bulk: {
+    // The /bulk page: top-N lists per media type (vocabulary in
+    // @shared/bulkImport.ts). preview resolves the list with in-library rows
+    // marked; start imports the user's SELECTION through the normal importers
+    // in bulk mode (lite characters / no OMDb / no HLTB) and returns
+    // immediately — progress is polled via status (500ms while running),
+    // cancel keeps everything imported so far. Skip-existing makes any
+    // interrupted run resumable by re-running the same list.
+    preview(params: BulkListParams): Promise<BulkPreviewItem[]>
+    start(payload: BulkStartPayload): Promise<BulkRunStatus>
+    status(): Promise<BulkRunStatus>
+    cancel(): Promise<void>
   }
   openlibrary: {
     search(query: string): Promise<ImportSearchResult[]>
@@ -598,6 +635,10 @@ export interface NaviApi {
     }): Promise<{ expression: string; reading: string; gloss: string | null } | null>
     // Visually-similar kanji for the dictionary's kanji breakdown chips.
     similarKanji(char: string): Promise<SimilarKanji[]>
+    // IME-ordered kanji candidates for the on-screen keyboard's composed kana:
+    // exact-reading matches first (frequency-ranked), then prefix predictions.
+    // [] with no dictionary installed — the keyboard degrades to kana commit.
+    readingCandidates(kana: string): Promise<ImeCandidate[]>
     // Transitivity-pair drill questions (Tatoeba sentence or authored fallback
     // — never gated on a pack).
     transitivityPool(req: { limit: number }): Promise<TransitivityQuestion[]>
@@ -731,8 +772,10 @@ export interface NaviApi {
 
     // Called ~every 5s while playing; `markWatched` also advances the media
     // item's own progress and credits the checklist the first time.
-    markProgress(fileId: number, seconds: number): Promise<void>
-    markWatched(fileId: number, watched: boolean): Promise<void>
+    // Take a ref, not a bare id: the same player serves the media library and
+    // the wrestling collection, and a file id is only unique within its table.
+    markProgress(ref: VideoSourceRef, seconds: number): Promise<void>
+    markWatched(ref: VideoSourceRef, watched: boolean): Promise<void>
   }
   music: {
     // Standalone local-music library (<root>/<Artist>/<Album>/<tracks>).
@@ -859,6 +902,56 @@ export interface NaviApi {
     importCoachDoc(game: GachaGameId, input: { title: string; content: string }): Promise<number>
     removeCoachDoc(id: number): Promise<void>
   }
+  wrestling: {
+    // Standalone section (/wrestling): a Wikipedia-imported wiki over events,
+    // matches, wrestlers and stables. Deliberately NOT a media_item type —
+    // ~2,500 events are reference data, not a personal library, so they live in
+    // their own wrestling_* tables (the music_*/gacha_* posture). Promotion
+    // vocabulary is code: src/shared/wrestling.ts.
+    overview(): Promise<WrestlingOverview>
+    events(filter: WrestlingEventFilter): Promise<WrestlingEvent[]>
+    event(id: number): Promise<WrestlingEventDetail | null>
+    // Prev/next in the promotion's calendar AND in the event's own series.
+    chronology(id: number): Promise<WrestlingChronology>
+    // A match has no page of its own; list entries resolve through this.
+    eventIdOfMatch(matchId: number): Promise<number | null>
+    // Events per year, for the promotion page's year rail.
+    yearCounts(promotion: WrestlingPromotionId): Promise<{ year: number; count: number }[]>
+    // Every year the library covers, across all promotions — the year page.
+    allYears(): Promise<{ year: number; count: number }[]>
+    wrestler(id: number): Promise<WrestlingWrestler | null>
+    // Always paginated — a career can run to thousands of matches.
+    wrestlerMatches(
+      id: number,
+      opts?: { limit?: number; offset?: number }
+    ): Promise<WrestlingMatchWithEvent[]>
+    searchWrestlers(query: string): Promise<WrestlingWrestler[]>
+    topRatedMatches(limit?: number): Promise<WrestlingMatchWithEvent[]>
+    // Batched per prose block, never per row: match participants are already
+    // structured, so only free text needs resolving.
+    resolveLinks(titles: string[]): Promise<WrestlingLinkTarget[]>
+
+    // The personal layer. stars is 0-5 in half steps; null clears the rating.
+    rateMatch(matchId: number, stars: number | null): Promise<void>
+    setFavorite(kind: WrestlingFavoriteKind, id: number, favorite: boolean): Promise<void>
+
+    // Wiki install/refresh. Fire-and-poll (the bulkImport singleton): start
+    // returns as soon as the crawl is spawned, then poll importStatus.
+    // The local collection: per-event folder attach, anime-style. Files play
+    // through the shared video pipeline via a { kind: 'wrestling' } ref.
+    files(eventId: number): Promise<{ localDir: string | null; files: WrestlingVideo[] }>
+    attachFolder(eventId: number): Promise<VideoAttachResult>
+    rescan(eventId: number): Promise<VideoAttachResult>
+    detach(eventId: number): Promise<void>
+
+    startImport(opts?: {
+      promotions?: WrestlingPromotionId[]
+      refresh?: boolean
+    }): Promise<WrestlingImportStatus>
+    importStatus(): Promise<WrestlingImportStatus>
+    cancelImport(): Promise<void>
+  }
+
   app: {
     // Opens an http(s) URL in the system browser (gacha news links). Never
     // navigates the app window; non-http(s) URLs are rejected in main.

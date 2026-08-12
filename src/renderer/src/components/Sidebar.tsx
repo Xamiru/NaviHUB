@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, useLocation } from 'react-router-dom'
 import { GACHA_GAMES } from '@shared/gacha'
+import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 import { MEDIA_CONFIGS, configFor, type MediaConfig } from '../lib/mediaConfig'
 import lainAvatar from '../assets/lain.png'
 
@@ -149,6 +150,15 @@ export default function Sidebar() {
               { to: '/music/stats', label: 'Listening stats' }
             ]}
           />
+          {/* Standalone wrestling section (not a MediaConfig — own tables/pages) */}
+          <NavGroup
+            to="/wrestling"
+            label="Wrestling"
+            children={WRESTLING_PROMOTIONS.map((p) => ({
+              to: `/wrestling/p/${p.id}`,
+              label: p.short
+            }))}
+          />
           <NavLink to="/lists" className={({ isActive }) => linkClass(isActive)}>
             Lists
           </NavLink>
@@ -212,6 +222,9 @@ export default function Sidebar() {
           Connected to the Wired
         </div>
         {/* Acquisition + system utilities live in the footer, off the browse tree */}
+        <NavLink to="/bulk" className={({ isActive }) => linkClass(isActive)}>
+          Bulk Import
+        </NavLink>
         <NavLink to="/torrents" className={({ isActive }) => linkClass(isActive)}>
           Torrents
         </NavLink>

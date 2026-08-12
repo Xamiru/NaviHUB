@@ -8,6 +8,7 @@ import { toast, toastError } from '../lib/toast'
 import { useOcrRun } from '../lib/useOcrRun'
 import Section from './Section'
 import type { MangaChapter, MediaDetail } from '@shared/types'
+import { confirmDialog } from '../lib/confirm'
 
 // Local manga reader entry point on the manga detail page: attach a series
 // folder from the manga library, list its scanned chapters (image folders,
@@ -106,11 +107,16 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
       else if (res.error) toast(res.error)
     })
 
-  const detach = () =>
-    run(async () => {
-      if (!confirm('Unlink the local folder? Reading progress per chapter will be forgotten.')) return
+  const detach = async (): Promise<void> => {
+    const ok = await confirmDialog(
+      'Unlink the local folder? Reading progress per chapter will be forgotten.',
+      { confirmLabel: 'Unlink', danger: true }
+    )
+    if (!ok) return
+    await run(async () => {
       await api.manga.detach(m.id)
     })
+  }
 
   const chapters = data?.chapters ?? []
   // Continue = the chapter mid-read, else the first unread one.

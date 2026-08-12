@@ -11,6 +11,7 @@ import Section from '../components/Section'
 import ActionMenu from '../components/ActionMenu'
 import CoverImage from '../components/CoverImage'
 import GachaUnitDialog from '../components/gacha/GachaUnitDialog'
+import { confirmDialog } from '../lib/confirm'
 
 export default function GachaUnitPage() {
   const { id } = useParams()
@@ -36,7 +37,11 @@ export default function GachaUnitPage() {
   }
 
   async function remove(): Promise<void> {
-    if (!confirm(`Delete ${unit!.name}? Its builds go with it.`)) return
+    const ok = await confirmDialog(`Delete ${unit!.name}? Its builds go with it.`, {
+      confirmLabel: 'Delete',
+      danger: true
+    })
+    if (!ok) return
     await api.gacha.removeUnit(unitId)
     await qc.invalidateQueries({ queryKey: qk.gacha.all })
     navigate(`/gacha/${unit!.game}`, { replace: true })
@@ -280,7 +285,11 @@ function BuildCard({ build }: { build: GachaBuild }) {
   }
 
   async function remove(): Promise<void> {
-    if (!confirm(`Delete build "${build.name}"?`)) return
+    const ok = await confirmDialog(`Delete build "${build.name}"?`, {
+      confirmLabel: 'Delete',
+      danger: true
+    })
+    if (!ok) return
     await api.gacha.removeBuild(build.id)
     await invalidate()
   }

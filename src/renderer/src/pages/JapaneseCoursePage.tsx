@@ -9,6 +9,7 @@ import Section from '../components/Section'
 import EmptyState from '../components/EmptyState'
 import ActionMenu from '../components/ActionMenu'
 import type { JpLessonKind, JpLessonSummary } from '@shared/types'
+import { confirmDialog } from '../lib/confirm'
 
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
   grammar: { cls: 'bg-purple-500/20 text-purple-300', label: '文法 Grammar' },
@@ -29,7 +30,11 @@ export default function JapaneseCoursePage() {
 
   async function removeCourse() {
     if (!course) return
-    if (!window.confirm(`Delete "${course.title}" and all its lessons and cards?`)) return
+    const ok = await confirmDialog(`Delete "${course.title}" and all its lessons and cards?`, {
+      confirmLabel: 'Delete',
+      danger: true
+    })
+    if (!ok) return
     await api.japanese.removeCourse(courseId)
     await qc.invalidateQueries({ queryKey: qk.japanese.all })
     toast('Course deleted', 'success')

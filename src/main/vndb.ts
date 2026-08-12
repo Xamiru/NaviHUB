@@ -1,8 +1,13 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry } from './http'
-import type { ImportSearchResult, ImportSummary } from '@shared/types'
+import { fetchWithRetry, sleep } from './http'
+import type {
+  BulkListParams,
+  BulkPreviewItem,
+  ImportSearchResult,
+  ImportSummary
+} from '@shared/types'
 
 // VNDB "Kana" HTTP API — public, no token needed for reads.
 // Docs: https://api.vndb.org/kana . It's a POST-per-endpoint query API: the body
@@ -257,6 +262,70 @@ export async function search(query: string): Promise<ImportSearchResult[]> {
     episodes: null,
     coverUrl: m.image?.url ?? null
   }))
+}
+
+/* ---------------- Top lists (the /bulk page) ---------------- */
+// The rated sort takes a votecount floor — VNDB's `rating` field is already
+// bayesian-adjusted, but a floor still keeps 12-vote doujin entries out of a
+// "top rated" shelf. Year bounds filter on `released`.
+const VNDB_SORTS: Record<string, string> = {
+  rated: 'rating',
+  voted: 'votecount'
+}
+const RATED_VOTE_FLOOR = 100
+
+// Pure + exported for tests. VNDB filters combine as ['and', f1, f2, ...].
+export function buildVndbTopBody(params: BulkListParams, page: number): Record<string, unknown> {
+  const sort = VNDB_SORTS[params.sort]
+  if (!sort) throw new Error(`Unknown VNDB sort: ${params.sort}`)
+  const filters: unknown[] = []
+  if (params.sort === 'rated') filters.push(['votecount', '>=', RATED_VOTE_FLOOR])
+  if (params.yearFrom) filters.push(['released', '>=', `${params.yearFrom}-01-01`])
+  if (params.yearTo) filters.push(['released', '<=', `${params.yearTo}-12-31`])
+  const body: Record<string, unknown> = {
+    fields: 'id, title, released, rating, image.url',
+    sort,
+    reverse: true,
+    results: 100, // VNDB's page maximum
+    page
+  }
+  if (filters.length === 1) body.filters = filters[0]
+  else if (filters.length > 1) body.filters = ['and', ...filters]
+  return body
+}
+
+export async function topList(
+  params: BulkListParams,
+  pageDelayMs = 600
+): Promise<BulkPreviewItem[]> {
+  const out: BulkPreviewItem[] = []
+  let page = 1
+  for (;;) {
+    let res: Awaited<ReturnType<typeof vndbPost>>
+    try {
+      res = await vndbPost('/vn', buildVndbTopBody(params, page))
+    } catch (e) {
+      // A page mid-crawl failing must not discard everything already fetched —
+      // return the partial list (the anilist.topList posture).
+      if (out.length > 0) return out
+      throw e
+    }
+    const results = res?.results ?? []
+    for (const m of results) {
+      out.push({
+        sourceId: vidToNum(m.id),
+        title: m.title ?? 'Untitled',
+        year: yearOf(m.released),
+        coverUrl: m.image?.url ?? null,
+        score: typeof m.rating === 'number' ? m.rating : null,
+        inLibrary: false
+      })
+      if (out.length >= params.count) return out
+    }
+    if (!res?.more || results.length === 0) return out
+    page++
+    if (pageDelayMs > 0) await sleep(pageDelayMs)
+  }
 }
 
 /* ---------------- Import ---------------- */

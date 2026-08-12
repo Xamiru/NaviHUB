@@ -56,27 +56,27 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
     }
   }
 
-  // Bulk "top games" shelf — a long run (covers download per title), safely
-  // re-runnable: already-imported titles are skipped, so an interrupted run
-  // resumes by pressing the button again.
-  const [bulkCount, setBulkCount] = useState('2000')
-  const [bulkBusy, setBulkBusy] = useState(false)
+  // Real-Metacritic backfill via Steam (games missing a score after a catalog
+  // bulk run). Long + throttled; resumable, so failures just mean "run again".
+  const [mcBusy, setMcBusy] = useState(false)
 
-  async function runBulk() {
-    setBulkBusy(true)
+  async function runMcBackfill() {
+    setMcBusy(true)
     setError(null)
     setDone(null)
     try {
-      const res = await api.rawgCatalog.bulkImport(Number(bulkCount) || 0)
+      const res = await api.steam.backfillMetacritic()
       await qc.invalidateQueries({ queryKey: qk.media.all })
+      // The community-score slider bounds derive from these scores (facets).
       await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
       setDone(
-        `Bulk import finished — ${res.imported} imported, ${res.skipped} already in the library${res.failed ? `, ${res.failed} failed` : ''}.`
+        `Metacritic backfill finished — ${res.updated} scores found, ${res.missed} not on Steam` +
+          `${res.failed > 0 ? `, ${res.failed} failed (re-run to retry)` : ''} (of ${res.scanned} checked).`
       )
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Bulk import failed')
+      setError(e instanceof Error ? e.message : 'Metacritic backfill failed')
     } finally {
-      setBulkBusy(false)
+      setMcBusy(false)
     }
   }
 
@@ -193,32 +193,25 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
           </button>
         </form>
 
-        {isCatalog && catalogStatus?.installed && (
+        {cfg.key === 'game' && (
           <div className="mb-4 flex flex-wrap items-center gap-2 text-sm">
-            <span className="text-gray-500">Bulk: import the top</span>
-            <input
-              type="number"
-              className="input w-24"
-              min={1}
-              max={10000}
-              value={bulkCount}
-              onChange={(e) => setBulkCount(e.target.value)}
-              disabled={bulkBusy}
-              aria-label="Bulk import count"
-            />
-            <span className="text-gray-500">most popular games</span>
-            <button className="btn-ghost" onClick={runBulk} disabled={bulkBusy || importingId !== null}>
-              {bulkBusy ? 'Importing…' : 'Run'}
+            <span className="text-gray-500">Fill missing Metacritic scores from Steam</span>
+            <button
+              className="btn-ghost"
+              onClick={runMcBackfill}
+              disabled={mcBusy || importingId !== null}
+            >
+              {mcBusy ? 'Filling…' : 'Run'}
             </button>
             <span className="text-xs text-gray-500">
-              Skips titles you already have — safe to re-run if interrupted.
+              Throttled for Steam&apos;s limits — a long library takes a while; safe to re-run.
             </span>
           </div>
         )}
 
         {error && <p className="text-sm text-red-400 mb-3">⚠ {error}</p>}
         {done && <p className="text-sm text-green-400 mb-3">✓ {done}</p>}
-        {(importingId !== null || bulkBusy) && <ImportProgress />}
+        {(importingId !== null || mcBusy) && <ImportProgress />}
         {isFetching && <p className="text-sm text-gray-500">Searching {source.label}…</p>}
 
         {!isFetching && submitted && results.length === 0 && (

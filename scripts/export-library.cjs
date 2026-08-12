@@ -91,6 +91,22 @@ async function main() {
     .prepare(`SELECT DISTINCT audio_path FROM theme_song WHERE audio_path LIKE 'audio/%'`)
     .all()
     .map((r) => r.audio_path)
+  // Wrestling event posters are NON-FREE fair-use images. sanitizeSql nulls the
+  // column, but the JPEGs live under media/ and would otherwise still ship in
+  // the bundle — the reference would be gone and the file would travel anyway.
+  // Collected here, BEFORE sanitizing nulls the column, to exclude the files.
+  const posterFiles = new Set()
+  try {
+    for (const r of src
+      .prepare(
+        `SELECT DISTINCT poster_path FROM wrestling_event WHERE poster_path LIKE 'media/%'`
+      )
+      .all()) {
+      posterFiles.add(path.join(USER_DIR, r.poster_path))
+    }
+  } catch {
+    // A DB predating the wrestling section simply has no such table.
+  }
   if (fs.existsSync(outDb)) fs.rmSync(outDb)
   await src.backup(outDb)
   src.close()
@@ -105,11 +121,13 @@ async function main() {
   copy.exec('VACUUM')
 
   /* ---- 3. covers/photos/art ---- */
-  console.log(`Copying ${MEDIA_DIR} -> ${outMedia} (skipping music-covers, wiped with music rows)...`)
+  console.log(
+    `Copying ${MEDIA_DIR} -> ${outMedia} (skipping music-covers and ${posterFiles.size} non-free wrestling posters)...`
+  )
   const musicCovers = path.join(MEDIA_DIR, 'music-covers')
   fs.cpSync(MEDIA_DIR, outMedia, {
     recursive: true,
-    filter: (p) => !p.startsWith(musicCovers)
+    filter: (p) => !p.startsWith(musicCovers) && !posterFiles.has(p)
   })
 
   /* ---- 4. theme-song audio ---- */

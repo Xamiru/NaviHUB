@@ -7,6 +7,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue } from '../lib/hooks'
 import { useMiningDraft } from '../lib/useMining'
+import JpKeyboardInput from '../components/japanese/keyboard/JpKeyboardInput'
 import PitchAccent from '../components/japanese/PitchAccent'
 import StructuredContent from '../components/japanese/StructuredContent'
 import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
@@ -70,12 +71,12 @@ export default function JapaneseDictionaryPage() {
         </div>
       )}
 
-      <input
-        className="input w-full text-lg"
+      <JpKeyboardInput
+        className="w-full text-lg"
         placeholder="e.g. 食べる, 面白い, sunset…"
         value={query}
         autoFocus
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={setQuery}
       />
 
       <div className="mt-5 space-y-4">

@@ -54,6 +54,19 @@ const SANITIZE_STATEMENTS = [
   'DELETE FROM video_file',
   'DELETE FROM video_cache',
 
+  // Wrestling: the WIKI itself is canonical reference data and survives (the
+  // theme_song posture) — only the personal layer goes. wrestling_video is the
+  // exporter's own scan cache (paths under their wrestling.dir), and
+  // poster_path is dropped because event posters are non-free fair use: fair
+  // use is context-specific, so a shared bundle must not carry them.
+  // (list/list_item are deleted wholesale above, so wrestling list entries go
+  // with them — no extra statement needed for the new ListKinds.)
+  'DELETE FROM wrestling_video',
+  `UPDATE wrestling_event SET favorite=0, local_dir=NULL, poster_path=NULL`,
+  `UPDATE wrestling_match SET rating=NULL, favorite=0, video_id=NULL`,
+  'UPDATE wrestling_wrestler SET favorite=0',
+  'UPDATE wrestling_stable SET favorite=0',
+
   // Wallpapers/fan art: rows point at files under the exporter's pictures.dir,
   // which isn't part of the bundle — they'd all be dead links on arrival.
   'DELETE FROM media_image',
@@ -115,7 +128,7 @@ const SANITIZE_STATEMENTS = [
   // know the top N Japanese words, inflating every comprehension figure.
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path',
-      'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','video.dir',
+      'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','video.dir','wrestling.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
       'vertex.project_id','vertex.region','vertex.credentials_path',

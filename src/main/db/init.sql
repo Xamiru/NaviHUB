@@ -856,3 +856,173 @@ CREATE TABLE IF NOT EXISTS jp_ghost (
   remaining  INTEGER NOT NULL DEFAULT 3,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- ---- Wrestling: the wiki ----
+-- Reference data imported from Wikipedia (src/main/wrestling/), NOT media_item
+-- rows: ~2,500 events would swamp Home strips, global search, stats and facets
+-- with things the user never "planned to watch". Promotion vocabulary is code
+-- (src/shared/wrestling.ts) and the tables are promotion-agnostic — adding a
+-- promotion is one config entry.
+--
+-- wiki_title is the canonical article title AFTER redirect resolution, which is
+-- what makes it a safe dedup key: [[Steve Austin]] and [["Stone Cold" Steve
+-- Austin]] both redirect to one page (see wrestling_wrestler_alias).
+--
+-- Personal columns here are only favorite (+ wrestling_match.rating) and
+-- local_dir — all wiped on export; the wiki data itself is not personal.
+CREATE TABLE IF NOT EXISTS wrestling_event (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  promotion    TEXT NOT NULL,
+  name         TEXT NOT NULL,
+  wiki_title   TEXT UNIQUE,
+  series       TEXT,
+  event_date   TEXT,
+  venue        TEXT,
+  city         TEXT,
+  attendance   INTEGER,
+  buyrate      TEXT,
+  tagline      TEXT,
+  poster_path  TEXT,
+  lead         TEXT,
+  local_dir    TEXT,
+  favorite     INTEGER NOT NULL DEFAULT 0,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_wrestling_event_promo ON wrestling_event(promotion, event_date);
+
+-- One row per match on a card. `title` is denormalized ("X vs. Y") because
+-- list_item renders entities through a fixed name column, and because match
+-- search shouldn't need a three-table join. `outcome` records only whether a
+-- winning side exists; the prose detail stays in result_text.
+--
+-- rating/favorite are the personal layer (0-5 stars, Meltzer style) and survive
+-- re-import. video_id is a SOFT link to wrestling_video — no FK, so detaching a
+-- folder can't cascade away the wiki row (the list_item / jp_card precedent).
+CREATE TABLE IF NOT EXISTS wrestling_match (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_id         INTEGER NOT NULL REFERENCES wrestling_event(id) ON DELETE CASCADE,
+  sort_order       INTEGER NOT NULL DEFAULT 0,
+  title            TEXT NOT NULL,
+  result_text      TEXT,
+  stipulation      TEXT,
+  championship     TEXT,
+  duration_seconds INTEGER,
+  outcome          TEXT NOT NULL DEFAULT 'unknown',
+  card_slot        TEXT,
+  card_label       TEXT,
+  rating           REAL,
+  favorite         INTEGER NOT NULL DEFAULT 0,
+  video_id         INTEGER,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_wrestling_match_event ON wrestling_match(event_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_wrestling_match_rating ON wrestling_match(rating);
+
+CREATE TABLE IF NOT EXISTS wrestling_wrestler (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  name              TEXT NOT NULL,
+  wiki_title        TEXT UNIQUE,
+  real_name         TEXT,
+  birth_date        TEXT,
+  debut_year        INTEGER,
+  billed_from       TEXT,
+  height            TEXT,
+  photo_path        TEXT,
+  bio               TEXT,
+  detail_fetched_at TEXT,
+  favorite          INTEGER NOT NULL DEFAULT 0,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_wrestling_wrestler_name ON wrestling_wrestler(name);
+
+-- The redirect memo, for events AND wrestlers alike. Card links point at
+-- whatever title the editor typed ([[Steve Austin]], [["Stone Cold" Steve
+-- Austin]], [[Stone Cold Steve Austin]]) and category members are frequently
+-- redirects too; the API resolves them with &redirects=1 and every mapping seen
+-- is recorded here, so later imports resolve locally without re-asking.
+--
+-- Deliberately NOT keyed to a wrestler row: an alias is learned BEFORE the row
+-- it points at exists (title resolution happens ahead of the write), and event
+-- titles need the same memo to make the resume filter work.
+CREATE TABLE IF NOT EXISTS wrestling_alias (
+  alias_title     TEXT PRIMARY KEY,
+  canonical_title TEXT NOT NULL
+);
+
+-- Participants of a match. This is the one thing `credit` cannot express:
+-- sides and results. side 0 is the winning side when outcome='decision';
+-- team_name holds the parenthesised group ("X-Factor", "The Steiner Brothers").
+CREATE TABLE IF NOT EXISTS wrestling_match_participant (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_id    INTEGER NOT NULL REFERENCES wrestling_match(id) ON DELETE CASCADE,
+  wrestler_id INTEGER NOT NULL REFERENCES wrestling_wrestler(id) ON DELETE CASCADE,
+  side        INTEGER NOT NULL DEFAULT 0,
+  won         INTEGER NOT NULL DEFAULT 0,
+  is_champion INTEGER NOT NULL DEFAULT 0,
+  team_name   TEXT,
+  sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_wrestling_participant_match ON wrestling_match_participant(match_id);
+CREATE INDEX IF NOT EXISTS idx_wrestling_participant_wrestler ON wrestling_match_participant(wrestler_id);
+
+CREATE TABLE IF NOT EXISTS wrestling_stable (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  name       TEXT NOT NULL,
+  wiki_title TEXT UNIQUE,
+  promotion  TEXT,
+  lead       TEXT,
+  image_path TEXT,
+  favorite   INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS wrestling_stable_member (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  stable_id   INTEGER NOT NULL REFERENCES wrestling_stable(id) ON DELETE CASCADE,
+  wrestler_id INTEGER NOT NULL REFERENCES wrestling_wrestler(id) ON DELETE CASCADE,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(stable_id, wrestler_id)
+);
+
+-- ---- Wrestling: the local collection ----
+-- A locally-playable file attached to an event, discovered by scanning the
+-- folder picked on that event's page. file_path is relative to the wrestling
+-- library root (settings key wrestling.dir).
+--
+-- Column groups mirror video_file deliberately: identity + freshness (the
+-- rescan fast path), the ffprobe snapshot (all NULL without ffprobe — .mp4/
+-- .webm still play), then user state the SCANNER NEVER WRITES so a rescan can't
+-- wipe a resume position. Personal → the whole table is dropped on export.
+--
+-- `season` is dead weight for wrestling and kept ANYWAY: the scanner is
+-- generalized over a scope descriptor rather than forked, so column parity with
+-- video_file keeps ONE upsert statement instead of two. One unused integer is
+-- cheaper than a second copy of the sync logic.
+CREATE TABLE IF NOT EXISTS wrestling_video (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  event_id       INTEGER NOT NULL REFERENCES wrestling_event(id) ON DELETE CASCADE,
+  file_path      TEXT NOT NULL,
+  title          TEXT NOT NULL,
+  number         REAL,
+  season         INTEGER,
+  sort_order     INTEGER NOT NULL DEFAULT 0,
+  file_mtime     INTEGER,
+  file_size      INTEGER,
+  duration       REAL,
+  width          INTEGER,
+  height         INTEGER,
+  video_codec    TEXT,
+  audio_codec    TEXT,
+  container      TEXT,
+  playability    TEXT,
+  resume_seconds REAL,
+  watched_at     TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(event_id, file_path)
+);
+CREATE INDEX IF NOT EXISTS idx_wrestling_video_event ON wrestling_video(event_id);
