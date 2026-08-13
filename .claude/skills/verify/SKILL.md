@@ -1,9 +1,18 @@
 ---
 name: verify
-description: Launch and drive the built NaviHUB Electron app for end-to-end verification (screenshots, navigation) against the real library DB.
+description: "LAPTOP ONLY. Launch and drive the built NaviHUB Electron app for end-to-end verification (screenshots, navigation) against the real library DB. Use this to confirm a renderer change actually works before reporting it done. Do NOT invoke on the VPS — it is headless and has no library."
 ---
 
 # Verifying NaviHUB in the running app
+
+**Machine check first.** This only works on the laptop/PC. If `/home/xamir/Desktop/NaviHUB`
+does not exist you are on the headless VPS: stop, and instead tell the user in the completion
+message that the change is unverified in the UI and what to click. The paths below are the
+laptop's and are correct there.
+
+**When to reach for this:** any change under `src/renderer/`. There are no renderer tests, so a
+green suite says nothing about whether the screen works. Thirteen of forty-eight sessions opened
+with a UI defect the user found after being told the work was done.
 
 Build first (`npm run build` — the app runs from `out/`), then drive the GUI
 with playwright-core's Electron driver. No project code changes needed.

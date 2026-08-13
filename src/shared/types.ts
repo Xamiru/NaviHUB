@@ -630,6 +630,9 @@ export interface BulkListParams {
   seasonYear?: number | null
 }
 
+// Preview returns only titles NOT already in the library — the crawl skips
+// owned rows without counting them, so a top-100 preview is always 100 new
+// titles (or fewer only when the source list itself runs dry).
 export interface BulkPreviewItem {
   sourceId: number
   title: string
@@ -638,7 +641,6 @@ export interface BulkPreviewItem {
   // Source-native community score on its own scale (AniList 0-100, VNDB 10-100,
   // TMDB 0-10, catalog Metacritic 0-100 or RAWG 0-5 depending on sort).
   score: number | null
-  inLibrary: boolean
 }
 
 export interface BulkStartPayload {
@@ -2878,4 +2880,24 @@ export interface WrestlingImportStatus {
   wrestlers: number
   failed: number
   message: string | null
+}
+
+// ---- player bridge (OS media controls + pop-out widget) ----
+
+// Transport verbs a remote surface (widget pill, Windows thumbbar) may send to
+// the main window's player. Seek/volume stay in-app on purpose.
+export type PlayerCommand = 'toggle' | 'next' | 'previous'
+
+// Compact now-playing state the main window publishes for remote surfaces.
+// Deliberately position-free: the pill has no scrubber, so track changes are
+// the only IPC traffic. Metadata here is ALREADY display-masked (quiz- tracks
+// arrive as "Song Quiz" with no artist/cover — see lib/playerMeta.ts).
+export interface PlayerSnapshot {
+  trackId: string
+  title: string
+  artist: string
+  coverPath: string | null // navimg-relative; null when masked or coverless
+  isPlaying: boolean
+  hasNext: boolean
+  hasPrev: boolean
 }

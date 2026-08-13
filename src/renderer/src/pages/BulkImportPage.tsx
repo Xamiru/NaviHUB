@@ -93,8 +93,9 @@ export default function BulkImportPage(): React.JSX.Element {
       const params = buildParams()
       const items = await api.bulk.preview(params)
       setPreview({ params, items })
-      // Already-in-library rows start deselected — they'd only be skipped.
-      setDeselected(new Set(items.filter((it) => it.inLibrary).map((it) => it.sourceId)))
+      // The preview contains only NEW titles (main excludes the library and
+      // tops the list up) — everything starts selected.
+      setDeselected(new Set())
     } finally {
       setPreviewing(false)
     }
@@ -217,8 +218,9 @@ export default function BulkImportPage(): React.JSX.Element {
 
             {(sourceKey === 'movie' || sourceKey === 'tv') && (
               <p className="text-xs text-gray-500">
-                Indian releases are excluded from these lists (your standing rule — importing one
-                individually still works).
+                Indian releases are excluded from these lists
+                {sourceKey === 'tv' ? ', along with anime, talk, news and soap shows' : ''} (your
+                standing rules — importing one individually still works).
               </p>
             )}
 
@@ -271,7 +273,8 @@ export default function BulkImportPage(): React.JSX.Element {
               )}
               {preview && (
                 <span className="text-xs text-gray-500">
-                  Already-imported titles are pre-deselected — importing them again only skips.
+                  Titles you already have were skipped and the list topped up — everything shown is
+                  new.
                 </span>
               )}
             </div>
@@ -401,7 +404,7 @@ function PreviewList({
                 </span>
               </span>
               <span className="shrink-0 text-xs text-gray-500">
-                {it.inLibrary ? '✓ in library' : off ? '○' : '✓'}
+                {off ? '○' : '✓'}
               </span>
             </button>
           )

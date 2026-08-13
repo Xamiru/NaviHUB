@@ -1,0 +1,45 @@
+# Local video player
+
+> Reference detail. The rules an agent must not break live in
+> [CLAUDE.md](../../CLAUDE.md#hard-invariants) — this file is the "how and why" narrative.
+
+**Covers** — the tiered playback model, the ffmpeg cache, subtitle parsing and discovery, the three-clock renderer, and subtitle mining.
+
+**Key files** — `src/main/video/` (`playability.ts`, `probeParse.ts`, `progressParse.ts`, `names.ts` pure; `ffmpeg.ts`, `cache.ts`, `session.ts`, `subtitles.ts`, `scan.ts`, `scope.ts`, `mine.ts` IO), `@shared/subtitles.ts`, `src/renderer/src/pages/VideoPlayerPage.tsx`
+
+**Tests** — `video`, `videoPlayability`, `videoNames`, `videoProgress`, `videoCoverage`, `subtitles`, `httpRange`
+
+---
+
+## Routes and scope
+
+**Local video player (2026-08-01)** — `/watch/file/:fileId` and `/watch/adhoc/:token` (`VideoPlayerPage`, chrome-free like the readers: the `isReader` regex in App.tsx now also matches `^/watch/(file|adhoc)/`, and the bare `/watch` landing picker deliberately KEEPS the shell). Built for immersion mining: subtitles render as OUR DOM in OUR typography so every word is a click target → dictionary → SRS. That requirement is why an mpv sidecar window was rejected outright (its subtitle text is only reachable over a JSON IPC socket, with no per-word hit boxes) and therefore why format support is a real problem.
+
+## The constraint everything bends around
+
+**The constraint everything bends around: Chromium 126 plays MP4 + WebM only** (H.264/VP8/VP9/AV1/AAC/MP3/Opus/Vorbis/FLAC). No Matroska demuxer, no HEVC, no AC3/DTS — i.e. not most anime. So playback is TIERED: native files play straight off `navimg://` (Range/206 already worked, `httpRange.ts`), and anything else goes through ONE user-installed-ffmpeg pass into a cached `.mp4` under `userData/videocache`, which then plays as a normal file with full seeking (no MSE, no pipe-seek hacks). ffmpeg is never bundled (`ffmpeg.path`/`ffprobe.path`, the `ytdlp.path` posture). **Without ffmpeg the app still works** — `.mp4`/`.webm` play and nothing is ever spawned.
+
+## Module split — pure decisions vs IO
+
+`src/main/video/` splits pure decisions from IO (the `updaterCore.ts` / `coachTools.ts` rule), so the whole matrix is tested with no binary: `playability.ts` (`decidePlayback` → `direct|remux|transcode|unsupported`, plus every argv builder), `probeParse.ts`, `progressParse.ts`, `names.ts` — all pure; `ffmpeg.ts`/`cache.ts`/`session.ts`/`subtitles.ts`/`scan.ts`/`mine.ts` do IO. Load-bearing details, each a test: **the container is decided by EXTENSION, never `format_name`** (ffprobe says `matroska,webm` for BOTH `.mkv` and `.webm`; Chromium plays one and refuses the other); `pickVideoStream` **skips `attached_pic`/mjpeg** (MKV cover art is a video stream — `-map 0:v:0` grabs the poster JPEG and yields a 1-frame file); **`out_time_ms` in `-progress` output is MICROseconds** despite the name; `+faststart` rewrites the file after 100%, hence a named `finalizing` state or a big remux looks hung; `-avoid_negative_ts make_zero` or every subtitle on a `.ts` source is seconds out; `-pix_fmt yuv420p` because 10-bit HEVC decodes to `yuv420p10le`. ffmpeg has **no `--` terminator**, so injection is handled two ways: `assertSafeArgPath` (absolute, not `-`-leading) AND `file:<abs>` on every path — the latter is what `--` would NOT have fixed, since ffmpeg reads `foo:bar` as protocol `foo` (a `re:zero 01.mkv`, any Windows `C:\`).
+
+## Cache
+
+Cache: key = sha1(path+mtime+size+`planTag`+`CACHE_VERSION`), **not** a content hash (hashing an 8 GB MKV every open costs exactly what the cache exists to save); `planTag` includes the chosen audio stream so a track switch can't be served the wrong copy. **A partial can never be served** — ffmpeg only writes `<key>.mp4.part`, publication is an atomic rename, and the `video_cache` row is inserted AFTER it (stage-then-swap). `evictToCap` runs before a new job, never during playback, protecting the active key and anything used in the last 30 min. Session is the `musicDownload.ts` singleton verbatim (module `status` + `video:prepareStatus` poll, `status.id !== id` stale guard, separate `proc.on('error')` path, SIGTERM→SIGKILL, `killActivePrepare()` in before-quit). **A remux auto-starts** (stream copy, disk-bound, lossless); **a transcode always needs an explicit click**.
+
+## Subtitles
+
+Subtitles: `@shared/subtitles.ts` is a pure hand-rolled SRT/VTT/ASS parser (the epub.ts/mokuro.ts house style) shared by renderer AND main. It reproduces the words, the timing and top-vs-bottom, and **deliberately nothing else** — karaoke, inline styling, `\pos`/`\t`, `[V4+ Styles]` are dropped, because a clickable token flow and ASS layout reproduction are incompatible (`NOT_SUPPORTED` documents this in-file). Fixture-tested gotchas: the ASS `Format:` line DEFINES field order (reordering it is the classic bug) and Text is last-and-comma-bearing; `Comment:` rows are skipped; `\p1` drawing runs are dropped (else a typeset sign poisons the corpus); SRT anchors on the `-->` line not the index; **`decodeSubtitleBytes` falls back to Shift-JIS** (JP `.srt` rips routinely are). `cuesAt` is an interval stab over a prefix-max of `end` — a plain binary search misses a long cue that started before a later short one, and it is cross-checked against a naive filter over 2000 randomized samples. Discovery (`video/subtitles.ts`) covers sibling-stem sidecars, both `Subs/` layouts, and embedded tracks extracted lazily via `-map 0:s:<typeIndex>` (**typeIndex ≠ absolute index**); bitmap tracks (PGS/VobSub) are LISTED-and-refused, never silently absent. **Every track — sidecar or extracted — is delivered as a file + navimg URL** the renderer `fetch()`es and parses itself; a native `<track>` is never used because it renders text the renderer can't reach.
+
+## Renderer — three separate clocks on purpose
+
+Renderer: **three separate clocks on purpose** — `timeRef` via `requestVideoFrameCallback` (frame-accurate, zero renders) drives cue sync, `activeCues` state changes only when the active id-set changes, and a ~4 Hz `uiTime` feeds the scrubber; one `currentTime`-in-state would repaint a 1500-row transcript 4×/s and still show cues 250 ms late. `SubtitleOverlay` is the `OcrOverlay` analog (same click-vs-drag `getSelection()` discrimination, same `stopPropagation` so the click-to-pause zone never fires, same green ✓ already-mined treatment); `[]` from the tokenizer falls back to selectable text. Layout puts `TranscriptPanel` and `MiningPanel` as **flex siblings, not overlays**, and fullscreen targets the root flex ROW so both stay usable. Resume copies the manga reader's debounce contract with the input **coarsened to 5 s buckets** (a playing video would otherwise re-arm the timer forever and never save). `a`/`d` = prev/next cue is the immersion binding; `m` = mine everywhere, so `Shift+M` is mute; Escape cascades with exit-fullscreen FIRST (the browser handles it natively too).
+
+## Progress is checklistRepo.logProgress, full stop
+
+**Progress is `checklistRepo.logProgress`, full stop.** `markWatched` flips `watched_at` and reports `firstTime`; ipc.ts calls logProgress on that transition. A manga-style `syncMediaProgress` was deliberately REMOVED from this path: it floors progress at the highest watched episode NUMBER, so the moment logProgress wrapped a finished series into a rewatch (progress → 1) the sync would slam it back to 12.
+
+## Mining extras
+
+Mining extras: `jp_card.audio_path`/`image_path` (init.sql + schema.ts + **`ensureColumn`** + `mapCard`/`insertCards`/`CARD_COLS` + `JpCard`/`JpCardInput` + `MiningDraft` — and rendered by `CardAttachments` on the review page AND lesson rows, since captured media nobody sees is worse than none). The frame is a renderer canvas grab (instant, no ffmpeg) which **requires `access-control-allow-origin` on the navimg handler + `crossOrigin="anonymous"`** — navimg is a different origin, so without both the canvas is tainted and `toBlob` throws. Sentence audio is `-ss` BEFORE `-i` (fast input seek) and **always re-encodes** (a copied AAC clip starting mid-frame pops), landing in the existing `jpaudio/mining/` prefix — which buys no path/CSP change and automatic exclusion from exports. `MiningPanel` gained an optional `lang` prop splitting it into `JapaneseMineBody`/`EnglishMineBody` (each owning its own queries); **`lang` undefined = the original behaviour with no switch**, which is why the manga and book readers are untouched. Subtitle text also feeds the EXISTING comprehension scan and prep deck through `seriesText.ts:seriesCorpus`/`videoTexts`/`pickCorpusTrack` — coverage.ts and prepDeck.ts needed zero changes. `video_file` + `video_cache` are personal → wiped in sanitizeSql.cjs, along with `video.dir`/`ffmpeg.path`/`ffprobe.path`. Chromium implements no `HTMLMediaElement.audioTracks`, so there is no audio-track picker — one honest line in the track menu instead, and choosing a non-default track routes through a remux. Deferred: hardware encoders (the `encoder` param exists), HDR tone-mapping, bitmap-sub OCR, a `video.dir`-wide scanner, autoplay, thumbnails.
+

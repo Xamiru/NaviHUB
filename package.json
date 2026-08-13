@@ -21,7 +21,8 @@
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
-    "test": "ELECTRON_RUN_AS_NODE=1 electron node_modules/vitest/vitest.mjs run"
+    "test": "ELECTRON_RUN_AS_NODE=1 electron node_modules/vitest/vitest.mjs run",
+    "db:query": "ELECTRON_RUN_AS_NODE=1 electron scripts/db.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",

@@ -167,7 +167,24 @@ export function buildDiscoverParams(
     if (!id) throw new Error(`Unknown TMDB genre: ${params.genre}`)
     out.with_genres = String(id)
   }
+  // TV bulk lists exclude daily filler (user directive: "no late night shows
+  // and such"): News 10763, Soap 10766, Talk 10767. Server-side, so excluded
+  // rows never consume page slots.
+  if (kind === 'tv') out.without_genres = TV_EXCLUDED_GENRE_IDS.join(',')
   return out
+}
+
+export const TV_EXCLUDED_GENRE_IDS = [10763, 10766, 10767] // News, Soap, Talk
+
+// Anime is tracked in the Anime section via AniList — a TV bulk list must not
+// re-import it as TMDB rows (user directive). TMDB has no "anime" genre; the
+// working definition is Animation (16) with Japanese original language, which
+// keeps western animation and Japanese live-action in.
+const TMDB_ANIMATION_GENRE_ID = 16
+export function isTmdbAnime(m: { genre_ids?: number[]; original_language?: string }): boolean {
+  return (
+    (m.genre_ids ?? []).includes(TMDB_ANIMATION_GENRE_ID) && String(m.original_language) === 'ja'
+  )
 }
 
 // Standing user directive (the old bulk-import.cjs --exclude-langs flag, now
@@ -188,13 +205,17 @@ export const EXCLUDED_ORIGINAL_LANGS = new Set([
   'gu' // Gujarati
 ])
 
+// `keep` + page cap: see anilist.topList — dropped rows (already in the
+// library, excluded languages, TV anime) don't count toward `count`, so the
+// list is always topped up with new titles.
 export async function discoverTop(
   kind: 'movie' | 'tv',
   params: BulkListParams,
-  pageDelayMs = 300
+  pageDelayMs = 300,
+  keep: (item: BulkPreviewItem) => boolean = () => true
 ): Promise<BulkPreviewItem[]> {
   const out: BulkPreviewItem[] = []
-  const maxPage = 500 // TMDB rejects deeper pages
+  const maxPage = Math.min(500, Math.max(25, Math.ceil(params.count / 20) * 5)) // 500 = TMDB's hard limit
   for (let page = 1; page <= maxPage; page++) {
     let data: Awaited<ReturnType<typeof tmdbGet>>
     try {
@@ -208,14 +229,16 @@ export async function discoverTop(
     const results = data?.results ?? []
     for (const m of results) {
       if (EXCLUDED_ORIGINAL_LANGS.has(String(m.original_language ?? ''))) continue
-      out.push({
+      if (kind === 'tv' && isTmdbAnime(m)) continue
+      const item: BulkPreviewItem = {
         sourceId: m.id,
         title: (kind === 'movie' ? m.title || m.original_title : m.name || m.original_name) || 'Untitled',
         year: yearOf(kind === 'movie' ? m.release_date : m.first_air_date),
         coverUrl: posterUrl(m.poster_path, 'w185'),
-        score: typeof m.vote_average === 'number' ? m.vote_average : null,
-        inLibrary: false
-      })
+        score: typeof m.vote_average === 'number' ? m.vote_average : null
+      }
+      if (!keep(item)) continue
+      out.push(item)
       if (out.length >= params.count) return out
     }
     if (results.length === 0 || page >= (data?.total_pages ?? 1)) return out

@@ -339,27 +339,43 @@ export function buildCatalogQuery(params: BulkListParams): { sql: string; args: 
     where.push('genres LIKE ?')
     args.push(`%"${params.genre}"%`)
   }
-  const sql = `SELECT * FROM catalog_game${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY ${order} LIMIT ?`
-  args.push(params.count)
+  const sql = `SELECT * FROM catalog_game${where.length ? ` WHERE ${where.join(' AND ')}` : ''} ORDER BY ${order} LIMIT ? OFFSET ?`
   return { sql, args }
 }
 
-export function listTop(params: BulkListParams): BulkPreviewItem[] {
+// `keep` decides whether a row counts toward `count` (bulkImport.ts passes
+// "not already in the library") — the scan walks the sorted list in chunks and
+// keeps going until `count` NEW games are found or the catalog runs out, so
+// "top 100" always yields a full 100. Local SQL, so over-scanning is free.
+export function listTop(
+  params: BulkListParams,
+  keep: (item: BulkPreviewItem) => boolean = () => true
+): BulkPreviewItem[] {
   const db = getCatalogDb()
   if (!db) throw new Error('The offline games catalog is not installed yet.')
   const { sql, args } = buildCatalogQuery(params)
-  const rows = db.prepare(sql).all(...args) as CatalogRow[]
-  return rows.map((g) => ({
-    sourceId: g.id,
-    title: g.name,
-    year: g.released ? Number(g.released.slice(0, 4)) || null : null,
-    coverUrl: g.image_url,
-    score:
-      params.sort === 'metacritic'
-        ? g.metacritic
-        : params.sort === 'rating'
-          ? g.rating
-          : (g.metacritic ?? g.rating),
-    inLibrary: false
-  }))
+  const stmt = db.prepare(sql)
+  const CHUNK = 500
+  const out: BulkPreviewItem[] = []
+  for (let offset = 0; ; offset += CHUNK) {
+    const rows = stmt.all(...args, CHUNK, offset) as CatalogRow[]
+    for (const g of rows) {
+      const item: BulkPreviewItem = {
+        sourceId: g.id,
+        title: g.name,
+        year: g.released ? Number(g.released.slice(0, 4)) || null : null,
+        coverUrl: g.image_url,
+        score:
+          params.sort === 'metacritic'
+            ? g.metacritic
+            : params.sort === 'rating'
+              ? g.rating
+              : (g.metacritic ?? g.rating)
+      }
+      if (!keep(item)) continue
+      out.push(item)
+      if (out.length >= params.count) return out
+    }
+    if (rows.length < CHUNK) return out
+  }
 }

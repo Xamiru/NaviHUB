@@ -87,18 +87,27 @@ function importedById(source: BulkSourceKey, sourceId: number): boolean {
     .get(ident.externalSource, ident.mediaType, String(sourceId))
 }
 
-// Paginated fetches over VOLATILE sorts (popularity, trending) can hand the
-// same title back on two pages — the sort shifts under a multi-second crawl
-// and an item near a page boundary reappears. The renderer keys rows and the
-// selection Set by sourceId, so duplicates must never leave main. Keep the
-// first (higher-ranked) occurrence.
-export function dedupeBySourceId(items: BulkPreviewItem[]): BulkPreviewItem[] {
+// The predicate the source crawls run every fetched row through. Three rejections:
+// already seen THIS crawl (volatile sorts — popularity, trending — shift under a
+// multi-second paginated fetch and repeat items across page boundaries; the
+// renderer keys rows and the selection Set by sourceId, so duplicates must never
+// leave main), already in the library by id, and — games only — already in the
+// library by normalized title (Steam/IGDB rows live in disjoint id spaces).
+// Rejected rows don't count toward `count`: the crawl keeps paging, so a top-100
+// preview is 100 titles the user does NOT have, not 100 minus their library.
+export function makeKeep(
+  have: Set<string>,
+  haveTitles: Set<string> | null
+): (item: BulkPreviewItem) => boolean {
   const seen = new Set<number>()
-  return items.filter((it) => {
-    if (seen.has(it.sourceId)) return false
-    seen.add(it.sourceId)
+  return (item) => {
+    if (seen.has(item.sourceId)) return false
+    if (have.has(String(item.sourceId))) return false
+    const t = haveTitles ? normTitle(item.title) : ''
+    if (t !== '' && haveTitles?.has(t)) return false
+    seen.add(item.sourceId)
     return true
-  })
+  }
 }
 
 export async function preview(params: BulkListParams): Promise<BulkPreviewItem[]> {
@@ -107,32 +116,20 @@ export async function preview(params: BulkListParams): Promise<BulkPreviewItem[]
     ...params,
     count: Math.max(1, Math.min(cfg.maxCount, Math.floor(Number(params.count) || 0)))
   }
-  let items: BulkPreviewItem[]
+  const keep = makeKeep(existingIds(clamped.source), existingGameTitles(clamped.source))
   switch (clamped.source) {
     case 'anime':
     case 'manga':
-      items = await anilist.topList(clamped)
-      break
+      return anilist.topList(clamped, undefined, keep)
     case 'game':
-      items = gamesCatalog.listTop(clamped)
-      break
+      return gamesCatalog.listTop(clamped, keep)
     case 'visual_novel':
-      items = await vndb.topList(clamped)
-      break
+      return vndb.topList(clamped, undefined, keep)
     case 'movie':
-      items = await tmdb.discoverTop('movie', clamped)
-      break
+      return tmdb.discoverTop('movie', clamped, undefined, keep)
     case 'tv':
-      items = await tmdb.discoverTop('tv', clamped)
-      break
+      return tmdb.discoverTop('tv', clamped, undefined, keep)
   }
-  const have = existingIds(clamped.source)
-  const haveTitles = existingGameTitles(clamped.source)
-  return dedupeBySourceId(items).map((it) => {
-    const t = haveTitles ? normTitle(it.title) : ''
-    const inLib = have.has(String(it.sourceId)) || (t !== '' && !!haveTitles?.has(t))
-    return inLib ? { ...it, inLibrary: true } : it
-  })
 }
 
 let status: BulkRunStatus = {

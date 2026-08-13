@@ -6,6 +6,7 @@ import App from './App'
 import { AudioPlayerProvider } from './lib/player'
 import MusicPlayLogger from './components/MusicPlayLogger'
 import BootSequence from './components/BootSequence'
+import PlayerWidgetPage from './pages/PlayerWidgetPage'
 import { toastError } from './lib/toast'
 import './styles.css'
 // Wired-chrome fonts, bundled as self-origin assets (CSP has no remote
@@ -31,20 +32,31 @@ window.addEventListener('unhandledrejection', (e) => {
   e.preventDefault()
 })
 
+// The pop-out player widget window loads the same bundle at #/widget and gets
+// ONLY its pill component: no router, no query client, no AudioPlayerProvider
+// (a second <audio> + mediaSession would fight the main window's), and no
+// BootSequence (a per-window sessionStorage gate would replay the splash
+// inside the 320x64 pill). Branched here, before any provider mounts.
+const isWidgetWindow = window.location.hash.startsWith('#/widget')
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <AudioPlayerProvider>
-        {/* Inside the provider (not App) so play counts survive the chromeless
-            manga-reader route, which renders without the normal shell. */}
-        <MusicPlayLogger />
-        {/* Same placement rationale: the once-per-launch Copland OS boot
-            splash (lain theme only) covers deep links into the readers too. */}
-        <BootSequence />
-        <HashRouter>
-          <App />
-        </HashRouter>
-      </AudioPlayerProvider>
-    </QueryClientProvider>
+    {isWidgetWindow ? (
+      <PlayerWidgetPage />
+    ) : (
+      <QueryClientProvider client={queryClient}>
+        <AudioPlayerProvider>
+          {/* Inside the provider (not App) so play counts survive the chromeless
+              manga-reader route, which renders without the normal shell. */}
+          <MusicPlayLogger />
+          {/* Same placement rationale: the once-per-launch Copland OS boot
+              splash (lain theme only) covers deep links into the readers too. */}
+          <BootSequence />
+          <HashRouter>
+            <App />
+          </HashRouter>
+        </AudioPlayerProvider>
+      </QueryClientProvider>
+    )}
   </React.StrictMode>
 )

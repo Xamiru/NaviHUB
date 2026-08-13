@@ -294,13 +294,16 @@ export function buildVndbTopBody(params: BulkListParams, page: number): Record<s
   return body
 }
 
+// `keep` + page cap: see anilist.topList — dropped rows (already in the
+// library) don't count toward `count`, so the list is always topped up.
 export async function topList(
   params: BulkListParams,
-  pageDelayMs = 600
+  pageDelayMs = 600,
+  keep: (item: BulkPreviewItem) => boolean = () => true
 ): Promise<BulkPreviewItem[]> {
+  const maxPages = Math.max(10, Math.ceil(params.count / 100) * 5)
   const out: BulkPreviewItem[] = []
-  let page = 1
-  for (;;) {
+  for (let page = 1; page <= maxPages; page++) {
     let res: Awaited<ReturnType<typeof vndbPost>>
     try {
       res = await vndbPost('/vn', buildVndbTopBody(params, page))
@@ -312,20 +315,21 @@ export async function topList(
     }
     const results = res?.results ?? []
     for (const m of results) {
-      out.push({
+      const item: BulkPreviewItem = {
         sourceId: vidToNum(m.id),
         title: m.title ?? 'Untitled',
         year: yearOf(m.released),
         coverUrl: m.image?.url ?? null,
-        score: typeof m.rating === 'number' ? m.rating : null,
-        inLibrary: false
-      })
+        score: typeof m.rating === 'number' ? m.rating : null
+      }
+      if (!keep(item)) continue
+      out.push(item)
       if (out.length >= params.count) return out
     }
     if (!res?.more || results.length === 0) return out
-    page++
     if (pageDelayMs > 0) await sleep(pageDelayMs)
   }
+  return out
 }
 
 /* ---------------- Import ---------------- */

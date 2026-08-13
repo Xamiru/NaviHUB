@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { api } from '../lib/api'
 import { usePlayer } from '../lib/player'
 import { playerShortcutsEnabled } from '../lib/playerShortcuts'
 import CoverImage from './CoverImage'
@@ -196,6 +197,14 @@ export default function NowPlayingBar(): React.JSX.Element | null {
       >
         ⤢
       </Link>
+      <button
+        onClick={() => void api.player.openWidget()}
+        className="shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm text-gray-400 hover:text-white hover:bg-base-700"
+        title="Pop out player"
+        aria-label="Pop out player"
+      >
+        ⧉
+      </button>
 
       <div className="hidden sm:flex items-center gap-1.5 w-28 shrink-0">
         <span className="text-gray-500 text-[10px] uppercase tracking-wide" aria-hidden="true">

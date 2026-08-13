@@ -348,14 +348,21 @@ export function buildTopVariables(
 // drop), the pages already fetched are returned as a PARTIAL list instead of
 // thrown away — the page header shows the real count, so a short list is
 // visible, not silent. pageDelayMs is injectable for tests only.
+// `keep` decides whether a fetched row counts toward `count` (bulkImport.ts
+// passes "not already in the library, not seen this crawl") — dropped rows
+// don't count, so the crawl keeps paging and "top 100" always means 100 NEW
+// titles. The page cap bounds the pathological case (user owns nearly the
+// whole list): give up after ~5x the minimal pages rather than crawling the
+// entire catalog at 2.1s/page.
 export async function topList(
   params: BulkListParams,
-  pageDelayMs = 2100
+  pageDelayMs = 2100,
+  keep: (item: BulkPreviewItem) => boolean = () => true
 ): Promise<BulkPreviewItem[]> {
   const perPage = 50 // AniList's Page maximum
+  const maxPages = Math.max(10, Math.ceil(params.count / perPage) * 5)
   const out: BulkPreviewItem[] = []
-  let page = 1
-  for (;;) {
+  for (let page = 1; page <= maxPages; page++) {
     let data: any
     try {
       data = await gql(TOP_QUERY, buildTopVariables(params, page, perPage))
@@ -365,20 +372,21 @@ export async function topList(
     }
     const media = data?.Page?.media ?? []
     for (const m of media) {
-      out.push({
+      const item: BulkPreviewItem = {
         sourceId: m.id,
         title: pickTitle(m.title).title,
         year: m.startDate?.year ?? null,
         coverUrl: m.coverImage?.large || m.coverImage?.medium || null,
-        score: m.averageScore ?? null,
-        inLibrary: false
-      })
+        score: m.averageScore ?? null
+      }
+      if (!keep(item)) continue
+      out.push(item)
       if (out.length >= params.count) return out
     }
     if (!data?.Page?.pageInfo?.hasNextPage || media.length === 0) return out
-    page++
     if (pageDelayMs > 0) await new Promise((r) => setTimeout(r, pageDelayMs))
   }
+  return out
 }
 
 // AniList relation types we surface on the detail page: the season chain plus

@@ -9,6 +9,12 @@ import {
 } from 'react'
 import { api } from './api'
 import { mediaUrl } from '@shared/mediaUrl'
+import { displayMeta, toPlayerSnapshot } from './playerMeta'
+
+// The pop-out widget window renders without this provider; the guard is belt
+// and braces so a future mount there could never publish an empty state over
+// the main window's, or double-handle remote commands.
+const IS_WIDGET_WINDOW = window.location.hash.startsWith('#/widget')
 
 // A single shared audio element drives all playback, so starting one song
 // automatically stops whatever was playing before, and the now-playing bar can
@@ -398,14 +404,17 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
   const hasPrev = queue.length > 0 // previous() always at least restarts
 
   // OS media integration: metadata for the system overlay + hardware media keys.
+  // Everything OS-facing goes through displayMeta() so quiz- tracks are masked
+  // at one choke point (see lib/playerMeta.ts) — the overlay never spoils an answer.
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
     if (!track) return
-    const cover = mediaUrl(track.coverPath)
+    const meta = displayMeta(track)
+    const cover = mediaUrl(meta.coverPath)
     navigator.mediaSession.metadata = new MediaMetadata({
-      title: track.title,
-      artist: track.subtitle ?? '',
-      album: track.context ?? '',
+      title: meta.title,
+      artist: meta.artist,
+      album: meta.album,
       artwork: cover ? [{ src: cover, sizes: '512x512', type: 'image/jpeg' }] : []
     })
   }, [track])
@@ -438,6 +447,18 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
   useEffect(() => {
     if (!('mediaSession' in navigator)) return
     const ms = navigator.mediaSession
+    // An idle player holds no OS handlers — otherwise a stray media key after
+    // stop() would still reach the dead transport (and on Windows keep the app
+    // listed in the SMTC flyout).
+    if (!track) {
+      ms.setActionHandler('play', null)
+      ms.setActionHandler('pause', null)
+      ms.setActionHandler('previoustrack', null)
+      ms.setActionHandler('nexttrack', null)
+      ms.setActionHandler('seekto', null)
+      ms.setActionHandler('stop', null)
+      return
+    }
     ms.setActionHandler('play', () => toggle())
     ms.setActionHandler('pause', () => toggle())
     ms.setActionHandler('previoustrack', () => previous())
@@ -457,7 +478,25 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       ms.setActionHandler('seekto', null)
       ms.setActionHandler('stop', null)
     }
-  }, [toggle, previous, next, hasNext, seek, stop])
+  }, [track, toggle, previous, next, hasNext, seek, stop])
+
+  // Remote-surface mirror: the Windows thumbbar and the pop-out widget render
+  // from this snapshot (already display-masked via playerMeta). Position is
+  // deliberately absent — track/transport changes are the only IPC traffic.
+  useEffect(() => {
+    if (IS_WIDGET_WINDOW) return
+    void api.player.publishState(toPlayerSnapshot(track, { isPlaying, hasNext, hasPrev }))
+  }, [track, isPlaying, hasNext, hasPrev])
+
+  // Transport commands pushed back from those surfaces ('player:cmd').
+  useEffect(() => {
+    if (IS_WIDGET_WINDOW) return
+    return api.player.onCommand((cmd) => {
+      if (cmd === 'toggle') toggle()
+      else if (cmd === 'next') next()
+      else if (cmd === 'previous') previous()
+    })
+  }, [toggle, next, previous])
 
   const onEnded = useCallback(() => {
     const a = audioRef.current

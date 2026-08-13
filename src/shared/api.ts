@@ -199,6 +199,8 @@ import type {
   MusicStatsDetail,
   MusicTrack,
   MediaProgressLogged,
+  PlayerCommand,
+  PlayerSnapshot,
   WrestlingChronology,
   WrestlingEvent,
   WrestlingEventDetail,
@@ -425,8 +427,10 @@ export interface NaviApi {
   }
   bulk: {
     // The /bulk page: top-N lists per media type (vocabulary in
-    // @shared/bulkImport.ts). preview resolves the list with in-library rows
-    // marked; start imports the user's SELECTION through the normal importers
+    // @shared/bulkImport.ts). preview resolves the list EXCLUDING titles
+    // already in the library — skipped rows don't consume slots, so top-100
+    // always means 100 new; start imports the user's SELECTION through the
+    // normal importers
     // in bulk mode (lite characters / no OMDb / no HLTB) and returns
     // immediately — progress is polled via status (500ms while running),
     // cancel keeps everything imported so far. Skip-existing makes any
@@ -965,6 +969,31 @@ export interface NaviApi {
     }): Promise<WrestlingImportStatus>
     importStatus(): Promise<WrestlingImportStatus>
     cancelImport(): Promise<void>
+  }
+
+  player: {
+    // The main window's player is the only audio owner; these channels exist so
+    // remote surfaces (Windows SMTC/thumbbar, the pop-out widget) can mirror
+    // and drive it. This group carries the app's ONLY main→renderer push
+    // channels ('player:cmd', 'player:state' — guarded by tests/pushBridge.test.ts);
+    // remote transport buttons need real latency, which polling can't give.
+
+    // Called by the main window's provider whenever track/isPlaying/hasNext/
+    // hasPrev change. The snapshot is already display-masked (playerMeta.ts).
+    publishState(snapshot: PlayerSnapshot | null): Promise<void>
+    // Last published snapshot — the widget's mount-time read; live updates
+    // arrive via onState.
+    getState(): Promise<PlayerSnapshot | null>
+    // Remote surface → main window transport verb (forwarded over 'player:cmd').
+    command(cmd: PlayerCommand): Promise<void>
+    // The always-on-top mini player window (gaming overlay). Open focuses the
+    // existing one; position persists in settings 'widget.pos'.
+    openWidget(): Promise<void>
+    closeWidget(): Promise<void>
+    // Push subscriptions; both return an unsubscribe. onCommand fires in the
+    // MAIN window (thumbbar/widget transport), onState in the WIDGET window.
+    onCommand(cb: (cmd: PlayerCommand) => void): () => void
+    onState(cb: (snapshot: PlayerSnapshot | null) => void): () => void
   }
 
   app: {

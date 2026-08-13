@@ -127,6 +127,14 @@
   .kbd {
     @apply rounded bg-base-700/70 px-1.5 py-0.5 text-[10px] text-gray-600;
   }
+  /* Frameless pop-out widget: the whole pill is a drag handle, interactive
+     controls opt back out (clicks never reach a drag region). */
+  .app-drag {
+    -webkit-app-region: drag;
+  }
+  .app-no-drag {
+    -webkit-app-region: no-drag;
+  }
 }
 
 /* EPUB book reader (BookContent) — typography for sanitized novel text.

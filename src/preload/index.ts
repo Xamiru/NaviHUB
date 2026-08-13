@@ -448,6 +448,27 @@ const api: NaviApi = {
     importStatus: () => ipcRenderer.invoke('wrestling:importStatus'),
     cancelImport: () => ipcRenderer.invoke('wrestling:cancelImport')
   },
+  player: {
+    publishState: (snapshot) => ipcRenderer.invoke('player:publishState', snapshot),
+    getState: () => ipcRenderer.invoke('player:getState'),
+    command: (cmd) => ipcRenderer.invoke('player:command', cmd),
+    openWidget: () => ipcRenderer.invoke('player:openWidget'),
+    closeWidget: () => ipcRenderer.invoke('player:closeWidget'),
+    // The app's only push channels (see tests/pushBridge.test.ts before adding
+    // another). Both return unsubscribers so effects can clean up.
+    onCommand: (cb) => {
+      const listener = (_e: Electron.IpcRendererEvent, cmd: Parameters<typeof cb>[0]): void =>
+        cb(cmd)
+      ipcRenderer.on('player:cmd', listener)
+      return () => ipcRenderer.removeListener('player:cmd', listener)
+    },
+    onState: (cb) => {
+      const listener = (_e: Electron.IpcRendererEvent, snap: Parameters<typeof cb>[0]): void =>
+        cb(snap)
+      ipcRenderer.on('player:state', listener)
+      return () => ipcRenderer.removeListener('player:state', listener)
+    }
+  },
   app: {
     openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
     pickTextFile: () => ipcRenderer.invoke('app:pickTextFile'),

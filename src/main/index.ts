@@ -19,6 +19,8 @@ import { killActiveOcr } from './mokuroRun'
 import { finalizeActiveGameSession } from './gameLaunch'
 import { closeCatalogDb } from './gamesCatalogDb'
 import { parseArgvFiles, queueOpen } from './openFile'
+import { setMainWindow as setPlayerBridgeWindow } from './playerBridge'
+import { closeWidget } from './widget'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
 protocol.registerSchemesAsPrivileged([
@@ -96,7 +98,13 @@ function createWindow(): void {
   mainWindow = win
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null
+    // The pop-out player widget is a satellite of this window, not an app
+    // surface of its own (it skips the taskbar) — never leave it orphaned.
+    closeWidget()
   })
+
+  // Windows thumbbar buttons + widget command routing live off this handle.
+  setPlayerBridgeWindow(win)
 
   // Native menu bar hidden unless opted in (Settings → General). The default
   // menu STAYS the application menu, so its accelerators (Ctrl+R, F11,
@@ -121,8 +129,10 @@ function createWindow(): void {
     }
   })
 
-  // No code path may spawn a child BrowserWindow — external links go through
-  // the guarded app:openExternal IPC (system browser) instead.
+  // No RENDERER code path may spawn a child BrowserWindow (window.open is
+  // denied here and in the widget) — external links go through the guarded
+  // app:openExternal IPC (system browser) instead. The one sanctioned child
+  // window is the main-process-owned pop-out player pill in widget.ts.
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
   // Right-click text menu (Electron ships none by default): cut/copy/paste in

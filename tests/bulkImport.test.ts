@@ -208,48 +208,119 @@ describe('discoverTop language exclusion (TMDB)', () => {
   })
 })
 
-describe('preview', () => {
-  it('deduplicates repeats from pagination drift, keeping the first occurrence', async () => {
-    expect(
-      bulk
-        .dedupeBySourceId([
-          { sourceId: 1, title: 'A', year: null, coverUrl: null, score: 9, inLibrary: false },
-          { sourceId: 2, title: 'B', year: null, coverUrl: null, score: 8, inLibrary: false },
-          { sourceId: 1, title: 'A again', year: null, coverUrl: null, score: 7, inLibrary: false }
-        ])
-        .map((it) => [it.sourceId, it.title])
-    ).toEqual([
-      [1, 'A'],
-      [2, 'B']
-    ])
+describe('discoverTop TV junk exclusion', () => {
+  it('tv requests exclude talk/news/soap server-side; movie requests do not', () => {
+    expect(buildDiscoverParams('tv', params({ source: 'tv' }), 1).without_genres).toBe(
+      '10763,10766,10767'
+    )
+    expect(buildDiscoverParams('movie', params({ source: 'movie' }), 1).without_genres).toBeUndefined()
   })
 
-  it('marks in-library rows via (external_source, media_type)', async () => {
+  it('drops anime (Animation + ja) but keeps western animation and Japanese live-action', async () => {
+    const row = (id: number, lang: string, genres: number[]) => ({
+      id,
+      name: `Show ${id}`,
+      original_language: lang,
+      genre_ids: genres,
+      first_air_date: '2024-01-01',
+      poster_path: null,
+      vote_average: 7
+    })
+    httpHandler = async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        total_pages: 1,
+        results: [
+          row(1, 'ja', [16, 18]), // anime — dropped
+          row(2, 'en', [16]), // western animation — kept
+          row(3, 'ja', [18]), // J-drama — kept
+          row(4, 'en', [35]) // sitcom — kept
+        ]
+      })
+    })
+    const items = await discoverTop('tv', params({ source: 'tv', count: 10 }), 0)
+    expect(items.map((it) => it.sourceId)).toEqual([2, 3, 4])
+  })
+})
+
+describe('makeKeep (the crawl predicate)', () => {
+  const item = (sourceId: number, title = `T${sourceId}`) => ({
+    sourceId,
+    title,
+    year: null,
+    coverUrl: null,
+    score: null
+  })
+
+  it('rejects duplicates from pagination drift, keeping the first occurrence', () => {
+    const keep = bulk.makeKeep(new Set(), null)
+    expect(keep(item(1))).toBe(true)
+    expect(keep(item(2))).toBe(true)
+    expect(keep(item(1, 'again'))).toBe(false)
+  })
+
+  it('rejects library ids and (games) normalized titles; empty normalization never matches', () => {
+    const keep = bulk.makeKeep(new Set(['7']), new Set(['persona 5 royal']))
+    expect(keep(item(7))).toBe(false) // owned by id
+    expect(keep(item(8, 'PERSONA 5: Royal'))).toBe(false) // Steam-owned, name bridge
+    expect(keep(item(9, '★☆★'))).toBe(true) // normalizes to '' — must not match anything
+    expect(keep(item(10, 'Bloodborne'))).toBe(true)
+  })
+})
+
+describe('preview', () => {
+  it('excludes in-library rows entirely and tops the list up to count', async () => {
     catalog = new Database(':memory:')
     catalog.exec(CATALOG_DDL)
-    const ins = catalog.prepare(
-      `INSERT INTO catalog_game (id, name, added) VALUES (?, ?, ?)`
-    )
+    const ins = catalog.prepare(`INSERT INTO catalog_game (id, name, added) VALUES (?, ?, ?)`)
     ins.run(1, 'Owned Game', 100)
     ins.run(2, 'New Game', 50)
+    ins.run(3, 'Backfill Game', 40)
     db.prepare(
       `INSERT INTO media_item (media_type, title, external_source, external_id)
        VALUES ('game', 'Owned Game', 'rawg', '1')`
     ).run()
-    // Same external id under a DIFFERENT media_type must not mark it.
+    // Same external id under a DIFFERENT media_type must not exclude it.
     db.prepare(
       `INSERT INTO media_item (media_type, title, external_source, external_id)
        VALUES ('anime', 'Same Id Anime', 'anilist', '2')`
     ).run()
 
-    const items = await bulk.preview(params({ source: 'game', count: 10 }))
-    expect(items.map((it) => [it.sourceId, it.inLibrary])).toEqual([
-      [1, true],
-      [2, false]
-    ])
+    // count 2: the owned #1 is skipped WITHOUT consuming a slot — #2 and #3 fill it.
+    const items = await bulk.preview(params({ source: 'game', count: 2 }))
+    expect(items.map((it) => it.sourceId)).toEqual([2, 3])
   })
 
-  it('marks a Steam-owned game in-library by normalized title (disjoint id spaces)', async () => {
+  it('online sources top up too: an owned movie is skipped without consuming a slot', async () => {
+    db.prepare(
+      `INSERT INTO media_item (media_type, title, external_source, external_id)
+       VALUES ('movie', 'Owned Movie', 'tmdb', '1')`
+    ).run()
+    const row = (id: number) => ({
+      id,
+      title: `Movie ${id}`,
+      original_language: 'en',
+      release_date: '2020-01-01',
+      poster_path: null,
+      vote_average: 8
+    })
+    httpHandler = async (url) => {
+      const page = new URL(url).searchParams.get('page')
+      return {
+        ok: true,
+        status: 200,
+        json: async () =>
+          page === '1'
+            ? { total_pages: 2, results: [row(1), row(2)] }
+            : { total_pages: 2, results: [row(3)] }
+      }
+    }
+    const items = await bulk.preview(params({ source: 'movie', count: 2 }))
+    expect(items.map((it) => it.sourceId)).toEqual([2, 3])
+  })
+
+  it('excludes a Steam-owned game by normalized title (disjoint id spaces)', async () => {
     catalog = new Database(':memory:')
     catalog.exec(CATALOG_DDL)
     const ins = catalog.prepare(`INSERT INTO catalog_game (id, name, added) VALUES (?, ?, ?)`)
@@ -262,10 +333,7 @@ describe('preview', () => {
        VALUES ('game', 'PERSONA 5: Royal', 'steam', '1687950')`
     ).run()
     const items = await bulk.preview(params({ source: 'game', count: 10 }))
-    expect(items.map((it) => [it.title, it.inLibrary])).toEqual([
-      ['Persona 5 Royal', true],
-      ['Bloodborne', false]
-    ])
+    expect(items.map((it) => it.title)).toEqual(['Bloodborne'])
   })
 })
 

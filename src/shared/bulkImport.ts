@@ -107,7 +107,6 @@ const TMDB_TV_GENRES: Record<string, number> = {
   Mystery: 9648,
   Reality: 10764,
   'Sci-Fi & Fantasy': 10765,
-  Soap: 10766,
   'War & Politics': 10768,
   Western: 37
 }

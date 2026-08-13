@@ -69,6 +69,8 @@ import * as gachaCoach from './gachaCoach'
 import * as coachRepo from './repos/coachRepo'
 import * as wrestlingRepo from './repos/wrestlingRepo'
 import * as wrestlingImport from './wrestling/importRun'
+import * as playerBridge from './playerBridge'
+import * as widget from './widget'
 import * as looseMatch from './wrestling/looseMatch'
 import * as scan from './video/scan'
 import type { VideoSourceRef } from '@shared/types'
@@ -716,6 +718,13 @@ export function registerIpc(): void {
   ipcMain.handle('wrestling:importStatus', () => wrestlingImport.getStatus())
   ipcMain.handle('wrestling:cancelImport', () => wrestlingImport.cancel())
 
+  // ---- player (remote transport: thumbbar + pop-out widget) ----
+  ipcMain.handle('player:publishState', (_e, snapshot) => playerBridge.publishState(snapshot))
+  ipcMain.handle('player:getState', () => playerBridge.getState())
+  ipcMain.handle('player:command', (_e, cmd) => playerBridge.dispatchCommand(cmd))
+  ipcMain.handle('player:openWidget', () => widget.openWidget(playerBridge.getState))
+  ipcMain.handle('player:closeWidget', () => widget.closeWidget())
+
   // ---- app (system browser for external links + text-file picker) ----
   ipcMain.handle('app:openExternal', (_e, url) => {
     if (!/^https?:\/\//i.test(String(url))) throw new Error('Only http(s) links can be opened')
@@ -727,7 +736,10 @@ export function registerIpc(): void {
   ipcMain.handle('app:pendingOpen', () => openFile.takePending())
   ipcMain.handle('app:setUiScale', (_e, scale) => {
     const factor = clampUiScale(Number(scale))
-    for (const win of BrowserWindow.getAllWindows()) win.webContents.setZoomFactor(factor)
+    // The pop-out player widget is excluded from UI zoom (and the menu bar
+    // below): its 320x64 pill is fixed-size, so scaling would clip it.
+    for (const win of BrowserWindow.getAllWindows())
+      if (win !== widget.getWidgetWindow()) win.webContents.setZoomFactor(factor)
     return factor
   })
   // Ctrl+wheel UI zoom (App.tsx global listener): steps the SAME persisted
@@ -736,7 +748,8 @@ export function registerIpc(): void {
   ipcMain.handle('app:bumpUiScale', (_e, direction) => {
     const cur = parseUiScale(settingsRepo.get('ui.scale'))
     const next = clampUiScale(Math.round((cur + (Number(direction) > 0 ? 0.1 : -0.1)) * 100) / 100)
-    for (const win of BrowserWindow.getAllWindows()) win.webContents.setZoomFactor(next)
+    for (const win of BrowserWindow.getAllWindows())
+      if (win !== widget.getWidgetWindow()) win.webContents.setZoomFactor(next)
     settingsRepo.set('ui.scale', String(next))
     return next
   })
@@ -745,7 +758,8 @@ export function registerIpc(): void {
   // Ctrl+Shift+I, Ctrl+= / Ctrl+-) keep working while the bar is invisible.
   // Persisting ui.menuBar is the caller's job (the setUiScale contract).
   ipcMain.handle('app:setMenuBarVisible', (_e, visible) => {
-    for (const win of BrowserWindow.getAllWindows()) win.setMenuBarVisibility(!!visible)
+    for (const win of BrowserWindow.getAllWindows())
+      if (win !== widget.getWidgetWindow()) win.setMenuBarVisibility(!!visible)
   })
 
   // ---- settings ----
