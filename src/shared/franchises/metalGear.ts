@@ -15,6 +15,8 @@ export const METAL_GEAR: FranchiseCfg = {
   name: 'Metal Gear',
   short: 'Metal Gear',
   color: '#88a06a',
+  heroUrl:
+    'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/287700/library_hero.jpg',
   studio: 'Konami (Kojima Productions)',
   tagline: 'Tactical espionage action — war economy, nuclear deterrence, and cardboard boxes.',
   trivia: [

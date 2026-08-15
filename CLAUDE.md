@@ -16,6 +16,7 @@ Rules the user has stated and had to re-state. Treat these as settled — do not
 - **The Japanese section must work fully offline and be the user's only learning source.** (2026-07-27, re-stated 08-01.) No feature there may depend on a live network call at study time.
 - **`npm run dist:win` is the user's job**, on their own machine. (2026-07-12.)
 - **Never launch the GUI on the VPS.** (2026-07-25.) See the machine table below.
+- **Nothing from this repo goes to the Claude account.** (2026-08-15.) No Artifact publishing, no Claude Design / DesignSync, no upload of code, mockups, docs or data to claude.ai hosting. UI previews are local files (`previews/`, gitignored — the `ui-preview` skill) that the user opens themselves. Local tools and the user's own git remote are the only places repo content may go.
 
 ## How to work here
 
@@ -30,7 +31,7 @@ They grant broad design autonomy ("the floor is yours", "as you see fit") and se
 `npm run typecheck` + `npm run test` green is **necessary, not sufficient**. Across 48 sessions, 13 opened with a defect the user found by using the app — blank screens, unclickable buttons, swapped labels, a back button that returned to the reader — none of which a unit test could see. There are no renderer tests at all (`vitest.config.ts` does not even match `.tsx`), so:
 
 - **Backend-only change** — typecheck + tests is done.
-- **Anything touching `src/renderer/`** — typecheck + tests, **and then either** drive the built app with the `verify` skill (laptop only) **or** say plainly, in the completion message, that the change is unverified in the UI and name what the user should click. Do not report a renderer change as working on the strength of a green test run.
+- **Anything touching `src/renderer/`** — typecheck + tests, **and then either** drive the built app with the `verify` skill (laptop only) **or** say plainly, in the completion message, that the change is unverified in the UI and name what the user should click. Do not report a renderer change as working on the strength of a green test run. For a *design* decision (new layout, options to pick between) get sign-off on a `ui-preview` mockup first — cheaper than a build cycle, and it works on the VPS — but a preview is not verification.
 - **Anything touching the schema or a migration** — see the `db-change` skill. Tests build from the *current* `init.sql`, so they structurally cannot catch a migration that breaks a pre-existing database. That class of bug has shipped and left the app unable to start.
 
 ## Machines
@@ -137,7 +138,7 @@ Renderer builds URLs synchronously with `mediaUrl(relPath)` (no per-image IPC); 
 
 **B) Standalone section** (Japanese/Music/Lists style): full vertical slice — tables (init.sql + schema.ts), repo, IPC block, api.ts group, preload mirror, pages + routes in App.tsx, hardcoded sidebar NavLink, `qk.<feature>` query keys, tests. `music_*` (2026-07) is the newest complete reference.
 
-**C) Curated overlay** (Franchises, 2026-08): hardcoded content in a `src/shared/<feature>/` module (frozen id strings, one file per unit + an index catalog — the `wrestling.ts`/`programming/` pattern), matched client-side against an existing media type's list; no new tables, user state rides existing ones. `src/shared/franchises/` + [media-types.md](docs/architecture/media-types.md) "Franchises" is the reference — including the curated-remote-art cache (`franchiseArt.ts`) and the `media_image` kind `'background'` (franchise pages only, NOT the Art tab).
+**C) Curated overlay** (Franchises, 2026-08): hardcoded content in a `src/shared/<feature>/` module (frozen id strings, one file per unit + an index catalog — the `wrestling.ts`/`programming/` pattern), matched client-side against an existing media type's list; no new tables, user state rides existing ones (a settings row per franchise for the user's background). `src/shared/franchises/` + [media-types.md](docs/architecture/media-types.md) "Franchises" is the reference — including the curated-remote-art cache (`franchiseArt.ts`), the viewport-pinned page background (`FranchiseBackground.tsx`, `background-attachment: fixed`) and the FLIP re-sort hook (`lib/useFlip.ts`). The `media_image` kind `'background'` and per-entry `bgUrl` are RESERVED for the game detail page — not surfaced anywhere yet.
 
 ## Import conventions
 
@@ -303,4 +304,4 @@ Per-subsystem narrative lives in [`docs/architecture/`](docs/architecture/00-ind
 | Packaging, releases, in-app updates, library export | [packaging-ci-updates.md](docs/architecture/packaging-ci-updates.md) |
 | Something that sounds like a feature request | [removed.md](docs/architecture/removed.md) — check it was not deliberately taken out |
 
-**Skills** (`.claude/skills/`) encode the multi-step rituals: `add-ipc` (the 5-file contract chain), `db-change` (schema + migration + sanitize + tests), `verify` (drive the built app — laptop only), `local-release` (ship a release by hand when Actions cannot run), `wrap` (end-of-session chores + a handoff prompt).
+**Skills** (`.claude/skills/`) encode the multi-step rituals: `add-ipc` (the 5-file contract chain), `db-change` (schema + migration + sanitize + tests), `verify` (drive the built app — laptop only), `ui-preview` (show a screen as a local, gitignored HTML mockup built from the app's real Tailwind classes BEFORE coding it — design sign-off, works on the VPS, never uploaded, is not verification), `local-release` (ship a release by hand when Actions cannot run), `wrap` (end-of-session chores + a handoff prompt).

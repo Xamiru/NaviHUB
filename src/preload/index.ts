@@ -192,6 +192,8 @@ const api: NaviApi = {
   franchise: {
     ensureArt: (franchiseId) => ipcRenderer.invoke('franchise:ensureArt', franchiseId),
     artMap: (franchiseId) => ipcRenderer.invoke('franchise:artMap', franchiseId),
+    ensureHeroes: () => ipcRenderer.invoke('franchise:ensureHeroes'),
+    heroMap: () => ipcRenderer.invoke('franchise:heroMap'),
     artStatus: () => ipcRenderer.invoke('franchise:artStatus')
   },
   torrents: {
@@ -476,6 +478,7 @@ const api: NaviApi = {
     publishState: (snapshot) => ipcRenderer.invoke('player:publishState', snapshot),
     getState: () => ipcRenderer.invoke('player:getState'),
     command: (cmd) => ipcRenderer.invoke('player:command', cmd),
+    showMain: () => ipcRenderer.invoke('player:showMain'),
     openWidget: () => ipcRenderer.invoke('player:openWidget'),
     closeWidget: () => ipcRenderer.invoke('player:closeWidget'),
     // The app's only push channels (see tests/pushBridge.test.ts before adding

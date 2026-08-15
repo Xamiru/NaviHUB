@@ -131,6 +131,7 @@ const SANITIZE_STATEMENTS = [
   // jp.knownBaseline is personal knowledge, not a preference: exporting it
   // hands the recipient an empty deck plus a standing claim that they already
   // know the top N Japanese words, inflating every comprehension figure.
+  // franchise.<id>.background rows point at the user's own image files.
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path',
       'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','video.dir','wrestling.dir',
@@ -142,7 +143,7 @@ const SANITIZE_STATEMENTS = [
       'jackett.url','jackett.api_key','jackett.start_cmd',
       'qbittorrent.url','qbittorrent.username','qbittorrent.password',
       'github.token','checklist.seeded','jp.knownBaseline')
-     OR key LIKE 'japanese.seeded%'`
+     OR key LIKE 'japanese.seeded%' OR key LIKE 'franchise.%'`
 ]
 
 const tableOf = (sql) => sql.match(/(?:DELETE FROM|UPDATE)\s+(\w+)/i)[1]

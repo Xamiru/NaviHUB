@@ -28,6 +28,9 @@ vi.mock('../src/main/files', () => ({
     return map
   },
   downloadImage: async () => null,
+  // Local icons (a crack's steam_settings/achievement_images) "copy in" to a
+  // path derived from the source, so a test can tell which file was used.
+  importImageFile: (abs: string) => (abs.endsWith('.missing') ? null : `media/lc-${abs.split(/[\\/]/).pop()}`),
   absoluteMediaPath: (p: string) => `/userData/${p}`
 }))
 
@@ -39,20 +42,29 @@ let storeSearchPayload: unknown
 let raGamePayload: unknown
 let raGameList: unknown = []
 let schemaStatus = 200
+let communityHtml = ''
+let communityStatus = 200
+const fetched: string[] = []
 vi.mock('../src/main/http', () => ({
   sleep: async () => {},
-  fetchWithRetry: async (url: string) => ({
-    ok: schemaStatus === 200,
-    status: schemaStatus,
-    json: async () => {
-      if (url.includes('GetSchemaForGame')) return schemaPayload
-      if (url.includes('GetGlobalAchievementPercentages')) return percentPayload
-      if (url.includes('/storesearch/')) return storeSearchPayload
-      if (url.includes('API_GetGameInfoAndUserProgress')) return raGamePayload
-      if (url.includes('API_GetGameList')) return raGameList
-      throw new Error(`Unrouted URL in test: ${url}`)
+  fetchWithRetry: async (url: string) => {
+    fetched.push(url)
+    const isCommunity = url.includes('steamcommunity.com/stats/')
+    const status = isCommunity ? communityStatus : schemaStatus
+    return {
+      ok: status === 200,
+      status,
+      text: async () => (isCommunity ? communityHtml : ''),
+      json: async () => {
+        if (url.includes('GetSchemaForGame')) return schemaPayload
+        if (url.includes('GetGlobalAchievementPercentages')) return percentPayload
+        if (url.includes('/storesearch/')) return storeSearchPayload
+        if (url.includes('API_GetGameInfoAndUserProgress')) return raGamePayload
+        if (url.includes('API_GetGameList')) return raGameList
+        throw new Error(`Unrouted URL in test: ${url}`)
+      }
     }
-  })
+  }
 }))
 
 const achievements = await import('../src/main/achievements')
@@ -73,10 +85,37 @@ function schemaFixture(list: unknown[]): unknown {
   return { game: { gameName: 'TF2', availableGameStats: { achievements: list } } }
 }
 
+// [name, description, icon, percent] rows in the community stats page's shape.
+function communityPage(rows: [string, string, string, string][]): string {
+  return rows
+    .map(
+      ([name, desc, icon, pct]) => `<div class="achieveRow ">
+  <div class="achieveImgHolder"><img src="${icon}"></div>
+  <div class="achieveTxtHolder"><div class="achievePercent">${pct}%</div>
+  <div class="achieveTxt"><h3>${name}</h3><h5>${desc}</h5></div></div></div>`
+    )
+    .join('\n')
+}
+
+// A crack's steam_settings folder, as the injected file IO sees it.
+const EXE_DIR = 'C:\\Games\\tf2'
+function localSchemaIO(schema: unknown, at = `${EXE_DIR}\\steam_settings\\achievements.json`) {
+  const files: Record<string, string> = { [at]: JSON.stringify(schema) }
+  return {
+    exists: (p: string) => p in files,
+    readFile: (p: string) => files[p] ?? '',
+    mtimeMs: () => null,
+    listDirs: () => []
+  }
+}
+
 beforeEach(() => {
   db = createTestDb()
   settings = { 'steam.web_api_key': 'KEY', 'ra.username': 'me', 'ra.api_key': 'RAKEY' }
   schemaStatus = 200
+  communityStatus = 200
+  communityHtml = ''
+  fetched.length = 0
   schemaPayload = schemaFixture([
     {
       name: 'ACH_WIN',
@@ -159,11 +198,11 @@ describe('Steam schema fetch', () => {
     expect(repo.listForMedia(id)[0].name).toBe('ACH_RAW')
   })
 
-  it('explains what to do when no API key is set, before touching the network', async () => {
+  it('never asks the Web API when there is no key', async () => {
     settings = {}
-    await expect(achievements.fetchSteamSchema(addGame(), '440')).rejects.toThrow(
-      /Steam Web API key/i
-    )
+    communityHtml = communityPage([['Winner', 'Win a round', 'https://cdn/win.jpg', '42.5']])
+    await achievements.fetchSteamSchema(addGame(), '440')
+    expect(fetched.some((u) => u.includes('GetSchemaForGame'))).toBe(false)
   })
 
   it('rejects an app id that is not a number', async () => {
@@ -174,13 +213,15 @@ describe('Steam schema fetch', () => {
 
   it('says the app id may be wrong rather than writing an empty set', async () => {
     schemaPayload = schemaFixture([])
+    communityStatus = 404
     const id = addGame()
-    await expect(achievements.fetchSteamSchema(id, '440')).rejects.toThrow(/no achievements/i)
+    await expect(achievements.fetchSteamSchema(id, '440')).rejects.toThrow(/wrong app id/i)
     expect(repo.listForMedia(id)).toEqual([])
   })
 
   it('remembers the chosen app id even when the fetch fails, so a retry is one click', async () => {
     schemaPayload = schemaFixture([])
+    communityStatus = 404
     const id = addGame(null, null)
     await expect(achievements.fetchSteamSchema(id, '999')).rejects.toThrow()
     expect(repo.getTracking(id)).toMatchObject({ provider: 'steam', providerGameId: '999' })
@@ -419,5 +460,143 @@ describe('refresh', () => {
 
   it('refuses on a title nobody has set up yet', async () => {
     await expect(achievements.refresh(addGame())).rejects.toThrow(/not tracked/i)
+  })
+})
+
+
+// ---- Keyless schema sources ------------------------------------------------
+// The user's Steam account cannot get a Web API key (Steam only issues them to
+// accounts that have spent money), so the list has to come from the crack's
+// own files first, and Steam's public page as the last resort.
+
+describe('schema source order', () => {
+  const localSchema = [
+    { name: 'ACH_WIN', displayName: 'Winner (local)', description: 'From disk', hidden: '0', icon: 'achievement_images/win.jpg', icongray: 'achievement_images/win_gray.jpg' },
+    { name: 'ACH_SECRET', displayName: 'Secret', hidden: '1' }
+  ]
+
+  it('prefers the steam_settings file beside the exe, touching no schema endpoint at all', async () => {
+    const id = addGame()
+    const res = await achievements.fetchSteamSchema(id, '440', { io: localSchemaIO(localSchema) })
+
+    expect(res.schemaSource).toBe('local')
+    expect(res.total).toBe(2)
+    const rows = repo.listForMedia(id)
+    expect(rows[0]).toMatchObject({
+      apiName: 'ACH_WIN',
+      name: 'Winner (local)',
+      description: 'From disk',
+      iconPath: 'media/lc-win.jpg',
+      iconGrayPath: 'media/lc-win_gray.jpg'
+    })
+    expect(rows[1]).toMatchObject({ hidden: true, iconPath: null })
+    expect(fetched.some((u) => u.includes('GetSchemaForGame'))).toBe(false)
+    expect(fetched.some((u) => u.includes('steamcommunity.com/stats'))).toBe(false)
+  })
+
+  it('still adds rarity to a local set from the keyless percentages endpoint', async () => {
+    const id = addGame()
+    await achievements.fetchSteamSchema(id, '440', { io: localSchemaIO(localSchema) })
+    expect(repo.listForMedia(id)[0].globalPct).toBe(42.5)
+  })
+
+  it('finds the file up to two folders above an exe kept in bin/', async () => {
+    const id = Number(
+      db
+        .prepare(
+          `INSERT INTO media_item (media_type, title, exe_path) VALUES ('game', 'Nested', ?)`
+        )
+        .run(`${EXE_DIR}\\bin\\x64\\game.exe`).lastInsertRowid
+    )
+    const res = await achievements.fetchSteamSchema(id, '440', {
+      io: localSchemaIO(localSchema, `${EXE_DIR}\\steam_settings\\achievements.json`)
+    })
+    expect(res.schemaSource).toBe('local')
+  })
+
+  it('falls through to the Web API when there is a key but no local file', async () => {
+    const res = await achievements.fetchSteamSchema(addGame(), '440')
+    expect(res.schemaSource).toBe('webapi')
+  })
+
+  it('falls through to the community page when there is no key and no local file', async () => {
+    settings = {}
+    communityHtml = communityPage([
+      ['Winner', 'Win a round', 'https://cdn/win.jpg', '42.5'],
+      ['Secret', 'Shh', 'https://cdn/secret.jpg', '2.9']
+    ])
+    percentPayload = {
+      achievementpercentages: {
+        achievements: [
+          { name: 'ACH_WIN', percent: 42.5 },
+          // Full precision on the API side, one decimal on the page — the
+          // join has to round to pair them.
+          { name: 'ACH_SECRET', percent: 2.9000001 }
+        ]
+      }
+    }
+    const id = addGame()
+    const res = await achievements.fetchSteamSchema(id, '440')
+
+    expect(res.schemaSource).toBe('community')
+    expect(res.unmatched).toBe(0)
+    const rows = repo.listForMedia(id)
+    expect(rows.map((r) => [r.apiName, r.name])).toEqual([
+      ['ACH_WIN', 'Winner'],
+      ['ACH_SECRET', 'Secret']
+    ])
+    expect(rows[0]).toMatchObject({ iconPath: 'media/dl-win.jpg', iconGrayPath: null, globalPct: 42.5 })
+    expect(rows[1].rarity).toBe('ultra-rare')
+  })
+
+  it('reports how many community rows could not be paired with an api name', async () => {
+    settings = {}
+    communityHtml = communityPage([
+      ['Winner', '', 'https://cdn/win.jpg', '42.5'],
+      ['Ghost', '', 'https://cdn/ghost.jpg', '0.1']
+    ])
+    percentPayload = { achievementpercentages: { achievements: [{ name: 'ACH_WIN', percent: 42.5 }] } }
+    const res = await achievements.fetchSteamSchema(addGame(), '440')
+    expect(res.total).toBe(1)
+    expect(res.unmatched).toBe(1)
+  })
+
+  it('treats a failing percentages endpoint as fatal for the community path (it is the only bridge to api names)', async () => {
+    settings = {}
+    communityHtml = communityPage([['Winner', '', 'https://cdn/win.jpg', '42.5']])
+    percentPayload = null
+    await expect(achievements.fetchSteamSchema(addGame(), '440')).rejects.toThrow()
+  })
+
+  it('names every source it tried when all three come up empty', async () => {
+    schemaPayload = schemaFixture([])
+    communityStatus = 404
+    await expect(achievements.fetchSteamSchema(addGame(), '440')).rejects.toThrow(
+      /steam_settings.*Web API.*community/s
+    )
+  })
+
+  it('the emulator sweep uses the same injected IO, so a local-schema game imports its unlocks in one go', async () => {
+    const io = localSchemaIO(localSchema)
+    const goldbergSave = '/roaming/Goldberg SteamEmu Saves/440/achievements.json'
+    const files: Record<string, string> = {
+      [`${EXE_DIR}\\steam_settings\\achievements.json`]: JSON.stringify(localSchema),
+      [goldbergSave]: JSON.stringify({ ACH_WIN: { earned: true, earned_time: 1600000000 } })
+    }
+    const both = {
+      ...io,
+      exists: (p: string) => p in files,
+      readFile: (p: string) => files[p] ?? '',
+      mtimeMs: (p: string) => (p in files ? 1_600_000_000_000 : null)
+    }
+    // windowsEnv() reads process.env, which is empty here — pass an env through
+    // importEmuUnlocks directly to prove the round trip.
+    const id = addGame()
+    await achievements.fetchSteamSchema(id, '440', { io: both })
+    const swept = achievements.importEmuUnlocks(id, {
+      io: both,
+      env: { appData: '/roaming', publicDir: '/public', localAppData: '/local' }
+    })
+    expect(swept.imported).toBe(1)
   })
 })

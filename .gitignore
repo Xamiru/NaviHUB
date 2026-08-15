@@ -14,6 +14,9 @@ release/
 # Claude Code — local, machine-specific settings (keep shared settings.json if added)
 .claude/settings.local.json
 
+# UI mockups built by the ui-preview skill — local, disposable, never pushed
+previews/
+
 # Logs
 *.log
 npm-debug.log*

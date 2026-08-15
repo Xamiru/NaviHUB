@@ -1,15 +1,22 @@
 import { useEffect, useState } from 'react'
 
-// Full-page artwork layer for the franchise pages — the test run for
-// app-wide per-media backgrounds. Deliberately page-local (absolute inside
-// the page's relative root, NOT fixed, NOT in the app shell): `main` is the
-// scroll container and the Topbar's backdrop-blur creates a containing block
-// that makes `fixed` fragile, so the art simply scrolls with the page.
+// The franchise page's full-page background — the test run for app-wide
+// per-media backgrounds. ONE image per page (curated hero or the user's own
+// file), pinned in place while the page scrolls.
+//
+// Pinning: `background-attachment: fixed` anchors the image to the WINDOW
+// viewport while it is painted only inside this element's box, so it holds
+// still as <main> (the app's scroll container) scrolls, and it can never
+// paint over the sidebar or Topbar — the layer is a normal absolute child of
+// the page root, so it needs no knowledge of the shell's widths and is immune
+// to the ui.scale zoom. (A `position: fixed` element would need the sidebar's
+// rem width and would stack over it; the alternative if this ever proves
+// janky on scroll is a `sticky top-0 h-0` wrapper holding a viewport-height
+// absolute image.)
 //
 // Cross-fade: the incoming URL is preloaded off-DOM, then mounted on top of
-// the previous image and faded in; the whole layer fades out when url goes
-// null. A dead URL never swaps in (onload never fires), so the page just
-// keeps whatever background it had.
+// the previous image and faded in. A dead URL never swaps in (onload never
+// fires), so the page keeps whatever it had.
 export default function FranchiseBackground({ url }: { url: string | null }) {
   const [shown, setShown] = useState<string | null>(null)
   const [previous, setPrevious] = useState<string | null>(null)
@@ -17,12 +24,6 @@ export default function FranchiseBackground({ url }: { url: string | null }) {
   useEffect(() => {
     if (url === shown) return
     if (url === null) {
-      // Keep the image mounted; the container's opacity transition fades it
-      // out. `previous` has to become the image that is actually ON SCREEN —
-      // it is what `mounted` falls back to below. Left pointing at the one
-      // before it, the layer fades out the WRONG artwork, and on the very
-      // first hover-then-leave (previous still null) the background vanishes
-      // with no transition at all.
       setPrevious(shown)
       setShown(null)
       return
@@ -51,32 +52,41 @@ export default function FranchiseBackground({ url }: { url: string | null }) {
         shown ? 'opacity-100' : 'opacity-0'
       }`}
     >
-      {previous && previous !== shown && (
-        <img src={previous} alt="" className="absolute inset-0 h-full w-full scale-105 object-cover" />
-      )}
-      {shown && <FadeInImage key={shown} url={shown} />}
-      {/* Scrim: keeps every text size readable over arbitrary art. */}
-      <div className="absolute inset-0 bg-gradient-to-b from-base-900/85 via-base-900/65 to-base-900/95" />
+      {previous && previous !== shown && <FixedImage url={previous} on />}
+      {shown && <FixedImage key={shown} url={shown} />}
+      {/* Scrim — also viewport-fixed so its gradient does not travel with
+          the page; keeps every text size readable over arbitrary art. */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            'linear-gradient(to bottom, rgb(var(--base-900) / 0.85), rgb(var(--base-900) / 0.7) 40%, rgb(var(--base-900) / 0.92))',
+          backgroundAttachment: 'fixed'
+        }}
+      />
     </div>
   )
 }
 
-// Mount at opacity-0, flip to 100 on the next frame so the CSS transition
-// runs. The URL is already in the browser cache (preloaded above), so the
-// img paints immediately.
-function FadeInImage({ url }: { url: string }) {
-  const [on, setOn] = useState(false)
+// A viewport-pinned image layer. Mounts at opacity-0 (unless `on`) and flips
+// on the next frame so the opacity transition runs; the URL is already in
+// the browser cache from the preload above, so it paints immediately.
+function FixedImage({ url, on: initiallyOn = false }: { url: string; on?: boolean }) {
+  const [on, setOn] = useState(initiallyOn)
   useEffect(() => {
+    if (initiallyOn) return
     const raf = requestAnimationFrame(() => setOn(true))
     return () => cancelAnimationFrame(raf)
-  }, [])
+  }, [initiallyOn])
   return (
-    <img
-      src={url}
-      alt=""
-      className={`absolute inset-0 h-full w-full scale-105 object-cover transition-opacity duration-700 ${
-        on ? 'opacity-100' : 'opacity-0'
-      }`}
+    <div
+      className={`absolute inset-0 transition-opacity duration-700 ${on ? 'opacity-100' : 'opacity-0'}`}
+      style={{
+        backgroundImage: `url("${url.replace(/"/g, '%22')}")`,
+        backgroundAttachment: 'fixed',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }}
     />
   )
 }

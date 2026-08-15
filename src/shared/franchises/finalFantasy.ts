@@ -14,6 +14,8 @@ export const FINAL_FANTASY: FranchiseCfg = {
   name: 'Final Fantasy',
   short: 'Final Fantasy',
   color: '#4a7dcf',
+  heroUrl:
+    'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2909400/library_hero.jpg',
   studio: 'Square Enix',
   tagline: 'A new world, a new cast, the same name — fantasy reinvented sixteen times.',
   trivia: [

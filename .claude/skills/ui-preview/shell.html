@@ -1,0 +1,225 @@
+<!-- @title Preview Shell -->
+<!--
+  NaviHUB preview shell. Copy this file to previews/src/<screen-slug>.html
+  (gitignored — the built file goes to previews/<slug>.html and is opened
+  locally, never uploaded) and replace everything inside <main>. Everything here
+  is the app's REAL markup vocabulary (Sidebar.tsx, Topbar.tsx, PageHeader,
+  Tabs, Section, StatTile, MediaCard, .pill/.card/.btn from styles.css), so the
+  classes copy straight into JSX when the design is approved.
+
+  Rules that carry over from the app: no emoji, no decorative glyphs; ONE
+  btn-primary per screen; gray-600 is decorative-only; hover states are not
+  visible in a preview, so render any state that matters as a labelled example.
+
+  Frame = one app window. For several variants, repeat the frame with a
+  variant label above each and give every frame a fixed height (h-[720px]).
+-->
+<div class="flex h-screen min-h-[640px]">
+  <!-- ===================== Sidebar (components/Sidebar.tsx) ===================== -->
+  <aside class="w-60 shrink-0 bg-base-800 border-r border-base-700 flex flex-col">
+    <a href="#" class="px-4 h-14 flex items-center gap-2.5 border-b border-base-700">
+      <img src="__LAIN_PNG__" alt="" class="w-6 h-6" />
+      <span class="sidebar-brand lain-crt brand-glitch text-lg font-bold tracking-tight">Navi<span class="text-accent">HUB</span></span>
+    </a>
+
+    <div class="flex-1 overflow-y-auto pt-3 pb-4 px-2">
+      <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Home</a>
+      <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Checklist</a>
+      <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Stats</a>
+
+      <div class="mx-3 mt-5 mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+        <span class="text-accent/60">//</span>Library<span class="h-px flex-1 bg-base-700" aria-hidden="true"></span>
+      </div>
+      <div class="space-y-0.5">
+        <!-- NavGroup, expanded + active (the section the mock lives in) -->
+        <div>
+          <div class="flex items-center">
+            <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors bg-accent/10 text-accent shadow-[inset_2px_0_0_0_rgb(var(--accent))]">Anime</a>
+            <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="true" aria-label="Collapse Anime"><span class="inline-block transition-transform rotate-90">›</span></button>
+          </div>
+          <div class="ml-3 pl-3 border-l border-accent/15 space-y-0.5 mb-1">
+            <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Seasonal</a>
+            <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Voice Actors</a>
+            <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Studios</a>
+            <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Characters</a>
+          </div>
+        </div>
+        <!-- NavGroup, collapsed -->
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Manga</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Manga"><span class="inline-block transition-transform">›</span></button>
+        </div>
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Visual Novels</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Visual Novels"><span class="inline-block transition-transform">›</span></button>
+        </div>
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Games</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Games"><span class="inline-block transition-transform">›</span></button>
+        </div>
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Movies / TV</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Movies / TV"><span class="inline-block transition-transform">›</span></button>
+        </div>
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Books</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Books"><span class="inline-block transition-transform">›</span></button>
+        </div>
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Music</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Music"><span class="inline-block transition-transform">›</span></button>
+        </div>
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Wrestling</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Wrestling"><span class="inline-block transition-transform">›</span></button>
+        </div>
+        <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Lists</a>
+        <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Tags</a>
+      </div>
+
+      <div class="mx-3 mt-5 mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+        <span class="text-accent/60">//</span>Play<span class="h-px flex-1 bg-base-700" aria-hidden="true"></span>
+      </div>
+      <div class="space-y-0.5">
+        <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Quiz</a>
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Gacha</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Gacha"><span class="inline-block transition-transform">›</span></button>
+        </div>
+      </div>
+
+      <div class="mx-3 mt-5 mb-1.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+        <span class="text-accent/60">//</span>Learn<span class="h-px flex-1 bg-base-700" aria-hidden="true"></span>
+      </div>
+      <div class="space-y-0.5">
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Japanese</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Japanese"><span class="inline-block transition-transform">›</span></button>
+        </div>
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">English</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand English"><span class="inline-block transition-transform">›</span></button>
+        </div>
+        <div class="flex items-center">
+          <a href="#" class="flex-1 flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Programming</a>
+          <button class="px-2 py-2 text-gray-500 hover:text-white" aria-expanded="false" aria-label="Expand Programming"><span class="inline-block transition-transform">›</span></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="p-2 border-t border-base-700">
+      <div class="px-3 pt-1 pb-1.5 flex items-center gap-2 text-[10px] tracking-widest text-gray-600 uppercase" aria-hidden="true">
+        <span class="wired-dot inline-block w-1.5 h-1.5 rounded-full bg-accent"></span>Connected to the Wired
+      </div>
+      <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Bulk Import</a>
+      <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Torrents</a>
+      <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Tasks</a>
+      <a href="#" class="flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors text-gray-300 hover:bg-base-700/70 hover:text-white">Settings</a>
+    </div>
+  </aside>
+
+  <div class="flex-1 min-w-0 flex flex-col">
+    <!-- ===================== Topbar (components/Topbar.tsx) ===================== -->
+    <header class="relative z-30 h-14 shrink-0 border-b border-base-700 bg-base-800/60 backdrop-blur flex items-center gap-4 px-5">
+      <form role="search" class="w-full max-w-xl" onsubmit="return false">
+        <div class="relative">
+          <input class="input pr-16" placeholder="Search titles, people, characters, studios…" aria-label="Search library" />
+          <kbd class="kbd pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">Ctrl K</kbd>
+        </div>
+      </form>
+      <div class="ml-auto flex items-center gap-2"></div>
+    </header>
+
+    <!-- ===================== Page (replace everything in <main>) ===================== -->
+    <main class="flex-1 min-w-0 overflow-y-auto min-h-0">
+      <div class="p-6 max-w-[1600px] mx-auto space-y-6">
+
+        <!-- PageHeader: eyebrow chips, title, actions (ONE btn-primary per screen) -->
+        <div>
+          <div class="flex flex-wrap items-center gap-1.5"><span class="chip">Anime</span><span class="chip">Watching</span></div>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h1 class="text-2xl font-bold mt-1">Anime</h1>
+            <div class="flex flex-wrap items-center gap-2">
+              <button class="btn-ghost">Import</button>
+              <button class="btn-primary">Add anime</button>
+            </div>
+          </div>
+          <p class="mt-1 text-sm text-gray-500">312 titles · 41 watching · 187 completed</p>
+        </div>
+
+        <!-- Tabs (horizontal rail) -->
+        <div role="tablist" aria-orientation="horizontal" class="flex items-center gap-1 border-b border-base-700">
+          <button role="tab" aria-selected="true" class="px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors border-accent text-white">Library</button>
+          <button role="tab" aria-selected="false" class="px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors border-transparent text-gray-400 hover:text-white">Seasonal <span class="ml-1.5 text-xs opacity-60">24</span></button>
+          <button role="tab" aria-selected="false" class="px-4 py-2 text-sm font-medium -mb-px border-b-2 transition-colors border-transparent text-gray-400 hover:text-white">Themes</button>
+        </div>
+
+        <!-- Pill row (single-select) + filters -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button class="pill pill-active">All</button>
+          <button class="pill">Watching</button>
+          <button class="pill">Completed</button>
+          <button class="pill">On hold</button>
+          <button class="pill">Dropped</button>
+          <button class="pill">Planned</button>
+          <div class="ml-auto w-64"><input class="input" placeholder="Filter this list…" aria-label="Filter" /></div>
+        </div>
+
+        <!-- StatTile row -->
+        <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div class="card p-4"><p class="text-xs uppercase tracking-wide text-gray-500">Mean score</p><p class="mt-1 text-2xl font-bold text-accent">7.9</p><p class="mt-0.5 text-xs text-gray-500">across 187 rated</p></div>
+          <div class="card p-4"><p class="text-xs uppercase tracking-wide text-gray-500">Episodes</p><p class="mt-1 text-2xl font-bold">4,812</p><p class="mt-0.5 text-xs text-gray-500">≈ 83 days</p></div>
+          <div class="card p-4"><p class="text-xs uppercase tracking-wide text-gray-500">This season</p><p class="mt-1 text-2xl font-bold">6</p><p class="mt-0.5 text-xs text-gray-500">airing, 2 behind</p></div>
+          <div class="card p-4"><p class="text-xs uppercase tracking-wide text-gray-500">Streak</p><p class="mt-1 text-2xl font-bold">14 d</p><p class="mt-0.5 text-xs text-gray-500">best 41 d</p></div>
+        </div>
+
+        <!-- Section + MediaCard grid (covers are placeholders: 2:3, base-700) -->
+        <section>
+          <div class="mb-2 flex items-baseline justify-between">
+            <h2 class="text-sm font-semibold uppercase tracking-widest text-gray-500">Continue watching</h2>
+            <span class="text-xs text-gray-500">sorted by last activity</span>
+          </div>
+          <div class="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+            <a href="#" class="group block">
+              <div class="relative aspect-[2/3] overflow-hidden rounded-lg bg-base-700">
+                <span class="absolute top-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-semibold text-yellow-300">★ 9</span>
+                <span class="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">18 / 26</span>
+                <div class="absolute inset-x-0 bottom-0 h-1 bg-black/60"><div class="h-full bg-accent" style="width:69%"></div></div>
+              </div>
+              <div class="mt-2"><p class="text-sm font-medium line-clamp-2 group-hover:text-accent">Serial Experiments Lain</p><p class="text-xs text-gray-500">Watching</p></div>
+            </a>
+            <a href="#" class="group block">
+              <div class="relative aspect-[2/3] overflow-hidden rounded-lg bg-base-700">
+                <span class="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">3 / 12</span>
+                <div class="absolute inset-x-0 bottom-0 h-1 bg-black/60"><div class="h-full bg-accent" style="width:25%"></div></div>
+              </div>
+              <div class="mt-2"><p class="text-sm font-medium line-clamp-2 group-hover:text-accent">Sonny Boy</p><p class="text-xs text-gray-500">Watching</p></div>
+            </a>
+            <a href="#" class="group block">
+              <div class="relative aspect-[2/3] overflow-hidden rounded-lg bg-base-700">
+                <span class="absolute top-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-semibold text-yellow-300">★ 8</span>
+                <span class="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">7 / 13</span>
+                <div class="absolute inset-x-0 bottom-0 h-1 bg-black/60"><div class="h-full bg-accent" style="width:54%"></div></div>
+              </div>
+              <div class="mt-2"><p class="text-sm font-medium line-clamp-2 group-hover:text-accent">Texhnolyze</p><p class="text-xs text-gray-500">Watching</p></div>
+            </a>
+            <a href="#" class="group block">
+              <div class="relative aspect-[2/3] overflow-hidden rounded-lg bg-base-700">
+                <span class="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">1 / 24</span>
+                <div class="absolute inset-x-0 bottom-0 h-1 bg-black/60"><div class="h-full bg-accent" style="width:4%"></div></div>
+              </div>
+              <div class="mt-2"><p class="text-sm font-medium line-clamp-2 group-hover:text-accent">Ergo Proxy</p><p class="text-xs text-gray-500">Watching</p></div>
+            </a>
+          </div>
+        </section>
+
+        <!-- Empty state (the ONE filled button lives here when it shows) -->
+        <div class="card p-8 text-center">
+          <p class="text-sm text-gray-400">Nothing planned for next season yet.</p>
+          <div class="mt-3"><button class="btn-ghost">Browse seasonal</button></div>
+        </div>
+
+      </div>
+    </main>
+  </div>
+</div>

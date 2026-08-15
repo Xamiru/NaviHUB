@@ -522,6 +522,9 @@ export interface NaviApi {
     ensureArt(franchiseId: string): Promise<{ started: boolean }>
     // url -> cached relative path (null = not downloaded yet, render the URL).
     artMap(franchiseId: string): Promise<Record<string, string | null>>
+    // The index page's set: franchiseId -> cached hero path (null = not yet).
+    ensureHeroes(): Promise<{ started: boolean }>
+    heroMap(): Promise<Record<string, string | null>>
     artStatus(): Promise<FranchiseArtStatus>
   }
   torrents: {
@@ -1040,6 +1043,9 @@ export interface NaviApi {
     getState(): Promise<PlayerSnapshot | null>
     // Remote surface → main window transport verb (forwarded over 'player:cmd').
     command(cmd: PlayerCommand): Promise<void>
+    // Brings the main window forward (restoring it if minimized) — the widget's
+    // song title/cover is a shortcut back into the app.
+    showMain(): Promise<void>
     // The always-on-top mini player window (gaming overlay). Open focuses the
     // existing one; position persists in settings 'widget.pos'.
     openWidget(): Promise<void>

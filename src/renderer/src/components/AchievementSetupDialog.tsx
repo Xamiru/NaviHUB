@@ -248,11 +248,23 @@ function RaPicker({ busy, onPick }: { busy: boolean; onPick: (gameId: string) =>
 
 // Shared by the section below: one place that says what a setup run found.
 export function reportSetup(result: AchievementSetupResult): void {
+  const from =
+    result.schemaSource === 'local'
+      ? ' from the game’s own files'
+      : result.schemaSource === 'community'
+        ? ' from Steam’s public page'
+        : ''
   const found =
     result.importedFromFiles > 0
       ? ` · ${result.importedFromFiles} already earned`
-      : result.filesFound === 0
+      : result.schemaSource && result.filesFound === 0
         ? ' · no emulator save files found yet'
         : ''
-  toast(`${result.total} achievements tracked${found}`, 'success')
+  toast(`${result.total} achievements tracked${from}${found}`, 'success')
+  if (result.unmatched) {
+    toast(
+      `${result.unmatched} achievement${result.unmatched === 1 ? '' : 's'} could not be matched to an id and ${result.unmatched === 1 ? 'was' : 'were'} skipped.`,
+      'error'
+    )
+  }
 }

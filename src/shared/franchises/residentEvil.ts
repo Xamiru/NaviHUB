@@ -15,6 +15,8 @@ export const RESIDENT_EVIL: FranchiseCfg = {
   name: 'Resident Evil',
   short: 'Resident Evil',
   color: '#a32222',
+  heroUrl:
+    'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2050650/library_hero.jpg',
   studio: 'Capcom',
   tagline: 'Survival horror, invented, lost, and reinvented — twice.',
   trivia: [

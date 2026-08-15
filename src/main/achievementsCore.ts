@@ -340,6 +340,166 @@ export function rarityTier(globalPct: number | null | undefined): RarityTier | n
   return 'ultra-rare'
 }
 
+// ---------------------------------------------------------------------------
+// Keyless schema sources. Steam only hands out Web API keys to accounts that
+// have spent money, and this user's account never will — so the achievement
+// LIST has to come from somewhere that needs no key. Two sources, in the order
+// achievements.ts tries them:
+//
+//   1. The crack's own steam_settings/achievements.json (Goldberg/GSE ship it
+//      beside the exe). Full schema, INCLUDING the api names the emulator
+//      writes unlocks under, and it needs no network at all.
+//   2. Steam's public community stats page, which lists names/art/global % but
+//      NOT api names — those are joined in from the keyless percentages
+//      endpoint by matching percentages (both are sorted by % desc).
+// ---------------------------------------------------------------------------
+
+export type SchemaRow = {
+  apiName: string
+  name: string
+  description: string | null
+  hidden: boolean
+  // Local sources: a path relative to steam_settings. Remote: a URL.
+  icon: string | null
+  iconGray: string | null
+  globalPct: number | null
+}
+
+// Goldberg's displayName/description are plain strings in older configs and
+// `{ english: "…", german: "…" }` objects in newer GSE ones.
+function localized(v: unknown): string | null {
+  if (typeof v === 'string') return v.trim() || null
+  if (v && typeof v === 'object') {
+    const rec = v as Record<string, unknown>
+    const pick = rec.english ?? Object.values(rec)[0]
+    return typeof pick === 'string' && pick.trim() ? pick.trim() : null
+  }
+  return null
+}
+
+function str(v: unknown): string | null {
+  return typeof v === 'string' && v.trim() ? v.trim() : null
+}
+
+// steam_settings/achievements.json — an array (documented shape), tolerating
+// the object-keyed-by-name variant some tools write. Never throws.
+export function parseGoldbergSchema(content: string): SchemaRow[] {
+  try {
+    const data: unknown = JSON.parse(content)
+    const entries: [string | null, Record<string, unknown>][] = Array.isArray(data)
+      ? data.map((e) => [null, (e ?? {}) as Record<string, unknown>])
+      : data && typeof data === 'object'
+        ? Object.entries(data as Record<string, unknown>).map(([k, e]) => [
+            k,
+            (e ?? {}) as Record<string, unknown>
+          ])
+        : []
+    const out: SchemaRow[] = []
+    const seen = new Set<string>()
+    for (const [key, e] of entries) {
+      const apiName = str(e.name) ?? key
+      if (!apiName || seen.has(apiName)) continue
+      seen.add(apiName)
+      out.push({
+        apiName,
+        name: localized(e.displayName) ?? apiName,
+        description: localized(e.description),
+        hidden: isTruthyFlag(e.hidden),
+        icon: str(e.icon),
+        iconGray: str(e.icongray) ?? str(e.icon_gray),
+        globalPct: null
+      })
+    }
+    return out
+  } catch {
+    return []
+  }
+}
+
+export type CommunityRow = {
+  name: string
+  description: string | null
+  iconUrl: string | null
+  percent: number | null
+}
+
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&quot;/g, '"')
+    .replace(/&#0?39;|&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&amp;/g, '&')
+    .trim()
+}
+
+// steamcommunity.com/stats/<appid>/achievements — one `achieveRow` block per
+// achievement: image, "82.4%", <h3>name</h3>, <h5>description</h5>. Regex, not
+// a DOM: main has no parser and the page shape has been stable for a decade.
+// Never throws; a page that is not the stats page (login wall, error) → [].
+export function parseCommunityAchievementsPage(html: string): CommunityRow[] {
+  const blocks = html.split(/class="achieveRow/).slice(1)
+  const out: CommunityRow[] = []
+  for (const block of blocks) {
+    const name = /<h3[^>]*>([\s\S]*?)<\/h3>/.exec(block)?.[1]
+    if (name == null) continue
+    const desc = /<h5[^>]*>([\s\S]*?)<\/h5>/.exec(block)?.[1] ?? ''
+    const img = /<img[^>]+src="([^"]+)"/.exec(block)?.[1] ?? null
+    const pctRaw = /achievePercent[^>]*>\s*([\d.]+)\s*%/.exec(block)?.[1]
+    const pct = pctRaw != null ? Number(pctRaw) : NaN
+    out.push({
+      name: decodeEntities(name.replace(/<[^>]+>/g, '')),
+      description: decodeEntities(desc.replace(/<[^>]+>/g, '')) || null,
+      iconUrl: img,
+      percent: Number.isFinite(pct) ? pct : null
+    })
+  }
+  return out
+}
+
+export type PercentRow = { name: string; percent: number }
+
+// The community page carries no api names, and the percentages endpoint
+// carries nothing BUT api names — the percentage is the only bridge. Both lists
+// are sorted by global % descending, so: match each page row to the first
+// unused endpoint row at the same rounded %, and within a run of ties keep the
+// two lists' shared order. A row with no partner is dropped (it cannot be
+// tracked without an api name) and counted, so the caller can say so.
+export function joinCommunityWithPercentages(
+  page: readonly CommunityRow[],
+  pct: readonly PercentRow[]
+): { rows: SchemaRow[]; unmatched: number } {
+  const key = (n: number): string => n.toFixed(1)
+  const pool = new Map<string, PercentRow[]>()
+  for (const p of pct) {
+    const k = key(p.percent)
+    const list = pool.get(k) ?? []
+    list.push(p)
+    pool.set(k, list)
+  }
+  const rows: SchemaRow[] = []
+  let unmatched = 0
+  for (const row of page) {
+    const partner = row.percent != null ? pool.get(key(row.percent))?.shift() : undefined
+    if (!partner) {
+      unmatched += 1
+      continue
+    }
+    rows.push({
+      apiName: partner.name,
+      name: row.name,
+      description: row.description,
+      hidden: false, // the public page does not say
+      icon: row.iconUrl,
+      iconGray: null, // Steam serves no locked art here; the UI greys the icon
+      globalPct: partner.percent
+    })
+  }
+  return { rows, unmatched }
+}
+
 export type GoldbergAchievementInput = {
   apiName: string
   name: string

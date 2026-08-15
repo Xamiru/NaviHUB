@@ -309,6 +309,24 @@ export async function downloadImage(url: string | null | undefined): Promise<str
   }
 }
 
+// Copies a local image (an achievement icon shipped inside a game's
+// steam_settings folder) into userData/media, content-addressed like
+// downloadImage so re-reading the same file is a no-op. Returns the stored
+// relative path, or null if the file is missing/unreadable/not an image.
+export function importImageFile(srcAbs: string): string | null {
+  try {
+    const urlExt = extname(srcAbs).toLowerCase()
+    if (!/^\.(png|jpe?g|webp|gif|bmp)$/.test(urlExt)) return null
+    const buf = readFileSync(srcAbs)
+    const fileName = `lc-${createHash('sha1').update(buf).digest('hex').slice(0, 16)}${urlExt}`
+    const dest = join(mediaDir(), fileName)
+    if (!existsSync(dest)) writeFileSync(dest, buf)
+    return join('media', fileName)
+  } catch {
+    return null
+  }
+}
+
 // If `fileName` already exists in `dir`, suffix " (2)", " (3)"… before the ext.
 // Two different source URLs can share a basename (…/a/art.jpg vs …/b/art.jpg),
 // so an existing file must never be silently reused for a new image.

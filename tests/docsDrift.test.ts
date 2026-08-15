@@ -32,6 +32,9 @@ const present = basenameIndex(root)
 const NOT_IN_REPO = new Set([
   // Build outputs, generated at package time.
   'latest.yml',
+  // A file inside the USER'S game folders (a Goldberg crack's schema), read by
+  // achievements.ts — not part of this repo.
+  'achievements.json',
   'latest-linux.yml',
   'app-update.yml',
   // Remote API endpoints that happen to end in .json.

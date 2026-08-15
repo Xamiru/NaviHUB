@@ -645,6 +645,12 @@ export interface AchievementSetupResult {
   unlocked: number // includes anything a retroactive emulator sweep found
   importedFromFiles: number
   filesFound: number
+  // Where the Steam list came from — the crack's own steam_settings file, the
+  // Web API (only with a key), or the public community page. Absent for RA.
+  schemaSource?: 'local' | 'webapi' | 'community'
+  // Community-page achievements that could not be paired with an api name and
+  // were dropped (they cannot be tracked without one).
+  unmatched?: number
 }
 
 // One unlock as it happened, for the popup + the global feed.
@@ -3140,9 +3146,14 @@ export interface WrestlingImportStatus {
 
 // ---- player bridge (OS media controls + pop-out widget) ----
 
-// Transport verbs a remote surface (widget pill, Windows thumbbar) may send to
-// the main window's player. Seek/volume stay in-app on purpose.
-export type PlayerCommand = 'toggle' | 'next' | 'previous'
+// What a remote surface (widget pill, Windows thumbbar) may ask the main
+// window's player to do. Tagged rather than a bare string union so the one
+// verb that carries a value can't be sent without it. Seek stays in-app.
+export type PlayerCommand =
+  | { kind: 'toggle' }
+  | { kind: 'next' }
+  | { kind: 'previous' }
+  | { kind: 'volume'; value: number } // 0..1
 
 // Compact now-playing state the main window publishes for remote surfaces.
 // Deliberately position-free: the pill has no scrubber, so track changes are
@@ -3156,4 +3167,5 @@ export interface PlayerSnapshot {
   isPlaying: boolean
   hasNext: boolean
   hasPrev: boolean
+  volume: number // 0..1, mirrors the in-app slider
 }

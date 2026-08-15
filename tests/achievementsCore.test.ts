@@ -3,6 +3,9 @@ import {
   buildGoldbergConfig,
   candidateUnlockPaths,
   diffNewUnlocks,
+  joinCommunityWithPercentages,
+  parseCommunityAchievementsPage,
+  parseGoldbergSchema,
   parseUnlockFile,
   rarityTier
 } from '../src/main/achievementsCore'
@@ -278,5 +281,173 @@ describe('buildGoldbergConfig', () => {
     const { achievementsJson } = buildGoldbergConfig('1', rows)
     expect(() => JSON.parse(achievementsJson)).not.toThrow()
     expect(achievementsJson.endsWith('\n')).toBe(true)
+  })
+})
+
+// ---- Keyless schema sources ------------------------------------------------
+
+describe('parseGoldbergSchema (the crack’s own steam_settings/achievements.json)', () => {
+  it('reads the documented array shape', () => {
+    const rows = parseGoldbergSchema(
+      JSON.stringify([
+        {
+          name: 'ACH_WIN',
+          displayName: 'Winner',
+          description: 'Win a round',
+          hidden: '0',
+          icon: 'achievement_images/win.jpg',
+          icongray: 'achievement_images/win_gray.jpg'
+        },
+        { name: 'ACH_SECRET', displayName: 'Secret', hidden: '1', icon: 'img/s.jpg' }
+      ])
+    )
+    expect(rows).toEqual([
+      {
+        apiName: 'ACH_WIN',
+        name: 'Winner',
+        description: 'Win a round',
+        hidden: false,
+        icon: 'achievement_images/win.jpg',
+        iconGray: 'achievement_images/win_gray.jpg',
+        globalPct: null
+      },
+      {
+        apiName: 'ACH_SECRET',
+        name: 'Secret',
+        description: null,
+        hidden: true,
+        icon: 'img/s.jpg',
+        iconGray: null,
+        globalPct: null
+      }
+    ])
+  })
+
+  it('takes the English string out of a localized GSE config', () => {
+    const rows = parseGoldbergSchema(
+      JSON.stringify([
+        {
+          name: 'A',
+          displayName: { english: 'Hello', german: 'Hallo' },
+          description: { german: 'Beschreibung', english: 'Description' },
+          hidden: 0,
+          icon_gray: 'g.jpg'
+        }
+      ])
+    )
+    expect(rows[0]).toMatchObject({ name: 'Hello', description: 'Description', iconGray: 'g.jpg' })
+  })
+
+  it('falls back to another language when there is no English, and to the api name when there is nothing', () => {
+    const rows = parseGoldbergSchema(
+      JSON.stringify([{ name: 'A', displayName: { japanese: 'こんにちは' } }, { name: 'B' }])
+    )
+    expect(rows.map((r) => r.name)).toEqual(['こんにちは', 'B'])
+  })
+
+  it('tolerates the object-keyed-by-name variant and drops duplicates', () => {
+    const rows = parseGoldbergSchema(
+      JSON.stringify({ ACH_A: { displayName: 'A' }, ACH_B: { name: 'ACH_B', displayName: 'B' } })
+    )
+    expect(rows.map((r) => r.apiName)).toEqual(['ACH_A', 'ACH_B'])
+    const dup = parseGoldbergSchema(JSON.stringify([{ name: 'X' }, { name: 'X' }]))
+    expect(dup).toHaveLength(1)
+  })
+
+  it('never throws on garbage', () => {
+    expect(parseGoldbergSchema('')).toEqual([])
+    expect(parseGoldbergSchema('{')).toEqual([])
+    expect(parseGoldbergSchema('"str"')).toEqual([])
+    expect(parseGoldbergSchema('[null, 5, {"name": ""}]')).toEqual([])
+  })
+})
+
+const COMMUNITY_PAGE = `
+<html><body>
+<div id="mainContents">
+  <div class="achieveRow ">
+    <div class="achieveImgHolder"><img src="https://cdn/440/win.jpg"></div>
+    <div class="achieveTxtHolder">
+      <div class="achievePercent">82.4%</div>
+      <div class="achieveTxt"><h3>Winner &amp; Champion</h3><h5>Win a &quot;round&quot;</h5></div>
+    </div>
+  </div>
+  <div class="achieveRow ">
+    <div class="achieveImgHolder"><img src="https://cdn/440/tie1.jpg"></div>
+    <div class="achieveTxtHolder">
+      <div class="achievePercent">10.0%</div>
+      <div class="achieveTxt"><h3>Tie One</h3><h5></h5></div>
+    </div>
+  </div>
+  <div class="achieveRow ">
+    <div class="achieveImgHolder"><img src="https://cdn/440/tie2.jpg"></div>
+    <div class="achieveTxtHolder">
+      <div class="achievePercent">10.0%</div>
+      <div class="achieveTxt"><h3>Tie Two</h3><h5>Second of a tie</h5></div>
+    </div>
+  </div>
+  <div class="achieveRow ">
+    <div class="achieveImgHolder"><img src="https://cdn/440/orphan.jpg"></div>
+    <div class="achieveTxtHolder">
+      <div class="achievePercent">0.3%</div>
+      <div class="achieveTxt"><h3>Orphan</h3><h5>Nobody in the API</h5></div>
+    </div>
+  </div>
+</div>
+</body></html>`
+
+describe('parseCommunityAchievementsPage', () => {
+  it('reads name, description, icon and percent out of each row, decoding entities', () => {
+    const rows = parseCommunityAchievementsPage(COMMUNITY_PAGE)
+    expect(rows).toHaveLength(4)
+    expect(rows[0]).toEqual({
+      name: 'Winner & Champion',
+      description: 'Win a "round"',
+      iconUrl: 'https://cdn/440/win.jpg',
+      percent: 82.4
+    })
+    expect(rows[1].description).toBeNull()
+  })
+
+  it('returns nothing for a page that is not the stats page', () => {
+    expect(parseCommunityAchievementsPage('<html><body>Sign in</body></html>')).toEqual([])
+    expect(parseCommunityAchievementsPage('')).toEqual([])
+  })
+})
+
+describe('joinCommunityWithPercentages', () => {
+  const page = parseCommunityAchievementsPage(COMMUNITY_PAGE)
+  const pct = [
+    { name: 'ACH_WIN', percent: 82.4000015 },
+    { name: 'ACH_TIE_A', percent: 10.0 },
+    { name: 'ACH_TIE_B', percent: 10.0 }
+  ]
+
+  it('pairs each row with the api name at the same rounded percentage', () => {
+    const { rows } = joinCommunityWithPercentages(page, pct)
+    expect(rows.find((r) => r.name === 'Winner & Champion')).toMatchObject({
+      apiName: 'ACH_WIN',
+      globalPct: 82.4000015,
+      icon: 'https://cdn/440/win.jpg',
+      iconGray: null,
+      hidden: false
+    })
+  })
+
+  it('keeps shared order within a run of ties', () => {
+    const { rows } = joinCommunityWithPercentages(page, pct)
+    expect(rows.find((r) => r.name === 'Tie One')?.apiName).toBe('ACH_TIE_A')
+    expect(rows.find((r) => r.name === 'Tie Two')?.apiName).toBe('ACH_TIE_B')
+  })
+
+  it('drops and counts a row with no partner instead of guessing', () => {
+    const { rows, unmatched } = joinCommunityWithPercentages(page, pct)
+    expect(rows.map((r) => r.name)).not.toContain('Orphan')
+    expect(unmatched).toBe(1)
+  })
+
+  it('never uses one api name twice', () => {
+    const { rows } = joinCommunityWithPercentages(page, [{ name: 'ONLY', percent: 10 }])
+    expect(rows.filter((r) => r.apiName === 'ONLY')).toHaveLength(1)
   })
 })

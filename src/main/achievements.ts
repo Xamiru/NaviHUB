@@ -2,16 +2,21 @@ import { copyFileSync, existsSync, mkdirSync, writeFileSync } from 'fs'
 import { extname, join } from 'path'
 import { dialog } from 'electron'
 import { getSqlite } from './db/connection'
-import { absoluteMediaPath, downloadImages } from './files'
+import { absoluteMediaPath, downloadImages, importImageFile } from './files'
 import { fetchWithRetry } from './http'
 import { updateActivity } from './progress'
 import * as settingsRepo from './repos/settingsRepo'
 import * as achievementRepo from './repos/achievementRepo'
 import { search as steamSearch } from './steam'
-import { exeDirOf, scanUnlocks, steamSettingsDir } from './emuScan'
-import { buildGoldbergConfig } from './achievementsCore'
+import { exeDirOf, findLocalSteamSchema, scanUnlocks, steamSettingsDir } from './emuScan'
+import {
+  buildGoldbergConfig,
+  joinCommunityWithPercentages,
+  parseCommunityAchievementsPage,
+  parseGoldbergSchema
+} from './achievementsCore'
 import type { EmuFileIO } from './emuScan'
-import type { EmuEnv } from './achievementsCore'
+import type { EmuEnv, PercentRow, SchemaRow } from './achievementsCore'
 import type {
   AchievementSetupResult,
   SteamAppCandidate,
@@ -31,15 +36,11 @@ import type {
 
 const WEB_API = 'https://api.steampowered.com'
 
-function steamKey(): string {
-  const key = settingsRepo.get('steam.web_api_key')?.trim()
-  if (!key) {
-    throw new Error(
-      'A Steam Web API key is needed to fetch achievement lists. Get a free one at ' +
-        'steamcommunity.com/dev/apikey and paste it into Settings > API keys.'
-    )
-  }
-  return key
+// Optional: Steam only issues keys to accounts that have spent money, and this
+// user's never will. With one the Web API is tried second; without, the two
+// keyless sources below carry the whole feature.
+function steamKey(): string | null {
+  return settingsRepo.get('steam.web_api_key')?.trim() || null
 }
 
 async function webApiGet(path: string, params: Record<string, string>): Promise<any> {
@@ -82,6 +83,15 @@ export async function resolveSteamCandidates(mediaId: number): Promise<SteamAppC
 }
 
 // ---------------- Steam schema ----------------
+// Three sources, tried in order; the first that yields a set wins:
+//   1. steam_settings/achievements.json beside the exe — what Goldberg/GSE
+//      cracks ship. Zero network, and it uses the exact api names the emulator
+//      writes unlocks under.
+//   2. The Web API, only if the user has a key.
+//   3. The public community stats page + the keyless percentages endpoint,
+//      joined by percentage (see achievementsCore.joinCommunityWithPercentages).
+// Rarity always comes from the keyless percentages endpoint, best-effort.
+
 type SteamSchemaAchievement = {
   name: string
   displayName?: string
@@ -91,13 +101,131 @@ type SteamSchemaAchievement = {
   icongray?: string
 }
 
+export type SteamSchemaSource = 'local' | 'webapi' | 'community'
+
+async function fetchPercentages(appid: string): Promise<PercentRow[]> {
+  const pct = await webApiGet('/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/', {
+    gameid: appid
+  })
+  const rows: { name?: string; percent?: number | string }[] =
+    pct?.achievementpercentages?.achievements ?? []
+  return rows
+    .filter((r) => r.name && Number.isFinite(Number(r.percent)))
+    .map((r) => ({ name: r.name as string, percent: Number(r.percent) }))
+}
+
+// A schema plus where its icons live, before any of them is stored.
+type LoadedSchema = {
+  source: SteamSchemaSource
+  rows: SchemaRow[]
+  // For 'local': the steam_settings folder icons resolve against.
+  localDir: string | null
+  unmatched: number
+}
+
+async function loadSteamSchema(
+  appid: string,
+  exeDir: string | null,
+  io?: EmuFileIO
+): Promise<LoadedSchema> {
+  const tried: string[] = []
+
+  // 1. The crack's own config.
+  const local = findLocalSteamSchema(exeDir, io)
+  if (local) {
+    const rows = parseGoldbergSchema(local.content)
+    if (rows.length) return { source: 'local', rows, localDir: local.dir, unmatched: 0 }
+    tried.push(`${local.dir} (unreadable achievements.json)`)
+  } else {
+    tried.push('no steam_settings/achievements.json beside the executable')
+  }
+
+  // 2. The Web API, if a key exists.
+  const key = steamKey()
+  if (key) {
+    const schema = await webApiGet('/ISteamUserStats/GetSchemaForGame/v2/', {
+      key,
+      appid,
+      l: 'english'
+    })
+    const list: SteamSchemaAchievement[] = schema?.game?.availableGameStats?.achievements ?? []
+    if (list.length) {
+      return {
+        source: 'webapi',
+        localDir: null,
+        unmatched: 0,
+        rows: list.map((a) => ({
+          apiName: a.name,
+          // Steam occasionally ships an achievement with an empty displayName;
+          // the api name is ugly but beats a blank row.
+          name: a.displayName?.trim() || a.name,
+          description: a.description?.trim() || null,
+          hidden: a.hidden === 1,
+          icon: a.icon ?? null,
+          iconGray: a.icongray ?? null,
+          globalPct: null
+        }))
+      }
+    }
+    tried.push('Steam Web API listed no achievements')
+  }
+
+  // 3. The public community page.
+  const pageRes = await fetchWithRetry(
+    `https://steamcommunity.com/stats/${appid}/achievements/?l=english`,
+    { headers: { Accept: 'text/html' }, timeoutMs: 20_000 }
+  )
+  const page = pageRes.ok ? parseCommunityAchievementsPage(await pageRes.text()) : []
+  if (page.length) {
+    // Here the percentages are not decoration — they are the only bridge to
+    // the api names — so a failure IS a failure.
+    const pct = await fetchPercentages(appid)
+    const joined = joinCommunityWithPercentages(page, pct)
+    if (joined.rows.length) {
+      return { source: 'community', localDir: null, ...joined }
+    }
+    tried.push('community page found achievements but none could be matched to api names')
+  } else {
+    tried.push(`community stats page had no achievements (HTTP ${pageRes.status})`)
+  }
+
+  throw new Error(
+    `Could not get an achievement list for Steam app ${appid} — ${tried.join('; ')}. ` +
+      'Either the game has no achievements or that is the wrong app id.'
+  )
+}
+
+// Stores every icon the schema references and returns apiName → stored paths.
+// Local icons are copied in (content-addressed); remote ones downloaded.
+async function storeIcons(
+  schema: LoadedSchema
+): Promise<Map<string, { icon: string | null; gray: string | null }>> {
+  const out = new Map<string, { icon: string | null; gray: string | null }>()
+  if (schema.source === 'local' && schema.localDir) {
+    const dir = schema.localDir
+    const sep = dir.includes('\\') ? '\\' : '/'
+    const resolve = (rel: string | null): string | null =>
+      rel ? importImageFile(`${dir}${sep}${rel.replace(/^[\\/]+/, '').split('/').join(sep)}`) : null
+    for (const r of schema.rows) out.set(r.apiName, { icon: resolve(r.icon), gray: resolve(r.iconGray) })
+    return out
+  }
+  const images = await downloadImages(schema.rows.flatMap((r) => [r.icon, r.iconGray]))
+  for (const r of schema.rows) {
+    out.set(r.apiName, {
+      icon: (r.icon && images.get(r.icon)) || null,
+      gray: (r.iconGray && images.get(r.iconGray)) || null
+    })
+  }
+  return out
+}
+
 export async function fetchSteamSchema(
   mediaId: number,
-  appid: string
+  appid: string,
+  deps: { io?: EmuFileIO } = {}
 ): Promise<AchievementSetupResult> {
   const id = appid.trim()
   if (!/^\d+$/.test(id)) throw new Error(`Not a Steam app id: ${appid}`)
-  const key = steamKey()
 
   // Remember the choice before the fetch so a failed network half doesn't cost
   // the user the lookup — but NOT when it would flip a title already tracked on
@@ -109,67 +237,55 @@ export async function fetchSteamSchema(
     achievementRepo.setAssociation(mediaId, 'steam', id)
   }
 
+  const row = getSqlite().prepare('SELECT exe_path FROM media_item WHERE id = ?').get(mediaId) as
+    | { exe_path: string | null }
+    | undefined
+  const exeDir = exeDirOf(row?.exe_path ?? null)
+
   updateActivity({ phase: 'fetching' })
-  const schema = await webApiGet('/ISteamUserStats/GetSchemaForGame/v2/', {
-    key,
-    appid: id,
-    l: 'english'
-  })
-  const list: SteamSchemaAchievement[] = schema?.game?.availableGameStats?.achievements ?? []
-  if (!list.length) {
-    throw new Error(
-      `Steam lists no achievements for app ${id}. Either the game has none, or that is the wrong app id.`
-    )
-  }
+  const schema = await loadSteamSchema(id, exeDir, deps.io)
 
-  // Rarity is a separate, KEYLESS endpoint, and a missing/failed one must not
-  // sink the whole fetch — percentages are decoration, the set is the point.
+  // Rarity for the two sources that don't already carry it. Decoration: a
+  // failure here must not sink the fetch.
   let percentages = new Map<string, number>()
-  try {
-    const pct = await webApiGet('/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/', {
-      gameid: id
-    })
-    const rows: { name?: string; percent?: number }[] =
-      pct?.achievementpercentages?.achievements ?? []
-    percentages = new Map(
-      rows
-        .filter((r) => r.name && typeof r.percent === 'number')
-        .map((r) => [r.name as string, r.percent as number])
-    )
-  } catch {
-    percentages = new Map()
+  if (schema.source !== 'community') {
+    try {
+      percentages = new Map((await fetchPercentages(id)).map((p) => [p.name, p.percent]))
+    } catch {
+      percentages = new Map()
+    }
   }
 
-  const images = await downloadImages(list.flatMap((a) => [a.icon ?? null, a.icongray ?? null]))
+  const icons = await storeIcons(schema)
 
   updateActivity({ phase: 'writing' })
   achievementRepo.upsertSchema(
     mediaId,
     'steam',
     id,
-    list.map((a) => ({
-      apiName: a.name,
-      // Steam occasionally ships an achievement with an empty displayName; the
-      // api name is ugly but beats a blank row.
-      name: a.displayName?.trim() || a.name,
-      description: a.description?.trim() || null,
-      hidden: a.hidden === 1,
-      iconPath: (a.icon && images.get(a.icon)) || null,
-      iconGrayPath: (a.icongray && images.get(a.icongray)) || null,
+    schema.rows.map((r) => ({
+      apiName: r.apiName,
+      name: r.name,
+      description: r.description,
+      hidden: r.hidden,
+      iconPath: icons.get(r.apiName)?.icon ?? null,
+      iconGrayPath: icons.get(r.apiName)?.gray ?? null,
       points: null, // Steam has no points, and none is invented
-      globalPct: percentages.get(a.name) ?? null
+      globalPct: r.globalPct ?? percentages.get(r.apiName) ?? null
     }))
   )
 
   // Anything already earned is on disk right now — sweep it in so a freshly
   // tracked game does not start at zero.
-  const swept = importEmuUnlocks(mediaId)
+  const swept = importEmuUnlocks(mediaId, { io: deps.io })
   const summary = achievementRepo.summaryFor(mediaId)
   return {
     total: summary.total,
     unlocked: summary.unlocked,
     importedFromFiles: swept.imported,
-    filesFound: swept.found
+    filesFound: swept.found,
+    schemaSource: schema.source,
+    unmatched: schema.unmatched
   }
 }
 

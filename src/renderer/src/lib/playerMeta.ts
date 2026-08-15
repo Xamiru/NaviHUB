@@ -44,7 +44,7 @@ export function displayMeta(track: TrackMeta): DisplayMeta {
 
 export function toPlayerSnapshot(
   track: TrackMeta | null,
-  state: { isPlaying: boolean; hasNext: boolean; hasPrev: boolean }
+  state: { isPlaying: boolean; hasNext: boolean; hasPrev: boolean; volume: number }
 ): PlayerSnapshot | null {
   if (!track) return null
   const meta = displayMeta(track)
@@ -55,6 +55,7 @@ export function toPlayerSnapshot(
     coverPath: meta.coverPath,
     isPlaying: state.isPlaying,
     hasNext: state.hasNext,
-    hasPrev: state.hasPrev
+    hasPrev: state.hasPrev,
+    volume: state.volume
   }
 }

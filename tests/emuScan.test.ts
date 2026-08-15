@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { exeDirOf, existingUnlockFiles, scanUnlocks, steamSettingsDir } from '../src/main/emuScan'
+import {
+  exeDirOf,
+  existingUnlockFiles,
+  findLocalSteamSchema,
+  scanUnlocks,
+  steamSettingsDir
+} from '../src/main/emuScan'
 import type { EmuFileIO } from '../src/main/emuScan'
 
 // The IO half of emulator scanning, driven entirely through an injected
@@ -112,10 +118,29 @@ describe('scanUnlocks', () => {
 })
 
 describe('path helpers', () => {
-  it('takes the folder an executable sits in', () => {
+  it('takes the folder an executable sits in, under either path flavor', () => {
     expect(exeDirOf('/games/thing/game.exe')).toBe('/games/thing')
+    // The stored paths are Windows paths and this test runs on Linux — the
+    // posix dirname of a backslash path is ".", which used to be a silent miss.
+    expect(exeDirOf('C:\\Games\\Thing\\game.exe')).toBe('C:\\Games\\Thing')
     expect(exeDirOf(null)).toBeNull()
     expect(exeDirOf('   ')).toBeNull()
+  })
+
+  it('finds a crack’s steam_settings schema beside the exe or up to two folders above', () => {
+    const files: Record<string, string> = {
+      'C:\\G\\steam_settings\\achievements.json': '[{"name":"A"}]'
+    }
+    const io = { ...fakeIO({}), exists: (p: string) => p in files, readFile: (p: string) => files[p] ?? '' }
+    expect(findLocalSteamSchema('C:\\G', io)?.dir).toBe('C:\\G\\steam_settings')
+    expect(findLocalSteamSchema('C:\\G\\bin\\x64', io)?.dir).toBe('C:\\G\\steam_settings')
+    expect(findLocalSteamSchema('C:\\G\\a\\b\\c', io)).toBeNull() // three levels: too far
+    expect(findLocalSteamSchema(null, io)).toBeNull()
+  })
+
+  it('ignores an empty steam_settings/achievements.json', () => {
+    const io = { ...fakeIO({}), exists: () => true, readFile: () => '   ' }
+    expect(findLocalSteamSchema('/g', io)).toBeNull()
   })
 
   it('names the folder Goldberg reads its config from', () => {

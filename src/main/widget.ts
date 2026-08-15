@@ -14,7 +14,9 @@ import { clampWidgetPos, defaultWidgetPos, formatWidgetPos, parseWidgetPos } fro
 // before-quit registry would need to tear down (its position is saved
 // synchronously in its own 'close' handler).
 
-const WIDGET_SIZE = { width: 320, height: 64 }
+// Wide enough for cover + title + transport + a volume slider, and still
+// leave a grabbable drag gutter between the song block and the controls.
+const WIDGET_SIZE = { width: 440, height: 64 }
 const POS_KEY = 'widget.pos'
 
 let widgetWindow: BrowserWindow | null = null

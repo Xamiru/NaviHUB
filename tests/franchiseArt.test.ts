@@ -27,7 +27,7 @@ vi.mock('../src/main/files', async (importOriginal) => ({
   }
 }))
 
-import { artMap, ensureArt, getArtStatus } from '../src/main/franchiseArt'
+import { artMap, ensureArt, ensureHeroes, getArtStatus, heroMap } from '../src/main/franchiseArt'
 import { FRANCHISES, franchiseArtUrls } from '../src/shared/franchises'
 import { dlFileName } from '../src/main/files'
 
@@ -81,6 +81,20 @@ describe('franchiseArt', () => {
     expect((await ensureArt(FRANCHISE.id)).started).toBe(true)
     expect((await ensureArt(FRANCHISES[1].id)).started).toBe(false)
     await settle()
+  })
+
+  it('caches the five hero images on their own and reports them per franchise', async () => {
+    expect(Object.values(heroMap()).every((v) => v === null)).toBe(true)
+    expect((await ensureHeroes()).started).toBe(true)
+    // Single-flight is shared with the per-franchise batch.
+    expect((await ensureArt(FRANCHISE.id)).started).toBe(false)
+    await settle()
+    const heroes = heroMap()
+    expect(Object.keys(heroes).sort()).toEqual(FRANCHISES.map((f) => f.id).sort())
+    expect(Object.values(heroes).every((v) => typeof v === 'string')).toBe(true)
+    // Nothing but the heroes was fetched.
+    expect(files.downloaded.length).toBe(new Set(FRANCHISES.map((f) => f.heroUrl)).size)
+    expect((await ensureHeroes()).started).toBe(false)
   })
 
   it('survives failed downloads and still finishes', async () => {

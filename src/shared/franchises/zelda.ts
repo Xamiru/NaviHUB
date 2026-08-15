@@ -18,6 +18,8 @@ export const ZELDA: FranchiseCfg = {
   name: 'The Legend of Zelda',
   short: 'Zelda',
   color: '#c9a227',
+  heroUrl:
+    'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/7/7c/BotW_Link_Gazing_at_Hyrule_Artwork.jpg',
   studio: 'Nintendo EPD',
   tagline: 'Courage, wisdom, power — the same legend retold for forty years.',
   trivia: [

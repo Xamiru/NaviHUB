@@ -83,7 +83,7 @@ describe('isMaskedTrack', () => {
 })
 
 describe('toPlayerSnapshot', () => {
-  const state = { isPlaying: true, hasNext: true, hasPrev: false }
+  const state = { isPlaying: true, hasNext: true, hasPrev: false, volume: 0.8 }
 
   it('returns null for a null track', () => {
     expect(toPlayerSnapshot(null, state)).toBeNull()
@@ -101,7 +101,8 @@ describe('toPlayerSnapshot', () => {
       coverPath: null,
       isPlaying: true,
       hasNext: true,
-      hasPrev: false
+      hasPrev: false,
+      volume: 0.8
     })
   })
 
@@ -113,7 +114,7 @@ describe('toPlayerSnapshot', () => {
         subtitle: 'Aiobahn',
         coverPath: 'music/a/cover.jpg'
       },
-      { isPlaying: false, hasNext: false, hasPrev: true }
+      { isPlaying: false, hasNext: false, hasPrev: true, volume: 0.35 }
     )
     expect(snap).toEqual({
       trackId: 'music-5',
@@ -122,7 +123,15 @@ describe('toPlayerSnapshot', () => {
       coverPath: 'music/a/cover.jpg',
       isPlaying: false,
       hasNext: false,
-      hasPrev: true
+      hasPrev: true,
+      volume: 0.35
     })
+  })
+
+  it('carries the volume through unchanged (the widget slider reads it)', () => {
+    for (const volume of [0, 0.5, 1]) {
+      const snap = toPlayerSnapshot({ id: 'theme-1', title: 'T' }, { ...state, volume })
+      expect(snap?.volume).toBe(volume)
+    }
   })
 })

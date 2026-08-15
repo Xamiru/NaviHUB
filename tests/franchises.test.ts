@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   FRANCHISES,
+  franchiseBackgroundKey,
   franchiseCfg,
   franchiseArtUrls,
+  franchiseHeroUrls,
   metaScoreFor,
   normalizeGameTitle
 } from '../src/shared/franchises'
@@ -69,11 +71,19 @@ describe('franchise catalog', () => {
 
   it('has verified https art URLs everywhere (no placeholders)', () => {
     for (const f of FRANCHISES) {
+      // The hero rides in the per-franchise cache set too.
+      expect(franchiseArtUrls(f)).toContain(f.heroUrl)
       for (const url of franchiseArtUrls(f)) {
         expect(url).toMatch(/^https:\/\//)
         expect(url, `${f.id}: unfilled art URL`).not.toContain('TODO')
       }
     }
+    const heroes = franchiseHeroUrls()
+    expect(Object.keys(heroes).sort()).toEqual(FRANCHISES.map((f) => f.id).sort())
+  })
+
+  it('names the settings row the export sanitizer wipes (LIKE franchise.%)', () => {
+    expect(franchiseBackgroundKey('zelda')).toBe('franchise.zelda.background')
   })
 
   it('keeps mc within Metacritic range and years sane', () => {

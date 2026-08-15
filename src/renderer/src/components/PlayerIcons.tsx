@@ -61,3 +61,20 @@ export function NextIcon({ className }: IconProps) {
     </Svg>
   )
 }
+
+// Speaker + one arc: labels the widget's volume slider, where a text label
+// would not fit. Same currentColor/1em contract as the transport marks.
+export function VolumeIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <path d="M2 6.2 L4.8 6.2 L8.2 3.2 L8.2 12.8 L4.8 9.8 L2 9.8 Z" />
+      <path
+        d="M10.4 5.9 A3.4 3.4 0 0 1 10.4 10.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </Svg>
+  )
+}

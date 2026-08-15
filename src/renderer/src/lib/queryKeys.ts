@@ -108,6 +108,7 @@ export const qk = {
     // canon itself is bundled data (@shared/franchises) — no query needed.
     all: ['franchise'] as const,
     artMap: (id: string) => ['franchise', 'artMap', id] as const,
+    heroMap: ['franchise', 'heroMap'] as const,
     artStatus: ['franchise', 'artStatus'] as const
   },
   pictures: {

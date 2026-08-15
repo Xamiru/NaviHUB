@@ -450,9 +450,9 @@ function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSa
         placeholder="Paste your Steam Web API key…"
         description={
           <>
-            Optional. Needed only to fetch achievement lists for games. Get a free key at{' '}
-            <span className="text-gray-400">steamcommunity.com/dev/apikey</span> — importing games
-            needs no key. Stored locally on this machine only.
+            Optional, and most people can skip it: achievement lists come from the game’s own
+            steam_settings folder or Steam’s public stats page without one. Steam only issues keys
+            to accounts that have spent money. Stored locally on this machine only.
           </>
         }
       />

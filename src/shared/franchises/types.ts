@@ -35,9 +35,11 @@ export interface FranchiseEntry {
   mc?: number
   spinOff?: boolean
   remake?: boolean
-  // Curated wide background artwork (https, curl-verified at authoring time).
-  // Cached content-addressed on first page visit (src/main/franchiseArt.ts);
-  // until then the remote URL renders directly (CSP allows img-src https:).
+  // Curated wide artwork for THIS game (https, curl-verified). RESERVED: the
+  // franchise page no longer uses per-game art (2026-08-15 feedback — one
+  // background per franchise, see FranchiseCfg.heroUrl); this is kept for the
+  // future per-game background on the detail page. Cached with the rest of the
+  // franchise art so it will already be on disk when that lands.
   bgUrl: string
   // One-liner shown on the row ('Remake of Snake Eater', 'aka Biohazard 7').
   note?: string
@@ -65,6 +67,10 @@ export interface FranchiseCfg {
   name: string
   short: string // breadcrumb / card label
   color: string // per-franchise accent (hex), the GACHA_GAMES / wrestling idiom
+  // Curated wide hero art (https, curl-verified): the index card image and the
+  // page's default background. The user overrides the page background with a
+  // settings row `franchise.<id>.background` (a media/ path from pickImage).
+  heroUrl: string
   studio: string
   tagline: string
   trivia: FranchiseTriviaSection[]

@@ -14,6 +14,8 @@ export const YAKUZA: FranchiseCfg = {
   name: 'Yakuza / Like a Dragon',
   short: 'Yakuza',
   color: '#cf4a8c',
+  heroUrl:
+    'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/638970/library_hero.jpg',
   studio: 'Ryu Ga Gotoku Studio (SEGA)',
   tagline: 'Crime drama, karaoke, and the eternal streets of Kamurocho.',
   trivia: [

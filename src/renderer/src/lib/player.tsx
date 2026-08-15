@@ -485,18 +485,19 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
   // deliberately absent — track/transport changes are the only IPC traffic.
   useEffect(() => {
     if (IS_WIDGET_WINDOW) return
-    void api.player.publishState(toPlayerSnapshot(track, { isPlaying, hasNext, hasPrev }))
-  }, [track, isPlaying, hasNext, hasPrev])
+    void api.player.publishState(toPlayerSnapshot(track, { isPlaying, hasNext, hasPrev, volume }))
+  }, [track, isPlaying, hasNext, hasPrev, volume])
 
   // Transport commands pushed back from those surfaces ('player:cmd').
   useEffect(() => {
     if (IS_WIDGET_WINDOW) return
     return api.player.onCommand((cmd) => {
-      if (cmd === 'toggle') toggle()
-      else if (cmd === 'next') next()
-      else if (cmd === 'previous') previous()
+      if (cmd.kind === 'toggle') toggle()
+      else if (cmd.kind === 'next') next()
+      else if (cmd.kind === 'previous') previous()
+      else if (cmd.kind === 'volume') setVolume(Math.min(Math.max(cmd.value, 0), 1))
     })
-  }, [toggle, next, previous])
+  }, [toggle, next, previous, setVolume])
 
   const onEnded = useCallback(() => {
     const a = audioRef.current

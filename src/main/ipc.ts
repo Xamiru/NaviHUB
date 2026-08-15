@@ -579,6 +579,8 @@ export function registerIpc(): void {
   // ---- franchise (curated pages' art cache) ----
   ipcMain.handle('franchise:ensureArt', (_e, franchiseId) => franchiseArt.ensureArt(franchiseId))
   ipcMain.handle('franchise:artMap', (_e, franchiseId) => franchiseArt.artMap(franchiseId))
+  ipcMain.handle('franchise:ensureHeroes', () => franchiseArt.ensureHeroes())
+  ipcMain.handle('franchise:heroMap', () => franchiseArt.heroMap())
   ipcMain.handle('franchise:artStatus', () => franchiseArt.getArtStatus())
 
   // ---- torrents (Jackett search + qBittorrent hand-off) ----
@@ -791,6 +793,7 @@ export function registerIpc(): void {
   ipcMain.handle('player:publishState', (_e, snapshot) => playerBridge.publishState(snapshot))
   ipcMain.handle('player:getState', () => playerBridge.getState())
   ipcMain.handle('player:command', (_e, cmd) => playerBridge.dispatchCommand(cmd))
+  ipcMain.handle('player:showMain', () => playerBridge.activateMainWindow())
   ipcMain.handle('player:openWidget', () => widget.openWidget(playerBridge.getState))
   ipcMain.handle('player:closeWidget', () => widget.closeWidget())
 

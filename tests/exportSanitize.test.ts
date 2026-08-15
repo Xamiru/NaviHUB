@@ -104,6 +104,7 @@ function seed(): void {
 
     INSERT INTO settings (key, value) VALUES
       ('tmdb.api_key', 'secret-tmdb'),
+      ('franchise.zelda.background', 'media/my-wallpaper-1234-1.png'),
       ('rawg.api_key', 'secret-rawg'),
       ('igdb.client_id', 'secret-igdb-id'),
       ('igdb.client_secret', 'secret-igdb-secret'),
@@ -204,7 +205,7 @@ describe('export sanitize', () => {
     }
   })
 
-  it('removes secrets, machine paths, and ALL japanese.seeded flags from settings', () => {
+  it('removes secrets, machine paths, franchise backgrounds and ALL japanese.seeded flags from settings', () => {
     const keys = (db.prepare('SELECT key FROM settings ORDER BY key').all() as { key: string }[])
       .map((r) => r.key)
     expect(keys).toEqual(['anime.statuses', 'score.max', 'theme'])

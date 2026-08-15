@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'fs'
-import { dirname, join } from 'path'
+import { join, posix, win32 } from 'path'
 import { candidateUnlockPaths, parseUnlockFile } from './achievementsCore'
 import type { EmuCandidate, EmuEnv, ParsedUnlock } from './achievementsCore'
 
@@ -140,13 +140,38 @@ export function scanUnlocks(
 // (Online-Fix, ALI213, Goldberg's local-save mode) are rooted.
 export function exeDirOf(exePath: string | null): string | null {
   if (!exePath?.trim()) return null
-  // The stored path is a Windows path; dirname handles it on Windows and
-  // degrades to a harmless miss on Linux, where none of this runs anyway.
-  const dir = dirname(exePath)
+  // The stored path is a Windows path. Pick the flavor by its separators
+  // rather than by the host: tests assert on these paths from Linux, and the
+  // posix dirname of "C:\\Games\\x.exe" is "." — a silent miss.
+  const dir = exePath.includes('\\') ? win32.dirname(exePath) : posix.dirname(exePath)
   return dir && dir !== '.' ? dir : null
 }
 
 // Where the wizard writes a generated Goldberg config.
 export function steamSettingsDir(baseDir: string): string {
   return join(baseDir, 'steam_settings')
+}
+
+// The achievement schema a Goldberg/GSE crack ships beside the game — the
+// zero-network source for the list. Looked for next to the exe and up to two
+// folders above it (some releases keep the exe in bin/ under the emulator's
+// folder). Returns the folder (icons resolve relative to it) and the file text.
+export function findLocalSteamSchema(
+  exeDir: string | null,
+  io: EmuFileIO = nodeFileIO
+): { dir: string; content: string } | null {
+  if (!exeDir) return null
+  const sep = exeDir.includes('\\') ? '\\' : '/'
+  const parts = exeDir.split(/[\\/]/)
+  for (let up = 0; up <= 2 && parts.length - up > 0; up++) {
+    const base = parts.slice(0, parts.length - up).join(sep)
+    if (!base) break
+    const dir = `${base}${sep}steam_settings`
+    const file = `${dir}${sep}achievements.json`
+    if (io.exists(file)) {
+      const content = io.readFile(file)
+      if (content.trim()) return { dir, content }
+    }
+  }
+  return null
 }
