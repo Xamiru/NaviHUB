@@ -4,6 +4,7 @@ import { existsSync } from 'fs'
 import { readdir, stat } from 'fs/promises'
 import { getSqlite } from '../db/connection'
 import { get as getSetting, set as setSetting } from '../repos/settingsRepo'
+import * as tasks from '../tasks'
 import { VIDEO_SCOPES, type VideoScope } from './scope'
 import { episodeTitle, isVideoFile, looksLikeSample, parseEpisodeName } from './names'
 import type {
@@ -341,6 +342,25 @@ async function probeChanged(
 }
 
 async function runScan(
+  scope: VideoScope,
+  ownerId: number,
+  localDir: string,
+  absDir: string
+): Promise<VideoAttachResult> {
+  // scanState was already maintained here but nothing read it (the
+  // video:scanStatus channel was removed as dead). This is what finally gives
+  // the app's one dark scan a progress surface.
+  return tasks.runTask(
+    {
+      kind: 'videoScan',
+      label: `Scanning ${scope.label}: ${localDir}`,
+      project: () => ({ detail: scanState.phase, done: scanState.done, total: scanState.total })
+    },
+    () => runScanInner(scope, ownerId, localDir, absDir)
+  )
+}
+
+async function runScanInner(
   scope: VideoScope,
   ownerId: number,
   localDir: string,

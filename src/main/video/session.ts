@@ -4,10 +4,24 @@ import { buildConvertArgs, type PlaybackPlan } from './playability'
 import { progressEta, progressPercent, type FfProgress } from './progressParse'
 import { runFfmpeg } from './ffmpeg'
 import * as cache from './cache'
-import type { VideoPrepareStatus } from '@shared/types'
+import * as tasks from '../tasks'
+import { processControls } from '../taskControls'
+import type { TaskControls } from '../tasks'
+import type { TaskState, VideoPrepareStatus } from '@shared/types'
 
 // One conversion at a time, reported through a polled status object — the
 // musicDownload.ts shape verbatim, because this app has no push channel.
+
+// Total by construction, so a new prepare state can't leave a Tasks row live
+// forever.
+const PREPARE_STATE: Record<NonNullable<VideoPrepareStatus>['state'], TaskState> = {
+  probing: 'running',
+  converting: 'running',
+  finalizing: 'running',
+  done: 'done',
+  error: 'error',
+  cancelled: 'cancelled'
+}
 
 let counter = 0
 let active: {
@@ -79,6 +93,24 @@ export function startPrepare(input: PrepareInput): { id: string } {
     message: input.plan.reason
   }
 
+  // Task registry row. PreparePanel keeps reading the status object above for
+  // the things only it needs (speed, ETA, the output path); this is the
+  // normalized view for the Tasks page.
+  const task = tasks.create({
+    kind: 'videoPrepare',
+    label: `${action === 'remux' ? 'Remuxing' : 'Transcoding'}: ${input.sourceLabel}`,
+    controls: prepareControls(id),
+    project: () =>
+      status?.id === id
+        ? {
+            state: PREPARE_STATE[status.state],
+            detail: status.speed ? `${status.state} at ${status.speed}` : status.state,
+            percent: status.percent,
+            error: status.state === 'error' ? status.message : null
+          }
+        : null
+  })
+
   const args = buildConvertArgs({
     input: input.absPath,
     output: partPath,
@@ -99,7 +131,8 @@ export function startPrepare(input: PrepareInput): { id: string } {
     status.etaSec = progressEta(p, input.durationSec)
   }
 
-  const { proc, done } = runFfmpeg(args, onProgress)
+  // task.id so ffmpeg's stderr is attributable to this conversion in the log.
+  const { proc, done } = runFfmpeg(args, onProgress, task.id)
   active = { id, proc, cancelled: false, partPath }
 
   void done.then(({ code, stderr }) => {
@@ -147,19 +180,22 @@ export function startPrepare(input: PrepareInput): { id: string } {
   return { id }
 }
 
+// Pause (SIGSTOP) + cancel for this conversion's ffmpeg. Shared by the task row
+// and cancelPrepare so the SIGCONT-before-SIGTERM ordering lives in one place.
+// Note ffmpeg's own speed/ETA read wrong for a few seconds after a resume — its
+// wall clock kept running while stopped — so the row's 'paused' state, not a
+// stalled percentage, is what the UI should trust.
+function prepareControls(id: string): TaskControls {
+  return processControls(() => (active?.id === id ? active.proc : null), {
+    onCancel: () => {
+      if (active?.id === id) active.cancelled = true
+    }
+  })
+}
+
 export function cancelPrepare(id: string): void {
   if (!active || active.id !== id) return
-  active.cancelled = true
-  active.proc.kill('SIGTERM')
-  const proc = active.proc
-  // Unref'd so a pending kill timer can't hold the app open at quit.
-  setTimeout(() => {
-    try {
-      proc.kill('SIGKILL')
-    } catch {
-      // Already gone.
-    }
-  }, 5000).unref()
+  prepareControls(id).cancel?.()
 }
 
 // Joins killActiveMusicDownload / abortActiveCoachTurn / killActiveUpdate in

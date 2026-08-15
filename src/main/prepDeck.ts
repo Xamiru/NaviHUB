@@ -3,6 +3,7 @@ import type Database from 'better-sqlite3'
 import { getSqlite } from './db/connection'
 import { getDictDb } from './dict/dictDb'
 import { countSeriesWords, isLearnableWord } from './seriesText'
+import * as tasks from './tasks'
 import { flattenGlossary } from '@shared/dictContent'
 import * as japaneseRepo from './repos/japaneseRepo'
 import * as coverageRepo from './repos/coverageRepo'
@@ -203,6 +204,23 @@ export function writePrepCourse(
 
 export async function buildPrepDeck(mediaId: number, limit = 100): Promise<PrepDeckSummary> {
   if (status.running) throw new Error('A prep deck is already being built')
+  return tasks.runTask(
+    {
+      kind: 'prepDeck',
+      label: 'Building prep deck',
+      route: `/japanese/comprehension/${mediaId}`,
+      controls: tasks.flagCancel('Deck builds are short — stop and re-run instead'),
+      project: () => ({ detail: status.phase, done: status.done, total: status.total })
+    },
+    (handle) => buildPrepDeckInner(mediaId, limit, handle)
+  )
+}
+
+async function buildPrepDeckInner(
+  mediaId: number,
+  limit: number,
+  handle: tasks.TaskHandle
+): Promise<PrepDeckSummary> {
   status.running = true
   status.error = null
   status.phase = 'reading'
@@ -261,7 +279,13 @@ export async function buildPrepDeck(mediaId: number, limit = 100): Promise<PrepD
         })
         status.done = words.length
       }
-      if (++sinceYield % 50 === 0) await yieldToLoop()
+      // The yield point is also the cancel point: throwing here means a
+      // stopped build writes NO partial course, and runTask settles it
+      // 'cancelled' rather than 'error'.
+      if (++sinceYield % 50 === 0) {
+        if (handle.cancelRequested()) throw new tasks.TaskCancelledError('Building prep deck')
+        await yieldToLoop()
+      }
     }
     if (words.length === 0) {
       throw new Error('Nothing new to learn — every frequent word is already in your decks')

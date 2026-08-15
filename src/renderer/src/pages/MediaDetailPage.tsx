@@ -24,6 +24,7 @@ import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
 import GameLaunchSection from '../components/GameLaunchSection'
+import AchievementsSection from '../components/AchievementsSection'
 import GameLaunchButton, { useHasLaunchTarget } from '../components/GameLaunchButton'
 import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import VideoEpisodesSection from '../components/VideoEpisodesSection'
@@ -43,7 +44,7 @@ import type {
 } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
 
-type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'art'
+type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'art'
 
 export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const { id } = useParams()
@@ -67,6 +68,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       ? [{ key: 'video' as DetailTab, label: cfg.videoTabLabel ?? 'Video' }]
       : []),
     ...(cfg.mediaTabLabel ? [{ key: 'media' as DetailTab, label: cfg.mediaTabLabel }] : []),
+    ...(cfg.hasAchievements ? [{ key: 'achievements' as DetailTab, label: 'Achievements' }] : []),
     { key: 'art', label: 'Art' }
   ]
   const [params] = useSearchParams()
@@ -243,6 +245,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           {cfg.hasThemes && <ThemesSection m={m} onChange={refresh} />}
         </>
       )}
+
+      {tab === 'achievements' && <AchievementsSection m={m} />}
 
       {tab === 'art' && (
         <>

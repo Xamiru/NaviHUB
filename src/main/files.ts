@@ -272,6 +272,22 @@ export async function downloadImages(
   return map
 }
 
+// downloadImage's deterministic content-addressed filename, extracted so the
+// derivation exists exactly once (franchiseArt.ts computes cache state from it
+// without downloading; tests/franchiseArt.test.ts guards the pairing).
+export function dlFileName(url: string): string {
+  const urlExt = extname(new URL(url).pathname)
+  const ext = /^\.(png|jpe?g|webp|gif|bmp)$/i.test(urlExt) ? urlExt : '.jpg'
+  return `dl-${createHash('sha1').update(url).digest('hex').slice(0, 16)}${ext}`
+}
+
+// The stored relative path for a URL if its download is already on disk, null
+// otherwise. Synchronous by design — callers sweep dozens of URLs per call.
+export function cachedDownload(url: string): string | null {
+  const fileName = dlFileName(url)
+  return existsSync(join(mediaDir(), fileName)) ? join('media', fileName) : null
+}
+
 // Downloads a remote image (e.g. an AniList cover) into userData/media and
 // returns the stored relative path, or null on failure. The filename is derived
 // deterministically from the URL, so re-importing a title whose art is already
@@ -279,9 +295,7 @@ export async function downloadImages(
 export async function downloadImage(url: string | null | undefined): Promise<string | null> {
   if (!url) return null
   try {
-    const urlExt = extname(new URL(url).pathname)
-    const ext = /^\.(png|jpe?g|webp|gif|bmp)$/i.test(urlExt) ? urlExt : '.jpg'
-    const fileName = `dl-${createHash('sha1').update(url).digest('hex').slice(0, 16)}${ext}`
+    const fileName = dlFileName(url)
     const dest = join(mediaDir(), fileName)
     const relPath = join('media', fileName)
     if (existsSync(dest)) return relPath

@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import ActivityIndicator from './ActivityIndicator'
 import GameSessionIndicator from './GameSessionIndicator'
+import TasksIndicator from './TasksIndicator'
 
 // Persistent top bar with a global search box (submitting navigates to
-// /search), the global import-progress pill, and the tracked-play-session pill.
+// /search), the running-tasks pill, and the tracked-play-session pill.
 export default function Topbar() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -25,7 +25,12 @@ export default function Topbar() {
   }
 
   return (
-    <header className="h-14 shrink-0 border-b border-base-700 bg-base-800/60 backdrop-blur flex items-center gap-4 px-5">
+    // relative z-30 is LOAD-BEARING, not styling: backdrop-blur creates a
+    // stacking context, so with z-index:auto this header paints at its DOM
+    // position and <main> — its next sibling — paints over it. The tasks
+    // dropdown, absolutely positioned INSIDE that context, would then render
+    // behind any card it overlaps.
+    <header className="relative z-30 h-14 shrink-0 border-b border-base-700 bg-base-800/60 backdrop-blur flex items-center gap-4 px-5">
       <form onSubmit={submit} role="search" className="w-full max-w-xl">
         <div className="relative">
           <input
@@ -42,7 +47,7 @@ export default function Topbar() {
       </form>
       <div className="ml-auto flex items-center gap-2">
         <GameSessionIndicator />
-        <ActivityIndicator />
+        <TasksIndicator />
       </div>
     </header>
   )

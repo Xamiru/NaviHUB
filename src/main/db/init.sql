@@ -49,6 +49,56 @@ CREATE TABLE IF NOT EXISTS game_session (
 CREATE INDEX IF NOT EXISTS idx_game_session_media   ON game_session(media_id);
 CREATE INDEX IF NOT EXISTS idx_game_session_started ON game_session(started_at);
 
+-- ---- Achievements ----
+-- Opt-in per title: one row here means "this game is tracked". Written when the
+-- user picks a provider and it is NEVER auto-created, so its existence is also
+-- the durable "this title was launchable once" marker — exe_path is nulled by
+-- games:clearExe and keeps no history, so eligibility is
+-- (exe_path IS NOT NULL) OR (a game_session row) OR (a row here).
+--
+-- provider/provider_game_id are frozen key strings: 'steam' + appid (prefilled
+-- from external_id for Steam-imported rows, otherwise resolved through the
+-- keyless storefront search) or 'ra' + a RetroAchievements game id.
+CREATE TABLE IF NOT EXISTS achievement_game (
+  media_id          INTEGER PRIMARY KEY REFERENCES media_item(id) ON DELETE CASCADE,
+  provider          TEXT NOT NULL,   -- 'steam' | 'ra'
+  provider_game_id  TEXT NOT NULL,   -- Steam appid, or RA game id
+  schema_fetched_at TEXT,            -- UTC; NULL = associated but not fetched yet
+  created_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- The achievement set itself: canonical provider data (the theme_song posture —
+-- survives an export). A re-fetch is authoritative for these columns and prunes
+-- achievements the provider dropped, but UNIQUE(media_id, api_name) keeps ids
+-- stable so unlocks below survive it.
+CREATE TABLE IF NOT EXISTS achievement (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id       INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  api_name       TEXT NOT NULL,   -- Steam apiname / RA achievement id as text
+  name           TEXT NOT NULL,
+  description    TEXT,
+  hidden         INTEGER NOT NULL DEFAULT 0,
+  icon_path      TEXT,            -- media/dl-… relative, unlocked art
+  icon_gray_path TEXT,            -- media/dl-… relative, locked art
+  points         INTEGER,         -- RA only; NULL for Steam (no invented score)
+  global_pct     REAL,            -- global unlock %, drives the rarity tier
+  sort_order     INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(media_id, api_name)
+);
+CREATE INDEX IF NOT EXISTS idx_achievement_media ON achievement(media_id);
+
+-- One row per UNLOCKED achievement (absence = locked), so the table doubles as
+-- the unlocked set. Personal → dropped on export. source is a frozen key
+-- string: 'emu' (parsed out of a Steam emulator's save file), 'ra', 'manual'.
+-- Re-imports keep the EARLIEST timestamp: an emu file rewritten with a fresh
+-- date must not relabel a years-old unlock.
+CREATE TABLE IF NOT EXISTS achievement_unlock (
+  achievement_id INTEGER PRIMARY KEY REFERENCES achievement(id) ON DELETE CASCADE,
+  unlocked_at    TEXT NOT NULL,   -- UTC
+  source         TEXT NOT NULL    -- 'emu' | 'ra' | 'manual'
+);
+CREATE INDEX IF NOT EXISTS idx_achievement_unlock_time ON achievement_unlock(unlocked_at);
+
 CREATE TABLE IF NOT EXISTS person (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   name            TEXT NOT NULL,

@@ -5,6 +5,7 @@ import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import initSql from './init.sql?raw'
 import { seedJapanese } from './japaneseSeed'
 import { CHECKLIST_SEED } from '@shared/checklist'
+import { logInfo } from '../logBus'
 import * as schema from './schema'
 
 export type DB = BetterSQLite3Database<typeof schema>
@@ -48,6 +49,10 @@ function ensureColumn(
   const cols = sqlite.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]
   if (!cols.some((c) => c.name === column)) {
     sqlite.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`)
+    // Logged only when it GENUINELY altered — on a current DB this whole
+    // function is 30 silent no-ops, and a log line per startup would be noise.
+    // On an old DB this is the record of what the upgrade actually did.
+    logInfo('db', `migration: ALTER TABLE ${table} ADD COLUMN ${ddl}`)
   }
 }
 

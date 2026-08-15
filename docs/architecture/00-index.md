@@ -22,6 +22,7 @@ things that were tried and rejected, and the gotchas that were paid for once alr
 | Torrent search (Jackett/qBittorrent) or the bulk importer | [torrents-bulk.md](torrents-bulk.md) |
 | Theme songs, the music library, the tournament bracket | [music-quiz.md](music-quiz.md) |
 | The checklist, streaks, or anything that advances progress on a title | [checklist-progress.md](checklist-progress.md) |
+| The task registry, pause/cancel, the structured log, the Tools menu | [tasks-logs.md](tasks-logs.md) |
 | Shared UI components, the Lain theme, dialogs, the menu bar, zoom | [ui-conventions.md](ui-conventions.md) |
 | Packaging, the release workflow, in-app updates, the library export | [packaging-ci-updates.md](packaging-ci-updates.md) |
 | Anything that sounds like a feature request — check it was not already removed | [removed.md](removed.md) |

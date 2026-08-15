@@ -3,6 +3,8 @@ import { dirname } from 'path'
 import { existsSync } from 'fs'
 import { dialog } from 'electron'
 import * as gameSessionRepo from './repos/gameSessionRepo'
+import * as achievementWatcher from './achievementWatcher'
+import { logWarn } from './logBus'
 import { assertLaunchableExe, shouldRecord, MIN_SESSION_SEC } from './gameLaunchCore'
 import type { GameLaunchStatus } from '@shared/types'
 
@@ -34,6 +36,10 @@ function endSession(id: string, endedAtMs: number, errMsg: string | null): void 
   const session = active
   if (session?.id !== id) return
   active = null
+  // Stop watching before the status settles, and let the final sweep run: an
+  // emulator usually flushes its save file AS the game exits, so a session's
+  // last unlocks only reach disk here.
+  void achievementWatcher.stopWatch()
   if (!status || status.id !== id) return
 
   const elapsedSec = Math.max(0, Math.round((endedAtMs - session.startedAtMs) / 1000))
@@ -119,6 +125,21 @@ export function startSession(mediaId: number): { id: string } {
     settled = true
     endSession(id, Date.now(), null)
   })
+
+  // AFTER the listeners, and never fatal: startWatch does real DB work, and a
+  // throw here once the child is already spawned would leave `active` set with
+  // no exit listener attached — every later launch rejected with "a game
+  // session is already being tracked", and a subsequent 'error' event on a
+  // listener-less emitter thrown as an uncaught exception in main.
+  // No-op unless this title has achievement tracking set up.
+  try {
+    achievementWatcher.startWatch(mediaId, startedAtMs)
+  } catch (err) {
+    logWarn(
+      'app',
+      `achievement watch failed to start: ${err instanceof Error ? err.message : String(err)}`
+    )
+  }
 
   return { id }
 }

@@ -33,6 +33,7 @@ import type {
   ThemeSongCounts,
   ThemeSongEntry,
   ThemeSongFilter,
+  FranchiseArtStatus,
   ImageKind,
   MediaImage,
   JackettEnsureResult,
@@ -51,6 +52,14 @@ import type {
   HltbTimes,
   GameLaunchOverview,
   GameLaunchStatus,
+  InstalledGame,
+  AchievementListPayload,
+  AchievementSetupResult,
+  AchievementUnlockEvent,
+  AchievementWatchStatus,
+  AchievementsOverview,
+  SteamAppCandidate,
+  RaGameCandidate,
   ListDetail,
   ListInput,
   ListKind,
@@ -157,6 +166,9 @@ import type {
   VideoToolsResult,
   JpToken,
   ActivityStatus,
+  LogPage,
+  LogTailRequest,
+  TaskSnapshot,
   UpdateStatus,
   UpdateTestResult,
   GachaBanner,
@@ -319,6 +331,38 @@ export interface NaviApi {
     clearExe(mediaId: number): Promise<void>
     launch(mediaId: number): Promise<{ id: string }>
     sessionStatus(): Promise<GameLaunchStatus | null>
+    // Titles with an exe linked right now — the Installed page.
+    installed(): Promise<InstalledGame[]>
+  }
+  achievements: {
+    // Tracking is opt-in per title and only offered where an exe is (or once
+    // was) linked. A Steam set is fetched from the Web API and its unlocks are
+    // read out of the crack's Steam emulator; a RetroAchievements set and its
+    // unlocks both come from the user's RA account.
+    list(mediaId: number): Promise<AchievementListPayload>
+    // Steam app id guesses for the setup dialog; `exact` needs no confirming.
+    resolveSteam(mediaId: number): Promise<SteamAppCandidate[]>
+    setupSteam(mediaId: number, appid: string): Promise<AchievementSetupResult>
+    raConsoles(): Promise<{ id: string; name: string }[]>
+    raSearch(query: string, consoleId: string): Promise<RaGameCandidate[]>
+    setupRa(mediaId: number, raGameId: string): Promise<AchievementSetupResult>
+    // Re-run whichever provider the title already uses. Authoritative for the
+    // set (prunes what the provider dropped); unlocks survive.
+    refresh(mediaId: number): Promise<AchievementSetupResult>
+    // Retroactive sweep of the emulator save files. `found: 0` is the
+    // diagnostic that nothing on disk is writing unlocks for this game.
+    importEmu(mediaId: number): Promise<{ found: number; imported: number; emus: string[] }>
+    toggleManual(achievementId: number, unlocked: boolean): Promise<void>
+    disable(mediaId: number): Promise<void>
+    // Polled while a session runs; the OS notification is raised from main, so
+    // this only drives the in-app toast and the live list refresh.
+    watchStatus(): Promise<AchievementWatchStatus | null>
+    overview(): Promise<AchievementsOverview>
+    recent(limit?: number): Promise<AchievementUnlockEvent[]>
+    cardSummaries(): Promise<Record<number, { unlocked: number; total: number }>>
+    // Writes a Goldberg steam_settings folder into a directory the user picks;
+    // it never touches the game folder. null = the picker was cancelled.
+    generateGoldberg(mediaId: number): Promise<{ dir: string; achievements: number } | null>
   }
   lists: {
     // Curated, ordered, type-scoped collections. `kind` filters the index.
@@ -469,6 +513,16 @@ export interface NaviApi {
     addFromFiles(mediaId: number, kind: ImageKind): Promise<MediaImage[]>
     // Removes the row and deletes its file on disk.
     remove(imageId: number): Promise<void>
+  }
+  franchise: {
+    // The curated franchise data ships in the bundle (@shared/franchises) —
+    // these only cache its remote art locally (src/main/franchiseArt.ts).
+    // ensureArt fires a background batch download of whatever is missing and
+    // returns immediately; poll artStatus while running, then re-fetch artMap.
+    ensureArt(franchiseId: string): Promise<{ started: boolean }>
+    // url -> cached relative path (null = not downloaded yet, render the URL).
+    artMap(franchiseId: string): Promise<Record<string, string | null>>
+    artStatus(): Promise<FranchiseArtStatus>
   }
   torrents: {
     // Progressive Jackett search (main-process — renderer CSP blocks remote
@@ -1017,11 +1071,38 @@ export interface NaviApi {
     // has no push channel, so the renderer polls, and a peek-without-clear
     // would reopen the same file every tick.
     pendingOpen(): Promise<OpenTarget[]>
+    // A route parked by the native Tools menu (Tasks / Logs). RETURNS AND
+    // CLEARS, like pendingOpen — main has no way to push a navigation.
+    pendingRoute(): Promise<string | null>
   }
   activity: {
     // The current long-running main-process task (imports, theme fetches);
     // poll while one runs to drive progress UI. active:false when idle.
     status(): Promise<ActivityStatus>
+  }
+  tasks: {
+    // Every long-running main-process job (imports, downloads, scans, OCR,
+    // conversions, the updater) as one normalized list — the Topbar pill and
+    // the Tasks page. Poll with refetchInterval while anything is live; there
+    // is no push channel. Each feature's own *Status channel is unaffected and
+    // still carries the rich per-kind detail its own panel needs.
+    list(): Promise<TaskSnapshot[]>
+    get(id: string): Promise<TaskSnapshot | null>
+    // All no-ops when the task is finished or lacks the control; check the
+    // snapshot's canCancel / canPause before offering the button.
+    cancel(id: string): Promise<void>
+    pause(id: string): Promise<void>
+    resume(id: string): Promise<void>
+    clearFinished(): Promise<void>
+  }
+  logs: {
+    // Structured main-process log (src/main/logBus.ts): task lifecycle, HTTP
+    // retries and rate-limit waits, DB migrations, child-process output.
+    // Cursor-paged like torrents.searchStatus — pass the previous page's
+    // nextSeq back as afterSeq. Omit afterSeq to seed with the newest entries.
+    tail(req: LogTailRequest): Promise<LogPage>
+    // Opens the rolling log file's folder in the OS file manager.
+    reveal(): Promise<void>
   }
   updates: {
     // In-app updates from GitHub Releases (src/main/updater.ts). Online work is

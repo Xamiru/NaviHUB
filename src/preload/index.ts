@@ -71,7 +71,26 @@ const api: NaviApi = {
     pickExe: (mediaId) => ipcRenderer.invoke('games:pickExe', mediaId),
     clearExe: (mediaId) => ipcRenderer.invoke('games:clearExe', mediaId),
     launch: (mediaId) => ipcRenderer.invoke('games:launch', mediaId),
-    sessionStatus: () => ipcRenderer.invoke('games:sessionStatus')
+    sessionStatus: () => ipcRenderer.invoke('games:sessionStatus'),
+    installed: () => ipcRenderer.invoke('games:installed')
+  },
+  achievements: {
+    list: (mediaId) => ipcRenderer.invoke('achievements:list', mediaId),
+    resolveSteam: (mediaId) => ipcRenderer.invoke('achievements:resolveSteam', mediaId),
+    setupSteam: (mediaId, appid) => ipcRenderer.invoke('achievements:setupSteam', mediaId, appid),
+    raConsoles: () => ipcRenderer.invoke('achievements:raConsoles'),
+    raSearch: (query, consoleId) => ipcRenderer.invoke('achievements:raSearch', query, consoleId),
+    setupRa: (mediaId, raGameId) => ipcRenderer.invoke('achievements:setupRa', mediaId, raGameId),
+    refresh: (mediaId) => ipcRenderer.invoke('achievements:refresh', mediaId),
+    importEmu: (mediaId) => ipcRenderer.invoke('achievements:importEmu', mediaId),
+    toggleManual: (achievementId, unlocked) =>
+      ipcRenderer.invoke('achievements:toggleManual', achievementId, unlocked),
+    disable: (mediaId) => ipcRenderer.invoke('achievements:disable', mediaId),
+    watchStatus: () => ipcRenderer.invoke('achievements:watchStatus'),
+    overview: () => ipcRenderer.invoke('achievements:overview'),
+    recent: (limit) => ipcRenderer.invoke('achievements:recent', limit),
+    cardSummaries: () => ipcRenderer.invoke('achievements:cardSummaries'),
+    generateGoldberg: (mediaId) => ipcRenderer.invoke('achievements:generateGoldberg', mediaId)
   },
   lists: {
     list: (kind) => ipcRenderer.invoke('lists:list', kind),
@@ -169,6 +188,11 @@ const api: NaviApi = {
       ipcRenderer.invoke('pictures:addFromUrl', mediaId, kind, url),
     addFromFiles: (mediaId, kind) => ipcRenderer.invoke('pictures:addFromFiles', mediaId, kind),
     remove: (imageId) => ipcRenderer.invoke('pictures:remove', imageId)
+  },
+  franchise: {
+    ensureArt: (franchiseId) => ipcRenderer.invoke('franchise:ensureArt', franchiseId),
+    artMap: (franchiseId) => ipcRenderer.invoke('franchise:artMap', franchiseId),
+    artStatus: () => ipcRenderer.invoke('franchise:artStatus')
   },
   torrents: {
     startSearch: (query, categories) =>
@@ -475,10 +499,23 @@ const api: NaviApi = {
     setUiScale: (scale) => ipcRenderer.invoke('app:setUiScale', scale),
     bumpUiScale: (direction) => ipcRenderer.invoke('app:bumpUiScale', direction),
     setMenuBarVisible: (visible) => ipcRenderer.invoke('app:setMenuBarVisible', visible),
-    pendingOpen: () => ipcRenderer.invoke('app:pendingOpen')
+    pendingOpen: () => ipcRenderer.invoke('app:pendingOpen'),
+    pendingRoute: () => ipcRenderer.invoke('app:pendingRoute')
   },
   activity: {
     status: () => ipcRenderer.invoke('activity:status')
+  },
+  tasks: {
+    list: () => ipcRenderer.invoke('tasks:list'),
+    get: (id) => ipcRenderer.invoke('tasks:get', id),
+    cancel: (id) => ipcRenderer.invoke('tasks:cancel', id),
+    pause: (id) => ipcRenderer.invoke('tasks:pause', id),
+    resume: (id) => ipcRenderer.invoke('tasks:resume', id),
+    clearFinished: () => ipcRenderer.invoke('tasks:clearFinished')
+  },
+  logs: {
+    tail: (req) => ipcRenderer.invoke('logs:tail', req),
+    reveal: () => ipcRenderer.invoke('logs:reveal')
   },
   updates: {
     status: () => ipcRenderer.invoke('update:status'),

@@ -13,6 +13,9 @@
 
 import { downloadImages } from '../files'
 import { beginActivity, endActivity, updateActivity } from '../progress'
+import * as tasks from '../tasks'
+import type { TaskHandle } from '../tasks'
+import { cooperativeGate, type PauseGate } from '../taskControls'
 import { sleep } from '../http'
 import * as repo from '../repos/wrestlingRepo'
 import * as wiki from './wikipedia'
@@ -50,14 +53,17 @@ let status: WrestlingImportStatus = {
   failed: 0,
   message: null
 }
-let cancelRequested = false
+// Cooperative pause/cancel. Pause means "stop starting new articles" — the
+// current fetch finishes first, so the registry shows 'pausing' until wait()
+// actually blocks.
+let gate: PauseGate | null = null
 
 export function getStatus(): WrestlingImportStatus {
   return { ...status }
 }
 
 export function cancel(): void {
-  if (status.state === 'running') cancelRequested = true
+  if (status.state === 'running') gate?.controls.cancel?.()
 }
 
 // Turns one article's wikitext into the rows the repo wants. Pure apart from
@@ -164,7 +170,8 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
   if (!cfgs.length) throw new Error('No known promotions selected.')
 
   const id = status.id + 1
-  cancelRequested = false
+  // The gate replaces the old cancelRequested flag; a fresh one per run means
+  // no reset is needed here.
   status = {
     id,
     state: 'running',
@@ -187,14 +194,38 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
   const pageImages = deps.pageImages ?? wiki.pageImages
   const delay = deps.delayMs ?? 0
 
+  // ONE task for the whole crawl — attachTo below keeps the nested per-article
+  // activity from minting a row per event.
+  // The gate reports 'paused' itself the moment it really blocks, which turns
+  // the row from 'pausing' into 'paused'.
+  let handle: TaskHandle
+  const runGate = cooperativeGate(
+    () => handle.progress({ state: 'paused' }),
+    () => handle.progress({ state: 'running' })
+  )
+  gate = runGate
+  const task = tasks.create({
+    kind: 'wrestlingImport',
+    label: 'Wrestling wiki import',
+    route: '/wrestling',
+    controls: runGate.controls,
+    project: () =>
+      status.id === id
+        ? { detail: status.message ?? status.phase, done: status.done, total: status.total }
+        : null
+  })
+  handle = task
+
   void (async () => {
-    beginActivity('Wrestling wiki import')
+    const slot = beginActivity('Wrestling wiki import', { attachTo: task })
     try {
       let consecutiveFailures = 0
 
       for (const cfg of cfgs) {
+        // Guarded await — see bulkImport for why it is not unconditional.
+        if (runGate.paused) await runGate.wait()
         if (status.id !== id) return
-        if (cancelRequested) {
+        if (runGate.cancelled) {
           status = { ...status, state: 'cancelled' }
           return
         }
@@ -213,8 +244,10 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
         const queue = [...titles]
 
         while (queue.length > 0) {
+          // Guarded await — see bulkImport for why it is not unconditional.
+        if (runGate.paused) await runGate.wait()
           if (status.id !== id) return
-          if (cancelRequested) {
+          if (runGate.cancelled) {
             status = { ...status, state: 'cancelled' }
             return
           }
@@ -346,8 +379,10 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
       if (opts.withWrestlers !== false) {
         status = { ...status, phase: 'wrestlers', promotion: null, message: null }
         for (;;) {
+          // Guarded await — see bulkImport for why it is not unconditional.
+        if (runGate.paused) await runGate.wait()
           if (status.id !== id) return
-          if (cancelRequested) {
+          if (runGate.cancelled) {
             status = { ...status, state: 'cancelled' }
             return
           }
@@ -404,8 +439,18 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
         status = { ...status, state: 'error', message: (err as Error).message }
       }
     } finally {
-      // Never clear a NEWER run's slot — it called beginActivity itself.
-      if (status.id === id) endActivity()
+      // Never clear a NEWER run's slot — neither a newer wrestling run
+      // (status.id) nor a dialog import that took it mid-run (the handle).
+      if (status.id === id) endActivity(undefined, slot)
+      task.settle(
+        status.id !== id
+          ? { state: 'cancelled', error: 'superseded by a newer run' }
+          : status.state === 'error'
+            ? { state: 'error', error: status.message }
+            : status.state === 'cancelled'
+              ? { state: 'cancelled' }
+              : { state: 'done' }
+      )
     }
   })()
 

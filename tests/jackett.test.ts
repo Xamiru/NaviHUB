@@ -39,6 +39,7 @@ import {
   testJackett
 } from '../src/main/jackett'
 import { set as setSetting } from '../src/main/repos/settingsRepo'
+import * as tasks from '../src/main/tasks'
 
 function seedConfig(): void {
   setSetting('jackett.url', 'http://localhost:9117')
@@ -47,6 +48,7 @@ function seedConfig(): void {
 
 beforeEach(() => {
   db = createTestDb()
+  tasks.__reset()
   fetchWithRetry.mockReset()
   execFile.mockReset()
   // Default: the start command succeeds (cb(err, stdout, stderr)).
@@ -384,6 +386,30 @@ describe('progressive search', () => {
     const s = searchStatus()!
     expect(s.running).toBe(false)
     expect(s.totalResults).toBe(2) // not wiped
+  })
+
+  // `running` alone cannot tell a stopped search from a finished one, so the
+  // task row for a deliberate Stop used to settle green as "done".
+  it('marks a cancelled search cancelled, not done', async () => {
+    seedConfig()
+    routeFetch((url) => (url.includes('t=indexers') ? indexerListRes : resultsFor('row')))
+    const { id } = startSearch('q', [])
+    await settle()
+
+    cancelSearch(id)
+    expect(searchStatus()!.running).toBe(false)
+    const row = tasks.list().find((t) => t.label.includes('Torrent search'))!
+    expect(row.state).toBe('cancelled')
+  })
+
+  it('a search that finishes on its own still settles done', async () => {
+    seedConfig()
+    routeFetch((url) => (url.includes('t=indexers') ? indexerListRes : resultsFor('row')))
+    startSearch('q', [])
+    await settle()
+
+    const row = tasks.list().find((t) => t.label.includes('Torrent search'))!
+    expect(row.state).toBe('done')
   })
 
   it('drops a stale job so its rows never reach a newer search', async () => {

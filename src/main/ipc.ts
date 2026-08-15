@@ -44,16 +44,25 @@ import * as bulkImport from './bulkImport'
 import * as openlibrary from './openlibrary'
 import * as themes from './themes'
 import * as pictures from './pictures'
+import * as franchiseArt from './franchiseArt'
 import * as jackett from './jackett'
 import * as qbittorrent from './qbittorrent'
 import * as hltb from './hltb'
 import * as gameLaunch from './gameLaunch'
 import * as gameSessionRepo from './repos/gameSessionRepo'
+import * as achievements from './achievements'
+import * as achievementWatcher from './achievementWatcher'
+import * as retroAchievements from './retroAchievements'
+import * as achievementRepo from './repos/achievementRepo'
 import * as files from './files'
 import * as manga from './manga'
 import * as video from './video'
 import * as openFile from './openFile'
 import { getActivity, withActivity } from './progress'
+import * as logBus from './logBus'
+import * as logFile from './logFile'
+import * as tasks from './tasks'
+import * as appMenu from './appMenu'
 import * as updater from './updater'
 import * as music from './music'
 import * as musicRepo from './repos/musicRepo'
@@ -175,6 +184,42 @@ export function registerIpc(): void {
   ipcMain.handle('games:clearExe', (_e, mediaId) => gameLaunch.clearExe(mediaId))
   ipcMain.handle('games:launch', (_e, mediaId) => gameLaunch.startSession(mediaId))
   ipcMain.handle('games:sessionStatus', () => gameLaunch.getLaunchStatus())
+  ipcMain.handle('games:installed', () => achievementRepo.installedGames())
+
+  // ---- achievements ----
+  // Steam sets come from the Web API and their unlocks off disk (whatever
+  // emulator the crack ships); retro sets and unlocks both come from a
+  // RetroAchievements account. Setup/refresh run inside withActivity so the
+  // import pill covers the icon downloads.
+  ipcMain.handle('achievements:list', (_e, mediaId) => achievementRepo.listPayload(mediaId))
+  ipcMain.handle('achievements:resolveSteam', (_e, mediaId) =>
+    achievements.resolveSteamCandidates(mediaId)
+  )
+  ipcMain.handle('achievements:setupSteam', (_e, mediaId, appid) =>
+    withActivity('Fetching achievements', () => achievements.fetchSteamSchema(mediaId, appid))
+  )
+  ipcMain.handle('achievements:raConsoles', () => retroAchievements.consoles())
+  ipcMain.handle('achievements:raSearch', (_e, query, consoleId) =>
+    retroAchievements.searchGames(query, consoleId)
+  )
+  ipcMain.handle('achievements:setupRa', (_e, mediaId, raGameId) =>
+    withActivity('Fetching achievements', () => retroAchievements.fetchRaGame(mediaId, raGameId))
+  )
+  ipcMain.handle('achievements:refresh', (_e, mediaId) =>
+    withActivity('Refreshing achievements', () => achievements.refresh(mediaId))
+  )
+  ipcMain.handle('achievements:importEmu', (_e, mediaId) => achievements.sweepEmuFiles(mediaId))
+  ipcMain.handle('achievements:toggleManual', (_e, achievementId, unlocked) =>
+    achievements.toggleManual(achievementId, unlocked)
+  )
+  ipcMain.handle('achievements:disable', (_e, mediaId) => achievements.disableTracking(mediaId))
+  ipcMain.handle('achievements:watchStatus', () => achievementWatcher.getWatchStatus())
+  ipcMain.handle('achievements:overview', () => achievementRepo.overview())
+  ipcMain.handle('achievements:recent', (_e, limit) => achievementRepo.recentUnlocks(limit ?? 12))
+  ipcMain.handle('achievements:cardSummaries', () => achievementRepo.cardSummaries())
+  ipcMain.handle('achievements:generateGoldberg', (_e, mediaId) =>
+    achievements.generateGoldbergConfig(mediaId)
+  )
 
   // ---- lists ----
   ipcMain.handle('lists:list', (_e, kind) => listRepo.list(kind))
@@ -531,6 +576,11 @@ export function registerIpc(): void {
   )
   ipcMain.handle('pictures:remove', (_e, imageId) => pictures.removeImage(imageId))
 
+  // ---- franchise (curated pages' art cache) ----
+  ipcMain.handle('franchise:ensureArt', (_e, franchiseId) => franchiseArt.ensureArt(franchiseId))
+  ipcMain.handle('franchise:artMap', (_e, franchiseId) => franchiseArt.artMap(franchiseId))
+  ipcMain.handle('franchise:artStatus', () => franchiseArt.getArtStatus())
+
   // ---- torrents (Jackett search + qBittorrent hand-off) ----
   // Button-triggered quick fetches — deliberately NOT withActivity.
   // Progressive: start a fan-out job, then poll status (no push channel).
@@ -546,6 +596,25 @@ export function registerIpc(): void {
 
   // ---- global activity (import progress, polled by the Topbar pill) ----
   ipcMain.handle('activity:status', () => getActivity())
+
+  // ---- tasks ----
+  // Every long-running main-process job in one list. list() IS the tick: it
+  // pulls each subsystem's projection and prunes finished rows, so there is no
+  // timer behind this. Rich per-feature detail still lives on that feature's
+  // own *Status channel — this is the normalized view plus the controls.
+  ipcMain.handle('tasks:list', () => tasks.list())
+  ipcMain.handle('tasks:get', (_e, id) => tasks.get(String(id)))
+  ipcMain.handle('tasks:cancel', (_e, id) => tasks.cancel(String(id)))
+  // No-ops unless the snapshot says canPause; pauseNote says why not.
+  ipcMain.handle('tasks:pause', (_e, id) => tasks.pause(String(id)))
+  ipcMain.handle('tasks:resume', (_e, id) => tasks.resume(String(id)))
+  ipcMain.handle('tasks:clearFinished', () => tasks.clearFinished())
+
+  // ---- logs ----
+  // Cursor-paged tail of the main-process log ring (src/main/logBus.ts). No
+  // push channel, so the viewer polls with the previous page's nextSeq.
+  ipcMain.handle('logs:tail', (_e, req) => logBus.readLog(req ?? {}))
+  ipcMain.handle('logs:reveal', () => shell.openPath(logFile.logDir()))
 
   // ---- in-app updates ----
   // Deliberately NOT withActivity: the shared slot has no terminal states and
@@ -734,6 +803,10 @@ export function registerIpc(): void {
   // Applies the UI scale live to every window. Persisting it is the caller's
   // job (settings:set 'ui.scale'); index.ts re-applies the stored value on load.
   ipcMain.handle('app:pendingOpen', () => openFile.takePending())
+  // Navigation parked by the native Tools menu. Same returns-AND-clears
+  // contract as pendingOpen, and drained by the same poll in OpenFileHandler —
+  // a menu item cannot push to the renderer (tests/pushBridge.test.ts).
+  ipcMain.handle('app:pendingRoute', () => appMenu.takePendingRoute())
   ipcMain.handle('app:setUiScale', (_e, scale) => {
     const factor = clampUiScale(Number(scale))
     // The pop-out player widget is excluded from UI zoom (and the menu bar

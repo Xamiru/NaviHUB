@@ -41,6 +41,7 @@ import { buildDiscoverParams, discoverTop } from '../src/main/tmdb'
 import { buildVndbTopBody } from '../src/main/vndb'
 import { CATALOG_DDL } from '../src/main/gamesCatalogSchema'
 import * as bulk from '../src/main/bulkImport'
+import { TaskCancelledError } from '../src/main/tasks'
 import type { BulkSourceKey } from '../src/shared/bulkImport'
 
 const params = (over: Partial<BulkListParams> = {}): BulkListParams => ({
@@ -409,6 +410,23 @@ describe('start (the run loop)', () => {
     expect(s.state).toBe('cancelled')
     expect(s.imported).toBe(1) // the title in flight when cancel hit still landed
     expect(s.done).toBe(1)
+  })
+
+  // Stopping from /tasks (rather than the /bulk button) sets the task's cancel
+  // flag, and progress.ts's checkpoint throws TaskCancelledError out of the
+  // importer in flight. Counting that as a failed title inflates the tally the
+  // user reads, and enough of them would trip the consecutive-failure bail.
+  it('a Stop that lands mid-title is not counted as a failure', async () => {
+    bulk.start(payload(5), {
+      delayMs: 0,
+      importOne: async (_s, id) => {
+        if (id === 2) throw new TaskCancelledError('Bulk import: Anime')
+      }
+    })
+    const s = await settled()
+    expect(s.state).toBe('cancelled')
+    expect(s.failed).toBe(0)
+    expect(s.imported).toBe(1)
   })
 
   it('rejects an empty selection and a second start while running', async () => {

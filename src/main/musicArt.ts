@@ -1,6 +1,8 @@
 import { getSqlite } from './db/connection'
 import { fetchWithRetry } from './http'
 import { downloadImage } from './files'
+import * as tasks from './tasks'
+import { cooperativeGate, type PauseGate } from './taskControls'
 import type { MusicArtResult, MusicArtStatus } from '@shared/types'
 
 // Online fallback for album covers / artist photos the scanner couldn't find
@@ -216,20 +218,48 @@ export function clearArtistArt(artistId: number): void {
 // ---------------------------------------------------------------------------
 
 const artState: MusicArtStatus = { running: false, done: 0, total: 0, updated: 0 }
-let cancelRequested = false
+// Cooperative pause/cancel between albums. Resumable by design — already-checked
+// rows are excluded by the WHERE — so stopping loses nothing.
+let gate: PauseGate | null = null
 
 export function getArtStatus(): MusicArtStatus {
   return { ...artState }
 }
 
 export function cancelArtFetch(): void {
-  cancelRequested = true
+  gate?.controls.cancel?.()
 }
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
 
 export async function fetchMissingArt(): Promise<MusicArtStatus> {
   if (artState.running) throw new Error('Art fetch already running')
+  // `handle` is assigned by runTask before it invokes the body, so the gate's
+  // paused/resumed callbacks below can reach it — they only ever fire from
+  // inside the loop. The gate itself must exist first, because `controls` is
+  // read when the task is created.
+  let handle: tasks.TaskHandle
+  const runGate = cooperativeGate(
+    () => handle.progress({ state: 'paused' }),
+    () => handle.progress({ state: 'running' })
+  )
+  gate = runGate
+  return tasks.runTask(
+    {
+      kind: 'musicArt',
+      label: 'Fetching missing music art',
+      route: '/music',
+      controls: runGate.controls,
+      project: () => ({ done: artState.done, total: artState.total })
+    },
+    (h) => {
+      handle = h
+      return fetchMissingArtInner(runGate)
+    }
+  )
+}
+
+async function fetchMissingArtInner(runGate: PauseGate): Promise<MusicArtStatus> {
   const db = getSqlite()
   const albums = db
     .prepare(
@@ -242,18 +272,21 @@ export async function fetchMissingArt(): Promise<MusicArtStatus> {
     )
     .all() as { id: number }[]
 
-  cancelRequested = false
   Object.assign(artState, { running: true, done: 0, total: albums.length + artists.length, updated: 0 })
   try {
     for (const { id } of albums) {
-      if (cancelRequested) break
+      // Guarded await — see bulkImport: an unconditional one adds a microtask
+      // hop per item and shifts when a cancel takes effect.
+      if (runGate.paused) await runGate.wait()
+      if (runGate.cancelled) break
       const res = await fetchAlbumArt(id)
       artState.done += 1
       if (res.updated) artState.updated += 1
       await sleep(200)
     }
     for (const { id } of artists) {
-      if (cancelRequested) break
+      if (runGate.paused) await runGate.wait()
+      if (runGate.cancelled) break
       const res = await fetchArtistImage(id)
       artState.done += 1
       if (res.updated) artState.updated += 1

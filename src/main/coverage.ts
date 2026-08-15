@@ -1,6 +1,7 @@
 import { getSqlite } from './db/connection'
 import { countSeriesWords } from './seriesText'
 import * as coverageRepo from './repos/coverageRepo'
+import * as tasks from './tasks'
 import type { JpCoverageDetail, JpCoverageScanStatus } from '@shared/types'
 
 // Comprehension scan orchestration: walk a series' text once, snapshot the word
@@ -25,6 +26,22 @@ export function getCoverageScanStatus(): JpCoverageScanStatus {
 
 export async function scanCoverage(mediaId: number): Promise<JpCoverageDetail> {
   if (status.running) throw new Error('A comprehension scan is already running')
+  return tasks.runTask(
+    {
+      kind: 'coverageScan',
+      label: 'Comprehension scan',
+      route: `/japanese/comprehension/${mediaId}`,
+      controls: tasks.flagCancel('Comprehension scans are short — stop and re-run instead'),
+      project: () => ({ done: status.done, total: status.total })
+    },
+    (handle) => scanCoverageInner(mediaId, handle)
+  )
+}
+
+async function scanCoverageInner(
+  mediaId: number,
+  handle: tasks.TaskHandle
+): Promise<JpCoverageDetail> {
   status.running = true
   status.error = null
   status.mediaId = mediaId
@@ -41,6 +58,8 @@ export async function scanCoverage(mediaId: number): Promise<JpCoverageDetail> {
     const scan = await countSeriesWords(mediaId, (done, total) => {
       status.done = done
       status.total = total
+      // The progress callback is the only cancellation point a file walk has.
+      if (handle.cancelRequested()) throw new tasks.TaskCancelledError('Comprehension scan')
     })
     coverageRepo.saveScan(mediaId, scan)
     const detail = coverageRepo.coverageForMedia(mediaId)

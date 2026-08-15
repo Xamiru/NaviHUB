@@ -79,6 +79,62 @@ export const gameSession = sqliteTable(
 )
 
 // ---------------------------------------------------------------------------
+// achievement_game / achievement / achievement_unlock — Steam-emulator and
+// RetroAchievements tracking (achievements.ts, achievementWatcher.ts). The
+// achievement_game row is opt-in and never auto-created, so it doubles as the
+// durable "was launchable once" marker after an exe is unlinked.
+// ---------------------------------------------------------------------------
+export const achievementGame = sqliteTable('achievement_game', {
+  mediaId: integer('media_id')
+    .primaryKey()
+    .references(() => mediaItem.id, { onDelete: 'cascade' }),
+  provider: text('provider').notNull(), // 'steam' | 'ra'
+  providerGameId: text('provider_game_id').notNull(),
+  schemaFetchedAt: text('schema_fetched_at'),
+  createdAt: text('created_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})
+
+export const achievement = sqliteTable(
+  'achievement',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    apiName: text('api_name').notNull(),
+    name: text('name').notNull(),
+    description: text('description'),
+    hidden: integer('hidden', { mode: 'boolean' }).notNull().default(false),
+    iconPath: text('icon_path'),
+    iconGrayPath: text('icon_gray_path'),
+    points: integer('points'), // RA only
+    globalPct: real('global_pct'),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    byMedia: index('idx_achievement_media').on(t.mediaId),
+    uniq: unique('uniq_achievement_api_name').on(t.mediaId, t.apiName)
+  })
+)
+
+// Row present = unlocked. Personal; dropped on export.
+export const achievementUnlock = sqliteTable(
+  'achievement_unlock',
+  {
+    achievementId: integer('achievement_id')
+      .primaryKey()
+      .references(() => achievement.id, { onDelete: 'cascade' }),
+    unlockedAt: text('unlocked_at').notNull(), // UTC
+    source: text('source').notNull() // 'emu' | 'ra' | 'manual'
+  },
+  (t) => ({
+    byTime: index('idx_achievement_unlock_time').on(t.unlockedAt)
+  })
+)
+
+// ---------------------------------------------------------------------------
 // person — voice actors, directors, authors, actors…
 // ---------------------------------------------------------------------------
 export const person = sqliteTable(

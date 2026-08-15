@@ -1,10 +1,10 @@
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'child_process'
-import { createInterface } from 'readline'
 import { statSync } from 'fs'
 import { get as getSetting } from '../repos/settingsRepo'
 import { buildProbeArgs } from './playability'
 import { parseProbeJson, type MediaProbe } from './probeParse'
 import { applyProgressLine, emptyProgress, type FfProgress } from './progressParse'
+import { pipeProcLines } from '../childLines'
 import type { VideoToolsResult } from '@shared/types'
 
 // Spawning ffmpeg/ffprobe. Every DECISION lives in playability.ts (pure); this
@@ -99,19 +99,34 @@ export interface FfmpegRun {
 // -progress lines to the caller. The last stderr lines are kept because
 // ffmpeg's real error is always the final one, and that's what the status
 // message should show rather than "exited with code 1".
-export function runFfmpeg(args: string[], onProgress: (p: FfProgress) => void): FfmpegRun {
+export function runFfmpeg(
+  args: string[],
+  onProgress: (p: FfProgress) => void,
+  taskId?: string | null
+): FfmpegRun {
   const proc = spawn(ffmpegBin(), args) as ChildProcessWithoutNullStreams
   let state = emptyProgress()
   const tail: string[] = []
 
-  createInterface({ input: proc.stdout }).on('line', (line) => {
-    state = applyProgressLine(state, line)
-    onProgress(state)
-  })
-  createInterface({ input: proc.stderr }).on('line', (line) => {
-    if (!line.trim()) return
-    tail.push(line)
-    if (tail.length > 20) tail.shift()
+  // The stderr tail is KEPT as well as logged — it is what produces the real
+  // error message on VideoPrepareStatus, and losing it would degrade the panel
+  // to "exited with code 1".
+  //
+  // logStdout:false because ffmpeg's stdout here is the -progress key=value
+  // protocol, already parsed into the status object. Routing a line per frame
+  // into the ring would evict everything else in under a minute.
+  pipeProcLines(proc, {
+    tool: 'ffmpeg',
+    taskId,
+    logStdout: false,
+    onStdout: (line) => {
+      state = applyProgressLine(state, line)
+      onProgress(state)
+    },
+    onStderr: (line) => {
+      tail.push(line)
+      if (tail.length > 20) tail.shift()
+    }
   })
 
   const done = new Promise<{ code: number | null; stderr: string }>((resolve) => {

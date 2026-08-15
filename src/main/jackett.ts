@@ -1,6 +1,7 @@
 import { execFile } from 'child_process'
 import { get as getSetting } from './repos/settingsRepo'
 import { fetchWithRetry } from './http'
+import * as tasks from './tasks'
 import { indexersForCategories } from '@shared/torrents'
 import type {
   JackettEnsureResult,
@@ -186,6 +187,10 @@ interface SearchJob {
   id: string
   query: string
   running: boolean
+  // Separate from `running`, which a finished fan-out clears too: without this
+  // the projection cannot tell a search the user stopped from one that
+  // completed, and a deliberate Stop settles green as "done".
+  cancelled: boolean
   indexerTotal: number
   indexerDone: number
   results: TorrentSearchResult[]
@@ -198,7 +203,40 @@ let jobCounter = 0
 export function startSearch(query: string, categories: number[]): { id: string } {
   requireConfig() // throws before we hand back an id the UI would poll
   const id = `search-${++jobCounter}`
-  job = { id, query, running: true, indexerTotal: 0, indexerDone: 0, results: [], errors: [] }
+  job = {
+    id,
+    query,
+    running: true,
+    cancelled: false,
+    indexerTotal: 0,
+    indexerDone: 0,
+    results: [],
+    errors: []
+  }
+  // ephemeral: a session's worth of searches would otherwise fill the finished
+  // list. Projected from the job's counters directly, NEVER from searchStatus(0)
+  // — that copies the whole >1000-row result array on every ~1Hz poll.
+  tasks.create({
+    kind: 'torrentSearch',
+    label: `Torrent search: ${query}`,
+    route: '/torrents',
+    ephemeral: true,
+    controls: { cancel: () => cancelSearch(id), pauseNote: 'Searches cannot be paused' },
+    project: () => {
+      if (job?.id !== id) return null
+      if (!job.running)
+        return {
+          state: job.cancelled ? 'cancelled' : 'done',
+          done: job.indexerDone,
+          total: job.indexerTotal
+        }
+      return {
+        detail: `${job.results.length} results`,
+        done: job.indexerDone,
+        total: job.indexerTotal
+      }
+    }
+  })
   void runSearch(id, query, categories)
   return { id }
 }
@@ -269,7 +307,9 @@ export function searchStatus(offset = 0): TorrentSearchStatus | null {
 
 // Stops the fan-out but KEEPS what's already found (qBittorrent's Stop button).
 export function cancelSearch(id: string): void {
-  if (job?.id === id) job.running = false
+  if (job?.id !== id) return
+  job.running = false
+  job.cancelled = true
 }
 
 // ---------------- "Start Jackett" ----------------

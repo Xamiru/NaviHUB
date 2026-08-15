@@ -16,6 +16,7 @@ import { TYPE_COLORS } from './StatsPage'
 import { GACHA_GAMES } from '@shared/gacha'
 import lainIcon from '../assets/lain.png'
 import { readerPath } from '../lib/readerPath'
+import { mediaUrl } from '@shared/mediaUrl'
 import type { MediaItem, ResumePoint, SettingsMap } from '@shared/types'
 
 // The status that marks an item as in-progress is the FIRST status of its
@@ -105,6 +106,8 @@ export default function HomePage() {
           <MusicCard />
         </div>
       </div>
+
+      <RecentUnlocks />
 
       <TopPeople />
 
@@ -514,6 +517,44 @@ function MusicCard() {
         Music library →
       </Link>
     </div>
+  )
+}
+
+// The last few achievements earned. Hidden entirely until something is
+// tracked, so a library with no games never sees an empty shelf.
+function RecentUnlocks() {
+  const { data = [] } = useQuery({
+    queryKey: qk.achievements.recent(10),
+    queryFn: () => api.achievements.recent(10)
+  })
+  if (!data.length) return null
+  return (
+    <Section className="mt-8" title="Recent unlocks">
+      <div className="flex gap-3 overflow-x-auto pb-1">
+        {data.map((e) => (
+          <Link
+            key={`${e.achievementId}-${e.unlockedAt}`}
+            to={`${configFor(e.mediaType).basePath}/${e.mediaId}?tab=achievements`}
+            className="card group flex w-64 shrink-0 items-center gap-3 p-3 hover:border-accent/60"
+            title={e.description ?? e.name}
+          >
+            {e.iconPath ? (
+              <img
+                src={mediaUrl(e.iconPath) ?? undefined}
+                alt=""
+                className="h-12 w-12 shrink-0 rounded object-cover"
+              />
+            ) : (
+              <span className="h-12 w-12 shrink-0 rounded bg-base-700" />
+            )}
+            <span className="min-w-0">
+              <span className="block truncate text-sm group-hover:text-accent">{e.name}</span>
+              <span className="block truncate text-xs text-gray-500">{e.mediaTitle}</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </Section>
   )
 }
 

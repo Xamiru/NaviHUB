@@ -116,9 +116,15 @@ function getMedia(mediaId: number): MediaRow {
 
 // "<Title> (<type>)/wallpapers" — the (<type>) suffix keeps an anime and its
 // manga adaptation (same title) in separate folders.
+const KIND_DIRS: Record<ImageKind, string> = {
+  wallpaper: 'wallpapers',
+  fanart: 'fanart',
+  background: 'backgrounds'
+}
+
 function subdirFor(media: MediaRow, kind: ImageKind): string {
   const folder = `${sanitizeFileBase(media.title, 'untitled')} (${media.media_type})`
-  return `${folder}/${kind === 'wallpaper' ? 'wallpapers' : 'fanart'}`
+  return `${folder}/${KIND_DIRS[kind]}`
 }
 
 function rowToImage(r: any): MediaImage {

@@ -58,6 +58,63 @@ describe('a live DB that predates newer columns', () => {
     expect(row).toEqual({ word: 'reticent', status: 'new' })
   })
 
+  it('gains the achievement tables without touching the pre-existing library', () => {
+    // Achievements added three BRAND-NEW tables (no ensureColumn, no index on a
+    // migrated column), so the only thing to prove is that a DB predating them
+    // picks them up on startup with its own rows untouched.
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    // media_item as it was before the launcher landed: no local_dir, no
+    // exe_path (both ensureColumn'd), everything else already there.
+    db.exec(`CREATE TABLE media_item (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      media_type      TEXT NOT NULL,
+      title           TEXT NOT NULL,
+      title_original  TEXT,
+      synopsis        TEXT,
+      cover_path      TEXT,
+      release_date    TEXT,
+      total_units     INTEGER,
+      status          TEXT,
+      score           REAL,
+      progress        INTEGER NOT NULL DEFAULT 0,
+      rewatch_count   INTEGER NOT NULL DEFAULT 0,
+      notes           TEXT,
+      favorite        INTEGER NOT NULL DEFAULT 0,
+      metadata        TEXT,
+      external_source TEXT,
+      external_id     TEXT,
+      created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+    );`)
+    db.prepare(`INSERT INTO media_item (media_type, title) VALUES ('game', 'Old Save')`).run()
+
+    expect(() => db.exec(initSql)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+
+    const tables = (
+      db
+        .prepare(
+          `SELECT name FROM sqlite_master WHERE type='table'
+             AND name IN ('achievement','achievement_game','achievement_unlock')`
+        )
+        .all() as { name: string }[]
+    ).map((t) => t.name)
+    expect(tables.sort()).toEqual(['achievement', 'achievement_game', 'achievement_unlock'])
+    // And the app's own eligibility query runs against the migrated shape.
+    expect(() =>
+      db
+        .prepare(
+          `SELECT 1 FROM media_item m WHERE m.id = 1
+             AND (m.exe_path IS NOT NULL
+                  OR EXISTS (SELECT 1 FROM game_session g WHERE g.media_id = m.id)
+                  OR EXISTS (SELECT 1 FROM achievement_game a WHERE a.media_id = m.id))`
+        )
+        .get()
+    ).not.toThrow()
+    expect(db.prepare('SELECT title FROM media_item').get()).toEqual({ title: 'Old Save' })
+  })
+
   it('NO init.sql statement references a column that only migrations create', () => {
     // The drift guard: parses the real ensureColumn list out of connection.ts
     // and cross-checks every index in init.sql against it, so the next index

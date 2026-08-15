@@ -17,10 +17,15 @@ import { killActiveUpdate } from './updater'
 import { killActivePrepare } from './video/session'
 import { killActiveOcr } from './mokuroRun'
 import { finalizeActiveGameSession } from './gameLaunch'
+import { stopAchievementWatcher } from './achievementWatcher'
 import { closeCatalogDb } from './gamesCatalogDb'
 import { parseArgvFiles, queueOpen } from './openFile'
 import { setMainWindow as setPlayerBridgeWindow } from './playerBridge'
 import { closeWidget } from './widget'
+import { logError, logInfo } from './logBus'
+import { startFileSink, stopFileSink } from './logFile'
+import { settleAllOnQuit as settleAllTasksOnQuit } from './tasks'
+import { installAppMenu } from './appMenu'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
 protocol.registerSchemesAsPrivileged([
@@ -167,6 +172,19 @@ app.whenReady().then(() => {
   // merely likely.
   if (!isPrimaryInstance) return
 
+  // Before initDatabase, so the migration lines this session's upgrade emits
+  // reach the file rather than only the ring.
+  startFileSink()
+  logInfo('app', `NaviHUB ${app.getVersion()} starting (electron ${process.versions.electron})`)
+
+  // uncaughtException is deliberately NOT handled: registering a handler
+  // suppresses Electron's default fatal behaviour, and logging-then-crashing
+  // means rethrowing inside the handler. That's a change to crash semantics
+  // that wants a real eyeball, so it stays out until it can be driven in the app.
+  process.on('unhandledRejection', (reason) => {
+    logError('app', `unhandled rejection: ${reason instanceof Error ? (reason.stack ?? reason.message) : String(reason)}`)
+  })
+
   initDatabase()
   registerIpc()
 
@@ -240,6 +258,9 @@ app.whenReady().then(() => {
   })
 
   createWindow()
+  // After createWindow, so Menu.getApplicationMenu() has the default menu to
+  // append to. Per-window bar VISIBILITY is unaffected — it stays opt-in.
+  installAppMenu(() => mainWindow)
 
   // A cold start FROM a double-click: the file is in our own argv. Queued (not
   // pushed) like every other open — the renderer collects it on first poll.
@@ -262,6 +283,10 @@ app.on('window-all-closed', () => {
 })
 
 app.on('before-quit', () => {
+  // FIRST: stamp everything still running as "cancelled (app quit)" before the
+  // killers below produce SIGKILL exit codes, which the subsystems' own status
+  // objects would otherwise report as errors the user never caused.
+  settleAllTasksOnQuit()
   // Don't let a half-finished yt-dlp outlive the app; its .part files survive
   // and resume on the next try.
   killActiveMusicDownload()
@@ -274,6 +299,10 @@ app.on('before-quit', () => {
   // A killed mokuro run loses nothing durable — finished volumes keep their
   // sidecars, and mokuro's own _ocr cache resumes the interrupted one.
   killActiveOcr()
+  // Stop the achievement poll and take one last look at the emulator's save
+  // file — quitting mid-session is the moment those unlocks would be lost.
+  // Also must precede closeDatabase(): it writes unlock rows.
+  stopAchievementWatcher()
   // The one child that is NOT killed: record the in-flight play session and
   // let the game outlive the app (it was spawned detached for exactly this).
   // Must run before closeDatabase() — it writes the session row.
@@ -281,4 +310,8 @@ app.on('before-quit', () => {
   closeDatabase()
   closeCatalogDb()
   closeDictDb()
+  // LAST, and synchronous: every step above can log, and this is the flush that
+  // gets those lines onto disk before the process goes away.
+  logInfo('app', 'shutting down')
+  stopFileSink()
 })

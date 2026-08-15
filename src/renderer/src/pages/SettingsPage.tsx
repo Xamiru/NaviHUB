@@ -436,9 +436,53 @@ function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSa
           </>
         }
       />
-      {/* Games import runs on Steam's keyless storefront API — no key row.
-          (RAWG and IGDB both remain in code but need keys/2FA the user can't
-          get; their settings keys stay in the sanitize wipe list.) */}
+      {/* Games IMPORT runs on Steam's keyless storefront API — no key needed.
+          The key below is only for achievement lists, which come from the
+          separate Web API. (RAWG and IGDB both remain in code but need
+          keys/2FA the user can't get; their settings keys stay in the sanitize
+          wipe list.) */}
+      <TextSetting
+        settingKey="steam.web_api_key"
+        data={data}
+        onSave={onSave}
+        title="Steam Web API key"
+        type="password"
+        placeholder="Paste your Steam Web API key…"
+        description={
+          <>
+            Optional. Needed only to fetch achievement lists for games. Get a free key at{' '}
+            <span className="text-gray-400">steamcommunity.com/dev/apikey</span> — importing games
+            needs no key. Stored locally on this machine only.
+          </>
+        }
+      />
+      <TextSetting
+        settingKey="ra.username"
+        data={data}
+        onSave={onSave}
+        title="RetroAchievements username"
+        placeholder="Your RA account name…"
+        description={
+          <>
+            Optional. Enables achievements for emulated games. Play through an RA-enabled emulator
+            signed into this account and unlocks sync here.
+          </>
+        }
+      />
+      <TextSetting
+        settingKey="ra.api_key"
+        data={data}
+        onSave={onSave}
+        title="RetroAchievements Web API key"
+        type="password"
+        placeholder="Paste your RA Web API key…"
+        description={
+          <>
+            Found on <span className="text-gray-400">retroachievements.org → Settings → Keys</span>.
+            Stored locally on this machine only.
+          </>
+        }
+      />
     </>
   )
 }

@@ -16,7 +16,22 @@ export default function Toaster() {
             t.kind === 'error' ? 'border-red-500/60 text-red-300' : 'border-accent/60 text-gray-200'
           }`}
         >
-          {t.message}
+          {t.kind === 'unlock' ? (
+            <span className="flex items-center gap-3">
+              {t.iconUrl ? (
+                <img src={t.iconUrl} alt="" className="w-10 h-10 rounded object-cover shrink-0" />
+              ) : null}
+              <span className="min-w-0">
+                <span className="block text-xs uppercase tracking-wide text-accent">
+                  Achievement unlocked
+                </span>
+                <span className="block truncate font-medium text-gray-100">{t.message}</span>
+                {t.sub ? <span className="block truncate text-xs text-gray-400">{t.sub}</span> : null}
+              </span>
+            </span>
+          ) : (
+            t.message
+          )}
         </button>
       ))}
     </div>

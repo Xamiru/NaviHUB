@@ -6,6 +6,7 @@ import { createHash } from 'crypto'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
 import { musicRootDir, absoluteMediaPath } from './files'
+import * as tasks from './tasks'
 import type { MusicDeleteResult, MusicScanStatus, MusicScanSummary } from '@shared/types'
 
 // ---------------------------------------------------------------------------
@@ -459,6 +460,21 @@ function extForPicture(format: string): string {
 
 export async function startScan(reader: TagReader = realTagReader): Promise<MusicScanSummary> {
   if (scanState.running) throw new Error('A scan is already running')
+  // The scan itself is untouched — runTask only wraps it in a registry row
+  // whose projection reads the same scanState the Music page already polls.
+  return tasks.runTask(
+    {
+      kind: 'musicScan',
+      label: 'Scanning music library',
+      route: '/music',
+      controls: tasks.flagCancel('Scans cannot be paused — stop and re-run instead'),
+      project: () => ({ detail: scanState.phase, done: scanState.done, total: scanState.total })
+    },
+    (handle) => scanLibrary(reader, handle)
+  )
+}
+
+async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise<MusicScanSummary> {
   const startedAt = Date.now()
   Object.assign(scanState, { running: true, phase: 'walking', done: 0, total: 0, error: null })
   try {
@@ -550,6 +566,9 @@ export async function startScan(reader: TagReader = realTagReader): Promise<Musi
       (f) => needsEmbed.has(f.albumDir) && firstFileOfAlbum.get(f.albumDir) === f.relPath,
       (done) => {
         scanState.done = done
+        // Tag parsing is the long phase, so this is where a stop has to bite.
+        // Throwing before any DB write means a cancelled scan changes nothing.
+        if (handle.cancelRequested()) throw new tasks.TaskCancelledError('Scanning music library')
       }
     )
     const parsed = [...unchanged, ...freshlyParsed]

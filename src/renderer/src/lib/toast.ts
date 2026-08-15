@@ -6,7 +6,12 @@
 export interface Toast {
   id: number
   message: string
-  kind: 'error' | 'success'
+  kind: 'error' | 'success' | 'unlock'
+  // 'unlock' only: the achievement's art and the game it belongs to. The OS
+  // notification is raised from main (it has to reach a fullscreen game); this
+  // is the in-app half, for when NaviHUB is what the user is looking at.
+  iconUrl?: string | null
+  sub?: string | null
 }
 
 const DISMISS_MS = 6000
@@ -42,6 +47,15 @@ export function toast(message: string, kind: Toast['kind'] = 'error'): void {
   }
   const id = nextId++
   toasts = [...toasts, { id, message, kind }]
+  emit()
+  setTimeout(() => dismissToast(id), DISMISS_MS)
+}
+
+// An achievement unlock, shown with its art. Never deduped by message the way
+// toast() is — two achievements can legitimately share a name across games.
+export function toastUnlock(message: string, sub: string | null, iconUrl: string | null): void {
+  const id = nextId++
+  toasts = [...toasts, { id, message, kind: 'unlock', sub, iconUrl }]
   emit()
   setTimeout(() => dismissToast(id), DISMISS_MS)
 }

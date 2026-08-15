@@ -5,7 +5,10 @@ import * as vndb from './vndb'
 import * as gamesCatalog from './gamesCatalog'
 import { normTitle } from './steam'
 import { sleep } from './http'
-import { beginActivity, endActivity } from './progress'
+import { beginActivity, endActivity, TaskCancelledError } from './progress'
+import * as tasks from './tasks'
+import type { TaskHandle } from './tasks'
+import { cooperativeGate, type PauseGate } from './taskControls'
 import { bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
 import type { BulkListParams, BulkPreviewItem, BulkRunStatus, BulkStartPayload } from '@shared/types'
 
@@ -143,14 +146,17 @@ let status: BulkRunStatus = {
   failed: 0,
   message: null
 }
-let cancelRequested = false
+// Cooperative pause/cancel. Pause means "stop starting new titles" — the one
+// in flight finishes first, which can be a whole fetchWithRetry timeout away,
+// so the registry shows 'pausing' until wait() actually blocks.
+let gate: PauseGate | null = null
 
 export function getStatus(): BulkRunStatus {
   return { ...status }
 }
 
 export function cancel(): void {
-  if (status.state === 'running') cancelRequested = true
+  if (status.state === 'running') gate?.controls.cancel?.()
 }
 
 async function importOne(source: BulkSourceKey, sourceId: number): Promise<void> {
@@ -192,7 +198,8 @@ export function start(
   if (!items.length) throw new Error('Nothing selected to import.')
 
   const id = status.id + 1
-  cancelRequested = false
+  // The gate is created below and replaces the old cancelRequested flag; a
+  // fresh one per run means no reset is needed here.
   status = {
     id,
     state: 'running',
@@ -208,18 +215,48 @@ export function start(
   const run = deps.importOne ?? importOne
   const delay = deps.delayMs ?? SOURCE_DELAY_MS[payload.source]
 
+  // ONE task for the whole run, not one per title: the inner importers call
+  // beginActivity through withActivity, and attachTo below is what stops each
+  // title minting its own row. Settled explicitly in the finally, because a
+  // nested import releasing the shared slot must not close this task.
+  // The gate reports 'paused' itself the moment it really blocks, which is what
+  // turns the row from 'pausing' into 'paused'.
+  let handle: TaskHandle
+  const runGate = cooperativeGate(
+    () => handle.progress({ state: 'paused' }),
+    () => handle.progress({ state: 'running' })
+  )
+  gate = runGate
+  const task = tasks.create({
+    kind: 'bulkImport',
+    label: `Bulk import: ${cfg.label}`,
+    route: '/bulk',
+    controls: runGate.controls,
+    project: () =>
+      status.id === id
+        ? { detail: status.message, done: status.done, total: status.total }
+        : null
+  })
+  handle = task
+
   void (async () => {
     // Arms progress.ts so every title's own updateActivity/imageProgress calls
     // reach the Topbar pill — the app's only always-mounted progress surface.
-    beginActivity(`Bulk import: ${cfg.label}`)
+    const slot = beginActivity(`Bulk import: ${cfg.label}`, { attachTo: task })
     // Cross-source dupes (Steam-owned games) match by name; built once — a
     // title imported manually MID-run is caught by the importedById re-check.
     const titleSet = existingGameTitles(payload.source)
     try {
       let consecutiveFailures = 0
       for (let i = 0; i < items.length; i++) {
+        // Guarded, NOT an unconditional await: awaiting an already-resolved
+        // promise still defers a microtask, which would delay every item by a
+        // tick and change when a cancel is observed relative to the title in
+        // flight. Blocks only when genuinely paused; a cancel releases it, so a
+        // paused run can always still be stopped.
+        if (runGate.paused) await runGate.wait()
         if (status.id !== id) return // a newer run took over
-        if (cancelRequested) {
+        if (runGate.cancelled) {
           status = { ...status, state: 'cancelled', message: null }
           return
         }
@@ -237,8 +274,16 @@ export function start(
           if (status.id !== id) return
           status = { ...status, imported: status.imported + 1 }
           consecutiveFailures = 0
-        } catch {
+        } catch (err) {
           if (status.id !== id) return
+          // Stopping from the Tasks page sets the task's cancel flag, which
+          // trips progress.ts's checkpoint INSIDE the title in flight. That is
+          // the user's own action, not an import failure: counting it inflates
+          // the tally and can even trip the consecutive-failure bail-out.
+          if (err instanceof TaskCancelledError || runGate.cancelled) {
+            status = { ...status, state: 'cancelled', message: null }
+            return
+          }
           status = { ...status, failed: status.failed + 1 }
           consecutiveFailures++
           if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
@@ -254,8 +299,20 @@ export function start(
       }
       if (status.id === id) status = { ...status, state: 'done', message: null }
     } finally {
-      // Never clear a NEWER run's slot (it called beginActivity itself).
-      if (status.id === id) endActivity()
+      // Never clear a NEWER run's slot — neither a newer bulk run (status.id)
+      // nor a dialog import that took the slot mid-run (the handle argument).
+      if (status.id === id) endActivity(undefined, slot)
+      // Settled from OUR state, not the slot's: the tally is the outcome the
+      // user cares about, and 'cancelled' must not read as a failure.
+      task.settle(
+        status.id !== id
+          ? { state: 'cancelled', error: 'superseded by a newer run' }
+          : status.state === 'error'
+            ? { state: 'error', error: status.message }
+            : status.state === 'cancelled'
+              ? { state: 'cancelled' }
+              : { state: 'done' }
+      )
     }
   })()
 

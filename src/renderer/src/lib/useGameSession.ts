@@ -64,6 +64,10 @@ export function useGameSession(): GameSessionHook {
     void qc.invalidateQueries({ queryKey: qk.games.all })
     void qc.invalidateQueries({ queryKey: qk.media.all })
     void qc.invalidateQueries({ queryKey: qk.checklist.all })
+    // And it almost certainly moved achievement counts — the watcher's final
+    // sweep runs as the game exits. Without this the Achievements tab, the card
+    // chips and the Home strip all keep showing pre-session numbers.
+    void qc.invalidateQueries({ queryKey: qk.achievements.all })
   }, [status, qc])
 
   return {

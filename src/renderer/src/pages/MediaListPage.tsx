@@ -96,6 +96,14 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   // Big libraries render in scroll-fed batches, same as the entity grids.
   const { visible, sentinelRef, hasMore } = useIncrementalList(items)
 
+  // One map for the whole grid rather than a query per card — only a handful of
+  // games are ever tracked, and untracked ones simply aren't in it.
+  const { data: achievementSummaries } = useQuery({
+    queryKey: qk.achievements.cardSummaries,
+    queryFn: () => api.achievements.cardSummaries(),
+    enabled: !!cfg.hasAchievements
+  })
+
   const { data: counts = {} } = useQuery({
     queryKey: qk.mediaCounts.byType(cfg.key),
     queryFn: () => api.media.statusCounts(cfg.key)
@@ -336,7 +344,13 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
           )}
           <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
             {visible.map((m) => (
-              <MediaCard key={m.id} cfg={cfg} item={m} showFavorite />
+              <MediaCard
+                key={m.id}
+                cfg={cfg}
+                item={m}
+                showFavorite
+                achievements={achievementSummaries?.[m.id]}
+              />
             ))}
           </div>
           <div ref={sentinelRef} />

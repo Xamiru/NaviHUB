@@ -365,7 +365,10 @@ export interface ThemeImportSummary {
 
 // ---- wallpapers / fan art ----
 
-export type ImageKind = 'wallpaper' | 'fanart'
+// 'background' (2026-08): a per-game page background override, set from the
+// franchise pages only — it is deliberately NOT surfaced on the Art tab.
+// One row per media item is the intended shape (the setter removes priors).
+export type ImageKind = 'wallpaper' | 'fanart' | 'background'
 
 // A wallpaper or fan-art image attached to a media item. The file lives under
 // pictures.dir (virtual "pictures/" prefix) — filePath feeds straight to mediaUrl().
@@ -395,6 +398,18 @@ export interface WallpaperSearchPage {
   results: WallpaperSearchResult[]
   page: number
   lastPage: number
+}
+
+// ---- franchises ----
+// The curated franchise data itself ships in the bundle (@shared/franchises);
+// the only backend surface is the art cache (src/main/franchiseArt.ts),
+// polled with this status while a batch download runs.
+
+export interface FranchiseArtStatus {
+  running: boolean
+  franchiseId: string | null
+  done: number
+  total: number
 }
 
 // One playable song in the song quiz pool: a theme flattened with the anime it
@@ -560,6 +575,134 @@ export interface GameLaunchStatus {
   discarded: boolean
   progressDelta: number | null
   message: string | null
+}
+
+// ---- Achievements ----
+// Tracking is opt-in per title and only offered for games that have (or once
+// had) a linked executable. Steam titles are tracked by reading the unlock
+// files cracked games' Steam emulators write; retro titles through a
+// RetroAchievements account. 'steam' | 'ra' and 'emu' | 'ra' | 'manual' are
+// stored in the DB — frozen key strings.
+
+export type AchievementProvider = 'steam' | 'ra'
+export type AchievementUnlockSource = 'emu' | 'ra' | 'manual'
+export type AchievementRarity = 'common' | 'uncommon' | 'rare' | 'ultra-rare'
+
+export interface AchievementRow {
+  id: number
+  apiName: string
+  name: string
+  description: string | null
+  hidden: boolean
+  iconPath: string | null // media/… relative, unlocked art
+  iconGrayPath: string | null // media/… relative, locked art
+  points: number | null // RA only — Steam has no score, and none is invented
+  globalPct: number | null
+  rarity: AchievementRarity | null // derived main-side from globalPct
+  unlockedAt: string | null // null = locked
+  unlockSource: AchievementUnlockSource | null
+}
+
+export interface AchievementTracking {
+  provider: AchievementProvider
+  providerGameId: string // Steam appid, or RA game id
+  schemaFetchedAt: string | null
+}
+
+export interface AchievementSummary {
+  unlocked: number
+  total: number
+  points: number | null // earned RA points; null for Steam sets
+}
+
+// The detail tab in one invoke. `eligible` is the exe-linked-now-or-ever rule;
+// when it is false the tab explains that instead of offering setup.
+export interface AchievementListPayload {
+  eligible: boolean
+  tracking: AchievementTracking | null
+  summary: AchievementSummary
+  achievements: AchievementRow[]
+}
+
+// A title's Steam appid guess for the setup dialog. `exact` marks the appid
+// already stored on a Steam-imported row, which needs no confirmation.
+export interface SteamAppCandidate {
+  appid: string
+  name: string
+  coverUrl: string | null
+  exact: boolean
+}
+
+export interface RaGameCandidate {
+  gameId: string
+  title: string
+  consoleName: string | null
+  iconUrl: string | null
+}
+
+export interface AchievementSetupResult {
+  total: number
+  unlocked: number // includes anything a retroactive emulator sweep found
+  importedFromFiles: number
+  filesFound: number
+}
+
+// One unlock as it happened, for the popup + the global feed.
+export interface AchievementUnlockEvent {
+  seq: number
+  achievementId: number
+  mediaId: number
+  mediaTitle: string
+  // VNs are trackable too, so every link out of a feed row has to resolve the
+  // type rather than assume /games.
+  mediaType: MediaType
+  name: string
+  description: string | null
+  iconPath: string | null
+  rarity: AchievementRarity | null
+  points: number | null
+  unlockedAt: string
+}
+
+// Polled while a game session runs (achievementWatcher.ts). The renderer fires
+// its in-app toast off `recent`, deduped by seq; the OS notification is raised
+// from main so it appears over a fullscreen game.
+export interface AchievementWatchStatus {
+  running: boolean
+  mediaId: number | null
+  provider: AchievementProvider | null
+  seq: number
+  recent: AchievementUnlockEvent[]
+  message: string | null
+}
+
+export interface AchievementGameProgress {
+  mediaId: number
+  title: string
+  mediaType: MediaType
+  coverPath: string | null
+  provider: AchievementProvider
+  unlocked: number
+  total: number
+}
+
+export interface AchievementsOverview {
+  recent: AchievementUnlockEvent[]
+  games: AchievementGameProgress[]
+  rarest: AchievementUnlockEvent[]
+  totals: { unlocked: number; total: number; games: number }
+}
+
+// A game playable from the app (Installed page): exe linked right now.
+export interface InstalledGame {
+  mediaId: number
+  title: string
+  mediaType: MediaType
+  coverPath: string | null
+  exePath: string
+  totalSeconds: number
+  lastPlayedAt: string | null
+  achievements: { unlocked: number; total: number } | null
 }
 
 // One row of a voice actor's filmography (powers the VA -> anime page)
@@ -1942,6 +2085,119 @@ export interface ActivityStatus {
   phase: 'fetching' | 'images' | 'audio' | 'writing'
   done: number // progress within the phase (images/audio only)
   total: number
+}
+
+// ---- Task registry ----
+// One normalized row per long-running main-process job (src/main/tasks.ts).
+// Every subsystem keeps its OWN rich *Status channel — this is a read-side
+// projection over them plus the pause/cancel controls, so the Tasks page can
+// show everything at once without any per-feature panel changing.
+// Guarded by tests/taskKindSync.test.ts.
+export type TaskKind =
+  | 'import' // any withActivity import (AniList, TMDB, VNDB, Steam, themes, …)
+  | 'bulkImport'
+  | 'wrestlingImport'
+  | 'musicDownload'
+  | 'mangaOcr'
+  | 'videoPrepare'
+  | 'appUpdate'
+  | 'musicScan'
+  | 'mangaRescan'
+  | 'videoScan'
+  | 'musicArt'
+  | 'dictImport'
+  | 'prepDeck'
+  | 'coreDeck'
+  | 'coverageScan'
+  | 'torrentSearch'
+  | 'franchiseArt'
+// Achievement fetches deliberately have NO kind of their own: they run through
+// withActivity in ipc.ts, so they are 'import' rows with a clear label
+// ("Fetching achievements"). Adding a kind nothing creates would be a lie the
+// guard test catches.
+
+// 'pausing' and 'cancelling' are not decoration: a loop job only checks its
+// gate between items, so a pause requested mid-title can take as long as one
+// fetchWithRetry timeout to bite. Showing 'paused' immediately would be a lie.
+// A SIGSTOPped child process goes straight to 'paused'.
+export type TaskState =
+  | 'running'
+  | 'pausing'
+  | 'paused'
+  | 'cancelling'
+  | 'done'
+  | 'cancelled'
+  | 'error'
+
+export interface TaskSnapshot {
+  id: string // `${kind}-${n}`, never reused within a process
+  kind: TaskKind
+  label: string // "Importing from AniList"
+  detail: string | null // current title / phase / file
+  state: TaskState
+  percent: number | null // 0..100; null = indeterminate
+  done: number
+  total: number
+  startedAt: number // epoch ms
+  endedAt: number | null
+  // Computed in main and PAUSE-AWARE (time spent paused is excluded), so the
+  // renderer never runs a clock of its own.
+  elapsedSec: number
+  error: string | null
+  canCancel: boolean
+  // False renders the button DISABLED, not hidden, with pauseNote as the
+  // tooltip — so it stays visible which jobs can pause and which cannot.
+  canPause: boolean
+  pauseNote: string | null
+  route: string | null // renderer hash route to the owning surface
+}
+
+// ---- Structured logs ----
+// The app writes no console output by design (tests/noConsole.test.ts locks
+// that). Everything worth reading goes through src/main/logBus.ts into a
+// bounded in-memory ring AND a rolling file under userData/logs/, and the
+// renderer reads it with a cursor — there is no push channel.
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
+
+// Closed union, guarded by tests/logSourceSync.test.ts. Per-task filtering is
+// by taskId, NOT by adding a source per subsystem — that's what keeps this
+// list short enough to render as filter chips.
+//   app   startup, quit, unhandled rejections
+//   db    migrations that genuinely ALTERed something
+//   http  fetch retries, rate-limit waits, final failures
+//   task  task registry lifecycle (started / finished / cancelled / failed)
+//   proc  child-process output (yt-dlp, ffmpeg, mokuro)
+//   ipc   an IPC handler threw
+export type LogSource = 'app' | 'db' | 'http' | 'task' | 'proc' | 'ipc'
+
+export interface LogEntry {
+  // Strictly increasing, never reused — the renderer holds it as a cursor, so
+  // an index-based id would rewind every time the ring wrapped.
+  seq: number
+  ts: number // epoch ms
+  level: LogLevel
+  source: LogSource
+  taskId: string | null
+  message: string // already redacted at ingest
+}
+
+// Cursor read, generalising the offset paging jackett.searchStatus already
+// uses. Omit afterSeq to SEED: main answers with the newest `limit` entries
+// rather than the oldest, so a freshly-opened viewer is instantly current.
+export interface LogTailRequest {
+  afterSeq?: number
+  taskId?: string
+  minLevel?: LogLevel
+  limit?: number // default 500, clamped to 2000
+}
+
+export interface LogPage {
+  entries: LogEntry[] // oldest-first; the renderer reverses for display
+  nextSeq: number // pass back as afterSeq
+  oldestSeq: number
+  // Entries evicted from the ring before this cursor could read them, so a gap
+  // in the viewer is never silent.
+  dropped: number
 }
 
 // ---- In-app updates ----

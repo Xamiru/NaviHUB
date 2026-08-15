@@ -17,6 +17,10 @@ import MediaListPage from './pages/MediaListPage'
 import MediaDetailPage from './pages/MediaDetailPage'
 import MediaFormPage from './pages/MediaFormPage'
 import SeasonalAnimePage from './pages/SeasonalAnimePage'
+import InstalledGamesPage from './pages/InstalledGamesPage'
+import FranchisesPage from './pages/FranchisesPage'
+import FranchisePage from './pages/FranchisePage'
+import AchievementsPage from './pages/AchievementsPage'
 import ThemeSongsPage from './pages/ThemeSongsPage'
 import EntityListView from './components/EntityListView'
 import SettingsPage from './pages/SettingsPage'
@@ -31,6 +35,8 @@ import ChecklistPage from './pages/ChecklistPage'
 import ListsIndexPage from './pages/ListsIndexPage'
 import TorrentsPage from './pages/TorrentsPage'
 import BulkImportPage from './pages/BulkImportPage'
+import TasksPage from './pages/TasksPage'
+import LogsPage from './pages/LogsPage'
 import ListFormPage from './pages/ListFormPage'
 import ListDetailPage from './pages/ListDetailPage'
 import TagsIndexPage from './pages/TagsIndexPage'
@@ -213,6 +219,11 @@ export default function App() {
             {/* Games (RAWG) — cast is manual; VAs share the anime/VN seiyuu pool */}
             <Route path="/games" element={<MediaListPage cfg={GAME} />} />
             <Route path="/games/new" element={<MediaFormPage cfg={GAME} />} />
+            {/* Above /games/:id — the /anime/seasonal precedent. */}
+            <Route path="/games/installed" element={<InstalledGamesPage />} />
+            <Route path="/games/achievements" element={<AchievementsPage />} />
+            <Route path="/games/franchises" element={<FranchisesPage />} />
+            <Route path="/games/franchises/:id" element={<FranchisePage />} />
             <Route path="/games/:id" element={<MediaDetailPage cfg={GAME} />} />
             <Route path="/games/:id/edit" element={<MediaFormPage cfg={GAME} />} />
 
@@ -329,6 +340,11 @@ export default function App() {
             <Route path="/watch" element={<WatchLandingPage />} />
             <Route path="/torrents" element={<TorrentsPage />} />
             <Route path="/bulk" element={<BulkImportPage />} />
+            {/* Two routes rather than a ?tab= param, so the native Tools menu
+                and Ctrl+K can deep-link the logs, and so the log poll only
+                exists while the Logs route is mounted. */}
+            <Route path="/tasks" element={<TasksPage />} />
+            <Route path="/tasks/logs" element={<LogsPage />} />
 
             <Route path="/lists" element={<ListsIndexPage />} />
             <Route path="/lists/new" element={<ListFormPage />} />

@@ -36,6 +36,8 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-tags', label: 'Tags', hint: 'Go to', to: '/tags' },
   { key: 'nav-watch', label: 'Watch a video file', hint: 'Go to', to: '/watch' },
   { key: 'nav-torrents', label: 'Torrents', hint: 'Go to', to: '/torrents' },
+  { key: 'nav-tasks', label: 'Tasks', hint: 'Go to', to: '/tasks' },
+  { key: 'nav-logs', label: 'Logs', hint: 'Go to', to: '/tasks/logs' },
   { key: 'nav-quiz', label: 'Quiz', hint: 'Go to', to: '/quiz' },
   { key: 'nav-gacha', label: 'Gacha', hint: 'Go to', to: '/gacha' },
   ...GACHA_GAMES.map((g) => ({

@@ -77,6 +77,11 @@ const SANITIZE_STATEMENTS = [
   // Game/VN play sessions launched from the app — play history is personal.
   'DELETE FROM game_session',
 
+  // Which achievements the exporter has EARNED is personal; the achievement
+  // sets themselves (achievement, achievement_game) are provider reference
+  // data and survive, the theme_song posture.
+  'DELETE FROM achievement_unlock',
+
   // Theme songs themselves are canonical (AnimeThemes data + downloaded audio)
   // and survive; only the hearts from the Songs page are personal.
   'UPDATE theme_song SET favorite=0',
@@ -131,6 +136,7 @@ const SANITIZE_STATEMENTS = [
       'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','video.dir','wrestling.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
+      'steam.web_api_key','ra.username','ra.api_key',
       'vertex.project_id','vertex.region','vertex.credentials_path',
       'sync.token','sync.device','sync.port',
       'jackett.url','jackett.api_key','jackett.start_cmd',

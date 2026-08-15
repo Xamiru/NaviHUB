@@ -228,6 +228,9 @@ export default function Sidebar() {
         <NavLink to="/torrents" className={({ isActive }) => linkClass(isActive)}>
           Torrents
         </NavLink>
+        <NavLink to="/tasks" className={({ isActive }) => linkClass(isActive)}>
+          Tasks
+        </NavLink>
         <NavLink to="/settings" className={({ isActive }) => linkClass(isActive)}>
           Settings
         </NavLink>

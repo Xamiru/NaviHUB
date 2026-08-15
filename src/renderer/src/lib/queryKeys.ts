@@ -103,6 +103,13 @@ export const qk = {
     all: ['torrents'] as const,
     status: (jobId: string) => ['torrents', 'status', jobId] as const
   },
+  franchise: {
+    // Curated franchise pages: the art cache map + its download poll. The
+    // canon itself is bundled data (@shared/franchises) — no query needed.
+    all: ['franchise'] as const,
+    artMap: (id: string) => ['franchise', 'artMap', id] as const,
+    artStatus: ['franchise', 'artStatus'] as const
+  },
   pictures: {
     // Wallpapers + fan art per media item, plus the Browse dialog's searches.
     all: ['pictures'] as const,
@@ -305,7 +312,22 @@ export const qk = {
     // tracked session runs (useGameSession).
     all: ['games'] as const,
     sessionStatus: ['games', 'sessionStatus'] as const,
-    overview: (mediaId: number) => ['games', 'overview', mediaId] as const
+    overview: (mediaId: number) => ['games', 'overview', mediaId] as const,
+    installed: ['games', 'installed'] as const
+  },
+  achievements: {
+    // Steam-emulator + RetroAchievements tracking. `watch` polls only while a
+    // game session is running (useAchievementWatch).
+    all: ['achievements'] as const,
+    list: (mediaId: number) => ['achievements', 'list', mediaId] as const,
+    watch: ['achievements', 'watch'] as const,
+    overview: ['achievements', 'overview'] as const,
+    recent: (limit: number) => ['achievements', 'recent', limit] as const,
+    cardSummaries: ['achievements', 'cardSummaries'] as const,
+    resolveSteam: (mediaId: number) => ['achievements', 'resolveSteam', mediaId] as const,
+    raConsoles: ['achievements', 'raConsoles'] as const,
+    raSearch: (query: string, consoleId: string) =>
+      ['achievements', 'raSearch', query, consoleId] as const
   },
   gamesCatalog: {
     // The offline RAWG catalog's install state (ImportDialog's catalog pill).
@@ -320,6 +342,23 @@ export const qk = {
     status: ['bulk', 'status'] as const
   },
   activity: ['activity'] as const,
+  tasks: {
+    // The main-process task registry (one row per long-running job). Mounted
+    // app-wide by the Topbar pill, so this poll never gates to false — it drops
+    // to a lazy heartbeat instead, because it is the DISCOVERY surface: a job
+    // started from the native menu, or from a dialog that forgot to kick(),
+    // must still appear.
+    all: ['tasks'] as const,
+    list: ['tasks', 'list'] as const
+  },
+  logs: {
+    // Cursor-paged log tail. The cursor is deliberately NOT part of the key: it
+    // lives in a ref and the queryFn appends to component state (the
+    // useTorrentSearch idiom). Keying by cursor would mint a fresh cache entry
+    // every second and grow the cache without bound.
+    all: ['logs'] as const,
+    tail: ['logs', 'tail'] as const
+  },
   search: (q: string) => ['search', q] as const,
   // External import-source search: the source key ('anilist', 'tmdb', …) is the
   // namespace itself, so these have no shared `all` prefix to invalidate.

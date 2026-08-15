@@ -6,7 +6,16 @@ import { mangaRootDir } from './files'
 import { assertSafeArgPath } from './video/playability'
 import { findSidecar } from './mokuro'
 import { isEpubFile } from './epub'
-import type { ChapterOcrOverview, MangaOcrRunStatus, MokuroDetectResult } from '@shared/types'
+import * as tasks from './tasks'
+import { pipeProcLines } from './childLines'
+import { processControls } from './taskControls'
+import type { TaskControls } from './tasks'
+import type {
+  ChapterOcrOverview,
+  MangaOcrRunStatus,
+  MokuroDetectResult,
+  TaskState
+} from '@shared/types'
 
 // In-app mokuro runs: ONE spawn of the user-installed binary (settings key
 // mokuro.path, never bundled — the ytdlp.path posture) over every eligible
@@ -77,6 +86,16 @@ let counter = 0
 let active: { id: string; proc: ChildProcessWithoutNullStreams; cancelled: boolean } | null = null
 let status: MangaOcrRunStatus | null = null
 
+// Total by construction — a new mokuro state can't reach the Tasks page as a
+// row stuck on 'running'.
+const OCR_STATE: Record<NonNullable<MangaOcrRunStatus>['state'], TaskState> = {
+  starting: 'running',
+  running: 'running',
+  done: 'done',
+  error: 'error',
+  cancelled: 'cancelled'
+}
+
 export function getOcrStatus(): MangaOcrRunStatus | null {
   return status ? { ...status } : null
 }
@@ -87,22 +106,6 @@ function chapterAbsPaths(mediaId: number): string[] {
     .all(mediaId) as { dir_path: string }[]
   const root = mangaRootDir()
   return rows.map((r) => join(root, r.dir_path))
-}
-
-// tqdm ends bars with \r, not \n — readline would buffer a whole bar's worth
-// of updates until the closing newline, so lines are split by hand.
-function onStreamLines(stream: NodeJS.ReadableStream, onLine: (line: string) => void): void {
-  let buf = ''
-  stream.setEncoding('utf-8')
-  stream.on('data', (chunk: string) => {
-    buf += chunk
-    const parts = buf.split(/\r\n|\r|\n/)
-    buf = parts.pop() ?? ''
-    for (const p of parts) if (p.trim() !== '') onLine(p)
-  })
-  stream.on('end', () => {
-    if (buf.trim() !== '') onLine(buf)
-  })
 }
 
 // Fire-and-poll: returns as soon as mokuro is spawned. Throws synchronously
@@ -131,6 +134,26 @@ export function startOcr(mediaId: number): { id: string } {
     message: 'Loading OCR model — a first run downloads ~450 MB of models…'
   }
 
+  // Task registry row — a projection over the status object above, which stays
+  // the single source of truth (and the sole input to the OCR panel).
+  const task = tasks.create({
+    kind: 'mangaOcr',
+    label: `OCR: ${targets.length} volume${targets.length === 1 ? '' : 's'}`,
+    route: `/manga/${mediaId}`,
+    controls: ocrControls(id),
+    project: () =>
+      status?.id === id
+        ? {
+            state: OCR_STATE[status.state],
+            detail: status.volumeTitle ?? status.message,
+            percent: status.percent,
+            done: status.volumeIndex ?? 0,
+            total: status.volumeCount ?? 0,
+            error: status.state === 'error' ? status.message : null
+          }
+        : null
+  })
+
   const proc = spawn(mokuroBin(), args) as ChildProcessWithoutNullStreams
   active = { id, proc, cancelled: false }
 
@@ -158,8 +181,10 @@ export function startOcr(mediaId: number): { id: string } {
       status.okCount = ev.ok
     }
   }
-  onStreamLines(proc.stdout, onLine)
-  onStreamLines(proc.stderr, onLine)
+  // Both streams reach onLine as before; the interesting lines ALSO become
+  // 'proc' log rows, which is what turns a Python traceback from a 20-line tail
+  // on one status message into something readable after the fact.
+  pipeProcLines(proc, { tool: 'mokuro', taskId: task.id, onStdout: onLine, onStderr: onLine })
 
   const done = new Promise<{ code: number | null; errMsg: string | null }>((resolve) => {
     let settled = false
@@ -198,19 +223,21 @@ export function startOcr(mediaId: number): { id: string } {
   return { id }
 }
 
+// Pause (SIGSTOP) + cancel for this run's child. One definition shared by the
+// task row and cancelOcr, so the SIGCONT-before-SIGTERM ordering — without
+// which cancelling a PAUSED run would hang until the SIGKILL fallback — can
+// only be got right once.
+function ocrControls(id: string): TaskControls {
+  return processControls(() => (active?.id === id ? active.proc : null), {
+    onCancel: () => {
+      if (active?.id === id) active.cancelled = true
+    }
+  })
+}
+
 export function cancelOcr(id: string): void {
   if (!active || active.id !== id) return
-  active.cancelled = true
-  active.proc.kill('SIGTERM')
-  const proc = active.proc
-  // Unref'd so a pending kill timer can't hold the app open at quit.
-  setTimeout(() => {
-    try {
-      proc.kill('SIGKILL')
-    } catch {
-      // Already gone.
-    }
-  }, 5000).unref()
+  ocrControls(id).cancel?.()
 }
 
 // Joins killActiveMusicDownload / killActivePrepare / … in the before-quit list.

@@ -127,6 +127,10 @@ export interface MediaConfig {
   // Launch-from-app + playtime tracking (games + VNs) — shows the launcher
   // section (link an executable, Play, session history) on the Playtime tab.
   hasGameLaunch?: boolean
+  // Achievements tab on the detail page + the completion chip on list cards
+  // (games + VNs — the same types that can link an executable, since tracking
+  // is only offered where one is or once was linked).
+  hasAchievements?: boolean
 }
 
 // Roles that represent "playing/voicing a character" (vs. crew). Used to split
@@ -278,7 +282,8 @@ export const VISUAL_NOVEL: MediaConfig = {
   hasPlaytimes: true,
   mediaTabLabel: 'Playtime',
   hasFanArt: true,
-  hasGameLaunch: true
+  hasGameLaunch: true,
+  hasAchievements: true
 }
 
 // Games come from RAWG (metadata, cover, developers/publishers, genres — it has
@@ -326,7 +331,12 @@ export const GAME: MediaConfig = {
   ],
   companyDefaultRole: 'developer',
   companyPickerPlaceholder: 'Add developer / publisher…',
-  children: [{ to: '/people', label: 'Voice Actors', role: 'voice_actor' }],
+  children: [
+    { to: '/games/installed', label: 'Installed' },
+    { to: '/games/achievements', label: 'Achievements' },
+    { to: '/games/franchises', label: 'Franchises' },
+    { to: '/people', label: 'Voice Actors', role: 'voice_actor' }
+  ],
   importSource: { key: 'steam', label: 'Steam', placeholder: 'Search Steam (e.g. Persona 5)…' },
   importSources: [
     { key: 'steam', label: 'Steam', placeholder: 'Search Steam (e.g. Persona 5)…' },
@@ -339,7 +349,8 @@ export const GAME: MediaConfig = {
   hasPlaytimes: true,
   mediaTabLabel: 'Playtime',
   hasFanArt: true,
-  hasGameLaunch: true
+  hasGameLaunch: true,
+  hasAchievements: true
 }
 
 export const MOVIE: MediaConfig = {

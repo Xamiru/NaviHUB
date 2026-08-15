@@ -1,11 +1,19 @@
 import { spawn, execFile, type ChildProcessWithoutNullStreams } from 'child_process'
 import { join, relative, isAbsolute } from 'path'
 import { mkdirSync } from 'fs'
-import { createInterface } from 'readline'
 import { get as getSetting } from './repos/settingsRepo'
 import { musicRootDir } from './files'
 import { startScan } from './music'
-import type { MusicDownloadEvent, MusicDownloadInput, YtDlpDetectResult } from '@shared/types'
+import * as tasks from './tasks'
+import { pipeProcLines } from './childLines'
+import { processControls } from './taskControls'
+import type { TaskControls } from './tasks'
+import type {
+  MusicDownloadEvent,
+  MusicDownloadInput,
+  TaskState,
+  YtDlpDetectResult
+} from '@shared/types'
 
 // Downloads music from YouTube/YT Music via a user-installed yt-dlp binary
 // (settings key ytdlp.path, default "yt-dlp" on PATH; ffmpeg must also be on
@@ -118,6 +126,18 @@ let counter = 0
 let active: { id: string; proc: ChildProcessWithoutNullStreams; cancelled: boolean } | null = null
 let status: MusicDownloadEvent | null = null
 
+// Total by construction: a Record over the union, so adding a yt-dlp status
+// without deciding its task state is a typecheck failure rather than a row
+// stuck on 'running' forever.
+const DOWNLOAD_STATE: Record<NonNullable<MusicDownloadEvent>['status'], TaskState> = {
+  starting: 'running',
+  downloading: 'running',
+  processing: 'running',
+  done: 'done',
+  error: 'error',
+  cancelled: 'cancelled'
+}
+
 function ytDlpBin(): string {
   return getSetting('ytdlp.path')?.trim() || 'yt-dlp'
 }
@@ -152,6 +172,28 @@ export function startDownload(input: MusicDownloadInput): { id: string } {
     message: null
   }
 
+  // Task registry row. This module keeps writing ONLY `status` as before; the
+  // registry pulls from it. The `status.id !== id` guard is the same staleness
+  // check every write below uses — returning null retires the projection when
+  // a newer download owns the slot.
+  const task = tasks.create({
+    kind: 'musicDownload',
+    label: `Download: ${artist} — ${album}`,
+    route: '/music',
+    controls: downloadControls(id),
+    project: () =>
+      status?.id === id
+        ? {
+            state: DOWNLOAD_STATE[status.status],
+            detail: status.title ?? status.message,
+            percent: status.percent,
+            done: status.itemIndex ?? 0,
+            total: status.itemCount ?? 0,
+            error: status.status === 'error' ? status.message : null
+          }
+        : null
+  })
+
   const proc = spawn(
     ytDlpBin(),
     buildYtDlpArgs({ url: input.url.trim(), albumDir, artist, album, format: input.format })
@@ -178,8 +220,9 @@ export function startDownload(input: MusicDownloadInput): { id: string } {
       lastError = ev.message
     }
   }
-  createInterface({ input: proc.stdout }).on('line', onLine)
-  createInterface({ input: proc.stderr }).on('line', onLine)
+  // yt-dlp draws its download percentage on a bare \r, so the shared splitter
+  // (not readline) is what makes those lines arrive at all.
+  pipeProcLines(proc, { tool: 'ytdlp', taskId: task.id, onStdout: onLine, onStderr: onLine })
 
   proc.on('error', (e) => {
     // spawn failure (binary missing) — 'close' may never fire with a code
@@ -227,14 +270,20 @@ export function startDownload(input: MusicDownloadInput): { id: string } {
   return { id }
 }
 
+// Pause (SIGSTOP) + cancel for this download's child. Built once and shared by
+// the task row and cancelDownload below, so the SIGCONT-before-SIGTERM ordering
+// can only be got right in one place.
+function downloadControls(id: string): TaskControls {
+  return processControls(() => (active?.id === id ? active.proc : null), {
+    onCancel: () => {
+      if (active?.id === id) active.cancelled = true
+    }
+  })
+}
+
 export function cancelDownload(id: string): void {
   if (!active || active.id !== id) return
-  active.cancelled = true
-  active.proc.kill('SIGTERM')
-  const proc = active.proc
-  setTimeout(() => {
-    if (proc.exitCode === null) proc.kill('SIGKILL') // still alive after SIGTERM
-  }, 5000).unref()
+  downloadControls(id).cancel?.()
 }
 
 // Called from index.ts on before-quit so a half-finished yt-dlp doesn't outlive

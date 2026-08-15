@@ -15,18 +15,21 @@ import type { MediaItem } from '@shared/types'
 //   showProgressBar    — thin bottom bar + formatProgressStat line (Continue)
 //   showFavorite       — hover/focus heart that writes straight through, so a
 //                        grid can be curated without opening anything
+//   achievements       — unlocked/total chip for a tracked game (games + VNs)
 const MediaCard = memo(function MediaCard({
   item,
   cfg,
   showTypeBadge = false,
   showProgressBar = false,
-  showFavorite = false
+  showFavorite = false,
+  achievements
 }: {
   item: MediaItem
   cfg?: MediaConfig
   showTypeBadge?: boolean
   showProgressBar?: boolean
   showFavorite?: boolean
+  achievements?: { unlocked: number; total: number }
 }) {
   const qc = useQueryClient()
   // Optimistic, re-synced from props — the ThemeRow contract, so an unrelated
@@ -76,6 +79,18 @@ const MediaCard = memo(function MediaCard({
         {item.score != null && (
           <span className="absolute top-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-semibold text-yellow-300">
             ★ {item.score}
+          </span>
+        )}
+        {/* Only for tracked games; top-left is free because game lists never
+            show the type badge. ✓ is a state mark, not decoration. */}
+        {!showTypeBadge && achievements && achievements.total > 0 && (
+          <span
+            className={`absolute top-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] tabular-nums ${
+              achievements.unlocked === achievements.total ? 'text-accent' : 'text-gray-200'
+            }`}
+            title={`${achievements.unlocked} of ${achievements.total} achievements unlocked`}
+          >
+            ✓ {achievements.unlocked}/{achievements.total}
           </span>
         )}
         {!showTypeBadge && item.status && (

@@ -4,6 +4,7 @@ import { getDictDb } from './dict/dictDb'
 import { glossFor, writeWordCourse } from './prepDeck'
 import { querySentences } from './dict/sentences'
 import { isLearnableWord } from './seriesText'
+import * as tasks from './tasks'
 import type { CoreDeckStatus, CoreDeckSummary } from '@shared/types'
 
 // "Core frequency deck": the next N most common Japanese words you don't have a
@@ -26,6 +27,22 @@ export function getCoreDeckStatus(): CoreDeckStatus {
 
 export async function buildCoreDeck(limit = 500): Promise<CoreDeckSummary> {
   if (status.running) throw new Error('A deck is already being built')
+  return tasks.runTask(
+    {
+      kind: 'coreDeck',
+      label: 'Building core deck',
+      route: '/japanese',
+      controls: tasks.flagCancel('Deck builds are short — stop and re-run instead'),
+      project: () => ({ detail: status.phase, done: status.done, total: status.total })
+    },
+    (handle) => buildCoreDeckInner(limit, handle)
+  )
+}
+
+async function buildCoreDeckInner(
+  limit: number,
+  handle: tasks.TaskHandle
+): Promise<CoreDeckSummary> {
   status.running = true
   status.error = null
   status.phase = 'selecting'
@@ -112,7 +129,12 @@ export async function buildCoreDeck(limit = 500): Promise<CoreDeckSummary> {
       }
       words.push(entry)
       status.done = words.length
-      if (++sinceYield % 50 === 0) await yieldToLoop()
+      // Yield point doubles as the cancel point — a stopped build writes no
+      // partial deck, and runTask settles it 'cancelled'.
+      if (++sinceYield % 50 === 0) {
+        if (handle.cancelRequested()) throw new tasks.TaskCancelledError('Building core deck')
+        await yieldToLoop()
+      }
     }
 
     if (words.length === 0) {

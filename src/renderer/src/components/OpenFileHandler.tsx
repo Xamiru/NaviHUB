@@ -26,6 +26,16 @@ export default function OpenFileHandler(): null {
     let cancelled = false
 
     async function collect(): Promise<void> {
+      // Navigation parked by the native Tools menu. Rides this existing poll
+      // rather than adding one of its own, and returns-AND-clears so repeated
+      // ticks are idempotent.
+      try {
+        const route = await api.app.pendingRoute()
+        if (route && !cancelled) navigate(route)
+      } catch {
+        /* ignore — same posture as pendingOpen below */
+      }
+
       let targets: OpenTarget[]
       try {
         targets = await api.app.pendingOpen()

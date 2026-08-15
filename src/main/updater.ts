@@ -13,6 +13,7 @@ import { app } from 'electron'
 import { autoUpdater, CancellationToken } from 'electron-updater'
 import { get as getSetting } from './repos/settingsRepo'
 import { fetchWithRetry } from './http'
+import * as tasks from './tasks'
 import {
   friendlyUpdateError,
   idleStatus,
@@ -147,6 +148,30 @@ export function downloadUpdate(): UpdateStatus {
   activeId = id
   cancelToken = ct
   apply(id, { kind: 'progress', percent: 0 })
+
+  // A task for the DOWNLOAD only — a check resolves in a second and would just
+  // be noise in the list. Projected from the module-level `status`, NOT
+  // getStatus(): that one recomputes environment() (an app.isPackaged check
+  // plus a settings read) on every call, and tasks:list polls ~1/s.
+  //
+  // No install special-case is needed: reaching 'ready' settles this task
+  // 'done', so it is already terminal by the time quitAndInstall runs and
+  // settleAllOnQuit cannot restamp it 'cancelled'.
+  tasks.create({
+    kind: 'appUpdate',
+    label: `Downloading update ${status.version ?? ''}`.trim(),
+    route: '/settings',
+    controls: { cancel: () => void cancelUpdate(), pauseNote: 'Updates cannot be paused' },
+    project: () => {
+      if (!status || status.id !== id) return null
+      // 'available' is where a cancel lands (the release still exists, the user
+      // just stopped fetching it) — from a download in flight that IS a cancel.
+      if (status.state === 'available') return { state: 'cancelled' }
+      if (status.state === 'ready') return { state: 'done', percent: 100 }
+      if (status.state === 'error') return { state: 'error', error: status.message }
+      return { percent: status.percent, detail: status.version }
+    }
+  })
   // Fire and forget, like startDownload in musicDownload.ts: the renderer polls
   // update:status for progress. Awaiting here would hold the IPC reply open for
   // the whole ~140MB transfer, so the progress bar could never move — and the

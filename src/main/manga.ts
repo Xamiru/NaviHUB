@@ -4,6 +4,7 @@ import { existsSync, readdirSync } from 'fs'
 import { readdir } from 'fs/promises'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
+import * as tasks from './tasks'
 import { isUnitProgress } from '@shared/mediaProgress'
 import { absoluteMediaPath, mangaRootDir, booksRootDir } from './files'
 import { isArchiveFile, listArchivePages } from './archive'
@@ -276,11 +277,28 @@ export async function rescan(mediaId: number): Promise<MangaAttachResult> {
   const media = getSqlite().prepare('SELECT title FROM media_item WHERE id = ?').get(mediaId) as {
     title: string
   }
-  const scanned = await scanSeriesDir(abs, media.title)
-  if (scanned.length === 0)
-    return { ok: false, error: 'No page images or EPUB books found in the folder' }
-  syncChapters(mediaId, localDir, scanned)
-  return { ok: true, chapterCount: scanned.length }
+  // Registry-sourced rather than projected: a rescan has no status object of
+  // its own, so until now a long walk over a big series was completely dark.
+  return tasks.runTask(
+    {
+      kind: 'mangaRescan',
+      label: `Rescanning: ${media.title}`,
+      route: `/manga/${mediaId}`
+    },
+    async (task) => {
+      task.progress({ detail: localDir })
+      const scanned = await scanSeriesDir(abs, media.title)
+      if (scanned.length === 0) {
+        // Not an exception — the caller renders this inline — but the task must
+        // still not read as a success.
+        task.settle({ state: 'error', error: 'No page images or EPUB books found in the folder' })
+        return { ok: false, error: 'No page images or EPUB books found in the folder' }
+      }
+      task.progress({ detail: `${scanned.length} chapters`, done: scanned.length, total: scanned.length })
+      syncChapters(mediaId, localDir, scanned)
+      return { ok: true, chapterCount: scanned.length }
+    }
+  )
 }
 
 export function detach(mediaId: number): void {

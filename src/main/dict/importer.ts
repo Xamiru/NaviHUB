@@ -7,6 +7,7 @@ import { setImmediate as yieldToLoop } from 'timers/promises'
 import yauzl from 'yauzl'
 import type Database from 'better-sqlite3'
 import { fetchWithRetry } from '../http'
+import * as tasks from '../tasks'
 import { getDictDb } from './dictDb'
 import { flattenGlossary } from '@shared/dictContent'
 import type {
@@ -79,7 +80,19 @@ export function setImportPhase(phase: DictImportStatus['phase'], done = 0, total
 export function setImportProgress(done: number, total?: number): void {
   importState.done = done
   if (total !== undefined) importState.total = total
+  // Every importer in this family reports through here, so one check covers
+  // dictionaries, sentence banks and stroke sets alike. Rows already written
+  // are kept — dictDb.sweepOrphans clears a half-import on the next startup,
+  // and the `dict` registry row is written LAST, so a stopped import is never
+  // mistaken for a complete one.
+  if (activeImport?.cancelRequested()) {
+    throw new tasks.TaskCancelledError(importState.dictTitle ?? 'Dictionary import')
+  }
 }
+
+// The task behind the current runImport, so the progress setter above can see
+// a cancel without every call site threading a handle.
+let activeImport: tasks.TaskHandle | null = null
 
 // ---- zip reader seam (importFromReader is pure of yauzl for testing) ----
 
@@ -549,15 +562,34 @@ export async function runImport<T>(fn: () => Promise<T>): Promise<T> {
   importState.phase = 'reading'
   importState.done = 0
   importState.total = 0
-  try {
-    return await fn()
-  } catch (err) {
-    importState.error = err instanceof Error ? err.message : String(err)
-    throw err
-  } finally {
-    importState.running = false
-    importState.phase = 'idle'
-  }
+  // One task for the whole gate, so dictionaries, sentence banks and stroke
+  // sets all appear without each entry point needing its own wiring.
+  return tasks.runTask(
+    {
+      kind: 'dictImport',
+      label: 'Dictionary import',
+      route: '/settings',
+      controls: tasks.flagCancel('Dictionary imports cannot be paused'),
+      project: () => ({
+        detail: importState.dictTitle ?? importState.phase,
+        done: importState.done,
+        total: importState.total
+      })
+    },
+    async (handle) => {
+      activeImport = handle
+      try {
+        return await fn()
+      } catch (err) {
+        importState.error = err instanceof Error ? err.message : String(err)
+        throw err
+      } finally {
+        activeImport = null
+        importState.running = false
+        importState.phase = 'idle'
+      }
+    }
+  )
 }
 
 // Streams a pack download to a temp file, reporting bytes through the shared

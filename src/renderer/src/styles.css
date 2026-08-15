@@ -324,6 +324,16 @@ aside,
 header {
   font-family: var(--font-mono);
 }
+/* Log rows. A component class rather than Tailwind's `font-mono`, because
+   tailwind.config.js extends colors and radii only — its font-mono resolves to
+   the system stack (ui-monospace, SFMono-Regular, …), not the bundled face in
+   --font-mono. And a log row matches none of the WIRED CHROME selectors above,
+   so without this the logs render in a foreign font with ragged columns. */
+.log-row {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Pixel-CRT face for the brand mark + boot splash only. VT323 has a single
    weight — neutralize font-bold — and reads small, so the brand upsizes. */
 .lain-crt {

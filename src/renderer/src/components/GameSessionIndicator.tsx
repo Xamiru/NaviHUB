@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { useGameSession, fmtDurationSec } from '../lib/useGameSession'
+import { useAchievementWatch } from '../lib/useAchievementWatch'
 import { configFor } from '../lib/mediaConfig'
 import type { MediaType } from '@shared/types'
 
@@ -13,6 +14,10 @@ import type { MediaType } from '@shared/types'
 // while nothing is running.
 export default function GameSessionIndicator() {
   const { status, running } = useGameSession()
+  // Mounted here for the same reason: the unlock toast has to be able to fire
+  // wherever the user happens to be, not only on a detail page. Its poll is
+  // gated on a running session, so it is free the rest of the time.
+  useAchievementWatch()
   if (!running || !status) return null
   const cfg = configFor(status.mediaType as MediaType)
   return (

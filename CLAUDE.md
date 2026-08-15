@@ -65,7 +65,7 @@ npm run export:library  # sanitized shareable library bundle (see scripts/export
 npm run install:desktop # register the .desktop entry + file associations (laptop)
 ```
 
-`npm run test` takes ~65 s for 117 files / ~1,464 tests. Run the whole suite — it is short enough that filtering is rarely worth the risk of missing a regression.
+`npm run test` takes ~80 s for 137 files / ~1,825 tests. Run the whole suite — it is short enough that filtering is rarely worth the risk of missing a regression.
 
 **Terminal gotcha:** VS Code's integrated terminal sets `ELECTRON_RUN_AS_NODE=1`, which makes `npm run dev` silently run Electron as plain Node (no window). Launch the GUI from a normal terminal or the desktop shortcut, or `unset ELECTRON_RUN_AS_NODE` first.
 
@@ -91,6 +91,8 @@ electron-vite three-way split; path aliases `@shared` → `src/shared` (everywhe
 Typecheck enforces preload/api agreement — if it passes, the contract is aligned.
 
 **Push events are frozen at exactly two channels** — `player:cmd` (main → main window: thumbbar/widget transport commands) and `player:state` (main → widget window: now-playing mirror), both owned by `src/main/playerBridge.ts`/`widget.ts` and locked by `tests/pushBridge.test.ts`, which fails on any new `webContents.send`/`ipcRenderer.on` channel. They exist because a remote pause button can't wait out a poll interval; nothing else qualifies. **Everything else polls.** Long-running main-process work (scans, downloads, art fetch) exposes a module-level status object behind a `domain:xStatus` invoke channel; the renderer polls it with `refetchInterval` while the operation's promise is pending. Keep this pattern. For **imports** specifically there's a shared global slot: `src/main/progress.ts` (`withActivity` wraps the import handlers in ipc.ts; `downloadImages` auto-reports per-image progress; importers mark `phase:'writing'` before their transaction) → polled via `activity:status` → `useActivity()`/`ActivityIndicator.tsx` (Topbar pill + ImportDialog bar). Instrument new importers the same way.
+
+**All of that is now ALSO surfaced in one place** by the task registry (`src/main/tasks.ts` → `tasks:list` → `lib/useTasks.ts` → the Topbar pill + `/tasks`). It is a read-side **projection**: each subsystem keeps writing only its own status object and registers a pure `project()` that reads it — never a second push. Adding a long-running job means one `tasks.create({ kind, label, route, controls, project })` call (or `tasks.runTask()` for the awaited `{ running: boolean }` shape) beside the status object you already have, plus a `TaskKind` entry (guarded by `tests/taskKindSync.test.ts`). **`project()` returns `null` ONLY when a newer run has taken the module's slot** — that settles the row `cancelled: superseded by a newer run`; returning it for a run that is still going leaves an immortal `running` row that `prune()`/`clearFinished()` can never evict and that pins `useTasks` at its 700 ms poll. Do NOT migrate a feature's own `*Status` channel or panel into it — see [`docs/architecture/tasks-logs.md`](docs/architecture/tasks-logs.md) for why.
 
 ## Database
 
@@ -129,11 +131,13 @@ Custom privileged `navimg://` protocol serves everything (images, audio, manga p
 
 Renderer builds URLs synchronously with `mediaUrl(relPath)` (no per-image IPC); `<img>` onError handles missing files (`CoverImage.tsx`). Settings are rows in the `settings` table (`settingsRepo.get/set`), surfaced in `SettingsPage.tsx`.
 
-## Adding features: two flavors
+## Adding features: three flavors
 
 **A) New media type** (fits `media_item`): add to the `MediaType` union in shared/types.ts; create a `MediaConfig` in `src/renderer/src/lib/mediaConfig.ts` and append to `MEDIA_CONFIGS`; add the 4 routes in `App.tsx` pointing at the shared `MediaListPage`/`MediaDetailPage`/`MediaFormPage` with `cfg={…}`. `MediaDetailPage` is TABBED (2026-07-28): Overview / `castSectionTitle` / an optional media tab named by `cfg.mediaTabLabel` (Theme Songs / Chapters / Playtime — absent = no tab, movies/TV) / Art; `?tab=` deep-links a tab (the Comprehension page passes `?tab=media`); the action column has ONE `btn-primary` — log progress, or **Play** for a game/VN with a linked exe (`GameLaunchButton`, which also owns launching; `GameLaunchSection` on the Playtime tab has no Play of its own), in which case the log button drops to ghost — and Delete lives in the `ActionMenu`. Status/score/favorite are editable in place there too (`QuickEdit`), so `MediaFormPage` is the full editor rather than the only way in. Sidebar renders automatically from `MEDIA_CONFIGS`. Config flags drive everything: `castLayout`, `hasCrew`, `listTabs`, `hideFromSidebar`, `importSource`, `hasThemes`, `hasLocalReader`, etc. Optional importer: copy `rawg.ts` (smallest complete example — API key from settings, `fetchWithRetry` from `http.ts`, two-phase import).
 
 **B) Standalone section** (Japanese/Music/Lists style): full vertical slice — tables (init.sql + schema.ts), repo, IPC block, api.ts group, preload mirror, pages + routes in App.tsx, hardcoded sidebar NavLink, `qk.<feature>` query keys, tests. `music_*` (2026-07) is the newest complete reference.
+
+**C) Curated overlay** (Franchises, 2026-08): hardcoded content in a `src/shared/<feature>/` module (frozen id strings, one file per unit + an index catalog — the `wrestling.ts`/`programming/` pattern), matched client-side against an existing media type's list; no new tables, user state rides existing ones. `src/shared/franchises/` + [media-types.md](docs/architecture/media-types.md) "Franchises" is the reference — including the curated-remote-art cache (`franchiseArt.ts`) and the `media_image` kind `'background'` (franchise pages only, NOT the Art tab).
 
 ## Import conventions
 
@@ -163,7 +167,7 @@ Renderer builds URLs synchronously with `mediaUrl(relPath)` (no per-image IPC); 
 
 ## Tests
 
-`tests/*.test.ts`, run with `npm run test`. 117 files, ~1,464 `it()` blocks, ~65 s.
+`tests/*.test.ts`, run with `npm run test`. 137 files, ~1,825 `it()` blocks, ~80 s.
 
 `tests/*.test.ts`, run with `npm run test`. Pattern: `createTestDb()` (tests/helpers.ts) builds an in-memory DB from the REAL init.sql; each file does `vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))` so repos run their actual SQL. Modules touching electron/fs mock `electron` and `../src/main/files` (see manga.test.ts, music.test.ts). Importer tests mock `http`/`files` with URL-keyed fixtures (rawgImport.test.ts). Design main-process logic with pure exported functions + injectable IO (e.g. the scanner's `TagReader`, yt-dlp's arg-builder) so tests never need real binaries/files. Test the real query, not a hand-written stand-in.
 
@@ -196,17 +200,26 @@ Break one of these and something silently corrupts, leaks, or fails to start. Th
 | `electron-builder.yml:fileAssociations` | `classifyPath` in `src/main/openFile.ts` | guarded by `tests/openFile.test.ts` |
 | a `webContents.send` / `ipcRenderer.on` channel | `ALLOWED` in `tests/pushBridge.test.ts` | the push surface is deliberately frozen at `player:cmd` + `player:state`; everything else polls |
 | an importer's logic or ordering | consider `scripts/bulk-import.cjs` | it duplicates the import pipeline (known debt) |
+| a `TaskKind` literal passed to `tasks.create` | the `TaskKind` union in `shared/types.ts` | string-matched, **both directions** — guarded by `tests/taskKindSync.test.ts` |
+| anything in `src/main/**` | it must not call `console.*` | there is no console in a packaged build; use `logInfo/logWarn/logError` from `logBus.ts`. Guarded by `tests/noConsole.test.ts` |
 
 ### The before-quit registry
 
-`src/main/index.ts` — **nine calls, and the order is load-bearing**:
+`src/main/index.ts` — **twelve calls, and the order is load-bearing**:
 
 ```
-killActiveMusicDownload → abortActiveCoachTurn → killActiveUpdate → killActivePrepare
-→ killActiveOcr → finalizeActiveGameSession → closeDatabase → closeCatalogDb → closeDictDb
+settleAllTasksOnQuit
+→ killActiveMusicDownload → abortActiveCoachTurn → killActiveUpdate → killActivePrepare
+→ killActiveOcr → stopAchievementWatcher → finalizeActiveGameSession
+→ closeDatabase → closeCatalogDb → closeDictDb
+→ stopFileSink
 ```
 
-`finalizeActiveGameSession()` **must precede** `closeDatabase()` — it writes the session row. `closeCatalogDb()`/`closeDictDb()` come **after**. Any new long-running main-process singleton adds its killer here. The game child is the one process deliberately *not* killed (spawned detached so the game outlives the app).
+`settleAllTasksOnQuit()` is **first**: it stamps every live task "cancelled (app quit)" before the killers below produce SIGKILL exit codes that the subsystems' own status objects would report as errors the user never caused. `stopFileSink()` is **last** and synchronous: every step above can log, and this is the flush that gets those lines onto disk.
+
+`stopAchievementWatcher()` and `finalizeActiveGameSession()` **must precede** `closeDatabase()` — the first writes unlock rows (its final sweep of the emulator save file), the second writes the session row. `closeCatalogDb()`/`closeDictDb()` come **after**. Any new long-running main-process singleton adds its killer here. The game child is the one process deliberately *not* killed (spawned detached so the game outlives the app).
+
+**`achievementWatcher.ts` owns the app's ONE main-side `setInterval`**, and it is bounded by a play session (started by `gameLaunch.startSession`, cleared by `endSession` + the quit killer above, `unref`'d so it can't hold the app open). It exists because the renderer cannot do this job: during a fullscreen game the renderer is occluded and its timers throttle, and it could not raise anything visible anyway. The OS notification comes from main via `new Notification(...)`, which is **not** `webContents.send` — the frozen push surface is untouched, and the renderer still polls `achievements:watchStatus` for its in-app toast. Do not take this as licence for a second interval; anything not tied to a live session still polls.
 
 ### Never do these
 
@@ -217,6 +230,9 @@ killActiveMusicDownload → abortActiveCoachTurn → killActiveUpdate → killAc
 - **`npx vitest` / `npx tsc`** — better-sqlite3 is built for Electron's ABI. Use `npm run test` / `npm run typecheck`.
 - **Query keys built inline** — only from `lib/queryKeys.ts` (`qk`), and each group's `all` key must stay a prefix of every key in that group or invalidation silently misses.
 - **A caller-supplied `signal` on `fetchWithRetry`** — it wins over the per-attempt timeout, making one deadline span every retry. Pass `timeoutMs`.
+- **`console.*` anywhere in `src/main`** — invisible in a packaged build, and it bypasses the log file the user can actually read. Use `logInfo`/`logWarn`/`logError` from `logBus.ts`; `tests/noConsole.test.ts` enforces it.
+- **Importing electron from `logCore.ts` / `logBus.ts` / `tasks.ts` / `taskControls.ts` / `childLines.ts`** — `http.ts` and `db/connection.ts` log through `logBus`, and their tests run with no electron mock. One electron import there reddens a large share of the suite. `logFile.ts` is the deliberate exception.
+- **`proc.kill('SIGSTOP')` without a platform gate** — Node has no signals on Windows, where that call IGNORES the name and **terminates the process**. Go through `processControls()` in `taskControls.ts`, which also sends SIGCONT before SIGTERM (a stopped process does not act on SIGTERM until continued).
 - **`productName` in `package.json`** — it lives ONLY in `electron-builder.yml`; adding it changes the userData folder name and orphans the user's library.
 
 ### Process spawn safety
@@ -233,10 +249,14 @@ Every spawn uses an argv array. yt-dlp keeps `--` before the user URL. **ffmpeg 
 - **HomePage/Seasonal media queries must stay byte-identical `{ mediaType }`** — they share one `qk.media.home` cache entry.
 - **Wallhaven searches hardcode `purity=100` (SFW)** — regression-tested; do not parameterise it.
 - **Re-import is authoritative**: it refreshes canonical fields and prunes removed children, but preserves personal tracking via COALESCE. Changes to import logic only affect existing titles after a re-import — **always tell the user that**.
+- **A watermark is committed AFTER its write, never before** — `achievementWatcher.pollOnce` moves `lastMtimeMs` only once `insertUnlocks` returns, or a swallowed `SQLITE_BUSY` makes every later tick (and the final sweep) take the "nothing changed" short-circuit and lose those unlocks for the session.
+- **`beginActivity`/`endActivity` callers pass their handle back** (`endActivity(err, own)`) — the activity slot is one global, and a dialog import started mid-run takes it. Settling "whatever is in the slot" marks a still-running import `done`.
+- **A credential that is not a recognisable param name needs its own `redact()` rule** in `logCore.ts` — `http.ts` logs full URLs, and the log file is outside the export sanitizer. RetroAchievements' `z=`/`y=` is the host-scoped precedent.
+- **Anything feeding a POSITIONAL file reads the provider's order** — `achievementRepo.listInProviderOrder`, not `listForMedia` (which sorts unlocked-first for the UI). The Goldberg config is a positional JSON array; UI order remaps every index and reshuffles on each new unlock.
 
 ### Frozen key strings
 
-Stored in the DB, so renaming one orphans data: checklist `task_key`, gacha unit-kind and currency `key`s, programming course/lesson/sheet keys, bulk-import sort keys, `GachaGameCfg.catalog.source`, wrestling promotion ids, and every `external_source` value.
+Stored in the DB, so renaming one orphans data: checklist `task_key`, gacha unit-kind and currency `key`s, programming course/lesson/sheet keys, bulk-import sort keys, `GachaGameCfg.catalog.source`, wrestling promotion ids, `achievement_game.provider` (`steam`/`ra`) and `achievement_unlock.source` (`emu`/`ra`/`manual`), and every `external_source` value.
 
 ## Known open issues
 
@@ -265,7 +285,7 @@ Per-subsystem narrative lives in [`docs/architecture/`](docs/architecture/00-ind
 
 | Working on… | Read |
 |---|---|
-| A media type, wallpapers/fan art, books, game launch + playtime, seasonal, list filters | [media-types.md](docs/architecture/media-types.md) |
+| A media type, wallpapers/fan art, books, game launch + playtime, achievements, seasonal, list filters | [media-types.md](docs/architecture/media-types.md) |
 | A games importer (RAWG → IGDB → Steam history, offline catalog) | [importers.md](docs/architecture/importers.md) |
 | Manga scanner, EPUB books, the readers, mokuro OCR | [readers.md](docs/architecture/readers.md) |
 | The video player, ffmpeg, subtitles, subtitle mining | [video.md](docs/architecture/video.md) |
@@ -278,6 +298,7 @@ Per-subsystem narrative lives in [`docs/architecture/`](docs/architecture/00-ind
 | Torrent search, or the bulk importer | [torrents-bulk.md](docs/architecture/torrents-bulk.md) |
 | Theme songs, music, the tournament bracket | [music-quiz.md](docs/architecture/music-quiz.md) |
 | The checklist, streaks, progress logging | [checklist-progress.md](docs/architecture/checklist-progress.md) |
+| The task registry, pause/cancel, the structured log, the Tools menu | [tasks-logs.md](docs/architecture/tasks-logs.md) |
 | Shared UI components, the Lain theme, dialogs, menu bar, zoom | [ui-conventions.md](docs/architecture/ui-conventions.md) |
 | Packaging, releases, in-app updates, library export | [packaging-ci-updates.md](docs/architecture/packaging-ci-updates.md) |
 | Something that sounds like a feature request | [removed.md](docs/architecture/removed.md) — check it was not deliberately taken out |

@@ -34,6 +34,12 @@ const CANONICAL_SURVIVORS = new Set([
   'tag',
   'media_tag',
   'theme_artist',
+  // Achievement sets are provider reference data (names, descriptions, icon
+  // paths, global rarity) and the provider↔title mapping that produced them.
+  // Only achievement_unlock — what the exporter actually earned — is personal,
+  // and sanitizeSql.cjs deletes it.
+  'achievement',
+  'achievement_game',
   // Wikipedia-derived wrestling reference data. The wiki is canonical; only the
   // personal layer (ratings, favourites, local files, posters) is stripped, which
   // sanitizeSql.cjs does via UPDATEs on the parent rows.
