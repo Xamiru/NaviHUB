@@ -151,7 +151,11 @@ export default function JapaneseHomePage() {
             body="Kana, kanji readings, verb forms, numbers, names, keigo."
           />
           <HubCard to="/japanese/write" title="Writing drill" body="Draw kanji stroke by stroke." />
-          <HubCard to="/japanese/test" title="JLPT test" body="Timed 30-question checkpoint." />
+          <HubCard
+            to="/japanese/test"
+            title="JLPT test"
+            body="Level checkpoint from the packs: grammar, vocab, kanji, reading."
+          />
           <HubCard
             to="/japanese/pitch"
             title="Pitch accent"
@@ -182,6 +186,21 @@ export default function JapaneseHomePage() {
             title="Build-a-kanji"
             body="Assemble kanji from their parts."
           />
+        </HubGrid>
+      </Section>
+
+      <Section title="Games">
+        <HubGrid>
+          <HubCard
+            to="/japanese/sentences"
+            title="Sentence games"
+            body="Particle fill, scramble, reading in context — generated from the sentence bank."
+          />
+          <HubCard
+            to="/japanese/arcade"
+            title="Arcade"
+            body="Sixty-second races: kana, readings, conjugation."
+          />
           <HubCard
             to="/japanese/shiritori"
             title="Shiritori"
@@ -193,6 +212,11 @@ export default function JapaneseHomePage() {
       <Section title="Read & mine">
         <HubGrid>
           <HubCard to="/japanese/mine" title="Mine words" body="Capture words into the SRS." />
+          <HubCard
+            to="/japanese/reading"
+            title="Graded reading"
+            body="Short passages N5-N2 with furigana and questions."
+          />
           <HubCard to="/japanese/analyze" title="Analyze text" body="How much of a paste can you read?" />
           <HubCard
             to="/japanese/coverage"

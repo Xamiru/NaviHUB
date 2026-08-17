@@ -57,7 +57,13 @@ export default function EnglishHomePage() {
     staleTime: 0
   })
 
+  const { data: leechList = [] } = useQuery({
+    queryKey: qk.english.leeches,
+    queryFn: () => api.english.listLeeches()
+  })
+
   const due = stats?.dueCount ?? 0
+  const leeches = leechList.length
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
@@ -89,6 +95,12 @@ export default function EnglishHomePage() {
             badge={due > 0 ? `${due} due` : undefined}
           />
           <HubCard
+            to="/english/deck"
+            title="Deck"
+            body="Every saved word with its frequency rank — prune the tail, spot the leeches."
+            badge={leeches > 0 ? `${leeches} leeches` : undefined}
+          />
+          <HubCard
             to="/english/writing"
             title="Writing"
             body="Essay, email and rewrite tasks, graded with corrections."
@@ -117,6 +129,31 @@ export default function EnglishHomePage() {
             to="/english/mechanics"
             title="Mechanics"
             body="Articles, punctuation, confusables, register — spot the error."
+          />
+          <HubCard
+            to="/english/use"
+            title="Use of English"
+            body="Typed: open cloze, word formation, key-word transformations."
+          />
+        </HubGrid>
+      </Section>
+
+      <Section title="Games">
+        <HubGrid>
+          <HubCard
+            to="/english/games/punctuate"
+            title="Punctuate it"
+            body="Put the commas, semicolons, dashes and apostrophes back where they belong."
+          />
+          <HubCard
+            to="/english/games/spot"
+            title="Spot the error"
+            body="One wrong word in the sentence — or none. Click it."
+          />
+          <HubCard
+            to="/english/games/match"
+            title="Collocation match"
+            body="Six pairs a set: verb + noun, adjective + noun, phrasal verbs, prepositions."
           />
         </HubGrid>
       </Section>

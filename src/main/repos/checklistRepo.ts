@@ -123,10 +123,18 @@ export function reorder(cadence: ChecklistCadence, orderedIds: number[]): void {
 // page with no task in hand, against whatever mediaLog item for that type is
 // on the board (daily before weekly). No matching item just means no credit:
 // the media row still moves.
+//
+// `opts.noRewatch` suppresses ONLY the rewatch wrap, for callers that back-fill
+// in bulk rather than reporting a fresh viewing — the TV season toggle, which
+// fires once per newly-ticked episode. The Seasons tab shipped empty on shows
+// finished long ago, so "Mark season watched" on one of them would otherwise
+// knock it back to Watching, reset progress to 1 and bump rewatch_count, none
+// of which unmarking restores. An unfinished title still advances normally.
 export function logProgress(
   mediaId: number,
   today: string,
-  task?: { key: string; cadence: ChecklistCadence }
+  task?: { key: string; cadence: ChecklistCadence },
+  opts: { noRewatch?: boolean } = {}
 ): MediaProgressLogged {
   const db = getSqlite()
   const tx = db.transaction((): MediaProgressLogged => {
@@ -166,7 +174,7 @@ export function logProgress(
       status: media.status,
       rewatchCount: media.rewatch_count
     }
-    const next = advanceProgress(
+    const advanced = advanceProgress(
       {
         progress: media.progress,
         status: media.status,
@@ -176,15 +184,26 @@ export function logProgress(
       statusesFor(media.media_type),
       isUnitProgress(media.media_type)
     )
-    mediaRepo.update(mediaId, {
-      progress: next.progress,
-      status: next.status,
-      rewatchCount: next.rewatchCount
-    })
+    // Suppressed wrap: the board still gets its credit, the media row does not
+    // move at all. Holding it exactly where it was is the point — the title is
+    // already finished, and this caller is recording history, not a new pass.
+    const held = opts.noRewatch === true && advanced.startedRewatch
+    const next = held
+      ? { ...advanced, ...prior, startedRewatch: false }
+      : advanced
+    if (!held) {
+      mediaRepo.update(mediaId, {
+        progress: next.progress,
+        status: next.status,
+        rewatchCount: next.rewatchCount
+      })
+    }
 
     let logId: number | null = null
     if (target) {
-      const payload: LogPayload = { title: media.title, prior }
+      // No `prior` when the row was held: undoing the credit should delete the
+      // log row and leave progress alone, since logging it never moved it.
+      const payload: LogPayload = held ? { title: media.title } : { title: media.title, prior }
       logId = Number(
         db
           .prepare(
@@ -400,6 +419,12 @@ const DETECT_SQL: Record<ChecklistDetectSource, { count: string; perDay: string 
             WHERE date(started_at, 'localtime') BETWEEN ? AND ?`,
     perDay: `SELECT date(started_at, 'localtime') AS day, COUNT(*) AS n FROM game_session
              WHERE date(started_at, 'localtime') ${HEATMAP_WINDOW} GROUP BY day`
+  },
+  progLesson: {
+    count: `SELECT COUNT(*) AS n FROM prog_progress
+            WHERE date(completed_at, 'localtime') BETWEEN ? AND ?`,
+    perDay: `SELECT date(completed_at, 'localtime') AS day, COUNT(*) AS n FROM prog_progress
+             WHERE date(completed_at, 'localtime') ${HEATMAP_WINDOW} GROUP BY day`
   }
 }
 

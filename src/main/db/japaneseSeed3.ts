@@ -19,7 +19,7 @@ export const N2_VOCAB_COURSE: SeedCourse = {
     'transitive/intransitive pairs, する-compounds and the connectives that hold ' +
     'newspaper and novel prose together.',
   level: 'N2',
-  difficulty: 18,
+  difficulty: 20,
   lessons: [
     {
       kind: 'vocab',
@@ -199,7 +199,7 @@ export const N2_KANJI_COURSE: SeedCourse = {
     'documentation and any story with politics or money in it. Past N3, kanji stick ' +
     'best through reading, so mine what you meet and let this cover the backbone.',
   level: 'N2',
-  difficulty: 19,
+  difficulty: 21,
   lessons: [
     {
       kind: 'kanji',
@@ -421,7 +421,7 @@ export const N1_VOCAB_COURSE: SeedCourse = {
     'formal verbs of official prose, and the adverbs and onomatopoeia that carry tone ' +
     'in serious fiction. Read widely alongside this — at N1 the deck can only start you off.',
   level: 'N1',
-  difficulty: 23,
+  difficulty: 25,
   lessons: [
     {
       kind: 'vocab',
@@ -601,7 +601,7 @@ export const N1_KANJI_COURSE: SeedCourse = {
     'medicine and literary prose. After this deck, everything new should come from what ' +
     'you read — mine it, and let the SRS do the rest.',
   level: 'N1',
-  difficulty: 24,
+  difficulty: 26,
   lessons: [
     {
       kind: 'kanji',

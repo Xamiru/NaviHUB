@@ -144,6 +144,13 @@ export function runMigrations(sqlite: Database.Database): void {
   // Game/VN launcher: per-title executable (written only by src/main/gameLaunch.ts,
   // same deliberate absence from mediaRepo's column map as local_dir).
   ensureColumn(sqlite, 'media_item', 'exe_path', 'exe_path TEXT')
+  // 2026-08: wide hero art for the detail page (AniList bannerImage / TMDB
+  // backdrop). Every pre-existing row has it NULL until re-imported, which is
+  // why the hero resolves through media_image and the cover before giving up.
+  ensureColumn(sqlite, 'media_item', 'banner_path', 'banner_path TEXT')
+  // 2026-08: chapter/volume thumbnails for the Volumes grid. Fills in on the
+  // next rescan of an already-attached series.
+  ensureColumn(sqlite, 'manga_chapter', 'cover_path', 'cover_path TEXT')
   // Gacha news moved to subreddit feeds right after first shipping: post
   // author + the feed's hot-rank ordering (DBs from the day-one build lack
   // these columns).
@@ -164,6 +171,9 @@ export function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'en_word', 'reps', 'reps INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'en_word', 'lapses', 'lapses INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'en_word', 'last_reviewed_at', 'last_reviewed_at TEXT')
+  // 2026-08-17: the Art tab's "Set background" flag. media_image predates it.
+  // No index on this column — an index in init.sql would run BEFORE this ALTER.
+  ensureColumn(sqlite, 'media_image', 'is_background', 'is_background INTEGER NOT NULL DEFAULT 0')
   // Shipped one build after the wrestling section, so live DBs already have the
   // table without it.
   ensureColumn(sqlite, 'wrestling_match', 'method', 'method TEXT')

@@ -417,7 +417,7 @@ SELECT * FROM subtree ORDER BY depth
           options: [
             'EXISTS cannot be correlated with the outer query',
             'In the negated form: NOT IN yields no rows if the subquery emits a NULL, NOT EXISTS is unaffected',
-            'IN forces materialization of the subquery, EXISTS never does',
+            "EXISTS always stops at the first matching row, while IN must fully materialize the subquery's result set before it can compare",
             'IN only accepts literal lists, not subqueries'
           ],
           correct: 1,
@@ -437,7 +437,7 @@ SELECT * FROM subtree ORDER BY depth
         {
           prompt: 'A recursive CTE over a graph with cycles uses UNION ALL. What happens?',
           options: [
-            'SQLite detects the cycle and stops',
+            'SQLite silently detects the repeated rows and automatically halts the recursion for you',
             'The recursion never terminates (until a LIMIT or depth guard stops it)',
             'It behaves identically to UNION',
             'The query errors at parse time'
@@ -546,7 +546,7 @@ A repeated OVER clause can be named once with WINDOW: \`WINDOW w AS (PARTITION B
           options: [
             'SUM skips rows whose ORDER BY key repeats',
             'The default frame is RANGE ... CURRENT ROW, which includes all peer rows tied on the ORDER BY key',
-            'Ties make the sort unstable, randomizing the sum',
+            'Ties make the sort order unstable across runs, so the summed value comes out different and effectively random each time',
             'SQLite computes window sums per distinct key by design'
           ],
           correct: 1,
@@ -639,7 +639,7 @@ WHERE m.media_type = 'anime'
           options: [
             'The query is answered from the index alone, never touching the table rows',
             'The index covers every row of the table',
-            'The index is being rebuilt to cover the query',
+            'The index is being rebuilt on the fly in the background so it can cover this particular query\'s columns',
             'A full scan of the index with no seeking'
           ],
           correct: 0,
@@ -722,7 +722,7 @@ Every statement runs in its own implicit transaction; wrap multi-statement work 
           prompt: 'In an ON CONFLICT DO UPDATE clause, what does excluded.name refer to?',
           options: [
             'The value from the row that the INSERT attempted to insert',
-            'The existing row\'s current value',
+            'The existing row\'s current value, exactly as it stood before this INSERT statement began running',
             'The column default',
             'NULL, since the row was excluded'
           ],
@@ -734,7 +734,7 @@ Every statement runs in its own implicit transaction; wrap multi-statement work 
           options: [
             'It disables foreign key checks for the statement',
             'It updates children to point at a random parent',
-            'It fails with a constraint error whenever children exist',
+            'It always fails immediately with a foreign key constraint error the moment any child row still references that parent',
             'It deletes the conflicting row before inserting, so cascades fire and child rows are destroyed'
           ],
           correct: 3,
@@ -755,7 +755,7 @@ Every statement runs in its own implicit transaction; wrap multi-statement work 
           prompt: 'Why is wrapping 10,000 INSERTs in one transaction dramatically faster than 10,000 bare INSERTs?',
           options: [
             'Each bare INSERT is its own implicit transaction and pays a durability sync; one transaction pays roughly one',
-            'SQLite batches statements into pages only inside explicit transactions',
+            'SQLite batches statements into pages only inside explicit transactions, and every page write still triggers its own separate disk sync',
             'Autocommit mode re-parses the statement each time',
             'The transaction disables index maintenance until COMMIT'
           ],

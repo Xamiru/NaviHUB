@@ -198,6 +198,7 @@ export default function Sidebar() {
             children={[
               { to: '/english/dictionary', label: 'Dictionary' },
               { to: '/english/review', label: 'Review' },
+              { to: '/english/deck', label: 'Deck' },
               { to: '/english/writing', label: 'Writing' }
             ]}
           />
@@ -206,7 +207,9 @@ export default function Sidebar() {
             label="Programming"
             children={[
               { to: '/programming/cheatsheets', label: 'Cheatsheets' },
-              { to: '/programming/practice', label: 'CLI practice' }
+              { to: '/programming/practice', label: 'CLI practice' },
+              { to: '/programming/sql', label: 'SQL sandbox' },
+              { to: '/programming/regex-golf', label: 'Regex golf' }
             ]}
           />
         </div>

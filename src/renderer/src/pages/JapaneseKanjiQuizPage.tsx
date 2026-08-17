@@ -8,6 +8,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import type { ComponentQuizItem } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // Build-a-kanji (kind 'components'): the kanji is shown with its meaning and
 // reading; assemble it by toggling exactly the components it contains out of a
@@ -21,15 +22,6 @@ const LEVELS: Source[] = ['N5', 'N4', 'N3', 'N2', 'N1']
 interface Chip {
   char: string
   strokes: number | null
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 export default function JapaneseKanjiQuizPage() {

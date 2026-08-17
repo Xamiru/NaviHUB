@@ -7,6 +7,7 @@ import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
 import RoadmapDailyLoop from '../components/japanese/RoadmapDailyLoop'
 import RoadmapMilestones from '../components/japanese/RoadmapMilestones'
+import JlptLadder from '../components/japanese/JlptLadder'
 import type { JpRoadmapCourse } from '@shared/types'
 
 // The study path, start to finish. Seeded courses carry a step number and lay
@@ -40,6 +41,10 @@ export default function JapaneseRoadmapPage() {
 
       <Section title="Daily loop">
         <RoadmapDailyLoop due={due} fresh={fresh} nextLesson={roadmap.nextLesson} />
+      </Section>
+
+      <Section title="JLPT ladder" subtitle="progress, not a gate">
+        <JlptLadder />
       </Section>
 
       <Section title="The path">

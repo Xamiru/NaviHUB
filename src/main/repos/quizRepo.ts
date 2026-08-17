@@ -144,21 +144,34 @@ function mapSession(r: Record<string, unknown>): QuizSession {
   }
 }
 
+// Time-attack kinds: the record is the MOST CORRECT in the fixed time, not the
+// best accuracy — ranking those by ratio would reward slow, careful play.
+// (Shiritori predates this and logs score = total to get the same effect.)
+export const SCORE_RANKED_KINDS: ReadonlySet<QuizKind> = new Set<QuizKind>([
+  'kanaRace',
+  'readingRace',
+  'conjRace'
+])
+
 // Recent rounds + the personal best. "Best" is the highest accuracy among
 // rounds of at least 5 questions (a lucky 1/1 endless round is not a record);
-// ties go to the longer round, then the newer one.
+// ties go to the longer round, then the newer one. Score-ranked kinds order
+// by score first (then accuracy).
 export function history(kind: QuizKind, limit = 15): QuizHistory {
   const db = getSqlite()
   const recent = (
     db
       .prepare(`SELECT * FROM quiz_session WHERE kind = ? ORDER BY played_at DESC, id DESC LIMIT ?`)
-      .all(kind, limit) as Record<string, unknown>[]
+      .all(kind, Math.max(1, Math.min(500, Math.floor(limit)))) as Record<string, unknown>[]
   ).map(mapSession)
+  const order = SCORE_RANKED_KINDS.has(kind)
+    ? 'score DESC, CAST(score AS REAL) / total DESC, played_at DESC, id DESC'
+    : 'CAST(score AS REAL) / total DESC, total DESC, played_at DESC, id DESC'
   const bestRow = db
     .prepare(
       `SELECT * FROM quiz_session
        WHERE kind = ? AND total >= 5
-       ORDER BY CAST(score AS REAL) / total DESC, total DESC, played_at DESC, id DESC
+       ORDER BY ${order}
        LIMIT 1`
     )
     .get(kind) as Record<string, unknown> | undefined

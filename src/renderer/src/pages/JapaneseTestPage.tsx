@@ -7,10 +7,15 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import QuizRecord from '../components/QuizRecord'
 import type { JpCard, JpLessonKind } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
-// JLPT checkpoint test: a timed 30-question mock over EVERYTHING at a level
-// (learned or not — it measures the level, not your study progress), drawn from
-// the seeded courses whose level chip matches. ≥80% = you own this level.
+// JLPT checkpoint: a timed ~30-question mock at a level, built from the OFFLINE
+// PACKS (main/jpJlpt.ts) — levelled grammar cloze, a frequency-band vocabulary
+// MC, kanji readings gated by KANJIDIC's jlpt stat, and bank sentences to
+// translate. Without the packs it falls back to the original sampler over the
+// SEEDED COURSES, which measures this app's own curriculum rather than the
+// level; the setup and the verdict both say which source produced the score.
+// Thirty items cannot certify anything, and the copy says that too.
 
 type Level = 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
 const LEVELS: Level[] = ['N5', 'N4', 'N3', 'N2', 'N1']
@@ -32,15 +37,6 @@ interface Question {
   front: string
   reading: string | null
   back: string
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 function distinctOptions(
@@ -115,9 +111,13 @@ export default function JapaneseTestPage() {
   })
 
   const [questions, setQuestions] = useState<Question[] | null>(null)
+  const [source, setSource] = useState<'packs' | 'courses'>('packs')
+  // Per-section tallies for the verdict (packs source only).
+  const [sectionsMeta, setSectionsMeta] = useState<{ key: string; label: string; note: string | null; from: number; to: number }[]>([])
   const [index, setIndex] = useState(0)
   const [picked, setPicked] = useState<number | null>(null)
   const [score, setScore] = useState(0)
+  const [answers, setAnswers] = useState<boolean[]>([])
   const [secondsLeft, setSecondsLeft] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -130,6 +130,38 @@ export default function JapaneseTestPage() {
     setError(null)
     setLoading(true)
     try {
+      // Packs first; the seeded-course sampler is the fallback.
+      const test = await api.japanese.jlptTestPool({ level })
+      if (test) {
+        const qs: Question[] = []
+        const meta: typeof sectionsMeta = []
+        for (const sec of test.sections) {
+          const from = qs.length
+          for (const q of sec.questions) {
+            qs.push({
+              prompt: q.prompt,
+              promptHint: q.promptHint,
+              heading: `${sec.label} — ${q.heading}`,
+              options: q.options,
+              correct: q.correct,
+              front: q.reveal.front,
+              reading: q.reveal.reading,
+              back: q.reveal.back
+            })
+          }
+          meta.push({ key: sec.key, label: sec.label, note: sec.note, from, to: qs.length })
+        }
+        loggedRef.current = false
+        setSource('packs')
+        setSectionsMeta(meta)
+        setQuestions(qs)
+        setIndex(0)
+        setPicked(null)
+        setScore(0)
+        setAnswers([])
+        setSecondsLeft(qs.length * SECONDS_PER_QUESTION)
+        return
+      }
       const matching = courses.filter((c) => c.level?.includes(level))
       const cards: TestCard[] = []
       for (const course of matching) {
@@ -146,10 +178,13 @@ export default function JapaneseTestPage() {
         return
       }
       loggedRef.current = false
+      setSource('courses')
+      setSectionsMeta([])
       setQuestions(qs)
       setIndex(0)
       setPicked(null)
       setScore(0)
+      setAnswers([])
       setSecondsLeft(qs.length * SECONDS_PER_QUESTION)
     } finally {
       setLoading(false)
@@ -173,7 +208,16 @@ export default function JapaneseTestPage() {
         score,
         total: questions.length,
         bestStreak: 0,
-        settings: { level }
+        settings: {
+          level,
+          source,
+          sections: Object.fromEntries(
+            sectionsMeta.map((m) => [
+              m.key,
+              [answers.slice(m.from, m.to).filter(Boolean).length, m.to - m.from]
+            ])
+          )
+        }
       })
       .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('jlpt') }))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -182,7 +226,13 @@ export default function JapaneseTestPage() {
   function choose(i: number): void {
     if (!current || picked !== null) return
     setPicked(i)
-    if (i === current.correct) setScore((s) => s + 1)
+    const right = i === current.correct
+    setAnswers((a) => {
+      const next = [...a]
+      next[index] = right
+      return next
+    })
+    if (right) setScore((s) => s + 1)
   }
 
   function next(): void {
@@ -221,7 +271,13 @@ export default function JapaneseTestPage() {
         <PageHeader
           back={{ to: "/japanese", label: "Japanese" }}
           title="JLPT Checkpoint"
-          subtitle={<>A timed 30-question mock over everything at a level — learned or not. Score 80% and you own the level; time limit is {SECONDS_PER_QUESTION}s per question.</>}
+          subtitle={
+            <>
+              A timed checkpoint built from the offline packs: levelled grammar, vocabulary by
+              frequency band, kanji readings, and sentences to translate. {SECONDS_PER_QUESTION}s a
+              question. It points at a level; it does not certify one.
+            </>
+          }
         />
 
         <div className="card p-5">
@@ -254,10 +310,10 @@ export default function JapaneseTestPage() {
     const pct = total ? Math.round((score / total) * 100) : 0
     const verdict =
       pct >= 80
-        ? { title: `${level} — passed`, sub: 'You own this level. Move up a step.', cls: 'text-green-400' }
+        ? { title: `Comfortable at ${level}`, sub: 'Worth trying the level above.', cls: 'text-green-400' }
         : pct >= 60
-          ? { title: `${level} — close`, sub: 'Nearly there — review the missed areas and retake.', cls: 'text-yellow-400' }
-          : { title: `${level} — not yet`, sub: 'Keep working the courses at this level.', cls: 'text-red-400' }
+          ? { title: `Close at ${level}`, sub: 'Review the weakest section below and retake.', cls: 'text-yellow-400' }
+          : { title: `Not yet at ${level}`, sub: 'Keep working this level; retake in a few weeks.', cls: 'text-red-400' }
     return (
       <div className="p-6 max-w-md mx-auto">
         <div className="card p-8 text-center">
@@ -270,6 +326,32 @@ export default function JapaneseTestPage() {
           </p>
           <p className={`mt-3 text-lg font-semibold ${verdict.cls}`}>{verdict.title}</p>
           <p className="mt-1 text-sm text-gray-400">{verdict.sub}</p>
+
+          {sectionsMeta.length > 0 && (
+            <ul className="mt-4 space-y-1 text-left text-sm">
+              {sectionsMeta.map((m) => {
+                const got = answers.slice(m.from, m.to).filter(Boolean).length
+                const n = m.to - m.from
+                return (
+                  <li key={m.key} className="flex items-baseline justify-between gap-3">
+                    <span className="text-gray-300">
+                      {m.label}
+                      {m.note && <span className="ml-1 text-xs text-gray-600">({m.note})</span>}
+                    </span>
+                    <span className="shrink-0 tabular-nums text-gray-400">
+                      {got} / {n}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+
+          <p className="mt-4 text-xs leading-relaxed text-gray-500">
+            {source === 'packs'
+              ? 'A checkpoint built from the offline packs — levelled grammar, a frequency band for vocabulary, KANJIDIC levels for kanji, bank sentences for reading. Thirty items cannot certify a level; treat it as a direction, not a result.'
+              : 'The offline packs are not installed, so this sampled your own seeded courses — it measures how much of this app’s curriculum you have studied, not the JLPT level. Install the dictionaries in Settings for the pack-based checkpoint.'}
+          </p>
           <div className="mt-6 flex gap-2">
             <button className="btn-primary flex-1" onClick={() => setQuestions(null)}>
               Back to setup

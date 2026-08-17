@@ -122,3 +122,58 @@ describe('lifetime', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM game_session').get()).toEqual({ n: 0 })
   })
 })
+
+describe('playtimeWeeks', () => {
+  // The Playtime tab's chart. Weeks are Monday-based and bucketed in UTC, and
+  // a session is credited to the week it STARTED.
+  const insert = (mediaId: number, startedAt: string, seconds: number): void => {
+    db.prepare(
+      `INSERT INTO game_session (media_id, started_at, ended_at, duration) VALUES (?, ?, ?, ?)`
+    ).run(mediaId, startedAt, startedAt, seconds)
+  }
+  // A date SQLite agrees is `daysAgo` days back, so the test never drifts.
+  const daysAgo = (n: number): string =>
+    (db.prepare(`SELECT date('now', ?) AS d`).get(`-${n} days`) as { d: string }).d
+
+  it('returns exactly 12 weeks, oldest first, with the gaps kept', () => {
+    const id = addMedia('game')
+    const weeks = repo.playtimeWeeks(id)
+    expect(weeks).toHaveLength(12)
+    expect(weeks.every((w) => w.seconds === 0)).toBe(true)
+    const days = weeks.map((w) => w.weekStart)
+    expect([...days].sort()).toEqual(days) // ascending
+    // Every bucket is a Monday (SQLite: %w is 1 for Monday).
+    for (const w of days) {
+      expect(db.prepare(`SELECT strftime('%w', ?) AS dow`).get(w)).toEqual({ dow: '1' })
+    }
+  })
+
+  it('sums sessions into the week they started, leaving other weeks empty', () => {
+    const id = addMedia('game')
+    insert(id, `${daysAgo(1)} 20:00:00`, 3600)
+    insert(id, `${daysAgo(2)} 20:00:00`, 1800)
+    insert(id, `${daysAgo(30)} 12:00:00`, 7200)
+
+    const weeks = repo.playtimeWeeks(id)
+    const total = weeks.reduce((n, w) => n + w.seconds, 0)
+    expect(total).toBe(3600 + 1800 + 7200)
+    expect(weeks.filter((w) => w.seconds > 0).length).toBeGreaterThanOrEqual(2)
+  })
+
+  it('ignores sessions older than the window and other titles', () => {
+    const id = addMedia('game')
+    const other = addMedia('game')
+    insert(id, `${daysAgo(200)} 12:00:00`, 9999)
+    insert(other, `${daysAgo(1)} 12:00:00`, 5555)
+    expect(repo.playtimeWeeks(id).every((w) => w.seconds === 0)).toBe(true)
+  })
+
+  it('rides along on overview()', () => {
+    const id = addMedia('game')
+    insert(id, `${daysAgo(1)} 20:00:00`, 3600)
+    const ov = repo.overview(id)
+    expect(ov.weeks).toHaveLength(12)
+    expect(ov.weeks.reduce((n, w) => n + w.seconds, 0)).toBe(3600)
+  })
+})
+

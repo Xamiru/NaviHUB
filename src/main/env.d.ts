@@ -1,3 +1,6 @@
+// electron-vite import suffixes (`?modulePath` for the SQL sandbox utility process).
+/// <reference types="electron-vite/node" />
+
 declare module '*.sql?raw' {
   const content: string
   export default content

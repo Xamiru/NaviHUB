@@ -13,6 +13,9 @@ import { failureHint, strokeVerdict } from '@shared/strokeMatch'
 import { splitReadings } from '@shared/romaji'
 import type { Point } from '@shared/strokes'
 import type { JpCard } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
+import { orderByComponent } from '@shared/kanjiGroups'
+import { Group, Pill } from '../components/PillGroup'
 
 // Write the kanji, don't just read it. Prompts with the meaning and readings,
 // then checks each drawn stroke against KanjiVG's reference in order — so
@@ -33,6 +36,7 @@ interface WritingItem {
 
 export default function JapaneseWritingPage() {
   const [items, setItems] = useState<WritingItem[] | null>(null)
+  const [settings, setSettings] = useState<Record<string, unknown>>({})
 
   return (
     <div className="mx-auto max-w-3xl p-6">
@@ -43,16 +47,30 @@ export default function JapaneseWritingPage() {
       />
 
       {items && items.length > 0 ? (
-        <Drill items={items} onExit={() => setItems(null)} />
+        <Drill items={items} settings={settings} onExit={() => setItems(null)} />
       ) : (
-        <WritingSetup onStart={setItems} />
+        <WritingSetup
+          onStart={(built, s) => {
+            setSettings(s)
+            setItems(built)
+          }}
+        />
       )}
     </div>
   )
 }
 
-function WritingSetup({ onStart }: { onStart: (items: WritingItem[]) => void }) {
+function WritingSetup({
+  onStart
+}: {
+  onStart: (items: WritingItem[], settings: Record<string, unknown>) => void
+}) {
   const [courseId, setCourseId] = usePersistedState<number | null>('jpWritingCourse', null)
+  // Scope: one lesson at a time is how the deck is actually studied; grouping
+  // deals kanji that share a component consecutively (@shared/kanjiGroups).
+  const [lessonId, setLessonId] = usePersistedState<number | null>('jpWritingLesson', null)
+  const [round, setRound] = usePersistedState<number>('jpWritingRound', 20)
+  const [grouped, setGrouped] = usePersistedState<boolean>('jpWritingGroup', true)
   const [loading, setLoading] = useState(false)
   const [emptyReason, setEmptyReason] = useState<string | null>(null)
 
@@ -69,6 +87,14 @@ function WritingSetup({ onStart }: { onStart: (items: WritingItem[]) => void }) 
   const kanjiCourses = courses.filter((c) => c.title.includes('Kanji') || c.title.includes('Radicals'))
   const effectiveCourseId = courseId ?? kanjiCourses[0]?.id ?? null
 
+  // The chosen course's kanji lessons, for the scope picker.
+  const { data: courseDetail } = useQuery({
+    queryKey: qk.japanese.course(effectiveCourseId ?? 0),
+    queryFn: () => api.japanese.getCourse(effectiveCourseId!),
+    enabled: effectiveCourseId != null
+  })
+  const kanjiLessons = (courseDetail?.lessons ?? []).filter((l) => l.kind === 'kanji')
+
   async function start(): Promise<void> {
     if (effectiveCourseId == null) return
     setLoading(true)
@@ -77,12 +103,26 @@ function WritingSetup({ onStart }: { onStart: (items: WritingItem[]) => void }) 
       const detail = await api.japanese.getCourse(effectiveCourseId)
       if (!detail) return
       const cards: JpCard[] = []
-      for (const lesson of detail.lessons.filter((l) => l.kind === 'kanji')) {
+      const wanted = detail.lessons.filter(
+        (l) => l.kind === 'kanji' && (lessonId == null || l.id === lessonId)
+      )
+      for (const lesson of wanted) {
         const full = await api.japanese.getLesson(lesson.id)
         if (full) cards.push(...full.cards)
       }
       // Single-character fronts only — a kanji card's front IS the character.
-      const singles = cards.filter((c) => [...c.front].length === 1)
+      // Deduped by character: one kanji can appear in several lessons of a
+      // course, and BOTH grouped-path steps key by character (orderByComponent
+      // builds a Set, the remap builds a Map), so duplicates were silently
+      // dropped after the round was sized — a "20 kanji" round could deal 17.
+      // Deduping here makes the count honest and saves the extra stroke IPC.
+      const singles: JpCard[] = []
+      const seenChar = new Set<string>()
+      for (const c of cards) {
+        if ([...c.front].length !== 1 || seenChar.has(c.front)) continue
+        seenChar.add(c.front)
+        singles.push(c)
+      }
       // One round trip per kanji, but issued together: a 200-card course would
       // otherwise mean 200 serialized IPC waits behind a bare "Loading…".
       const strokeData = await Promise.all(singles.map((c) => api.dict.strokes(c.front)))
@@ -112,7 +152,31 @@ function WritingSetup({ onStart }: { onStart: (items: WritingItem[]) => void }) 
         )
         return
       }
-      onStart(shuffle(built))
+      // Group by shared component when kradfile is installed (a miss just
+      // leaves the order shuffled — never a blocker).
+      let ordered = shuffle(built)
+      if (grouped) {
+        try {
+          const infos = await api.dict.kanji(built.map((b) => b.char).join(''))
+          const comps = new Map(infos.map((i) => [i.character, i.components ?? []]))
+          if ([...comps.values()].some((c) => c.length > 0)) {
+            const order = orderByComponent(
+              ordered.map((b) => b.char),
+              (c) => comps.get(c) ?? []
+            )
+            const byChar = new Map(ordered.map((b) => [b.char, b]))
+            ordered = order.map((c) => byChar.get(c)!).filter(Boolean)
+          }
+        } catch {
+          /* no kradfile — keep the shuffle */
+        }
+      }
+      onStart(round > 0 ? ordered.slice(0, round) : ordered, {
+        course: effectiveCourseId,
+        lesson: lessonId,
+        round,
+        grouped
+      })
     } catch (e) {
       toastError(e)
     } finally {
@@ -141,11 +205,14 @@ function WritingSetup({ onStart }: { onStart: (items: WritingItem[]) => void }) 
       <p className="mb-3 text-sm text-gray-400">
         You&apos;ll see the meaning and readings — draw the character stroke by stroke.
       </p>
-      <div className="mb-4 flex items-center gap-2">
+      <div className="mb-3 flex flex-wrap items-center gap-2">
         <select
           className="input max-w-sm"
           value={effectiveCourseId ?? ''}
-          onChange={(e) => setCourseId(Number(e.target.value))}
+          onChange={(e) => {
+            setCourseId(Number(e.target.value))
+            setLessonId(null)
+          }}
         >
           {kanjiCourses.map((c) => (
             <option key={c.id} value={c.id}>
@@ -153,6 +220,32 @@ function WritingSetup({ onStart }: { onStart: (items: WritingItem[]) => void }) 
             </option>
           ))}
         </select>
+        <select
+          className="input max-w-sm"
+          value={lessonId ?? ''}
+          onChange={(e) => setLessonId(e.target.value ? Number(e.target.value) : null)}
+        >
+          <option value="">All kanji lessons</option>
+          {kanjiLessons.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.title} ({l.cardCount})
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        <Group label="Round">
+          <Pill active={round === 10} onClick={() => setRound(10)} label="10" />
+          <Pill active={round === 20} onClick={() => setRound(20)} label="20" />
+          <Pill active={round === 0} onClick={() => setRound(0)} label="All" />
+        </Group>
+        <button
+          className={`chip-toggle ${grouped ? 'chip-toggle-active' : ''}`}
+          onClick={() => setGrouped((v) => !v)}
+          title="Deal kanji that share a component one after another (needs the KRADFILE pack)"
+        >
+          Group by shared component
+        </button>
         <button
           className="btn-primary shrink-0"
           disabled={loading || effectiveCourseId == null}
@@ -169,7 +262,15 @@ function WritingSetup({ onStart }: { onStart: (items: WritingItem[]) => void }) 
   )
 }
 
-function Drill({ items, onExit }: { items: WritingItem[]; onExit: () => void }) {
+function Drill({
+  items,
+  settings,
+  onExit
+}: {
+  items: WritingItem[]
+  settings: Record<string, unknown>
+  onExit: () => void
+}) {
   const qc = useQueryClient()
   const [queue, setQueue] = useState<WritingItem[]>(items)
   const [index, setIndex] = useState(0)
@@ -201,7 +302,7 @@ function Drill({ items, onExit }: { items: WritingItem[]; onExit: () => void }) 
           score: correct,
           total: answeredRef.current,
           bestStreak,
-          settings: {}
+          settings
         })
         await qc.invalidateQueries({ queryKey: qk.quiz.history('writing') })
       } catch {
@@ -352,13 +453,4 @@ function Drill({ items, onExit }: { items: WritingItem[]; onExit: () => void }) 
       </div>
     </div>
   )
-}
-
-function shuffle<T>(list: T[]): T[] {
-  const out = [...list]
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[out[i], out[j]] = [out[j], out[i]]
-  }
-  return out
 }

@@ -7,24 +7,13 @@ import { Group, Pill } from '../components/PillGroup'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
 import type { LoanwordQuizItem } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // Katakana loanword recognition (kind 'loanword') — the under-served half of
 // the katakana problem: not シ vs ツ, but realizing ミシン is just "machine"
 // after a century of phonetic drift. MC-4 English glosses (typed English is
 // dishonest: glosses are multi-token and the source isn't always English —
 // アルバイト is German).
-
-// Fisher-Yates. A `.sort(() => Math.random() - 0.5)` comparator is not a
-// uniform shuffle, and with the answer at index 0 it left the correct gloss in
-// slot 1 ~36% of the time — a free tell in a discrimination drill.
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 export default function JapaneseLoanwordsPage() {
   const [length, setLength] = usePersistedState<number>('jpLoanwordLength', 10)

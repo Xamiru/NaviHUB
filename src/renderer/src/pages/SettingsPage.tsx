@@ -150,7 +150,8 @@ function TextSetting({
   description,
   type = 'text',
   placeholder,
-  note
+  note,
+  actions
 }: {
   settingKey: string
   data: Record<string, string> | undefined
@@ -160,6 +161,8 @@ function TextSetting({
   type?: 'text' | 'password'
   placeholder?: string
   note?: ReactNode
+  // Extra control(s) beside Save — e.g. "Open folder" for a directory setting.
+  actions?: ReactNode
 }) {
   const [value, setValue] = useState('')
   useEffect(() => setValue(data?.[settingKey] ?? ''), [data, settingKey])
@@ -176,6 +179,7 @@ function TextSetting({
         <button className="btn-ghost shrink-0" onClick={() => onSave(settingKey, value.trim())}>
           Save
         </button>
+        {actions}
       </div>
       {note && <p className="mt-1 text-xs text-gray-500">{note}</p>}
     </SettingCard>
@@ -545,6 +549,31 @@ function FoldersSettings({ data, onSave }: { data?: Record<string, string>; onSa
             the app&apos;s data folder. Changing this only affects newly added images — existing
             files stay where they were saved.
           </>
+        }
+      />
+      <TextSetting
+        settingKey="slideshow.dir"
+        data={data}
+        onSave={onSave}
+        title="Slideshow folder"
+        placeholder="/home/you/Pictures/NaviHUB/Slideshow"
+        description={
+          <>
+            Right-click any image on a title&apos;s Art tab and choose{' '}
+            <span className="text-gray-400">Add to slideshow</span> to copy it here. Point Windows
+            Settings &gt; Personalization &gt; Background &gt; Slideshow at this folder once and the
+            desktop cycles through them — NaviHUB does not need to be running. Leave blank to use{' '}
+            <span className="text-gray-400">&lt;Pictures folder&gt;/Slideshow</span>. Changing this
+            only affects newly added images.
+          </>
+        }
+        actions={
+          <button
+            className="btn-ghost shrink-0"
+            onClick={() => void api.pictures.openSlideshowFolder()}
+          >
+            Open folder
+          </button>
         }
       />
     </>

@@ -1,6 +1,7 @@
 import { ipcMain, shell, BrowserWindow } from 'electron'
 import { clampUiScale, parseUiScale } from '@shared/uiScale'
 import * as mediaRepo from './repos/mediaRepo'
+import * as tvRepo from './repos/tvRepo'
 import * as peopleRepo from './repos/peopleRepo'
 import * as companyRepo from './repos/companyRepo'
 import * as characterRepo from './repos/characterRepo'
@@ -33,6 +34,10 @@ import * as dictSimilarKanji from './dict/similarKanji'
 import * as imeCandidates from './dict/imeCandidates'
 import * as englishRepo from './repos/englishRepo'
 import * as programmingRepo from './repos/programmingRepo'
+import * as sqlSandbox from './sqlSandbox'
+import * as englishDeck from './englishDeck'
+import * as jpSentenceGames from './jpSentenceGames'
+import * as jpJlpt from './jpJlpt'
 import * as anilist from './anilist'
 import * as tmdb from './tmdb'
 import * as vndb from './vndb'
@@ -117,7 +122,12 @@ export function registerIpc(): void {
   ipcMain.handle('media:create', (_e, input) => mediaRepo.create(input))
   ipcMain.handle('media:update', (_e, id, input) => mediaRepo.update(id, input))
   ipcMain.handle('media:logProgress', (_e, id) => checklistRepo.logProgress(id, todayLocal()))
-  ipcMain.handle('media:remove', (_e, id) => mediaRepo.remove(id))
+  ipcMain.handle('media:remove', (_e, id) => {
+    // The image rows cascade, but their copies in the desktop-slideshow folder
+    // do not — Windows would keep showing wallpapers for a deleted title.
+    pictures.forgetSlideshowForMedia(id)
+    return mediaRepo.remove(id)
+  })
   ipcMain.handle('media:removeCharacter', (_e, mediaId, characterId) =>
     linkRepo.removeMediaCharacter(mediaId, characterId)
   )
@@ -127,6 +137,31 @@ export function registerIpc(): void {
   ipcMain.handle('media:jpMilestones', () => mediaRepo.jpMilestones())
   ipcMain.handle('media:resumePoints', () => mediaRepo.resumePoints())
   ipcMain.handle('media:activityHeatmap', () => mediaRepo.activityHeatmap())
+
+  // ---- tv episode catalogue ----
+  // Ticking an episode is a media-progress event, so a FIRST-time watch goes
+  // through checklistRepo.logProgress — the app's one "I watched another one"
+  // write — exactly as video:markWatched does. tvRepo itself never touches
+  // media_item.progress. A season toggle logs once per newly-watched episode,
+  // so ticking a season credits the same as ticking each episode by hand.
+  ipcMain.handle('tv:seasons', (_e, mediaId: number) => tvRepo.listSeasons(mediaId, todayLocal()))
+  ipcMain.handle('tv:setWatched', (_e, episodeId: number, watched: boolean) => {
+    const res = tvRepo.setWatched(episodeId, watched)
+    if (res?.firstTime) checklistRepo.logProgress(res.mediaId, todayLocal())
+  })
+  ipcMain.handle(
+    'tv:setSeasonWatched',
+    (_e, mediaId: number, season: number, watched: boolean) => {
+      const today = todayLocal()
+      const { firstTime } = tvRepo.setSeasonWatched(mediaId, season, watched, today)
+      // noRewatch: a season toggle back-fills a catalogue, so it must not wrap
+      // an already-finished show into a fresh pass. Ticking ONE episode by hand
+      // still does — that is a deliberate "I just watched this".
+      for (let i = 0; i < firstTime; i++) {
+        checklistRepo.logProgress(mediaId, today, undefined, { noRewatch: true })
+      }
+    }
+  )
 
   // ---- people ----
   ipcMain.handle('people:list', (_e, search, role, mediaType) =>
@@ -170,7 +205,7 @@ export function registerIpc(): void {
   ipcMain.handle('quiz:songPool', (_e, filter) => quizRepo.songPool(filter))
   ipcMain.handle('quiz:tournamentPool', (_e, source) => tournamentRepo.tournamentPool(source))
   ipcMain.handle('quiz:logSession', (_e, input) => quizRepo.logSession(input))
-  ipcMain.handle('quiz:history', (_e, kind) => quizRepo.history(kind))
+  ipcMain.handle('quiz:history', (_e, kind, limit) => quizRepo.history(kind, limit ?? 15))
 
   // ---- HowLongToBeat times (games + VNs) ----
   ipcMain.handle('hltb:fetch', (_e, mediaId) => hltb.fetchForMedia(mediaId))
@@ -301,6 +336,7 @@ export function registerIpc(): void {
   ipcMain.handle('japanese:listLeeches', () => japaneseRepo.listLeeches())
   ipcMain.handle('japanese:resetCard', (_e, id) => japaneseRepo.resetCard(id))
   ipcMain.handle('japanese:stats', () => japaneseRepo.stats())
+  ipcMain.handle('japanese:jlptLadder', () => japaneseRepo.jlptLadder())
   ipcMain.handle('japanese:statsDetail', () => japaneseRepo.statsDetail())
   ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
   ipcMain.handle('japanese:markWordsKnown', (_e, words) => japaneseRepo.markWordsKnown(words))
@@ -318,6 +354,11 @@ export function registerIpc(): void {
     japaneseRepo.ghostAnswer(cardId, correct)
   )
   ipcMain.handle('japanese:feed', (_e, req) => jpFeed.getFeed(req))
+  ipcMain.handle('japanese:particlePool', (_e, req) => jpSentenceGames.particlePool(req))
+  ipcMain.handle('japanese:scramblePool', (_e, req) => jpSentenceGames.scramblePool(req))
+  ipcMain.handle('japanese:contextReadingPool', (_e, req) => jpSentenceGames.contextReadingPool(req))
+  ipcMain.handle('japanese:readingRacePool', (_e, req) => jpDrills.readingRacePool(req))
+  ipcMain.handle('japanese:jlptTestPool', (_e, req) => jpJlpt.jlptTestPool(req))
 
   // ---- offline dictionaries ----
   ipcMain.handle('dict:list', () => dictImporter.listDictionaries())
@@ -398,6 +439,9 @@ export function registerIpc(): void {
   ipcMain.handle('english:listWritings', () => englishRepo.listWritings())
   ipcMain.handle('english:removeWriting', (_e, id) => englishRepo.removeWriting(id))
   ipcMain.handle('english:errorTally', () => englishRepo.writingErrorTally())
+  ipcMain.handle('english:deck', () => englishDeck.deckOverview())
+  ipcMain.handle('english:listLeeches', () => englishRepo.listLeeches())
+  ipcMain.handle('english:removeWords', (_e, ids) => englishRepo.removeWords(ids))
 
   // ---- programming (learn section; content is code, only completion is data) ----
   ipcMain.handle('programming:progress', () => programmingRepo.progress())
@@ -405,6 +449,14 @@ export function registerIpc(): void {
   ipcMain.handle('programming:uncomplete', (_e, lessonKey) =>
     programmingRepo.uncomplete(lessonKey)
   )
+  ipcMain.handle('programming:recordAttempt', (_e, input) => programmingRepo.recordAttempt(input))
+  ipcMain.handle('programming:attempts', () => programmingRepo.attempts())
+  ipcMain.handle('programming:recordCliRound', (_e, input) => programmingRepo.recordCliRound(input))
+  ipcMain.handle('programming:cliMisses', () => programmingRepo.cliMisses())
+  ipcMain.handle('programming:solves', () => programmingRepo.solves())
+  ipcMain.handle('programming:recordSolve', (_e, input) => programmingRepo.recordSolve(input))
+  ipcMain.handle('programming:sqlRun', (_e, input) => sqlSandbox.runExercise(input))
+  ipcMain.handle('programming:sqlExpected', (_e, key) => sqlSandbox.expectedTable(key))
 
   // ---- local manga reader ----
   ipcMain.handle('manga:attachFolder', (_e, mediaId) => manga.attachFolder(mediaId))
@@ -575,6 +627,13 @@ export function registerIpc(): void {
     pictures.addFromFiles(mediaId, kind)
   )
   ipcMain.handle('pictures:remove', (_e, imageId) => pictures.removeImage(imageId))
+  ipcMain.handle('pictures:toggleSlideshow', (_e, imageId) => pictures.toggleSlideshow(imageId))
+  ipcMain.handle('pictures:setBackground', (_e, mediaId, imageId) =>
+    pictures.setBackground(mediaId, imageId)
+  )
+  ipcMain.handle('pictures:openSlideshowFolder', async () => {
+    await shell.openPath(files.ensureSlideshowDir())
+  })
 
   // ---- franchise (curated pages' art cache) ----
   ipcMain.handle('franchise:ensureArt', (_e, franchiseId) => franchiseArt.ensureArt(franchiseId))

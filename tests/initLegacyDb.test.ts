@@ -113,6 +113,113 @@ describe('a live DB that predates newer columns', () => {
         .get()
     ).not.toThrow()
     expect(db.prepare('SELECT title FROM media_item').get()).toEqual({ title: 'Old Save' })
+
+    // 2026-08: the same legacy shape predates banner_path (detail-page hero
+    // art). The column must arrive by migration, and the hero's own fallback
+    // query — banner_path, else the first Art-tab image — must run on it.
+    const cols = (db.prepare('PRAGMA table_info(media_item)').all() as { name: string }[]).map(
+      (c) => c.name
+    )
+    expect(cols).toContain('banner_path')
+    expect(() =>
+      db
+        .prepare(
+          `SELECT m.banner_path,
+                  (SELECT file_path FROM media_image
+                    WHERE media_id = m.id AND kind IN ('fanart', 'wallpaper')
+                    ORDER BY CASE kind WHEN 'fanart' THEN 0 ELSE 1 END,
+                             COALESCE(sort_order, 1000000), id LIMIT 1) AS fallback
+             FROM media_item m WHERE m.id = 1`
+        )
+        .get()
+    ).not.toThrow()
+  })
+
+  it('gains is_background + slideshow_item on a media_image that predates them', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    // media_image exactly as the 2026-07 wallpapers release created it — the
+    // Art tab's "Set background" flag and the slideshow table came later. Note
+    // the pre-existing index: init.sql recreates it IF NOT EXISTS, and it must
+    // not reference the migrated column.
+    db.exec(`CREATE TABLE media_item (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      media_type      TEXT NOT NULL,
+      title           TEXT NOT NULL,
+      title_original  TEXT,
+      synopsis        TEXT,
+      cover_path      TEXT,
+      release_date    TEXT,
+      total_units     INTEGER,
+      status          TEXT,
+      score           REAL,
+      progress        INTEGER NOT NULL DEFAULT 0,
+      rewatch_count   INTEGER NOT NULL DEFAULT 0,
+      notes           TEXT,
+      favorite        INTEGER NOT NULL DEFAULT 0,
+      metadata        TEXT,
+      external_source TEXT,
+      external_id     TEXT,
+      created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE media_image (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      media_id    INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+      kind        TEXT NOT NULL,
+      file_path   TEXT NOT NULL,
+      source_url  TEXT,
+      source      TEXT,
+      width       INTEGER, height INTEGER, sort_order INTEGER,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX idx_media_image_media ON media_image(media_id, kind);`)
+    db.prepare(`INSERT INTO media_item (id, media_type, title) VALUES (1, 'anime', 'Berserk')`).run()
+    db.prepare(
+      `INSERT INTO media_image (id, media_id, kind, file_path)
+       VALUES (5, 1, 'wallpaper', 'pictures/Berserk (anime)/wallpapers/a.jpg')`
+    ).run()
+
+    expect(() => db.exec(initSql)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+
+    const cols = (db.prepare('PRAGMA table_info(media_image)').all() as { name: string }[]).map(
+      (c) => c.name
+    )
+    expect(cols).toContain('is_background')
+    // The existing image survives and defaults to "not the background".
+    expect(db.prepare('SELECT is_background FROM media_image WHERE id=5').get()).toEqual({
+      is_background: 0
+    })
+    expect(
+      db.prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='slideshow_item'`).get()
+    ).toBeTruthy()
+
+    // The app's own queries against the migrated shape: the Art-tab row read
+    // (LEFT JOIN onto the new table) and the backdrop lookup in mediaRepo.get.
+    expect(() =>
+      db
+        .prepare(
+          `SELECT i.id, i.is_background, s.file_name AS slideshow_file
+             FROM media_image i LEFT JOIN slideshow_item s ON s.image_id = i.id
+            WHERE i.media_id=? AND i.kind=? ORDER BY i.sort_order, i.id`
+        )
+        .all(1, 'wallpaper')
+    ).not.toThrow()
+    expect(() =>
+      db
+        .prepare(
+          'SELECT file_path FROM media_image WHERE media_id = ? AND is_background = 1 ORDER BY id LIMIT 1'
+        )
+        .get(1)
+    ).not.toThrow()
+
+    // Re-running migrations is a no-op, and the new FK bites.
+    runMigrations(db)
+    db.prepare(`INSERT INTO slideshow_item (image_id, file_name) VALUES (5, 'Berserk - a.jpg')`).run()
+    db.prepare('DELETE FROM media_item WHERE id=1').run()
+    expect(db.prepare('SELECT COUNT(*) AS n FROM slideshow_item').get()).toEqual({ n: 0 })
+    db.close()
   })
 
   it('NO init.sql statement references a column that only migrations create', () => {

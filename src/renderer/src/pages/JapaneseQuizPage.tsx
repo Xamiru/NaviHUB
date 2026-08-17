@@ -10,6 +10,7 @@ import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
 import { confusableTier } from '@shared/confusables'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 type Phase = 'setup' | 'play' | 'summary'
 type Direction = 'jp2en' | 'en2jp' | 'jp2reading' | 'cloze'
@@ -21,15 +22,6 @@ interface Stats {
 }
 
 const ZERO: Stats = { score: 0, total: 0, streak: 0, best: 0 }
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 // Cloze needs an example sentence that actually contains the word, and the
 // word must not BE the sentence (grammar cards' front is the whole sentence).

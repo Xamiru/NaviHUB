@@ -1,10 +1,11 @@
 import type { EnPassage } from './types'
+import { EN_PASSAGES_SET2 } from './passagesSet2'
 
 // Reading passages for the English test section, six C1 and six C2.
 // Passage keys are FROZEN (quiz_session settings and writing prompts store
 // them); titles, text and questions may be edited freely.
 
-export const EN_PASSAGES: EnPassage[] = [
+const SET1: EnPassage[] = [
   {
     key: 'the-lost-art-of-boredom',
     title: 'The Lost Art of Boredom',
@@ -1290,3 +1291,6 @@ window.`,
     ]
   }
 ]
+
+// Set 1 + set 2 (added 2026-08-15); order is authoring order, the pages shuffle.
+export const EN_PASSAGES = [...SET1, ...EN_PASSAGES_SET2]

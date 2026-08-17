@@ -177,7 +177,7 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
       {achievements.length === 0 ? (
         <EmptyState title="No achievements in this set" />
       ) : (
-        <ul className="space-y-1">
+        <ul className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
           {achievements.map((a) => (
             <AchievementItem
               key={a.id}
@@ -226,37 +226,58 @@ function AchievementItem({
   onToggle: (unlocked: boolean) => void
 }) {
   const unlocked = a.unlockedAt != null
+  // The art is the point of the tile: locked ones use the provider's own
+  // greyed icon at full strength when it exists, and only fall back to a CSS
+  // grayscale when it does not — never a washed-out 40 % ghost.
   const icon = unlocked ? a.iconPath : (a.iconGrayPath ?? a.iconPath)
+  const dimmed = !unlocked && !a.iconGrayPath
+  // A hidden achievement keeps its secret until it is earned; the description
+  // then appears (when the source had one — Steam's public page blanks them).
+  const description = a.hidden && !unlocked ? 'Hidden achievement' : (a.description ?? '')
+  const meta: string[] = []
+  if (a.rarity) {
+    meta.push(
+      `★ ${RARITY_LABEL[a.rarity]}${a.globalPct != null ? ` ${a.globalPct.toFixed(1)}%` : ''}`
+    )
+  }
+  if (a.points != null) meta.push(`${a.points} pts`)
+  if (unlocked) meta.push(fmtUnlockDate(a.unlockedAt as string))
+
   return (
-    <li className="flex items-center gap-3 rounded border border-base-700/40 px-3 py-2">
+    <li
+      className={`relative flex items-center gap-3 rounded-lg border p-2 pr-8 ${
+        unlocked ? 'border-base-700/60 bg-base-800/60' : 'border-base-700/30'
+      }`}
+    >
       {icon ? (
         <img
           src={mediaUrl(icon) ?? undefined}
           alt=""
-          className={`h-12 w-12 rounded object-cover shrink-0 ${unlocked ? '' : 'opacity-40 grayscale'}`}
+          className={`h-16 w-16 shrink-0 rounded object-cover ${dimmed ? 'grayscale opacity-70' : ''}`}
         />
       ) : (
-        <span className="h-12 w-12 rounded bg-base-700 shrink-0" />
+        <span className="h-16 w-16 shrink-0 rounded bg-base-700" />
       )}
       <div className="min-w-0 flex-1">
-        <p className={`truncate ${unlocked ? 'text-gray-100' : 'text-gray-400'}`}>
+        <p className={`truncate text-sm font-medium ${unlocked ? 'text-gray-100' : 'text-gray-400'}`}>
           {a.name}
-          {a.hidden && !unlocked ? <span className="ml-2 text-xs text-gray-600">hidden</span> : null}
         </p>
-        <p className="truncate text-sm text-gray-500">{a.description ?? ''}</p>
-      </div>
-      <div className="shrink-0 text-right text-xs">
-        {a.rarity && (
-          <p className={RARITY_CLASS[a.rarity]}>
-            ★ {RARITY_LABEL[a.rarity]}
-            {a.globalPct != null ? ` · ${a.globalPct.toFixed(1)}%` : ''}
+        <p
+          className={`line-clamp-2 text-xs leading-snug ${
+            a.hidden && !unlocked ? 'italic text-gray-600' : 'text-gray-500'
+          }`}
+          title={description}
+        >
+          {description}
+        </p>
+        {meta.length > 0 && (
+          <p className={`mt-1 truncate text-[11px] ${a.rarity ? RARITY_CLASS[a.rarity] : 'text-gray-500'}`}>
+            {meta.join(' · ')}
           </p>
         )}
-        {a.points != null && <p className="text-gray-500">{a.points} points</p>}
-        {unlocked && <p className="text-gray-500">{fmtUnlockDate(a.unlockedAt as string)}</p>}
       </div>
       <button
-        className="btn-ghost text-xs shrink-0"
+        className="absolute right-1.5 top-1.5 rounded px-1 text-xs text-gray-500 hover:text-accent disabled:opacity-40"
         disabled={busy}
         onClick={() => onToggle(!unlocked)}
         title={unlocked ? 'Mark as locked' : 'Mark as unlocked'}

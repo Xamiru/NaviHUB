@@ -12,6 +12,7 @@ import {
   keigoAnswersRegular,
   type KeigoRegister
 } from '@shared/keigo'
+import { shuffle } from '@shared/shuffle'
 
 // Keigo transform tab (kind 'keigo'): plain verb + target register → type the
 // keigo form. The suppletive table (行く→いらっしゃる/参る) is the hard part;
@@ -72,7 +73,7 @@ export default function KeigoDrillSetup() {
       }
     }
     // TypedDrill shuffles internally; cap the round here.
-    setItems(out.sort(() => Math.random() - 0.5).slice(0, length || out.length))
+    setItems(shuffle(out).slice(0, length || out.length))
   }
 
   if (items && items.length > 0) {

@@ -1,5 +1,5 @@
 import { getSqlite } from '../db/connection'
-import { gradeCard } from '@shared/srs'
+import { gradeCard, LEECH_LAPSES } from '@shared/srs'
 import type { SrsGrade, SrsStatus } from '@shared/types'
 import type {
   EnReviewOutcome,
@@ -96,6 +96,35 @@ export function listWords(search?: string): EnWord[] {
 
 export function removeWord(id: number): void {
   getSqlite().prepare('DELETE FROM en_word WHERE id = ?').run(id)
+}
+
+// Bulk removal for the deck page (rank triage). en_review_log cascades.
+export function removeWords(ids: number[]): number {
+  const db = getSqlite()
+  const clean = [...new Set(ids.filter((n) => Number.isInteger(n)))]
+  let changes = 0
+  db.transaction(() => {
+    for (let i = 0; i < clean.length; i += 500) {
+      const chunk = clean.slice(i, i + 500)
+      const res = db
+        .prepare(`DELETE FROM en_word WHERE id IN (${chunk.map(() => '?').join(',')})`)
+        .run(...chunk)
+      changes += res.changes
+    }
+  })()
+  return changes
+}
+
+// Words that keep lapsing — the Japanese listLeeches rule, minus the
+// learning-step counter (English cards are saved words, not lessons; the deck
+// page shows lapses next to frequency rank so pruning stays a human call).
+export function listLeeches(): EnWord[] {
+  const rows = getSqlite()
+    .prepare(
+      `SELECT * FROM en_word WHERE lapses >= ? ORDER BY lapses DESC, ease ASC, id ASC LIMIT 100`
+    )
+    .all(LEECH_LAPSES) as Record<string, unknown>[]
+  return rows.map(mapRow)
 }
 
 // ---- SRS (/english/review) ----

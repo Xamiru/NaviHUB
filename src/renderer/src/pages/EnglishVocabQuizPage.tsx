@@ -9,6 +9,9 @@ import QuizRecord from '../components/QuizRecord'
 import EmptyState from '../components/EmptyState'
 import { Group, Pill } from '../components/PillGroup'
 import type { EnBand, EnVocabMode, EnVocabQuestion, EnWordInput } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
+import { EN_IDIOMS } from '@shared/english/idioms'
+import { buildIdiomPool } from '@shared/english/idiomPool'
 
 // Advanced-vocabulary MCQ (the ProgrammingQuizPage loop over an IPC pool):
 // words tiered by OpenSubtitles frequency band, or the user's saved list.
@@ -16,7 +19,8 @@ import type { EnBand, EnVocabMode, EnVocabQuestion, EnWordInput } from '@shared/
 // answer IS the signal that this word belongs in the review deck.
 
 type Phase = 'setup' | 'play' | 'summary'
-type Source = EnBand | 'myWords'
+type Source = EnBand | 'myWords' | 'idioms'
+type IdiomKind = 'all' | 'idiom' | 'phrasal'
 
 interface Question {
   id: string
@@ -44,15 +48,6 @@ const BAND_LABEL: Record<EnBand, string> = {
   rare: 'Rare (25-50k)'
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
 function toQuestion(q: EnVocabQuestion, i: number): Question {
   const options = shuffle([q.answer, ...q.distractors])
   return { id: `${q.word}-${i}`, q, options, correct: options.indexOf(q.answer) }
@@ -64,6 +59,7 @@ export default function EnglishVocabQuizPage() {
   const [mode, setMode] = usePersistedState<EnVocabMode>('enVocabMode', 'word2def')
   const [source, setSource] = usePersistedState<Source>('enVocabSource', 'advanced')
   const [length, setLength] = usePersistedState<number>('enVocabLength', 10)
+  const [idiomKind, setIdiomKind] = usePersistedState<IdiomKind>('enVocabIdiomKind', 'all')
 
   const [current, setCurrent] = useState<Question | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
@@ -96,17 +92,27 @@ export default function EnglishVocabQuizPage() {
   const answered = picked !== null
   const packsReady = !!dictInfo && !!freqInfo
   // My-words rounds work with no packs; synonyms needs the WordNet synsets.
-  const effectiveMode: EnVocabMode = source === 'myWords' && mode === 'synonyms' ? 'word2def' : mode
+  const effectiveMode: EnVocabMode =
+    (source === 'myWords' || source === 'idioms') && mode === 'synonyms' ? 'word2def' : mode
 
   async function startGame(): Promise<void> {
     setError(null)
     setLoading(true)
     try {
-      const pool = await api.english.vocabPool({
-        mode: effectiveMode,
-        source: source === 'myWords' ? { kind: 'myWords' } : { kind: 'band', band: source },
-        limit: Math.max(length, 40)
-      })
+      // Idioms are content in code — no IPC; the pool builder mirrors the
+      // main-side shape so everything below is source-agnostic.
+      const pool =
+        source === 'idioms'
+          ? buildIdiomPool(
+              idiomKind === 'all' ? EN_IDIOMS : EN_IDIOMS.filter((i) => i.kind === idiomKind),
+              effectiveMode === 'def2word' ? 'def2word' : 'word2def',
+              Math.max(length, 40)
+            )
+          : await api.english.vocabPool({
+              mode: effectiveMode,
+              source: source === 'myWords' ? { kind: 'myWords' } : { kind: 'band', band: source },
+              limit: Math.max(length, 40)
+            })
       if (pool.length === 0) {
         setError(
           source === 'myWords'
@@ -174,7 +180,7 @@ export default function EnglishVocabQuizPage() {
           score: s.score,
           total: s.total,
           bestStreak: s.best,
-          settings: { mode: effectiveMode, source, length: lengthRef.current }
+          settings: { mode: effectiveMode, source, idiomKind: source === 'idioms' ? idiomKind : undefined, length: lengthRef.current }
         })
         .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('englishVocab') }))
         .catch(() => {})
@@ -220,7 +226,7 @@ export default function EnglishVocabQuizPage() {
   }, [phase, current, answered])
 
   if (phase === 'setup') {
-    const bandBlocked = source !== 'myWords' && !packsReady
+    const bandBlocked = source !== 'myWords' && source !== 'idioms' && !packsReady
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <PageHeader
@@ -255,10 +261,24 @@ export default function EnglishVocabQuizPage() {
               onClick={() => setSource('myWords')}
               label="My saved words"
             />
+            <Pill
+              active={source === 'idioms'}
+              onClick={() => setSource('idioms')}
+              label="Idioms & phrasals"
+            />
           </Group>
-          {source === 'myWords' && mode === 'synonyms' && (
+          {source === 'idioms' && (
+            <Group label="Set">
+              <Pill active={idiomKind === 'all'} onClick={() => setIdiomKind('all')} label="Both" />
+              <Pill active={idiomKind === 'idiom'} onClick={() => setIdiomKind('idiom')} label="Idioms" />
+              <Pill active={idiomKind === 'phrasal'} onClick={() => setIdiomKind('phrasal')} label="Phrasal verbs" />
+            </Group>
+          )}
+          {(source === 'myWords' || source === 'idioms') && mode === 'synonyms' && (
             <p className="text-xs text-gray-500">
-              Saved words carry no synonym data — this round will ask meanings instead.
+              {source === 'myWords'
+                ? 'Saved words carry no synonym data — this round will ask meanings instead.'
+                : 'Idioms have no synonym data — this round will ask meanings instead. Misses join your deck as phrases.'}
             </p>
           )}
 

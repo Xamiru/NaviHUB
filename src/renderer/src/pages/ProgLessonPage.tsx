@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -9,10 +9,14 @@ import Section from '../components/Section'
 import Markdown from '../components/Markdown'
 import { progCourse, progLessonKey } from '@shared/programming/courses'
 import type { ProgQuestion } from '@shared/programming/types'
+import { shuffle } from '@shared/shuffle'
+import { bestAttempts } from '@shared/programming/attempts'
 
 // One lesson: the Markdown body, a click-to-check "Check understanding" block
-// (self-check only — nothing is logged), and the completion toggle. Keyed by
-// route params so navigating prev/next remounts fresh question state.
+// (a finished check — every question answered — is recorded once as a
+// prog_attempt row; the best score shows on the course page), and the
+// completion toggle. Keyed by route params so navigating prev/next remounts
+// fresh question state.
 export default function ProgLessonPage() {
   const { courseKey = '', lessonKey = '' } = useParams()
   const course = progCourse(courseKey)
@@ -28,14 +32,34 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
   // 1-4 answer the first unanswered question (the quiz pages' keyboard idiom).
-  const [answered, setAnswered] = useState<ReadonlySet<number>>(new Set())
-  const activeQ = lesson.questions.findIndex((_, i) => !answered.has(i))
+  const [results, setResults] = useState<ReadonlyMap<number, boolean>>(new Map())
+  const activeQ = lesson.questions.findIndex((_, i) => !results.has(i))
+  const recordedRef = useRef(false)
 
   const { data: progress = [] } = useQuery({
     queryKey: qk.programming.progress,
     queryFn: () => api.programming.progress()
   })
+  const { data: attempts = [] } = useQuery({
+    queryKey: qk.programming.attempts,
+    queryFn: () => api.programming.attempts()
+  })
   const isDone = progress.some((p) => p.lessonKey === fullKey)
+  const summary = bestAttempts(attempts).get(fullKey)
+  const total = lesson.questions.length
+  const checkDone = total > 0 && results.size === total
+  const score = [...results.values()].filter(Boolean).length
+
+  // One prog_attempt row per finished check, guarded like the quiz pages'
+  // loggedRef — StrictMode double-invokes effects, this must not double-log.
+  useEffect(() => {
+    if (!checkDone || recordedRef.current) return
+    recordedRef.current = true
+    void api.programming
+      .recordAttempt({ lessonKey: fullKey, score, total })
+      .then(() => qc.invalidateQueries({ queryKey: qk.programming.attempts }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [checkDone])
 
   const prev = index > 0 ? course.lessons[index - 1] : null
   const next = index < course.lessons.length - 1 ? course.lessons[index + 1] : null
@@ -76,10 +100,26 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
                 q={q}
                 n={i + 1}
                 active={i === activeQ}
-                onAnswered={() => setAnswered((s) => new Set(s).add(i))}
+                onAnswered={(ok) => setResults((m) => new Map(m).set(i, ok))}
               />
             ))}
           </div>
+          {(checkDone || summary) && (
+            <p className="mt-3 text-sm text-gray-400">
+              {checkDone && (
+                <span className={score === total ? 'text-accent' : ''}>
+                  This check: {score} / {total}
+                </span>
+              )}
+              {checkDone && summary && <span className="mx-2 text-gray-600">·</span>}
+              {summary && (
+                <span>
+                  best {Math.max(summary.best.score, checkDone ? score : 0)} / {summary.best.total}
+                  {summary.attempts > 1 ? ` over ${summary.attempts} checks` : ''}
+                </span>
+              )}
+            </p>
+          )}
         </Section>
       )}
 
@@ -112,22 +152,27 @@ function Question({
   q: ProgQuestion
   n: number
   active: boolean
-  onAnswered: () => void
+  onAnswered: (correct: boolean) => void
 }) {
+  // Options are authored with the answer clustered at index 1 (43% of the
+  // catalog), so deal them shuffled once per mount — the quiz page already
+  // does — and re-find the correct one by identity.
+  const [options] = useState(() => shuffle(q.options))
+  const correct = options.indexOf(q.options[q.correct])
   const [picked, setPicked] = useState<number | null>(null)
   const answered = picked !== null
 
   function pick(i: number): void {
     if (picked !== null) return
     setPicked(i)
-    onAnswered()
+    onAnswered(i === correct)
   }
 
   useEffect(() => {
     if (!active || answered) return
     function onKey(e: KeyboardEvent) {
       const num = Number(e.key)
-      if (!Number.isInteger(num) || num < 1 || num > q.options.length) return
+      if (!Number.isInteger(num) || num < 1 || num > options.length) return
       const t = e.target as HTMLElement
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)
         return
@@ -145,10 +190,10 @@ function Question({
         {q.prompt}
       </p>
       <div className="space-y-1.5">
-        {q.options.map((opt, i) => {
+        {options.map((opt, i) => {
           let cls = 'border-base-700 hover:bg-base-700/60'
           if (answered) {
-            if (i === q.correct) cls = 'border-green-500/60 bg-green-500/10 text-green-300'
+            if (i === correct) cls = 'border-green-500/60 bg-green-500/10 text-green-300'
             else if (i === picked) cls = 'border-red-500/60 bg-red-500/10 text-red-300'
             else cls = 'border-base-700 opacity-60'
           }

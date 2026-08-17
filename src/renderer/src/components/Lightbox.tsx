@@ -9,12 +9,16 @@ export default function Lightbox({
   images,
   index,
   onIndexChange,
-  onClose
+  onClose,
+  onContextMenu
 }: {
   images: { url: string; alt?: string }[]
   index: number
   onIndexChange: (i: number) => void
   onClose: () => void
+  // Right-click on the image itself; the OWNER draws the menu (the grid section
+  // knows which row this index is and what the actions do).
+  onContextMenu?: (index: number, e: React.MouseEvent) => void
 }): React.JSX.Element | null {
   const panelRef = useDialog(onClose)
   const count = images.length
@@ -52,6 +56,11 @@ export default function Lightbox({
           alt={img.alt ?? ''}
           draggable={false}
           className="max-w-full max-h-full object-contain select-none"
+          onContextMenu={(e) => {
+            if (!onContextMenu) return
+            e.preventDefault()
+            onContextMenu(index, e)
+          }}
         />
 
         <button

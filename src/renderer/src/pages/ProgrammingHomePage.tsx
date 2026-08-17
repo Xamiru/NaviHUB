@@ -7,20 +7,47 @@ import Section from '../components/Section'
 import StatTile from '../components/StatTile'
 import HubCard from '../components/HubCard'
 import { PROG_COURSES, progLessonKey } from '@shared/programming/courses'
-import { CHEAT_SHEETS } from '@shared/programming/cheatsheets'
+import { CHEAT_SHEETS, practicePool } from '@shared/programming/cheatsheets'
+import { passedChecks } from '@shared/programming/attempts'
+import { SQL_EXERCISES } from '@shared/programming/sqlExercises'
+import { REGEX_GOLF_PUZZLES } from '@shared/programming/regexGolf'
 
-// Programming section dashboard: course cards with progress, plus the way into
-// the cheatsheets and the typed CLI drill. Content is code
-// (src/shared/programming/) — only lesson completion is fetched.
+// Programming section dashboard: course cards with progress, the drills (quiz,
+// CLI typing, SQL sandbox, regex golf), and the tracking layer over them
+// (self-check passes, weak commands, solves). Content is code
+// (src/shared/programming/) — only progress rows are fetched.
 export default function ProgrammingHomePage() {
   const { data: progress = [] } = useQuery({
     queryKey: qk.programming.progress,
     queryFn: () => api.programming.progress()
   })
+  const { data: attempts = [] } = useQuery({
+    queryKey: qk.programming.attempts,
+    queryFn: () => api.programming.attempts()
+  })
+  const { data: misses = [] } = useQuery({
+    queryKey: qk.programming.cliMisses,
+    queryFn: () => api.programming.cliMisses()
+  })
+  const { data: solves = [] } = useQuery({
+    queryKey: qk.programming.solves,
+    queryFn: () => api.programming.solves()
+  })
   const { data: cliHistory } = useQuery({
     queryKey: qk.quiz.history('cli'),
     queryFn: () => api.quiz.history('cli')
   })
+  const { data: quizHistory } = useQuery({
+    queryKey: qk.quiz.history('programming'),
+    queryFn: () => api.quiz.history('programming')
+  })
+  const sqlSolved = solves.filter((s) => s.kind === 'sql').length
+  const regexSolved = solves.filter((s) => s.kind === 'regex').length
+  const passed = passedChecks(attempts)
+  const attemptedLessons = new Set(attempts.map((a) => a.lessonKey)).size
+  // Weak commands: resolve the frozen keys back to display commands.
+  const byKey = new Map(practicePool(null).map((i) => [i.key, i]))
+  const weak = misses.map((m) => ({ ...m, item: byKey.get(m.cmdKey) })).filter((m) => m.item)
 
   const done = new Set(progress.map((p) => p.lessonKey))
   const totalLessons = PROG_COURSES.reduce((n, c) => n + c.lessons.length, 0)
@@ -31,13 +58,12 @@ export default function ProgrammingHomePage() {
     ])
   )
   const doneLessons = [...doneByCourse.values()].reduce((a, b) => a + b, 0)
-  const coursesStarted = [...doneByCourse.values()].filter((n) => n > 0).length
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
         title="Programming"
-        subtitle="Courses, CLI cheatsheets, and a typing drill."
+        subtitle="Courses, cheatsheets, and drills: quiz, CLI typing, SQL sandbox, regex golf."
         actions={
           <Link to="/programming/cheatsheets" className="btn-ghost">
             Cheatsheets
@@ -45,22 +71,40 @@ export default function ProgrammingHomePage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mb-6">
         <StatTile
           label="Lessons completed"
           value={`${doneLessons} / ${totalLessons}`}
           accent={doneLessons > 0}
         />
-        <StatTile label="Courses started" value={`${coursesStarted} / ${PROG_COURSES.length}`} />
+        <StatTile
+          label="Checks passed"
+          value={`${passed} / ${attemptedLessons}`}
+          sub="full marks / attempted"
+        />
+        <StatTile
+          label="Quiz rounds"
+          value={quizHistory?.totalSessions ?? 0}
+          sub={
+            quizHistory?.best ? `best ${quizHistory.best.score}/${quizHistory.best.total}` : undefined
+          }
+        />
         <StatTile
           label="CLI practice rounds"
           value={cliHistory?.totalSessions ?? 0}
           sub={cliHistory?.best ? `best ${cliHistory.best.score}/${cliHistory.best.total}` : undefined}
         />
         <StatTile
-          label="Cheatsheet commands"
-          value={CHEAT_SHEETS.reduce((n, s) => n + s.entries.length, 0)}
-          sub={`${CHEAT_SHEETS.length} sheets`}
+          label="SQL exercises"
+          value={`${sqlSolved} / ${SQL_EXERCISES.length}`}
+          sub="solved"
+          accent={sqlSolved > 0}
+        />
+        <StatTile
+          label="Regex golf"
+          value={`${regexSolved} / ${REGEX_GOLF_PUZZLES.length}`}
+          sub="solved"
+          accent={regexSolved > 0}
         />
       </div>
 
@@ -70,20 +114,55 @@ export default function ProgrammingHomePage() {
           <HubCard
             to="/programming/quiz"
             title="Quiz"
-            body="Multiple choice over the courses' questions, or which command does what."
+            body="Multiple choice over the courses' questions, which command does what, or code snippets."
           />
           <HubCard
             to="/programming/practice"
             title="CLI typing drill"
             body="Read the task, type the command. Misses come back around."
+            badge={weak.length > 0 ? `${weak.length} weak` : undefined}
+          />
+          <HubCard
+            to="/programming/sql"
+            title="SQL sandbox"
+            body="Real queries against a small anime dataset, graded against the expected rows."
+          />
+          <HubCard
+            to="/programming/regex-golf"
+            title="Regex golf"
+            body="Match these, not those — in as few characters as you can."
           />
           <HubCard
             to="/programming/cheatsheets"
             title="Cheatsheets"
-            body="Every command on one page, searchable across sheets."
+            body={`${CHEAT_SHEETS.reduce((n, s) => n + s.entries.length, 0)} commands across ${CHEAT_SHEETS.length} sheets, searchable.`}
           />
         </div>
       </Section>
+
+      {weak.length > 0 && (
+        <Section
+          title="Weak commands"
+          subtitle="Missed more often than hit in the CLI drill. Cleared by getting them right first try."
+        >
+          <div className="card flex flex-wrap items-center gap-2 p-3">
+            {weak.slice(0, 12).map((w) => (
+              <code
+                key={w.cmdKey}
+                className="rounded bg-base-700 px-1.5 py-0.5 text-xs"
+                title={`${w.item!.desc} · missed ${w.misses}×`}
+              >
+                {w.item!.answers[0]}
+                <span className="ml-1 text-gray-500">×{w.misses}</span>
+              </code>
+            ))}
+            {weak.length > 12 && <span className="text-xs text-gray-500">+{weak.length - 12} more</span>}
+            <Link to="/programming/practice?weak=1" className="btn-primary ml-auto shrink-0">
+              Drill these
+            </Link>
+          </div>
+        </Section>
+      )}
 
       <Section title="Courses">
         <div className="grid gap-3 sm:grid-cols-2">

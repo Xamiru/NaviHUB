@@ -1,6 +1,6 @@
 import { app, dialog } from 'electron'
 import { join, extname, basename } from 'path'
-import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync } from 'fs'
+import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, unlinkSync } from 'fs'
 import { createHash } from 'crypto'
 import { get as getSetting } from './repos/settingsRepo'
 import { imageProgress } from './progress'
@@ -66,6 +66,45 @@ export function musicRootDir(): string {
 export function picturesDir(): string {
   const custom = getSetting('pictures.dir')?.trim()
   return custom && custom.length ? custom : join(app.getPath('userData'), 'pictures')
+}
+
+// The Windows desktop-slideshow folder (settings key `slideshow.dir`). This is
+// the ONE picture root that is deliberately NOT a navimg prefix: nothing in the
+// app displays these files. They are flat COPIES of Art-tab images, made so the
+// user can point Windows Personalization > Background > Slideshow at one folder
+// and have the OS rotate them — including while NaviHUB is closed, which is why
+// the app never sets the wallpaper itself.
+export function slideshowDir(): string {
+  const custom = getSetting('slideshow.dir')?.trim()
+  return custom && custom.length ? custom : join(picturesDir(), 'Slideshow')
+}
+
+export function ensureSlideshowDir(): string {
+  const dir = slideshowDir()
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  return dir
+}
+
+// Copies an Art-tab image into the slideshow folder under a readable, de-clashed
+// name, and returns the name actually written (the caller stores it so the copy
+// can be removed later). THROWS on failure — the toggle is a user action and a
+// silent no-op would leave a row claiming a file that is not there.
+export function copyIntoSlideshow(srcAbs: string, preferredName: string): string {
+  if (!existsSync(srcAbs)) throw new Error('The image file is missing on disk')
+  const dir = ensureSlideshowDir()
+  const fileName = unclashName(dir, basename(preferredName))
+  copyFileSync(srcAbs, join(dir, fileName))
+  return fileName
+}
+
+// Best-effort deletion of a slideshow copy. Never throws: the user may well have
+// deleted it by hand from the folder, and un-slideshowing must still succeed.
+export function removeSlideshowCopy(fileName: string): void {
+  try {
+    unlinkSync(join(slideshowDir(), basename(fileName)))
+  } catch {
+    /* already gone */
+  }
 }
 
 // Japanese learning audio (Tatoeba sentence clips, pitch minimal pairs) —

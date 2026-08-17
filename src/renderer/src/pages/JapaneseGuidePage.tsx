@@ -18,7 +18,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Roadmap',
         to: '/japanese/roadmap',
-        text: 'Every course in study order, 24 steps N5 → N1. "You are here" marks the first course with lessons left. Nothing is locked — jump wherever you like. The strip up top is the daily loop (reviews, lesson, immersion — a bit of each, in parallel), and Milestones track finished anime and books against the long-term targets. Decks you or the app generated sit under Unscheduled.'
+        text: 'Every course in study order, 26 steps N5 → N1. "You are here" marks the first course with lessons left. Nothing is locked — jump wherever you like. The strip up top is the daily loop (reviews, lesson, immersion — a bit of each, in parallel), and Milestones track finished anime and books against the long-term targets. Decks you or the app generated sit under Unscheduled.'
       },
       {
         name: 'Lessons',
@@ -93,11 +93,6 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
         text: 'The kanji is shown; assemble it from component chips (decoys included). Production beats recognition for telling 待 from 持 apart. Needs the components pack.'
       },
       {
-        name: 'Shiritori',
-        to: '/japanese/shiritori',
-        text: 'Word chain against the dictionary — your word must start with the last kana of its word, ん loses. Every app reply comes glossed, so losing is still studying.'
-      },
-      {
         name: 'Confusables',
         to: '/japanese/confusables',
         text: 'Three tabs, one skill: pick the right kanji among computed look-alikes（末/未）, the right half of a transitivity pair inside a real sentence（開く/開ける — watch the を/が）, and the right spelling of a homophone（かえる ×4）. The wrong options are the ones you would actually pick.'
@@ -125,7 +120,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Writing drill',
         to: '/japanese/write',
-        text: 'Draw the kanji from its meaning and readings. Strokes are checked in order — start point and direction, not neatness. Three misses on one stroke reveals it and moves on. Needs the stroke-order pack.'
+        text: 'Draw the kanji from its meaning and readings. Strokes are checked in order — start point and direction, not neatness. Three misses on one stroke reveals it and moves on. Scope it to one lesson, pick a round size, and leave "group by shared component" on so 待 arrives right after 持. Needs the stroke-order pack (grouping also wants the components pack).'
       },
       {
         name: 'Quiz',
@@ -135,13 +130,38 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'JLPT test',
         to: '/japanese/test',
-        text: 'A 30-question timed checkpoint at one level, drawn from every course tagged with it whether or not you’ve learned them. It measures the level, not your progress. 80%+ means you own it.'
+        text: 'A timed ~30-question checkpoint built from the offline packs: levelled grammar cloze, vocabulary from the level’s frequency band, kanji readings gated by KANJIDIC, and bank sentences to translate. Per-section scores at the end. Without the packs it falls back to sampling your own seeded courses — which measures this app’s curriculum, not the level, and says so. Thirty items certify nothing either way.'
+      }
+    ]
+  },
+  {
+    title: 'Games',
+    entries: [
+      {
+        name: 'Sentence games',
+        to: '/japanese/sentences',
+        text: 'Three drills built from the sentence bank on the fly, so the pool never runs dry. Particle fill blanks one particle and offers four — never one that would also be right, so は/が is a real question rather than a coin toss. Scramble hands you the sentence in chunks: it checks against the ORIGINAL order, and a different order may still be grammatical. Reading in context highlights one kanji word to type; every reading JMdict attests is accepted. Needs the sentence bank; the reading tab also needs JMdict.'
+      },
+      {
+        name: 'Arcade',
+        to: '/japanese/arcade',
+        text: 'Sixty seconds, one prompt at a time: kana, kanji readings (your cards, frequent words, or both), or conjugation. The record is how many you get RIGHT in the minute, not your accuracy — hesitating to protect a percentage does not pay here.'
+      },
+      {
+        name: 'Shiritori',
+        to: '/japanese/shiritori',
+        text: 'Word chain against the dictionary — your word must start with the last kana of its word, ん loses. Every app reply comes glossed, so losing is still studying.'
       }
     ]
   },
   {
     title: 'Reading & mining',
     entries: [
+      {
+        name: 'Graded reading',
+        to: '/japanese/reading',
+        text: 'Twenty-four short passages, six each at N5 to N2, with furigana you can switch off and four questions apiece. Prompts are English at N5/N4 and Japanese from N3 up. Double-click a paragraph to open the mining panel on it; the best score per passage is kept.'
+      },
       {
         name: 'Dictionary',
         to: '/japanese/dictionary',

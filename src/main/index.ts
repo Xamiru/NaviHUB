@@ -16,6 +16,7 @@ import { abortActiveCoachTurn } from './gachaCoach'
 import { killActiveUpdate } from './updater'
 import { killActivePrepare } from './video/session'
 import { killActiveOcr } from './mokuroRun'
+import { killSqlSandbox } from './sqlSandbox'
 import { finalizeActiveGameSession } from './gameLaunch'
 import { stopAchievementWatcher } from './achievementWatcher'
 import { closeCatalogDb } from './gamesCatalogDb'
@@ -299,6 +300,9 @@ app.on('before-quit', () => {
   // A killed mokuro run loses nothing durable — finished volumes keep their
   // sidecars, and mokuro's own _ocr cache resumes the interrupted one.
   killActiveOcr()
+  // The SQL sandbox's utility process holds nothing durable — an in-memory
+  // copy of a dataset that is code — so it is simply dropped.
+  killSqlSandbox()
   // Stop the achievement poll and take one last look at the emulator's save
   // file — quitting mid-session is the moment those unlocks would be lost.
   // Also must precede closeDatabase(): it writes unlock rows.

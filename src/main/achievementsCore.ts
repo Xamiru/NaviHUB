@@ -462,42 +462,70 @@ export function parseCommunityAchievementsPage(html: string): CommunityRow[] {
 export type PercentRow = { name: string; percent: number }
 
 // The community page carries no api names, and the percentages endpoint
-// carries nothing BUT api names — the percentage is the only bridge. Both lists
-// are sorted by global % descending, so: match each page row to the first
-// unused endpoint row at the same rounded %, and within a run of ties keep the
-// two lists' shared order. A row with no partner is dropped (it cannot be
-// tracked without an api name) and counted, so the caller can say so.
+// carries nothing BUT api names — and both are sorted by global % descending.
+// That shared ORDER is the bridge, not the numbers: Steam serves the page from
+// a cache and the endpoint live, so on any game with active players most
+// values differ by a tenth and an exact-percent join collapses (AC4 Black Flag:
+// 12 of 49 paired). So:
+//   - equal counts → pair by rank outright (a tie run can at worst swap names
+//     inside itself, which a later re-fetch corrects);
+//   - unequal counts (a page/endpoint out of step about an added or removed
+//     achievement) → an order-preserving alignment that pairs rows within
+//     PCT_TOLERANCE of each other and drops what cannot be placed, counted so
+//     the caller can say so.
+const PCT_TOLERANCE = 1.5
+
+function byPercentDesc<T extends { percent: number | null }>(rows: readonly T[]): T[] {
+  return [...rows].sort((a, b) => (b.percent ?? -1) - (a.percent ?? -1))
+}
+
 export function joinCommunityWithPercentages(
   page: readonly CommunityRow[],
   pct: readonly PercentRow[]
 ): { rows: SchemaRow[]; unmatched: number } {
-  const key = (n: number): string => n.toFixed(1)
-  const pool = new Map<string, PercentRow[]>()
-  for (const p of pct) {
-    const k = key(p.percent)
-    const list = pool.get(k) ?? []
-    list.push(p)
-    pool.set(k, list)
+  const p = byPercentDesc(page)
+  const a = byPercentDesc(pct)
+  const toRow = (row: CommunityRow, partner: PercentRow): SchemaRow => ({
+    apiName: partner.name,
+    name: row.name,
+    description: row.description,
+    // Steam blanks the description of HIDDEN achievements on the public page
+    // (verified: Yakuza 6 shows 8 empty <h5>s out of 59, exactly its secret
+    // set), so an empty description is the hidden flag here. The real text
+    // stays unknown until a source that has it is fetched.
+    hidden: row.description == null,
+    icon: row.iconUrl,
+    iconGray: null, // Steam serves no locked art here; the UI greys the icon
+    globalPct: partner.percent
+  })
+
+  if (p.length === a.length) {
+    return { rows: p.map((row, i) => toRow(row, a[i])), unmatched: 0 }
+  }
+
+  // Order-preserving alignment (LCS over "close enough" pairs).
+  const n = p.length
+  const m = a.length
+  const close = (i: number, j: number): boolean =>
+    p[i].percent != null && Math.abs((p[i].percent as number) - a[j].percent) <= PCT_TOLERANCE
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array<number>(m + 1).fill(0))
+  for (let i = n - 1; i >= 0; i--) {
+    for (let j = m - 1; j >= 0; j--) {
+      dp[i][j] = Math.max(dp[i + 1][j], dp[i][j + 1], close(i, j) ? 1 + dp[i + 1][j + 1] : 0)
+    }
   }
   const rows: SchemaRow[] = []
-  let unmatched = 0
-  for (const row of page) {
-    const partner = row.percent != null ? pool.get(key(row.percent))?.shift() : undefined
-    if (!partner) {
-      unmatched += 1
-      continue
-    }
-    rows.push({
-      apiName: partner.name,
-      name: row.name,
-      description: row.description,
-      hidden: false, // the public page does not say
-      icon: row.iconUrl,
-      iconGray: null, // Steam serves no locked art here; the UI greys the icon
-      globalPct: partner.percent
-    })
+  let i = 0
+  let j = 0
+  while (i < n && j < m) {
+    if (close(i, j) && dp[i][j] === 1 + dp[i + 1][j + 1]) {
+      rows.push(toRow(p[i], a[j]))
+      i++
+      j++
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) i++
+    else j++
   }
-  return { rows, unmatched }
+  return { rows, unmatched: n - rows.length }
 }
 
 export type GoldbergAchievementInput = {

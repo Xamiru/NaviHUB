@@ -73,7 +73,7 @@ Hold onto one sentence: *git is a content-addressed object store, and everything
         {
           prompt: 'Which command prints the human-readable contents of the object HEAD refers to?',
           options: [
-            'git show-ref HEAD',
+            'git show-ref --heads --tags HEAD',
             'git rev-parse HEAD',
             'git ls-files HEAD',
             'git cat-file -p HEAD',
@@ -84,7 +84,7 @@ Hold onto one sentence: *git is a content-addressed object store, and everything
         {
           prompt: 'Why does rewriting an old commit necessarily change the SHAs of every commit after it?',
           options: [
-            'Git re-signs each descendant with a new timestamp, and the timestamp is part of the hash',
+            'Git re-signs each descendant commit with a fresh timestamp and committer identity, and both get hashed into the new commit object',
             'Each commit hash covers its parent hashes, so a changed ancestor cascades through all descendants',
             'The branch ref stores a checksum over the whole history',
             'Packfiles must be rebuilt, which assigns new object ids',
@@ -176,7 +176,7 @@ Once you see refs as pointer files, git's "scary" operations deflate. A force-pu
           prompt: 'You made two commits in detached HEAD, then switched to main. What is true?',
           options: [
             'The commits were deleted when you switched',
-            'Git refuses to switch away until you either create a branch for them or discard them explicitly',
+            'Git refuses to switch away until you either create a branch for them, discard them explicitly, or pass --force to override the safety check',
             'The commits are unreferenced but reachable via the reflog, and a new branch can still capture them',
             'Git silently merged them into main',
           ],
@@ -360,7 +360,7 @@ If a rebase goes sideways: \`git rebase --abort\` during, \`git reflog\` plus \`
         {
           prompt: 'What does git commit --fixup=abc123 do?',
           options: [
-            'Immediately melds the staged changes into commit abc123 and rewrites everything after it',
+            'Immediately melds the staged changes into commit abc123 and rewrites every descendant commit after it with a new SHA',
             'Reverts abc123 and stages the inverse changes',
             'Creates a normal commit whose fixup! message lets a later --autosquash rebase fold it into abc123',
             'Amends abc123 in place if it is unpushed',
@@ -373,7 +373,7 @@ If a rebase goes sideways: \`git rebase --abort\` during, \`git reflog\` plus \`
           options: [
             'To discard the commit\'s changes and start over',
             'To move the commit onto the previous branch',
-            'To detach HEAD so that the new commits you make do not move the branch ref along',
+            'To detach HEAD entirely, so the new commits you make afterward never move the current branch ref along at all',
             'To un-commit while keeping its changes in the working tree, ready to re-stage in pieces',
           ],
           correct: 3,
@@ -584,7 +584,7 @@ The difference is subtle but useful: \`-S\` fires only when the number of occurr
           options: [
             'The current commit is bad',
             'This commit cannot be tested — skip it',
-            'Abort the whole bisect session',
+            'Abort the whole bisect session immediately, discarding every verdict recorded so far',
             'The current commit is good',
           ],
           correct: 1,
@@ -596,7 +596,7 @@ The difference is subtle but useful: \`-S\` fires only when the number of occurr
             'About 10, since each step halves the range',
             'About 600, one per commit',
             'About 300, half on average',
-            'About 25, one per merge in the range',
+            'About 25, since bisect must also test one commit at every merge point along the range',
           ],
           correct: 0,
           explain: 'Binary search is logarithmic: log2(600) is about 9.2, so roughly ten verdicts pinpoint the first bad commit.',
@@ -711,7 +711,7 @@ Commit \`.githooks/\` and every configured clone runs the same checks (each deve
           prompt: 'Why can the same branch not be checked out in two worktrees at once?',
           options: [
             'Both worktrees would move the same ref as you commit, corrupting each other\'s state, so git forbids it',
-            'The index file format only supports one checkout per branch, so the second would overwrite it',
+            'The index file format only supports one checkout per branch at a time, so the second worktree would silently overwrite the first one\'s index on disk',
             'It would double-count commits in git log',
             'It is allowed, but only with --force on both sides',
           ],
@@ -721,7 +721,7 @@ Commit \`.githooks/\` and every configured clone runs the same checks (each deve
         {
           prompt: 'How do you make a hooks directory that is versioned and shared with the team?',
           options: [
-            'Commit .git/hooks — it is tracked like any directory',
+            'Commit .git/hooks directly to the repository — it is tracked and versioned like any other project directory',
             'Commit a .githooks directory and set core.hooksPath to it',
             'Add hooks = .githooks to .gitattributes',
             'Push hooks to the remote with git push --hooks',

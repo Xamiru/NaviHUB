@@ -23,6 +23,8 @@ export const mediaItem = sqliteTable(
     titleOriginal: text('title_original'),
     synopsis: text('synopsis'),
     coverPath: text('cover_path'),
+    // Wide hero art for the detail page (AniList bannerImage / TMDB backdrop).
+    bannerPath: text('banner_path'),
     releaseDate: text('release_date'),
     totalUnits: integer('total_units'),
     // personal tracking
@@ -361,10 +363,51 @@ export const mediaImage = sqliteTable(
     width: integer('width'),
     height: integer('height'),
     sortOrder: integer('sort_order'),
+    // 1 = the item's detail-page backdrop; at most one per media_id.
+    isBackground: integer('is_background').notNull().default(0),
     createdAt: text('created_at').notNull()
   },
   (t) => ({
     byMedia: index('idx_media_image_media').on(t.mediaId, t.kind)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// slideshow_item — images copied into the Windows desktop slideshow folder
+// (slideshow.dir). file_name is the copy's name in that folder, not a navimg
+// path. Personal; wiped on export.
+// ---------------------------------------------------------------------------
+export const slideshowItem = sqliteTable('slideshow_item', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  imageId: integer('image_id')
+    .notNull()
+    .unique()
+    .references(() => mediaImage.id, { onDelete: 'cascade' }),
+  fileName: text('file_name').notNull(),
+  addedAt: text('added_at').notNull()
+})
+
+// The TMDB episode catalogue for a TV show — see init.sql for why it is separate
+// from video_file and why specials are excluded.
+export const tvEpisode = sqliteTable(
+  'tv_episode',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    season: integer('season').notNull(),
+    number: integer('number').notNull(),
+    absolute: integer('absolute'),
+    title: text('title'),
+    overview: text('overview'),
+    airDate: text('air_date'),
+    runtime: integer('runtime'),
+    watchedAt: text('watched_at'),
+    createdAt: text('created_at').notNull()
+  },
+  (t) => ({
+    byMedia: index('idx_tv_episode_media').on(t.mediaId, t.season, t.number)
   })
 )
 
@@ -463,6 +506,8 @@ export const mangaChapter = sqliteTable(
     title: text('title').notNull(),
     number: real('number'),
     pageCount: integer('page_count').notNull().default(0),
+    // First page as a virtual path, for the Volumes grid thumbnail.
+    coverPath: text('cover_path'),
     sortOrder: integer('sort_order').notNull().default(0),
     lastReadPage: integer('last_read_page'),
     readAt: text('read_at'),
@@ -1215,6 +1260,47 @@ export const progProgress = sqliteTable('prog_progress', {
     .notNull()
     .default(sql`(datetime('now'))`)
 })
+
+export const progAttempt = sqliteTable(
+  'prog_attempt',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    lessonKey: text('lesson_key').notNull(),
+    score: integer('score').notNull(),
+    total: integer('total').notNull(),
+    at: text('at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byLesson: index('idx_prog_attempt_lesson').on(t.lessonKey)
+  })
+)
+
+export const progCliMiss = sqliteTable('prog_cli_miss', {
+  cmdKey: text('cmd_key').primaryKey(),
+  misses: integer('misses').notNull().default(0),
+  lastAt: text('last_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})
+
+export const progSolve = sqliteTable(
+  'prog_solve',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    kind: text('kind').notNull(),
+    key: text('key').notNull(),
+    best: integer('best'),
+    answer: text('answer'),
+    solvedAt: text('solved_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    kindKey: uniqueIndex('prog_solve_kind_key').on(t.kind, t.key)
+  })
+)
 
 // ---------------------------------------------------------------------------
 // Ghost reviews — echoes of lapsed cards (see japaneseRepo ghostQueue). No FK

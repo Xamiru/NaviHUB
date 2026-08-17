@@ -5,6 +5,7 @@ import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import { progCourse, progLessonKey } from '@shared/programming/courses'
+import { bestAttempts } from '@shared/programming/attempts'
 
 // One course: the ordered lesson list with completion state. Fixed-parent
 // breadcrumb (the JapaneseGuidePage exception), content straight from the
@@ -18,8 +19,14 @@ export default function ProgCoursePage() {
     queryFn: () => api.programming.progress()
   })
 
+  const { data: attempts = [] } = useQuery({
+    queryKey: qk.programming.attempts,
+    queryFn: () => api.programming.attempts()
+  })
+
   if (!course) return <PageStatus>Course not found.</PageStatus>
 
+  const best = bestAttempts(attempts)
   const done = new Set(progress.map((p) => p.lessonKey))
   const doneCount = course.lessons.filter((l) => done.has(progLessonKey(course.key, l.key))).length
   const next = course.lessons.find((l) => !done.has(progLessonKey(course.key, l.key)))
@@ -50,7 +57,9 @@ export default function ProgCoursePage() {
 
       <ol className="space-y-1.5">
         {course.lessons.map((l, i) => {
-          const isDone = done.has(progLessonKey(course.key, l.key))
+          const fullKey = progLessonKey(course.key, l.key)
+          const isDone = done.has(fullKey)
+          const b = best.get(fullKey)
           return (
             <li key={l.key}>
               <Link
@@ -63,6 +72,16 @@ export default function ProgCoursePage() {
                 <span className={`min-w-0 flex-1 text-sm ${isDone ? 'text-gray-400' : ''}`}>
                   {l.title}
                 </span>
+                {b && (
+                  <span
+                    className={`chip shrink-0 tabular-nums ${
+                      b.best.score === b.best.total ? 'text-accent' : 'text-gray-400'
+                    }`}
+                    title={`Best self-check over ${b.attempts} attempt${b.attempts === 1 ? '' : 's'}`}
+                  >
+                    {b.best.score}/{b.best.total}
+                  </span>
+                )}
                 {isDone && <span className="chip shrink-0 bg-accent/15 text-accent">done</span>}
               </Link>
             </li>

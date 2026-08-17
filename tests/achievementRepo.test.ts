@@ -91,6 +91,15 @@ describe('upsertSchema', () => {
     expect(row.rarity).toBe('ultra-rare')
   })
 
+  it('keeps an existing description when a re-fetch source lacks one', () => {
+    // Steam's public page blanks hidden descriptions; a re-fetch through it
+    // must not erase text an earlier, fuller source supplied.
+    const id = addGame()
+    repo.upsertSchema(id, 'steam', '1091500', [ach('A', { description: 'The secret text' })])
+    repo.upsertSchema(id, 'steam', '1091500', [ach('A', { description: null, hidden: true })])
+    expect(repo.listForMedia(id)[0]).toMatchObject({ description: 'The secret text', hidden: true })
+  })
+
   it('keeps existing art when a re-fetch could not re-download it', () => {
     const id = addGame()
     repo.upsertSchema(id, 'steam', '1091500', [ach('A', { iconPath: 'media/dl-good.jpg' })])

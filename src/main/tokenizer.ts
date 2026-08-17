@@ -64,6 +64,7 @@ export async function tokenize(text: string): Promise<JpToken[]> {
     base: t.basic_form && t.basic_form !== '*' ? t.basic_form : t.surface_form,
     reading: t.reading ? toHiragana(t.reading) : null,
     pos: t.pos,
+    posDetail: t.pos_detail_1 && t.pos_detail_1 !== '*' ? t.pos_detail_1 : null,
     wordLike: !NON_WORD_POS.has(t.pos) && JP_CHAR.test(t.surface_form)
   }))
 }

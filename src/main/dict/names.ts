@@ -1,6 +1,7 @@
 import { getDictDb } from './dictDb'
 import { isKanaOnly } from '@shared/kana'
 import type { NameKind, NameQuizItem } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // Name sampling over an installed JMnedict (imported as a regular Yomitan
 // dictionary — see PRESET_OPTS in importer.ts). Feeds the name-reading drill.
@@ -85,5 +86,5 @@ export function nameSample(req: { kind: NameKind; limit: number }): NameQuizItem
     return []
   }
   // Interleave surname/given when both were requested.
-  return out.sort(() => Math.random() - 0.5).slice(0, limit)
+  return shuffle(out).slice(0, limit)
 }

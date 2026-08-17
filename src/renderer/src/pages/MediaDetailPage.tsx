@@ -19,10 +19,14 @@ import {
   type MediaConfig
 } from '../lib/mediaConfig'
 import { toast, toastError } from '../lib/toast'
+import { mediaUrl } from '@shared/mediaUrl'
 import CoverImage from '../components/CoverImage'
+import MediaHero from '../components/MediaHero'
+import FranchiseBackground from '../components/FranchiseBackground'
 import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
+import TvSeasonsSection from '../components/TvSeasonsSection'
 import GameLaunchSection from '../components/GameLaunchSection'
 import AchievementsSection from '../components/AchievementsSection'
 import GameLaunchButton, { useHasLaunchTarget } from '../components/GameLaunchButton'
@@ -94,7 +98,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
     await api.media.remove(mediaId)
     await qc.invalidateQueries({ queryKey: qk.media.all })
     await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
-    navigate(cfg.basePath)
+    // replace: the detail route for a row that no longer exists must leave the
+    // history stack, or Back returns to a "Not found." page.
+    navigate(cfg.basePath, { replace: true })
   }
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
@@ -122,79 +128,111 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const olRaw = metaNum('olRating')
   const olScore = olRaw != null ? ((olRaw / 100) * scoreMax).toFixed(1) : null
 
+  // One filled action per screen. For a game/VN with a linked executable that is
+  // Play — you launch far more often than you log an hour — and the log button
+  // steps down to ghost. Delete lives behind More, away from Edit's elbow.
+  // `inline` is the hero row; otherwise it's the full-width cover column.
+  const actionStack = (inline: boolean) => (
+    <>
+      {cfg.hasGameLaunch && (
+        <GameLaunchButton mediaId={m.id} className={inline ? 'btn-primary' : 'btn-primary w-full'} />
+      )}
+      <LogProgressButton cfg={cfg} m={m} demoted={hasLaunch} inline={inline} />
+      <Link to={`${cfg.basePath}/${m.id}/edit`} className={inline ? 'btn-ghost' : 'btn-ghost w-full'}>
+        Edit
+      </Link>
+      <AddToListMenu kind="media" entityId={mediaId} fullWidth={!inline} />
+      <button
+        className={inline ? 'btn-ghost' : 'btn-ghost w-full'}
+        onClick={() => setTorrentsOpen(true)}
+      >
+        Find torrents
+      </button>
+      <ActionMenu
+        buttonClassName={inline ? 'btn-ghost' : 'btn-ghost w-full'}
+        items={[{ label: 'Delete…', danger: true, onSelect: del }]}
+      />
+    </>
+  )
+
+  const statsNode = (
+    <>
+      {anilistAvg != null && <StatInline label="AniList Avg" value={`${anilistAvg} / ${scoreMax}`} />}
+      {vndbScore != null && <StatInline label="VNDB" value={`${vndbScore} / ${scoreMax}`} />}
+      {imdb != null && <StatInline label="IMDb" value={`${imdb} / ${scoreMax}`} />}
+      {rottenTomatoes != null && <StatInline label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />}
+      {metacritic != null && <StatInline label="Metacritic" value={`${metacritic} / 100`} />}
+      {olScore != null && <StatInline label="Open Library" value={`${olScore} / ${scoreMax}`} />}
+      <StatInline label={cfg.progressStatLabel} value={cfg.formatProgressStat(m)} />
+      <StatInline label={cfg.timesConsumedLabel} value={String(m.rewatchCount)} />
+      <StatInline label="Released" value={m.releaseDate ?? '—'} />
+    </>
+  )
+
+  const tagRow = m.tags.length > 0 && (
+    <div className="flex flex-wrap gap-2 mb-5">
+      {m.tags.map((t) => (
+        <Link key={t.id} to={`/tags/${t.id}`} className="chip hover:text-accent">
+          {t.name}
+        </Link>
+      ))}
+    </div>
+  )
+
+  const hero = cfg.detailHero
+
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <BackButton />
+    // The optional full-page backdrop (an Art-tab image the user flagged) is an
+    // absolute child of the page root, exactly as on the franchise page: pinned
+    // with background-attachment: fixed, so it holds still while <main> scrolls
+    // and can never paint over the sidebar or Topbar.
+    <div className="relative min-h-full">
+      <FranchiseBackground url={mediaUrl(m.backgroundPath)} />
 
-      <div className="grid grid-cols-[220px_1fr] gap-7">
-        <div>
-          <CoverImage
-            path={m.coverPath}
-            alt={m.title}
-            rounded="rounded-xl"
-            className="w-full aspect-[2/3]"
-          />
-          {/* One filled action per screen. For a game/VN with a linked
-              executable that is Play — you launch far more often than you log
-              an hour — and the log button steps down to ghost. Delete lives
-              behind More, away from Edit's elbow. */}
-          <div className="mt-3 space-y-2">
-            {cfg.hasGameLaunch && <GameLaunchButton mediaId={m.id} />}
-            <LogProgressButton cfg={cfg} m={m} demoted={hasLaunch} />
-            <Link to={`${cfg.basePath}/${m.id}/edit`} className="btn-ghost w-full">
-              Edit
-            </Link>
-            <AddToListMenu kind="media" entityId={mediaId} fullWidth />
-            <button className="btn-ghost w-full" onClick={() => setTorrentsOpen(true)}>
-              Find torrents
-            </button>
-            <ActionMenu
-              buttonClassName="btn-ghost w-full"
-              items={[{ label: 'Delete…', danger: true, onSelect: del }]}
-            />
-          </div>
-        </div>
+      <div className="relative z-10">
+        {hero && (
+          <MediaHero cfg={cfg} m={m} variant={hero} actions={actionStack(true)} stats={statsNode} />
+        )}
 
-        <div className="min-w-0">
-          <div className="flex items-start gap-2">
-            <h1 className="text-2xl font-bold">{m.title}</h1>
-            {m.favorite && (
-              <span className="text-yellow-400 text-xl" title="Favorite">
-                ★
-              </span>
-            )}
-          </div>
-          {m.titleOriginal && <p className="text-gray-500 mb-4">{m.titleOriginal}</p>}
+        <div className={hero ? 'mx-auto max-w-5xl px-6 pb-6 pt-5' : 'p-6 max-w-5xl mx-auto'}>
+        {!hero && <BackButton />}
 
-          <QuickEdit cfg={cfg} m={m} />
-
-          <div className="flex flex-wrap gap-6 my-5">
-            {anilistAvg != null && (
-              <StatInline label="AniList Avg" value={`${anilistAvg} / ${scoreMax}`} />
-            )}
-            {vndbScore != null && <StatInline label="VNDB" value={`${vndbScore} / ${scoreMax}`} />}
-            {imdb != null && <StatInline label="IMDb" value={`${imdb} / ${scoreMax}`} />}
-            {rottenTomatoes != null && (
-              <StatInline label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />
-            )}
-            {metacritic != null && <StatInline label="Metacritic" value={`${metacritic} / 100`} />}
-            {olScore != null && <StatInline label="Open Library" value={`${olScore} / ${scoreMax}`} />}
-            <StatInline label={cfg.progressStatLabel} value={cfg.formatProgressStat(m)} />
-            <StatInline label={cfg.timesConsumedLabel} value={String(m.rewatchCount)} />
-            <StatInline label="Released" value={m.releaseDate ?? '—'} />
-          </div>
-
-          {m.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mb-5">
-              {m.tags.map((t) => (
-                <Link key={t.id} to={`/tags/${t.id}`} className="chip hover:text-accent">
-                  {t.name}
-                </Link>
-              ))}
+        {hero ? (
+          <>
+            <QuickEdit cfg={cfg} m={m} />
+            <div className="mt-5">{tagRow}</div>
+          </>
+        ) : (
+          <div className="grid grid-cols-[220px_1fr] gap-7">
+            <div>
+              <CoverImage
+                path={m.coverPath}
+                alt={m.title}
+                rounded="rounded-xl"
+                className="w-full aspect-[2/3]"
+              />
+              <div className="mt-3 space-y-2">{actionStack(false)}</div>
             </div>
-          )}
-        </div>
-      </div>
+
+            <div className="min-w-0">
+              <div className="flex items-start gap-2">
+                <h1 className="text-2xl font-bold">{m.title}</h1>
+                {m.favorite && (
+                  <span className="text-yellow-400 text-xl" title="Favorite">
+                    ★
+                  </span>
+                )}
+              </div>
+              {m.titleOriginal && <p className="text-gray-500 mb-4">{m.titleOriginal}</p>}
+
+              <QuickEdit cfg={cfg} m={m} />
+
+              <div className="flex flex-wrap gap-6 my-5">{statsNode}</div>
+
+              {tagRow}
+            </div>
+          </div>
+        )}
 
       <Tabs className="mt-4 mb-6" value={tab} onChange={setTab} tabs={tabs} />
 
@@ -236,6 +274,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
       {tab === 'media' && (
         <>
+          {cfg.key === 'tv' && <TvSeasonsSection m={m} />}
           {cfg.hasGameLaunch && <GameLaunchSection m={m} />}
           {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
           {cfg.hasLocalReader && <MangaChaptersSection m={m} />}
@@ -263,6 +302,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           onClose={() => setTorrentsOpen(false)}
         />
       )}
+        </div>
+      </div>
     </div>
   )
 }
@@ -380,11 +421,15 @@ function QuickEdit({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
 function LogProgressButton({
   cfg,
   m,
-  demoted = false
+  demoted = false,
+  inline = false
 }: {
   cfg: MediaConfig
   m: MediaDetail
   demoted?: boolean
+  // Hero headers lay the actions out as a row; the plain header stacks them
+  // full-width down the cover column.
+  inline?: boolean
 }) {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
@@ -412,7 +457,7 @@ function LogProgressButton({
 
   return (
     <button
-      className={`${demoted ? 'btn-ghost' : 'btn-primary'} w-full mt-2`}
+      className={`${demoted ? 'btn-ghost' : 'btn-primary'} ${inline ? '' : 'w-full mt-2'}`}
       onClick={log}
       disabled={busy}
       title={

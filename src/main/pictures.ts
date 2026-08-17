@@ -1,10 +1,13 @@
 import { unlinkSync } from 'fs'
+import { basename, extname } from 'path'
 import { getSqlite } from './db/connection'
 import {
   absoluteMediaPath,
   copyImageInto,
+  copyIntoSlideshow,
   downloadImageTo,
   pickImageFiles,
+  removeSlideshowCopy,
   sanitizeFileBase
 } from './files'
 import { fetchWithRetry } from './http'
@@ -118,14 +121,22 @@ function getMedia(mediaId: number): MediaRow {
 // manga adaptation (same title) in separate folders.
 const KIND_DIRS: Record<ImageKind, string> = {
   wallpaper: 'wallpapers',
-  fanart: 'fanart',
-  background: 'backgrounds'
+  fanart: 'fanart'
 }
 
 function subdirFor(media: MediaRow, kind: ImageKind): string {
   const folder = `${sanitizeFileBase(media.title, 'untitled')} (${media.media_type})`
   return `${folder}/${KIND_DIRS[kind]}`
 }
+
+// Every read of an image row goes through this: the two per-image toggles the
+// Art tab shows (is this the page background? is it in the desktop slideshow?)
+// must ride along with the row, or the tile markers would need a second query
+// per image.
+const IMAGE_SELECT = `SELECT i.id, i.media_id, i.kind, i.file_path, i.source_url, i.source,
+          i.width, i.height, i.is_background, s.file_name AS slideshow_file
+     FROM media_image i
+     LEFT JOIN slideshow_item s ON s.image_id = i.id`
 
 function rowToImage(r: any): MediaImage {
   return {
@@ -136,19 +147,23 @@ function rowToImage(r: any): MediaImage {
     sourceUrl: r.source_url,
     source: r.source,
     width: r.width,
-    height: r.height
+    height: r.height,
+    isBackground: r.is_background === 1,
+    inSlideshow: r.slideshow_file != null
   }
 }
 
 export function listImages(mediaId: number, kind: ImageKind): MediaImage[] {
   const rows = getSqlite()
-    .prepare(
-      `SELECT id, media_id, kind, file_path, source_url, source, width, height
-         FROM media_image WHERE media_id=? AND kind=?
-        ORDER BY sort_order, id`
-    )
+    .prepare(`${IMAGE_SELECT} WHERE i.media_id=? AND i.kind=? ORDER BY i.sort_order, i.id`)
     .all(mediaId, kind) as any[]
   return rows.map(rowToImage)
+}
+
+function getImage(imageId: number): MediaImage {
+  const row = getSqlite().prepare(`${IMAGE_SELECT} WHERE i.id=?`).get(imageId)
+  if (!row) throw new Error('Image not found')
+  return rowToImage(row)
 }
 
 function insertImage(
@@ -170,11 +185,7 @@ function insertImage(
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(mediaId, kind, filePath, sourceUrl, source, width, height, nextOrder.n)
-  const row = db
-    .prepare(
-      'SELECT id, media_id, kind, file_path, source_url, source, width, height FROM media_image WHERE id=?'
-    )
-    .get(Number(info.lastInsertRowid))
+  const row = db.prepare(`${IMAGE_SELECT} WHERE i.id=?`).get(Number(info.lastInsertRowid))
   return rowToImage(row)
 }
 
@@ -192,10 +203,7 @@ async function addDownloaded(
 ): Promise<MediaImage> {
   const media = getMedia(mediaId)
   const existing = getSqlite()
-    .prepare(
-      `SELECT id, media_id, kind, file_path, source_url, source, width, height
-         FROM media_image WHERE media_id=? AND kind=? AND source_url=?`
-    )
+    .prepare(`${IMAGE_SELECT} WHERE i.media_id=? AND i.kind=? AND i.source_url=?`)
     .get(mediaId, kind, url)
   if (existing) return rowToImage(existing)
   const filePath = await downloadImageTo(url, subdirFor(media, kind), baseName)
@@ -248,11 +256,18 @@ export async function addFromFiles(mediaId: number, kind: ImageKind): Promise<Me
 // a missing/locked file must not leave the row behind.
 export function removeImage(imageId: number): void {
   const db = getSqlite()
-  const row = db.prepare('SELECT file_path FROM media_image WHERE id=?').get(imageId) as
-    | { file_path: string }
-    | undefined
+  const row = db
+    .prepare(
+      `SELECT i.file_path, s.file_name AS slideshow_file
+         FROM media_image i LEFT JOIN slideshow_item s ON s.image_id = i.id
+        WHERE i.id=?`
+    )
+    .get(imageId) as { file_path: string; slideshow_file: string | null } | undefined
   if (!row) return
+  // slideshow_item cascades with the row; its COPY in the slideshow folder does
+  // not, and Windows would keep showing a wallpaper the user just deleted.
   db.prepare('DELETE FROM media_image WHERE id=?').run(imageId)
+  if (row.slideshow_file) removeSlideshowCopy(row.slideshow_file)
   if (row.file_path.startsWith('pictures/')) {
     try {
       unlinkSync(absoluteMediaPath(row.file_path))
@@ -260,4 +275,82 @@ export function removeImage(imageId: number): void {
       /* already gone or unwritable — row removal is what matters */
     }
   }
+}
+
+// ---- desktop slideshow -----------------------------------------------------
+// The copy's name in the slideshow folder. Readable on purpose: the folder is a
+// flat pile of images from every title, and the user browses it in Explorer.
+export function slideshowFileName(title: string, filePath: string): string {
+  const base = basename(filePath)
+  // Split on the REAL extension before defaulting it — slicing by '.jpg'.length
+  // against an extension-less name would eat four characters of the stem.
+  const found = extname(base)
+  const stem = sanitizeFileBase(base.slice(0, base.length - found.length), 'image')
+  return `${sanitizeFileBase(title, 'untitled')} - ${stem}${found || '.jpg'}`
+}
+
+// Adds or removes the image's copy in the slideshow folder. The file is copied
+// BEFORE the row is written, so a failed copy leaves no row claiming a file that
+// is not there; removal is best-effort, so a copy the user deleted by hand in
+// Explorer still un-toggles cleanly (that is also the repair path — remove, then
+// add again).
+export function toggleSlideshow(imageId: number): MediaImage {
+  const db = getSqlite()
+  const row = db
+    .prepare(
+      `SELECT i.file_path, m.title, s.file_name AS slideshow_file
+         FROM media_image i
+         JOIN media_item m ON m.id = i.media_id
+         LEFT JOIN slideshow_item s ON s.image_id = i.id
+        WHERE i.id=?`
+    )
+    .get(imageId) as { file_path: string; title: string; slideshow_file: string | null } | undefined
+  if (!row) throw new Error('Image not found')
+  if (row.slideshow_file) {
+    removeSlideshowCopy(row.slideshow_file)
+    db.prepare('DELETE FROM slideshow_item WHERE image_id=?').run(imageId)
+  } else {
+    const fileName = copyIntoSlideshow(
+      absoluteMediaPath(row.file_path),
+      slideshowFileName(row.title, row.file_path)
+    )
+    db.prepare('INSERT INTO slideshow_item (image_id, file_name) VALUES (?, ?)').run(imageId, fileName)
+  }
+  return getImage(imageId)
+}
+
+// Drops every slideshow copy belonging to a media item. Called before the item
+// is deleted: the rows would cascade, but the files sit in a folder Windows is
+// actively cycling through.
+export function forgetSlideshowForMedia(mediaId: number): void {
+  const db = getSqlite()
+  const rows = db
+    .prepare(
+      `SELECT s.file_name FROM slideshow_item s
+         JOIN media_image i ON i.id = s.image_id
+        WHERE i.media_id=?`
+    )
+    .all(mediaId) as { file_name: string }[]
+  for (const r of rows) removeSlideshowCopy(r.file_name)
+  db.prepare(
+    'DELETE FROM slideshow_item WHERE image_id IN (SELECT id FROM media_image WHERE media_id=?)'
+  ).run(mediaId)
+}
+
+// ---- detail-page background ------------------------------------------------
+// At most one image per media item carries the flag, which is why this clears
+// the whole item before setting one. imageId null = clear.
+export function setBackground(mediaId: number, imageId: number | null): void {
+  const db = getSqlite()
+  db.transaction(() => {
+    db.prepare('UPDATE media_image SET is_background=0 WHERE media_id=? AND is_background=1').run(
+      mediaId
+    )
+    if (imageId != null) {
+      const info = db
+        .prepare('UPDATE media_image SET is_background=1 WHERE id=? AND media_id=?')
+        .run(imageId, mediaId)
+      if (info.changes !== 1) throw new Error('Image not found')
+    }
+  })()
 }

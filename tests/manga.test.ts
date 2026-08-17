@@ -109,7 +109,9 @@ describe('scanSeriesDir', () => {
   it('treats a flat series as one chapter', async () => {
     const dir = makeSeries('OneShot', { '': 5 })
     const scanned = await manga.scanSeriesDir(dir, 'One Shot')
-    expect(scanned).toEqual([{ dirPath: '', title: 'One Shot', number: null, pageCount: 5 }])
+    expect(scanned).toEqual([
+      { dirPath: '', title: 'One Shot', number: null, pageCount: 5, coverPage: 'p001.png' }
+    ])
   })
 
   it('finds chapter subfolders in natural order (ch2 before ch10)', async () => {
@@ -535,3 +537,39 @@ describe('book-type media (the Books section reusing the chapter machinery)', ()
     expect(mediaProgress(mediaId)).toBe(1)
   })
 })
+
+describe('chapter thumbnails', () => {
+  // The Volumes grid needs a page to show. The scanner records the FIRST page
+  // (naturally sorted, so it matches what the reader opens), and syncChapters
+  // stores it as a virtual path.
+  it('records the first page of a folder chapter, natural-sorted', async () => {
+    const dir = join(root, 'Natural')
+    mkdirSync(join(dir, 'ch 1'), { recursive: true })
+    for (const n of ['10.png', '2.png', '1.png']) {
+      writeFileSync(join(dir, 'ch 1', n), 'x')
+    }
+    const scanned = await manga.scanSeriesDir(dir, 'Natural')
+    expect(scanned[0].coverPage).toBe('1.png')
+  })
+
+  it('stores it as a prefixed virtual path on attach', async () => {
+    const mediaId = makeMedia('Thumbs')
+    const dir = makeSeries('Thumbs', { 'ch 1': 2 })
+    await attachViaDialog(mediaId, dir)
+    const ch = manga.chapters(mediaId).chapters[0]
+    expect(ch.coverPath).toBe('manga/Thumbs/ch 1/p001.png')
+  })
+
+  it('keeps the stored thumbnail when a rescan cannot produce one', async () => {
+    const mediaId = makeMedia('Keeps')
+    const dir = makeSeries('Keeps', { 'ch 1': 2 })
+    await attachViaDialog(mediaId, dir)
+    const before = manga.chapters(mediaId).chapters[0].coverPath
+    expect(before).not.toBeNull()
+
+    // A rescan that reports the same chapter with no cover must not blank it.
+    await manga.rescan(mediaId)
+    expect(manga.chapters(mediaId).chapters[0].coverPath).toBe(before)
+  })
+})
+

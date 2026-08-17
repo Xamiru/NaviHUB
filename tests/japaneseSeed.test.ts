@@ -14,39 +14,45 @@ beforeEach(() => {
 })
 
 describe('seedJapanese', () => {
-  it('seeds twenty-four courses in study order (Step 1..24) and is idempotent', () => {
+  // The study path, in order. Wave 4 (2026-08-15) inserted Set Phrases at 5 and
+  // VN/Net Slang at 12, pushing everything after them down one and then two.
+  const PATH = [
+    'N5 Foundations',
+    'Radicals',
+    'N5 Kanji',
+    'Manga & VN Japanese',
+    'Set Phrases',
+    'Counters',
+    'N4 Grammar',
+    'N4 Vocabulary',
+    'N4 Kanji',
+    'SFX',
+    'Manga & VN Japanese II',
+    'VN, Gaming & Net Slang',
+    'N3 Grammar I',
+    'N3 Grammar II',
+    'N3 Vocabulary',
+    'N3 Kanji',
+    'Speech Styles',
+    'N2 Grammar I',
+    'N2 Grammar II',
+    'N2 Vocabulary',
+    'N2 Kanji',
+    'Idioms',
+    'N1 Grammar I',
+    'N1 Grammar II',
+    'N1 Vocabulary',
+    'N1 Kanji'
+  ]
+
+  it('seeds twenty-six courses in study order (Step 1..26) and is idempotent', () => {
     seedJapanese(db)
     seedJapanese(db)
     const courses = jp.listCourses()
-    expect(courses).toHaveLength(24)
+    expect(courses).toHaveLength(PATH.length)
     // listCourses orders by difficulty — the seeded packs are the study path.
-    expect(courses.map((c) => c.difficulty)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
-    ])
-    expect(courses[0].title).toContain('N5 Foundations')
-    expect(courses[1].title).toContain('Radicals')
-    expect(courses[2].title).toContain('N5 Kanji')
-    expect(courses[3].title).toContain('Manga & VN Japanese')
-    expect(courses[4].title).toContain('Counters')
-    expect(courses[5].title).toContain('N4 Grammar')
-    expect(courses[6].title).toContain('N4 Vocabulary')
-    expect(courses[7].title).toContain('N4 Kanji')
-    expect(courses[8].title).toContain('SFX')
-    expect(courses[9].title).toContain('Manga & VN Japanese II')
-    expect(courses[10].title).toContain('N3 Grammar I')
-    expect(courses[11].title).toContain('N3 Grammar II')
-    expect(courses[12].title).toContain('N3 Vocabulary')
-    expect(courses[13].title).toContain('N3 Kanji')
-    expect(courses[14].title).toContain('Speech Styles')
-    expect(courses[15].title).toContain('N2 Grammar I')
-    expect(courses[16].title).toContain('N2 Grammar II')
-    expect(courses[17].title).toContain('N2 Vocabulary')
-    expect(courses[18].title).toContain('N2 Kanji')
-    expect(courses[19].title).toContain('Idioms')
-    expect(courses[20].title).toContain('N1 Grammar I')
-    expect(courses[21].title).toContain('N1 Grammar II')
-    expect(courses[22].title).toContain('N1 Vocabulary')
-    expect(courses[23].title).toContain('N1 Kanji')
+    expect(courses.map((c) => c.difficulty)).toEqual(PATH.map((_, i) => i + 1))
+    PATH.forEach((fragment, i) => expect(courses[i].title, `step ${i + 1}`).toContain(fragment))
     expect(courses.every((c) => c.level)).toBe(true)
   })
 
@@ -73,8 +79,9 @@ describe('seedJapanese', () => {
     seedJapanese(db)
     const titles = jp.listCourses().map((c) => c.title)
     // 7 later JLPT packs + the 5 packs of the 2026-07-05 wave + the 4 packs of
-    // the 2026-07-27 wave (N2/N1 vocabulary and kanji).
-    expect(titles).toHaveLength(16)
+    // the 2026-07-27 wave (N2/N1 vocabulary and kanji) + the 2 packs of the
+    // 2026-08-15 wave (set phrases, VN/net slang).
+    expect(titles).toHaveLength(18)
     expect(titles.join(' ')).toContain('N3 Grammar II')
     expect(titles.join(' ')).toContain('N3 Vocabulary')
     expect(titles.join(' ')).toContain('N3 Kanji')
@@ -91,9 +98,11 @@ describe('seedJapanese', () => {
     expect(titles.join(' ')).toContain('N2 Kanji')
     expect(titles.join(' ')).toContain('N1 Vocabulary')
     expect(titles.join(' ')).toContain('N1 Kanji')
+    expect(titles.join(' ')).toContain('Set Phrases')
+    expect(titles.join(' ')).toContain('VN, Gaming & Net Slang')
   })
 
-  it('renumbers a live DB from the old 1–15 layout to the current 24-step path', () => {
+  it('renumbers a live DB from the old 1–15 layout to the current 26-step path', () => {
     // Simulate the pre-2026-07-05 install: all 15 packs seeded under the old
     // step numbers, all flags set (so no pack re-seeds), levels backfilled.
     const OLD: [string, string, number][] = [
@@ -127,21 +136,21 @@ describe('seedJapanese', () => {
     seedJapanese(db)
 
     const courses = jp.listCourses()
-    expect(courses).toHaveLength(24)
-    // Path is contiguous 1..24 with both later waves slotted in.
-    expect(courses.map((c) => c.difficulty)).toEqual([
-      1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24
-    ])
+    expect(courses).toHaveLength(PATH.length)
+    // Path is contiguous 1..26 with every later wave slotted in.
+    expect(courses.map((c) => c.difficulty)).toEqual(PATH.map((_, i) => i + 1))
     const at = (step: number): string => courses[step - 1].title
     expect(at(2)).toContain('Radicals')
     expect(at(3)).toBe('JLPT N5 Kanji')
-    expect(at(5)).toContain('Counters')
-    expect(at(9)).toContain('SFX')
-    expect(at(15)).toContain('Speech Styles')
-    expect(at(18)).toContain('N2 Vocabulary')
-    expect(at(20)).toContain('Idioms')
-    expect(at(22)).toBe('JLPT N1 Grammar II')
-    expect(at(24)).toBe('JLPT N1 Kanji')
+    expect(at(5)).toContain('Set Phrases')
+    expect(at(6)).toContain('Counters')
+    expect(at(10)).toContain('SFX')
+    expect(at(12)).toContain('VN, Gaming & Net Slang')
+    expect(at(17)).toContain('Speech Styles')
+    expect(at(20)).toContain('N2 Vocabulary')
+    expect(at(22)).toContain('Idioms')
+    expect(at(24)).toBe('JLPT N1 Grammar II')
+    expect(at(26)).toBe('JLPT N1 Kanji')
     // The old rows were UPDATEd, not replaced — user data preserved.
     expect(courses[2].description).toBe('old row')
 
@@ -152,7 +161,7 @@ describe('seedJapanese', () => {
     )
   })
 
-  it('renumbers a live DB from the 20-step layout to the 24-step path', () => {
+  it('renumbers a live DB from the 20-step layout to the 26-step path', () => {
     // The 2026-07-27 wave: N2/N1 vocabulary and kanji slot in beside their
     // grammar packs, pushing Idioms and the N1 grammar courses down.
     const OLD: [string, string, number][] = [
@@ -199,24 +208,116 @@ describe('seedJapanese', () => {
     const byTitle = new Map(jp.listCourses().map((c) => [c.title, c]))
     // The moved packs kept their rows (description 'old row') at new steps.
     expect(byTitle.get('Idioms & Set Phrases (慣用句)')).toMatchObject({
-      difficulty: 20,
+      difficulty: 22,
       description: 'old row'
     })
-    expect(byTitle.get('JLPT N1 Grammar I')).toMatchObject({ difficulty: 21, description: 'old row' })
-    expect(byTitle.get('JLPT N1 Grammar II')).toMatchObject({ difficulty: 22, description: 'old row' })
-    expect(byTitle.get('JLPT N2 Grammar II')!.difficulty).toBe(17) // unmoved
-    // …and the four new packs landed on the freed steps.
-    expect(byTitle.get('JLPT N2 Vocabulary')!.difficulty).toBe(18)
-    expect(byTitle.get('JLPT N2 Kanji')!.difficulty).toBe(19)
-    expect(byTitle.get('JLPT N1 Vocabulary')!.difficulty).toBe(23)
-    expect(byTitle.get('JLPT N1 Kanji')!.difficulty).toBe(24)
+    expect(byTitle.get('JLPT N1 Grammar I')).toMatchObject({ difficulty: 23, description: 'old row' })
+    expect(byTitle.get('JLPT N1 Grammar II')).toMatchObject({ difficulty: 24, description: 'old row' })
+    // N2 Grammar II sat still through the 2026-07-27 pass and then moved 17→19
+    // with the 2026-08-15 wave.
+    expect(byTitle.get('JLPT N2 Grammar II')!.difficulty).toBe(19)
+    // …and the new packs landed on the freed steps.
+    expect(byTitle.get('JLPT N2 Vocabulary')!.difficulty).toBe(20)
+    expect(byTitle.get('JLPT N2 Kanji')!.difficulty).toBe(21)
+    expect(byTitle.get('JLPT N1 Vocabulary')!.difficulty).toBe(25)
+    expect(byTitle.get('JLPT N1 Kanji')!.difficulty).toBe(26)
+    expect(byTitle.get('Anime & Manga Set Phrases')!.difficulty).toBe(5)
+    expect(byTitle.get('VN, Gaming & Net Slang')!.difficulty).toBe(12)
     // No two courses share a step.
     const steps = jp.listCourses().map((c) => c.difficulty)
     expect(new Set(steps).size).toBe(steps.length)
 
-    // Idempotent: a second run changes nothing (order3 flag guards it).
+    // Idempotent: a second run changes nothing (the order flags guard it).
     seedJapanese(db)
     expect(jp.listCourses().map((c) => c.difficulty)).toEqual(steps)
+  })
+
+  // The catalog as a whole carries ~117 fronts that appear in more than one
+  // deck (a word introduced in vocabulary and again as a kanji card), which is
+  // deliberate and predates this test. What must NOT happen is a NEW pack
+  // duplicating something already seeded: the user would get two SRS cards for
+  // one word and see it twice in every drill picker. Pinned for the wave-4
+  // packs, which were authored to that rule.
+  it('the wave-4 packs introduce no front that another seeded course already has', () => {
+    seedJapanese(db)
+    const rows = db
+      .prepare(
+        `SELECT c.front AS front, co.title AS course FROM jp_card c
+         JOIN jp_lesson l ON l.id = c.lesson_id
+         JOIN jp_course co ON co.id = l.course_id`
+      )
+      .all() as { front: string; course: string }[]
+    const NEW = ['Anime & Manga Set Phrases', 'VN, Gaming & Net Slang']
+    const older = new Set(rows.filter((r) => !NEW.includes(r.course)).map((r) => r.front))
+    const clashes = rows
+      .filter((r) => NEW.includes(r.course) && older.has(r.front))
+      .map((r) => `${r.front} (${r.course})`)
+    expect(clashes, 'a wave-4 card duplicates an existing seeded card').toEqual([])
+    // And the two new decks do not collide with each other.
+    const newFronts = rows.filter((r) => NEW.includes(r.course)).map((r) => r.front)
+    expect(new Set(newFronts).size, 'duplicate front inside the wave-4 packs').toBe(newFronts.length)
+    expect(newFronts.length).toBeGreaterThanOrEqual(200)
+  })
+
+  it('renumbers a live 24-step DB to the 26-step path and seeds only the two new packs', () => {
+    // The state a user was in before 2026-08-15: every pack of the 24-step
+    // layout seeded, all flags set including both earlier order flags.
+    const LAYOUT24: [string, string, number][] = [
+      ['japanese.seeded', 'JLPT N5 Foundations', 1],
+      ['japanese.seeded.radicals', 'Kanji Radicals & Components', 2],
+      ['japanese.seeded.kanji', 'JLPT N5 Kanji', 3],
+      ['japanese.seeded.casual', 'Manga & VN Japanese', 4],
+      ['japanese.seeded.counters', 'Counters & Numbers', 5],
+      ['japanese.seeded.n4', 'JLPT N4 Grammar', 6],
+      ['japanese.seeded.n4vocab', 'JLPT N4 Vocabulary', 7],
+      ['japanese.seeded.n4kanji', 'JLPT N4 Kanji', 8],
+      ['japanese.seeded.sfx', 'Manga SFX & Onomatopoeia', 9],
+      ['japanese.seeded.casual2', 'Manga & VN Japanese II', 10],
+      ['japanese.seeded.n3', 'JLPT N3 Grammar I', 11],
+      ['japanese.seeded.n3b', 'JLPT N3 Grammar II', 12],
+      ['japanese.seeded.n3vocab', 'JLPT N3 Vocabulary', 13],
+      ['japanese.seeded.n3kanji', 'JLPT N3 Kanji Essentials', 14],
+      ['japanese.seeded.speech', 'Speech Styles & Role Language', 15],
+      ['japanese.seeded.n2a', 'JLPT N2 Grammar I', 16],
+      ['japanese.seeded.n2b', 'JLPT N2 Grammar II', 17],
+      ['japanese.seeded.n2vocab', 'JLPT N2 Vocabulary', 18],
+      ['japanese.seeded.n2kanji', 'JLPT N2 Kanji', 19],
+      ['japanese.seeded.idioms', 'Idioms & Set Phrases (慣用句)', 20],
+      ['japanese.seeded.n1a', 'JLPT N1 Grammar I', 21],
+      ['japanese.seeded.n1b', 'JLPT N1 Grammar II', 22],
+      ['japanese.seeded.n1vocab', 'JLPT N1 Vocabulary', 23],
+      ['japanese.seeded.n1kanji', 'JLPT N1 Kanji', 24]
+    ]
+    const insertFlag = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?)')
+    const insertCourse = db.prepare(
+      `INSERT INTO jp_course (title, description, level, difficulty, sort_order)
+       VALUES (?, 'old row', 'N?', ?, ?)`
+    )
+    LAYOUT24.forEach(([flag, title, step], i) => {
+      insertFlag.run(flag, '1')
+      insertCourse.run(title, step, i)
+    })
+    for (const f of ['japanese.seeded.levels', 'japanese.seeded.order2', 'japanese.seeded.order3']) {
+      insertFlag.run(f, '1')
+    }
+
+    seedJapanese(db)
+
+    const courses = jp.listCourses()
+    expect(courses).toHaveLength(26)
+    expect(courses.map((c) => c.difficulty)).toEqual(PATH.map((_, i) => i + 1))
+    PATH.forEach((fragment, i) => expect(courses[i].title, `step ${i + 1}`).toContain(fragment))
+    // Only the two new packs are fresh rows; everything else kept its data.
+    const fresh = courses.filter((c) => c.description !== 'old row').map((c) => c.title)
+    expect(fresh).toHaveLength(2)
+    expect(fresh.join(' ')).toContain('Set Phrases')
+    expect(fresh.join(' ')).toContain('VN, Gaming & Net Slang')
+
+    // Idempotent.
+    const steps = courses.map((c) => c.difficulty)
+    seedJapanese(db)
+    expect(jp.listCourses().map((c) => c.difficulty)).toEqual(steps)
+    expect(jp.listCourses()).toHaveLength(26)
   })
 
   it('the 24-step reorder leaves a renamed or user-renumbered course alone', () => {

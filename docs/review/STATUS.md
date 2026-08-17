@@ -14,6 +14,11 @@ running the command shown, not by reading the review.
 |---|---|---|
 | Top-20 #2 — `MediaDetailPage` has **zero** `btn-primary` | `grep -c btn-primary src/renderer/src/pages/MediaDetailPage.tsx` | **1** — fixed |
 | Mouse-only destructive actions / native `window.confirm` modals (27 sites) | `grep -rn 'window\.confirm' src/renderer/src` | **0 call sites** — replaced by `lib/confirm.ts`; the only textual hit is a comment inside that module |
+| Top-20 #4 — biased `.sort(() => Math.random() - 0.5)` shuffles | `tests/shuffle.test.ts` text guard | **0 sites** (2026-08-15) — one Fisher-Yates in `src/shared/shuffle.ts` |
+| Programming quiz answer-length tell (77% at review time, 47% by 08-12) | `tests/programmingBias.test.ts` | **≤ 25% per course** (2026-08-15); the test caps strict-longest and strict-shortest at 30% and adds a 1.5× spread rule |
+| Learning-step misses invisible to the leech list (`03-educational.md:53-60`) | `tests/japaneseRepo.test.ts` learning-step cases | fixed 2026-08-15 — `listLeeches` ORs `lapses >= 6` with Again-grades-since-reset `>= 8` |
+| Programming: no per-lesson score, CLI misses discarded, quiz summary blind to the lesson (`03-educational.md:508-518`) | `prog_attempt` / `prog_cli_miss`; quiz summary "Missed N from …" | shipped 2026-08-15 |
+| Cheatsheet answers / factual prose errors (`03-educational.md:441-471`) | the cited lines | already fixed before 08-15; the `regexCourse.ts:288/322` claim was WRONG — `(?<name>…)` shipped in Go 1.22 |
 
 ## The review itself is now wrong
 
@@ -35,9 +40,7 @@ These were true when written and are not true now. **Trust the code, not these r
 
 | Finding | Check | Result |
 |---|---|---|
-| Top-20 #4 — biased `.sort(() => Math.random() - 0.5)` with the answer at index 0. Measured over 200k trials: slot 1 **35.8%**, slot 3 **15.8%** | `grep -rln 'Math\.random() *- *0\.5' src/renderer/src` | **7 files**: `KeigoDrill`, `LookalikeDrill`, `MinimalPairsDrill`, `SpeakDrill`, `TransitivityDrill` (components/japanese/), `JapaneseLeechDrillPage`, `JapaneseLoanwordsPage` |
 | Unescaped `LIKE '%q%'` in search — `%`/`_` in a query act as wildcards | `grep -c LIKE src/main/repos/searchRepo.ts` | **4** queries |
-| Programming quiz — correct option is the strict longest of four in 169/219 questions (77%) | see `03-educational.md` | unchanged |
 
 Everything else in the six deliverables is **unverified since 2026-08-08** — treat it as "probably
 still true, but re-check before acting". The `_raw/` folder holds the thirteen intermediate recon

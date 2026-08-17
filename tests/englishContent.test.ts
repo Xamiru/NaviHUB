@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { EN_PASSAGES } from '../src/shared/english/passages'
 import { EN_MECHANICS } from '../src/shared/english/mechanics'
 import { EN_WRITING_PROMPTS } from '../src/shared/english/writingPrompts'
+import { EN_MECHANICS_CATEGORIES } from '../src/shared/english/types'
 import { parseMarkdown } from '../src/shared/markdown'
 
 // Validates the authored English test catalogs (the programming.test.ts
@@ -50,6 +51,30 @@ describe('reading passages', () => {
     for (const p of EN_PASSAGES) for (const q of p.questions) counts[q.correct]++
     const total = counts.reduce((a, b) => a + b, 0)
     for (const c of counts) expect(c, `distribution ${counts.join('/')}`).toBeLessThan(total * 0.55)
+  })
+})
+
+describe('content volume after set 2 (2026-08-15)', () => {
+  it('has ≥ 24 passages, ≥ 20 questions of every kind, ≥ 30 mechanics items per category, no duplicate mechanics prompts', () => {
+    expect(EN_PASSAGES.length).toBeGreaterThanOrEqual(24)
+    const kinds = new Map<string, number>()
+    for (const p of EN_PASSAGES) for (const q of p.questions) kinds.set(q.kind, (kinds.get(q.kind) ?? 0) + 1)
+    for (const k of ['main-idea', 'inference', 'vocab-in-context', 'tone', 'detail']) {
+      expect(kinds.get(k) ?? 0, k).toBeGreaterThanOrEqual(20)
+    }
+    for (const c of EN_MECHANICS_CATEGORIES) {
+      expect(EN_MECHANICS.filter((m) => m.category === c).length, c).toBeGreaterThanOrEqual(30)
+    }
+    // Generic prompts ("Which spelling is correct?") legitimately repeat with
+    // different options; a duplicate ITEM is prompt + options.
+    const items = EN_MECHANICS.map((m) =>
+      JSON.stringify([m.prompt.trim().toLowerCase(), [...m.options].map((o) => o.trim().toLowerCase()).sort()])
+    )
+    expect(new Set(items).size, 'duplicate mechanics items').toBe(items.length)
+    // Answer positions across mechanics stay spread (no index above 40%).
+    const pos = [0, 0, 0, 0]
+    for (const m of EN_MECHANICS) pos[m.correct]++
+    for (const n of pos) expect(n / EN_MECHANICS.length).toBeLessThanOrEqual(0.4)
   })
 })
 

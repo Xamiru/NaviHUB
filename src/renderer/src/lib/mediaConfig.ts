@@ -127,6 +127,13 @@ export interface MediaConfig {
   // Launch-from-app + playtime tracking (games + VNs) — shows the launcher
   // section (link an executable, Play, session history) on the Playtime tab.
   hasGameLaunch?: boolean
+  // Art-led detail header (2026-08). 'banner' hangs the cover off a shallow
+  // strip of wide art (anime, VNs — the cover is the recognisable thing);
+  // 'backdrop' puts the title and actions on top of a tall still (movies — the
+  // still IS the identity). Absent = the plain two-column header, which is what
+  // types whose detail page is carried by a data tab keep (manga/books read,
+  // games play, TV ticks episodes). See components/MediaHero.tsx.
+  detailHero?: 'banner' | 'backdrop'
   // Achievements tab on the detail page + the completion chip on list cards
   // (games + VNs — the same types that can link an executable, since tracking
   // is only offered where one is or once was linked).
@@ -195,7 +202,8 @@ export const ANIME: MediaConfig = {
   hasVideoLibrary: true,
   videoTabLabel: 'Episodes',
   hasFanArt: true,
-  hasSeasonal: true
+  hasSeasonal: true,
+  detailHero: 'banner'
 }
 
 // Manga shares anime's AniList source and character-centric layout, but has no
@@ -283,7 +291,8 @@ export const VISUAL_NOVEL: MediaConfig = {
   mediaTabLabel: 'Playtime',
   hasFanArt: true,
   hasGameLaunch: true,
-  hasAchievements: true
+  hasAchievements: true,
+  detailHero: 'banner'
 }
 
 // Games come from RAWG (metadata, cover, developers/publishers, genres — it has
@@ -392,7 +401,8 @@ export const MOVIE: MediaConfig = {
     { key: 'movie', label: 'Movies' },
     { key: 'tv', label: 'TV Shows' }
   ],
-  importSource: { key: 'tmdb', label: 'TMDB', placeholder: 'Search TMDB (e.g. Inception)…' }
+  importSource: { key: 'tmdb', label: 'TMDB', placeholder: 'Search TMDB (e.g. Inception)…' },
+  detailHero: 'backdrop'
 }
 
 // TV shares Movies' section, actor pool, and TMDB source, but lists separately
@@ -431,7 +441,11 @@ export const TV: MediaConfig = {
   children: [],
   hideFromSidebar: true,
   hasVideoLibrary: true,
-  videoTabLabel: 'Episodes',
+  // 'Files' rather than 'Episodes': the Seasons tab below is where episodes are
+  // tracked, and two tabs called Episodes would be a coin toss.
+  videoTabLabel: 'Files',
+  // The TMDB episode catalogue as a season accordion + tick grid.
+  mediaTabLabel: 'Seasons',
   listTabs: [
     { key: 'movie', label: 'Movies' },
     { key: 'tv', label: 'TV Shows' }

@@ -1,10 +1,11 @@
 import type { EnMechanicsItem } from './types'
+import { EN_MECHANICS_SET2 } from './mechanicsSet2'
 
 // Mechanics drill bank for the English test section: articles, punctuation,
 // sentence boundaries, confusables, register and spelling, pitched at C1/C2.
 // Item keys are FROZEN ('<category>-<nn>'); prompts and options may be edited.
 
-export const EN_MECHANICS: EnMechanicsItem[] = [
+const SET1: EnMechanicsItem[] = [
   // ---- articles ----
   {
     key: 'articles-01',
@@ -1231,3 +1232,6 @@ export const EN_MECHANICS: EnMechanicsItem[] = [
       'Of course is always two words. Off course means straying from a route, and coarse means rough or crude.'
   }
 ]
+
+// Set 1 + set 2 (added 2026-08-15); order is authoring order, the pages shuffle.
+export const EN_MECHANICS = [...SET1, ...EN_MECHANICS_SET2]

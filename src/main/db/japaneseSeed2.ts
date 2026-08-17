@@ -677,7 +677,7 @@ export const COUNTERS_COURSE: SeedCourse = {
     'This course covers the counters you will actually meet in manga and VNs, the irregular ' +
     'readings that trip everyone up (ひとり, ついたち, はたち), and how to ask "how many?".',
   level: 'N5–N4',
-  difficulty: 5,
+  difficulty: 6,
   lessons: [
     {
       kind: 'grammar',
@@ -1013,7 +1013,7 @@ export const SFX_COURSE: SeedCourse = {
     'These are almost never in beginner textbooks, yet a manga page can be half SFX. ' +
     'After this course the big scrawled katakana stops being decoration and starts being story.',
   level: 'N5+',
-  difficulty: 9,
+  difficulty: 10,
   lessons: [
     {
       kind: 'grammar',
@@ -1181,7 +1181,7 @@ export const SPEECH_COURSE: SeedCourse = {
     'family terms and sentence endings all encode age, class, gender and attitude (役割語 — role language). ' +
     'This goes deeper than the Manga & VN courses: archetype by archetype.',
   level: 'N4+',
-  difficulty: 15,
+  difficulty: 17,
   lessons: [
     {
       kind: 'vocab',
@@ -1599,7 +1599,7 @@ export const IDIOMS_COURSE: SeedCourse = {
     'battle-scene set phrases, four-character idioms (四字熟語) and the proverbs fiction quotes. ' +
     'These read as single units — learn them as units and dialogue speeds up dramatically.',
   level: 'N3–N2',
-  difficulty: 20,
+  difficulty: 22,
   lessons: [
     {
       kind: 'vocab',

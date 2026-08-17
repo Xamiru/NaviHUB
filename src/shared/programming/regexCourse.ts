@@ -75,7 +75,7 @@ re.FindAllString("widths 3.5 and 10.25", -1) // ["3.5", "10.25"]
           options: [
             'Exactly the ASCII digits 0-9',
             'A literal backslash followed by d',
-            'Digits only when re.UNICODE is passed explicitly',
+            'Digits only when the re.UNICODE flag is passed explicitly to re.compile()',
             'Any Unicode decimal digit, unless re.ASCII narrows it'
           ],
           correct: 3,
@@ -242,7 +242,7 @@ Command-line tools blur the distinction because they feed input line by line: in
           options: [
             'A one-character match on space, tab, or punctuation',
             'A zero-width assertion at a position where \\w and non-\\w (or the string edge) meet',
-            'An anchor matching only at the start or end of the string',
+            'An anchor matching only at the exact start or end position of the entire input string',
             'A shorthand for [\\s] that also matches string edges'
           ],
           correct: 1,
@@ -349,7 +349,7 @@ The Go gotcha is worth stars in the margin: in \`ReplaceAllString\`, \`$1x\` is 
           prompt: 'What does the pattern (\\w+) \\1 match?',
           options: [
             'A word followed by the same text again, e.g. "the the"',
-            'Any two words separated by a space',
+            'Any two distinct words separated by a single space character',
             'A word followed by a literal backslash and 1',
             'A word repeated any number of times'
           ],
@@ -400,7 +400,7 @@ A final honesty check: lookarounds make patterns powerful and dense at the same 
             'Only the exact strings "cat" and "dog"',
             'Any string containing "cat" or "dog"',
             '"catalog" and "hotdog" — it means starts-with-cat OR ends-with-dog',
-            'Only strings that both start with "cat" and end with "dog"'
+            'Only strings that both start with the literal prefix "cat" and end with the literal suffix "dog"'
           ],
           correct: 2,
           explain:
@@ -410,7 +410,7 @@ A final honesty check: lookarounds make patterns powerful and dense at the same 
           prompt: 'How many characters does a lookahead like (?=.*\\d) consume from the input?',
           options: [
             'Zero — it is a width-less assertion about what lies ahead',
-            'Exactly as many as .*\\d matches',
+            'Exactly as many characters as the inner pattern .*\\d ends up matching',
             'One, the digit it finds',
             'It depends on whether the engine backtracks'
           ],
@@ -423,7 +423,7 @@ A final honesty check: lookarounds make patterns powerful and dense at the same 
           options: [
             'Lookbehind may not contain character classes',
             'Only negative lookbehind is supported',
-            'Lookbehind is unsupported; only lookahead exists',
+            'Lookbehind is entirely unsupported in the standard library; only lookahead assertions exist',
             'The lookbehind pattern must match a fixed width — (?<=a+) is an error'
           ],
           correct: 3,
@@ -516,7 +516,7 @@ Rule of thumb: write in the POSIX-safe subset (\`[0-9]\`, explicit groups) when 
             'Matching time linear in the input length, regardless of the pattern',
             'Zero heap allocation per match',
             'Patterns compile in constant time',
-            'Matches are found in parallel across goroutines'
+            'Matches are automatically found in parallel by spawning one goroutine per candidate'
           ],
           correct: 0,
           explain:
@@ -525,7 +525,7 @@ Rule of thumb: write in the POSIX-safe subset (\`[0-9]\`, explicit groups) when 
         {
           prompt: 'In Go\'s regexp API, what does adding "Submatch" to a Find method name change?',
           options: [
-            'It restricts matching to one line at a time',
+            'It restricts the match to searching only the first line of multiline input',
             'It returns byte indices instead of text',
             'The result includes capture groups, not just the overall match',
             'It makes the search case-insensitive'
@@ -611,7 +611,7 @@ Nested or recursive structure is the hard line: HTML, JSON, balanced parentheses
           options: [
             '(\\w+\\s??)* — make the inner quantifier lazy',
             '(?:\\w+(?:\\s\\w+)*)? — one unambiguous way to match each word',
-            '(\\w+\\s?)*+ works in every engine including Go',
+            '(\\w+\\s?)*+ removes the ambiguity too and is fully portable to Go\'s RE2 engine',
             '((\\w|\\s)*)* — flatten the classes together'
           ],
           correct: 1,

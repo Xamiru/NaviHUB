@@ -6,6 +6,7 @@ import EmptyState from '../components/EmptyState'
 import PageStatus from '../components/PageStatus'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { shuffle } from '@shared/shuffle'
 
 // Leech isolation drill (kind 'leech') — grind stuck cards WITHOUT touching
 // their real SM-2 state (the mechanic every WaniKani userscript reinvents).
@@ -54,7 +55,7 @@ export default function JapaneseLeechDrillPage() {
 
   function start(): void {
     if (!items) return
-    const shuffled = [...items].sort(() => Math.random() - 0.5)
+    const shuffled = shuffle(items)
     setQueue(shuffled)
     setIndex(0)
     setRevealed(false)
@@ -134,7 +135,7 @@ export default function JapaneseLeechDrillPage() {
         <PageHeader back={{ to: '/japanese/stats', label: 'Stats' }} title="Leech Drill" />
         <EmptyState
           title="No leeches to drill"
-          body="Cards only land here after repeated lapses — that's a good thing."
+          body="Cards only land here after repeated lapses or a run of learning-step misses — that's a good thing."
           action={
             <Link to="/japanese/stats" className="btn-primary">
               Back to stats

@@ -11,6 +11,30 @@
 
 ---
 
+## Home as a widget dashboard
+
+**Configurable Home (2026-08-16).** Everything below the hero is a widget: shown/hidden and reordered from Home's Customise dialog, persisted as ONE settings row (`home.widgets`).
+
+**The hero is not a widget.** The wall of the user's own covers behind the brand is Home's identity — the user asked for it explicitly — so it stays pinned above whatever is configured, and the dialog says so.
+
+`lib/homeWidgets.ts` holds the catalogue and the pure layout resolution, deliberately outside `HomePage.tsx` so it is testable (`tests/homeWidgets.test.ts`; the renderer has no `.tsx` tests). `parseHomeLayout` is forgiving because that settings row outlives the code that wrote it: unparseable or absent input falls back to the defaults, a key this build no longer knows is dropped, and **a key the build knows but the row lacks is APPENDED, visible** — a widget added in a later release has to appear on its own, or it would be invisible forever to anyone who had ever opened the dialog. Widget keys are therefore FROZEN strings (CLAUDE.md's list).
+
+Layout is a 2-column grid; each widget declares `span: 'full' | 'half'`, so halves pair up and strips take the width. Rendering is a lookup from the stored order into a `Record<HomeWidgetKey, ReactNode>` rather than a chain of JSX, so the order is the only thing deciding what appears where. The widgets' own `mt-8` margins came off — the grid's `gap-6` owns the spacing now.
+
+The dialog uses ▲▼ buttons rather than the `SortableList` drag primitive, on the play-queue precedent: that primitive is for orders persisted per-row on the server with optimistic rollback, and this list is client-side until Save writes one settings row.
+
+## Reader settings drawer
+
+**One drawer, both readers (2026-08-16).** `components/reader/ReaderSettingsDrawer.tsx` is the settings panel for the manga and book readers: a flex SIBLING of the reading column (the `MiningPanel` idiom), not an overlay — opening it narrows the page instead of covering it, so a setting can be watched taking effect on the page while it is dragged. That is why it replaced the bottom-anchored popover, which sat on top of the thing it was changing and had to stay small.
+
+Escape is deliberately NOT wired in the drawer. Both readers already own a keydown chain that closes the topmost thing (help → chapter list → settings → mining panel → back to series), and a `useDialog` there would double-fire it. `DrawerSlider` is the drawer's one new primitive, for the genuinely continuous prefs; everything enumerated stays `PopoverRow` + `PopoverOption`, which `BookSettingsPopover.tsx` still exports for both readers.
+
+`BookSettingsPopover` now exports `BookSettingsGroups` — the controls without a shell. The module owns the controls, the drawer owns the panel.
+
+**Brightness** (both readers, in each reader's own localStorage prefs) applies `filter: brightness()` to the whole reading COLUMN, bars included — a bright bar over a dimmed page is exactly what you do not want at 2am. It is separate from the book reader's `theme`: the paper and sepia pages are bright by design, and turning them down is not the same choice as switching to the black one. **Page gap** (manga, scroll mode only) spaces the pages of a scanned volume; 0 keeps the seamless webtoon look. Both merge over `DEFAULTS` on load, so stored prefs from before they existed pick up the defaults with no migration.
+
+The manga reader's page counter now also flanks the slider: while dragging, the top bar is the furthest thing from your eye.
+
 ## EPUB light novels
 
 **EPUB light novels (2026-07-06)** live in the manga section as chapters: the scanner treats a `.epub` as one chapter whose `page_count` = spine length ("pages" = spine documents); `manga.ts:listChapterPages` is the format seam (folder → CBZ → EPUB). `src/main/epub.ts` parses container/OPF/nav/NCX with a hand-rolled, test-covered tag scan (no XML dep) behind an mtime cache; `archive.ts`'s `splitArchivePath` recognizes `.epub` segments so the protocol streams entries (EPUB_MIME adds xhtml/css/fonts — scripts never), but `.epub` is deliberately NOT in `ARCHIVE_EXTS` (a book must never scan as a CBZ of its embedded images). Renderer: `BookReaderPage` (`/manga/:id/book/:chapterId`, chrome-free) fetches spine XHTML via renderer `fetch()` (CSP `connect-src` includes `navimg:`), renders through `BookContent` — DOMParser + tag whitelist, NEVER dangerouslySetInnerHTML, img srcs resolved via the shared pure `resolveEpubHref` (`@shared/epubPaths`, also used by the OPF parser). All chapter navigation routes through `lib/readerPath.ts:readerPath()` (dirPath `.epub` suffix picks book vs image reader) so mixed series cross freely. Progress/read-state reuse `manga_chapter` unchanged (`last_read_page` = spine index); the reader reuses `MiningPanel` (tap paragraph → SRS) and persists typography in localStorage `book.readerPrefs`.

@@ -32,6 +32,9 @@ export interface MediaItem {
   titleOriginal: string | null
   synopsis: string | null
   coverPath: string | null
+  // Wide hero art for the detail page (AniList bannerImage / TMDB backdrop).
+  // NULL on every row imported before 2026-08 until it is re-imported.
+  bannerPath: string | null
   releaseDate: string | null
   totalUnits: number | null
   // personal tracking
@@ -346,7 +349,56 @@ export interface MediaRelation {
   mediaType: MediaType | null // the related work's type ('anime' | 'manga' | …)
 }
 
+// ---- Japanese: the JLPT ladder (shared/jlptLevels.ts owns the rules) ----
+
+export interface JpJlptLadder {
+  levels: import('./jlptLevels').JlptLevelProgress[]
+  // The easiest level not yet cleared; null when no course carries a level.
+  current: import('./jlptLevels').JlptLevel | null
+  // Cards whose next review is at least a week out, across every level.
+  passed: number
+  cards: number
+  // Cards in courses whose label names no JLPT tier — counted so the page can
+  // say so rather than quietly leaving them out of every total.
+  unlevelled: number
+}
+
+// ---- TV episode catalogue (the detail page's Seasons tab) ----
+
+export interface TvEpisode {
+  id: number
+  season: number
+  number: number
+  absolute: number | null // 1-based position across the whole show
+  title: string | null
+  overview: string | null
+  airDate: string | null
+  runtime: number | null // minutes
+  watchedAt: string | null
+  // The local file for this episode, matched from video_file by season+number —
+  // null when you don't have it. Lets the grid offer Play without a second query.
+  fileId: number | null
+}
+
+export interface TvSeason {
+  season: number
+  episodes: TvEpisode[]
+  watched: number
+  // Episodes whose air_date is in the future — the grid greys them and the
+  // "mark season watched" action ignores them.
+  unaired: number
+}
+
 export interface MediaDetail extends MediaItem {
+  // Wide art the detail-page hero actually paints, resolved server-side:
+  // banner_path (imported), else the first fan art / wallpaper on the Art tab,
+  // else null — at which point the hero blurs the cover instead. Kept separate
+  // from bannerPath so the renderer never re-implements the fallback order.
+  heroPath: string | null
+  // The Art-tab image flagged as this item's full-page backdrop, or null.
+  // Independent of heroPath: the same image may be both, and setting a backdrop
+  // never changes the hero strip.
+  backgroundPath: string | null
   tags: Tag[]
   companies: MediaCompanyLink[]
   cast: CastEntry[] // still used for staff (non voice-actor credits)
@@ -365,10 +417,10 @@ export interface ThemeImportSummary {
 
 // ---- wallpapers / fan art ----
 
-// 'background' (2026-08): a per-game page background override, set from the
-// franchise pages only — it is deliberately NOT surfaced on the Art tab.
-// One row per media item is the intended shape (the setter removes priors).
-export type ImageKind = 'wallpaper' | 'fanart' | 'background'
+// The two Art-tab grids. A page background is NOT a third kind — it is the
+// is_background flag on one of these rows (2026-08-17), so the image keeps its
+// place in the grid and is not duplicated on disk.
+export type ImageKind = 'wallpaper' | 'fanart'
 
 // A wallpaper or fan-art image attached to a media item. The file lives under
 // pictures.dir (virtual "pictures/" prefix) — filePath feeds straight to mediaUrl().
@@ -381,6 +433,12 @@ export interface MediaImage {
   source: string | null // 'wallhaven' | 'tmdb' | 'url' | 'file'
   width: number | null
   height: number | null
+  // This image is the media item's full-page detail backdrop (at most one per
+  // item) — MediaDetail.backgroundPath is the same file, resolved server-side.
+  isBackground: boolean
+  // A copy of this image sits in the Windows desktop-slideshow folder
+  // (slideshow.dir). Membership is a slideshow_item row, not a file scan.
+  inSlideshow: boolean
 }
 
 // One result in the wallpaper Browse dialog. thumbUrl is shown in the grid
@@ -466,6 +524,20 @@ export type QuizKind =
   | 'keigo' // honorific/humble/polite transform drill
   | 'leech' // leech isolation drill (no SRS writes)
   | 'speak' // pitch production drill (record + contour match)
+  | 'regexGolf' // regex golf rounds (puzzles solved / played; per-puzzle bests live in prog_solve)
+  | 'englishCloze' // Use of English: open cloze (typed function word)
+  | 'englishWordForm' // Use of English: word formation (typed derived form)
+  | 'englishTransform' // Use of English: key-word transformations (typed 3-6 words)
+  | 'englishPunctuate' // Punctuate-it game (place marks and apostrophes)
+  | 'englishSpotError' // Spot-the-error game (click the wrong word)
+  | 'englishMatch' // collocation / phrasal-verb match game
+  | 'particles' // sentence-bank particle fill (MC over は/が/を/に/で…)
+  | 'scramble' // sentence-bank chunk reordering (graded against the original)
+  | 'contextReading' // typed reading of a kanji word inside a bank sentence
+  | 'kanaRace' // 60 s arcade: kana → romaji, per keystroke (best = most correct)
+  | 'readingRace' // 60 s arcade: kanji word → reading, per keystroke
+  | 'conjRace' // 60 s arcade: conjugation sprint, Enter to submit
+  | 'jpReading' // graded reading passages N5-N2 (per-passage bests via settings.passageKey)
 
 export interface QuizSessionInput {
   kind: QuizKind
@@ -556,6 +628,10 @@ export interface GameLaunchOverview {
   totalSeconds: number
   sessionCount: number
   sessions: GameSessionRow[]
+  // Tracked seconds per Monday-based week, oldest first, empty weeks included —
+  // the Playtime tab's chart. Rides the same invoke rather than a second
+  // channel; it is one GROUP BY over a table that is already being read.
+  weeks: { weekStart: string; seconds: number }[]
 }
 
 // The tracked-session poll (gameLaunch.ts). Terminal states persist until the
@@ -950,6 +1026,7 @@ export interface JpLeech {
   reading: string | null
   back: string
   lapses: number
+  agains: number // Again grades since the last reset (learning-step misses)
   ease: number
   status: SrsStatus
   intervalDays: number
@@ -1268,6 +1345,76 @@ export interface SentenceExample {
   // navimg-relative clip path when the sentence-audio pack has a recording of
   // this exact sentence (joined on jp text), else null.
   audioPath: string | null
+}
+
+// ---- Sentence games (/japanese/sentences) ----
+// Pools are generated in main from the installed sentence bank + kuromoji;
+// nothing is authored. Plain awaits at Start (never cached).
+export interface SentenceGamePoolRequest {
+  limit: number
+  maxChars?: number // default 30
+}
+export interface ParticleQuizItem {
+  jp: string
+  en: string
+  blanked: string // jp with the particle replaced by the cloze BLANK
+  answer: string
+  options: string[] // 4, shuffled, never a conflict partner of the answer
+  audioPath: string | null
+}
+export interface ScrambleQuizItem {
+  jp: string
+  en: string
+  chunks: string[] // in the ORIGINAL order (the renderer shuffles for the tray)
+  punct: string // sentence-final punctuation, re-appended on reveal
+  audioPath: string | null
+}
+export interface ContextReadingItem {
+  jp: string
+  en: string
+  target: { surface: string; start: number; end: number }
+  readings: string[] // [0] = kuromoji's, all confirmed against JMdict for this expression
+  gloss: string | null
+  audioPath: string | null
+}
+
+// Arcade reading race: a kanji-bearing word with every reading that counts.
+export interface ReadingRaceRequest {
+  source: 'cards' | 'frequency' | 'both'
+  limit: number
+}
+export interface ReadingRaceWord {
+  term: string
+  readings: string[]
+  gloss: string | null
+  fromCards: boolean
+}
+
+// ---- JLPT checkpoint (/japanese/test) ----
+// Built from the offline packs. `source: 'packs'` distinguishes it from the
+// legacy seeded-course sampler the page falls back to.
+export type JlptLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
+export type JlptSectionKey = 'grammar' | 'vocab' | 'kanji' | 'reading'
+export interface JlptQuestion {
+  section: JlptSectionKey
+  heading: string
+  prompt: string
+  promptHint: string | null // reading / English gloss shown under the prompt
+  options: string[]
+  correct: number
+  reveal: { front: string; reading: string | null; back: string }
+}
+export interface JlptSection {
+  key: JlptSectionKey
+  label: string
+  wanted: number
+  questions: JlptQuestion[]
+  note: string | null // honesty note ("level approximated by word frequency")
+}
+export interface JlptTest {
+  level: JlptLevel
+  source: 'packs'
+  sections: JlptSection[]
 }
 
 export interface SentenceBankInfo {
@@ -1642,6 +1789,9 @@ export interface MangaChapter {
   title: string
   number: number | null
   pageCount: number
+  // First page, as a navimg-able virtual path — the Volumes grid thumbnail.
+  // null for EPUBs and for series not rescanned since covers were added.
+  coverPath: string | null
   sortOrder: number
   lastReadPage: number | null // 0-based; null = never opened
   readAt: string | null // non-null = completed
@@ -1689,6 +1839,9 @@ export interface ScannedChapter {
   title: string
   number: number | null
   pageCount: number
+  // File name of the first page, for the Volumes grid thumbnail. null for
+  // EPUBs, whose "pages" are XHTML spine documents rather than images.
+  coverPage: string | null
 }
 
 // ---- "Open with NaviHUB" ----
@@ -1911,6 +2064,7 @@ export interface JpToken {
   base: string // dictionary form (食べた → 食べる); falls back to surface
   reading: string | null // hiragana
   pos: string // top-level POS: 名詞 / 動詞 / 助詞 / …
+  posDetail: string | null // kuromoji pos_detail_1 (係助詞 / 格助詞 / 接尾 / 非自立 / 代名詞 / 数 …), null when '*'
   wordLike: boolean // false for particles, aux verbs, punctuation
 }
 
@@ -2789,6 +2943,12 @@ export interface EnWord {
   lastReviewedAt: string | null
 }
 
+// Deck page row: the saved word plus its frequency rank (null without the
+// frequency pack, or for phrases/proper nouns the pack does not list).
+export interface EnDeckWord extends EnWord {
+  rank: number | null
+}
+
 export interface EnReviewQueue {
   due: EnWord[]
   fresh: EnWord[] // 'new' cards, oldest saves first
@@ -2906,6 +3066,61 @@ export interface EnWritingEntry {
 export interface ProgLessonProgress {
   lessonKey: string // FROZEN '<courseKey>/<lessonKey>'
   completedAt: string
+}
+
+// One finished lesson self-check (every question answered). Append-only.
+export interface ProgAttempt {
+  lessonKey: string
+  score: number
+  total: number
+  at: string
+}
+
+// The CLI drill's weak-command memory, keyed by cheatsheet entry.
+export interface ProgCliMiss {
+  cmdKey: string // FROZEN '<sheetKey>/<answers[0]>'
+  misses: number
+  lastAt: string
+}
+export interface ProgCliRoundInput {
+  missed: string[] // cmd keys missed at least once this round
+  correct: string[] // cmd keys answered right first try
+}
+
+// Solved sandbox exercises / golf puzzles. `kind` values are FROZEN.
+export type ProgSolveKind = 'sql' | 'regex'
+export interface ProgSolve {
+  kind: ProgSolveKind
+  key: string
+  best: number | null // regex: shortest pattern length; sql: null
+  answer: string | null // the winning pattern / the accepted SQL
+  solvedAt: string
+}
+export interface ProgSolveInput {
+  kind: ProgSolveKind
+  key: string
+  best?: number | null
+  answer?: string | null
+}
+
+// The SQL sandbox: one query against the seeded in-memory dataset.
+export interface SqlRunInput {
+  exerciseKey: string
+  sql: string
+}
+export type SqlCell = string | number | null
+export interface SqlTable {
+  columns: string[]
+  rows: SqlCell[][]
+  truncated: boolean
+}
+export type SqlMismatch = 'columns' | 'rowCount' | 'rows' | 'order' | null
+export interface SqlRunResult extends SqlTable {
+  ms: number
+  correct: boolean
+  mismatch: SqlMismatch
+  expectedColumns: string[]
+  error: string | null // validation / SQL error / timeout — rows empty when set
 }
 
 // ---- Wrestling section (/wrestling) ----

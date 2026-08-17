@@ -5,6 +5,7 @@ import { baselineSize, knownWordSet, tiersForWords } from './repos/coverageRepo'
 import { tokenize } from './tokenizer'
 import { isLearnableWord } from './seriesText'
 import type { JpFeed, JpFeedItem, JpFeedRequest, JpToken } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // The i+1 sentence feed (MorphMan's "1T" mechanic over the user's own SRS
 // tiers): sentence-bank sentences where every word is known except EXACTLY
@@ -162,15 +163,6 @@ export async function buildFeed(req: JpFeedRequest, deps: FeedDeps): Promise<Omi
     }
   })
   return { items: out, scanned: rows.length, eligible: eligible.length }
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 // ---- IO wiring + cache ----

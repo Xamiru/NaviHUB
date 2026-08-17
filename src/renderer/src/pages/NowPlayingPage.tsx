@@ -68,7 +68,20 @@ export default function NowPlayingPage() {
   const titleLink = albumLink ?? animeLink
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    // The art-led now-playing screen. The ambient wash is the app's OWN accent,
+    // not a palette extracted from the cover: the Lain theme is one hue on
+    // purpose, and a per-album tint would make this the only screen that
+    // isn't. It still lifts the artwork off a flat background, which was the
+    // point of the treatment.
+    <div className="relative p-6 max-w-5xl mx-auto">
+      <div
+        className="pointer-events-none absolute inset-0 -z-10"
+        aria-hidden="true"
+        style={{
+          background:
+            'radial-gradient(70% 55% at 30% 0%, rgb(var(--accent) / 0.10) 0%, transparent 70%)'
+        }}
+      />
       <BackButton />
       <div className="mt-2 grid gap-10 lg:grid-cols-[minmax(0,1fr)_340px]">
         {/* Left: artwork + transport */}

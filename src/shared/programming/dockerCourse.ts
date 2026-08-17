@@ -58,7 +58,7 @@ Hold onto one sentence: *an image is a frozen filesystem recipe; a container is 
           options: [
             'Its writable layer and runtime metadata; the image is untouched',
             'The image layers it was created from',
-            'Nothing, until docker system prune runs',
+            'Nothing at all -- the container stays on disk until you separately run docker system prune to reclaim it',
             'The image tag, but the layers survive',
           ],
           correct: 0,
@@ -78,7 +78,7 @@ Hold onto one sentence: *an image is a frozen filesystem recipe; a container is 
         {
           prompt: 'Which operations does docker run compose?',
           options: [
-            'build, create, start',
+            'build the image from a Dockerfile, then create, start, and publish every exposed port',
             'pull, exec, attach',
             'create, start, and (unless -d) attach',
             'start and commit',
@@ -142,7 +142,7 @@ That first pair is the exact incantation for "why did my container die", and it 
           prompt: 'What does docker stop actually do?',
           options: [
             'Sends SIGKILL immediately',
-            'Freezes the container cgroup until docker start',
+            'Freezes the container cgroup in place indefinitely until a later docker start command resumes the very same process',
             'Sends SIGTERM to PID 1, waits a grace period (default 10s), then SIGKILL',
             'Sends SIGHUP and detaches the logging driver',
           ],
@@ -163,7 +163,7 @@ That first pair is the exact incantation for "why did my container die", and it 
         {
           prompt: 'What does docker exec -it web sh actually start?',
           options: [
-            'A reconnection of your terminal to PID 1',
+            'A reconnection of your terminal to the running container PID 1 process and its current output stream',
             'A second container from the same image',
             'An SSH session to the container',
             'A new process inside the running container\'s existing namespaces',
@@ -348,7 +348,7 @@ docker volume prune
             'It is archived into the image as a new layer',
             'It is moved into an anonymous volume',
             'It is deleted — everything written there is gone',
-            'It is kept until the next docker system prune',
+            'It is kept on disk indefinitely until the next docker system prune run clears it out',
           ],
           correct: 2,
           explain: 'The writable layer belongs to the container. docker rm deletes it, which is the whole argument for putting real data in volumes.',
@@ -450,7 +450,7 @@ docker inspect --format '{{json .NetworkSettings.Ports}}' web
           options: [
             'All bridge networks provide DNS by container name',
             'DNS only works with --network host',
-            'DNS requires editing /etc/hosts inside each container',
+            'DNS requires manually editing /etc/hosts inside every container on the network, each time one is added',
             'User-defined networks provide DNS by container name; the default bridge does not',
           ],
           correct: 3,
@@ -473,7 +473,7 @@ docker inspect --format '{{json .NetworkSettings.Ports}}' web
             'It cannot until -p 5432:5432 is added to db',
             'Via the host IP and a published port',
             'Directly at db:5432 — publishing is only needed for access from the host or outside',
-            'Docker assigns db a random published port automatically',
+            'Docker automatically assigns db a randomly chosen published port that web must discover and connect to',
           ],
           correct: 2,
           explain: 'Containers on a shared network talk container-port to container-port over that network. -p is strictly about reaching in from outside.',

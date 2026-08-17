@@ -35,6 +35,11 @@ export const MAX_INTERVAL_DAYS = 365
 // lapse costs less here and lapses accrue faster per unit of pain — 6 catches
 // the problem cards a session or two earlier without flagging normal wobble.
 export const LEECH_LAPSES = 6
+// A card can also be a leech BEFORE it ever graduates: repeated Again grades
+// in the learning/relearning steps never touch `lapses` (gradeCard only bumps
+// it from `review`), so listLeeches also counts Again grades among the card's
+// reviews since its last reset (reps rows of jp_review_log).
+export const LEECH_AGAINS = 8
 // Ghost reviews (Bunpro-style): a lapsed review-state card echoes back until
 // answered correctly this many times, independent of its real SM-2 state.
 export const GHOST_STEPS = 3

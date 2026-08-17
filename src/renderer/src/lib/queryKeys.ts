@@ -45,7 +45,10 @@ export const qk = {
     // Same rationale — logging an episode should refresh the roadmap milestones.
     jpMilestones: ['media', 'jpMilestones'] as const,
     resumePoints: ['media', 'resumePoints'] as const,
-    activityHeatmap: ['media', 'activityHeatmap'] as const
+    activityHeatmap: ['media', 'activityHeatmap'] as const,
+    // Under ['media'] on purpose: ticking an episode logs media progress, so the
+    // detail page's own invalidation has to reach the season grid too.
+    tvSeasons: (mediaId: number) => ['media', 'tvSeasons', mediaId] as const
   },
   mediaCounts: {
     all: ['media-counts'] as const,
@@ -87,7 +90,10 @@ export const qk = {
   quiz: {
     all: ['quiz'] as const,
     songPool: (filter: QuizSongFilter) => ['quiz', 'songPool', filter] as const,
-    history: (kind: QuizKind) => ['quiz', 'history', kind] as const
+    history: (kind: QuizKind) => ['quiz', 'history', kind] as const,
+    // A longer window of the same history (under the history(kind) prefix so
+    // one invalidation refreshes both).
+    historyAll: (kind: QuizKind) => ['quiz', 'history', kind, 'all'] as const
   },
   themes: {
     // Anime OP/ED library (/anime/songs). Hearting a song invalidates the `all`
@@ -115,6 +121,10 @@ export const qk = {
     // Wallpapers + fan art per media item, plus the Browse dialog's searches.
     all: ['pictures'] as const,
     list: (mediaId: number, kind: ImageKind) => ['pictures', 'list', mediaId, kind] as const,
+    // Prefix of list() — invalidates BOTH kinds for one item, which the
+    // background/slideshow toggles need (flagging a wallpaper clears a marker
+    // that may be sitting on a fan-art tile).
+    lists: (mediaId: number) => ['pictures', 'list', mediaId] as const,
     wallhaven: (q: string, page: number) => ['pictures', 'wallhaven', q, page] as const,
     tmdb: (mediaId: number) => ['pictures', 'tmdb', mediaId] as const
   },
@@ -159,6 +169,9 @@ export const qk = {
     // pins staleTime so mining mid-session never triggers a rebuild.
     feed: (req: JpFeedRequest) => ['japanese', 'feed', req] as const,
     courses: ['japanese', 'courses'] as const,
+    // The JLPT ladder on the roadmap. Under the ['japanese'] prefix so a review
+    // session's invalidation moves the level bars too.
+    jlptLadder: ['japanese', 'jlptLadder'] as const,
     // Mining page: the flattened vocab-lesson list + ensured inbox target.
     mineTargets: ['japanese', 'mineTargets'] as const,
     course: (id: number) => ['japanese', 'course', id] as const,
@@ -197,13 +210,19 @@ export const qk = {
     // Writing practice history (/english/writing).
     writings: ['english', 'writings'] as const,
     // Graded corrections tallied by category — drives the mechanics weighting.
-    errorTally: ['english', 'errorTally'] as const
+    errorTally: ['english', 'errorTally'] as const,
+    deck: ['english', 'deck'] as const,
+    leeches: ['english', 'leeches'] as const
   },
   programming: {
     // Programming learn section (/programming): lesson completion only — the
     // course/cheatsheet content is code, never fetched.
     all: ['programming'] as const,
-    progress: ['programming', 'progress'] as const
+    progress: ['programming', 'progress'] as const,
+    attempts: ['programming', 'attempts'] as const,
+    cliMisses: ['programming', 'cliMisses'] as const,
+    solves: ['programming', 'solves'] as const,
+    sqlExpected: (key: string) => ['programming', 'sqlExpected', key] as const
   },
   dict: {
     // Offline dictionaries. Import/delete invalidate the `all` prefix, which also

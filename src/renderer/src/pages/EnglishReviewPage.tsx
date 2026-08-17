@@ -181,6 +181,12 @@ export default function EnglishReviewPage() {
           <p className="text-center text-xs text-gray-400">
             Space to flip · 1 Again · 2 Hard · 3 Good · 4 Easy
           </p>
+          <p className="text-center text-xs text-gray-500">
+            <Link to="/english/deck" className="hover:text-gray-300">
+              Manage the deck
+            </Link>{' '}
+            — ranks, leeches, bulk prune
+          </p>
         </div>
       </div>
     )

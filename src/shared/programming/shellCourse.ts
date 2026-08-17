@@ -69,7 +69,7 @@ fi
           prompt: 'set -e is active. In which of these does an internal failure of setup() NOT abort the script?',
           options: [
             'if setup; then deploy; fi',
-            'setup',
+            'setup; echo "setup finished successfully"',
             'setup; deploy',
             'result=$(setup)',
           ],
@@ -191,7 +191,7 @@ Unquoted expansion is an injection surface, not just a correctness bug:
             'Causes word splitting on the pattern',
             'Makes the right side match as a glob pattern instead of a literal string',
             'Nothing; [[ ]] treats both sides identically',
-            'Triggers a syntax error when pattern contains spaces',
+            'Triggers a syntax error whenever the pattern contains spaces or other IFS whitespace characters',
           ],
           correct: 1,
           explain: 'Inside [[ ]] nothing is word-split, but the unquoted right side of == is interpreted as a pattern. Quoting it demands an exact literal match.',
@@ -210,7 +210,7 @@ Unquoted expansion is an injection surface, not just a correctness bug:
         {
           prompt: 'Why write rm -- "$f" rather than rm "$f"?',
           options: [
-            'Quoting alone does not protect against embedded glob characters',
+            'Quoting alone does not protect against embedded glob characters such as an asterisk in the value',
             '-- stops option parsing, so a filename beginning with a dash cannot be read as a flag',
             '-- forces rm to prompt before each removal',
             'It is required whenever $f contains spaces',
@@ -373,7 +373,7 @@ A glob is a path pattern: \`*\` matches any run of characters (not \`/\`), \`?\`
           prompt: 'Without nullglob, what happens when for f in ./*.log runs in a directory with no .log files?',
           options: [
             'The loop is skipped entirely',
-            'bash raises a glob error and the script exits',
+            'bash raises a glob error and the script exits immediately without running the loop body',
             'The loop runs once with f empty',
             'The loop runs once with f set to the literal string ./*.log',
           ],
@@ -397,7 +397,7 @@ A glob is a path pattern: \`*\` matches any run of characters (not \`/\`), \`?\`
             'The numbers 1 through 5',
             'Nothing; the loop body never runs',
             'A single literal string, because brace expansion happens before $n is expanded',
-            'The numbers 1 through 5, but only with shopt -s extglob',
+            'The numbers 1 through 5, because shopt -s extglob enables variable brace-range expansion',
           ],
           correct: 2,
           explain: 'Brace expansion is the first expansion performed, so it sees the characters $n, not the value 5, and leaves the whole thing literal. Use for (( i=1; i<=n; i++ )) or seq.',
@@ -407,7 +407,7 @@ A glob is a path pattern: \`*\` matches any run of characters (not \`/\`), \`?\`
           options: [
             'IFS= speeds up reading; -r enables raw binary mode',
             '-r keeps backslashes literal; IFS= preserves leading and trailing whitespace',
-            '-r reads the whole file at once; IFS= splits it into lines',
+            '-r reads the whole file at once into a single variable; IFS= splits that variable into separate lines',
             'They are both needed only for CSV input',
           ],
           correct: 1,
@@ -606,7 +606,7 @@ The assignment happened, in a child process that is now gone. Three fixes, in or
             'read cannot assign to variables declared outside the loop',
             'The loop ran in a subshell created by the pipe, and its variables died with it',
             'set -u cleared the variable when the pipe closed',
-            'The pipe buffered the data so the loop never executed',
+            'The pipe buffered the data so the loop never executed and total kept its initial value of zero',
           ],
           correct: 1,
           explain: 'Each pipeline segment is a subshell; assignments there never reach the parent. Feed the loop with done < <(producer) to keep it in the current shell.',
@@ -814,7 +814,7 @@ Bash's sweet spot is coordinating processes, files and pipes — glue. Rewrite i
           prompt: 'shellcheck flags SC2086 on a line. What is it telling you?',
           options: [
             'An expansion is unquoted and subject to word splitting and globbing',
-            'The script lacks a shebang line',
+            'The script lacks a shebang line, so bash cannot determine which interpreter to use',
             'A variable is assigned but never used',
             'cd is used without error handling',
           ],
@@ -824,7 +824,7 @@ Bash's sweet spot is coordinating processes, files and pipes — glue. Rewrite i
         {
           prompt: 'Which situation is the strongest signal that a bash script should become a Python or Go program?',
           options: [
-            'It needs to run the same pipeline on twenty files',
+            'It needs to run the exact same pipeline of commands on twenty different input files in a row',
             'It calls curl and jq together',
             'It must run on both Linux and macOS',
             'Its data wants nested structures — lists of records with named fields',

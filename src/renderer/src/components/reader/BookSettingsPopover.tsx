@@ -1,8 +1,12 @@
 import type { ReactNode } from 'react'
+import { DrawerSlider } from './ReaderSettingsDrawer'
 
-// Typography & theme popover for the book reader ("Aa" in the bottom bar) —
-// the SubtitleTrackMenu shell. Replaces the old row of blind cycler glyphs:
-// every pref shows its current value and all its options.
+// Typography & theme controls for the book reader ("Aa" in the bottom bar).
+// Every pref shows its current value and all its options, rather than the old
+// row of blind cycler glyphs. The panel these live in is
+// ReaderSettingsDrawer, shared with the manga reader — this module owns the
+// controls, not the shell, and still exports the PopoverRow/PopoverOption
+// primitives both readers build their rows from.
 
 export type BookTheme = 'dark' | 'black' | 'sepia' | 'paper'
 export type BookFont = 'sans' | 'serif'
@@ -14,6 +18,10 @@ export interface BookPrefs {
   vertical: boolean
   theme: BookTheme
   font: BookFont
+  // Dim the whole reading column for night reading. Separate from `theme`:
+  // the paper and sepia pages are bright by design, and turning them down is
+  // not the same choice as switching to the black one.
+  brightness: number // 0.3 – 1
 }
 
 export const BOOK_DEFAULTS: BookPrefs = {
@@ -22,7 +30,8 @@ export const BOOK_DEFAULTS: BookPrefs = {
   maxWidth: 700,
   vertical: false,
   theme: 'dark',
-  font: 'sans'
+  font: 'sans',
+  brightness: 1
 }
 export const LINE_HEIGHTS = [1.6, 1.9, 2.2]
 export const WIDTHS = [600, 700, 850, 1100]
@@ -74,20 +83,16 @@ export function PopoverOption({
   )
 }
 
-export default function BookSettingsPopover({
+export default function BookSettingsGroups({
   prefs,
-  setPref,
-  onClose
+  setPref
 }: {
   prefs: BookPrefs
   setPref: <K extends keyof BookPrefs>(k: K, v: BookPrefs[K]) => void
-  onClose: () => void
 }) {
-  const { fontSize, lineHeight, maxWidth, vertical, theme, font } = prefs
+  const { fontSize, lineHeight, maxWidth, vertical, theme, font, brightness } = prefs
   return (
     <>
-      <div className="fixed inset-0 z-20" onMouseDown={onClose} />
-      <div className="absolute bottom-full right-0 z-30 mb-2 w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-lg border border-base-700 bg-base-900/95 p-3 shadow-xl shadow-black/40 backdrop-blur">
         <PopoverRow label="Text size">
           <PopoverOption active={false} title="Smaller (-)" onClick={() => setPref('fontSize', Math.max(12, fontSize - 1))}>
             A−
@@ -140,7 +145,15 @@ export default function BookSettingsPopover({
             縦 Vertical
           </PopoverOption>
         </PopoverRow>
-      </div>
+        <DrawerSlider
+          label="Brightness"
+          value={brightness}
+          display={`${Math.round(brightness * 100)}%`}
+          min={0.3}
+          max={1}
+          step={0.05}
+          onChange={(v) => setPref('brightness', v)}
+        />
     </>
   )
 }

@@ -20,6 +20,11 @@ const SANITIZE_STATEMENTS = [
   `UPDATE media_item SET status=NULL, score=NULL, progress=0,
      rewatch_count=0, notes=NULL, favorite=0, local_dir=NULL, exe_path=NULL`,
 
+  // The TMDB episode catalogue is canonical and worth shipping; which episodes
+  // the exporter watched is not. Same shape as the wrestling reference tables:
+  // keep the rows, clear the personal column.
+  'UPDATE tv_episode SET watched_at=NULL',
+
   // User-curated lists (rankings + notes).
   'DELETE FROM list_item',
   'DELETE FROM list',
@@ -69,6 +74,9 @@ const SANITIZE_STATEMENTS = [
 
   // Wallpapers/fan art: rows point at files under the exporter's pictures.dir,
   // which isn't part of the bundle — they'd all be dead links on arrival.
+  // slideshow_item goes first (child FK) and is personal anyway: it names files
+  // in the exporter's own Windows desktop slideshow folder.
+  'DELETE FROM slideshow_item',
   'DELETE FROM media_image',
 
   // Quiz round history (personal scores).
@@ -116,6 +124,9 @@ const SANITIZE_STATEMENTS = [
   'DELETE FROM en_word',
   'DELETE FROM en_writing',
   'DELETE FROM prog_progress',
+  'DELETE FROM prog_attempt',
+  'DELETE FROM prog_cli_miss',
+  'DELETE FROM prog_solve',
 
   // Legacy: the PC↔phone sync server was removed (2026-08-01), but a DB that
   // ran an older build still has its table. sanitizeDb skips tables the DB
@@ -134,7 +145,7 @@ const SANITIZE_STATEMENTS = [
   // franchise.<id>.background rows point at the user's own image files.
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path',
-      'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','video.dir','wrestling.dir',
+      'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','slideshow.dir','video.dir','wrestling.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
       'steam.web_api_key','ra.username','ra.api_key',

@@ -11,6 +11,7 @@ import { usePersistedState } from '../../lib/navState'
 import { usePlayer } from '../../lib/player'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { MinimalPair, MinimalPairItem } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // The kotu.io minimal-pairs mechanic (kind 'pairs'): a native recording plays,
 // you pick which of two pitch contours you heard. Endless with Stop, running
@@ -139,7 +140,7 @@ function makeRound(pairs: MinimalPair[]): Round | null {
     }
     const distinct = [...byPosition.values()]
     if (distinct.length < 2) continue
-    const shuffled = [...distinct].sort(() => Math.random() - 0.5)
+    const shuffled = shuffle(distinct)
     const options: [MinimalPairItem, MinimalPairItem] = [shuffled[0], shuffled[1]]
     return { pair, options, playedIndex: Math.random() < 0.5 ? 0 : 1 }
   }

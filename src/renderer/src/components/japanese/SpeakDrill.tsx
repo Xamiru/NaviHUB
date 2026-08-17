@@ -22,6 +22,7 @@ import {
   type NormalizedContour
 } from '@shared/pitchTrack'
 import type { PitchPoolItem } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // The Speak tab (kind 'speak'): say the word, get shape feedback — your F0
 // contour (local YIN, no cloud, no ASR) overlaid on the Kanjium target.
@@ -77,7 +78,7 @@ export default function SpeakDrill() {
         pausedMusicRef.current = true
         player.toggle()
       }
-      setPool(items.sort(() => Math.random() - 0.5))
+      setPool(shuffle(items))
       setIndex(0)
       setNailed(0)
       setGraded(0)

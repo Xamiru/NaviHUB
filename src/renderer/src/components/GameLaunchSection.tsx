@@ -7,6 +7,7 @@ import { useGameSession, fmtDurationSec } from '../lib/useGameSession'
 import { fmtMinutesAsHours } from '../lib/mediaConfig'
 import Section from './Section'
 import StatTile from './StatTile'
+import BarChart, { type Bar } from './BarChart'
 import type { MediaDetail, HltbTimes } from '@shared/types'
 
 // Launch-from-app + tracked playtime for games/VNs (cfg.hasGameLaunch), on the
@@ -21,6 +22,27 @@ function fmtSessionStart(utc: string): string {
   return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
     ' · ' +
     d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+}
+
+// 'YYYY-MM-DD' → 'Aug 11', for the sparse x labels and the tooltips.
+function fmtWeek(day: string): string {
+  return new Date(day + 'T00:00:00').toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric'
+  })
+}
+
+function weekBars(weeks: { weekStart: string; seconds: number }[]): Bar[] {
+  return weeks.map((w, i) => {
+    const hours = Math.round((w.seconds / 3600) * 10) / 10
+    return {
+      key: w.weekStart,
+      // Every fourth week keeps the axis readable at twelve bars.
+      label: i % 4 === 0 ? fmtWeek(w.weekStart) : undefined,
+      value: hours,
+      title: `week of ${fmtWeek(w.weekStart)} · ${hours ? `${hours} h` : 'nothing played'}`
+    }
+  })
 }
 
 export default function GameLaunchSection({ m }: { m: MediaDetail }) {
@@ -125,6 +147,16 @@ export default function GameLaunchSection({ m }: { m: MediaDetail }) {
           <StatTile label="HLTB Main" value={fmtMinutesAsHours(hltbMain)} sub="estimate" />
         )}
       </div>
+
+      {/* The shape of the last 12 weeks. Hours (one decimal) rather than
+          seconds: the bar label is read at a glance, and a 40-minute session
+          reading "0.7" is more honest than "40" beside a 6-hour week. */}
+      {ov.weeks.some((w) => w.seconds > 0) && (
+        <div className="mt-5">
+          <p className="mb-1 text-xs uppercase tracking-wide text-gray-500">Last 12 weeks</p>
+          <BarChart bars={weekBars(ov.weeks)} height={80} />
+        </div>
+      )}
 
       {/* Recent sessions */}
       {ov.sessions.length > 0 && (

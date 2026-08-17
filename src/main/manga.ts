@@ -81,14 +81,20 @@ export async function scanSeriesDir(absDir: string, seriesTitle: string): Promis
     } catch {
       return
     }
-    const pageCount = entries.filter((e) => e.isFile() && isImageFile(e.name)).length
-    if (pageCount > 0) {
+    // Sorted the same way listChapterPages sorts, so the "cover" really is the
+    // page the reader would open first.
+    const images = entries
+      .filter((e) => e.isFile() && isImageFile(e.name))
+      .map((e) => e.name)
+      .sort((a, b) => collator.compare(a, b))
+    if (images.length > 0) {
       const name = rel === '' ? seriesTitle : basename(dir)
       found.push({
         dirPath: rel,
         title: name,
         number: rel === '' ? null : parseChapterNumber(name),
-        pageCount
+        pageCount: images.length,
+        coverPage: images[0]
       })
     }
     for (const e of entries) {
@@ -100,7 +106,8 @@ export async function scanSeriesDir(absDir: string, seriesTitle: string): Promis
             dirPath: rel === '' ? e.name : `${rel}/${e.name}`,
             title: stem,
             number: parseChapterNumber(stem),
-            pageCount: archivePages.length
+            pageCount: archivePages.length,
+            coverPage: archivePages[0] ?? null
           })
         }
         continue
@@ -113,7 +120,8 @@ export async function scanSeriesDir(absDir: string, seriesTitle: string): Promis
             dirPath: rel === '' ? e.name : `${rel}/${e.name}`,
             title: stem,
             number: parseChapterNumber(stem),
-            pageCount: spineCount
+            pageCount: spineCount,
+            coverPage: null // spine documents are XHTML, not a thumbnail
           })
         }
         continue
@@ -147,6 +155,7 @@ function rowToChapter(r: Record<string, unknown>): MangaChapter {
     title: r.title as string,
     number: (r.number as number) ?? null,
     pageCount: r.page_count as number,
+    coverPath: (r.cover_path as string | null) ?? null,
     sortOrder: r.sort_order as number,
     lastReadPage: (r.last_read_page as number) ?? null,
     readAt: (r.read_at as string) ?? null
@@ -192,24 +201,41 @@ export function chapters(mediaId: number): MangaLibrary {
 // title/number/page_count/sort_order on surviving rows (never touching reading
 // state), inserts new ones, deletes rows whose folder vanished. Because rows
 // are matched by dir_path, a rescan preserves last_read_page/read_at for free.
-function syncChapters(mediaId: number, localDir: string, scanned: ScannedChapter[]): void {
+function syncChapters(
+  mediaId: number,
+  localDir: string,
+  scanned: ScannedChapter[],
+  prefix: 'manga' | 'books'
+): void {
   const db = getSqlite()
   const tx = db.transaction(() => {
     const keep: string[] = []
     const upsert = db.prepare(
-      `INSERT INTO manga_chapter (media_id, dir_path, title, number, page_count, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?)
+      `INSERT INTO manga_chapter
+         (media_id, dir_path, title, number, page_count, cover_path, sort_order)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(media_id, dir_path) DO UPDATE SET
          title = excluded.title,
          number = excluded.number,
          page_count = excluded.page_count,
+         -- COALESCE so a rescan that cannot see the pages (unreadable archive)
+         -- keeps the thumbnail it already had.
+         cover_path = COALESCE(excluded.cover_path, cover_path),
          sort_order = excluded.sort_order,
          updated_at = datetime('now')`
     )
     scanned.forEach((c, i) => {
       const dirPath = c.dirPath === '' ? localDir : `${localDir}/${c.dirPath}`
       keep.push(dirPath)
-      upsert.run(mediaId, dirPath, c.title, c.number, c.pageCount, i)
+      upsert.run(
+        mediaId,
+        dirPath,
+        c.title,
+        c.number,
+        c.pageCount,
+        c.coverPage ? `${prefix}/${dirPath}/${c.coverPage}` : null,
+        i
+      )
     })
     if (keep.length === 0) {
       db.prepare('DELETE FROM manga_chapter WHERE media_id = ?').run(mediaId)
@@ -262,7 +288,7 @@ export async function attachFolder(mediaId: number): Promise<MangaAttachResult> 
   const scanned = await scanSeriesDir(picked, media.title)
   if (scanned.length === 0)
     return { ok: false, error: 'No page images or EPUB books found in that folder' }
-  syncChapters(mediaId, localDir, scanned)
+  syncChapters(mediaId, localDir, scanned, info.prefix)
   return { ok: true, chapterCount: scanned.length }
 }
 
@@ -295,7 +321,7 @@ export async function rescan(mediaId: number): Promise<MangaAttachResult> {
         return { ok: false, error: 'No page images or EPUB books found in the folder' }
       }
       task.progress({ detail: `${scanned.length} chapters`, done: scanned.length, total: scanned.length })
-      syncChapters(mediaId, localDir, scanned)
+      syncChapters(mediaId, localDir, scanned, info.prefix)
       return { ok: true, chapterCount: scanned.length }
     }
   )

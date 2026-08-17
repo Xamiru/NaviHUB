@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { usePersistedState } from '../lib/navState'
 import { readerPath, isBookChapter } from '../lib/readerPath'
 import { toast, toastError } from '../lib/toast'
 import { useOcrRun } from '../lib/useOcrRun'
 import Section from './Section'
+import CoverImage from './CoverImage'
 import type { MangaChapter, MediaDetail } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
 
@@ -123,6 +125,10 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
   const continueCh =
     chapters.find((c) => c.lastReadPage != null && !c.readAt) ?? chapters.find((c) => !c.readAt)
   const readCount = chapters.filter((c) => c.readAt).length
+  // Grid is the browsing view (Komga-shaped: thumbnail, unread ribbon, progress
+  // bar); the list stays for the dense facts and the per-chapter chips. Kept in
+  // history-scoped state so Back out of the reader restores the view you chose.
+  const [view, setView] = usePersistedState<'grid' | 'list'>('chapterView', 'grid')
 
   const openReader = (ch: MangaChapter) => navigate(readerPath(basePath, m.id, ch))
 
@@ -206,20 +212,137 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
               {data.localDir}
             </span>
           </div>
-          <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
-            {chapters.map((ch) => (
-              <ChapterRow
-                key={ch.id}
-                ch={ch}
-                hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
-                onOpen={() => openReader(ch)}
-                onChange={refresh}
-              />
-            ))}
+          <div className="mb-2 flex items-center gap-1.5">
+            <button
+              className={view === 'grid' ? 'pill pill-active' : 'pill'}
+              onClick={() => setView('grid')}
+            >
+              Grid
+            </button>
+            <button
+              className={view === 'list' ? 'pill pill-active' : 'pill'}
+              onClick={() => setView('list')}
+            >
+              List
+            </button>
           </div>
+          {view === 'grid' ? (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-4">
+              {chapters.map((ch) => (
+                <ChapterTile
+                  key={ch.id}
+                  ch={ch}
+                  hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
+                  onOpen={() => openReader(ch)}
+                  onChange={refresh}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
+              {chapters.map((ch) => (
+                <ChapterRow
+                  key={ch.id}
+                  ch={ch}
+                  hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
+                  onOpen={() => openReader(ch)}
+                  onChange={refresh}
+                />
+              ))}
+            </div>
+          )}
         </>
       )}
     </Section>
+  )
+}
+
+// Grid form of a chapter/volume: the thumbnail the scanner recorded, an unread
+// ribbon, and a progress bar for one in flight. Clicking the tile reads; the
+// tick toggles read, mirroring ChapterRow so the two views do the same things.
+function ChapterTile({
+  ch,
+  hasOcr,
+  onOpen,
+  onChange
+}: {
+  ch: MangaChapter
+  hasOcr: boolean
+  onOpen: () => void
+  onChange: () => void
+}) {
+  const inProgress = ch.lastReadPage != null && !ch.readAt
+  const pct =
+    inProgress && ch.pageCount > 0
+      ? Math.min(100, Math.round((((ch.lastReadPage ?? 0) + 1) / ch.pageCount) * 100))
+      : null
+
+  async function toggleRead(e: React.MouseEvent): Promise<void> {
+    e.stopPropagation()
+    try {
+      await api.manga.markChapterRead(ch.id, !ch.readAt)
+      onChange()
+    } catch (err) {
+      toastError(err)
+    }
+  }
+
+  return (
+    <div className="group">
+      <button className="relative block w-full text-left" onClick={onOpen} title="Read">
+        <CoverImage
+          path={ch.coverPath}
+          alt={ch.title}
+          rounded="rounded-lg"
+          className={`aspect-[2/3] w-full ${ch.readAt ? 'opacity-60' : ''}`}
+        />
+        {!ch.readAt && !inProgress && (
+          <span className="absolute right-1.5 top-1.5 rounded bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-base-900">
+            {ch.pageCount}
+          </span>
+        )}
+        {hasOcr && (
+          <span
+            className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-accent"
+            title="Mokuro OCR available"
+          >
+            OCR
+          </span>
+        )}
+        {pct != null && (
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">
+            <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+          </div>
+        )}
+      </button>
+      <div className="mt-2 flex items-start gap-2">
+        <button
+          onClick={toggleRead}
+          title={ch.readAt ? 'Mark unread' : 'Mark read'}
+          aria-label={ch.readAt ? 'Mark unread' : 'Mark read'}
+          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] ${
+            ch.readAt ? 'bg-accent/20 text-accent' : 'bg-base-700 text-gray-600 hover:text-gray-300'
+          }`}
+        >
+          ✓
+        </button>
+        <div className="min-w-0">
+          <p
+            className={`truncate text-sm ${ch.readAt ? 'text-gray-500' : 'text-gray-200'} group-hover:text-accent`}
+            title={ch.title}
+          >
+            {ch.title}
+          </p>
+          <p className="text-xs text-gray-500">
+            {inProgress
+              ? `${isBookChapter(ch) ? '§' : 'p.'} ${(ch.lastReadPage ?? 0) + 1} of ${ch.pageCount}`
+              : ch.readAt
+                ? 'read'
+                : `${ch.pageCount} ${isBookChapter(ch) ? 'sections' : 'pages'}`}
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 

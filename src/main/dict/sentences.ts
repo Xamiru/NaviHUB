@@ -184,6 +184,30 @@ const toExample = (r: ExampleRow): SentenceExample => ({
 const AUDIO_SUBSELECT = `(SELECT sa.path FROM sentence_audio sa
     JOIN audio_bank ab ON ab.id = sa.bank_id WHERE sa.jp = s.jp LIMIT 1) AS audio_path`
 
+// A random sample of bank sentences in a length band — the sentence games'
+// raw material (they tokenize and keep what yields a question). The bank join
+// hides staged rows from a crashed import.
+export function sampleSentences(req: {
+  minChars: number
+  maxChars: number
+  limit: number
+}): SentenceExample[] {
+  const db = getDictDb()
+  try {
+    const rows = db
+      .prepare(
+        `SELECT s.jp, s.en, s.attribution, ${AUDIO_SUBSELECT}
+         FROM sentence s JOIN sentence_bank b ON b.id = s.bank_id
+         WHERE length(s.jp) BETWEEN ? AND ?
+         ORDER BY RANDOM() LIMIT ?`
+      )
+      .all(req.minChars, req.maxChars, Math.max(0, req.limit)) as ExampleRow[]
+    return rows.map(toExample)
+  } catch {
+    return []
+  }
+}
+
 // Example sentences containing `term`. Exact-surface matches come first, then
 // shortest — short sentences make the best cards and cloze prompts. Never
 // throws (a malformed FTS query must not break a lookup).

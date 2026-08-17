@@ -5,11 +5,15 @@ import {
   addFromFiles,
   addFromSearch,
   addFromUrl,
+  forgetSlideshowForMedia,
   listImages,
   parseWallhaven,
   removeImage,
   searchTmdbBackdrops,
   searchWallhaven,
+  setBackground,
+  slideshowFileName,
+  toggleSlideshow,
   tmdbBackdropResults,
   wallhavenSearchUrl
 } from '../src/main/pictures'
@@ -28,6 +32,8 @@ const files = vi.hoisted(() => ({
   downloadImageTo: vi.fn(),
   copyImageInto: vi.fn(),
   pickImageFiles: vi.fn(),
+  copyIntoSlideshow: vi.fn(),
+  removeSlideshowCopy: vi.fn(),
   absoluteMediaPath: vi.fn((rel: string) => `/nonexistent-test-root/${rel}`),
   sanitizeFileBase: (s: string, fallback = 'theme'): string => {
     const clean = s
@@ -64,6 +70,9 @@ beforeEach(() => {
     async (_url: string, subdir: string, base?: string | null) =>
       `pictures/${subdir}/${base ?? 'img'}.jpg`
   )
+  // The real helper de-clashes against the folder; by default it writes the name
+  // it was asked for.
+  files.copyIntoSlideshow.mockImplementation((_src: string, name: string) => name)
 })
 
 const wallhavenFixture = {
@@ -308,5 +317,127 @@ describe('media delete', () => {
     await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
     db.prepare('DELETE FROM media_item WHERE id=1').run()
     expect(db.prepare('SELECT COUNT(*) AS n FROM media_image').get()).toEqual({ n: 0 })
+  })
+})
+
+describe('slideshowFileName', () => {
+  it('prefixes the title so a flat folder of images from every title stays readable', () => {
+    expect(slideshowFileName('Berserk', 'pictures/Berserk (anime)/wallpapers/wallhaven-x8g2o3.jpg'))
+      .toBe('Berserk - wallhaven-x8g2o3.jpg')
+  })
+
+  it('sanitizes both halves and keeps the extension', () => {
+    expect(slideshowFileName('Re:Zero', 'pictures/x/y/ep*1.png')).toBe('Re Zero - ep 1.png')
+  })
+
+  it('falls back for an empty title or basename, and assumes .jpg when there is no extension', () => {
+    expect(slideshowFileName('', 'pictures/x/y/pic.webp')).toBe('untitled - pic.webp')
+    expect(slideshowFileName('Berserk', 'pictures/x/y/noext')).toBe('Berserk - noext.jpg')
+  })
+})
+
+describe('toggleSlideshow', () => {
+  it('copies the file in, records the name it was actually written under, and toggles back off', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    // the folder already holds a "Berserk - one.jpg", so the helper de-clashes
+    files.copyIntoSlideshow.mockReturnValueOnce('Berserk - one (2).jpg')
+
+    const on = toggleSlideshow(img.id)
+    expect(on.inSlideshow).toBe(true)
+    expect(files.copyIntoSlideshow).toHaveBeenCalledWith(
+      `/nonexistent-test-root/${img.filePath}`,
+      'Berserk - one.jpg'
+    )
+    expect(
+      db.prepare('SELECT file_name FROM slideshow_item WHERE image_id=?').get(img.id)
+    ).toEqual({ file_name: 'Berserk - one (2).jpg' })
+    expect(listImages(1, 'wallpaper')[0].inSlideshow).toBe(true)
+
+    const off = toggleSlideshow(img.id)
+    expect(off.inSlideshow).toBe(false)
+    // the stored name, not the one we asked for — the copy on disk is (2)
+    expect(files.removeSlideshowCopy).toHaveBeenCalledWith('Berserk - one (2).jpg')
+    expect(db.prepare('SELECT COUNT(*) AS n FROM slideshow_item').get()).toEqual({ n: 0 })
+  })
+
+  it('leaves no row when the copy fails', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    files.copyIntoSlideshow.mockImplementationOnce(() => {
+      throw new Error('The image file is missing on disk')
+    })
+    expect(() => toggleSlideshow(img.id)).toThrow(/missing on disk/)
+    expect(db.prepare('SELECT COUNT(*) AS n FROM slideshow_item').get()).toEqual({ n: 0 })
+    expect(listImages(1, 'wallpaper')[0].inSlideshow).toBe(false)
+  })
+
+  it('throws on an unknown image', () => {
+    expect(() => toggleSlideshow(4242)).toThrow(/not found/i)
+  })
+
+  it('removeImage drops the membership row AND the copy on disk', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    toggleSlideshow(img.id)
+    removeImage(img.id)
+    expect(files.removeSlideshowCopy).toHaveBeenCalledWith('Berserk - one.jpg')
+    expect(db.prepare('SELECT COUNT(*) AS n FROM slideshow_item').get()).toEqual({ n: 0 })
+  })
+
+  it('forgetSlideshowForMedia clears every copy for one title only', async () => {
+    const a = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    const b = await addFromUrl(1, 'fanart', 'https://x.com/two.jpg')
+    const other = await addFromUrl(2, 'wallpaper', 'https://x.com/three.jpg')
+    for (const i of [a, b, other]) toggleSlideshow(i.id)
+
+    forgetSlideshowForMedia(1)
+    expect(files.removeSlideshowCopy).toHaveBeenCalledWith('Berserk - one.jpg')
+    expect(files.removeSlideshowCopy).toHaveBeenCalledWith('Berserk - two.jpg')
+    expect(files.removeSlideshowCopy).not.toHaveBeenCalledWith('Blade Runner - three.jpg')
+    expect(db.prepare('SELECT COUNT(*) AS n FROM slideshow_item').get()).toEqual({ n: 1 })
+  })
+
+  it('membership rows cascade when the media item is deleted', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    toggleSlideshow(img.id)
+    db.prepare('DELETE FROM media_item WHERE id=1').run()
+    expect(db.prepare('SELECT COUNT(*) AS n FROM slideshow_item').get()).toEqual({ n: 0 })
+  })
+})
+
+describe('setBackground', () => {
+  it('flags one image and moves the flag across kinds, since a page has one backdrop', async () => {
+    const wall = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    const fan = await addFromUrl(1, 'fanart', 'https://x.com/two.jpg')
+
+    setBackground(1, wall.id)
+    expect(listImages(1, 'wallpaper')[0].isBackground).toBe(true)
+
+    setBackground(1, fan.id)
+    expect(listImages(1, 'wallpaper')[0].isBackground).toBe(false)
+    expect(listImages(1, 'fanart')[0].isBackground).toBe(true)
+  })
+
+  it('clears with a null id', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    setBackground(1, img.id)
+    setBackground(1, null)
+    expect(listImages(1, 'wallpaper')[0].isBackground).toBe(false)
+  })
+
+  it('refuses an image belonging to another title, leaving the old flag alone', async () => {
+    const mine = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    const theirs = await addFromUrl(2, 'wallpaper', 'https://x.com/two.jpg')
+    setBackground(1, mine.id)
+    expect(() => setBackground(1, theirs.id)).toThrow(/not found/i)
+    expect(listImages(1, 'wallpaper')[0].isBackground).toBe(true)
+    expect(listImages(2, 'wallpaper')[0].isBackground).toBe(false)
+  })
+
+  it('does not leak across titles', async () => {
+    const a = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    const b = await addFromUrl(2, 'wallpaper', 'https://x.com/two.jpg')
+    setBackground(1, a.id)
+    setBackground(2, b.id)
+    expect(listImages(1, 'wallpaper')[0].isBackground).toBe(true)
+    expect(listImages(2, 'wallpaper')[0].isBackground).toBe(true)
   })
 })

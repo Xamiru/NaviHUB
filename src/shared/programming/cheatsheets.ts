@@ -991,6 +991,98 @@ export const CHEAT_SHEETS: CheatSheet[] = [
         answers: ['go install']
       }
     ]
+  },
+  {
+    // The commands the linux-internals course explains — deliberately the ones
+    // the processes/system/network sheets don't already carry.
+    key: 'linux',
+    title: 'Linux internals & networking',
+    entries: [
+      {
+        cmd: 'strace -f -p <pid>',
+        desc: 'Trace the system calls of a running process and its children',
+        example: 'strace -f -p 4242 -e trace=network',
+        answers: ['strace -f -p', 'strace -p']
+      },
+      {
+        cmd: 'lsof -p <pid>',
+        desc: 'List every file, socket and library one process has open',
+        answers: ['lsof -p']
+      },
+      {
+        cmd: 'dmesg -T',
+        desc: 'Kernel ring buffer with human-readable timestamps (OOM kills, disk errors)',
+        answers: ['dmesg -T', 'sudo dmesg -T']
+      },
+      {
+        cmd: 'ip r',
+        desc: 'Show the routing table (which interface and gateway a packet takes)',
+        answers: ['ip r', 'ip route', 'ip route show']
+      },
+      {
+        cmd: 'ss -s',
+        desc: 'Socket statistics summary: how many TCP connections in each state',
+        answers: ['ss -s']
+      },
+      {
+        cmd: 'tcpdump -i any -n port 80',
+        desc: 'Capture packets on every interface for one port, no name resolution',
+        example: 'sudo tcpdump -i any -n port 80 -w web.pcap',
+        answers: ['tcpdump -i any -n port 80', 'sudo tcpdump -i any -n port 80']
+      },
+      {
+        cmd: 'nc -zv <host> <port>',
+        desc: 'Check whether a TCP port is reachable without sending data',
+        example: 'nc -zv db.internal 5432',
+        answers: ['nc -zv', 'nc -vz']
+      },
+      {
+        cmd: 'traceroute <host>',
+        desc: 'Show every hop a packet takes to a host',
+        answers: ['traceroute', 'tracepath']
+      },
+      {
+        cmd: 'nft list ruleset',
+        desc: 'Print the whole nftables firewall ruleset',
+        answers: ['nft list ruleset', 'sudo nft list ruleset']
+      },
+      {
+        cmd: 'getent hosts <name>',
+        desc: 'Resolve a name the way the system does (hosts file, resolver, NSS order)',
+        answers: ['getent hosts']
+      },
+      {
+        cmd: 'resolvectl status',
+        desc: 'Which DNS servers systemd-resolved is using, per interface',
+        answers: ['resolvectl status', 'resolvectl']
+      },
+      {
+        cmd: 'lsblk',
+        desc: 'Block devices as a tree: disks, partitions, mountpoints',
+        answers: ['lsblk', 'lsblk -f']
+      },
+      {
+        cmd: 'findmnt',
+        desc: 'Every mounted filesystem as a tree, or where one path is mounted',
+        example: 'findmnt /home',
+        answers: ['findmnt']
+      },
+      {
+        cmd: 'renice -n 10 -p <pid>',
+        desc: 'Lower a running process\'s CPU priority (higher nice = politer)',
+        answers: ['renice -n 10 -p', 'renice -n 10']
+      },
+      {
+        cmd: 'ulimit -n',
+        desc: 'Show the open-file-descriptor limit of this shell',
+        answers: ['ulimit -n']
+      },
+      {
+        cmd: 'cat /proc/<pid>/status',
+        desc: 'A process\'s state, memory (VmRSS), threads and uid straight from the kernel',
+        answers: ['cat /proc/<pid>/status']
+      }
+    ]
   }
 ]
 
@@ -1007,6 +1099,7 @@ export const normalizeCmd = (s: string): string =>
     .trim()
 
 export interface CliPracticeItem {
+  key: string // FROZEN '<sheetKey>/<answers[0]>' — prog_cli_miss.cmd_key
   sheetKey: string
   sheetTitle: string
   cmd: string // canonical display form
@@ -1025,13 +1118,15 @@ export function practicePool(sheetKeys: string[] | null): CliPracticeItem[] {
   for (const sheet of selected) {
     for (const e of sheet.entries as CheatEntry[]) {
       if (!e.answers || e.answers.length === 0) continue
+      const answers = e.answers.map(normalizeCmd)
       out.push({
+        key: `${sheet.key}/${answers[0]}`,
         sheetKey: sheet.key,
         sheetTitle: sheet.title,
         cmd: e.cmd,
         desc: e.desc,
         example: e.example,
-        answers: e.answers.map(normalizeCmd)
+        answers
       })
     }
   }

@@ -17,22 +17,16 @@ import type {
   LoanwordQuizItem,
   LookalikeQuizItem,
   PitchPoolItem,
-  TransitivityQuestion
+  TransitivityQuestion,
+  ReadingRaceRequest,
+  ReadingRaceWord
 } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // Question pools for the Japanese drills that need BOTH databases (the
 // coreDeck.ts pattern: navihub.db for the user's cards, dictionaries.db for
 // pack data, joined in JS). Pools are sampled fresh per round in a plain await
 // from the Start handler — never cached in the query client.
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 export interface PitchPoolRequest {
   source: 'cards' | 'frequency' | 'both'
@@ -167,7 +161,7 @@ function kanjiFromCards(): string[] {
 
 // KANJIDIC kanji at an N level. KANJIDIC's jlpt stat uses the OLD 1-4 levels;
 // some dicts carry jlpt_new 1-5 — accept either via the maps above.
-function kanjiByLevel(level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1'): string[] {
+export function kanjiByLevel(level: 'N5' | 'N4' | 'N3' | 'N2' | 'N1'): string[] {
   const out: string[] = []
   try {
     const dictDb = getDictDb()
@@ -656,4 +650,78 @@ export function shiritoriNext(req: ShiritoriNextRequest): ShiritoriWord | null {
   } catch {
     return null
   }
+}
+
+// ---- Arcade: reading race ----
+// Kanji-bearing words with their accepted readings, for the 60-second typing
+// race: the user's learned cards first (what they are actually studying),
+// topped up from the frequency list × JMdict when asked or when the deck is
+// thin. Every reading JMdict attests for the expression is accepted — the
+// prompt is a bare word, so 魚 must take さかな and うお alike.
+const RACE_FREQ_MAX_RANK = 8000
+
+export function readingRacePool(req: ReadingRaceRequest): ReadingRaceWord[] {
+  const out: ReadingRaceWord[] = []
+  const seen = new Set<string>()
+
+  const push = (term: string, readings: string[], gloss: string | null, fromCards: boolean): void => {
+    if (seen.has(term) || readings.length === 0) return
+    if (kanjiChars(term).length === 0) return
+    seen.add(term)
+    out.push({ term, readings, gloss, fromCards })
+  }
+
+  if (req.source !== 'frequency') {
+    const cards = getSqlite()
+      .prepare(
+        `SELECT c.front, c.reading, c.back FROM jp_card c
+         JOIN jp_lesson l ON l.id = c.lesson_id
+         WHERE l.learned = 1 AND c.reading IS NOT NULL AND c.reading != ''`
+      )
+      .all() as { front: string; reading: string; back: string | null }[]
+    for (const card of shuffle(cards)) {
+      if (out.length >= req.limit) break
+      push(card.front, [toHiragana(card.reading)], card.back ?? null, true)
+    }
+  }
+
+  if (req.source !== 'cards' && out.length < req.limit) {
+    const db = getDictDb()
+    try {
+      const rows = db
+        .prepare(
+          `SELECT t.expression, t.reading, t.glossary FROM freq f
+           JOIN term t ON t.expression = f.expression
+           JOIN dict d ON d.id = t.dict_id
+           WHERE f.rank <= ? AND d.priority >= 0 AND t.reading != ''
+           ORDER BY RANDOM() LIMIT ?`
+        )
+        .all(RACE_FREQ_MAX_RANK, Math.max(50, req.limit * 6)) as {
+        expression: string
+        reading: string
+        glossary: string
+      }[]
+      const byExpr = new Map<string, { readings: Set<string>; gloss: string | null }>()
+      for (const r of rows) {
+        const cur = byExpr.get(r.expression) ?? { readings: new Set<string>(), gloss: null }
+        cur.readings.add(toHiragana(r.reading))
+        if (!cur.gloss) {
+          try {
+            cur.gloss = flattenGlossary(JSON.parse(r.glossary) as GlossaryItem[], 60) || null
+          } catch {
+            cur.gloss = null
+          }
+        }
+        byExpr.set(r.expression, cur)
+      }
+      for (const [expression, v] of byExpr) {
+        if (out.length >= req.limit) break
+        push(expression, [...v.readings], v.gloss, false)
+      }
+    } catch {
+      // no packs — cards only
+    }
+  }
+
+  return out.slice(0, req.limit)
 }

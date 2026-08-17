@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
@@ -9,7 +9,14 @@ import type { CheatEntry, CheatSheet } from '@shared/programming/types'
 // a wrapping row, which the underline Tabs rail can't do), or a cross-sheet
 // filter when searching. Pure static content from the code catalog — no queries.
 export default function CheatsheetsPage() {
-  const [sheetKey, setSheetKey] = usePersistedState('cheatSheetTab', CHEAT_SHEETS[0].key)
+  // `?sheet=<key>` seeds the tab (the quiz summary's "Review" link) — the
+  // MediaDetailPage `?tab=` idiom: read once as the initial value.
+  const [params] = useSearchParams()
+  const seeded = params.get('sheet')
+  const [sheetKey, setSheetKey] = usePersistedState(
+    'cheatSheetTab',
+    seeded && CHEAT_SHEETS.some((s) => s.key === seeded) ? seeded : CHEAT_SHEETS[0].key
+  )
   const [search, setSearch] = usePersistedState('cheatSheetSearch', '')
 
   const q = search.trim().toLowerCase()

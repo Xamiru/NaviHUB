@@ -1,5 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import DoorCard from '../components/DoorCard'
+import HomeCustomiseDialog from '../components/HomeCustomiseDialog'
+import {
+  HOME_LAYOUT_SETTING,
+  parseHomeLayout,
+  widgetDef,
+  type HomeWidgetKey
+} from '../lib/homeWidgets'
 import MediaCard from '../components/MediaCard'
 import { Link } from 'react-router-dom'
 import { useQueries, useQuery } from '@tanstack/react-query'
@@ -18,6 +25,7 @@ import lainIcon from '../assets/lain.png'
 import { readerPath } from '../lib/readerPath'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { MediaItem, ResumePoint, SettingsMap } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // The status that marks an item as in-progress is the FIRST status of its
 // media type's *configured* list ("Watching" for anime/TV, "Playing" for VNs
@@ -80,38 +88,37 @@ export default function HomePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [...lists.map((q) => q.data), settings])
 
-  return (
-    <div className="p-6 max-w-[1600px] mx-auto">
-      <Hero items={all} stats={stats} />
+  // The stored layout, or every widget in catalogue order when there is none.
+  // The Hero is deliberately not in it: the wall of your own covers is Home's
+  // identity, not a widget, and it stays pinned above whatever you configure.
+  const layout = parseHomeLayout(settings?.[HOME_LAYOUT_SETTING])
+  const [customising, setCustomising] = useState(false)
 
-      {/* Today: the learn/play surfaces with a daily pulse, in one band.
-          (This band IS Home's DoorCard rail — the glow stays Home-exclusive.) */}
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+  // Each widget's body. Rendering is by lookup rather than a chain of JSX, so
+  // the stored order is the ONLY thing deciding what appears where.
+  const widgets: Record<HomeWidgetKey, ReactNode> = {
+    today: (
+      // The learn/play surfaces with a daily pulse, in one band. This band IS
+      // Home's DoorCard rail — the glow stays Home-exclusive.
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <ChecklistCard />
         <JapaneseCard />
         <EnglishCard />
         <PlayCard />
       </div>
-
-      <ResumeStrip />
-
-      {continuing.length > 0 && (
+    ),
+    resume: <ResumeStrip />,
+    continue:
+      continuing.length > 0 ? (
         <Strip title="Continue" items={continuing.slice(0, 12)} showProgress />
-      )}
-
-      <div className="mt-8 grid gap-4 lg:grid-cols-[2fr_1fr] items-stretch">
-        <Spotlight pool={backlog.length ? backlog : all} fromBacklog={backlog.length > 0} />
-        <div className="flex flex-col gap-4">
-          <TimeStatsCard />
-          <MusicCard />
-        </div>
-      </div>
-
-      <RecentUnlocks />
-
-      <TopPeople />
-
-      <Section className="mt-8" title="Recently added">
+      ) : null,
+    spotlight: <Spotlight pool={backlog.length ? backlog : all} fromBacklog={backlog.length > 0} />,
+    timeStats: <TimeStatsCard />,
+    music: <MusicCard />,
+    unlocks: <RecentUnlocks />,
+    people: <TopPeople />,
+    recent: (
+      <Section title="Recently added">
         {isLoading ? (
           <p className="text-sm text-gray-500">Loading…</p>
         ) : recent.length === 0 ? (
@@ -128,9 +135,51 @@ export default function HomePage() {
           <Strip items={recent} />
         )}
       </Section>
+    ),
+    favorites:
+      favorites.length > 0 ? <Strip title="Favorites" items={favorites.slice(0, 12)} /> : null
+  }
 
-      {favorites.length > 0 && <Strip title="Favorites" items={favorites.slice(0, 12)} />}
+  return (
+    <div className="p-6 max-w-[1600px] mx-auto">
+      <Hero items={all} stats={stats} />
 
+      <div className="mt-4 flex justify-end">
+        <button className="btn-ghost text-xs" onClick={() => setCustomising(true)}>
+          Customise
+        </button>
+      </div>
+
+      {/* Two columns: 'full' widgets span both, 'half' widgets pair with the
+          next half beside them. Below lg everything is one column anyway. */}
+      <div className="mt-2 grid items-start gap-6 lg:grid-cols-2">
+        {layout
+          .filter((e) => e.visible)
+          .map((e) => {
+            const def = widgetDef(e.key)
+            const body = widgets[e.key]
+            if (!def || !body) return null
+            return (
+              // empty:hidden collapses the cell when the widget renders
+              // nothing. `body` is a React element, so it is truthy even for
+              // ResumeStrip / RecentUnlocks / TopPeople / MusicCard, each of
+              // which returns null with no data — an emptier library was
+              // showing their wrappers as blank gap-6 bands.
+              <div
+                key={e.key}
+                className={`empty:hidden ${
+                  def.span === 'full' ? 'lg:col-span-2' : 'lg:col-span-1'
+                }`}
+              >
+                {body}
+              </div>
+            )
+          })}
+      </div>
+
+      {customising && (
+        <HomeCustomiseDialog layout={layout} onClose={() => setCustomising(false)} />
+      )}
     </div>
   )
 }
@@ -138,15 +187,6 @@ export default function HomePage() {
 const byCreatedDesc = (a: MediaItem, b: MediaItem) => b.createdAt.localeCompare(a.createdAt)
 const byUpdatedDesc = (a: MediaItem, b: MediaItem) => b.updatedAt.localeCompare(a.updatedAt)
 const cardKey = (m: MediaItem) => `${m.mediaType}-${m.id}`
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 function greetingFor(hour: number): string {
   if (hour < 5) return 'Up late?'
@@ -529,7 +569,7 @@ function RecentUnlocks() {
   })
   if (!data.length) return null
   return (
-    <Section className="mt-8" title="Recent unlocks">
+    <Section title="Recent unlocks">
       <div className="flex gap-3 overflow-x-auto pb-1">
         {data.map((e) => (
           <Link
@@ -575,7 +615,7 @@ function TopPeople() {
   if (topVas.length < 3) return null
 
   return (
-    <Section className="mt-8" title="Your people">
+    <Section title="Your people">
       <div className="card p-5">
         <p className="text-xs text-gray-500 mb-3">
           The voice actors your library keeps coming back to
@@ -633,7 +673,7 @@ function ResumeStrip() {
   const shown = points.slice(0, 4)
   if (shown.length === 0) return null
   return (
-    <Section className="mt-8" title="Pick up where you left off">
+    <Section title="Pick up where you left off">
       <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
         {shown.map((p) => (
           <Link
@@ -696,6 +736,6 @@ function Strip({
       ))}
     </div>
   )
-  return title ? <Section className="mt-8" title={title}>{row}</Section> : row
+  return title ? <Section title={title}>{row}</Section> : row
 }
 

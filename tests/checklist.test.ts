@@ -221,6 +221,23 @@ describe('detection', () => {
     expect(taskByKey(SAT, 'game-session')).toMatchObject({ detected: 1, progress: 2 })
   })
 
+  it('counts programming lessons completed in the week', () => {
+    checklistRepo.addTask('prog-lesson', 'weekly')
+    const add = (key: string, day: string): void => {
+      db.prepare('INSERT INTO prog_progress (lesson_key, completed_at) VALUES (?, ?)').run(
+        key,
+        `${day} 12:00:00`
+      )
+    }
+    add('go-from-python/a', '2026-07-17') // previous week
+    add('go-from-python/b', '2026-07-20') // this week (Mon)
+    add('go-from-python/c', FRI) // this week (Fri)
+    expect(taskByKey(FRI, 'prog-lesson')).toMatchObject({ detected: 2, progress: 2, done: true })
+    // Learned outside the app (a book chapter) → hand credit stacks on top.
+    checklistRepo.credit('prog-lesson', 'weekly', FRI)
+    expect(taskByKey(FRI, 'prog-lesson').progress).toBe(3)
+  })
+
   it('counts lessons learned in the week', () => {
     checklistRepo.addTask('jp-lesson', 'weekly')
     const courseId = Number(
@@ -500,6 +517,30 @@ describe('rewatches', () => {
     const res = checklistRepo.logProgress(id, SAT, MOVIE_TASK)
     expect(res).toMatchObject({ startedRewatch: true, rewatchCount: 4 })
     expect(mediaRow(id)).toEqual({ status: 'Watched', progress: 0 })
+  })
+
+  // The TV season toggle back-fills a catalogue rather than reporting a new
+  // viewing: it credits the board but must leave a finished show finished.
+  it('noRewatch credits the board without wrapping a finished title', () => {
+    checklistRepo.addTask('anime-episode', 'daily')
+    const id = addMedia('anime', 'Bebop', { status: 'Completed', progress: 26, totalUnits: 26 })
+    const res = checklistRepo.logProgress(id, SAT, ANIME_TASK, { noRewatch: true })
+    expect(res.startedRewatch).toBe(false)
+    expect(mediaRow(id)).toEqual({ status: 'Completed', progress: 26 })
+    expect(rewatchCount(id)).toBe(0)
+    // The credit is real, and undoing it leaves the held row alone.
+    expect(res.logId).not.toBeNull()
+    checklistRepo.undoLog(res.logId!)
+    expect(mediaRow(id)).toEqual({ status: 'Completed', progress: 26 })
+    expect(rewatchCount(id)).toBe(0)
+  })
+
+  it('noRewatch still advances a title that is NOT finished', () => {
+    checklistRepo.addTask('anime-episode', 'daily')
+    const id = addMedia('anime', 'Bebop', { status: 'Watching', progress: 4, totalUnits: 26 })
+    const res = checklistRepo.logProgress(id, SAT, ANIME_TASK, { noRewatch: true })
+    expect(res.startedRewatch).toBe(false)
+    expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 5 })
   })
 })
 

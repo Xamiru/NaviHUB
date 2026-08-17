@@ -265,7 +265,9 @@ function Leeches() {
               </p>
               <p className="truncate text-xs text-gray-500">{l.back}</p>
             </div>
-            <span className="shrink-0 text-xs text-red-300">{l.lapses} lapses</span>
+            <span className="shrink-0 text-xs text-red-300">
+              {l.lapses} lapses{l.agains > 0 ? ` · ${l.agains} misses` : ''}
+            </span>
             <span className="shrink-0 text-xs text-gray-500">ease {l.ease.toFixed(2)}</span>
             <Link
               to={`/japanese/lessons/${l.lessonId}`}

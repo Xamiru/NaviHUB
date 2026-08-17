@@ -2,7 +2,9 @@ import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { fetchWithRetry, sleep } from './http'
+import { logWarn } from './logBus'
 import * as settingsRepo from './repos/settingsRepo'
+import * as tvRepo from './repos/tvRepo'
 import type {
   BulkListParams,
   BulkPreviewItem,
@@ -317,6 +319,7 @@ interface NormalizedTitle {
   native: string | null
   synopsis: string | null
   posterPath: string | null // raw TMDB poster path
+  backdropPath: string | null // raw TMDB backdrop path (wide hero art)
   totalUnits: number | null
   releaseDate: string | null
   companies: any[] // TMDB company/network nodes
@@ -324,6 +327,9 @@ interface NormalizedTitle {
   cast: any[] // TMDB cast edges
   crew: any[] // TMDB crew edges (empty for TV)
   extraMeta?: Record<string, number> | null // OMDb scores merged into metadata
+  // TV only: the episode catalogue, already fetched (network phase) so the
+  // write below stays inside the one transaction.
+  episodes?: tvRepo.EpisodeCatalogue
 }
 
 // The authoritative import shared by movies + TV: refreshes canonical fields but
@@ -336,8 +342,12 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
     .slice(0, MAX_CAST)
 
   const coverUrl = posterUrl(n.posterPath, 'w500')
+  // w1280 rather than original: the hero is a background behind a scrim, and the
+  // originals run to several MB each.
+  const bannerUrl = posterUrl(n.backdropPath, 'w1280')
   const images = await downloadImages([
     coverUrl,
+    bannerUrl,
     ...castEdges.map((e) => profileUrl(e.profile_path)),
     ...n.crew.filter((e) => mapCrewJob(e.job)).map((e) => profileUrl(e.profile_path))
   ])
@@ -347,6 +357,7 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
   updateActivity({ phase: 'writing' })
   return db.transaction((): ImportSummary => {
     const coverPath = img(coverUrl)
+    const bannerPath = img(bannerUrl)
 
     // ---- media (preserve personal tracking on re-import) ----
     const existing = db
@@ -359,15 +370,25 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
       mediaId = existing.id
       db.prepare(
         `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+         banner_path=COALESCE(?, banner_path),
          total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
-      ).run(n.title, n.native, n.synopsis, coverPath, n.totalUnits, n.releaseDate, mediaId)
+      ).run(
+        n.title,
+        n.native,
+        n.synopsis,
+        coverPath,
+        bannerPath,
+        n.totalUnits,
+        n.releaseDate,
+        mediaId
+      )
     } else {
       const info = db
         .prepare(
           `INSERT INTO media_item
-           (media_type, title, title_original, synopsis, cover_path, total_units, release_date,
-            external_source, external_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           (media_type, title, title_original, synopsis, cover_path, banner_path, total_units,
+            release_date, external_source, external_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           n.mediaType,
@@ -375,6 +396,7 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
           n.native,
           n.synopsis,
           coverPath,
+          bannerPath,
           n.totalUnits,
           n.releaseDate,
           SOURCE,
@@ -403,6 +425,13 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
         mediaId
       )
     }
+
+    // ---- episode catalogue (TV) ----
+    // Authoritative like every other child: refreshed, pruned, and watched_at
+    // left alone. Absent for movies and for a TV import whose season fetches all
+    // failed — in which case the existing catalogue is left untouched rather
+    // than pruned to nothing.
+    if (n.episodes?.seasons.length) tvRepo.replaceEpisodes(mediaId, n.episodes)
 
     // ---- production companies / networks (cap a few) ----
     let studios = 0
@@ -527,6 +556,7 @@ export async function importMovie(
     native: m.original_title && m.original_title !== title ? m.original_title : null,
     synopsis: m.overview || null,
     posterPath: m.poster_path ?? null,
+    backdropPath: m.backdrop_path ?? null,
     totalUnits: m.runtime ?? null,
     releaseDate: m.release_date || null,
     companies: m.production_companies ?? [],
@@ -535,6 +565,58 @@ export async function importMovie(
     crew: m.credits?.crew ?? [],
     extraMeta: opts.skipOmdb ? null : await fetchOmdb(m.imdb_id) // TMDB movies carry imdb_id directly
   })
+}
+
+// The episode catalogue for a show: one request per season, in season order, so
+// `absolute` can be numbered across the whole run. Specials (season 0) are
+// skipped — `absolute` has to agree with number_of_episodes, which excludes them.
+//
+// A season that fails to fetch is logged and skipped rather than failing the
+// whole import: the show's own data is already in hand, and a missing season is
+// recoverable by re-importing. TMDB has no documented rate limit any more, but
+// the same 200ms courtesy pause the bulk lists use applies between seasons.
+async function fetchEpisodes(tmdbId: number, seasons: any[]): Promise<tvRepo.EpisodeCatalogue> {
+  const numbers = (seasons ?? [])
+    .map((s) => Number(s?.season_number))
+    .filter((n) => Number.isInteger(n) && n > 0)
+    .sort((a, b) => a - b)
+
+  const out: tvRepo.ImportedEpisode[] = []
+  const fetched: number[] = []
+  let absolute = 0
+  let missed = false
+  for (const [i, season] of numbers.entries()) {
+    if (i > 0) await sleep(200)
+    let data: any
+    try {
+      data = await tmdbGet(`/tv/${tmdbId}/season/${season}`)
+    } catch (err) {
+      logWarn('http', `tmdb: season ${season} of show ${tmdbId} failed to fetch: ${String(err)}`)
+      missed = true
+      continue
+    }
+    fetched.push(season)
+    for (const e of data?.episodes ?? []) {
+      const number = Number(e?.episode_number)
+      if (!Number.isInteger(number)) continue
+      absolute++
+      out.push({
+        season,
+        number,
+        absolute,
+        title: e.name || null,
+        overview: e.overview || null,
+        airDate: e.air_date || null,
+        runtime: typeof e.runtime === 'number' && e.runtime > 0 ? e.runtime : null
+      })
+    }
+  }
+  // A season that did not come back leaves every LATER season's absolute number
+  // short by that season's length. Writing those numbers would silently corrupt
+  // a previously correct run, so a partial fetch publishes no numbering at all
+  // and replaceEpisodes COALESCEs the existing values through untouched.
+  if (missed) for (const e of out) e.absolute = null
+  return { episodes: out, seasons: fetched }
 }
 
 export async function importTv(
@@ -554,6 +636,7 @@ export async function importTv(
   const epDuration = runTimes.length
     ? Math.round(runTimes.reduce((a, b) => a + b, 0) / runTimes.length)
     : (m.last_episode_to_air?.runtime ?? null)
+  const episodes = await fetchEpisodes(tmdbId, m.seasons)
   const omdb = opts.skipOmdb ? null : await fetchOmdb(m.external_ids?.imdb_id)
   const extraMeta =
     epDuration && epDuration > 0 ? { ...(omdb ?? {}), epDuration } : omdb
@@ -564,6 +647,7 @@ export async function importTv(
     native: m.original_name && m.original_name !== title ? m.original_name : null,
     synopsis: m.overview || null,
     posterPath: m.poster_path ?? null,
+    backdropPath: m.backdrop_path ?? null,
     totalUnits: m.number_of_episodes ?? null,
     releaseDate: m.first_air_date || null,
     companies,
@@ -572,6 +656,7 @@ export async function importTv(
     // (aggregated across episodes), not a single `character` field as on movies.
     // The plain /tv credits endpoint only returns ~main regulars, so this is the
     // full billed cast. Flatten each person's primary role into a movie-shaped edge.
+    episodes,
     cast: (m.aggregate_credits?.cast ?? []).map((c: any) => {
       const primary = c.roles?.[0] ?? {}
       return {

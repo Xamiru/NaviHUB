@@ -9,6 +9,8 @@ import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
 import { EN_MECHANICS } from '@shared/english/mechanics'
 import type { EnMechanicsCategory } from '@shared/english/types'
+import { shuffle } from '@shared/shuffle'
+import { weightedOrder } from '@shared/english/weightedDeck'
 
 // Mechanics drill over the authored error-spot items (content is code —
 // src/shared/english/mechanics.ts): articles, punctuation, sentence
@@ -45,28 +47,11 @@ const CATEGORY_LABEL: Record<Category, string> = {
   spelling: 'Spelling'
 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
-// A shuffle biased toward what the LLM writing grader keeps catching you doing,
-// WITHOUT duplicating entries: an earlier version pushed 2-3 copies of an item
-// into the pool, so one 10-question round could ask the same prompt twice (with
-// independently shuffled options, so it did not even read as a repeat) while
-// the setup screen counted the unweighted pool. Efraimidis-Spirakis weighted
-// sampling without replacement — a heavier category drifts earlier in the deck,
-// every item still appears exactly once, and the count stays honest.
+// Weighted toward the categories the LLM writing grader keeps catching — see
+// @shared/english/weightedDeck (every item exactly once, heavier earlier).
 function orderDeck(pool: Question[], weights?: Map<string, number>): Question[] {
   if (!weights || weights.size === 0) return shuffle(pool)
-  return [...pool]
-    .map((q) => ({ q, key: Math.random() ** (1 / (1 + (weights.get(q.category) ?? 0))) }))
-    .sort((a, b) => b.key - a.key)
-    .map((x) => x.q)
+  return weightedOrder(pool, (q) => weights.get(q.category) ?? 0)
 }
 
 function buildPool(category: Category): Question[] {

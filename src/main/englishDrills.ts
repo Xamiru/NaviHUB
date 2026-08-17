@@ -8,6 +8,7 @@ import type {
   EnVocabPoolRequest,
   EnVocabQuestion
 } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // Question pools for the English vocab/spelling tests (the jpDrills.ts
 // pattern: navihub.db for the user's saved words, dictionaries.db for the
@@ -28,15 +29,6 @@ const POS_LABEL: Record<string, string> = {
   v: 'verb',
   a: 'adjective',
   r: 'adverb'
-}
-
-function shuffle<T>(arr: T[], rng: () => number): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 const parseJsonArray = <T,>(raw: unknown): T[] => {

@@ -441,6 +441,7 @@ query ($id: Int) {
     seasonYear
     startDate { year month day }
     coverImage { large extraLarge }
+    bannerImage
     genres
     studios { edges { isMain node { id name } } }
     relations {
@@ -512,8 +513,12 @@ export async function importAnime(
   const limited = charEdges.slice(0, MAX_CHARACTERS)
 
   const coverUrl = m.coverImage?.extraLarge || m.coverImage?.large
+  // Wide hero art for the detail page. AniList leaves bannerImage null on plenty
+  // of titles, in which case the hero falls back to Art-tab images or the cover.
+  const bannerUrl = m.bannerImage || null
   const images = await downloadImages([
     coverUrl,
+    bannerUrl,
     ...limited.flatMap((edge: any) => [
       edge.node?.image?.large,
       ...(edge.voiceActors ?? []).map((va: any) => va.image?.large)
@@ -528,6 +533,7 @@ export async function importAnime(
   return db.transaction((): AniListImportSummary => {
     const { title, native } = pickTitle(m.title)
     const coverPath = img(coverUrl)
+    const bannerPath = img(bannerUrl)
 
     // ---- media (preserve personal tracking on re-import) ----
     const existing = db
@@ -540,12 +546,14 @@ export async function importAnime(
       mediaId = existing.id
       db.prepare(
         `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+         banner_path=COALESCE(?, banner_path),
          total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
       ).run(
         title,
         native,
         stripHtml(m.description),
         coverPath,
+        bannerPath,
         m.episodes ?? null,
         fmtDate(m.startDate),
         mediaId
@@ -554,15 +562,16 @@ export async function importAnime(
       const info = db
         .prepare(
           `INSERT INTO media_item
-           (media_type, title, title_original, synopsis, cover_path, total_units, release_date,
-            external_source, external_id)
-           VALUES ('anime', ?, ?, ?, ?, ?, ?, ?, ?)`
+           (media_type, title, title_original, synopsis, cover_path, banner_path, total_units,
+            release_date, external_source, external_id)
+           VALUES ('anime', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           title,
           native,
           stripHtml(m.description),
           coverPath,
+          bannerPath,
           m.episodes ?? null,
           fmtDate(m.startDate),
           SOURCE,
@@ -664,6 +673,7 @@ query ($id: Int) {
     averageScore
     startDate { year month day }
     coverImage { large extraLarge }
+    bannerImage
     genres
     relations {
       edges {
@@ -716,8 +726,10 @@ export async function importManga(
   const limited = charEdges.slice(0, MAX_CHARACTERS)
 
   const coverUrl = m.coverImage?.extraLarge || m.coverImage?.large
+  const bannerUrl = m.bannerImage || null
   const images = await downloadImages([
     coverUrl,
+    bannerUrl,
     ...limited.map((edge: any) => edge.node?.image?.large),
     ...(m.staff?.edges ?? []).map((edge: any) => edge.node?.image?.large)
   ])
@@ -729,6 +741,7 @@ export async function importManga(
   return db.transaction((): AniListImportSummary => {
     const { title, native } = pickTitle(m.title)
     const coverPath = img(coverUrl)
+    const bannerPath = img(bannerUrl)
 
     const existing = db
       .prepare('SELECT id FROM media_item WHERE external_source = ? AND external_id = ?')
@@ -740,12 +753,14 @@ export async function importManga(
       mediaId = existing.id
       db.prepare(
         `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
+         banner_path=COALESCE(?, banner_path),
          total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
       ).run(
         title,
         native,
         stripHtml(m.description),
         coverPath,
+        bannerPath,
         m.chapters ?? null,
         fmtDate(m.startDate),
         mediaId
@@ -754,15 +769,16 @@ export async function importManga(
       const info = db
         .prepare(
           `INSERT INTO media_item
-           (media_type, title, title_original, synopsis, cover_path, total_units, release_date,
-            external_source, external_id)
-           VALUES ('manga', ?, ?, ?, ?, ?, ?, ?, ?)`
+           (media_type, title, title_original, synopsis, cover_path, banner_path, total_units,
+            release_date, external_source, external_id)
+           VALUES ('manga', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           title,
           native,
           stripHtml(m.description),
           coverPath,
+          bannerPath,
           m.chapters ?? null,
           fmtDate(m.startDate),
           SOURCE,

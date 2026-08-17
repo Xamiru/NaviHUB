@@ -8,6 +8,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import type { GrammarPoint } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // Grammar cloze drill (kind 'grammar'): a real example sentence with the
 // grammar point blanked out (＿＿), the EN translation always visible as the
@@ -33,15 +34,6 @@ interface Stats {
   best: number
 }
 const ZERO: Stats = { score: 0, total: 0, streak: 0, best: 0 }
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 // Build a question from a point + the full fetched pool (for distractors).
 function buildQuestion(point: GrammarPoint, pool: GrammarPoint[]): Question | null {

@@ -263,12 +263,13 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
             </div>
           </div>
 
-          <div className="min-w-0">
+          {/* Right half: vertical timeline | vertical character list */}
+          <div className="grid min-w-0 gap-4 sm:grid-cols-2">
             <Timeline cfg={cfg} matched={matched} isFinished={isFinished} />
             {cfg.characters.length > 0 && (
-              <section className="mb-8">
+              <section className="min-w-0">
                 <h2 className="mb-3 text-lg font-semibold">Characters</h2>
-                <div className="flex gap-3 overflow-x-auto pb-2">
+                <div className="space-y-2">
                   {cfg.characters.map((c) => (
                     <CharacterCard key={c.id} cfg={cfg} character={c} art={art} />
                   ))}
@@ -379,15 +380,11 @@ function EntryRow({
   )
 }
 
-// A horizontally scrollable year strip of COVERS: fixed px per year, tiles
-// placed at their release year and stacked into lanes when they would
-// overlap. Owned = library cover (accent ring + ✓ when finished, links to the
-// game); missing = greyed placeholder tile.
-const PX_PER_YEAR = 34
-const TILE_W = 30
-const TILE_H = 42
-const LANE_H = TILE_H + 6
-
+// A vertical timeline: a spine with the release year beside each cover,
+// spacing proportional to the gap between releases (clamped, so a 40-year
+// franchise stays scannable). Owned = library cover (accent ring + ✓ when
+// finished, links to the game); missing = greyed placeholder tile. Decade
+// changes get a small divider label.
 function Timeline({
   cfg,
   matched,
@@ -397,68 +394,76 @@ function Timeline({
   matched: Map<string, MediaItem>
   isFinished: (m: MediaItem) => boolean
 }) {
-  const min = Math.min(...cfg.entries.map((e) => e.year)) - 1
-  const max = Math.max(...cfg.entries.map((e) => e.year)) + 1
-  const width = (max - min) * PX_PER_YEAR + TILE_W
-  // Lane packing: sorted by year, each tile takes the lowest lane whose last
-  // occupant ends before this tile starts.
-  const laneEnds: number[] = []
-  const placed = [...cfg.entries]
-    .sort((a, b) => a.year - b.year)
-    .map((e) => {
-      const x = (e.year - min) * PX_PER_YEAR
-      let lane = laneEnds.findIndex((end) => end <= x)
-      if (lane < 0) lane = laneEnds.push(0) - 1
-      laneEnds[lane] = x + TILE_W + 4
-      return { e, x, lane }
-    })
-  const lanes = Math.max(1, laneEnds.length)
-  const decades: number[] = []
-  for (let y = Math.ceil(min / 10) * 10; y <= max; y += 10) decades.push(y)
+  const sorted = [...cfg.entries].sort((a, b) => a.year - b.year)
   return (
-    <section className="mb-8">
+    <section className="min-w-0">
       <h2 className="mb-3 text-lg font-semibold">Timeline</h2>
-      <div className="overflow-x-auto rounded-md border border-base-700 bg-base-800/70 px-3 pb-5 pt-3">
-        <div className="relative" style={{ width, height: lanes * LANE_H + 14 }}>
-          {placed.map(({ e, x, lane }) => {
-            const item = matched.get(e.id) ?? null
-            const done = item != null && isFinished(item)
-            const top = (lanes - 1 - lane) * LANE_H
-            const tile = item ? (
-              <CoverImage path={item.coverPath} alt="" className="h-full w-full" rounded="rounded-sm" />
-            ) : (
-              <div className="h-full w-full rounded-sm bg-base-700 opacity-50" />
-            )
-            const cls = 'absolute block overflow-hidden rounded-sm transition-transform hover:z-10 hover:scale-125'
-            const style = {
-              left: x,
-              top,
-              width: TILE_W,
-              height: TILE_H,
-              boxShadow: done ? `0 0 0 2px ${cfg.color}` : undefined
-            }
-            const label = `${e.title} (${e.year})${done ? ' — finished' : item ? '' : ' — not in library'}`
-            return item ? (
-              <Link key={e.id} to={`/games/${item.id}`} className={cls} style={style} title={label} aria-label={label}>
-                {tile}
-              </Link>
-            ) : (
-              <div key={e.id} className={cls} style={style} title={label}>
+      <div className="relative pl-14">
+        {/* the spine */}
+        <div className="absolute bottom-2 left-[3.25rem] top-2 w-px bg-base-600" />
+        {sorted.map((e, i) => {
+          const item = matched.get(e.id) ?? null
+          const done = item != null && isFinished(item)
+          const prev = sorted[i - 1]
+          const gapYears = prev ? e.year - prev.year : 0
+          const marginTop = i === 0 ? 0 : Math.min(8 + gapYears * 6, 44)
+          const decade = Math.floor(e.year / 10) * 10
+          const newDecade = i === 0 || Math.floor(prev.year / 10) * 10 !== decade
+          const sameYear = prev != null && prev.year === e.year
+          const tile = item ? (
+            <CoverImage path={item.coverPath} alt="" className="h-24 w-16" />
+          ) : (
+            <div className="flex h-24 w-16 items-center justify-center rounded-md bg-base-700 text-gray-600 opacity-60">
+              ○
+            </div>
+          )
+          const label = `${e.title} (${e.year})${done ? ' — finished' : item ? '' : ' — not in library'}`
+          const body = (
+            <div className="flex items-center gap-3">
+              <div
+                className="shrink-0 overflow-hidden rounded-md transition-transform hover:scale-105"
+                style={{ boxShadow: done ? `0 0 0 2px ${cfg.color}` : undefined }}
+              >
                 {tile}
               </div>
-            )
-          })}
-          <div className="absolute inset-x-0 h-px bg-base-600" style={{ top: lanes * LANE_H + 2 }} />
-          {decades.map((y) => (
-            <span
-              key={y}
-              className="absolute -translate-x-1/2 text-[10px] text-gray-500"
-              style={{ left: (y - min) * PX_PER_YEAR + TILE_W / 2, top: lanes * LANE_H + 4 }}
-            >
-              {y}
-            </span>
-          ))}
-        </div>
+              <div className="min-w-0">
+                <p className={`truncate text-sm font-medium ${item ? '' : 'text-gray-400'}`}>{e.title}</p>
+                <p className="truncate text-xs text-gray-500">
+                  {e.spinOff ? 'spin-off' : e.remake ? 'remake' : e.note ?? ''}
+                </p>
+              </div>
+            </div>
+          )
+          return (
+            <div key={e.id} className="relative" style={{ marginTop }}>
+              {newDecade && (
+                <span className="absolute -left-14 -top-1 w-10 text-right text-[10px] uppercase tracking-wide text-gray-600">
+                  {decade}s
+                </span>
+              )}
+              {/* year + spine dot */}
+              {!sameYear && (
+                <span className="absolute -left-14 top-9 w-10 text-right font-mono text-xs text-gray-400">
+                  {e.year}
+                </span>
+              )}
+              <span
+                className="absolute -left-[0.8rem] top-[2.55rem] h-2.5 w-2.5 rounded-full border-2"
+                style={{
+                  borderColor: item ? cfg.color : 'rgb(75 85 99)',
+                  background: done ? cfg.color : 'rgb(var(--base-900))'
+                }}
+              />
+              {item ? (
+                <Link to={`/games/${item.id}`} className="block" title={label} aria-label={label}>
+                  {body}
+                </Link>
+              ) : (
+                <div title={label}>{body}</div>
+              )}
+            </div>
+          )
+        })}
       </div>
     </section>
   )
@@ -478,33 +483,35 @@ function CharacterCard({
     .map((id) => cfg.entries.find((e) => e.id === id))
     .filter((e): e is FranchiseEntry => !!e)
   return (
-    <div className="card w-44 shrink-0 p-3">
+    <div className="card flex gap-3 p-3">
       <img
         src={art(character.portraitUrl)}
         alt={character.name}
-        className="mb-2 h-40 w-full rounded-md bg-base-700 object-cover object-top"
+        className="h-24 w-16 shrink-0 rounded-md bg-base-700 object-cover object-top"
         loading="lazy"
         draggable={false}
       />
-      <p className="truncate font-semibold" title={character.name}>
-        {character.name}
-      </p>
-      <p className="mb-1 truncate text-xs" style={{ color: cfg.color }}>
-        {character.role}
-      </p>
-      <button
-        className="mb-1 text-left text-xs text-gray-400"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-      >
-        <span className="mr-1">{open ? '▾' : '▸'}</span>
-        {open ? character.blurb : `${character.blurb.slice(0, 60)}…`}
-      </button>
-      {open && (
-        <p className="text-[11px] text-gray-500">
-          Appears in: {games.map((g) => g.year).join(', ')}
+      <div className="min-w-0 flex-1">
+        <p className="truncate font-semibold" title={character.name}>
+          {character.name}
         </p>
-      )}
+        <p className="mb-1 truncate text-xs" style={{ color: cfg.color }}>
+          {character.role}
+        </p>
+        <button
+          className="text-left text-xs text-gray-400"
+          onClick={() => setOpen((o) => !o)}
+          aria-expanded={open}
+        >
+          <span className="mr-1">{open ? '▾' : '▸'}</span>
+          {open ? character.blurb : `${character.blurb.slice(0, 70)}…`}
+        </button>
+        {open && (
+          <p className="mt-1 text-[11px] text-gray-500">
+            Appears in: {games.map((g) => g.year).join(', ')}
+          </p>
+        )}
+      </div>
     </div>
   )
 }

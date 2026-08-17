@@ -31,15 +31,9 @@ export function nextPowerOfTwo(n: number): number {
   return p
 }
 
-// Fisher-Yates copy; rng injectable for tests.
-export function shuffle<T>(arr: T[], rng: () => number = Math.random): T[] {
-  const out = [...arr]
-  for (let i = out.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1))
-    ;[out[i], out[j]] = [out[j], out[i]]
-  }
-  return out
-}
+// The shuffle lives in @shared/shuffle now; re-exported so the tournament page
+// and tests/bracket.test.ts keep their import.
+export { shuffle } from './shuffle'
 
 // Round r match m feeds round r+1 match m >> 1, slot a if m is even.
 function feed(matches: BracketMatch[], rounds: number, match: BracketMatch): void {

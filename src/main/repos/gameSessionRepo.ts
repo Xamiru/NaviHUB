@@ -81,11 +81,45 @@ export function recordSession(
 // The Playtime tab's launcher panel in one read: linked exe, tracked totals,
 // recent sessions (newest first, capped — the panel is a summary, not a log
 // browser).
+// Weekly tracked time for the Playtime tab's chart. Weeks are Monday-based and
+// bucketed in UTC (started_at is UTC, like every timestamp here): a session is
+// credited to the week it STARTED, so an all-nighter counts once, where it began.
+// Empty weeks are filled in by the caller-facing loop below so the chart shows
+// the gaps — "played nothing for three weeks" is the shape worth seeing.
+export function playtimeWeeks(mediaId: number, weeks = 12): { weekStart: string; seconds: number }[] {
+  const db = getSqlite()
+  const rows = db
+    .prepare(
+      `SELECT date(started_at, 'weekday 0', '-6 days') AS week_start,
+              COALESCE(SUM(duration), 0) AS seconds
+         FROM game_session
+        WHERE media_id = ?
+          AND date(started_at) >= date('now', ?)
+        GROUP BY week_start`
+    )
+    .all(mediaId, `-${weeks * 7} days`) as { week_start: string; seconds: number }[]
+  const bySeconds = new Map(rows.map((r) => [r.week_start, r.seconds]))
+
+  // This week's Monday, then back one week at a time, oldest first.
+  const thisMonday = db
+    .prepare(`SELECT date('now', 'weekday 0', '-6 days') AS d`)
+    .get() as { d: string }
+  const out: { weekStart: string; seconds: number }[] = []
+  for (let i = weeks - 1; i >= 0; i--) {
+    const { d } = db
+      .prepare(`SELECT date(?, ?) AS d`)
+      .get(thisMonday.d, `-${i * 7} days`) as { d: string }
+    out.push({ weekStart: d, seconds: bySeconds.get(d) ?? 0 })
+  }
+  return out
+}
+
 export function overview(mediaId: number): {
   exePath: string | null
   totalSeconds: number
   sessionCount: number
   sessions: GameSessionRow[]
+  weeks: { weekStart: string; seconds: number }[]
 } {
   const db = getSqlite()
   const media = db.prepare('SELECT exe_path FROM media_item WHERE id = ?').get(mediaId) as
@@ -106,6 +140,7 @@ export function overview(mediaId: number): {
     exePath: media?.exe_path ?? null,
     totalSeconds: agg.s,
     sessionCount: agg.n,
-    sessions
+    sessions,
+    weeks: playtimeWeeks(mediaId)
   }
 }

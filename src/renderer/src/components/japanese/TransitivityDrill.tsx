@@ -7,6 +7,7 @@ import { usePersistedState } from '../../lib/navState'
 import { BLANK } from '@shared/cloze'
 import { TRANSITIVITY_PAIRS, type TransitivityPair } from '@shared/transitivity'
 import type { TransitivityQuestion } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // Transitive/intransitive pair discrimination (kind 'transitivity') — the
 // single most-repeated confusion on r/LearnJapanese, drilled the way the
@@ -43,10 +44,10 @@ export default function TransitivityDrill() {
   function buildQuestion(data: QuestionData): McQuestion<QuestionData> | null {
     const { q, pair } = data
     const correct = q.side === 'trans' ? pair.trans : pair.intrans
-    const members = [
+    const members = shuffle([
       { word: pair.intrans, kana: pair.intransKana },
       { word: pair.trans, kana: pair.transKana }
-    ].sort(() => Math.random() - 0.5)
+    ])
     return {
       item: data,
       options: members.map((m) => ({

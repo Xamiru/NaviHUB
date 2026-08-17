@@ -8,7 +8,8 @@ import Section from './Section'
 import CoverImage from './CoverImage'
 import Lightbox from './Lightbox'
 import ImageBrowseDialog from './ImageBrowseDialog'
-import type { ImageKind, MediaDetail } from '@shared/types'
+import ContextMenu from './ContextMenu'
+import type { ImageKind, MediaDetail, MediaImage } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
 
 // One gallery section powers both "Wallpapers" and "Fan Art" (kind prop).
@@ -27,6 +28,9 @@ export default function MediaImagesSection({
   const [urlOpen, setUrlOpen] = useState(false)
   const [url, setUrl] = useState('')
   const [lightboxAt, setLightboxAt] = useState<number | null>(null)
+  // Right-click target, held by id rather than by object: the list refetches
+  // after every toggle, so a captured row would show stale menu labels.
+  const [menu, setMenu] = useState<{ x: number; y: number; imageId: number } | null>(null)
 
   const { data } = useQuery({
     queryKey: qk.pictures.list(m.id, kind),
@@ -35,7 +39,10 @@ export default function MediaImagesSection({
   const images = data ?? []
 
   const label = kind === 'wallpaper' ? 'Wallpapers' : 'Fan Art'
-  const refresh = () => qc.invalidateQueries({ queryKey: qk.pictures.list(m.id, kind) })
+  // Both kinds, not just this one: setting a background clears the flag from
+  // whatever held it, which may well be a tile in the other section.
+  const refresh = () => qc.invalidateQueries({ queryKey: qk.pictures.lists(m.id) })
+  const menuImg = menu ? images.find((i) => i.id === menu.imageId) : undefined
 
   async function run(fn: () => Promise<void>): Promise<void> {
     setBusy(true)
@@ -63,6 +70,20 @@ export default function MediaImagesSection({
       setUrl('')
       setUrlOpen(false)
       toast('Image added', 'success')
+    })
+
+  const toggleSlideshow = (img: MediaImage): Promise<void> =>
+    run(async () => {
+      const updated = await api.pictures.toggleSlideshow(img.id)
+      toast(updated.inSlideshow ? 'Added to slideshow' : 'Removed from slideshow', 'success')
+    })
+
+  const toggleBackground = (img: MediaImage): Promise<void> =>
+    run(async () => {
+      await api.pictures.setBackground(m.id, img.isBackground ? null : img.id)
+      // The page backdrop is painted from MediaDetail, not from this query.
+      await qc.invalidateQueries({ queryKey: qk.media.detail(m.id) })
+      toast(img.isBackground ? 'Background cleared' : 'Background set', 'success')
     })
 
   const remove = async (imageId: number): Promise<void> => {
@@ -96,6 +117,10 @@ export default function MediaImagesSection({
               aria-label={`View ${label.toLowerCase()} ${i + 1}`}
               className="group relative aspect-video overflow-hidden rounded-lg cursor-zoom-in"
               onClick={() => setLightboxAt(i)}
+              onContextMenu={(e) => {
+                e.preventDefault()
+                setMenu({ x: e.clientX, y: e.clientY, imageId: img.id })
+              }}
               onKeyDown={(e) => {
                 // Only when the tile ITSELF has focus. Without this the handler
                 // also caught Enter on the Remove button nested inside it,
@@ -118,6 +143,20 @@ export default function MediaImagesSection({
               {img.width && img.height && (
                 <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
                   {img.width}×{img.height}
+                </span>
+              )}
+              {(img.isBackground || img.inSlideshow) && (
+                <span className="absolute bottom-1.5 right-1.5 flex gap-1">
+                  {img.isBackground && (
+                    <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-accent">
+                      Background
+                    </span>
+                  )}
+                  {img.inSlideshow && (
+                    <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
+                      Slideshow
+                    </span>
+                  )}
                 </span>
               )}
               <button
@@ -190,8 +229,39 @@ export default function MediaImagesSection({
             alt: `${m.title} ${label.toLowerCase()}`
           }))}
           index={lightboxAt}
-          onIndexChange={setLightboxAt}
-          onClose={() => setLightboxAt(null)}
+          onIndexChange={(i) => {
+            setLightboxAt(i)
+            setMenu(null)
+          }}
+          onClose={() => {
+            setLightboxAt(null)
+            setMenu(null)
+          }}
+          onContextMenu={(i, e) => {
+            const img = images[i]
+            if (img) setMenu({ x: e.clientX, y: e.clientY, imageId: img.id })
+          }}
+        />
+      )}
+
+      {/* After the Lightbox so it stacks above it when opened from there. */}
+      {menu && menuImg && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          onClose={() => setMenu(null)}
+          items={[
+            {
+              label: menuImg.inSlideshow ? 'Remove from slideshow' : 'Add to slideshow',
+              disabled: busy,
+              onSelect: () => toggleSlideshow(menuImg)
+            },
+            {
+              label: menuImg.isBackground ? 'Clear background' : 'Set background',
+              disabled: busy,
+              onSelect: () => toggleBackground(menuImg)
+            }
+          ]}
         />
       )}
     </Section>

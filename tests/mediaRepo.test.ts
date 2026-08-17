@@ -214,6 +214,99 @@ describe('mediaRepo.facets', () => {
   })
 })
 
+describe('mediaRepo.get hero art', () => {
+  // The detail-page hero (components/MediaHero.tsx) paints m.heroPath and never
+  // re-derives the order, so the fallback chain is pinned here: imported banner
+  // → the first Art-tab image, fan art before wallpapers → null (the hero then
+  // blurs the cover). The page BACKDROP is a separate field: flagging one does
+  // not disturb this chain.
+  const addImage = (mediaId: number, kind: string, path: string, sortOrder?: number) =>
+    db
+      .prepare(
+        'INSERT INTO media_image (media_id, kind, file_path, sort_order) VALUES (?, ?, ?, ?)'
+      )
+      .run(mediaId, kind, path, sortOrder ?? null)
+
+  it('is null when the title has neither a banner nor any art', () => {
+    const id = addAnime('Texhnolyze')
+    expect(mediaRepo.get(id)!.heroPath).toBeNull()
+  })
+
+  it('prefers the imported banner over anything on the Art tab', () => {
+    const id = addAnime('Lain')
+    addImage(id, 'fanart', 'pictures/lain/fanart/a.jpg')
+    db.prepare('UPDATE media_item SET banner_path = ? WHERE id = ?').run('media/dl-banner', id)
+    const got = mediaRepo.get(id)!
+    expect(got.bannerPath).toBe('media/dl-banner')
+    expect(got.heroPath).toBe('media/dl-banner')
+  })
+
+  it('falls back to fan art before a wallpaper, then by sort order', () => {
+    const id = addAnime('Ergo Proxy')
+    addImage(id, 'wallpaper', 'pictures/ep/wall/a.jpg', 0)
+    addImage(id, 'fanart', 'pictures/ep/fanart/late.jpg', 5)
+    addImage(id, 'fanart', 'pictures/ep/fanart/first.jpg', 1)
+    expect(mediaRepo.get(id)!.heroPath).toBe('pictures/ep/fanart/first.jpg')
+  })
+
+  it('uses a wallpaper when that is all there is', () => {
+    const id = addAnime('Kaiba')
+    addImage(id, 'wallpaper', 'pictures/kaiba/wall/a.jpg')
+    expect(mediaRepo.get(id)!.heroPath).toBe('pictures/kaiba/wall/a.jpg')
+  })
+
+  it('ignores any other kind (kind is untyped TEXT in the DDL)', () => {
+    const id = addAnime('Boogiepop')
+    addImage(id, 'background', 'pictures/bgp/bg.jpg')
+    expect(mediaRepo.get(id)!.heroPath).toBeNull()
+  })
+})
+
+describe('mediaRepo.get backgroundPath', () => {
+  // The full-page backdrop the detail page paints (the Art tab's "Set
+  // background"). It is a FLAG on a wallpaper/fan-art row, not a separate
+  // image, so it must be resolved independently of the hero chain above.
+  const addImage = (mediaId: number, kind: string, path: string, isBg = 0) =>
+    Number(
+      db
+        .prepare(
+          'INSERT INTO media_image (media_id, kind, file_path, is_background) VALUES (?, ?, ?, ?)'
+        )
+        .run(mediaId, kind, path, isBg).lastInsertRowid
+    )
+
+  it('is null until an image is flagged', () => {
+    const id = addAnime('Serial Experiments')
+    addImage(id, 'wallpaper', 'pictures/sel/wall/a.jpg')
+    expect(mediaRepo.get(id)!.backgroundPath).toBeNull()
+  })
+
+  it('returns the flagged image without touching heroPath', () => {
+    const id = addAnime('Paranoia Agent')
+    addImage(id, 'fanart', 'pictures/pa/fanart/hero.jpg')
+    addImage(id, 'wallpaper', 'pictures/pa/wall/bg.jpg', 1)
+    const got = mediaRepo.get(id)!
+    expect(got.backgroundPath).toBe('pictures/pa/wall/bg.jpg')
+    // the hero still follows its own order (fan art first), unchanged
+    expect(got.heroPath).toBe('pictures/pa/fanart/hero.jpg')
+  })
+
+  it('lets the same image be both the hero fallback and the backdrop', () => {
+    const id = addAnime('Monster')
+    addImage(id, 'fanart', 'pictures/monster/fanart/one.jpg', 1)
+    const got = mediaRepo.get(id)!
+    expect(got.heroPath).toBe('pictures/monster/fanart/one.jpg')
+    expect(got.backgroundPath).toBe('pictures/monster/fanart/one.jpg')
+  })
+
+  it('does not pick up another title\'s backdrop', () => {
+    const mine = addAnime('Texhnolyze II')
+    const other = addAnime('Lain II')
+    addImage(other, 'wallpaper', 'pictures/lain/wall/bg.jpg', 1)
+    expect(mediaRepo.get(mine)!.backgroundPath).toBeNull()
+  })
+})
+
 describe('mediaRepo create/get/update', () => {
   it('round-trips a full item with tags and metadata', () => {
     const tagId = tagRepo.upsert({ name: 'Fantasy' })

@@ -13,9 +13,15 @@ vi.mock('../src/main/db/connection', () => ({
   getSqlite: () => db
 }))
 
+// Downloads resolve to null paths by default (the schema does not care what a
+// cover path holds). `imageFor` lets one test say "this URL landed on disk" so
+// the banner column can be checked without pretending every image downloaded.
+const images = vi.hoisted(() => ({ resolve: null as ((url: string) => string | null) | null }))
 vi.mock('../src/main/files', () => ({
   downloadImages: async (urls: (string | null | undefined)[]) =>
-    new Map(urls.filter(Boolean).map((u) => [u as string, null])),
+    new Map(
+      urls.filter(Boolean).map((u) => [u as string, images.resolve ? images.resolve(u as string) : null])
+    ),
   downloadImage: async () => null
 }))
 
@@ -94,6 +100,7 @@ function animeFixture(overrides: Record<string, unknown> = {}) {
 beforeEach(() => {
   db = createTestDb()
   fixture = animeFixture()
+  images.resolve = null
 })
 
 describe('importAnime', () => {
@@ -258,5 +265,31 @@ describe('importAnime', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM media_item').get()).toEqual({ n: 0 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM character').get()).toEqual({ n: 0 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM company').get()).toEqual({ n: 0 })
+  })
+})
+
+describe('hero banner art', () => {
+  it('stores the downloaded bannerImage and keeps it when a re-import has none', async () => {
+    images.resolve = (url) => (url.includes('banner') ? 'media/dl-banner' : null)
+    fixture = animeFixture({ bannerImage: 'https://img/banner.png' })
+    await importAnime(101)
+    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({
+      banner_path: 'media/dl-banner'
+    })
+
+    // AniList drops bannerImage on plenty of titles; a re-import that comes back
+    // without one must not blank the hero (COALESCE, like cover_path).
+    images.resolve = null
+    fixture = animeFixture({ bannerImage: null })
+    await importAnime(101)
+    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({
+      banner_path: 'media/dl-banner'
+    })
+  })
+
+  it('leaves banner_path null when the title has no banner at all', async () => {
+    fixture = animeFixture({ bannerImage: null })
+    await importAnime(101)
+    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({ banner_path: null })
   })
 })

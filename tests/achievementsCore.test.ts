@@ -434,6 +434,12 @@ describe('joinCommunityWithPercentages', () => {
     })
   })
 
+  it('reads a blank description as the hidden flag — that is how Steam marks secrets on the public page', () => {
+    const { rows } = joinCommunityWithPercentages(page, pct)
+    expect(rows.find((r) => r.name === 'Tie One')).toMatchObject({ hidden: true, description: null })
+    expect(rows.find((r) => r.name === 'Tie Two')?.hidden).toBe(false)
+  })
+
   it('keeps shared order within a run of ties', () => {
     const { rows } = joinCommunityWithPercentages(page, pct)
     expect(rows.find((r) => r.name === 'Tie One')?.apiName).toBe('ACH_TIE_A')
@@ -444,6 +450,43 @@ describe('joinCommunityWithPercentages', () => {
     const { rows, unmatched } = joinCommunityWithPercentages(page, pct)
     expect(rows.map((r) => r.name)).not.toContain('Orphan')
     expect(unmatched).toBe(1)
+  })
+
+  it('pairs by RANK, so cache drift between the page and the endpoint cannot break it', () => {
+    // The AC4 Black Flag case: Steam served the page from a cache and the
+    // percentages live, every value off by a tenth, and an exact-percent join
+    // paired 12 of 49. Same order, same count → same pairing.
+    const drifted = [
+      { name: 'ACH_WIN', percent: 82.5 },
+      { name: 'ACH_TIE_A', percent: 10.1 },
+      { name: 'ACH_TIE_B', percent: 9.9 },
+      { name: 'ACH_ORPHAN', percent: 0.4 }
+    ]
+    const { rows, unmatched } = joinCommunityWithPercentages(page, drifted)
+    expect(unmatched).toBe(0)
+    expect(rows.map((r) => [r.name, r.apiName])).toEqual([
+      ['Winner & Champion', 'ACH_WIN'],
+      ['Tie One', 'ACH_TIE_A'],
+      ['Tie Two', 'ACH_TIE_B'],
+      ['Orphan', 'ACH_ORPHAN']
+    ])
+    // And the live percentage wins over the page's cached one.
+    expect(rows[0].globalPct).toBe(82.5)
+  })
+
+  it('aligns by order within a tolerance when the counts differ', () => {
+    // The endpoint knows about an achievement the cached page does not yet
+    // list (or vice versa): pair everything that lines up, drop the odd one.
+    const extra = [
+      { name: 'ACH_WIN', percent: 82.4 },
+      { name: 'ACH_NEW', percent: 40.0 }, // not on the page
+      { name: 'ACH_TIE_A', percent: 10.0 },
+      { name: 'ACH_TIE_B', percent: 10.0 },
+      { name: 'ACH_ORPHAN', percent: 0.3 }
+    ]
+    const { rows, unmatched } = joinCommunityWithPercentages(page, extra)
+    expect(unmatched).toBe(0)
+    expect(rows.map((r) => r.apiName)).toEqual(['ACH_WIN', 'ACH_TIE_A', 'ACH_TIE_B', 'ACH_ORPHAN'])
   })
 
   it('never uses one api name twice', () => {

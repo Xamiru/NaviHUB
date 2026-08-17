@@ -13,6 +13,7 @@ import { splitMora, toHiragana } from '@shared/kana'
 import type { PitchPoolItem } from '@shared/types'
 import MinimalPairsDrill from '../components/japanese/MinimalPairsDrill'
 import SpeakDrill from '../components/japanese/SpeakDrill'
+import { shuffle } from '@shared/shuffle'
 
 // Pitch accent training, TheMoeWay's optional-but-recommended pillar. Two
 // halves: the KNOWLEDGE quiz (see a word, pick its contour — Kanjium data) and
@@ -68,15 +69,6 @@ function patternName(position: number, moraCount: number): string {
   if (position === 1) return 'atamadaka'
   if (position >= moraCount) return 'odaka'
   return 'nakadaka'
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 interface PitchQuestion {

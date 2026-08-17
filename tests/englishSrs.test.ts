@@ -6,7 +6,9 @@ let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
 
 import {
+  listLeeches,
   listWords,
+  removeWords,
   reviewQueue,
   saveWord,
   saveWords,
@@ -95,5 +97,30 @@ describe('en_word as the SRS deck', () => {
     ])
     expect(added).toBe(1)
     expect(listWords()).toHaveLength(2)
+  })
+})
+
+describe('deck hygiene', () => {
+  it('listLeeches returns words at or past LEECH_LAPSES, worst first', () => {
+    const a = saveWord({ word: 'a', meaning: 'm' })
+    const b = saveWord({ word: 'b', meaning: 'm' })
+    const c = saveWord({ word: 'c', meaning: 'm' })
+    db.prepare("UPDATE en_word SET lapses = 5, status = 'review' WHERE id = ?").run(a)
+    db.prepare("UPDATE en_word SET lapses = 6, status = 'review', ease = 2.0 WHERE id = ?").run(b)
+    db.prepare("UPDATE en_word SET lapses = 9, status = 'review', ease = 1.7 WHERE id = ?").run(c)
+    expect(listLeeches().map((w) => w.word)).toEqual(['c', 'b'])
+  })
+
+  it('removeWords deletes in bulk, cascades the review log, and returns the count', () => {
+    const a = saveWord({ word: 'a', meaning: 'm' })
+    const b = saveWord({ word: 'b', meaning: 'm' })
+    const c = saveWord({ word: 'c', meaning: 'm' })
+    submitReview(a, 'good')
+    submitReview(b, 'again')
+    expect(removeWords([a, b, 9999, a])).toBe(2)
+    expect(listWords().map((w) => w.id)).toEqual([c])
+    const logs = (db.prepare('SELECT COUNT(*) AS n FROM en_review_log').get() as { n: number }).n
+    expect(logs).toBe(0)
+    expect(removeWords([])).toBe(0)
   })
 })

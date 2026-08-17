@@ -9,11 +9,12 @@ import BookContent from '../components/reader/BookContent'
 import MiningPanel from '../components/reader/MiningPanel'
 import BarButton from '../components/reader/BarButton'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
-import BookSettingsPopover, {
+import BookSettingsGroups, {
   BOOK_DEFAULTS,
   BOOK_SERIF_STACK,
   type BookPrefs
 } from '../components/reader/BookSettingsPopover'
+import ReaderSettingsDrawer from '../components/reader/ReaderSettingsDrawer'
 import { PrevIcon, NextIcon } from '../components/PlayerIcons'
 import type { EpubTocEntry, MangaChapter } from '@shared/types'
 // Mincho face for the serif reading option — unicode-range split woff2s, so
@@ -94,7 +95,7 @@ export default function BookReaderPage() {
       return next
     })
   }, [])
-  const { fontSize, lineHeight, maxWidth, vertical, theme, font } = prefs
+  const { fontSize, lineHeight, maxWidth, vertical, theme, font, brightness } = prefs
 
   // ---- current section (same init contract as the manga reader) ----
   const [section, setSection] = useState(0)
@@ -348,7 +349,20 @@ export default function BookReaderPage() {
 
   return (
     <div className="h-screen bg-base-900 flex">
+      {/* Brightness dims the reading column, bars included — a bright bar over
+          a dimmed page is exactly what you do not want at 2am. */}
       <div className="relative flex-1 min-w-0 flex flex-col">
+        {/* A black overlay, NOT `filter: brightness()` — a filter makes this
+            column the containing block for `position: fixed` descendants, which
+            reshrank the TOC popover's `fixed inset-0` click-away backdrop to
+            the column. Compositing black at 1-b matches brightness(b). */}
+        {brightness < 1 && (
+          <div
+            className="pointer-events-none absolute inset-0 z-40 bg-black"
+            style={{ opacity: 1 - brightness }}
+            aria-hidden="true"
+          />
+        )}
         {/* top bar */}
         <div className="shrink-0 z-20 bg-base-900/95 backdrop-blur border-b border-base-800 px-4 py-2 flex items-center gap-3">
           <button className="btn-ghost py-1 px-3 text-sm" onClick={exitToDetail}>
@@ -503,13 +517,6 @@ export default function BookReaderPage() {
               title="Typography & theme"
               onClick={() => setSettingsOpen((v) => !v)}
             />
-            {settingsOpen && (
-              <BookSettingsPopover
-                prefs={prefs}
-                setPref={setPref}
-                onClose={() => setSettingsOpen(false)}
-              />
-            )}
             <BarButton
               label="⛏"
               active={panelOpen}
@@ -526,6 +533,18 @@ export default function BookReaderPage() {
       </div>
 
       {/* mining panel */}
+      {settingsOpen && (
+        <ReaderSettingsDrawer title="Typography" onClose={() => setSettingsOpen(false)}>
+          <BookSettingsGroups prefs={prefs} setPref={setPref} />
+          <div className="border-t border-base-700 pt-3">
+            <p className="text-[10px] leading-relaxed text-gray-600">
+              Settings apply to every book. Keyboard: ← → section, V vertical text, T contents,
+              Esc closes.
+            </p>
+          </div>
+        </ReaderSettingsDrawer>
+      )}
+
       {panelOpen && (
         <MiningPanel
           mediaId={mediaId}

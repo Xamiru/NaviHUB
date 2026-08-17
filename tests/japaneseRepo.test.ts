@@ -503,6 +503,56 @@ describe('japaneseRepo — leeches', () => {
     expect(jp.listLeeches()).toEqual([])
   })
 
+  // Learning-step misses never touch `lapses` (gradeCard bumps it only from
+  // review), so a card that keeps failing its first steps used to be invisible
+  // to every problem-card surface. It now surfaces on Again count since reset.
+  function learningCard(front: string): number {
+    const courseId = jp.createCourse({ title: `c-${front}` })
+    const lessonId = jp.createLesson({
+      courseId,
+      kind: 'vocab',
+      title: `l-${front}`,
+      cards: [{ front, reading: null, back: 'meaning' }]
+    })
+    jp.setLessonLearned(lessonId, true)
+    return (db.prepare('SELECT id FROM jp_card WHERE front = ?').get(front) as { id: number }).id
+  }
+
+  it('surfaces a card failed repeatedly in its learning steps (LEECH_AGAINS = 8) with lapses = 0', () => {
+    const id = learningCard('未')
+    for (let i = 0; i < 7; i++) jp.submitReview(id, 'again')
+    expect(jp.listLeeches()).toEqual([])
+    jp.submitReview(id, 'again')
+    const leeches = jp.listLeeches()
+    expect(leeches.map((l) => l.id)).toEqual([id])
+    expect(leeches[0].agains).toBe(8)
+    expect(leeches[0].lapses).toBe(0)
+  })
+
+  it('counts Again grades only since the last reset, and a card can re-surface after one', () => {
+    const id = learningCard('再')
+    for (let i = 0; i < 8; i++) jp.submitReview(id, 'again')
+    expect(jp.listLeeches().map((l) => l.id)).toEqual([id])
+    jp.resetCard(id) // reps → 0, log kept
+    expect(jp.listLeeches()).toEqual([])
+    for (let i = 0; i < 8; i++) jp.submitReview(id, 'again')
+    expect(jp.listLeeches().map((l) => l.id)).toEqual([id])
+    expect(jp.listLeeches()[0].agains).toBe(8)
+  })
+
+  it('does not sum lapses and misses — each threshold stands alone', () => {
+    const id = cardWithLapses('和', 3) // review card, 3 lapses
+    for (let i = 0; i < 4; i++) jp.submitReview(id, 'again')
+    // 3 lapses < 6 and 4 (+ whatever the lapse relearn produced) misses < 8
+    const agains = (
+      db
+        .prepare(`SELECT COUNT(*) AS n FROM jp_review_log WHERE card_id = ? AND grade = 'again'`)
+        .get(id) as { n: number }
+    ).n
+    expect(agains).toBeLessThan(8)
+    expect(jp.listLeeches()).toEqual([])
+  })
+
   it('resetCard restores a fresh SRS state and keeps the review history', () => {
     const id = cardWithLapses('罠', 9)
     jp.submitReview(id, 'good') // leaves a log row

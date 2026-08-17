@@ -10,6 +10,7 @@ import type {
   MediaListFilter,
   MediaListFacets,
   MediaDetail,
+  TvSeason,
   LibraryTimeStats,
   Person,
   PersonCredit,
@@ -85,7 +86,24 @@ import type {
   EnWordInput,
   EnWritingEntry,
   EnErrorTally,
+  EnDeckWord,
   ProgLessonProgress,
+  SentenceGamePoolRequest,
+  ParticleQuizItem,
+  ScrambleQuizItem,
+  ContextReadingItem,
+  ReadingRaceRequest,
+  ReadingRaceWord,
+  JlptLevel,
+  JlptTest,
+  ProgAttempt,
+  ProgCliMiss,
+  ProgCliRoundInput,
+  ProgSolve,
+  ProgSolveInput,
+  SqlRunInput,
+  SqlRunResult,
+  SqlTable,
   DictInfo,
   DictEntry,
   DictImportStatus,
@@ -146,6 +164,7 @@ import type {
   JpLeech,
   JpRoadmap,
   JpStats,
+  JpJlptLadder,
   JpStatsDetail,
   SrsGrade,
   MangaAttachResult,
@@ -254,6 +273,18 @@ export interface NaviApi {
     // Every dated log, day-bucketed, for the /stats activity grid.
     activityHeatmap(): Promise<ActivityHeatmap>
   }
+  // The TV episode catalogue behind the detail page's Seasons tab. Separate
+  // from `video`, which is the files you have on disk — these rows exist for
+  // every episode TMDB lists, and the two are joined for the Play affordance.
+  tv: {
+    seasons(mediaId: number): Promise<TvSeason[]>
+    // Ticking an episode routes a first-time watch through the same
+    // logProgress path as video:markWatched, so status promotion, the rewatch
+    // wrap and checklist credit stay in one place.
+    setWatched(episodeId: number, watched: boolean): Promise<void>
+    // Whole-season toggle; marking skips unaired episodes, unmarking clears all.
+    setSeasonWatched(mediaId: number, season: number, watched: boolean): Promise<void>
+  }
   people: {
     // role filters the browse list to people with that kind of credit (and
     // sorts by how many they have); mediaType further scopes it to one media
@@ -308,7 +339,9 @@ export interface NaviApi {
     // Finished-round history: pages log a session at game end; setup screens
     // show the personal best + recent rounds.
     logSession(input: QuizSessionInput): Promise<number>
-    history(kind: QuizKind): Promise<QuizHistory>
+    // limit = how many recent rounds come back (default 15; the graded-reading
+    // page asks for 200 to find per-passage bests in settings.passageKey).
+    history(kind: QuizKind, limit?: number): Promise<QuizHistory>
   }
   hltb: {
     // Looks the item's title up on HowLongToBeat and stores the main / extra /
@@ -511,8 +544,16 @@ export interface NaviApi {
     addFromUrl(mediaId: number, kind: ImageKind, url: string): Promise<MediaImage>
     // Native multi-select picker; copies into pictures.dir. [] when cancelled.
     addFromFiles(mediaId: number, kind: ImageKind): Promise<MediaImage[]>
-    // Removes the row and deletes its file on disk.
+    // Removes the row and deletes its file on disk (and its slideshow copy).
     remove(imageId: number): Promise<void>
+    // Adds/removes a COPY of the image in the Windows desktop-slideshow folder
+    // (slideshow.dir); the OS does the rotating. Returns the updated row.
+    toggleSlideshow(imageId: number): Promise<MediaImage>
+    // Flags one image as the item's full-page detail backdrop; null clears it.
+    setBackground(mediaId: number, imageId: number | null): Promise<void>
+    // Opens slideshow.dir in the OS file manager (creating it if needed) so the
+    // user can point Windows Personalization > Background > Slideshow at it.
+    openSlideshowFolder(): Promise<void>
   }
   franchise: {
     // The curated franchise data ships in the bundle (@shared/franchises) —
@@ -589,6 +630,9 @@ export interface NaviApi {
     listLeeches(): Promise<JpLeech[]>
     resetCard(id: number): Promise<void>
     stats(): Promise<JpStats>
+    // The JLPT ladder on the roadmap page: per-level card counts and how many
+    // have earned a real interval. Progress only — nothing here gates study.
+    jlptLadder(): Promise<JpJlptLadder>
     // Review history (heatmap/streaks/grades) + due forecast for the stats page.
     statsDetail(): Promise<JpStatsDetail>
     // Vocab mining: find-or-create the capture course/lesson.
@@ -639,6 +683,16 @@ export interface NaviApi {
     ghostAnswer(cardId: number, correct: boolean): Promise<JpGhostOutcome>
     // The i+1 sentence feed (built ~2-3s cold, cached by knowledge state).
     feed(req: JpFeedRequest): Promise<JpFeed>
+    // Sentence games (/japanese/sentences): pools generated from the sentence
+    // bank + kuromoji, sampled fresh per round.
+    particlePool(req: SentenceGamePoolRequest): Promise<ParticleQuizItem[]>
+    scramblePool(req: SentenceGamePoolRequest): Promise<ScrambleQuizItem[]>
+    contextReadingPool(req: SentenceGamePoolRequest): Promise<ContextReadingItem[]>
+    // Arcade reading race pool (cards / frequency top-up).
+    readingRacePool(req: ReadingRaceRequest): Promise<ReadingRaceWord[]>
+    // The JLPT checkpoint built from the offline packs; null = packs missing
+    // and the page falls back to its seeded-course sampler.
+    jlptTestPool(req: { level: JlptLevel }): Promise<JlptTest | null>
   }
   // Offline Yomitan dictionaries (see src/main/dict/). Lookups run offline first
   // and fall back to jisho.org; every result is a DictEntry. Nothing throws.
@@ -760,6 +814,11 @@ export interface NaviApi {
     // Graded corrections tallied by mechanics category — the personal error log
     // the writing feature has always produced and never read back.
     errorTally(): Promise<EnErrorTally>
+    // Deck hygiene (/english/deck): the saved list with frequency ranks, the
+    // leech list, and bulk removal for rank triage.
+    deck(): Promise<EnDeckWord[]>
+    listLeeches(): Promise<EnWord[]>
+    removeWords(ids: number[]): Promise<number>
   }
   // Programming learn section (/programming). Content is code
   // (src/shared/programming/); only lesson completion crosses IPC, keyed by
@@ -768,6 +827,17 @@ export interface NaviApi {
     progress(): Promise<ProgLessonProgress[]>
     complete(lessonKey: string): Promise<void>
     uncomplete(lessonKey: string): Promise<void>
+    // Lesson self-check scores, CLI weak commands, sandbox/golf solves — the
+    // "track it properly" layer over content that is still code.
+    recordAttempt(input: { lessonKey: string; score: number; total: number }): Promise<void>
+    attempts(): Promise<ProgAttempt[]>
+    recordCliRound(input: ProgCliRoundInput): Promise<void>
+    cliMisses(): Promise<ProgCliMiss[]>
+    solves(): Promise<ProgSolve[]>
+    recordSolve(input: ProgSolveInput): Promise<void>
+    // SQL sandbox: runs in a killable utility process (see main/sqlSandbox.ts).
+    sqlRun(input: SqlRunInput): Promise<SqlRunResult>
+    sqlExpected(exerciseKey: string): Promise<SqlTable>
   }
   manga: {
     // Local manga reader: chapters are page-image folders under the manga

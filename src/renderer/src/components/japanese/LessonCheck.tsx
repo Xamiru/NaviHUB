@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from '../../lib/api'
 import Section from '../Section'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // End-of-lesson self-check: a short multiple-choice quiz over THIS lesson's
 // cards, with distractors drawn from the rest of the course. Runs before the
@@ -15,15 +16,6 @@ interface Question {
   ask: 'meaning' | 'reading'
   options: string[]
   correct: number
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 const QUESTION_COUNT = 8

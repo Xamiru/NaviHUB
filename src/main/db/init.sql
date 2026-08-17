@@ -10,6 +10,11 @@ CREATE TABLE IF NOT EXISTS media_item (
   title_original  TEXT,
   synopsis        TEXT,
   cover_path      TEXT,
+  -- Wide hero art for the detail page (AniList bannerImage / TMDB backdrop),
+  -- content-addressed under media/ like cover_path. Canonical, not personal —
+  -- it survives export. NULL until the title is (re-)imported; the detail page
+  -- falls back to a media_image row, then to a blurred cover.
+  banner_path     TEXT,
   release_date    TEXT,
   total_units     INTEGER,
   status          TEXT,
@@ -257,9 +262,54 @@ CREATE TABLE IF NOT EXISTS media_image (
   width       INTEGER,
   height      INTEGER,
   sort_order  INTEGER,
+  -- 1 = this image is the item's detail-page backdrop (Art tab right-click
+  -- "Set background"). At most one per media_id, enforced by
+  -- pictures.setBackground; personal, wiped with the table on export.
+  is_background INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_media_image_media ON media_image(media_id, kind);
+
+-- slideshow_item — Art-tab images the user pushed into the Windows desktop
+-- slideshow folder (setting slideshow.dir, default <pictures.dir>/Slideshow).
+-- NaviHUB only COPIES the file there; the user points Windows Personalization >
+-- Background > Slideshow at the folder once and the OS does the rotating.
+-- file_name is the copy's name inside that folder — not a navimg path, the copy
+-- is never served by the app. Personal; wiped on export.
+CREATE TABLE IF NOT EXISTS slideshow_item (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  image_id   INTEGER NOT NULL UNIQUE REFERENCES media_image(id) ON DELETE CASCADE,
+  file_name  TEXT NOT NULL,
+  added_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- tv_episode — the EPISODE CATALOGUE for a TV show, from TMDB. Distinct from
+-- video_file, which indexes episodes you have on disk: a row here exists whether
+-- or not the file does, and the detail page's season grid joins the two so an
+-- episode you own gets a Play button.
+--
+-- Specials (TMDB season 0) are deliberately skipped: `absolute` has to agree
+-- with media_item.total_units (TMDB's number_of_episodes), which excludes them.
+--
+-- watched_at is the only personal column — the scan/import path NEVER writes it,
+-- and re-import COALESCEs it, so refreshing a show cannot wipe what you watched.
+-- Stills are not downloaded: a long-running show is hundreds of images, and the
+-- grid does not show one.
+CREATE TABLE IF NOT EXISTS tv_episode (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id    INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  season      INTEGER NOT NULL,
+  number      INTEGER NOT NULL,
+  absolute    INTEGER,                    -- 1-based position across the show
+  title       TEXT,
+  overview    TEXT,
+  air_date    TEXT,
+  runtime     INTEGER,                    -- minutes
+  watched_at  TEXT,                       -- NULL = unwatched (personal)
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(media_id, season, number)
+);
+CREATE INDEX IF NOT EXISTS idx_tv_episode_media ON tv_episode(media_id, season, number);
 
 -- list — a user-curated, ordered collection (Letterboxd-style). entity_kind is
 -- fixed per list ('media' | 'person' | 'character' | 'company'); ranked toggles
@@ -301,6 +351,11 @@ CREATE TABLE IF NOT EXISTS manga_chapter (
   title          TEXT NOT NULL,
   number         REAL,
   page_count     INTEGER NOT NULL DEFAULT 0,
+  -- First page of the chapter/volume as a virtual path ("manga/<dir>/<file>"),
+  -- so the Volumes grid has a thumbnail without opening every chapter. Written
+  -- by the scanner only; NULL for EPUBs (spine documents are XHTML, not images)
+  -- and for rows scanned before this existed, until the next rescan.
+  cover_path     TEXT,
   sort_order     INTEGER NOT NULL DEFAULT 0,
   last_read_page INTEGER,
   read_at        TEXT,
@@ -893,6 +948,38 @@ CREATE TABLE IF NOT EXISTS prog_progress (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   lesson_key   TEXT NOT NULL UNIQUE,
   completed_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- One row per finished lesson self-check (all questions answered) — attempts
+-- precede and outlive "complete", so they are append-only history, not columns
+-- on prog_progress. Personal → wiped on export.
+CREATE TABLE IF NOT EXISTS prog_attempt (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  lesson_key TEXT NOT NULL,
+  score      INTEGER NOT NULL,
+  total      INTEGER NOT NULL,
+  at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_prog_attempt_lesson ON prog_attempt(lesson_key);
+-- The CLI typing drill's weak-command memory: cmd_key is the FROZEN
+-- '<sheetKey>/<answers[0]>' of a cheatsheet entry; misses go up on a miss and
+-- down on a first-try hit, rows at 0 are deleted. Personal → wiped on export.
+CREATE TABLE IF NOT EXISTS prog_cli_miss (
+  cmd_key TEXT PRIMARY KEY,
+  misses  INTEGER NOT NULL DEFAULT 0,
+  last_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- Solved sandbox exercises / golf puzzles: kind is FROZEN ('sql' | 'regex'),
+-- key is the exercise/puzzle key from the shared content module; best = the
+-- numeric record where one exists (regex: shortest pattern length), answer =
+-- the accepted SQL / winning pattern. Personal → wiped on export.
+CREATE TABLE IF NOT EXISTS prog_solve (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind      TEXT NOT NULL,
+  key       TEXT NOT NULL,
+  best      INTEGER,
+  answer    TEXT,
+  solved_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(kind, key)
 );
 
 -- ---- Ghost reviews (Bunpro-style echoes of lapsed cards) ----

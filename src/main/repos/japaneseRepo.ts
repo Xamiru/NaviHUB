@@ -1,5 +1,15 @@
 import { getSqlite } from '../db/connection'
-import { GHOST_STEPS, gradeCard, LEECH_LAPSES, newCardState } from '@shared/srs'
+import { GHOST_STEPS, gradeCard, LEECH_AGAINS, LEECH_LAPSES, newCardState } from '@shared/srs'
+import {
+  JLPT_LEVELS,
+  PASSED_INTERVAL_DAYS,
+  currentLevel,
+  ladderTotals,
+  levelComplete,
+  parseJlptLevel,
+  type JlptLevel,
+  type JlptLevelProgress
+} from '@shared/jlptLevels'
 import { computeStreaks } from './musicRepo'
 import type {
   JpCard,
@@ -23,12 +33,14 @@ import type {
   JpRoadmap,
   JpStats,
   JpStatsDetail,
+  JpJlptLadder,
   GrammarDeckResult,
   JpGhostCard,
   JpGhostOutcome,
   MediaType,
   SrsGrade,
-  SrsStatus
+  SrsStatus,
+  QuizKind
 } from '@shared/types'
 
 // Joined onto every card read so mined cards can show the manga/VN they came
@@ -404,25 +416,45 @@ export function reviewQueue(newLimit: number): JpReviewQueue {
 // signal and jp_review_log keeps the history, so leech-ness is a read-time
 // predicate and a reset is just an SRS-state UPDATE.
 
+// Two signals, OR-ed: review-phase lapses (jp_card.lapses) and Again grades
+// among the card's last `reps` log rows — reps counts grades since the last
+// resetCard (which zeroes it but keeps the log), so a reset card starts clean
+// and a card that keeps failing its learning steps surfaces without ever
+// having lapsed.
 export function listLeeches(): JpLeech[] {
   const rows = getSqlite()
     .prepare(
-      `SELECT k.id, k.front, k.reading, k.back, k.lapses, k.ease, k.status, k.interval_days,
+      `WITH ranked AS (
+         SELECT r.card_id, r.grade,
+                ROW_NUMBER() OVER (PARTITION BY r.card_id ORDER BY r.id DESC) AS rn
+         FROM jp_review_log r
+       ),
+       agains AS (
+         SELECT ranked.card_id, COUNT(*) AS n
+         FROM ranked
+         JOIN jp_card k ON k.id = ranked.card_id
+         WHERE ranked.grade = 'again' AND ranked.rn <= k.reps
+         GROUP BY ranked.card_id
+       )
+       SELECT k.id, k.front, k.reading, k.back, k.lapses, k.ease, k.status, k.interval_days,
+              COALESCE(a.n, 0) AS agains,
               l.id AS lesson_id, l.title AS lesson_title, c.id AS course_id, c.title AS course_title
        FROM jp_card k
        JOIN jp_lesson l ON l.id = k.lesson_id
        JOIN jp_course c ON c.id = l.course_id
-       WHERE k.lapses >= ?
-       ORDER BY k.lapses DESC, k.ease ASC, k.id ASC
+       LEFT JOIN agains a ON a.card_id = k.id
+       WHERE k.lapses >= ? OR COALESCE(a.n, 0) >= ?
+       ORDER BY (k.lapses + COALESCE(a.n, 0)) DESC, k.ease ASC, k.id ASC
        LIMIT 100`
     )
-    .all(LEECH_LAPSES) as Record<string, unknown>[]
+    .all(LEECH_LAPSES, LEECH_AGAINS) as Record<string, unknown>[]
   return rows.map((r) => ({
     id: r.id as number,
     front: r.front as string,
     reading: (r.reading as string) ?? null,
     back: r.back as string,
     lapses: r.lapses as number,
+    agains: r.agains as number,
     ease: r.ease as number,
     status: r.status as SrsStatus,
     intervalDays: r.interval_days as number,
@@ -639,12 +671,16 @@ const INBOX_LESSON = 'Mined words'
 const KNOWN_LESSON = 'Already known'
 const KNOWN_INTERVAL_DAYS = 36500
 
-// Every Japanese-section QuizKind — the journey's "quiz rounds" count.
-const JP_QUIZ_KINDS = [
+// Every Japanese-section QuizKind — the Journey "quiz rounds" count. A new
+// Japanese drill adds its kind here too; tests/jpQuizKindsSync.test.ts diffs
+// this list against the kind literals used under pages/Japanese* and
+// components/japanese/.
+export const JP_QUIZ_KINDS: QuizKind[] = [
   'japanese', 'kana', 'kanji', 'conjugation', 'writing', 'jlpt',
   'pitch', 'pairs', 'components', 'grammar', 'names', 'numbers',
   'dictation', 'shiritori', 'lookalike', 'transitivity', 'homophone',
-  'loanword', 'keigo', 'leech', 'speak'
+  'loanword', 'keigo', 'leech', 'speak',
+  'particles', 'scramble', 'contextReading', 'kanaRace', 'readingRace', 'conjRace', 'jpReading'
 ]
 
 // Find-or-create the capture target for mined words. Looked up by title (not a
@@ -925,6 +961,66 @@ export function stats(): JpStats {
 // Everything the Japanese stats page needs, in one invoke (mirrors
 // musicRepo.statsDetail). Timestamps are stored UTC; every user-facing
 // grouping applies 'localtime' so days land on the user's calendar.
+// The JLPT ladder for the roadmap page. One pass over jp_card ⋈ jp_lesson ⋈
+// jp_course, bucketed by the course's level LABEL parsed to a canonical tier
+// (shared/jlptLevels.ts owns that rule and the pass thresholds, so the page and
+// the tests read the same definitions).
+//
+// "Passed" is a card with a real interval — see PASSED_INTERVAL_DAYS. Cards in
+// courses whose label names no tier are counted separately rather than dropped:
+// a total the user cannot reconcile with their library is worse than a caveat.
+export function jlptLadder(): JpJlptLadder {
+  const db = getSqlite()
+  const rows = db
+    .prepare(
+      `SELECT c.level AS level,
+              COUNT(*) AS cards,
+              SUM(CASE WHEN k.status = 'review' AND k.interval_days >= ? THEN 1 ELSE 0 END) AS passed,
+              SUM(CASE WHEN k.reps > 0 THEN 1 ELSE 0 END) AS seen
+         FROM jp_card k
+         JOIN jp_lesson l ON l.id = k.lesson_id
+         JOIN jp_course c ON c.id = l.course_id
+        GROUP BY c.level`
+    )
+    .all(PASSED_INTERVAL_DAYS) as {
+    level: string | null
+    cards: number
+    passed: number
+    seen: number
+  }[]
+
+  const byLevel = new Map<JlptLevel, { cards: number; passed: number; seen: number }>()
+  let unlevelled = 0
+  for (const r of rows) {
+    const level = parseJlptLevel(r.level)
+    if (!level) {
+      unlevelled += r.cards
+      continue
+    }
+    const acc = byLevel.get(level) ?? { cards: 0, passed: 0, seen: 0 }
+    acc.cards += r.cards
+    acc.passed += r.passed
+    acc.seen += r.seen
+    byLevel.set(level, acc)
+  }
+
+  const levels: JlptLevelProgress[] = JLPT_LEVELS.map((level) => {
+    const a = byLevel.get(level) ?? { cards: 0, passed: 0, seen: 0 }
+    return {
+      level,
+      cards: a.cards,
+      passed: a.passed,
+      inProgress: Math.max(0, a.seen - a.passed),
+      untouched: Math.max(0, a.cards - a.seen),
+      pct: a.cards ? Math.round((a.passed / a.cards) * 100) : 0,
+      complete: levelComplete(a.passed, a.cards)
+    }
+  })
+
+  const totals = ladderTotals(levels)
+  return { levels, current: currentLevel(levels), passed: totals.passed, cards: totals.cards, unlevelled }
+}
+
 export function statsDetail(): JpStatsDetail {
   const db = getSqlite()
 

@@ -60,9 +60,12 @@ function seed(): void {
     INSERT INTO manga_chapter (media_id, dir_path, title, last_read_page, read_at)
       VALUES (1, 'ch1', 'Chapter 1', 12, '2025-06-15');
 
-    INSERT INTO media_image (media_id, kind, file_path, source_url, source, width, height)
-      VALUES (1, 'wallpaper', 'pictures/Cowboy Bebop (anime)/wallpapers/wallhaven-x1.jpg',
-        'https://w.wallhaven.cc/full/x1.jpg', 'wallhaven', 1920, 1080);
+    INSERT INTO media_image (id, media_id, kind, file_path, source_url, source, width, height,
+                             is_background)
+      VALUES (7, 1, 'wallpaper', 'pictures/Cowboy Bebop (anime)/wallpapers/wallhaven-x1.jpg',
+        'https://w.wallhaven.cc/full/x1.jpg', 'wallhaven', 1920, 1080, 1);
+    INSERT INTO slideshow_item (image_id, file_name)
+      VALUES (7, 'Cowboy Bebop - wallhaven-x1.jpg');
 
     INSERT INTO video_file (media_id, file_path, title, number, watched_at, resume_seconds)
       VALUES (1, 'Cowboy Bebop/ep01.mkv', 'Session 1', 1, '2026-08-01 22:00:00', 431);
@@ -101,6 +104,9 @@ function seed(): void {
     INSERT INTO en_writing (prompt_key, prompt_title, submission, feedback, score)
       VALUES ('opinion-remote-work', 'Remote work', 'My essay text.', '{"scores":{}}', 7.5);
     INSERT INTO prog_progress (lesson_key) VALUES ('go-from-python/why-go');
+    INSERT INTO prog_attempt (lesson_key, score, total) VALUES ('go-from-python/why-go', 3, 4);
+    INSERT INTO prog_cli_miss (cmd_key, misses) VALUES ('files/ls -la', 2);
+    INSERT INTO prog_solve (kind, key, best, answer) VALUES ('regex', 'digits', 5, '\\d+');
 
     INSERT INTO settings (key, value) VALUES
       ('tmdb.api_key', 'secret-tmdb'),
@@ -119,6 +125,7 @@ function seed(): void {
       ('books.dir', '/media/xamir/Anglo/Books'),
       ('audio.dir', '/media/xamir/Anglo/Anime'),
       ('pictures.dir', '/media/xamir/Anglo/Pictures'),
+      ('slideshow.dir', '/media/xamir/Anglo/Pictures/Slideshow'),
       ('jackett.url', 'http://localhost:9117'),
       ('jackett.api_key', 'secret-jackett'),
       ('jackett.start_cmd', 'systemctl start jackett.service'),
@@ -191,11 +198,13 @@ describe('export sanitize', () => {
     for (const t of [
       'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log', 'jp_ghost',
       'music_artist', 'music_album', 'music_track', 'music_playlist',
-      'music_playlist_track', 'music_play_log', 'manga_chapter', 'media_image', 'quiz_session',
+      'music_playlist_track', 'music_play_log', 'manga_chapter', 'media_image', 'slideshow_item',
+      'quiz_session',
       'game_session',
       'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta',
       'gacha_chat_thread', 'gacha_chat_message', 'gacha_goal', 'gacha_coach_note', 'gacha_coach_doc',
       'checklist_task', 'checklist_log', 'en_word', 'en_review_log', 'en_writing', 'prog_progress',
+      'prog_attempt', 'prog_cli_miss', 'prog_solve',
       // Scan cache + remux index: rows point at the exporter's own userData,
       // and resume positions are personal. sanitizeSql.cjs has always deleted
       // these two; nothing ever seeded them, so the guard had a hole.

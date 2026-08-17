@@ -11,6 +11,7 @@ import BarButton from '../components/reader/BarButton'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
 import { PrevIcon, NextIcon } from '../components/PlayerIcons'
 import { PopoverRow, PopoverOption } from '../components/reader/BookSettingsPopover'
+import ReaderSettingsDrawer, { DrawerSlider } from '../components/reader/ReaderSettingsDrawer'
 import type { MangaChapter, MokuroBlock } from '@shared/types'
 
 // Immersive local manga reader (routed chrome-free from App.tsx).
@@ -29,6 +30,12 @@ interface ReaderPrefs {
   direction: Direction
   coverOffset: boolean
   zoom: number
+  // Dim the page for night reading. A CSS filter on the reading column, so it
+  // costs nothing and never touches the stored image.
+  brightness: number // 0.3 – 1
+  // Space between pages in scroll mode. 0 is the seamless webtoon look; a few
+  // px separates the pages of a scanned volume.
+  gap: number // px
 }
 
 const PREFS_KEY = 'manga.readerPrefs'
@@ -37,7 +44,9 @@ const DEFAULTS: ReaderPrefs = {
   fit: 'height',
   direction: 'rtl',
   coverOffset: true,
-  zoom: 1
+  zoom: 1,
+  brightness: 1,
+  gap: 0
 }
 
 function loadPrefs(): ReaderPrefs {
@@ -96,7 +105,7 @@ export default function MangaReaderPage() {
       return next
     })
   }, [])
-  const { mode, fit, direction, coverOffset, zoom } = prefs
+  const { mode, fit, direction, coverOffset, zoom, brightness, gap } = prefs
 
   // ---- current page ----
   const [page, setPage] = useState(0)
@@ -571,8 +580,24 @@ export default function MangaReaderPage() {
 
   return (
     <div className="h-screen bg-black flex" onMouseMove={pokeBar}>
-      {/* main reading column */}
+      {/* main reading column. Brightness dims here rather than on each page so
+          the bars dim with the page — a bright bar over a dimmed page is
+          exactly what you do not want at 2am. */}
       <div className="relative flex-1 min-w-0 flex flex-col">
+        {/* A black overlay, NOT `filter: brightness()`. A filter makes this
+            column the containing block for every `position: fixed` descendant,
+            which silently reshrank the chapter popover's `fixed inset-0`
+            click-away backdrop to the column — so with the mining panel open,
+            clicking beside the popover no longer dismissed it. Compositing
+            black at 1-b over a colour is what brightness(b) computed anyway.
+            pointer-events-none so it never swallows a page tap. */}
+        {brightness < 1 && (
+          <div
+            className="pointer-events-none absolute inset-0 z-40 bg-black"
+            style={{ opacity: 1 - brightness }}
+            aria-hidden="true"
+          />
+        )}
         {/* top bar */}
         <div className={`${barCls} top-0 border-b`}>
           <button className="btn-ghost py-1 px-3 text-sm" onClick={exitToDetail}>
@@ -640,7 +665,10 @@ export default function MangaReaderPage() {
             <div
               className="mx-auto"
               style={{
-                width: fit === 'width' ? `${100 * zoom}%` : `min(${48 * zoom}rem, ${100 * zoom}%)`
+                width: fit === 'width' ? `${100 * zoom}%` : `min(${48 * zoom}rem, ${100 * zoom}%)`,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: gap ? `${gap}px` : undefined
               }}
             >
               {pages.map((p, i) => (
@@ -729,6 +757,11 @@ export default function MangaReaderPage() {
               onClose={() => setChapterListOpen(false)}
             />
           )}
+          {/* The counter flanks the slider as well as sitting in the top bar:
+              while you drag, the top bar is the furthest thing from your eye. */}
+          <span className="w-8 shrink-0 text-right text-xs tabular-nums text-gray-400">
+            {page + 1}
+          </span>
           <input
             type="range"
             min={0}
@@ -739,6 +772,7 @@ export default function MangaReaderPage() {
             style={{ direction: direction === 'rtl' && mode !== 'vertical' ? 'rtl' : 'ltr' }}
             aria-label="Page"
           />
+          <span className="w-8 shrink-0 text-xs tabular-nums text-gray-500">{pageCount}</span>
           <button
             className="btn-ghost py-1 px-2 text-xs"
             disabled={!nextChapter}
@@ -769,16 +803,6 @@ export default function MangaReaderPage() {
                 pokeBar()
               }}
             />
-            {settingsOpen && (
-              <DisplayPopover
-                mode={mode}
-                fit={fit}
-                direction={direction}
-                coverOffset={coverOffset}
-                setPref={setPref}
-                onClose={() => setSettingsOpen(false)}
-              />
-            )}
             <BarButton label="⛏" active={panelOpen} title="Mine words (M)" onClick={() => setPanelOpen((v) => !v)} />
             <BarButton label="?" title="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)} />
           </div>
@@ -790,6 +814,78 @@ export default function MangaReaderPage() {
       </div>
 
       {/* mining panel */}
+      {settingsOpen && (
+        <ReaderSettingsDrawer onClose={() => setSettingsOpen(false)}>
+          <PopoverRow label="Mode">
+            <PopoverOption active={mode === 'single'} title="S" onClick={() => setPref('mode', 'single')}>
+              Single
+            </PopoverOption>
+            <PopoverOption active={mode === 'double'} title="D" onClick={() => setPref('mode', 'double')}>
+              Double
+            </PopoverOption>
+            <PopoverOption active={mode === 'vertical'} title="V" onClick={() => setPref('mode', 'vertical')}>
+              Scroll
+            </PopoverOption>
+          </PopoverRow>
+          <PopoverRow label="Fit">
+            <PopoverOption active={fit === 'height'} title="F cycles" onClick={() => setPref('fit', 'height')}>
+              Height
+            </PopoverOption>
+            <PopoverOption active={fit === 'width'} title="F cycles" onClick={() => setPref('fit', 'width')}>
+              Width
+            </PopoverOption>
+            <PopoverOption active={fit === 'original'} title="F cycles" onClick={() => setPref('fit', 'original')}>
+              Original
+            </PopoverOption>
+          </PopoverRow>
+          <PopoverRow label="Direction">
+            <PopoverOption active={direction === 'rtl'} title="R toggles" onClick={() => setPref('direction', 'rtl')}>
+              ← Right to left
+            </PopoverOption>
+            <PopoverOption active={direction === 'ltr'} title="R toggles" onClick={() => setPref('direction', 'ltr')}>
+              Left to right →
+            </PopoverOption>
+          </PopoverRow>
+          {mode === 'double' && (
+            <PopoverRow label="Spreads">
+              <PopoverOption
+                active={coverOffset}
+                title="C toggles"
+                onClick={() => setPref('coverOffset', !coverOffset)}
+              >
+                Cover page alone
+              </PopoverOption>
+            </PopoverRow>
+          )}
+          <DrawerSlider
+            label="Brightness"
+            value={brightness}
+            display={`${Math.round(brightness * 100)}%`}
+            min={0.3}
+            max={1}
+            step={0.05}
+            onChange={(v) => setPref('brightness', v)}
+          />
+          {mode === 'vertical' && (
+            <DrawerSlider
+              label="Page gap"
+              value={gap}
+              display={gap ? `${gap} px` : 'seamless'}
+              min={0}
+              max={48}
+              step={4}
+              onChange={(v) => setPref('gap', v)}
+            />
+          )}
+          <div className="border-t border-base-700 pt-3">
+            <p className="text-[10px] leading-relaxed text-gray-600">
+              Settings apply to every series. Keyboard: ← → page, S/D/V mode, F fit, R direction,
+              O overlay, Esc closes.
+            </p>
+          </div>
+        </ReaderSettingsDrawer>
+      )}
+
       {panelOpen && (
         <MiningPanel
           mediaId={mediaId}
@@ -858,74 +954,6 @@ function ChapterListPopover({
 
 // Display settings popover (BookSettingsPopover's manga sibling): labelled
 // segmented rows for what used to be five cryptic letter/arrow buttons.
-function DisplayPopover({
-  mode,
-  fit,
-  direction,
-  coverOffset,
-  setPref,
-  onClose
-}: {
-  mode: Mode
-  fit: Fit
-  direction: Direction
-  coverOffset: boolean
-  setPref: <K extends keyof ReaderPrefs>(k: K, v: ReaderPrefs[K]) => void
-  onClose: () => void
-}) {
-  return (
-    <>
-      <div className="fixed inset-0 z-20" onMouseDown={onClose} />
-      <div className="absolute bottom-full right-0 z-30 mb-2 w-72 max-w-[calc(100vw-2rem)] space-y-3 rounded-lg border border-base-700 bg-base-900/95 p-3 shadow-xl shadow-black/40 backdrop-blur">
-        <PopoverRow label="Mode">
-          <PopoverOption active={mode === 'single'} title="S" onClick={() => setPref('mode', 'single')}>
-            Single
-          </PopoverOption>
-          <PopoverOption active={mode === 'double'} title="D" onClick={() => setPref('mode', 'double')}>
-            Double
-          </PopoverOption>
-          <PopoverOption active={mode === 'vertical'} title="V" onClick={() => setPref('mode', 'vertical')}>
-            Scroll
-          </PopoverOption>
-        </PopoverRow>
-        <PopoverRow label="Fit">
-          <PopoverOption active={fit === 'height'} title="F cycles" onClick={() => setPref('fit', 'height')}>
-            Height
-          </PopoverOption>
-          <PopoverOption active={fit === 'width'} title="F cycles" onClick={() => setPref('fit', 'width')}>
-            Width
-          </PopoverOption>
-          <PopoverOption active={fit === 'original'} title="F cycles" onClick={() => setPref('fit', 'original')}>
-            Original
-          </PopoverOption>
-        </PopoverRow>
-        <PopoverRow label="Direction">
-          <PopoverOption active={direction === 'rtl'} title="R toggles" onClick={() => setPref('direction', 'rtl')}>
-            ← Right to left
-          </PopoverOption>
-          <PopoverOption active={direction === 'ltr'} title="R toggles" onClick={() => setPref('direction', 'ltr')}>
-            Left to right →
-          </PopoverOption>
-        </PopoverRow>
-        {mode === 'double' && (
-          <PopoverRow label="Spreads">
-            <PopoverOption
-              active={coverOffset}
-              title="C toggles"
-              onClick={() => setPref('coverOffset', !coverOffset)}
-            >
-              Cover page alone
-            </PopoverOption>
-          </PopoverRow>
-        )}
-      </div>
-    </>
-  )
-}
-
-// One rendered page: the wrapper shrink-wraps the drawn image exactly
-// (inline-block + relative), so the OCR overlay can position blocks in
-// percentages of the source image.
 function PageView({
   chapterId,
   index,

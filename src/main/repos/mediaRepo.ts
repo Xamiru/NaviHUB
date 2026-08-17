@@ -427,6 +427,31 @@ export function get(id: number): MediaDetail | null {
   if (!row) return null
   const base = mapMedia(row)
 
+  // Hero art for the detail page. banner_path wins (it is the source's own wide
+  // art), else the first image the user attached on the Art tab — fan art before
+  // wallpapers, since fan art is framed for a title and a wallpaper rarely is.
+  const heroFallback = db
+    .prepare(
+      `SELECT file_path FROM media_image
+       WHERE media_id = ? AND kind IN ('fanart', 'wallpaper')
+       ORDER BY CASE kind WHEN 'fanart' THEN 0 ELSE 1 END,
+                COALESCE(sort_order, 1000000), id
+       LIMIT 1`
+    )
+    .get(id) as { file_path: string } | undefined
+  const heroPath = base.bannerPath ?? heroFallback?.file_path ?? null
+
+  // The full-page backdrop, if the user flagged one on the Art tab. Independent
+  // of heroPath on purpose: the same image can be both, and picking a backdrop
+  // must not silently change the hero strip. At most one row carries the flag
+  // (pictures.setBackground enforces it); ORDER BY id is belt and braces.
+  const backgroundRow = db
+    .prepare(
+      'SELECT file_path FROM media_image WHERE media_id = ? AND is_background = 1 ORDER BY id LIMIT 1'
+    )
+    .get(id) as { file_path: string } | undefined
+  const backgroundPath = backgroundRow?.file_path ?? null
+
   const tags = db
     .prepare(
       `SELECT t.* FROM tag t JOIN media_tag mt ON mt.tag_id = t.id
@@ -631,7 +656,17 @@ export function get(id: number): MediaDetail | null {
     }
   })
 
-  return { ...base, tags, companies, cast, characters, themes, relations }
+  return {
+    ...base,
+    heroPath,
+    backgroundPath,
+    tags,
+    companies,
+    cast,
+    characters,
+    themes,
+    relations
+  }
 }
 
 function setTags(mediaId: number, tagIds: number[]): void {

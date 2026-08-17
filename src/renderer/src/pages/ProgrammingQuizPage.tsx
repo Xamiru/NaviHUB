@@ -9,26 +9,27 @@ import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
 import { PROG_COURSES } from '@shared/programming/courses'
 import { CHEAT_SHEETS } from '@shared/programming/cheatsheets'
-import type { CheatEntry } from '@shared/programming/types'
+import { SNIPPET_LANGS, type SnippetKind, type SnippetLang } from '@shared/programming/snippets'
+import {
+  commandQuestions,
+  courseQuestions,
+  snippetQuestions,
+  type ProgQuizQuestion
+} from '@shared/programming/quizPools'
+import { shuffle } from '@shared/shuffle'
 
-// Multiple-choice quiz over the programming section, in the Quiz hub. Two
-// pools, both built entirely in the renderer from the code catalog (no IPC —
-// the content is shared/programming): the courses' own check questions, and
-// "which command does this" over the cheatsheets. Same loop as the Japanese
-// quiz: 1-4 to answer, Enter to advance, one endGame() funnel that logs a
-// quiz_session row of kind 'programming'.
+// Multiple-choice quiz over the programming section. Three pools, all built
+// entirely in the renderer from the code catalog (@shared/programming/
+// quizPools — no IPC): the courses' own check questions, "which command does
+// this" over the cheatsheets, and the snippet decks (predict the output /
+// spot the bug). Same loop as the Japanese quiz: 1-4 to answer, Enter to
+// advance, one endGame() funnel that logs a quiz_session row of kind
+// 'programming' (mode in settings). The summary groups misses by where they
+// came from and links back to the lesson / sheet.
 
 type Phase = 'setup' | 'play' | 'summary'
-type Mode = 'course' | 'command'
-
-interface Question {
-  id: string
-  prompt: string
-  context: string | null // small line above the prompt (course / sheet)
-  options: string[]
-  correct: number
-  explain: string | null
-}
+type Mode = 'course' | 'command' | 'snippets'
+type Question = ProgQuizQuestion
 
 interface Stats {
   score: number
@@ -38,91 +39,10 @@ interface Stats {
 }
 const ZERO: Stats = { score: 0, total: 0, streak: 0, best: 0 }
 
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
-// Course questions already ship four options; only their display order is
-// shuffled, so `correct` is re-found by identity.
-function courseQuestions(courseKey: string | null): Question[] {
-  const courses = courseKey ? PROG_COURSES.filter((c) => c.key === courseKey) : PROG_COURSES
-  const out: Question[] = []
-  for (const c of courses) {
-    for (const l of c.lessons) {
-      l.questions.forEach((q, i) => {
-        const answer = q.options[q.correct]
-        const options = shuffle(q.options)
-        out.push({
-          id: `${c.key}/${l.key}/${i}`,
-          prompt: q.prompt,
-          context: `${c.title} · ${l.title}`,
-          options,
-          correct: options.indexOf(answer),
-          explain: q.explain ?? null
-        })
-      })
-    }
-  }
-  return out
-}
-
-// "Which command does X?" — the answer is the entry's command, distractors are
-// other commands from the same sheet (falling back to every sheet for the
-// short ones), deduped by rendered text.
-//
-// Distractors are drawn from entries of the SAME KIND as the answer, where the
-// presence of `answers` is the signal: entries that carry one are real CLI
-// invocations, entries without one are keystrokes (tmux's `prefix d` and
-// friends, left answers-less on purpose so they never enter the typing drill).
-// Mixing the two made a CLI prompt offer three chord-shaped options that are
-// eliminable on sight — and vice versa.
-const isCommand = (e: CheatEntry): boolean => !!e.answers?.length
-
-function commandQuestions(sheetKey: string | null): Question[] {
-  const sheets = sheetKey ? CHEAT_SHEETS.filter((s) => s.key === sheetKey) : CHEAT_SHEETS
-  // Precomputed once per call, not once per entry: rebuilding these inside the
-  // loop made the whole pool O(entries²) over ~180 entries.
-  const allByKind = {
-    true: CHEAT_SHEETS.flatMap((s) => s.entries.filter(isCommand).map((e) => e.cmd)),
-    false: CHEAT_SHEETS.flatMap((s) => s.entries.filter((e) => !isCommand(e)).map((e) => e.cmd))
-  }
-  const out: Question[] = []
-  for (const sheet of sheets) {
-    const sheetByKind = {
-      true: sheet.entries.filter(isCommand).map((e) => e.cmd),
-      false: sheet.entries.filter((e) => !isCommand(e)).map((e) => e.cmd)
-    }
-    for (const entry of sheet.entries) {
-      const kind = String(isCommand(entry)) as 'true' | 'false'
-      const taken = new Set([entry.cmd])
-      const distractors: string[] = []
-      for (const pool of [sheetByKind[kind], allByKind[kind]]) {
-        for (const cmd of shuffle(pool)) {
-          if (distractors.length >= 3) break
-          if (taken.has(cmd)) continue
-          taken.add(cmd)
-          distractors.push(cmd)
-        }
-        if (distractors.length >= 3) break
-      }
-      if (distractors.length < 3) continue
-      const options = shuffle([entry.cmd, ...distractors])
-      out.push({
-        id: `${sheet.key}/${entry.cmd}`,
-        prompt: entry.desc,
-        context: sheet.title,
-        options,
-        correct: options.indexOf(entry.cmd),
-        explain: entry.example ? `Example: ${entry.example}` : null
-      })
-    }
-  }
-  return out
+interface MissGroup {
+  label: string
+  to: string | null
+  n: number
 }
 
 export default function ProgrammingQuizPage() {
@@ -131,6 +51,8 @@ export default function ProgrammingQuizPage() {
   const [mode, setMode] = usePersistedState<Mode>('progQuizMode', 'course')
   const [courseKey, setCourseKey] = usePersistedState<string | null>('progQuizCourse', null)
   const [sheetKey, setSheetKey] = usePersistedState<string | null>('progQuizSheet', null)
+  const [snipLang, setSnipLang] = usePersistedState<SnippetLang | null>('progQuizSnipLang', null)
+  const [snipKind, setSnipKind] = usePersistedState<SnippetKind | null>('progQuizSnipKind', null)
   const [length, setLength] = usePersistedState<number>('progQuizLength', 10)
 
   const [current, setCurrent] = useState<Question | null>(null)
@@ -144,6 +66,15 @@ export default function ProgrammingQuizPage() {
   const statsRef = useRef<Stats>(ZERO)
   const lengthRef = useRef(10)
   const loggedRef = useRef(false)
+  // Misses grouped by source (lesson / sheet / snippet deck) for the summary.
+  const missedRef = useRef<Map<string, MissGroup>>(new Map())
+  const [missGroups, setMissGroups] = useState<MissGroup[]>([])
+
+  function buildPool(): Question[] {
+    if (mode === 'course') return courseQuestions(courseKey)
+    if (mode === 'command') return commandQuestions(sheetKey)
+    return snippetQuestions(snipLang, snipKind)
+  }
 
   const { data: history } = useQuery({
     queryKey: qk.quiz.history('programming'),
@@ -153,7 +84,7 @@ export default function ProgrammingQuizPage() {
   const answered = picked !== null
 
   function startGame(): void {
-    const pool = mode === 'course' ? courseQuestions(courseKey) : commandQuestions(sheetKey)
+    const pool = buildPool()
     if (pool.length < 4) {
       setError('Not enough questions in that selection yet — pick a wider scope.')
       return
@@ -164,6 +95,8 @@ export default function ProgrammingQuizPage() {
     statsRef.current = ZERO
     lengthRef.current = length
     loggedRef.current = false
+    missedRef.current = new Map()
+    setMissGroups([])
     setStats(ZERO)
     setNewBest(false)
     setPhase('play')
@@ -181,6 +114,12 @@ export default function ProgrammingQuizPage() {
     if (picked !== null || !current) return
     setPicked(index ?? -1) // -1 = revealed without answering
     const right = index !== null && index === current.correct
+    if (!right) {
+      const label = current.reviewLabel ?? current.context ?? 'Other'
+      const g = missedRef.current.get(label) ?? { label, to: current.reviewTo, n: 0 }
+      g.n += 1
+      missedRef.current.set(label, g)
+    }
     const s = statsRef.current
     const streak = right ? s.streak + 1 : 0
     statsRef.current = {
@@ -207,11 +146,12 @@ export default function ProgrammingQuizPage() {
           score: s.score,
           total: s.total,
           bestStreak: s.best,
-          settings: { mode, courseKey, sheetKey, length: lengthRef.current }
+          settings: { mode, courseKey, sheetKey, snipLang, snipKind, length: lengthRef.current }
         })
         .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('programming') }))
         .catch(() => {})
     }
+    setMissGroups([...missedRef.current.values()].sort((a, b) => b.n - a.n))
     setPhase('summary')
   }
 
@@ -243,14 +183,13 @@ export default function ProgrammingQuizPage() {
   }, [phase, current, answered])
 
   if (phase === 'setup') {
-    const poolSize =
-      mode === 'course' ? courseQuestions(courseKey).length : commandQuestions(sheetKey).length
+    const poolSize = buildPool().length
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <PageHeader
           back={{ to: '/programming', label: 'Programming' }}
           title="Programming Quiz"
-          subtitle="Multiple choice over the courses' questions and the command cheatsheets."
+          subtitle="Multiple choice over the courses' questions, the command cheatsheets, and code snippets."
         />
 
         <div className="card p-5 space-y-5">
@@ -265,9 +204,42 @@ export default function ProgrammingQuizPage() {
               onClick={() => setMode('command')}
               label="Which command?"
             />
+            <Pill
+              active={mode === 'snippets'}
+              onClick={() => setMode('snippets')}
+              label="Code snippets"
+            />
           </Group>
 
-          {mode === 'course' ? (
+          {mode === 'snippets' && (
+            <>
+              <Group label="Language">
+                <Pill active={snipLang === null} onClick={() => setSnipLang(null)} label="All" />
+                {SNIPPET_LANGS.map((l) => (
+                  <Pill
+                    key={l.key}
+                    active={snipLang === l.key}
+                    onClick={() => setSnipLang(l.key)}
+                    label={l.label}
+                  />
+                ))}
+              </Group>
+              <Group label="Kind">
+                <Pill active={snipKind === null} onClick={() => setSnipKind(null)} label="Both" />
+                <Pill
+                  active={snipKind === 'output'}
+                  onClick={() => setSnipKind('output')}
+                  label="Predict the output"
+                />
+                <Pill
+                  active={snipKind === 'bug'}
+                  onClick={() => setSnipKind('bug')}
+                  label="Spot the bug"
+                />
+              </Group>
+            </>
+          )}
+          {mode === 'course' && (
             <Group label="Course">
               <Pill active={courseKey === null} onClick={() => setCourseKey(null)} label="All" />
               {PROG_COURSES.map((c) => (
@@ -279,7 +251,8 @@ export default function ProgrammingQuizPage() {
                 />
               ))}
             </Group>
-          ) : (
+          )}
+          {mode === 'command' && (
             <Group label="Sheet">
               <Pill active={sheetKey === null} onClick={() => setSheetKey(null)} label="All" />
               {CHEAT_SHEETS.map((s) => (
@@ -323,6 +296,25 @@ export default function ProgrammingQuizPage() {
             {accuracy}% · best streak {stats.best}
           </p>
           {newBest && <p className="mt-3 text-sm text-accent">New personal best.</p>}
+          {missGroups.length > 0 && (
+            <div className="mt-4 text-left">
+              <p className="mb-1 text-xs uppercase tracking-widest text-gray-500">Missed</p>
+              <ul className="space-y-1 text-sm">
+                {missGroups.slice(0, 6).map((g) => (
+                  <li key={g.label} className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate text-gray-300">
+                      {g.n} from {g.label}
+                    </span>
+                    {g.to && (
+                      <Link to={g.to} className="btn-ghost shrink-0 px-2 py-0.5 text-xs">
+                        Review
+                      </Link>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="mt-5 flex justify-center gap-2">
             <button className="btn-primary" onClick={() => setPhase('setup')}>
               Play again
@@ -355,6 +347,11 @@ export default function ProgrammingQuizPage() {
         {current?.context && (
           <p className="mb-2 text-xs uppercase tracking-widest text-gray-600">{current.context}</p>
         )}
+        {current?.code && (
+          <pre className="mb-3 overflow-x-auto rounded-md bg-base-900 p-3 font-mono text-xs leading-relaxed">
+            <code>{current.code}</code>
+          </pre>
+        )}
         <p className="text-lg leading-snug">{current?.prompt}</p>
       </div>
 
@@ -374,7 +371,7 @@ export default function ProgrammingQuizPage() {
               onClick={() => handleAnswer(i)}
             >
               <kbd className="kbd mt-0.5 shrink-0">{i + 1}</kbd>
-              <span className={mode === 'command' ? 'font-mono' : ''}>{opt}</span>
+              <span className={current.mono ? 'whitespace-pre-wrap font-mono' : ''}>{opt}</span>
             </button>
           )
         })}

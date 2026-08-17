@@ -14,6 +14,11 @@ import { SILENT_HILL } from './silentHill'
 import { GTA } from './gta'
 import { DRAGON_QUEST } from './dragonQuest'
 import { SOULS } from './souls'
+import { FIRE_EMBLEM } from './fireEmblem'
+import { TRAILS } from './trails'
+import { MASS_EFFECT } from './massEffect'
+import { PERSONA } from './persona'
+import { HALO } from './halo'
 
 export * from './types'
 export { matchLibrary, normalizeGameTitle } from './match'
@@ -27,7 +32,12 @@ export const FRANCHISES: FranchiseCfg[] = [
   SILENT_HILL,
   GTA,
   DRAGON_QUEST,
-  SOULS
+  SOULS,
+  FIRE_EMBLEM,
+  TRAILS,
+  MASS_EFFECT,
+  PERSONA,
+  HALO
 ]
 
 export function franchiseCfg(id: string): FranchiseCfg | null {

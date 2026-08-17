@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import { SET_PHRASES_COURSE, VN_SLANG_COURSE } from './japaneseSeed4'
 import {
   RADICALS_COURSE,
   COUNTERS_COURSE,
@@ -944,7 +945,7 @@ const N4_COURSE: SeedCourse = {
     'VN sentences — relative clauses, んだ, potential, conditionals, passive/causative, ' +
     'hearsay and appearance, giving and receiving.',
   level: 'N4',
-  difficulty: 6,
+  difficulty: 7,
   lessons: [
     {
       kind: 'grammar',
@@ -1330,7 +1331,7 @@ const N4_VOCAB_COURSE: SeedCourse = {
     'Core N4 words grouped by theme — the everyday vocabulary that carries most ' +
     'slice-of-life manga and VN scenes. Best studied alongside the N4 Grammar course.',
   level: 'N4',
-  difficulty: 7,
+  difficulty: 8,
   lessons: [
     {
       kind: 'vocab',
@@ -1494,7 +1495,7 @@ const N4_KANJI_COURSE: SeedCourse = {
     'The ~160 kanji of JLPT N4, grouped by theme. Together with the N5 deck this ' +
     'covers the characters that appear on nearly every manga page.',
   level: 'N4',
-  difficulty: 8,
+  difficulty: 9,
   lessons: [
     {
       kind: 'kanji',
@@ -1744,7 +1745,7 @@ const CASUAL2_COURSE: SeedCourse = {
     'rough contractions, Kansai dialect, character role-language, and the onomatopoeia ' +
     'that fills every panel.',
   level: 'N4–N3',
-  difficulty: 10,
+  difficulty: 11,
   lessons: [
     {
       kind: 'grammar',
@@ -1965,7 +1966,7 @@ const N3_COURSE: SeedCourse = {
     'A first pass at intermediate grammar — the patterns narration leans on once ' +
     'dialogue stops being the hard part. Do this after the N4 courses.',
   level: 'N3',
-  difficulty: 11,
+  difficulty: 13,
   lessons: [
     {
       kind: 'grammar',
@@ -2258,7 +2259,7 @@ const N3B_COURSE: SeedCourse = {
     'The second half of the core N3 patterns — contrast, cause, blame and the ' +
     'connective tissue of narration. Finishing this makes most seinen manga readable.',
   level: 'N3',
-  difficulty: 12,
+  difficulty: 14,
   lessons: [
     {
       kind: 'grammar',
@@ -2532,7 +2533,7 @@ const N3_VOCAB_COURSE: SeedCourse = {
     'narration runs on. From here on, most new vocabulary should come from what you ' +
     'read (mine it!); this deck covers the unavoidable core.',
   level: 'N3',
-  difficulty: 13,
+  difficulty: 15,
   lessons: [
     {
       kind: 'vocab',
@@ -2697,7 +2698,7 @@ const N3_KANJI_COURSE: SeedCourse = {
     'The ~150 highest-value kanji of the N3 set (the full level has ~370). Past this ' +
     'point, new kanji stick best through reading — let the mining inbox catch the rest.',
   level: 'N3',
-  difficulty: 14,
+  difficulty: 16,
   lessons: [
     {
       kind: 'kanji',
@@ -2918,7 +2919,7 @@ const N2A_COURSE: SeedCourse = {
     'The high-frequency core of N2 — obligation, inevitability and emphasis. ' +
     'Half of these are dramatic-dialogue staples; the other half carry narration.',
   level: 'N2',
-  difficulty: 16,
+  difficulty: 18,
   lessons: [
     {
       kind: 'grammar',
@@ -3182,7 +3183,7 @@ const N2B_COURSE: SeedCourse = {
     'The rest of the N2 core — parallel change, concession, limits and the ' +
     '“might/can’t quite” family. Heavy on narration patterns.',
   level: 'N2',
-  difficulty: 17,
+  difficulty: 19,
   lessons: [
     {
       kind: 'grammar',
@@ -3425,7 +3426,7 @@ const N1A_COURSE: SeedCourse = {
     'Advanced patterns chosen for fiction first: the literary, dramatic and archaic ' +
     'grammar that fantasy manga, period pieces and VN narration are written in.',
   level: 'N1',
-  difficulty: 21,
+  difficulty: 23,
   lessons: [
     {
       kind: 'grammar',
@@ -3667,7 +3668,7 @@ const N1B_COURSE: SeedCourse = {
     'The last stretch: emphasis, extremity and formality — はおろか, 極まりない, ' +
     'ならでは and friends. Finish this and no grammar in a manga or VN should stop you.',
   level: 'N1',
-  difficulty: 22,
+  difficulty: 24,
   lessons: [
     {
       kind: 'grammar',
@@ -3985,26 +3986,28 @@ const ALL_PACKS: { flag: string; course: SeedCourse }[] = [
   { flag: 'japanese.seeded.radicals', course: RADICALS_COURSE }, // 2
   { flag: 'japanese.seeded.kanji', course: N5_KANJI_COURSE }, // 3
   { flag: 'japanese.seeded.casual', course: CASUAL_COURSE }, // 4
-  { flag: 'japanese.seeded.counters', course: COUNTERS_COURSE }, // 5
-  { flag: 'japanese.seeded.n4', course: N4_COURSE }, // 6
-  { flag: 'japanese.seeded.n4vocab', course: N4_VOCAB_COURSE }, // 7
-  { flag: 'japanese.seeded.n4kanji', course: N4_KANJI_COURSE }, // 8
-  { flag: 'japanese.seeded.sfx', course: SFX_COURSE }, // 9
-  { flag: 'japanese.seeded.casual2', course: CASUAL2_COURSE }, // 10
-  { flag: 'japanese.seeded.n3', course: N3_COURSE }, // 11
-  { flag: 'japanese.seeded.n3b', course: N3B_COURSE }, // 12
-  { flag: 'japanese.seeded.n3vocab', course: N3_VOCAB_COURSE }, // 13
-  { flag: 'japanese.seeded.n3kanji', course: N3_KANJI_COURSE }, // 14
-  { flag: 'japanese.seeded.speech', course: SPEECH_COURSE }, // 15
-  { flag: 'japanese.seeded.n2a', course: N2A_COURSE }, // 16
-  { flag: 'japanese.seeded.n2b', course: N2B_COURSE }, // 17
-  { flag: 'japanese.seeded.n2vocab', course: N2_VOCAB_COURSE }, // 18
-  { flag: 'japanese.seeded.n2kanji', course: N2_KANJI_COURSE }, // 19
-  { flag: 'japanese.seeded.idioms', course: IDIOMS_COURSE }, // 20
-  { flag: 'japanese.seeded.n1a', course: N1A_COURSE }, // 21
-  { flag: 'japanese.seeded.n1b', course: N1B_COURSE }, // 22
-  { flag: 'japanese.seeded.n1vocab', course: N1_VOCAB_COURSE }, // 23
-  { flag: 'japanese.seeded.n1kanji', course: N1_KANJI_COURSE } // 24
+  { flag: 'japanese.seeded.setphrases', course: SET_PHRASES_COURSE }, // 5
+  { flag: 'japanese.seeded.counters', course: COUNTERS_COURSE }, // 6
+  { flag: 'japanese.seeded.n4', course: N4_COURSE }, // 7
+  { flag: 'japanese.seeded.n4vocab', course: N4_VOCAB_COURSE }, // 8
+  { flag: 'japanese.seeded.n4kanji', course: N4_KANJI_COURSE }, // 9
+  { flag: 'japanese.seeded.sfx', course: SFX_COURSE }, // 10
+  { flag: 'japanese.seeded.casual2', course: CASUAL2_COURSE }, // 11
+  { flag: 'japanese.seeded.vnslang', course: VN_SLANG_COURSE }, // 12
+  { flag: 'japanese.seeded.n3', course: N3_COURSE }, // 13
+  { flag: 'japanese.seeded.n3b', course: N3B_COURSE }, // 14
+  { flag: 'japanese.seeded.n3vocab', course: N3_VOCAB_COURSE }, // 15
+  { flag: 'japanese.seeded.n3kanji', course: N3_KANJI_COURSE }, // 16
+  { flag: 'japanese.seeded.speech', course: SPEECH_COURSE }, // 17
+  { flag: 'japanese.seeded.n2a', course: N2A_COURSE }, // 18
+  { flag: 'japanese.seeded.n2b', course: N2B_COURSE }, // 19
+  { flag: 'japanese.seeded.n2vocab', course: N2_VOCAB_COURSE }, // 20
+  { flag: 'japanese.seeded.n2kanji', course: N2_KANJI_COURSE }, // 21
+  { flag: 'japanese.seeded.idioms', course: IDIOMS_COURSE }, // 22
+  { flag: 'japanese.seeded.n1a', course: N1A_COURSE }, // 23
+  { flag: 'japanese.seeded.n1b', course: N1B_COURSE }, // 24
+  { flag: 'japanese.seeded.n1vocab', course: N1_VOCAB_COURSE }, // 25
+  { flag: 'japanese.seeded.n1kanji', course: N1_KANJI_COURSE } // 26
 ]
 
 // The 2026-07-05 renumbering, applied once to DBs seeded under the old 1–15
@@ -4076,11 +4079,58 @@ function reorderSteps2(sqlite: Database.Database): void {
   tx()
 }
 
+// The 2026-08-15 renumbering: 'Anime & Manga Set Phrases' takes step 5 and
+// 'VN, Gaming & Net Slang' takes step 12, pushing every later pack down. Same
+// one-sided policy as the earlier passes — matched by ORIGINAL title + OLD
+// step, so a course the user renamed or renumbered is left alone.
+const STEP_REORDER3: [title: string, oldStep: number][] = [
+  ['Counters & Numbers', 5],
+  ['JLPT N4 Grammar', 6],
+  ['JLPT N4 Vocabulary', 7],
+  ['JLPT N4 Kanji', 8],
+  ['Manga SFX & Onomatopoeia', 9],
+  ['Manga & VN Japanese II', 10],
+  ['JLPT N3 Grammar I', 11],
+  ['JLPT N3 Grammar II', 12],
+  ['JLPT N3 Vocabulary', 13],
+  ['JLPT N3 Kanji Essentials', 14],
+  ['Speech Styles & Role Language', 15],
+  ['JLPT N2 Grammar I', 16],
+  ['JLPT N2 Grammar II', 17],
+  ['JLPT N2 Vocabulary', 18],
+  ['JLPT N2 Kanji', 19],
+  ['Idioms & Set Phrases (慣用句)', 20],
+  ['JLPT N1 Grammar I', 21],
+  ['JLPT N1 Grammar II', 22],
+  ['JLPT N1 Vocabulary', 23],
+  ['JLPT N1 Kanji', 24]
+]
+
+function reorderSteps3(sqlite: Database.Database): void {
+  const done = sqlite
+    .prepare('SELECT value FROM settings WHERE key = ?')
+    .get('japanese.seeded.order4')
+  if (done) return
+  const move = sqlite.prepare(
+    'UPDATE jp_course SET difficulty = ? WHERE title = ? AND difficulty = ?'
+  )
+  const tx = sqlite.transaction(() => {
+    // Highest step first, so every destination is free on arrival.
+    for (const [title, oldStep] of [...STEP_REORDER3].reverse()) {
+      const pack = ALL_PACKS.find((p) => p.course.title === title)
+      if (pack) move.run(pack.course.difficulty, title, oldStep)
+    }
+    sqlite.prepare('INSERT INTO settings (key, value) VALUES (?, ?)').run('japanese.seeded.order4', '1')
+  })
+  tx()
+}
+
 export function seedJapanese(sqlite: Database.Database): void {
   // Renumber BEFORE seeding so the new packs never share a step with a course
   // still carrying its old number.
   backfillLevels(sqlite)
   reorderSteps(sqlite)
   reorderSteps2(sqlite)
+  reorderSteps3(sqlite)
   for (const p of ALL_PACKS) seedPack(sqlite, p.flag, p.course)
 }

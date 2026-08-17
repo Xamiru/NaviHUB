@@ -10,6 +10,12 @@ vi.mock('../src/main/db/connection', () => ({
 import * as programmingRepo from '../src/main/repos/programmingRepo'
 import { PROG_COURSES, progCourse, progLesson, progLessonKey } from '../src/shared/programming/courses'
 import { CHEAT_SHEETS, normalizeCmd, practicePool } from '../src/shared/programming/cheatsheets'
+import { bestAttempts, passedChecks } from '../src/shared/programming/attempts'
+import type { ProgAttempt } from '../src/shared/types'
+import { REGEX_GOLF_PUZZLES } from '../src/shared/programming/regexGolf'
+import { SQL_EXERCISES } from '../src/shared/programming/sqlExercises'
+import { PROG_SNIPPETS, SNIPPET_LANGS } from '../src/shared/programming/snippets'
+import { commandQuestions, courseQuestions, snippetQuestions } from '../src/shared/programming/quizPools'
 import { parseMarkdown } from '../src/shared/markdown'
 
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/
@@ -51,8 +57,14 @@ describe('course catalog content', () => {
           expect(q.correct, id).toBeGreaterThanOrEqual(0)
           expect(q.correct, id).toBeLessThan(4)
           expect(new Set(q.options).size, `${id}: duplicate options`).toBe(4)
+          expect(q.explain?.trim().length ?? 0, `${id}: explain required`).toBeGreaterThan(10)
+          for (const o of q.options) {
+            expect(o.toLowerCase(), `${id}: lazy option`).not.toMatch(/^(all|none) of the above/)
+          }
         }
+        expect(l.questions.length, `${c.key}/${l.key}: at least 3 questions`).toBeGreaterThanOrEqual(3)
       }
+      expect(c.lessons.length, `${c.key}: at least 7 lessons`).toBeGreaterThanOrEqual(7)
     }
   })
 
@@ -109,6 +121,89 @@ describe('cheatsheet content', () => {
   })
 })
 
+describe('snippet decks (predict the output / spot the bug)', () => {
+  it('keys are unique and <lang>-<slug>, decks are big enough per language and kind', () => {
+    const keys = PROG_SNIPPETS.map((s) => s.key)
+    expect(new Set(keys).size).toBe(keys.length)
+    for (const s of PROG_SNIPPETS) {
+      expect(s.key, s.key).toMatch(new RegExp(`^${s.lang}-[a-z0-9]+(-[a-z0-9]+)*$`))
+      expect(SNIPPET_LANGS.map((l) => l.key)).toContain(s.lang)
+    }
+    for (const l of SNIPPET_LANGS) {
+      expect(PROG_SNIPPETS.filter((s) => s.lang === l.key).length, l.key).toBeGreaterThanOrEqual(10)
+    }
+    expect(PROG_SNIPPETS.filter((s) => s.kind === 'output').length).toBeGreaterThanOrEqual(20)
+    expect(PROG_SNIPPETS.filter((s) => s.kind === 'bug').length).toBeGreaterThanOrEqual(20)
+  })
+
+  it('every snippet is well-formed: ≤ 20 code lines, 4 distinct options, in-range answer, explain', () => {
+    for (const s of PROG_SNIPPETS) {
+      expect(s.code.trim().length, s.key).toBeGreaterThan(0)
+      expect(s.code.split('\n').length, `${s.key}: code too long`).toBeLessThanOrEqual(20)
+      expect(s.options.length, s.key).toBe(4)
+      expect(new Set(s.options).size, `${s.key}: duplicate options`).toBe(4)
+      expect(s.correct, s.key).toBeGreaterThanOrEqual(0)
+      expect(s.correct, s.key).toBeLessThan(4)
+      expect(s.explain.trim().length, `${s.key}: explain`).toBeGreaterThan(20)
+      expect(s.prompt.trim().length, s.key).toBeGreaterThan(5)
+      for (const o of s.options) {
+        expect(o.toLowerCase(), `${s.key}: lazy option`).not.toMatch(/^(all|none) of the above/)
+      }
+    }
+  })
+
+  it('answer positions are spread (no index above 40%)', () => {
+    const counts = [0, 0, 0, 0]
+    for (const s of PROG_SNIPPETS) counts[s.correct]++
+    for (const c of counts) expect(c / PROG_SNIPPETS.length).toBeLessThanOrEqual(0.4)
+  })
+})
+
+describe('quiz pools (pure builders)', () => {
+  const seq = (): (() => number) => {
+    let i = 0
+    return () => ((i += 0.37) % 1)
+  }
+
+  it('course questions carry a lesson review route and re-find the answer after shuffling', () => {
+    const qs = courseQuestions(null, seq())
+    expect(qs.length).toBeGreaterThan(200)
+    for (const q of qs) {
+      expect(q.options.length).toBe(4)
+      expect(q.reviewTo).toMatch(/^\/programming\/course\//)
+      expect(q.code).toBeNull()
+    }
+    // Same rng → same deck; the answer index follows the shuffled text.
+    const again = courseQuestions(null, seq())
+    expect(again.map((q) => q.options[q.correct])).toEqual(qs.map((q) => q.options[q.correct]))
+  })
+
+  it('command questions never mix keystroke chords with CLI commands, and link to the sheet', () => {
+    const chords = new Set(
+      CHEAT_SHEETS.flatMap((s) => s.entries.filter((e) => !e.answers?.length).map((e) => e.cmd))
+    )
+    for (const q of commandQuestions(null, seq())) {
+      const kinds = new Set(q.options.map((o) => chords.has(o)))
+      expect(kinds.size, q.id).toBe(1)
+      expect(new Set(q.options).size).toBe(4)
+      expect(q.reviewTo).toMatch(/^\/programming\/cheatsheets\?sheet=/)
+      expect(q.mono).toBe(true)
+    }
+  })
+
+  it('snippet questions filter by language and kind and carry the code', () => {
+    const all = snippetQuestions(null, null, seq())
+    expect(all.length).toBe(PROG_SNIPPETS.length)
+    const py = snippetQuestions('python', 'output', seq())
+    expect(py.length).toBe(PROG_SNIPPETS.filter((s) => s.lang === 'python' && s.kind === 'output').length)
+    for (const q of py) {
+      expect(q.code).toBeTruthy()
+      expect(q.context).toContain('python')
+      expect(q.options[q.correct]).toBe(PROG_SNIPPETS.find((s) => `snippet/${s.key}` === q.id)!.options[PROG_SNIPPETS.find((s) => `snippet/${s.key}` === q.id)!.correct])
+    }
+  })
+})
+
 describe('programmingRepo', () => {
   beforeEach(() => {
     db = createTestDb()
@@ -133,5 +228,108 @@ describe('programmingRepo', () => {
     expect(() => programmingRepo.complete('garbage')).toThrow()
     // uncomplete of an unknown key is a harmless no-op delete
     expect(() => programmingRepo.uncomplete('garbage')).not.toThrow()
+  })
+
+  // ---- lesson self-check attempts ----
+  it('records attempts (validated key, clamped score) and folds them into best/latest', () => {
+    expect(() => programmingRepo.recordAttempt({ lessonKey: 'garbage', score: 1, total: 4 })).toThrow()
+    programmingRepo.recordAttempt({ lessonKey: KEY, score: 2, total: 4 })
+    programmingRepo.recordAttempt({ lessonKey: KEY, score: 9, total: 4 }) // clamped to 4
+    programmingRepo.recordAttempt({ lessonKey: KEY, score: 3, total: 4 })
+    const rows = programmingRepo.attempts()
+    expect(rows.map((r) => r.score)).toEqual([2, 4, 3])
+    const folded = bestAttempts(rows)
+    expect(folded.get(KEY)).toMatchObject({ attempts: 3, best: { score: 4 }, latest: { score: 3 } })
+    expect(passedChecks(rows)).toBe(1)
+  })
+
+  // A lesson's question count is not frozen — the attempt history is
+  // append-only, so editing a lesson leaves rows with different totals under
+  // one key. Ranked by raw score, an old 11/12 would outrank a later perfect
+  // 10/10 and hide it from passedChecks().
+  it('ranks best attempts by ratio, not raw score, across changed lesson lengths', () => {
+    const at = (n: number): string => `2026-08-1${n}T00:00:00Z`
+    const rows: ProgAttempt[] = [
+      { lessonKey: KEY, score: 11, total: 12, at: at(1) },
+      { lessonKey: KEY, score: 10, total: 10, at: at(2) }
+    ]
+    const best = bestAttempts(rows).get(KEY)!.best
+    expect([best.score, best.total]).toEqual([10, 10])
+    expect(passedChecks(rows)).toBe(1)
+
+    // The reverse order folds identically — best must not depend on arrival.
+    expect(passedChecks([rows[1], rows[0]])).toBe(1)
+
+    // A higher raw score at a worse ratio never wins.
+    const worse: ProgAttempt[] = [
+      { lessonKey: KEY, score: 8, total: 10, at: at(1) },
+      { lessonKey: KEY, score: 9, total: 20, at: at(2) }
+    ]
+    expect(bestAttempts(worse).get(KEY)!.best.total).toBe(10)
+  })
+
+  it('breaks ratio ties on the longer check, then on the later attempt', () => {
+    const at = (n: number): string => `2026-08-1${n}T00:00:00Z`
+    // Same ratio, different lengths: 6/6 is a stronger run than 3/3.
+    const tie: ProgAttempt[] = [
+      { lessonKey: KEY, score: 6, total: 6, at: at(1) },
+      { lessonKey: KEY, score: 3, total: 3, at: at(2) }
+    ]
+    expect(bestAttempts(tie).get(KEY)!.best.total).toBe(6)
+    // Identical ratio AND length: the most recent wins.
+    const same: ProgAttempt[] = [
+      { lessonKey: KEY, score: 4, total: 5, at: at(1) },
+      { lessonKey: KEY, score: 4, total: 5, at: at(2) }
+    ]
+    expect(bestAttempts(same).get(KEY)!.best.at).toBe(at(2))
+    // A zero-question lesson is ratio 0, never "passed", and never the best.
+    const empty: ProgAttempt[] = [
+      { lessonKey: KEY, score: 0, total: 0, at: at(1) },
+      { lessonKey: KEY, score: 1, total: 4, at: at(2) }
+    ]
+    expect(bestAttempts(empty).get(KEY)!.best.total).toBe(4)
+    expect(passedChecks([empty[0]])).toBe(0)
+  })
+
+  // ---- CLI weak commands ----
+  it('CLI rounds bump misses, walk them back on first-try hits, and drop rows at zero', () => {
+    const pool = practicePool(null)
+    const [a, b, c] = pool.slice(0, 3).map((i) => i.key)
+    programmingRepo.recordCliRound({ missed: [a, b, 'nope/garbage'], correct: [c] })
+    expect(programmingRepo.cliMisses().map((m) => [m.cmdKey, m.misses])).toEqual([
+      [a, 1],
+      [b, 1]
+    ])
+    programmingRepo.recordCliRound({ missed: [a], correct: [b] })
+    const after = programmingRepo.cliMisses()
+    expect(after).toHaveLength(1)
+    expect(after[0]).toMatchObject({ cmdKey: a, misses: 2 })
+    // A key both missed and correct in one round counts as missed (worst wins).
+    programmingRepo.recordCliRound({ missed: [c], correct: [c] })
+    expect(programmingRepo.cliMisses().find((m) => m.cmdKey === c)?.misses).toBe(1)
+  })
+
+  it('practice pool keys are unique and match the frozen <sheet>/<answers[0]> shape', () => {
+    const pool = practicePool(null)
+    const keys = pool.map((i) => i.key)
+    expect(new Set(keys).size).toBe(keys.length)
+    for (const i of pool) expect(i.key).toBe(`${i.sheetKey}/${i.answers[0]}`)
+  })
+
+  // ---- solves ----
+  it('records solves: sql is first-write-wins, regex keeps the shortest pattern; unknown keys throw', () => {
+    const sqlKey = SQL_EXERCISES[0].key
+    const rxKey = REGEX_GOLF_PUZZLES[0].key
+    expect(() => programmingRepo.recordSolve({ kind: 'sql', key: 'nope' })).toThrow()
+    expect(() => programmingRepo.recordSolve({ kind: 'regex', key: 'nope' })).toThrow()
+    programmingRepo.recordSolve({ kind: 'sql', key: sqlKey, answer: 'SELECT title FROM anime' })
+    programmingRepo.recordSolve({ kind: 'sql', key: sqlKey, answer: 'SELECT title FROM anime WHERE 1' })
+    programmingRepo.recordSolve({ kind: 'regex', key: rxKey, best: 9, answer: '^[0-9]+$' })
+    programmingRepo.recordSolve({ kind: 'regex', key: rxKey, best: 5, answer: '^\\d+$' })
+    programmingRepo.recordSolve({ kind: 'regex', key: rxKey, best: 7, answer: '^\\d\\d*$' }) // worse, ignored
+    const solves = programmingRepo.solves()
+    expect(solves).toHaveLength(2)
+    expect(solves.find((s) => s.kind === 'sql')).toMatchObject({ key: sqlKey, best: null, answer: 'SELECT title FROM anime' })
+    expect(solves.find((s) => s.kind === 'regex')).toMatchObject({ key: rxKey, best: 5, answer: '^\\d+$' })
   })
 })

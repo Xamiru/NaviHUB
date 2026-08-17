@@ -20,6 +20,7 @@ export type ChecklistDetectSource =
   | 'quizRound'
   | 'enReviews'
   | 'gameSession'
+  | 'progLesson'
 
 export interface ChecklistDef {
   key: string
@@ -130,6 +131,16 @@ export const CHECKLIST_DEFS: ChecklistDef[] = [
     target: 1,
     route: '/games',
     source: 'gameSession'
+  },
+  {
+    key: 'prog-lesson',
+    label: 'Complete a programming lesson',
+    hint: 'Counts lessons marked complete in the Programming section.',
+    kind: 'detected',
+    defaultCadence: 'weekly',
+    target: 1,
+    route: '/programming',
+    source: 'progLesson'
   },
   ...GACHA_GAMES.map(
     (g): ChecklistDef => ({

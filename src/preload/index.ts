@@ -19,6 +19,12 @@ const api: NaviApi = {
     resumePoints: () => ipcRenderer.invoke('media:resumePoints'),
     activityHeatmap: () => ipcRenderer.invoke('media:activityHeatmap')
   },
+  tv: {
+    seasons: (mediaId) => ipcRenderer.invoke('tv:seasons', mediaId),
+    setWatched: (episodeId, watched) => ipcRenderer.invoke('tv:setWatched', episodeId, watched),
+    setSeasonWatched: (mediaId, season, watched) =>
+      ipcRenderer.invoke('tv:setSeasonWatched', mediaId, season, watched)
+  },
   people: {
     list: (search, role, mediaType) => ipcRenderer.invoke('people:list', search, role, mediaType),
     get: (id) => ipcRenderer.invoke('people:get', id),
@@ -61,7 +67,7 @@ const api: NaviApi = {
     songPool: (filter) => ipcRenderer.invoke('quiz:songPool', filter),
     tournamentPool: (source) => ipcRenderer.invoke('quiz:tournamentPool', source),
     logSession: (input) => ipcRenderer.invoke('quiz:logSession', input),
-    history: (kind) => ipcRenderer.invoke('quiz:history', kind)
+    history: (kind, limit) => ipcRenderer.invoke('quiz:history', kind, limit)
   },
   hltb: {
     fetch: (mediaId) => ipcRenderer.invoke('hltb:fetch', mediaId)
@@ -187,7 +193,11 @@ const api: NaviApi = {
     addFromUrl: (mediaId, kind, url) =>
       ipcRenderer.invoke('pictures:addFromUrl', mediaId, kind, url),
     addFromFiles: (mediaId, kind) => ipcRenderer.invoke('pictures:addFromFiles', mediaId, kind),
-    remove: (imageId) => ipcRenderer.invoke('pictures:remove', imageId)
+    remove: (imageId) => ipcRenderer.invoke('pictures:remove', imageId),
+    toggleSlideshow: (imageId) => ipcRenderer.invoke('pictures:toggleSlideshow', imageId),
+    setBackground: (mediaId, imageId) =>
+      ipcRenderer.invoke('pictures:setBackground', mediaId, imageId),
+    openSlideshowFolder: () => ipcRenderer.invoke('pictures:openSlideshowFolder')
   },
   franchise: {
     ensureArt: (franchiseId) => ipcRenderer.invoke('franchise:ensureArt', franchiseId),
@@ -237,6 +247,7 @@ const api: NaviApi = {
     coverageList: () => ipcRenderer.invoke('japanese:coverageList'),
     analyzeText: (text) => ipcRenderer.invoke('japanese:analyzeText', text),
     stats: () => ipcRenderer.invoke('japanese:stats'),
+    jlptLadder: () => ipcRenderer.invoke('japanese:jlptLadder'),
     statsDetail: () => ipcRenderer.invoke('japanese:statsDetail'),
     addGrammarPoints: (ids) => ipcRenderer.invoke('japanese:addGrammarPoints', ids),
     addGrammarLevel: (level) => ipcRenderer.invoke('japanese:addGrammarLevel', level),
@@ -251,7 +262,12 @@ const api: NaviApi = {
     confusables: () => ipcRenderer.invoke('japanese:confusables'),
     ghostQueue: (limit) => ipcRenderer.invoke('japanese:ghostQueue', limit),
     ghostAnswer: (cardId, correct) => ipcRenderer.invoke('japanese:ghostAnswer', cardId, correct),
-    feed: (req) => ipcRenderer.invoke('japanese:feed', req)
+    feed: (req) => ipcRenderer.invoke('japanese:feed', req),
+    particlePool: (req) => ipcRenderer.invoke('japanese:particlePool', req),
+    scramblePool: (req) => ipcRenderer.invoke('japanese:scramblePool', req),
+    contextReadingPool: (req) => ipcRenderer.invoke('japanese:contextReadingPool', req),
+    readingRacePool: (req) => ipcRenderer.invoke('japanese:readingRacePool', req),
+    jlptTestPool: (req) => ipcRenderer.invoke('japanese:jlptTestPool', req)
   },
   dict: {
     list: () => ipcRenderer.invoke('dict:list'),
@@ -316,12 +332,23 @@ const api: NaviApi = {
     writingFeedback: (req) => ipcRenderer.invoke('english:writingFeedback', req),
     listWritings: () => ipcRenderer.invoke('english:listWritings'),
     removeWriting: (id) => ipcRenderer.invoke('english:removeWriting', id),
-    errorTally: () => ipcRenderer.invoke('english:errorTally')
+    errorTally: () => ipcRenderer.invoke('english:errorTally'),
+    deck: () => ipcRenderer.invoke('english:deck'),
+    listLeeches: () => ipcRenderer.invoke('english:listLeeches'),
+    removeWords: (ids) => ipcRenderer.invoke('english:removeWords', ids)
   },
   programming: {
     progress: () => ipcRenderer.invoke('programming:progress'),
     complete: (lessonKey) => ipcRenderer.invoke('programming:complete', lessonKey),
-    uncomplete: (lessonKey) => ipcRenderer.invoke('programming:uncomplete', lessonKey)
+    uncomplete: (lessonKey) => ipcRenderer.invoke('programming:uncomplete', lessonKey),
+    recordAttempt: (input) => ipcRenderer.invoke('programming:recordAttempt', input),
+    attempts: () => ipcRenderer.invoke('programming:attempts'),
+    recordCliRound: (input) => ipcRenderer.invoke('programming:recordCliRound', input),
+    cliMisses: () => ipcRenderer.invoke('programming:cliMisses'),
+    solves: () => ipcRenderer.invoke('programming:solves'),
+    recordSolve: (input) => ipcRenderer.invoke('programming:recordSolve', input),
+    sqlRun: (input) => ipcRenderer.invoke('programming:sqlRun', input),
+    sqlExpected: (exerciseKey) => ipcRenderer.invoke('programming:sqlExpected', exerciseKey)
   },
   manga: {
     attachFolder: (mediaId) => ipcRenderer.invoke('manga:attachFolder', mediaId),

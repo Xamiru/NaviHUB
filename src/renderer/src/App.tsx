@@ -68,10 +68,18 @@ import JapaneseShiritoriPage from './pages/JapaneseShiritoriPage'
 import JapaneseConfusablesPage from './pages/JapaneseConfusablesPage'
 import JapaneseLoanwordsPage from './pages/JapaneseLoanwordsPage'
 import JapaneseFeedPage from './pages/JapaneseFeedPage'
+import JapaneseSentencesPage from './pages/JapaneseSentencesPage'
+import JapaneseArcadePage from './pages/JapaneseArcadePage'
+import JapaneseReadingPage from './pages/JapaneseReadingPage'
 import JapaneseLeechDrillPage from './pages/JapaneseLeechDrillPage'
 import EnglishDictionaryPage from './pages/EnglishDictionaryPage'
 import EnglishHomePage from './pages/EnglishHomePage'
 import EnglishReviewPage from './pages/EnglishReviewPage'
+import EnglishDeckPage from './pages/EnglishDeckPage'
+import EnglishUsePage from './pages/EnglishUsePage'
+import EnglishPunctuatePage from './pages/EnglishPunctuatePage'
+import EnglishSpotErrorPage from './pages/EnglishSpotErrorPage'
+import EnglishMatchPage from './pages/EnglishMatchPage'
 import EnglishVocabQuizPage from './pages/EnglishVocabQuizPage'
 import EnglishSpellingPage from './pages/EnglishSpellingPage'
 import EnglishReadingPage from './pages/EnglishReadingPage'
@@ -83,6 +91,8 @@ import ProgLessonPage from './pages/ProgLessonPage'
 import CheatsheetsPage from './pages/CheatsheetsPage'
 import CliPracticePage from './pages/CliPracticePage'
 import ProgrammingQuizPage from './pages/ProgrammingQuizPage'
+import SqlSandboxPage from './pages/SqlSandboxPage'
+import RegexGolfPage from './pages/RegexGolfPage'
 import MangaReaderPage from './pages/MangaReaderPage'
 import BookReaderPage from './pages/BookReaderPage'
 import VideoPlayerPage from './pages/VideoPlayerPage'
@@ -395,6 +405,9 @@ export default function App() {
             <Route path="/japanese/confusables" element={<JapaneseConfusablesPage />} />
             <Route path="/japanese/loanwords" element={<JapaneseLoanwordsPage />} />
             <Route path="/japanese/feed" element={<JapaneseFeedPage />} />
+            <Route path="/japanese/sentences" element={<JapaneseSentencesPage />} />
+            <Route path="/japanese/arcade" element={<JapaneseArcadePage />} />
+            <Route path="/japanese/reading" element={<JapaneseReadingPage />} />
             <Route path="/japanese/leeches/drill" element={<JapaneseLeechDrillPage />} />
             <Route path="/japanese/test" element={<JapaneseTestPage />} />
             <Route path="/japanese/stats" element={<JapaneseStatsPage />} />
@@ -404,6 +417,11 @@ export default function App() {
             <Route path="/english" element={<EnglishHomePage />} />
             <Route path="/english/dictionary" element={<EnglishDictionaryPage />} />
             <Route path="/english/review" element={<EnglishReviewPage />} />
+            <Route path="/english/deck" element={<EnglishDeckPage />} />
+            <Route path="/english/use" element={<EnglishUsePage />} />
+            <Route path="/english/games/punctuate" element={<EnglishPunctuatePage />} />
+            <Route path="/english/games/spot" element={<EnglishSpotErrorPage />} />
+            <Route path="/english/games/match" element={<EnglishMatchPage />} />
             <Route path="/english/vocab" element={<EnglishVocabQuizPage />} />
             <Route path="/english/spelling" element={<EnglishSpellingPage />} />
             <Route path="/english/reading" element={<EnglishReadingPage />} />
@@ -416,6 +434,8 @@ export default function App() {
             <Route path="/programming/cheatsheets" element={<CheatsheetsPage />} />
             <Route path="/programming/practice" element={<CliPracticePage />} />
             <Route path="/programming/quiz" element={<ProgrammingQuizPage />} />
+            <Route path="/programming/sql" element={<SqlSandboxPage />} />
+            <Route path="/programming/regex-golf" element={<RegexGolfPage />} />
             <Route path="/programming/course/:courseKey" element={<ProgCoursePage />} />
             <Route path="/programming/course/:courseKey/:lessonKey" element={<ProgLessonPage />} />
 

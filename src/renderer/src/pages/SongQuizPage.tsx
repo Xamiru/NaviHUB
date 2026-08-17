@@ -13,6 +13,7 @@ import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
 import { ERAS } from '@shared/era'
 import type { QuizSong, QuizSongFilter } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 type Phase = 'setup' | 'play' | 'summary'
 type ListSource = 'watched' | 'all'
@@ -26,15 +27,6 @@ interface Stats {
 const TIMER_SECONDS = 20
 const AUTONEXT_MS = 3500
 const OFFSET_MAX_FRACTION = 0.6 // never start a clip past 60% of the song
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 // One song per anime, so distractor options never repeat an anime.
 function uniqueByMedia(songs: QuizSong[]): QuizSong[] {

@@ -6,6 +6,7 @@ import { Group, Pill } from '../PillGroup'
 import { api } from '../../lib/api'
 import { usePersistedState } from '../../lib/navState'
 import type { LookalikeQuizItem } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // Look-alike discrimination (kind 'lookalike'): the community's explicit
 // unmet ask — given a meaning + reading, pick the RIGHT kanji among its
@@ -15,18 +16,6 @@ import type { LookalikeQuizItem } from '@shared/types'
 
 type Source = 'cards' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
 const LEVELS: Source[] = ['N5', 'N4', 'N3', 'N2', 'N1']
-
-// Fisher-Yates. A `.sort(() => Math.random() - 0.5)` comparator is not a
-// uniform shuffle, and with the answer at index 0 it left the correct kanji in
-// slot 1 ~36% of the time — a free tell in a discrimination drill.
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 export default function LookalikeDrill() {
   const [source, setSource] = usePersistedState<Source>('jpLookalikeSource', 'cards')

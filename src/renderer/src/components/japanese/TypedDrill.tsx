@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import type { QuizKind } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // The generic typed drill engine (finite queue, misses re-enqueued at the end,
 // one quiz_session row per finished round). Moved verbatim out of
@@ -10,32 +11,30 @@ import type { QuizKind } from '@shared/types'
 // the kana tab's per-keystroke endless variant stays in the page.
 
 export interface DrillItem {
-  prompt: string
+  prompt: string // the identity key of the item (misses are tracked by it) — and the display when `node` is absent
+  node?: ReactNode // richer prompt rendering (a gapped sentence, a highlighted word); `prompt` stays the key
+  label?: string // what the summary's "Missed" list shows instead of `prompt`
   instruction?: string | null // small line above the prompt ("→ て-form")
   sub: string | null // small line under the prompt after answering (readings/meaning)
   accept: (input: string) => boolean
   reveal: string // shown on a wrong answer
 }
 
-export function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
 
 export default function TypedDrill({
   items,
   kind,
   settings,
-  onExit
+  onExit,
+  placeholder = 'type the reading…',
+  wide = false
 }: {
   items: DrillItem[]
   kind: QuizKind
   settings: Record<string, unknown>
   onExit: () => void
+  placeholder?: string
+  wide?: boolean // a wider input for multi-word answers (Use of English)
 }) {
   const qc = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -108,7 +107,9 @@ export default function TypedDrill({
         {missed.size > 0 && (
           <p className="mt-3 text-lg text-gray-300">
             <span className="mr-2 text-xs uppercase tracking-widest text-gray-500">Missed</span>
-            {[...missed].join('　')}
+            {[...missed]
+              .map((p) => items.find((i) => i.prompt === p)?.label ?? p)
+              .join(items.some((i) => i.label) ? ' · ' : '　')}
           </p>
         )}
         <div className="mt-5 flex justify-center gap-2">
@@ -137,13 +138,15 @@ export default function TypedDrill({
       {current!.instruction && (
         <p className="mb-2 text-center text-sm text-gray-400">{current!.instruction}</p>
       )}
-      <p
-        className={`text-center leading-none ${
-          current!.prompt.length > 4 ? 'text-4xl leading-snug' : 'text-7xl'
-        }`}
-      >
-        {current!.prompt}
-      </p>
+      {current!.node ?? (
+        <p
+          className={`text-center leading-none ${
+            current!.prompt.length > 4 ? 'text-4xl leading-snug' : 'text-7xl'
+          }`}
+        >
+          {current!.prompt}
+        </p>
+      )}
 
       {wrong ? (
         <div className="mt-6 text-center">
@@ -156,11 +159,11 @@ export default function TypedDrill({
           </button>
         </div>
       ) : (
-        <div className="mx-auto mt-6 max-w-xs">
+        <div className={`mx-auto mt-6 ${wide ? 'max-w-lg' : 'max-w-xs'}`}>
           <input
             ref={inputRef}
             className="input w-full text-center text-lg"
-            placeholder="type the reading…"
+            placeholder={placeholder}
             value={input}
             autoFocus
             onChange={(e) => setInput(e.target.value)}

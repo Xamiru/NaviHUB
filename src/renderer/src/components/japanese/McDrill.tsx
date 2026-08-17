@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import type { QuizKind } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
 
 // The multiple-choice quiz loop shared by the confusables/loanword drills: a
 // finite-or-endless deck, 1-N answer keys + Enter advance, loggedRef-guarded
@@ -53,15 +54,6 @@ export default function McDrill<T>({
   const deckRef = useRef<T[]>([])
   const statsRef = useRef<Stats>(ZERO)
   const loggedRef = useRef(false)
-
-  function shuffle<U>(arr: U[]): U[] {
-    const a = [...arr]
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[a[i], a[j]] = [a[j], a[i]]
-    }
-    return a
-  }
 
   function nextQuestion(): void {
     for (let tries = 0; tries < 50; tries++) {

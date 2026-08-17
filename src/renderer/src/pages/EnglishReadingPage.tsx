@@ -8,6 +8,7 @@ import QuizRecord from '../components/QuizRecord'
 import Markdown from '../components/Markdown'
 import { EN_PASSAGES } from '@shared/english/passages'
 import type { EnPassage, EnReadingQuestion } from '@shared/english/types'
+import { shuffle } from '@shared/shuffle'
 
 // Reading comprehension over the authored C1/C2 passages (content is code —
 // src/shared/english/passages.ts). Pick a passage, read it, answer its
@@ -28,15 +29,6 @@ const KIND_LABEL: Record<EnReadingQuestion['kind'], string> = {
   'vocab-in-context': 'Vocabulary in context',
   tone: 'Tone',
   detail: 'Detail'
-}
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 const wordCount = (text: string): number => text.split(/\s+/).filter(Boolean).length

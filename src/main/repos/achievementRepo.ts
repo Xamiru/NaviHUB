@@ -132,7 +132,13 @@ export function upsertSchema(
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(media_id, api_name) DO UPDATE SET
          name = excluded.name,
-         description = excluded.description,
+         -- A source that lacks a description (Steam's public page blanks the
+         -- hidden ones) must not wipe one an earlier source supplied.
+         description = COALESCE(excluded.description, achievement.description),
+         -- hidden stays authoritative from the source even when the text above
+         -- is preserved: that pairing is deliberate, not a leak. The kept text
+         -- is what the UI reveals once the achievement is unlocked, and until
+         -- then hidden is exactly what should be concealing it.
          hidden = excluded.hidden,
          -- COALESCE so a refetch that couldn't re-download art keeps the art
          -- already on disk, the import-preserves-what-it-can rule.
