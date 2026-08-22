@@ -293,3 +293,89 @@ describe('hero banner art', () => {
     expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({ banner_path: null })
   })
 })
+
+describe('partial refresh (Library Refresh)', () => {
+  // The invariant the whole feature turns on: `only` writes media_item columns
+  // and NOTHING else. pruneCharacters' last two statements sweep orphans for the
+  // whole SOURCE, not this media id, so a thin payload run through the normal
+  // path would delete cast across the library.
+  const counts = () => ({
+    characters: (db.prepare('SELECT COUNT(*) AS n FROM character').get() as { n: number }).n,
+    mediaCharacters: (db.prepare('SELECT COUNT(*) AS n FROM media_character').get() as { n: number })
+      .n,
+    credits: (db.prepare('SELECT COUNT(*) AS n FROM credit').get() as { n: number }).n,
+    companies: (db.prepare('SELECT COUNT(*) AS n FROM media_company').get() as { n: number }).n,
+    tags: (db.prepare('SELECT COUNT(*) AS n FROM media_tag').get() as { n: number }).n,
+    relations: (db.prepare('SELECT COUNT(*) AS n FROM media_relation').get() as { n: number }).n
+  })
+
+  it('leaves every child row intact — cast, studios, genres and relations', async () => {
+    await importAnime(101)
+    const before = counts()
+    // A full import must actually have written children, or this proves nothing.
+    expect(before.characters).toBeGreaterThan(0)
+    expect(before.credits).toBeGreaterThan(0)
+    expect(before.companies).toBeGreaterThan(0)
+    expect(before.tags).toBeGreaterThan(0)
+
+    images.resolve = (url) => (url.includes('cover') ? 'media/dl-new-cover' : null)
+    await importAnime(101, { only: ['cover'] })
+
+    expect(counts()).toEqual(before)
+    expect(db.prepare('SELECT cover_path FROM media_item').get()).toEqual({
+      cover_path: 'media/dl-new-cover'
+    })
+  })
+
+  it('writes only the chosen columns, leaving the others alone', async () => {
+    await importAnime(101)
+    db.prepare("UPDATE media_item SET title='Hand edited', banner_path='media/old-banner'").run()
+
+    images.resolve = (url) => (url.includes('cover') ? 'media/dl-c2' : null)
+    await importAnime(101, { only: ['cover'] })
+
+    const row = db.prepare('SELECT title, cover_path, banner_path FROM media_item').get() as {
+      title: string
+      cover_path: string
+      banner_path: string
+    }
+    expect(row.cover_path).toBe('media/dl-c2') // asked for
+    expect(row.title).toBe('Hand edited') // not asked for
+    expect(row.banner_path).toBe('media/old-banner')
+  })
+
+  it('a text refresh restores canonical fields and merges scores', async () => {
+    await importAnime(101)
+    db.prepare("UPDATE media_item SET title='Wrong', synopsis=NULL, total_units=NULL").run()
+    await importAnime(101, { only: ['text'] })
+    const row = db.prepare('SELECT title, synopsis, total_units, metadata FROM media_item').get() as {
+      title: string
+      synopsis: string
+      total_units: number
+      metadata: string
+    }
+    expect(row.title).toBe('Test Anime')
+    expect(row.synopsis).toContain('Line one.')
+    expect(row.total_units).toBe(12)
+    expect(JSON.parse(row.metadata).averageScore).toBe(85)
+  })
+
+  it('never touches personal tracking', async () => {
+    await importAnime(101)
+    db.prepare('UPDATE media_item SET status=?, score=?, progress=?, rewatch_count=?').run(
+      'Watching',
+      9,
+      7,
+      2
+    )
+    await importAnime(101, { only: ['cover', 'text'] })
+    expect(
+      db.prepare('SELECT status, score, progress, rewatch_count FROM media_item').get()
+    ).toEqual({ status: 'Watching', score: 9, progress: 7, rewatch_count: 2 })
+  })
+
+  it('refuses a title that is not in the library', async () => {
+    await expect(importAnime(101, { only: ['cover'] })).rejects.toThrow(/not in the library/)
+  })
+})
+

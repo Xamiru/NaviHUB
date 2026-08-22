@@ -559,6 +559,13 @@ const api: NaviApi = {
     all: () => ipcRenderer.invoke('settings:all'),
     set: (key, value) => ipcRenderer.invoke('settings:set', key, value)
   },
+  refresh: {
+    preview: (req) => ipcRenderer.invoke('refresh:preview', req),
+    start: (req) => ipcRenderer.invoke('refresh:start', req),
+    status: () => ipcRenderer.invoke('refresh:status'),
+    cancel: () => ipcRenderer.invoke('refresh:cancel'),
+    one: (mediaId, aspects) => ipcRenderer.invoke('refresh:one', mediaId, aspects)
+  },
   files: {
     pickImage: () => ipcRenderer.invoke('files:pickImage'),
     resolveUrl: (relPath) => ipcRenderer.invoke('files:resolveUrl', relPath),

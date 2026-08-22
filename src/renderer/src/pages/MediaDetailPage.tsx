@@ -22,6 +22,7 @@ import { toast, toastError } from '../lib/toast'
 import { mediaUrl } from '@shared/mediaUrl'
 import CoverImage from '../components/CoverImage'
 import MediaHero from '../components/MediaHero'
+import RefreshMediaDialog from '../components/RefreshMediaDialog'
 import FranchiseBackground from '../components/FranchiseBackground'
 import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
@@ -57,6 +58,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const qc = useQueryClient()
   const scoreMax = useScoreMax()
   const [torrentsOpen, setTorrentsOpen] = useState(false)
+  const [refreshOpen, setRefreshOpen] = useState(false)
   // Drives which action is the filled one (see the action column below).
   const hasLaunch = useHasLaunchTarget(mediaId, !!cfg.hasGameLaunch)
 
@@ -150,7 +152,12 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       </button>
       <ActionMenu
         buttonClassName={inline ? 'btn-ghost' : 'btn-ghost w-full'}
-        items={[{ label: 'Delete…', danger: true, onSelect: del }]}
+        items={[
+          // Re-pulls only the aspects you tick — never the cast or your own
+          // tracking. The whole-library version lives on /bulk's Refresh tab.
+          ...(m.externalSource ? [{ label: 'Refresh…', onSelect: () => setRefreshOpen(true) }] : []),
+          { label: 'Delete…', danger: true, onSelect: del }
+        ]}
       />
     </>
   )
@@ -293,6 +300,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           {cfg.hasFanArt && <MediaImagesSection m={m} kind="fanart" />}
         </>
       )}
+
+      {refreshOpen && <RefreshMediaDialog m={m} onClose={() => setRefreshOpen(false)} />}
 
       {torrentsOpen && (
         <TorrentSearchDialog

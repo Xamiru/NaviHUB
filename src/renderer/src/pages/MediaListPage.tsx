@@ -19,6 +19,7 @@ import MediaFilterPanel, {
   type MediaFilters
 } from '../components/MediaFilterPanel'
 import { seasonLabel } from '@shared/season'
+import { loadListSort, saveListSort } from '../lib/listSortPrefs'
 import type { MediaItem, MediaListFilter, MediaSort } from '@shared/types'
 
 // Sort menu. `random` is a seeded shuffle — it has no direction, so the page
@@ -36,21 +37,34 @@ const SORTS: { value: MediaSort; label: string }[] = [
   { value: 'random', label: 'Random' }
 ]
 
+const SORT_VALUES = SORTS.map((s) => s.value)
+
 const newSeed = (): number => Math.floor(Math.random() * 1_000_000)
 
 export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   const navigate = useNavigate()
   const statuses = useStatuses(cfg)
 
+  // The sort the user last left THIS library on (localStorage, per media type),
+  // read once per mount — the shell remounts the page on every pathname change,
+  // so this re-reads when you switch libraries. Seeded here rather than in a
+  // useEffect so the first render already issues the right query.
+  const [savedSort] = useState(() => {
+    const s = loadListSort(cfg.key, SORT_VALUES)
+    return { ...s, seed: s.sort === 'random' ? newSeed() : 1 }
+  })
+
   // Empty = every status; the pills toggle rather than switch, so "Action games
   // I'm either playing or planning" is one click away.
   const [selStatuses, setSelStatuses] = usePersistedState<string[]>('statuses', [])
   const [search, setSearch] = usePersistedState('search', '')
-  const [sort, setSort] = usePersistedState<MediaSort>('sort', 'updated')
+  const [sort, setSort] = usePersistedState<MediaSort>('sort', savedSort.sort)
   // Shuffle seed: part of the query key, so bumping it deals a new hand while
-  // an unchanged seed keeps the order stable across refetches.
-  const [seed, setSeed] = usePersistedState('seed', 1)
-  const [sortDir, setSortDir] = usePersistedState<'asc' | 'desc'>('sortDir', 'desc')
+  // an unchanged seed keeps the order stable across refetches. A library whose
+  // remembered sort IS random gets a fresh hand per visit rather than the same
+  // "random" order forever.
+  const [seed, setSeed] = usePersistedState('seed', savedSort.seed)
+  const [sortDir, setSortDir] = usePersistedState<'asc' | 'desc'>('sortDir', savedSort.dir)
   const [favOnly, setFavOnly] = usePersistedState('favOnly', false)
   const [filters, setFilters] = usePersistedState<MediaFilters>('filters', EMPTY_FILTERS)
   const [showFilters, setShowFilters] = usePersistedState('showFilters', false)
@@ -207,15 +221,19 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
         >
           Favorites
         </button>
+        {/* Both controls write the choice back to listSortPrefs: this library
+            reopens on whatever you picked last, here and after a restart. */}
         <div className="flex items-center gap-2 ml-auto text-sm">
           <span className="text-gray-500">Sort</span>
           <select
             className="input w-auto py-1.5"
             value={sort}
+            title="Your last choice becomes this library's default"
             onChange={(e) => {
               const next = e.target.value as MediaSort
               if (next === 'random') setSeed(newSeed())
               setSort(next)
+              saveListSort(cfg.key, { sort: next })
             }}
           >
             {SORTS.map((s) => (
@@ -231,7 +249,11 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
           ) : (
             <button
               className="btn-ghost py-1.5"
-              onClick={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
+              onClick={() => {
+                const next = sortDir === 'asc' ? 'desc' : 'asc'
+                setSortDir(next)
+                saveListSort(cfg.key, { dir: next })
+              }}
               title="Toggle direction"
               aria-label="Toggle sort direction"
             >

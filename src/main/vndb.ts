@@ -1,4 +1,5 @@
 import { getSqlite } from './db/connection'
+import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { fetchWithRetry, sleep } from './http'
@@ -339,7 +340,15 @@ export async function topList(
 // Two phases like the AniList importer: all network work first (VN detail,
 // character pages, every image), then all DB writes in one transaction so a
 // failed import can't leave a half-written title.
-export async function importVisualNovel(id: number): Promise<ImportSummary> {
+export async function importVisualNovel(
+  id: number,
+  opts: { only?: RefreshAspect[] } = {}
+): Promise<ImportSummary> {
+  // Library Refresh: write only the chosen media_item columns and skip every
+  // child block INCLUDING pruneCharacters, whose orphan sweep is scoped to the
+  // SOURCE rather than this media id. A partial run executes no DELETE.
+  const partial = !!opts.only?.length
+  const wants = (a: RefreshAspect): boolean => !partial || !!opts.only?.includes(a)
   const vid = numToVid(id)
 
   // 1) VN detail — includes developers, creative staff, and the character<->VA
@@ -390,19 +399,20 @@ export async function importVisualNovel(id: number): Promise<ImportSummary> {
     const created = !existing
     if (existing) {
       mediaId = existing.id
-      db.prepare(
-        `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-         total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
-      ).run(
-        title,
-        native,
-        stripBBCode(m.description),
-        coverPath,
-        m.length_minutes ?? null,
-        fmtReleased(m.released),
-        mediaId
-      )
+      const sets: string[] = []
+      const args: unknown[] = []
+      if (wants('text')) {
+        sets.push('title=?', 'title_original=?', 'synopsis=?', 'total_units=?', 'release_date=?')
+        args.push(title, native, stripBBCode(m.description), m.length_minutes ?? null, fmtReleased(m.released))
+      }
+      if (wants('cover')) {
+        sets.push('cover_path=COALESCE(?, cover_path)')
+        args.push(coverPath)
+      }
+      sets.push("updated_at=datetime('now')")
+      db.prepare(`UPDATE media_item SET ${sets.join(', ')} WHERE id=?`).run(...args, mediaId)
     } else {
+      if (partial) throw new Error('That title is not in the library — import it first.')
       const info = db
         .prepare(
           `INSERT INTO media_item
@@ -427,11 +437,16 @@ export async function importVisualNovel(id: number): Promise<ImportSummary> {
     // VNDB score stat there), alongside any existing metadata keys. The length
     // vote count backs the play-time panel ("Average · N votes"); the average
     // itself lives in total_units above.
-    mergeMetadata(db, mediaId, {
-      vndbRating: typeof m.rating === 'number' && m.rating > 0 ? m.rating : undefined,
-      vndbLengthVotes:
-        typeof m.length_votes === 'number' && m.length_votes > 0 ? m.length_votes : undefined
-    })
+    if (wants('text')) {
+      mergeMetadata(db, mediaId, {
+        vndbRating: typeof m.rating === 'number' && m.rating > 0 ? m.rating : undefined,
+        vndbLengthVotes:
+          typeof m.length_votes === 'number' && m.length_votes > 0 ? m.length_votes : undefined
+      })
+    }
+
+    // Child rows + pruneCharacters stop here on a partial refresh.
+    if (partial) return { mediaId, title, studios: 0, cast: 0, staff: 0, created }
 
     // ---- developers -> companies ----
     let studios = 0

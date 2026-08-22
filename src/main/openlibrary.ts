@@ -1,4 +1,5 @@
 import { getSqlite } from './db/connection'
+import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { fetchWithRetry } from './http'
@@ -43,7 +44,8 @@ export async function search(query: string): Promise<ImportSearchResult[]> {
       id: d.key.slice('/works/'.length),
       title: d.title ?? 'Untitled',
       // The dialog's subtitle line — the author is the disambiguator for books.
-      native: Array.isArray(d.author_name) && d.author_name.length ? d.author_name.join(', ') : null,
+      native:
+        Array.isArray(d.author_name) && d.author_name.length ? d.author_name.join(', ') : null,
       year: typeof d.first_publish_year === 'number' ? d.first_publish_year : null,
       format: 'Book',
       episodes: typeof d.number_of_pages_median === 'number' ? d.number_of_pages_median : null,
@@ -74,17 +76,24 @@ function medianPages(editions: any[]): number | null {
 // ratings + one downloadImages batch), then every DB write in one transaction.
 // Everything past the work fetch is best-effort — a missing ratings endpoint
 // or author 404 never blocks the import.
-export async function importBook(olId: string): Promise<ImportSummary> {
+export async function importBook(
+  olId: string,
+  opts: { only?: RefreshAspect[] } = {}
+): Promise<ImportSummary> {
+  // Library Refresh: media_item columns only. Open Library is the most
+  // separable of the importers — authors, page count and rating are each their
+  // own request — so a partial refresh skips those fetches too.
+  const partial = !!opts.only?.length
+  const wants = (a: RefreshAspect): boolean => !partial || !!opts.only?.includes(a)
   if (!/^OL\d+W$/.test(olId)) throw new Error('Invalid Open Library work id')
   const w = await olGet(`/works/${olId}.json`)
   if (!w?.key) throw new Error('Book not found on Open Library')
 
-  const coverUrl: string | null = Array.isArray(w.covers) && w.covers[0] > 0
-    ? `${COVERS}/b/id/${w.covers[0]}-L.jpg`
-    : null
+  const coverUrl: string | null =
+    Array.isArray(w.covers) && w.covers[0] > 0 ? `${COVERS}/b/id/${w.covers[0]}-L.jpg` : null
 
   // Authors: the work lists /authors/OL…A refs; each needs its own fetch.
-  const authorKeys: string[] = (w.authors ?? [])
+  const authorKeys: string[] = (partial ? [] : (w.authors ?? []))
     .map((a: any) => a?.author?.key ?? a?.key)
     .filter((k: any): k is string => typeof k === 'string' && k.startsWith('/authors/'))
     .slice(0, MAX_AUTHORS)
@@ -96,32 +105,38 @@ export async function importBook(olId: string): Promise<ImportSummary> {
       authors.push({
         key: key.slice('/authors/'.length),
         name: String(a.name),
-        photoUrl: Array.isArray(a.photos) && a.photos[0] > 0 ? `${COVERS}/a/id/${a.photos[0]}-M.jpg` : null
+        photoUrl:
+          Array.isArray(a.photos) && a.photos[0] > 0 ? `${COVERS}/a/id/${a.photos[0]}-M.jpg` : null
       })
     } catch {
       /* best-effort */
     }
   }
 
+  // Both of these feed the 'text' aspect only, and each is its own request —
+  // a cover-only refresh has no reason to make them.
   let totalPages: number | null = null
-  try {
-    const ed = await olGet(`/works/${olId}/editions.json`, { limit: '50' })
-    totalPages = medianPages(ed?.entries ?? [])
-  } catch {
-    /* best-effort */
+  if (wants('text')) {
+    try {
+      const ed = await olGet(`/works/${olId}/editions.json`, { limit: '50' })
+      totalPages = medianPages(ed?.entries ?? [])
+    } catch {
+      /* best-effort */
+    }
   }
 
   let olRating: number | null = null
-  try {
-    const r = await olGet(`/works/${olId}/ratings.json`)
-    const avg = r?.summary?.average
-    if (typeof avg === 'number' && avg > 0 && (r?.summary?.count ?? 0) > 0) {
-      // 1-5 stars → the shared 0-100 community scale (COMMUNITY_SQL reads it raw).
-      olRating = Math.round(avg * 20)
+  if (wants('text'))
+    try {
+      const r = await olGet(`/works/${olId}/ratings.json`)
+      const avg = r?.summary?.average
+      if (typeof avg === 'number' && avg > 0 && (r?.summary?.count ?? 0) > 0) {
+        // 1-5 stars → the shared 0-100 community scale (COMMUNITY_SQL reads it raw).
+        olRating = Math.round(avg * 20)
+      }
+    } catch {
+      /* best-effort */
     }
-  } catch {
-    /* best-effort */
-  }
 
   const images = await downloadImages([coverUrl, ...authors.map((a) => a.photoUrl)])
   const coverPath = coverUrl ? (images.get(coverUrl) ?? null) : null
@@ -147,12 +162,25 @@ export async function importBook(olId: string): Promise<ImportSummary> {
       mediaId = existing.id
       // total_units also COALESCEs: the editions median can be null and must
       // never wipe a hand-entered page count.
-      db.prepare(
-        `UPDATE media_item SET title=?, synopsis=COALESCE(?, synopsis), cover_path=COALESCE(?, cover_path),
-         total_units=COALESCE(?, total_units), release_date=COALESCE(?, release_date),
-         updated_at=datetime('now') WHERE id=?`
-      ).run(title, synopsis, coverPath, totalPages, releaseDate, mediaId)
+      const sets: string[] = []
+      const args: unknown[] = []
+      if (wants('text')) {
+        sets.push(
+          'title=?',
+          'synopsis=COALESCE(?, synopsis)',
+          'total_units=COALESCE(?, total_units)',
+          'release_date=COALESCE(?, release_date)'
+        )
+        args.push(title, synopsis, totalPages, releaseDate)
+      }
+      if (wants('cover')) {
+        sets.push('cover_path=COALESCE(?, cover_path)')
+        args.push(coverPath)
+      }
+      sets.push("updated_at=datetime('now')")
+      db.prepare(`UPDATE media_item SET ${sets.join(', ')} WHERE id=?`).run(...args, mediaId)
     } else {
+      if (partial) throw new Error('That title is not in the library — import it first.')
       const info = db
         .prepare(
           `INSERT INTO media_item
@@ -165,10 +193,9 @@ export async function importBook(olId: string): Promise<ImportSummary> {
     }
 
     // ---- rating -> metadata, merged so other keys survive re-import ----
-    if (olRating != null) {
+    if (olRating != null && wants('text')) {
       const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId) as
-        | { metadata: string | null }
-        | undefined
+        { metadata: string | null } | undefined
       let metaObj: Record<string, unknown> = {}
       if (metaRow?.metadata) {
         try {
@@ -178,8 +205,14 @@ export async function importBook(olId: string): Promise<ImportSummary> {
         }
       }
       metaObj.olRating = olRating
-      db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(JSON.stringify(metaObj), mediaId)
+      db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(
+        JSON.stringify(metaObj),
+        mediaId
+      )
     }
+
+    // Child rows stop here on a partial refresh.
+    if (partial) return { mediaId, title, studios: 0, cast: 0, staff: 0, created }
 
     // ---- authors -> person + writer credits (the "Authors" crew section) ----
     let staff = 0
@@ -224,8 +257,7 @@ export async function importBook(olId: string): Promise<ImportSummary> {
       .slice(0, MAX_TAGS)
     for (const subject of subjects) {
       const existingTag = db.prepare('SELECT id FROM tag WHERE name=?').get(subject) as
-        | { id: number }
-        | undefined
+        { id: number } | undefined
       const tagId = existingTag
         ? existingTag.id
         : Number(

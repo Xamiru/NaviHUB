@@ -1,4 +1,5 @@
 import { getSqlite } from './db/connection'
+import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { fetchWithRetry, sleep } from './http'
@@ -81,7 +82,15 @@ export async function search(query: string): Promise<ImportSearchResult[]> {
 // Two-phase like every importer: appdetails + cover download + HLTB lookup
 // first, then all DB writes in one transaction. Dedup key ('steam', appid);
 // re-import refreshes canonical fields and keeps personal tracking.
-export async function importGame(appId: number): Promise<ImportSummary> {
+export async function importGame(
+  appId: number,
+  opts: { only?: RefreshAspect[] } = {}
+): Promise<ImportSummary> {
+  // Library Refresh: media_item columns only — companies and genres are skipped
+  // whole (they use INSERT OR IGNORE and never prune, but a partial refresh
+  // still has no business writing them).
+  const partial = !!opts.only?.length
+  const wants = (a: RefreshAspect): boolean => !partial || !!opts.only?.includes(a)
   const id = Math.floor(Number(appId))
   if (!Number.isFinite(id) || id <= 0) throw new Error('Bad Steam app id')
   const payload = await steamGet('/appdetails', { appids: String(id) })
@@ -117,11 +126,20 @@ export async function importGame(appId: number): Promise<ImportSummary> {
     const created = !existing
     if (existing) {
       mediaId = existing.id
-      db.prepare(
-        `UPDATE media_item SET title=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-         total_units=COALESCE(?, total_units), release_date=?, updated_at=datetime('now') WHERE id=?`
-      ).run(title, g.short_description || null, coverPath, lengthHours, released, mediaId)
+      const sets: string[] = []
+      const args: unknown[] = []
+      if (wants('text')) {
+        sets.push('title=?', 'synopsis=?', 'total_units=COALESCE(?, total_units)', 'release_date=?')
+        args.push(title, g.short_description || null, lengthHours, released)
+      }
+      if (wants('cover')) {
+        sets.push('cover_path=COALESCE(?, cover_path)')
+        args.push(coverPath)
+      }
+      sets.push("updated_at=datetime('now')")
+      db.prepare(`UPDATE media_item SET ${sets.join(', ')} WHERE id=?`).run(...args, mediaId)
     } else {
+      if (partial) throw new Error('That title is not in the library — import it first.')
       const info = db
         .prepare(
           `INSERT INTO media_item
@@ -135,7 +153,7 @@ export async function importGame(appId: number): Promise<ImportSummary> {
 
     // ---- Metacritic + HLTB -> metadata, merged so other keys survive ----
     const metacritic = typeof g.metacritic?.score === 'number' ? g.metacritic.score : 0
-    if (metacritic > 0 || hltbTimes) {
+    if ((metacritic > 0 || hltbTimes) && wants('text')) {
       const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId) as
         | { metadata: string | null }
         | undefined
@@ -151,6 +169,9 @@ export async function importGame(appId: number): Promise<ImportSummary> {
       if (hltbTimes) metaObj.hltb = hltbTimes
       db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(JSON.stringify(metaObj), mediaId)
     }
+
+    // Child rows stop here on a partial refresh.
+    if (partial) return { mediaId, title, studios: 0, cast: 0, staff: 0, created }
 
     // ---- developers + publishers -> companies. Steam gives bare NAME strings
     // (no ids), so companies match by case-insensitive name — an Atlus row

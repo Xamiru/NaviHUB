@@ -96,10 +96,19 @@ export default function MediaHero({ cfg, m, variant, actions, stats }: Props) {
       ? Math.min(100, Math.round((m.progress / m.totalUnits) * 100))
       : null
 
+  // Is a page background set (Art tab → right-click → Set background)? Then
+  // MediaDetailPage is already painting wide art behind this whole page, and a
+  // hero that paints its own crop on top of it lands two different framings of
+  // one file edge to edge — the seam reported on 2026-08-17. Each variant
+  // answers that differently below: 'banner' drops its strip entirely (it was
+  // only atmosphere, which the backdrop now provides), 'backdrop' keeps its
+  // block but goes art-less (it carries the title, synopsis and actions).
+  const onBackground = !!m.backgroundPath
+
   if (variant === 'backdrop') {
     return (
-      <div className="relative h-[420px] bg-base-700">
-        <HeroArt m={m} />
+      <div className={`relative h-[420px] ${onBackground ? '' : 'bg-base-700'}`}>
+        {!onBackground && <HeroArt m={m} />}
         {/* Two scrims: vertical so the text block sits on near-black, horizontal
             so the left edge stays readable over a busy still. */}
         <div className="absolute inset-0 bg-gradient-to-t from-base-900 via-base-900/60 to-transparent" />
@@ -141,18 +150,34 @@ export default function MediaHero({ cfg, m, variant, actions, stats }: Props) {
 
   return (
     <div>
-      <div className="relative h-[220px] bg-base-700">
-        <HeroArt m={m} />
-        <div className="absolute inset-0 bg-gradient-to-t from-base-900 via-base-900/40 to-transparent" />
-        <div className="absolute left-6 top-4 z-10">
-          <BackButton overlay />
+      {/* The strip is pure atmosphere, so a page background replaces it outright
+          rather than showing through it: the backdrop IS the wide art now, and
+          keeping 220px of empty space above the cover just to preserve the
+          overhang would be a hole in the page. Back moves inline, since it lived
+          on the strip. (The 'backdrop' variant above keeps its block either way —
+          the title, synopsis and actions sit on it, so it is not decoration.) */}
+      {!onBackground && (
+        <div className="relative h-[220px] bg-base-700">
+          <HeroArt m={m} />
+          <div className="absolute inset-0 bg-gradient-to-t from-base-900 via-base-900/40 to-transparent" />
+          <div className="absolute left-6 top-4 z-10">
+            <BackButton overlay />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="mx-auto max-w-5xl px-6">
-        {/* The cover hangs off the banner's bottom edge — the overlap is the
-            whole point of this variant, so the negative margin is load-bearing. */}
-        <div className="-mt-24 flex flex-wrap items-end gap-5">
+        {onBackground && (
+          <div className="pt-4">
+            <BackButton overlay />
+          </div>
+        )}
+        {/* Without a background the cover hangs off the banner's bottom edge —
+            the overlap is the whole point of this variant, so the negative
+            margin is load-bearing. With one there is no edge to hang off. */}
+        <div
+          className={`flex flex-wrap items-end gap-5 ${onBackground ? 'mt-4' : '-mt-24'}`}
+        >
           <CoverImage
             path={m.coverPath}
             alt={m.title}

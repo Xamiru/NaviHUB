@@ -6,6 +6,8 @@ import { useIncrementalList } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { useBulkRun } from '../lib/useBulkRun'
 import PageHeader from '../components/PageHeader'
+import Tabs from '../components/Tabs'
+import RefreshTab from '../components/RefreshTab'
 import { Group, Pill } from '../components/PillGroup'
 import { BULK_SOURCES, bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
 import type { BulkListParams, BulkPreviewItem } from '@shared/types'
@@ -33,6 +35,8 @@ export default function BulkImportPage(): React.JSX.Element {
   // Keyed by source (the sortByType shape): 'Horror' picked for Movies must not
   // silently ride into Anime just because both genre lists contain the name.
   const [genreByType, setGenreByType] = usePersistedState<Record<string, string>>('bulk.genre', {})
+  // Import fills the shelf; Refresh updates what is already on it.
+  const [tab, setTab] = usePersistedState<'import' | 'refresh'>('bulk.tab', 'import')
   const [season, setSeason] = usePersistedState('bulk.season', '')
   const [seasonYear, setSeasonYear] = usePersistedState('bulk.seasonYear', '')
 
@@ -132,9 +136,27 @@ export default function BulkImportPage(): React.JSX.Element {
     <div className="p-6 max-w-6xl mx-auto">
       <PageHeader
         title="Bulk Import"
-        subtitle="Fill a shelf in one run — preview a top list, then import the whole selection."
+        subtitle={
+          tab === 'import'
+            ? 'Fill a shelf in one run — preview a top list, then import the whole selection.'
+            : 'Update titles you already have — pick what to re-pull, and from which types.'
+        }
       />
 
+      <Tabs
+        className="mb-5"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { key: 'import', label: 'Import' },
+          { key: 'refresh', label: 'Refresh' }
+        ]}
+      />
+
+      {tab === 'refresh' ? (
+        <RefreshTab />
+      ) : (
+        <>
       <div className="card p-5 space-y-4 mb-6">
         <Group label="Type">
           {BULK_SOURCES.map((s) => (
@@ -297,6 +319,8 @@ export default function BulkImportPage(): React.JSX.Element {
           onAll={() => setDeselected(new Set())}
           onNone={() => setDeselected(new Set(preview.items.map((it) => it.sourceId)))}
         />
+      )}
+        </>
       )}
     </div>
   )

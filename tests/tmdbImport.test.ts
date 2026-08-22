@@ -235,3 +235,93 @@ describe('tv episode catalogue', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM tv_episode').get()).toEqual({ n: 0 })
   })
 })
+
+describe('partial refresh (Library Refresh)', () => {
+  // Same invariant as the AniList side: `only` writes media_item columns (and
+  // tv_episode when asked) and prunes nothing. TMDB's character prune is inlined
+  // in persistTitle and sweeps orphans source-globally.
+  const counts = () => ({
+    characters: (db.prepare('SELECT COUNT(*) AS n FROM character').get() as { n: number }).n,
+    credits: (db.prepare('SELECT COUNT(*) AS n FROM credit').get() as { n: number }).n,
+    companies: (db.prepare('SELECT COUNT(*) AS n FROM media_company').get() as { n: number }).n,
+    tags: (db.prepare('SELECT COUNT(*) AS n FROM media_tag').get() as { n: number }).n
+  })
+
+  const withCast = () =>
+    movieFixture({
+      credits: {
+        cast: [
+          { credit_id: 'c1', id: 1, name: 'Junko Iwao', character: 'Mima', order: 0, profile_path: '/a.jpg' },
+          { credit_id: 'c2', id: 2, name: 'Rica Matsumoto', character: 'Rumi', order: 1, profile_path: '/b.jpg' }
+        ],
+        crew: [{ id: 9, name: 'Satoshi Kon', job: 'Director', profile_path: null }]
+      }
+    })
+
+  it('leaves cast, crew, companies and genres intact on a cover refresh', async () => {
+    routes['/movie/550'] = withCast()
+    await importMovie(550, { skipOmdb: true })
+    const before = counts()
+    expect(before.characters).toBeGreaterThan(0)
+    expect(before.credits).toBeGreaterThan(0)
+    expect(before.companies).toBeGreaterThan(0)
+    expect(before.tags).toBeGreaterThan(0)
+
+    images.resolve = (url) => (url.includes('poster') ? 'media/dl-new-poster' : null)
+    await importMovie(550, { only: ['cover'] })
+
+    expect(counts()).toEqual(before)
+    expect(db.prepare('SELECT cover_path FROM media_item').get()).toEqual({
+      cover_path: 'media/dl-new-poster'
+    })
+  })
+
+  it('a banner refresh touches neither the title nor the cover', async () => {
+    await importMovie(550, { skipOmdb: true })
+    db.prepare("UPDATE media_item SET title='Hand edited', cover_path='media/mine'").run()
+
+    images.resolve = (url) => (url.includes('backdrop') ? 'media/dl-b2' : null)
+    await importMovie(550, { only: ['banner'] })
+
+    expect(
+      db.prepare('SELECT title, cover_path, banner_path FROM media_item').get()
+    ).toEqual({ title: 'Hand edited', cover_path: 'media/mine', banner_path: 'media/dl-b2' })
+  })
+
+  it('an episodes refresh fills the catalogue and leaves everything else', async () => {
+    await importTv(1920, { skipOmdb: true })
+    db.prepare("UPDATE media_item SET title='Hand edited'").run()
+    db.prepare('DELETE FROM tv_episode').run()
+
+    await importTv(1920, { only: ['episodes'] })
+
+    expect(db.prepare('SELECT COUNT(*) AS n FROM tv_episode').get()).toEqual({ n: 4 })
+    expect(db.prepare('SELECT title FROM media_item').get()).toEqual({ title: 'Hand edited' })
+  })
+
+  it('a refresh that did not ask for episodes never requests a season', async () => {
+    await importTv(1920, { skipOmdb: true })
+    // The http mock throws on any unmocked path, so removing the season routes
+    // turns "fetched a season anyway" into a failure — one request per season is
+    // the only network cost aspect selection actually saves.
+    delete routes['/tv/1920/season/1']
+    delete routes['/tv/1920/season/2']
+    await expect(importTv(1920, { only: ['cover'] })).resolves.toBeTruthy()
+  })
+
+  it('never touches personal tracking', async () => {
+    await importMovie(550, { skipOmdb: true })
+    db.prepare('UPDATE media_item SET status=?, score=?, rewatch_count=?').run('Watched', 10, 4)
+    await importMovie(550, { only: ['cover', 'text'] })
+    expect(db.prepare('SELECT status, score, rewatch_count FROM media_item').get()).toEqual({
+      status: 'Watched',
+      score: 10,
+      rewatch_count: 4
+    })
+  })
+
+  it('refuses a title that is not in the library', async () => {
+    await expect(importMovie(550, { only: ['cover'] })).rejects.toThrow(/not in the library/)
+  })
+})
+

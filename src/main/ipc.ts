@@ -2,6 +2,7 @@ import { ipcMain, shell, BrowserWindow } from 'electron'
 import { clampUiScale, parseUiScale } from '@shared/uiScale'
 import * as mediaRepo from './repos/mediaRepo'
 import * as tvRepo from './repos/tvRepo'
+import * as libraryRefresh from './libraryRefresh'
 import * as peopleRepo from './repos/peopleRepo'
 import * as companyRepo from './repos/companyRepo'
 import * as characterRepo from './repos/characterRepo'
@@ -161,6 +162,15 @@ export function registerIpc(): void {
         checklistRepo.logProgress(mediaId, today, undefined, { noRewatch: true })
       }
     }
+  )
+
+  // ---- library refresh ----
+  ipcMain.handle('refresh:preview', (_e, req) => libraryRefresh.preview(req))
+  ipcMain.handle('refresh:start', (_e, req) => libraryRefresh.start(req))
+  ipcMain.handle('refresh:status', () => libraryRefresh.getStatus())
+  ipcMain.handle('refresh:cancel', () => libraryRefresh.cancel())
+  ipcMain.handle('refresh:one', (_e, mediaId: number, aspects) =>
+    withActivity('Refreshing title', () => libraryRefresh.refreshMedia(mediaId, aspects))
   )
 
   // ---- people ----

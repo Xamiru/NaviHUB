@@ -886,6 +886,30 @@ export interface BulkRunStatus {
   message: string | null
 }
 
+// ---- Library Refresh (selectable-aspect bulk re-import) ----
+
+export interface RefreshPreview {
+  total: number // titles the run would touch
+  // Rows of the chosen types whose external_source no importer serves any more
+  // (legacy 'rawg'/'igdb' games), reported rather than silently dropped.
+  unsupported: number
+}
+
+export interface RefreshRunStatus {
+  id: number
+  state: 'idle' | 'running' | 'done' | 'cancelled' | 'error'
+  label: string
+  done: number
+  total: number
+  refreshed: number
+  skipped: number
+  failed: number
+  // Current title while running; the bail-out hint on 'error'.
+  message: string | null
+  // Named so a failed title can be retried by hand rather than re-running 400.
+  failures: { id: number; title: string; error: string }[]
+}
+
 // ---- Japanese learning ----
 // Standalone section: courses → lessons → cards. A lesson is 'grammar'
 // (body = explanation text, cards = example sentences), 'vocab' (cards =
@@ -2256,6 +2280,7 @@ export interface ActivityStatus {
 export type TaskKind =
   | 'import' // any withActivity import (AniList, TMDB, VNDB, Steam, themes, …)
   | 'bulkImport'
+  | 'libraryRefresh'
   | 'wrestlingImport'
   | 'musicDownload'
   | 'mangaOcr'

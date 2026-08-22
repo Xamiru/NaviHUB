@@ -27,6 +27,7 @@ const IDLE_MS = 5000
 //   torrentSearch   the /torrents page renders its own result state
 const OWNED: ReadonlySet<TaskKind> = new Set<TaskKind>([
   'bulkImport',
+  'libraryRefresh',
   'mangaOcr',
   'appUpdate',
   'musicDownload',

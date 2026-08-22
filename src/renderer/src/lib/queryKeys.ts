@@ -354,6 +354,13 @@ export const qk = {
     all: ['gamesCatalog'] as const,
     status: ['gamesCatalog', 'status'] as const
   },
+  refresh: {
+    // Library Refresh run status. Like bulk, the preview is a plain await in the
+    // handler rather than a query — it is a COUNT, and an enabled query would
+    // re-run it on every remount.
+    all: ['refresh'] as const,
+    status: ['refresh', 'status'] as const
+  },
   bulk: {
     // The /bulk page's run status poll. Previews are deliberately NOT a query
     // (a plain await in the button handler — an enabled query would refire the

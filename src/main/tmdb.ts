@@ -5,6 +5,7 @@ import { fetchWithRetry, sleep } from './http'
 import { logWarn } from './logBus'
 import * as settingsRepo from './repos/settingsRepo'
 import * as tvRepo from './repos/tvRepo'
+import type { RefreshAspect } from '@shared/refresh'
 import type {
   BulkListParams,
   BulkPreviewItem,
@@ -327,6 +328,11 @@ interface NormalizedTitle {
   cast: any[] // TMDB cast edges
   crew: any[] // TMDB crew edges (empty for TV)
   extraMeta?: Record<string, number> | null // OMDb scores merged into metadata
+  // Library Refresh: when present, persistTitle writes ONLY these aspects and
+  // skips every child block (cast, companies, genres) INCLUDING their prunes —
+  // the character prune sweeps orphans source-globally, so a thin payload would
+  // delete cast across the library. A partial run executes no DELETE at all.
+  only?: RefreshAspect[]
   // TV only: the episode catalogue, already fetched (network phase) so the
   // write below stays inside the one transaction.
   episodes?: tvRepo.EpisodeCatalogue
@@ -341,16 +347,22 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
     .sort((a, b) => (a.order ?? 999) - (b.order ?? 999))
     .slice(0, MAX_CAST)
 
+  const partial = !!n.only?.length
+  const wants = (a: RefreshAspect): boolean => !partial || !!n.only?.includes(a)
   const coverUrl = posterUrl(n.posterPath, 'w500')
   // w1280 rather than original: the hero is a background behind a scrim, and the
   // originals run to several MB each.
   const bannerUrl = posterUrl(n.backdropPath, 'w1280')
-  const images = await downloadImages([
-    coverUrl,
-    bannerUrl,
-    ...castEdges.map((e) => profileUrl(e.profile_path)),
-    ...n.crew.filter((e) => mapCrewJob(e.job)).map((e) => profileUrl(e.profile_path))
-  ])
+  const images = await downloadImages(
+    partial
+      ? [wants('cover') ? coverUrl : null, wants('banner') ? bannerUrl : null]
+      : [
+          coverUrl,
+          bannerUrl,
+          ...castEdges.map((e) => profileUrl(e.profile_path)),
+          ...n.crew.filter((e) => mapCrewJob(e.job)).map((e) => profileUrl(e.profile_path))
+        ]
+  )
   const img = (url: string | null): string | null => (url ? (images.get(url) ?? null) : null)
 
   const db = getSqlite()
@@ -368,21 +380,26 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
     const created = !existing
     if (existing) {
       mediaId = existing.id
-      db.prepare(
-        `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-         banner_path=COALESCE(?, banner_path),
-         total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
-      ).run(
-        n.title,
-        n.native,
-        n.synopsis,
-        coverPath,
-        bannerPath,
-        n.totalUnits,
-        n.releaseDate,
-        mediaId
-      )
+      const sets: string[] = []
+      const args: unknown[] = []
+      if (wants('text')) {
+        sets.push('title=?', 'title_original=?', 'synopsis=?', 'total_units=?', 'release_date=?')
+        args.push(n.title, n.native, n.synopsis, n.totalUnits, n.releaseDate)
+      }
+      if (wants('cover')) {
+        sets.push('cover_path=COALESCE(?, cover_path)')
+        args.push(coverPath)
+      }
+      if (wants('banner')) {
+        sets.push('banner_path=COALESCE(?, banner_path)')
+        args.push(bannerPath)
+      }
+      sets.push("updated_at=datetime('now')")
+      db.prepare(`UPDATE media_item SET ${sets.join(', ')} WHERE id=?`).run(...args, mediaId)
     } else {
+      // A refresh targets a row that already exists; a half-populated insert
+      // (no cast, no companies) would be worse than saying so.
+      if (partial) throw new Error('That title is not in the library — import it first.')
       const info = db
         .prepare(
           `INSERT INTO media_item
@@ -407,7 +424,7 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
 
     // ---- OMDb scores (IMDb / Rotten Tomatoes) -> metadata, merged so re-import
     // keeps any other metadata keys. Shown beside the user's own score. ----
-    if (n.extraMeta) {
+    if (n.extraMeta && wants('text')) {
       const metaRow = db.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId) as
         | { metadata: string | null }
         | undefined
@@ -432,6 +449,10 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
     // failed — in which case the existing catalogue is left untouched rather
     // than pruned to nothing.
     if (n.episodes?.seasons.length) tvRepo.replaceEpisodes(mediaId, n.episodes)
+
+    // Everything below writes CHILD rows and prunes them. A partial refresh
+    // stops here — see NormalizedTitle.only.
+    if (partial) return { mediaId, title: n.title, studios: 0, cast: 0, staff: 0, created }
 
     // ---- production companies / networks (cap a few) ----
     let studios = 0
@@ -544,8 +565,10 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
 // one big bulk run would burn through. Detail-page re-import enriches later.
 export async function importMovie(
   tmdbId: number,
-  opts: { skipOmdb?: boolean } = {}
+  opts: { skipOmdb?: boolean; only?: RefreshAspect[] } = {}
 ): Promise<ImportSummary> {
+  // A refresh that isn't asking for text has no use for OMDb's scores.
+  const skipOmdb = opts.skipOmdb || (!!opts.only?.length && !opts.only.includes('text'))
   const m = await tmdbGet(`/movie/${tmdbId}`, { append_to_response: 'credits' })
   if (!m?.id) throw new Error('Movie not found on TMDB')
   const title = m.title || m.original_title || 'Untitled'
@@ -563,7 +586,8 @@ export async function importMovie(
     genres: m.genres ?? [],
     cast: m.credits?.cast ?? [],
     crew: m.credits?.crew ?? [],
-    extraMeta: opts.skipOmdb ? null : await fetchOmdb(m.imdb_id) // TMDB movies carry imdb_id directly
+    only: opts.only,
+    extraMeta: skipOmdb ? null : await fetchOmdb(m.imdb_id) // TMDB movies carry imdb_id directly
   })
 }
 
@@ -621,8 +645,13 @@ async function fetchEpisodes(tmdbId: number, seasons: any[]): Promise<tvRepo.Epi
 
 export async function importTv(
   tmdbId: number,
-  opts: { skipOmdb?: boolean } = {}
+  opts: { skipOmdb?: boolean; only?: RefreshAspect[] } = {}
 ): Promise<ImportSummary> {
+  const partial = !!opts.only?.length
+  const skipOmdb = opts.skipOmdb || (partial && !opts.only?.includes('text'))
+  // The one aspect whose network cost is real: one request per season. A
+  // refresh that didn't ask for episodes must not pay it.
+  const wantEpisodes = !partial || !!opts.only?.includes('episodes')
   // external_ids gives us the IMDb id (TV details omit it otherwise) for OMDb.
   const m = await tmdbGet(`/tv/${tmdbId}`, { append_to_response: 'aggregate_credits,external_ids' })
   if (!m?.id) throw new Error('TV show not found on TMDB')
@@ -636,8 +665,8 @@ export async function importTv(
   const epDuration = runTimes.length
     ? Math.round(runTimes.reduce((a, b) => a + b, 0) / runTimes.length)
     : (m.last_episode_to_air?.runtime ?? null)
-  const episodes = await fetchEpisodes(tmdbId, m.seasons)
-  const omdb = opts.skipOmdb ? null : await fetchOmdb(m.external_ids?.imdb_id)
+  const episodes = wantEpisodes ? await fetchEpisodes(tmdbId, m.seasons) : undefined
+  const omdb = skipOmdb ? null : await fetchOmdb(m.external_ids?.imdb_id)
   const extraMeta =
     epDuration && epDuration > 0 ? { ...(omdb ?? {}), epDuration } : omdb
   return persistTitle({
@@ -657,6 +686,7 @@ export async function importTv(
     // The plain /tv credits endpoint only returns ~main regulars, so this is the
     // full billed cast. Flatten each person's primary role into a movie-shaped edge.
     episodes,
+    only: opts.only,
     cast: (m.aggregate_credits?.cast ?? []).map((c: any) => {
       const primary = c.roles?.[0] ?? {}
       return {

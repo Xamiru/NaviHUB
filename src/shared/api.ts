@@ -1,6 +1,7 @@
 // The typed surface exposed on window.api. Both preload (which implements the
 // bridge) and the renderer (which consumes it) import this so they never drift.
 
+import type { RefreshAspect, RefreshRequest } from './refresh'
 import type {
   ChecklistCadence,
   ChecklistStatus,
@@ -10,6 +11,8 @@ import type {
   MediaListFilter,
   MediaListFacets,
   MediaDetail,
+  RefreshPreview,
+  RefreshRunStatus,
   TvSeason,
   LibraryTimeStats,
   Person,
@@ -1198,6 +1201,17 @@ export interface NaviApi {
   settings: {
     all(): Promise<SettingsMap>
     set(key: string, value: string): Promise<void>
+  }
+  // Library Refresh: re-run each title's importer writing only the chosen
+  // aspects. See @shared/refresh.ts — a partial refresh never touches child
+  // rows, so it cannot prune cast or relations.
+  refresh: {
+    preview(req: RefreshRequest): Promise<RefreshPreview>
+    start(req: RefreshRequest): Promise<RefreshRunStatus>
+    status(): Promise<RefreshRunStatus>
+    cancel(): Promise<void>
+    // One title, from its detail page. Plain await — no run, no poll.
+    one(mediaId: number, aspects: RefreshAspect[]): Promise<void>
   }
   files: {
     // Opens a native picker, copies the chosen image into userData/media,

@@ -1,4 +1,5 @@
 import { getSqlite } from './db/connection'
+import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
 import { fetchWithRetry } from './http'
@@ -488,10 +489,54 @@ query ($id: Int, $page: Int) {
 // but skip the CHARS_QUERY pagination — at AniList's ~30 req/min budget, five
 // requests per title would turn a 1000-title run into hours. A later re-import
 // from the detail page fetches the full cast.
+// ---------------------------------------------------------------------------
+// Partial refresh (Library Refresh, 2026-08-16)
+//
+// `only` turns an import into a WRITE-GATED one: media_item columns for the
+// chosen aspects, and nothing else. Every child block below is skipped whole —
+// characters, credits, studios, genres, staff, relations — because those paths
+// PRUNE, and pruneCharacters' last two statements sweep orphans for the whole
+// SOURCE rather than for this media id. A "covers only" pass that reused them
+// with a thin payload would delete cast across the library.
+//
+// A partial run therefore executes NO DELETE at all. tests/anilistImport.test.ts
+// asserts exactly that.
+// ---------------------------------------------------------------------------
+function wants(only: RefreshAspect[] | undefined, aspect: RefreshAspect): boolean {
+  return !only?.length || only.includes(aspect)
+}
+
+// Builds the media_item UPDATE for the selected aspects. With no `only` this is
+// the same statement (and the same values) the importer has always run.
+function mediaUpdate(
+  only: RefreshAspect[] | undefined,
+  vals: { title: string; native: string | null; synopsis: string | null; totalUnits: number | null; releaseDate: string | null; coverPath: string | null; bannerPath: string | null }
+): { sql: string; args: unknown[] } {
+  const sets: string[] = []
+  const args: unknown[] = []
+  if (wants(only, 'text')) {
+    sets.push('title=?', 'title_original=?', 'synopsis=?', 'total_units=?', 'release_date=?')
+    args.push(vals.title, vals.native, vals.synopsis, vals.totalUnits, vals.releaseDate)
+  }
+  if (wants(only, 'cover')) {
+    sets.push('cover_path=COALESCE(?, cover_path)')
+    args.push(vals.coverPath)
+  }
+  if (wants(only, 'banner')) {
+    sets.push('banner_path=COALESCE(?, banner_path)')
+    args.push(vals.bannerPath)
+  }
+  sets.push("updated_at=datetime('now')")
+  return { sql: `UPDATE media_item SET ${sets.join(', ')} WHERE id=?`, args }
+}
+
 export async function importAnime(
   anilistId: number,
-  opts: { liteCharacters?: boolean } = {}
+  opts: { liteCharacters?: boolean; only?: RefreshAspect[] } = {}
 ): Promise<AniListImportSummary> {
+  // A partial refresh never needs the cast, so it always takes the lite path —
+  // at AniList's ~30 req/min that is the difference between one request and five.
+  const partial = !!opts.only?.length
   const data = await gql(DETAIL_QUERY, { id: anilistId })
   const m = data?.Media
   if (!m) throw new Error('Anime not found on AniList')
@@ -501,7 +546,7 @@ export async function importAnime(
   // up to the first 125 — keep VA-less characters too so the list matches the site.
   const MAX_CHARACTERS = 125 // 5 pages of 25
   const charEdges: any[] = [...(m.characters?.edges ?? [])]
-  let hasNext = !opts.liteCharacters && !!m.characters?.pageInfo?.hasNextPage
+  let hasNext = !opts.liteCharacters && !partial && !!m.characters?.pageInfo?.hasNextPage
   let page = 1
   while (hasNext && charEdges.length < MAX_CHARACTERS) {
     page++
@@ -516,15 +561,19 @@ export async function importAnime(
   // Wide hero art for the detail page. AniList leaves bannerImage null on plenty
   // of titles, in which case the hero falls back to Art-tab images or the cover.
   const bannerUrl = m.bannerImage || null
-  const images = await downloadImages([
-    coverUrl,
-    bannerUrl,
-    ...limited.flatMap((edge: any) => [
-      edge.node?.image?.large,
-      ...(edge.voiceActors ?? []).map((va: any) => va.image?.large)
-    ]),
-    ...(m.staff?.edges ?? []).map((edge: any) => edge.node?.image?.large)
-  ])
+  const images = await downloadImages(
+    partial
+      ? [wants(opts.only, 'cover') ? coverUrl : null, wants(opts.only, 'banner') ? bannerUrl : null]
+      : [
+          coverUrl,
+          bannerUrl,
+          ...limited.flatMap((edge: any) => [
+            edge.node?.image?.large,
+            ...(edge.voiceActors ?? []).map((va: any) => va.image?.large)
+          ]),
+          ...(m.staff?.edges ?? []).map((edge: any) => edge.node?.image?.large)
+        ]
+  )
   const img = (url: string | null | undefined): string | null =>
     url ? (images.get(url) ?? null) : null
 
@@ -544,21 +593,20 @@ export async function importAnime(
     const created = !existing
     if (existing) {
       mediaId = existing.id
-      db.prepare(
-        `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-         banner_path=COALESCE(?, banner_path),
-         total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
-      ).run(
+      const up = mediaUpdate(opts.only, {
         title,
         native,
-        stripHtml(m.description),
+        synopsis: stripHtml(m.description),
+        totalUnits: m.episodes ?? null,
+        releaseDate: fmtDate(m.startDate),
         coverPath,
-        bannerPath,
-        m.episodes ?? null,
-        fmtDate(m.startDate),
-        mediaId
-      )
+        bannerPath
+      })
+      db.prepare(up.sql).run(...up.args, mediaId)
     } else {
+      // A refresh targets a row that already exists; inserting a half-populated
+      // one (no cast, no studios) would be worse than saying so.
+      if (partial) throw new Error('That title is not in the library — import it first.')
       const info = db
         .prepare(
           `INSERT INTO media_item
@@ -580,12 +628,18 @@ export async function importAnime(
       mediaId = Number(info.lastInsertRowid)
     }
 
-    mergeMetadata(db, mediaId, {
-      averageScore: m.averageScore,
-      epDuration: m.duration,
-      season: m.season,
-      seasonYear: m.seasonYear
-    })
+    if (wants(opts.only, 'text')) {
+      mergeMetadata(db, mediaId, {
+        averageScore: m.averageScore,
+        epDuration: m.duration,
+        season: m.season,
+        seasonYear: m.seasonYear
+      })
+    }
+
+    // Everything below writes CHILD rows and prunes. A partial refresh stops
+    // here — see the note on mediaUpdate above.
+    if (partial) return { mediaId, title, studios: 0, cast: 0, staff: 0, created }
 
     // ---- studios: only the main animation studio(s), not producers/licensors ----
     let studios = 0
@@ -705,8 +759,9 @@ query ($id: Int, $page: Int) {
 // opts.liteCharacters as on importAnime — first page only, for bulk runs.
 export async function importManga(
   anilistId: number,
-  opts: { liteCharacters?: boolean } = {}
+  opts: { liteCharacters?: boolean; only?: RefreshAspect[] } = {}
 ): Promise<AniListImportSummary> {
+  const partial = !!opts.only?.length
   const data = await gql(DETAIL_QUERY_MANGA, { id: anilistId })
   const m = data?.Media
   if (!m) throw new Error('Manga not found on AniList')
@@ -714,7 +769,7 @@ export async function importManga(
   // ---- characters (no voice actors for manga) ----
   const MAX_CHARACTERS = 125
   const charEdges: any[] = [...(m.characters?.edges ?? [])]
-  let hasNext = !opts.liteCharacters && !!m.characters?.pageInfo?.hasNextPage
+  let hasNext = !opts.liteCharacters && !partial && !!m.characters?.pageInfo?.hasNextPage
   let page = 1
   while (hasNext && charEdges.length < MAX_CHARACTERS) {
     page++
@@ -727,12 +782,16 @@ export async function importManga(
 
   const coverUrl = m.coverImage?.extraLarge || m.coverImage?.large
   const bannerUrl = m.bannerImage || null
-  const images = await downloadImages([
-    coverUrl,
-    bannerUrl,
-    ...limited.map((edge: any) => edge.node?.image?.large),
-    ...(m.staff?.edges ?? []).map((edge: any) => edge.node?.image?.large)
-  ])
+  const images = await downloadImages(
+    partial
+      ? [wants(opts.only, 'cover') ? coverUrl : null, wants(opts.only, 'banner') ? bannerUrl : null]
+      : [
+          coverUrl,
+          bannerUrl,
+          ...limited.map((edge: any) => edge.node?.image?.large),
+          ...(m.staff?.edges ?? []).map((edge: any) => edge.node?.image?.large)
+        ]
+  )
   const img = (url: string | null | undefined): string | null =>
     url ? (images.get(url) ?? null) : null
 
@@ -751,21 +810,18 @@ export async function importManga(
     const created = !existing
     if (existing) {
       mediaId = existing.id
-      db.prepare(
-        `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-         banner_path=COALESCE(?, banner_path),
-         total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
-      ).run(
+      const up = mediaUpdate(opts.only, {
         title,
         native,
-        stripHtml(m.description),
+        synopsis: stripHtml(m.description),
+        totalUnits: m.chapters ?? null,
+        releaseDate: fmtDate(m.startDate),
         coverPath,
-        bannerPath,
-        m.chapters ?? null,
-        fmtDate(m.startDate),
-        mediaId
-      )
+        bannerPath
+      })
+      db.prepare(up.sql).run(...up.args, mediaId)
     } else {
+      if (partial) throw new Error('That title is not in the library — import it first.')
       const info = db
         .prepare(
           `INSERT INTO media_item
@@ -787,7 +843,10 @@ export async function importManga(
       mediaId = Number(info.lastInsertRowid)
     }
 
-    mergeMetadata(db, mediaId, { averageScore: m.averageScore })
+    if (wants(opts.only, 'text')) mergeMetadata(db, mediaId, { averageScore: m.averageScore })
+
+    // Child rows + prunes stop here on a partial refresh.
+    if (partial) return { mediaId, title, studios: 0, cast: 0, staff: 0, created }
 
     for (const g of m.genres ?? []) linkGenre(db, mediaId, g)
 
