@@ -39,9 +39,40 @@ async function steamGet(path: string, params: Record<string, string>): Promise<a
 }
 
 // "Oct 21, 2022" / "21 Oct, 2022" / "2023" → ISO date; null for TBA/invalid.
+// Steam's store dates are calendar text, not timestamps: routing them through
+// Date.parse reads them as LOCAL midnight, so the old toISOString() render
+// shifted every release date a day early for anyone east of UTC. The known
+// shapes are therefore parsed straight from their fields; the timestamp path
+// survives only as a last resort for unrecognized input.
+const MONTHS = new Map(
+  ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].map(
+    (m, i) => [m, i + 1]
+  )
+)
+
+function isoDate(year: string, month1to12: number, day: string): string | null {
+  const d = Number(day)
+  if (d < 1 || d > 31) return null
+  return `${year}-${String(month1to12).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+}
+
 export function parseSteamDate(raw: string | null | undefined): string | null {
-  if (!raw?.trim()) return null
-  const ms = Date.parse(raw.trim())
+  const s = raw?.trim()
+  if (!s) return null
+  let m = /^([A-Za-z]{3,9})\.?\s+(\d{1,2}),?\s+(\d{4})$/.exec(s) // Oct 21, 2022
+  let mo = m ? MONTHS.get(m[1]!.slice(0, 3).toLowerCase()) : undefined
+  if (m && mo) {
+    const iso = isoDate(m[3]!, mo, m[2]!)
+    if (iso) return iso
+  }
+  m = /^(\d{1,2})\s+([A-Za-z]{3,9}),?\s+(\d{4})$/.exec(s) // 21 Oct, 2022
+  mo = m ? MONTHS.get(m[2]!.slice(0, 3).toLowerCase()) : undefined
+  if (m && mo) {
+    const iso = isoDate(m[3]!, mo, m[1]!)
+    if (iso) return iso
+  }
+  if (/^\d{4}$/.test(s)) return `${s}-01-01`
+  const ms = Date.parse(s)
   if (!Number.isFinite(ms)) return null
   return new Date(ms).toISOString().slice(0, 10)
 }

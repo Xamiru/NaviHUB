@@ -7,6 +7,7 @@ import { AudioPlayerProvider } from './lib/player'
 import MusicPlayLogger from './components/MusicPlayLogger'
 import BootSequence from './components/BootSequence'
 import PlayerWidgetPage from './pages/PlayerWidgetPage'
+import AchPopupPage from './pages/AchPopupPage'
 import { toastError } from './lib/toast'
 import './styles.css'
 // Wired-chrome fonts, bundled as self-origin assets (CSP has no remote
@@ -37,12 +38,17 @@ window.addEventListener('unhandledrejection', (e) => {
 // (a second <audio> + mediaSession would fight the main window's), and no
 // BootSequence (a per-window sessionStorage gate would replay the splash
 // inside the 320x64 pill). Branched here, before any provider mounts.
+// The achievement overlay (#/achpop, AchPopupPage) is the same kind of
+// satellite window and gets the same treatment.
 const isWidgetWindow = window.location.hash.startsWith('#/widget')
+const isAchPopupWindow = window.location.hash.startsWith('#/achpop')
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     {isWidgetWindow ? (
       <PlayerWidgetPage />
+    ) : isAchPopupWindow ? (
+      <AchPopupPage />
     ) : (
       <QueryClientProvider client={queryClient}>
         <AudioPlayerProvider>

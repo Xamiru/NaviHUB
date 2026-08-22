@@ -1,11 +1,11 @@
-import { Notification, nativeImage } from 'electron'
-import { absoluteMediaPath } from './files'
 import * as achievementRepo from './repos/achievementRepo'
 import { exeDirOf, nodeFileIO, scanUnlocks, windowsEnv } from './emuScan'
 import type { EmuFileIO } from './emuScan'
 import type { EmuEnv } from './achievementsCore'
 import { getSqlite } from './db/connection'
 import * as retroAchievements from './retroAchievements'
+import * as achPopup from './achPopup'
+import { ACH_POPUP_BURST_AT } from '@shared/achievements'
 import type {
   AchievementRow,
   AchievementUnlockEvent,
@@ -18,10 +18,13 @@ import type {
 // main-side interval, and it exists because the alternative cannot work: the
 // user is in a fullscreen game, so the renderer is occluded (its timers are
 // throttled to seconds-to-minutes) and cannot raise anything the user would
-// see anyway. The OS notification is therefore fired from main — which is NOT
-// a push channel (no webContents.send), so the frozen push surface is
-// untouched. The renderer separately polls getWatchStatus() for its in-app
-// toast and to refresh the list.
+// see anyway.
+//
+// Popups go through achPopup.ts — a click-through always-on-top overlay that
+// floats over the game, because OS notifications are suppressed during
+// fullscreen apps on Windows. The overlay polls getWatchStatus() itself; this
+// module only guarantees the glass is up. When the overlay cannot be raised
+// (no display, hardened profile), the old OS-notification path takes over.
 //
 // Lifetime is bounded by the play session: startWatch on spawn, stopWatch on
 // exit, and stopAchievementWatcher() in the before-quit registry — where it
@@ -72,51 +75,26 @@ function mediaOf(mediaId: number): { title: string; mediaType: MediaType } {
   return { title: row?.title ?? 'Game', mediaType: (row?.media_type ?? 'game') as MediaType }
 }
 
-// The user is fullscreen in a game — this notification is the whole point of
-// the feature, so a failure to raise it must never take the session down.
+// The user is fullscreen in a game — this popup is the whole point of the
+// feature, so a failure to raise it must never take the session down: the
+// overlay is tried first, and its OS-notification fallback (inside achPopup)
+// covers environments where no window can exist.
 function notify(event: AchievementUnlockEvent): void {
-  try {
-    if (!Notification.isSupported()) return
-    const options: Electron.NotificationConstructorOptions = {
-      title: `Achievement unlocked — ${event.name}`,
-      body: event.description ?? event.mediaTitle,
-      silent: false
-    }
-    if (event.iconPath) {
-      const icon = nativeImage.createFromPath(absoluteMediaPath(event.iconPath))
-      if (!icon.isEmpty()) options.icon = icon
-    }
-    new Notification(options).show()
-  } catch {
-    // No notification service (a bare Linux session, a locked-down Windows
-    // profile): the in-app toast and the list still show the unlock.
-  }
+  if (!achPopup.showUnlock()) achPopup.fallbackNotify(event)
 }
 
-// Above this, one OS notification per unlock becomes a burst nobody can read.
-// The first tick of a session ingests the WHOLE save file (startWatch sets
-// lastMtimeMs: null on purpose), so a fortnight of playing outside NaviHUB
-// arrives as one batch — 30 popups stacked over a fullscreen game.
-const NOTIFY_INDIVIDUALLY = 3
-
-// The batch form of notify(), same never-throw posture.
+// The batch form. Above ACH_POPUP_BURST_AT, one popup per unlock becomes a
+// stack nobody can read — the overlay page collapses its own poll batches the
+// same way, so this only governs how many raise() calls (and fallback
+// notifications) fire.
 function notifySummary(count: number, mediaTitle: string): void {
-  try {
-    if (!Notification.isSupported()) return
-    new Notification({
-      title: `${count} achievements unlocked`,
-      body: mediaTitle,
-      silent: false
-    }).show()
-  } catch {
-    // See notify().
-  }
+  if (!achPopup.showBurst()) achPopup.fallbackNotifySummary(count, mediaTitle)
 }
 
 function publish(mediaId: number, rows: AchievementRow[]): void {
   if (!rows.length) return
   const { title: mediaTitle, mediaType } = mediaOf(mediaId)
-  const burst = rows.length > NOTIFY_INDIVIDUALLY
+  const burst = rows.length > ACH_POPUP_BURST_AT
   for (const row of rows) {
     seq += 1
     const event: AchievementUnlockEvent = {
@@ -250,6 +228,10 @@ export function startWatch(mediaId: number, nowMs: number = Date.now()): void {
     // this launch is caught instead of skipped.
     lastMtimeMs: null
   }
+  // Preload the overlay so its page is polling before the first unlock — a
+  // window created on demand at publish time would seed past the unlock that
+  // triggered it.
+  achPopup.sessionStarted()
   timer = setInterval(tick, tracking.provider === 'ra' ? RA_POLL_MS : STEAM_POLL_MS)
   // Never hold the app open for this.
   timer.unref?.()
@@ -277,7 +259,12 @@ export async function stopWatch(deps: WatchDeps = {}): Promise<void> {
   // network call, and gameLaunch clears `active` BEFORE calling this, so the
   // user can start a new session inside that window — nulling unconditionally
   // would silently kill the new session's detection for its whole duration.
-  if (watch === mine) watch = null
+  // sessionEnded rides the same guard: closing the overlay under a NEW session
+  // would leave its first unlocks seeding into a dead window.
+  if (watch === mine) {
+    watch = null
+    achPopup.sessionEnded()
+  }
 }
 
 // before-quit registry (index.ts), ahead of closeDatabase() because the final

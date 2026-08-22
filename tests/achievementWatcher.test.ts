@@ -10,19 +10,30 @@ import { createTestDb } from './helpers'
 let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
 
-const notifications: { title: string; body: string; icon: unknown }[] = []
-vi.mock('electron', () => ({
-  Notification: class {
-    static isSupported = (): boolean => true
-    constructor(private opts: { title: string; body: string; icon?: unknown }) {}
-    show(): void {
-      notifications.push({ title: this.opts.title, body: this.opts.body, icon: this.opts.icon })
-    }
+// The popup overlay is where popups go now (achPopup.ts); the OS-notification
+// functions are its fallback. Both are captured here so tests pin exactly what
+// was raised per unlock.
+const calls: string[] = []
+let overlayUp = true
+const fallbacks: { title: string }[] = []
+vi.mock('../src/main/achPopup', () => ({
+  sessionStarted: () => void calls.push('started'),
+  showUnlock: () => {
+    if (!overlayUp) return false
+    calls.push('unlock')
+    return true
   },
-  nativeImage: { createFromPath: (p: string) => ({ isEmpty: () => !p.includes('dl-') }) }
+  showBurst: () => {
+    if (!overlayUp) return false
+    calls.push('burst')
+    return true
+  },
+  sessionEnded: () => void calls.push('ended'),
+  closeAchPopup: () => {},
+  fallbackNotify: (e: { name: string }) => void fallbacks.push({ title: e.name }),
+  fallbackNotifySummary: (count: number) =>
+    void fallbacks.push({ title: `${count} achievements unlocked` })
 }))
-
-vi.mock('../src/main/files', () => ({ absoluteMediaPath: (p: string) => `/userData/${p}` }))
 
 let raRows: { raGameId: string; apiName: string; unlockedAtMs: number | null }[] = []
 let raThrows = false
@@ -88,7 +99,9 @@ beforeEach(() => {
   mtime = 1_000_000
   raRows = []
   raThrows = false
-  notifications.length = 0
+  calls.length = 0
+  fallbacks.length = 0
+  overlayUp = true
   watcher.__resetForTests()
 })
 
@@ -120,7 +133,7 @@ describe('startWatch', () => {
 })
 
 describe('pollOnce: the Steam emulator path', () => {
-  it('records a new unlock and raises exactly one notification', async () => {
+  it('records a new unlock and raises exactly one popup', async () => {
     const id = setupGame()
     watcher.startWatch(id)
     files[GOLDBERG] = earned('ACH_A')
@@ -129,10 +142,8 @@ describe('pollOnce: the Steam emulator path', () => {
 
     expect(fresh.map((r) => r.apiName)).toEqual(['ACH_A'])
     expect(repo.summaryFor(id).unlocked).toBe(1)
-    expect(notifications).toHaveLength(1)
-    expect(notifications[0].title).toContain('ACH_A')
-    expect(notifications[0].body).toBe('do ACH_A')
-    expect(notifications[0].icon).toBeTruthy()
+    expect(calls).toEqual(['started', 'unlock'])
+    expect(fallbacks).toHaveLength(0)
   })
 
   it('publishes the unlock to the poll status, seq climbing per event', async () => {
@@ -156,7 +167,7 @@ describe('pollOnce: the Steam emulator path', () => {
     const second = await watcher.pollOnce(deps)
 
     expect(second).toEqual([])
-    expect(notifications).toHaveLength(1)
+    expect(calls.filter((c) => c === 'unlock')).toHaveLength(1)
   })
 
   it('skips the parse entirely while nothing has been rewritten', async () => {
@@ -176,7 +187,7 @@ describe('pollOnce: the Steam emulator path', () => {
   it('does nothing when no emulator file exists at all', async () => {
     watcher.startWatch(setupGame())
     expect(await watcher.pollOnce(deps)).toEqual([])
-    expect(notifications).toHaveLength(0)
+    expect(calls).toEqual(['started'])
   })
 
   it('survives a file caught mid-write', async () => {
@@ -232,7 +243,9 @@ describe('session end', () => {
     await watcher.stopWatch(deps)
 
     expect(repo.summaryFor(id).unlocked).toBe(1)
-    expect(notifications).toHaveLength(1)
+    expect(calls.filter((c) => c === 'unlock')).toHaveLength(1)
+    // The overlay is told the session is over (it idles out on its own).
+    expect(calls).toContain('ended')
   })
 
   it('stops watching but keeps the unlocks visible to the poll', async () => {
@@ -267,12 +280,15 @@ describe('session end', () => {
       }
     })
 
+    calls.length = 0
     const second = setupGame()
     watcher.startWatch(second)
     release()
     await sweep
 
     expect(watcher.getWatchStatus()).toMatchObject({ running: true, mediaId: second })
+    // The superseded stop must not idle-close the overlay under the new one.
+    expect(calls).toEqual(['started'])
     files[GOLDBERG] = earned('ACH_A')
     expect((await watcher.pollOnce(deps)).map((r) => r.apiName)).toEqual(['ACH_A'])
   })
@@ -405,7 +421,7 @@ describe('write failures and bursts', () => {
     expect(repo.summaryFor(1).unlocked).toBe(1)
   })
 
-  it('collapses a first-tick burst into ONE notification', async () => {
+  it('collapses a first-tick burst into ONE popup', async () => {
     const id = setupGame()
     const names = ['A1', 'A2', 'A3', 'A4', 'A5']
     repo.upsertSchema(
@@ -429,19 +445,59 @@ describe('write failures and bursts', () => {
     files[GOLDBERG] = earned(...names)
 
     expect(await watcher.pollOnce(deps)).toHaveLength(5)
-    expect(notifications).toHaveLength(1)
-    expect(notifications[0]!.title).toBe('5 achievements unlocked')
-    // Only the OS popups collapse; the in-app list still gets every event.
+    expect(calls.filter((c) => c === 'burst')).toHaveLength(1)
+    expect(calls).not.toContain('unlock')
+    expect(fallbacks).toHaveLength(0)
+    // Only the popups collapse; the in-app list still gets every event.
     expect(watcher.getWatchStatus()?.recent).toHaveLength(5)
   })
 
-  it('still notifies individually for a normal handful', async () => {
+  it('still pops individually for a normal handful', async () => {
     watcher.startWatch(setupGame())
     files[GOLDBERG] = earned('ACH_A', 'ACH_B')
 
     expect(await watcher.pollOnce(deps)).toHaveLength(2)
-    expect(notifications).toHaveLength(2)
-    expect(notifications[0]!.title).toContain('Achievement unlocked')
+    expect(calls.filter((c) => c === 'unlock')).toHaveLength(2)
+  })
+
+  // When the overlay cannot be raised (no display, hardened profile) the old
+  // OS-notification path takes over, burst rule and all.
+  it('falls back to OS notifications while the overlay is down', async () => {
+    overlayUp = false
+    watcher.startWatch(setupGame())
+    files[GOLDBERG] = earned('ACH_A', 'ACH_B')
+
+    await watcher.pollOnce(deps)
+
+    expect(calls).toEqual(['started'])
+    expect(fallbacks.map((f) => f.title)).toEqual(['ACH_A', 'ACH_B'])
+  })
+
+  it('collapses a fallback burst into ONE summary notification', async () => {
+    overlayUp = false
+    const id = setupGame()
+    const names = ['A1', 'A2', 'A3', 'A4', 'A5']
+    repo.upsertSchema(
+      id,
+      'steam',
+      '440',
+      names.map((apiName) => ({
+        apiName,
+        name: apiName,
+        description: null,
+        hidden: false,
+        iconPath: null,
+        iconGrayPath: null,
+        points: null,
+        globalPct: null
+      }))
+    )
+    watcher.startWatch(id)
+    files[GOLDBERG] = earned(...names)
+
+    await watcher.pollOnce(deps)
+
+    expect(fallbacks.map((f) => f.title)).toEqual(['5 achievements unlocked'])
   })
 
   // stopAchievementWatcher() runs immediately before closeDatabase(); an RA

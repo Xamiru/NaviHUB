@@ -307,6 +307,30 @@
   .panel-in {
     animation: panel-in 0.15s ease-out;
   }
+
+  /* Achievement overlay cards (AchPopupPage): slide in from the right like
+     the console dashboards, and drain a thin lifetime strip so the dismiss
+     reads as intentional. Reduced motion mounts them plainly. */
+  @keyframes ach-card-in {
+    from {
+      opacity: 0;
+      transform: translateX(48px);
+    }
+  }
+  @keyframes ach-card-life {
+    from {
+      transform: scaleX(1);
+    }
+    to {
+      transform: scaleX(0);
+    }
+  }
+  .ach-card {
+    animation: ach-card-in 0.3s ease-out;
+  }
+  .ach-card-life {
+    animation: ach-card-life 6s linear both;
+  }
 }
 
 /* ============================ WIRED CHROME ============================

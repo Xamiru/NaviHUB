@@ -100,6 +100,17 @@ describe('parseSteamDate', () => {
     expect(parseSteamDate('To be announced')).toBeNull()
     expect(parseSteamDate(null)).toBeNull()
   })
+
+  it('is timezone-proof: the calendar fields survive, not a local-midnight parse', () => {
+    // The old Date.parse + toISOString path returned '2022-10-20' on any
+    // machine east of UTC. These assertions fail there, which is the point.
+    expect(parseSteamDate('Oct 21, 2022')).toBe('2022-10-21')
+    expect(parseSteamDate('October 21, 2022')).toBe('2022-10-21')
+    // A bare year is UTC-safe either way, but pin it.
+    expect(parseSteamDate('2023')).toBe('2023-01-01')
+    // Garbage days fall through to the timestamp parser and die there.
+    expect(parseSteamDate('Oct 99, 2022')).toBeNull()
+  })
 })
 
 describe('importGame', () => {

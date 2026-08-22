@@ -6,8 +6,9 @@ import { clampWidgetPos, defaultWidgetPos, formatWidgetPos, parseWidgetPos } fro
 
 // The pop-out mini player ("gaming widget"): a frameless always-on-top pill
 // that mirrors the main window's player and sends transport commands back.
-// This module is the ONE sanctioned owner of a child BrowserWindow — renderer
-// window.open stays denied everywhere (see index.ts setWindowOpenHandler).
+// This module is a sanctioned owner of a child BrowserWindow, beside
+// achPopup.ts — renderer window.open stays denied everywhere (see index.ts
+// setWindowOpenHandler).
 //
 // The widget window is deliberately not part of the app lifecycle: it skips
 // the taskbar, closes when the main window closes, and holds nothing the

@@ -23,6 +23,7 @@ import { closeCatalogDb } from './gamesCatalogDb'
 import { parseArgvFiles, queueOpen } from './openFile'
 import { setMainWindow as setPlayerBridgeWindow } from './playerBridge'
 import { closeWidget } from './widget'
+import { closeAchPopup } from './achPopup'
 import { logError, logInfo } from './logBus'
 import { startFileSink, stopFileSink } from './logFile'
 import { settleAllOnQuit as settleAllTasksOnQuit } from './tasks'
@@ -104,9 +105,11 @@ function createWindow(): void {
   mainWindow = win
   win.on('closed', () => {
     if (mainWindow === win) mainWindow = null
-    // The pop-out player widget is a satellite of this window, not an app
-    // surface of its own (it skips the taskbar) — never leave it orphaned.
+    // The pop-out player widget and the achievement overlay are satellites of
+    // this window, not app surfaces of their own (both skip the taskbar) —
+    // never leave them orphaned.
     closeWidget()
+    closeAchPopup()
   })
 
   // Windows thumbbar buttons + widget command routing live off this handle.
@@ -137,8 +140,9 @@ function createWindow(): void {
 
   // No RENDERER code path may spawn a child BrowserWindow (window.open is
   // denied here and in the widget) — external links go through the guarded
-  // app:openExternal IPC (system browser) instead. The one sanctioned child
-  // window is the main-process-owned pop-out player pill in widget.ts.
+  // app:openExternal IPC (system browser) instead. The sanctioned child
+  // windows are the main-process-owned pop-out player pill (widget.ts) and
+  // the in-game achievement overlay (achPopup.ts).
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))
 
   // Right-click text menu (Electron ships none by default): cut/copy/paste in
