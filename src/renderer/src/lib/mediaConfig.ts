@@ -129,10 +129,10 @@ export interface MediaConfig {
   hasGameLaunch?: boolean
   // Art-led detail header (2026-08). 'banner' hangs the cover off a shallow
   // strip of wide art (anime, VNs — the cover is the recognisable thing);
-  // 'backdrop' puts the title and actions on top of a tall still (movies — the
-  // still IS the identity). Absent = the plain two-column header, which is what
-  // types whose detail page is carried by a data tab keep (manga/books read,
-  // games play, TV ticks episodes). See components/MediaHero.tsx.
+  // 'backdrop' puts the title and actions on top of a tall still. Absent = the
+  // plain two-column header, which is what types whose detail page is carried
+  // by a data tab keep (manga/books read, games play, movies/TV watch). See
+  // components/MediaHero.tsx.
   detailHero?: 'banner' | 'backdrop'
   // Achievements tab on the detail page + the completion chip on list cards
   // (games + VNs — the same types that can link an executable, since tracking
@@ -402,7 +402,6 @@ export const MOVIE: MediaConfig = {
     { key: 'tv', label: 'TV Shows' }
   ],
   importSource: { key: 'tmdb', label: 'TMDB', placeholder: 'Search TMDB (e.g. Inception)…' },
-  detailHero: 'backdrop'
 }
 
 // TV shares Movies' section, actor pool, and TMDB source, but lists separately

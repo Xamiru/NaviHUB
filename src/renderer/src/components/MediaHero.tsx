@@ -11,14 +11,13 @@ import type { MediaDetail } from '@shared/types'
 //                bottom edge, then the title block beside it (anime, VNs: the
 //                cover is the thing you recognise, the banner is atmosphere).
 //   'backdrop' — a tall cinematic still with the title and actions sitting on
-//                top of it (movies: the still IS the identity, and there is one
-//                obvious action).
+//                top of it when a media type calls for an art-led header.
 //
 // Types without the flag keep the plain two-column header on MediaDetailPage.
 //
 // Hero art is `m.heroPath`, resolved by mediaRepo (imported banner → first Art
-// tab image → null). When it is null we blur the cover up as the backdrop, so a
-// title that has never been re-imported still gets a hero rather than a hole.
+// tab image → null). With no usable art the 'banner' variant drops its strip
+// outright (see useHeroArt); only 'backdrop' blurs the cover as an underlay.
 
 export type HeroVariant = 'banner' | 'backdrop'
 
@@ -33,44 +32,35 @@ interface Props {
   stats: ReactNode
 }
 
-// The art itself, or the cover blurred up when there is none.
-//
-// mediaUrl() is a synchronous string build with no existence check, so a
-// heroPath whose file has since been deleted still yields a URL — onError is
-// what actually falls through to the blurred cover (the CoverImage convention).
-function HeroArt({ m }: { m: MediaDetail }) {
-  const heroUrl = useImageUrl(m.heroPath)
-  const coverUrl = useImageUrl(m.coverPath)
-  const [heroFailed, setHeroFailed] = useState(false)
+// Wide-art availability. mediaUrl() is a synchronous string build with no
+// existence check, so a heroPath whose file has since been deleted (or was
+// never downloaded) still yields a URL — onError is what actually reports the
+// failure (the CoverImage convention). Callers decide their own fallback:
+// 'banner' DROPS its strip when there is no real art, because a 220px smear of
+// the blurred cover reads as broken (reported 2026-08-22); 'backdrop' keeps
+// its block either way — the title and actions sit on it.
+function useHeroArt(m: MediaDetail): { url: string | null; ok: boolean; fail: () => void } {
+  const url = useImageUrl(m.heroPath)
+  const [failed, setFailed] = useState(false)
   // A new path is a fresh chance to load — clear a prior failure.
-  useEffect(() => setHeroFailed(false), [heroUrl])
+  useEffect(() => setFailed(false), [url])
+  return { url, ok: !!url && !failed, fail: () => setFailed(true) }
+}
 
-  if (heroUrl && !heroFailed) {
-    return (
-      <img
-        src={heroUrl}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full object-cover"
-        decoding="async"
-        draggable={false}
-        onError={() => setHeroFailed(true)}
-      />
-    )
-  }
-  if (coverUrl) {
-    return (
-      <img
-        src={coverUrl}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl"
-        decoding="async"
-        draggable={false}
-      />
-    )
-  }
-  return null
+// The blurred-cover underlay for the backdrop variant's no-art case.
+function BlurredCover({ m }: { m: MediaDetail }) {
+  const coverUrl = useImageUrl(m.coverPath)
+  if (!coverUrl) return null
+  return (
+    <img
+      src={coverUrl}
+      alt=""
+      aria-hidden="true"
+      className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl"
+      decoding="async"
+      draggable={false}
+    />
+  )
 }
 
 function year(date: string | null): string | null {
@@ -96,6 +86,8 @@ export default function MediaHero({ cfg, m, variant, actions, stats }: Props) {
       ? Math.min(100, Math.round((m.progress / m.totalUnits) * 100))
       : null
 
+  const art = useHeroArt(m)
+
   // Is a page background set (Art tab → right-click → Set background)? Then
   // MediaDetailPage is already painting wide art behind this whole page, and a
   // hero that paints its own crop on top of it lands two different framings of
@@ -104,11 +96,26 @@ export default function MediaHero({ cfg, m, variant, actions, stats }: Props) {
   // only atmosphere, which the backdrop now provides), 'backdrop' keeps its
   // block but goes art-less (it carries the title, synopsis and actions).
   const onBackground = !!m.backgroundPath
+  // The banner strip needs BOTH: no page background above it, and real wide
+  // art to paint. (The backdrop variant ignores this — its block carries text.)
+  const showStrip = !onBackground && art.ok
 
   if (variant === 'backdrop') {
     return (
       <div className={`relative h-[420px] ${onBackground ? '' : 'bg-base-700'}`}>
-        {!onBackground && <HeroArt m={m} />}
+        {!onBackground && (art.ok ? (
+          <img
+            src={art.url ?? undefined}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+            decoding="async"
+            draggable={false}
+            onError={art.fail}
+          />
+        ) : (
+          <BlurredCover m={m} />
+        ))}
         {/* Two scrims: vertical so the text block sits on near-black, horizontal
             so the left edge stays readable over a busy still. */}
         <div className="absolute inset-0 bg-gradient-to-t from-base-900 via-base-900/60 to-transparent" />
@@ -150,15 +157,24 @@ export default function MediaHero({ cfg, m, variant, actions, stats }: Props) {
 
   return (
     <div>
-      {/* The strip is pure atmosphere, so a page background replaces it outright
-          rather than showing through it: the backdrop IS the wide art now, and
-          keeping 220px of empty space above the cover just to preserve the
-          overhang would be a hole in the page. Back moves inline, since it lived
-          on the strip. (The 'backdrop' variant above keeps its block either way —
-          the title, synopsis and actions sit on it, so it is not decoration.) */}
-      {!onBackground && (
+      {/* The strip renders only when real wide art exists AND no page
+          background is set. Either absence drops it outright rather than
+          showing through it or smearing the cover up: a 220px strip of blurred
+          cover reads as broken (reported 2026-08-22), and keeping empty space
+          just to preserve the overhang would be a hole in the page. Back moves
+          inline, since it lived on the strip; the cover row swaps `-mt-24` for
+          `mt-4` (nothing left to hang off). */}
+      {showStrip && (
         <div className="relative h-[220px] bg-base-700">
-          <HeroArt m={m} />
+          <img
+            src={art.url ?? undefined}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full object-cover"
+            decoding="async"
+            draggable={false}
+            onError={art.fail}
+          />
           <div className="absolute inset-0 bg-gradient-to-t from-base-900 via-base-900/40 to-transparent" />
           <div className="absolute left-6 top-4 z-10">
             <BackButton overlay />
@@ -167,17 +183,12 @@ export default function MediaHero({ cfg, m, variant, actions, stats }: Props) {
       )}
 
       <div className="mx-auto max-w-5xl px-6">
-        {onBackground && (
+        {!showStrip && (
           <div className="pt-4">
             <BackButton overlay />
           </div>
         )}
-        {/* Without a background the cover hangs off the banner's bottom edge —
-            the overlap is the whole point of this variant, so the negative
-            margin is load-bearing. With one there is no edge to hang off. */}
-        <div
-          className={`flex flex-wrap items-end gap-5 ${onBackground ? 'mt-4' : '-mt-24'}`}
-        >
+        <div className={`flex flex-wrap items-end gap-5 ${showStrip ? '-mt-24' : 'mt-4'}`}>
           <CoverImage
             path={m.coverPath}
             alt={m.title}
