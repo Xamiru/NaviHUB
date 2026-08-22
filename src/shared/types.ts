@@ -747,8 +747,8 @@ export interface AchievementUnlockEvent {
 }
 
 // Polled while a game session runs (achievementWatcher.ts). The renderer fires
-// its in-app toast off `recent`, deduped by seq; the OS notification is raised
-// from main so it appears over a fullscreen game.
+// its in-app toast off `recent`, deduped by seq, and the in-game overlay window
+// (achPopup.ts → #/achpop) polls the same object for its Xbox-style cards.
 export interface AchievementWatchStatus {
   running: boolean
   mediaId: number | null

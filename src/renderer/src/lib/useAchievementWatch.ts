@@ -6,11 +6,12 @@ import { mediaUrl } from '@shared/mediaUrl'
 import { toast, toastUnlock } from './toast'
 import { useGameSession } from './useGameSession'
 
-// In-app half of the unlock popup. Main raises the OS notification (it has to
-// reach a fullscreen game), and this polls the same status object so an unlock
-// also lands in the app itself — plus it is what refreshes the achievement
-// lists while a session runs. The useGameSession recipe: poll only while a
-// session is live, dedupe at module level so several mounts can't double-toast.
+// In-app half of the unlock popup. The OVERLAY half is the achPopup window
+// (src/main/achPopup.ts → #/achpop), which floats over a fullscreen game; this
+// hook polls the same status object so an unlock also lands in the app itself —
+// plus it is what refreshes the achievement lists while a session runs. The
+// useGameSession recipe: poll only while a session is live, dedupe at module
+// level so several mounts can't double-toast.
 //
 // `seq` is monotonic for the life of the main process. Seeding from the FIRST
 // status seen rather than from zero is what stops a renderer reload mid-session
@@ -23,7 +24,8 @@ let lastMessage: string | null = null
 // watcher's FINAL sweep — the one that catches the unlocks an emulator flushes
 // on exit — lands after that, and for RetroAchievements a network call later
 // still. Polling for a grace period past the end is what lets those reach the
-// in-app toast; without it they only ever appeared as OS notifications.
+// toast (and the overlay, which reads the same status); without it they only
+// ever surfaced after reopening the app.
 const GRACE_MS = 20_000
 
 export function useAchievementWatch(): void {

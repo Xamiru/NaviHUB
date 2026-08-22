@@ -390,8 +390,8 @@ export interface NaviApi {
     importEmu(mediaId: number): Promise<{ found: number; imported: number; emus: string[] }>
     toggleManual(achievementId: number, unlocked: boolean): Promise<void>
     disable(mediaId: number): Promise<void>
-    // Polled while a session runs; the OS notification is raised from main, so
-    // this only drives the in-app toast and the live list refresh.
+    // Polled while a session runs; the in-game overlay (achPopup.ts) and this
+    // both read it — one for the popup cards, this for the toast + list refresh.
     watchStatus(): Promise<AchievementWatchStatus | null>
     overview(): Promise<AchievementsOverview>
     recent(limit?: number): Promise<AchievementUnlockEvent[]>
