@@ -29,6 +29,12 @@ const SANITIZE_STATEMENTS = [
   'DELETE FROM list_item',
   'DELETE FROM list',
 
+  // User-curated tier boards (same personal layer as list/list_item; children
+  // before parents).
+  'DELETE FROM tier_item',
+  'DELETE FROM tier_row',
+  'DELETE FROM tier_list',
+
   // Japanese learning: content AND progress go — the default courses re-seed on
   // the recipient's first launch once the japanese.seeded% flags are cleared.
   'DELETE FROM jp_ghost',

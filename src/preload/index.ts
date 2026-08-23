@@ -65,6 +65,10 @@ const api: NaviApi = {
   },
   quiz: {
     songPool: (filter) => ipcRenderer.invoke('quiz:songPool', filter),
+    characterPool: (filter) => ipcRenderer.invoke('quiz:characterPool', filter),
+    vaPool: (filter) => ipcRenderer.invoke('quiz:vaPool', filter),
+    synopsisPool: (filter) => ipcRenderer.invoke('quiz:synopsisPool', filter),
+    mangaPanelPool: (filter, length) => ipcRenderer.invoke('quiz:mangaPanelPool', filter, length),
     tournamentPool: (source) => ipcRenderer.invoke('quiz:tournamentPool', source),
     logSession: (input) => ipcRenderer.invoke('quiz:logSession', input),
     history: (kind, limit) => ipcRenderer.invoke('quiz:history', kind, limit)
@@ -93,6 +97,7 @@ const api: NaviApi = {
       ipcRenderer.invoke('achievements:toggleManual', achievementId, unlocked),
     disable: (mediaId) => ipcRenderer.invoke('achievements:disable', mediaId),
     watchStatus: () => ipcRenderer.invoke('achievements:watchStatus'),
+    testPopup: () => ipcRenderer.invoke('achievements:testPopup'),
     overview: () => ipcRenderer.invoke('achievements:overview'),
     recent: (limit) => ipcRenderer.invoke('achievements:recent', limit),
     cardSummaries: () => ipcRenderer.invoke('achievements:cardSummaries'),
@@ -113,6 +118,18 @@ const api: NaviApi = {
     reorder: (listId, orderedItemIds) =>
       ipcRenderer.invoke('lists:reorder', listId, orderedItemIds),
     forEntity: (kind, entityId) => ipcRenderer.invoke('lists:forEntity', kind, entityId)
+  },
+  tierLists: {
+    list: (kind) => ipcRenderer.invoke('tierLists:list', kind),
+    get: (id) => ipcRenderer.invoke('tierLists:get', id),
+    create: (input) => ipcRenderer.invoke('tierLists:create', input),
+    update: (id, input) => ipcRenderer.invoke('tierLists:update', id, input),
+    remove: (id) => ipcRenderer.invoke('tierLists:remove', id),
+    setRows: (listId, rows) => ipcRenderer.invoke('tierLists:setRows', listId, rows),
+    persistBoard: (listId, placements) =>
+      ipcRenderer.invoke('tierLists:persistBoard', listId, placements),
+    addItem: (listId, entityId) => ipcRenderer.invoke('tierLists:addItem', listId, entityId),
+    removeItem: (itemId) => ipcRenderer.invoke('tierLists:removeItem', itemId)
   },
   checklist: {
     status: () => ipcRenderer.invoke('checklist:status'),
@@ -569,7 +586,8 @@ const api: NaviApi = {
   files: {
     pickImage: () => ipcRenderer.invoke('files:pickImage'),
     resolveUrl: (relPath) => ipcRenderer.invoke('files:resolveUrl', relPath),
-    saveBytes: (bytes, ext, subdir) => ipcRenderer.invoke('files:saveBytes', bytes, ext, subdir)
+    saveBytes: (bytes, ext, subdir) => ipcRenderer.invoke('files:saveBytes', bytes, ext, subdir),
+    saveImageAs: (bytes, defaultName) => ipcRenderer.invoke('files:saveImageAs', bytes, defaultName)
   }
 }
 

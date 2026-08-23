@@ -136,6 +136,32 @@ describe('quizRepo.songPool', () => {
     expect(pool).toHaveLength(1)
     expect(pool[0].artists).toEqual(['Yoko', 'Kanno'])
   })
+
+  it('returns the release year and tag genres for distractor affinity', () => {
+    const id = Number(
+      db
+        .prepare(
+          `INSERT INTO media_item (media_type, title, release_date, metadata)
+           VALUES ('anime', 'A', '2011-04-01', '{"seasonYear":2011}')`
+        )
+        .run().lastInsertRowid
+    )
+    for (const name of ['Action', 'Comedy']) {
+      const tagId = Number(
+        db.prepare(`INSERT INTO tag (name) VALUES (?)`).run(name).lastInsertRowid
+      )
+      db.prepare(`INSERT INTO media_tag (media_id, tag_id) VALUES (?, ?)`).run(id, tagId)
+    }
+    addTheme(id, { audioPath: 'audio/a.ogg' })
+
+    const [song] = quizRepo.songPool()
+    expect(song.year).toBe(2011)
+    expect([...song.genres].sort()).toEqual(['Action', 'Comedy'])
+    // an untagged anime just gets an empty list, never null
+    const b = addAnime('B')
+    addTheme(b, { audioPath: 'audio/b.ogg' })
+    expect(quizRepo.songPool().find((s) => s.animeTitle === 'B')?.genres).toEqual([])
+  })
 })
 
 describe('quizRepo session history', () => {
@@ -225,5 +251,20 @@ describe('quizRepo session history', () => {
       bestStreak: 0,
       totalSessions: 0
     })
+  })
+
+  it('ranks score-ranked kinds (arcade, shiritori, races) by score first', () => {
+    expect([...quizRepo.SCORE_RANKED_KINDS].sort()).toEqual(
+      ['conjRace', 'kanaRace', 'readingRace', 'shiritori', 'songArcade'].sort()
+    )
+    // 2000 points at 60% accuracy must beat 3000 points at 50% — and the
+    // reverse of that must NOT win on ratio.
+    quizRepo.logSession({ kind: 'songArcade', score: 2000, total: 12, bestStreak: 6 })
+    const big = quizRepo.logSession({ kind: 'songArcade', score: 3000, total: 24, bestStreak: 7 })
+    expect(quizRepo.history('songArcade').best?.id).toBe(big)
+    // accuracy kinds still rank by ratio: 3/5 beats 4/10
+    quizRepo.logSession({ kind: 'songReverse', score: 4, total: 10, bestStreak: 2 })
+    const sharper = quizRepo.logSession({ kind: 'songReverse', score: 3, total: 5, bestStreak: 3 })
+    expect(quizRepo.history('songReverse').best?.id).toBe(sharper)
   })
 })

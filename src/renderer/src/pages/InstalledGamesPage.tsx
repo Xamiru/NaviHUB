@@ -119,7 +119,12 @@ function InstalledCard({
   return (
     <li className="card p-3 flex gap-3">
       <Link to={`${cfg.basePath}/${g.mediaId}`} className="shrink-0">
-        <CoverImage path={g.coverPath} alt={g.title} className="h-28 w-20 object-cover" />
+        <CoverImage
+          path={g.coverPath}
+          alt={g.title}
+          className="h-28 w-20 object-cover"
+          thumbWidth={320}
+        />
       </Link>
       <div className="min-w-0 flex-1 flex flex-col">
         <Link to={`${cfg.basePath}/${g.mediaId}`} className="truncate font-medium hover:text-accent">

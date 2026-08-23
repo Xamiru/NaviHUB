@@ -14,6 +14,7 @@ import * as quizRepo from './repos/quizRepo'
 import * as themeRepo from './repos/themeRepo'
 import * as tournamentRepo from './repos/tournamentRepo'
 import * as listRepo from './repos/listRepo'
+import * as tierListRepo from './repos/tierListRepo'
 import * as checklistRepo from './repos/checklistRepo'
 import * as japaneseRepo from './repos/japaneseRepo'
 import * as english from './english'
@@ -213,6 +214,12 @@ export function registerIpc(): void {
 
   // ---- quiz ----
   ipcMain.handle('quiz:songPool', (_e, filter) => quizRepo.songPool(filter))
+  ipcMain.handle('quiz:characterPool', (_e, filter) => quizRepo.characterPool(filter))
+  ipcMain.handle('quiz:vaPool', (_e, filter) => quizRepo.vaPool(filter))
+  ipcMain.handle('quiz:synopsisPool', (_e, filter) => quizRepo.synopsisPool(filter))
+  ipcMain.handle('quiz:mangaPanelPool', (_e, filter, length) =>
+    manga.panelPool(filter, length ?? 10)
+  )
   ipcMain.handle('quiz:tournamentPool', (_e, source) => tournamentRepo.tournamentPool(source))
   ipcMain.handle('quiz:logSession', (_e, input) => quizRepo.logSession(input))
   ipcMain.handle('quiz:history', (_e, kind, limit) => quizRepo.history(kind, limit ?? 15))
@@ -259,6 +266,7 @@ export function registerIpc(): void {
   )
   ipcMain.handle('achievements:disable', (_e, mediaId) => achievements.disableTracking(mediaId))
   ipcMain.handle('achievements:watchStatus', () => achievementWatcher.getWatchStatus())
+  ipcMain.handle('achievements:testPopup', () => achievementWatcher.requestPopupTest())
   ipcMain.handle('achievements:overview', () => achievementRepo.overview())
   ipcMain.handle('achievements:recent', (_e, limit) => achievementRepo.recentUnlocks(limit ?? 12))
   ipcMain.handle('achievements:cardSummaries', () => achievementRepo.cardSummaries())
@@ -284,6 +292,21 @@ export function registerIpc(): void {
     listRepo.reorder(listId, orderedItemIds)
   )
   ipcMain.handle('lists:forEntity', (_e, kind, entityId) => listRepo.forEntity(kind, entityId))
+
+  // ---- tierlists (TierMaker-style boards) ----
+  ipcMain.handle('tierLists:list', (_e, kind) => tierListRepo.list(kind))
+  ipcMain.handle('tierLists:get', (_e, id) => tierListRepo.get(id))
+  ipcMain.handle('tierLists:create', (_e, input) => tierListRepo.create(input))
+  ipcMain.handle('tierLists:update', (_e, id, input) => tierListRepo.update(id, input))
+  ipcMain.handle('tierLists:remove', (_e, id) => tierListRepo.remove(id))
+  ipcMain.handle('tierLists:setRows', (_e, listId, rows) => tierListRepo.setRows(listId, rows))
+  ipcMain.handle('tierLists:persistBoard', (_e, listId, placements) =>
+    tierListRepo.persistBoard(listId, placements)
+  )
+  ipcMain.handle('tierLists:addItem', (_e, listId, entityId) =>
+    tierListRepo.addItem(listId, entityId)
+  )
+  ipcMain.handle('tierLists:removeItem', (_e, itemId) => tierListRepo.removeItem(itemId))
 
   // ---- checklist (daily / weekly recurring board) ----
   ipcMain.handle('checklist:status', () => checklistRepo.status(todayLocal()))
@@ -916,5 +939,8 @@ export function registerIpc(): void {
   ipcMain.handle('files:resolveUrl', (_e, relPath) => files.resolveUrl(relPath))
   ipcMain.handle('files:saveBytes', (_e, bytes, ext, subdir) =>
     files.saveMediaBytes(bytes, ext, subdir)
+  )
+  ipcMain.handle('files:saveImageAs', (_e, bytes, defaultName) =>
+    files.saveImageAs(BrowserWindow.fromWebContents(_e.sender), bytes, defaultName)
   )
 }

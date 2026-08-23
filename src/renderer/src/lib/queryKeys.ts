@@ -61,6 +61,11 @@ export const qk = {
     detail: (listId: number) => ['lists', 'detail', listId] as const,
     forEntity: (kind: ListKind, entityId: number) => ['lists', 'forEntity', kind, entityId] as const
   },
+  tierLists: {
+    all: ['tierLists'] as const,
+    index: (kind: ListKind | null) => ['tierLists', kind] as const,
+    detail: (listId: number) => ['tierLists', 'detail', listId] as const
+  },
   checklist: {
     all: ['checklist'] as const,
     status: ['checklist', 'status'] as const

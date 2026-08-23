@@ -6,9 +6,11 @@ import {
   currentMatch,
   nextPowerOfTwo,
   pickWinner,
+  placementsOf,
   roundLabel,
   runnerUpOf,
   shuffle,
+  standingsOf,
   type Bracket
 } from '../src/shared/bracket'
 
@@ -164,6 +166,44 @@ describe('labels and progress', () => {
     const br = createBracket(2)
     expect(runnerUpOf(br)).toBeNull()
     expect(championOf(br)).toBeNull()
+  })
+})
+
+describe('standingsOf', () => {
+  it('orders a decided 4-bracket: final two first, then semifinal losers', () => {
+    let br = createBracket(4)
+    br = pickWinner(br, 0, 'a') // m0: 0 beats 1 → 1 out in semis
+    br = pickWinner(br, 1, 'b') // m1: 3 beats 2 → 2 out in semis
+    br = pickWinner(br, 2, 'a') // final: 0 beats 3
+    expect(standingsOf(br)).toEqual([0, 3, 1, 2])
+  })
+
+  it('groups by elimination round — later rounds place higher (n=8)', () => {
+    let br = createBracket(8)
+    for (let i = 0; i < 7; i++) br = pickWinner(br, i, 'a')
+    // Champion 0; runner-up 4 (final loser); semifinal losers 2 then 6;
+    // round-0 losers 1,3,5,7 in match order.
+    expect(standingsOf(br)).toEqual([0, 4, 2, 6, 1, 3, 5, 7])
+  })
+
+  it('skips byes entirely and works on partial brackets', () => {
+    const br = createBracket(5) // padded to 8 with 3 pre-resolved byes
+    expect(standingsOf(br)).toHaveLength(0) // nothing eliminated yet
+    const one = pickWinner(br, 3, 'a') // the only real round-0 match: 3 beats 4
+    expect(standingsOf(one)).toEqual([4])
+  })
+
+  it('carries the elimination round per placement', () => {
+    let br = createBracket(4)
+    br = pickWinner(br, 0, 'a') // 1 out in round 0
+    br = pickWinner(br, 1, 'b') // 2 out in round 0
+    br = pickWinner(br, 2, 'a') // final: 3 out in round 1, champion 0
+    expect(placementsOf(br)).toEqual([
+      { poolIndex: 0, outInRound: null },
+      { poolIndex: 3, outInRound: 1 },
+      { poolIndex: 1, outInRound: 0 },
+      { poolIndex: 2, outInRound: 0 }
+    ])
   })
 })
 

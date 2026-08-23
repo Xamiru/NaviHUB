@@ -8,7 +8,27 @@ const QUIZZES = [
   {
     to: '/quiz/song',
     title: 'Song Quiz',
-    desc: 'A random anime opening or ending plays — guess which anime it belongs to from 4 options.'
+    desc: 'A random anime opening or ending plays — guess which anime it belongs to from 4 options. Classic, arcade and reverse modes.'
+  },
+  {
+    to: '/quiz/character',
+    title: 'Character Quiz',
+    desc: 'A character portrait appears — name the title they belong to.'
+  },
+  {
+    to: '/quiz/va',
+    title: 'Voice Actor Quiz',
+    desc: 'Match characters with their Japanese voice actors — both directions, straight from your credit graph.'
+  },
+  {
+    to: '/quiz/synopsis',
+    title: 'Synopsis Quiz',
+    desc: 'A description excerpt appears — guess which title in your library it describes.'
+  },
+  {
+    to: '/quiz/panels',
+    title: 'Manga Panels',
+    desc: 'A random page from one of your locally-linked manga appears — name the series.'
   },
   {
     to: '/quiz/tournament',

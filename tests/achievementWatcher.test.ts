@@ -122,6 +122,35 @@ describe('startWatch', () => {
     expect(watcher.getWatchStatus()).toMatchObject({ running: true, provider: 'steam', seq: 0 })
   })
 
+  describe('popup test', () => {
+    it('serves a test card and raises the overlay with no session running', () => {
+      watcher.requestPopupTest()
+      const status = watcher.getWatchStatus()
+      expect(status?.test?.name).toBe('Achievement popup test')
+      expect(status?.testId).toBeTruthy()
+      // The glass must come up — a test nobody can see verifies nothing.
+      expect(calls).toContain('unlock')
+    })
+
+    it('dedupes by testId: the same request is served until TTL, not re-carded', () => {
+      watcher.requestPopupTest()
+      const first = watcher.getWatchStatus()
+      const second = watcher.getWatchStatus()
+      expect(second?.testId).toBe(first?.testId)
+    })
+
+    it('expires a standalone test and starts the overlay idle close', () => {
+      const now = vi.spyOn(Date, 'now')
+      now.mockReturnValue(1_000)
+      watcher.requestPopupTest()
+      now.mockReturnValue(16_001)
+
+      expect(watcher.getWatchStatus()).toBeNull()
+      expect(calls).toContain('ended')
+      now.mockRestore()
+    })
+  })
+
   it('reads what is already on disk on the first tick', async () => {
     // An unlock earned between the last sweep and this launch must not be
     // skipped just because the file predates the session.

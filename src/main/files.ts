@@ -1,4 +1,4 @@
-import { app, dialog } from 'electron'
+import { app, dialog, BrowserWindow } from 'electron'
 import { join, extname, basename } from 'path'
 import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, unlinkSync } from 'fs'
 import { createHash } from 'crypto'
@@ -440,6 +440,29 @@ export async function pickImageFiles(): Promise<string[]> {
   })
   if (res.canceled) return []
   return res.filePaths
+}
+
+// Saves rendered image bytes (the tier-board PNG export) through a native SAVE
+// dialog. The parent window is attached — every other dialog call site in the
+// app passes none, which is the prime suspect behind the historical
+// "sometimes I can't type" report — so focus returns to the window that asked.
+// Returns the path written ('.png' appended if missing), or null on cancel.
+export async function saveImageAs(
+  parent: BrowserWindow | null,
+  bytes: Uint8Array,
+  defaultName: string
+): Promise<string | null> {
+  const base = sanitizeFileBase(defaultName.replace(/\.[a-z0-9]+$/i, ''), 'tierlist')
+  const options = {
+    title: 'Export image',
+    defaultPath: `${base}.png`,
+    filters: [{ name: 'PNG image', extensions: ['png'] }]
+  }
+  const res = parent ? await dialog.showSaveDialog(parent, options) : await dialog.showSaveDialog(options)
+  if (res.canceled || !res.filePath) return null
+  const target = res.filePath.toLowerCase().endsWith('.png') ? res.filePath : `${res.filePath}.png`
+  writeFileSync(target, Buffer.from(bytes))
+  return target
 }
 
 // Writes raw bytes (a pasted screenshot, or a frame grabbed off the video

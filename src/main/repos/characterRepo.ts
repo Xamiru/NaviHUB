@@ -1,6 +1,7 @@
 import { getSqlite } from '../db/connection'
 import { mapCharacter, mapPerson, mapMedia } from './mappers'
 import * as listRepo from './listRepo'
+import * as tierListRepo from './tierListRepo'
 import type { Character, CreditRole, CharacterAppearance } from '@shared/types'
 
 export function list(search?: string): Character[] {
@@ -88,5 +89,6 @@ export function upsert(input: Partial<Character> & { name: string }): number {
 
 export function remove(id: number): void {
   listRepo.removeEntityFromLists('character', id)
+  tierListRepo.removeEntityFromTierLists('character', id)
   getSqlite().prepare('DELETE FROM character WHERE id = ?').run(id)
 }

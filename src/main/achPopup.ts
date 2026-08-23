@@ -3,6 +3,7 @@ import { join } from 'path'
 import type { AchievementUnlockEvent } from '@shared/types'
 import { POPUP_SIZE, anchorPos } from '@shared/achievements'
 import { absoluteMediaPath } from './files'
+import { logWarn } from './logBus'
 
 // The in-game achievement popup: an Xbox-360-style toast overlay that floats
 // over the game the user is playing. It exists because OS notifications are
@@ -41,7 +42,17 @@ function load(win2: BrowserWindow): void {
 
 function create(): BrowserWindow | null {
   try {
-    const pos = anchorPos(screen.getPrimaryDisplay().workArea)
+    // Anchor to the display the USER is on (cursor), not blindly the primary:
+    // a game fullscreened on a secondary monitor must not get its popups
+    // delivered to a screen they cannot see. Single-monitor setups resolve to
+    // the same display either way.
+    let workArea = screen.getPrimaryDisplay().workArea
+    try {
+      workArea = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
+    } catch {
+      // No cursor position (headless, locked session) — primary is the fallback.
+    }
+    const pos = anchorPos(workArea)
     const w = new BrowserWindow({
       ...pos,
       width: POPUP_SIZE.width,
@@ -104,12 +115,22 @@ function raise(): boolean {
   let w = getAchPopupWindow()
   if (!w) {
     w = create()
-    if (!w) return false
+    if (!w) {
+      logWarn('app', 'achievement popup: window creation failed; falling back to OS notifications')
+      return false
+    }
     win = w
   }
   try {
     if (!w.isVisible()) w.showInactive()
-  } catch {
+    // Fullscreen games on Windows can knock a topmost window down the z-order
+    // (and Electron has known races where alwaysOnTop silently lapses after a
+    // show). Re-assert both every raise — cheap, and the difference between a
+    // popup that appears once and one that appears every time.
+    w.setAlwaysOnTop(true, 'screen-saver')
+    w.moveTop()
+  } catch (err) {
+    logWarn('app', `achievement popup: could not raise overlay: ${String(err)}`)
     return false
   }
   return true

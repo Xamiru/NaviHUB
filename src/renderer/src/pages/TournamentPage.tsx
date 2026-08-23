@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import PageHeader from '../components/PageHeader'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -7,16 +7,19 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue, useStatuses } from '../lib/hooks'
 import { usePlayer } from '../lib/player'
-import { ANIME, MEDIA_CONFIGS } from '../lib/mediaConfig'
+import { ANIME, MEDIA_CONFIGS, statusesExceptPlanned } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import StatTile from '../components/StatTile'
+import TournamentTree from '../components/TournamentTree'
 import { Group, Pill } from '../components/PillGroup'
 import {
   bracketProgress,
   championOf,
   createBracket,
   currentMatch,
+  nextPowerOfTwo,
   pickWinner,
+  placementsOf,
   roundLabel,
   runnerUpOf,
   shuffle,
@@ -30,6 +33,21 @@ type MusicScope = 'all' | 'liked' | 'playlist' | 'artist' | 'album'
 
 const SIZES = [8, 16, 32, 64] as const
 
+// Frozen settings key holding the ONE autosaved, unfinished bracket. Finishing
+// or discarding clears it; pools above SAVED_MAX_ENTRIES never autosave.
+const SAVED_KEY = 'tournament.saved'
+const SAVED_MAX_ENTRIES = 256
+
+// Serialized resume slot: entries + engine state are plain JSON, and version
+// lets an older save be ignored instead of half-restored.
+interface SavedTournament {
+  version: 1
+  sourceLabel: string
+  createdAt: string
+  contenders: TournamentEntry[]
+  bracket: Bracket
+}
+
 // A named selection from one of the second-level pickers.
 interface Pick {
   id: number
@@ -40,7 +58,7 @@ export default function TournamentPage() {
   const player = usePlayer()
   const qc = useQueryClient()
   const animeStatuses = useStatuses(ANIME)
-  const watchedStatuses = animeStatuses.filter((s) => !/^plan/i.test(s))
+  const watchedStatuses = statusesExceptPlanned(animeStatuses)
 
   // ---- setup options (persisted so they survive navigation) ----
   const [kind, setKind] = usePersistedState<SourceKind>('tourneyKind', 'music')
@@ -56,6 +74,7 @@ export default function TournamentPage() {
   const [listPick, setListPick] = usePersistedState<Pick | null>('tourneyList', null)
   const [size, setSize] = usePersistedState<number | null>('tourneySize', 16)
   const [search, setSearch] = usePersistedState('tourneySearch', '')
+  const [treeOpen, setTreeOpen] = usePersistedState('tourneyTreeOpen', false)
   const debouncedSearch = useDebouncedValue(search.trim())
 
   // ---- game state ----
@@ -67,6 +86,11 @@ export default function TournamentPage() {
   const [logged, setLogged] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  // Resume support: describeSource() reads the setup pills, which a resumed
+  // run outlives — so its label is frozen at deal/save time.
+  const [sourceLabelOverride, setSourceLabelOverride] = useState<string | null>(null)
+  const [savedCreatedAt, setSavedCreatedAt] = useState<string | null>(null)
+  const [saved, setSaved] = useState<SavedTournament | null>(null)
 
   const mediaCfg = MEDIA_CONFIGS.find((c) => c.key === mediaType) ?? ANIME
   const mediaStatuses = useStatuses(mediaCfg)
@@ -105,6 +129,7 @@ export default function TournamentPage() {
   }
 
   function describeSource(): string {
+    if (sourceLabelOverride) return sourceLabelOverride
     switch (kind) {
       case 'music': {
         const scope =
@@ -158,7 +183,27 @@ export default function TournamentPage() {
     setBracket(createBracket(picked.length))
     setUndoStack([])
     setLogged(false)
+    setSourceLabelOverride(null)
+    setSavedCreatedAt(new Date().toISOString())
     setPhase('play')
+  }
+
+  function resumeSaved(s: SavedTournament) {
+    // The full pool is not part of a save, so "Run it back" after resuming
+    // re-deals the same contender set — close enough, and never empty.
+    setPool(s.contenders)
+    setContenders(s.contenders)
+    setBracket(s.bracket)
+    setUndoStack([])
+    setLogged(false)
+    setSourceLabelOverride(s.sourceLabel)
+    setSavedCreatedAt(s.createdAt)
+    setPhase('play')
+  }
+
+  function discardSaved() {
+    setSaved(null)
+    void api.settings.set(SAVED_KEY, '').catch(() => {})
   }
 
   async function startGame() {
@@ -183,9 +228,57 @@ export default function TournamentPage() {
     }
   }
 
+  // Load the autosaved bracket once on mount; only a genuinely unfinished one
+  // (still has a current match) qualifies for resume.
+  useEffect(() => {
+    let cancelled = false
+    api.settings
+      .all()
+      .then((m) => {
+        if (cancelled) return
+        const raw = m[SAVED_KEY]
+        if (!raw) return
+        try {
+          const parsed = JSON.parse(raw) as SavedTournament
+          if (
+            parsed?.version === 1 &&
+            Array.isArray(parsed.contenders) &&
+            parsed.bracket?.matches?.length > 0 &&
+            currentMatch(parsed.bracket) != null
+          ) {
+            setSaved(parsed)
+          }
+        } catch {
+          /* a malformed slot is simply no resume offer */
+        }
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Autosave after every pick while a run is live. Oversized pools skip the
+  // save entirely (the settings row is not the place for megabytes of JSON).
+  useEffect(() => {
+    if (phase !== 'play' || !bracket || contenders.length === 0) return
+    if (contenders.length > SAVED_MAX_ENTRIES) return
+    const snapshot: SavedTournament = {
+      version: 1,
+      sourceLabel: sourceLabelOverride ?? describeSource(),
+      createdAt: savedCreatedAt ?? new Date().toISOString(),
+      contenders,
+      bracket
+    }
+    void api.settings.set(SAVED_KEY, JSON.stringify(snapshot)).catch(() => {})
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, bracket])
+
   function endGame(finished: Bracket) {
     stopIfOurs()
     setBracket(finished)
+    // A finished run is no longer resumable.
+    void api.settings.set(SAVED_KEY, '').catch(() => {})
     if (!logged) {
       setLogged(true)
       const champ = contenders[championOf(finished)!]
@@ -200,7 +293,11 @@ export default function TournamentPage() {
             sourceLabel: describeSource(),
             poolSize: contenders.length,
             champion: { key: champ.key, name: champ.name, imagePath: champ.imagePath },
-            runnerUp: { key: runner.key, name: runner.name }
+            runnerUp: { key: runner.key, name: runner.name },
+            standings: placementsOf(finished).map((p) => ({
+              name: contenders[p.poolIndex].name,
+              outInRound: p.outInRound
+            }))
           }
         })
         .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('tournament') }))
@@ -264,6 +361,25 @@ export default function TournamentPage() {
           subtitle="Two entries face off, you pick the winner — last one standing takes the crown."
           className="mb-6"
         />
+
+        {saved && (
+          <div className="card mb-6 flex items-center gap-4 p-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">Unfinished tournament</p>
+              <p className="truncate text-sm text-gray-400">
+                {saved.sourceLabel} · {saved.contenders.length} contenders ·{' '}
+                {bracketProgress(saved.bracket).picksMade}/{bracketProgress(saved.bracket).totalPicks}{' '}
+                picks made
+              </p>
+            </div>
+            <button className="btn-primary shrink-0 px-4 py-2 text-sm" onClick={() => resumeSaved(saved)}>
+              Resume
+            </button>
+            <button className="btn-ghost shrink-0 px-3 py-2 text-sm" onClick={discardSaved}>
+              Discard
+            </button>
+          </div>
+        )}
 
         <div className="card p-6 space-y-6">
           <Group label="Contenders">
@@ -428,38 +544,104 @@ export default function TournamentPage() {
   if (phase === 'summary' && bracket) {
     const champ = contenders[championOf(bracket)!]
     const runner = contenders[runnerUpOf(bracket)!]
+    const placements = placementsOf(bracket)
+    const size = nextPowerOfTwo(contenders.length)
     return (
-      <div className="p-6 max-w-lg mx-auto">
-        <div className="card p-10 text-center">
-          <p className="text-sm uppercase tracking-widest text-gray-500">Champion</p>
-          <div className="mt-5 flex justify-center">
-            <CoverImage
-              path={champ.imagePath}
-              alt={champ.name}
-              className={champ.entryKind === 'music' ? 'h-48 w-48' : 'h-64 w-44'}
-              fallback={champ.entryKind === 'music' ? 'music' : 'initial'}
-            />
+      <div className="p-6 max-w-2xl mx-auto">
+        <div className="grid grid-cols-[14rem_1fr] items-start gap-6">
+          <div className="card-glow p-6 text-center">
+            <p className="text-sm uppercase tracking-widest text-gray-500">Champion</p>
+            <div className="mx-auto mt-4 w-full">
+              <CoverImage
+                path={champ.imagePath}
+                alt={champ.name}
+                className={`w-full ${champ.entryKind === 'music' ? 'aspect-square' : 'aspect-[2/3]'}`}
+                fallback={champ.entryKind === 'music' ? 'music' : 'initial'}
+              />
+            </div>
+            <p className="mt-4 text-2xl font-bold">{champ.name}</p>
+            {champ.subtitle && <p className="mt-1 text-base text-gray-400">{champ.subtitle}</p>}
+            <p className="mt-4 text-sm text-gray-500">
+              Runner-up: <span className="text-gray-300">{runner.name}</span>
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              {contenders.length} contenders · {describeSource()}
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button className="btn-primary flex-1" onClick={() => dealBracket(pool)}>
+                Run it back
+              </button>
+              <button className="btn-ghost flex-1" onClick={() => setPhase('setup')}>
+                New
+              </button>
+            </div>
           </div>
-          <p className="mt-4 text-3xl font-bold">{champ.name}</p>
-          {champ.subtitle && <p className="mt-1 text-base text-gray-400">{champ.subtitle}</p>}
-          <p className="mt-4 text-sm text-gray-500">
-            Runner-up: <span className="text-gray-300">{runner.name}</span>
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            {contenders.length} contenders · {describeSource()}
-          </p>
-          <div className="mt-6 flex gap-2">
-            <button className="btn-primary flex-1" onClick={() => dealBracket(pool)}>
-              Run it back
-            </button>
-            <button className="btn-ghost flex-1" onClick={() => setPhase('setup')}>
-              New tournament
-            </button>
+
+          <div className="card p-5">
+            <p className="label mb-3">Standings</p>
+            <ol className="space-y-1">
+              {placements.flatMap((p, i) => {
+                const entry = contenders[p.poolIndex]
+                const label =
+                  p.outInRound == null ? 'Champion' : roundLabel(size >> p.outInRound)
+                const nodes: ReactNode[] = []
+                // A divider heads only the big elimination groups (the rounds
+                // that send 4+ home); smaller ones carry their row label.
+                const firstOfGroup =
+                  p.outInRound != null &&
+                  (i === 0 || placements[i - 1].outInRound !== p.outInRound)
+                if (
+                  firstOfGroup &&
+                  placements.filter((x) => x.outInRound === p.outInRound).length > 2
+                ) {
+                  nodes.push(
+                    <li
+                      key={`d-${p.poolIndex}`}
+                      className="pb-0.5 pt-2 pl-3 pr-3 text-[10px] font-semibold uppercase tracking-widest text-gray-500"
+                    >
+                      Out in the {label.toLowerCase()}
+                    </li>
+                  )
+                }
+                nodes.push(
+                  <li
+                    key={p.poolIndex}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
+                      p.outInRound == null ? 'bg-accent/10' : 'bg-base-800'
+                    }`}
+                  >
+                    <span
+                      className={`w-8 shrink-0 text-right text-sm font-bold ${
+                        p.outInRound == null ? 'text-accent' : i === 1 ? 'text-gray-400' : 'text-gray-500'
+                      }`}
+                    >
+                      {i + 1}
+                    </span>
+                    <CoverImage
+                      path={entry.imagePath}
+                      alt={entry.name}
+                      rounded="rounded"
+                      className="h-9 w-9 shrink-0"
+                      fallback={entry.entryKind === 'music' ? 'music' : 'initial'}
+                    />
+                    <span
+                      className={`min-w-0 flex-1 truncate ${
+                        p.outInRound == null ? 'text-sm font-semibold text-accent' : i === 1 ? 'text-sm font-medium' : 'text-sm'
+                      }`}
+                    >
+                      {entry.name}
+                    </span>
+                    <span className="shrink-0 text-xs text-gray-500">{label}</span>
+                  </li>
+                )
+                return nodes
+              })}
+            </ol>
           </div>
-          <Link to="/quiz" className="mt-3 inline-block text-sm text-gray-500 hover:text-white">
-            Back to quizzes
-          </Link>
         </div>
+        <Link to="/quiz" className="mt-4 block text-center text-sm text-gray-500 hover:text-white">
+          Back to quizzes
+        </Link>
       </div>
     )
   }
@@ -485,6 +667,9 @@ export default function TournamentPage() {
           <span>
             {progress.picksMade}/{progress.totalPicks} picks
           </span>
+          <button className="btn-ghost py-1 px-2 text-sm" onClick={() => setTreeOpen(!treeOpen)}>
+            {treeOpen ? 'Hide bracket' : 'Show bracket'}
+          </button>
           <button
             className="btn-ghost py-1 px-2 text-sm"
             disabled={undoStack.length === 0}
@@ -515,6 +700,13 @@ export default function TournamentPage() {
       <p className="mt-4 text-center text-sm text-gray-500">
         Click a card (or press 1 / 2, ← / →) to send it through. Backspace undoes the last pick; Space plays or pauses.
       </p>
+
+      {treeOpen && (
+        <div className="card mt-6 p-5">
+          <p className="label mb-4">Bracket</p>
+          <TournamentTree bracket={bracket} contenders={contenders} />
+        </div>
+      )}
     </div>
   )
 }

@@ -1,0 +1,7 @@
+sandbox_mode = "workspace-write"
+approval_policy = "on-request"
+approvals_reviewer = "user"
+project_doc_max_bytes = 65536
+
+[sandbox_workspace_write]
+network_access = false

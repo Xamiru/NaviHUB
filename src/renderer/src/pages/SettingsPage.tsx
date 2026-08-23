@@ -10,6 +10,14 @@ import { qk } from '../lib/queryKeys'
 import { toast } from '../lib/toast'
 import { MEDIA_CONFIGS, type MediaConfig } from '../lib/mediaConfig'
 import {
+  SIDEBAR_HIDDEN_SETTING,
+  parseHiddenSections,
+  serializeHiddenSections,
+  toggleSectionHidden,
+  sidebarSectionDefs,
+  type SidebarGroup
+} from '../lib/sidebarSections'
+import {
   UI_SCALE_DEFAULT,
   UI_SCALE_STEPS,
   formatUiScale,
@@ -83,6 +91,7 @@ export default function SettingsPage() {
             <>
               <UiScaleSettings data={data} onSave={setKey} />
               <MenuBarSettings data={data} onSave={setKey} />
+              <SidebarSettings data={data} onSave={setKey} />
               <ScoreSettings data={data} onSave={setKey} />
               <TimeStatsSettings data={data} onSave={setKey} />
             </>
@@ -295,6 +304,60 @@ function MenuBarSettings({ data, onSave }: { data?: Record<string, string>; onSa
 }
 
 // ---- Library & tracking -----------------------------------------------------
+
+const SIDEBAR_GROUPS: { id: SidebarGroup; label: string }[] = [
+  { id: 'core', label: 'Core' },
+  { id: 'library', label: 'Library' },
+  { id: 'play', label: 'Play' },
+  { id: 'learn', label: 'Learn' }
+]
+
+function SidebarSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+  const hidden = parseHiddenSections(data?.[SIDEBAR_HIDDEN_SETTING])
+  const defs = sidebarSectionDefs()
+  const [saving, setSaving] = useState(false)
+
+  async function toggle(key: string) {
+    if (saving) return
+    setSaving(true)
+    try {
+      await onSave(SIDEBAR_HIDDEN_SETTING, serializeHiddenSections(toggleSectionHidden(hidden, key)))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <SettingCard
+      title="Sidebar"
+      description="Hide sections you are not using. A hidden section leaves the sidebar only — search (Ctrl+K) and direct links still reach it. Home and the footer links always stay."
+    >
+      <div className="space-y-4">
+        {SIDEBAR_GROUPS.map((g) => (
+          <div key={g.id}>
+            <span className="label mb-1.5 block">{g.label}</span>
+            <div className="flex flex-wrap gap-2">
+              {/* Lit chip = section is in the sidebar; dim = hidden. */}
+              {defs
+                .filter((d) => d.group === g.id)
+                .map((d) => (
+                  <button
+                    key={d.key}
+                    className={hidden.has(d.key) ? 'chip-toggle' : 'chip-toggle chip-toggle-active'}
+                    aria-pressed={!hidden.has(d.key)}
+                    disabled={saving}
+                    onClick={() => toggle(d.key)}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </SettingCard>
+  )
+}
 
 function ScoreSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
   const [scoreMax, setScoreMax] = useState('10')

@@ -6,9 +6,11 @@ import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
 import * as tasks from './tasks'
 import { isUnitProgress } from '@shared/mediaProgress'
+import { shuffle } from '@shared/shuffle'
 import { absoluteMediaPath, mangaRootDir, booksRootDir } from './files'
 import { isArchiveFile, listArchivePages } from './archive'
 import { isEpubFile, epubSpineCount, listEpubPages, epubToc } from './epub'
+import { GENRE_CSV_EXPR, YEAR_EXPR } from './repos/quizRepo'
 import { mediaUrl } from '@shared/mediaUrl'
 import type {
   MediaType,
@@ -16,6 +18,8 @@ import type {
   MangaChapter,
   MangaLibrary,
   MangaPages,
+  QuizLibFilter,
+  QuizMangaPanelItem,
   ScannedChapter
 } from '@shared/types'
 
@@ -139,6 +143,49 @@ export async function scanSeriesDir(absDir: string, seriesTitle: string): Promis
     return collator.compare(a.dirPath, b.dirPath)
   })
   return found
+}
+
+// One manga-panel quiz candidate: a linked series plus each image chapter's
+// page list, already read from disk by panelPool().
+export interface PanelCandidate {
+  mediaId: number
+  title: string
+  coverPath: string | null
+  year: number | null
+  genres: string[]
+  chapters: { dirPath: string; files: string[] }[]
+}
+
+// Pure seed selection for the manga-panel quiz: shuffles the candidate
+// series, takes up to `count` of them — ONE question per series, since a
+// second page of the same title would give the answer away — and picks one
+// uniformly random page from a random chapter of each. Exported for tests;
+// panelPool() below is its thin IO half.
+export function pickPanelSeeds(
+  candidates: PanelCandidate[],
+  count: number,
+  rng: () => number = Math.random
+): QuizMangaPanelItem[] {
+  const out: QuizMangaPanelItem[] = []
+  for (const c of shuffle(candidates, rng)) {
+    if (out.length >= count) break
+    const usable = c.chapters.filter((ch) => ch.files.length > 0)
+    if (usable.length === 0) continue
+    const ch = usable[Math.floor(rng() * usable.length)]
+    const file = ch.files[Math.floor(rng() * ch.files.length)]
+    out.push({
+      mediaId: c.mediaId,
+      title: c.title,
+      coverPath: c.coverPath,
+      year: c.year,
+      genres: c.genres,
+      // media_type='manga' is guaranteed by the caller's SQL, so the virtual
+      // prefix is always 'manga/' here (books resolve through the same module
+      // but are filtered out upstream).
+      pageRelPath: `manga/${ch.dirPath}/${file}`
+    })
+  }
+  return out
 }
 
 // ---------------------------------------------------------------------------
@@ -405,6 +452,72 @@ export async function adhocPages(token: string): Promise<MangaPages | null> {
     }),
     ...(isBook ? { isBook: true, toc: await epubToc(abs) } : {})
   }
+}
+
+// ---------------------------------------------------------------------------
+// Manga-panel quiz pool
+// ---------------------------------------------------------------------------
+
+// The manga-panel quiz pool: `length` question seeds over locally-linked
+// manga. Eligibility is SQL (linked chapters + cover + status filter, EPUB
+// chapters excluded); page discovery walks only the sampled series' chapter
+// folders, so a big library costs `length` directory listings, not the whole
+// root. Read-only — it never touches page_count caches or reading state.
+export async function panelPool(
+  filter: QuizLibFilter = {},
+  length = 10
+): Promise<QuizMangaPanelItem[]> {
+  const db = getSqlite()
+  const where: string[] = [
+    `mi.media_type = 'manga'`,
+    'mi.cover_path IS NOT NULL',
+    // EPUB books have spine documents, not image pages — nothing to show.
+    `LOWER(mc.dir_path) NOT LIKE '%.epub'`
+  ]
+  const params: unknown[] = []
+  const statuses = filter.statuses?.filter((s) => s)
+  if (statuses && statuses.length > 0) {
+    where.push(`mi.status IN (${statuses.map(() => '?').join(', ')})`)
+    params.push(...statuses)
+  }
+
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT mi.id AS media_id, mi.title, mi.cover_path,
+              ${YEAR_EXPR} AS year,
+              ${GENRE_CSV_EXPR} AS genre_csv
+       FROM media_item mi
+       JOIN manga_chapter mc ON mc.media_id = mi.id
+       WHERE ${where.join(' AND ')}`
+    )
+    .all(...params) as Record<string, unknown>[]
+
+  const wanted = Math.max(1, Math.min(50, Math.floor(length)))
+  const root = mangaRootDir()
+  const candidates: PanelCandidate[] = []
+  for (const r of shuffle(rows)) {
+    if (candidates.length >= wanted) break
+    const chRows = db
+      .prepare(
+        `SELECT dir_path FROM manga_chapter WHERE media_id = ? AND LOWER(dir_path) NOT LIKE '%.epub'`
+      )
+      .all(r.media_id) as { dir_path: string }[]
+    const chapters: { dirPath: string; files: string[] }[] = []
+    for (const ch of chRows) {
+      const files = await listChapterPages(join(root, ch.dir_path))
+      if (files.length > 0) chapters.push({ dirPath: ch.dir_path, files })
+    }
+    if (chapters.length === 0) continue // vanished folder / unreadable archive
+    candidates.push({
+      mediaId: r.media_id as number,
+      title: r.title as string,
+      coverPath: (r.cover_path as string) ?? null,
+      year: (r.year as number | null) ?? null,
+      genres: r.genre_csv ? String(r.genre_csv).split(',') : [],
+      chapters
+    })
+  }
+  return pickPanelSeeds(candidates, wanted)
 }
 
 // Raises media_item.progress (chapters read) to match the local read state.

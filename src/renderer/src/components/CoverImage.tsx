@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useImageUrl } from '../lib/hooks'
+import { thumbUrl } from '@shared/mediaUrl'
 import MusicPlaceholder from './MusicPlaceholder'
 
 interface Props {
@@ -10,6 +11,10 @@ interface Props {
   // 'music' swaps the initial-letter placeholder for the listening-girl
   // artwork — used by every music-section cover slot.
   fallback?: 'initial' | 'music'
+  // Ask for a disk-cached downscaled variant (see src/main/thumbs.ts) instead
+  // of decoding the full-resolution source. Use for small cover slots in long
+  // grids; onError falls back to the original transparently.
+  thumbWidth?: number
 }
 
 // Shows a stored cover/photo, or a tasteful placeholder with the title initial.
@@ -21,24 +26,35 @@ export default function CoverImage({
   alt,
   className = '',
   rounded = 'rounded-md',
-  fallback = 'initial'
+  fallback = 'initial',
+  thumbWidth
 }: Props) {
   const url = useImageUrl(path)
   const [failed, setFailed] = useState(false)
+  const [thumbFailed, setThumbFailed] = useState(false)
 
-  // A new path is a fresh chance to load — clear a prior failure.
-  useEffect(() => setFailed(false), [url])
+  // A new path is a fresh chance to load — clear prior failures.
+  useEffect(() => {
+    setFailed(false)
+    setThumbFailed(false)
+  }, [url])
+
+  const thumb = url && !failed && thumbWidth ? thumbUrl(path, thumbWidth) : null
+  const src = thumb && !thumbFailed ? thumb : url
 
   if (url && !failed) {
     return (
       <img
-        src={url}
+        src={src ?? undefined}
         alt={alt}
         className={`object-cover bg-base-700 ${rounded} ${className}`}
         loading="lazy"
         decoding="async"
         draggable={false}
-        onError={() => setFailed(true)}
+        onError={() => {
+          if (thumb && !thumbFailed) setThumbFailed(true)
+          else setFailed(true)
+        }}
       />
     )
   }

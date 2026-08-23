@@ -3,6 +3,11 @@ import { NavLink, useLocation } from 'react-router-dom'
 import { GACHA_GAMES } from '@shared/gacha'
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 import { MEDIA_CONFIGS, configFor, type MediaConfig } from '../lib/mediaConfig'
+import { useSettings } from '../lib/hooks'
+import {
+  SIDEBAR_HIDDEN_SETTING,
+  parseHiddenSections
+} from '../lib/sidebarSections'
 import lainAvatar from '../assets/lain.png'
 
 // Active = phosphor indicator bar (inset shadow, no layout shift) + accent
@@ -112,6 +117,18 @@ function MediaSection({ cfg }: { cfg: MediaConfig }) {
 }
 
 export default function Sidebar() {
+  const { data: settings } = useSettings()
+  // Sections hidden from Settings → General → Sidebar. Presentational only:
+  // routes stay live so Ctrl+K and old links still land there.
+  const hidden = parseHiddenSections(settings?.[SIDEBAR_HIDDEN_SETTING])
+  const visible = (key: string) => !hidden.has(key)
+  // A group header renders only while its group has something to show.
+  const libraryEmpty =
+    MEDIA_CONFIGS.filter((cfg) => !cfg.hideFromSidebar).every((cfg) => hidden.has(cfg.key)) &&
+    ['music', 'wrestling', 'lists', 'tags'].every((k) => hidden.has(k))
+  const playEmpty = hidden.has('quiz') && hidden.has('gacha')
+  const learnEmpty = hidden.has('japanese') && hidden.has('english') && hidden.has('programming')
+
   return (
     <aside className="w-60 shrink-0 bg-base-800 border-r border-base-700 flex flex-col">
       <NavLink to="/" className="px-4 h-14 flex items-center gap-2.5 border-b border-base-700">
@@ -127,92 +144,118 @@ export default function Sidebar() {
         <NavLink to="/" end className={({ isActive }) => linkClass(isActive)}>
           Home
         </NavLink>
-        <NavLink to="/checklist" className={({ isActive }) => linkClass(isActive)}>
-          Checklist
-        </NavLink>
+        {visible('checklist') && (
+          <NavLink to="/checklist" className={({ isActive }) => linkClass(isActive)}>
+            Checklist
+          </NavLink>
+        )}
         {/* Cross-library time-spent stats — daily/overview trio with Home + Checklist */}
-        <NavLink to="/stats" className={({ isActive }) => linkClass(isActive)}>
-          Stats
-        </NavLink>
+        {visible('stats') && (
+          <NavLink to="/stats" className={({ isActive }) => linkClass(isActive)}>
+            Stats
+          </NavLink>
+        )}
 
-        <SectionLabel>Library</SectionLabel>
+        {!libraryEmpty && <SectionLabel>Library</SectionLabel>}
 
         <div className="space-y-0.5">
-          {MEDIA_CONFIGS.filter((cfg) => !cfg.hideFromSidebar).map((cfg) => (
+          {MEDIA_CONFIGS.filter((cfg) => !cfg.hideFromSidebar && visible(cfg.key)).map((cfg) => (
             <MediaSection key={cfg.key} cfg={cfg} />
           ))}
           {/* Standalone local-music section (not a MediaConfig — own tables/pages) */}
-          <NavGroup
-            to="/music"
-            label="Music"
-            children={[
-              { to: '/music/liked', label: 'Liked' },
-              { to: '/music/stats', label: 'Listening stats' }
-            ]}
-          />
+          {visible('music') && (
+            <NavGroup
+              to="/music"
+              label="Music"
+              children={[
+                { to: '/music/liked', label: 'Liked' },
+                { to: '/music/stats', label: 'Listening stats' }
+              ]}
+            />
+          )}
           {/* Standalone wrestling section (not a MediaConfig — own tables/pages) */}
-          <NavGroup
-            to="/wrestling"
-            label="Wrestling"
-            children={WRESTLING_PROMOTIONS.map((p) => ({
-              to: `/wrestling/p/${p.id}`,
-              label: p.short
-            }))}
-          />
-          <NavLink to="/lists" className={({ isActive }) => linkClass(isActive)}>
-            Lists
-          </NavLink>
-          <NavLink to="/tags" className={({ isActive }) => linkClass(isActive)}>
-            Tags
-          </NavLink>
+          {visible('wrestling') && (
+            <NavGroup
+              to="/wrestling"
+              label="Wrestling"
+              children={WRESTLING_PROMOTIONS.map((p) => ({
+                to: `/wrestling/p/${p.id}`,
+                label: p.short
+              }))}
+            />
+          )}
+          {visible('lists') && (
+            <NavLink to="/lists" className={({ isActive }) => linkClass(isActive)}>
+              Lists
+            </NavLink>
+          )}
+          {visible('tags') && (
+            <NavLink to="/tags" className={({ isActive }) => linkClass(isActive)}>
+              Tags
+            </NavLink>
+          )}
         </div>
 
-        <SectionLabel>Play</SectionLabel>
-        <div className="space-y-0.5">
-          <NavLink to="/quiz" className={({ isActive }) => linkClass(isActive)}>
-            Quiz
-          </NavLink>
-          <NavGroup
-            to="/gacha"
-            label="Gacha"
-            children={GACHA_GAMES.map((g) => ({ to: `/gacha/${g.id}`, label: g.short }))}
-          />
-        </div>
+        {!playEmpty && <SectionLabel>Play</SectionLabel>}
+        {!playEmpty && (
+          <div className="space-y-0.5">
+            {visible('quiz') && (
+              <NavLink to="/quiz" className={({ isActive }) => linkClass(isActive)}>
+                Quiz
+              </NavLink>
+            )}
+            {visible('gacha') && (
+              <NavGroup
+                to="/gacha"
+                label="Gacha"
+                children={GACHA_GAMES.map((g) => ({ to: `/gacha/${g.id}`, label: g.short }))}
+              />
+            )}
+          </div>
+        )}
 
-        <SectionLabel>Learn</SectionLabel>
-        <div className="space-y-0.5">
-          <NavGroup
-            to="/japanese"
-            label="Japanese"
-            children={[
-              { to: '/japanese/roadmap', label: 'Roadmap' },
-              { to: '/japanese/review', label: 'Review' },
-              { to: '/japanese/dictionary', label: 'Dictionary' },
-              { to: '/japanese/kana', label: 'Drills' },
-              { to: '/japanese/guide', label: 'Guide' }
-            ]}
-          />
-          <NavGroup
-            to="/english"
-            label="English"
-            children={[
-              { to: '/english/dictionary', label: 'Dictionary' },
-              { to: '/english/review', label: 'Review' },
-              { to: '/english/deck', label: 'Deck' },
-              { to: '/english/writing', label: 'Writing' }
-            ]}
-          />
-          <NavGroup
-            to="/programming"
-            label="Programming"
-            children={[
-              { to: '/programming/cheatsheets', label: 'Cheatsheets' },
-              { to: '/programming/practice', label: 'CLI practice' },
-              { to: '/programming/sql', label: 'SQL sandbox' },
-              { to: '/programming/regex-golf', label: 'Regex golf' }
-            ]}
-          />
-        </div>
+        {!learnEmpty && <SectionLabel>Learn</SectionLabel>}
+        {!learnEmpty && (
+          <div className="space-y-0.5">
+            {visible('japanese') && (
+              <NavGroup
+                to="/japanese"
+                label="Japanese"
+                children={[
+                  { to: '/japanese/roadmap', label: 'Roadmap' },
+                  { to: '/japanese/review', label: 'Review' },
+                  { to: '/japanese/dictionary', label: 'Dictionary' },
+                  { to: '/japanese/kana', label: 'Drills' },
+                  { to: '/japanese/guide', label: 'Guide' }
+                ]}
+              />
+            )}
+            {visible('english') && (
+              <NavGroup
+                to="/english"
+                label="English"
+                children={[
+                  { to: '/english/dictionary', label: 'Dictionary' },
+                  { to: '/english/review', label: 'Review' },
+                  { to: '/english/deck', label: 'Deck' },
+                  { to: '/english/writing', label: 'Writing' }
+                ]}
+              />
+            )}
+            {visible('programming') && (
+              <NavGroup
+                to="/programming"
+                label="Programming"
+                children={[
+                  { to: '/programming/cheatsheets', label: 'Cheatsheets' },
+                  { to: '/programming/practice', label: 'CLI practice' },
+                  { to: '/programming/sql', label: 'SQL sandbox' },
+                  { to: '/programming/regex-golf', label: 'Regex golf' }
+                ]}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       <div className="p-2 border-t border-base-700">

@@ -1,6 +1,7 @@
 import { getSqlite } from '../db/connection'
 import { mapCompany, mapMedia } from './mappers'
 import * as listRepo from './listRepo'
+import * as tierListRepo from './tierListRepo'
 import type { Company, MediaItem, MediaType } from '@shared/types'
 
 // Sorted by how many distinct works they're linked to (most prolific first).
@@ -72,5 +73,6 @@ export function upsert(input: Partial<Company> & { name: string }): number {
 
 export function remove(id: number): void {
   listRepo.removeEntityFromLists('company', id)
+  tierListRepo.removeEntityFromTierLists('company', id)
   getSqlite().prepare('DELETE FROM company WHERE id = ?').run(id)
 }

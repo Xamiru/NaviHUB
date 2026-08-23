@@ -489,6 +489,60 @@ export const listItem = sqliteTable(
 )
 
 // ---------------------------------------------------------------------------
+// tier_list + tier_row + tier_item — TierMaker-style boards. Same kind scoping
+// as list; tier_item.row_id NULL = the unranked pool, and deleting a row drops
+// its items back into the pool (SET NULL) rather than deleting them.
+// ---------------------------------------------------------------------------
+export const tierList = sqliteTable(
+  'tier_list',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    title: text('title').notNull(),
+    description: text('description'),
+    entityKind: text('entity_kind').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({ byKind: index('idx_tier_list_kind').on(t.entityKind) })
+)
+
+export const tierRow = sqliteTable(
+  'tier_row',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    listId: integer('list_id')
+      .notNull()
+      .references(() => tierList.id, { onDelete: 'cascade' }),
+    label: text('label').notNull(),
+    color: text('color').notNull().default('#7f7f7f'),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({ byList: index('idx_tier_row_list').on(t.listId) })
+)
+
+export const tierItem = sqliteTable(
+  'tier_item',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    listId: integer('list_id')
+      .notNull()
+      .references(() => tierList.id, { onDelete: 'cascade' }),
+    rowId: integer('row_id').references(() => tierRow.id, { onDelete: 'set null' }),
+    entityId: integer('entity_id').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    byList: index('idx_tier_item_list').on(t.listId),
+    byRow: index('idx_tier_item_row').on(t.rowId),
+    uniq: unique('uniq_tier_item').on(t.listId, t.entityId)
+  })
+)
+
+// ---------------------------------------------------------------------------
 // manga_chapter — a locally-readable chapter of a manga media_item, discovered
 // by scanning the attached series folder (media_item.local_dir). dir_path is
 // relative to the manga library root; '' = the series folder itself holds the

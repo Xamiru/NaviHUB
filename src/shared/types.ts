@@ -234,6 +234,70 @@ export interface ListInput {
   ranked?: boolean
 }
 
+// ---- Tier lists (TierMaker-style boards) ----
+
+// A tier list scopes one ListKind onto labeled color rows plus an unranked
+// pool. Same kind system as List; rows live in tier_row, placements in
+// tier_item (row_id NULL = pool).
+export interface TierList {
+  id: number
+  title: string
+  description: string | null
+  kind: ListKind
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TierRowData {
+  id: number
+  label: string
+  color: string // '#rrggbb'
+}
+
+// A resolved tile: tier_item joined with its entity, normalized like ListEntry.
+export interface TierEntry {
+  itemId: number // tier_item.id
+  entityId: number
+  name: string
+  subtitle: string | null
+  imagePath: string | null
+  mediaType: MediaType | null // kind === 'media' only, for the route
+}
+
+export interface TierRowGroup {
+  row: TierRowData
+  items: TierEntry[]
+}
+
+export interface TierBoard extends TierList {
+  rows: TierRowGroup[]
+  pool: TierEntry[]
+}
+
+export interface TierListSummary extends TierList {
+  itemCount: number // includes pool items
+  previewImages: (string | null)[] // ranked items first, then the pool
+}
+
+export interface TierListInput {
+  title: string
+  description?: string | null
+  kind: ListKind // required on create; immutable afterwards. New boards seed S–F.
+}
+
+export interface TierRowInput {
+  label: string
+  color: string
+}
+
+// One container's ordering for persistBoard: a row id, or null for the pool,
+// with its item ids in display order. The whole board is written in one
+// transaction per drag.
+export interface TierPlacement {
+  rowId: number | null
+  itemIds: number[]
+}
+
 // ---- Composite view models ----
 
 export interface CastEntry {
@@ -484,6 +548,8 @@ export interface QuizSong {
   coverPath: string | null
   status: string | null
   artists: string[] // performer names, shown on the reveal card
+  year: number | null // release year (seasonYear || release-date year) — distractor affinity
+  genres: string[] // tag names — distractor affinity (shared-genre wrong answers are plausible)
 }
 
 // Narrows the song quiz pool. Omit a field (or pass null) to leave it unfiltered.
@@ -493,9 +559,74 @@ export interface QuizSongFilter {
   eras?: string[] | null // era keys from @shared/era; null/empty = any decade
 }
 
+// Narrows the library MCQ pools (character / VA / synopsis). Both knobs are
+// optional; null/empty means unfiltered. mediaTypes only bites on the
+// synopsis pool today, but every pool accepts it so the UIs can grow alike.
+export interface QuizLibFilter {
+  statuses?: string[] | null // null/empty = any status ("Watched" vs "All")
+  mediaTypes?: string[] | null // null/empty = any media type
+}
+
+// One character-quiz seed: a portrait plus the title it came from (its first
+// linked media). year/genres drive distractor affinity like QuizSong's.
+export interface QuizCharacterItem {
+  characterId: number
+  name: string
+  nameNative: string | null
+  imagePath: string | null
+  mediaId: number
+  mediaTitle: string
+  coverPath: string | null
+  year: number | null
+  genres: string[]
+}
+
+// One Japanese-role voice credit usable as a question seed in either VA
+// direction: "who voices this character?" and "which character do they voice?".
+export interface QuizVaItem {
+  personId: number
+  personName: string
+  photoPath: string | null
+  characterId: number
+  characterName: string
+  characterImagePath: string | null
+  mediaId: number
+  mediaTitle: string
+}
+
+// One synopsis-quiz seed: any library title with enough description text to
+// be recognizable but not trivially short.
+export interface QuizSynopsisItem {
+  mediaId: number
+  mediaType: MediaType
+  title: string
+  coverPath: string | null
+  synopsis: string
+  year: number | null
+  genres: string[]
+}
+
+// One manga-panel question seed: a servable page (the same virtual path shape
+// the reader uses — folders and CBZ entries alike) plus the series it belongs
+// to. year/genres drive distractor affinity like every other library pool.
+export interface QuizMangaPanelItem {
+  mediaId: number
+  title: string
+  coverPath: string | null
+  year: number | null
+  genres: string[]
+  pageRelPath: string // "manga/<dir>/<file>" or "manga/<dir>/<Vol 1.cbz>/<entry>"
+}
+
 // ---- quiz history (finished rounds of any quiz mode) ----
 export type QuizKind =
   | 'song'
+  | 'songArcade' // song quiz arcade run: lives + speed points (best = most points)
+  | 'songReverse' // song quiz reverse: hear clips, pick which belongs to the shown anime
+  | 'character' // character portrait -> which anime/title
+  | 'va' // voice-actor credits, both directions
+  | 'synopsis' // description excerpt -> which title
+  | 'mangaPanel' // a page from a locally-linked manga -> which series
   | 'japanese'
   | 'kana'
   | 'kanji'
@@ -749,6 +880,9 @@ export interface AchievementUnlockEvent {
 // Polled while a game session runs (achievementWatcher.ts). The renderer fires
 // its in-app toast off `recent`, deduped by seq, and the in-game overlay window
 // (achPopup.ts → #/achpop) polls the same object for its Xbox-style cards.
+// `test`/`testId` carry the "Test popup & sound" request from the Achievements
+// page: the overlay renders ONE fake card per testId (the main window's toast
+// hook deliberately ignores them); main drops the pair after a short TTL.
 export interface AchievementWatchStatus {
   running: boolean
   mediaId: number | null
@@ -756,6 +890,8 @@ export interface AchievementWatchStatus {
   seq: number
   recent: AchievementUnlockEvent[]
   message: string | null
+  test?: AchievementUnlockEvent | null
+  testId?: number
 }
 
 export interface AchievementGameProgress {

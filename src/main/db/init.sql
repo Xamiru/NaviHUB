@@ -339,6 +339,44 @@ CREATE TABLE IF NOT EXISTS list_item (
 );
 CREATE INDEX IF NOT EXISTS idx_list_item_list ON list_item(list_id);
 
+-- tier_list — a TierMaker-style board: labeled, colored tier rows plus an
+-- unranked pool, filled by dragging covers from one entity kind (the same
+-- kinds as `list`). Rows live in tier_row, placements in tier_item.
+CREATE TABLE IF NOT EXISTS tier_list (
+  id           INTEGER PRIMARY KEY AUTOINCREMENT,
+  title        TEXT NOT NULL,
+  description  TEXT,
+  entity_kind  TEXT NOT NULL,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_tier_list_kind ON tier_list(entity_kind);
+
+-- tier_row — one labeled band of the board. color is a '#rrggbb' hex string.
+CREATE TABLE IF NOT EXISTS tier_row (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  list_id    INTEGER NOT NULL REFERENCES tier_list(id) ON DELETE CASCADE,
+  label      TEXT NOT NULL,
+  color      TEXT NOT NULL DEFAULT '#7f7f7f',
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_tier_row_list ON tier_row(list_id);
+
+-- tier_item — one cover on the board. row_id NULL = the unranked pool below
+-- the tiers; deleting a row drops its items back into the pool (SET NULL),
+-- never deletes them. entity_id is polymorphic like list_item's: no FK, reads
+-- resolve/skip missing ids and entity deletes clean up matching rows.
+CREATE TABLE IF NOT EXISTS tier_item (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  list_id    INTEGER NOT NULL REFERENCES tier_list(id) ON DELETE CASCADE,
+  row_id     INTEGER REFERENCES tier_row(id) ON DELETE SET NULL,
+  entity_id  INTEGER NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(list_id, entity_id)
+);
+CREATE INDEX IF NOT EXISTS idx_tier_item_list ON tier_item(list_id);
+CREATE INDEX IF NOT EXISTS idx_tier_item_row ON tier_item(row_id);
+
 -- manga_chapter — a locally-readable chapter of a manga media_item, discovered
 -- by scanning the series folder (media_item.local_dir). dir_path is relative to
 -- the manga library root (settings key manga.dir); '' means the series folder

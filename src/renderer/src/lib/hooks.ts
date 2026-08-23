@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { qk } from './queryKeys'
 import { mediaUrl } from '@shared/mediaUrl'
+import { MEDIA_CONFIGS, statusesExceptPlanned } from './mediaConfig'
 import type { SettingsMap } from '@shared/types'
 
 export function useSettings() {
@@ -35,6 +36,18 @@ export function statusesFrom(
 export function useStatuses(cfg: { statusesKey: string; defaultStatuses: string[] }): string[] {
   const { data } = useSettings()
   return statusesFrom(data, cfg)
+}
+
+// Union of every media type's non-planned statuses — the "Watched" scope for
+// the library-wide quizzes (character / VA / synopsis), where no single
+// MediaConfig applies and each type names its own statuses.
+export function useAllWatchedStatuses(): string[] {
+  const { data } = useSettings()
+  const out = new Set<string>()
+  for (const cfg of MEDIA_CONFIGS) {
+    for (const s of statusesExceptPlanned(statusesFrom(data, cfg))) out.add(s)
+  }
+  return [...out]
 }
 
 // Modal dialog basics: Escape closes, focus moves into the panel on mount and

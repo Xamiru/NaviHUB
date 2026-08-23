@@ -16,3 +16,14 @@ export function mediaUrl(relPath: string | null | undefined): string | null {
     .join('/')
   return `navimg://${encoded}`
 }
+
+// A downscaled variant of a stored image, served from the main process's disk
+// cache (generated on first request — see src/main/thumbs.ts). Small cover
+// slots should use this: full-resolution sources (Steam's 1200x1800 library
+// art, VNDB originals) decoded at thumbnail size are what makes long cover
+// grids jank on scroll. Falls back to the original via <img> onError when the
+// thumb can't be produced.
+export function thumbUrl(relPath: string | null | undefined, width: number): string | null {
+  if (!relPath) return null
+  return mediaUrl(`thumb/${width}/${relPath}`)
+}

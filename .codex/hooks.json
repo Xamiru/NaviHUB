@@ -1,0 +1,17 @@
+{
+  "description": "NaviHUB command guards shared with Claude Code.",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$(git rev-parse --show-toplevel)/.claude/hooks/no-npx-toolchain.sh\"",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

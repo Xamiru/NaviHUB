@@ -15,7 +15,8 @@ import type {
 //
 // imageCol is a full SQL expression, not a bare column, so a kind with no
 // artwork of its own (a wrestling match) can say NULL.
-const KIND: Record<
+// Shared with tierListRepo — tier boards resolve the same kinds.
+export const KIND: Record<
   ListKind,
   { table: string; nameCol: string; imageCol: string; subCol: string }
 > = {
@@ -44,7 +45,8 @@ const KIND: Record<
   }
 }
 
-const MEDIA_LABEL: Record<string, string> = {
+// media_type → display label, shared with tierListRepo's tile mapping.
+export const MEDIA_LABEL: Record<string, string> = {
   anime: 'Anime',
   manga: 'Manga',
   visual_novel: 'Visual Novel',

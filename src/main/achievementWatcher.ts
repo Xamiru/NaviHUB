@@ -54,15 +54,58 @@ let message: string | null = null
 // Set once by stopAchievementWatcher(); see the check in pollOnce's RA branch.
 let quitting = false
 
+// The "Test popup & sound" request. Served to BOTH pollers (main window +
+// overlay) until the TTL lapses — the main window's hook ignores it, and the
+// overlay dedupes by testId, so a lingering entry costs one stale field, not
+// repeat cards. Lazy expiry: no timer, just an age check on read.
+const TEST_TTL_MS = 15_000
+let testEvent: AchievementUnlockEvent | null = null
+let testId = 0
+let testAtMs = 0
+
+// Raises the overlay with a fake unlock so the user can verify visibility over
+// a game (and hear the chime) WITHOUT earning something first. Works with no
+// session running — showUnlock() creates the window on demand, and the page's
+// poll picks the card up off the next watchStatus read.
+export function requestPopupTest(): void {
+  testId += 1
+  testAtMs = Date.now()
+  const event: AchievementUnlockEvent = {
+    // seq 0 never collides with real unlocks (they count up from 1) and the
+    // overlay dedupes tests by testId anyway.
+    seq: 0,
+    achievementId: 0,
+    mediaId: 0,
+    mediaTitle: 'NaviHUB',
+    mediaType: 'game',
+    name: 'Achievement popup test',
+    description: 'If you can read this over your game, the overlay works.',
+    iconPath: null,
+    rarity: null,
+    points: 10,
+    unlockedAt: new Date().toISOString().slice(0, 19).replace('T', ' ')
+  }
+  testEvent = event
+  // The glass itself: a test with the window sitting uncreated would never be
+  // seen — nothing polls until it exists.
+  if (!achPopup.showUnlock()) achPopup.fallbackNotify(event)
+}
+
 export function getWatchStatus(): AchievementWatchStatus | null {
-  if (!watch && !recent.length) return null
+  if (testEvent && Date.now() - testAtMs >= TEST_TTL_MS) {
+    testEvent = null
+    if (!watch) achPopup.sessionEnded()
+  }
+  if (!watch && !recent.length && !testEvent) return null
   return {
     running: !!watch,
     mediaId: watch?.mediaId ?? null,
     provider: watch?.provider ?? null,
     seq,
     recent: [...recent],
-    message
+    message,
+    test: testEvent,
+    testId: testEvent ? testId : undefined
   }
 }
 
@@ -302,4 +345,7 @@ export function __resetForTests(): void {
   message = null
   seq = 0
   quitting = false
+  testEvent = null
+  testId = 0
+  testAtMs = 0
 }

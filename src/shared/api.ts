@@ -46,11 +46,16 @@ import type {
   TorrentServiceTestResult,
   WallpaperSearchPage,
   WallpaperSearchResult,
+  QuizCharacterItem,
   QuizHistory,
   QuizKind,
+  QuizLibFilter,
+  QuizMangaPanelItem,
   QuizSessionInput,
   QuizSong,
   QuizSongFilter,
+  QuizSynopsisItem,
+  QuizVaItem,
   TournamentEntry,
   TournamentSource,
   HltbTimes,
@@ -68,6 +73,11 @@ import type {
   ListInput,
   ListKind,
   ListSummary,
+  TierBoard,
+  TierListInput,
+  TierListSummary,
+  TierPlacement,
+  TierRowInput,
   JpCardInput,
   JpCourseDetail,
   JpCourseInput,
@@ -336,6 +346,15 @@ export interface NaviApi {
     // The pool of playable anime theme songs for the song quiz, narrowed by the
     // given filter (OP/ED, list statuses). Game logic runs in the renderer.
     songPool(filter: QuizSongFilter): Promise<QuizSong[]>
+    // Library MCQ pools for the character / VA / synopsis quizzes: imaged
+    // characters (first linked title), Japanese-role voice credits (deduped
+    // per character), and titles with enough synopsis to quiz on.
+    characterPool(filter: QuizLibFilter): Promise<QuizCharacterItem[]>
+    vaPool(filter: QuizLibFilter): Promise<QuizVaItem[]>
+    synopsisPool(filter: QuizLibFilter): Promise<QuizSynopsisItem[]>
+    // Manga-panel quiz seeds: length questions, each a random page from a
+    // random image chapter of one locally-linked series (one per series).
+    mangaPanelPool(filter: QuizLibFilter, length: number): Promise<QuizMangaPanelItem[]>
     // Normalized contender pool for tournament mode, resolved from one library
     // source. Returns the whole matching set; the renderer shuffles and caps.
     tournamentPool(source: TournamentSource): Promise<TournamentEntry[]>
@@ -393,6 +412,9 @@ export interface NaviApi {
     // Polled while a session runs; the in-game overlay (achPopup.ts) and this
     // both read it — one for the popup cards, this for the toast + list refresh.
     watchStatus(): Promise<AchievementWatchStatus | null>
+    // Raises the in-game overlay with a fake unlock card + chime, so visibility
+    // over a fullscreen game can be verified without earning an achievement.
+    testPopup(): Promise<void>
     overview(): Promise<AchievementsOverview>
     recent(limit?: number): Promise<AchievementUnlockEvent[]>
     cardSummaries(): Promise<Record<number, { unlocked: number; total: number }>>
@@ -419,6 +441,23 @@ export interface NaviApi {
       kind: ListKind,
       entityId: number
     ): Promise<{ id: number; title: string; contains: boolean }[]>
+  }
+  tierLists: {
+    // TierMaker-style boards over the same ListKinds as lists. The picker flow
+    // is the UniversalPicker; items land in the pool and are dragged onto rows.
+    list(kind?: ListKind | null): Promise<TierListSummary[]>
+    get(id: number): Promise<TierBoard | null>
+    create(input: TierListInput): Promise<number>
+    update(id: number, input: { title?: string; description?: string | null }): Promise<void>
+    remove(id: number): Promise<void>
+    // Replaces every row of the board (rename/recolor/reorder/add/delete) in
+    // one transaction. Deleting a row returns its items to the pool.
+    setRows(listId: number, rows: TierRowInput[]): Promise<void>
+    // Persists one drag: containers in display order with their item ids in
+    // order. One transaction per call.
+    persistBoard(listId: number, placements: TierPlacement[]): Promise<void>
+    addItem(listId: number, entityId: number): Promise<number> // lands in the pool
+    removeItem(itemId: number): Promise<void>
   }
   checklist: {
     // Daily/weekly recurring board (/checklist). The item catalog lives in
@@ -1223,5 +1262,9 @@ export interface NaviApi {
     // video player) into userData/media and returns the stored relative path.
     // `subdir` keeps a caller's output in its own folder.
     saveBytes(bytes: Uint8Array, ext: string, subdir?: string): Promise<string>
+    // Saves rendered bytes through a native SAVE dialog (tier-board PNG export).
+    // The parent window is attached so focus returns to the app. Returns the
+    // path written, or null if cancelled. The '.png' extension is appended.
+    saveImageAs(bytes: Uint8Array, defaultName: string): Promise<string | null>
   }
 }

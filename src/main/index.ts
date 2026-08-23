@@ -7,6 +7,7 @@ import { initDatabase, closeDatabase } from './db/connection'
 import { closeDictDb } from './dict/dictDb'
 import { registerIpc } from './ipc'
 import { absoluteMediaPath } from './files'
+import { parseThumbRequest, ensureThumb } from './thumbs'
 import { splitArchivePath, readArchiveEntry, mimeFor } from './archive'
 import { parseByteRange } from './httpRange'
 import { killActive as killActiveMusicDownload } from './musicDownload'
@@ -195,6 +196,9 @@ app.whenReady().then(() => {
 
   // navimg://media/<file> -> the real file under userData/media.
   // navimg://manga/<...>.cbz/<entry> -> a page streamed out of the archive.
+  // navimg://thumb/<w>/<rel> -> a disk-cached downscaled JPEG of a stored
+  //   image (thumbs.ts), generated on first request — small cover slots use
+  //   this so scroll grids don't decode full-resolution sources.
   // Plain files are streamed by hand (not net.fetch) so Range requests get a
   // real 206 — that's what makes <audio> seekable and lets Chromium read
   // trailing metadata (m4a moov, VBR mp3 length) without downloading it all.
@@ -216,6 +220,22 @@ app.whenReady().then(() => {
       // doesn't admit Node's Buffer/Uint8Array<ArrayBufferLike> generics.
       return new Response(data as unknown as BodyInit, {
         headers: { 'content-type': mimeFor(archived.entryName) }
+      })
+    }
+
+    if (relPath.startsWith('thumb/')) {
+      const parsed = parseThumbRequest(relPath)
+      if (!parsed) return new Response('Not found', { status: 404 })
+      const thumbAbs = await ensureThumb(parsed.width, parsed.sourceRel)
+      if (!thumbAbs) return new Response('Not found', { status: 404 })
+      const st = await stat(thumbAbs)
+      // Output is always our own JPEG re-encode, so the mime is fixed.
+      return new Response(Readable.toWeb(createReadStream(thumbAbs)) as unknown as BodyInit, {
+        headers: {
+          'content-type': 'image/jpeg',
+          'content-length': String(st.size),
+          'access-control-allow-origin': '*'
+        }
       })
     }
 

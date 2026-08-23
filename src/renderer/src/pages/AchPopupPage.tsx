@@ -34,6 +34,10 @@ export default function AchPopupPage(): React.JSX.Element {
   // Seeded from the FIRST status seen — anything in `recent` at mount has been
   // popped once already (or predates us).
   const lastSeq = useRef<number | null>(null)
+  // The Achievements page's "Test popup & sound" request rides the same poll
+  // (status.test/testId). Deduped by id — main serves it for a TTL window, and
+  // this is the only consumer that renders it.
+  const lastTestId = useRef(0)
 
   useEffect(() => {
     // The window is transparent; body's theme background would paint it black.
@@ -54,6 +58,16 @@ export default function AchPopupPage(): React.JSX.Element {
       // one timeout per card.
       setCards((cs) => cs.filter((c) => Date.now() - c.at < LIFE_MS))
       if (!status) return
+      // The test card is independent of the session seq — a test can arrive
+      // with no watch running at all.
+      if (status.test && status.testId && status.testId !== lastTestId.current) {
+        lastTestId.current = status.testId
+        playUnlockChime()
+        setCards((cs) => [
+          ...cs,
+          { key: ++cardKey, kind: 'unlock', event: status.test!, at: Date.now() }
+        ])
+      }
       if (lastSeq.current === null) {
         lastSeq.current = status.seq
         return

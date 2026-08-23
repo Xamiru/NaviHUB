@@ -1,6 +1,7 @@
 import { getSqlite } from '../db/connection'
 import { mapMedia, mapTag, mapPerson, mapCompany, mapCharacter } from './mappers'
 import * as listRepo from './listRepo'
+import * as tierListRepo from './tierListRepo'
 import * as settingsRepo from './settingsRepo'
 import type {
   MediaItem,
@@ -723,6 +724,7 @@ export function update(id: number, input: Partial<MediaItemInput>): void {
 
 export function remove(id: number): void {
   listRepo.removeEntityFromLists('media', id)
+  tierListRepo.removeEntityFromTierLists('media', id)
   getSqlite().prepare('DELETE FROM media_item WHERE id = ?').run(id)
 }
 

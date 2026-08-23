@@ -9,6 +9,7 @@ import Section from '../components/Section'
 import StatTile from '../components/StatTile'
 import EmptyState from '../components/EmptyState'
 import CoverImage from '../components/CoverImage'
+import { toast, toastError } from '../lib/toast'
 import type { AchievementUnlockEvent, MediaType } from '@shared/types'
 
 // Everything earned across the library: the recent feed, per-game completion,
@@ -23,6 +24,18 @@ function fmtDate(utc: string): string {
 
 function detailPath(mediaType: MediaType, mediaId: number): string {
   return `${configFor(mediaType).basePath}/${mediaId}?tab=achievements`
+}
+
+// Raises the in-game overlay with a fake unlock card + the real chime. Works
+// with no session running — this is how visibility over a fullscreen game gets
+// verified without earning an achievement first.
+async function testPopup(): Promise<void> {
+  try {
+    await api.achievements.testPopup()
+    toast('Test card sent — check the bottom-right of your screen.', 'success')
+  } catch (e) {
+    toastError(e)
+  }
 }
 
 export default function AchievementsPage() {
@@ -55,13 +68,21 @@ export default function AchievementsPage() {
   if (!data.games.length) {
     return (
       <div className="p-6">
-        <PageHeader title="Achievements" />
+        <PageHeader
+          title="Achievements"
+          actions={
+            <button className="btn-ghost" onClick={() => void testPopup()}>
+              Test popup &amp; sound
+            </button>
+          }
+        />
         <EmptyState
           title="Nothing tracked yet"
           body={
             <>
               Open a game you have linked an executable for, go to its Achievements tab, and pick a
-              provider. Unlocks then pop up as you earn them.
+              provider. Unlocks then pop up as you earn them. Use "Test popup & sound" to check the
+              overlay renders over your games.
             </>
           }
           action={
@@ -80,7 +101,19 @@ export default function AchievementsPage() {
 
   return (
     <div className="p-6">
-      <PageHeader title="Achievements" subtitle={`${data.totals.games} games tracked`} />
+      <PageHeader
+        title="Achievements"
+        subtitle={`${data.totals.games} games tracked`}
+        actions={
+          <button
+            className="btn-ghost"
+            onClick={() => void testPopup()}
+            title="Raises the in-game overlay with a fake unlock, so you can verify it shows over fullscreen games"
+          >
+            Test popup &amp; sound
+          </button>
+        }
+      />
 
       <div className="mb-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
         <StatTile label="Unlocked" value={String(data.totals.unlocked)} accent />

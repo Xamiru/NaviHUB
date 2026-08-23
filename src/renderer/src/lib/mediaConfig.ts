@@ -160,6 +160,14 @@ export function isCompletedStatus(status: string | null | undefined): boolean {
   return !!status && /^(completed|watched)$/i.test(status.trim())
 }
 
+// Status meaning is positional throughout the app: the last configured value
+// is planned, regardless of what the user renamed it to. Quiz "watched" /
+// "reading" scopes include every non-planned state and must not infer that
+// distinction from English labels.
+export function statusesExceptPlanned(statuses: string[]): string[] {
+  return statuses.slice(0, -1)
+}
+
 export const ANIME: MediaConfig = {
   key: 'anime',
   singular: 'Anime',

@@ -101,6 +101,30 @@ export function runnerUpOf(br: Bracket): number | null {
   return final.winner === final.a ? final.b : final.a
 }
 
+// Full placement order once the bracket is decided: champion, runner-up, then
+// everyone else grouped by the round they were knocked out of — semifinal
+// losers ahead of quarterfinal losers, and within one round in match order.
+// Byes never appear (a bye is not an elimination). Works on partial brackets
+// too: undecided matches simply contribute nothing.
+export function placementsOf(br: Bracket): { poolIndex: number; outInRound: number | null }[] {
+  const out: { poolIndex: number; outInRound: number | null }[] = []
+  const champ = championOf(br)
+  if (champ != null) out.push({ poolIndex: champ, outInRound: null })
+  for (let r = br.rounds - 1; r >= 0; r--) {
+    for (const m of br.matches) {
+      if (m.round === r && m.winner != null && m.a != null && m.b != null) {
+        out.push({ poolIndex: m.winner === m.a ? m.b : m.a, outInRound: r })
+      }
+    }
+  }
+  return out
+}
+
+// Placement order only — the champion-first list of pool indices.
+export function standingsOf(br: Bracket): number[] {
+  return placementsOf(br).map((p) => p.poolIndex)
+}
+
 export function roundLabel(competitors: number): string {
   if (competitors === 2) return 'Final'
   if (competitors === 4) return 'Semifinals'

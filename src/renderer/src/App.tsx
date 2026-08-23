@@ -30,6 +30,10 @@ import StudioDetailPage from './pages/StudioDetailPage'
 import CharacterDetailPage from './pages/CharacterDetailPage'
 import QuizLandingPage from './pages/QuizLandingPage'
 import SongQuizPage from './pages/SongQuizPage'
+import CharacterQuizPage from './pages/CharacterQuizPage'
+import VaQuizPage from './pages/VaQuizPage'
+import SynopsisQuizPage from './pages/SynopsisQuizPage'
+import MangaPanelQuizPage from './pages/MangaPanelQuizPage'
 import TournamentPage from './pages/TournamentPage'
 import ChecklistPage from './pages/ChecklistPage'
 import ListsIndexPage from './pages/ListsIndexPage'
@@ -39,6 +43,8 @@ import TasksPage from './pages/TasksPage'
 import LogsPage from './pages/LogsPage'
 import ListFormPage from './pages/ListFormPage'
 import ListDetailPage from './pages/ListDetailPage'
+import TierListFormPage from './pages/TierListFormPage'
+import TierListEditorPage from './pages/TierListEditorPage'
 import TagsIndexPage from './pages/TagsIndexPage'
 import TagDetailPage from './pages/TagDetailPage'
 import JapaneseHomePage from './pages/JapaneseHomePage'
@@ -342,6 +348,10 @@ export default function App() {
                 own Learn section (Japanese / English / Programming) */}
             <Route path="/quiz" element={<QuizLandingPage />} />
             <Route path="/quiz/song" element={<SongQuizPage />} />
+            <Route path="/quiz/character" element={<CharacterQuizPage />} />
+            <Route path="/quiz/va" element={<VaQuizPage />} />
+            <Route path="/quiz/synopsis" element={<SynopsisQuizPage />} />
+            <Route path="/quiz/panels" element={<MangaPanelQuizPage />} />
             <Route path="/quiz/tournament" element={<TournamentPage />} />
             {/* moved into the Programming section — old link may be in history */}
             <Route path="/quiz/programming" element={<Navigate to="/programming/quiz" replace />} />
@@ -360,6 +370,12 @@ export default function App() {
             <Route path="/lists/new" element={<ListFormPage />} />
             <Route path="/lists/:id" element={<ListDetailPage />} />
             <Route path="/lists/:id/edit" element={<ListFormPage />} />
+
+            {/* Tier lists — the Lists section's tiermaker-style tab. Static
+                'tier' segment outranks /lists/:id, so these win over it. */}
+            <Route path="/lists/tier/new" element={<TierListFormPage />} />
+            <Route path="/lists/tier/:id" element={<TierListEditorPage />} />
+            <Route path="/lists/tier/:id/edit" element={<TierListFormPage />} />
 
             {/* Tags — cross-type browse of the shared tag table */}
             <Route path="/tags" element={<TagsIndexPage />} />
