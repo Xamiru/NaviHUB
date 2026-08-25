@@ -619,6 +619,12 @@ export default function MangaReaderPage() {
           <span className="text-sm text-gray-400 shrink-0">
             {page + 1} / {pageCount}
           </span>
+          <div className="absolute inset-x-0 bottom-0 h-px bg-base-800" aria-hidden="true">
+            <div
+              className="h-full bg-accent transition-[width] motion-reduce:transition-none"
+              style={{ width: `${((page + 1) / Math.max(1, pageCount)) * 100}%` }}
+            />
+          </div>
         </div>
 
         {/* pages */}
@@ -724,7 +730,7 @@ export default function MangaReaderPage() {
         )}
 
         {/* bottom bar */}
-        <div className={`${barCls} bottom-0 border-t`}>
+        <div className={`${barCls} bottom-0 overflow-x-auto border-t`}>
           <button
             className="btn-ghost py-1 px-2 text-xs"
             disabled={!prevChapter}
@@ -803,7 +809,7 @@ export default function MangaReaderPage() {
                 pokeBar()
               }}
             />
-            <BarButton label="⛏" active={panelOpen} title="Mine words (M)" onClick={() => setPanelOpen((v) => !v)} />
+            <BarButton label="Mine" active={panelOpen} title="Mine words (M)" onClick={() => setPanelOpen((v) => !v)} />
             <BarButton label="?" title="Keyboard shortcuts (?)" onClick={() => setHelpOpen(true)} />
           </div>
         </div>

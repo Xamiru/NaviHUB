@@ -16,6 +16,7 @@ import { usePersistedState } from '../lib/navState'
 import { configFor } from '../lib/mediaConfig'
 import type { JpStatsDetail, SrsGrade } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const DAY_MS = 86_400_000
@@ -53,7 +54,7 @@ export default function JapaneseStatsPage() {
     answered > 0 ? Math.round(((answered - detail.gradeCounts.again) / answered) * 100) : 0
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <EditorialDetailFrame width="wide">
       <PageHeader back={{ to: '/japanese', label: 'Japanese' }} title="Japanese stats" />
 
       {answered === 0 ? (
@@ -147,7 +148,7 @@ export default function JapaneseStatsPage() {
           <Leeches />
         </>
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }
 

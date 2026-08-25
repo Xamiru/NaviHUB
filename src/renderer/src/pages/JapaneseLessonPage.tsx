@@ -17,6 +17,8 @@ import StrokeOrderDiagram from '../components/japanese/StrokeOrderDiagram'
 import { grammarCandidates } from '@shared/cloze'
 import type { JpCard, JpLessonKind } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import ContextPanel, { ContextFact } from '../components/ContextPanel'
 
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
   grammar: { cls: 'bg-purple-500/20 text-purple-300', label: '文法 Grammar' },
@@ -70,7 +72,19 @@ export default function JapaneseLessonPage() {
   const isGrammar = lesson.kind === 'grammar'
 
   return (
-    <div className="p-6 max-w-[900px] mx-auto">
+    <EditorialDetailFrame
+      width="wide"
+      aside={
+        <ContextPanel title="Lesson evidence" identity={lesson.id}>
+          <ContextFact label="Course">{lesson.courseTitle}</ContextFact>
+          <ContextFact label="Material">{KIND_CHIP[lesson.kind].label}</ContextFact>
+          <ContextFact label="Cards">{lesson.cards.length}</ContextFact>
+          <ContextFact label="Review state">
+            {lesson.learned ? 'Active in review and quiz pools' : 'Not learned yet'}
+          </ContextFact>
+        </ContextPanel>
+      }
+    >
       <PageHeader
         back={{ to: `/japanese/courses/${lesson.courseId}`, label: lesson.courseTitle }}
         title={lesson.title}
@@ -152,7 +166,7 @@ export default function JapaneseLessonPage() {
           </p>
         )}
       </div>
-    </div>
+    </EditorialDetailFrame>
   )
 }
 

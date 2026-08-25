@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
 import QuizRecord from '../components/QuizRecord'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import { Group, Pill } from '../components/PillGroup'
 import { EN_MECHANICS } from '@shared/english/mechanics'
 import type { EnMechanicsCategory } from '@shared/english/types'
@@ -246,19 +247,14 @@ export default function EnglishMechanicsPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-        <span className="tabular-nums">
-          {stats.total}
-          {lengthRef.current > 0 ? ` / ${lengthRef.current}` : ''} · {stats.score} correct
-        </span>
-        <span>
-          streak {stats.streak}
-          <button className="btn-ghost ml-3 px-2 py-0.5 text-xs" onClick={endGame}>
-            End drill
-          </button>
-        </span>
-      </div>
+    <StudySessionFrame
+      title="Mechanics drill"
+      subtitle={current ? CATEGORY_LABEL[current.category] : 'Mistake ledger practice'}
+      progress={lengthRef.current > 0 ? { current: Math.min(stats.total + 1, lengthRef.current), total: lengthRef.current, label: 'Drill' } : undefined}
+      actions={<button className="btn-ghost px-2 py-0.5 text-xs" onClick={endGame}>End drill</button>}
+      rail={<SessionEvidence title="Mistake evidence"><p>{stats.score} correct across {stats.total} answers.</p><p className="mt-2">Current streak {stats.streak}; best streak {stats.best}.</p></SessionEvidence>}
+      surface={false}
+    >
 
       <div className="card p-5">
         <p className="mb-2 text-xs uppercase tracking-widest text-gray-600">
@@ -303,6 +299,6 @@ export default function EnglishMechanicsPage() {
           </button>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

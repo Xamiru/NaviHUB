@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
 import QuizRecord from '../components/QuizRecord'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import {
   CHEAT_SHEETS,
   normalizeCmd,
@@ -49,13 +50,11 @@ export default function CliPracticePage() {
 
   if (playing) {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <Drill
-          items={pool}
-          settings={{ sheets: selected.length > 0 ? selected : 'all', weakOnly }}
-          onExit={() => setPlaying(false)}
-        />
-      </div>
+      <Drill
+        items={pool}
+        settings={{ sheets: selected.length > 0 ? selected : 'all', weakOnly }}
+        onExit={() => setPlaying(false)}
+      />
     )
   }
 
@@ -246,18 +245,12 @@ function Drill({
   }
 
   return (
-    <div className="card p-6">
-      <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-        <span className="tabular-nums">
-          {correct} / {answered}
-        </span>
-        <span>
-          streak {streak}
-          <button className="btn-ghost ml-3 px-2 py-0.5 text-xs" onClick={() => setStopped(true)}>
-            Stop
-          </button>
-        </span>
-      </div>
+    <StudySessionFrame
+      title="CLI practice"
+      subtitle={current?.sheetTitle ?? 'Command drill'}
+      actions={<button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setStopped(true)}>Stop</button>}
+      rail={<SessionEvidence title="Terminal evidence"><p>{correct} correct across {answered} answers.</p><p className="mt-2">Current streak {streak}; best streak {bestStreak}.</p><p className="mt-2">{missed.size} commands need another pass.</p></SessionEvidence>}
+    >
 
       <p className="text-center text-xs uppercase tracking-widest text-gray-600">
         {current?.sheetTitle}
@@ -297,6 +290,6 @@ function Drill({
           <span className="text-xs text-gray-600">Enter reveals the answer</span>
         )}
       </p>
-    </div>
+    </StudySessionFrame>
   )
 }

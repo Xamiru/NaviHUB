@@ -33,18 +33,18 @@ export default function MusicEntityHeader({
   extraActions?: ReactNode // page-specific buttons, placed before Delete
 }) {
   return (
-    <div className={`mb-6 flex gap-5 ${round ? 'items-center' : 'items-end'}`}>
+    <div className={`mb-8 grid gap-6 border-b border-base-700 pb-7 sm:grid-cols-[190px_minmax(0,1fr)] ${round ? 'sm:items-center' : 'sm:items-end'}`}>
       <CoverImage
         path={coverPath}
         alt={title}
         rounded={round ? 'rounded-full' : undefined}
-        className={`shrink-0 ${round ? 'h-32 w-32' : 'h-44 w-44'}`}
+        className={`mx-auto shrink-0 sm:mx-0 ${round ? 'h-40 w-40' : 'h-48 w-48'}`}
         fallback="music"
       />
       <div className="min-w-0">
-        <h1 className="text-3xl font-bold">{title}</h1>
+        <h1 className="text-3xl font-semibold text-white sm:text-4xl text-balance">{title}</h1>
         <p className="mt-1 text-sm text-gray-400">{meta}</p>
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-5 flex flex-wrap gap-2">
           <button className="btn-primary" onClick={onPlay}>
             Play
           </button>

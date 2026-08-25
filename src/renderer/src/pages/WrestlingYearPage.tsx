@@ -7,6 +7,7 @@ import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
 import { WRESTLING_PROMOTIONS, promotionName } from '@shared/wrestling'
 import type { WrestlingEvent } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
 
 // "1997 in professional wrestling": every promotion's shows for one year, in
 // order, so the Monday Night Wars read as one calendar instead of two lists.
@@ -77,7 +78,7 @@ export default function WrestlingYearPage(): JSX.Element {
   const promotions = new Set((events ?? []).map((e) => e.promotion))
 
   return (
-    <div className="p-6">
+    <EditorialDetailFrame width="reading">
       <PageHeader
         back={{ to: '/wrestling', label: 'Wrestling' }}
         title={`${y} in professional wrestling`}
@@ -145,6 +146,6 @@ export default function WrestlingYearPage(): JSX.Element {
           ) : null}
         </div>
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }

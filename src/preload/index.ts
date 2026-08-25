@@ -280,6 +280,7 @@ const api: NaviApi = {
     ghostQueue: (limit) => ipcRenderer.invoke('japanese:ghostQueue', limit),
     ghostAnswer: (cardId, correct) => ipcRenderer.invoke('japanese:ghostAnswer', cardId, correct),
     feed: (req) => ipcRenderer.invoke('japanese:feed', req),
+    listeningPool: (req) => ipcRenderer.invoke('japanese:listeningPool', req),
     particlePool: (req) => ipcRenderer.invoke('japanese:particlePool', req),
     scramblePool: (req) => ipcRenderer.invoke('japanese:scramblePool', req),
     contextReadingPool: (req) => ipcRenderer.invoke('japanese:contextReadingPool', req),

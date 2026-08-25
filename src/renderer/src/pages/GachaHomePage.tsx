@@ -23,19 +23,84 @@ export default function GachaHomePage() {
 
   if (isLoading && !overview) return <PageStatus>Loading…</PageStatus>
   const byGame = new Map((overview ?? []).map((o) => [o.game, o]))
+  const totalDue = Object.values(due ?? {}).reduce((sum, count) => sum + (count ?? 0), 0)
+  const games = [...GACHA_GAMES].sort(
+    (a, b) => (due?.[b.id] ?? 0) - (due?.[a.id] ?? 0)
+  )
+  const coach = GACHA_GAMES.find((game) => game.coach)
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
-        title="Gacha"
-        subtitle="The live-service games you play: roster, builds, wallet, banners and news per game."
+        title="Operations board"
+        subtitle="Every live-service game reduced to what is due, changing and worth opening."
+        actions={
+          coach ? (
+            <Link to={`/gacha/${coach.id}/coach`} className="btn-primary">
+              Open {coach.short} coach
+            </Link>
+          ) : undefined
+        }
       />
 
+      <div className="mb-6 grid gap-4 sm:grid-cols-3">
+        <div className={`card border-t p-5 ${totalDue > 0 ? 'border-t-accent' : 'border-t-base-600'}`}>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Due now</p>
+          <p className={`mt-2 text-3xl font-semibold tabular-nums ${totalDue > 0 ? 'text-accent' : ''}`}>
+            {totalDue}
+          </p>
+          <p className="mt-1 text-xs text-gray-500">Reminders across every game</p>
+        </div>
+        <div className="card border-t border-t-base-600 p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Tracked games</p>
+          <p className="mt-2 text-3xl font-semibold tabular-nums">{GACHA_GAMES.length}</p>
+          <p className="mt-1 text-xs text-gray-500">One local operations surface</p>
+        </div>
+        <div className="card border-t border-t-base-600 p-5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Roster total</p>
+          <p className="mt-2 text-3xl font-semibold tabular-nums">
+            {(overview ?? []).reduce((sum, game) => sum + game.unitCount, 0)}
+          </p>
+          <p className="mt-1 text-xs text-gray-500">Owned and catalogued units</p>
+        </div>
+      </div>
+
       <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-4">
-        {GACHA_GAMES.map((g) => (
+        {games.map((g) => (
           <GameCard key={g.id} cfg={g} overview={byGame.get(g.id)} due={due?.[g.id] ?? 0} />
         ))}
       </div>
+
+      <section className="card mt-6 p-6">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+              Across games
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-white">Operational pressure</h2>
+          </div>
+          <span className="text-sm text-gray-500">Due work sorts the board automatically</span>
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {games.map((game) => {
+            const count = due?.[game.id] ?? 0
+            return (
+              <Link
+                key={game.id}
+                to={`/gacha/${game.id}`}
+                className="rounded-md border border-base-700 p-4 transition-colors hover:border-accent"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm font-medium">{game.short}</span>
+                  <span className={count > 0 ? 'text-sm text-accent' : 'text-sm text-gray-500'}>
+                    {count > 0 ? `${count} due` : 'Clear'}
+                  </span>
+                </div>
+              </Link>
+            )
+          })}
+        </div>
+      </section>
     </div>
   )
 }

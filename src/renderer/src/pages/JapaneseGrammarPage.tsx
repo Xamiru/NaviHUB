@@ -24,7 +24,8 @@ export default function JapaneseGrammarPage() {
   // purpose: a library plus a one-shot drill, with nothing scheduling a point
   // for review. These file cards into the SAME queue as everything else.
   const qc = useQueryClient()
-  const [adding, setAdding] = useState(false)
+  const [addingId, setAddingId] = useState<number | null>(null)
+  const [stagedIds, setStagedIds] = useState<Set<number>>(() => new Set())
   const [params, setParams] = useSearchParams()
   const [level, setLevel] = usePersistedState<LevelFilter>('jpGrammarLevel', 'all')
   const [query, setQuery] = usePersistedState<string>('jpGrammarQuery', '')
@@ -61,27 +62,22 @@ export default function JapaneseGrammarPage() {
 
   const { visible, sentinelRef, hasMore } = useIncrementalList(filtered)
 
-  async function addLevel(level: string): Promise<void> {
-    setAdding(true)
+  async function stagePoint(id: number): Promise<void> {
+    setAddingId(id)
     try {
-      const res = await api.japanese.addGrammarLevel(level)
+      const res = await api.japanese.addGrammarPoints([id])
       await qc.invalidateQueries({ queryKey: qk.japanese.all })
-      if (res.available === 0) {
-        // No points at that level at all — almost always a missing bank, and
-        // claiming "already in your deck" there was a flat lie.
-        toast(`No ${level} grammar points are installed`, 'error')
-      } else {
-        toast(
-          res.added > 0
-            ? `Added ${res.added} ${level} grammar card${res.added === 1 ? '' : 's'} to your reviews`
-            : `Every clozeable ${level} point is already in your deck`,
-          'success'
-        )
-      }
+      setStagedIds((prev) => new Set(prev).add(id))
+      toast(
+        res.added > 0
+          ? 'Staged as a lesson. Read it there, then mark it learned to introduce its cards.'
+          : 'This point is already staged, or has no clozeable examples.',
+        'success'
+      )
     } catch (e) {
       toastError(e)
     } finally {
-      setAdding(false)
+      setAddingId(null)
     }
   }
 
@@ -96,16 +92,9 @@ export default function JapaneseGrammarPage() {
             : 'Every JLPT grammar point, offline.'
         }
         actions={
-          <>
-            {level !== 'all' && bank && (
-              <button className="btn-ghost" disabled={adding} onClick={() => void addLevel(level)}>
-                {adding ? 'Adding…' : `Add ${level} to reviews`}
-              </button>
-            )}
-            <Link to="/japanese/grammar/quiz" className="btn-ghost">
-              Grammar drill
-            </Link>
-          </>
+          <Link to="/japanese/grammar/quiz" className="btn-ghost">
+            Grammar drill
+          </Link>
         }
       />
 
@@ -154,6 +143,9 @@ export default function JapaneseGrammarPage() {
                   meaning={p.meaning}
                   expanded={expandedId === p.id}
                   onToggle={() => setExpandedId(expandedId === p.id ? null : p.id)}
+                  staging={addingId === p.id}
+                  staged={stagedIds.has(p.id)}
+                  onStage={() => void stagePoint(p.id)}
                 />
               ))}
               {hasMore && <div ref={sentinelRef} />}
@@ -171,7 +163,10 @@ function GrammarRow({
   title,
   meaning,
   expanded,
-  onToggle
+  onToggle,
+  staging,
+  staged,
+  onStage
 }: {
   id: number
   level: string
@@ -179,6 +174,9 @@ function GrammarRow({
   meaning: string
   expanded: boolean
   onToggle: () => void
+  staging: boolean
+  staged: boolean
+  onStage: () => void
 }) {
   const { data: point } = useQuery({
     queryKey: qk.dict.grammarPoint(id),
@@ -215,14 +213,17 @@ function GrammarRow({
           {point.explanation && (
             <p className="whitespace-pre-wrap leading-relaxed text-gray-400">{point.explanation}</p>
           )}
-          <p className="mt-3">
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button className="btn-ghost" disabled={staging || staged} onClick={onStage}>
+              {staging ? 'Staging…' : staged ? 'Staged' : 'Stage as lesson'}
+            </button>
             <Link
               to={`/japanese/dictionary?q=${encodeURIComponent(title.split(/[\s(（]/)[0])}`}
               className="text-xs text-gray-500 hover:text-accent"
             >
               Search in dictionary
             </Link>
-          </p>
+          </div>
         </div>
       )}
     </div>

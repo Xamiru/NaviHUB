@@ -161,6 +161,8 @@ import type {
   JpGhostOutcome,
   JpFeed,
   JpFeedRequest,
+  JpListeningItem,
+  JpListeningRequest,
   JpLessonQuizPool,
   JpQuizItem,
   JpQuizScope,
@@ -678,8 +680,8 @@ export interface NaviApi {
     // Review history (heatmap/streaks/grades) + due forecast for the stats page.
     statsDetail(): Promise<JpStatsDetail>
     // Vocab mining: find-or-create the capture course/lesson.
-    // Grammar points as SRS cards in the ordinary review queue (one lesson per
-    // JLPT level under a shared course). Idempotent by card front.
+    // Grammar points staged as small unlearned lessons under a shared course.
+    // Marking a lesson learned introduces its ordinary SRS cards.
     addGrammarPoints(ids: number[]): Promise<GrammarDeckResult>
     addGrammarLevel(level: string): Promise<GrammarDeckResult & { available: number }>
     ensureMiningInbox(): Promise<JpMiningInbox>
@@ -725,6 +727,9 @@ export interface NaviApi {
     ghostAnswer(cardId: number, correct: boolean): Promise<JpGhostOutcome>
     // The i+1 sentence feed (built ~2-3s cold, cached by knowledge state).
     feed(req: JpFeedRequest): Promise<JpFeed>
+    // Knowledge-matched Tatoeba listening: all-known or exactly one unknown,
+    // sampled fresh for each guided listening round.
+    listeningPool(req: JpListeningRequest): Promise<JpListeningItem[]>
     // Sentence games (/japanese/sentences): pools generated from the sentence
     // bank + kuromoji, sampled fresh per round.
     particlePool(req: SentenceGamePoolRequest): Promise<ParticleQuizItem[]>

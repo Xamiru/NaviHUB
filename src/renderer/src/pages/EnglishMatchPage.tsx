@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
 import QuizRecord from '../components/QuizRecord'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import { Group, Pill } from '../components/PillGroup'
 import { EN_MATCH_SETS } from '@shared/english/collocations'
 import { EN_MATCH_THEMES, type EnMatchSet, type EnMatchTheme } from '@shared/english/types'
@@ -108,20 +109,16 @@ export default function EnglishMatchPage() {
   if (phase === 'play') {
     const set = roundRef.current[index]
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-          <span className="tabular-nums">
-            Set {index + 1} / {roundRef.current.length} · {firstTry} first-try · {misses} misses
-          </span>
-          <button
-            className="btn-ghost px-2 py-0.5 text-xs"
-            onClick={() => endGame(firstTry, pairsPlayed, bestStreak)}
-          >
-            End round
-          </button>
-        </div>
+      <StudySessionFrame
+        title="Collocation match"
+        subtitle={`${THEME_LABEL[set.theme]} / ${set.title}`}
+        progress={{ current: index + 1, total: roundRef.current.length, label: 'Sets' }}
+        actions={<button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => endGame(firstTry, pairsPlayed, bestStreak)}>End round</button>}
+        rail={<SessionEvidence title="Mistake evidence"><p>{firstTry} first-try matches with {misses} misses.</p><p className="mt-2">Best streak {bestStreak}.</p></SessionEvidence>}
+        surface={false}
+      >
         <MatchSet key={set.key} set={set} streakIn={streak} onDone={setDone} />
-      </div>
+      </StudySessionFrame>
     )
   }
 

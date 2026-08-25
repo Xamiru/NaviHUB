@@ -9,6 +9,7 @@ import EmptyState from '../components/EmptyState'
 import { Group, Pill } from '../components/PillGroup'
 import Furigana from '../components/japanese/Furigana'
 import MiningPanel from '../components/reader/MiningPanel'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import { JP_PASSAGES } from '@shared/japanese/readings'
 import { stripFurigana } from '@shared/japanese/furigana'
 import type { JpPassage, JpReadingLevel } from '@shared/japanese/types'
@@ -166,21 +167,34 @@ export default function JapaneseReadingPage() {
     const answered = picked !== null
     return (
       <div className="flex h-full">
-        <div className="min-w-0 flex-1 overflow-y-auto p-6">
+        <StudySessionFrame
+          className="min-w-0 flex-1 overflow-y-auto"
+          title="Graded reading"
+          subtitle={<Furigana text={passage.title} show={furigana} />}
+          progress={{ current: index + 1, total: questions.length, label: 'Comprehension' }}
+          actions={
+            <>
+              <button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setFurigana((v) => !v)}>
+                {furigana ? 'Hide furigana' : 'Show furigana'}
+              </button>
+              <button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setPhase('setup')}>
+                Back to list
+              </button>
+            </>
+          }
+          rail={
+            <SessionEvidence title="Reading evidence">
+              <dl className="space-y-3">
+                <div className="flex justify-between gap-3"><dt>Level</dt><dd className="text-white">{passage.level}</dd></div>
+                <div className="flex justify-between gap-3"><dt>Topic</dt><dd className="text-right text-white">{passage.topic}</dd></div>
+                <div className="flex justify-between gap-3"><dt>Score</dt><dd className="text-white">{score}/{index + (answered ? 1 : 0)}</dd></div>
+              </dl>
+              <p className="mt-4 border-t border-base-700 pt-4">Double-click a term in the passage to open the offline mining panel.</p>
+            </SessionEvidence>
+          }
+          surface={false}
+        >
           <div className="mx-auto max-w-3xl">
-            <div className="mb-4 flex items-center justify-between text-sm">
-              <span className="font-medium">
-                Question {index + 1} / {questions.length}
-              </span>
-              <div className="flex items-center gap-3 text-gray-400">
-                <button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setFurigana((v) => !v)}>
-                  {furigana ? 'Hide furigana' : 'Show furigana'}
-                </button>
-                <button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setPhase('setup')}>
-                  Back to list
-                </button>
-              </div>
-            </div>
 
             <div className="card max-h-[45vh] overflow-y-auto p-5">
               <p className="mb-3 text-xs uppercase tracking-widest text-gray-600">
@@ -257,7 +271,7 @@ export default function JapaneseReadingPage() {
               )}
             </div>
           </div>
-        </div>
+        </StudySessionFrame>
         {mining && (
           <MiningPanel
             mediaId={null}

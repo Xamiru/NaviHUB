@@ -58,16 +58,32 @@ export default function ProgrammingHomePage() {
     ])
   )
   const doneLessons = [...doneByCourse.values()].reduce((a, b) => a + b, 0)
+  const focusCourse =
+    PROG_COURSES.find((course) => (doneByCourse.get(course.key) ?? 0) < course.lessons.length) ??
+    PROG_COURSES[0]
+  const recommendedLesson = focusCourse?.lessons.find(
+    (lesson) => !done.has(progLessonKey(focusCourse.key, lesson.key))
+  )
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
-        title="Programming"
-        subtitle="Courses, cheatsheets, and drills: quiz, CLI typing, SQL sandbox, regex golf."
+        title="Skill graph"
+        subtitle="Explore completed concepts, the next dependency and the local practice surfaces that prove each skill."
         actions={
-          <Link to="/programming/cheatsheets" className="btn-ghost">
-            Cheatsheets
-          </Link>
+          <>
+            <Link to="/programming/cheatsheets" className="btn-ghost">
+              Cheatsheets
+            </Link>
+            {focusCourse && recommendedLesson && (
+              <Link
+                to={`/programming/course/${focusCourse.key}/${recommendedLesson.key}`}
+                className="btn-primary"
+              >
+                Open recommended node
+              </Link>
+            )}
+          </>
         }
       />
 
@@ -107,6 +123,79 @@ export default function ProgrammingHomePage() {
           accent={regexSolved > 0}
         />
       </div>
+
+      {focusCourse && (
+        <Section
+          title="Skill graph"
+          subtitle={`${doneByCourse.get(focusCourse.key) ?? 0} of ${focusCourse.lessons.length} lessons complete`}
+        >
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
+            <div className="card p-6">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+                    Active course
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-white">{focusCourse.title}</h2>
+                </div>
+                <Link to={`/programming/course/${focusCourse.key}`} className="btn-ghost">
+                  Open course
+                </Link>
+              </div>
+              <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                {focusCourse.lessons.slice(0, 8).map((lesson) => {
+                  const key = progLessonKey(focusCourse.key, lesson.key)
+                  const complete = done.has(key)
+                  const current = lesson.key === recommendedLesson?.key
+                  return (
+                    <Link
+                      key={lesson.key}
+                      to={`/programming/course/${focusCourse.key}/${lesson.key}`}
+                      className={`min-h-28 rounded-lg border p-4 transition-colors hover:border-accent ${
+                        current
+                          ? 'border-accent/60 bg-accent/10'
+                          : complete
+                            ? 'border-accent/25 bg-base-700/50'
+                            : 'border-base-700'
+                      }`}
+                    >
+                      <p className={`text-[10px] font-semibold uppercase tracking-wider ${current ? 'text-accent' : 'text-gray-500'}`}>
+                        {current ? 'Recommended' : complete ? 'Evidence logged' : 'Available'}
+                      </p>
+                      <p className="mt-2 text-sm font-medium">{lesson.title}</p>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+            <aside className="space-y-4">
+              <div className="card-glow p-6">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+                  Recommended node
+                </p>
+                <h2 className="mt-2 text-xl font-semibold text-white">
+                  {recommendedLesson?.title ?? 'Course complete'}
+                </h2>
+                <p className="mt-2 text-sm leading-relaxed text-gray-400">
+                  {recommendedLesson
+                    ? 'This is the first unfinished dependency in the active course.'
+                    : 'Choose another course or strengthen the evidence through practice.'}
+                </p>
+              </div>
+              <div className="card p-6">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  Evidence
+                </p>
+                <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+                  <div><p className="text-xl font-semibold">{passed}</p><p className="text-[10px] text-gray-500">Checks</p></div>
+                  <div><p className="text-xl font-semibold">{quizHistory?.totalSessions ?? 0}</p><p className="text-[10px] text-gray-500">Quizzes</p></div>
+                  <div><p className="text-xl font-semibold">{sqlSolved + regexSolved}</p><p className="text-[10px] text-gray-500">Solves</p></div>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </Section>
+      )}
 
       {/* The section owns its own drills — the Quiz hub is library-only */}
       <Section title="Practice">
@@ -157,14 +246,14 @@ export default function ProgrammingHomePage() {
               </code>
             ))}
             {weak.length > 12 && <span className="text-xs text-gray-500">+{weak.length - 12} more</span>}
-            <Link to="/programming/practice?weak=1" className="btn-primary ml-auto shrink-0">
+            <Link to="/programming/practice?weak=1" className="btn-ghost ml-auto shrink-0">
               Drill these
             </Link>
           </div>
         </Section>
       )}
 
-      <Section title="Courses">
+      <Section title="Course archive">
         <div className="grid gap-3 sm:grid-cols-2">
           {PROG_COURSES.map((c) => {
             const n = doneByCourse.get(c.key) ?? 0

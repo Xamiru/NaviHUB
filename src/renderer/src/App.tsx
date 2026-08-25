@@ -9,6 +9,7 @@ import CommandPalette from './components/CommandPalette'
 import PlayerShortcuts from './components/PlayerShortcuts'
 import Toaster from './components/Toaster'
 import ConfirmHost from './components/ConfirmHost'
+import LearningContextBand from './components/LearningContextBand'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -124,10 +125,12 @@ import GachaGamePage from './pages/GachaGamePage'
 import GachaUnitPage from './pages/GachaUnitPage'
 import GachaCoachPage from './pages/GachaCoachPage'
 import { ANIME, MANGA, VISUAL_NOVEL, GAME, BOOK, MOVIE, TV } from './lib/mediaConfig'
+import { surfaceMoodForPath } from './lib/surfaceMood'
 
 export default function App() {
   const mainRef = useRef<HTMLElement>(null)
   const location = useLocation()
+  const surfaceMood = surfaceMoodForPath(location.pathname)
   useScrollRestoration(mainRef)
 
   // The manga/book readers and the video player are immersive: no
@@ -146,7 +149,8 @@ export default function App() {
   useLayoutEffect(() => {
     if (isReader) document.documentElement.dataset.reader = 'true'
     else delete document.documentElement.dataset.reader
-  }, [isReader])
+    document.documentElement.dataset.mood = surfaceMood
+  }, [isReader, surfaceMood])
 
   // Ctrl+wheel = UI zoom (Electron has no built-in handler for it). Steps the
   // same persisted ui.scale the Settings pills write, via app:bumpUiScale.
@@ -204,7 +208,12 @@ export default function App() {
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col">
         <Topbar />
-        <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto min-h-0">
+        <main
+          ref={mainRef}
+          className="archive-main flex-1 min-w-0 overflow-y-auto min-h-0"
+          data-mood={surfaceMood}
+        >
+          <LearningContextBand />
           <ErrorBoundary key={location.pathname}>
           <Routes>
             <Route path="/" element={<HomePage />} />

@@ -10,6 +10,8 @@ import EmptyState from '../components/EmptyState'
 import ActionMenu from '../components/ActionMenu'
 import type { JpLessonKind, JpLessonSummary } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import ContextPanel, { ContextFact } from '../components/ContextPanel'
 
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
   grammar: { cls: 'bg-purple-500/20 text-purple-300', label: '文法 Grammar' },
@@ -48,7 +50,19 @@ export default function JapaneseCoursePage() {
   const pct = course.lessons.length ? Math.round((learned / course.lessons.length) * 100) : 0
 
   return (
-    <div className="p-6 max-w-[900px] mx-auto">
+    <EditorialDetailFrame
+      width="wide"
+      aside={
+        <ContextPanel title="Course evidence" identity={course.id}>
+          <ContextFact label="Frontier">
+            {course.difficulty != null ? `Step ${course.difficulty}` : 'Unscheduled course'}
+          </ContextFact>
+          <ContextFact label="Completion">{learned} of {course.lessons.length} lessons learned</ContextFact>
+          <ContextFact label="Progress">{pct}% complete</ContextFact>
+          <ContextFact label="Level">{course.level ?? 'Not assigned'}</ContextFact>
+        </ContextPanel>
+      }
+    >
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title={course.title}
@@ -115,7 +129,7 @@ export default function JapaneseCoursePage() {
           </div>
         )}
       </Section>
-    </div>
+    </EditorialDetailFrame>
   )
 }
 

@@ -11,6 +11,7 @@ import { ANIME, MEDIA_CONFIGS, statusesExceptPlanned } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import StatTile from '../components/StatTile'
 import TournamentTree from '../components/TournamentTree'
+import StudySessionFrame from '../components/StudySessionFrame'
 import { Group, Pill } from '../components/PillGroup'
 import {
   bracketProgress,
@@ -547,7 +548,11 @@ export default function TournamentPage() {
     const placements = placementsOf(bracket)
     const size = nextPowerOfTwo(contenders.length)
     return (
-      <div className="p-6 max-w-2xl mx-auto">
+      <StudySessionFrame
+        title="Tournament complete"
+        subtitle={`${contenders.length} contenders · ${describeSource()}`}
+        surface={false}
+      >
         <div className="grid grid-cols-[14rem_1fr] items-start gap-6">
           <div className="card-glow p-6 text-center">
             <p className="text-sm uppercase tracking-widest text-gray-500">Champion</p>
@@ -642,7 +647,7 @@ export default function TournamentPage() {
         <Link to="/quiz" className="mt-4 block text-center text-sm text-gray-500 hover:text-white">
           Back to quizzes
         </Link>
-      </div>
+      </StudySessionFrame>
     )
   }
 
@@ -655,18 +660,13 @@ export default function TournamentPage() {
   const right = contenders[cur.match.b!]
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <div className="mb-5 flex items-center justify-between text-base">
-        <div>
-          <span className="font-semibold">{roundLabel(progress.competitorsInRound)}</span>
-          <span className="ml-3 text-gray-400">
-            Match {progress.playedInRound} of {progress.playableInRound}
-          </span>
-        </div>
-        <div className="flex items-center gap-3 text-gray-400">
-          <span>
-            {progress.picksMade}/{progress.totalPicks} picks
-          </span>
+    <StudySessionFrame
+      title={roundLabel(progress.competitorsInRound)}
+      subtitle={`Match ${progress.playedInRound} of ${progress.playableInRound}`}
+      progress={{ current: progress.picksMade, total: progress.totalPicks, label: 'Bracket picks' }}
+      surface={false}
+      actions={
+        <>
           <button className="btn-ghost py-1 px-2 text-sm" onClick={() => setTreeOpen(!treeOpen)}>
             {treeOpen ? 'Hide bracket' : 'Show bracket'}
           </button>
@@ -680,8 +680,9 @@ export default function TournamentPage() {
           <button className="btn-ghost py-1 px-2 text-sm" onClick={() => setPhase('setup')}>
             End tournament
           </button>
-        </div>
-      </div>
+        </>
+      }
+    >
 
       <div className="grid grid-cols-2 gap-4">
         {([left, right] as const).map((entry, i) => (
@@ -707,7 +708,7 @@ export default function TournamentPage() {
           <TournamentTree bracket={bracket} contenders={contenders} />
         </div>
       )}
-    </div>
+    </StudySessionFrame>
   )
 }
 

@@ -78,7 +78,7 @@ export default function MusicStatsPage() {
     utcToLocalDay(stats.logStartedAt!) < windowStart!
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
       <PageHeader
         back="history"
         title="Listening stats"

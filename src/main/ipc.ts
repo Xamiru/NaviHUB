@@ -31,6 +31,7 @@ import * as dictAudio from './dict/tatoebaAudio'
 import * as jpDrills from './jpDrills'
 import * as jpConfusables from './jpConfusables'
 import * as jpFeed from './jpFeed'
+import * as jpListening from './jpListening'
 import * as jpGrammarDeck from './jpGrammarDeck'
 import * as dictSimilarKanji from './dict/similarKanji'
 import * as imeCandidates from './dict/imeCandidates'
@@ -387,6 +388,7 @@ export function registerIpc(): void {
     japaneseRepo.ghostAnswer(cardId, correct)
   )
   ipcMain.handle('japanese:feed', (_e, req) => jpFeed.getFeed(req))
+  ipcMain.handle('japanese:listeningPool', (_e, req) => jpListening.listeningPool(req))
   ipcMain.handle('japanese:particlePool', (_e, req) => jpSentenceGames.particlePool(req))
   ipcMain.handle('japanese:scramblePool', (_e, req) => jpSentenceGames.scramblePool(req))
   ipcMain.handle('japanese:contextReadingPool', (_e, req) => jpSentenceGames.contextReadingPool(req))

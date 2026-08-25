@@ -5,10 +5,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
+import { loadJpDailyTarget, saveJpDailyTarget } from '../lib/japanesePrefs'
 import { gradeCard, LEECH_LAPSES, overdueDays, previewIntervals, type SrsState } from '@shared/srs'
 import { buildTypedPrompt } from '@shared/cloze'
+import { jpDailyPacing } from '@shared/japanese/dailyPlan'
 import CardSourceBadge from '../components/CardSourceBadge'
 import CardAttachments from '../components/japanese/CardAttachments'
+import StudySessionFrame from '../components/StudySessionFrame'
 import type { JpReviewCard, SrsGrade } from '@shared/types'
 
 type Phase = 'setup' | 'review' | 'done'
@@ -55,7 +58,8 @@ const GRADE_LABEL: Record<SrsGrade, string> = {
 export default function JapaneseReviewPage() {
   const qc = useQueryClient()
   const navigate = useNavigate()
-  const [newLimit, setNewLimit] = usePersistedState<number>('jpNewLimit', 10)
+  const [initialNewLimit] = useState(loadJpDailyTarget)
+  const [newLimit, setNewLimitState] = usePersistedState<number>('jpNewLimit', initialNewLimit)
   // Bunpro-style typed answers. Only suggests a grade — the four buttons still
   // decide, so SM-2 semantics are untouched.
   const [typedMode, setTypedMode] = usePersistedState<boolean>('jpTypedMode', false)
@@ -85,6 +89,11 @@ export default function JapaneseReviewPage() {
   const [typed, setTyped] = useState('')
   const [checked, setChecked] = useState<{ correct: boolean } | null>(null)
 
+  function setNewLimit(target: number): void {
+    saveJpDailyTarget(target)
+    setNewLimitState(target)
+  }
+
   const current = queue[0] ?? null
   // Null when this card can't produce a good prompt — it just flips as before.
   const prompt =
@@ -96,7 +105,12 @@ export default function JapaneseReviewPage() {
     setError(null)
     setLoading(true)
     try {
-      const { due, fresh } = await api.japanese.reviewQueue(newLimit)
+      const daily = jpDailyPacing(
+        newLimit,
+        stats?.introducedToday ?? 0,
+        stats?.newAvailableCount ?? 0
+      )
+      const { due, fresh } = await api.japanese.reviewQueue(daily.newThisSession)
       const cappedDue = dueCap > 0 ? due.slice(0, dueCap) : due
       const items: SessionItem[] = [...cappedDue, ...fresh].map(toItem)
       if (ghostsOn) {
@@ -217,6 +231,11 @@ export default function JapaneseReviewPage() {
   }
 
   if (phase === 'setup') {
+    const daily = jpDailyPacing(
+      newLimit,
+      stats?.introducedToday ?? 0,
+      stats?.newAvailableCount ?? 0
+    )
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <PageHeader
@@ -238,7 +257,7 @@ export default function JapaneseReviewPage() {
           </div>
 
           <div>
-            <div className="label mb-2">New cards this session</div>
+            <div className="label mb-2">New cards today</div>
             <div className="flex flex-wrap gap-2">
               {[0, 5, 10, 20].map((n) => (
                 <button
@@ -250,14 +269,13 @@ export default function JapaneseReviewPage() {
                 </button>
               ))}
             </div>
-            {(stats?.introducedToday ?? 0) > 0 && (
-              <p className="mt-1.5 text-xs text-gray-500">
-                {stats!.introducedToday} new {stats!.introducedToday === 1 ? 'card' : 'cards'}{' '}
-                already introduced today
-                {newLimit > 0 && stats!.introducedToday >= newLimit
-                  ? ' — that is a full day; consider None'
-                  : ''}
-                .
+            <p className="mt-1.5 text-xs text-gray-500">
+              {daily.introducedToday} introduced today · {daily.remainingToday} remaining in the
+              daily budget. Starting another session will not add a second full batch.
+            </p>
+            {newLimit > 0 && daily.remainingToday === 0 && (
+              <p className="mt-1 text-xs text-amber-300">
+                Daily target reached; this session will contain due and ghost reviews only.
               </p>
             )}
           </div>
@@ -364,11 +382,12 @@ export default function JapaneseReviewPage() {
   const previews = previewIntervals(srs, overdueDays(card.dueAt))
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-sm text-gray-400">
-        <span>{queue.length} left</span>
-        <div className="flex items-center gap-3">
-          <span>{reviewed} reviewed</span>
+    <StudySessionFrame
+      title="Japanese review"
+      subtitle={`${card.lessonTitle} · ${card.lessonKind}`}
+      progress={{ current: reviewed, total: reviewed + queue.length, label: 'Cards reviewed' }}
+      actions={
+        <>
           {current.ghost && (
             <span
               className="chip bg-base-700 text-gray-400"
@@ -394,10 +413,11 @@ export default function JapaneseReviewPage() {
           >
             End session
           </button>
-        </div>
-      </div>
+        </>
+      }
+    >
 
-      <div className="card p-8 text-center min-h-[260px] flex flex-col items-center justify-center">
+      <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
         {prompt ? (
           <>
             <p className="text-3xl leading-relaxed">{prompt.display}</p>
@@ -545,6 +565,6 @@ export default function JapaneseReviewPage() {
           </div>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

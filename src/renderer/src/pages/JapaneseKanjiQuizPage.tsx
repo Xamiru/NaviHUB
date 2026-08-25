@@ -9,6 +9,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import type { ComponentQuizItem } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
+import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../components/StudySessionFrame'
 
 // Build-a-kanji (kind 'components'): the kanji is shown with its meaning and
 // reading; assemble it by toggling exactly the components it contains out of a
@@ -54,7 +55,7 @@ export default function JapaneseKanjiQuizPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-[1320px] mx-auto">
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Build-a-Kanji"
@@ -206,6 +207,7 @@ function ComponentDrill({
   if (finished) {
     const pct = items.length ? Math.round((firstTryCorrect / items.length) * 100) : 0
     return (
+      <StudySessionFrame title="Build-a-kanji results" subtitle="First-try component recall" surface={false}>
       <div className="card p-6 text-center">
         <p className="text-3xl font-bold">
           {firstTryCorrect} / {items.length}
@@ -225,6 +227,7 @@ function ComponentDrill({
           </button>
         </div>
       </div>
+      </StudySessionFrame>
     )
   }
   if (!current) return null
@@ -232,19 +235,31 @@ function ComponentDrill({
   const target = new Set(current.components.map((c) => c.char))
 
   return (
-    <div className="card p-6">
-      <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-        <span>
-          {index + 1} / {queue.length}
-        </span>
-        <span>
-          streak {streak}
-          <button className="btn-ghost ml-3 px-2 py-0.5 text-xs" onClick={onExit}>
-            Stop
-          </button>
-        </span>
-      </div>
-
+    <StudySessionFrame
+      title="Build a kanji"
+      subtitle="Select every component that belongs to the target."
+      progress={{ current: index + 1, total: queue.length, label: 'Kanji' }}
+      actions={<button className="btn-ghost" onClick={onExit}>Stop</button>}
+      rail={
+        <>
+          <SessionEvidence title="Session evidence">
+            <p>Current streak: {streak}</p>
+            <p>Best streak: {bestStreak}</p>
+            <p>First-try correct: {firstTryCorrect}</p>
+          </SessionEvidence>
+          <SessionEvidence title="Keyboard">
+            Keys 1-9 toggle components. Enter checks the selection or continues after feedback.
+          </SessionEvidence>
+        </>
+      }
+      feedback={
+        revealed ? (
+          <SessionFeedback tone={wasCorrect ? 'correct' : 'incorrect'} title={wasCorrect ? 'Correct' : 'Component evidence'}>
+            {wasCorrect ? current.kanji : `${current.kanji} = ${current.components.map((component) => component.char).join(' + ')}`}
+          </SessionFeedback>
+        ) : undefined
+      }
+    >
       <p className="text-center text-7xl leading-none">{current.kanji}</p>
       <p className="mt-3 text-center text-sm text-gray-400">
         {current.meaning ?? ''}
@@ -284,9 +299,6 @@ function ComponentDrill({
       <div className="mt-6 text-center">
         {revealed ? (
           <>
-            <p className={`text-sm ${wasCorrect ? 'text-green-400' : 'text-red-400'}`}>
-              {wasCorrect ? 'Correct.' : `${current.kanji} = ${current.components.map((c) => c.char).join(' + ')}`}
-            </p>
             <button className="btn-primary mt-4" onClick={submit} autoFocus>
               Continue (Enter)
             </button>
@@ -297,6 +309,6 @@ function ComponentDrill({
           </button>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

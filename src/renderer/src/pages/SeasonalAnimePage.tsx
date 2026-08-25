@@ -74,11 +74,11 @@ export default function SeasonalAnimePage() {
   const yearOptions = years.includes(year) ? years : [...years, year].sort((a, b) => b - a)
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
+    <div className="mx-auto max-w-[1600px] p-4 sm:p-6">
       <PageHeader
         back="history"
-        title="Seasonal anime"
-        subtitle="Your library by airing season"
+        title="Seasonal broadcast archive"
+        subtitle="Your anime library in premiere order, quarter by quarter."
         actions={
           <>
             <button
@@ -106,7 +106,7 @@ export default function SeasonalAnimePage() {
             >
               {yearOptions.map((y) => (
                 <option key={y} value={y}>
-                  {y} · {seasonCount(byYear.get(y))}
+                  {y} / {seasonCount(byYear.get(y))}
                 </option>
               ))}
             </select>
@@ -121,13 +121,45 @@ export default function SeasonalAnimePage() {
         }
       />
 
+      {!isLoading && items.length > 0 && (
+        <section className={`mb-7 p-5 sm:p-6 ${year === now.year ? 'card-glow' : 'card'}`}>
+          <div className="flex flex-wrap items-start justify-between gap-5">
+            <div>
+              <h2 className="text-2xl font-semibold text-white">{year} broadcast year</h2>
+              <p className="mt-2 text-sm text-gray-400">
+                {seasonCount(buckets)} tracked / {completedCount(buckets)} completed
+              </p>
+            </div>
+            {year === now.year && <span className="chip">Current year</span>}
+          </div>
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            {SEASONS.map((season) => (
+              <button
+                key={season}
+                className={`border-l px-4 text-left ${
+                  year === now.year && season === now.season ? 'border-accent' : 'border-base-600'
+                }`}
+                onClick={() => scrollToSeason(season)}
+              >
+                <p className={year === now.year && season === now.season ? 'text-accent' : 'text-white'}>
+                  {buckets[season].length} titles
+                </p>
+                <p className="mt-1 text-xs text-gray-400">
+                  {seasonLabel(season)} / {buckets[season].filter((m) => isCompletedStatus(m.status)).length} complete
+                </p>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* Quick-nav to a season's shelf. Imperative scroll on purpose —
           href="#…" anchors don't survive HashRouter. */}
       <div className="mb-6 flex flex-wrap gap-2">
         {SEASONS.map((s) => (
           <button
             key={s}
-            className="pill"
+            className={`pill ${year === now.year && s === now.season ? 'pill-active' : ''}`}
             onClick={() => scrollToSeason(s)}
           >
             {seasonLabel(s)}
@@ -154,14 +186,18 @@ export default function SeasonalAnimePage() {
           const completed = list.filter((m) => isCompletedStatus(m.status)).length
           const airingNow = year === now.year && s === now.season
           return (
-            <div key={s} id={`season-${s}`}>
+            <div
+              key={s}
+              id={`season-${s}`}
+              className={airingNow ? '-mx-3 mb-8 rounded-lg border border-accent/25 bg-accent/5 px-3 pt-5 sm:-mx-5 sm:px-5' : ''}
+            >
               <Section
                 title={`${seasonLabel(s)} ${year}`}
                 subtitle={
                   <>
-                    {seasonMonthsLabel(s)} · {list.length} {list.length === 1 ? 'title' : 'titles'}
-                    {completed > 0 && <> · {completed} completed</>}
-                    {airingNow && <span className="text-accent"> · Airing now</span>}
+                    {seasonMonthsLabel(s)} / {list.length} {list.length === 1 ? 'title' : 'titles'}
+                    {completed > 0 && <> / {completed} completed</>}
+                    {airingNow && <span className="text-accent"> / Airing now</span>}
                   </>
                 }
               >
@@ -211,6 +247,15 @@ function seasonCount(buckets: SeasonBuckets | undefined): number {
   return SEASONS.reduce((sum, s) => sum + buckets[s].length, 0)
 }
 
+function completedCount(buckets: SeasonBuckets): number {
+  return SEASONS.reduce(
+    (sum, season) => sum + buckets[season].filter((item) => isCompletedStatus(item.status)).length,
+    0
+  )
+}
+
 function scrollToSeason(s: Season): void {
-  document.getElementById(`season-${s}`)?.scrollIntoView({ behavior: 'smooth' })
+  document.getElementById(`season-${s}`)?.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+  })
 }

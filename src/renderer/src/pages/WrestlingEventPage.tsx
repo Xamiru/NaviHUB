@@ -18,6 +18,7 @@ import { WRESTLING_CATEGORIES, wrestlingTorrentQuery } from '@shared/torrents'
 import { promotionName } from '@shared/wrestling'
 import { wikipediaUrl } from '@shared/wikiLinks'
 import type { WrestlingMatch } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
 
 // Preserves card order while grouping — a night is a contiguous run.
 function groupByCard(matches: WrestlingMatch[]): [string | null, WrestlingMatch[]][] {
@@ -75,7 +76,7 @@ export default function WrestlingEventPage(): JSX.Element {
   ].filter(Boolean)
 
   return (
-    <div className="p-6">
+    <EditorialDetailFrame width="wide">
       <PageHeader
         back="history"
         eyebrow={
@@ -131,12 +132,12 @@ export default function WrestlingEventPage(): JSX.Element {
         />
       )}
 
-      <div className="grid gap-8 lg:grid-cols-[220px_1fr]">
+      <div className="grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
         <div>
           <CoverImage
             path={event.posterPath}
             alt={event.name}
-            className="w-full max-w-[220px] object-cover"
+            className="w-full max-w-[240px] object-cover"
           />
           {event.tagline && <p className="mt-3 text-sm italic text-gray-500">{event.tagline}</p>}
         </div>
@@ -188,6 +189,6 @@ export default function WrestlingEventPage(): JSX.Element {
           {chrono && <WrestlingChronologyNav {...chrono} />}
         </div>
       </div>
-    </div>
+    </EditorialDetailFrame>
   )
 }

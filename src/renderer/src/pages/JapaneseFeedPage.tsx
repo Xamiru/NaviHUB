@@ -13,6 +13,8 @@ import { useMiningDraft } from '../lib/useMining'
 import { usePlayer } from '../lib/player'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { JpFeedItem } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import ContextPanel, { ContextFact } from '../components/ContextPanel'
 
 // The i+1 sentence feed: sentences where you know every word except exactly
 // one — comprehensible input on tap, the unknown one click from your deck.
@@ -56,7 +58,7 @@ export default function JapaneseFeedPage() {
 
   if (!bankLoading && !bank) {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
+      <EditorialDetailFrame width="wide">
         <PageHeader back={{ to: '/japanese', label: 'Japanese' }} title="Sentence Feed" />
         <EmptyState
           title="Sentence bank not installed"
@@ -67,12 +69,22 @@ export default function JapaneseFeedPage() {
             </Link>
           }
         />
-      </div>
+      </EditorialDetailFrame>
     )
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <EditorialDetailFrame
+      width="wide"
+      aside={
+        <ContextPanel title="Feed evidence" identity={`${mode}-${feed?.items.length ?? 0}`}>
+          <ContextFact label="Mode">{mode === 'one' ? 'One new word' : 'All words known'}</ContextFact>
+          <ContextFact label="Available">{feed?.items.length ?? 0} sentences</ContextFact>
+          <ContextFact label="Scanned">{feed?.scanned.toLocaleString() ?? 'Building feed'}</ContextFact>
+          <ContextFact label="Source">Offline sentence bank and your current card state</ContextFact>
+        </ContextPanel>
+      }
+    >
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Sentence Feed"
@@ -143,7 +155,7 @@ export default function JapaneseFeedPage() {
           {hasMore && <div ref={sentinelRef} />}
         </>
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }
 

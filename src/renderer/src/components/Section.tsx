@@ -15,8 +15,11 @@ export default function Section({
 }) {
   return (
     <section className={className}>
-      <div className="mb-2 flex items-baseline justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500">{title}</h2>
+      <div className="mb-3 flex items-center gap-3">
+        <h2 className="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
+          {title}
+        </h2>
+        <span className="h-px flex-1 bg-base-700" aria-hidden="true" />
         {subtitle && <span className="text-xs text-gray-500">{subtitle}</span>}
       </div>
       {children}

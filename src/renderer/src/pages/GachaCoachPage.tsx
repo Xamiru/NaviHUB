@@ -12,6 +12,7 @@ import PageStatus from '../components/PageStatus'
 import CoverImage from '../components/CoverImage'
 import Markdown from '../components/Markdown'
 import CoachRail from '../components/gacha/CoachRail'
+import QuietWorkspace from '../components/QuietWorkspace'
 
 const QUICK_PROMPTS = [
   'What should I do today?',
@@ -134,7 +135,12 @@ function Coach({ cfg }: { cfg: GachaGameCfg }) {
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_340px]">
-        <div className="flex min-h-[70vh] flex-col">
+        <QuietWorkspace
+          title="Advisory thread"
+          description="Roster, goals, banners and reminders are supplied as live local context."
+          className="mb-0 min-h-[70vh]"
+        >
+          <div className="flex min-h-[62vh] flex-col">
           {!configured && (
             <div className="card mb-4 border-amber-500/40 p-4 text-sm">
               <p className="mb-2 font-medium">The coach needs a model provider.</p>
@@ -196,7 +202,7 @@ function Coach({ cfg }: { cfg: GachaGameCfg }) {
           </div>
 
           {/* composer */}
-          <div className="mt-4">
+          <div className="mt-4 border-t border-base-700 pt-4">
             {attachments.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-2">
                 {attachments.map((a, i) => (
@@ -246,7 +252,8 @@ function Coach({ cfg }: { cfg: GachaGameCfg }) {
               )}
             </div>
           </div>
-        </div>
+          </div>
+        </QuietWorkspace>
 
         <CoachRail game={cfg.id} onNewThread={newThread} />
       </div>

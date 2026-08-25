@@ -205,7 +205,7 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
               setOpen(false)
             }}
           >
-            ＋ Add to queue
+            Add to queue
           </button>
           <Link
             className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
@@ -258,7 +258,7 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
                   <span
                     className={`w-4 text-center ${p.contains ? 'text-accent' : 'text-gray-600'}`}
                   >
-                    {p.contains ? '✓' : '＋'}
+                    {p.contains ? '✓' : '○'}
                   </span>
                   <span className="truncate">{p.title}</span>
                 </button>

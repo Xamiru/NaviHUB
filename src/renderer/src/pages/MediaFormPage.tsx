@@ -244,9 +244,9 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
         className="mb-6"
       />
 
-      <div className="grid grid-cols-[180px_1fr] gap-6">
+      <div className="grid gap-7 sm:grid-cols-[180px_minmax(0,1fr)] lg:grid-cols-[210px_minmax(0,1fr)]">
         {/* Cover */}
-        <div>
+        <div className="mx-auto w-full max-w-[210px] sm:mx-0">
           <div className="aspect-[2/3] rounded-lg overflow-hidden bg-base-700 border border-base-600">
             {coverUrl && !coverFailed ? (
               <img

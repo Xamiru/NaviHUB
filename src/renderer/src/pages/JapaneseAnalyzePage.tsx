@@ -17,6 +17,9 @@ import CoverageBar, {
   uniqueKnownShare
 } from '../components/japanese/CoverageBar'
 import type { JpAnalyzedToken, JpTextAnalysis, JpWordTier } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import ContextPanel, { ContextFact } from '../components/ContextPanel'
+import QuietWorkspace from '../components/QuietWorkspace'
 
 // The comprehension score pointed at arbitrary text: paste anything Japanese
 // and see which words you know, which you're learning and which are new — then
@@ -50,39 +53,68 @@ export default function JapaneseAnalyzePage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <EditorialDetailFrame
+      width="wide"
+      aside={
+        result ? (
+          <ContextPanel title="Reading evidence" identity={result.stats.tokenCount}>
+            <ContextFact label="Known by usage">{pct(knownShare(result.stats.tiers))}</ContextFact>
+            <ContextFact label="Known unique words">
+              {pct(uniqueKnownShare(result.stats.tiers))}
+            </ContextFact>
+            <ContextFact label="Unknown vocabulary">
+              {result.stats.tiers.unknown.uniqueCount.toLocaleString()} words
+            </ContextFact>
+            <ContextFact label="Next action">
+              Select a highlighted word in the text to open the mining panel.
+            </ContextFact>
+          </ContextPanel>
+        ) : (
+          <ContextPanel title="Analysis flow" identity="empty-analysis">
+            <ContextFact label="Input">Paste Japanese text from any local source.</ContextFact>
+            <ContextFact label="Evidence">Coverage uses your current offline study state.</ContextFact>
+            <ContextFact label="Output">Unknown words can move directly into mining.</ContextFact>
+          </ContextPanel>
+        )
+      }
+    >
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Analyze text"
         subtitle="Paste any Japanese text to see how much of it you can read."
       />
 
-      <textarea
-        className="input min-h-[140px] w-full font-normal"
-        placeholder="Paste Japanese text here…"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      <div className="mt-2 flex items-center gap-3">
-        <button className="btn-primary" disabled={busy || !text.trim()} onClick={() => void analyze()}>
-          {busy ? 'Analyzing…' : 'Analyze'}
-        </button>
-        {text.length > 0 && (
-          <span className="text-xs text-gray-500">{text.length.toLocaleString()} characters</span>
-        )}
-        {result && (
-          <button
-            className="btn-ghost ml-auto"
-            onClick={() => {
-              setText('')
-              setResult(null)
-              setMining(null)
-            }}
-          >
-            Clear
+      <QuietWorkspace
+        title="Source text"
+        description="Tokenization, coverage and dictionary evidence stay on this device."
+      >
+        <textarea
+          className="input min-h-[180px] w-full font-normal leading-7"
+          placeholder="Paste Japanese text here…"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <div className="mt-3 flex items-center gap-3">
+          <button className="btn-primary" disabled={busy || !text.trim()} onClick={() => void analyze()}>
+            {busy ? 'Analyzing…' : 'Analyze'}
           </button>
-        )}
-      </div>
+          {text.length > 0 && (
+            <span className="text-xs text-gray-500">{text.length.toLocaleString()} characters</span>
+          )}
+          {result && (
+            <button
+              className="btn-ghost ml-auto"
+              onClick={() => {
+                setText('')
+                setResult(null)
+                setMining(null)
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </QuietWorkspace>
 
       {result && <AnalysisView result={result} onMine={setMining} />}
 
@@ -94,7 +126,7 @@ export default function JapaneseAnalyzePage() {
           onClose={() => setMining(null)}
         />
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }
 

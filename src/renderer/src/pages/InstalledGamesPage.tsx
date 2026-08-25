@@ -71,12 +71,12 @@ export default function InstalledGamesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="mx-auto max-w-[1600px] p-4 sm:p-6">
       <PageHeader
-        title="Installed"
-        subtitle={`${data.length} playable from the app`}
+        title="Installed games"
+        subtitle={`${data.length} playable from the app, ordered as a launch-ready collection`}
       />
-      <ul className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(320px,1fr))]">
+      <ul className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(340px,1fr))]">
         {data.map((g) => (
           <InstalledCard
             key={g.mediaId}

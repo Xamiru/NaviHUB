@@ -9,6 +9,9 @@ import { useMiningDraft } from '../lib/useMining'
 import UniversalPicker, { type PickedEntity } from '../components/UniversalPicker'
 import CoverImage from '../components/CoverImage'
 import DictResultRow from '../components/japanese/DictResultRow'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import ContextPanel, { ContextFact } from '../components/ContextPanel'
+import QuietWorkspace from '../components/QuietWorkspace'
 
 export default function JapaneseMinePage() {
   const searchRef = useRef<HTMLInputElement>(null)
@@ -46,14 +49,30 @@ export default function JapaneseMinePage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <EditorialDetailFrame
+      width="wide"
+      aside={
+        <ContextPanel title="Card evidence" identity={source?.entityId ?? (draft.front || 'new-card')}>
+          <ContextFact label="Source">{source?.name ?? 'No source linked'}</ContextFact>
+          <ContextFact label="Target">
+            {targets?.lessons.find((lesson) => lesson.lessonId === targetLessonId)?.label ??
+              'Mined words inbox'}
+          </ContextFact>
+          <ContextFact label="Review state">New cards enter the offline review queue.</ContextFact>
+        </ContextPanel>
+      }
+    >
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Mine words"
         subtitle="Hit a word while reading? Look it up, tweak it, save it — it goes straight into your review queue."
       />
 
-      <div className="card p-5 space-y-5">
+      <QuietWorkspace
+        title="Capture workspace"
+        description="Lookup, verify and save without losing the source you are reading."
+      >
+      <div className="space-y-5">
         <div>
           <div className="label mb-1">Look up (offline dictionaries · English works too)</div>
           <div className="flex gap-2">
@@ -192,6 +211,7 @@ export default function JapaneseMinePage() {
           </button>
         </div>
       </div>
-    </div>
+      </QuietWorkspace>
+    </EditorialDetailFrame>
   )
 }

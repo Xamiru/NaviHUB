@@ -643,6 +643,7 @@ export type QuizKind =
   | 'names' // JMnedict name-reading drill
   | 'numbers' // generated numbers & counters typing drill
   | 'dictation' // Tatoeba audio dictation
+  | 'listening' // knowledge-matched Tatoeba gist + transcript + shadowing
   | 'shiritori' // word chain vs the dictionary
   | 'englishVocab' // WordNet+frequency MCQ (word/def/synonyms)
   | 'englishSpelling' // typed spelling drill (definition + IPA -> word)
@@ -1700,8 +1701,8 @@ export interface GrammarPoint extends GrammarPointSummary {
   examples: GrammarExample[]
 }
 
-// Result of filing grammar points into the SRS deck. `skipped` counts points
-// whose cards were already there — "add all N5" is safe to re-run.
+// Result of staging grammar points as lessons. `skipped` counts points whose
+// cards were already there, so staging is safe to re-run.
 export interface GrammarDeckResult {
   lessonId: number
   added: number
@@ -1738,6 +1739,20 @@ export interface AudioSentence {
   en: string
   audioPath: string // navimg-relative (jpaudio/tatoeba/…)
   attribution: string | null // per-clip contributor credit (license requires it)
+}
+
+export interface JpListeningRequest {
+  mode: 'known' | 'one'
+  includeLearning: boolean
+  limit: number
+  maxChars?: number
+}
+
+// A playable sentence matched against the learner's current known-word set.
+// `unknown*` is populated only in one-new-word mode.
+export interface JpListeningItem extends AudioSentence {
+  unknownWord: string | null
+  unknownSurface: string | null
 }
 
 // ---- Minimal pairs (kotu.io backup pack) ----

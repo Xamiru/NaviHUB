@@ -13,6 +13,8 @@ import StatTile from '../components/StatTile'
 import { Group, Pill } from '../components/PillGroup'
 import { LEECH_LAPSES, overdueDays } from '@shared/srs'
 import type { EnDeckWord } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import ContextPanel, { ContextFact } from '../components/ContextPanel'
 
 // The English deck, laid bare: every saved word with its frequency rank, SRS
 // state and lapse count, so the auto-save-misses loop (vocab/spelling misses
@@ -112,7 +114,19 @@ export default function EnglishDeckPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <EditorialDetailFrame
+      width="wide"
+      aside={
+        <ContextPanel title="Mistake ledger" identity={`${filter}-${sort}-${shown.length}`}>
+          <ContextFact label="Due pressure">{stats.due} words due now</ContextFact>
+          <ContextFact label="Persistent misses">{stats.leeches} leeches</ContextFact>
+          <ContextFact label="Current view">{shown.length} of {words.length} words</ContextFact>
+          <ContextFact label="Frequency evidence">
+            {anyRanked ? 'OpenSubtitles ranks installed' : 'Frequency pack not installed'}
+          </ContextFact>
+        </ContextPanel>
+      }
+    >
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Deck"
@@ -236,6 +250,6 @@ export default function EnglishDeckPage() {
           </div>
         </>
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }

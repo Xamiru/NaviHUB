@@ -43,9 +43,14 @@ export default function MiningPanel(props: MiningPanelProps) {
   }, [lang])
 
   return (
-    <div className="panel-in w-[360px] shrink-0 h-full overflow-y-auto bg-base-900 border-l border-base-700 p-4 space-y-4">
+    <aside className="panel-in h-full w-[440px] max-w-[44vw] shrink-0 space-y-5 overflow-y-auto border-l border-base-700 bg-base-800 p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-300">Mine words</h2>
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+            Study reader
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-white">Mining panel</h2>
+        </div>
         <div className="flex items-center gap-2">
           {lang !== undefined && (
             <div className="flex gap-1">
@@ -69,7 +74,7 @@ export default function MiningPanel(props: MiningPanelProps) {
         </div>
       </div>
       {mode === 'en' ? <EnglishMineBody {...props} /> : <JapaneseMineBody {...props} />}
-    </div>
+    </aside>
   )
 }
 
@@ -170,7 +175,7 @@ function JapaneseMineBody({
               onClick={() => navigator.clipboard.writeText(blockText)}
               title="Copy sentence"
             >
-              ⧉ Copy
+              Copy
             </button>
           </div>
           {tokens && tokens.length > 0 ? (

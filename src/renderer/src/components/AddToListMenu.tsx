@@ -84,7 +84,7 @@ export default function AddToListMenu({
                 onClick={() => toggle(l.id, l.contains)}
               >
                 <span className={`w-4 text-center ${l.contains ? 'text-accent' : 'text-gray-600'}`}>
-                  {l.contains ? '✓' : '＋'}
+                  {l.contains ? '✓' : '○'}
                 </span>
                 <span className="truncate">{l.title}</span>
               </button>

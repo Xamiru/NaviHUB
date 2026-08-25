@@ -40,6 +40,7 @@ import ImportDialog from '../components/ImportDialog'
 import { torznabCategoriesFor } from '@shared/torrents'
 import Section from '../components/Section'
 import PageStatus from '../components/PageStatus'
+import { RelationshipTrail } from '../components/EditorialDetailFrame'
 import type {
   MediaDetail,
   MediaCharacterEntry,
@@ -201,8 +202,22 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           <MediaHero cfg={cfg} m={m} variant={hero} actions={actionStack(true)} stats={statsNode} />
         )}
 
-        <div className={hero ? 'mx-auto max-w-5xl px-6 pb-6 pt-5' : 'p-6 max-w-5xl mx-auto'}>
+        <div className={hero ? 'mx-auto max-w-[1400px] px-4 pb-6 pt-5 sm:px-6' : 'mx-auto max-w-[1400px] p-4 sm:p-6'}>
         {!hero && <BackButton />}
+
+        <RelationshipTrail>
+          <Link to={cfg.basePath} className="hover:text-accent">{cfg.plural}</Link>
+          <span className="text-gray-600" aria-hidden="true">›</span>
+          {m.companies.slice(0, 2).map((link, index) => (
+            <span key={link.id} className="contents">
+              {index > 0 && <span className="text-gray-600" aria-hidden="true">·</span>}
+              <Link to={`/studios/${link.company.id}`} className="hover:text-accent">
+                {link.company.name}
+              </Link>
+            </span>
+          ))}
+          <span className="ml-auto capitalize text-gray-500">{m.status ?? 'Untracked'}</span>
+        </RelationshipTrail>
 
         {hero ? (
           <>
@@ -210,8 +225,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
             <div className="mt-5">{tagRow}</div>
           </>
         ) : (
-          <div className="grid grid-cols-[220px_1fr] gap-7">
-            <div>
+          <div className="grid gap-7 sm:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
+            <div className="mx-auto w-full max-w-[240px] sm:mx-0">
               <CoverImage
                 path={m.coverPath}
                 alt={m.title}
@@ -223,7 +238,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
             <div className="min-w-0">
               <div className="flex items-start gap-2">
-                <h1 className="text-2xl font-bold">{m.title}</h1>
+                <h1 className="text-3xl font-semibold text-white text-balance">{m.title}</h1>
                 {m.favorite && (
                   <span className="text-yellow-400 text-xl" title="Favorite">
                     ★
@@ -1186,5 +1201,4 @@ function StaffSection({
 }
 
 /* ---------------- small helpers ---------------- */
-
 

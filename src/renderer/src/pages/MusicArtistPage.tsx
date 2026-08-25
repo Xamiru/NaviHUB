@@ -70,7 +70,7 @@ export default function MusicArtistPage() {
   if (!artist) return <PageStatus>Artist not found.</PageStatus>
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
       <BackButton />
 
       <MusicEntityHeader
@@ -103,14 +103,14 @@ export default function MusicArtistPage() {
 
       {artist.topTracks.length > 0 && (
         <Section title="Most played" className="mb-6">
-          <div className="max-w-3xl">
+          <div className="max-w-5xl">
             <TrackList tracks={artist.topTracks} />
           </div>
         </Section>
       )}
 
       <Section title="Albums" className="mb-6">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-5">
           {artist.albums.map((a) => (
             <AlbumCard key={a.id} album={a} />
           ))}

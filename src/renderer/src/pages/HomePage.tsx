@@ -61,6 +61,10 @@ export default function HomePage() {
   })
   const isLoading = lists.some((q) => q.isLoading)
   const { data: settings } = useSettings()
+  const { data: resumePoints = [] } = useQuery({
+    queryKey: qk.media.resumePoints,
+    queryFn: () => api.media.resumePoints()
+  })
 
   // Derive the sections only when a query's data actually changes, not on every
   // render (these sort/filter over the whole library). MEDIA_CONFIGS is a fixed
@@ -107,7 +111,7 @@ export default function HomePage() {
         <PlayCard />
       </div>
     ),
-    resume: <ResumeStrip />,
+    resume: <ResumeStrip points={resumePoints} />,
     continue:
       continuing.length > 0 ? (
         <Strip title="Continue" items={continuing.slice(0, 12)} showProgress />
@@ -126,7 +130,7 @@ export default function HomePage() {
             title="Nothing here yet"
             body="Add or import your first title to see it show up here."
             action={
-              <Link to="/anime" className="btn-primary">
+              <Link to="/anime" className="btn-ghost">
                 Go to your library
               </Link>
             }
@@ -141,18 +145,29 @@ export default function HomePage() {
   }
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
-      <Hero items={all} stats={stats} />
+    <div className="mx-auto max-w-[1760px] p-5 sm:p-6 xl:p-8">
+      <Hero
+        items={all}
+        stats={stats}
+        resume={resumePoints[0]}
+        continuing={continuing[0]}
+      />
 
-      <div className="mt-4 flex justify-end">
+      <div className="mt-6 flex items-end justify-between border-b border-base-700 pb-3">
+        <div>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-accent">
+            Personal transmission
+          </p>
+          <h2 className="mt-1 text-xl font-semibold text-white">Your archive, in motion</h2>
+        </div>
         <button className="btn-ghost text-xs" onClick={() => setCustomising(true)}>
-          Customise
+          Customise Home
         </button>
       </div>
 
       {/* Two columns: 'full' widgets span both, 'half' widgets pair with the
           next half beside them. Below lg everything is one column anyway. */}
-      <div className="mt-2 grid items-start gap-6 lg:grid-cols-2">
+      <div className="mt-5 grid items-start gap-7 lg:grid-cols-2">
         {layout
           .filter((e) => e.visible)
           .map((e) => {
@@ -200,7 +215,9 @@ function greetingFor(hour: number): string {
 // while the library is empty or still loading.
 function Hero({
   items,
-  stats
+  stats,
+  resume,
+  continuing
 }: {
   items: MediaItem[]
   stats: {
@@ -210,6 +227,8 @@ function Hero({
     favorites: number
     avgScore: string | null
   }
+  resume?: ResumePoint
+  continuing?: MediaItem
 }) {
   // Re-shuffles only when the library itself changes, so the wall doesn't
   // twitch on every render.
@@ -227,10 +246,10 @@ function Hero({
   const streak = checklist?.streak.current ?? 0
 
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <section className="relative min-h-[330px] overflow-hidden rounded-2xl border border-base-700 bg-base-900">
       {tiles.length >= 12 && (
         <div
-          className="absolute -inset-6 grid grid-cols-6 md:grid-cols-8 auto-rows-fr gap-1.5 -rotate-2 scale-105"
+          className="absolute -inset-8 grid grid-cols-6 auto-rows-fr gap-2 -rotate-2 scale-105 md:grid-cols-8"
           aria-hidden
         >
           {tiles.map((m) => (
@@ -244,43 +263,148 @@ function Hero({
           ))}
         </div>
       )}
-      <div className="absolute inset-0 bg-gradient-to-b from-base-900/80 via-base-900/70 to-base-900" />
+      <div className="absolute inset-0 bg-gradient-to-r from-base-900 via-base-900/85 to-base-900/60" />
+      <div className="absolute inset-0 bg-gradient-to-t from-base-900 via-transparent to-base-900/35" />
 
-      <div className="relative flex flex-col items-center text-center px-6 py-12">
-        {/* The Lain mark — same art as the app icon (assets/icon.png). */}
-        <img src={lainIcon} alt="NaviHUB logo" className="h-16 w-16 mb-3 drop-shadow-lg" />
-        <h1 className="text-4xl font-bold tracking-tight">
-          Navi<span className="text-accent">HUB</span>
-        </h1>
-        <p className="mt-1.5 text-xs uppercase tracking-[0.3em] text-accent/80">good vibrations</p>
-        {stats.titles > 0 && (
-          <>
-            <p className="mt-5 text-sm text-gray-400">
-              {greeting} — {stats.inProgress > 0 ? 'picking up where you left off?' : 'what are we into today?'}
-            </p>
-            <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs tabular-nums">
-              <span className="chip bg-base-800/80">{stats.titles} titles</span>
+      <div className="relative grid min-h-[330px] items-center gap-8 p-7 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.78fr)] lg:p-10">
+        <div className="max-w-2xl">
+          <div className="flex items-center gap-4">
+            <img src={lainIcon} alt="NaviHUB logo" className="h-14 w-14 drop-shadow-lg" />
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-accent">
+                Archive broadcast
+              </p>
+              <h1 className="mt-1 text-4xl font-bold tracking-tight sm:text-5xl">
+                Navi<span className="text-accent">HUB</span>
+              </h1>
+            </div>
+          </div>
+          <p className="mt-6 text-base text-gray-300">
+            {greeting}. {stats.inProgress > 0 ? 'Your next signal is ready.' : 'The archive is listening.'}
+          </p>
+          <p className="mt-1 max-w-lg text-sm leading-relaxed text-gray-500">
+            Continue a saved session first, then drift through the people, worlds and patterns already connected in your library.
+          </p>
+
+          {stats.titles > 0 && (
+            <div className="mt-5 flex flex-wrap gap-2 text-xs tabular-nums">
+              <span className="chip border-base-600 bg-base-800/80">{stats.titles} titles</span>
               {stats.inProgress > 0 && (
-                <span className="chip bg-base-800/80">{stats.inProgress} in progress</span>
+                <span className="chip border-base-600 bg-base-800/80">
+                  {stats.inProgress} in progress
+                </span>
               )}
               {stats.completed > 0 && (
-                <span className="chip bg-base-800/80">{stats.completed} finished</span>
+                <span className="chip border-base-600 bg-base-800/80">{stats.completed} finished</span>
               )}
               {stats.favorites > 0 && (
-                <span className="chip bg-base-800/80">{stats.favorites} favorites</span>
+                <span className="chip border-base-600 bg-base-800/80">{stats.favorites} favorites</span>
               )}
               {stats.avgScore && (
-                <span className="chip bg-base-800/80">Ø score {stats.avgScore}</span>
+                <span className="chip border-base-600 bg-base-800/80">Average {stats.avgScore}</span>
               )}
               {streak > 1 && (
-                <span className="chip bg-base-800/80 text-accent">
+                <span className="chip border-accent/30 bg-base-800/80 text-accent">
                   {streak}-day streak
                 </span>
               )}
             </div>
-          </>
-        )}
+          )}
+        </div>
+
+        <HeroContinuation resume={resume} continuing={continuing} />
       </div>
+    </section>
+  )
+}
+
+function HeroContinuation({
+  resume,
+  continuing
+}: {
+  resume?: ResumePoint
+  continuing?: MediaItem
+}) {
+  if (resume) {
+    return (
+      <Link
+        to={resumeHref(resume)}
+        className="group relative min-h-52 overflow-hidden rounded-xl border border-accent/30 bg-base-800/90 p-5 shadow-2xl transition-colors hover:border-accent"
+      >
+        {resume.media.coverPath && (
+          <div className="absolute inset-0 opacity-20 blur-xl" aria-hidden="true">
+            <CoverImage
+              path={resume.media.coverPath}
+              alt=""
+              rounded=""
+              className="h-full w-full scale-125"
+            />
+          </div>
+        )}
+        <div className="relative flex h-full min-h-[168px] gap-4">
+          <CoverImage
+            path={resume.media.coverPath}
+            alt={resume.media.title}
+            rounded="rounded-lg"
+            className="w-28 shrink-0 shadow-lg"
+          />
+          <div className="flex min-w-0 flex-1 flex-col py-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+              Resume transmission
+            </p>
+            <h2 className="mt-2 line-clamp-2 text-xl font-semibold leading-tight text-white group-hover:text-accent">
+              {resume.media.title}
+            </h2>
+            <p className="mt-2 truncate text-sm text-gray-300">{resume.partTitle}</p>
+            <p className="mt-1 text-xs text-gray-500">{resumeLabel(resume)}</p>
+            <span className="btn-primary mt-auto self-start">Continue</span>
+          </div>
+        </div>
+      </Link>
+    )
+  }
+
+  if (continuing) {
+    const cfg = configFor(continuing.mediaType)
+    return (
+      <Link
+        to={pathForMedia(continuing)}
+        className="group relative min-h-52 overflow-hidden rounded-xl border border-base-600 bg-base-800/90 p-5 shadow-2xl transition-colors hover:border-accent"
+      >
+        <div className="relative flex h-full min-h-[168px] gap-4">
+          <CoverImage
+            path={continuing.coverPath}
+            alt={continuing.title}
+            rounded="rounded-lg"
+            className="w-28 shrink-0 shadow-lg"
+          />
+          <div className="flex min-w-0 flex-1 flex-col py-1">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+              Continue {cfg.singular.toLowerCase()}
+            </p>
+            <h2 className="mt-2 line-clamp-2 text-xl font-semibold leading-tight text-white group-hover:text-accent">
+              {continuing.title}
+            </h2>
+            <p className="mt-2 text-sm text-gray-400">{cfg.formatProgressStat(continuing)}</p>
+            <span className="btn-primary mt-auto self-start">Open title</span>
+          </div>
+        </div>
+      </Link>
+    )
+  }
+
+  return (
+    <div className="flex min-h-52 flex-col justify-end rounded-xl border border-base-600 bg-base-800/80 p-6">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+        First transmission
+      </p>
+      <h2 className="mt-2 text-xl font-semibold text-white">Build your personal archive</h2>
+      <p className="mt-2 text-sm leading-relaxed text-gray-400">
+        Add a title, scan a local library, or begin a course. Home will turn that activity into a continuation feed.
+      </p>
+      <Link to="/anime" className="btn-primary mt-5 self-start">
+        Open library
+      </Link>
     </div>
   )
 }
@@ -332,7 +456,7 @@ function Spotlight({ pool, fromBacklog }: { pool: MediaItem[]; fromBacklog: bool
           <p className="mt-2 text-sm text-gray-400 line-clamp-3">{pick.synopsis}</p>
         )}
         <div className="mt-auto pt-3 flex gap-2">
-          <Link to={pathForMedia(pick)} className="btn-primary">
+          <Link to={pathForMedia(pick)} className="btn-ghost">
             Open
           </Link>
           <button
@@ -665,11 +789,7 @@ function TopPeople() {
 // is "in progress by status": these link STRAIGHT into the reader or player at
 // the saved position, skipping the detail page entirely. Capped at 4 so it
 // stays a shortcut rather than a second library.
-function ResumeStrip() {
-  const { data: points = [] } = useQuery({
-    queryKey: qk.media.resumePoints,
-    queryFn: () => api.media.resumePoints()
-  })
+function ResumeStrip({ points }: { points: ResumePoint[] }) {
   const shown = points.slice(0, 4)
   if (shown.length === 0) return null
   return (
@@ -738,4 +858,3 @@ function Strip({
   )
   return title ? <Section title={title}>{row}</Section> : row
 }
-

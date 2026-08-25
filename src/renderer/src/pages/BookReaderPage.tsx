@@ -364,7 +364,7 @@ export default function BookReaderPage() {
           />
         )}
         {/* top bar */}
-        <div className="shrink-0 z-20 bg-base-900/95 backdrop-blur border-b border-base-800 px-4 py-2 flex items-center gap-3">
+        <div className="relative z-20 flex shrink-0 items-center gap-3 border-b border-base-800 bg-base-900/95 px-4 py-2 backdrop-blur">
           <button className="btn-ghost py-1 px-3 text-sm" onClick={exitToDetail}>
             ← Back
           </button>
@@ -375,6 +375,12 @@ export default function BookReaderPage() {
           <span className="text-sm text-gray-400 shrink-0">
             {section + 1} / {sectionCount}
           </span>
+          <div className="absolute inset-x-0 bottom-0 h-px bg-base-800" aria-hidden="true">
+            <div
+              className="h-full bg-accent transition-[width] motion-reduce:transition-none"
+              style={{ width: `${((section + 1) / Math.max(1, sectionCount)) * 100}%` }}
+            />
+          </div>
         </div>
 
         {/* content — the themed reading surface (data-book-theme scopes the
@@ -461,7 +467,7 @@ export default function BookReaderPage() {
         )}
 
         {/* bottom bar */}
-        <div className="shrink-0 z-20 bg-base-900/95 backdrop-blur border-t border-base-800 px-4 py-2 flex items-center gap-3">
+        <div className="z-20 flex shrink-0 items-center gap-3 overflow-x-auto border-t border-base-800 bg-base-900/95 px-4 py-2 backdrop-blur">
           <button
             className="btn-ghost py-1 px-2 text-xs"
             disabled={!prevChapter}
@@ -518,7 +524,7 @@ export default function BookReaderPage() {
               onClick={() => setSettingsOpen((v) => !v)}
             />
             <BarButton
-              label="⛏"
+              label="Mine"
               active={panelOpen}
               title="Mine words (M) — then tap a paragraph"
               onClick={() => setPanelOpen((v) => !v)}

@@ -11,6 +11,8 @@ import { EN_WRITING_PROMPTS } from '@shared/english/writingPrompts'
 import { Group, Pill } from '../components/PillGroup'
 import type { EnWritingTaskKind } from '@shared/english/types'
 import type { EnWritingEntry } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import ContextPanel, { ContextFact } from '../components/ContextPanel'
 
 // Writing practice: pick a task, write, submit for LLM grading (the coach
 // provider settings — one plain-await call, the button disables for the
@@ -170,7 +172,19 @@ export default function EnglishWritingPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <EditorialDetailFrame
+      width="wide"
+      aside={
+        <ContextPanel title="Writing evidence" identity={result?.id ?? selected?.key ?? 'writing-setup'}>
+          <ContextFact label="Task">{selected?.title ?? 'Choose a task'}</ContextFact>
+          <ContextFact label="Draft length">{words} words</ContextFact>
+          <ContextFact label="Feedback history">{writings?.length ?? 0} graded submissions</ContextFact>
+          <ContextFact label="Evaluation">
+            Feedback uses the configured provider and preserves every saved result locally.
+          </ContextFact>
+        </ContextPanel>
+      }
+    >
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Writing"
@@ -270,6 +284,6 @@ export default function EnglishWritingPage() {
           </div>
         </Section>
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader'
+import StudySessionFrame from '../components/StudySessionFrame'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -483,9 +484,8 @@ export default function SongQuizPage() {
     const accuracy = stats.total ? Math.round((stats.correct / stats.total) * 100) : 0
     const arcade = modeRef.current === 'arcade'
     return (
-      <div className="p-6 max-w-lg mx-auto">
-        <div className="card p-10 text-center">
-          <p className="text-sm uppercase tracking-widest text-gray-500">Quiz complete</p>
+      <StudySessionFrame title="Song quiz complete" subtitle={arcade ? 'Arcade broadcast' : 'Challenge broadcast'}>
+        <div className="py-3 text-center">
           {arcade ? (
             <>
               <p className="mt-3 text-6xl font-bold">{stats.score}</p>
@@ -514,7 +514,7 @@ export default function SongQuizPage() {
             </Link>
           </div>
         </div>
-      </div>
+      </StudySessionFrame>
     )
   }
 
@@ -532,13 +532,17 @@ export default function SongQuizPage() {
   const correctIdx = current ? options.findIndex((o) => o.themeId === current.themeId) : -1
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-base">
-        <span className="font-medium">
-          Question {qNum}
-          {modeRef.current !== 'arcade' && lengthRef.current > 0 ? ` of ${lengthRef.current}` : ''}
-        </span>
-        <div className="flex items-center gap-4 text-gray-400">
+    <StudySessionFrame
+      title={reverse ? 'Reverse song challenge' : 'Song challenge'}
+      subtitle={modeRef.current === 'arcade' ? `Question ${qNum} · arcade run` : 'Identify the archive relationship from sound'}
+      progress={
+        modeRef.current !== 'arcade' && lengthRef.current > 0
+          ? { current: qNum, total: lengthRef.current, label: 'Songs' }
+          : undefined
+      }
+      surface={false}
+      actions={
+        <>
           {modeRef.current === 'arcade' ? (
             <>
               <span className="font-medium text-gray-200">Points {stats.score}</span>
@@ -559,8 +563,9 @@ export default function SongQuizPage() {
           <button className="btn-ghost py-1 px-2 text-sm" onClick={endGame}>
             End quiz
           </button>
-        </div>
-      </div>
+        </>
+      }
+    >
 
       {timed && !answered && (
         <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-base-700">
@@ -731,7 +736,7 @@ export default function SongQuizPage() {
             </button>
           ))}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }
 

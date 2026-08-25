@@ -108,8 +108,9 @@ export default function EnglishUsePage() {
 
   if (items) {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
+      <div className="p-6 max-w-[1320px] mx-auto">
         <TypedDrill
+          title={LABEL[format]}
           items={items}
           kind={KIND[format]}
           settings={{ format, length }}
@@ -122,7 +123,7 @@ export default function EnglishUsePage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-[1320px] mx-auto">
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Use of English"

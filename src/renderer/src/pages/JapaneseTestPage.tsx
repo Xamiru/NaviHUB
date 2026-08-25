@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import QuizRecord from '../components/QuizRecord'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import type { JpCard, JpLessonKind } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
 
@@ -367,18 +368,31 @@ export default function JapaneseTestPage() {
 
   // ---- play ----
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-sm">
-        <span className="font-medium">
-          {index + 1} / {questions.length}
-        </span>
-        <div className="flex items-center gap-4 text-gray-400">
-          <span className={secondsLeft <= 60 ? 'text-red-400' : ''}>{mmss(secondsLeft)}</span>
+    <StudySessionFrame
+      title={`${level} checkpoint`}
+      subtitle={`${current!.heading} / ${source === 'packs' ? 'Offline level packs' : 'Local curriculum'}`}
+      progress={{ current: index + 1, total: questions.length, label: 'Checkpoint' }}
+      actions={
+        <>
+          <span className={`px-2 text-sm tabular-nums ${secondsLeft <= 60 ? 'text-red-400' : 'text-gray-300'}`}>
+            {mmss(secondsLeft)}
+          </span>
           <button className="btn-ghost py-1 px-2 text-xs" onClick={() => setSecondsLeft(0)}>
             End test
           </button>
-        </div>
-      </div>
+        </>
+      }
+      rail={
+        <SessionEvidence title="Checkpoint evidence">
+          <dl className="space-y-3">
+            <div className="flex justify-between gap-3"><dt>Correct</dt><dd className="text-white">{score}</dd></div>
+            <div className="flex justify-between gap-3"><dt>Answered</dt><dd className="text-white">{index + (picked !== null ? 1 : 0)}</dd></div>
+            <div className="flex justify-between gap-3"><dt>Level</dt><dd className="text-white">{level}</dd></div>
+          </dl>
+        </SessionEvidence>
+      }
+      surface={false}
+    >
 
       <div className="card p-8 text-center">
         <p className="text-xs uppercase tracking-widest text-gray-500">{current!.heading}</p>
@@ -428,6 +442,6 @@ export default function JapaneseTestPage() {
           </button>
         </div>
       )}
-    </div>
+    </StudySessionFrame>
   )
 }

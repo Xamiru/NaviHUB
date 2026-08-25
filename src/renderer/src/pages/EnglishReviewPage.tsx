@@ -7,6 +7,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { gradeCard, LEECH_LAPSES, overdueDays, previewIntervals, type SrsState } from '@shared/srs'
 import type { EnWord, SrsGrade } from '@shared/types'
+import StudySessionFrame from '../components/StudySessionFrame'
 
 // SRS review over the saved English words (the JapaneseReviewPage port, minus
 // typed mode): front = the word, back = the chosen definition. The renderer
@@ -222,11 +223,12 @@ export default function EnglishReviewPage() {
   const previews = previewIntervals(srs, overdueDays(word.dueAt))
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-sm text-gray-400">
-        <span>{queue.length} left</span>
-        <div className="flex items-center gap-3">
-          <span>{reviewed} reviewed</span>
+    <StudySessionFrame
+      title="English review"
+      subtitle="Mistake ledger recall"
+      progress={{ current: reviewed, total: reviewed + queue.length, label: 'Words reviewed' }}
+      actions={
+        <>
           {srs.status === 'new' && <span className="chip bg-sky-500/20 text-sky-300">new</span>}
           {srs.status === 'learning' && (
             <span className="chip bg-amber-500/20 text-amber-300">learning</span>
@@ -239,10 +241,11 @@ export default function EnglishReviewPage() {
           <button className="btn-ghost py-1 px-2 text-xs" onClick={() => setQueue([])}>
             End session
           </button>
-        </div>
-      </div>
+        </>
+      }
+    >
 
-      <div className="card p-8 text-center min-h-[260px] flex flex-col items-center justify-center">
+      <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
         <p className="text-4xl leading-relaxed">{word.word}</p>
         {word.phonetic && <p className="mt-2 text-lg text-gray-400">{word.phonetic}</p>}
         {word.pos && <p className="mt-1 text-xs text-gray-500">{word.pos}</p>}
@@ -282,6 +285,6 @@ export default function EnglishReviewPage() {
           </div>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

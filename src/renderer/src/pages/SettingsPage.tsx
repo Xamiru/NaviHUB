@@ -33,6 +33,13 @@ import type {
 import StartJackettButton from '../components/StartJackettButton'
 import { useUpdateStatus } from '../lib/useUpdateStatus'
 import { confirmDialog } from '../lib/confirm'
+import EmptyState from '../components/EmptyState'
+import QuietWorkspace from '../components/QuietWorkspace'
+import {
+  filterSettingsSections,
+  type SettingsSearchSection
+} from '../lib/settingsFilter'
+import TasksTabs from '../components/TasksTabs'
 
 // Persist a setting and refresh the settings cache. Passed down to every
 // section so they all save the same way.
@@ -55,6 +62,44 @@ const TABS = [
 ] as const
 type TabId = (typeof TABS)[number]['key']
 
+const SETTINGS_SEARCH: readonly SettingsSearchSection<TabId>[] = [
+  {
+    key: 'general',
+    title: 'General',
+    terms: ['appearance', 'ui scale', 'zoom', 'menu bar', 'sidebar', 'score', 'time stats']
+  },
+  {
+    key: 'statuses',
+    title: 'Statuses',
+    terms: ['anime', 'manga', 'games', 'movies', 'television', 'books', 'tracking']
+  },
+  {
+    key: 'data',
+    title: 'Keys & Folders',
+    terms: ['api keys', 'library paths', 'music folder', 'video folder', 'pictures', 'tokens']
+  },
+  {
+    key: 'japanese',
+    title: 'Dictionaries',
+    terms: ['japanese', 'english', 'offline', 'frequency', 'jmdict', 'known words']
+  },
+  {
+    key: 'ai',
+    title: 'AI Coach',
+    terms: ['gemini', 'anthropic', 'vertex', 'model', 'fgo']
+  },
+  {
+    key: 'integrations',
+    title: 'Integrations',
+    terms: ['ffmpeg', 'video', 'yt-dlp', 'music download', 'mokuro', 'ocr', 'jackett', 'qbittorrent', 'torrent']
+  },
+  {
+    key: 'system',
+    title: 'System',
+    terms: ['updates', 'version', 'release']
+  }
+]
+
 export default function SettingsPage() {
   const { data } = useSettings()
   const qc = useQueryClient()
@@ -67,6 +112,14 @@ export default function SettingsPage() {
     'settingsTab',
     requested && TABS.some((t) => t.key === requested) ? requested : 'general'
   )
+  const [settingsQuery, setSettingsQuery] = usePersistedState('settingsSearch', '')
+  const matches = filterSettingsSections(SETTINGS_SEARCH, settingsQuery)
+  const displayTab = settingsQuery.trim() ? (matches[0]?.key ?? null) : tab
+
+  function openTab(next: TabId): void {
+    setTab(next)
+    setSettingsQuery('')
+  }
 
   const setKey: SaveFn = async (key, value) => {
     await api.settings.set(key, value)
@@ -75,19 +128,57 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <PageHeader title="Settings" className="mb-6" />
+    <div className="mx-auto max-w-6xl p-6">
+      <PageHeader
+        title="Settings"
+        subtitle="Search the local system, then adjust one quiet group at a time."
+        className="mb-6"
+        actions={
+          <label className="block w-full sm:w-72">
+            <span className="sr-only">Search settings</span>
+            <input
+              className="input w-full"
+              type="search"
+              placeholder="Search settings…"
+              value={settingsQuery}
+              onChange={(e) => setSettingsQuery(e.target.value)}
+            />
+          </label>
+        }
+      />
+      <TasksTabs value="settings" />
 
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Section nav — sticky on desktop, wrapping row on narrow screens. */}
         <nav className="shrink-0 md:w-52">
           <div className="md:sticky md:top-6">
-            <Tabs orientation="vertical" tabs={[...TABS]} value={tab} onChange={setTab} />
+            <Tabs
+              orientation="vertical"
+              tabs={matches.map((section) => ({ key: section.key, label: section.title }))}
+              value={displayTab ?? tab}
+              onChange={openTab}
+            />
+            {settingsQuery.trim() && matches.length > 0 && (
+              <p className="mt-3 text-xs text-gray-500">
+                {matches.length} matching section{matches.length === 1 ? '' : 's'}
+              </p>
+            )}
           </div>
         </nav>
 
         <div className="min-w-0 flex-1">
-          {tab === 'general' && (
+          {displayTab == null ? (
+            <EmptyState
+              title="No matching settings"
+              body="Try a feature name such as video, dictionary, sidebar, torrent or updates."
+              action={
+                <button className="btn-primary" onClick={() => setSettingsQuery('')}>
+                  Clear search
+                </button>
+              }
+            />
+          ) : null}
+          {displayTab === 'general' && (
             <>
               <UiScaleSettings data={data} onSave={setKey} />
               <MenuBarSettings data={data} onSave={setKey} />
@@ -96,25 +187,25 @@ export default function SettingsPage() {
               <TimeStatsSettings data={data} onSave={setKey} />
             </>
           )}
-          {tab === 'statuses' &&
+          {displayTab === 'statuses' &&
             MEDIA_CONFIGS.map((cfg) => (
               <StatusEditor key={cfg.key} cfg={cfg} data={data} onSave={setKey} />
             ))}
-          {tab === 'data' && (
+          {displayTab === 'data' && (
             <>
               <ApiKeysSettings data={data} onSave={setKey} />
               <FoldersSettings data={data} onSave={setKey} />
             </>
           )}
-          {tab === 'japanese' && (
+          {displayTab === 'japanese' && (
             <>
               <KnownBaselineSettings data={data} onSave={setKey} />
               <DictionarySettings />
               <EnglishDictionarySettings />
             </>
           )}
-          {tab === 'ai' && <CoachSettings data={data} onSave={setKey} />}
-          {tab === 'integrations' && (
+          {displayTab === 'ai' && <CoachSettings data={data} onSave={setKey} />}
+          {displayTab === 'integrations' && (
             <>
               <YtdlpSettings data={data} onSave={setKey} />
               <VideoToolsSettings data={data} onSave={setKey} />
@@ -122,7 +213,7 @@ export default function SettingsPage() {
               <TorrentSettings data={data} onSave={setKey} />
             </>
           )}
-          {tab === 'system' && <UpdateSettings data={data} onSave={setKey} />}
+          {displayTab === 'system' && <UpdateSettings data={data} onSave={setKey} />}
         </div>
       </div>
     </div>
@@ -141,11 +232,9 @@ function SettingCard({
   children: ReactNode
 }) {
   return (
-    <section className="card p-5 mb-6">
-      <h2 className="font-semibold mb-1">{title}</h2>
-      {description && <p className="text-sm text-gray-500 mb-4">{description}</p>}
+    <QuietWorkspace title={title} description={description}>
       {children}
-    </section>
+    </QuietWorkspace>
   )
 }
 

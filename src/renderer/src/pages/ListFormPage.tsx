@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
+import QuietWorkspace from '../components/QuietWorkspace'
 import { KIND_LABEL } from '../lib/listLinks'
 import type { ListKind } from '@shared/types'
 
@@ -68,6 +69,10 @@ export default function ListFormPage() {
     <div className="p-6 max-w-xl mx-auto">
       <PageHeader back="history" title={editing ? 'Edit list' : 'New list'} />
 
+      <QuietWorkspace
+        title="Collection identity"
+        description="Name the point of view first; membership and ordering stay on the collection page."
+      >
       <div className="space-y-4">
         <div>
           <label className="label">Title</label>
@@ -118,6 +123,7 @@ export default function ListFormPage() {
           {saving ? 'Saving…' : editing ? 'Save changes' : 'Create list'}
         </button>
       </div>
+      </QuietWorkspace>
     </div>
   )
 }

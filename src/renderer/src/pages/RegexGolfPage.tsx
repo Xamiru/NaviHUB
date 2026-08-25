@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue } from '../lib/hooks'
 import PageHeader from '../components/PageHeader'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
 import {
@@ -124,28 +125,21 @@ export default function RegexGolfPage() {
   if (phase === 'play') {
     const puzzle = roundRef.current[index]
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-          <span className="tabular-nums">
-            Puzzle {index + 1} / {roundRef.current.length} · {solvedCount} solved
-          </span>
-          <span>
-            streak {streak}
-            <button
-              className="btn-ghost ml-3 px-2 py-0.5 text-xs"
-              onClick={() => endGame(solvedCount, bestStreak, index)}
-            >
-              End round
-            </button>
-          </span>
-        </div>
+      <StudySessionFrame
+        title="Regex golf"
+        subtitle={puzzle.title}
+        progress={{ current: index + 1, total: roundRef.current.length, label: 'Puzzles' }}
+        actions={<button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => endGame(solvedCount, bestStreak, index)}>End round</button>}
+        rail={<SessionEvidence title="Terminal evidence"><p>{solvedCount} solved; {underParCount} under par.</p><p className="mt-2">Current streak {streak}; best streak {bestStreak}.</p></SessionEvidence>}
+        surface={false}
+      >
         <PuzzleCard
           key={puzzle.key}
           puzzle={puzzle}
           best={bestByKey.get(puzzle.key) ?? null}
           onNext={next}
         />
-      </div>
+      </StudySessionFrame>
     )
   }
 

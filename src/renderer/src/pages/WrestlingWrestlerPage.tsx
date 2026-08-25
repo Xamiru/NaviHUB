@@ -15,6 +15,7 @@ import AddToListMenu from '../components/AddToListMenu'
 import WrestlingMatchRow from '../components/wrestling/WrestlingMatchRow'
 import { wikipediaUrl } from '@shared/wikiLinks'
 import type { WrestlingMatchWithEvent } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
 
 // A career runs to thousands of matches; the repo pages and this batches again.
 const PAGE = 300
@@ -96,7 +97,7 @@ export default function WrestlingWrestlerPage(): JSX.Element {
   const honourCount = w.honours.reduce((n, g) => n + g.items.length, 0)
 
   return (
-    <div className="p-6">
+    <EditorialDetailFrame width="wide">
       <PageHeader
         back="history"
         title={w.name}
@@ -119,9 +120,9 @@ export default function WrestlingWrestlerPage(): JSX.Element {
         }
       />
 
-      <div className="grid gap-8 lg:grid-cols-[200px_1fr]">
+      <div className="grid gap-8 lg:grid-cols-[240px_minmax(0,1fr)]">
         <div className="space-y-4">
-          <CoverImage path={w.photoPath} alt={w.name} className="w-full max-w-[200px] object-cover" />
+          <CoverImage path={w.photoPath} alt={w.name} className="w-full max-w-[240px] object-cover" />
           {facts.length > 0 && (
             <div className="space-y-3">
               {facts.map((f) => (
@@ -184,6 +185,6 @@ export default function WrestlingWrestlerPage(): JSX.Element {
           )}
         </div>
       </div>
-    </div>
+    </EditorialDetailFrame>
   )
 }

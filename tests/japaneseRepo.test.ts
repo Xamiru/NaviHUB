@@ -667,7 +667,7 @@ describe('addGrammarCards', () => {
     cards: fronts.map((front) => ({ front, back: `${title} — meaning`, notes: null }))
   })
 
-  it('files cards into one learned lesson per level, ready to review', () => {
+  it('stages one unlearned lesson per point without flooding reviews', () => {
     const res = jp.addGrammarCards('Grammar', [
       point('N5', 'ている', ['彼は___。']),
       point('N4', ' so-и', ['雨が___。'])
@@ -676,12 +676,13 @@ describe('addGrammarCards', () => {
     const courses = jp.listCourses()
     const grammar = courses.find((c) => c.title === 'Grammar')!
     expect(grammar.lessonCount).toBe(2)
-    expect(grammar.learnedLessonCount).toBe(2) // learned on creation, so they queue
+    expect(grammar.learnedLessonCount).toBe(0)
     const detail = jp.getCourse(grammar.id)!
-    expect(detail.lessons.map((l) => l.title)).toEqual(['N5', 'N4'])
+    expect(detail.lessons.map((l) => l.title)).toEqual(['N5 · ている', 'N4 ·  so-и'])
     expect(detail.lessons.every((l) => l.kind === 'grammar')).toBe(true)
-    // They are ordinary new cards in the shared queue.
-    expect(jp.reviewQueue(10).fresh).toHaveLength(2)
+    expect(jp.reviewQueue(10).fresh).toHaveLength(0)
+    jp.setLessonLearned(detail.lessons[0].id, true)
+    expect(jp.reviewQueue(10).fresh).toHaveLength(1)
   })
 
   it('is idempotent, so "add all N5" can be re-run as the bank grows', () => {

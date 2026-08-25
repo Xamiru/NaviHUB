@@ -67,8 +67,8 @@ export default function TagsIndexPage() {
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
-        title="Tags"
-        subtitle={tags ? `${tags.length} tags` : undefined}
+        title="Tags as lenses"
+        subtitle={tags ? `${tags.length} relationship lenses across your library` : undefined}
         actions={
           <input
             className="input max-w-xs"
@@ -102,7 +102,7 @@ export default function TagsIndexPage() {
           body={q || scope === 'unused' ? undefined : 'Imports add them automatically.'}
         />
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-4">
           {shown.map((t) => (
             <TagCard key={t.id} tag={t} onRemove={() => remove(t)} />
           ))}

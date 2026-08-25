@@ -12,9 +12,11 @@ export default function StatTile({
   accent?: boolean
 }) {
   return (
-    <div className="card p-4">
-      <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${accent ? 'text-accent' : ''}`}>{value}</p>
+    <div className={`card border-t p-4 ${accent ? 'border-t-accent' : 'border-t-base-600'}`}>
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500">{label}</p>
+      <p className={`mt-2 text-2xl font-semibold tabular-nums ${accent ? 'text-accent' : ''}`}>
+        {value}
+      </p>
       {sub && <p className="mt-0.5 text-xs text-gray-500">{sub}</p>}
     </div>
   )

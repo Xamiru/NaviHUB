@@ -62,6 +62,62 @@ export function NextIcon({ className }: IconProps) {
   )
 }
 
+export function ShuffleIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M2 4h2.1c3.5 0 4.3 8 7.8 8H14" />
+        <path d="m11.8 9.8 2.2 2.2-2.2 2.2" />
+        <path d="M2 12h2.1c1.1 0 2-.8 2.8-1.9M9.1 5.9C10 4.8 10.8 4 11.9 4H14" />
+        <path d="m11.8 1.8 2.2 2.2-2.2 2.2" />
+      </g>
+    </Svg>
+  )
+}
+
+export function RepeatIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 5h8.7L10 3.3M13 11H4.3L6 12.7" />
+        <path d="M13 5v2M3 11V9" />
+      </g>
+    </Svg>
+  )
+}
+
+export function QueueIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round">
+        <path d="M2.5 4h11M2.5 8h11M2.5 12h7" />
+      </g>
+      <path d="M11 10.2 14 12l-3 1.8Z" />
+    </Svg>
+  )
+}
+
+export function ExpandIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 3H3v3M10 3h3v3M6 13H3v-3M10 13h3v-3" />
+      </g>
+    </Svg>
+  )
+}
+
+export function PopOutIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 4H3v9h9V9" />
+        <path d="M8 3h5v5M13 3 7 9" />
+      </g>
+    </Svg>
+  )
+}
+
 // Speaker + one arc: labels the widget's volume slider, where a text label
 // would not fit. Same currentColor/1em contract as the transport marks.
 export function VolumeIcon({ className }: IconProps) {

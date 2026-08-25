@@ -5,7 +5,17 @@ import { usePlayer } from '../lib/player'
 import { playerShortcutsEnabled } from '../lib/playerShortcuts'
 import CoverImage from './CoverImage'
 import QueuePanel from './QueuePanel'
-import { PlayIcon, PauseIcon, PrevIcon, NextIcon } from './PlayerIcons'
+import {
+  PlayIcon,
+  PauseIcon,
+  PrevIcon,
+  NextIcon,
+  ShuffleIcon,
+  RepeatIcon,
+  QueueIcon,
+  ExpandIcon,
+  PopOutIcon
+} from './PlayerIcons'
 
 // Elapsed/total clock ("3:07"); shared with the full-page now-playing view.
 export function formatTime(t: number): string {
@@ -171,12 +181,12 @@ export default function NowPlayingBar(): React.JSX.Element | null {
             title={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
             aria-label={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
           >
-            ⇄
+            <ShuffleIcon className="h-4 w-4" />
           </button>
         )}
         <button
           onClick={cycleRepeat}
-          className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${
+          className={`relative shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${
             repeat !== 'off'
               ? 'text-accent bg-accent/15'
               : 'text-gray-400 hover:text-white hover:bg-base-700'
@@ -190,7 +200,10 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           }
           aria-label={`Repeat: ${repeat}`}
         >
-          {repeat === 'one' ? '⟳¹' : '⟳'}
+          <RepeatIcon className="h-4 w-4" />
+          {repeat === 'one' && (
+            <span className="absolute bottom-1 right-1 text-[8px] font-bold leading-none">1</span>
+          )}
         </button>
         <button
           onClick={() => setQueueOpen((v) => !v)}
@@ -202,7 +215,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           title="Queue"
           aria-label="Queue"
         >
-          ☰
+          <QueueIcon className="h-4 w-4" />
         </button>
         <Link
           to="/now-playing"
@@ -210,7 +223,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           title="Now playing view"
           aria-label="Now playing view"
         >
-          ⤢
+          <ExpandIcon className="h-4 w-4" />
         </Link>
         <button
           onClick={() => void api.player.openWidget()}
@@ -218,7 +231,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           title="Pop out player"
           aria-label="Pop out player"
         >
-          ⧉
+          <PopOutIcon className="h-4 w-4" />
         </button>
 
         <div className="hidden sm:flex items-center gap-1.5 w-28 shrink-0">

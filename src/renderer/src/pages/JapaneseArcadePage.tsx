@@ -53,7 +53,7 @@ export default function JapaneseArcadePage() {
   )
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-[1320px] mx-auto">
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Arcade"

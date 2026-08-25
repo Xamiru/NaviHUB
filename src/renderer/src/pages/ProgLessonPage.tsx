@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
 import Markdown from '../components/Markdown'
@@ -76,20 +77,18 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <PageHeader
-        back={{ to: `/programming/course/${course.key}`, label: course.title }}
-        title={lesson.title}
-        actions={
-          <span className="text-xs text-gray-500">
-            Lesson {index + 1} of {course.lessons.length}
-          </span>
-        }
-      />
+    <StudySessionFrame
+      title={lesson.title}
+      subtitle={<Link to={`/programming/course/${course.key}`} className="hover:text-accent">{course.title}</Link>}
+      progress={{ current: index + 1, total: course.lessons.length, label: 'Course path' }}
+      actions={<button className={isDone ? 'btn-ghost' : 'btn-primary'} disabled={busy} onClick={() => void toggleDone()}>{isDone ? 'Mark incomplete' : 'Mark lesson complete'}</button>}
+      rail={<SessionEvidence title="Skill evidence"><p>{checkDone ? `${score} of ${total} correct in this check.` : `${results.size} of ${total} checks answered.`}</p>{summary && <p className="mt-2">Best attempt {summary.best.score} of {summary.best.total}.</p>}<p className="mt-2">{isDone ? 'Completion logged locally.' : 'Completion is not yet logged.'}</p></SessionEvidence>}
+      surface={false}
+    >
 
-      <div className="card p-5">
+      <article className="card p-5 sm:p-7">
         <Markdown text={lesson.body} />
-      </div>
+      </article>
 
       {lesson.questions.length > 0 && (
         <Section title="Check understanding" className="mt-6 mb-0">
@@ -124,9 +123,6 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
       )}
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
-        <button className={isDone ? 'btn-ghost' : 'btn-primary'} disabled={busy} onClick={() => void toggleDone()}>
-          {isDone ? 'Mark incomplete' : 'Mark lesson complete'}
-        </button>
         <span className="flex-1" />
         {prev && (
           <Link to={`/programming/course/${course.key}/${prev.key}`} className="btn-ghost">
@@ -139,7 +135,7 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
           </Link>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }
 

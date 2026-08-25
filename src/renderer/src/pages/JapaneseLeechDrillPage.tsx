@@ -7,6 +7,7 @@ import PageStatus from '../components/PageStatus'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { shuffle } from '@shared/shuffle'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 
 // Leech isolation drill (kind 'leech') — grind stuck cards WITHOUT touching
 // their real SM-2 state (the mechanic every WaniKani userscript reinvents).
@@ -131,7 +132,7 @@ export default function JapaneseLeechDrillPage() {
 
   if (!items || items.length === 0) {
     return (
-      <div className="p-6 max-w-2xl mx-auto">
+      <div className="p-6 max-w-[1320px] mx-auto">
         <PageHeader back={{ to: '/japanese/stats', label: 'Stats' }} title="Leech Drill" />
         <EmptyState
           title="No leeches to drill"
@@ -147,7 +148,7 @@ export default function JapaneseLeechDrillPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-6 max-w-[1320px] mx-auto">
       <PageHeader
         back={{ to: '/japanese/stats', label: 'Stats' }}
         title="Leech Drill"
@@ -175,6 +176,7 @@ export default function JapaneseLeechDrillPage() {
           </button>
         </div>
       ) : finished ? (
+        <StudySessionFrame title="Leech drill results" subtitle="First-try recall summary" surface={false}>
         <div className="card p-8 text-center">
           <p className="text-sm uppercase tracking-widest text-gray-500">Drill complete</p>
           <p className="mt-3 text-5xl font-bold">
@@ -191,16 +193,26 @@ export default function JapaneseLeechDrillPage() {
             </Link>
           </div>
         </div>
+        </StudySessionFrame>
       ) : (
-        <div className="card p-6">
-          <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-            <span>
-              {index + 1} / {queue.length}
-            </span>
-            <button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setIndex(queue.length)}>
-              Stop
-            </button>
-          </div>
+        <StudySessionFrame
+          title="Leech drill"
+          subtitle="Extra recall without changing the real SRS schedule."
+          progress={{ current: index + 1, total: queue.length, label: 'Card' }}
+          actions={<button className="btn-ghost" onClick={() => setIndex(queue.length)}>Stop</button>}
+          rail={
+            <>
+              <SessionEvidence title="Session evidence">
+                <p>{firstTry} first-try recalls</p>
+                <p>{answered} total showings</p>
+                <p>{queue.length - index} cards remain in the queue</p>
+              </SessionEvidence>
+              <SessionEvidence title="Grading">
+                Reveal with Space or Enter, then use 1 for Missed and 2 for Got it. Misses return later.
+              </SessionEvidence>
+            </>
+          }
+        >
           <p className="text-center text-5xl leading-snug">{current!.front}</p>
           {revealed ? (
             <div className="mt-6 text-center">
@@ -230,7 +242,7 @@ export default function JapaneseLeechDrillPage() {
               </button>
             </div>
           )}
-        </div>
+        </StudySessionFrame>
       )}
     </div>
   )

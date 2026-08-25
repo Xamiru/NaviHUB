@@ -11,6 +11,8 @@ import RefreshTab from '../components/RefreshTab'
 import { Group, Pill } from '../components/PillGroup'
 import { BULK_SOURCES, bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
 import type { BulkListParams, BulkPreviewItem } from '@shared/types'
+import QuietWorkspace from '../components/QuietWorkspace'
+import TasksTabs from '../components/TasksTabs'
 
 const SEASONS = ['winter', 'spring', 'summer', 'fall'] as const
 
@@ -143,6 +145,8 @@ export default function BulkImportPage(): React.JSX.Element {
         }
       />
 
+      <TasksTabs value="imports" />
+
       <Tabs
         className="mb-5"
         value={tab}
@@ -157,7 +161,16 @@ export default function BulkImportPage(): React.JSX.Element {
         <RefreshTab />
       ) : (
         <>
-      <div className="card p-5 space-y-4 mb-6">
+      <ImportFlow
+        previewReady={!!preview}
+        running={!!runStatus && runStatus.state === 'running'}
+        finished={!!runStatus && runStatus.state === 'done'}
+      />
+      <QuietWorkspace
+        title="Configure list"
+        description="Choose the source and limits before NaviHUB fetches any preview rows."
+      >
+      <div className="space-y-4">
         <Group label="Type">
           {BULK_SOURCES.map((s) => (
             <Pill key={s.key} active={s.key === sourceKey} onClick={() => switchSource(s.key)} label={s.label} />
@@ -303,6 +316,7 @@ export default function BulkImportPage(): React.JSX.Element {
           </>
         )}
       </div>
+      </QuietWorkspace>
 
       {runStatus && runStatus.state !== 'idle' && <RunCard status={runStatus} onStop={stopRun} />}
 
@@ -323,6 +337,41 @@ export default function BulkImportPage(): React.JSX.Element {
         </>
       )}
     </div>
+  )
+}
+
+function ImportFlow({
+  previewReady,
+  running,
+  finished
+}: {
+  previewReady: boolean
+  running: boolean
+  finished: boolean
+}) {
+  const steps = [
+    { label: 'Configure', complete: previewReady || running || finished, active: !previewReady && !running && !finished },
+    { label: 'Preview', complete: running || finished, active: previewReady && !running && !finished },
+    { label: 'Run', complete: finished, active: running }
+  ]
+  return (
+    <ol className="mb-6 grid gap-2 sm:grid-cols-3" aria-label="Bulk import stages">
+      {steps.map((step, index) => (
+        <li
+          key={step.label}
+          className={`card flex items-center gap-3 border-t p-4 ${
+            step.active ? 'border-t-accent' : 'border-t-base-600'
+          }`}
+        >
+          <span className={step.complete || step.active ? 'text-accent' : 'text-gray-500'}>
+            {step.complete ? '✓' : index + 1}
+          </span>
+          <span className={step.active ? 'font-medium text-white' : 'text-sm text-gray-400'}>
+            {step.label}
+          </span>
+        </li>
+      ))}
+    </ol>
   )
 }
 

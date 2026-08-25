@@ -15,11 +15,11 @@ export default function MusicLikedPage() {
   })
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-5xl p-4 sm:p-6">
       <PageHeader
         back="history"
-        title="Liked Songs"
-        subtitle={`${tracks.length} ${tracks.length === 1 ? 'track' : 'tracks'}`}
+        title="Liked songs"
+        subtitle={`${tracks.length} ${tracks.length === 1 ? 'track' : 'tracks'} in this automatic collection`}
         actions={
           <>
             <button

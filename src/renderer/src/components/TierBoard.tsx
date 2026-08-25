@@ -185,14 +185,14 @@ export default function TierBoard({
         applyState(serverState.current)
       }}
     >
-      <div className="space-y-2">
+      <div className="space-y-3">
         {state.rows.map((g) => (
           <TierRowBand key={g.row.id} group={g} onRemoveItem={onRemoveItem} />
         ))}
 
-        <div className="pt-3">
-          <p className="mb-1 text-xs uppercase tracking-widest text-gray-600">
-            Unranked · {state.pool.length}
+        <div className="mt-7 border-t border-base-700 pt-5">
+          <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Unranked pool / {state.pool.length}
           </p>
           <DropTray cid={POOL}>
             <SortableContext items={state.pool.map((i) => i.itemId)} strategy={rectSortingStrategy}>
@@ -219,9 +219,9 @@ function TierRowBand({
 }) {
   const cid = rowCid(group.row.id)
   return (
-    <div className="flex overflow-hidden rounded-lg border border-base-600">
+    <div className="grid min-w-0 grid-cols-[88px_minmax(0,1fr)] overflow-hidden rounded-lg border border-base-600 sm:grid-cols-[112px_minmax(0,1fr)]">
       <div
-        className="flex w-28 shrink-0 cursor-default select-none items-center justify-center px-2 text-center font-bold break-words"
+        className="flex min-h-[132px] cursor-default select-none items-center justify-center px-2 text-center text-lg font-bold break-words"
         style={{ backgroundColor: group.row.color, color: '#17171f' }}
         title={group.row.label}
       >
@@ -254,9 +254,9 @@ function DropTray({
   return (
     <div
       ref={setNodeRef}
-      className={`flex flex-wrap content-start gap-1.5 rounded-lg p-2 transition-colors ${
+      className={`flex flex-wrap content-start gap-2 rounded-lg p-3 transition-colors ${
         isOver ? 'bg-base-700 ring-1 ring-accent' : 'bg-base-800/50'
-      } ${grow ? 'min-h-[64px] flex-1' : 'min-h-[80px] w-full'}`}
+      } ${grow ? 'min-h-[132px] min-w-0' : 'min-h-[132px] w-full border border-dashed border-base-600'}`}
     >
       {children}
     </div>
@@ -301,7 +301,7 @@ function TileVisual({ item, overlay }: { item: TierEntry; overlay?: boolean }) {
       className={`${overlay ? 'shadow-xl ring-2 ring-accent' : ''}`}
       title={item.name}
     >
-      <CoverImage path={item.imagePath} alt={item.name} className="h-[88px] w-16" />
+      <CoverImage path={item.imagePath} alt={item.name} className="h-28 w-20 rounded" thumbWidth={160} />
     </div>
   )
 }

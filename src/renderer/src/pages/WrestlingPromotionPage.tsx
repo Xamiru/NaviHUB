@@ -11,6 +11,7 @@ import CoverImage from '../components/CoverImage'
 import { Group, Pill } from '../components/PillGroup'
 import { promotionCfg } from '@shared/wrestling'
 import type { WrestlingEvent, WrestlingEventFilter } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
 
 const SORTS: { key: NonNullable<WrestlingEventFilter['sort']>; label: string }[] = [
   { key: 'date', label: 'Newest' },
@@ -93,11 +94,11 @@ export default function WrestlingPromotionPage(): JSX.Element {
   )
 
   return (
-    <div className="p-6">
+    <EditorialDetailFrame width="full">
       <PageHeader
         back={{ to: '/wrestling', label: 'Wrestling' }}
         title={cfg.short}
-        subtitle={cfg.name}
+        subtitle={`${cfg.name} · ${events?.length ?? 0} events in the current chronology`}
       />
 
       <div className="mb-5 space-y-4">
@@ -170,7 +171,7 @@ export default function WrestlingPromotionPage(): JSX.Element {
         />
       ) : (
         <>
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-4">
             {visible.map((e) => (
               <EventCard key={e.id} event={e} />
             ))}
@@ -178,6 +179,6 @@ export default function WrestlingPromotionPage(): JSX.Element {
           <div ref={sentinelRef} />
         </>
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }

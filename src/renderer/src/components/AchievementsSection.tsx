@@ -1,49 +1,39 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import type { AchievementProvider, MediaDetail } from '@shared/types'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { mediaUrl } from '@shared/mediaUrl'
 import { confirmDialog } from '../lib/confirm'
 import { toast, toastError } from '../lib/toast'
+import { usePersistedState } from '../lib/navState'
+import {
+  selectTrophies,
+  summarizeTrophies,
+  type TrophyFilter,
+  type TrophySort
+} from '../lib/achievementDisplay'
 import AchievementSetupDialog, { reportSetup } from './AchievementSetupDialog'
 import GoldbergWizardDialog from './GoldbergWizardDialog'
 import EmptyState from './EmptyState'
-import type { AchievementProvider, AchievementRarity, AchievementRow, MediaDetail } from '@shared/types'
+import ActionMenu from './ActionMenu'
+import { TrophyProgress, TrophyRow, providerLabel } from './TrophyDisplay'
 
-// The Achievements tab on a game/VN detail page (cfg.hasAchievements). Three
-// states: not eligible (no exe was ever linked), eligible but untracked (pick a
-// provider), tracked (the list). Manual toggling is always available, which is
-// the floor for games nothing can track automatically.
-
-const RARITY_LABEL: Record<AchievementRarity, string> = {
-  common: 'Common',
-  uncommon: 'Uncommon',
-  rare: 'Rare',
-  'ultra-rare': 'Ultra rare'
-}
-
-// Reserved for decorative marks; rarity is a real distinction so it gets a
-// readable tone, brightest for the rarest.
-const RARITY_CLASS: Record<AchievementRarity, string> = {
-  common: 'text-gray-500',
-  uncommon: 'text-gray-400',
-  rare: 'text-gray-300',
-  'ultra-rare': 'text-accent'
-}
-
-function fmtUnlockDate(utc: string): string {
-  const d = new Date(utc.replace(' ', 'T') + (utc.endsWith('Z') ? '' : 'Z'))
-  if (Number.isNaN(d.getTime())) return utc
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
-}
+const FILTERS: { key: TrophyFilter; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'earned', label: 'Earned' },
+  { key: 'locked', label: 'Locked' },
+  { key: 'ultra-rare', label: 'Ultra rare' }
+]
 
 export default function AchievementsSection({ m }: { m: MediaDetail }) {
   const qc = useQueryClient()
   const [setupProvider, setSetupProvider] = useState<AchievementProvider | null>(null)
   const [wizardOpen, setWizardOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [filter, setFilter] = usePersistedState<TrophyFilter>('trophyFilter', 'all')
+  const [sort, setSort] = usePersistedState<TrophySort>('trophySort', 'default')
 
-  const { data, isLoading, isError } = useQuery({
+  const query = useQuery({
     queryKey: qk.achievements.list(m.id),
     queryFn: () => api.achievements.list(m.id)
   })
@@ -64,22 +54,33 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
     }
   }
 
-  // isError first: a failed query leaves data undefined with isLoading false,
-  // so `isLoading || !data` on its own renders "Loading…" for ever.
-  if (isError)
-    return <p className="text-sm text-gray-500">Could not load achievements — try again in a moment.</p>
-  if (isLoading || !data) return <p className="text-sm text-gray-500">Loading…</p>
+  if (query.isError) {
+    return (
+      <div className="card max-w-xl border-red-500/30 p-5">
+        <p className="font-medium">This trophy set could not be loaded</p>
+        <p className="mt-2 text-sm text-gray-400">The stored set and unlocks are unchanged.</p>
+        <button className="btn-ghost mt-4" onClick={() => void query.refetch()}>
+          Try again
+        </button>
+      </div>
+    )
+  }
+  if (query.isLoading || !query.data) {
+    return (
+      <div className="card p-5" aria-label="Loading achievements">
+        <div className="h-3 w-48 animate-pulse rounded bg-base-600" />
+        <div className="mt-4 h-16 animate-pulse rounded bg-base-700" />
+        <div className="mt-3 h-16 animate-pulse rounded bg-base-700" />
+      </div>
+    )
+  }
 
+  const data = query.data
   if (!data.eligible) {
     return (
       <EmptyState
         title="No achievements yet"
-        body={
-          <>
-            Achievements are tracked for games you play through NaviHUB. Link this title’s
-            executable on the Playtime tab first, then come back.
-          </>
-        }
+        body="Achievements are tracked for games you play through NaviHUB. Link this title's executable on the Playtime tab first, then return here."
       />
     )
   }
@@ -90,12 +91,12 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
         <div className="grid gap-4 sm:grid-cols-2">
           <SetupCard
             title="Steam achievements"
-            body="For PC games. The achievement list comes from Steam; unlocks are read from whatever Steam emulator the game uses, and pop up as you earn them."
+            body="For PC games. The provider supplies the set, rarity and artwork; compatible emulator files can supply unlocks."
             onClick={() => setSetupProvider('steam')}
           />
           <SetupCard
             title="RetroAchievements"
-            body="For emulated games. Play through an RA-enabled emulator signed into your account and your unlocks sync here."
+            body="For emulated games. Your RetroAchievements account supplies the set, points, rarity and unlock history."
             onClick={() => setSetupProvider('ra')}
           />
         </div>
@@ -116,87 +117,147 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
   }
 
   const { summary, achievements, tracking } = data
-  const pct = summary.total ? Math.round((summary.unlocked / summary.total) * 100) : 0
+  const counts = summarizeTrophies(achievements)
+  const selected = selectTrophies(achievements, filter, sort)
+  const countFor = (key: TrophyFilter): number => {
+    if (key === 'earned') return counts.earned
+    if (key === 'locked') return counts.locked
+    if (key === 'ultra-rare') return counts.ultraRare
+    return counts.total
+  }
+
+  async function disableTracking(): Promise<void> {
+    const ok = await confirmDialog(
+      'Stop tracking achievements for this title? The set and its recorded unlocks will be deleted.',
+      { confirmLabel: 'Stop tracking', danger: true }
+    )
+    if (ok) await api.achievements.disable(m.id)
+  }
 
   return (
     <>
-      {/* Completion header */}
-      <div className="card p-4 mb-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-lg">
-            <span className="font-medium">{summary.unlocked}</span>
-            <span className="text-gray-500"> of {summary.total} unlocked</span>
-          </p>
-          <p className="text-sm text-gray-500">
-            {pct}%{summary.points != null ? ` · ${summary.points} points` : ''} ·{' '}
-            {tracking.provider === 'steam' ? 'Steam' : 'RetroAchievements'}
-          </p>
+      <div className="mb-6 grid gap-5 border-b border-base-700 pb-6 lg:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="card max-w-3xl p-5">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-semibold text-white">{m.title} trophy set</h2>
+              <p className="mt-1 text-xs text-gray-400">
+                {providerLabel(tracking.provider)} / provider rarity and artwork
+              </p>
+            </div>
+            {counts.ultraRare > 0 && <span className="chip">{counts.ultraRare} ultra rare</span>}
+          </div>
+          <TrophyProgress
+            earned={summary.unlocked}
+            total={summary.total}
+            points={summary.points}
+            provider={tracking.provider}
+          />
         </div>
-        <div className="mt-3 h-2 rounded bg-base-700 overflow-hidden">
-          <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+        <div className="flex flex-wrap items-end gap-2 lg:justify-end">
+          <button
+            className="btn-ghost"
+            disabled={busy}
+            onClick={() =>
+              act(async () => {
+                const result = await api.achievements.refresh(m.id)
+                reportSetup(result)
+              })
+            }
+          >
+            Re-fetch list
+          </button>
+          <ActionMenu
+            items={[
+              ...(tracking.provider === 'steam'
+                ? [
+                    {
+                      label: 'Import from emulator files',
+                      disabled: busy,
+                      onSelect: () =>
+                        act(async () => {
+                          const result = await api.achievements.importEmu(m.id)
+                          toast(
+                            result.found === 0
+                              ? 'No compatible emulator save files were found for this game.'
+                              : `Read ${result.found} file${result.found === 1 ? '' : 's'} from ${result.emus.join(', ')}. ${result.imported} new unlock${result.imported === 1 ? '' : 's'} imported.`,
+                            result.found === 0 ? 'error' : 'success'
+                          )
+                        })
+                    },
+                    {
+                      label: 'Set up Goldberg',
+                      disabled: busy,
+                      onSelect: () => setWizardOpen(true)
+                    }
+                  ]
+                : []),
+              {
+                label: 'Stop tracking',
+                danger: true,
+                disabled: busy,
+                onSelect: () => act(disableTracking)
+              }
+            ]}
+          />
         </div>
-      </div>
-
-      {/* Actions */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        <button className="btn-ghost text-xs" disabled={busy} onClick={() => act(async () => {
-          const res = await api.achievements.refresh(m.id)
-          reportSetup(res)
-        })}>
-          Re-fetch list
-        </button>
-        {tracking.provider === 'steam' && (
-          <>
-            <button className="btn-ghost text-xs" disabled={busy} onClick={() => act(async () => {
-              const res = await api.achievements.importEmu(m.id)
-              toast(
-                res.found === 0
-                  ? 'No emulator save files found for this game — use "Set up Goldberg" if its crack writes none.'
-                  : `Read ${res.found} file${res.found === 1 ? '' : 's'} (${res.emus.join(', ')}) — ${res.imported} new unlock${res.imported === 1 ? '' : 's'}.`,
-                res.found === 0 ? 'error' : 'success'
-              )
-            })}>
-              Import from emulator files
-            </button>
-            <button className="btn-ghost text-xs" disabled={busy} onClick={() => setWizardOpen(true)}>
-              Set up Goldberg
-            </button>
-          </>
-        )}
-        <button className="btn-ghost text-xs" disabled={busy} onClick={() => act(async () => {
-          const ok = await confirmDialog(
-            'Stop tracking achievements for this title? The list and your recorded unlocks for it are deleted.',
-            { confirmLabel: 'Stop tracking', danger: true }
-          )
-          if (ok) await api.achievements.disable(m.id)
-        })}>
-          Stop tracking
-        </button>
       </div>
 
       {achievements.length === 0 ? (
         <EmptyState title="No achievements in this set" />
       ) : (
-        <ul className="grid gap-2 grid-cols-[repeat(auto-fill,minmax(280px,1fr))]">
-          {achievements.map((a) => (
-            <AchievementItem
-              key={a.id}
-              a={a}
-              busy={busy}
-              onToggle={(unlocked) =>
-                act(async () => {
-                  if (!unlocked) {
-                    const ok = await confirmDialog(`Mark “${a.name}” as locked again?`, {
-                      confirmLabel: 'Mark locked'
+        <>
+          <div className="mb-5 flex flex-wrap items-center gap-2">
+            {FILTERS.map((item) => (
+              <button
+                key={item.key}
+                className={`pill ${filter === item.key ? 'pill-active' : ''}`}
+                onClick={() => setFilter(item.key)}
+              >
+                {item.label} <span className={filter === item.key ? 'opacity-75' : 'text-gray-500'}>{countFor(item.key)}</span>
+              </button>
+            ))}
+            <label className="ml-auto flex items-center gap-2 text-xs text-gray-400">
+              Sort
+              <select className="input h-9 w-44" value={sort} onChange={(event) => setSort(event.target.value as TrophySort)}>
+                <option value="default">Default</option>
+                <option value="unlock-date">Unlock date</option>
+                <option value="rarity">Rarity</option>
+                <option value="name">Name</option>
+              </select>
+            </label>
+          </div>
+
+          {selected.length ? (
+            <ul className="card overflow-hidden p-0">
+              {selected.map((achievement) => (
+                <TrophyRow
+                  key={achievement.id}
+                  achievement={achievement}
+                  provider={tracking.provider}
+                  busy={busy}
+                  onToggle={(unlocked) =>
+                    act(async () => {
+                      if (!unlocked) {
+                        const ok = await confirmDialog(`Mark "${achievement.name}" as locked again?`, {
+                          confirmLabel: 'Mark locked'
+                        })
+                        if (!ok) return
+                      }
+                      await api.achievements.toggleManual(achievement.id, unlocked)
                     })
-                    if (!ok) return
                   }
-                  await api.achievements.toggleManual(a.id, unlocked)
-                })
-              }
+                />
+              ))}
+            </ul>
+          ) : (
+            <EmptyState
+              title={`No ${FILTERS.find((item) => item.key === filter)?.label.toLowerCase()} achievements`}
+              body="Choose another trophy filter to return to the full set."
+              action={<button className="btn-primary" onClick={() => setFilter('all')}>Show all achievements</button>}
             />
-          ))}
-        </ul>
+          )}
+        </>
       )}
 
       {wizardOpen && <GoldbergWizardDialog mediaId={m.id} onClose={() => setWizardOpen(false)} />}
@@ -206,85 +267,10 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
 
 function SetupCard({ title, body, onClick }: { title: string; body: string; onClick: () => void }) {
   return (
-    <div className="card p-5 flex flex-col">
-      <h3 className="font-medium">{title}</h3>
-      <p className="mt-1 mb-4 flex-1 text-sm text-gray-500">{body}</p>
-      <button className="btn self-start" onClick={onClick}>
-        Set up
-      </button>
+    <div className="card flex flex-col p-5">
+      <h3 className="font-medium text-white">{title}</h3>
+      <p className="mb-4 mt-2 flex-1 text-sm leading-6 text-gray-400">{body}</p>
+      <button className="btn self-start" onClick={onClick}>Set up</button>
     </div>
-  )
-}
-
-function AchievementItem({
-  a,
-  busy,
-  onToggle
-}: {
-  a: AchievementRow
-  busy: boolean
-  onToggle: (unlocked: boolean) => void
-}) {
-  const unlocked = a.unlockedAt != null
-  // The art is the point of the tile: locked ones use the provider's own
-  // greyed icon at full strength when it exists, and only fall back to a CSS
-  // grayscale when it does not — never a washed-out 40 % ghost.
-  const icon = unlocked ? a.iconPath : (a.iconGrayPath ?? a.iconPath)
-  const dimmed = !unlocked && !a.iconGrayPath
-  // A hidden achievement keeps its secret until it is earned; the description
-  // then appears (when the source had one — Steam's public page blanks them).
-  const description = a.hidden && !unlocked ? 'Hidden achievement' : (a.description ?? '')
-  const meta: string[] = []
-  if (a.rarity) {
-    meta.push(
-      `★ ${RARITY_LABEL[a.rarity]}${a.globalPct != null ? ` ${a.globalPct.toFixed(1)}%` : ''}`
-    )
-  }
-  if (a.points != null) meta.push(`${a.points} pts`)
-  if (unlocked) meta.push(fmtUnlockDate(a.unlockedAt as string))
-
-  return (
-    <li
-      className={`relative flex items-center gap-3 rounded-lg border p-2 pr-8 ${
-        unlocked ? 'border-base-700/60 bg-base-800/60' : 'border-base-700/30'
-      }`}
-    >
-      {icon ? (
-        <img
-          src={mediaUrl(icon) ?? undefined}
-          alt=""
-          className={`h-16 w-16 shrink-0 rounded object-cover ${dimmed ? 'grayscale opacity-70' : ''}`}
-        />
-      ) : (
-        <span className="h-16 w-16 shrink-0 rounded bg-base-700" />
-      )}
-      <div className="min-w-0 flex-1">
-        <p className={`truncate text-sm font-medium ${unlocked ? 'text-gray-100' : 'text-gray-400'}`}>
-          {a.name}
-        </p>
-        <p
-          className={`line-clamp-2 text-xs leading-snug ${
-            a.hidden && !unlocked ? 'italic text-gray-600' : 'text-gray-500'
-          }`}
-          title={description}
-        >
-          {description}
-        </p>
-        {meta.length > 0 && (
-          <p className={`mt-1 truncate text-[11px] ${a.rarity ? RARITY_CLASS[a.rarity] : 'text-gray-500'}`}>
-            {meta.join(' · ')}
-          </p>
-        )}
-      </div>
-      <button
-        className="absolute right-1.5 top-1.5 rounded px-1 text-xs text-gray-500 hover:text-accent disabled:opacity-40"
-        disabled={busy}
-        onClick={() => onToggle(!unlocked)}
-        title={unlocked ? 'Mark as locked' : 'Mark as unlocked'}
-        aria-label={unlocked ? `Mark ${a.name} as locked` : `Mark ${a.name} as unlocked`}
-      >
-        {unlocked ? '✓' : '○'}
-      </button>
-    </li>
   )
 }

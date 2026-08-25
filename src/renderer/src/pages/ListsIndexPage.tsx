@@ -37,12 +37,12 @@ export default function ListsIndexPage() {
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
-        title="Lists"
-        subtitle="Your curated collections."
+        title="Curated collections"
+        subtitle="Authored shelves, rankings and tier boards drawn from every part of the archive."
         actions={
           !isLoading && lists.length === 0 ? undefined : (
             <Link to={newTo} className="btn-primary">
-              {isTiers ? '+ New tier list' : '+ New list'}
+              {isTiers ? 'New tier list' : 'New list'}
             </Link>
           )
         }
@@ -94,7 +94,7 @@ export default function ListsIndexPage() {
           />
         )
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-4">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5">
           {lists.map((l) =>
             isTiers ? (
               <TierCard key={l.id} summary={l as TierListSummary} />

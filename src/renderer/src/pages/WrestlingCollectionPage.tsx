@@ -16,6 +16,7 @@ import WrestlingMatchRow from '../components/wrestling/WrestlingMatchRow'
 import LooseMatchDialog from '../components/wrestling/LooseMatchDialog'
 import { promotionName } from '@shared/wrestling'
 import type { WrestlingMatchWithEvent } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
 
 type Tab = 'events' | 'loose'
 
@@ -61,7 +62,7 @@ export default function WrestlingCollectionPage(): JSX.Element {
   const ownedCount = owned?.length ?? 0
 
   return (
-    <div className="p-6">
+    <EditorialDetailFrame width="wide">
       <PageHeader
         back={{ to: '/wrestling', label: 'Wrestling' }}
         title="Collection"
@@ -74,6 +75,19 @@ export default function WrestlingCollectionPage(): JSX.Element {
           </button>
         }
       />
+
+      <div className="mb-6 grid gap-3 sm:grid-cols-2">
+        <div className="card border-t border-t-base-600 p-4">
+          <p className="text-xs uppercase tracking-wide text-gray-500">Owned events</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{ownedCount}</p>
+          <p className="mt-1 text-xs text-gray-500">Cards with local video attached</p>
+        </div>
+        <div className="card border-t border-t-base-600 p-4">
+          <p className="text-xs uppercase tracking-wide text-gray-500">Loose matches</p>
+          <p className="mt-1 text-2xl font-semibold tabular-nums">{looseCount}</p>
+          <p className="mt-1 text-xs text-gray-500">Standalone matches outside an event</p>
+        </div>
+      </div>
 
       <Tabs
         className="mb-5"
@@ -92,7 +106,7 @@ export default function WrestlingCollectionPage(): JSX.Element {
             body="Open an event and attach the folder holding your rip."
           />
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-4">
             {owned.map((e) => (
               <Link key={e.id} to={`/wrestling/event/${e.id}`} className="card group overflow-hidden">
                 <CoverImage
@@ -181,6 +195,6 @@ export default function WrestlingCollectionPage(): JSX.Element {
           }}
         />
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }

@@ -109,7 +109,7 @@ export default function MusicLibraryPage() {
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
-        title="Music"
+        title="Sonic archive"
         subtitle={
           stats && stats.tracks > 0
             ? `${stats.artists} artists · ${stats.albums} albums · ${stats.tracks} tracks · ${formatLongDuration(stats.totalDuration)}`
@@ -179,6 +179,8 @@ export default function MusicLibraryPage() {
         </div>
       )}
 
+      <SonicArchiveLead />
+
       <input
         className="input mb-4 max-w-md"
         placeholder="Search artists, albums, tracks…"
@@ -212,6 +214,87 @@ export default function MusicLibraryPage() {
 
       {dlOpen && <MusicDownloadDialog onClose={() => setDlOpen(false)} />}
     </div>
+  )
+}
+
+function SonicArchiveLead() {
+  const { data } = useQuery({
+    queryKey: qk.music.statsDetail(30),
+    queryFn: () => api.music.statsDetail(30)
+  })
+  const artist = data?.topArtists[0]
+  if (!data || !artist) return null
+  const topTrack = data.topTracks[0]
+  const topHour = [...data.playsByHour].sort((a, b) => b.plays - a.plays)[0]
+  const period =
+    topHour == null
+      ? 'No pattern yet'
+      : topHour.hour < 6
+        ? 'Late night'
+        : topHour.hour < 12
+          ? 'Morning'
+          : topHour.hour < 18
+            ? 'Afternoon'
+            : 'Evening'
+
+  return (
+    <section className="card mb-6 grid overflow-hidden lg:grid-cols-[280px_minmax(0,1fr)]">
+      <div className="relative min-h-56 overflow-hidden bg-base-700 p-6">
+        {artist.coverPath && (
+          <CoverImage
+            path={artist.coverPath}
+            alt=""
+            rounded=""
+            className="absolute inset-0 h-full w-full scale-110 opacity-35 blur-lg"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/65 to-transparent" />
+        <div className="relative flex h-full flex-col justify-end">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+            Strongest signal / 30 days
+          </p>
+          <Link
+            to={`/music/artists/${artist.id}`}
+            className="mt-2 line-clamp-2 text-2xl font-semibold text-white hover:text-accent"
+          >
+            {artist.name}
+          </Link>
+          <p className="mt-1 text-xs text-gray-400">
+            {artist.plays} plays / {formatLongDuration(artist.seconds)}
+          </p>
+        </div>
+      </div>
+      <div className="p-6">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
+          Listen through relationships
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold text-white">Your listening leaves trails</h2>
+        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-400">
+          Move between artists, albums and play history without leaving the local library.
+        </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-md border border-base-700 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Top track</p>
+            <p className="mt-2 truncate text-sm font-medium">{topTrack?.track.title ?? 'Keep listening'}</p>
+            <p className="mt-1 text-xs text-gray-500">
+              {topTrack ? `${topTrack.plays} plays` : 'A pattern will appear here'}
+            </p>
+          </div>
+          <div className="rounded-md border border-base-700 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Listening pattern</p>
+            <p className="mt-2 text-sm font-medium">{period}</p>
+            <p className="mt-1 text-xs text-gray-500">
+              {topHour ? `Most active around ${String(topHour.hour).padStart(2, '0')}:00` : 'More plays needed'}
+            </p>
+          </div>
+          <div className="rounded-md border border-base-700 p-4">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">New signals</p>
+            <p className="mt-2 text-sm font-medium">{data.newArtists.length} artists</p>
+            <p className="mt-1 text-xs text-gray-500">First heard in this period</p>
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
 

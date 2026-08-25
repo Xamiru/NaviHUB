@@ -39,9 +39,9 @@ export default function TasksPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="mx-auto max-w-[1400px] p-6">
       <PageHeader
-        title="Tasks"
+        title="Work and maintenance"
         eyebrow={
           <>
             <span className="chip">{active.length} running</span>
@@ -49,7 +49,7 @@ export default function TasksPage() {
             {failed > 0 && <span className="chip text-red-400">{failed} failed</span>}
           </>
         }
-        subtitle="Imports, downloads, scans and conversions running in the background."
+        subtitle="A list-first task canvas for imports, downloads, scans, conversions and their structured logs."
         actions={
           <ActionMenu
             items={[

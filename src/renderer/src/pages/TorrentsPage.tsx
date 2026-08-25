@@ -6,6 +6,8 @@ import { TORRENT_CATEGORY_OPTIONS } from '@shared/torrents'
 import TorrentResultsPanel from '../components/TorrentResultsPanel'
 import StartJackettButton from '../components/StartJackettButton'
 import PageHeader from '../components/PageHeader'
+import TasksTabs from '../components/TasksTabs'
+import QuietWorkspace from '../components/QuietWorkspace'
 
 // Free-form Jackett search for anything not tied to a library item (music,
 // software, one-offs). Results stream in per indexer via useTorrentSearch.
@@ -28,6 +30,7 @@ export default function TorrentsPage(): React.JSX.Element {
         subtitle="Search your Jackett indexers and send results to qBittorrent."
         actions={<StartJackettButton />}
       />
+      <TasksTabs value="torrents" />
 
       {!configured ? (
         <div className="card p-5 text-sm text-gray-400">
@@ -39,12 +42,16 @@ export default function TorrentsPage(): React.JSX.Element {
         </div>
       ) : (
         <>
+          <QuietWorkspace
+            title="Indexer search"
+            description="Results stream in as each configured indexer answers."
+          >
           <form
             onSubmit={(e) => {
               e.preventDefault()
               if (query.trim()) void search.start(query.trim(), cats)
             }}
-            className="flex gap-2 mb-5"
+            className="mb-5 flex flex-wrap gap-2"
           >
             <input
               className="input"
@@ -71,6 +78,7 @@ export default function TorrentsPage(): React.JSX.Element {
           </form>
 
           <TorrentResultsPanel search={search} />
+          </QuietWorkspace>
         </>
       )}
     </div>

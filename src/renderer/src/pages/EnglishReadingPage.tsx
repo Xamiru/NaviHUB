@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import QuizRecord from '../components/QuizRecord'
 import Markdown from '../components/Markdown'
 import { EN_PASSAGES } from '@shared/english/passages'
@@ -196,15 +197,14 @@ export default function EnglishReadingPage() {
   if (!passage || !current) return null
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-        <span className="tabular-nums">
-          Question {index + 1} / {questions.length} · {score} correct
-        </span>
-        <button className="btn-ghost px-2 py-0.5 text-xs" onClick={endGame}>
-          End test
-        </button>
-      </div>
+    <StudySessionFrame
+      title="Reading comprehension"
+      subtitle={`${passage.title} / ${passage.level}`}
+      progress={{ current: index + 1, total: questions.length, label: 'Passage' }}
+      actions={<button className="btn-ghost px-2 py-0.5 text-xs" onClick={endGame}>End test</button>}
+      rail={<SessionEvidence title="Reading evidence"><p>{score} correct so far.</p><p className="mt-2">Current task: {KIND_LABEL[current.q.kind]}.</p></SessionEvidence>}
+      surface={false}
+    >
 
       <div className="card max-h-[45vh] overflow-y-auto p-5">
         <p className="mb-2 text-xs uppercase tracking-widest text-gray-600">
@@ -255,6 +255,6 @@ export default function EnglishReadingPage() {
           </button>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

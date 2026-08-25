@@ -998,7 +998,7 @@ This is arguably THE most important structure for reading: long Japanese sentenc
 
 The thing you can do usually takes が: 日本語が読める.
 
-In casual speech Group 2 often drops the ら (ら抜き): 食べれる, 見れる — technically "wrong", everywhere in real dialogue.
+In casual speech Group 2 often drops the ら (ら抜き): 食べれる, 見れる. This is widespread in real dialogue, though formal prescriptive usage still prefers 食べられる and 見られる.
 
 The potential verb conjugates like a Group 2 verb: 読めない, 読めた, 読めます.`,
       cards: [
@@ -1057,7 +1057,7 @@ Works with adjectives and nouns too:
 
 たらどうですか（casual: たら？） makes a suggestion: 休んだら？ — "why don't you rest?"
 
-たら is the safest conditional to produce — it fits almost everywhere と/ば/なら do.`,
+たら is the broadest general-purpose conditional to produce, but と/ば/なら each carries a contrast worth learning.`,
       cards: [
         { front: '雨が降ったら、行きません。', reading: 'あめがふったら、いきません。', back: "If it rains, I won't go." },
         { front: '家に帰ったら、電話してね。', reading: 'いえにかえったら、でんわしてね。', back: 'Call me when you get home.' },
@@ -1078,7 +1078,7 @@ Works with adjectives and nouns too:
 
 時間があれば、手伝います。 — "If I have time, I'll help."
 
-ば leans hypothetical; と states a rule. Both ban commands in the result clause — use たら for those.`,
+ば leans hypothetical; と states a rule. と normally excludes requests, commands and the speaker's one-time decision in the result. ば is less absolute: volitional results are possible when the condition is a state or the clauses have different subjects, as in 時間があれば、手伝ってください. For a command tied directly to the listener's action, たら is usually the safest choice.`,
       cards: [
         { front: '春になると、桜が咲きます。', reading: 'はるになると、さくらがさきます。', back: 'When spring comes, the cherry blossoms bloom.' },
         { front: 'このボタンを押すと、ドアが開く。', reading: 'このボタンをおすと、ドアがあく。', back: 'If you press this button, the door opens.' },
@@ -1106,7 +1106,7 @@ Key contrast with たら: 日本に行ったら買う = buy AFTER arriving; 日�
     {
       kind: 'grammar',
       title: 'Giving & receiving: あげる・くれる・もらう',
-      body: `Three verbs encode WHO benefits — Japanese never skips this:
+      body: `Three verbs make the direction of giving or benefit explicit when they are used:
 
 ・あげる — I/we give outward: 友達にプレゼントをあげた。
 ・くれる — someone gives IN toward me/my group: 姉が傘をくれた。

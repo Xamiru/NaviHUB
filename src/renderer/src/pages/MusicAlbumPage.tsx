@@ -77,7 +77,7 @@ export default function MusicAlbumPage() {
 
   let lastDisc: number | null = null
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-[1200px] p-4 sm:p-6">
       <BackButton />
 
       <MusicEntityHeader
@@ -102,7 +102,7 @@ export default function MusicAlbumPage() {
         deleteLabel="Delete album"
       />
 
-      <div className="max-w-3xl">
+      <div className="max-w-5xl">
         {visible.map((t, i) => {
           const disc = t.discNo ?? 1
           const discHeader = multiDisc && disc !== lastDisc

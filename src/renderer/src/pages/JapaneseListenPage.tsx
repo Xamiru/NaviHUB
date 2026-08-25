@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import QuizRecord from '../components/QuizRecord'
+import Tabs from '../components/Tabs'
 import { Group, Pill } from '../components/PillGroup'
 import JpKeyboardInput from '../components/japanese/keyboard/JpKeyboardInput'
 import { api } from '../lib/api'
@@ -12,23 +13,387 @@ import { usePersistedState } from '../lib/navState'
 import { usePlayer } from '../lib/player'
 import { mediaUrl } from '@shared/mediaUrl'
 import { diffChars, normalizeDictation, readingsKey } from '@shared/dictation'
-import type { AudioSentence } from '@shared/types'
+import { shuffle } from '@shared/shuffle'
+import { usePitchRecorder, type Take } from '../lib/usePitchRecorder'
+import type { AudioSentence, JpListeningItem } from '@shared/types'
 
-// Dictation (kind 'dictation'): a native Tatoeba recording plays, type what
-// you heard. Correctness compares kuromoji READINGS, so kanji and kana forms
-// both count; the reveal shows a per-character diff against the transcript.
-// Framed as listening practice — the diff matters more than the score.
+type ListeningTab = 'guided' | 'dictation'
 
 export default function JapaneseListenPage() {
-  const [length, setLength] = usePersistedState<number>('jpDictationLength', 5)
-  const [items, setItems] = useState<AudioSentence[] | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-
+  const [tab, setTab] = usePersistedState<ListeningTab>('jpListeningTab', 'guided')
   const { data: bank, isLoading } = useQuery({
     queryKey: qk.dict.sentenceAudioBank,
     queryFn: () => api.dict.sentenceAudioBank()
   })
+
+  return (
+    <div className="p-6 max-w-2xl mx-auto">
+      <PageHeader
+        back={{ to: '/japanese', label: 'Japanese' }}
+        title="Listening"
+        subtitle="Train comprehension first, then compare your own shadowing with a native recording."
+      />
+
+      {!isLoading && !bank ? (
+        <EmptyState
+          title="Sentence audio not installed"
+          body="Download the Tatoeba sentence audio in Settings → Dictionaries (needs the example-sentence bank)."
+          action={
+            <Link to="/settings" className="btn-primary">
+              Open Settings
+            </Link>
+          }
+        />
+      ) : (
+        <>
+          <Tabs
+            tabs={[
+              { key: 'guided', label: 'Guided listening' },
+              { key: 'dictation', label: 'Dictation' }
+            ]}
+            value={tab}
+            onChange={setTab}
+            className="mb-5"
+          />
+          {tab === 'guided' ? <GuidedListening /> : <DictationSetup />}
+        </>
+      )}
+    </div>
+  )
+}
+
+function GuidedListening() {
+  const [mode, setMode] = usePersistedState<'known' | 'one'>('jpListeningMode', 'known')
+  const [includeLearning, setIncludeLearning] = usePersistedState<boolean>(
+    'jpListeningIncludeLearning',
+    false
+  )
+  const [length, setLength] = usePersistedState<number>('jpListeningLength', 5)
+  const [items, setItems] = useState<JpListeningItem[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  async function start(): Promise<void> {
+    setError(null)
+    setLoading(true)
+    try {
+      const sample = await api.japanese.listeningPool({
+        mode,
+        includeLearning,
+        limit: length,
+        maxChars: 45
+      })
+      if (sample.length === 0) {
+        setError(
+          mode === 'known'
+            ? 'No all-known recordings matched yet. Include learning cards or try one-new-word mode.'
+            : 'No one-new-word recordings matched yet. Build your known-word base or try all-known mode.'
+        )
+        return
+      }
+      setItems(sample)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (items) return <GuidedRound items={items} mode={mode} onExit={() => setItems(null)} />
+
+  return (
+    <div>
+      <div className="card p-5 space-y-5">
+        <Group label="Difficulty">
+          <Pill active={mode === 'known'} onClick={() => setMode('known')} label="All known" />
+          <Pill active={mode === 'one'} onClick={() => setMode('one')} label="One new word" />
+        </Group>
+        <label className="flex cursor-pointer items-start gap-2.5">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={includeLearning}
+            onChange={(e) => setIncludeLearning(e.target.checked)}
+          />
+          <span className="text-sm">
+            Count learning cards as known
+            <span className="block text-xs text-gray-500">
+              Off is stricter: only graduated review cards count.
+            </span>
+          </span>
+        </label>
+        <Group label="Sentences">
+          <Pill active={length === 5} onClick={() => setLength(5)} label="5" />
+          <Pill active={length === 10} onClick={() => setLength(10)} label="10" />
+        </Group>
+        <p className="text-sm text-gray-400">
+          Hear the sentence before seeing it, choose its meaning, then reveal the transcript and
+          shadow it. Pronunciation is self-compared; the app does not pretend to grade your accent.
+        </p>
+        {error && <p className="text-sm text-red-400">{error}</p>}
+        <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
+          {loading ? 'Matching recordings…' : 'Start guided listening'}
+        </button>
+      </div>
+      <QuizRecord kind="listening" />
+    </div>
+  )
+}
+
+function GuidedRound({
+  items,
+  mode,
+  onExit
+}: {
+  items: JpListeningItem[]
+  mode: 'known' | 'one'
+  onExit: () => void
+}) {
+  const qc = useQueryClient()
+  const player = usePlayer()
+  const recorder = usePitchRecorder()
+  const audioRef = useRef<HTMLAudioElement | null>(null)
+  const [index, setIndex] = useState(0)
+  const [options, setOptions] = useState<string[]>([])
+  const [picked, setPicked] = useState<number | null>(null)
+  const [revealed, setRevealed] = useState(false)
+  const [score, setScore] = useState(0)
+  const [take, setTake] = useState<Take | null>(null)
+  const [shadowed, setShadowed] = useState<Set<number>>(() => new Set())
+  const [finished, setFinished] = useState(false)
+  const loggedRef = useRef(false)
+  const current = items[index] ?? null
+
+  function playClip(): void {
+    if (!current) return
+    audioRef.current?.pause()
+    const url = mediaUrl(current.audioPath)
+    if (!url) return
+    const audio = new Audio(url)
+    audioRef.current = audio
+    void audio.play().catch(() => {})
+  }
+
+  function choicesFor(item: JpListeningItem): string[] {
+    const wrong = shuffle([...new Set(items.map((x) => x.en).filter((x) => x !== item.en))]).slice(
+      0,
+      3
+    )
+    return shuffle([item.en, ...wrong])
+  }
+
+  useEffect(() => {
+    if (player.isPlaying) player.toggle()
+    return () => {
+      audioRef.current?.pause()
+      audioRef.current = null
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    if (!current) return
+    setOptions(choicesFor(current))
+    playClip()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [index])
+
+  useEffect(() => {
+    if (recorder.status !== 'recording') return
+    const timer = window.setTimeout(() => {
+      const nextTake = recorder.stop()
+      setTake(nextTake)
+      if (nextTake) setShadowed((prev) => new Set(prev).add(index))
+    }, 12000)
+    return () => window.clearTimeout(timer)
+  }, [recorder.status, recorder.stop, index])
+
+  useEffect(() => {
+    if (!finished || loggedRef.current) return
+    loggedRef.current = true
+    void api.quiz
+      .logSession({
+        kind: 'listening',
+        score,
+        total: items.length,
+        bestStreak: 0,
+        settings: { mode, length: items.length, shadowed: shadowed.size }
+      })
+      .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('listening') }))
+  }, [finished, items.length, mode, qc, score, shadowed.size])
+
+  function choose(i: number): void {
+    if (!current || revealed) return
+    setPicked(i)
+    if (options[i] === current.en) setScore((n) => n + 1)
+    setRevealed(true)
+  }
+
+  function reveal(): void {
+    if (revealed) return
+    setPicked(-1)
+    setRevealed(true)
+  }
+
+  function advance(): void {
+    if (recorder.status === 'recording') {
+      const nextTake = recorder.stop()
+      if (nextTake) setShadowed((prev) => new Set(prev).add(index))
+    }
+    if (index + 1 >= items.length) {
+      setFinished(true)
+      return
+    }
+    setIndex((i) => i + 1)
+    setPicked(null)
+    setRevealed(false)
+    setTake(null)
+  }
+
+  function stopRecording(): void {
+    const nextTake = recorder.stop()
+    setTake(nextTake)
+    if (nextTake) setShadowed((prev) => new Set(prev).add(index))
+  }
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent): void {
+      const target = e.target as HTMLElement
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return
+      const n = Number(e.key)
+      if (!revealed && n >= 1 && n <= options.length) {
+        e.preventDefault()
+        choose(n - 1)
+      } else if (revealed && e.key === 'Enter') {
+        e.preventDefault()
+        advance()
+      } else if (e.key === 'r' || e.key === 'R') {
+        e.preventDefault()
+        playClip()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revealed, options, index, recorder.status])
+
+  if (finished) {
+    return (
+      <div className="card p-8 text-center">
+        <p className="text-sm uppercase tracking-widest text-gray-500">Listening complete</p>
+        <p className="mt-3 text-5xl font-bold">
+          {score}
+          <span className="text-2xl text-gray-500"> / {items.length}</span>
+        </p>
+        <p className="mt-2 text-sm text-gray-400">Shadowed {shadowed.size} sentences</p>
+        <div className="mt-6 flex gap-2">
+          <button className="btn-primary flex-1" onClick={onExit}>
+            Again
+          </button>
+          <Link to="/japanese" className="btn-ghost flex-1 text-center">
+            Back
+          </Link>
+        </div>
+      </div>
+    )
+  }
+  if (!current) return null
+
+  const surface = current.unknownSurface
+  const at = surface ? current.jp.indexOf(surface) : -1
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between text-sm">
+        <span className="font-medium">
+          Sentence {index + 1} of {items.length}
+        </span>
+        <div className="flex items-center gap-4 text-gray-400">
+          <span>Score {score}/{index + (revealed ? 1 : 0)}</span>
+          <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setFinished(true)}>
+            End
+          </button>
+        </div>
+      </div>
+
+      <div className="card p-6 text-center">
+        <p className="mb-3 text-sm text-gray-400">Listen before reading</p>
+        <button className="btn-ghost" onClick={playClip}>Replay (R)</button>
+      </div>
+
+      {!revealed ? (
+        <div className="mt-4 space-y-2">
+          {options.map((option, i) => (
+            <button
+              key={option}
+              className="card block w-full p-3 text-left hover:border-accent"
+              onClick={() => choose(i)}
+            >
+              <span className="mr-2 text-xs text-gray-500">{i + 1}</span>
+              {option}
+            </button>
+          ))}
+          <button className="btn-ghost mt-2" onClick={reveal}>Reveal transcript</button>
+        </div>
+      ) : (
+        <div className="card mt-4 p-5">
+          <p className={`text-xs font-semibold uppercase tracking-wide ${picked !== -1 && options[picked ?? -1] === current.en ? 'text-green-400' : 'text-amber-300'}`}>
+            {picked !== -1 && options[picked ?? -1] === current.en ? 'Meaning understood' : 'Study the transcript'}
+          </p>
+          <p className="mt-2 text-xl leading-relaxed">
+            {at >= 0 && surface ? (
+              <>
+                {current.jp.slice(0, at)}
+                <span className="rounded bg-amber-500/20 px-0.5 text-amber-200">{surface}</span>
+                {current.jp.slice(at + surface.length)}
+              </>
+            ) : current.jp}
+          </p>
+          <p className="mt-1 text-sm text-gray-400">{current.en}</p>
+          {current.unknownWord && (
+            <p className="mt-2 text-xs text-amber-300">New word: {current.unknownWord}</p>
+          )}
+          {current.attribution && (
+            <p className="mt-2 text-xs text-gray-600">Recording: {current.attribution}</p>
+          )}
+
+          <div className="mt-5 border-t border-base-700 pt-4">
+            <p className="text-sm font-medium">Shadow once, then compare</p>
+            <p className="mt-1 text-xs text-gray-500">
+              Replay the native sentence, imitate its timing and melody, then replay your take.
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button className="btn-ghost" onClick={playClip}>Native</button>
+              {recorder.status === 'recording' ? (
+                <button className="btn-primary" onClick={stopRecording}>
+                  Stop ({recorder.seconds.toFixed(1)}s)
+                </button>
+              ) : (
+                <button className="btn-ghost" onClick={() => void recorder.start()}>Record</button>
+              )}
+              {take && <button className="btn-ghost" onClick={() => recorder.replay(take)}>My take</button>}
+            </div>
+            {(recorder.status === 'denied' || recorder.status === 'no-mic' || recorder.status === 'error') && (
+              <p className="mt-2 text-xs text-amber-300">
+                Microphone unavailable. Shadow aloud without recording; it is optional.
+              </p>
+            )}
+          </div>
+          <button className="btn-primary mt-5" onClick={advance}>
+            {index + 1 >= items.length ? 'Finish (Enter)' : 'Next (Enter)'}
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Dictation (kind 'dictation'): a native Tatoeba recording plays, type what
+// you heard. Correctness compares kuromoji readings, so kanji and kana forms
+// both count; the reveal shows a per-character diff against the transcript.
+function DictationSetup() {
+  const [length, setLength] = usePersistedState<number>('jpDictationLength', 5)
+  const [items, setItems] = useState<AudioSentence[] | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   async function start(): Promise<void> {
     setError(null)
@@ -45,25 +410,7 @@ export default function JapaneseListenPage() {
     }
   }
 
-  return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <PageHeader
-        back={{ to: '/japanese', label: 'Japanese' }}
-        title="Dictation"
-        subtitle="Listen to a real sentence, type what you heard."
-      />
-
-      {!isLoading && !bank ? (
-        <EmptyState
-          title="Sentence audio not installed"
-          body="Download the Tatoeba sentence audio in Settings → Dictionaries (needs the example-sentence bank)."
-          action={
-            <Link to="/settings" className="btn-primary">
-              Open Settings
-            </Link>
-          }
-        />
-      ) : items ? (
+  return items ? (
         <DictationRound items={items} onExit={() => setItems(null)} />
       ) : (
         <div>
@@ -79,9 +426,7 @@ export default function JapaneseListenPage() {
           </div>
           <QuizRecord kind="dictation" />
         </div>
-      )}
-    </div>
-  )
+      )
 }
 
 function DictationRound({ items, onExit }: { items: AudioSentence[]; onExit: () => void }) {

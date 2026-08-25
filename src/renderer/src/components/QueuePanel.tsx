@@ -143,7 +143,7 @@ export function EditButton({
 // The heart, on a queue row. Only library tracks have one: the queue also
 // carries `theme-` / `quiz-` / `tourney-` / `file-` ids, none of which have a
 // music_track row to like. Returns the numeric id, or null for those.
-function musicIdOf(trackId: string): number | null {
+export function musicIdOf(trackId: string): number | null {
   // Anchored digits, not Number(): Number('') is 0 and passes isFinite, so a
   // bare `music-` id would have rendered a heart writing against track 0.
   const m = /^music-(\d+)$/.exec(trackId)
@@ -164,7 +164,15 @@ export function useLikedTrackIds(): Set<number> {
   return useMemo(() => new Set((data ?? []).map((t) => t.id)), [data])
 }
 
-function QueueLikeButton({ trackId, likedIds }: { trackId: number; likedIds: Set<number> }) {
+export function QueueLikeButton({
+  trackId,
+  likedIds,
+  prominent = false
+}: {
+  trackId: number
+  likedIds: Set<number>
+  prominent?: boolean
+}) {
   const qc = useQueryClient()
   const source = likedIds.has(trackId)
   const [liked, setLiked] = useState(source)
@@ -188,15 +196,32 @@ function QueueLikeButton({ trackId, likedIds }: { trackId: number; likedIds: Set
   const label = liked ? 'Remove from Liked Songs' : 'Add to Liked Songs'
   return (
     <button
-      className={`px-1 text-sm ${
-        liked ? 'text-accent' : 'text-gray-600 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
-      } hover:text-accent`}
+      className={
+        prominent
+          ? liked
+            ? 'pill pill-active gap-2'
+            : 'pill gap-2 text-gray-400'
+          : `px-1 text-sm ${
+              liked
+                ? 'text-accent'
+                : 'text-gray-600 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
+            } hover:text-accent`
+      }
       title={label}
       aria-label={label}
       aria-pressed={liked}
       onClick={(e) => void toggle(e)}
     >
-      {liked ? '♥' : '♡'}
+      {prominent ? (
+        <>
+          <span aria-hidden="true">♥</span>
+          <span>{liked ? 'Liked' : 'Like'}</span>
+        </>
+      ) : liked ? (
+        '♥'
+      ) : (
+        '♡'
+      )}
     </button>
   )
 }

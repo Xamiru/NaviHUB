@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
+import QuietWorkspace from '../components/QuietWorkspace'
 
 export default function JapaneseCourseFormPage() {
   const { id } = useParams()
@@ -62,6 +63,10 @@ export default function JapaneseCourseFormPage() {
     <div className="p-6 max-w-xl mx-auto">
       <PageHeader back="history" title={editing ? 'Edit course' : 'New course'} />
 
+      <QuietWorkspace
+        title="Course structure"
+        description="A calm editor for the course name, scope and its place in the knowledge map."
+      >
       <div className="space-y-4">
         <div>
           <label className="label">Title</label>
@@ -114,6 +119,7 @@ export default function JapaneseCourseFormPage() {
           {saving ? 'Saving…' : editing ? 'Save changes' : 'Create course'}
         </button>
       </div>
+      </QuietWorkspace>
     </div>
   )
 }

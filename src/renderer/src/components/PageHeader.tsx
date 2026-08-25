@@ -28,7 +28,7 @@ export default function PageHeader({
   return (
     <>
       {back === 'history' && <BackButton />}
-      <div className={className}>
+      <div className={`${className} border-b border-base-700 pb-4`}>
         {back && back !== 'history' && (
           <Link to={back.to} className="text-sm text-gray-500 hover:text-gray-300">
             ← {back.label}
@@ -39,13 +39,17 @@ export default function PageHeader({
             {eyebrow}
           </div>
         )}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className={`text-2xl font-bold ${(back && back !== 'history') || eyebrow ? 'mt-1' : ''}`}>
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h1
+            className={`text-3xl font-semibold tracking-tight text-white ${
+              (back && back !== 'history') || eyebrow ? 'mt-1' : ''
+            }`}
+          >
             {title}
           </h1>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
-        {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1.5 max-w-4xl text-sm leading-relaxed text-gray-400">{subtitle}</p>}
       </div>
     </>
   )

@@ -17,6 +17,7 @@ import {
   type ProgQuizQuestion
 } from '@shared/programming/quizPools'
 import { shuffle } from '@shared/shuffle'
+import StudySessionFrame, { SessionFeedback } from '../components/StudySessionFrame'
 
 // Multiple-choice quiz over the programming section. Three pools, all built
 // entirely in the renderer from the code catalog (@shared/programming/
@@ -329,21 +330,35 @@ export default function ProgrammingQuizPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-        <span className="tabular-nums">
-          {stats.total}
-          {lengthRef.current > 0 ? ` / ${lengthRef.current}` : ''} · {stats.score} correct
-        </span>
-        <span>
-          streak {stats.streak}
+    <StudySessionFrame
+      title="Programming challenge"
+      subtitle={current?.context ?? 'Skill graph recall'}
+      progress={
+        lengthRef.current > 0
+          ? { current: stats.total, total: lengthRef.current, label: `${stats.score} correct` }
+          : undefined
+      }
+      actions={
+        <>
+          <span className="text-xs text-gray-400">Streak {stats.streak}</span>
           <button className="btn-ghost ml-3 px-2 py-0.5 text-xs" onClick={endGame}>
             End quiz
           </button>
-        </span>
-      </div>
+        </>
+      }
+      feedback={
+        answered && current?.explain ? (
+          <SessionFeedback
+            tone={picked === current.correct ? 'correct' : 'incorrect'}
+            title={picked === current.correct ? 'Correct' : 'Review this answer'}
+          >
+            {current.explain}
+          </SessionFeedback>
+        ) : undefined
+      }
+    >
 
-      <div className="card p-5">
+      <div>
         {current?.context && (
           <p className="mb-2 text-xs uppercase tracking-widest text-gray-600">{current.context}</p>
         )}
@@ -377,10 +392,6 @@ export default function ProgrammingQuizPage() {
         })}
       </div>
 
-      {answered && current?.explain && (
-        <p className="mt-3 text-sm text-gray-400">{current.explain}</p>
-      )}
-
       <div className="mt-4 flex justify-end gap-2">
         {!answered ? (
           <button className="btn-ghost" onClick={() => handleAnswer(null)}>
@@ -393,7 +404,6 @@ export default function ProgrammingQuizPage() {
           </button>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }
-

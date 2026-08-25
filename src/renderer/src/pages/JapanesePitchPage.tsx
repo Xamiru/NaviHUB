@@ -14,6 +14,7 @@ import type { PitchPoolItem } from '@shared/types'
 import MinimalPairsDrill from '../components/japanese/MinimalPairsDrill'
 import SpeakDrill from '../components/japanese/SpeakDrill'
 import { shuffle } from '@shared/shuffle'
+import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../components/StudySessionFrame'
 
 // Pitch accent training, TheMoeWay's optional-but-recommended pillar. Two
 // halves: the KNOWLEDGE quiz (see a word, pick its contour — Kanjium data) and
@@ -31,7 +32,7 @@ export default function JapanesePitchPage() {
   )
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-[1320px] mx-auto">
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Pitch Accent"
@@ -247,6 +248,7 @@ function PatternQuizSetup() {
   if (phase === 'summary') {
     const accuracy = stats.total ? Math.round((stats.score / stats.total) * 100) : 0
     return (
+      <StudySessionFrame title="Pitch quiz results" subtitle="Contour recognition summary" surface={false}>
       <div className="card p-8 text-center">
         <p className="text-sm uppercase tracking-widest text-gray-500">Quiz complete</p>
         <p className="mt-3 text-5xl font-bold">
@@ -266,6 +268,7 @@ function PatternQuizSetup() {
           </Link>
         </div>
       </div>
+      </StudySessionFrame>
     )
   }
 
@@ -275,23 +278,34 @@ function PatternQuizSetup() {
   const qNum = answered ? stats.total : stats.total + 1
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between text-sm">
-        <span className="font-medium">
-          Question {qNum}
-          {lengthRef.current > 0 ? ` of ${lengthRef.current}` : ''}
-        </span>
-        <div className="flex items-center gap-4 text-gray-400">
-          <span>
-            Score {stats.score}/{stats.total}
-          </span>
-          <span>Streak {stats.streak}</span>
-          <button className="btn-ghost py-1 px-2 text-xs" onClick={endGame}>
-            End quiz
-          </button>
-        </div>
-      </div>
-
+    <StudySessionFrame
+      title="Pitch quiz"
+      subtitle={lengthRef.current > 0 ? `Question ${qNum} of ${lengthRef.current}` : `Question ${qNum}`}
+      progress={lengthRef.current > 0 ? { current: qNum, total: lengthRef.current, label: 'Round' } : undefined}
+      actions={<button className="btn-ghost" onClick={endGame}>End quiz</button>}
+      rail={
+        <>
+          <SessionEvidence title="Session evidence">
+            <p>Score: {stats.score}/{stats.total}</p>
+            <p>Current streak: {stats.streak}</p>
+            <p>Best streak: {stats.best}</p>
+          </SessionEvidence>
+          <SessionEvidence title="Keyboard">
+            Keys 1-4 choose a contour. Enter advances after the accepted patterns appear.
+          </SessionEvidence>
+        </>
+      }
+      feedback={
+        answered ? (
+          <SessionFeedback
+            tone={picked !== null && item.positions.includes(picked) ? 'correct' : 'incorrect'}
+            title={picked !== null && item.positions.includes(picked) ? 'Correct' : picked === null ? 'Skipped' : 'Incorrect'}
+          >
+            Accepted {item.positions.length > 1 ? 'attested variants are shown below.' : 'pattern is shown below.'}
+          </SessionFeedback>
+        ) : undefined
+      }
+    >
       <div className="card p-8 text-center">
         <p className="text-xs uppercase tracking-widest text-gray-500">
           How is this word said?
@@ -370,6 +384,6 @@ function PatternQuizSetup() {
           </button>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

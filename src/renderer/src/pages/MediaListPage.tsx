@@ -68,6 +68,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   const [favOnly, setFavOnly] = usePersistedState('favOnly', false)
   const [filters, setFilters] = usePersistedState<MediaFilters>('filters', EMPTY_FILTERS)
   const [showFilters, setShowFilters] = usePersistedState('showFilters', false)
+  const [contextId, setContextId] = useState<number | null>(null)
   // `?import=1` opens the dialog on arrival (the one-shot `?tab=` idiom), so
   // Home's Import chip lands on the importer instead of just this list.
   const [params] = useSearchParams()
@@ -107,6 +108,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
     queryKey: qk.media.list(filter),
     queryFn: () => api.media.list(filter)
   })
+  const contextItem = items.find((item) => item.id === contextId) ?? items[0]
   // Big libraries render in scroll-fed batches, same as the entity grids.
   const { visible, sentinelRef, hasMore } = useIncrementalList(items)
 
@@ -364,16 +366,25 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
               {items.length} of {total} {cfg.plural.toLowerCase()} match
             </p>
           )}
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
-            {visible.map((m) => (
-              <MediaCard
-                key={m.id}
-                cfg={cfg}
-                item={m}
-                showFavorite
-                achievements={achievementSummaries?.[m.id]}
-              />
-            ))}
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(145px,1fr))] gap-4">
+              {visible.map((m) => (
+                <div
+                  key={m.id}
+                  onMouseEnter={() => setContextId(m.id)}
+                  onFocusCapture={() => setContextId(m.id)}
+                  className={contextItem?.id === m.id ? 'rounded-lg ring-1 ring-accent/60' : ''}
+                >
+                  <MediaCard
+                    cfg={cfg}
+                    item={m}
+                    showFavorite
+                    achievements={achievementSummaries?.[m.id]}
+                  />
+                </div>
+              ))}
+            </div>
+            <ContextLens item={contextItem} cfg={cfg} />
           </div>
           <div ref={sentinelRef} />
           {hasMore && (
@@ -384,6 +395,70 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
         </>
       )}
     </div>
+  )
+}
+
+function ContextLens({ item, cfg }: { item: MediaItem; cfg: MediaConfig }) {
+  const year = item.releaseDate?.slice(0, 4)
+  return (
+    <aside className="card sticky top-5 hidden overflow-hidden lg:block">
+      <div className="relative h-48 overflow-hidden bg-base-700">
+        <CoverImage
+          path={item.coverPath}
+          alt=""
+          rounded=""
+          className="h-full w-full scale-110 opacity-45 blur-lg"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/30 to-transparent" />
+        <CoverImage
+          path={item.coverPath}
+          alt={item.title}
+          rounded="rounded-md"
+          className="absolute bottom-4 left-5 h-32 w-[86px] shadow-xl"
+        />
+      </div>
+      <div className="p-5">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+          Context lens
+        </p>
+        <h2 className="mt-2 line-clamp-2 text-2xl font-semibold leading-tight text-white">
+          {item.title}
+        </h2>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {item.status && <span className="chip">{item.status}</span>}
+          {item.score != null && <span className="chip">Score {item.score}</span>}
+          {year && <span className="chip">{year}</span>}
+        </div>
+        <div className="mt-5 grid grid-cols-2 gap-3 border-y border-base-700 py-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Progress</p>
+            <p className="mt-1 text-sm text-gray-200">{cfg.formatProgressStat(item)}</p>
+          </div>
+          <div>
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Archive</p>
+            <p className="mt-1 text-sm text-gray-200">{cfg.singular}</p>
+          </div>
+        </div>
+        {item.synopsis && (
+          <p className="mt-4 line-clamp-4 text-sm leading-relaxed text-gray-400">{item.synopsis}</p>
+        )}
+        <Link to={`${cfg.basePath}/${item.id}`} className="btn-ghost mt-5 w-full">
+          Open detail
+        </Link>
+        {cfg.children.length > 0 && (
+          <div className="mt-5 border-t border-base-700 pt-4">
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Connected locally</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {cfg.children.slice(0, 3).map((child) => (
+                <Link key={child.to} to={child.to} className="pill">
+                  {child.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </aside>
   )
 }
 
@@ -430,5 +505,3 @@ function ActiveChip({ label, onClear }: { label: string; onClear: () => void }) 
 
 // MediaCard moved to components/MediaCard.tsx; re-exported for old importers.
 export { default as MediaCard } from '../components/MediaCard'
-
-

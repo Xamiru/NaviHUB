@@ -160,7 +160,10 @@ function Hero({
         {total > 0 && <span className="ml-auto text-sm tabular-nums text-gray-400">{pct}%</span>}
       </div>
       <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-base-900/60">
-        <div className="h-full bg-accent transition-[width]" style={{ width: `${pct}%` }} />
+        <div
+          className="h-full bg-accent transition-[width] motion-reduce:transition-none"
+          style={{ width: `${pct}%` }}
+        />
       </div>
       <div className="mt-4 flex flex-wrap gap-2">
         <span className="chip">

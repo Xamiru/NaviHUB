@@ -78,15 +78,15 @@ export default function TierListEditorPage() {
   const totalItems = board.rows.reduce((n, g) => n + g.items.length, 0) + board.pool.length
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="mx-auto max-w-[1600px] p-4 sm:p-6">
       <PageHeader
         back="history"
         title={board.title}
         subtitle={
           <>
             {board.description && <span className="block text-gray-400">{board.description}</span>}
-            {KIND_LABEL[board.kind]} · {totalItems}{' '}
-            {totalItems === 1 ? 'item' : 'items'} · drag covers between the tiers
+            {KIND_LABEL[board.kind]} / {totalItems}{' '}
+            {totalItems === 1 ? 'item' : 'items'} / drag covers between tiers
           </>
         }
         actions={
@@ -95,17 +95,17 @@ export default function TierListEditorPage() {
               {exporting ? 'Rendering…' : 'Export PNG'}
             </button>
             <button className="btn-ghost" onClick={() => setEditingRows(true)}>
-              Edit tiers…
+              Edit tiers
             </button>
             <Link to={`/lists/tier/${listId}/edit`} className="btn-ghost">
               Edit
             </Link>
-            <ActionMenu items={[{ label: 'Delete…', onSelect: del, danger: true }]} />
+            <ActionMenu items={[{ label: 'Delete', onSelect: del, danger: true }]} />
           </>
         }
       />
 
-      <div className="mb-5">
+      <div className="mb-6 border-b border-base-700 pb-5">
         <UniversalPicker
           kind={board.kind}
           excludeIds={[
@@ -232,7 +232,7 @@ function EditRowsDialog({
                 title="Move up"
                 aria-label={`Move ${r.label || 'row'} up`}
               >
-                ▲
+                Up
               </button>
               <button
                 className="btn-ghost px-2 py-1"
@@ -241,7 +241,7 @@ function EditRowsDialog({
                 title="Move down"
                 aria-label={`Move ${r.label || 'row'} down`}
               >
-                ▼
+                Down
               </button>
               <button
                 className="px-2 text-gray-500 hover:text-red-400"
@@ -254,7 +254,7 @@ function EditRowsDialog({
             </div>
           ))}
           {draft.length === 0 && (
-            <p className="py-3 text-center text-sm text-gray-600">No tiers — add one below.</p>
+            <p className="py-3 text-center text-sm text-gray-600">No tiers. Add one below.</p>
           )}
         </div>
 
@@ -267,13 +267,10 @@ function EditRowsDialog({
             ])
           }
         >
-          + Add tier
+          Add tier
         </button>
 
         <div className="mt-5 flex justify-end gap-2">
-          <button className="btn-ghost" onClick={onClose}>
-            Cancel
-          </button>
           <button className="btn-primary" disabled={saving} onClick={save}>
             {saving ? 'Saving…' : 'Save tiers'}
           </button>

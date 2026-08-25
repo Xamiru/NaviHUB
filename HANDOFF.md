@@ -1,41 +1,32 @@
 # NaviHUB Handoff
 
-Status: Nine code-review findings fixed and automated validation complete.
+Status: Japanese tutor audit complete; adaptive Japanese Home preview awaiting user approval.
 
 ## Current goal
 
-Verify the review fixes in the running laptop app, then continue normal NaviHUB development.
+Implement the approved Japanese-learning improvements, beginning with backlog-aware daily pacing and a guided listening/output foundation.
 
 ## Completed
 
-- Quiz watched/reading scopes now exclude the positional final planned status, including renamed statuses and the default `Want to Watch` movie/TV label.
-- Voice-actor distractors exclude every character played by the answer actor.
-- Cancelled or outside tier-list drops restore the last persisted board; successful drops advance the rollback snapshot.
-- Cover thumbnails fall back from thumbnail to original to placeholder correctly.
-- Standalone achievement-popup tests expire and schedule the overlay idle close.
-- Tier-list save/delete navigation replaces stale routes.
-- Sidebar visibility controls block overlapping writes.
-- Tier-list PNG filesystem failures propagate to the existing error toast.
-- The obsolete `HANDOFF.md.orig` patch backup was removed.
+- Audited the Japanese curriculum, SRS, roadmap, mining, reading, listening, drills and stats as a reading-focused language course.
+- Recommended adaptive daily pacing, a known-word listening/shadowing feed, controlled sentence production, curriculum wording fixes and graded-reading expansion.
+- Built the required local UI preview at `previews/japanese-today.html` using the real NaviHUB theme and shell.
+- Preview build reports 136 class tokens and zero missing CSS rules.
 
 ## Next action
 
-- On the laptop, run the UI checks below against the built app.
+- Get user approval or revisions for `previews/japanese-today.html`.
+- After approval, port the adaptive Home design into React, then design/implement the listening flow using the `add-ipc` contract where new backend data is needed.
 
-## Validation
+## Preview notes
 
-- Focused regression set passes: 6 files, 74 tests.
-- `npm run typecheck` passes.
-- Full suite passes: 174 test files, 2,372 tests.
-- `npm run build` passes.
-
-## UI verification
-
-- Not run on the headless VPS. On the laptop, check: watched-only quizzes exclude planned movies/TV; a multi-role voice actor never produces two correct options; cancelling a cross-tier drag restores the tile; a missing thumbnail and source show the placeholder; the achievement popup test disappears and its overlay closes; tier-list edit/delete Back navigation is correct; rapid sidebar visibility clicks preserve each accepted change; PNG export reports a filesystem failure.
+- All counts and the current lesson/title in the mockup are sample data.
+- The proposed behavior does not lock lessons: it withholds the next-lesson recommendation while unseen cards remain, but keeps a `Study the next lesson anyway` override.
+- The full tool catalog remains available under four compact category cards.
 
 ## Working-tree notes
 
-- The repository contains substantial pre-existing user changes plus this review-fix set.
-- New regression coverage is in `tests/libraryQuizStatus.test.ts`, `tests/quizDistractors.test.ts`, and `tests/achievementWatcher.test.ts`.
-- `CLAUDE.md` and `AGENTS.md` remain byte-identical and were not changed for these fixes.
+- The repository still contains substantial pre-existing user changes.
+- `previews/` is gitignored and the preview is local-only.
+- No production source files were changed for this design milestone.
 - Git mutations remain the user's responsibility.

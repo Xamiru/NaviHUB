@@ -40,9 +40,15 @@ export default function ProgCoursePage() {
       />
 
       <div className="card mb-5 flex items-center justify-between gap-3 p-4">
-        <p className="text-sm text-gray-400">
-          {doneCount} / {course.lessons.length} lessons completed
-        </p>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3 text-sm text-gray-400">
+            <span>{doneCount} / {course.lessons.length} lessons completed</span>
+            <span className="tabular-nums">{Math.round((doneCount / course.lessons.length) * 100)}%</span>
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-base-700">
+            <div className="h-full bg-accent" style={{ width: `${(doneCount / course.lessons.length) * 100}%` }} />
+          </div>
+        </div>
         {next ? (
           <Link
             to={`/programming/course/${course.key}/${next.key}`}
@@ -55,7 +61,7 @@ export default function ProgCoursePage() {
         )}
       </div>
 
-      <ol className="space-y-1.5">
+      <ol className="relative space-y-2 before:absolute before:bottom-6 before:left-[27px] before:top-6 before:w-px before:bg-base-700">
         {course.lessons.map((l, i) => {
           const fullKey = progLessonKey(course.key, l.key)
           const isDone = done.has(fullKey)
@@ -66,8 +72,8 @@ export default function ProgCoursePage() {
                 to={`/programming/course/${course.key}/${l.key}`}
                 className="card flex items-center gap-3 p-3 hover:bg-base-700/50"
               >
-                <span className="w-7 shrink-0 text-right text-sm tabular-nums text-gray-600">
-                  {i + 1}.
+                <span className={`relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border bg-base-800 text-xs tabular-nums ${isDone ? 'border-accent text-accent' : 'border-base-600 text-gray-500'}`}>
+                  {i + 1}
                 </span>
                 <span className={`min-w-0 flex-1 text-sm ${isDone ? 'text-gray-400' : ''}`}>
                   {l.title}

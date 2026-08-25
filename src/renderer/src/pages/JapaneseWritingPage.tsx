@@ -16,6 +16,7 @@ import type { JpCard } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
 import { orderByComponent } from '@shared/kanjiGroups'
 import { Group, Pill } from '../components/PillGroup'
+import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../components/StudySessionFrame'
 
 // Write the kanji, don't just read it. Prompts with the meaning and readings,
 // then checks each drawn stroke against KanjiVG's reference in order — so
@@ -39,7 +40,7 @@ export default function JapaneseWritingPage() {
   const [settings, setSettings] = useState<Record<string, unknown>>({})
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-[1320px] p-6">
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Writing drill"
@@ -313,6 +314,7 @@ function Drill({
 
   if (done) {
     return (
+      <StudySessionFrame title="Writing drill results" subtitle="First-try stroke recall" surface={false}>
       <div className="card p-6 text-center">
         <p className="text-lg font-medium">Round complete</p>
         <p className="mt-1 text-sm text-gray-400">
@@ -324,6 +326,7 @@ function Drill({
           </button>
         </div>
       </div>
+      </StudySessionFrame>
     )
   }
 
@@ -385,17 +388,25 @@ function Drill({
   }
 
   return (
-    <div>
-      <div className="mb-3 flex items-baseline justify-between">
-        <p className="text-sm text-gray-400">
-          {index + 1} / {queue.length} · stroke {strokeIndex + 1} of {item.strokes.length}
-        </p>
-        <p className="text-xs text-gray-500">
-          {correct} correct · streak {streak}
-        </p>
-      </div>
-
-      <div className="card p-5">
+    <StudySessionFrame
+      title="Kanji writing"
+      subtitle={`Stroke ${strokeIndex + 1} of ${item.strokes.length}`}
+      progress={{ current: index + 1, total: queue.length, label: 'Character' }}
+      actions={<button className="btn-ghost" onClick={onExit}>End drill</button>}
+      rail={
+        <>
+          <SessionEvidence title="Session evidence">
+            <p>{correct} first-try correct</p>
+            <p>Current streak: {streak}</p>
+            <p>Best streak: {bestStreak}</p>
+          </SessionEvidence>
+          <SessionEvidence title="Stroke evidence">
+            Draw one stroke at a time. A hint appears after a miss; repeatedly missed characters return later.
+          </SessionEvidence>
+        </>
+      }
+      feedback={message ? <SessionFeedback tone="incorrect" title="Stroke feedback">{message}</SessionFeedback> : undefined}
+    >
         <p className="text-lg font-medium">{item.meaning}</p>
         {item.readings && <p className="mt-0.5 text-sm text-gray-400">{item.readings}</p>}
 
@@ -407,7 +418,6 @@ function Drill({
             onStroke={handleStroke}
           />
           <div className="min-w-0 flex-1">
-            {message && <p className="mb-2 text-sm text-amber-300">{message}</p>}
             <div className="flex flex-wrap gap-2">
               <button
                 className="btn-ghost"
@@ -437,12 +447,7 @@ function Drill({
             </div>
           </div>
         </div>
-      </div>
-
       <div className="mt-4 flex items-center justify-between">
-        <button className="btn-ghost" onClick={onExit}>
-          End drill
-        </button>
         <details className="text-sm">
           <summary className="cursor-pointer text-gray-500 hover:text-gray-300">Reveal the answer</summary>
           <div className="mt-2 flex items-center gap-3">
@@ -451,6 +456,6 @@ function Drill({
           </div>
         </details>
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

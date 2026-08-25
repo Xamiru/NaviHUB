@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import type { QuizKind } from '@shared/types'
+import StudySessionFrame, { SessionFeedback } from '../StudySessionFrame'
 
 // One answer slot in a library-MCQ question: a stable numeric key (what the
 // page compares against correctKey) plus its visual.
@@ -33,6 +34,13 @@ const TIMER_SECONDS = 20
 const AUTONEXT_MS = 3500
 
 const EMPTY_STATS: Stats = { score: 0, total: 0, streak: 0, best: 0 }
+
+const QUIZ_TITLE: Partial<Record<QuizKind, string>> = {
+  character: 'Character challenge',
+  va: 'Voice actor challenge',
+  synopsis: 'Synopsis challenge',
+  mangaPanel: 'Manga panel challenge'
+}
 
 interface Props {
   kind: QuizKind
@@ -167,9 +175,8 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
   if (done) {
     const accuracy = stats.total ? Math.round((stats.score / stats.total) * 100) : 0
     return (
-      <div className="p-6 max-w-lg mx-auto">
-        <div className="card p-10 text-center">
-          <p className="text-sm uppercase tracking-widest text-gray-500">Quiz complete</p>
+      <StudySessionFrame title="Quiz complete" subtitle={QUIZ_TITLE[kind] ?? 'Challenge broadcast'}>
+        <div className="py-3 text-center">
           <p className="mt-3 text-6xl font-bold">
             {stats.score}
             <span className="text-3xl text-gray-500"> / {stats.total}</span>
@@ -188,7 +195,7 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
             </Link>
           </div>
         </div>
-      </div>
+      </StudySessionFrame>
     )
   }
 
@@ -196,12 +203,12 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
   const isLast = idx + 1 >= questions.length
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-base">
-        <span className="font-medium">
-          Question {idx + 1} of {questions.length}
-        </span>
-        <div className="flex items-center gap-4 text-gray-400">
+    <StudySessionFrame
+      title={QUIZ_TITLE[kind] ?? 'Challenge broadcast'}
+      subtitle={timed ? `${TIMER_SECONDS} second timed round` : 'Library relationship challenge'}
+      progress={{ current: idx + 1, total: questions.length, label: 'Questions' }}
+      actions={
+        <>
           <span>
             Score {stats.score}/{stats.total}
           </span>
@@ -209,8 +216,19 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
           <button className="btn-ghost py-1 px-2 text-sm" onClick={endGame}>
             End quiz
           </button>
-        </div>
-      </div>
+        </>
+      }
+      feedback={
+        answered ? (
+          <SessionFeedback
+            tone={picked === q.correctKey ? 'correct' : 'incorrect'}
+            title={picked === q.correctKey ? 'Correct' : 'Answer revealed'}
+          >
+            Continue when you are ready. Enter advances without changing the scoring rules.
+          </SessionFeedback>
+        ) : undefined
+      }
+    >
 
       {timed && !answered && (
         <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-base-700">
@@ -223,7 +241,7 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
         </div>
       )}
 
-      <div className="card p-8">{q.prompt}</div>
+      <div>{q.prompt}</div>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {q.options.map((o, i) => {
@@ -266,6 +284,6 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
             </button>
           ))}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

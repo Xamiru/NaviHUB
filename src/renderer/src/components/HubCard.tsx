@@ -33,7 +33,8 @@ export default function HubCard({
       {meta && <p className="mt-3 text-xs text-gray-500">{meta}</p>}
     </>
   )
-  const cls = 'card group block p-4 text-left transition-colors hover:border-accent'
+  const cls =
+    'card group block h-full min-h-[126px] p-5 text-left transition-colors hover:border-accent hover:bg-base-700/60'
   return to ? (
     <Link to={to} className={cls}>
       {inner}

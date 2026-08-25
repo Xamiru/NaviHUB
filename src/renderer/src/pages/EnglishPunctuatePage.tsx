@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
 import QuizRecord from '../components/QuizRecord'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import { Group, Pill } from '../components/PillGroup'
 import { EN_PUNCTUATE } from '@shared/english/punctuateItems'
 import { EN_PUNCTUATE_FOCUS, type EnPunctuateFocus, type EnPunctuateItem } from '@shared/english/types'
@@ -119,23 +120,16 @@ export default function EnglishPunctuatePage() {
   if (phase === 'play') {
     const item = roundRef.current[index]
     return (
-      <div className="p-6 max-w-3xl mx-auto">
-        <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-          <span className="tabular-nums">
-            {index + 1} / {roundRef.current.length} · {perfect} perfect
-          </span>
-          <span>
-            streak {streak}
-            <button
-              className="btn-ghost ml-3 px-2 py-0.5 text-xs"
-              onClick={() => endGame(perfect, bestStreak, index)}
-            >
-              End round
-            </button>
-          </span>
-        </div>
+      <StudySessionFrame
+        title="Punctuate it"
+        subtitle={FOCUS_LABEL[item.focus]}
+        progress={{ current: index + 1, total: roundRef.current.length, label: 'Round' }}
+        actions={<button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => endGame(perfect, bestStreak, index)}>End round</button>}
+        rail={<SessionEvidence title="Mistake evidence"><p>{perfect} fully correct sentences.</p><p className="mt-2">Current streak {streak}; best streak {bestStreak}.</p></SessionEvidence>}
+        surface={false}
+      >
         <ItemCard key={item.key} item={item} onNext={next} />
-      </div>
+      </StudySessionFrame>
     )
   }
 

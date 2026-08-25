@@ -15,6 +15,8 @@ import { flattenGlossary } from '@shared/dictContent'
 import { mediaUrl } from '@shared/mediaUrl'
 import { transitivityPartner } from '@shared/transitivity'
 import type { DictEntry, GlossaryItem, KanjiInfo } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import ContextPanel, { ContextFact } from '../components/ContextPanel'
 
 // Standalone offline dictionary: search JMdict / KANJIDIC / pitch / grammar dicts
 // at once, see definitions with pitch and a kanji breakdown, and mine any entry
@@ -53,7 +55,21 @@ export default function JapaneseDictionaryPage() {
   })
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <EditorialDetailFrame
+      width="wide"
+      aside={
+        <ContextPanel title="Reference evidence" identity={debounced || 'dictionary-idle'}>
+          <ContextFact label="Dictionary packs">{dicts.length} installed</ContextFact>
+          <ContextFact label="Current lookup">
+            {debounced ? `${entries.length} matching entries` : 'Waiting for a search'}
+          </ContextFact>
+          <ContextFact label="Sentence evidence">
+            {sentenceBank ? 'Offline examples available' : 'Sentence bank not installed'}
+          </ContextFact>
+          <ContextFact label="Capture path">Open Mine on any result to add it to review.</ContextFact>
+        </ContextPanel>
+      }
+    >
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Dictionary"
@@ -90,7 +106,7 @@ export default function JapaneseDictionaryPage() {
           <ResultsList entries={entries} onSearch={setQuery} hasSentences={!!sentenceBank} />
         )}
       </div>
-    </div>
+    </EditorialDetailFrame>
   )
 }
 

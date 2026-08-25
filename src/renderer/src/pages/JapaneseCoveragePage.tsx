@@ -15,8 +15,8 @@ import { usePersistedState } from '../lib/navState'
 // this list reorders itself as study progresses.
 export default function JapaneseCoveragePage() {
   // 'known' = the repo's best-understood-first order; 'level' re-sorts by
-  // distance from the ~95% comprehensible-input sweet spot — "closest to my
-  // level" is what to read NEXT, not what's easiest.
+  // distance from the ~95% assisted-reading target. That is an intensive
+  // reading candidate, not a claim that 95% is comfortable unassisted.
   const [sort, setSort] = usePersistedState<'known' | 'level'>('jpCoverageSort', 'known')
   const { data: rows, isLoading } = useQuery({
     queryKey: qk.japanese.coverageList,
@@ -39,7 +39,7 @@ export default function JapaneseCoveragePage() {
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Comprehension"
-        subtitle="How much of each scanned series you can already read."
+        subtitle="How much of each scanned series you know, and what suits assisted reading."
       />
 
       <div className="mb-4">
@@ -48,7 +48,7 @@ export default function JapaneseCoveragePage() {
           <Pill
             active={sort === 'level'}
             onClick={() => setSort('level')}
-            label="Closest to my level"
+            label="Assisted target (~95%)"
           />
         </Group>
       </div>

@@ -9,6 +9,7 @@ import { useStatuses, useDebouncedValue, useIncrementalList } from '../lib/hooks
 import { usePlayer, type Track } from '../lib/player'
 import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
+import Section from '../components/Section'
 import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import MediaFilterPanel, {
   EMPTY_FILTERS,
@@ -40,7 +41,7 @@ const SORTS: { value: MediaSort; label: string }[] = [
 const newSeed = (): number => Math.floor(Math.random() * 1_000_000)
 
 function songTitle(s: ThemeSongEntry): string {
-  return s.slug ? `${s.slug} · ${s.title ?? 'Untitled'}` : (s.title ?? 'Untitled')
+  return s.slug ? `${s.slug} / ${s.title ?? 'Untitled'}` : (s.title ?? 'Untitled')
 }
 
 // Queue track. Keeps the `theme-<id>` id namespace the detail page and the
@@ -129,14 +130,14 @@ export default function ThemeSongsPage(): JSX.Element {
   }
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto">
+    <div className="mx-auto max-w-[1600px] p-4 sm:p-6">
       <PageHeader
-        title="Songs"
+        title="Theme song archive"
         subtitle={
           counts
             ? `${counts.playable} playable theme${counts.playable === 1 ? '' : 's'}${
                 counts.total > counts.playable ? ` of ${counts.total}` : ''
-              } · ${counts.favorites} favorite${counts.favorites === 1 ? '' : 's'}`
+              } / ${counts.favorites} favorite${counts.favorites === 1 ? '' : 's'}`
             : 'Anime openings and endings from your library'
         }
         actions={
@@ -152,7 +153,7 @@ export default function ThemeSongsPage(): JSX.Element {
       />
 
       {/* Anime status pills — multi-select, "All" clears (MediaListPage idiom) */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      <div className="mb-4 flex flex-wrap gap-2">
         <button
           onClick={() => setSelStatuses([])}
           className={selStatuses.length === 0 ? 'pill pill-active' : 'pill'}
@@ -172,7 +173,7 @@ export default function ThemeSongsPage(): JSX.Element {
         ))}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="mb-5 flex flex-wrap items-center gap-3 border-y border-base-700 py-4">
         <input
           className="input max-w-xs"
           placeholder="Search songs, artists, anime…"
@@ -222,7 +223,7 @@ export default function ThemeSongsPage(): JSX.Element {
         >
           Favorite anime
         </button>
-        <div className="flex items-center gap-2 ml-auto text-sm">
+        <div className="ml-auto flex items-center gap-2 text-sm">
           <span className="text-gray-500">Sort</span>
           <select
             className="input w-auto py-1.5"
@@ -250,7 +251,7 @@ export default function ThemeSongsPage(): JSX.Element {
               title="Toggle direction"
               aria-label="Toggle sort direction"
             >
-              {sortDir === 'asc' ? '↑' : '↓'}
+              {sortDir === 'asc' ? 'Ascending' : 'Descending'}
             </button>
           )}
         </div>
@@ -351,14 +352,16 @@ export default function ThemeSongsPage(): JSX.Element {
         </div>
       ) : (
         <>
-          <p className="mb-3 text-xs text-gray-400">
-            {songs.length} song{songs.length === 1 ? '' : 's'} queued by these filters
-          </p>
-          <div className="space-y-1.5">
-            {visible.map((s, i) => (
-              <SongRow key={s.themeId} song={s} onPlay={() => playAt(i)} />
-            ))}
-          </div>
+          <Section
+            title="Current selection"
+            subtitle={`${songs.length} song${songs.length === 1 ? '' : 's'} queued by these filters`}
+          >
+            <div className="card overflow-hidden p-0">
+              {visible.map((s, i) => (
+                <SongRow key={s.themeId} song={s} index={i} onPlay={() => playAt(i)} />
+              ))}
+            </div>
+          </Section>
           <div ref={sentinelRef} />
           {hasMore && (
             <p className="mt-4 text-center text-xs text-gray-400">
@@ -371,7 +374,7 @@ export default function ThemeSongsPage(): JSX.Element {
   )
 }
 
-function SongRow({ song, onPlay }: { song: ThemeSongEntry; onPlay: () => void }): JSX.Element {
+function SongRow({ song, index, onPlay }: { song: ThemeSongEntry; index: number; onPlay: () => void }): JSX.Element {
   const qc = useQueryClient()
   const player = usePlayer()
   const id = `theme-${song.themeId}`
@@ -392,20 +395,21 @@ function SongRow({ song, onPlay }: { song: ThemeSongEntry; onPlay: () => void })
   }
 
   return (
-    <div
-      className={`group flex items-center gap-3 rounded-md bg-base-800 px-3 py-2 ${
-        isCurrent ? 'ring-1 ring-accent/50' : ''
-      }`}
-    >
+    <div className={`group grid min-w-0 grid-cols-[40px_48px_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 ${
+      index ? 'border-t border-base-700' : ''
+    } ${isCurrent ? 'bg-accent/10 shadow-[inset_2px_0_0_0_rgb(var(--accent))]' : 'hover:bg-base-700/35'}`}>
       <button
         onClick={() => (isCurrent ? player.toggle() : onPlay())}
         title={isPlaying ? 'Pause' : 'Play'}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/15 text-sm text-accent hover:bg-accent/30"
+        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm ${
+          isCurrent ? 'bg-accent text-base-900' : 'border border-base-600 text-gray-300 hover:border-accent hover:text-accent'
+        }`}
+        aria-label={isPlaying ? `Pause ${song.title ?? 'theme song'}` : `Play ${song.title ?? 'theme song'}`}
       >
         {isPlaying ? <PauseIcon /> : <PlayIcon />}
       </button>
       <Link to={`/anime/${song.mediaId}`} className="shrink-0">
-        <CoverImage path={song.coverPath} alt={song.animeTitle} className="h-10 w-10" />
+        <CoverImage path={song.coverPath} alt={song.animeTitle} className="h-12 w-12 rounded" thumbWidth={96} />
       </Link>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
@@ -429,7 +433,7 @@ function SongRow({ song, onPlay }: { song: ThemeSongEntry; onPlay: () => void })
                   </Link>
                 </span>
               ))}
-              {' · '}
+              {' / '}
             </>
           )}
           <Link to={`/anime/${song.mediaId}`} className="hover:text-accent">
@@ -445,7 +449,7 @@ function SongRow({ song, onPlay }: { song: ThemeSongEntry; onPlay: () => void })
         aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
         onClick={toggleFavorite}
       >
-        {favorite ? '♥' : '♡'}
+          ♥
       </button>
     </div>
   )
@@ -462,7 +466,7 @@ function ActiveChip({ label, onClear }: { label: string; onClear: () => void }):
         aria-label={`Remove filter ${label}`}
         title={`Remove ${label}`}
       >
-        ×
+        ✕
       </button>
     </span>
   )

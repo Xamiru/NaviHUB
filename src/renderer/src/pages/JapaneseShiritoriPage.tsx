@@ -8,6 +8,7 @@ import { qk } from '../lib/queryKeys'
 import { toHiragana } from '@shared/kana'
 import { romajiToHiragana } from '@shared/romaji'
 import { chainKana, startsWithKana } from '@shared/shiritori'
+import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../components/StudySessionFrame'
 
 // Shiritori vs the dictionary (kind 'shiritori'): word-chain — your word must
 // start with the last kana of the app's word; ん ends the game. Validation is
@@ -143,13 +144,38 @@ export default function JapaneseShiritoriPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-6 max-w-[1320px] mx-auto">
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Shiritori"
         subtitle="Word chain against the dictionary. ん loses. Every reply teaches you a word."
       />
 
+      <StudySessionFrame
+        title="Current chain"
+        subtitle={`Next word starts with ${required}`}
+        surface={false}
+        actions={
+          outcome === null ? (
+            <button className="btn-ghost" onClick={() => endGame('gaveUp', last.expression)}>
+              Give up
+            </button>
+          ) : undefined
+        }
+        rail={
+          <>
+            <SessionEvidence title="Chain evidence">
+              <p>{userWords} accepted player words</p>
+              <p>{turns.length} total turns</p>
+              <p>Required kana: {required}</p>
+            </SessionEvidence>
+            <SessionEvidence title="Rules">
+              Enter a dictionary word beginning with the final kana. Repeats are rejected and a word ending in ん loses.
+            </SessionEvidence>
+          </>
+        }
+        feedback={note ? <SessionFeedback tone="incorrect" title="Word rejected">{note}</SessionFeedback> : undefined}
+      >
       <div className="card mb-4 max-h-[45vh] space-y-2 overflow-y-auto p-4">
         {turns.map((t, i) => (
           <div key={i} className={`flex ${t.who === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -202,14 +228,7 @@ export default function JapaneseShiritoriPage() {
             <button className="btn-primary shrink-0" disabled={busy} onClick={() => void submit()}>
               {busy ? '…' : 'Play'}
             </button>
-            <button
-              className="btn-ghost shrink-0"
-              onClick={() => endGame('gaveUp', last.expression)}
-            >
-              Give up
-            </button>
           </div>
-          {note && <p className="mt-2 text-center text-sm text-red-400">{note}</p>}
         </div>
       ) : (
         <div className="flex justify-center">
@@ -218,6 +237,7 @@ export default function JapaneseShiritoriPage() {
           </button>
         </div>
       )}
+      </StudySessionFrame>
 
       {history && history.recent.length > 0 && (
         <Section title="Your record" className="mt-8">

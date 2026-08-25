@@ -678,7 +678,7 @@ const KNOWN_INTERVAL_DAYS = 36500
 export const JP_QUIZ_KINDS: QuizKind[] = [
   'japanese', 'kana', 'kanji', 'conjugation', 'writing', 'jlpt',
   'pitch', 'pairs', 'components', 'grammar', 'names', 'numbers',
-  'dictation', 'shiritori', 'lookalike', 'transitivity', 'homophone',
+  'dictation', 'listening', 'shiritori', 'lookalike', 'transitivity', 'homophone',
   'loanword', 'keigo', 'leech', 'speak',
   'particles', 'scramble', 'contextReading', 'kanaRace', 'readingRace', 'conjRace', 'jpReading'
 ]
@@ -725,11 +725,11 @@ export function ensureMiningInbox(): JpMiningInbox {
   return tx()
 }
 
-// Files grammar cards into one lesson per JLPT level inside a shared course,
-// creating both on demand. Cards enter as ordinary 'new' rows in a LEARNED
-// lesson, so they join the existing review queue rather than needing a second
-// scheduler. Idempotent by card front: re-running "add all N5" after the bank
-// grows adds only what is missing.
+// Files each grammar point into its own small lesson inside a shared course,
+// creating both on demand. New lessons stay UNLEARNED: opening one, reading its
+// examples and deliberately marking it learned is what introduces the cards.
+// This prevents a bulk library action from silently flooding the review queue.
+// Idempotent by point-title lesson + card front.
 export function addGrammarCards(
   courseTitle: string,
   points: { level: string; title: string; cards: { front: string; back: string; notes: string | null }[] }[]
@@ -762,9 +762,10 @@ export function addGrammarCards(
         skipped++
         continue
       }
+      const lessonTitle = `${point.level} · ${point.title}`
       let lesson = db
         .prepare('SELECT id FROM jp_lesson WHERE course_id = ? AND title = ? ORDER BY id ASC')
-        .get(course.id, point.level) as { id: number } | undefined
+        .get(course.id, lessonTitle) as { id: number } | undefined
       if (!lesson) {
         const next = (
           db
@@ -776,9 +777,9 @@ export function addGrammarCards(
         const info = db
           .prepare(
             `INSERT INTO jp_lesson (course_id, kind, title, sort_order, learned)
-             VALUES (?, 'grammar', ?, ?, 1)`
+             VALUES (?, 'grammar', ?, ?, 0)`
           )
-          .run(course.id, point.level, next)
+          .run(course.id, lessonTitle, next)
         lesson = { id: Number(info.lastInsertRowid) }
       }
       lastLessonId = lesson.id

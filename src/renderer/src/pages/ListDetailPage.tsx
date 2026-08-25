@@ -71,19 +71,19 @@ export default function ListDetailPage() {
     if (!ok) return
     await api.lists.remove(listId)
     invalidate()
-    navigate('/lists')
+    navigate('/lists', { replace: true })
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="mx-auto max-w-6xl p-4 sm:p-6">
       <PageHeader
         back="history"
         title={list.title}
         subtitle={
           <>
             {list.description && <span className="block text-gray-400">{list.description}</span>}
-            {KIND_LABEL[kind]} · {items.length} {items.length === 1 ? 'item' : 'items'}
-            {list.ranked && ' · Ranked'}
+            {KIND_LABEL[kind]} / {items.length} {items.length === 1 ? 'item' : 'items'}
+            {list.ranked && ' / Ranked collection'}
           </>
         }
         actions={
@@ -91,12 +91,12 @@ export default function ListDetailPage() {
             <Link to={`/lists/${listId}/edit`} className="btn-ghost">
               Edit
             </Link>
-            <ActionMenu items={[{ label: 'Delete…', onSelect: del, danger: true }]} />
+            <ActionMenu items={[{ label: 'Delete', onSelect: del, danger: true }]} />
           </>
         }
       />
 
-      <div className="mb-5">
+      <div className="mb-6 border-b border-base-700 pb-5">
         <UniversalPicker
           kind={kind}
           excludeIds={items.map((i) => i.entityId)}
@@ -105,13 +105,13 @@ export default function ListDetailPage() {
       </div>
 
       {items.length === 0 ? (
-        <EmptyState title={`No entries yet — search above to add a ${KIND_NOUN[kind]}.`} />
+        <EmptyState title={`No entries yet. Search above to add a ${KIND_NOUN[kind]}.`} />
       ) : (
         <SortableList
           ids={items.map((i) => i.itemId)}
           sensors={sensors}
           onDragEnd={onDragEnd}
-          className="space-y-2"
+          className="space-y-3"
         >
           {items.map((item, index) => (
             <ListRow
@@ -150,32 +150,35 @@ function ListRow({
   const to = pathForEntity(kind, item.entityId, item.mediaType)
 
   return (
-    <SortableRow id={item.itemId} className="card flex items-center gap-3 p-2">
+    <SortableRow id={item.itemId} className="card flex items-center gap-4 p-4">
       {(handle) => (
         <>
           {handle}
           {ranked && (
-            <span className="w-6 shrink-0 text-center text-sm font-semibold text-gray-400">
+            <span className="w-10 shrink-0 text-center text-3xl font-semibold text-gray-400">
               {index + 1}
             </span>
           )}
           <Link to={to} className="shrink-0">
-            <CoverImage path={item.imagePath} alt={item.name} className="h-14 w-10" />
+            <CoverImage path={item.imagePath} alt={item.name} className="h-[84px] w-14 rounded" thumbWidth={120} />
           </Link>
           <div className="min-w-0 flex-1">
             <Link to={to} className="line-clamp-1 font-medium hover:text-accent">
               {item.name}
             </Link>
-            {item.subtitle && <p className="text-xs text-gray-500">{item.subtitle}</p>}
-            <input
-              className="input mt-1 py-1 text-xs"
-              placeholder="Add a note…"
+            {item.subtitle && <p className="mt-1 text-xs text-gray-500">{item.subtitle}</p>}
+            <label className="mt-3 block">
+              <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-gray-500">Collection note</span>
+              <input
+              className="input mt-1 py-1.5 text-xs"
+              placeholder="Add a note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
               onBlur={() => {
                 if ((item.note ?? '') !== note) onSaveNote(item.itemId, note.trim() || null)
               }}
-            />
+              />
+            </label>
           </div>
           <button
             className="px-2 text-gray-500 hover:text-red-400"

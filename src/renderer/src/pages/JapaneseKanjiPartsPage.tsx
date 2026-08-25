@@ -8,6 +8,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useIncrementalList } from '../lib/hooks'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
 
 // Search-by-parts: toggle the components you can see in an unknown kanji and
 // watch the grid narrow (the radkfile workflow, offline). Click a match to
@@ -59,7 +60,7 @@ export default function JapaneseKanjiPartsPage() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <EditorialDetailFrame width="wide">
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Kanji by Parts"
@@ -159,6 +160,6 @@ export default function JapaneseKanjiPartsPage() {
           </Section>
         </>
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }

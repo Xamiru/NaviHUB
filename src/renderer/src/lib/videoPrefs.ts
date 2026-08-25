@@ -42,7 +42,7 @@ export const DEFAULT_VIDEO_PREFS: VideoPrefs = {
   dialogueOnly: true,
   autoPauseOnMine: true,
   pauseOnHover: false,
-  transcriptOpen: false
+  transcriptOpen: true
 }
 
 export function loadVideoPrefs(): VideoPrefs {

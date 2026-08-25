@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
+import QuietWorkspace from '../components/QuietWorkspace'
 import { toast } from '../lib/toast'
 import type { JpCardInput, JpLessonKind } from '@shared/types'
 
@@ -186,6 +187,11 @@ export default function JapaneseLessonFormPage() {
       />
 
       <div className="space-y-4">
+        <QuietWorkspace
+          title="Lesson identity"
+          description="The explanation sets context; reviewable cards remain a separate working deck below."
+          className="mb-7"
+        >
         <div>
           <label className="label">Title</label>
           <input
@@ -208,6 +214,7 @@ export default function JapaneseLessonFormPage() {
             />
           </div>
         )}
+        </QuietWorkspace>
 
         <div>
           <div className="label mb-2">
@@ -320,7 +327,7 @@ export default function JapaneseLessonFormPage() {
             ))}
           </div>
           <button className="btn-ghost mt-2 text-sm" onClick={addRow}>
-            + Add {isGrammar ? 'sentence' : kind === 'kanji' ? 'kanji' : 'card'}
+            Add {isGrammar ? 'sentence' : kind === 'kanji' ? 'kanji' : 'card'}
           </button>
         </div>
 

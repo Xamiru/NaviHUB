@@ -9,6 +9,7 @@ import RoadmapDailyLoop from '../components/japanese/RoadmapDailyLoop'
 import RoadmapMilestones from '../components/japanese/RoadmapMilestones'
 import JlptLadder from '../components/japanese/JlptLadder'
 import type { JpRoadmapCourse } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
 
 // The study path, start to finish. Seeded courses carry a step number and lay
 // out in order; everything the user or the app generated (mining inbox, prep
@@ -32,63 +33,66 @@ export default function JapaneseRoadmapPage() {
   const frontierIndex = roadmap.steps.findIndex((c) => c.id === roadmap.frontierCourseId)
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <EditorialDetailFrame width="wide">
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Roadmap"
         subtitle="Every course in study order. Work down the path — or jump anywhere you like."
       />
 
-      <Section title="Daily loop">
-        <RoadmapDailyLoop due={due} fresh={fresh} nextLesson={roadmap.nextLesson} />
-      </Section>
+      <div className="grid min-w-0 gap-7 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div className="min-w-0">
+          <Section title="Knowledge path" subtitle="Your current frontier stays visible without locking later material">
+            <div className="relative space-y-3 before:absolute before:bottom-5 before:left-[27px] before:top-5 before:w-px before:bg-accent/20">
+              <KanaStepRow />
+              {roadmap.steps.map((course, i) => (
+                <StepRow
+                  key={course.id}
+                  course={course}
+                  state={
+                    course.id === roadmap.frontierCourseId
+                      ? 'current'
+                      : frontierIndex >= 0 && i > frontierIndex
+                        ? 'upcoming'
+                        : course.lessonCount > 0 && course.learnedLessonCount >= course.lessonCount
+                          ? 'cleared'
+                          : 'started'
+                  }
+                />
+              ))}
+            </div>
+          </Section>
 
-      <Section title="JLPT ladder" subtitle="progress, not a gate">
-        <JlptLadder />
-      </Section>
-
-      <Section title="The path">
-        <div className="space-y-2">
-          <KanaStepRow />
-          {roadmap.steps.map((course, i) => (
-            <StepRow
-              key={course.id}
-              course={course}
-              state={
-                course.id === roadmap.frontierCourseId
-                  ? 'current'
-                  : frontierIndex >= 0 && i > frontierIndex
-                    ? 'upcoming'
-                    : course.lessonCount > 0 && course.learnedLessonCount >= course.lessonCount
-                      ? 'cleared'
-                      : 'started'
-              }
-            />
-          ))}
+          <Section
+            title="Unscheduled"
+            subtitle={<Link to="/japanese/courses/new" className="hover:text-accent">+ New course</Link>}
+          >
+            {roadmap.unscheduled.length === 0 ? (
+              <p className="text-sm text-gray-500">
+                Mined words, series prep decks and core decks will show up here.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {roadmap.unscheduled.map((course) => (
+                  <StepRow key={course.id} course={course} state="started" />
+                ))}
+              </div>
+            )}
+          </Section>
         </div>
-      </Section>
-
-      <Section title="Milestones">
-        <RoadmapMilestones />
-      </Section>
-
-      <Section
-        title="Unscheduled"
-        subtitle={<Link to="/japanese/courses/new" className="hover:text-accent">+ New course</Link>}
-      >
-        {roadmap.unscheduled.length === 0 ? (
-          <p className="text-sm text-gray-500">
-            Mined words, series prep decks and core decks will show up here.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {roadmap.unscheduled.map((course) => (
-              <StepRow key={course.id} course={course} state="started" />
-            ))}
-          </div>
-        )}
-      </Section>
-    </div>
+        <aside className="min-w-0 space-y-6">
+          <Section title="Daily loop">
+            <RoadmapDailyLoop due={due} fresh={fresh} nextLesson={roadmap.nextLesson} />
+          </Section>
+          <Section title="JLPT ladder" subtitle="progress, not a gate">
+            <JlptLadder />
+          </Section>
+          <Section title="Milestones">
+            <RoadmapMilestones />
+          </Section>
+        </aside>
+      </div>
+    </EditorialDetailFrame>
   )
 }
 
@@ -103,7 +107,7 @@ function KanaStepRow() {
   })
   const practiced = (history?.totalSessions ?? 0) > 0
   return (
-    <Link to="/japanese/kana" className="card group block border-l-2 border-l-base-700 p-3">
+    <Link to="/japanese/kana" className="card group relative z-[1] block border-l-2 border-l-base-700 p-4">
       <div className="flex items-baseline gap-2">
         <span className="font-mono text-[11px] uppercase tracking-widest text-gray-600">
           Step 00
@@ -128,7 +132,7 @@ function StepRow({ course, state }: { course: JpRoadmapCourse; state: StepState 
   return (
     <Link
       to={`/japanese/courses/${course.id}`}
-      className={`card group block border-l-2 p-3 ${
+      className={`card group relative z-[1] block border-l-2 p-4 ${
         state === 'current' ? 'border-l-accent' : 'border-l-base-700'
       } ${state === 'upcoming' ? 'opacity-60' : ''}`}
     >

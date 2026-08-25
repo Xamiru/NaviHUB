@@ -44,7 +44,7 @@ export default function JapaneseSentencesPage() {
 
   if (!isLoading && !bank) {
     return (
-      <div className="p-6 max-w-3xl mx-auto">
+      <div className="p-6 max-w-[1320px] mx-auto">
         <PageHeader back={{ to: '/japanese', label: 'Japanese' }} title="Sentence games" />
         <EmptyState
           title="Sentence bank not installed"
@@ -60,7 +60,7 @@ export default function JapaneseSentencesPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <div className="p-6 max-w-[1320px] mx-auto">
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Sentence games"

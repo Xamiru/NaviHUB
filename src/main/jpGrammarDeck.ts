@@ -31,9 +31,8 @@ function cardsFor(point: GrammarPoint): { front: string; back: string; notes: st
     }))
 }
 
-// Adds the given points to the grammar lesson for their level, creating the
-// course/lesson on demand. Idempotent: a point already carrying cards is
-// skipped, so "add all N5" can be re-run after the bank grows.
+// Stages each given point as a small unlearned lesson, creating the course and
+// lessons on demand. Idempotent: a point already carrying cards is skipped.
 export function addGrammarPoints(ids: number[]): GrammarDeckResult {
   const points = ids.map((id) => getGrammarPoint(id)).filter((p): p is GrammarPoint => !!p)
   if (points.length === 0) return { lessonId: 0, added: 0, skipped: 0 }
@@ -47,7 +46,7 @@ export function addGrammarPoints(ids: number[]): GrammarDeckResult {
   )
 }
 
-// The bulk action behind "Add <level> to reviews". Kept here rather than
+// Legacy bulk action for a whole level. Kept here rather than
 // composed in ipc.ts so the "a level means every clozeable point in it" rule is
 // testable and the handler stays a one-liner. `available` distinguishes "your
 // deck already covers this level" from "the grammar bank is not installed" —

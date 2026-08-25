@@ -3,6 +3,10 @@ import { api } from '../../lib/api'
 import Section from '../Section'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
+import {
+  buildLessonProductionPrompts,
+  type LessonProductionPrompt
+} from '@shared/japanese/lessonProduction'
 
 // End-of-lesson self-check: a short multiple-choice quiz over THIS lesson's
 // cards, with distractors drawn from the rest of the course. Runs before the
@@ -70,6 +74,8 @@ export default function LessonCheck({
   const [chosen, setChosen] = useState<number | null>(null)
   const [score, setScore] = useState(0)
   const [loading, setLoading] = useState(false)
+  const [production, setProduction] = useState<LessonProductionPrompt[]>([])
+  const [productionDone, setProductionDone] = useState(false)
 
   async function start(): Promise<void> {
     setLoading(true)
@@ -78,6 +84,8 @@ export default function LessonCheck({
       // question order re-roll every time.
       const pool = await api.japanese.lessonQuizPool(lessonId)
       const qs = buildQuestions(pool.items, pool.distractors, kind)
+      setProduction(buildLessonProductionPrompts(shuffle(pool.items), kind))
+      setProductionDone(false)
       setQuestions(qs)
       setIndex(0)
       setChosen(null)
@@ -126,6 +134,16 @@ export default function LessonCheck({
 
   const perfect = questions !== null && score === questions.length
 
+  if (finished && production.length > 0 && !productionDone) {
+    return (
+      <ProductionCheck
+        prompts={production}
+        recallScore={`${score} / ${questions.length}`}
+        onDone={() => setProductionDone(true)}
+      />
+    )
+  }
+
   return (
     <div className="card mt-6 p-5">
       <Section
@@ -147,7 +165,8 @@ export default function LessonCheck({
           <p className="text-lg font-semibold">
             {score} / {questions.length}
             <span className="ml-2 text-sm font-normal text-gray-400">
-              {perfect ? 'Perfect — it stuck.' : score >= questions.length * 0.7 ? 'Solid.' : 'Worth another read.'}
+              {perfect ? 'Perfect recall.' : score >= questions.length * 0.7 ? 'Solid recall.' : 'Worth another read.'}
+              {productionDone && ' Production checked too.'}
             </span>
           </p>
           <div className="mt-3 flex gap-2">
@@ -200,6 +219,73 @@ export default function LessonCheck({
           )}
         </div>
       ) : null}
+      </Section>
+    </div>
+  )
+}
+
+function ProductionCheck({
+  prompts,
+  recallScore,
+  onDone
+}: {
+  prompts: LessonProductionPrompt[]
+  recallScore: string
+  onDone: () => void
+}) {
+  const [index, setIndex] = useState(0)
+  const [typed, setTyped] = useState('')
+  const [revealed, setRevealed] = useState(false)
+  const current = prompts[index]
+
+  function next(): void {
+    if (index + 1 >= prompts.length) {
+      onDone()
+      return
+    }
+    setIndex((i) => i + 1)
+    setTyped('')
+    setRevealed(false)
+  }
+
+  return (
+    <div className="card mt-6 p-5">
+      <Section title="Use it" className="" subtitle={`${index + 1} / ${prompts.length}`}>
+        <p className="mb-1 text-xs text-gray-500">Recall score {recallScore}</p>
+        <p className="text-sm text-gray-400">
+          Write one natural Japanese answer. Compare it with the model yourself; equivalent wording
+          can be correct.
+        </p>
+        <p className="mt-4 text-lg">{current.promptEn}</p>
+        <textarea
+          className="input mt-3 min-h-20 w-full"
+          autoFocus
+          value={typed}
+          placeholder="Write in Japanese…"
+          onChange={(e) => setTyped(e.target.value)}
+        />
+        {!revealed ? (
+          <button className="btn-primary mt-3" disabled={!typed.trim()} onClick={() => setRevealed(true)}>
+            Compare with model
+          </button>
+        ) : (
+          <div className="mt-4 rounded-lg border border-base-700 bg-base-900/50 p-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">One model answer</p>
+            <p className="mt-2 text-xl">{current.modelJp}</p>
+            {current.reading && current.reading !== current.modelJp && (
+              <p className="mt-1 text-sm text-gray-500">{current.reading}</p>
+            )}
+            <p className="mt-2 text-xs text-gray-500">{current.note}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button className="btn-ghost" onClick={() => { setTyped(''); setRevealed(false) }}>
+                Needs another try
+              </button>
+              <button className="btn-primary" onClick={next}>
+                {index + 1 >= prompts.length ? 'Finish production' : 'Close enough; next'}
+              </button>
+            </div>
+          </div>
+        )}
       </Section>
     </div>
   )

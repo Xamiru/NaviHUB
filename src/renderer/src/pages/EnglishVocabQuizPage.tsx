@@ -7,6 +7,7 @@ import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
 import QuizRecord from '../components/QuizRecord'
 import EmptyState from '../components/EmptyState'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import { Group, Pill } from '../components/PillGroup'
 import type { EnBand, EnVocabMode, EnVocabQuestion, EnWordInput } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
@@ -344,19 +345,14 @@ export default function EnglishVocabQuizPage() {
 
   const q = current?.q
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-        <span className="tabular-nums">
-          {stats.total}
-          {lengthRef.current > 0 ? ` / ${lengthRef.current}` : ''} · {stats.score} correct
-        </span>
-        <span>
-          streak {stats.streak}
-          <button className="btn-ghost ml-3 px-2 py-0.5 text-xs" onClick={endGame}>
-            End quiz
-          </button>
-        </span>
-      </div>
+    <StudySessionFrame
+      title="Vocabulary challenge"
+      subtitle={effectiveMode === 'synonyms' ? 'Closest in meaning' : 'Mistake ledger practice'}
+      progress={lengthRef.current > 0 ? { current: Math.min(stats.total + 1, lengthRef.current), total: lengthRef.current, label: 'Quiz' } : undefined}
+      actions={<button className="btn-ghost px-2 py-0.5 text-xs" onClick={endGame}>End quiz</button>}
+      rail={<SessionEvidence title="Mistake evidence"><p>{stats.score} correct across {stats.total} answers.</p><p className="mt-2">Missed library words are added to the local review deck at the end of the round.</p></SessionEvidence>}
+      surface={false}
+    >
 
       <div className="card p-6 text-center">
         {effectiveMode === 'synonyms' && (
@@ -414,6 +410,6 @@ export default function EnglishVocabQuizPage() {
           </button>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

@@ -7,7 +7,7 @@ import TasksTabs from '../components/TasksTabs'
 // exists while this page is mounted.
 export default function LogsPage() {
   return (
-    <div className="p-6">
+    <div className="mx-auto max-w-[1600px] p-6">
       <PageHeader
         title="Logs"
         subtitle="Task lifecycle, HTTP retries and rate limits, database migrations, and the output of yt-dlp, ffmpeg and mokuro. Also written to userData/logs/."

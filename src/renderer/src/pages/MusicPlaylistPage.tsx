@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -12,6 +12,7 @@ import ActionMenu from '../components/ActionMenu'
 import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
 import MusicTrackRow from '../components/MusicTrackRow'
 import { confirmDialog } from '../lib/confirm'
+import { RelationshipTrail } from '../components/EditorialDetailFrame'
 
 export default function MusicPlaylistPage() {
   const { id } = useParams()
@@ -79,8 +80,14 @@ export default function MusicPlaylistPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-5xl p-4 sm:p-6">
       <BackButton />
+      <RelationshipTrail>
+        <Link to="/music" className="hover:text-accent">Sonic archive</Link>
+        <span className="text-gray-600" aria-hidden="true">›</span>
+        <span>Playlists</span>
+        <span className="ml-auto tabular-nums text-gray-500">{items.length} tracks</span>
+      </RelationshipTrail>
 
       <div className="mb-5 flex items-start justify-between gap-4">
         <div className="min-w-0">
@@ -204,7 +211,7 @@ function AddTracksPicker({
               className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-base-700"
               onClick={() => add(t.id)}
             >
-              <span className="text-gray-500">＋</span>
+              <span className="text-gray-500">Add</span>
               <span className="min-w-0">
                 <span className="line-clamp-1">{t.title}</span>
                 <span className="line-clamp-1 text-xs text-gray-500">

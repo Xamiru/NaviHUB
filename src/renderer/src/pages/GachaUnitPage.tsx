@@ -12,6 +12,7 @@ import ActionMenu from '../components/ActionMenu'
 import CoverImage from '../components/CoverImage'
 import GachaUnitDialog from '../components/gacha/GachaUnitDialog'
 import { confirmDialog } from '../lib/confirm'
+import EditorialDetailFrame, { RelationshipTrail } from '../components/EditorialDetailFrame'
 
 export default function GachaUnitPage() {
   const { id } = useParams()
@@ -58,8 +59,16 @@ export default function GachaUnitPage() {
   const facets = [unit.element, unit.role].filter(Boolean).join(' · ')
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <EditorialDetailFrame width="reading">
       <BackButton />
+
+      <RelationshipTrail>
+        <span>Gacha</span>
+        <span aria-hidden="true">›</span>
+        <span>{cfg.name}</span>
+        <span aria-hidden="true">›</span>
+        <span>{kind?.plural ?? unit.kind}</span>
+      </RelationshipTrail>
 
       <div className="flex flex-col gap-6 sm:flex-row">
         <CoverImage
@@ -135,7 +144,7 @@ export default function GachaUnitPage() {
       </div>
 
       {editing && <GachaUnitDialog game={cfg} unit={unit} onClose={() => setEditing(false)} />}
-    </div>
+    </EditorialDetailFrame>
   )
 }
 

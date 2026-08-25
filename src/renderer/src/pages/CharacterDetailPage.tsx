@@ -8,7 +8,9 @@ import AddToListMenu from '../components/AddToListMenu'
 import CoverImage from '../components/CoverImage'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
+import EditorialDetailFrame, { RelationshipTrail } from '../components/EditorialDetailFrame'
 import { pathForMedia } from '../lib/mediaConfig'
+import { chronologicalYear } from '../lib/archiveDisplay'
 
 export default function CharacterDetailPage() {
   const { id } = useParams()
@@ -27,9 +29,19 @@ export default function CharacterDetailPage() {
 
   if (!character) return <PageStatus>Loading…</PageStatus>
 
+  const chronologicalRoles = [...roles].sort((a, b) =>
+    (b.media.releaseDate ?? '').localeCompare(a.media.releaseDate ?? '')
+  )
+
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <EditorialDetailFrame width="reading">
       <BackButton />
+      <RelationshipTrail>
+        <span>Characters</span>
+        <span className="text-gray-600" aria-hidden="true">›</span>
+        <span>{character.name}</span>
+        <span className="ml-auto tabular-nums text-gray-500">{roles.length} appearances</span>
+      </RelationshipTrail>
       <EntityHeader
         rounded="rounded-full"
         longTextLabel="Description"
@@ -65,7 +77,7 @@ export default function CharacterDetailPage() {
           </p>
         ) : (
           <div className="space-y-2">
-            {roles.map((r) => (
+            {chronologicalRoles.map((r) => (
               <div
                 key={r.media.id}
                 className="flex items-center gap-3 bg-base-800 rounded-md px-3 py-2"
@@ -95,11 +107,14 @@ export default function CharacterDetailPage() {
                     ))}
                   </div>
                 </div>
+                <span className="text-xs tabular-nums text-gray-500">
+                  {chronologicalYear(r.media.releaseDate)}
+                </span>
               </div>
             ))}
           </div>
         )}
       </Section>
-    </div>
+    </EditorialDetailFrame>
   )
 }

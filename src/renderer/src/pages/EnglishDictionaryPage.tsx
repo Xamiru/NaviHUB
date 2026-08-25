@@ -11,6 +11,9 @@ import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import EntryCard, { savedKey } from '../components/english/EnEntryCard'
 import type { EnDictEntry, EnDictMeaning, EnWord } from '@shared/types'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import ContextPanel, { ContextFact } from '../components/ContextPanel'
+import QuietWorkspace from '../components/QuietWorkspace'
 
 // English→English dictionary (Learn section): look a word up on
 // dictionaryapi.dev (through main — the renderer can't fetch remote hosts) and
@@ -66,7 +69,23 @@ export default function EnglishDictionaryPage() {
   }
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
+    <EditorialDetailFrame
+      width="wide"
+      aside={
+        <ContextPanel title="Dictionary evidence" identity={debounced || 'dictionary-idle'}>
+          <ContextFact label="Lookup source">
+            {dictInfo === null ? 'Online fallback' : 'Offline WordNet'}
+          </ContextFact>
+          <ContextFact label="Current results">
+            {debounced ? `${entries.length} entries` : 'Waiting for a search'}
+          </ContextFact>
+          <ContextFact label="Saved vocabulary">{words.length} definitions</ContextFact>
+          <ContextFact label="Review path">
+            Every saved definition joins the English review deck.
+          </ContextFact>
+        </ContextPanel>
+      }
+    >
       <PageHeader
         back={{ to: '/english', label: 'English' }}
         title="Dictionary"
@@ -84,13 +103,18 @@ export default function EnglishDictionaryPage() {
         </div>
       )}
 
-      <input
-        className="input w-full text-lg"
-        placeholder="e.g. ephemeral, serendipity, sunset…"
-        value={query}
-        autoFocus
-        onChange={(e) => setQuery(e.target.value)}
-      />
+      <QuietWorkspace
+        title="Lookup"
+        description="Search, compare definitions and save only the sense that fits."
+      >
+        <input
+          className="input w-full text-lg"
+          placeholder="e.g. ephemeral, serendipity, sunset…"
+          value={query}
+          autoFocus
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </QuietWorkspace>
 
       <div className="mt-5 space-y-4">
         {debounced.length === 0 ? null : isFetching && entries.length === 0 ? (
@@ -111,7 +135,7 @@ export default function EnglishDictionaryPage() {
       </div>
 
       <SavedWords words={words} />
-    </div>
+    </EditorialDetailFrame>
   )
 }
 

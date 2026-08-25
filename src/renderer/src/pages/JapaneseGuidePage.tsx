@@ -78,9 +78,9 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
         text: 'Two halves: see a word and pick its contour (Kanjium pack), and the kotu-style minimal pairs — hear a recording, say which of two contours it was (pairs pack). Optional per TheMoeWay, decisive if you care how you sound.'
       },
       {
-        name: 'Dictation',
+        name: 'Listening',
         to: '/japanese/listen',
-        text: 'A native Tatoeba recording plays; type what you heard. Graded on readings, so kanji or kana both count — the per-character diff is the real feedback. Needs the sentence-audio pack.'
+        text: 'Guided mode picks recordings made only of known words or exactly one new word: choose the meaning before seeing the transcript, then shadow and compare your take with the native audio. Dictation remains as the second tab and grades readings, so kanji or kana both count. Needs the sentence-audio pack.'
       },
       {
         name: 'Grammar drill',
@@ -251,7 +251,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       },
       {
         name: 'Sentence audio (Tatoeba)',
-        text: 'Native recordings for dictation and Play buttons on examples. Thousands of small downloads — start it and walk away; interrupting is safe, re-running resumes.'
+        text: 'Native recordings for guided listening, shadowing, dictation and Play buttons on examples. Thousands of small downloads — start it and walk away; interrupting is safe, re-running resumes.'
       },
       {
         name: 'Minimal pairs (kotu)',
@@ -275,16 +275,17 @@ export default function JapaneseGuidePage() {
         <div className="card p-4">
           <ol className="list-inside list-decimal space-y-1 text-sm text-gray-300">
             <li>Clear your reviews.</li>
-            <li>Learn the next lesson on the roadmap, if you have the attention for it.</li>
+            <li>Do a short guided-listening round and shadow each revealed sentence once.</li>
             <li>Read something and mine what you don&apos;t know. This is the part that matters.</li>
+            <li>Learn the next roadmap lesson only when the unseen-card backlog is clear.</li>
           </ol>
           <dl className="mt-4 space-y-3">
             <div>
               <dt className="font-medium">One hour</dt>
               <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
-                A split that works: ~20 minutes of reviews, ~15 on the next lesson, ~25 reading —
-                manga with the mining panel, or the sentence feed. Short on time? Reviews, then
-                reading; the lesson keeps.
+                A split that works: ~20 minutes of reviews, ~10 guided listening and shadowing,
+                ~25 reading, and ~5 to start a lesson only when the unseen backlog is clear. Short
+                on time? Reviews, listening, then reading; the lesson keeps.
               </dd>
             </div>
             <div>

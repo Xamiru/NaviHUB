@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import type { QuizKind } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
+import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../StudySessionFrame'
 
 // The multiple-choice quiz loop shared by the confusables/loanword drills: a
 // finite-or-endless deck, 1-N answer keys + Enter advance, loggedRef-guarded
@@ -33,7 +34,8 @@ export default function McDrill<T>({
   renderPrompt,
   renderReveal,
   optionClassName,
-  onExit
+  onExit,
+  title = 'Challenge'
 }: {
   kind: QuizKind
   items: T[]
@@ -44,6 +46,7 @@ export default function McDrill<T>({
   renderReveal: (q: McQuestion<T>, correct: boolean) => ReactNode
   optionClassName?: string
   onExit: () => void
+  title?: string
 }) {
   const qc = useQueryClient()
   const [question, setQuestion] = useState<McQuestion<T> | null>(null)
@@ -133,22 +136,24 @@ export default function McDrill<T>({
   if (finished) {
     const accuracy = stats.total ? Math.round((stats.score / stats.total) * 100) : 0
     return (
-      <div className="card p-8 text-center">
-        <p className="text-sm uppercase tracking-widest text-gray-500">Round complete</p>
-        <p className="mt-3 text-5xl font-bold">
-          {stats.score}
-          <span className="text-2xl text-gray-500"> / {stats.total}</span>
-        </p>
-        <div className="mt-4 flex justify-center gap-6 text-sm text-gray-400">
-          <span>{accuracy}% correct</span>
-          <span>Best streak {stats.best}</span>
+      <StudySessionFrame title={`${title} results`} subtitle="Round summary" surface={false}>
+        <div className="card p-8 text-center">
+          <p className="text-sm uppercase tracking-widest text-gray-500">Round complete</p>
+          <p className="mt-3 text-5xl font-bold">
+            {stats.score}
+            <span className="text-2xl text-gray-500"> / {stats.total}</span>
+          </p>
+          <div className="mt-4 flex justify-center gap-6 text-sm text-gray-400">
+            <span>{accuracy}% correct</span>
+            <span>Best streak {stats.best}</span>
+          </div>
+          <div className="mt-6 flex justify-center">
+            <button className="btn-primary" onClick={onExit}>
+              Back to setup
+            </button>
+          </div>
         </div>
-        <div className="mt-6 flex justify-center">
-          <button className="btn-primary" onClick={onExit}>
-            Back to setup
-          </button>
-        </div>
-      </div>
+      </StudySessionFrame>
     )
   }
   if (!question) return null
@@ -157,23 +162,34 @@ export default function McDrill<T>({
   const qNum = answered ? stats.total : stats.total + 1
 
   return (
-    <div>
-      <div className="mb-4 flex items-center justify-between text-sm">
-        <span className="font-medium">
-          Question {qNum}
-          {length > 0 ? ` of ${length}` : ''}
-        </span>
-        <div className="flex items-center gap-4 text-gray-400">
-          <span>
-            Score {stats.score}/{stats.total}
-          </span>
-          <span>Streak {stats.streak}</span>
-          <button className="btn-ghost py-1 px-2 text-xs" onClick={end}>
-            End round
-          </button>
-        </div>
-      </div>
-
+    <StudySessionFrame
+      title={title}
+      subtitle={length > 0 ? `Question ${qNum} of ${length}` : `Question ${qNum}`}
+      progress={length > 0 ? { current: qNum, total: length, label: 'Round' } : undefined}
+      actions={<button className="btn-ghost" onClick={end}>End round</button>}
+      rail={
+        <>
+          <SessionEvidence title="Session evidence">
+            <p>Score: {stats.score}/{stats.total}</p>
+            <p>Current streak: {stats.streak}</p>
+            <p>Best streak: {stats.best}</p>
+          </SessionEvidence>
+          <SessionEvidence title="Keyboard">
+            Choose with the numbered keys. Press Enter after feedback to continue.
+          </SessionEvidence>
+        </>
+      }
+      feedback={
+        answered ? (
+          <SessionFeedback
+            tone={wasCorrect ? 'correct' : 'incorrect'}
+            title={wasCorrect ? 'Correct' : 'Review the evidence'}
+          >
+            {renderReveal(question, wasCorrect)}
+          </SessionFeedback>
+        ) : undefined
+      }
+    >
       {renderPrompt(question)}
 
       <div className={`mt-4 grid grid-cols-1 gap-2 sm:grid-cols-2 ${optionClassName ?? ''}`}>
@@ -200,8 +216,6 @@ export default function McDrill<T>({
         })}
       </div>
 
-      {answered && <div className="card mt-4 p-4">{renderReveal(question, wasCorrect)}</div>}
-
       <div className="mt-4 flex gap-2">
         {!answered && (
           <button className="btn-ghost" onClick={() => answer(null)}>
@@ -214,6 +228,6 @@ export default function McDrill<T>({
           </button>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

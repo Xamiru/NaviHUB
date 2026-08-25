@@ -127,7 +127,7 @@ export default function StatsPage() {
   if (!stats) return <PageStatus>Loading…</PageStatus>
 
   return (
-    <div className="mx-auto max-w-4xl p-6">
+    <div className="mx-auto max-w-[1400px] p-6">
       <PageHeader title="Time spent" />
       {stats.consumedCount === 0 ? (
         <EmptyState

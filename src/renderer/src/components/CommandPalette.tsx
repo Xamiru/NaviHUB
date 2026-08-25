@@ -66,7 +66,7 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-jp-grammar', label: 'Japanese grammar library', hint: 'Go to', to: '/japanese/grammar' },
   { key: 'nav-jp-kanji', label: 'Kanji by parts', hint: 'Go to', to: '/japanese/kanji' },
   { key: 'nav-jp-pitch', label: 'Pitch accent drills', hint: 'Go to', to: '/japanese/pitch' },
-  { key: 'nav-jp-listen', label: 'Japanese dictation', hint: 'Go to', to: '/japanese/listen' },
+  { key: 'nav-jp-listen', label: 'Japanese listening', hint: 'Go to', to: '/japanese/listen' },
   { key: 'nav-jp-shiritori', label: 'Shiritori', hint: 'Go to', to: '/japanese/shiritori' },
   { key: 'nav-jp-feed', label: 'Japanese sentence feed', hint: 'Go to', to: '/japanese/feed' },
   { key: 'nav-jp-sentences', label: 'Japanese sentence games', hint: 'Go to', to: '/japanese/sentences' },

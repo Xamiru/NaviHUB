@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
+import QuietWorkspace from '../components/QuietWorkspace'
 import { KIND_LABEL } from '../lib/listLinks'
 import type { ListKind } from '@shared/types'
 
@@ -63,6 +64,10 @@ export default function TierListFormPage() {
     <div className="p-6 max-w-xl mx-auto">
       <PageHeader back="history" title={editing ? 'Edit tier list' : 'New tier list'} />
 
+      <QuietWorkspace
+        title="Board identity"
+        description="Define what the board ranks. Tier rows and item placement stay in the editor."
+      >
       <div className="space-y-4">
         <div>
           <label className="label">Title</label>
@@ -115,6 +120,7 @@ export default function TierListFormPage() {
           {saving ? 'Saving…' : editing ? 'Save changes' : 'Create tier list'}
         </button>
       </div>
+      </QuietWorkspace>
     </div>
   )
 }

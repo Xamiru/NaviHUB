@@ -11,6 +11,8 @@ import HubCard from '../components/HubCard'
 import WrestlingImportPanel from '../components/wrestling/WrestlingImportPanel'
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 
+const TIMELINE_FILTER = { sort: 'date' as const, limit: 8 }
+
 // The wrestling hub: one card per promotion plus the install/refresh flow.
 // Promotions come from shared/wrestling.ts, so adding one needs no page change.
 export default function WrestlingHomePage(): JSX.Element {
@@ -27,6 +29,10 @@ export default function WrestlingHomePage(): JSX.Element {
     queryKey: qk.wrestling.allYears,
     queryFn: () => api.wrestling.allYears()
   })
+  const { data: timeline = [] } = useQuery({
+    queryKey: qk.wrestling.events(TIMELINE_FILTER),
+    queryFn: () => api.wrestling.events(TIMELINE_FILTER)
+  })
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
 
@@ -36,10 +42,10 @@ export default function WrestlingHomePage(): JSX.Element {
   return (
     <div className="p-6">
       <PageHeader
-        title="Wrestling"
+        title="Chronology"
         subtitle={
           installed
-            ? `${overview!.totals.events.toLocaleString()} events · ${overview!.totals.matches.toLocaleString()} matches · ${overview!.totals.wrestlers.toLocaleString()} wrestlers`
+            ? `${overview!.totals.events.toLocaleString()} events across one local timeline · ${overview!.totals.matches.toLocaleString()} matches · ${overview!.totals.wrestlers.toLocaleString()} wrestlers`
             : 'A wiki of every pay-per-view, and your own collection'
         }
         actions={
@@ -67,6 +73,68 @@ export default function WrestlingHomePage(): JSX.Element {
             <div className="mb-8">
               <WrestlingImportPanel installed onDone={() => undefined} />
             </div>
+          )}
+
+          {timeline.length > 0 && (
+            <Section title="Event timeline" subtitle="Newest event dates first">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,0.75fr)]">
+                <div className="card p-6">
+                  <div className="border-l border-accent/30 pl-6">
+                    {timeline.slice(0, 6).map((event, index) => {
+                      const promotion = WRESTLING_PROMOTIONS.find((p) => p.id === event.promotion)
+                      return (
+                        <Link
+                          key={event.id}
+                          to={`/wrestling/event/${event.id}`}
+                          className="group relative block border-b border-base-700 pb-5 pt-1 last:border-b-0 last:pb-1"
+                        >
+                          <span
+                            className={`absolute -left-[29px] top-2 h-2.5 w-2.5 rounded-full ${
+                              index === 0 ? 'bg-accent' : 'bg-base-500'
+                            }`}
+                            aria-hidden="true"
+                          />
+                          <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500">
+                            {[event.eventDate ?? 'Date unknown', promotion?.short ?? event.promotion]
+                              .join(' / ')}
+                          </p>
+                          <h2 className="mt-1.5 line-clamp-1 text-lg font-semibold text-gray-200 group-hover:text-accent">
+                            {event.name}
+                          </h2>
+                          <p className="mt-1 text-xs text-gray-500">
+                            {event.matchCount} matches
+                            {event.videoCount > 0 ? ` / ${event.videoCount} local videos` : ''}
+                          </p>
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+                <aside className="space-y-4">
+                  <div className="card-glow p-6">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+                      Latest event
+                    </p>
+                    <h2 className="mt-2 text-2xl font-semibold text-white">{timeline[0].name}</h2>
+                    <p className="mt-2 text-sm text-gray-400">
+                      {timeline[0].eventDate ?? 'Date unknown'} / {timeline[0].matchCount} matches
+                    </p>
+                    <Link to={`/wrestling/event/${timeline[0].id}`} className="btn-primary mt-5">
+                      Open event
+                    </Link>
+                  </div>
+                  <div className="card p-6">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                      Coverage
+                    </p>
+                    <p className="mt-2 text-3xl font-semibold text-white">{years?.length ?? 0} years</p>
+                    <p className="mt-1 text-sm text-gray-500">
+                      {overview!.totals.rated} personally rated matches
+                    </p>
+                  </div>
+                </aside>
+              </div>
+            </Section>
           )}
 
           {(recent?.events.length || recent?.loose.length) && (

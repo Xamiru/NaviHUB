@@ -69,7 +69,7 @@ export default function SqlSandboxPage() {
         }
       />
 
-      <div className="grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)_260px]">
+      <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)_280px]">
         {/* Exercise list */}
         <div className="space-y-3">
           <Group label="Level">
@@ -217,7 +217,7 @@ function Workbench({
 
       <textarea
         ref={textRef}
-        className="input min-h-[140px] w-full resize-y font-mono text-sm"
+        className="input min-h-[180px] w-full resize-y border-base-600 bg-base-950 font-mono text-sm leading-6"
         placeholder="SELECT …"
         value={sql}
         spellCheck={false}

@@ -29,7 +29,7 @@ const Row = memo(function Row({
 }) {
   return (
     <div
-      className={`group flex gap-2 border-b border-base-800 px-3 py-1.5 text-sm ${
+      className={`group flex gap-3 border-b border-base-700/70 px-4 py-3 text-sm ${
         active
           ? 'bg-accent/10 text-accent shadow-[inset_2px_0_0_0_rgb(var(--accent))]'
           : 'text-gray-300'
@@ -93,18 +93,24 @@ export default function TranscriptPanel({
   useEffect(() => {
     if (activeCueId == null || Date.now() < manualUntil) return
     const el = scrollRef.current?.querySelector(`[data-cue="${activeCueId}"]`)
-    el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    el?.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' })
   }, [activeCueId, manualUntil])
 
   return (
-    <div className="flex h-full w-[340px] shrink-0 flex-col border-l border-base-700 bg-base-900">
-      <div className="flex items-center gap-2 border-b border-base-700 px-3 py-2">
-        <span className="label mb-0 flex-1">
-          Transcript
-          <span className="ml-2 normal-case text-gray-500">
+    <aside className="panel-in fixed inset-y-0 right-0 z-40 flex h-full w-[min(440px,92vw)] shrink-0 flex-col border-l border-base-700 bg-base-800 shadow-2xl shadow-black/60 xl:static xl:z-auto xl:max-w-[44vw] xl:shadow-none">
+      <div className="flex items-center gap-3 border-b border-base-700 px-5 py-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
+            Transcript mode
+          </p>
+          <h1 className="mt-1 text-xl font-semibold text-white">
+            Clickable subtitles
+            <span className="ml-2 text-xs font-normal text-gray-500">
             {dq.trim() ? `${filtered.length} of ${base.length}` : `${base.length} lines`}
-          </span>
-        </span>
+            </span>
+          </h1>
+        </div>
         <span className="kbd">T</span>
         <button
           className="text-gray-500 hover:text-white"
@@ -115,7 +121,7 @@ export default function TranscriptPanel({
           ✕
         </button>
       </div>
-      <div className="border-b border-base-700 p-2">
+      <div className="border-b border-base-700 p-4">
         <input
           className="input w-full"
           placeholder="Search the script…"
@@ -154,6 +160,6 @@ export default function TranscriptPanel({
           </>
         )}
       </div>
-    </div>
+    </aside>
   )
 }

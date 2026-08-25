@@ -4,6 +4,7 @@ import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import type { QuizKind } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
+import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../StudySessionFrame'
 
 // The generic typed drill engine (finite queue, misses re-enqueued at the end,
 // one quiz_session row per finished round). Moved verbatim out of
@@ -27,7 +28,8 @@ export default function TypedDrill({
   settings,
   onExit,
   placeholder = 'type the reading…',
-  wide = false
+  wide = false,
+  title = 'Typed drill'
 }: {
   items: DrillItem[]
   kind: QuizKind
@@ -35,6 +37,7 @@ export default function TypedDrill({
   onExit: () => void
   placeholder?: string
   wide?: boolean // a wider input for multi-word answers (Use of English)
+  title?: string
 }) {
   const qc = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -97,44 +100,58 @@ export default function TypedDrill({
   if (finished) {
     const pct = items.length ? Math.round((firstTryCorrect / items.length) * 100) : 0
     return (
-      <div className="card p-6 text-center">
-        <p className="text-3xl font-bold">
-          {firstTryCorrect} / {items.length}
-        </p>
-        <p className="mt-1 text-sm text-gray-400">
-          {pct === 100 ? 'Flawless.' : `${pct}% on the first try · best streak ${bestStreak}`}
-        </p>
-        {missed.size > 0 && (
-          <p className="mt-3 text-lg text-gray-300">
-            <span className="mr-2 text-xs uppercase tracking-widest text-gray-500">Missed</span>
-            {[...missed]
-              .map((p) => items.find((i) => i.prompt === p)?.label ?? p)
-              .join(items.some((i) => i.label) ? ' · ' : '　')}
+      <StudySessionFrame title={`${title} results`} subtitle="First-try recall and requeued misses" surface={false}>
+        <div className="card p-7 text-center">
+          <p className="text-3xl font-bold">
+            {firstTryCorrect} / {items.length}
           </p>
-        )}
-        <div className="mt-5 flex justify-center gap-2">
-          <button className="btn-primary" onClick={onExit}>
-            Back to setup
-          </button>
+          <p className="mt-1 text-sm text-gray-400">
+            {pct === 100 ? 'Flawless.' : `${pct}% on the first try · best streak ${bestStreak}`}
+          </p>
+          {missed.size > 0 && (
+            <p className="mt-3 text-lg text-gray-300">
+              <span className="mr-2 text-xs uppercase tracking-widest text-gray-500">Missed</span>
+              {[...missed]
+                .map((p) => items.find((i) => i.prompt === p)?.label ?? p)
+                .join(items.some((i) => i.label) ? ' · ' : '　')}
+            </p>
+          )}
+          <div className="mt-5 flex justify-center gap-2">
+            <button className="btn-primary" onClick={onExit}>
+              Back to setup
+            </button>
+          </div>
         </div>
-      </div>
+      </StudySessionFrame>
     )
   }
 
   return (
-    <div className="card p-6">
-      <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-        <span>
-          {index + 1} / {queue.length}
-        </span>
-        <span>
-          streak {streak}
-          <button className="btn-ghost ml-3 px-2 py-0.5 text-xs" onClick={onExit}>
-            Stop
-          </button>
-        </span>
-      </div>
-
+    <StudySessionFrame
+      title={title}
+      subtitle="Missed prompts return at the end of the queue."
+      progress={{ current: index + 1, total: queue.length, label: 'Prompt' }}
+      actions={<button className="btn-ghost" onClick={onExit}>Stop</button>}
+      rail={
+        <>
+          <SessionEvidence title="Session evidence">
+            <p>Current streak: {streak}</p>
+            <p>Best streak: {bestStreak}</p>
+            <p>First-try correct: {firstTryCorrect}</p>
+          </SessionEvidence>
+          <SessionEvidence title="Keyboard">
+            Type the answer, then press Enter. After a miss, Enter acknowledges the correction.
+          </SessionEvidence>
+        </>
+      }
+      feedback={
+        wrong ? (
+          <SessionFeedback tone="incorrect" title={`Correct answer: ${current!.reveal}`}>
+            {current!.sub}
+          </SessionFeedback>
+        ) : undefined
+      }
+    >
       {current!.instruction && (
         <p className="mb-2 text-center text-sm text-gray-400">{current!.instruction}</p>
       )}
@@ -150,10 +167,6 @@ export default function TypedDrill({
 
       {wrong ? (
         <div className="mt-6 text-center">
-          <p className="text-sm text-red-400">
-            Correct answer: <span className="text-lg text-gray-100">{current!.reveal}</span>
-          </p>
-          {current!.sub && <p className="mt-1 text-xs text-gray-500">{current!.sub}</p>}
           <button className="btn-primary mt-4" onClick={submit} autoFocus>
             Continue (Enter)
           </button>
@@ -173,6 +186,6 @@ export default function TypedDrill({
           />
         </div>
       )}
-    </div>
+    </StudySessionFrame>
   )
 }

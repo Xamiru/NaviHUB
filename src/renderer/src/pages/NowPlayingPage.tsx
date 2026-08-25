@@ -6,8 +6,21 @@ import CoverImage from '../components/CoverImage'
 import BackButton from '../components/BackButton'
 import Section from '../components/Section'
 import { formatTime } from '../components/NowPlayingBar'
-import { QueueRow, EditButton, useLikedTrackIds } from '../components/QueuePanel'
-import { PlayIcon, PauseIcon, PrevIcon, NextIcon } from '../components/PlayerIcons'
+import {
+  QueueRow,
+  EditButton,
+  QueueLikeButton,
+  musicIdOf,
+  useLikedTrackIds
+} from '../components/QueuePanel'
+import {
+  PlayIcon,
+  PauseIcon,
+  PrevIcon,
+  NextIcon,
+  ShuffleIcon,
+  RepeatIcon
+} from '../components/PlayerIcons'
 
 // Spotify-style full-page view of the current track: big artwork, transport
 // controls and the live queue side by side. Pure view over usePlayer() — no
@@ -66,6 +79,7 @@ export default function NowPlayingPage() {
   const artistLink = track.artistId != null ? `/music/artists/${track.artistId}` : null
   const dur = (Number.isFinite(duration) && duration > 0 ? duration : track.duration) || 0
   const titleLink = albumLink ?? animeLink
+  const libraryTrackId = musicIdOf(track.id)
 
   return (
     // The art-led now-playing screen. The ambient wash is the app's OWN accent,
@@ -148,52 +162,52 @@ export default function NowPlayingPage() {
             </span>
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-7 flex items-center gap-3">
             {queue.length > 1 && (
               <button
                 onClick={toggleShuffle}
-                className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                className={`flex h-10 w-10 items-center justify-center rounded-full ${
                   shuffled
-                    ? 'text-accent bg-accent/15'
-                    : 'text-gray-400 hover:text-white hover:bg-base-700'
+                    ? 'bg-accent/10 text-accent hover:bg-accent/20'
+                    : 'text-gray-400 hover:bg-base-700 hover:text-white'
                 }`}
                 title={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
                 aria-label={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
               >
-                ⇄
+                <ShuffleIcon className="h-4 w-4" />
               </button>
             )}
             <button
               onClick={previous}
-              className="w-11 h-11 rounded-full text-gray-300 hover:text-white hover:bg-base-700 flex items-center justify-center text-lg"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-base-600 bg-base-800/80 text-xl text-gray-300 hover:border-base-500 hover:bg-base-700 hover:text-white"
               title="Previous"
               aria-label="Previous"
             >
-              <PrevIcon />
+              <PrevIcon className="h-5 w-5" />
             </button>
             <button
               onClick={toggle}
-              className="w-14 h-14 rounded-full bg-accent/20 text-accent hover:bg-accent/30 flex items-center justify-center text-2xl"
+              className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-2xl text-base-900 shadow-lg shadow-accent/20 hover:bg-accent-hover"
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? <PauseIcon /> : <PlayIcon />}
+              {isPlaying ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
             </button>
             <button
               onClick={next}
               disabled={!hasNext}
-              className="w-11 h-11 rounded-full text-gray-300 hover:text-white hover:bg-base-700 flex items-center justify-center text-lg disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-300"
+              className="flex h-12 w-12 items-center justify-center rounded-full border border-base-600 bg-base-800/80 text-xl text-gray-300 hover:border-base-500 hover:bg-base-700 hover:text-white disabled:opacity-30 disabled:hover:border-base-600 disabled:hover:bg-base-800/80 disabled:hover:text-gray-300"
               title="Next"
               aria-label="Next"
             >
-              <NextIcon />
+              <NextIcon className="h-5 w-5" />
             </button>
             <button
               onClick={cycleRepeat}
-              className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              className={`relative flex h-10 w-10 items-center justify-center rounded-full ${
                 repeat !== 'off'
-                  ? 'text-accent bg-accent/15'
-                  : 'text-gray-400 hover:text-white hover:bg-base-700'
+                  ? 'bg-accent/10 text-accent hover:bg-accent/20'
+                  : 'text-gray-400 hover:bg-base-700 hover:text-white'
               }`}
               title={
                 repeat === 'off'
@@ -204,9 +218,18 @@ export default function NowPlayingPage() {
               }
               aria-label={`Repeat: ${repeat}`}
             >
-              {repeat === 'one' ? '⟳¹' : '⟳'}
+              <RepeatIcon className="h-4 w-4" />
+              {repeat === 'one' && (
+                <span className="absolute bottom-0.5 right-0.5 text-[8px] font-semibold">1</span>
+              )}
             </button>
           </div>
+
+          {libraryTrackId != null && (
+            <div className="mt-5">
+              <QueueLikeButton trackId={libraryTrackId} likedIds={likedIds} prominent />
+            </div>
+          )}
 
           <div className="mt-4 flex w-40 items-center gap-1.5">
             <span className="text-gray-500 text-[10px] uppercase tracking-wide" aria-hidden="true">

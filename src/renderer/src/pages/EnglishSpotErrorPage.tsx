@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
 import QuizRecord from '../components/QuizRecord'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import { Group, Pill } from '../components/PillGroup'
 import { EN_SPOT_ERRORS } from '@shared/english/spotErrors'
 import { EN_MECHANICS_CATEGORIES, type EnMechanicsCategory, type EnSpotErrorItem } from '@shared/english/types'
@@ -218,19 +219,14 @@ export default function EnglishSpotErrorPage() {
   const wasRight = answered && picked === current.wrongIndex
 
   return (
-    <div className="p-6 max-w-3xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-xs text-gray-500">
-        <span className="tabular-nums">
-          {answered ? total : total + 1}
-          {length > 0 ? ` / ${length}` : ''} · {score} correct
-        </span>
-        <span>
-          streak {streak}
-          <button className="btn-ghost ml-3 px-2 py-0.5 text-xs" onClick={endGame}>
-            End round
-          </button>
-        </span>
-      </div>
+    <StudySessionFrame
+      title="Spot the error"
+      subtitle={CAT_LABEL[current.category]}
+      progress={length > 0 ? { current: Math.min((answered ? total : total + 1), length), total: length, label: 'Round' } : undefined}
+      actions={<button className="btn-ghost px-2 py-0.5 text-xs" onClick={endGame}>End round</button>}
+      rail={<SessionEvidence title="Mistake evidence"><p>{score} correct across {total} answers.</p><p className="mt-2">Current streak {streak}; best streak {bestStreak}.</p></SessionEvidence>}
+      surface={false}
+    >
 
       <div className="card p-5">
         <p className="mb-3 text-xs uppercase tracking-widest text-gray-600">{CAT_LABEL[current.category]}</p>
@@ -295,6 +291,6 @@ export default function EnglishSpotErrorPage() {
           </>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

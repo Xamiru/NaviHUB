@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
 import WrestlingMatchRow from '../components/wrestling/WrestlingMatchRow'
+import EditorialDetailFrame from '../components/EditorialDetailFrame'
 
 const LIMIT = 200
 
@@ -21,7 +22,7 @@ export default function WrestlingRatedPage(): JSX.Element {
   if (isLoading) return <PageStatus>Loading…</PageStatus>
 
   return (
-    <div className="p-6">
+    <EditorialDetailFrame width="reading">
       <PageHeader
         back={{ to: '/wrestling', label: 'Wrestling' }}
         title="Highest rated"
@@ -49,6 +50,6 @@ export default function WrestlingRatedPage(): JSX.Element {
           <div ref={sentinelRef} />
         </div>
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }

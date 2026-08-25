@@ -5,6 +5,7 @@ import { qk } from '../../lib/queryKeys'
 import { matchState } from '@shared/typing'
 import { readingMatches } from '@shared/romaji'
 import type { QuizKind } from '@shared/types'
+import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../StudySessionFrame'
 
 // The arcade races' shared shell: a fixed clock, a score/streak header and one
 // of two input loops.
@@ -141,6 +142,7 @@ export default function ArcadeShell({
     const acc = attempted ? Math.round((correct / attempted) * 100) : 0
     const best = history?.best
     return (
+      <StudySessionFrame title="Arcade results" subtitle={`${spec.seconds}-second challenge`} surface={false}>
       <div className="card p-8 text-center">
         <p className="text-sm uppercase tracking-widest text-gray-500">Time</p>
         <p className="mt-3 text-6xl font-bold">{correct}</p>
@@ -158,12 +160,37 @@ export default function ArcadeShell({
           </button>
         </div>
       </div>
+      </StudySessionFrame>
     )
   }
 
   const pct = Math.max(0, Math.min(100, (left / spec.seconds) * 100))
   return (
-    <div className="card p-6">
+    <StudySessionFrame
+      title="Arcade session"
+      subtitle={`${spec.seconds}-second ${spec.kind.replace('Race', '').toLowerCase()} race`}
+      progress={{ current: spec.seconds - left, total: spec.seconds, label: `${left}s remaining` }}
+      actions={<button className="btn-ghost" onClick={() => setOver(true)}>Stop</button>}
+      rail={
+        <>
+          <SessionEvidence title="Live evidence">
+            <p>{correct} correct</p>
+            <p>{attempted} attempted</p>
+            <p>Current streak: {streak}</p>
+          </SessionEvidence>
+          <SessionEvidence title="Scoring">
+            The record is the number correct before time expires. Enter reveals or submits, depending on the race.
+          </SessionEvidence>
+        </>
+      }
+      feedback={
+        wrong ? (
+          <SessionFeedback tone="incorrect" title={`Answer: ${item.reveal}`}>
+            {item.sub ?? 'Press Enter to move on.'}
+          </SessionFeedback>
+        ) : undefined
+      }
+    >
       <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-base-700">
         <div
           className={`h-full rounded-full transition-[width] duration-200 ${left <= 10 ? 'bg-red-500' : 'bg-accent'}`}
@@ -177,9 +204,6 @@ export default function ArcadeShell({
         </span>
         <span>
           streak {streak} · <span className={left <= 10 ? 'text-red-400' : ''}>{left}s</span>
-          <button className="btn-ghost ml-3 px-2 py-0.5 text-xs" onClick={() => setOver(true)}>
-            Stop
-          </button>
         </span>
       </div>
 
@@ -219,6 +243,6 @@ export default function ArcadeShell({
           <span className="text-xs text-gray-600">Enter reveals the answer</span>
         )}
       </p>
-    </div>
+    </StudySessionFrame>
   )
 }

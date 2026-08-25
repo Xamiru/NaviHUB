@@ -65,7 +65,7 @@ export default function JapaneseLoanwordsPage() {
   }
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-6 max-w-[1320px] mx-auto">
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Loanwords"
@@ -74,6 +74,7 @@ export default function JapaneseLoanwordsPage() {
 
       {items ? (
         <McDrill
+          title="Loanword drill"
           kind="loanword"
           items={items}
           length={length}

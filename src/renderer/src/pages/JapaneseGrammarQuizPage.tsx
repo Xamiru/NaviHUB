@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
 import { api } from '../lib/api'
@@ -266,22 +267,39 @@ export default function JapaneseGrammarQuizPage() {
   const qNum = answered ? stats.total : stats.total + 1
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
-      <div className="mb-4 flex items-center justify-between text-sm">
-        <span className="font-medium">
-          Question {qNum}
-          {lengthRef.current > 0 ? ` of ${lengthRef.current}` : ''}
-        </span>
-        <div className="flex items-center gap-4 text-gray-400">
-          <span>
-            Score {stats.score}/{stats.total}
-          </span>
-          <span>Streak {stats.streak}</span>
-          <button className="btn-ghost py-1 px-2 text-xs" onClick={endGame}>
-            End drill
-          </button>
-        </div>
-      </div>
+    <StudySessionFrame
+      title="Grammar drill"
+      subtitle={`${question.point.level} / ${question.point.title}`}
+      progress={
+        lengthRef.current > 0
+          ? { current: Math.min(qNum, lengthRef.current), total: lengthRef.current, label: 'Drill' }
+          : undefined
+      }
+      actions={
+        <button className="btn-ghost py-1 px-2 text-xs" onClick={endGame}>
+          End drill
+        </button>
+      }
+      rail={
+        <SessionEvidence title="Session evidence">
+          <dl className="space-y-3">
+            <div className="flex justify-between gap-3">
+              <dt>Score</dt>
+              <dd className="text-white">{stats.score}/{stats.total}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt>Current streak</dt>
+              <dd className="text-white">{stats.streak}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt>Best streak</dt>
+              <dd className="text-white">{stats.best}</dd>
+            </div>
+          </dl>
+        </SessionEvidence>
+      }
+      surface={false}
+    >
 
       <div className="card p-8 text-center">
         <p className="text-xs uppercase tracking-widest text-gray-500">What fills the blank?</p>
@@ -366,6 +384,6 @@ export default function JapaneseGrammarQuizPage() {
           </button>
         )}
       </div>
-    </div>
+    </StudySessionFrame>
   )
 }

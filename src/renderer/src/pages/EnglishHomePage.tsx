@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
@@ -23,7 +24,7 @@ const CATEGORY_LABEL: Record<string, string> = {
 // corrections array and nothing ever looked at it again — which made it the
 // most valuable data in the section and the only write-only data in the app.
 // The mechanics drill weights itself off the same tally.
-function ErrorLog() {
+function ErrorLog({ due, leeches }: { due: number; leeches: number }) {
   const { data } = useQuery({
     queryKey: qk.english.errorTally,
     queryFn: () => api.english.errorTally()
@@ -32,19 +33,51 @@ function ErrorLog() {
   const top = data.byCategory.slice(0, 4)
   if (top.length === 0) return null
   return (
-    <Section title="What you keep getting wrong" subtitle={`last ${data.submissions} submissions`}>
-      <div className="card p-4">
-        <div className="flex flex-wrap gap-2">
-          {top.map((c) => (
-            <span key={c.category} className="chip">
-              {c.count} {CATEGORY_LABEL[c.category] ?? c.category}
-            </span>
-          ))}
+    <Section title="Mistake ledger" subtitle={`Evidence from ${data.submissions} writing submissions`}>
+      <div className="grid gap-5 lg:grid-cols-[0.72fr_1.28fr]">
+        <div className="card-glow flex flex-col p-6">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">
+            Current priority
+          </p>
+          <h2 className="mt-3 text-2xl font-semibold text-white">
+            {CATEGORY_LABEL[top[0].category] ?? top[0].category}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-gray-400">
+            {top[0].count} corrections in your graded work. Start here, then return to the ledger to see whether the pattern recedes.
+          </p>
+          <Link to="/english/mechanics" className="btn-ghost mt-6 self-start">
+            Practice this pattern
+          </Link>
         </div>
-        <p className="mt-3 text-xs text-gray-500">
-          Counted from the corrections on your graded writing. The mechanics drill draws these
-          categories more often.
-        </p>
+        <div className="card overflow-hidden">
+          <div className="grid grid-cols-[minmax(0,1fr)_100px_150px] border-b border-base-700 px-5 py-3 text-[10px] font-semibold uppercase tracking-wider text-gray-500">
+            <span>Pattern</span>
+            <span>Corrections</span>
+            <span>Evidence</span>
+          </div>
+          {top.map((c) => (
+            <div
+              key={c.category}
+              className="grid grid-cols-[minmax(0,1fr)_100px_150px] items-center border-b border-base-700 px-5 py-4 last:border-b-0"
+            >
+              <span className="text-sm text-gray-200">
+                {CATEGORY_LABEL[c.category] ?? c.category}
+              </span>
+              <span className="text-sm tabular-nums text-accent">{c.count}</span>
+              <span className="text-xs text-gray-500">Graded writing</span>
+            </div>
+          ))}
+          <div className="grid gap-3 border-t border-base-700 p-4 sm:grid-cols-2">
+            <Link to="/english/review" className="rounded-md border border-base-700 p-3 hover:border-accent">
+              <p className="text-xs uppercase tracking-wider text-gray-500">Review pressure</p>
+              <p className="mt-1 text-sm font-medium">{due} cards due</p>
+            </Link>
+            <Link to="/english/deck" className="rounded-md border border-base-700 p-3 hover:border-accent">
+              <p className="text-xs uppercase tracking-wider text-gray-500">Weak words</p>
+              <p className="mt-1 text-sm font-medium">{leeches} leeches</p>
+            </Link>
+          </div>
+        </div>
       </div>
     </Section>
   )
@@ -68,8 +101,13 @@ export default function EnglishHomePage() {
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
-        title="English"
-        subtitle="Look words up, save them, then let the tests and reviews make them stick."
+        title="Mistake ledger"
+        subtitle="Use your own corrections and review pressure as the map for advanced English practice."
+        actions={
+          <Link to={due > 0 ? '/english/review' : '/english/writing'} className="btn-primary">
+            {due > 0 ? `Review ${due} cards` : 'Start writing task'}
+          </Link>
+        }
       />
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
@@ -79,7 +117,7 @@ export default function EnglishHomePage() {
         <StatTile label="Reviewed today" value={stats?.reviewedToday ?? 0} />
       </div>
 
-      <ErrorLog />
+      <ErrorLog due={due} leeches={leeches} />
 
       <Section title="Study">
         <HubGrid>

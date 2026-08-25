@@ -9,7 +9,9 @@ import AddToListMenu from '../components/AddToListMenu'
 import CoverImage from '../components/CoverImage'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
+import EditorialDetailFrame, { RelationshipTrail } from '../components/EditorialDetailFrame'
 import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
+import { chronologicalYear } from '../lib/archiveDisplay'
 import type { PersonCredit, MediaType } from '@shared/types'
 
 export default function PersonDetailPage() {
@@ -85,6 +87,10 @@ export default function PersonDetailPage() {
       )
     : staffRoles
 
+  const chronology = [...credits].sort((a, b) =>
+    (b.media.releaseDate ?? '').localeCompare(a.media.releaseDate ?? '')
+  )
+
   const actingSection =
     totalActing > 0 &&
     actingTypes.map((type) => {
@@ -118,8 +124,14 @@ export default function PersonDetailPage() {
   )
 
   return (
-    <div className="p-6 max-w-[1200px] mx-auto">
+    <EditorialDetailFrame width="wide">
       <BackButton />
+      <RelationshipTrail>
+        <Link to="/people" className="hover:text-accent">People</Link>
+        <span className="text-gray-600" aria-hidden="true">›</span>
+        <span>{person.name}</span>
+        <span className="ml-auto tabular-nums text-gray-500">{credits.length} credits</span>
+      </RelationshipTrail>
       <EntityHeader
         rounded="rounded-full"
         longTextLabel="Biography"
@@ -150,6 +162,28 @@ export default function PersonDetailPage() {
         actions={<AddToListMenu kind="person" entityId={personId} />}
       />
 
+      {chronology.length > 0 && (
+        <Section title={`Chronology · ${chronology.length}`} subtitle="Credits ordered by release date across every medium.">
+          <div className="card overflow-hidden p-0">
+            {chronology.map((credit) => (
+              <Link
+                key={credit.creditId}
+                to={pathForMedia(credit.media)}
+                className="grid min-w-0 grid-cols-[64px_minmax(0,1fr)] gap-4 border-t border-base-700 px-4 py-3 first:border-t-0 hover:bg-base-700/40 sm:grid-cols-[72px_minmax(0,1fr)_140px]"
+              >
+                <span className="text-sm tabular-nums text-gray-500">
+                  {chronologicalYear(credit.media.releaseDate)}
+                </span>
+                <span className="min-w-0 truncate font-medium">{credit.media.title}</span>
+                <span className="hidden text-right text-sm capitalize text-gray-400 sm:block">
+                  {credit.role.replace('_', ' ')}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Section>
+      )}
+
       {totalActing === 0 && staffRoles.length === 0 && (
         <Section title="Roles">
           <p className="text-sm text-gray-400">
@@ -169,7 +203,7 @@ export default function PersonDetailPage() {
           {crewSection}
         </>
       )}
-    </div>
+    </EditorialDetailFrame>
   )
 }
 

@@ -18,6 +18,7 @@ import GachaUnitDialog from '../components/gacha/GachaUnitDialog'
 import GachaBannerDialog from '../components/gacha/GachaBannerDialog'
 import GachaGameImageDialog from '../components/gacha/GachaGameImageDialog'
 import { confirmDialog } from '../lib/confirm'
+import QuietWorkspace from '../components/QuietWorkspace'
 
 type Tab = 'roster' | 'catalog' | 'banners' | 'news'
 
@@ -39,6 +40,12 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
     queryFn: () => api.gacha.overview()
   })
   const imagePath = overview?.find((o) => o.game === cfg.id)?.imagePath ?? null
+  const gameOverview = overview?.find((o) => o.game === cfg.id)
+  const { data: due } = useQuery({
+    queryKey: qk.gacha.dueCounts,
+    queryFn: () => api.gacha.dueCounts()
+  })
+  const dueCount = due?.[cfg.id] ?? 0
 
   const TABS: { key: Tab; label: string }[] = [
     { key: 'roster', label: 'Roster' },
@@ -82,26 +89,70 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
         </button>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <CurrencyStrip cfg={cfg} />
+      <div className="mb-6 grid gap-3 sm:grid-cols-3">
+        <OperationTile label="Roster" value={gameOverview?.unitCount ?? 0} detail="Owned units" />
+        <OperationTile
+          label="Live banners"
+          value={gameOverview?.activeBanners ?? 0}
+          detail="Active now"
+        />
+        <OperationTile
+          label="Due work"
+          value={dueCount}
+          detail={dueCount > 0 ? 'Needs attention' : 'Operations clear'}
+          urgent={dueCount > 0}
+        />
       </div>
 
-      <Tabs
-        className="mb-5"
-        value={tab}
-        onChange={setTab}
-        tabs={TABS}
-        actions={cfg.coach ? <CoachTab cfg={cfg} /> : undefined}
-      />
+      <QuietWorkspace
+        title="Resources"
+        description="Editable balances stay visible without competing with the active workspace."
+      >
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <CurrencyStrip cfg={cfg} />
+        </div>
+      </QuietWorkspace>
 
-      {tab === 'roster' && <RosterTab cfg={cfg} />}
-      {tab === 'catalog' && cfg.catalog && <CatalogTab cfg={cfg} />}
-      {tab === 'banners' && <BannersTab cfg={cfg} />}
-      {tab === 'news' && <NewsTab cfg={cfg} />}
+      <section aria-label={`${cfg.name} workspace`}>
+        <Tabs
+          className="mb-5"
+          value={tab}
+          onChange={setTab}
+          tabs={TABS}
+          actions={cfg.coach ? <CoachTab cfg={cfg} /> : undefined}
+        />
+
+        {tab === 'roster' && <RosterTab cfg={cfg} />}
+        {tab === 'catalog' && cfg.catalog && <CatalogTab cfg={cfg} />}
+        {tab === 'banners' && <BannersTab cfg={cfg} />}
+        {tab === 'news' && <NewsTab cfg={cfg} />}
+      </section>
 
       {editingImage && (
         <GachaGameImageDialog game={cfg} current={imagePath} onClose={() => setEditingImage(false)} />
       )}
+    </div>
+  )
+}
+
+function OperationTile({
+  label,
+  value,
+  detail,
+  urgent = false
+}: {
+  label: string
+  value: number
+  detail: string
+  urgent?: boolean
+}) {
+  return (
+    <div className={`card border-t p-4 ${urgent ? 'border-t-accent' : 'border-t-base-600'}`}>
+      <p className="text-xs uppercase tracking-wide text-gray-500">{label}</p>
+      <p className={`mt-1 text-2xl font-semibold tabular-nums ${urgent ? 'text-accent' : ''}`}>
+        {value.toLocaleString()}
+      </p>
+      <p className="mt-1 text-xs text-gray-500">{detail}</p>
     </div>
   )
 }
