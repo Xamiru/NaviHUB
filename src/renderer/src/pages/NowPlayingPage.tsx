@@ -162,14 +162,14 @@ export default function NowPlayingPage() {
             </span>
           </div>
 
-          <div className="mt-7 flex items-center gap-3">
+          <div className="mt-6 flex items-center gap-1.5">
             {queue.length > 1 && (
               <button
                 onClick={toggleShuffle}
-                className={`flex h-10 w-10 items-center justify-center rounded-full ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                   shuffled
                     ? 'bg-accent/10 text-accent hover:bg-accent/20'
-                    : 'text-gray-400 hover:bg-base-700 hover:text-white'
+                    : 'text-gray-500 hover:bg-base-700/70 hover:text-gray-200'
                 }`}
                 title={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
                 aria-label={shuffled ? 'Disable shuffle' : 'Shuffle queue'}
@@ -179,35 +179,35 @@ export default function NowPlayingPage() {
             )}
             <button
               onClick={previous}
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-base-600 bg-base-800/80 text-xl text-gray-300 hover:border-base-500 hover:bg-base-700 hover:text-white"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-base-700/70 hover:text-white"
               title="Previous"
               aria-label="Previous"
             >
-              <PrevIcon className="h-5 w-5" />
+              <PrevIcon className="h-4 w-4" />
             </button>
             <button
               onClick={toggle}
-              className="flex h-16 w-16 items-center justify-center rounded-full bg-accent text-2xl text-base-900 shadow-lg shadow-accent/20 hover:bg-accent-hover"
+              className="flex h-11 w-11 items-center justify-center rounded-full border border-accent/35 bg-accent/15 text-accent transition-colors hover:bg-accent/25"
               title={isPlaying ? 'Pause' : 'Play'}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? <PauseIcon className="h-6 w-6" /> : <PlayIcon className="h-6 w-6" />}
+              {isPlaying ? <PauseIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
             </button>
             <button
               onClick={next}
               disabled={!hasNext}
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-base-600 bg-base-800/80 text-xl text-gray-300 hover:border-base-500 hover:bg-base-700 hover:text-white disabled:opacity-30 disabled:hover:border-base-600 disabled:hover:bg-base-800/80 disabled:hover:text-gray-300"
+              className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition-colors hover:bg-base-700/70 hover:text-white disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
               title="Next"
               aria-label="Next"
             >
-              <NextIcon className="h-5 w-5" />
+              <NextIcon className="h-4 w-4" />
             </button>
             <button
               onClick={cycleRepeat}
-              className={`relative flex h-10 w-10 items-center justify-center rounded-full ${
+              className={`relative flex h-8 w-8 items-center justify-center rounded-full transition-colors ${
                 repeat !== 'off'
                   ? 'bg-accent/10 text-accent hover:bg-accent/20'
-                  : 'text-gray-400 hover:bg-base-700 hover:text-white'
+                  : 'text-gray-500 hover:bg-base-700/70 hover:text-gray-200'
               }`}
               title={
                 repeat === 'off'

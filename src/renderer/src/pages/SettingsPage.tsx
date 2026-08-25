@@ -39,7 +39,6 @@ import {
   filterSettingsSections,
   type SettingsSearchSection
 } from '../lib/settingsFilter'
-import TasksTabs from '../components/TasksTabs'
 
 // Persist a setting and refresh the settings cache. Passed down to every
 // section so they all save the same way.
@@ -128,40 +127,46 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl p-6">
+    <div className="mx-auto max-w-6xl p-4 sm:p-6">
       <PageHeader
         title="Settings"
         subtitle="Search the local system, then adjust one quiet group at a time."
         className="mb-6"
-        actions={
-          <label className="block w-full sm:w-72">
-            <span className="sr-only">Search settings</span>
-            <input
-              className="input w-full"
-              type="search"
-              placeholder="Search settings…"
-              value={settingsQuery}
-              onChange={(e) => setSettingsQuery(e.target.value)}
-            />
-          </label>
-        }
       />
-      <TasksTabs value="settings" />
-
       <div className="flex flex-col gap-6 md:flex-row">
         {/* Section nav — sticky on desktop, wrapping row on narrow screens. */}
         <nav className="shrink-0 md:w-52">
           <div className="md:sticky md:top-6">
-            <Tabs
-              orientation="vertical"
-              tabs={matches.map((section) => ({ key: section.key, label: section.title }))}
-              value={displayTab ?? tab}
-              onChange={openTab}
-            />
+            <label className="block">
+              <span className="label">Find a section</span>
+              <input
+                className="input w-full"
+                type="search"
+                placeholder="Video, folders, updates…"
+                value={settingsQuery}
+                onChange={(e) => setSettingsQuery(e.target.value)}
+              />
+            </label>
+            <div className="mt-4 border-t border-base-700 pt-4">
+              <Tabs
+                orientation="vertical"
+                tabs={matches.map((section) => ({ key: section.key, label: section.title }))}
+                value={displayTab ?? tab}
+                onChange={openTab}
+              />
+            </div>
             {settingsQuery.trim() && matches.length > 0 && (
-              <p className="mt-3 text-xs text-gray-500">
-                {matches.length} matching section{matches.length === 1 ? '' : 's'}
-              </p>
+              <div className="mt-4 border-t border-base-700 pt-4">
+                <p className="text-xs text-gray-500">
+                  {matches.length} matching section{matches.length === 1 ? '' : 's'}
+                </p>
+                <button
+                  className="mt-2 text-sm text-accent hover:underline"
+                  onClick={() => setSettingsQuery('')}
+                >
+                  Clear search
+                </button>
+              </div>
             )}
           </div>
         </nav>
@@ -266,7 +271,7 @@ function TextSetting({
   useEffect(() => setValue(data?.[settingKey] ?? ''), [data, settingKey])
   return (
     <SettingCard title={title} description={description}>
-      <div className="flex items-center gap-2">
+      <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
         <input
           className="input"
           type={type}

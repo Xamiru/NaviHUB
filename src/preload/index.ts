@@ -64,6 +64,8 @@ const api: NaviApi = {
     global: (query) => ipcRenderer.invoke('search:global', query)
   },
   quiz: {
+    availability: (request) => ipcRenderer.invoke('quiz:availability', request),
+    challengePool: (request) => ipcRenderer.invoke('quiz:challengePool', request),
     songPool: (filter) => ipcRenderer.invoke('quiz:songPool', filter),
     characterPool: (filter) => ipcRenderer.invoke('quiz:characterPool', filter),
     vaPool: (filter) => ipcRenderer.invoke('quiz:vaPool', filter),
@@ -71,7 +73,7 @@ const api: NaviApi = {
     mangaPanelPool: (filter, length) => ipcRenderer.invoke('quiz:mangaPanelPool', filter, length),
     tournamentPool: (source) => ipcRenderer.invoke('quiz:tournamentPool', source),
     logSession: (input) => ipcRenderer.invoke('quiz:logSession', input),
-    history: (kind, limit) => ipcRenderer.invoke('quiz:history', kind, limit)
+    history: (kind, limit, playMode) => ipcRenderer.invoke('quiz:history', kind, limit, playMode)
   },
   hltb: {
     fetch: (mediaId) => ipcRenderer.invoke('hltb:fetch', mediaId)

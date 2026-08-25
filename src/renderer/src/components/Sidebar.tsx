@@ -3,7 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 import lainAvatar from '../assets/lain.png'
 import {
   archiveAreaForPath,
-  bestArchiveRoute,
+  drawerRouteForPath,
   drawerItemsForArea,
   type ArchiveArea,
   type ArchiveNavItem
@@ -79,7 +79,7 @@ export default function Sidebar() {
   }, [])
 
   const drawerItems = openArea ? visibleItems(openArea) : []
-  const drawerCurrent = bestArchiveRoute(
+  const drawerCurrent = drawerRouteForPath(
     location.pathname,
     drawerItems.map((item) => item.to)
   )
@@ -123,15 +123,9 @@ export default function Sidebar() {
       </nav>
 
       <div className="border-t border-base-700 py-2">
-        <NavLink to="/tasks" className={railClass(location.pathname.startsWith('/tasks'))}>
-          Tasks
-        </NavLink>
         <button
           type="button"
-          className={railClass(
-            (currentArea === 'system' && !location.pathname.startsWith('/tasks')) ||
-              openArea === 'system'
-          )}
+          className={railClass(currentArea === 'system' || openArea === 'system')}
           onClick={() => setOpenArea(openArea === 'system' ? null : 'system')}
           aria-expanded={openArea === 'system'}
           aria-controls="archive-nav-drawer"

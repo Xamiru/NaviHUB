@@ -153,7 +153,7 @@ export interface PanelCandidate {
   coverPath: string | null
   year: number | null
   genres: string[]
-  chapters: { dirPath: string; files: string[] }[]
+  chapters: { dirPath: string; files: string[]; lastReadPage: number | null; readAt: string | null }[]
 }
 
 // Pure seed selection for the manga-panel quiz: shuffles the candidate
@@ -169,10 +169,16 @@ export function pickPanelSeeds(
   const out: QuizMangaPanelItem[] = []
   for (const c of shuffle(candidates, rng)) {
     if (out.length >= count) break
-    const usable = c.chapters.filter((ch) => ch.files.length > 0)
-    if (usable.length === 0) continue
-    const ch = usable[Math.floor(rng() * usable.length)]
-    const file = ch.files[Math.floor(rng() * ch.files.length)]
+    const pages = c.chapters.flatMap((ch) => {
+      const consumedEnd = ch.readAt != null ? ch.files.length - 1 : (ch.lastReadPage ?? -1)
+      if (consumedEnd < 0) return []
+      const trimEdges = ch.files.length >= 6 && consumedEnd >= 2
+      const start = trimEdges ? 2 : 0
+      const end = trimEdges && consumedEnd >= ch.files.length - 1 ? ch.files.length - 2 : consumedEnd
+      return ch.files.slice(start, end + 1).map((file) => ({ dirPath: ch.dirPath, file }))
+    })
+    if (pages.length === 0) continue
+    const page = pages[Math.floor(rng() * pages.length)]
     out.push({
       mediaId: c.mediaId,
       title: c.title,
@@ -182,7 +188,7 @@ export function pickPanelSeeds(
       // media_type='manga' is guaranteed by the caller's SQL, so the virtual
       // prefix is always 'manga/' here (books resolve through the same module
       // but are filtered out upstream).
-      pageRelPath: `manga/${ch.dirPath}/${file}`
+      pageRelPath: `manga/${page.dirPath}/${page.file}`
     })
   }
   return out
@@ -497,15 +503,28 @@ export async function panelPool(
   const candidates: PanelCandidate[] = []
   for (const r of shuffle(rows)) {
     if (candidates.length >= wanted) break
-    const chRows = db
+      const chRows = db
       .prepare(
-        `SELECT dir_path FROM manga_chapter WHERE media_id = ? AND LOWER(dir_path) NOT LIKE '%.epub'`
+        `SELECT dir_path, last_read_page, read_at FROM manga_chapter
+         WHERE media_id = ? AND LOWER(dir_path) NOT LIKE '%.epub'
+           AND (? = 'all' OR read_at IS NOT NULL OR last_read_page IS NOT NULL)`
       )
-      .all(r.media_id) as { dir_path: string }[]
-    const chapters: { dirPath: string; files: string[] }[] = []
+      .all(r.media_id, filter.scope ?? 'consumed') as {
+        dir_path: string
+        last_read_page: number | null
+        read_at: string | null
+      }[]
+    const chapters: PanelCandidate['chapters'] = []
     for (const ch of chRows) {
       const files = await listChapterPages(join(root, ch.dir_path))
-      if (files.length > 0) chapters.push({ dirPath: ch.dir_path, files })
+      if (files.length > 0) {
+        chapters.push({
+          dirPath: ch.dir_path,
+          files,
+          lastReadPage: filter.scope === 'all' ? files.length - 1 : ch.last_read_page,
+          readAt: filter.scope === 'all' ? 'all' : ch.read_at
+        })
+      }
     }
     if (chapters.length === 0) continue // vanished folder / unreadable archive
     candidates.push({

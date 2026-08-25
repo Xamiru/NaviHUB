@@ -125,6 +125,15 @@ export function standingsOf(br: Bracket): number[] {
   return placementsOf(br).map((p) => p.poolIndex)
 }
 
+export function placementRank(
+  placements: ReturnType<typeof placementsOf>,
+  index: number
+): number {
+  const row = placements[index]
+  if (!row || row.outInRound == null) return 1
+  return placements.findIndex((candidate) => candidate.outInRound === row.outInRound) + 1
+}
+
 export function roundLabel(competitors: number): string {
   if (competitors === 2) return 'Final'
   if (competitors === 4) return 'Semifinals'

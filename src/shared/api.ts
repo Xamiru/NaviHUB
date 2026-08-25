@@ -47,8 +47,13 @@ import type {
   WallpaperSearchPage,
   WallpaperSearchResult,
   QuizCharacterItem,
+  QuizAvailability,
+  QuizAvailabilityRequest,
+  QuizChallengeQuestion,
+  QuizChallengeRequest,
   QuizHistory,
   QuizKind,
+  QuizPlayMode,
   QuizLibFilter,
   QuizMangaPanelItem,
   QuizSessionInput,
@@ -345,6 +350,8 @@ export interface NaviApi {
     global(query: string): Promise<GlobalSearchResults>
   }
   quiz: {
+    availability(request: QuizAvailabilityRequest): Promise<QuizAvailability>
+    challengePool(request: QuizChallengeRequest): Promise<QuizChallengeQuestion[]>
     // The pool of playable anime theme songs for the song quiz, narrowed by the
     // given filter (OP/ED, list statuses). Game logic runs in the renderer.
     songPool(filter: QuizSongFilter): Promise<QuizSong[]>
@@ -365,7 +372,7 @@ export interface NaviApi {
     logSession(input: QuizSessionInput): Promise<number>
     // limit = how many recent rounds come back (default 15; the graded-reading
     // page asks for 200 to find per-passage bests in settings.passageKey).
-    history(kind: QuizKind, limit?: number): Promise<QuizHistory>
+    history(kind: QuizKind, limit?: number, playMode?: QuizPlayMode): Promise<QuizHistory>
   }
   hltb: {
     // Looks the item's title up on HowLongToBeat and stores the main / extra /

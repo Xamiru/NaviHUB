@@ -74,10 +74,10 @@ export default function PlayerWidgetPage(): React.JSX.Element {
               className="h-12 w-12 shrink-0"
               fallback="music"
             />
-            <span className="block w-28 min-w-0">
-              <span className="block truncate text-sm font-medium leading-tight">{snap.title}</span>
+            <span className="block w-44 min-w-0">
+              <span className="block truncate text-xs font-medium leading-tight">{snap.title}</span>
               {snap.artist && (
-                <span className="block truncate text-xs leading-tight text-gray-400">
+                <span className="block truncate text-[10px] leading-tight text-gray-400">
                   {snap.artist}
                 </span>
               )}

@@ -1,117 +1,136 @@
+import { useMemo } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
-import HubCard from '../components/HubCard'
-import { Link } from 'react-router-dom'
+import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
+import { useAllCompletedStatuses, useSettings } from '../lib/hooks'
+import type { QuizAvailability } from '@shared/types'
 
-// A quiz type shown as a card on the hub. This section is for quizzes over the
-// LIBRARY only — study drills live in their own section (Japanese, English,
-// Programming each own theirs).
-const QUIZZES = [
+interface GameCard {
+  to: string
+  title: string
+  body: string
+  availability?: keyof QuizAvailability
+  minimum?: number
+}
+
+const GROUPS: Array<{ title: string; games: GameCard[] }> = [
   {
-    to: '/quiz/song',
-    title: 'Song Quiz',
-    signal: 'Audio',
-    desc: 'A random anime opening or ending plays — guess which anime it belongs to from 4 options. Classic, arcade and reverse modes.'
+    title: 'Audio',
+    games: [{ to: '/quiz/song', title: 'Song Quiz', body: 'Classic, arcade, or reverse theme-song rounds.', availability: 'song', minimum: 4 }]
   },
   {
-    to: '/quiz/character',
-    title: 'Character Quiz',
-    signal: 'Images',
-    desc: 'A character portrait appears — name the title they belong to.'
+    title: 'Images',
+    games: [
+      { to: '/quiz/images', title: 'Image Reveal', body: 'Identify covers or art through four reveal stages.', availability: 'imageReveal', minimum: 4 },
+      { to: '/quiz/silhouette', title: 'Silhouette', body: 'Recognise a character or the title they belong to.', availability: 'silhouette', minimum: 4 },
+      { to: '/quiz/panels', title: 'Manga Panels', body: 'Name a manga from a safely selected local page.', availability: 'mangaPanel', minimum: 4 }
+    ]
   },
   {
-    to: '/quiz/va',
-    title: 'Voice Actor Quiz',
-    signal: 'Connections',
-    desc: 'Match characters with their Japanese voice actors — both directions, straight from your credit graph.'
+    title: 'Connections',
+    games: [
+      { to: '/quiz/connections', title: 'Connections', body: 'Find the person or studio linking two titles.', availability: 'connections', minimum: 4 },
+      { to: '/quiz/chronology', title: 'Chronology', body: 'Order four connected titles by release date.', availability: 'chronology', minimum: 4 },
+      { to: '/quiz/odd-one-out', title: 'Odd One Out', body: 'Find the entry that breaks a stated relationship.', availability: 'oddOneOut', minimum: 4 }
+    ]
   },
   {
-    to: '/quiz/synopsis',
-    title: 'Synopsis Quiz',
-    signal: 'Text',
-    desc: 'A description excerpt appears — guess which title in your library it describes.'
+    title: 'Library',
+    games: [
+      { to: '/quiz/character', title: 'Character Quiz', body: 'Match a character to every legitimate appearance.', availability: 'character', minimum: 4 },
+      { to: '/quiz/va', title: 'Voice Actor Quiz', body: 'Match Japanese credits within the exact title.', availability: 'va', minimum: 4 },
+      { to: '/quiz/synopsis', title: 'Synopsis Quiz', body: 'Identify a title from a spoiler-conscious excerpt.', availability: 'synopsis', minimum: 4 },
+      { to: '/quiz/higher-lower', title: 'Higher or Lower', body: 'An endless three-life comparison run.', availability: 'higherLower', minimum: 2 }
+    ]
   },
   {
-    to: '/quiz/panels',
-    title: 'Manga Panels',
-    signal: 'Local pages',
-    desc: 'A random page from one of your locally-linked manga appears — name the series.'
-  },
-  {
-    to: '/quiz/tournament',
     title: 'Tournament',
-    signal: 'Bracket',
-    desc: 'World-cup bracket over your library — songs, characters, anime or people go head-to-head until one champion remains.'
+    games: [{ to: '/quiz/tournament', title: 'Tournament', body: 'Knockout or group-stage contests over your library.' }]
   }
 ]
 
+function hasValidTournamentSave(raw: string | undefined): boolean {
+  if (!raw) return false
+  try {
+    const saved = JSON.parse(raw) as Record<string, unknown>
+    return (
+      saved.version === 2 &&
+      Array.isArray(saved.contenders) &&
+      (saved.groups != null || saved.bracket != null || saved.activeTiebreak != null)
+    )
+  } catch {
+    return false
+  }
+}
+
 export default function QuizLandingPage() {
-  const day = Math.floor(Date.now() / 86_400_000)
-  const daily = QUIZZES[day % (QUIZZES.length - 1)]
+  const navigate = useNavigate()
+  const completedStatuses = useAllCompletedStatuses()
+  const { data: settings } = useSettings()
+  const request = useMemo(
+    () => ({ scope: 'consumed' as const, statuses: completedStatuses }),
+    [completedStatuses]
+  )
+  const { data: availability } = useQuery({
+    queryKey: qk.quiz.availability(request),
+    queryFn: () => api.quiz.availability(request)
+  })
+  const solo = GROUPS.flatMap((group) => group.games).filter(
+    (game) => game.availability && (availability?.[game.availability] ?? 0) >= (game.minimum ?? 1)
+  )
+  const hasSaved = hasValidTournamentSave(settings?.['tournament.saved'])
+
+  function randomChallenge() {
+    if (!solo.length) return
+    navigate(solo[Math.floor(Math.random() * solo.length)].to, { state: { randomChallenge: true } })
+  }
+
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
-        title="Challenge broadcast"
-        subtitle="A rotating daily format turns your own local library into the signal."
-        actions={
-          <Link to={daily.to} className="btn-primary">
-            Accept daily challenge
-          </Link>
-        }
+        title="Quiz broadcast"
+        subtitle="Replayable solo challenges and shared-room games built from the library you have completed."
+        actions={<Link to="/quiz/party" className="btn-primary">Start party</Link>}
       />
-
-      <div className="grid items-stretch gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)]">
-        <section className="card-glow relative min-h-[360px] overflow-hidden p-7 sm:p-9">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgb(var(--accent)/0.14),transparent_22rem)]" />
-          <div className="relative flex h-full flex-col">
-            <span className="chip w-max border border-accent/20 bg-black/30 text-accent">
-              Daily challenge / {daily.signal}
-            </span>
-            <h2 className="mt-6 max-w-3xl text-4xl font-semibold leading-tight text-white sm:text-5xl">
-              {daily.title}
-            </h2>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-gray-300">{daily.desc}</p>
-            <div className="mt-8 grid max-w-3xl gap-3 sm:grid-cols-3">
-              <div className="rounded-md border border-base-600 bg-black/20 p-4">
-                <p className="text-[10px] uppercase tracking-wider text-gray-500">Source</p>
-                <p className="mt-2 text-sm font-medium">Your library only</p>
-              </div>
-              <div className="rounded-md border border-base-600 bg-black/20 p-4">
-                <p className="text-[10px] uppercase tracking-wider text-gray-500">Input</p>
-                <p className="mt-2 text-sm font-medium">Keyboard ready</p>
-              </div>
-              <div className="rounded-md border border-base-600 bg-black/20 p-4">
-                <p className="text-[10px] uppercase tracking-wider text-gray-500">Rotation</p>
-                <p className="mt-2 text-sm font-medium">Changes daily</p>
-              </div>
+      <section className="card-glow mb-8 p-7">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">Open play</p>
+        <h2 className="mt-3 text-3xl font-semibold text-white">Choose the signal, not the calendar.</h2>
+        <p className="mt-2 max-w-3xl text-gray-300">
+          Every deal receives a fresh replay seed. Completed-only pools are the default so the quiz does not reveal unseen characters, connections, art, or endings.
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Link to="/quiz/song" className="btn-ghost">Quick Solo</Link>
+          <button className="btn-ghost" disabled={!solo.length} onClick={randomChallenge}>Random Challenge</button>
+          {hasSaved && <Link to="/quiz/tournament" className="btn-ghost">Resume Tournament</Link>}
+        </div>
+      </section>
+      <div className="space-y-8">
+        {GROUPS.map((group) => (
+          <section key={group.title}>
+            <h2 className="label mb-3">{group.title}</h2>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
+              {group.games.map((game) => {
+                const count = game.availability ? availability?.[game.availability] ?? 0 : null
+                const ready = count == null || count >= (game.minimum ?? 1)
+                const inner = (
+                  <>
+                    <p className="font-semibold">{game.title}</p>
+                    <p className="mt-1 text-sm text-gray-400">{game.body}</p>
+                    <p className="mt-3 text-xs text-gray-500">
+                      {count == null ? 'Uses your selected contender source' : ready ? `${count} eligible sources` : `Needs at least ${game.minimum}; ${count} eligible`}
+                    </p>
+                  </>
+                )
+                return ready ? (
+                  <Link key={game.to} to={game.to} className="card block min-h-[140px] p-5 transition-colors hover:border-accent hover:bg-base-700/60">{inner}</Link>
+                ) : (
+                  <div key={game.to} className="card min-h-[140px] p-5 opacity-55" aria-disabled="true">{inner}</div>
+                )
+              })}
             </div>
-            <Link to={daily.to} className="btn-ghost mt-auto self-start px-6">
-              Start challenge
-            </Link>
-          </div>
-        </section>
-
-        <aside className="card p-6">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
-            Quick play
-          </p>
-          <div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-            {QUIZZES.map((q) => (
-              <Link
-                key={q.to}
-                to={q.to}
-                className="rounded-md border border-base-700 p-4 transition-colors hover:border-accent hover:bg-base-700/50"
-              >
-                <p className="text-[10px] uppercase tracking-wider text-accent">{q.signal}</p>
-                <p className="mt-1 text-sm font-medium">{q.title}</p>
-              </Link>
-            ))}
-          </div>
-        </aside>
-      </div>
-
-      <div className="mt-7 grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
-        {QUIZZES.map((q) => (
-          <HubCard key={q.to} to={q.to} title={q.title} body={q.desc} meta={q.signal} />
+          </section>
         ))}
       </div>
     </div>

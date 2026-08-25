@@ -71,6 +71,23 @@ export function bestArchiveRoute(pathname: string, routes: string[]): string | n
   )
 }
 
+export function drawerRouteForPath(pathname: string, routes: string[]): string | null {
+  const direct = bestArchiveRoute(pathname, routes)
+  if (direct) return direct
+
+  const media = MEDIA_CONFIGS.find(
+    (cfg) => pathname === cfg.basePath || pathname.startsWith(`${cfg.basePath}/`)
+  )
+  if (!media?.hideFromSidebar) return null
+
+  const siblingKeys = new Set(media.listTabs?.map((tab) => tab.key) ?? [])
+  return (
+    MEDIA_CONFIGS.find(
+      (cfg) => !cfg.hideFromSidebar && siblingKeys.has(cfg.key) && routes.includes(cfg.basePath)
+    )?.basePath ?? null
+  )
+}
+
 export function archiveAreaForPath(pathname: string): ArchiveArea {
   if (
     pathname.startsWith('/settings') ||
@@ -89,6 +106,9 @@ export function archiveAreaForPath(pathname: string): ArchiveArea {
   }
   if (pathname.startsWith('/quiz') || pathname.startsWith('/gacha')) return 'play'
   if (
+    MEDIA_CONFIGS.some(
+      (cfg) => pathname === cfg.basePath || pathname.startsWith(`${cfg.basePath}/`)
+    ) ||
     MEDIA_DRAWER_ITEMS.some(
       (item) => pathname === item.to || pathname.startsWith(`${item.to}/`)
     ) ||
@@ -111,7 +131,12 @@ export function archiveAreaForPath(pathname: string): ArchiveArea {
 }
 
 function mediaContext(pathname: string): ArchiveContext | null {
-  if (pathname.startsWith('/anime')) {
+  if (
+    pathname.startsWith('/anime') ||
+    ['/people', '/artists', '/studios', '/characters'].some(
+      (route) => pathname === route || pathname.startsWith(`${route}/`)
+    )
+  ) {
     return {
       title: 'Anime archive',
       items: [
@@ -119,6 +144,7 @@ function mediaContext(pathname: string): ArchiveContext | null {
         { to: '/anime/seasonal', label: 'Seasonal' },
         { to: '/anime/songs', label: 'Songs' },
         { to: '/people', label: 'Voice Actors' },
+        { to: '/artists', label: 'Artists' },
         { to: '/studios', label: 'Studios' }
       ]
     }
@@ -135,10 +161,7 @@ function mediaContext(pathname: string): ArchiveContext | null {
   if (pathname.startsWith('/visual-novels')) {
     return {
       title: 'Visual novel archive',
-      items: [
-        { to: '/visual-novels', label: 'Visual Novels' },
-        { to: '/people', label: 'Voice Actors' }
-      ]
+      items: [{ to: '/visual-novels', label: 'Visual Novels' }]
     }
   }
   if (pathname.startsWith('/games')) {
@@ -222,10 +245,11 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
     return {
       title: 'Challenge broadcast',
       items: [
-        { to: '/quiz', label: 'Challenges' },
-        { to: '/quiz/song', label: 'Song Quiz' },
-        { to: '/quiz/character', label: 'Characters' },
-        { to: '/quiz/va', label: 'Voice Actors' },
+        { to: '/quiz', label: 'Quiz Home' },
+        { to: '/quiz/party', label: 'Party' },
+        { to: '/quiz/song', label: 'Songs' },
+        { to: '/quiz/images', label: 'Images' },
+        { to: '/quiz/connections', label: 'Connections' },
         { to: '/quiz/tournament', label: 'Tournament' }
       ]
     }
@@ -293,24 +317,6 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
 
   const media = mediaContext(pathname)
   if (media) return media
-
-  if (
-    pathname.startsWith('/people') ||
-    pathname.startsWith('/artists') ||
-    pathname.startsWith('/studios') ||
-    pathname.startsWith('/characters')
-  ) {
-    return {
-      title: 'Context lens',
-      items: [
-        { to: '/people', label: 'Voice Actors' },
-        { to: '/actors', label: 'Actors' },
-        { to: '/artists', label: 'Artists' },
-        { to: '/mangaka', label: 'Mangaka' },
-        { to: '/studios', label: 'Studios' }
-      ]
-    }
-  }
 
   return { title: 'Archive broadcast', items: HOME_ITEMS }
 }

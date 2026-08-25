@@ -214,6 +214,8 @@ export function registerIpc(): void {
   ipcMain.handle('search:global', (_e, query) => searchRepo.global(query))
 
   // ---- quiz ----
+  ipcMain.handle('quiz:availability', (_e, request) => quizRepo.availability(request))
+  ipcMain.handle('quiz:challengePool', (_e, request) => quizRepo.challengePool(request))
   ipcMain.handle('quiz:songPool', (_e, filter) => quizRepo.songPool(filter))
   ipcMain.handle('quiz:characterPool', (_e, filter) => quizRepo.characterPool(filter))
   ipcMain.handle('quiz:vaPool', (_e, filter) => quizRepo.vaPool(filter))
@@ -223,7 +225,9 @@ export function registerIpc(): void {
   )
   ipcMain.handle('quiz:tournamentPool', (_e, source) => tournamentRepo.tournamentPool(source))
   ipcMain.handle('quiz:logSession', (_e, input) => quizRepo.logSession(input))
-  ipcMain.handle('quiz:history', (_e, kind, limit) => quizRepo.history(kind, limit ?? 15))
+  ipcMain.handle('quiz:history', (_e, kind, limit, playMode) =>
+    quizRepo.history(kind, limit ?? 15, playMode)
+  )
 
   // ---- HowLongToBeat times (games + VNs) ----
   ipcMain.handle('hltb:fetch', (_e, mediaId) => hltb.fetchForMedia(mediaId))

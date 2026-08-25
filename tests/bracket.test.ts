@@ -6,6 +6,7 @@ import {
   currentMatch,
   nextPowerOfTwo,
   pickWinner,
+  placementRank,
   placementsOf,
   roundLabel,
   runnerUpOf,
@@ -203,6 +204,14 @@ describe('standingsOf', () => {
       { poolIndex: 3, outInRound: 1 },
       { poolIndex: 1, outInRound: 0 },
       { poolIndex: 2, outInRound: 0 }
+    ])
+  })
+
+  it('assigns tied knockout ranks by elimination round', () => {
+    const { final } = playThrough(8)
+    const placements = placementsOf(final)
+    expect(placements.map((_, index) => placementRank(placements, index))).toEqual([
+      1, 2, 3, 3, 5, 5, 5, 5
     ])
   })
 })

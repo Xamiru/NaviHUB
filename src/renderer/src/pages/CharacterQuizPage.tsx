@@ -2,20 +2,21 @@ import { useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
-import { useAllWatchedStatuses } from '../lib/hooks'
+import { useAllCompletedStatuses } from '../lib/hooks'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
 import LibMcRound, { type McQuestion } from '../components/libraryQuiz/LibMcRound'
 import { Group, Pill } from '../components/PillGroup'
 import { pickDistractors } from '@shared/quizDistractors'
 import { shuffle } from '@shared/shuffle'
+import { balancedDeal } from '@shared/quizCore'
 
 // Character quiz: a portrait appears, you name the title it belongs to.
 // Distractor titles share the answer's era/genres where the library allows.
 export default function CharacterQuizPage() {
-  const watchedStatuses = useAllWatchedStatuses()
+  const completedStatuses = useAllCompletedStatuses()
 
-  const [listSource, setListSource] = usePersistedState<'watched' | 'all'>('quizCharList', 'watched')
+  const [listSource, setListSource] = usePersistedState<'consumed' | 'all'>('quizCharList', 'consumed')
   const [length, setLength] = usePersistedState<number>('quizCharLength', 10)
   const [timerEnabled, setTimerEnabled] = usePersistedState('quizCharTimer', true)
 
@@ -30,7 +31,7 @@ export default function CharacterQuizPage() {
     setLoading(true)
     try {
       const pool = await api.quiz.characterPool({
-        statuses: listSource === 'all' ? null : watchedStatuses
+        statuses: listSource === 'all' ? null : completedStatuses
       })
       const distinctMedia = new Set(pool.map((p) => p.mediaId)).size
       if (pool.length === 0 || distinctMedia < 4) {
@@ -39,14 +40,14 @@ export default function CharacterQuizPage() {
         )
         return
       }
-      const seeds = shuffle(pool).slice(0, length)
+      const seeds = balancedDeal(pool, length, (item) => item.mediaId)
       const qs: McQuestion[] = seeds.map((seed) => {
         // pickDistractors keys on mediaId, so a distractor title never shares
         // the answer's title (and its covers stay distinct within a question).
-        const distractors = pickDistractors(pool, seed, 3)
+        const distractors = pickDistractors(pool, seed, 3, seed.validMediaIds)
         return {
           key: `char-${seed.characterId}`,
-          correctKey: seed.mediaId,
+          validKeys: seed.validMediaIds.map((id) => `media-${id}`),
           prompt: (
             <div className="text-center">
               <CoverImage
@@ -61,7 +62,7 @@ export default function CharacterQuizPage() {
             </div>
           ),
           options: shuffle([seed, ...distractors]).map((o) => ({
-            key: o.mediaId,
+            key: `media-${o.mediaId}`,
             node: (
               <>
                 <CoverImage path={o.coverPath} alt={o.mediaTitle} className="h-24 w-16 shrink-0" />
@@ -110,9 +111,10 @@ export default function CharacterQuizPage() {
 
       <div className="card p-6 space-y-6">
         <Group label="From">
-          <Pill active={listSource === 'watched'} onClick={() => setListSource('watched')} label="Watched" />
+          <Pill active={listSource !== 'all'} onClick={() => setListSource('consumed')} label="Completed" />
           <Pill active={listSource === 'all'} onClick={() => setListSource('all')} label="All" />
         </Group>
+        {listSource === 'all' && <p className="-mt-4 text-sm text-amber-300">Includes in-progress or unseen content and may contain spoilers.</p>}
 
         <Group label="Length">
           <Pill active={length === 5} onClick={() => setLength(5)} label="5" />

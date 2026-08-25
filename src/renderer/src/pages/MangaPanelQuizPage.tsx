@@ -3,7 +3,7 @@ import PageHeader from '../components/PageHeader'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
 import { useStatuses } from '../lib/hooks'
-import { MANGA, statusesExceptPlanned } from '../lib/mediaConfig'
+import { MANGA } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
 import LibMcRound, { type McQuestion } from '../components/libraryQuiz/LibMcRound'
@@ -18,9 +18,7 @@ import { mediaUrl } from '@shared/mediaUrl'
 // chapters (folders or CBZ); pages are the exact paths the reader streams.
 export default function MangaPanelQuizPage() {
   const statuses = useStatuses(MANGA)
-  const readingStatuses = statusesExceptPlanned(statuses)
-
-  const [listSource, setListSource] = usePersistedState<'reading' | 'all'>('quizPanelList', 'reading')
+  const [listSource, setListSource] = usePersistedState<'consumed' | 'all'>('quizPanelList', 'consumed')
   const [length, setLength] = usePersistedState<number>('quizPanelLength', 10)
   const [timerEnabled, setTimerEnabled] = usePersistedState('quizPanelTimer', true)
 
@@ -35,8 +33,11 @@ export default function MangaPanelQuizPage() {
     setLoading(true)
     try {
       const pool = await api.quiz.mangaPanelPool(
-        { statuses: listSource === 'all' ? null : readingStatuses },
-        length
+        {
+          statuses: listSource === 'all' ? null : [statuses[1]].filter(Boolean),
+          scope: listSource
+        },
+        length + 5
       )
       if (pool.length < 4) {
         setError(
@@ -46,8 +47,8 @@ export default function MangaPanelQuizPage() {
       }
       const qs: McQuestion[] = pool.map((seed) => ({
         key: `panel-${seed.mediaId}`,
-        correctKey: seed.mediaId,
-        prompt: (
+        validKeys: [`media-${seed.mediaId}`],
+        prompt: ({ skip }) => (
           <div className="text-center">
             <p className="text-sm uppercase tracking-widest text-gray-500">
               Which manga is this page from?
@@ -57,13 +58,14 @@ export default function MangaPanelQuizPage() {
               alt="Manga page"
               className="mx-auto mt-4 max-h-[65vh] w-auto rounded-xl border border-base-700"
               draggable={false}
+              onError={skip}
             />
           </div>
         ),
         // pickDistractors keys on mediaId and never returns the answer's own
         // title, so all four covers stay distinct.
         options: shuffle([seed, ...pickDistractors(pool, seed, 3)]).map((o) => ({
-          key: o.mediaId,
+          key: `media-${o.mediaId}`,
           node: (
             <>
               <CoverImage path={o.coverPath} alt={o.title} className="h-24 w-16 shrink-0" />
@@ -94,6 +96,7 @@ export default function MangaPanelQuizPage() {
         questions={questions}
         settings={settingsSnapshot}
         timed={timerEnabled}
+        targetLength={length}
         onPlayAgain={playAgain}
         backTo={{ to: '/quiz', label: 'quizzes' }}
       />
@@ -111,9 +114,10 @@ export default function MangaPanelQuizPage() {
 
       <div className="card p-6 space-y-6">
         <Group label="From">
-          <Pill active={listSource === 'reading'} onClick={() => setListSource('reading')} label="Reading" />
+          <Pill active={listSource !== 'all'} onClick={() => setListSource('consumed')} label="Read pages" />
           <Pill active={listSource === 'all'} onClick={() => setListSource('all')} label="All" />
         </Group>
+        {listSource === 'all' && <p className="-mt-4 text-sm text-amber-300">Includes unread pages and may contain spoilers.</p>}
 
         <Group label="Length">
           <Pill active={length === 5} onClick={() => setLength(5)} label="5" />

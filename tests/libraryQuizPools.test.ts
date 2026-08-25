@@ -158,7 +158,7 @@ describe('quizRepo.vaPool', () => {
     })
   })
 
-  it('dedupes a character to its FIRST credit and filters by status', () => {
+  it('preserves a character credit in every title and filters by status', () => {
     const m1 = addMedia('Show One', { status: 'Completed' })
     const m2 = addMedia('Show Two', { status: 'Watching' })
     const ch = addCharacter('Vivy', 'char/vivy.webp')
@@ -167,10 +167,8 @@ describe('quizRepo.vaPool', () => {
     addCredit(m1, p1, ch)
     addCredit(m2, p2, ch)
 
-    expect(quizRepo.vaPool()).toHaveLength(1)
-    expect(quizRepo.vaPool()[0].personName).toBe('Asami Tano') // lowest credit id wins
-    // A status filter narrows the candidate rows FIRST, so the character is
-    // then credited via its first matching-status appearance.
+    expect(quizRepo.vaPool()).toHaveLength(2)
+    expect(quizRepo.vaPool().map((r) => r.personName)).toEqual(['Asami Tano', 'Someone Else'])
     expect(quizRepo.vaPool({ statuses: ['Watching'] })).toMatchObject([
       { personName: 'Someone Else' }
     ])

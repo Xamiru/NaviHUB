@@ -1,13 +1,13 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import PageHeader from '../components/PageHeader'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { useDebouncedValue, useStatuses } from '../lib/hooks'
+import { useAllCompletedStatuses, useDebouncedValue, useStatuses } from '../lib/hooks'
 import { usePlayer } from '../lib/player'
-import { ANIME, MEDIA_CONFIGS, statusesExceptPlanned } from '../lib/mediaConfig'
+import { ANIME, MEDIA_CONFIGS } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import StatTile from '../components/StatTile'
 import TournamentTree from '../components/TournamentTree'
@@ -21,18 +21,30 @@ import {
   nextPowerOfTwo,
   pickWinner,
   placementsOf,
+  placementRank,
   roundLabel,
   runnerUpOf,
   shuffle,
   type Bracket
 } from '@shared/bracket'
 import type { MediaType, TournamentEntry, TournamentSource } from '@shared/types'
+import type { TournamentFormat, TournamentTiebreak } from '@shared/types'
+import {
+  createTournamentGroups,
+  currentGroupMatch,
+  groupPlacements,
+  groupQualification,
+  pickGroupWinner,
+  type TournamentGroupsState
+} from '@shared/tournamentGroups'
+import { quizSeed, seededRng } from '@shared/quizCore'
 
 type Phase = 'setup' | 'play' | 'summary'
 type SourceKind = TournamentSource['kind']
 type MusicScope = 'all' | 'liked' | 'playlist' | 'artist' | 'album'
 
-const SIZES = [8, 16, 32, 64] as const
+const GROUP_SIZES = [8, 16, 32, 64] as const
+const KNOCKOUT_SIZES = [8, 16, 32, 64, 128, 256] as const
 
 // Frozen settings key holding the ONE autosaved, unfinished bracket. Finishing
 // or discarding clears it; pools above SAVED_MAX_ENTRIES never autosave.
@@ -42,11 +54,30 @@ const SAVED_MAX_ENTRIES = 256
 // Serialized resume slot: entries + engine state are plain JSON, and version
 // lets an older save be ignored instead of half-restored.
 interface SavedTournament {
-  version: 1
+  version: 2
   sourceLabel: string
   createdAt: string
   contenders: TournamentEntry[]
-  bracket: Bracket
+  format: TournamentFormat
+  stage: 'groups' | 'tiebreak' | 'knockout'
+  groups: TournamentGroupsState | null
+  groupField: TournamentEntry[] | null
+  qualified: number[]
+  tiebreakQueue: TournamentTiebreak[]
+  activeTiebreak: { spec: TournamentTiebreak; bracket: Bracket } | null
+  bracket: Bracket | null
+  seed: number
+  size: number
+}
+
+interface TournamentSnapshot {
+  contenders: TournamentEntry[]
+  stage: 'groups' | 'tiebreak' | 'knockout'
+  groups: TournamentGroupsState | null
+  qualified: number[]
+  tiebreakQueue: TournamentTiebreak[]
+  activeTiebreak: { spec: TournamentTiebreak; bracket: Bracket } | null
+  bracket: Bracket | null
 }
 
 // A named selection from one of the second-level pickers.
@@ -59,7 +90,8 @@ export default function TournamentPage() {
   const player = usePlayer()
   const qc = useQueryClient()
   const animeStatuses = useStatuses(ANIME)
-  const watchedStatuses = statusesExceptPlanned(animeStatuses)
+  const completedStatuses = useAllCompletedStatuses()
+  const animeCompleted = [animeStatuses[1]].filter(Boolean)
 
   // ---- setup options (persisted so they survive navigation) ----
   const [kind, setKind] = usePersistedState<SourceKind>('tourneyKind', 'music')
@@ -68,7 +100,7 @@ export default function TournamentPage() {
   const [themeType, setThemeType] = usePersistedState<'OP' | 'ED' | null>('tourneyThemeType', null)
   const [themeList, setThemeList] = usePersistedState<'watched' | 'all'>('tourneyThemeList', 'watched')
   const [charMedia, setCharMedia] = usePersistedState<Pick | null>('tourneyCharMedia', null)
-  const [charScope, setCharScope] = usePersistedState<'all' | 'media'>('tourneyCharScope', 'all')
+  const [charScope, setCharScope] = usePersistedState<'all' | 'unseen' | 'media'>('tourneyCharScope', 'all')
   const [mediaType, setMediaType] = usePersistedState<MediaType>('tourneyMediaType', 'anime')
   const [mediaStatus, setMediaStatus] = usePersistedState<string | null>('tourneyMediaStatus', null)
   const [peopleRole, setPeopleRole] = usePersistedState<'voice_actor' | null>('tourneyRole', 'voice_actor')
@@ -76,6 +108,7 @@ export default function TournamentPage() {
   const [size, setSize] = usePersistedState<number | null>('tourneySize', 16)
   const [search, setSearch] = usePersistedState('tourneySearch', '')
   const [treeOpen, setTreeOpen] = usePersistedState('tourneyTreeOpen', false)
+  const [format, setFormat] = usePersistedState<TournamentFormat>('tourneyFormat', 'knockout')
   const debouncedSearch = useDebouncedValue(search.trim())
 
   // ---- game state ----
@@ -83,15 +116,25 @@ export default function TournamentPage() {
   const [pool, setPool] = useState<TournamentEntry[]>([])
   const [contenders, setContenders] = useState<TournamentEntry[]>([])
   const [bracket, setBracket] = useState<Bracket | null>(null)
-  const [undoStack, setUndoStack] = useState<Bracket[]>([])
-  const [logged, setLogged] = useState(false)
+  const [stage, setStage] = useState<'groups' | 'tiebreak' | 'knockout'>('knockout')
+  const [groups, setGroups] = useState<TournamentGroupsState | null>(null)
+  const [groupField, setGroupField] = useState<TournamentEntry[] | null>(null)
+  const [qualified, setQualified] = useState<number[]>([])
+  const [tiebreakQueue, setTiebreakQueue] = useState<TournamentTiebreak[]>([])
+  const [activeTiebreak, setActiveTiebreak] = useState<{ spec: TournamentTiebreak; bracket: Bracket } | null>(null)
+  const [undoStack, setUndoStack] = useState<TournamentSnapshot[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   // Resume support: describeSource() reads the setup pills, which a resumed
   // run outlives — so its label is frozen at deal/save time.
   const [sourceLabelOverride, setSourceLabelOverride] = useState<string | null>(null)
   const [savedCreatedAt, setSavedCreatedAt] = useState<string | null>(null)
   const [saved, setSaved] = useState<SavedTournament | null>(null)
+  const [tournamentSeed, setTournamentSeed] = useState(0)
+  const [tournamentSize, setTournamentSize] = useState(0)
+  const interactionLock = useRef(false)
+  const loggedRef = useRef(false)
 
   const mediaCfg = MEDIA_CONFIGS.find((c) => c.key === mediaType) ?? ANIME
   const mediaStatuses = useStatuses(mediaCfg)
@@ -138,11 +181,11 @@ export default function TournamentPage() {
         return `Music · ${scope}`
       }
       case 'themes':
-        return `Themes · ${themeType ?? 'OP+ED'} · ${themeList === 'watched' ? 'Watched' : 'All'}`
+        return `Themes · ${themeType ?? 'OP+ED'} · ${themeList === 'watched' ? 'Completed' : 'All'}`
       case 'characters':
         return charScope === 'media' && charMedia ? `Characters · ${charMedia.label}` : 'Characters'
       case 'media':
-        return `${mediaCfg.plural}${mediaStatus ? ` · ${mediaStatus}` : ''}`
+        return `${mediaCfg.plural} · ${mediaStatus === '__all__' ? 'All' : mediaStatus ?? mediaStatuses[1] ?? 'Completed'}`
       case 'people':
         return peopleRole === 'voice_actor' ? 'Voice actors' : 'People'
       case 'list':
@@ -159,16 +202,16 @@ export default function TournamentPage() {
       case 'themes':
         return {
           kind,
-          filter: { songType: themeType, statuses: themeList === 'watched' ? watchedStatuses : null }
+          filter: { songType: themeType, statuses: themeList === 'watched' ? animeCompleted : null }
         }
       case 'characters':
         if (charScope === 'media') {
           if (!charMedia) return 'Pick a title first.'
           return { kind, mediaId: charMedia.id }
         }
-        return { kind }
+        return charScope === 'unseen' ? { kind } : { kind, statuses: completedStatuses }
       case 'media':
-        return { kind, mediaType, status: mediaStatus }
+        return { kind, mediaType, status: mediaStatus === '__all__' ? null : mediaStatus ?? mediaStatuses[1] ?? null }
       case 'people':
         return { kind, role: peopleRole }
       case 'list':
@@ -177,14 +220,31 @@ export default function TournamentPage() {
     }
   }
 
-  function dealBracket(fullPool: TournamentEntry[]) {
-    const picked = shuffle(fullPool).slice(0, size ?? fullPool.length)
+  function dealBracket(fullPool: TournamentEntry[], dealSize = size ?? fullPool.length, preserveLabel = false) {
+    const nextSeed = quizSeed(`${Date.now()}-${Math.random()}`)
+    const picked = shuffle(fullPool, seededRng(nextSeed)).slice(0, dealSize)
     setPool(fullPool)
     setContenders(picked)
-    setBracket(createBracket(picked.length))
+    setTournamentSize(picked.length)
+    if (format === 'groups') {
+      setStage('groups')
+      setGroups(createTournamentGroups(picked.length))
+      setGroupField(picked)
+      setBracket(null)
+    } else {
+      setStage('knockout')
+      setGroups(null)
+      setGroupField(null)
+      setBracket(createBracket(picked.length))
+    }
+    setQualified([])
+    setTiebreakQueue([])
+    setActiveTiebreak(null)
     setUndoStack([])
-    setLogged(false)
-    setSourceLabelOverride(null)
+    loggedRef.current = false
+    setSaveState('idle')
+    if (!preserveLabel) setSourceLabelOverride(null)
+    setTournamentSeed(nextSeed)
     setSavedCreatedAt(new Date().toISOString())
     setPhase('play')
   }
@@ -192,11 +252,21 @@ export default function TournamentPage() {
   function resumeSaved(s: SavedTournament) {
     // The full pool is not part of a save, so "Run it back" after resuming
     // re-deals the same contender set — close enough, and never empty.
-    setPool(s.contenders)
+    setPool(s.groupField ?? s.contenders)
     setContenders(s.contenders)
     setBracket(s.bracket)
+    setFormat(s.format)
+    setStage(s.stage)
+    setGroups(s.groups)
+    setGroupField(s.groupField)
+    setQualified(s.qualified)
+    setTiebreakQueue(s.tiebreakQueue)
+    setActiveTiebreak(s.activeTiebreak)
+    setTournamentSeed(s.seed)
+    setTournamentSize(s.size)
     setUndoStack([])
-    setLogged(false)
+    loggedRef.current = false
+    setSaveState('idle')
     setSourceLabelOverride(s.sourceLabel)
     setSavedCreatedAt(s.createdAt)
     setPhase('play')
@@ -221,6 +291,22 @@ export default function TournamentPage() {
         setError('Need at least 2 entries for a bracket — widen the source.')
         return
       }
+      if (size == null && fullPool.length > SAVED_MAX_ENTRIES) {
+        setError(`This source has ${fullPool.length} contenders. Select 256 or fewer to keep autosave and the bracket usable.`)
+        return
+      }
+      if (format === 'groups' && size == null) {
+        setError('Groups then knockout requires 8, 16, 32, or 64 contenders.')
+        return
+      }
+      if (format === 'groups' && !GROUP_SIZES.includes(size as 8 | 16 | 32 | 64)) {
+        setError('Groups then knockout requires 8, 16, 32, or 64 contenders.')
+        return
+      }
+      if (format === 'groups' && size != null && fullPool.length < size) {
+        setError(`This source has ${fullPool.length} contenders; the selected group format needs exactly ${size}.`)
+        return
+      }
       dealBracket(fullPool)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to load the pool.')
@@ -242,10 +328,9 @@ export default function TournamentPage() {
         try {
           const parsed = JSON.parse(raw) as SavedTournament
           if (
-            parsed?.version === 1 &&
+            parsed?.version === 2 &&
             Array.isArray(parsed.contenders) &&
-            parsed.bracket?.matches?.length > 0 &&
-            currentMatch(parsed.bracket) != null
+            (parsed.groups != null || (parsed.bracket?.matches?.length ?? 0) > 0 || parsed.activeTiebreak != null)
           ) {
             setSaved(parsed)
           }
@@ -262,26 +347,36 @@ export default function TournamentPage() {
   // Autosave after every pick while a run is live. Oversized pools skip the
   // save entirely (the settings row is not the place for megabytes of JSON).
   useEffect(() => {
-    if (phase !== 'play' || !bracket || contenders.length === 0) return
+    if (phase !== 'play' || contenders.length === 0) return
     if (contenders.length > SAVED_MAX_ENTRIES) return
     const snapshot: SavedTournament = {
-      version: 1,
+      version: 2,
       sourceLabel: sourceLabelOverride ?? describeSource(),
       createdAt: savedCreatedAt ?? new Date().toISOString(),
       contenders,
-      bracket
+      format,
+      stage,
+      groups,
+      groupField,
+      qualified,
+      tiebreakQueue,
+      activeTiebreak,
+      bracket,
+      seed: tournamentSeed,
+      size: tournamentSize
     }
     void api.settings.set(SAVED_KEY, JSON.stringify(snapshot)).catch(() => {})
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, bracket])
+  }, [phase, bracket, groups, groupField, activeTiebreak, qualified, tiebreakQueue, format, stage, tournamentSeed, tournamentSize])
 
   function endGame(finished: Bracket) {
     stopIfOurs()
     setBracket(finished)
     // A finished run is no longer resumable.
     void api.settings.set(SAVED_KEY, '').catch(() => {})
-    if (!logged) {
-      setLogged(true)
+    if (!loggedRef.current) {
+      loggedRef.current = true
+      setSaveState('saving')
       const champ = contenders[championOf(finished)!]
       const runner = contenders[runnerUpOf(finished)!]
       void api.quiz
@@ -292,36 +387,131 @@ export default function TournamentPage() {
           bestStreak: 0,
           settings: {
             sourceLabel: describeSource(),
-            poolSize: contenders.length,
+            format,
+            seed: tournamentSeed,
+            correct: 0,
+            attempted: 0,
+            scorePolicy: 'tournament',
+            playMode: 'solo',
+            poolSize: tournamentSize,
             champion: { key: champ.key, name: champ.name, imagePath: champ.imagePath },
             runnerUp: { key: runner.key, name: runner.name },
             standings: placementsOf(finished).map((p) => ({
               name: contenders[p.poolIndex].name,
               outInRound: p.outInRound
-            }))
+            })),
+            groupStandings: groups?.groups.map((group) => ({
+              group: group.id + 1,
+              standings: group.standings.map((row) => ({
+                name: groupField?.[row.contender]?.name ?? String(row.contender),
+                wins: row.wins,
+                played: row.played
+              }))
+            })) ?? null
           }
         })
-        .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('tournament') }))
-        .catch(() => {})
+        .then(() => {
+          setSaveState('saved')
+          return qc.invalidateQueries({ queryKey: qk.quiz.history('tournament') })
+        })
+        .catch((error) => {
+          loggedRef.current = false
+          setSaveState('failed')
+          throw error
+        })
     }
     setPhase('summary')
   }
 
+  function snapshot(): TournamentSnapshot {
+    return { contenders, stage, groups, qualified, tiebreakQueue, activeTiebreak, bracket }
+  }
+
+  function beginKnockout(indices: number[]) {
+    // The knockout bracket indexes a compact contender array, so retain the
+    // group qualifiers in their qualification order and replace the pool.
+    const advancing = indices.map((i) => contenders[i])
+    setContenders(advancing)
+    setStage('knockout')
+    setQualified(indices)
+    setTiebreakQueue([])
+    setActiveTiebreak(null)
+    setBracket(createBracket(advancing.length))
+  }
+
+  function beginTiebreaks(base: number[], queue: TournamentTiebreak[]) {
+    setQualified(base)
+    setTiebreakQueue(queue.slice(1))
+    if (queue.length === 0) {
+      beginKnockout(base)
+      return
+    }
+    setStage('tiebreak')
+    setActiveTiebreak({ spec: queue[0], bracket: createBracket(queue[0].contenders.length) })
+  }
+
+  function finishGroups(nextGroups: TournamentGroupsState) {
+    const base: number[] = []
+    const ties: TournamentTiebreak[] = []
+    for (const group of nextGroups.groups) {
+      const result = groupQualification(group)
+      base.push(...result.qualified)
+      if (result.tiebreak) ties.push(result.tiebreak)
+    }
+    beginTiebreaks(base, ties)
+  }
+
   function pick(side: 'a' | 'b') {
-    if (!bracket) return
-    const cur = currentMatch(bracket)
-    if (!cur) return
-    stopIfOurs()
-    const next = pickWinner(bracket, cur.matchIndex, side)
-    setUndoStack((s) => [...s, bracket])
-    if (currentMatch(next) === null) endGame(next)
-    else setBracket(next)
+    if (interactionLock.current) return
+    interactionLock.current = true
+    try {
+      stopIfOurs()
+      setUndoStack((stack) => [...stack, snapshot()])
+      if (stage === 'groups' && groups) {
+        const current = currentGroupMatch(groups)
+        if (!current) return
+        const next = pickGroupWinner(groups, current.groupId, current.matchIndex, side === 'a' ? current.a : current.b)
+        setGroups(next)
+        if (currentGroupMatch(next) == null) finishGroups(next)
+        return
+      }
+      if (stage === 'tiebreak' && activeTiebreak) {
+        const current = currentMatch(activeTiebreak.bracket)
+        if (!current) return
+        const nextBracket = pickWinner(activeTiebreak.bracket, current.matchIndex, side)
+        if (currentMatch(nextBracket) != null) {
+          setActiveTiebreak({ ...activeTiebreak, bracket: nextBracket })
+          return
+        }
+        const additions = [activeTiebreak.spec.contenders[championOf(nextBracket)!]]
+        if (activeTiebreak.spec.needed === 2) additions.push(activeTiebreak.spec.contenders[runnerUpOf(nextBracket)!])
+        const nextQualified = [...qualified, ...additions]
+        if (tiebreakQueue.length) beginTiebreaks(nextQualified, tiebreakQueue)
+        else beginKnockout(nextQualified)
+        return
+      }
+      if (!bracket) return
+      const cur = currentMatch(bracket)
+      if (!cur) return
+      const next = pickWinner(bracket, cur.matchIndex, side)
+      if (currentMatch(next) === null) endGame(next)
+      else setBracket(next)
+    } finally {
+      window.setTimeout(() => { interactionLock.current = false }, 0)
+    }
   }
 
   function undo() {
     if (undoStack.length === 0) return
     stopIfOurs()
-    setBracket(undoStack[undoStack.length - 1])
+    const previous = undoStack[undoStack.length - 1]
+    setContenders(previous.contenders)
+    setStage(previous.stage)
+    setGroups(previous.groups)
+    setQualified(previous.qualified)
+    setTiebreakQueue(previous.tiebreakQueue)
+    setActiveTiebreak(previous.activeTiebreak)
+    setBracket(previous.bracket)
     setUndoStack((s) => s.slice(0, -1))
   }
 
@@ -368,9 +558,7 @@ export default function TournamentPage() {
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Unfinished tournament</p>
               <p className="truncate text-sm text-gray-400">
-                {saved.sourceLabel} · {saved.contenders.length} contenders ·{' '}
-                {bracketProgress(saved.bracket).picksMade}/{bracketProgress(saved.bracket).totalPicks}{' '}
-                picks made
+                {saved.sourceLabel} · {saved.size} contenders · {saved.format === 'groups' ? 'Groups then knockout' : 'Knockout'}
               </p>
             </div>
             <button className="btn-primary shrink-0 px-4 py-2 text-sm" onClick={() => resumeSaved(saved)}>
@@ -390,6 +578,18 @@ export default function TournamentPage() {
             <Pill active={kind === 'media'} onClick={() => setKind('media')} label="Media" />
             <Pill active={kind === 'people'} onClick={() => setKind('people')} label="People" />
             <Pill active={kind === 'list'} onClick={() => setKind('list')} label="Custom list" />
+          </Group>
+
+          <Group label="Format">
+            <Pill active={format === 'knockout'} onClick={() => setFormat('knockout')} label="Knockout" />
+            <Pill
+              active={format === 'groups'}
+              onClick={() => {
+                setFormat('groups')
+                if (size == null || !GROUP_SIZES.includes(size as 8 | 16 | 32 | 64)) setSize(64)
+              }}
+              label="Groups then knockout"
+            />
           </Group>
 
           {kind === 'music' && (
@@ -432,18 +632,21 @@ export default function TournamentPage() {
                 <Pill active={themeType === 'ED'} onClick={() => setThemeType('ED')} label="Endings" />
               </Group>
               <Group label="From">
-                <Pill active={themeList === 'watched'} onClick={() => setThemeList('watched')} label="Watched" />
+                <Pill active={themeList === 'watched'} onClick={() => setThemeList('watched')} label="Completed" />
                 <Pill active={themeList === 'all'} onClick={() => setThemeList('all')} label="All" />
               </Group>
+              {themeList === 'all' && <p className="text-sm text-amber-300">Includes in-progress or unseen content and may contain spoilers.</p>}
             </>
           )}
 
           {kind === 'characters' && (
             <>
               <Group label="From">
-                <Pill active={charScope === 'all'} onClick={() => setCharScope('all')} label="Everyone" />
+                <Pill active={charScope === 'all'} onClick={() => setCharScope('all')} label="Completed library" />
+                <Pill active={charScope === 'unseen'} onClick={() => setCharScope('unseen')} label="All library" />
                 <Pill active={charScope === 'media'} onClick={() => setCharScope('media')} label="One title" />
               </Group>
+              {charScope === 'unseen' && <p className="text-sm text-amber-300">Includes in-progress or unseen content and may contain spoilers.</p>}
               {charScope === 'media' && (
                 <MediaSearchPicker
                   value={charMedia}
@@ -472,11 +675,13 @@ export default function TournamentPage() {
                 ))}
               </Group>
               <Group label="Status">
-                <Pill active={mediaStatus === null} onClick={() => setMediaStatus(null)} label="Any" />
-                {mediaStatuses.map((s) => (
+                <Pill active={mediaStatus === null} onClick={() => setMediaStatus(null)} label="Completed" />
+                <Pill active={mediaStatus === '__all__'} onClick={() => setMediaStatus('__all__')} label="All" />
+                {mediaStatuses.filter((s) => s !== mediaStatuses[1]).map((s) => (
                   <Pill key={s} active={mediaStatus === s} onClick={() => setMediaStatus(s)} label={s} />
                 ))}
               </Group>
+              {mediaStatus === '__all__' && <p className="text-sm text-amber-300">Includes in-progress or unseen content and may contain spoilers.</p>}
             </>
           )}
 
@@ -494,11 +699,14 @@ export default function TournamentPage() {
           {kind === 'list' && <ListPicker value={listPick} onChange={setListPick} />}
 
           <Group label="Bracket size">
-            {SIZES.map((s) => (
+            {(format === 'groups' ? GROUP_SIZES : KNOCKOUT_SIZES).map((s) => (
               <Pill key={s} active={size === s} onClick={() => setSize(s)} label={String(s)} />
             ))}
-            <Pill active={size === null} onClick={() => setSize(null)} label="Everyone" />
+            {format === 'knockout' && <Pill active={size === null} onClick={() => setSize(null)} label="Everyone" />}
           </Group>
+          {format === 'knockout' && size === null && (
+            <p className="text-sm text-gray-500">Everyone is accepted only when the resolved pool is at most 256 contenders.</p>
+          )}
 
           {error && <p className="text-sm text-red-400">{error}</p>}
 
@@ -550,7 +758,7 @@ export default function TournamentPage() {
     return (
       <StudySessionFrame
         title="Tournament complete"
-        subtitle={`${contenders.length} contenders · ${describeSource()}`}
+        subtitle={`${tournamentSize} contenders · ${describeSource()}`}
         surface={false}
       >
         <div className="grid grid-cols-[14rem_1fr] items-start gap-6">
@@ -570,16 +778,18 @@ export default function TournamentPage() {
               Runner-up: <span className="text-gray-300">{runner.name}</span>
             </p>
             <p className="mt-1 text-sm text-gray-500">
-              {contenders.length} contenders · {describeSource()}
+              {tournamentSize} contenders · {describeSource()}
             </p>
             <div className="mt-5 flex gap-2">
-              <button className="btn-primary flex-1" onClick={() => dealBracket(pool)}>
+              <button className="btn-primary flex-1" onClick={() => dealBracket(pool, tournamentSize, true)}>
                 Run it back
               </button>
               <button className="btn-ghost flex-1" onClick={() => setPhase('setup')}>
                 New
               </button>
             </div>
+            {saveState === 'saving' && <p className="mt-3 text-sm text-gray-400">Saving tournament summary…</p>}
+            {saveState === 'failed' && <button className="btn-danger mt-3 w-full" onClick={() => endGame(bracket)}>Retry saving summary</button>}
           </div>
 
           <div className="card p-5">
@@ -620,7 +830,7 @@ export default function TournamentPage() {
                         p.outInRound == null ? 'text-accent' : i === 1 ? 'text-gray-400' : 'text-gray-500'
                       }`}
                     >
-                      {i + 1}
+                      {placementRank(placements, i)}
                     </span>
                     <CoverImage
                       path={entry.imagePath}
@@ -652,24 +862,57 @@ export default function TournamentPage() {
   }
 
   // ---- play phase ----
-  if (!bracket) return null
-  const cur = currentMatch(bracket)
-  if (!cur) return null
-  const progress = bracketProgress(bracket)
-  const left = contenders[cur.match.a!]
-  const right = contenders[cur.match.b!]
+  let leftIndex: number
+  let rightIndex: number
+  let playTitle: string
+  let playSubtitle: string
+  let playCurrent: number
+  let playTotal: number
+  if (stage === 'groups' && groups) {
+    const current = currentGroupMatch(groups)
+    if (!current) return null
+    leftIndex = current.a
+    rightIndex = current.b
+    playTitle = `Group ${current.groupId + 1}`
+    playCurrent = groups.groups.flatMap((group) => group.matches).filter((match) => match.winner != null).length
+    playTotal = groups.groups.length * 6
+    playSubtitle = `Match ${playCurrent + 1} of ${playTotal}`
+  } else if (stage === 'tiebreak' && activeTiebreak) {
+    const current = currentMatch(activeTiebreak.bracket)
+    if (!current) return null
+    leftIndex = activeTiebreak.spec.contenders[current.match.a!]
+    rightIndex = activeTiebreak.spec.contenders[current.match.b!]
+    const progress = bracketProgress(activeTiebreak.bracket)
+    playTitle = `Group ${activeTiebreak.spec.groupId + 1} cutoff tiebreak`
+    playSubtitle = `${activeTiebreak.spec.needed} qualification place${activeTiebreak.spec.needed === 1 ? '' : 's'} available`
+    playCurrent = progress.picksMade
+    playTotal = progress.totalPicks
+  } else {
+    if (!bracket) return null
+    const current = currentMatch(bracket)
+    if (!current) return null
+    leftIndex = current.match.a!
+    rightIndex = current.match.b!
+    const progress = bracketProgress(bracket)
+    playTitle = roundLabel(progress.competitorsInRound)
+    playSubtitle = `Match ${progress.playedInRound} of ${progress.playableInRound}`
+    playCurrent = progress.picksMade
+    playTotal = progress.totalPicks
+  }
+  const left = contenders[leftIndex]
+  const right = contenders[rightIndex]
 
   return (
     <StudySessionFrame
-      title={roundLabel(progress.competitorsInRound)}
-      subtitle={`Match ${progress.playedInRound} of ${progress.playableInRound}`}
-      progress={{ current: progress.picksMade, total: progress.totalPicks, label: 'Bracket picks' }}
+      title={playTitle}
+      subtitle={playSubtitle}
+      progress={{ current: playCurrent, total: playTotal, label: stage === 'groups' ? 'Group matches' : 'Bracket picks' }}
       surface={false}
       actions={
         <>
-          <button className="btn-ghost py-1 px-2 text-sm" onClick={() => setTreeOpen(!treeOpen)}>
+          {stage === 'knockout' && <button className="btn-ghost py-1 px-2 text-sm" onClick={() => setTreeOpen(!treeOpen)}>
             {treeOpen ? 'Hide bracket' : 'Show bracket'}
-          </button>
+          </button>}
           <button
             className="btn-ghost py-1 px-2 text-sm"
             disabled={undoStack.length === 0}
@@ -702,7 +945,28 @@ export default function TournamentPage() {
         Click a card (or press 1 / 2, ← / →) to send it through. Backspace undoes the last pick; Space plays or pauses.
       </p>
 
-      {treeOpen && (
+      {stage === 'groups' && groups && (() => {
+        const current = currentGroupMatch(groups)
+        const group = current ? groups.groups[current.groupId] : null
+        const places = group ? groupPlacements(group) : []
+        return group ? (
+          <div className="card mt-6 p-5">
+            <p className="label mb-3">Group {group.id + 1} standings</p>
+            <div className="space-y-1">
+              {group.standings.map((row, index) => (
+                <div key={row.contender} className="flex items-center gap-3 rounded-md bg-base-800 px-3 py-2 text-sm">
+                  <span className="w-5 text-gray-500">{places.find((place) => place.contenders.includes(row.contender))?.place ?? index + 1}</span>
+                  <span className="min-w-0 flex-1 truncate">{contenders[row.contender].name}</span>
+                  <span className="text-gray-400">{row.wins} win{row.wins === 1 ? '' : 's'}</span>
+                  <span className="text-gray-500">{row.played}/3</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null
+      })()}
+
+      {treeOpen && stage === 'knockout' && bracket && (
         <div className="card mt-6 p-5">
           <p className="label mb-4">Bracket</p>
           <TournamentTree bracket={bracket} contenders={contenders} />

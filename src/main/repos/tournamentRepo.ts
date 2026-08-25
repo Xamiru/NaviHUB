@@ -80,6 +80,7 @@ export function tournamentPool(source: TournamentSource): TournamentEntry[] {
 
     case 'characters': {
       const db = getSqlite()
+      const statuses = source.statuses?.filter(Boolean) ?? []
       // With no media filter the subtitle is the character's first linked
       // title — duplicate names across shows are common, so head-to-head
       // cards need the disambiguation. Native name is the fallback.
@@ -94,17 +95,27 @@ export function tournamentPool(source: TournamentSource): TournamentEntry[] {
                  ORDER BY COALESCE(mc.sort_order, 9999) ASC, ch.id ASC`
               )
               .all(source.mediaId)
-          : db
-              .prepare(
+          : statuses.length
+            ? db.prepare(
+              `SELECT DISTINCT ch.id, ch.name, ch.name_native, ch.image_path,
+                      (SELECT mi2.title FROM media_character mc2
+                       JOIN media_item mi2 ON mi2.id = mc2.media_id
+                       WHERE mc2.character_id = ch.id
+                         ${statuses.length ? `AND mi2.status IN (${statuses.map(() => '?').join(',')})` : ''}
+                       ORDER BY mc2.id ASC LIMIT 1) AS media_title
+               FROM character ch JOIN media_character mc ON mc.character_id=ch.id
+               JOIN media_item mi ON mi.id=mc.media_id
+               ${statuses.length ? `WHERE mi.status IN (${statuses.map(() => '?').join(',')})` : ''}
+               ORDER BY ch.name COLLATE NOCASE ASC`
+            ).all(...statuses, ...statuses)
+            : db.prepare(
                 `SELECT ch.id, ch.name, ch.name_native, ch.image_path,
                         (SELECT mi.title FROM media_character mc
                          JOIN media_item mi ON mi.id = mc.media_id
                          WHERE mc.character_id = ch.id
                          ORDER BY mc.id ASC LIMIT 1) AS media_title
-                 FROM character ch
-                 ORDER BY ch.name COLLATE NOCASE ASC`
-              )
-              .all()
+                 FROM character ch ORDER BY ch.name COLLATE NOCASE ASC`
+              ).all()
       ) as {
         id: number
         name: string

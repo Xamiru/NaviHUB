@@ -565,6 +565,7 @@ export interface QuizSongFilter {
 export interface QuizLibFilter {
   statuses?: string[] | null // null/empty = any status ("Watched" vs "All")
   mediaTypes?: string[] | null // null/empty = any media type
+  scope?: QuizConsumptionScope // consumed restricts local-page questions to read progress
 }
 
 // One character-quiz seed: a portrait plus the title it came from (its first
@@ -579,6 +580,7 @@ export interface QuizCharacterItem {
   coverPath: string | null
   year: number | null
   genres: string[]
+  validMediaIds: number[] // every matching title this character appears in
 }
 
 // One Japanese-role voice credit usable as a question seed in either VA
@@ -592,6 +594,8 @@ export interface QuizVaItem {
   characterImagePath: string | null
   mediaId: number
   mediaTitle: string
+  validPersonIds: number[] // every JP voice for this character in this title
+  validCharacterIds: number[] // every character this person voices in this title
 }
 
 // One synopsis-quiz seed: any library title with enough description text to
@@ -600,6 +604,7 @@ export interface QuizSynopsisItem {
   mediaId: number
   mediaType: MediaType
   title: string
+  titleOriginal: string | null
   coverPath: string | null
   synopsis: string
   year: number | null
@@ -627,6 +632,13 @@ export type QuizKind =
   | 'va' // voice-actor credits, both directions
   | 'synopsis' // description excerpt -> which title
   | 'mangaPanel' // a page from a locally-linked manga -> which series
+  | 'imageReveal' // progressively reveal a cover/banner/art image (best = points)
+  | 'silhouette' // character silhouette -> character/title
+  | 'connections' // shared person/studio between two titles
+  | 'chronology' // order four related titles by release date
+  | 'oddOneOut' // identify the title outside an explicit shared relation
+  | 'higherLower' // endless metric comparison (best = most correct)
+  | 'songRelay' // couch-party song relay; no solo personal best
   | 'japanese'
   | 'kana'
   | 'kanji'
@@ -671,6 +683,142 @@ export type QuizKind =
   | 'conjRace' // 60 s arcade: conjugation sprint, Enter to submit
   | 'jpReading' // graded reading passages N5-N2 (per-passage bests via settings.passageKey)
 
+export type QuizPlayMode = 'solo' | 'party'
+export type QuizConsumptionScope = 'consumed' | 'all'
+export type QuizScorePolicy = 'accuracy' | 'points' | 'party' | 'tournament'
+
+export interface QuizAvailabilityRequest {
+  statuses?: string[] | null
+  scope?: QuizConsumptionScope
+}
+
+export interface QuizAvailability {
+  song: number
+  character: number
+  va: number
+  synopsis: number
+  mangaPanel: number
+  imageReveal: number
+  silhouette: number
+  connections: number
+  chronology: number
+  oddOneOut: number
+  higherLower: number
+}
+
+export type QuizChallengeKind =
+  | 'imageReveal'
+  | 'silhouette'
+  | 'connections'
+  | 'chronology'
+  | 'oddOneOut'
+  | 'higherLower'
+
+export interface QuizChallengeRequest {
+  kind: QuizChallengeKind
+  seed: number
+  scope?: QuizConsumptionScope
+  statuses?: string[] | null
+  length: number
+  options?: {
+    imageSource?: 'covers' | 'art'
+    silhouetteMode?: 'character' | 'title'
+    connectionMode?: 'person' | 'studio'
+    higherLowerMetric?: 'releaseDate' | 'totalUnits' | 'personalScore'
+  }
+}
+
+export interface QuizChallengeChoice {
+  key: string
+  label: string
+  imagePath?: string | null
+}
+
+interface QuizChallengeBase {
+  id: string
+  kind: QuizChallengeKind
+  prompt: string
+  choices: QuizChallengeChoice[]
+  validKeys: string[]
+}
+
+export interface QuizImageRevealQuestion extends QuizChallengeBase {
+  kind: 'imageReveal'
+  imagePath: string
+}
+
+export interface QuizSilhouetteQuestion extends QuizChallengeBase {
+  kind: 'silhouette'
+  imagePath: string
+}
+
+export interface QuizConnectionsQuestion extends QuizChallengeBase {
+  kind: 'connections'
+  titleA: QuizChallengeChoice
+  titleB: QuizChallengeChoice
+  reveal: string
+}
+
+export interface QuizChronologyQuestion extends QuizChallengeBase {
+  kind: 'chronology'
+  entries: Array<QuizChallengeChoice & { releaseDate: string }>
+  validKeys: string[] // oldest to newest
+}
+
+export interface QuizOddOneOutQuestion extends QuizChallengeBase {
+  kind: 'oddOneOut'
+  relation: 'studio' | 'credited person' | 'genre'
+  explanation: string
+}
+
+export interface QuizHigherLowerQuestion extends QuizChallengeBase {
+  kind: 'higherLower'
+  reference: QuizChallengeChoice
+  challenger: QuizChallengeChoice
+  metric: 'releaseDate' | 'totalUnits' | 'personalScore'
+  referenceValue: number
+  challengerValue: number
+}
+
+export type QuizChallengeQuestion =
+  | QuizImageRevealQuestion
+  | QuizSilhouetteQuestion
+  | QuizConnectionsQuestion
+  | QuizChronologyQuestion
+  | QuizOddOneOutQuestion
+  | QuizHigherLowerQuestion
+
+export type QuizPartyParticipants = 2 | 3 | 4 | 'teams'
+export interface QuizPartyConfig {
+  participants: QuizPartyParticipants
+  kind: QuizKind
+  scope: QuizConsumptionScope
+  seed: number
+}
+export interface QuizPartyScore {
+  label: string
+  score: number
+}
+export interface QuizPartyTurn {
+  question: number
+  owner: number
+  phase: 'owner' | 'steal' | 'reveal' | 'done'
+}
+export interface QuizPartySteal {
+  side: number
+  seconds: 5
+  attempted: boolean
+}
+export interface QuizPartyResult {
+  kind: QuizKind
+  participants: string[]
+  scores: QuizPartyScore[]
+  winners: string[]
+  questionCount: number
+  scope: QuizConsumptionScope
+  seed: number
+}
+
 export interface QuizSessionInput {
   kind: QuizKind
   score: number
@@ -691,12 +839,35 @@ export interface QuizSession {
 
 export interface QuizHistory {
   recent: QuizSession[] // newest first
-  best: QuizSession | null // best accuracy among rounds with total >= 5
+  best: QuizSession | null // policy-ranked solo best among rounds with total >= 5
   bestStreak: number // max streak across all sessions
   totalSessions: number
 }
 
 // ---- tournament mode (world-cup bracket over library entities) ----
+
+export type TournamentFormat = 'knockout' | 'groups'
+export interface TournamentGroupStanding {
+  contender: number
+  played: number
+  wins: number
+}
+export interface TournamentGroupMatch {
+  a: number
+  b: number
+  winner: number | null
+}
+export interface TournamentGroup {
+  id: number
+  contenders: number[]
+  matches: TournamentGroupMatch[]
+  standings: TournamentGroupStanding[]
+}
+export interface TournamentTiebreak {
+  groupId: number
+  contenders: number[]
+  needed: 1 | 2
+}
 
 // Where a tournament's contender pool comes from. The repo resolves each
 // variant to a normalized TournamentEntry list; the renderer shuffles and
@@ -705,7 +876,7 @@ export type TournamentSource =
   | { kind: 'music'; scope: 'all' | 'liked' }
   | { kind: 'music'; scope: 'playlist' | 'artist' | 'album'; id: number }
   | { kind: 'themes'; filter?: QuizSongFilter | null }
-  | { kind: 'characters'; mediaId?: number | null } // null/omit = every character
+  | { kind: 'characters'; mediaId?: number | null; statuses?: string[] | null }
   | { kind: 'media'; mediaType: MediaType; status?: string | null }
   | { kind: 'people'; role?: CreditRole | null } // null/omit = anyone with credits
   | { kind: 'list'; listId: number } // a custom list (any entity kind)

@@ -2,14 +2,13 @@ import { useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
-import { useAllWatchedStatuses } from '../lib/hooks'
+import { useAllCompletedStatuses } from '../lib/hooks'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
 import LibMcRound, { type McQuestion } from '../components/libraryQuiz/LibMcRound'
 import { Group, Pill } from '../components/PillGroup'
 import type { QuizVaItem } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
-import { characterIdsForPerson } from '@shared/quizDistractors'
 
 type Direction = 'both' | 'toVa' | 'toChar'
 
@@ -43,10 +42,10 @@ function vaDistractors(
 //   toVa   — "who voices this character?" (portrait + name shown)
 //   toChar — "which character does this VA voice?" (person shown)
 export default function VaQuizPage() {
-  const watchedStatuses = useAllWatchedStatuses()
+  const completedStatuses = useAllCompletedStatuses()
 
   const [direction, setDirection] = usePersistedState<Direction>('quizVaDir', 'both')
-  const [listSource, setListSource] = usePersistedState<'watched' | 'all'>('quizVaList', 'watched')
+  const [listSource, setListSource] = usePersistedState<'consumed' | 'all'>('quizVaList', 'consumed')
   const [length, setLength] = usePersistedState<number>('quizVaLength', 10)
   const [timerEnabled, setTimerEnabled] = usePersistedState('quizVaTimer', true)
 
@@ -61,7 +60,7 @@ export default function VaQuizPage() {
     setLoading(true)
     try {
       const pool = await api.quiz.vaPool({
-        statuses: listSource === 'all' ? null : watchedStatuses
+        statuses: listSource === 'all' ? null : completedStatuses
       })
       if (pool.length < 4) {
         setError(
@@ -81,11 +80,11 @@ export default function VaQuizPage() {
               : 'toChar'
             : direction
         if (dir === 'toVa') {
-          const distractors = vaDistractors(pool, seed, (v) => v.personId, [seed.personId])
+          const distractors = vaDistractors(pool, seed, (v) => v.personId, seed.validPersonIds)
           if (distractors.length < 3) continue
           qs.push({
             key: `tova-${seed.characterId}`,
-            correctKey: seed.personId,
+            validKeys: seed.validPersonIds.map((id) => `person-${id}`),
             prompt: (
               <div className="text-center">
                 <CoverImage
@@ -96,11 +95,11 @@ export default function VaQuizPage() {
                 />
                 <p className="mt-4 text-2xl font-semibold">{seed.characterName}</p>
                 <p className="text-base text-gray-500">{seed.mediaTitle}</p>
-                <p className="mt-2 text-gray-400">Who voices this character?</p>
+                <p className="mt-2 text-gray-400">Who voices this character in {seed.mediaTitle}?</p>
               </div>
             ),
             options: shuffle([seed, ...distractors]).map((o) => ({
-              key: o.personId,
+              key: `person-${o.personId}`,
               node: (
                 <>
                   <CoverImage path={o.photoPath} alt={o.personName} rounded="rounded-full" className="h-14 w-14 shrink-0" />
@@ -114,12 +113,12 @@ export default function VaQuizPage() {
             pool,
             seed,
             (v) => v.characterId,
-            characterIdsForPerson(pool, seed.personId)
+            seed.validCharacterIds
           )
           if (distractors.length < 3) continue
           qs.push({
             key: `tochar-${seed.characterId}`,
-            correctKey: seed.characterId,
+            validKeys: seed.validCharacterIds.map((id) => `character-${id}`),
             prompt: (
               <div className="text-center">
                 <div className="flex items-center justify-center gap-4">
@@ -131,11 +130,11 @@ export default function VaQuizPage() {
                   />
                   <p className="text-3xl font-bold">{seed.personName}</p>
                 </div>
-                <p className="mt-3 text-gray-400">Which character do they voice?</p>
+                <p className="mt-3 text-gray-400">Which of these characters do they voice in {seed.mediaTitle}?</p>
               </div>
             ),
             options: shuffle([seed, ...distractors]).map((o) => ({
-              key: o.characterId,
+              key: `character-${o.characterId}`,
               node: (
                 <>
                   <CoverImage path={o.characterImagePath} alt={o.characterName} className="h-24 w-16 shrink-0" />
@@ -200,9 +199,10 @@ export default function VaQuizPage() {
         </Group>
 
         <Group label="From">
-          <Pill active={listSource === 'watched'} onClick={() => setListSource('watched')} label="Watched" />
+          <Pill active={listSource !== 'all'} onClick={() => setListSource('consumed')} label="Completed" />
           <Pill active={listSource === 'all'} onClick={() => setListSource('all')} label="All" />
         </Group>
+        {listSource === 'all' && <p className="-mt-4 text-sm text-amber-300">Includes in-progress or unseen content and may contain spoilers.</p>}
 
         <Group label="Length">
           <Pill active={length === 5} onClick={() => setLength(5)} label="5" />

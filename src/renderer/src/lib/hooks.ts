@@ -50,6 +50,18 @@ export function useAllWatchedStatuses(): string[] {
   return [...out]
 }
 
+// The second configured status is the completed slot across every MediaConfig.
+// Use positional meaning so renamed statuses remain safe for spoiler filters.
+export function useAllCompletedStatuses(): string[] {
+  const { data } = useSettings()
+  const out = new Set<string>()
+  for (const cfg of MEDIA_CONFIGS) {
+    const completed = statusesFrom(data, cfg)[1]
+    if (completed) out.add(completed)
+  }
+  return [...out]
+}
+
 // Modal dialog basics: Escape closes, focus moves into the panel on mount and
 // returns to the opener on unmount. Attach the returned ref to the panel and
 // give that element role="dialog" aria-modal="true" tabIndex={-1}. An inner

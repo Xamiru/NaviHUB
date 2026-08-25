@@ -35,6 +35,8 @@ import CharacterQuizPage from './pages/CharacterQuizPage'
 import VaQuizPage from './pages/VaQuizPage'
 import SynopsisQuizPage from './pages/SynopsisQuizPage'
 import MangaPanelQuizPage from './pages/MangaPanelQuizPage'
+import ChallengeQuizPage from './pages/ChallengeQuizPage'
+import PartyQuizPage from './pages/PartyQuizPage'
 import TournamentPage from './pages/TournamentPage'
 import ChecklistPage from './pages/ChecklistPage'
 import ListsIndexPage from './pages/ListsIndexPage'
@@ -356,11 +358,18 @@ export default function App() {
             {/* Quiz — quizzes over the LIBRARY only; study drills live in their
                 own Learn section (Japanese / English / Programming) */}
             <Route path="/quiz" element={<QuizLandingPage />} />
+            <Route path="/quiz/party" element={<PartyQuizPage />} />
             <Route path="/quiz/song" element={<SongQuizPage />} />
             <Route path="/quiz/character" element={<CharacterQuizPage />} />
             <Route path="/quiz/va" element={<VaQuizPage />} />
             <Route path="/quiz/synopsis" element={<SynopsisQuizPage />} />
             <Route path="/quiz/panels" element={<MangaPanelQuizPage />} />
+            <Route path="/quiz/images" element={<ChallengeQuizPage kind="imageReveal" />} />
+            <Route path="/quiz/silhouette" element={<ChallengeQuizPage kind="silhouette" />} />
+            <Route path="/quiz/connections" element={<ChallengeQuizPage kind="connections" />} />
+            <Route path="/quiz/chronology" element={<ChallengeQuizPage kind="chronology" />} />
+            <Route path="/quiz/odd-one-out" element={<ChallengeQuizPage kind="oddOneOut" />} />
+            <Route path="/quiz/higher-lower" element={<ChallengeQuizPage kind="higherLower" />} />
             <Route path="/quiz/tournament" element={<TournamentPage />} />
             {/* moved into the Programming section — old link may be in history */}
             <Route path="/quiz/programming" element={<Navigate to="/programming/quiz" replace />} />

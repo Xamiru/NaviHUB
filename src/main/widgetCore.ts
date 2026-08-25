@@ -13,6 +13,11 @@ export interface WidgetSize {
   height: number
 }
 
+// One authoritative geometry for BrowserWindow creation and position math.
+// The extra width gives ordinary song titles room without making the widget
+// taller over a game or other fullscreen content.
+export const WIDGET_SIZE: WidgetSize = { width: 520, height: 64 }
+
 // Matches Electron's Display.workArea shape.
 export interface WorkArea {
   x: number

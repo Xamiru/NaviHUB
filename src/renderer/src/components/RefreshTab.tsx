@@ -8,6 +8,8 @@ import { MEDIA_CONFIGS } from '../lib/mediaConfig'
 import { REFRESH_ASPECTS, aspectsForTypes } from '@shared/refresh'
 import type { RefreshAspect } from '@shared/refresh'
 import type { MediaType, RefreshPreview, RefreshRunStatus } from '@shared/types'
+import QuietWorkspace from './QuietWorkspace'
+import OperationFlow from './OperationFlow'
 
 // The Refresh tab on /bulk: re-run each title's importer, writing only the
 // aspects you pick. The counterpart to the Import tab — that one fills the
@@ -29,6 +31,8 @@ export default function RefreshTab(): React.JSX.Element {
   const active = aspects.filter((a) => offered.includes(a))
   const req = { types, aspects: active, onlyMissing }
   const canRun = types.length > 0 && active.length > 0
+  const running = run.status?.state === 'running'
+  const finished = run.status?.state === 'done'
 
   function toggleType(t: MediaType): void {
     setTypes(types.includes(t) ? types.filter((x) => x !== t) : [...types, t])
@@ -68,7 +72,19 @@ export default function RefreshTab(): React.JSX.Element {
 
   return (
     <div className="space-y-6">
-      <div className="card space-y-4 p-5">
+      <OperationFlow
+        label="Library refresh stages"
+        steps={[
+          { label: 'Configure', state: preview || running || finished ? 'complete' : 'active' },
+          { label: 'Check', state: running || finished ? 'complete' : preview ? 'active' : 'pending' },
+          { label: 'Run', state: finished ? 'complete' : running ? 'active' : 'pending' }
+        ]}
+      />
+      <QuietWorkspace
+        title="Configure refresh"
+        description="Choose which existing titles and fields should be refreshed before counting the work."
+      >
+        <div className="space-y-4">
         <Group label="Media types">
           {MEDIA_CONFIGS.map((cfg) => (
             <Pill
@@ -158,7 +174,8 @@ export default function RefreshTab(): React.JSX.Element {
           request per season, so a whole-library TV refresh takes a while — it can be paused or
           stopped from the Tasks page.
         </p>
-      </div>
+        </div>
+      </QuietWorkspace>
 
       {run.status && run.status.state !== 'idle' && (
         <RefreshRunCard status={run.status} onStop={stop} />

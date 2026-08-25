@@ -12,7 +12,8 @@ import { Group, Pill } from '../components/PillGroup'
 import { BULK_SOURCES, bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
 import type { BulkListParams, BulkPreviewItem } from '@shared/types'
 import QuietWorkspace from '../components/QuietWorkspace'
-import TasksTabs from '../components/TasksTabs'
+import EmptyState from '../components/EmptyState'
+import OperationFlow, { type OperationFlowStep } from '../components/OperationFlow'
 
 const SEASONS = ['winter', 'spring', 'summer', 'fall'] as const
 
@@ -135,7 +136,7 @@ export default function BulkImportPage(): React.JSX.Element {
   const selectedCount = preview ? preview.items.length - deselected.size : 0
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
       <PageHeader
         title="Bulk Import"
         subtitle={
@@ -144,8 +145,6 @@ export default function BulkImportPage(): React.JSX.Element {
             : 'Update titles you already have — pick what to re-pull, and from which types.'
         }
       />
-
-      <TasksTabs value="imports" />
 
       <Tabs
         className="mb-5"
@@ -161,16 +160,16 @@ export default function BulkImportPage(): React.JSX.Element {
         <RefreshTab />
       ) : (
         <>
-      <ImportFlow
-        previewReady={!!preview}
-        running={!!runStatus && runStatus.state === 'running'}
-        finished={!!runStatus && runStatus.state === 'done'}
-      />
-      <QuietWorkspace
-        title="Configure list"
-        description="Choose the source and limits before NaviHUB fetches any preview rows."
-      >
-      <div className="space-y-4">
+          <ImportFlow
+            previewReady={!!preview}
+            running={!!runStatus && runStatus.state === 'running'}
+            finished={!!runStatus && runStatus.state === 'done'}
+          />
+          <QuietWorkspace
+            title="Configure list"
+            description="Choose the source and limits before NaviHUB fetches any preview rows."
+          >
+            <div className="space-y-4">
         <Group label="Type">
           {BULK_SOURCES.map((s) => (
             <Pill key={s.key} active={s.key === sourceKey} onClick={() => switchSource(s.key)} label={s.label} />
@@ -315,8 +314,8 @@ export default function BulkImportPage(): React.JSX.Element {
             </div>
           </>
         )}
-      </div>
-      </QuietWorkspace>
+            </div>
+          </QuietWorkspace>
 
       {runStatus && runStatus.state !== 'idle' && <RunCard status={runStatus} onStop={stopRun} />}
 
@@ -349,30 +348,18 @@ function ImportFlow({
   running: boolean
   finished: boolean
 }) {
-  const steps = [
-    { label: 'Configure', complete: previewReady || running || finished, active: !previewReady && !running && !finished },
-    { label: 'Preview', complete: running || finished, active: previewReady && !running && !finished },
-    { label: 'Run', complete: finished, active: running }
+  const steps: OperationFlowStep[] = [
+    {
+      label: 'Configure',
+      state: previewReady || running || finished ? 'complete' : 'active'
+    },
+    {
+      label: 'Preview',
+      state: running || finished ? 'complete' : previewReady ? 'active' : 'pending'
+    },
+    { label: 'Run', state: finished ? 'complete' : running ? 'active' : 'pending' }
   ]
-  return (
-    <ol className="mb-6 grid gap-2 sm:grid-cols-3" aria-label="Bulk import stages">
-      {steps.map((step, index) => (
-        <li
-          key={step.label}
-          className={`card flex items-center gap-3 border-t p-4 ${
-            step.active ? 'border-t-accent' : 'border-t-base-600'
-          }`}
-        >
-          <span className={step.complete || step.active ? 'text-accent' : 'text-gray-500'}>
-            {step.complete ? '✓' : index + 1}
-          </span>
-          <span className={step.active ? 'font-medium text-white' : 'text-sm text-gray-400'}>
-            {step.label}
-          </span>
-        </li>
-      ))}
-    </ol>
-  )
+  return <OperationFlow label="Bulk import stages" steps={steps} />
 }
 
 function RunCard({
@@ -439,51 +426,55 @@ function PreviewList({
 }) {
   const { visible, sentinelRef, hasMore } = useIncrementalList(items)
   return (
-    <div>
-      <div className="mb-2 flex items-center gap-3 text-xs text-gray-400">
-        <span>
-          {items.length} title{items.length === 1 ? '' : 's'} · {items.length - deselected.size} selected
-        </span>
-        <button className="text-accent hover:underline" onClick={onAll}>
-          Select all
-        </button>
-        <button className="text-accent hover:underline" onClick={onNone}>
-          Select none
-        </button>
-      </div>
-      <div className="space-y-1">
-        {visible.map((it, i) => {
-          const off = deselected.has(it.sourceId)
-          return (
-            <button
-              key={it.sourceId}
-              className={`flex w-full items-center gap-3 rounded-md p-2 text-left ${
-                off ? 'bg-base-800 opacity-50' : 'bg-base-700'
-              }`}
-              onClick={() => onToggle(it.sourceId)}
-            >
-              <span className="w-8 shrink-0 text-right text-xs tabular-nums text-gray-500">{i + 1}</span>
-              {it.coverUrl ? (
-                <img src={it.coverUrl} alt="" loading="lazy" className="h-14 w-10 shrink-0 rounded object-cover" />
-              ) : (
-                <div className="h-14 w-10 shrink-0 rounded bg-base-600" />
-              )}
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{it.title}</span>
-                <span className="block text-xs text-gray-500">
-                  {[it.year, it.score != null ? `★ ${fmtScore(it.score)}` : null]
-                    .filter(Boolean)
-                    .join(' · ')}
+    <QuietWorkspace
+      title="Preview selection"
+      description={`${items.length} title${items.length === 1 ? '' : 's'} · ${items.length - deselected.size} selected`}
+      actions={
+        <>
+          <button className="btn-ghost" onClick={onAll}>Select all</button>
+          <button className="btn-ghost" onClick={onNone}>Select none</button>
+        </>
+      }
+    >
+      {items.length === 0 ? (
+        <EmptyState
+          title="No new titles"
+          body="Every result from this list is already in the library. Change the source or filters and preview again."
+          className="py-10 text-center"
+        />
+      ) : (
+        <div className="card overflow-hidden p-0">
+          {visible.map((it, i) => {
+            const off = deselected.has(it.sourceId)
+            return (
+              <button
+                key={it.sourceId}
+                className={`flex w-full items-center gap-3 border-b border-base-700/60 p-2.5 text-left last:border-b-0 hover:bg-base-700/35 ${
+                  off ? 'opacity-50' : ''
+                }`}
+                onClick={() => onToggle(it.sourceId)}
+              >
+                <span className="w-8 shrink-0 text-right text-xs tabular-nums text-gray-500">{i + 1}</span>
+                {it.coverUrl ? (
+                  <img src={it.coverUrl} alt="" loading="lazy" className="h-14 w-10 shrink-0 rounded object-cover" />
+                ) : (
+                  <div className="h-14 w-10 shrink-0 rounded bg-base-600" />
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-medium">{it.title}</span>
+                  <span className="block text-xs text-gray-500">
+                    {[it.year, it.score != null ? `★ ${fmtScore(it.score)}` : null]
+                      .filter(Boolean)
+                      .join(' · ')}
+                  </span>
                 </span>
-              </span>
-              <span className="shrink-0 text-xs text-gray-500">
-                {off ? '○' : '✓'}
-              </span>
-            </button>
-          )
-        })}
-      </div>
+                <span className="shrink-0 text-xs text-gray-500">{off ? '○' : '✓'}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
       {hasMore && <div ref={sentinelRef} className="h-8" />}
-    </div>
+    </QuietWorkspace>
   )
 }

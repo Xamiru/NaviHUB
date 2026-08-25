@@ -46,7 +46,8 @@ function linkSeries(
   title: string,
   chapters: string[],
   status: string | null = 'Reading',
-  cover: string | null = 'media/cover.webp'
+  cover: string | null = 'media/cover.webp',
+  consumed = true
 ): number {
   const id = Number(
     db
@@ -56,10 +57,15 @@ function linkSeries(
       .run(title, status, cover).lastInsertRowid
   )
   for (const dirPath of chapters) {
-    db.prepare(`INSERT INTO manga_chapter (media_id, dir_path, title, page_count) VALUES (?, ?, ?, 3)`).run(
+    db.prepare(
+      `INSERT INTO manga_chapter (media_id, dir_path, title, page_count, last_read_page, read_at)
+       VALUES (?, ?, ?, 3, ?, ?)`
+    ).run(
       id,
       dirPath,
-      dirPath
+      dirPath,
+      consumed ? 2 : null,
+      consumed ? '2026-01-01 00:00:00' : null
     )
   }
   return id
@@ -72,7 +78,12 @@ describe('pickPanelSeeds', () => {
     coverPath: null,
     year: null,
     genres: [],
-    chapters: chapters.map((files, i) => ({ dirPath: `S${mediaId}/c${i}`, files }))
+    chapters: chapters.map((files, i) => ({
+      dirPath: `S${mediaId}/c${i}`,
+      files,
+      lastReadPage: files.length - 1,
+      readAt: '2026-01-01 00:00:00'
+    }))
   })
 
   it('returns at most count seeds, one per series', () => {
@@ -106,6 +117,28 @@ describe('pickPanelSeeds', () => {
     const seed = run()
     expect(seed[0].pageRelPath).toMatch(/^manga\/S[12]\/c\d\/[abcd]\.png$/)
   })
+
+  it('never crosses partial-read progress and excludes long-chapter edge pages', () => {
+    const files = Array.from({ length: 10 }, (_, i) => `p${i}.png`)
+    const partial = cand(1, [files])
+    partial.chapters[0].lastReadPage = 4
+    partial.chapters[0].readAt = null
+    for (const rng of [() => 0, () => 0.999]) {
+      const [seed] = manga.pickPanelSeeds([partial], 1, rng)
+      expect(['p2.png', 'p3.png', 'p4.png'].some((page) => seed.pageRelPath.endsWith(page))).toBe(true)
+      expect(seed.pageRelPath).not.toMatch(/p[5-9]\.png$/)
+    }
+
+    const completed = cand(2, [files])
+    const draws = Array.from({ length: 20 }, (_, i) => manga.pickPanelSeeds([completed], 1, () => i / 20)[0].pageRelPath)
+    expect(draws.every((path) => !path.endsWith('p0.png') && !path.endsWith('p1.png') && !path.endsWith('p9.png'))).toBe(true)
+  })
+
+  it('samples the flattened eligible pages rather than choosing a chapter first', () => {
+    const candidate = cand(3, [['only.png'], ...[Array.from({ length: 9 }, (_, i) => `many-${i}.png`)]])
+    const [seed] = manga.pickPanelSeeds([candidate], 1, () => 0.7)
+    expect(seed.pageRelPath).toContain('many-')
+  })
 })
 
 describe('manga.panelPool', () => {
@@ -137,11 +170,11 @@ describe('manga.panelPool', () => {
     expect(pool[0].pageRelPath).not.toContain('.epub')
 
     // The cap limits questions, not eligibility.
-    const capped = await manga.panelPool({}, 1)
+    const capped = await manga.panelPool({ scope: 'all' }, 1)
     expect(capped).toHaveLength(1)
 
     // No filter = every linked series is in play.
-    expect(await manga.panelPool({}, 10)).toHaveLength(2)
+    expect(await manga.panelPool({ scope: 'all' }, 10)).toHaveLength(2)
   })
 
   it('skips series whose folders vanished without failing the round', async () => {

@@ -54,9 +54,10 @@ export function distractorScore(answer: DistractorCandidate, candidate: Distract
 export function pickDistractors<T extends DistractorCandidate>(
   pool: T[],
   answer: DistractorCandidate,
-  count: number
+  count: number,
+  forbiddenMediaIds: readonly number[] = []
 ): T[] {
-  const seen = new Set<number>([answer.mediaId])
+  const seen = new Set<number>([answer.mediaId, ...forbiddenMediaIds])
   const tiers = new Map<number, T[]>()
   for (const c of pool) {
     if (seen.has(c.mediaId)) continue

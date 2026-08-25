@@ -245,10 +245,10 @@ function SonicArchiveLead() {
             path={artist.coverPath}
             alt=""
             rounded=""
-            className="absolute inset-0 h-full w-full scale-110 opacity-35 blur-lg"
+            className="absolute inset-0 h-full w-full"
           />
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/65 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/55 to-base-800/10" />
         <div className="relative flex h-full flex-col justify-end">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
             Strongest signal / 30 days

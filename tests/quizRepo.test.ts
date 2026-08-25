@@ -164,6 +164,24 @@ describe('quizRepo.songPool', () => {
   })
 })
 
+describe('quizRepo availability', () => {
+  it('honors completed-status scope and reports format readiness counts', () => {
+    const completed = addAnime('Completed', 'Completed')
+    const watching = addAnime('Watching', 'Watching')
+    addTheme(completed, { audioPath: 'audio/c.ogg' })
+    addTheme(watching, { audioPath: 'audio/w.ogg' })
+    db.prepare(`UPDATE media_item SET cover_path='media/c.jpg', release_date='2020-01-01' WHERE id=?`).run(completed)
+    db.prepare(`UPDATE media_item SET cover_path='media/w.jpg', release_date='2021-01-01' WHERE id=?`).run(watching)
+
+    const safe = quizRepo.availability({ scope: 'consumed', statuses: ['Completed'] })
+    const all = quizRepo.availability({ scope: 'all' })
+    expect(safe.song).toBe(1)
+    expect(all.song).toBe(2)
+    expect(safe.imageReveal).toBe(1)
+    expect(all.higherLower).toBe(2)
+  })
+})
+
 describe('quizRepo session history', () => {
   it('filters history by kind and orders recent newest-first', () => {
     quizRepo.logSession({ kind: 'song', score: 3, total: 5, bestStreak: 2 })
@@ -253,9 +271,32 @@ describe('quizRepo session history', () => {
     })
   })
 
+  it('keeps party sessions out of solo records and treats legacy rows as solo', () => {
+    const legacy = quizRepo.logSession({ kind: 'song', score: 4, total: 5, bestStreak: 4 })
+    const party = quizRepo.logSession({
+      kind: 'song',
+      score: 8,
+      total: 10,
+      bestStreak: 0,
+      settings: { playMode: 'party', correct: 8 }
+    })
+    expect(quizRepo.history('song').recent.map((s) => s.id)).toEqual([legacy])
+    const partyHistory = quizRepo.history('song', 15, 'party')
+    expect(partyHistory.recent.map((s) => s.id)).toEqual([party])
+    expect(partyHistory.best).toBeNull()
+  })
+
   it('ranks score-ranked kinds (arcade, shiritori, races) by score first', () => {
     expect([...quizRepo.SCORE_RANKED_KINDS].sort()).toEqual(
-      ['conjRace', 'kanaRace', 'readingRace', 'shiritori', 'songArcade'].sort()
+      [
+        'conjRace',
+        'higherLower',
+        'imageReveal',
+        'kanaRace',
+        'readingRace',
+        'shiritori',
+        'songArcade'
+      ].sort()
     )
     // 2000 points at 60% accuracy must beat 3000 points at 50% — and the
     // reverse of that must NOT win on ratio.

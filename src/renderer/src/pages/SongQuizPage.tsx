@@ -8,7 +8,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useStatuses } from '../lib/hooks'
 import { usePlayer } from '../lib/player'
-import { ANIME, statusesExceptPlanned } from '../lib/mediaConfig'
+import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
@@ -16,9 +16,22 @@ import { ERAS } from '@shared/era'
 import type { QuizKind, QuizSong, QuizSongFilter } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
 import { pickDistractors } from '@shared/quizDistractors'
+import {
+  isNewQuizBest,
+  quizScorePolicy,
+  quizSeed,
+  seededRng,
+  shuffledDeckAvoiding
+} from '@shared/quizCore'
+import {
+  quizClipDurationMs,
+  shouldAcceptAudioRequest,
+  shouldAutoplaySongMode,
+  shouldStopQuizTrack
+} from '@shared/quizAudioCore'
 
 type Phase = 'setup' | 'play' | 'summary'
-type ListSource = 'watched' | 'all'
+type ListSource = 'consumed' | 'all'
 type Mode = 'classic' | 'arcade' | 'reverse'
 
 interface Stats {
@@ -62,12 +75,12 @@ export default function SongQuizPage() {
   const player = usePlayer()
   const qc = useQueryClient()
   const statuses = useStatuses(ANIME)
-  const watchedStatuses = statusesExceptPlanned(statuses)
+  const completedStatuses = statuses[1] ? [statuses[1]] : []
 
   // Setup options (persisted so they survive navigation / a new round).
   const [mode, setMode] = usePersistedState<Mode>('quizMode', 'classic')
   const [songType, setSongType] = usePersistedState<'OP' | 'ED' | null>('quizSongType', null)
-  const [listSource, setListSource] = usePersistedState<ListSource>('quizList', 'watched')
+  const [listSource, setListSource] = usePersistedState<ListSource>('quizList', 'consumed')
   // Selected era keys (multi-select); empty = every decade.
   const [eras, setEras] = usePersistedState<string[]>('quizEras', [])
   const [length, setLength] = usePersistedState<number>('quizLength', 10) // 0 = endless
@@ -88,6 +101,7 @@ export default function SongQuizPage() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [newBest, setNewBest] = useState(false)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
 
   const roundKind = kindForMode(mode)
   const { data: history } = useQuery({
@@ -111,6 +125,9 @@ export default function SongQuizPage() {
   const timeLeftRef = useRef(TIMER_SECONDS)
   const auditionedRef = useRef<number | null>(null)
   const loggedRef = useRef(false)
+  const playRequestRef = useRef(0)
+  const seedRef = useRef(0)
+  const rngRef = useRef<() => number>(Math.random)
 
   function clearAuto() {
     if (autoTimerRef.current != null) {
@@ -119,11 +136,16 @@ export default function SongQuizPage() {
     }
   }
 
+  function stopQuizAudio() {
+    playRequestRef.current++
+    if (shouldStopQuizTrack(player.track?.id)) player.stop()
+  }
+
   // Stop playback + timers when leaving the quiz page.
   useEffect(() => {
     return () => {
       clearAuto()
-      player.stop()
+      stopQuizAudio()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -151,8 +173,10 @@ export default function SongQuizPage() {
   // so the cap is per-play rather than per-question). The timer keeps running.
   useEffect(() => {
     if (phase !== 'play' || !current || answered || snippetRef.current === 0) return
-    if (!player.isPlaying || player.track?.id !== `quiz-${current.themeId}`) return
-    const id = window.setTimeout(() => player.toggle(), snippetRef.current * 1000)
+    if (!player.isPlaying || !player.track?.id.startsWith('quiz-')) return
+    const duration = quizClipDurationMs(snippetRef.current)
+    if (duration == null) return
+    const id = window.setTimeout(() => player.toggle(), duration)
     return () => window.clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase, current, answered, player.isPlaying, player.track?.id])
@@ -192,24 +216,26 @@ export default function SongQuizPage() {
 
   // Once the current song's duration is known, jump to a random start point.
   useEffect(() => {
-    if (!offsetEnabled || !current) return
-    if (player.track?.id !== `quiz-${current.themeId}`) return
+    if (!offsetEnabled || !current || !player.track?.id.startsWith('quiz-')) return
     // A streamed song may report Infinity/NaN duration; skip the offset then
     // rather than seeking to a non-finite time.
     if (!Number.isFinite(player.duration) || player.duration <= 0) return
-    if (offsetDoneRef.current === current.themeId) return
-    offsetDoneRef.current = current.themeId
-    player.seek(Math.random() * player.duration * OFFSET_MAX_FRACTION)
+    const activeThemeId = Number(player.track.id.slice('quiz-'.length))
+    if (offsetDoneRef.current === activeThemeId) return
+    offsetDoneRef.current = activeThemeId
+    player.seek(rngRef.current() * player.duration * OFFSET_MAX_FRACTION)
   }, [offsetEnabled, current, player.track?.id, player.duration, player])
 
   async function playSong(song: QuizSong) {
+    const request = ++playRequestRef.current
     offsetDoneRef.current = null
     let src: string | null = null
     if (song.audioPath) src = await api.files.resolveUrl(song.audioPath)
     if (!src) src = song.audioUrl
+    if (!shouldAcceptAudioRequest(playRequestRef.current, request)) return
     // Mask the track so the now-playing bar doesn't spoil the answer.
     if (src) player.play({ id: `quiz-${song.themeId}`, src, title: 'Song Quiz', subtitle: null, context: '???' })
-    else player.stop()
+    else stopQuizAudio()
   }
 
   // Reverse mode: hear a candidate clip without answering yet.
@@ -225,7 +251,14 @@ export default function SongQuizPage() {
     clearAuto()
     auditionedRef.current = null
     setAuditioned(null)
-    if (deckRef.current.length === 0) deckRef.current = shuffle(poolRef.current)
+    if (deckRef.current.length === 0) {
+      deckRef.current = shuffledDeckAvoiding(
+        poolRef.current,
+        currentRef.current,
+        (a, b) => a.themeId === b.themeId,
+        rngRef.current
+      )
+    }
     const song = deckRef.current.pop()
     if (!song) {
       endGame()
@@ -233,16 +266,17 @@ export default function SongQuizPage() {
     }
     // Distractors share the answer's era/genres when the library allows, and
     // never another song of the SAME anime (pickDistractors dedupes by media).
-    const distractors = pickDistractors(poolRef.current, song, 3)
+    const distractors = pickDistractors(shuffle(poolRef.current, rngRef.current), song, 3)
     currentRef.current = song
     answeredRef.current = false
     setCurrent(song)
-    setOptions(shuffle([song, ...distractors]))
+    setOptions(shuffle([song, ...distractors], rngRef.current))
     setPicked(null)
     setAnswered(false)
     timeLeftRef.current = TIMER_SECONDS
     setTimeLeft(TIMER_SECONDS)
-    void playSong(song)
+    if (shouldAutoplaySongMode(modeRef.current)) void playSong(song)
+    else stopQuizAudio()
   }
 
   function handleAnswer(key: number | null, correct: boolean) {
@@ -294,39 +328,55 @@ export default function SongQuizPage() {
 
   function endGame() {
     clearAuto()
-    player.stop()
+    stopQuizAudio()
     const s = statsRef.current
     if (!loggedRef.current && s.total > 0) {
       loggedRef.current = true
       // Decide "new personal best" BEFORE invalidating, or the refetched
       // history would already contain this round and the banner would flip.
       // Arcade bests rank by points (SCORE_RANKED_KINDS), the rest by accuracy.
-      const prev = history?.best
-      const better =
-        modeRef.current === 'arcade'
-          ? prev == null || s.score > prev.score
-          : prev == null || s.score / s.total > prev.score / prev.total
-      setNewBest(s.total >= 5 && better)
+      const kind = kindForMode(modeRef.current)
+      const policy = quizScorePolicy(kind)
+      const sessionSettings = {
+        mode: modeRef.current,
+        songType,
+        listSource,
+        eras,
+        length: modeRef.current === 'arcade' ? 0 : lengthRef.current,
+        timerEnabled: modeRef.current === 'arcade' ? true : timerEnabled,
+        offsetEnabled,
+        snippet: snippetRef.current,
+        autoNext,
+        correct: s.correct,
+        attempted: s.total,
+        scorePolicy: policy,
+        playMode: 'solo',
+        seed: seedRef.current
+      }
+      setNewBest(
+        isNewQuizBest(
+          { score: s.score, total: s.total, settings: sessionSettings },
+          history?.best ?? null,
+          policy
+        )
+      )
       void api.quiz
         .logSession({
-          kind: kindForMode(modeRef.current),
+          kind,
           score: s.score,
           total: s.total,
           bestStreak: s.best,
-          settings: {
-            mode: modeRef.current,
-            songType,
-            listSource,
-            eras,
-            length: modeRef.current === 'arcade' ? 0 : lengthRef.current,
-            timerEnabled: modeRef.current === 'arcade' ? true : timerEnabled,
-            offsetEnabled,
-            snippet: snippetRef.current,
-            autoNext
-          }
+          settings: sessionSettings
         })
-        .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history(kindForMode(modeRef.current)) }))
-        .catch(() => {})
+        .then(() => {
+          setSaveState('saved')
+          return qc.invalidateQueries({ queryKey: qk.quiz.history(kind) })
+        })
+        .catch((error) => {
+          setSaveState('failed')
+          throw error
+        })
+      setSaveState('saving')
     }
     setPhase('summary')
   }
@@ -335,7 +385,7 @@ export default function SongQuizPage() {
     setError(null)
     setLoading(true)
     try {
-      const statusFilter = listSource === 'all' ? null : watchedStatuses
+      const statusFilter = listSource === 'all' ? null : completedStatuses
       const filter: QuizSongFilter = {
         songType,
         statuses: statusFilter,
@@ -356,7 +406,9 @@ export default function SongQuizPage() {
         return
       }
       poolRef.current = pool
-      deckRef.current = shuffle(pool)
+      seedRef.current = quizSeed(`${Date.now()}-${Math.random()}`)
+      rngRef.current = seededRng(seedRef.current)
+      deckRef.current = shuffle(pool, rngRef.current)
       statsRef.current = EMPTY_STATS
       setStats(EMPTY_STATS)
       modeRef.current = mode
@@ -367,6 +419,7 @@ export default function SongQuizPage() {
       setLives(ARCADE_LIVES)
       loggedRef.current = false
       setNewBest(false)
+      setSaveState('idle')
       setPhase('play')
       nextQuestion()
     } catch (e) {
@@ -407,9 +460,10 @@ export default function SongQuizPage() {
           </Group>
 
           <Group label="From">
-            <Pill active={listSource === 'watched'} onClick={() => setListSource('watched')} label="Watched" />
+            <Pill active={listSource !== 'all'} onClick={() => setListSource('consumed')} label="Completed" />
             <Pill active={listSource === 'all'} onClick={() => setListSource('all')} label="All" />
           </Group>
+          {listSource === 'all' && <p className="-mt-4 text-sm text-amber-300">Includes in-progress or unseen content and may contain spoilers.</p>}
 
           <Group label="Era">
             {/* Multi-select decades; "Any" clears the set. Unknown-year anime
@@ -505,6 +559,8 @@ export default function SongQuizPage() {
             <span>Best streak {stats.best}</span>
           </div>
           {newBest && <p className="mt-3 text-sm font-semibold text-accent">New personal best.</p>}
+          {saveState === 'saving' && <p className="mt-3 text-sm text-gray-400">Saving session…</p>}
+          {saveState === 'failed' && <p className="mt-3 text-sm text-red-400">Session was not saved.</p>}
           <div className="mt-6 flex gap-2">
             <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
               Play again
@@ -617,7 +673,9 @@ export default function SongQuizPage() {
           const isCorrect = current != null && o.themeId === current.themeId
           if (reverse) {
             const wrongPick = answered && picked === o.themeId && !isCorrect
-            const auditioningThis = auditioned === i && isOurs
+            const optionIsLoaded = player.track?.id === `quiz-${o.themeId}`
+            const auditioningThis = auditioned === i && optionIsLoaded
+            const playingThis = auditioningThis && player.isPlaying
             return (
               <div
                 key={o.themeId}
@@ -635,12 +693,12 @@ export default function SongQuizPage() {
               >
                 <button
                   className="btn-ghost h-9 w-9 shrink-0 rounded-full p-0 text-sm"
-                  aria-label={auditioningThis ? `Stop clip ${i + 1}` : `Audition clip ${i + 1}`}
-                  title={auditioningThis ? 'Stop' : `Audition clip ${i + 1}`}
+                  aria-label={playingThis ? `Stop clip ${i + 1}` : `Audition clip ${i + 1}`}
+                  title={playingThis ? 'Stop' : `Audition clip ${i + 1}`}
                   disabled={answered}
-                  onClick={() => (auditioningThis && playing ? player.toggle() : auditionAt(i))}
+                  onClick={() => (playingThis ? player.toggle() : auditionAt(i))}
                 >
-                  {auditioningThis && playing ? 'II' : '▸'}
+                  {playingThis ? 'II' : '▸'}
                 </button>
                 <span className="min-w-0 flex-1 truncate text-base font-medium">Clip {i + 1}</span>
                 {!answered && (

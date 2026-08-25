@@ -6,8 +6,8 @@ import { TORRENT_CATEGORY_OPTIONS } from '@shared/torrents'
 import TorrentResultsPanel from '../components/TorrentResultsPanel'
 import StartJackettButton from '../components/StartJackettButton'
 import PageHeader from '../components/PageHeader'
-import TasksTabs from '../components/TasksTabs'
 import QuietWorkspace from '../components/QuietWorkspace'
+import EmptyState from '../components/EmptyState'
 
 // Free-form Jackett search for anything not tied to a library item (music,
 // software, one-offs). Results stream in per indexer via useTorrentSearch.
@@ -24,60 +24,77 @@ export default function TorrentsPage(): React.JSX.Element {
   // time you land on the page would be a lot of tracker traffic for nothing.
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="mx-auto max-w-[1600px] p-4 sm:p-6">
       <PageHeader
         title="Torrents"
         subtitle="Search your Jackett indexers and send results to qBittorrent."
         actions={<StartJackettButton />}
       />
-      <TasksTabs value="torrents" />
-
       {!configured ? (
-        <div className="card p-5 text-sm text-gray-400">
-          Jackett isn&apos;t configured. Set its URL and API key in{' '}
-          <Link className="text-accent hover:underline" to="/settings">
-            Settings → Tools
-          </Link>
-          .
-        </div>
+        <EmptyState
+          title="Jackett is not configured"
+          body="Set its URL and API key before starting an indexer search."
+          action={
+            <Link className="btn-primary" to="/settings?tab=integrations">
+              Open integration settings
+            </Link>
+          }
+        />
       ) : (
         <>
           <QuietWorkspace
             title="Indexer search"
             description="Results stream in as each configured indexer answers."
           >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              if (query.trim()) void search.start(query.trim(), cats)
-            }}
-            className="mb-5 flex flex-wrap gap-2"
-          >
-            <input
-              className="input"
-              placeholder="Search torrents…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              autoFocus
-            />
-            <select
-              className="input w-auto"
-              aria-label="Category"
-              value={catIdx}
-              onChange={(e) => setCatIdx(Number(e.target.value))}
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (query.trim()) void search.start(query.trim(), cats)
+              }}
+              className="flex flex-wrap gap-2"
             >
-              {TORRENT_CATEGORY_OPTIONS.map((o, i) => (
-                <option key={o.label} value={i}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-            <button className="btn-primary" type="submit" disabled={!query.trim()}>
-              Search
-            </button>
-          </form>
+              <input
+                className="input min-w-64 flex-1"
+                placeholder="Search torrents…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                autoFocus
+              />
+              <select
+                className="input w-auto"
+                aria-label="Category"
+                value={catIdx}
+                onChange={(e) => setCatIdx(Number(e.target.value))}
+              >
+                {TORRENT_CATEGORY_OPTIONS.map((o, i) => (
+                  <option key={o.label} value={i}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+              <button className="btn-primary" type="submit" disabled={!query.trim()}>
+                Search
+              </button>
+            </form>
+          </QuietWorkspace>
 
-          <TorrentResultsPanel search={search} />
+          <QuietWorkspace
+            title="Indexer stream"
+            description={
+              search.started
+                ? 'Narrow the results already received without querying Jackett again.'
+                : 'Start a search above. Results will appear as each configured indexer answers.'
+            }
+          >
+            {search.started ? (
+              <TorrentResultsPanel search={search} />
+            ) : (
+              <EmptyState
+                title="Ready to search"
+                body="Enter a title or release name, choose a category, and start the fan-out."
+                className="py-10 text-center"
+              />
+            )}
           </QuietWorkspace>
         </>
       )}

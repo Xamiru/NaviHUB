@@ -5,12 +5,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import type { QuizKind } from '@shared/types'
+import { answerIsCorrect, isNewQuizBest, quizScorePolicy, quizSeed } from '@shared/quizCore'
 import StudySessionFrame, { SessionFeedback } from '../StudySessionFrame'
 
 // One answer slot in a library-MCQ question: a stable numeric key (what the
 // page compares against correctKey) plus its visual.
 export interface McOption {
-  key: number
+  key: string
   node: ReactNode
 }
 
@@ -18,8 +19,8 @@ export interface McOption {
 // the page; the frame owns the loop around them.
 export interface McQuestion {
   key: string // react key
-  correctKey: number
-  prompt: ReactNode
+  validKeys: string[]
+  prompt: ReactNode | ((controls: { skip: () => void }) => ReactNode)
   options: McOption[]
 }
 
@@ -47,6 +48,7 @@ interface Props {
   questions: McQuestion[]
   settings: Record<string, unknown> // round-options snapshot for quiz_session
   timed: boolean
+  targetLength?: number
   onPlayAgain: () => void // rebuild questions; the page remounts us via key
   backTo: { to: string; label: string }
 }
@@ -55,14 +57,18 @@ interface Props {
 // the index, streak/score, optional countdown, keyboard answering (1-4 +
 // Enter), reveal, auto-advance, the one-shot endGame() session log with its
 // new-best decision BEFORE invalidation, and the summary screen.
-export default function LibMcRound({ kind, questions, settings, timed, onPlayAgain, backTo }: Props) {
+export default function LibMcRound({ kind, questions, settings, timed, targetLength = questions.length, onPlayAgain, backTo }: Props) {
   const qc = useQueryClient()
+  const seedRef = useRef(
+    typeof settings.seed === 'number' ? settings.seed : quizSeed(`${Date.now()}-${Math.random()}`)
+  )
   const [idx, setIdx] = useState(0)
-  const [picked, setPicked] = useState<number | null>(null)
+  const [picked, setPicked] = useState<string | null>(null)
   const [answered, setAnswered] = useState(false)
   const [stats, setStats] = useState<Stats>(EMPTY_STATS)
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS)
   const [newBest, setNewBest] = useState(false)
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [done, setDone] = useState(false)
 
   const { data: history } = useQuery({
@@ -74,6 +80,7 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
   const answeredRef = useRef(false)
   const autoRef = useRef<number | null>(null)
   const loggedRef = useRef(false)
+  const invalidRef = useRef(new Set<string>())
 
   const q = questions[idx]
 
@@ -124,10 +131,10 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [done, q, answered])
 
-  function handleAnswer(key: number | null) {
+  function handleAnswer(key: string | null) {
     if (answeredRef.current || !q) return
     answeredRef.current = true
-    const correct = key != null && key === q.correctKey
+    const correct = answerIsCorrect(q.validKeys, key)
     const s = statsRef.current
     const streak = correct ? s.streak + 1 : 0
     const next: Stats = {
@@ -145,10 +152,23 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
 
   function advance() {
     clearAuto()
-    if (idx + 1 >= questions.length) endGame()
+    if (statsRef.current.total >= targetLength || idx + 1 >= questions.length) endGame()
     else {
       answeredRef.current = false
       setIdx(idx + 1)
+      setPicked(null)
+      setAnswered(false)
+      setTimeLeft(TIMER_SECONDS)
+    }
+  }
+
+  function skipInvalidQuestion() {
+    if (!q || answeredRef.current || invalidRef.current.has(q.key)) return
+    invalidRef.current.add(q.key)
+    clearAuto()
+    if (idx + 1 >= questions.length) endGame()
+    else {
+      setIdx((current) => current + 1)
       setPicked(null)
       setAnswered(false)
       setTimeLeft(TIMER_SECONDS)
@@ -162,12 +182,39 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
       loggedRef.current = true
       // Decide "new personal best" BEFORE invalidating, or the refetched
       // history would already contain this round and the banner would flip.
-      const prev = history?.best
-      setNewBest(s.total >= 5 && (!prev || s.score / s.total > prev.score / prev.total))
+      const policy = quizScorePolicy(kind)
+      const sessionSettings = {
+        ...settings,
+        correct: s.score,
+        attempted: s.total,
+        scorePolicy: policy,
+        playMode: 'solo',
+        seed: seedRef.current
+      }
+      setNewBest(
+        isNewQuizBest(
+          { score: s.score, total: s.total, settings: sessionSettings },
+          history?.best ?? null,
+          policy
+        )
+      )
       void api.quiz
-        .logSession({ kind, score: s.score, total: s.total, bestStreak: s.best, settings })
-        .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history(kind) }))
-        .catch(() => {})
+        .logSession({
+          kind,
+          score: s.score,
+          total: s.total,
+          bestStreak: s.best,
+          settings: sessionSettings
+        })
+        .then(() => {
+          setSaveState('saved')
+          return qc.invalidateQueries({ queryKey: qk.quiz.history(kind) })
+        })
+        .catch((error) => {
+          setSaveState('failed')
+          throw error
+        })
+      setSaveState('saving')
     }
     setDone(true)
   }
@@ -177,6 +224,8 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
     return (
       <StudySessionFrame title="Quiz complete" subtitle={QUIZ_TITLE[kind] ?? 'Challenge broadcast'}>
         <div className="py-3 text-center">
+          {saveState === 'saving' && <p className="text-sm text-gray-400">Saving session…</p>}
+          {saveState === 'failed' && <p className="text-sm text-red-400">Session was not saved.</p>}
           <p className="mt-3 text-6xl font-bold">
             {stats.score}
             <span className="text-3xl text-gray-500"> / {stats.total}</span>
@@ -200,13 +249,13 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
   }
 
   const timePct = Math.max(0, Math.min(100, (timeLeft / TIMER_SECONDS) * 100))
-  const isLast = idx + 1 >= questions.length
+  const isLast = stats.total >= targetLength || idx + 1 >= questions.length
 
   return (
     <StudySessionFrame
       title={QUIZ_TITLE[kind] ?? 'Challenge broadcast'}
       subtitle={timed ? `${TIMER_SECONDS} second timed round` : 'Library relationship challenge'}
-      progress={{ current: idx + 1, total: questions.length, label: 'Questions' }}
+      progress={{ current: Math.min(stats.total + 1, targetLength), total: targetLength, label: 'Questions' }}
       actions={
         <>
           <span>
@@ -221,8 +270,8 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
       feedback={
         answered ? (
           <SessionFeedback
-            tone={picked === q.correctKey ? 'correct' : 'incorrect'}
-            title={picked === q.correctKey ? 'Correct' : 'Answer revealed'}
+            tone={answerIsCorrect(q.validKeys, picked) ? 'correct' : 'incorrect'}
+            title={answerIsCorrect(q.validKeys, picked) ? 'Correct' : 'Answer revealed'}
           >
             Continue when you are ready. Enter advances without changing the scoring rules.
           </SessionFeedback>
@@ -241,11 +290,11 @@ export default function LibMcRound({ kind, questions, settings, timed, onPlayAga
         </div>
       )}
 
-      <div>{q.prompt}</div>
+      <div>{typeof q.prompt === 'function' ? q.prompt({ skip: skipInvalidQuestion }) : q.prompt}</div>
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {q.options.map((o, i) => {
-          const correct = answered && o.key === q.correctKey
+          const correct = answered && q.validKeys.includes(o.key)
           const wrongPick = answered && picked === o.key && !correct
           return (
             <button

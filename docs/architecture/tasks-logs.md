@@ -180,6 +180,10 @@ is a change to crash semantics that wants a real eyeball first.
 
 ## The renderer
 
+Task Canvas navigation has one owner: the System drawer reaches Tasks, Logs, Bulk Import,
+Torrents and Settings, and the adaptive Topbar switches between them. There is no permanent Tasks
+rail button and no second in-page tab row.
+
 - `lib/useTasks.ts` — the `useBulkRun` idiom with one deliberate difference: idle is a **5s
   heartbeat**, not `false`. It is the app-wide discovery surface (mounted by the Topbar pill on
   every page), so a job started from the native menu must still appear. 700ms while anything is

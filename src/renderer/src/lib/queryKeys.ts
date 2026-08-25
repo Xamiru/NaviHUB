@@ -10,6 +10,7 @@ import type {
   MediaListFilter,
   MediaType,
   QuizKind,
+  QuizAvailabilityRequest,
   QuizSongFilter,
   ThemeSongFilter
 } from '@shared/types'
@@ -94,11 +95,16 @@ export const qk = {
   },
   quiz: {
     all: ['quiz'] as const,
+    availability: (request: QuizAvailabilityRequest) => ['quiz', 'availability', request] as const,
+    challengePool: (request: import('@shared/types').QuizChallengeRequest) =>
+      ['quiz', 'challengePool', request] as const,
     songPool: (filter: QuizSongFilter) => ['quiz', 'songPool', filter] as const,
-    history: (kind: QuizKind) => ['quiz', 'history', kind] as const,
+    history: (kind: QuizKind, playMode: 'solo' | 'party' = 'solo') =>
+      ['quiz', 'history', kind, playMode] as const,
     // A longer window of the same history (under the history(kind) prefix so
     // one invalidation refreshes both).
-    historyAll: (kind: QuizKind) => ['quiz', 'history', kind, 'all'] as const
+    historyAll: (kind: QuizKind, playMode: 'solo' | 'party' = 'solo') =>
+      ['quiz', 'history', kind, playMode, 'all'] as const
   },
   themes: {
     // Anime OP/ED library (/anime/songs). Hearting a song invalidates the `all`
