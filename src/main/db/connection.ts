@@ -123,8 +123,21 @@ export function seedChecklist(sqlite: Database.Database): void {
 // Exported for tests/initLegacyDb.test.ts, which replays a pre-SRS live DB
 // against the real init.sql + migrations.
 export function runMigrations(sqlite: Database.Database): void {
+  // Spotify entity sources arrived after the music library. The indexes must
+  // be created after ALTER TABLE or a pre-feature database cannot start.
+  ensureColumn(sqlite, 'music_artist', 'spotify_id', 'spotify_id TEXT')
+  ensureColumn(sqlite, 'music_album', 'spotify_id', 'spotify_id TEXT')
+  sqlite
+    .prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_music_artist_spotify ON music_artist(spotify_id)')
+    .run()
+  sqlite
+    .prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_music_album_spotify ON music_album(spotify_id)')
+    .run()
   ensureColumn(sqlite, 'character', 'external_source', 'external_source TEXT')
   ensureColumn(sqlite, 'character', 'external_id', 'external_id TEXT')
+  // AniList character gender powers plausible same-VA quiz distractors. Old
+  // rows remain NULL until their anime is re-imported.
+  ensureColumn(sqlite, 'character', 'gender', 'gender TEXT')
   ensureColumn(sqlite, 'credit', 'importance', 'importance INTEGER')
   ensureColumn(sqlite, 'media_character', 'sort_order', 'sort_order INTEGER')
   // Japanese section: kanji readings + mined-word source (DBs created before

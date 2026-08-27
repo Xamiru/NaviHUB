@@ -150,9 +150,9 @@ export class Ring<T extends { seq: number }> {
 // Not an optimization — a correctness requirement. ffmpeg and mokuro emit a
 // progress line per frame/page on a bare \r; unfiltered, one conversion floods
 // a 3000-entry ring in under a minute and evicts everything worth reading.
-export type ProcTool = 'ytdlp' | 'ffmpeg' | 'mokuro'
+export type ProcTool = 'ytdlp' | 'spotdl' | 'ffmpeg' | 'mokuro'
 
-const PERCENT_STEP: Record<ProcTool, number> = { ytdlp: 10, ffmpeg: 10, mokuro: 25 }
+const PERCENT_STEP: Record<ProcTool, number> = { ytdlp: 10, spotdl: 10, ffmpeg: 10, mokuro: 25 }
 
 // Returns a stateful keep/drop predicate — one per spawn, never shared.
 export function makeProcLineFilter(tool: ProcTool): (line: string) => boolean {
@@ -177,7 +177,7 @@ export function makeProcLineFilter(tool: ProcTool): (line: string) => boolean {
 }
 
 function matchPercent(tool: ProcTool, text: string): number | null {
-  if (tool === 'ytdlp') {
+  if (tool === 'ytdlp' || tool === 'spotdl') {
     // "[download]  45.3% of  120.00MiB at 2.00MiB/s ETA 00:30"
     const m = /^\[download\]\s+(\d+(?:\.\d+)?)%/.exec(text)
     return m ? Number(m[1]) : null

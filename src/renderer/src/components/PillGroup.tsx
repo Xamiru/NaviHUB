@@ -14,14 +14,21 @@ export function Group({ label, children }: { label: string; children: ReactNode 
 export function Pill({
   active,
   onClick,
-  label
+  label,
+  disabled = false
 }: {
   active: boolean
   onClick: () => void
   label: string
+  disabled?: boolean
 }) {
   return (
-    <button onClick={onClick} className={active ? 'pill pill-active' : 'pill'}>
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={active}
+      className={`${active ? 'pill pill-active' : 'pill'} disabled:cursor-not-allowed disabled:opacity-40`}
+    >
       {label}
     </button>
   )

@@ -172,13 +172,288 @@ describe('quizRepo availability', () => {
     addTheme(watching, { audioPath: 'audio/w.ogg' })
     db.prepare(`UPDATE media_item SET cover_path='media/c.jpg', release_date='2020-01-01' WHERE id=?`).run(completed)
     db.prepare(`UPDATE media_item SET cover_path='media/w.jpg', release_date='2021-01-01' WHERE id=?`).run(watching)
+    const completedMovie = Number(
+      db
+        .prepare(`INSERT INTO media_item (media_type, title, status, cover_path) VALUES ('movie', 'Film', 'Completed', 'media/f.jpg')`)
+        .run().lastInsertRowid
+    )
+    const watchingTv = Number(
+      db
+        .prepare(`INSERT INTO media_item (media_type, title, status, cover_path) VALUES ('tv', 'Show', 'Watching', 'media/t.jpg')`)
+        .run().lastInsertRowid
+    )
+    const actor = Number(
+      db.prepare(`INSERT INTO person (name, photo_path) VALUES ('Actor', 'media/a.jpg')`).run()
+        .lastInsertRowid
+    )
+    db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 0)`).run(completedMovie, actor)
+    db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 25)`).run(watchingTv, actor)
+
+    const readingManga = Number(
+      db
+        .prepare(
+          `INSERT INTO media_item (media_type, title, status, cover_path)
+           VALUES ('manga', 'Reading Manga', 'Reading', 'media/m.jpg')`
+        )
+        .run().lastInsertRowid
+    )
+    db.prepare(
+      `INSERT INTO manga_chapter
+       (media_id, dir_path, title, page_count, last_read_page)
+       VALUES (?, 'Reading Manga/c1', 'Chapter 1', 10, 4)`
+    ).run(readingManga)
+
+    const sharedVa = Number(
+      db.prepare(`INSERT INTO person (name) VALUES ('Shared VA')`).run().lastInsertRowid
+    )
+    const matchingAnime = addAnime('Completed Match', 'Completed')
+    const decoyMedia = [
+      addAnime('Completed Decoy A', 'Completed'),
+      addAnime('Completed Decoy B', 'Completed'),
+      addAnime('Completed Decoy C', 'Completed')
+    ]
+    for (const [index, mediaId] of [completed, matchingAnime, watching, ...decoyMedia].entries()) {
+      const characterId = Number(
+        db
+          .prepare(`INSERT INTO character (name, gender, image_path) VALUES (?, 'female', ?)`)
+          .run(`Character ${index}`, `media/ch-${index}.jpg`).lastInsertRowid
+      )
+      const personId = index < 3
+        ? sharedVa
+        : Number(
+            db.prepare(`INSERT INTO person (name) VALUES (?)`).run(`Decoy VA ${index}`)
+              .lastInsertRowid
+          )
+      db.prepare(
+        `INSERT INTO credit
+           (media_id, person_id, character_id, role, language, importance)
+         VALUES (?, ?, ?, 'voice_actor', 'Japanese', 1)`
+      ).run(mediaId, personId, characterId)
+    }
 
     const safe = quizRepo.availability({ scope: 'consumed', statuses: ['Completed'] })
     const all = quizRepo.availability({ scope: 'all' })
     expect(safe.song).toBe(1)
     expect(all.song).toBe(2)
+    expect(safe.cast).toBe(1)
+    expect(all.cast).toBe(2)
+    expect(safe.va).toBe(2)
+    expect(all.va).toBe(3)
+    expect(safe.mangaPanel).toBe(1)
     expect(safe.imageReveal).toBe(1)
     expect(all.higherLower).toBe(2)
+  })
+})
+
+describe('quizRepo higher/lower availability', () => {
+  it('reports playable counts by media category and metric', () => {
+    db.prepare(
+      `INSERT INTO media_item
+       (media_type, title, status, cover_path, release_date, total_units, score)
+       VALUES
+       ('anime', 'Old', 'Completed', 'media/old.jpg', '1998-04-03', 26, 8),
+       ('anime', 'New', 'Completed', 'media/new.jpg', '2024-01-01', 12, 9),
+       ('anime', 'Same year', 'Completed', 'media/same.jpg', '2024-09-01', 12, 9),
+       ('anime', 'No cover', 'Completed', NULL, '1980-01-01', 50, 10),
+       ('movie', 'Film', 'Completed', 'media/film.jpg', '2001-01-01', 120, 7)`
+    ).run()
+
+    const result = quizRepo.availability({ statuses: ['Completed'] })
+    const anime = result.higherLowerOptions.find((option) => option.mediaType === 'anime')!
+    const movie = result.higherLowerOptions.find((option) => option.mediaType === 'movie')!
+    expect(anime).toEqual({
+      mediaType: 'anime',
+      releaseDate: 3,
+      totalUnits: 3,
+      personalScore: 3
+    })
+    expect(movie).toEqual({
+      mediaType: 'movie',
+      releaseDate: 0,
+      totalUnits: 0,
+      personalScore: 0
+    })
+    expect(result.higherLower).toBe(3)
+  })
+
+  it('filters the dealt pool to the requested category', () => {
+    db.prepare(
+      `INSERT INTO media_item
+       (media_type, title, cover_path, release_date)
+       VALUES
+       ('anime', 'Anime A', 'media/a.jpg', '2000-01-01'),
+       ('anime', 'Anime B', 'media/b.jpg', '2010-01-01'),
+       ('movie', 'Movie A', 'media/c.jpg', '1990-01-01'),
+       ('movie', 'Movie B', 'media/d.jpg', '2020-01-01')`
+    ).run()
+    const [question] = quizRepo.challengePool({
+      kind: 'higherLower',
+      seed: 4,
+      length: 1,
+      options: { higherLowerMediaType: 'movie', higherLowerMetric: 'releaseDate' }
+    })
+    expect(question.kind).toBe('higherLower')
+    if (question.kind !== 'higherLower') return
+    expect(question.mediaType).toBe('movie')
+    expect([question.reference.label, question.challenger.label].sort()).toEqual([
+      'Movie A',
+      'Movie B'
+    ])
+  })
+})
+
+describe('quizRepo silhouette challenge pool', () => {
+  it('uses imported anime character portraits and excludes movie roles', () => {
+    for (let index = 0; index < 4; index++) {
+      const mediaId = addAnime(`Anime ${index + 1}`, 'Completed')
+      const characterId = Number(
+        db
+          .prepare(`INSERT INTO character (name, gender, image_path) VALUES (?, 'female', ?) `)
+          .run(`Heroine ${index + 1}`, `media/heroine-${index + 1}.jpg`).lastInsertRowid
+      )
+      db.prepare(`INSERT INTO media_character (media_id, character_id) VALUES (?, ?)`).run(
+        mediaId,
+        characterId
+      )
+    }
+    const movieId = Number(
+      db
+        .prepare(`INSERT INTO media_item (media_type, title, status) VALUES ('movie', 'Film', 'Completed')`)
+        .run().lastInsertRowid
+    )
+    const movieCharacter = Number(
+      db
+        .prepare(`INSERT INTO character (name, gender, image_path) VALUES ('Movie Role', 'female', 'media/movie.jpg')`)
+        .run().lastInsertRowid
+    )
+    db.prepare(`INSERT INTO media_character (media_id, character_id) VALUES (?, ?)`).run(
+      movieId,
+      movieCharacter
+    )
+
+    const questions = quizRepo.challengePool({
+      kind: 'silhouette',
+      seed: 4,
+      statuses: ['Completed'],
+      length: 10,
+      options: { silhouetteMode: 'character' }
+    })
+    expect(questions).toHaveLength(4)
+    expect(questions.every((question) => !question.reveal.includes('Movie Role'))).toBe(true)
+  })
+})
+
+describe('quizRepo Connections challenge pool', () => {
+  it('uses only top-ten billed movie and TV actors and reports actual playable pairs', () => {
+    const addScreenTitle = (mediaType: 'movie' | 'tv' | 'anime', title: string): number => Number(
+      db.prepare(
+        `INSERT INTO media_item (media_type, title, status, cover_path)
+         VALUES (?, ?, 'Completed', ?)`
+      ).run(mediaType, title, `media/${title}.jpg`).lastInsertRowid
+    )
+    const addActor = (name: string): number => Number(
+      db.prepare(`INSERT INTO person (name) VALUES (?)`).run(name).lastInsertRowid
+    )
+    const addRole = (mediaId: number, personId: number, characterName: string, order: number): void => {
+      const characterId = Number(
+        db.prepare(`INSERT INTO character (name) VALUES (?)`).run(characterName).lastInsertRowid
+      )
+      db.prepare(
+        `INSERT INTO media_character (media_id, character_id, sort_order) VALUES (?, ?, ?)`
+      ).run(mediaId, characterId, order)
+      db.prepare(
+        `INSERT INTO credit (media_id, person_id, character_id, role, importance)
+         VALUES (?, ?, ?, 'actor', ?)`
+      ).run(mediaId, personId, characterId, order)
+    }
+
+    const film = addScreenTitle('movie', 'Film')
+    const show = addScreenTitle('tv', 'Show')
+    const decoyTitles = [
+      addScreenTitle('movie', 'Decoy A'),
+      addScreenTitle('tv', 'Decoy B'),
+      addScreenTitle('movie', 'Decoy C')
+    ]
+    const anime = addScreenTitle('anime', 'Anime')
+    const shared = addActor('Shared Actor')
+    addRole(film, shared, 'Film Lead', 0)
+    addRole(show, shared, 'Show Lead', 9)
+    addRole(anime, shared, 'Anime Role', 0)
+
+    const lowerBilled = addActor('Background Actor')
+    addRole(film, lowerBilled, 'Film Extra', 0)
+    addRole(show, lowerBilled, 'Show Extra', 10)
+
+    const director = addActor('Shared Director')
+    db.prepare(`INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, 'director')`).run(
+      film,
+      director
+    )
+    db.prepare(`INSERT INTO credit (media_id, person_id, role) VALUES (?, ?, 'director')`).run(
+      show,
+      director
+    )
+
+    decoyTitles.forEach((mediaId, index) => {
+      addRole(mediaId, addActor(`Decoy Actor ${index + 1}`), `Decoy Role ${index + 1}`, index)
+    })
+
+    const questions = quizRepo.challengePool({
+      kind: 'connections',
+      seed: 12,
+      statuses: ['Completed'],
+      length: 10
+    })
+    expect(questions).toHaveLength(1)
+    const [question] = questions
+    expect(question.kind).toBe('connections')
+    if (question.kind !== 'connections') return
+    expect([question.titleA.label, question.titleB.label].sort()).toEqual(['Film', 'Show'])
+    expect(new Set(question.validKeys)).toEqual(new Set([String(shared), String(director)]))
+    expect(question.choices).toHaveLength(4)
+    expect(question.choices.map((choice) => choice.key)).not.toContain(String(lowerBilled))
+    expect(question.reveal).toContain('Film: Film Lead')
+    expect(question.reveal).toContain('Show: Show Lead')
+    expect(question.reveal).toContain('Shared Director — Film: director; Show: director')
+    expect(question.reveal).not.toContain('Anime Role')
+    expect(quizRepo.availability({ statuses: ['Completed'] }).connections).toBe(1)
+  })
+})
+
+describe('quizRepo Chronology challenge pool', () => {
+  it('uses resolved franchise components and keeps availability aligned with buildable sets', () => {
+    const ids = Array.from({ length: 5 }, (_, index) => Number(
+      db.prepare(
+        `INSERT INTO media_item
+           (media_type, title, status, cover_path, release_date, external_source, external_id)
+         VALUES ('movie', ?, 'Completed', ?, ?, 'test', ?)`
+      ).run(
+        `Series ${index + 1}`,
+        `media/series-${index + 1}.jpg`,
+        `${2000 + index}-06-01`,
+        String(index + 1)
+      ).lastInsertRowid
+    ))
+    for (let index = 0; index < ids.length - 1; index++) {
+      db.prepare(
+        `INSERT INTO media_relation
+           (media_id, relation_type, related_source, related_external_id)
+         VALUES (?, 'SEQUEL', 'test', ?)`
+      ).run(ids[index], String(index + 2))
+    }
+
+    const request = {
+      kind: 'chronology' as const,
+      seed: 9,
+      statuses: ['Completed'],
+      length: 5
+    }
+    const questions = quizRepo.challengePool(request)
+    expect(questions).toHaveLength(5)
+    expect(questions.every((question) =>
+      question.kind === 'chronology' && question.connectionLabel === 'Same franchise'
+    )).toBe(true)
+    expect(quizRepo.availability({ statuses: ['Completed'] }).chronology).toBe(5)
   })
 })
 

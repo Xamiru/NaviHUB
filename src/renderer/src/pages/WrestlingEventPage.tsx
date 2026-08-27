@@ -14,6 +14,7 @@ import WrestlingFilesSection from '../components/wrestling/WrestlingFilesSection
 import WrestlingChronologyNav from '../components/wrestling/WrestlingChronology'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
 import AddToListMenu from '../components/AddToListMenu'
+import FavoriteButton from '../components/FavoriteButton'
 import { WRESTLING_CATEGORIES, wrestlingTorrentQuery } from '@shared/torrents'
 import { promotionName } from '@shared/wrestling'
 import { wikipediaUrl } from '@shared/wikiLinks'
@@ -96,16 +97,13 @@ export default function WrestlingEventPage(): JSX.Element {
         subtitle={facts.join(' · ') || undefined}
         actions={
           <>
-            <button
+            <FavoriteButton
+              active={event.favorite}
               onClick={async () => {
                 await api.wrestling.setFavorite('event', event.id, !event.favorite)
                 await qc.invalidateQueries({ queryKey: qk.wrestling.all })
               }}
-              className={`btn ${event.favorite ? 'text-accent' : ''}`}
-              aria-label={event.favorite ? 'Remove from favorites' : 'Add to favorites'}
-            >
-              ♥
-            </button>
+            />
             <AddToListMenu kind="wrestlingEvent" entityId={event.id} />
             {event.wikiTitle && (
               <button

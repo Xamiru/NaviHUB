@@ -5,10 +5,12 @@ import { useIncrementalList } from '../lib/hooks'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toastError } from '../lib/toast'
+import { musicIdOf } from '../lib/playerTrackIds'
 import CoverImage from './CoverImage'
+import FavoriteButton from './FavoriteButton'
 import { PlayIcon, PauseIcon } from './PlayerIcons'
 
-// Spotify-style "queue" popover anchored above the now-playing bar: the current
+// Queue popover anchored above the now-playing bar: the current
 // song plus everything still to come. Clicking a row jumps straight to it;
 // "Next up" rows can be reordered (▲▼) or removed (×) — the playing track
 // itself is never editable, which keeps the player's index bookkeeping trivial.
@@ -45,12 +47,21 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
     <>
       {/* click-away backdrop */}
       <div className="fixed inset-0 z-30" onClick={onClose} />
-      <div className="absolute bottom-full right-2 mb-2 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-base-700 bg-base-800 shadow-xl shadow-black/40 overflow-hidden">
+      <div
+        className="absolute bottom-full right-2 mb-2 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-base-700 bg-base-800 shadow-xl shadow-black/40 overflow-hidden"
+        role="dialog"
+        aria-label="Playback queue"
+      >
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-base-700">
           <span className="text-sm font-semibold">Queue</span>
-          <span className="text-xs text-gray-500">
-            {upNext.length === 0 ? 'Nothing up next' : `${upNext.length} up next`}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">
+              {upNext.length === 0 ? 'Nothing up next' : `${upNext.length} up next`}
+            </span>
+            <button className="px-1 text-gray-400 hover:text-white" aria-label="Close queue" onClick={onClose}>
+              ✕
+            </button>
+          </div>
         </div>
         <div ref={listRef} className="max-h-96 overflow-y-auto p-2">
           {current && (
@@ -143,13 +154,6 @@ export function EditButton({
 // The heart, on a queue row. Only library tracks have one: the queue also
 // carries `theme-` / `quiz-` / `tourney-` / `file-` ids, none of which have a
 // music_track row to like. Returns the numeric id, or null for those.
-export function musicIdOf(trackId: string): number | null {
-  // Anchored digits, not Number(): Number('') is 0 and passes isFinite, so a
-  // bare `music-` id would have rendered a heart writing against track 0.
-  const m = /^music-(\d+)$/.exec(trackId)
-  return m ? Number(m[1]) : null
-}
-
 // One Set for every row. Each row used to run its own useQuery and an O(liked)
 // `.some()`; the panel re-renders on every playback tick (see the memo note
 // above), so with 96 visible rows and a few thousand liked tracks that was
@@ -167,11 +171,13 @@ export function useLikedTrackIds(): Set<number> {
 export function QueueLikeButton({
   trackId,
   likedIds,
-  prominent = false
+  prominent = false,
+  iconOnly = false
 }: {
   trackId: number
   likedIds: Set<number>
   prominent?: boolean
+  iconOnly?: boolean
 }) {
   const qc = useQueryClient()
   const source = likedIds.has(trackId)
@@ -193,36 +199,14 @@ export function QueueLikeButton({
     }
   }
 
-  const label = liked ? 'Remove from Liked Songs' : 'Add to Liked Songs'
   return (
-    <button
-      className={
-        prominent
-          ? liked
-            ? 'pill pill-active gap-2'
-            : 'pill gap-2 text-gray-400'
-          : `px-1 text-sm ${
-              liked
-                ? 'text-accent'
-                : 'text-gray-600 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100'
-            } hover:text-accent`
-      }
-      title={label}
-      aria-label={label}
-      aria-pressed={liked}
-      onClick={(e) => void toggle(e)}
-    >
-      {prominent ? (
-        <>
-          <span aria-hidden="true">♥</span>
-          <span>{liked ? 'Liked' : 'Like'}</span>
-        </>
-      ) : liked ? (
-        '♥'
-      ) : (
-        '♡'
-      )}
-    </button>
+    <FavoriteButton
+      active={liked}
+      variant={prominent ? 'pill' : iconOnly ? 'default' : 'compact'}
+      activeLabel="Remove from Liked Songs"
+      inactiveLabel="Add to Liked Songs"
+      onClick={(event) => void toggle(event)}
+    />
   )
 }
 

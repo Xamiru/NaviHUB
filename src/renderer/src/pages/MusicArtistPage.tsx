@@ -11,6 +11,7 @@ import PageStatus from '../components/PageStatus'
 import MusicEntityHeader from '../components/MusicEntityHeader'
 import Section from '../components/Section'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
+import SpotifyEntityDownloadDialog from '../components/SpotifyEntityDownloadDialog'
 import { AUDIO_CATEGORIES, discographyQuery } from '@shared/torrents'
 import { AlbumCard, TrackList } from './MusicLibraryPage'
 import { confirmDialog } from '../lib/confirm'
@@ -22,20 +23,31 @@ export default function MusicArtistPage() {
   const navigate = useNavigate()
   const player = usePlayer()
   const [torrentsOpen, setTorrentsOpen] = useState(false)
+  const [spotifyOpen, setSpotifyOpen] = useState(false)
 
   const { data: artist, isLoading } = useQuery({
     queryKey: qk.music.artist(artistId),
     queryFn: () => api.music.artist(artistId)
   })
+  const { data: tracks = [], isLoading: tracksLoading } = useQuery({
+    queryKey: qk.music.artistTracks(artistId),
+    queryFn: () => api.music.artistTracks(artistId)
+  })
 
   async function playAll(shuffle: boolean): Promise<void> {
-    playTracks(player, await api.music.artistTracks(artistId), { shuffle })
+    playTracks(player, tracks, { shuffle })
   }
 
   async function findPhoto(): Promise<void> {
     try {
       const res = await api.music.artFetchArtist(artistId)
-      if (!res.updated) toast('No confident photo match found online')
+      if (!res.updated) {
+        toast(
+          res.reason === 'download_failed'
+            ? 'Artist photo lookup failed. Check your connection and try again.'
+            : 'No confident photo match found online'
+        )
+      }
       qc.invalidateQueries({ queryKey: qk.music.all })
     } catch (e) {
       toastError(e)
@@ -90,15 +102,17 @@ export default function MusicArtistPage() {
         onClearArt={clearPhoto}
         onDelete={deleteArtist}
         deleteLabel="Delete artist"
-        extraActions={
-          <button
-            className="btn-ghost"
-            onClick={() => setTorrentsOpen(true)}
-            title="Search Jackett for this artist's discography"
-          >
-            Find torrents
-          </button>
-        }
+        addMusicItems={[
+          {
+            label: 'Complete from Spotify…',
+            onSelect: () => setSpotifyOpen(true)
+          },
+          {
+            label: 'Search torrents…',
+            title: "Search Jackett for this artist's discography",
+            onSelect: () => setTorrentsOpen(true)
+          }
+        ]}
       />
 
       {artist.topTracks.length > 0 && (
@@ -117,12 +131,34 @@ export default function MusicArtistPage() {
         </div>
       </Section>
 
+      <Section
+        title="All tracks"
+        subtitle={tracksLoading ? 'Loading the complete catalog…' : `${tracks.length} tracks in release order`}
+        className="mb-6"
+      >
+        <div className="max-w-5xl">
+          {tracksLoading ? (
+            <p className="text-sm text-gray-400">Loading tracks…</p>
+          ) : (
+            <TrackList tracks={tracks} />
+          )}
+        </div>
+      </Section>
+
       {torrentsOpen && (
         <TorrentSearchDialog
           heading={artist.name}
           query={discographyQuery(artist.name)}
           categories={AUDIO_CATEGORIES}
           onClose={() => setTorrentsOpen(false)}
+        />
+      )}
+      {spotifyOpen && (
+        <SpotifyEntityDownloadDialog
+          kind="artist"
+          entityId={artistId}
+          savedUrl={artist.spotifyUrl}
+          onClose={() => setSpotifyOpen(false)}
         />
       )}
     </div>

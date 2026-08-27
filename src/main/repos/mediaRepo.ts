@@ -486,7 +486,8 @@ export function get(id: number): MediaDetail | null {
                 p.photo_path AS p_photo_path, p.bio AS p_bio, p.birthday AS p_birthday,
                 p.external_source AS p_external_source, p.external_id AS p_external_id,
                 ch.id AS ch_id, ch.name AS ch_name, ch.name_native AS ch_name_native,
-                ch.image_path AS ch_image_path, ch.description AS ch_description
+                ch.gender AS ch_gender, ch.image_path AS ch_image_path,
+                ch.description AS ch_description
          FROM credit cr
          JOIN person p ON p.id = cr.person_id
          LEFT JOIN character ch ON ch.id = cr.character_id
@@ -515,6 +516,7 @@ export function get(id: number): MediaDetail | null {
             id: r.ch_id,
             name: r.ch_name,
             name_native: r.ch_name_native,
+            gender: r.ch_gender,
             image_path: r.ch_image_path,
             description: r.ch_description
           })
@@ -526,7 +528,8 @@ export function get(id: number): MediaDetail | null {
     .prepare(
       `SELECT mc.sort_order AS sort_order,
               ch.id AS ch_id, ch.name AS ch_name, ch.name_native AS ch_name_native,
-              ch.image_path AS ch_image_path, ch.description AS ch_description,
+              ch.gender AS ch_gender, ch.image_path AS ch_image_path,
+              ch.description AS ch_description,
               cr.id AS credit_id, cr.language AS credit_language,
               p.id AS p_id, p.name AS p_name, p.name_native AS p_name_native,
               p.photo_path AS p_photo_path, p.bio AS p_bio, p.birthday AS p_birthday,
@@ -552,6 +555,7 @@ export function get(id: number): MediaDetail | null {
           id: r.ch_id,
           name: r.ch_name,
           name_native: r.ch_name_native,
+          gender: r.ch_gender,
           image_path: r.ch_image_path,
           description: r.ch_description
         }),

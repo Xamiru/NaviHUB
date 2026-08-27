@@ -10,7 +10,8 @@ import { usePlayer, type Track } from '../lib/player'
 import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
-import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
+import FavoriteButton from '../components/FavoriteButton'
+import { HeartIcon, PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import MediaFilterPanel, {
   EMPTY_FILTERS,
   activeCount,
@@ -212,7 +213,7 @@ export default function ThemeSongsPage(): JSX.Element {
           onClick={() => setFavSongs((v) => !v)}
           title="Show hearted songs only"
         >
-          ♥ Favorite songs
+          <HeartIcon className="h-3.5 w-3.5" filled={favSongs} /> Favorite songs
         </button>
         <button
           className={`btn py-1.5 ${
@@ -441,16 +442,11 @@ function SongRow({ song, index, onPlay }: { song: ThemeSongEntry; index: number;
           </Link>
         </p>
       </div>
-      <button
-        className={`px-1 text-sm ${
-          favorite ? 'text-accent' : 'text-gray-600 opacity-0 group-hover:opacity-100'
-        } hover:text-accent`}
-        title={favorite ? 'Remove from favorites' : 'Add to favorites'}
-        aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
-        onClick={toggleFavorite}
-      >
-          ♥
-      </button>
+      <FavoriteButton
+        active={favorite}
+        variant="compact"
+        onClick={() => void toggleFavorite()}
+      />
     </div>
   )
 }

@@ -134,6 +134,14 @@ describe('pickPanelSeeds', () => {
     expect(draws.every((path) => !path.endsWith('p0.png') && !path.endsWith('p1.png') && !path.endsWith('p9.png'))).toBe(true)
   })
 
+  it('waits until a safe interior page has been read in a long chapter', () => {
+    const files = Array.from({ length: 10 }, (_, i) => `p${i}.png`)
+    const barelyStarted = cand(1, [files])
+    barelyStarted.chapters[0].lastReadPage = 1
+    barelyStarted.chapters[0].readAt = null
+    expect(manga.pickPanelSeeds([barelyStarted], 1)).toEqual([])
+  })
+
   it('samples the flattened eligible pages rather than choosing a chapter first', () => {
     const candidate = cand(3, [['only.png'], ...[Array.from({ length: 9 }, (_, i) => `many-${i}.png`)]])
     const [seed] = manga.pickPanelSeeds([candidate], 1, () => 0.7)
@@ -150,7 +158,7 @@ describe('manga.panelPool', () => {
     // Not linked — no chapter rows, so never eligible despite the status.
     linkSeries('Unlinked', [])
 
-    const pool = await manga.panelPool({ statuses: ['Reading'] }, 10)
+    const pool = await manga.panelPool({ scope: 'consumed' }, 10)
     expect(pool).toHaveLength(2)
     expect(new Set(pool.map((p) => p.mediaId)).size).toBe(2)
     for (const seed of pool) {
@@ -159,13 +167,13 @@ describe('manga.panelPool', () => {
     }
   })
 
-  it('excludes EPUB chapters and honours the status filter and cap', async () => {
+  it('excludes EPUB chapters and honours page scope and the cap', async () => {
     makeSeries('Img Series', { c1: 2 })
     makeSeries('Planned Series', { c1: 2 })
     linkSeries('Img Series', ['Img Series/c1', 'Img Series/Vol 1.epub'])
-    linkSeries('Planned Series', ['Planned Series/c1'], 'Plan to Read')
+    linkSeries('Planned Series', ['Planned Series/c1'], 'Plan to Read', 'media/cover.webp', false)
 
-    const pool = await manga.panelPool({ statuses: ['Reading'] }, 10)
+    const pool = await manga.panelPool({ scope: 'consumed' }, 10)
     expect(pool.map((p) => p.title)).toEqual(['Img Series'])
     expect(pool[0].pageRelPath).not.toContain('.epub')
 
@@ -177,6 +185,16 @@ describe('manga.panelPool', () => {
     expect(await manga.panelPool({ scope: 'all' }, 10)).toHaveLength(2)
   })
 
+  it('uses page progress even when the manga itself is not completed', async () => {
+    makeSeries('Current', { c1: 4 })
+    makeSeries('Planned but sampled', { c1: 4 })
+    linkSeries('Current', ['Current/c1'], 'Reading')
+    linkSeries('Planned but sampled', ['Planned but sampled/c1'], 'Plan to Read')
+
+    const pool = await manga.panelPool({ scope: 'consumed', seed: 7 }, 10)
+    expect(pool.map((item) => item.title).sort()).toEqual(['Current', 'Planned but sampled'])
+  })
+
   it('skips series whose folders vanished without failing the round', async () => {
     linkSeries('Ghost', ['Ghost/missing']) // no files on disk
     makeSeries('Real', { c1: 1 })
@@ -184,5 +202,15 @@ describe('manga.panelPool', () => {
 
     const pool = await manga.panelPool({}, 5)
     expect(pool.map((p) => p.title)).toEqual(['Real'])
+  })
+
+  it('uses the supplied seed for reproducible series and page selection', async () => {
+    for (const name of ['A', 'B', 'C', 'D', 'E']) {
+      makeSeries(name, { c1: 8 })
+      linkSeries(name, [`${name}/c1`])
+    }
+    const first = await manga.panelPool({ scope: 'consumed', seed: 913 }, 4)
+    const repeated = await manga.panelPool({ scope: 'consumed', seed: 913 }, 4)
+    expect(repeated).toEqual(first)
   })
 })

@@ -55,7 +55,12 @@ export function tournamentPool(source: TournamentSource): TournamentEntry[] {
           tracks = musicRepo.listTracks({ likedOnly: true })
           break
         case 'playlist':
-          tracks = musicRepo.getPlaylist(source.id)?.items.map((i) => i.track) ?? []
+          tracks =
+            musicRepo
+              .getPlaylist(source.id)
+              ?.items.flatMap((item) =>
+                item.kind === 'local' ? [item.track] : item.matchedTrack ? [item.matchedTrack] : []
+              ) ?? []
           break
         case 'artist':
           tracks = musicRepo.artistTracks(source.id)

@@ -16,8 +16,10 @@ vi.mock('../src/main/files', () => ({
 vi.mock('../src/main/http', () => ({
   fetchWithRetry: async (url: string) => {
     const hit = Object.entries(responses).find(([k]) => url.includes(k))
+    if (hit?.[1] instanceof Error) throw hit[1]
     return {
       ok: hit != null,
+      status: hit != null ? 200 : 404,
       json: async () => hit?.[1] ?? {}
     }
   }
@@ -25,8 +27,11 @@ vi.mock('../src/main/http', () => ({
 
 import {
   normalizeForMatch,
+  escapeMusicBrainzQueryValue,
+  musicBrainzCreditName,
   pickBestAlbumMatch,
   pickBestArtistMatch,
+  pickMusicBrainzReleaseGroup,
   fetchAlbumArt,
   fetchArtistImage,
   clearAlbumArt,
@@ -35,7 +40,7 @@ import {
 
 beforeEach(() => {
   db = createTestDb()
-  responses = {}
+  responses = { 'musicbrainz.org/ws/2/release-group': { 'release-groups': [] } }
   downloadImage.mockClear()
 })
 
@@ -54,29 +59,74 @@ function seedAlbum(artist = 'Radiohead', album = 'OK Computer'): number {
 }
 
 describe('normalizeForMatch', () => {
-  it('casefolds, strips diacritics/punctuation and edition suffixes', () => {
-    expect(normalizeForMatch('OK Computer (Deluxe Edition)')).toBe('ok computer')
-    expect(normalizeForMatch('Amnesiac [2001 Remaster]')).toBe('amnesiac')
+  it('casefolds and strips diacritics/punctuation without erasing edition identity', () => {
+    expect(normalizeForMatch('OK Computer (Deluxe Edition)')).toBe(
+      'ok computer deluxe edition'
+    )
+    expect(normalizeForMatch('Amnesiac [2001 Remaster]')).toBe('amnesiac 2001 remaster')
     expect(normalizeForMatch('Sigur Rós')).toBe('sigur ros')
     expect(normalizeForMatch("What's Going On?")).toBe('what s going on')
   })
 })
 
+describe('MusicBrainz query helpers', () => {
+  it('escapes Lucene syntax inside literal artist and album values', () => {
+    expect(escapeMusicBrainzQueryValue('AC/DC + "Live" && More')).toBe(
+      'AC\\/DC \\+ \\"Live\\" \\&& More'
+    )
+  })
+
+  it('reconstructs the full credited artist including join phrases', () => {
+    expect(
+      musicBrainzCreditName([
+        { name: 'Jay-Z', joinphrase: ' & ' },
+        { artist: { name: 'Kanye West' } }
+      ])
+    ).toBe('Jay-Z & Kanye West')
+  })
+})
+
 describe('pickBestAlbumMatch', () => {
   const want = { artist: 'Radiohead', album: 'OK Computer' }
-  it('accepts an exact match and deluxe variants', () => {
+  it('accepts exact normalized identity but rejects a different edition', () => {
+    expect(
+      pickBestAlbumMatch(
+        [{ artist: 'radiohead', album: 'OK Computer!', coverUrl: 'u1' }],
+        want.artist,
+        want.album
+      )
+    ).toEqual({ coverUrl: 'u1' })
     expect(
       pickBestAlbumMatch(
         [{ artist: 'Radiohead', album: 'OK Computer (Deluxe)', coverUrl: 'u1' }],
         want.artist,
         want.album
       )
-    ).toEqual({ coverUrl: 'u1' })
+    ).toBeNull()
   })
   it('rejects a different artist even when the album matches', () => {
     expect(
       pickBestAlbumMatch(
         [{ artist: 'Someone Else', album: 'OK Computer', coverUrl: 'u1' }],
+        want.artist,
+        want.album
+      )
+    ).toBeNull()
+  })
+  it('rejects artist substrings and ambiguous exact results', () => {
+    expect(
+      pickBestAlbumMatch(
+        [{ artist: 'Queens of the Stone Age', album: 'Hits', coverUrl: 'wrong' }],
+        'Queen',
+        'Hits'
+      )
+    ).toBeNull()
+    expect(
+      pickBestAlbumMatch(
+        [
+          { artist: 'Radiohead', album: 'OK Computer', coverUrl: 'u1' },
+          { artist: 'radiohead', album: 'OK Computer!', coverUrl: 'u2' }
+        ],
         want.artist,
         want.album
       )
@@ -107,7 +157,78 @@ describe('pickBestArtistMatch', () => {
   })
 })
 
+describe('pickMusicBrainzReleaseGroup', () => {
+  const candidates = [
+    { id: 'original', artist: 'Radiohead', album: 'OK Computer', score: 100, year: 1997 },
+    { id: 'later', artist: 'Radiohead', album: 'OK Computer', score: 100, year: 2009 }
+  ]
+
+  it('uses a known year to resolve otherwise ambiguous exact release groups', () => {
+    expect(pickMusicBrainzReleaseGroup(candidates, 'Radiohead', 'OK Computer', 1997)?.id).toBe(
+      'original'
+    )
+  })
+
+  it('rejects ambiguity, partial names, and lower-scored matches', () => {
+    expect(pickMusicBrainzReleaseGroup(candidates, 'Radiohead', 'OK Computer', null)).toBeNull()
+    expect(
+      pickMusicBrainzReleaseGroup(
+        [{ id: 'wrong', artist: 'Radiohead Tribute', album: 'OK Computer', score: 100, year: 1997 }],
+        'Radiohead',
+        'OK Computer',
+        1997
+      )
+    ).toBeNull()
+    expect(
+      pickMusicBrainzReleaseGroup(
+        [{ id: 'weak', artist: 'Radiohead', album: 'OK Computer', score: 99, year: 1997 }],
+        'Radiohead',
+        'OK Computer',
+        1997
+      )
+    ).toBeNull()
+  })
+})
+
 describe('fetchAlbumArt', () => {
+  it('prefers a 1200px Cover Art Archive front image from an exact release group', async () => {
+    const id = seedAlbum()
+    responses['musicbrainz.org/ws/2/release-group'] = {
+      'release-groups': [
+        {
+          id: 'mb-release-group',
+          title: 'OK Computer',
+          score: 100,
+          'first-release-date': '1997-05-21',
+          'artist-credit': [{ artist: { name: 'Radiohead' } }]
+        }
+      ]
+    }
+    responses['coverartarchive.org/release-group/mb-release-group'] = {
+      images: [
+        {
+          front: true,
+          image: 'https://archive/original.jpg',
+          thumbnails: { '1200': 'https://archive/1200.jpg' }
+        }
+      ]
+    }
+    const res = await fetchAlbumArt(id)
+    expect(res).toMatchObject({ updated: true, sourceUrl: 'https://archive/1200.jpg' })
+    expect(downloadImage).toHaveBeenCalledWith('https://archive/1200.jpg')
+  })
+
+  it('uses the remembered Spotify album image before fuzzy provider fallbacks', async () => {
+    const id = seedAlbum()
+    db.prepare(`UPDATE music_album SET spotify_id = 'spotify-album' WHERE id = ?`).run(id)
+    responses['open.spotify.com/oembed'] = { thumbnail_url: 'https://spotify/album.jpg' }
+    responses['api.deezer.com/search/album'] = {
+      data: [{ title: 'OK Computer', cover_xl: 'https://deezer/img.jpg', artist: { name: 'Radiohead' } }]
+    }
+    const res = await fetchAlbumArt(id)
+    expect(res.sourceUrl).toBe('https://spotify/album.jpg')
+  })
+
   it('stores the Deezer cover with provenance and a checked stamp', async () => {
     const id = seedAlbum()
     responses['api.deezer.com/search/album'] = {
@@ -169,6 +290,20 @@ describe('fetchAlbumArt', () => {
     >
     expect(row.art_checked_at).toBeNull()
   })
+
+  it('does not cache a total provider outage as a permanent miss', async () => {
+    const id = seedAlbum()
+    responses = {
+      'musicbrainz.org': new Error('offline'),
+      'api.deezer.com': new Error('offline'),
+      'itunes.apple.com': new Error('offline')
+    }
+    const res = await fetchAlbumArt(id)
+    expect(res.reason).toBe('download_failed')
+    expect(db.prepare('SELECT art_checked_at FROM music_album WHERE id = ?').get(id)).toEqual({
+      art_checked_at: null
+    })
+  })
 })
 
 describe('clear + bulk fetch', () => {
@@ -182,7 +317,7 @@ describe('clear + bulk fetch', () => {
     expect(row).toEqual({ cover_path: null, art_source_url: null, art_checked_at: null })
   })
 
-  it('fetchMissingArt skips already-checked rows and counts updates', async () => {
+  it('fetchMissingArt revisits old misses with upgraded providers and counts updates', async () => {
     const a = seedAlbum('Radiohead', 'OK Computer')
     const b = seedAlbum('Radiohead', 'Kid A')
     db.prepare(`UPDATE music_album SET art_checked_at = datetime('now') WHERE id = ?`).run(b)
@@ -197,8 +332,16 @@ describe('clear + bulk fetch', () => {
       data: [{ name: 'Radiohead', picture_xl: 'https://deezer/artist.jpg' }]
     }
     const status = await fetchMissingArt()
-    // one unchecked album + one unchecked artist; the checked album is skipped
-    expect(status).toMatchObject({ running: false, done: 2, total: 2, updated: 2 })
+    // Both albums plus the artist are retried; rows with actual art remain excluded.
+    expect(status).toMatchObject({
+      running: false,
+      cancelled: false,
+      done: 3,
+      total: 3,
+      updated: 3,
+      missing: 0,
+      failed: 0
+    })
     const cover = db.prepare('SELECT cover_path FROM music_album WHERE id = ?').get(a) as {
       cover_path: string | null
     }
@@ -208,9 +351,39 @@ describe('clear + bulk fetch', () => {
     }
     expect(artist.cover_path).toBe('media/dl-fake.jpg')
   })
+
+  it('reports confident misses separately from provider failures', async () => {
+    seedAlbum('Unknown Artist', 'Unknown Album')
+    responses['api.deezer.com'] = { data: [] }
+    responses['itunes.apple.com'] = { results: [] }
+    let status = await fetchMissingArt()
+    expect(status).toMatchObject({ updated: 0, missing: 2, failed: 0 })
+
+    db.prepare(`UPDATE music_album SET art_checked_at = NULL`).run()
+    db.prepare(`UPDATE music_artist SET art_checked_at = NULL`).run()
+    responses = {
+      'musicbrainz.org': new Error('offline'),
+      'api.deezer.com': new Error('offline'),
+      'itunes.apple.com': new Error('offline')
+    }
+    status = await fetchMissingArt()
+    expect(status).toMatchObject({ updated: 0, missing: 0, failed: 2 })
+  })
 })
 
 describe('fetchArtistImage', () => {
+  it('prefers the exact remembered Spotify artist image', async () => {
+    seedAlbum()
+    const artistId = (db.prepare('SELECT id FROM music_artist LIMIT 1').get() as { id: number }).id
+    db.prepare(`UPDATE music_artist SET spotify_id = 'spotify-artist' WHERE id = ?`).run(artistId)
+    responses['open.spotify.com/oembed'] = { thumbnail_url: 'https://spotify/artist.jpg' }
+    responses['api.deezer.com/search/artist'] = {
+      data: [{ name: 'Radiohead', picture_xl: 'https://deezer/artist.jpg' }]
+    }
+    const res = await fetchArtistImage(artistId)
+    expect(res.sourceUrl).toBe('https://spotify/artist.jpg')
+  })
+
   it('stores an exact-match Deezer artist photo', async () => {
     seedAlbum()
     const artistId = (db.prepare('SELECT id FROM music_artist LIMIT 1').get() as { id: number }).id

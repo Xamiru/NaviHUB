@@ -1,23 +1,22 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { useStatuses } from '../lib/hooks'
-import { MANGA } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
 import LibMcRound, { type McQuestion } from '../components/libraryQuiz/LibMcRound'
 import { Group, Pill } from '../components/PillGroup'
-import type { QuizMangaPanelItem } from '@shared/types'
-import { pickDistractors } from '@shared/quizDistractors'
-import { shuffle } from '@shared/shuffle'
+import { quizSeed } from '@shared/quizCore'
+import { buildMangaPanelQuestions } from '@shared/mangaPanelQuiz'
 import { mediaUrl } from '@shared/mediaUrl'
 
 // Manga panel quiz: a random page from a locally-linked series appears —
 // name the manga it belongs to. Eligibility is every series with attached
 // chapters (folders or CBZ); pages are the exact paths the reader streams.
 export default function MangaPanelQuizPage() {
-  const statuses = useStatuses(MANGA)
+  const qc = useQueryClient()
   const [listSource, setListSource] = usePersistedState<'consumed' | 'all'>('quizPanelList', 'consumed')
   const [length, setLength] = usePersistedState<number>('quizPanelLength', 10)
   const [timerEnabled, setTimerEnabled] = usePersistedState('quizPanelTimer', true)
@@ -32,39 +31,41 @@ export default function MangaPanelQuizPage() {
     setError(null)
     setLoading(true)
     try {
-      const pool = await api.quiz.mangaPanelPool(
-        {
-          statuses: listSource === 'all' ? null : [statuses[1]].filter(Boolean),
-          scope: listSource
-        },
-        length + 5
-      )
-      if (pool.length < 4) {
+      const seed = quizSeed(`${Date.now()}-${Math.random()}`)
+      const filter = { scope: listSource, seed }
+      const requested = length + 5
+      const pool = await qc.fetchQuery({
+        queryKey: qk.quiz.mangaPanelPool(filter, requested),
+        queryFn: () => api.quiz.mangaPanelPool(filter, requested)
+      })
+      const built = buildMangaPanelQuestions(pool, seed)
+      if (built.length < length) {
         setError(
-          `Need pages from at least 4 different locally-linked manga — found ${pool.length}. Attach folders to your manga (on a title's page) or widen the filters.`
+          `Need ${length} different manga with eligible readable pages — found ${built.length}. Attach more manga folders, choose a shorter round, or widen the page scope.`
         )
         return
       }
-      const qs: McQuestion[] = pool.map((seed) => ({
-        key: `panel-${seed.mediaId}`,
-        validKeys: [`media-${seed.mediaId}`],
-        prompt: ({ skip }) => (
+      const qs: McQuestion[] = built.map((question) => ({
+        key: question.key,
+        validKeys: question.validKeys,
+        waitForPrompt: true,
+        prompt: ({ skip, ready }) => (
           <div className="text-center">
             <p className="text-sm uppercase tracking-widest text-gray-500">
               Which manga is this page from?
             </p>
             <img
-              src={mediaUrl(seed.pageRelPath) ?? undefined}
+              src={mediaUrl(question.answer.pageRelPath) ?? undefined}
               alt="Manga page"
-              className="mx-auto mt-4 max-h-[65vh] w-auto rounded-xl border border-base-700"
+              className="mx-auto mt-4 max-h-[65vh] max-w-full rounded-xl border border-base-700"
               draggable={false}
+              onLoad={ready}
               onError={skip}
             />
           </div>
         ),
-        // pickDistractors keys on mediaId and never returns the answer's own
-        // title, so all four covers stay distinct.
-        options: shuffle([seed, ...pickDistractors(pool, seed, 3)]).map((o) => ({
+        // The shared builder guarantees four distinct manga identities.
+        options: question.options.map((o) => ({
           key: `media-${o.mediaId}`,
           node: (
             <>
@@ -74,7 +75,7 @@ export default function MangaPanelQuizPage() {
           )
         }))
       }))
-      setSettingsSnapshot({ listSource, length, timerEnabled })
+      setSettingsSnapshot({ listSource, scope: listSource, length, timerEnabled, seed })
       setQuestions(qs)
       setRound((r) => r + 1)
     } catch (e) {

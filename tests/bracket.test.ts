@@ -12,6 +12,7 @@ import {
   runnerUpOf,
   shuffle,
   standingsOf,
+  visibleContenderIndices,
   type Bracket
 } from '../src/shared/bracket'
 
@@ -213,6 +214,22 @@ describe('standingsOf', () => {
     expect(placements.map((_, index) => placementRank(placements, index))).toEqual([
       1, 2, 3, 3, 5, 5, 5, 5
     ])
+  })
+})
+
+describe('visibleContenderIndices', () => {
+  it('reveals only the current and already-played matchups', () => {
+    let bracket = createBracket(8)
+    expect([...visibleContenderIndices(bracket)]).toEqual([0, 1])
+    bracket = pickWinner(bracket, 0, 'a')
+    expect([...visibleContenderIndices(bracket)].sort((a, b) => a - b)).toEqual([0, 1, 2, 3])
+    expect(visibleContenderIndices(bracket).has(4)).toBe(false)
+  })
+
+  it('does not reveal a bye until that contender reaches a real matchup', () => {
+    const bracket = createBracket(5)
+    expect([...visibleContenderIndices(bracket)].sort((a, b) => a - b)).toEqual([3, 4])
+    expect(visibleContenderIndices(bracket).has(0)).toBe(false)
   })
 })
 

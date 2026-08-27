@@ -136,18 +136,29 @@ function upsertCharacter(db: any, node: any, charSource: string, img: string | n
     .get(charSource, ext) as { id: number; image_path: string | null } | undefined
   const name = node.name?.full ?? 'Unknown'
   const nativeName = node.name?.native ?? null
+  const gender = normalizeCharacterGender(node.gender)
   if (row) {
-    if (!row.image_path && img) {
-      db.prepare('UPDATE character SET image_path=? WHERE id=?').run(img, row.id)
-    }
+    db.prepare(
+      `UPDATE character SET gender=?, image_path=COALESCE(image_path, ?) WHERE id=?`
+    ).run(gender, img, row.id)
     return row.id
   }
   const info = db
     .prepare(
-      'INSERT INTO character (name, name_native, image_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)'
+      `INSERT INTO character
+         (name, name_native, gender, image_path, external_source, external_id)
+       VALUES (?, ?, ?, ?, ?, ?)`
     )
-    .run(name, nativeName, img, charSource, ext)
+    .run(name, nativeName, gender, img, charSource, ext)
   return Number(info.lastInsertRowid)
+}
+
+function normalizeCharacterGender(value: unknown): string | null {
+  if (typeof value !== 'string') return null
+  const normalized = value.trim().toLowerCase().replace(/[^a-z]+/g, '')
+  if (normalized === 'male' || normalized === 'female') return normalized
+  if (normalized === 'nonbinary') return 'nonbinary'
+  return null
 }
 
 // Authoritative prune: drop this media's source-owned characters that weren't in
@@ -455,7 +466,7 @@ query ($id: Int) {
       pageInfo { hasNextPage }
       edges {
         role
-        node { id name { full native } image { large } }
+        node { id name { full native } gender image { large } }
         voiceActors(language: JAPANESE) { id name { full native } image { large } }
       }
     }
@@ -473,7 +484,7 @@ query ($id: Int, $page: Int) {
       pageInfo { hasNextPage }
       edges {
         role
-        node { id name { full native } image { large } }
+        node { id name { full native } gender image { large } }
         voiceActors(language: JAPANESE) { id name { full native } image { large } }
       }
     }
@@ -737,10 +748,10 @@ query ($id: Int) {
     }
     characters(sort: [ROLE, FAVOURITES_DESC], page: 1, perPage: 25) {
       pageInfo { hasNextPage }
-      edges { role node { id name { full native } image { large } } }
+      edges { role node { id name { full native } gender image { large } } }
     }
     staff(perPage: 8, sort: RELEVANCE) {
-      edges { role node { id name { full native } image { large } } }
+      edges { role node { id name { full native } gender image { large } } }
     }
   }
 }`

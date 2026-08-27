@@ -1,30 +1,39 @@
 import { getSqlite } from './db/connection'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, sleep } from './http'
 import { downloadImage } from './files'
 import * as tasks from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
 import type { MusicArtResult, MusicArtStatus } from '@shared/types'
 
-// Online fallback for album covers / artist photos the scanner couldn't find
-// locally. Zero API keys: Deezer's public API covers both albums and artists;
-// the iTunes Search API is the album fallback. Guiding rule: no art beats
-// wrong art — fuzzy matches are rejected, and every attempt (found or not)
-// stamps art_checked_at so the bulk job never refetch-loops on misses.
+// Online fallback for art the scanner could not find locally. Albums prefer an
+// exact MusicBrainz release group and Cover Art Archive front image. Remembered
+// Spotify ids give identity-safe fallbacks; Deezer/iTunes remain strict-name
+// fallbacks. Temporary provider failures are never cached as permanent misses.
 
-// ---------------------------------------------------------------------------
-// Pure matching helpers (exported for tests).
-// ---------------------------------------------------------------------------
-
-// Lowercase, strip diacritics/punctuation, collapse spaces, and drop trailing
-// edition suffixes like "(Deluxe Edition)" / "[2009 Remaster]" so a folder
-// named "OK Computer" matches Deezer's "OK Computer (Deluxe)".
 export function normalizeForMatch(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/\s*[([][^)\]]*(deluxe|remaster|edition|expanded|bonus|anniversary)[^)\]]*[)\]]\s*$/i, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
+}
+
+// MusicBrainz uses Lucene syntax even after URL encoding. Escape syntax inside
+// quoted field values so names such as AC/DC, !!!, +44, or titles containing a
+// quote cannot change or invalidate the query.
+export function escapeMusicBrainzQueryValue(value: string): string {
+  return value
+    .replace(/([+\-!(){}\[\]^"~*?:\\/])/g, '\\$1')
+    .replace(/&&|\|\|/g, '\\$&')
+}
+
+export function musicBrainzCreditName(
+  credits: { name?: string; joinphrase?: string; artist?: { name?: string } }[] | undefined
+): string {
+  return (credits ?? [])
+    .map((credit) => `${credit.name ?? credit.artist?.name ?? ''}${credit.joinphrase ?? ''}`)
+    .join('')
     .trim()
 }
 
@@ -34,26 +43,25 @@ export interface AlbumCandidate {
   coverUrl: string | null
 }
 
-// Best confident cover among search results: the artist must match exactly
-// (or contain the wanted name — "feat." noise), the album on equality or
-// prefix/containment. Anything fuzzier is rejected.
 export function pickBestAlbumMatch(
   candidates: AlbumCandidate[],
   wantArtist: string,
   wantAlbum: string
 ): { coverUrl: string } | null {
-  const nArtist = normalizeForMatch(wantArtist)
-  const nAlbum = normalizeForMatch(wantAlbum)
-  if (!nArtist || !nAlbum) return null
-  for (const c of candidates) {
-    if (!c.coverUrl) continue
-    const ca = normalizeForMatch(c.artist)
-    const cb = normalizeForMatch(c.album)
-    const artistOk = ca === nArtist || ca.includes(nArtist) || nArtist.includes(ca)
-    const albumOk = cb === nAlbum || cb.startsWith(nAlbum) || nAlbum.startsWith(cb)
-    if (artistOk && albumOk) return { coverUrl: c.coverUrl }
-  }
-  return null
+  const artist = normalizeForMatch(wantArtist)
+  const album = normalizeForMatch(wantAlbum)
+  if (!artist || !album) return null
+  const urls = new Set(
+    candidates
+      .filter(
+        (candidate) =>
+          candidate.coverUrl &&
+          normalizeForMatch(candidate.artist) === artist &&
+          normalizeForMatch(candidate.album) === album
+      )
+      .map((candidate) => candidate.coverUrl as string)
+  )
+  return urls.size === 1 ? { coverUrl: [...urls][0] } : null
 }
 
 export function pickBestArtistMatch(
@@ -62,137 +70,324 @@ export function pickBestArtistMatch(
 ): { pictureUrl: string } | null {
   const want = normalizeForMatch(wantName)
   if (!want) return null
-  for (const c of candidates) {
-    if (c.pictureUrl && normalizeForMatch(c.name) === want) return { pictureUrl: c.pictureUrl }
-  }
-  return null
-}
-
-// ---------------------------------------------------------------------------
-// Providers.
-// ---------------------------------------------------------------------------
-
-async function getJson(url: string): Promise<unknown | null> {
-  try {
-    const res = await fetchWithRetry(url)
-    if (!res.ok) return null
-    return await res.json()
-  } catch {
-    return null
-  }
-}
-
-async function deezerAlbums(artist: string, album: string): Promise<AlbumCandidate[]> {
-  const exact = await getJson(
-    `https://api.deezer.com/search/album?q=${encodeURIComponent(`artist:"${artist}" album:"${album}"`)}`
+  const urls = new Set(
+    candidates
+      .filter((candidate) => candidate.pictureUrl && normalizeForMatch(candidate.name) === want)
+      .map((candidate) => candidate.pictureUrl as string)
   )
-  let data = (exact as { data?: unknown[] })?.data ?? []
-  if (data.length === 0) {
-    const loose = await getJson(
-      `https://api.deezer.com/search/album?q=${encodeURIComponent(`${artist} ${album}`)}`
-    )
-    data = (loose as { data?: unknown[] })?.data ?? []
-  }
-  return data.map((d) => {
-    const r = d as { title?: string; cover_xl?: string; artist?: { name?: string } }
-    return { artist: r.artist?.name ?? '', album: r.title ?? '', coverUrl: r.cover_xl ?? null }
-  })
+  return urls.size === 1 ? { pictureUrl: [...urls][0] } : null
 }
 
-async function itunesAlbums(artist: string, album: string): Promise<AlbumCandidate[]> {
-  const json = await getJson(
+export interface MusicBrainzReleaseGroupCandidate {
+  id: string
+  artist: string
+  album: string
+  score: number
+  year: number | null
+}
+
+export function pickMusicBrainzReleaseGroup(
+  candidates: MusicBrainzReleaseGroupCandidate[],
+  wantArtist: string,
+  wantAlbum: string,
+  wantYear: number | null
+): MusicBrainzReleaseGroupCandidate | null {
+  const artist = normalizeForMatch(wantArtist)
+  const album = normalizeForMatch(wantAlbum)
+  let exact = candidates.filter(
+    (candidate) =>
+      candidate.score === 100 &&
+      normalizeForMatch(candidate.artist) === artist &&
+      normalizeForMatch(candidate.album) === album
+  )
+  if (exact.length > 1 && wantYear != null) {
+    const sameYear = exact.filter((candidate) => candidate.year === wantYear)
+    if (sameYear.length === 1) exact = sameYear
+  }
+  return new Set(exact.map((candidate) => candidate.id)).size === 1 ? exact[0] : null
+}
+
+type ProviderResult<T> = { kind: 'ok'; value: T } | { kind: 'miss' } | { kind: 'error' }
+
+async function getJson(
+  url: string,
+  init?: RequestInit,
+  missingStatuses: number[] = []
+): Promise<ProviderResult<unknown>> {
+  try {
+    const res = await fetchWithRetry(url, { ...init, timeoutMs: 20_000 })
+    if (missingStatuses.includes(res.status)) return { kind: 'miss' }
+    if (!res.ok) return { kind: 'error' }
+    return { kind: 'ok', value: await res.json() }
+  } catch {
+    return { kind: 'error' }
+  }
+}
+
+async function deezerAlbums(artist: string, album: string): Promise<ProviderResult<AlbumCandidate[]>> {
+  const query = async (q: string): Promise<ProviderResult<AlbumCandidate[]>> => {
+    const result = await getJson(`https://api.deezer.com/search/album?q=${encodeURIComponent(q)}`)
+    if (result.kind !== 'ok') return result
+    const data = (result.value as { data?: unknown[] })?.data
+    if (!Array.isArray(data)) return { kind: 'error' }
+    return {
+      kind: 'ok',
+      value: data.map((item) => {
+        const row = item as { title?: string; cover_xl?: string; artist?: { name?: string } }
+        return {
+          artist: row.artist?.name ?? '',
+          album: row.title ?? '',
+          coverUrl: row.cover_xl ?? null
+        }
+      })
+    }
+  }
+  const exact = await query(`artist:"${artist}" album:"${album}"`)
+  if (exact.kind !== 'ok' || exact.value.length > 0) return exact
+  return query(`${artist} ${album}`)
+}
+
+async function itunesAlbums(artist: string, album: string): Promise<ProviderResult<AlbumCandidate[]>> {
+  const result = await getJson(
     `https://itunes.apple.com/search?term=${encodeURIComponent(`${artist} ${album}`)}&entity=album&limit=5`
   )
-  const results = (json as { results?: unknown[] })?.results ?? []
-  return results.map((d) => {
-    const r = d as { artistName?: string; collectionName?: string; artworkUrl100?: string }
-    return {
-      artist: r.artistName ?? '',
-      album: r.collectionName ?? '',
-      // iTunes serves arbitrary sizes by rewriting the dimension in the URL.
-      coverUrl: r.artworkUrl100 ? r.artworkUrl100.replace('100x100', '600x600') : null
+  if (result.kind !== 'ok') return result
+  const data = (result.value as { results?: unknown[] })?.results
+  if (!Array.isArray(data)) return { kind: 'error' }
+  return {
+    kind: 'ok',
+    value: data.map((item) => {
+      const row = item as { artistName?: string; collectionName?: string; artworkUrl100?: string }
+      return {
+        artist: row.artistName ?? '',
+        album: row.collectionName ?? '',
+        coverUrl: row.artworkUrl100 ? row.artworkUrl100.replace('100x100', '600x600') : null
+      }
+    })
+  }
+}
+
+async function deezerArtists(
+  name: string
+): Promise<ProviderResult<{ name: string; pictureUrl: string | null }[]>> {
+  const result = await getJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}`)
+  if (result.kind !== 'ok') return result
+  const data = (result.value as { data?: unknown[] })?.data
+  if (!Array.isArray(data)) return { kind: 'error' }
+  return {
+    kind: 'ok',
+    value: data.map((item) => {
+      const row = item as { name?: string; picture_xl?: string }
+      return { name: row.name ?? '', pictureUrl: row.picture_xl ?? null }
+    })
+  }
+}
+
+async function spotifyImage(
+  kind: 'artist' | 'album',
+  spotifyId: string | null
+): Promise<ProviderResult<string>> {
+  if (!spotifyId) return { kind: 'miss' }
+  const source = `https://open.spotify.com/${kind}/${spotifyId}`
+  const result = await getJson(
+    `https://open.spotify.com/oembed?url=${encodeURIComponent(source)}`,
+    undefined,
+    [404]
+  )
+  if (result.kind !== 'ok') return result
+  const url = (result.value as { thumbnail_url?: unknown })?.thumbnail_url
+  return typeof url === 'string' && url ? { kind: 'ok', value: url } : { kind: 'miss' }
+}
+
+const MUSICBRAINZ_UA = 'NaviHUB/0.2 (https://github.com/AmirHTaee/NaviHUB)'
+const MUSICBRAINZ_INTERVAL_MS = process.env.NODE_ENV === 'test' ? 0 : 1100
+let musicBrainzQueue: Promise<void> = Promise.resolve()
+let lastMusicBrainzRequest = 0
+
+async function musicBrainzJson(url: string): Promise<ProviderResult<unknown>> {
+  const before = musicBrainzQueue
+  let release: () => void = () => undefined
+  musicBrainzQueue = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  await before
+  try {
+    const wait = MUSICBRAINZ_INTERVAL_MS - (Date.now() - lastMusicBrainzRequest)
+    if (wait > 0) await sleep(wait)
+    const result = await getJson(url, { headers: { 'User-Agent': MUSICBRAINZ_UA } })
+    lastMusicBrainzRequest = Date.now()
+    return result
+  } finally {
+    release()
+  }
+}
+
+async function musicBrainzReleaseGroups(
+  artist: string,
+  album: string
+): Promise<ProviderResult<MusicBrainzReleaseGroupCandidate[]>> {
+  const query = `releasegroup:"${escapeMusicBrainzQueryValue(album)}" AND artist:"${escapeMusicBrainzQueryValue(artist)}"`
+  const result = await musicBrainzJson(
+    `https://musicbrainz.org/ws/2/release-group/?query=${encodeURIComponent(query)}&fmt=json&limit=5`
+  )
+  if (result.kind !== 'ok') return result
+  const groups = (result.value as { 'release-groups'?: unknown[] })?.['release-groups']
+  if (!Array.isArray(groups)) return { kind: 'error' }
+  return {
+    kind: 'ok',
+    value: groups.map((item) => {
+      const row = item as {
+        id?: string
+        title?: string
+        score?: number
+        'first-release-date'?: string
+        'artist-credit'?: {
+          name?: string
+          joinphrase?: string
+          artist?: { name?: string }
+        }[]
+      }
+      const year = Number(row['first-release-date']?.slice(0, 4))
+      return {
+        id: row.id ?? '',
+        album: row.title ?? '',
+        artist: musicBrainzCreditName(row['artist-credit']),
+        score: Number(row.score ?? 0),
+        year: Number.isInteger(year) ? year : null
+      }
+    })
+  }
+}
+
+async function coverArtArchive(releaseGroupId: string): Promise<ProviderResult<string>> {
+  const result = await getJson(
+    `https://coverartarchive.org/release-group/${releaseGroupId}`,
+    { headers: { 'User-Agent': MUSICBRAINZ_UA } },
+    [404]
+  )
+  if (result.kind !== 'ok') return result
+  const images = (result.value as { images?: unknown[] })?.images
+  if (!Array.isArray(images)) return { kind: 'error' }
+  const front = images.find((item) => (item as { front?: unknown }).front === true) as
+    | { image?: string; thumbnails?: Record<string, string> }
+    | undefined
+  const url = front?.thumbnails?.['1200'] ?? front?.image
+  return url ? { kind: 'ok', value: url } : { kind: 'miss' }
+}
+
+interface ArtLookup {
+  url: string | null
+  transientFailure: boolean
+}
+
+async function findAlbumCoverUrl(
+  artist: string,
+  album: string,
+  year: number | null,
+  spotifyId: string | null
+): Promise<ArtLookup> {
+  let transientFailure = false
+  const groups = await musicBrainzReleaseGroups(artist, album)
+  if (groups.kind === 'error') transientFailure = true
+  if (groups.kind === 'ok') {
+    const group = pickMusicBrainzReleaseGroup(groups.value, artist, album, year)
+    if (group) {
+      const cover = await coverArtArchive(group.id)
+      if (cover.kind === 'ok') return { url: cover.value, transientFailure }
+      if (cover.kind === 'error') transientFailure = true
     }
-  })
-}
+  }
 
-async function deezerArtists(name: string): Promise<{ name: string; pictureUrl: string | null }[]> {
-  const json = await getJson(`https://api.deezer.com/search/artist?q=${encodeURIComponent(name)}`)
-  const data = (json as { data?: unknown[] })?.data ?? []
-  return data.map((d) => {
-    const r = d as { name?: string; picture_xl?: string }
-    return { name: r.name ?? '', pictureUrl: r.picture_xl ?? null }
-  })
-}
+  const spotify = await spotifyImage('album', spotifyId)
+  if (spotify.kind === 'ok') return { url: spotify.value, transientFailure }
+  if (spotify.kind === 'error') transientFailure = true
 
-// ---------------------------------------------------------------------------
-// Fetch + apply.
-// ---------------------------------------------------------------------------
+  const deezer = await deezerAlbums(artist, album)
+  if (deezer.kind === 'ok') {
+    const match = pickBestAlbumMatch(deezer.value, artist, album)
+    if (match) return { url: match.coverUrl, transientFailure }
+  } else if (deezer.kind === 'error') transientFailure = true
 
-async function findAlbumCoverUrl(artist: string, album: string): Promise<string | null> {
-  const deezer = pickBestAlbumMatch(await deezerAlbums(artist, album), artist, album)
-  if (deezer) return deezer.coverUrl
-  const itunes = pickBestAlbumMatch(await itunesAlbums(artist, album), artist, album)
-  return itunes?.coverUrl ?? null
+  const itunes = await itunesAlbums(artist, album)
+  if (itunes.kind === 'ok') {
+    const match = pickBestAlbumMatch(itunes.value, artist, album)
+    if (match) return { url: match.coverUrl, transientFailure }
+  } else if (itunes.kind === 'error') transientFailure = true
+  return { url: null, transientFailure }
 }
 
 export async function fetchAlbumArt(albumId: number): Promise<MusicArtResult> {
   const db = getSqlite()
   const row = db
     .prepare(
-      `SELECT al.title, ar.name AS artist_name FROM music_album al
+      `SELECT al.title, al.year, al.spotify_id, ar.name AS artist_name FROM music_album al
        JOIN music_artist ar ON ar.id = al.artist_id WHERE al.id = ?`
     )
-    .get(albumId) as { title: string; artist_name: string } | undefined
+    .get(albumId) as
+    | { title: string; year: number | null; spotify_id: string | null; artist_name: string }
+    | undefined
   if (!row) return { updated: false, path: null, sourceUrl: null, reason: 'not_found' }
 
-  const url = await findAlbumCoverUrl(row.artist_name, row.title)
+  const lookup = await findAlbumCoverUrl(row.artist_name, row.title, row.year, row.spotify_id)
   const stamp = db.prepare(
     `UPDATE music_album SET art_checked_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
   )
-  if (!url) {
-    stamp.run(albumId)
-    return { updated: false, path: null, sourceUrl: null, reason: 'not_found' }
+  if (!lookup.url) {
+    if (!lookup.transientFailure) stamp.run(albumId)
+    return {
+      updated: false,
+      path: null,
+      sourceUrl: null,
+      reason: lookup.transientFailure ? 'download_failed' : 'not_found'
+    }
   }
-  const path = await downloadImage(url)
-  if (!path) {
-    // network hiccup — don't stamp art_checked_at, so the bulk job retries
-    return { updated: false, path: null, sourceUrl: url, reason: 'download_failed' }
-  }
+  const path = await downloadImage(lookup.url)
+  if (!path) return { updated: false, path: null, sourceUrl: lookup.url, reason: 'download_failed' }
   db.prepare(
     `UPDATE music_album SET cover_path = ?, art_source_url = ?, art_checked_at = datetime('now'),
      updated_at = datetime('now') WHERE id = ?`
-  ).run(path, url, albumId)
-  return { updated: true, path, sourceUrl: url, reason: 'ok' }
+  ).run(path, lookup.url, albumId)
+  return { updated: true, path, sourceUrl: lookup.url, reason: 'ok' }
 }
 
 export async function fetchArtistImage(artistId: number): Promise<MusicArtResult> {
   const db = getSqlite()
-  const row = db.prepare('SELECT name FROM music_artist WHERE id = ?').get(artistId) as
-    | { name: string }
+  const row = db.prepare('SELECT name, spotify_id FROM music_artist WHERE id = ?').get(artistId) as
+    | { name: string; spotify_id: string | null }
     | undefined
   if (!row) return { updated: false, path: null, sourceUrl: null, reason: 'not_found' }
 
-  const match = pickBestArtistMatch(await deezerArtists(row.name), row.name)
+  let transientFailure = false
+  const spotify = await spotifyImage('artist', row.spotify_id)
+  let url = spotify.kind === 'ok' ? spotify.value : null
+  if (spotify.kind === 'error') transientFailure = true
+  if (!url) {
+    const deezer = await deezerArtists(row.name)
+    if (deezer.kind === 'ok') url = pickBestArtistMatch(deezer.value, row.name)?.pictureUrl ?? null
+    if (deezer.kind === 'error') transientFailure = true
+  }
+
   const stamp = db.prepare(
     `UPDATE music_artist SET art_checked_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
   )
-  if (!match) {
-    stamp.run(artistId)
-    return { updated: false, path: null, sourceUrl: null, reason: 'not_found' }
+  if (!url) {
+    if (!transientFailure) stamp.run(artistId)
+    return {
+      updated: false,
+      path: null,
+      sourceUrl: null,
+      reason: transientFailure ? 'download_failed' : 'not_found'
+    }
   }
-  const path = await downloadImage(match.pictureUrl)
-  if (!path) {
-    return { updated: false, path: null, sourceUrl: match.pictureUrl, reason: 'download_failed' }
-  }
+  const path = await downloadImage(url)
+  if (!path) return { updated: false, path: null, sourceUrl: url, reason: 'download_failed' }
   db.prepare(
     `UPDATE music_artist SET cover_path = ?, art_source_url = ?, art_checked_at = datetime('now'),
      updated_at = datetime('now') WHERE id = ?`
-  ).run(path, match.pictureUrl, artistId)
-  return { updated: true, path, sourceUrl: match.pictureUrl, reason: 'ok' }
+  ).run(path, url, artistId)
+  return { updated: true, path, sourceUrl: url, reason: 'ok' }
 }
 
-// Clearing also resets art_checked_at so a later bulk run tries again. Local
-// folder/embedded art will simply be restored by the next scan.
 export function clearAlbumArt(albumId: number): void {
   getSqlite()
     .prepare(
@@ -211,15 +406,15 @@ export function clearArtistArt(artistId: number): void {
     .run(artistId)
 }
 
-// ---------------------------------------------------------------------------
-// Bulk "fetch missing art" job — sequential + throttled, cancellable, resumable
-// (already-checked rows are excluded by the WHERE, so a killed job just
-// continues where it left off next run). Status is polled like the scanner's.
-// ---------------------------------------------------------------------------
-
-const artState: MusicArtStatus = { running: false, done: 0, total: 0, updated: 0 }
-// Cooperative pause/cancel between albums. Resumable by design — already-checked
-// rows are excluded by the WHERE — so stopping loses nothing.
+const artState: MusicArtStatus = {
+  running: false,
+  cancelled: false,
+  done: 0,
+  total: 0,
+  updated: 0,
+  missing: 0,
+  failed: 0
+}
 let gate: PauseGate | null = null
 
 export function getArtStatus(): MusicArtStatus {
@@ -230,14 +425,8 @@ export function cancelArtFetch(): void {
   gate?.controls.cancel?.()
 }
 
-const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms))
-
 export async function fetchMissingArt(): Promise<MusicArtStatus> {
   if (artState.running) throw new Error('Art fetch already running')
-  // `handle` is assigned by runTask before it invokes the body, so the gate's
-  // paused/resumed callbacks below can reach it — they only ever fire from
-  // inside the loop. The gate itself must exist first, because `controls` is
-  // read when the task is created.
   let handle: tasks.TaskHandle
   const runGate = cooperativeGate(
     () => handle.progress({ state: 'paused' }),
@@ -263,37 +452,48 @@ async function fetchMissingArtInner(runGate: PauseGate): Promise<MusicArtStatus>
   const db = getSqlite()
   const albums = db
     .prepare(
-      'SELECT id FROM music_album WHERE cover_path IS NULL AND art_checked_at IS NULL ORDER BY id'
+      `SELECT id FROM music_album WHERE cover_path IS NULL
+       ORDER BY art_checked_at IS NULL DESC, id`
     )
     .all() as { id: number }[]
   const artists = db
     .prepare(
-      'SELECT id FROM music_artist WHERE cover_path IS NULL AND art_checked_at IS NULL ORDER BY id'
+      `SELECT id FROM music_artist WHERE cover_path IS NULL
+       ORDER BY art_checked_at IS NULL DESC, id`
     )
     .all() as { id: number }[]
 
-  Object.assign(artState, { running: true, done: 0, total: albums.length + artists.length, updated: 0 })
+  Object.assign(artState, {
+    running: true,
+    cancelled: false,
+    done: 0,
+    total: albums.length + artists.length,
+    updated: 0,
+    missing: 0,
+    failed: 0
+  })
   try {
     for (const { id } of albums) {
-      // Guarded await — see bulkImport: an unconditional one adds a microtask
-      // hop per item and shifts when a cancel takes effect.
       if (runGate.paused) await runGate.wait()
       if (runGate.cancelled) break
-      const res = await fetchAlbumArt(id)
+      const result = await fetchAlbumArt(id)
       artState.done += 1
-      if (res.updated) artState.updated += 1
-      await sleep(200)
+      if (result.updated) artState.updated += 1
+      else if (result.reason === 'download_failed') artState.failed += 1
+      else artState.missing += 1
     }
     for (const { id } of artists) {
       if (runGate.paused) await runGate.wait()
       if (runGate.cancelled) break
-      const res = await fetchArtistImage(id)
+      const result = await fetchArtistImage(id)
       artState.done += 1
-      if (res.updated) artState.updated += 1
-      await sleep(200)
+      if (result.updated) artState.updated += 1
+      else if (result.reason === 'download_failed') artState.failed += 1
+      else artState.missing += 1
     }
   } finally {
     artState.running = false
+    artState.cancelled = runGate.cancelled
   }
   return { ...artState }
 }

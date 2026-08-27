@@ -91,6 +91,21 @@ export function currentMatch(br: Bracket): { match: BracketMatch; matchIndex: nu
   return i === -1 ? null : { match: br.matches[i], matchIndex: i }
 }
 
+// A contender becomes visible in the bracket only once the player has seen it
+// in a real matchup. Pre-resolved byes and untouched future first-round pairs
+// stay concealed, preserving the surprise of later matchups.
+export function visibleContenderIndices(br: Bracket): Set<number> {
+  const visible = new Set<number>()
+  const current = currentMatch(br)?.match
+  for (const match of br.matches) {
+    const appeared = match === current || (match.a != null && match.b != null && match.winner != null)
+    if (!appeared) continue
+    if (match.a != null) visible.add(match.a)
+    if (match.b != null) visible.add(match.b)
+  }
+  return visible
+}
+
 export function championOf(br: Bracket): number | null {
   return br.matches[br.matches.length - 1].winner
 }

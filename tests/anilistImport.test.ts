@@ -37,10 +37,22 @@ vi.mock('../src/main/http', () => ({
   }
 }))
 
-function charEdge(role: string, id: number, name: string, vaId: number, vaName: string) {
+function charEdge(
+  role: string,
+  id: number,
+  name: string,
+  vaId: number,
+  vaName: string,
+  gender = 'Female'
+) {
   return {
     role,
-    node: { id, name: { full: name, native: null }, image: { large: `https://img/c${id}.png` } },
+    node: {
+      id,
+      name: { full: name, native: null },
+      gender,
+      image: { large: `https://img/c${id}.png` }
+    },
     voiceActors: [
       { id: vaId, name: { full: vaName, native: null }, image: { large: `https://img/p${vaId}.png` } }
     ]
@@ -133,16 +145,34 @@ describe('importAnime', () => {
     // MAIN role ranks above SUPPORTING via credit.importance.
     const credits = db
       .prepare(
-        `SELECT ch.name AS character, p.name AS person, cr.importance
+        `SELECT ch.name AS character, ch.gender, p.name AS person, cr.importance
          FROM credit cr JOIN character ch ON ch.id = cr.character_id
          JOIN person p ON p.id = cr.person_id
          WHERE cr.role = 'voice_actor' ORDER BY cr.importance`
       )
       .all()
     expect(credits).toEqual([
-      { character: 'Alice', person: 'Seiyuu A', importance: 0 },
-      { character: 'Bob', person: 'Seiyuu B', importance: 1 }
+      { character: 'Alice', gender: 'female', person: 'Seiyuu A', importance: 0 },
+      { character: 'Bob', gender: 'female', person: 'Seiyuu B', importance: 1 }
     ])
+  })
+
+  it('refreshes canonical character gender on re-import', async () => {
+    await importAnime(101)
+    expect(db.prepare(`SELECT gender FROM character WHERE name='Alice'`).get()).toEqual({
+      gender: 'female'
+    })
+
+    fixture = animeFixture({
+      characters: {
+        pageInfo: { hasNextPage: false },
+        edges: [charEdge('MAIN', 201, 'Alice', 301, 'Seiyuu A', 'Non-binary')]
+      }
+    })
+    await importAnime(101)
+    expect(db.prepare(`SELECT gender FROM character WHERE name='Alice'`).get()).toEqual({
+      gender: 'nonbinary'
+    })
   })
 
   it('liteCharacters (the bulk path) never paginates even when more pages exist', async () => {
@@ -378,4 +408,3 @@ describe('partial refresh (Library Refresh)', () => {
     await expect(importAnime(101, { only: ['cover'] })).rejects.toThrow(/not in the library/)
   })
 })
-

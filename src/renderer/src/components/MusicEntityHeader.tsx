@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import CoverImage from './CoverImage'
-import ActionMenu from './ActionMenu'
+import ActionMenu, { type ActionItem } from './ActionMenu'
 
 // Hero header shared by the album and artist pages: art + title + meta line +
 // Play/Shuffle + find/clear-art actions. `round` switches to the artist look
@@ -17,7 +17,7 @@ export default function MusicEntityHeader({
   onClearArt,
   onDelete,
   deleteLabel,
-  extraActions
+  addMusicItems = []
 }: {
   coverPath: string | null
   title: string
@@ -30,8 +30,30 @@ export default function MusicEntityHeader({
   onClearArt: () => void
   onDelete?: () => void // permanently deletes from disk (gated by a confirm)
   deleteLabel?: string
-  extraActions?: ReactNode // page-specific buttons, placed before Delete
+  addMusicItems?: ActionItem[]
 }) {
+  const maintenanceItems: ActionItem[] = [
+    coverPath
+      ? {
+          label: `Clear ${artNoun}`,
+          title: `Remove the stored ${artNoun}`,
+          onSelect: onClearArt
+        }
+      : {
+          label: `Find ${artNoun}`,
+          title: `Look the ${artNoun} up online`,
+          onSelect: onFindArt
+        }
+  ]
+  if (onDelete) {
+    maintenanceItems.push({
+      label: deleteLabel ? `${deleteLabel}…` : 'Delete…',
+      danger: true,
+      title: 'Permanently delete from your computer',
+      onSelect: onDelete
+    })
+  }
+
   return (
     <div className={`mb-8 grid gap-6 border-b border-base-700 pb-7 sm:grid-cols-[190px_minmax(0,1fr)] ${round ? 'sm:items-center' : 'sm:items-end'}`}>
       <CoverImage
@@ -51,36 +73,8 @@ export default function MusicEntityHeader({
           <button className="btn-ghost" onClick={onShuffle}>
             Shuffle
           </button>
-          {coverPath ? (
-            <button
-              className="btn-ghost"
-              onClick={onClearArt}
-              title={`Remove the stored ${artNoun}`}
-            >
-              Clear {artNoun}
-            </button>
-          ) : (
-            <button
-              className="btn-ghost"
-              onClick={onFindArt}
-              title={`Look the ${artNoun} up online`}
-            >
-              Find {artNoun}
-            </button>
-          )}
-          {extraActions}
-          {onDelete && (
-            <ActionMenu
-              items={[
-                {
-                  label: deleteLabel ? `${deleteLabel}…` : 'Delete…',
-                  danger: true,
-                  title: 'Permanently delete from your computer',
-                  onSelect: onDelete
-                }
-              ]}
-            />
-          )}
+          {addMusicItems.length > 0 && <ActionMenu label="Add music" items={addMusicItems} />}
+          <ActionMenu label="Library maintenance" items={maintenanceItems} />
         </div>
       </div>
     </div>

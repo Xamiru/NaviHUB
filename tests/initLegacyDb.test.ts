@@ -21,6 +21,87 @@ const read = (rel: string): string =>
 const initSql = read('../src/main/db/init.sql')
 
 describe('a live DB that predates newer columns', () => {
+  it('adds unique Spotify IDs to legacy music artists and albums without losing rows', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(`CREATE TABLE music_artist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, dir_path TEXT NOT NULL UNIQUE,
+      cover_path TEXT, art_checked_at TEXT, art_source_url TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE music_album (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, artist_id INTEGER NOT NULL REFERENCES music_artist(id) ON DELETE CASCADE,
+      title TEXT NOT NULL, dir_path TEXT NOT NULL UNIQUE, year INTEGER, cover_path TEXT,
+      art_checked_at TEXT, art_source_url TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO music_artist (id, name, dir_path) VALUES (1, 'Legacy Artist', 'Legacy Artist');
+    INSERT INTO music_album (id, artist_id, title, dir_path) VALUES (1, 1, 'Legacy Album', 'Legacy Artist/Legacy Album');`)
+    expect(() => db.exec(initSql)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+    expect(db.prepare('SELECT name, spotify_id FROM music_artist WHERE id=1').get()).toEqual({ name: 'Legacy Artist', spotify_id: null })
+    expect(db.prepare('SELECT title, spotify_id FROM music_album WHERE id=1').get()).toEqual({ title: 'Legacy Album', spotify_id: null })
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM sqlite_master WHERE type='index' AND name IN ('idx_music_artist_spotify','idx_music_album_spotify')`).get()).toEqual({ n: 2 })
+  })
+  it('adds nullable character gender without losing imported cast', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(`CREATE TABLE character (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      name            TEXT NOT NULL,
+      name_native     TEXT,
+      image_path      TEXT,
+      description     TEXT,
+      external_source TEXT,
+      external_id     TEXT
+    );`)
+    db.prepare(
+      `INSERT INTO character
+         (name, image_path, external_source, external_id)
+       VALUES ('Legacy Hero', 'media/hero.jpg', 'anilist-character', '10')`
+    ).run()
+
+    expect(() => db.exec(initSql)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+
+    const columns = (db.prepare('PRAGMA table_info(character)').all() as { name: string }[]).map(
+      (column) => column.name
+    )
+    expect(columns).toContain('gender')
+    expect(db.prepare('SELECT name, image_path, gender FROM character').get()).toEqual({
+      name: 'Legacy Hero',
+      image_path: 'media/hero.jpg',
+      gender: null
+    })
+  })
+
+  it('adds Spotify playlist snapshot tables without harming old music playlists', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(`CREATE TABLE music_playlist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      description TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );`)
+    db.prepare(`INSERT INTO music_playlist (title) VALUES ('Old mix')`).run()
+
+    expect(() => db.exec(initSql)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+    const tables = db
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type = 'table'
+         AND name IN ('music_spotify_playlist', 'music_spotify_playlist_item') ORDER BY name`
+      )
+      .all()
+    expect(tables).toEqual([
+      { name: 'music_spotify_playlist' },
+      { name: 'music_spotify_playlist_item' }
+    ])
+    expect(db.prepare('SELECT title FROM music_playlist').all()).toEqual([{ title: 'Old mix' }])
+  })
+
   it('survives init.sql + migrations with its data intact (the en_word crash)', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')

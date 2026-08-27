@@ -142,7 +142,7 @@ export default function BulkImportPage(): React.JSX.Element {
         subtitle={
           tab === 'import'
             ? 'Fill a shelf in one run — preview a top list, then import the whole selection.'
-            : 'Update titles you already have — pick what to re-pull, and from which types.'
+            : 'Care for what you already own — refresh source metadata or maintain local files.'
         }
       />
 

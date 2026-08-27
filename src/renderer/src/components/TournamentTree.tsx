@@ -1,5 +1,12 @@
 import CoverImage from './CoverImage'
-import { currentMatch, nextPowerOfTwo, roundLabel, type Bracket, type BracketMatch } from '@shared/bracket'
+import {
+  currentMatch,
+  nextPowerOfTwo,
+  roundLabel,
+  visibleContenderIndices,
+  type Bracket,
+  type BracketMatch
+} from '@shared/bracket'
 import type { TournamentEntry } from '@shared/types'
 
 // Fixed cell geometry — the column math below depends on every cell being
@@ -24,6 +31,7 @@ export default function TournamentTree({
 }) {
   const size = nextPowerOfTwo(bracket.entryCount)
   const cur = currentMatch(bracket)
+  const visible = visibleContenderIndices(bracket)
 
   // Vertical position of each match, column by column: round 0 stacks evenly,
   // every later match sits at the midpoint of its two feeders.
@@ -53,7 +61,7 @@ export default function TournamentTree({
     return m.winner === self ? 'win' : 'loss'
   }
 
-  function Row({ entry, state }: { entry: TournamentEntry | null; state: SlotState }) {
+  function Row({ entry, poolIndex, state }: { entry: TournamentEntry | null; poolIndex: number | null; state: SlotState }) {
     if (state === 'tbd' || !entry) {
       return (
         <div className="flex min-w-0 items-center gap-2">
@@ -62,11 +70,20 @@ export default function TournamentTree({
         </div>
       )
     }
+    if (poolIndex == null || !visible.has(poolIndex)) {
+      return (
+        <div className="flex min-w-0 items-center gap-2">
+          <span className="h-7 w-7 shrink-0 rounded border border-dashed border-base-600 bg-base-700/40" />
+          <span className="truncate text-xs text-gray-400">Hidden contender</span>
+        </div>
+      )
+    }
     return (
       <div className={`flex min-w-0 items-center gap-2 ${state === 'loss' ? 'opacity-40' : ''}`}>
         <CoverImage
           path={entry.imagePath}
           alt={entry.name}
+          thumbWidth={64}
           rounded="rounded"
           className={`h-7 w-7 shrink-0 ${state === 'live' ? 'animate-pulse' : ''}`}
           fallback={entry.entryKind === 'music' ? 'music' : 'initial'}
@@ -112,7 +129,7 @@ export default function TournamentTree({
                       isCurrent ? 'border-accent bg-accent/10' : 'border-base-700 bg-base-800'
                     }`}
                   >
-                    <Row entry={contenders[m.a!]} state={isBye ? 'win' : slotState(m, 'a')} />
+                    <Row entry={contenders[m.a!]} poolIndex={m.a} state={isBye ? 'win' : slotState(m, 'a')} />
                     <div className="mt-1.5">
                       {isBye ? (
                         <div className="flex min-w-0 items-center gap-2 opacity-30">
@@ -120,7 +137,7 @@ export default function TournamentTree({
                           <span className="truncate text-xs text-gray-500">bye</span>
                         </div>
                       ) : (
-                        <Row entry={contenders[m.b ?? -1]} state={slotState(m, 'b')} />
+                        <Row entry={contenders[m.b ?? -1]} poolIndex={m.b} state={slotState(m, 'b')} />
                       )}
                     </div>
                   </div>
@@ -145,6 +162,7 @@ export default function TournamentTree({
                   <CoverImage
                     path={contenders[champIndex].imagePath}
                     alt={contenders[champIndex].name}
+                    thumbWidth={96}
                     rounded="rounded"
                     className="mx-auto h-12 w-12"
                     fallback={contenders[champIndex].entryKind === 'music' ? 'music' : 'initial'}

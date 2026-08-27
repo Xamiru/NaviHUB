@@ -8,8 +8,7 @@ import type { QuizKind } from '@shared/types'
 import { answerIsCorrect, isNewQuizBest, quizScorePolicy, quizSeed } from '@shared/quizCore'
 import StudySessionFrame, { SessionFeedback } from '../StudySessionFrame'
 
-// One answer slot in a library-MCQ question: a stable numeric key (what the
-// page compares against correctKey) plus its visual.
+// One answer slot in a library-MCQ question: a stable string key plus its visual.
 export interface McOption {
   key: string
   node: ReactNode
@@ -20,8 +19,10 @@ export interface McOption {
 export interface McQuestion {
   key: string // react key
   validKeys: string[]
-  prompt: ReactNode | ((controls: { skip: () => void }) => ReactNode)
+  prompt: ReactNode | ((controls: { skip: () => void; ready: () => void }) => ReactNode)
   options: McOption[]
+  reveal?: ReactNode
+  waitForPrompt?: boolean
 }
 
 interface Stats {
@@ -37,6 +38,7 @@ const AUTONEXT_MS = 3500
 const EMPTY_STATS: Stats = { score: 0, total: 0, streak: 0, best: 0 }
 
 const QUIZ_TITLE: Partial<Record<QuizKind, string>> = {
+  cast: 'Cast challenge',
   character: 'Character challenge',
   va: 'Voice actor challenge',
   synopsis: 'Synopsis challenge',
@@ -53,7 +55,7 @@ interface Props {
   backTo: { to: string; label: string }
 }
 
-// Shared MCQ round for the library quizzes (character / VA / synopsis): owns
+// Shared MCQ round for the library quizzes (cast / VA / synopsis): owns
 // the index, streak/score, optional countdown, keyboard answering (1-4 +
 // Enter), reveal, auto-advance, the one-shot endGame() session log with its
 // new-best decision BEFORE invalidation, and the summary screen.
@@ -67,6 +69,7 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
   const [answered, setAnswered] = useState(false)
   const [stats, setStats] = useState<Stats>(EMPTY_STATS)
   const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS)
+  const [promptReady, setPromptReady] = useState(!questions[0]?.waitForPrompt)
   const [newBest, setNewBest] = useState(false)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
   const [done, setDone] = useState(false)
@@ -95,18 +98,18 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
 
   // Countdown while the current question is live.
   useEffect(() => {
-    if (!timed || done || !q || answered) return
+    if (!timed || done || !q || answered || !promptReady) return
     const id = window.setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000)
     return () => window.clearInterval(id)
-  }, [timed, done, q, answered])
+  }, [timed, done, q, answered, promptReady])
 
   // Time's up counts as a miss.
   useEffect(() => {
-    if (!done && timed && q && !answeredRef.current && timeLeft <= 0) {
+    if (!done && timed && q && promptReady && !answeredRef.current && timeLeft <= 0) {
       handleAnswer(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft, answered, timed, done, q])
+  }, [timeLeft, answered, timed, done, q, promptReady])
 
   // Keyboard: 1-4 answers, Enter advances (same scheme as the song quiz).
   useEffect(() => {
@@ -129,10 +132,10 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [done, q, answered])
+  }, [done, q, answered, promptReady])
 
   function handleAnswer(key: string | null) {
-    if (answeredRef.current || !q) return
+    if (answeredRef.current || !q || !promptReady) return
     answeredRef.current = true
     const correct = answerIsCorrect(q.validKeys, key)
     const s = statsRef.current
@@ -159,6 +162,7 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
       setPicked(null)
       setAnswered(false)
       setTimeLeft(TIMER_SECONDS)
+      setPromptReady(!questions[idx + 1]?.waitForPrompt)
     }
   }
 
@@ -172,6 +176,7 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
       setPicked(null)
       setAnswered(false)
       setTimeLeft(TIMER_SECONDS)
+      setPromptReady(!questions[idx + 1]?.waitForPrompt)
     }
   }
 
@@ -273,13 +278,14 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
             tone={answerIsCorrect(q.validKeys, picked) ? 'correct' : 'incorrect'}
             title={answerIsCorrect(q.validKeys, picked) ? 'Correct' : 'Answer revealed'}
           >
-            Continue when you are ready. Enter advances without changing the scoring rules.
+            {q.reveal ??
+              'Continue when you are ready. Enter advances without changing the scoring rules.'}
           </SessionFeedback>
         ) : undefined
       }
     >
 
-      {timed && !answered && (
+      {timed && !answered && promptReady && (
         <div className="mb-4 h-2 w-full overflow-hidden rounded-full bg-base-700">
           <div
             className={`h-full transition-[width] duration-1000 ease-linear ${
@@ -290,7 +296,15 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
         </div>
       )}
 
-      <div>{typeof q.prompt === 'function' ? q.prompt({ skip: skipInvalidQuestion }) : q.prompt}</div>
+      <div>
+        {typeof q.prompt === 'function'
+          ? q.prompt({ skip: skipInvalidQuestion, ready: () => setPromptReady(true) })
+          : q.prompt}
+      </div>
+
+      {q.waitForPrompt && !promptReady && (
+        <p className="mt-3 text-center text-sm text-gray-400">Loading panel…</p>
+      )}
 
       <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {q.options.map((o, i) => {
@@ -299,7 +313,7 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
           return (
             <button
               key={o.key}
-              disabled={answered}
+              disabled={answered || !promptReady}
               onClick={() => handleAnswer(o.key)}
               className={`flex items-center gap-4 rounded-xl border p-3 text-left transition-colors ${
                 correct
@@ -317,7 +331,7 @@ export default function LibMcRound({ kind, questions, settings, timed, targetLen
       </div>
 
       <div className="mt-5 flex gap-2">
-        {!answered && (
+        {!answered && promptReady && (
           <button className="btn-ghost px-5 py-2.5 text-base" onClick={() => handleAnswer(null)}>
             Reveal answer
           </button>

@@ -78,6 +78,7 @@ export interface Character {
   id: number
   name: string
   nameNative: string | null
+  gender: string | null
   imagePath: string | null
   description: string | null
 }
@@ -559,7 +560,7 @@ export interface QuizSongFilter {
   eras?: string[] | null // era keys from @shared/era; null/empty = any decade
 }
 
-// Narrows the library MCQ pools (character / VA / synopsis). Both knobs are
+// Narrows the library MCQ pools (cast / VA / synopsis). Both knobs are
 // optional; null/empty means unfiltered. mediaTypes only bites on the
 // synopsis pool today, but every pool accepts it so the UIs can grow alike.
 export interface QuizLibFilter {
@@ -568,34 +569,49 @@ export interface QuizLibFilter {
   scope?: QuizConsumptionScope // consumed restricts local-page questions to read progress
 }
 
-// One character-quiz seed: a portrait plus the title it came from (its first
-// linked media). year/genres drive distractor affinity like QuizSong's.
-export interface QuizCharacterItem {
-  characterId: number
-  name: string
-  nameNative: string | null
-  imagePath: string | null
-  mediaId: number
-  mediaTitle: string
-  coverPath: string | null
-  year: number | null
-  genres: string[]
-  validMediaIds: number[] // every matching title this character appears in
+export interface QuizSynopsisFilter extends QuizLibFilter {
+  completedStatuses?: string[] | null
+  includeSafeUnseen?: boolean // non-completed titles only when no earlier entry is known
+  requireCover?: boolean
 }
 
-// One Japanese-role voice credit usable as a question seed in either VA
-// direction: "who voices this character?" and "which character do they voice?".
-export interface QuizVaItem {
+export interface QuizMangaPanelFilter {
+  scope?: QuizConsumptionScope
+  seed?: number
+}
+
+// One cast-quiz seed: a photographed actor paired with one eligible movie/TV
+// credit. Movie seeds are top-ten billed; TV seeds are uncapped. validMediaIds
+// retains every in-scope screen credit so a real appearance is never a wrong
+// option even when that edge is not itself eligible to seed a movie question.
+export interface QuizCastItem {
   personId: number
   personName: string
   photoPath: string | null
+  mediaId: number
+  mediaTitle: string
+  mediaType: Extract<MediaType, 'movie' | 'tv'>
+  coverPath: string | null
+  year: number | null
+  genres: string[]
+  billingOrder: number | null
+  validMediaIds: number[]
+}
+
+// One anime character appearance with every Japanese VA credited for it.
+// The same character may appear in several titles, but questions always match
+// it to a genuinely different character in a different title.
+export interface QuizVaItem {
   characterId: number
   characterName: string
   characterImagePath: string | null
+  gender: string | null
   mediaId: number
   mediaTitle: string
-  validPersonIds: number[] // every JP voice for this character in this title
-  validCharacterIds: number[] // every character this person voices in this title
+  year: number | null
+  importance: number | null
+  personIds: number[]
+  personNames: string[]
 }
 
 // One synopsis-quiz seed: any library title with enough description text to
@@ -607,8 +623,12 @@ export interface QuizSynopsisItem {
   titleOriginal: string | null
   coverPath: string | null
   synopsis: string
+  status: string | null
   year: number | null
   genres: string[]
+  relationAliases: string[]
+  characterNames: string[]
+  hasEarlierRelation: boolean
 }
 
 // One manga-panel question seed: a servable page (the same virtual path shape
@@ -628,15 +648,15 @@ export type QuizKind =
   | 'song'
   | 'songArcade' // song quiz arcade run: lives + speed points (best = most points)
   | 'songReverse' // song quiz reverse: hear clips, pick which belongs to the shown anime
-  | 'character' // character portrait -> which anime/title
-  | 'va' // voice-actor credits, both directions
+  | 'character' // legacy character-portrait sessions; new rounds use cast
+  | 'cast' // actor photo -> credited movie/TV title
+  | 'va' // anime character -> different-title character sharing a Japanese VA
   | 'synopsis' // description excerpt -> which title
   | 'mangaPanel' // a page from a locally-linked manga -> which series
   | 'imageReveal' // progressively reveal a cover/banner/art image (best = points)
   | 'silhouette' // character silhouette -> character/title
   | 'connections' // shared person/studio between two titles
   | 'chronology' // order four related titles by release date
-  | 'oddOneOut' // identify the title outside an explicit shared relation
   | 'higherLower' // endless metric comparison (best = most correct)
   | 'songRelay' // couch-party song relay; no solo personal best
   | 'japanese'
@@ -694,7 +714,7 @@ export interface QuizAvailabilityRequest {
 
 export interface QuizAvailability {
   song: number
-  character: number
+  cast: number
   va: number
   synopsis: number
   mangaPanel: number
@@ -702,8 +722,17 @@ export interface QuizAvailability {
   silhouette: number
   connections: number
   chronology: number
-  oddOneOut: number
   higherLower: number
+  higherLowerOptions: QuizHigherLowerAvailability[]
+}
+
+export type QuizHigherLowerMetric = 'releaseDate' | 'totalUnits' | 'personalScore'
+
+export interface QuizHigherLowerAvailability {
+  mediaType: MediaType
+  releaseDate: number
+  totalUnits: number
+  personalScore: number
 }
 
 export type QuizChallengeKind =
@@ -711,7 +740,6 @@ export type QuizChallengeKind =
   | 'silhouette'
   | 'connections'
   | 'chronology'
-  | 'oddOneOut'
   | 'higherLower'
 
 export interface QuizChallengeRequest {
@@ -723,8 +751,11 @@ export interface QuizChallengeRequest {
   options?: {
     imageSource?: 'covers' | 'art'
     silhouetteMode?: 'character' | 'title'
-    connectionMode?: 'person' | 'studio'
-    higherLowerMetric?: 'releaseDate' | 'totalUnits' | 'personalScore'
+    higherLowerMetric?: QuizHigherLowerMetric
+    higherLowerMediaType?: MediaType
+    higherLowerReferenceId?: number
+    higherLowerExcludeIds?: number[]
+    higherLowerIndependent?: boolean
   }
 }
 
@@ -750,6 +781,7 @@ export interface QuizImageRevealQuestion extends QuizChallengeBase {
 export interface QuizSilhouetteQuestion extends QuizChallengeBase {
   kind: 'silhouette'
   imagePath: string
+  reveal: string
 }
 
 export interface QuizConnectionsQuestion extends QuizChallengeBase {
@@ -762,20 +794,16 @@ export interface QuizConnectionsQuestion extends QuizChallengeBase {
 export interface QuizChronologyQuestion extends QuizChallengeBase {
   kind: 'chronology'
   entries: Array<QuizChallengeChoice & { releaseDate: string }>
+  connectionLabel: string
   validKeys: string[] // oldest to newest
-}
-
-export interface QuizOddOneOutQuestion extends QuizChallengeBase {
-  kind: 'oddOneOut'
-  relation: 'studio' | 'credited person' | 'genre'
-  explanation: string
 }
 
 export interface QuizHigherLowerQuestion extends QuizChallengeBase {
   kind: 'higherLower'
   reference: QuizChallengeChoice
   challenger: QuizChallengeChoice
-  metric: 'releaseDate' | 'totalUnits' | 'personalScore'
+  metric: QuizHigherLowerMetric
+  mediaType: MediaType
   referenceValue: number
   challengerValue: number
 }
@@ -785,7 +813,6 @@ export type QuizChallengeQuestion =
   | QuizSilhouetteQuestion
   | QuizConnectionsQuestion
   | QuizChronologyQuestion
-  | QuizOddOneOutQuestion
   | QuizHigherLowerQuestion
 
 export type QuizPartyParticipants = 2 | 3 | 4 | 'teams'
@@ -867,6 +894,12 @@ export interface TournamentTiebreak {
   groupId: number
   contenders: number[]
   needed: 1 | 2
+  places: Array<1 | 2>
+}
+export interface TournamentQualifier {
+  contender: number
+  groupId: number
+  place: 1 | 2
 }
 
 // Where a tournament's contender pool comes from. The repo resolves each
@@ -2461,6 +2494,8 @@ export interface MusicArtistDetail {
   id: number
   name: string
   coverPath: string | null
+  spotifyId: string | null
+  spotifyUrl: string | null
   trackCount: number
   albums: MusicAlbumSummary[]
   topTracks: MusicTrack[] // by play count; empty until something is played
@@ -2473,6 +2508,8 @@ export interface MusicAlbumDetail {
   title: string
   year: number | null
   coverPath: string | null
+  spotifyId: string | null
+  spotifyUrl: string | null
   tracks: MusicTrack[]
 }
 
@@ -2483,12 +2520,43 @@ export interface MusicPlaylistSummary {
   trackCount: number
   previewCovers: (string | null)[] // first 4 album covers, playlist order
   updatedAt: string
+  source: 'local' | 'spotify'
+  playableCount: number
+  missingCount: number
 }
 
 export interface MusicPlaylistEntry {
+  kind: 'local'
   itemId: number
   position: number
   track: MusicTrack
+}
+
+export interface MusicSpotifyPlaylistEntry {
+  kind: 'spotify'
+  itemId: number
+  position: number
+  spotifyTrackId: string
+  title: string
+  artists: string[]
+  primaryArtist: string
+  albumArtist: string | null
+  albumTitle: string
+  duration: number | null
+  coverPath: string | null
+  spotifyUrl: string
+  trackNo: number | null
+  discNo: number | null
+  year: number | null
+  matchedTrack: MusicTrack | null
+}
+
+export type MusicPlaylistItem = MusicPlaylistEntry | MusicSpotifyPlaylistEntry
+
+export interface MusicSpotifySource {
+  spotifyId: string
+  sourceUrl: string
+  importedAt: string
 }
 
 export interface MusicPlaylistDetail {
@@ -2497,7 +2565,83 @@ export interface MusicPlaylistDetail {
   description: string | null
   createdAt: string
   updatedAt: string
-  items: MusicPlaylistEntry[]
+  items: MusicPlaylistItem[]
+  source: MusicSpotifySource | null
+  playableCount: number
+  missingCount: number
+}
+
+export interface SpotifyImportResult {
+  playlistId: number
+  existing: boolean
+  title: string
+  imported: number
+  matched: number
+  missing: number
+  duplicates: number
+  skipped: number
+}
+
+export interface SpotifyDownloadInput {
+  playlistId: number
+  itemIds?: number[]
+}
+
+export type SpotifyEntityKind = 'artist' | 'album'
+
+export interface SpotifyEntityInspectInput {
+  kind: SpotifyEntityKind
+  entityId: number
+  url?: string
+}
+
+export interface SpotifyReleasePreview {
+  spotifyAlbumId: string
+  spotifyUrl: string
+  title: string
+  albumArtist: string
+  year: number | null
+  albumType: 'album' | 'single' | 'compilation' | null
+  trackCount: number
+  localCount: number
+  missingCount: number
+  duration: number
+  estimatedBytes: number
+  missingDuration: number
+  missingEstimatedBytes: number
+  preselected: boolean
+}
+
+export interface SpotifyEntityInspection {
+  inspectionId: string
+  kind: SpotifyEntityKind
+  entityId: number
+  sourceId: string
+  sourceUrl: string
+  sourceName: string
+  matchesCurrentEntity: boolean
+  mismatchMessage: string | null
+  duplicateCount: number
+  skippedCount: number
+  releases: SpotifyReleasePreview[]
+}
+
+export interface SpotifyEntityDownloadInput {
+  inspectionId: string
+  albumIds: string[]
+  allowMismatch?: boolean
+}
+
+export interface SpotifyEntityRef {
+  kind: SpotifyEntityKind
+  entityId: number
+}
+
+export interface SpotdlDetectResult {
+  ok: boolean
+  version: string | null
+  ffmpeg: boolean
+  error: string | null
 }
 
 export interface MusicSearchResults {
@@ -2556,6 +2700,13 @@ export interface MusicDownloadEvent {
   itemCount: number | null
   title: string | null // current file being downloaded
   message: string | null // error text / phase note
+  source?: 'url' | 'spotify' | 'spotifyEntity'
+  playlistId?: number | null
+  entityKind?: SpotifyEntityKind
+  entityId?: number | null
+  route?: string | null
+  resolvedCount?: number
+  failedCount?: number
 }
 
 export interface YtDlpDetectResult {
@@ -2577,9 +2728,12 @@ export interface MusicArtResult {
 
 export interface MusicArtStatus {
   running: boolean
+  cancelled: boolean
   done: number
   total: number
   updated: number
+  missing: number
+  failed: number
 }
 
 // ---- Global activity (import progress) ----

@@ -177,6 +177,8 @@ describe('startScan', () => {
     db.prepare(
       `UPDATE music_track SET liked_at = datetime('now'), play_count = 5 WHERE 1=1`
     ).run()
+    db.prepare(`UPDATE music_artist SET spotify_id = 'artist-source'`).run()
+    db.prepare(`UPDATE music_album SET spotify_id = 'album-source'`).run()
 
     const second = fakeReader()
     await startScan(second)
@@ -187,6 +189,8 @@ describe('startScan', () => {
     >
     expect(row.liked_at).not.toBeNull()
     expect(row.play_count).toBe(5)
+    expect(db.prepare('SELECT spotify_id FROM music_artist').get()).toEqual({ spotify_id: 'artist-source' })
+    expect(db.prepare('SELECT spotify_id FROM music_album').get()).toEqual({ spotify_id: 'album-source' })
   })
 
   it('prunes vanished tracks, empty albums/artists, and cascades playlist rows', async () => {

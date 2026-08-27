@@ -10,6 +10,10 @@ interface IconProps {
   className?: string
 }
 
+interface HeartIconProps extends IconProps {
+  filled?: boolean
+}
+
 function Svg({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <svg
@@ -113,6 +117,54 @@ export function PopOutIcon({ className }: IconProps) {
       <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
         <path d="M7 4H3v9h9V9" />
         <path d="M8 3h5v5M13 3 7 9" />
+      </g>
+    </Svg>
+  )
+}
+
+export function HeartIcon({ className, filled = true }: HeartIconProps) {
+  return (
+    <Svg className={className}>
+      <path
+        d="M8 13.4 2.8 8.5C-.2 5.7 1.7 1.7 5 2.2c1.2.2 2.2.9 3 1.9 1-1 1.8-1.7 3-1.9 3.3-.5 5.2 3.5 2.2 6.3Z"
+        fill={filled ? 'currentColor' : 'none'}
+        stroke="currentColor"
+        strokeWidth="1.35"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  )
+}
+
+export function PlaylistAddIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M2.5 4h7M2.5 8h5M2.5 12h4" />
+        <path d="M11.5 7.5v6M8.5 10.5h6" />
+      </g>
+    </Svg>
+  )
+}
+
+export function DownloadIcon({ className }: IconProps) {
+  return (
+    <Svg className={className}>
+      <g
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M8 2.5v7M5.2 7.2 8 10l2.8-2.8" />
+        <path d="M3 12.8h10" />
       </g>
     </Svg>
   )

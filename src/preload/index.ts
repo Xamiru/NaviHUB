@@ -67,7 +67,7 @@ const api: NaviApi = {
     availability: (request) => ipcRenderer.invoke('quiz:availability', request),
     challengePool: (request) => ipcRenderer.invoke('quiz:challengePool', request),
     songPool: (filter) => ipcRenderer.invoke('quiz:songPool', filter),
-    characterPool: (filter) => ipcRenderer.invoke('quiz:characterPool', filter),
+    castPool: (filter) => ipcRenderer.invoke('quiz:castPool', filter),
     vaPool: (filter) => ipcRenderer.invoke('quiz:vaPool', filter),
     synopsisPool: (filter) => ipcRenderer.invoke('quiz:synopsisPool', filter),
     mangaPanelPool: (filter, length) => ipcRenderer.invoke('quiz:mangaPanelPool', filter, length),
@@ -200,6 +200,7 @@ const api: NaviApi = {
     import: (mediaId) => ipcRenderer.invoke('themes:import', mediaId),
     list: (filter) => ipcRenderer.invoke('themes:list', filter),
     counts: () => ipcRenderer.invoke('themes:counts'),
+    favorite: (themeId) => ipcRenderer.invoke('themes:favorite', themeId),
     setFavorite: (themeId, favorite) =>
       ipcRenderer.invoke('themes:setFavorite', themeId, favorite)
   },
@@ -432,6 +433,15 @@ const api: NaviApi = {
       ipcRenderer.invoke('music:removePlaylistTrackByTrack', playlistId, trackId),
     reorderPlaylist: (playlistId, orderedItemIds) =>
       ipcRenderer.invoke('music:reorderPlaylist', playlistId, orderedItemIds),
+    spotifyImportPlaylist: (url) => ipcRenderer.invoke('music:spotifyImportPlaylist', url),
+    spotifyDownloadPlaylist: (input) =>
+      ipcRenderer.invoke('music:spotifyDownloadPlaylist', input),
+    spotifyInspectEntity: (input) => ipcRenderer.invoke('music:spotifyInspectEntity', input),
+    spotifyDownloadEntity: (input) => ipcRenderer.invoke('music:spotifyDownloadEntity', input),
+    spotifyForgetEntitySource: (input) =>
+      ipcRenderer.invoke('music:spotifyForgetEntitySource', input),
+    spotifyRemoveItem: (itemId) => ipcRenderer.invoke('music:spotifyRemoveItem', itemId),
+    spotifyDetect: () => ipcRenderer.invoke('music:spotifyDetect'),
     playlistsForTrack: (trackId) => ipcRenderer.invoke('music:playlistsForTrack', trackId),
     setLiked: (trackId, liked) => ipcRenderer.invoke('music:setLiked', trackId, liked),
     logPlay: (trackId) => ipcRenderer.invoke('music:logPlay', trackId),

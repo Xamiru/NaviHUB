@@ -13,6 +13,7 @@ vi.mock('../src/main/db/connection', () => ({
 }))
 
 import * as musicRepo from '../src/main/repos/musicRepo'
+import * as spotifyRepo from '../src/main/repos/musicSpotifyRepo'
 
 beforeEach(() => {
   db = createTestDb()
@@ -103,6 +104,52 @@ describe('browse', () => {
     expect(artist.trackCount).toBe(2)
   })
 
+  it('remembers unique Spotify sources, exposes canonical links, and forgets them', () => {
+    const trackId = seedTrack({})
+    const row = db.prepare('SELECT artist_id, album_id FROM music_track WHERE id = ?').get(trackId) as {
+      artist_id: number
+      album_id: number
+    }
+    spotifyRepo.rememberEntitySource('artist', row.artist_id, 'artist-source')
+    spotifyRepo.rememberEntitySource('album', row.album_id, 'album-source')
+    expect(musicRepo.getArtist(row.artist_id)).toMatchObject({
+      spotifyId: 'artist-source',
+      spotifyUrl: 'https://open.spotify.com/artist/artist-source'
+    })
+    expect(musicRepo.getAlbum(row.album_id)).toMatchObject({
+      spotifyId: 'album-source',
+      spotifyUrl: 'https://open.spotify.com/album/album-source'
+    })
+    spotifyRepo.forgetEntitySource('album', row.album_id)
+    expect(musicRepo.getAlbum(row.album_id)?.spotifyId).toBeNull()
+
+    seedTrack({ artist: 'Other', album: 'Other', path: 'other/song.mp3' })
+    const otherArtist = db.prepare(`SELECT id FROM music_artist WHERE name = 'Other'`).get() as { id: number }
+    expect(() => spotifyRepo.rememberEntitySource('artist', otherArtist.id, 'artist-source')).toThrow()
+  })
+
+  it('refuses ambiguous automatic source linkage and links after resolution is unique', () => {
+    const first = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'one.mp3' })
+    const duplicate = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'two.mp3' })
+    const song: spotifyRepo.SpotdlSong = {
+      spotifyTrackId: 'spotify-track', title: 'Song', artists: ['Artist'], primaryArtist: 'Artist',
+      albumArtist: 'Artist', albumTitle: 'Album', duration: 200, coverUrl: null,
+      spotifyUrl: 'https://open.spotify.com/track/spotify-track', discNo: 1, trackNo: 1,
+      year: 2024, rawJson: '{}', spotifyAlbumId: 'spotify-album',
+      spotifyArtistId: 'spotify-artist', spotifyArtistIds: ['spotify-artist'], albumType: 'album'
+    }
+    spotifyRepo.linkUnambiguousSources('spotify-artist', [{ spotifyAlbumId: 'spotify-album', songs: [song] }])
+    expect(db.prepare('SELECT spotify_id FROM music_album').get()).toEqual({ spotify_id: null })
+    db.prepare('DELETE FROM music_track WHERE id = ?').run(duplicate)
+    spotifyRepo.linkUnambiguousSources('spotify-artist', [{ spotifyAlbumId: 'spotify-album', songs: [song] }])
+    const linked = db.prepare(
+      `SELECT al.spotify_id AS album_source, ar.spotify_id AS artist_source
+       FROM music_track t JOIN music_album al ON al.id=t.album_id
+       JOIN music_artist ar ON ar.id=t.artist_id WHERE t.id=?`
+    ).get(first)
+    expect(linked).toEqual({ album_source: 'spotify-album', artist_source: 'spotify-artist' })
+  })
+
   it('searchAll matches artists, albums and tracks independently', () => {
     seedTrack({ artist: 'Radiohead', album: 'OK Computer', title: 'Karma Police' })
     const res = musicRepo.searchAll('karma')
@@ -170,6 +217,81 @@ describe('playlists', () => {
     musicRepo.addPlaylistTracks(id, [t1])
     db.prepare('DELETE FROM music_track WHERE id = ?').run(t1)
     expect(musicRepo.getPlaylist(id)!.items).toHaveLength(0)
+  })
+
+  it('keeps Spotify source order, counts missing rows, and appends manual tracks', () => {
+    const matched = seedTrack({ artist: 'Artist', album: 'Album', title: 'Matched', path: 'p1' })
+    const manual = seedTrack({ artist: 'Other', album: 'Manual', title: 'Manual', path: 'p2' })
+    const playlistId = musicRepo.createPlaylist({ title: 'Imported mix' })
+    db.prepare(
+      `INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+       VALUES (?, 'spotify-list', 'https://open.spotify.com/playlist/spotify-list')`
+    ).run(playlistId)
+    const insert = db.prepare(
+      `INSERT INTO music_spotify_playlist_item
+       (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+        album_title, duration, spotify_url, raw_json, matched_track_id, cover_path)
+       VALUES (?, ?, ?, ?, '["Artist"]', 'Artist', 'Album', 200, ?, '{}', ?, ?)`
+    )
+    insert.run(playlistId, 'first-track', 0, 'Matched', 'https://open.spotify.com/track/first', matched, 'media/first.jpg')
+    insert.run(playlistId, 'second-track', 1, 'Missing', 'https://open.spotify.com/track/second', null, 'media/second.jpg')
+    musicRepo.addPlaylistTracks(playlistId, [manual])
+
+    const detail = musicRepo.getPlaylist(playlistId)!
+    expect(detail.source?.spotifyId).toBe('spotify-list')
+    expect(detail.items.map((item) => item.kind)).toEqual(['spotify', 'spotify', 'local'])
+    expect(detail.items.map((item) => item.position)).toEqual([0, 1, 2])
+    expect(detail.playableCount).toBe(2)
+    expect(detail.missingCount).toBe(1)
+    expect(musicRepo.listPlaylists()[0]).toMatchObject({
+      source: 'spotify',
+      trackCount: 3,
+      playableCount: 2,
+      missingCount: 1,
+      previewCovers: ['media/first.jpg', 'media/second.jpg', null]
+    })
+  })
+
+  it('turns a deleted matched track grey and resolves it again after a rescan', () => {
+    const trackId = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'p1' })
+    const playlistId = musicRepo.createPlaylist({ title: 'Imported mix' })
+    db.prepare(
+      `INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+       VALUES (?, 'source-id', 'https://open.spotify.com/playlist/source-id')`
+    ).run(playlistId)
+    db.prepare(
+      `INSERT INTO music_spotify_playlist_item
+       (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+        album_title, duration, spotify_url, raw_json, matched_track_id)
+       VALUES (?, 'song-id', 0, 'Song', '["Artist"]', 'Artist', 'Album', 200,
+               'https://open.spotify.com/track/song-id', '{}', ?)`
+    ).run(playlistId, trackId)
+
+    db.prepare('DELETE FROM music_track WHERE id = ?').run(trackId)
+    expect(musicRepo.getPlaylist(playlistId)!.missingCount).toBe(1)
+    seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'p-restored' })
+    expect(spotifyRepo.resolveAllSpotifyItems()).toBe(1)
+    expect(musicRepo.getPlaylist(playlistId)!.missingCount).toBe(0)
+  })
+
+  it('finds an existing Spotify playlist and removes only its source item', () => {
+    const playlistId = musicRepo.createPlaylist({ title: 'Imported mix' })
+    db.prepare(
+      `INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+       VALUES (?, 'repeat-id', 'https://open.spotify.com/playlist/repeat-id')`
+    ).run(playlistId)
+    db.prepare(
+      `INSERT INTO music_spotify_playlist_item
+       (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+        album_title, spotify_url, raw_json)
+       VALUES (?, 'song-id', 0, 'Song', '["Artist"]', 'Artist', 'Album',
+               'https://open.spotify.com/track/song-id', '{}')`
+    ).run(playlistId)
+    expect(spotifyRepo.findPlaylistBySpotifyId('repeat-id')).toBe(playlistId)
+    const itemId = (db.prepare('SELECT id FROM music_spotify_playlist_item').get() as { id: number }).id
+    spotifyRepo.removeSpotifyItem(itemId)
+    expect(musicRepo.getPlaylist(playlistId)!.items).toEqual([])
+    expect(musicRepo.getPlaylist(playlistId)).not.toBeNull()
   })
 })
 

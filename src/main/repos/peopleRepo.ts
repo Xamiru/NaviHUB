@@ -74,7 +74,8 @@ export function credits(id: number): PersonCredit[] {
       `SELECT cr.id AS credit_id, cr.role AS credit_role, cr.language AS credit_language,
               m.*,
               ch.id AS ch_id, ch.name AS ch_name, ch.name_native AS ch_name_native,
-              ch.image_path AS ch_image_path, ch.description AS ch_description
+              ch.gender AS ch_gender, ch.image_path AS ch_image_path,
+              ch.description AS ch_description
        FROM credit cr
        JOIN media_item m ON m.id = cr.media_id
        LEFT JOIN character ch ON ch.id = cr.character_id
@@ -99,6 +100,7 @@ export function credits(id: number): PersonCredit[] {
             id: r.ch_id,
             name: r.ch_name,
             name_native: r.ch_name_native,
+            gender: r.ch_gender,
             image_path: r.ch_image_path,
             description: r.ch_description
           })

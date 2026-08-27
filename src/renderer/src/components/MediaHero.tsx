@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import CoverImage from './CoverImage'
 import BackButton from './BackButton'
+import { HeartIcon } from './PlayerIcons'
 import { useImageUrl } from '../lib/hooks'
 import type { MediaConfig } from '../lib/mediaConfig'
 import type { MediaDetail } from '@shared/types'
@@ -131,8 +132,8 @@ export default function MediaHero({ cfg, m, variant, actions, stats }: Props) {
             <div className="mt-1 flex items-start gap-2">
               <h1 className="max-w-2xl text-4xl font-bold leading-tight">{m.title}</h1>
               {m.favorite && (
-                <span className="text-xl text-yellow-400" title="Favorite">
-                  ★
+                <span className="text-accent" title="Favorite">
+                  <HeartIcon className="h-5 w-5" />
                 </span>
               )}
             </div>
@@ -206,8 +207,8 @@ export default function MediaHero({ cfg, m, variant, actions, stats }: Props) {
             <div className="mt-1.5 flex items-start gap-2">
               <h1 className="text-3xl font-bold">{m.title}</h1>
               {m.favorite && (
-                <span className="text-xl text-yellow-400" title="Favorite">
-                  ★
+                <span className="text-accent" title="Favorite">
+                  <HeartIcon className="h-5 w-5" />
                 </span>
               )}
             </div>

@@ -127,6 +127,14 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_theme_artist_person ON theme_artist(person_id);
 `)
 
+// The standalone importer does not run the app's migration registry. Keep the
+// nullable AniList character-gender column available even when this script is
+// the first process opened after updating the checkout.
+const characterColumns = db.prepare('PRAGMA table_info(character)').all()
+if (!characterColumns.some((column) => column.name === 'gender')) {
+  db.exec('ALTER TABLE character ADD COLUMN gender TEXT')
+}
+
 /* ----------------------------- utilities ----------------------------- */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 
@@ -410,7 +418,7 @@ query ($id: Int) {
       pageInfo { hasNextPage }
       edges {
         role
-        node { id name { full native } image { large } }
+        node { id name { full native } gender image { large } }
         voiceActors(language: JAPANESE) { id name { full native } image { large } }
       }
     }
@@ -427,7 +435,7 @@ query ($id: Int, $page: Int) {
       pageInfo { hasNextPage }
       edges {
         role
-        node { id name { full native } image { large } }
+        node { id name { full native } gender image { large } }
         voiceActors(language: JAPANESE) { id name { full native } image { large } }
       }
     }
@@ -520,17 +528,22 @@ async function alUpsertCharacter(node, charSource = AL_SOURCE) {
   const row = db.prepare('SELECT id, image_path FROM character WHERE external_source=? AND external_id=?').get(charSource, ext)
   const name = node.name?.full ?? 'Unknown'
   const nativeName = node.name?.native ?? null
+  const normalizedGender = typeof node.gender === 'string'
+    ? node.gender.trim().toLowerCase().replace(/[^a-z]+/g, '')
+    : ''
+  const gender = ['male', 'female', 'nonbinary'].includes(normalizedGender)
+    ? normalizedGender
+    : null
   if (row) {
-    if (!row.image_path && node.image?.large) {
-      const p = await downloadImage(node.image.large)
-      if (p) db.prepare('UPDATE character SET image_path=? WHERE id=?').run(p, row.id)
-    }
+    const p = !row.image_path && node.image?.large ? await downloadImage(node.image.large) : null
+    db.prepare('UPDATE character SET gender=?, image_path=COALESCE(image_path, ?) WHERE id=?')
+      .run(gender, p, row.id)
     return row.id
   }
   const img = await downloadImage(node.image?.large)
   return Number(
-    db.prepare('INSERT INTO character (name, name_native, image_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)')
-      .run(name, nativeName, img, charSource, ext).lastInsertRowid
+    db.prepare('INSERT INTO character (name, name_native, gender, image_path, external_source, external_id) VALUES (?, ?, ?, ?, ?, ?)')
+      .run(name, nativeName, gender, img, charSource, ext).lastInsertRowid
   )
 }
 
@@ -656,10 +669,10 @@ query ($id: Int) {
     }
     characters(sort: [ROLE, FAVOURITES_DESC], page: 1, perPage: 25) {
       pageInfo { hasNextPage }
-      edges { role node { id name { full native } image { large } } }
+      edges { role node { id name { full native } gender image { large } } }
     }
     staff(perPage: 8, sort: RELEVANCE) {
-      edges { role node { id name { full native } image { large } } }
+      edges { role node { id name { full native } gender image { large } } }
     }
   }
 }`

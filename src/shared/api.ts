@@ -46,7 +46,7 @@ import type {
   TorrentServiceTestResult,
   WallpaperSearchPage,
   WallpaperSearchResult,
-  QuizCharacterItem,
+  QuizCastItem,
   QuizAvailability,
   QuizAvailabilityRequest,
   QuizChallengeQuestion,
@@ -55,10 +55,12 @@ import type {
   QuizKind,
   QuizPlayMode,
   QuizLibFilter,
+  QuizMangaPanelFilter,
   QuizMangaPanelItem,
   QuizSessionInput,
   QuizSong,
   QuizSongFilter,
+  QuizSynopsisFilter,
   QuizSynopsisItem,
   QuizVaItem,
   TournamentEntry,
@@ -244,6 +246,13 @@ import type {
   MusicLibraryStats,
   MusicPlaylistDetail,
   MusicPlaylistSummary,
+  SpotifyDownloadInput,
+  SpotifyEntityDownloadInput,
+  SpotifyEntityInspectInput,
+  SpotifyEntityInspection,
+  SpotifyEntityRef,
+  SpotifyImportResult,
+  SpotdlDetectResult,
   MusicScanStatus,
   MusicScanSummary,
   MusicSearchResults,
@@ -355,15 +364,14 @@ export interface NaviApi {
     // The pool of playable anime theme songs for the song quiz, narrowed by the
     // given filter (OP/ED, list statuses). Game logic runs in the renderer.
     songPool(filter: QuizSongFilter): Promise<QuizSong[]>
-    // Library MCQ pools for the character / VA / synopsis quizzes: imaged
-    // characters (first linked title), Japanese-role voice credits (deduped
-    // per character), and titles with enough synopsis to quiz on.
-    characterPool(filter: QuizLibFilter): Promise<QuizCharacterItem[]>
+    // Library MCQ pools for cast / VA / synopsis quizzes: photographed screen
+    // actors, anime character appearances grouped with Japanese VAs, and synopses.
+    castPool(filter: QuizLibFilter): Promise<QuizCastItem[]>
     vaPool(filter: QuizLibFilter): Promise<QuizVaItem[]>
-    synopsisPool(filter: QuizLibFilter): Promise<QuizSynopsisItem[]>
-    // Manga-panel quiz seeds: length questions, each a random page from a
-    // random image chapter of one locally-linked series (one per series).
-    mangaPanelPool(filter: QuizLibFilter, length: number): Promise<QuizMangaPanelItem[]>
+    synopsisPool(filter: QuizSynopsisFilter): Promise<QuizSynopsisItem[]>
+    // Manga-panel quiz seeds: length questions, each a reproducibly selected
+    // eligible page from one locally-linked series (one per series).
+    mangaPanelPool(filter: QuizMangaPanelFilter, length: number): Promise<QuizMangaPanelItem[]>
     // Normalized contender pool for tournament mode, resolved from one library
     // source. Returns the whole matching set; the renderer shuffles and caps.
     tournamentPool(source: TournamentSource): Promise<TournamentEntry[]>
@@ -582,6 +590,7 @@ export interface NaviApi {
     list(filter: ThemeSongFilter): Promise<ThemeSongEntry[]>
     // Unfiltered totals for the header ("N of M playable · K favorites").
     counts(): Promise<ThemeSongCounts>
+    favorite(themeId: number): Promise<boolean>
     setFavorite(themeId: number, favorite: boolean): Promise<void>
   }
   pictures: {
@@ -999,6 +1008,13 @@ export interface NaviApi {
     removePlaylistTrack(itemId: number): Promise<void>
     removePlaylistTrackByTrack(playlistId: number, trackId: number): Promise<void>
     reorderPlaylist(playlistId: number, orderedItemIds: number[]): Promise<void>
+    spotifyImportPlaylist(url: string): Promise<SpotifyImportResult>
+    spotifyDownloadPlaylist(input: SpotifyDownloadInput): Promise<{ id: string }>
+    spotifyInspectEntity(input: SpotifyEntityInspectInput): Promise<SpotifyEntityInspection>
+    spotifyDownloadEntity(input: SpotifyEntityDownloadInput): Promise<{ id: string | null }>
+    spotifyForgetEntitySource(input: SpotifyEntityRef): Promise<void>
+    spotifyRemoveItem(itemId: number): Promise<void>
+    spotifyDetect(): Promise<SpotdlDetectResult>
     playlistsForTrack(
       trackId: number
     ): Promise<{ id: number; title: string; contains: boolean }[]>
@@ -1014,7 +1030,7 @@ export interface NaviApi {
     downloadCancel(id: string): Promise<void>
     downloadStatus(): Promise<MusicDownloadEvent | null>
     downloadDetect(): Promise<YtDlpDetectResult>
-    // online art fallback (Deezer/iTunes, no API keys)
+    // online art fallback (MusicBrainz/CAA, remembered Spotify, Deezer/iTunes)
     artFetchAlbum(albumId: number): Promise<MusicArtResult>
     artFetchArtist(artistId: number): Promise<MusicArtResult>
     artClearAlbum(albumId: number): Promise<void>

@@ -131,6 +131,7 @@ CREATE TABLE IF NOT EXISTS character (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   name            TEXT NOT NULL,
   name_native     TEXT,
+  gender          TEXT,
   image_path      TEXT,
   description     TEXT,
   external_source TEXT,
@@ -577,6 +578,7 @@ CREATE TABLE IF NOT EXISTS music_artist (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   name            TEXT NOT NULL,            -- folder name (authoritative)
   dir_path        TEXT NOT NULL,            -- "Radiohead"
+  spotify_id      TEXT,                     -- remembered matching Spotify artist
   cover_path      TEXT,                     -- filled by the online-art fetcher (media/…)
   art_checked_at  TEXT,                     -- last online-art attempt (found or not)
   art_source_url  TEXT,                     -- provenance of the fetched image
@@ -591,6 +593,7 @@ CREATE TABLE IF NOT EXISTS music_album (
   artist_id       INTEGER NOT NULL REFERENCES music_artist(id) ON DELETE CASCADE,
   title           TEXT NOT NULL,            -- folder name (authoritative)
   dir_path        TEXT NOT NULL,            -- "Radiohead/OK Computer"; equals the artist
+  spotify_id      TEXT,                     -- remembered matching Spotify album
                                             -- dir for the synthetic "Singles" album
   year            INTEGER,                  -- from tags (first track that has one)
   cover_path      TEXT,                     -- "music/<dir>/cover.jpg" (folder art) |
@@ -649,6 +652,40 @@ CREATE TABLE IF NOT EXISTS music_playlist_track (
   UNIQUE(playlist_id, track_id)             -- no duplicate tracks per playlist
 );
 CREATE INDEX IF NOT EXISTS idx_music_playlist_track_track ON music_playlist_track(track_id);
+
+-- One-time public Spotify playlist snapshots. Source items deliberately live
+-- beside ordinary playlist tracks: imported order/metadata survives missing
+-- local files, while manual additions keep the established table and append.
+CREATE TABLE IF NOT EXISTS music_spotify_playlist (
+  playlist_id  INTEGER PRIMARY KEY REFERENCES music_playlist(id) ON DELETE CASCADE,
+  spotify_id   TEXT NOT NULL UNIQUE,
+  source_url   TEXT NOT NULL,
+  imported_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS music_spotify_playlist_item (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  playlist_id       INTEGER NOT NULL REFERENCES music_playlist(id) ON DELETE CASCADE,
+  spotify_track_id  TEXT NOT NULL,
+  position          INTEGER NOT NULL,
+  title             TEXT NOT NULL,
+  artists_json      TEXT NOT NULL,
+  primary_artist    TEXT NOT NULL,
+  album_artist      TEXT,
+  album_title       TEXT NOT NULL,
+  duration          REAL,
+  cover_path        TEXT,
+  spotify_url       TEXT NOT NULL,
+  disc_no           INTEGER,
+  track_no          INTEGER,
+  year              INTEGER,
+  raw_json          TEXT NOT NULL,
+  matched_track_id  INTEGER REFERENCES music_track(id) ON DELETE SET NULL,
+  added_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(playlist_id, spotify_track_id)
+);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_item_playlist ON music_spotify_playlist_item(playlist_id);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_item_match ON music_spotify_playlist_item(matched_track_id);
 
 -- Append-only play log (one row per counted play — the same 10s rule as
 -- play_count, see MusicPlayLogger). duration snapshots the track length at

@@ -5,7 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePlayer } from '../lib/player'
 import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
-import { useDebouncedValue } from '../lib/hooks'
+import { useDebouncedValue, useIncrementalList } from '../lib/hooks'
 import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
 import ActionMenu from '../components/ActionMenu'
@@ -13,6 +13,17 @@ import { SortableList, SortableRow, useOptimisticReorder } from '../components/S
 import MusicTrackRow from '../components/MusicTrackRow'
 import { confirmDialog } from '../lib/confirm'
 import { RelationshipTrail } from '../components/EditorialDetailFrame'
+import CoverImage from '../components/CoverImage'
+import { formatDuration } from '../components/MusicTrackRow'
+import { usePersistedState } from '../lib/navState'
+import { useDownloadStatus } from '../components/MusicDownloadDialog'
+import { toast, toastError } from '../lib/toast'
+import type {
+  MusicPlaylistEntry,
+  MusicPlaylistItem,
+  MusicSpotifyPlaylistEntry,
+  MusicTrack
+} from '@shared/types'
 
 export default function MusicPlaylistPage() {
   const { id } = useParams()
@@ -20,6 +31,12 @@ export default function MusicPlaylistPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const player = usePlayer()
+  const downloadStatus = useDownloadStatus()
+  const [search, setSearch] = usePersistedState('spotifyPlaylistSearch', '')
+  const [availability, setAvailability] = usePersistedState<'all' | 'playable' | 'missing'>(
+    'spotifyPlaylistAvailability',
+    'all'
+  )
 
   const { data: playlist, isLoading } = useQuery({
     queryKey: qk.music.playlist(playlistId),
@@ -32,8 +49,11 @@ export default function MusicPlaylistPage() {
   }
 
   // Optimistic drag-reorder over the server's item list (shared with lists).
-  const { items, setItems, sensors, onDragEnd } = useOptimisticReorder(
-    playlist?.items,
+  const ordinarySeed = playlist?.items.filter(
+    (item): item is MusicPlaylistEntry => item.kind === 'local'
+  )
+  const { items: sortableItems, setItems, sensors, onDragEnd } = useOptimisticReorder(
+    ordinarySeed,
     (next) =>
       api.music.reorderPlaylist(
         playlistId,
@@ -45,19 +65,83 @@ export default function MusicPlaylistPage() {
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState('')
 
+  const isSpotify = playlist?.source != null
+  const allItems = isSpotify ? (playlist?.items ?? []) : sortableItems
+  const playable: { item: MusicPlaylistItem; track: MusicTrack }[] = []
+  for (const item of allItems) {
+    if (item.kind === 'local') playable.push({ item, track: item.track })
+    else if (item.matchedTrack) playable.push({ item, track: item.matchedTrack })
+  }
+  const missingSpotify = allItems.filter(
+    (item): item is MusicSpotifyPlaylistEntry => item.kind === 'spotify' && !item.matchedTrack
+  )
+  const normalizedSearch = search.trim().toLocaleLowerCase()
+  const filteredItems = allItems.filter((item) => {
+    if (availability === 'playable' && item.kind === 'spotify' && !item.matchedTrack) return false
+    if (availability === 'missing' && (item.kind === 'local' || item.matchedTrack)) return false
+    if (!normalizedSearch) return true
+    const text =
+      item.kind === 'local'
+        ? `${item.track.title} ${item.track.artistName} ${item.track.albumTitle}`
+        : `${item.title} ${item.artists.join(' ')} ${item.albumTitle}`
+    return text.toLocaleLowerCase().includes(normalizedSearch)
+  })
+  const incremental = useIncrementalList(filteredItems, 96)
+  const busy =
+    downloadStatus?.source === 'spotify' &&
+    downloadStatus.playlistId === playlistId &&
+    ['starting', 'downloading', 'processing'].includes(downloadStatus.status)
+
   if (isLoading) return <PageStatus>Loading…</PageStatus>
   if (!playlist) return <PageStatus>Playlist not found.</PageStatus>
 
-  function playFrom(i: number, shuffle = false): void {
-    const tracks = items.map((it) => musicTrackToPlayerTrack(it.track))
+  function playItem(item: MusicPlaylistItem, shuffle = false): void {
+    const playableIndex = playable.findIndex((entry) => entry.item === item)
+    const tracks = playable.map((entry) => musicTrackToPlayerTrack(entry.track))
     if (tracks.length === 0) return
-    player.playQueue(tracks, i, { shuffle })
+    player.playQueue(tracks, Math.max(0, playableIndex), { shuffle })
   }
 
   async function removeItem(itemId: number): Promise<void> {
     setItems((prev) => prev.filter((i) => i.itemId !== itemId))
     await api.music.removePlaylistTrack(itemId)
     invalidate()
+  }
+
+  async function removeSpotifyItem(itemId: number): Promise<void> {
+    await api.music.spotifyRemoveItem(itemId)
+    invalidate()
+  }
+
+  async function download(itemsToDownload: MusicSpotifyPlaylistEntry[]): Promise<void> {
+    if (itemsToDownload.length === 0 || busy) return
+    const bytes = Math.ceil(
+      itemsToDownload.reduce(
+        (total, item) => total + (item.duration == null ? 10 * 1024 * 1024 : item.duration * 40_000),
+        0
+      ) * 1.05
+    )
+    if (itemsToDownload.length > 100 || bytes > 2 * 1024 ** 3) {
+      const size =
+        bytes >= 1024 ** 3
+          ? `${(bytes / 1024 ** 3).toFixed(1)} GB`
+          : `${Math.ceil(bytes / 1024 ** 2)} MB`
+      const ok = await confirmDialog(
+        `Download ${itemsToDownload.length} missing songs as 320 kbps MP3 files? Estimated size: ${size}. Completed chunks are kept if you cancel.`,
+        { confirmLabel: 'Download' }
+      )
+      if (!ok) return
+    }
+    try {
+      await api.music.spotifyDownloadPlaylist({
+        playlistId,
+        itemIds: itemsToDownload.map((item) => item.itemId)
+      })
+      qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
+      toast(`Downloading ${itemsToDownload.length} song${itemsToDownload.length === 1 ? '' : 's'}`)
+    } catch (error) {
+      toastError(error)
+    }
   }
 
   async function saveTitle(): Promise<void> {
@@ -76,7 +160,7 @@ export default function MusicPlaylistPage() {
     if (!ok) return
     await api.music.removePlaylist(playlistId)
     qc.invalidateQueries({ queryKey: qk.music.playlists })
-    navigate('/music')
+    navigate('/music', { replace: true })
   }
 
   return (
@@ -86,7 +170,7 @@ export default function MusicPlaylistPage() {
         <Link to="/music" className="hover:text-accent">Sonic archive</Link>
         <span className="text-gray-600" aria-hidden="true">›</span>
         <span>Playlists</span>
-        <span className="ml-auto tabular-nums text-gray-500">{items.length} tracks</span>
+        <span className="ml-auto tabular-nums text-gray-500">{allItems.length} tracks</span>
       </RelationshipTrail>
 
       <div className="mb-5 flex items-start justify-between gap-4">
@@ -104,59 +188,188 @@ export default function MusicPlaylistPage() {
               }}
             />
           ) : (
-            <h1
-              className="cursor-text text-2xl font-bold hover:text-accent"
-              title="Rename"
-              onClick={() => {
-                setTitle(playlist.title)
-                setEditing(true)
-              }}
-            >
-              {playlist.title}
-            </h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold">{playlist.title}</h1>
+              <button
+                className="btn-ghost px-2 py-1 text-xs"
+                onClick={() => {
+                  setTitle(playlist.title)
+                  setEditing(true)
+                }}
+              >
+                Rename
+              </button>
+            </div>
           )}
           <p className="mt-1 text-xs text-gray-500">
-            Playlist · {items.length} {items.length === 1 ? 'track' : 'tracks'}
+            Playlist · {allItems.length} {allItems.length === 1 ? 'track' : 'tracks'}
           </p>
         </div>
-        <div className="flex shrink-0 gap-2">
-          <button className="btn-primary" onClick={() => playFrom(0)} disabled={!items.length}>
-            Play
+        <div className="flex shrink-0 flex-wrap justify-end gap-2">
+          <button
+            className="btn-primary"
+            onClick={() => {
+              if (missingSpotify.length > 0) void download(missingSpotify)
+              else if (playable[0]) playItem(playable[0].item)
+            }}
+            disabled={missingSpotify.length > 0 ? busy : !playable.length}
+          >
+            {playlist.missingCount > 0 && isSpotify ? `Download missing (${playlist.missingCount})` : 'Play'}
           </button>
+          {missingSpotify.length > 0 && (
+            <button
+              className="btn-ghost"
+              disabled={!playable.length}
+              onClick={() => playable[0] && playItem(playable[0].item)}
+            >
+              Play
+            </button>
+          )}
           <button
             className="btn-ghost"
-            disabled={!items.length}
+            disabled={!playable.length}
             onClick={() =>
               playTracks(
                 player,
-                items.map((i) => i.track),
+                playable.map((item) => item.track),
                 { shuffle: true }
               )
             }
           >
             Shuffle
           </button>
-          <ActionMenu items={[{ label: 'Delete playlist…', danger: true, onSelect: del }]} />
+          <ActionMenu
+            items={[
+              ...(playlist.source
+                ? [
+                    {
+                      label: 'Open source in Spotify',
+                      onSelect: () => api.app.openExternal(playlist.source!.sourceUrl)
+                    }
+                  ]
+                : []),
+              { label: 'Delete playlist…', danger: true, onSelect: del }
+            ]}
+          />
         </div>
       </div>
 
+      <p className="mb-4 text-sm text-gray-400">
+        {allItems.length} total · {playlist.playableCount} playable
+        {isSpotify && ` · ${playlist.missingCount} missing`}
+      </p>
+
+      {busy && downloadStatus && (
+        <div className="mb-5 rounded-md bg-base-700/60 p-3" role="status">
+          <div className="flex items-center justify-between gap-3 text-sm">
+            <div className="min-w-0">
+              <p className="line-clamp-1 text-gray-300">
+                {downloadStatus.status === 'processing'
+                  ? (downloadStatus.message ?? 'Updating library')
+                  : (downloadStatus.title ?? 'Starting spotDL')}
+              </p>
+              <p className="mt-0.5 text-xs text-gray-500">
+                {downloadStatus.itemIndex ?? 0}/{downloadStatus.itemCount ?? 0} completed
+                {downloadStatus.resolvedCount != null &&
+                  ` · ${downloadStatus.resolvedCount} resolved · ${downloadStatus.failedCount ?? 0} remaining`}
+              </p>
+            </div>
+            <button
+              className="btn-ghost shrink-0"
+              onClick={async () => {
+                await api.music.downloadCancel(downloadStatus.id)
+                qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
+              }}
+            >
+              Cancel download
+            </button>
+          </div>
+          <div
+            className="mt-2 h-1.5 overflow-hidden rounded bg-base-600"
+            role="progressbar"
+            aria-label="Missing-track download progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(downloadStatus.percent ?? 0)}
+          >
+            <div
+              className="h-full bg-accent transition-all"
+              style={{ width: `${Math.min(100, downloadStatus.percent ?? 0)}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {isSpotify && (
+        <div className="mb-5 flex flex-wrap items-center gap-2">
+          <input
+            className="input min-w-56 flex-1"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search this playlist"
+          />
+          {(['all', 'playable', 'missing'] as const).map((value) => (
+            <button
+              key={value}
+              className={availability === value ? 'pill-active' : 'pill'}
+              onClick={() => setAvailability(value)}
+            >
+              {value === 'all' ? 'All' : value === 'playable' ? 'Playable' : 'Missing'}
+            </button>
+          ))}
+        </div>
+      )}
+
       <AddTracksPicker
         playlistId={playlistId}
-        excludeIds={items.map((i) => i.track.id)}
+        excludeIds={playable.map((i) => i.track.id)}
         onAdded={invalidate}
       />
 
-      {items.length === 0 ? (
+      {allItems.length === 0 ? (
         <p className="text-sm text-gray-400">No tracks yet — search above to add some.</p>
+      ) : isSpotify ? (
+        <>
+          <div className="space-y-0.5">
+            {incremental.visible.map((item) =>
+              item.kind === 'local' ? (
+                <MusicTrackRow
+                  key={`local-${item.itemId}`}
+                  track={item.track}
+                  showAlbum
+                  onPlay={() => playItem(item)}
+                  onRemove={() => removeItem(item.itemId)}
+                />
+              ) : item.matchedTrack ? (
+                <MusicTrackRow
+                  key={`spotify-${item.itemId}`}
+                  track={item.matchedTrack}
+                  showAlbum
+                  onPlay={() => playItem(item)}
+                  onRemove={() => removeSpotifyItem(item.itemId)}
+                />
+              ) : (
+                <SpotifyMissingRow
+                  key={`spotify-${item.itemId}`}
+                  item={item}
+                  busy={busy}
+                  onDownload={() => download([item])}
+                  onRemove={() => removeSpotifyItem(item.itemId)}
+                />
+              )
+            )}
+          </div>
+          <div ref={incremental.sentinelRef} />
+        </>
       ) : (
-        <SortableList ids={items.map((i) => i.itemId)} sensors={sensors} onDragEnd={onDragEnd}>
-          {items.map((item, index) => (
+        <SortableList ids={sortableItems.map((i) => i.itemId)} sensors={sensors} onDragEnd={onDragEnd}>
+          {sortableItems.map((item) => (
             <SortableRow key={item.itemId} id={item.itemId}>
               {(handle) => (
                 <MusicTrackRow
                   track={item.track}
                   showAlbum
-                  onPlay={() => playFrom(index)}
+                  onPlay={() => playItem(item)}
                   onRemove={() => removeItem(item.itemId)}
                   leading={handle}
                 />
@@ -165,6 +378,45 @@ export default function MusicPlaylistPage() {
           ))}
         </SortableList>
       )}
+    </div>
+  )
+}
+
+function SpotifyMissingRow({
+  item,
+  busy,
+  onDownload,
+  onRemove
+}: {
+  item: MusicSpotifyPlaylistEntry
+  busy: boolean
+  onDownload: () => void
+  onRemove: () => void
+}) {
+  return (
+    <div className="flex items-center gap-3 rounded-md px-2 py-1.5 text-gray-400 hover:bg-base-700">
+      <CoverImage
+        path={item.coverPath}
+        alt={item.title}
+        className="h-10 w-10 shrink-0 opacity-85"
+        fallback="music"
+        thumbWidth={80}
+      />
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-1 text-sm font-medium text-gray-300">{item.title}</p>
+        <p className="line-clamp-1 text-xs text-gray-500">
+          {item.artists.join(', ')} · {item.albumTitle} · Missing locally
+        </p>
+      </div>
+      <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-500">
+        {formatDuration(item.duration)}
+      </span>
+      <button className="btn-ghost px-2 py-1 text-xs" disabled={busy} onClick={onDownload}>
+        Download
+      </button>
+      <button className="btn-ghost px-2 py-1 text-xs" onClick={onRemove}>
+        Remove
+      </button>
     </div>
   )
 }
@@ -182,7 +434,7 @@ function AddTracksPicker({
 }) {
   const [search, setSearch] = useState('')
   const query = useDebouncedValue(search.trim())
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: qk.music.search(query),
     queryFn: () => api.music.search(query),
     enabled: query.length > 0
@@ -203,15 +455,21 @@ function AddTracksPicker({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
       />
-      {query && results.length > 0 && (
+      {query && (
         <div className="absolute z-20 mt-1 max-h-72 w-full overflow-y-auto rounded-md border border-base-500 bg-base-800 p-1 shadow-lg">
+          {isLoading && <p className="px-2 py-2 text-sm text-gray-400">Searching tracks…</p>}
+          {!isLoading && results.length === 0 && (
+            <p className="px-2 py-2 text-sm text-gray-400">
+              No available tracks match “{query}”.
+            </p>
+          )}
           {results.map((t) => (
             <button
               key={t.id}
               className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-base-700"
               onClick={() => add(t.id)}
             >
-              <span className="text-gray-500">Add</span>
+              <span className="text-accent">Add</span>
               <span className="min-w-0">
                 <span className="line-clamp-1">{t.title}</span>
                 <span className="line-clamp-1 text-xs text-gray-500">

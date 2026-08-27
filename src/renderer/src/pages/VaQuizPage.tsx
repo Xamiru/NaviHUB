@@ -1,54 +1,24 @@
 import { useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useAllCompletedStatuses } from '../lib/hooks'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
 import LibMcRound, { type McQuestion } from '../components/libraryQuiz/LibMcRound'
 import { Group, Pill } from '../components/PillGroup'
-import type { QuizVaItem } from '@shared/types'
-import { shuffle } from '@shared/shuffle'
+import { buildVaQuizQuestions, vaAppearanceKey } from '@shared/vaQuiz'
+import { quizSeed } from '@shared/quizCore'
+import type { QuizLibFilter } from '@shared/types'
 
-type Direction = 'both' | 'toVa' | 'toChar'
-
-// Distractors for a VA question: same-show candidates first (cast-mates and
-// their casts are the plausible wrong answer), never repeating an option
-// identity. `forbidden` bans identities outright — the seed's own key, and
-// for "which character do they voice?" every character the seed's VA plays,
-// or a second right answer could sit among the options.
-function vaDistractors(
-  pool: QuizVaItem[],
-  seed: QuizVaItem,
-  idOf: (v: QuizVaItem) => number,
-  forbidden: number[]
-): QuizVaItem[] {
-  const banned = new Set(forbidden)
-  const ok = (v: QuizVaItem) => !banned.has(idOf(v))
-  const sameShow = shuffle(pool.filter((p) => ok(p) && p.mediaId === seed.mediaId))
-  const rest = shuffle(pool.filter((p) => ok(p) && p.mediaId !== seed.mediaId))
-  const seen = new Set<number>()
-  const out: QuizVaItem[] = []
-  for (const c of [...sameShow, ...rest]) {
-    if (seen.has(idOf(c))) continue
-    seen.add(idOf(c))
-    out.push(c)
-    if (out.length === 3) break
-  }
-  return out
-}
-
-// Voice-actor quiz over the credit graph, both directions:
-//   toVa   — "who voices this character?" (portrait + name shown)
-//   toChar — "which character does this VA voice?" (person shown)
 export default function VaQuizPage() {
+  const qc = useQueryClient()
   const completedStatuses = useAllCompletedStatuses()
-
-  const [direction, setDirection] = usePersistedState<Direction>('quizVaDir', 'both')
-  const [listSource, setListSource] = usePersistedState<'consumed' | 'all'>('quizVaList', 'consumed')
+  const [scope, setScope] = usePersistedState<'consumed' | 'all'>('quizVaScope', 'consumed')
   const [length, setLength] = usePersistedState<number>('quizVaLength', 10)
   const [timerEnabled, setTimerEnabled] = usePersistedState('quizVaTimer', true)
-
   const [round, setRound] = useState(0)
   const [questions, setQuestions] = useState<McQuestion[] | null>(null)
   const [settingsSnapshot, setSettingsSnapshot] = useState<Record<string, unknown>>({})
@@ -59,113 +29,74 @@ export default function VaQuizPage() {
     setError(null)
     setLoading(true)
     try {
-      const pool = await api.quiz.vaPool({
-        statuses: listSource === 'all' ? null : completedStatuses
+      const seed = quizSeed(`${Date.now()}-${Math.random()}`)
+      const filter: QuizLibFilter = { statuses: scope === 'all' ? null : completedStatuses }
+      const pool = await qc.fetchQuery({
+        queryKey: qk.quiz.vaPool(filter),
+        queryFn: () => api.quiz.vaPool(filter)
       })
-      if (pool.length < 4) {
+      const built = buildVaQuizQuestions(pool, length, seed)
+      if (built.length < length) {
         setError(
-          `Need voice credits for at least 4 different characters with portraits — found ${pool.length}. Import cast for your anime first (re-importing refreshes credits), or widen the filters.`
+          `Only ${built.length} solvable same-voice questions are available for these filters; choose a shorter round, widen the scope, or re-import anime cast.`
         )
         return
       }
-      const seeds = shuffle(pool).slice(0, length)
-      const qs: McQuestion[] = []
-      for (const seed of seeds) {
-        // Mixed mode flips a coin per question; a direction is skipped when
-        // the pool cannot supply four distinct identities for it.
-        const dir =
-          direction === 'both'
-            ? Math.random() < 0.5
-              ? 'toVa'
-              : 'toChar'
-            : direction
-        if (dir === 'toVa') {
-          const distractors = vaDistractors(pool, seed, (v) => v.personId, seed.validPersonIds)
-          if (distractors.length < 3) continue
-          qs.push({
-            key: `tova-${seed.characterId}`,
-            validKeys: seed.validPersonIds.map((id) => `person-${id}`),
-            prompt: (
-              <div className="text-center">
-                <CoverImage
-                  path={seed.characterImagePath}
-                  alt={seed.characterName}
-                  rounded="rounded-xl"
-                  className="mx-auto h-72 w-auto"
-                />
-                <p className="mt-4 text-2xl font-semibold">{seed.characterName}</p>
-                <p className="text-base text-gray-500">{seed.mediaTitle}</p>
-                <p className="mt-2 text-gray-400">Who voices this character in {seed.mediaTitle}?</p>
-              </div>
-            ),
-            options: shuffle([seed, ...distractors]).map((o) => ({
-              key: `person-${o.personId}`,
-              node: (
-                <>
-                  <CoverImage path={o.photoPath} alt={o.personName} rounded="rounded-full" className="h-14 w-14 shrink-0" />
-                  <span className="line-clamp-2 text-base font-medium">{o.personName}</span>
-                </>
-              )
-            }))
-          })
-        } else {
-          const distractors = vaDistractors(
-            pool,
-            seed,
-            (v) => v.characterId,
-            seed.validCharacterIds
+
+      const qs: McQuestion[] = built.map((question) => ({
+        key: question.key,
+        validKeys: question.validKeys,
+        prompt: (
+          <div className="text-center">
+            <CoverImage
+              path={question.source.characterImagePath}
+              alt={question.source.characterName}
+              rounded="rounded-xl"
+              className="mx-auto h-72 w-auto"
+            />
+            <p className="mt-4 text-2xl font-semibold">{question.source.characterName}</p>
+            <p className="text-base text-gray-500">{question.source.mediaTitle}</p>
+            <p className="mt-2 text-gray-400">
+              Which other character shares a Japanese voice actor?
+            </p>
+          </div>
+        ),
+        reveal: (
+          <span>
+            {question.source.characterName} and {question.answer.characterName} are voiced by{' '}
+            <span className="font-semibold text-white">
+              {question.sharedPersonNames.join(' and ')}
+            </span>
+            .
+          </span>
+        ),
+        options: question.options.map((option) => ({
+          key: vaAppearanceKey(option),
+          node: (
+            <>
+              <CoverImage
+                path={option.characterImagePath}
+                alt={option.characterName}
+                className="h-24 w-16 shrink-0"
+              />
+              <span className="min-w-0">
+                <span className="line-clamp-2 text-base font-medium">
+                  {option.characterName}
+                </span>
+                <span className="block truncate text-sm text-gray-500">{option.mediaTitle}</span>
+              </span>
+            </>
           )
-          if (distractors.length < 3) continue
-          qs.push({
-            key: `tochar-${seed.characterId}`,
-            validKeys: seed.validCharacterIds.map((id) => `character-${id}`),
-            prompt: (
-              <div className="text-center">
-                <div className="flex items-center justify-center gap-4">
-                  <CoverImage
-                    path={seed.photoPath}
-                    alt={seed.personName}
-                    rounded="rounded-full"
-                    className="h-20 w-20 shrink-0"
-                  />
-                  <p className="text-3xl font-bold">{seed.personName}</p>
-                </div>
-                <p className="mt-3 text-gray-400">Which of these characters do they voice in {seed.mediaTitle}?</p>
-              </div>
-            ),
-            options: shuffle([seed, ...distractors]).map((o) => ({
-              key: `character-${o.characterId}`,
-              node: (
-                <>
-                  <CoverImage path={o.characterImagePath} alt={o.characterName} className="h-24 w-16 shrink-0" />
-                  <span className="min-w-0">
-                    <span className="line-clamp-2 text-base font-medium">{o.characterName}</span>
-                    <span className="block truncate text-sm text-gray-500">{o.mediaTitle}</span>
-                  </span>
-                </>
-              )
-            }))
-          })
-        }
-      }
-      if (qs.length === 0) {
-        setError(
-          'The pool is too thin for this direction — try "Both" or the other direction.'
-        )
-        return
-      }
-      setSettingsSnapshot({ direction, listSource, length, timerEnabled })
+        }))
+      }))
+      setSettingsSnapshot({ scope, length, timerEnabled, seed })
       setQuestions(qs)
-      setRound((r) => r + 1)
+      setRound((value) => value + 1)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load voice credits.')
+      setError(e instanceof Error ? e.message : 'Failed to load anime voice credits.')
     } finally {
       setLoading(false)
     }
-  }
-
-  function playAgain() {
-    void startGame()
   }
 
   if (questions && round > 0) {
@@ -176,7 +107,7 @@ export default function VaQuizPage() {
         questions={questions}
         settings={settingsSnapshot}
         timed={timerEnabled}
-        onPlayAgain={playAgain}
+        onPlayAgain={() => void startGame()}
         backTo={{ to: '/quiz', label: 'quizzes' }}
       />
     )
@@ -187,22 +118,24 @@ export default function VaQuizPage() {
       <PageHeader
         back={{ to: '/quiz', label: 'Quiz' }}
         title="Voice Actor Quiz"
-        subtitle="Match characters and their Japanese voice actors — straight from your credit graph."
+        subtitle="Connect characters from different anime through their Japanese voice actor."
         className="mb-6"
       />
 
       <div className="card p-6 space-y-6">
-        <Group label="Direction">
-          <Pill active={direction === 'both'} onClick={() => setDirection('both')} label="Both" />
-          <Pill active={direction === 'toVa'} onClick={() => setDirection('toVa')} label="Who voices them" />
-          <Pill active={direction === 'toChar'} onClick={() => setDirection('toChar')} label="Their roles" />
-        </Group>
-
         <Group label="From">
-          <Pill active={listSource !== 'all'} onClick={() => setListSource('consumed')} label="Completed" />
-          <Pill active={listSource === 'all'} onClick={() => setListSource('all')} label="All" />
+          <Pill
+            active={scope === 'consumed'}
+            onClick={() => setScope('consumed')}
+            label="Completed"
+          />
+          <Pill active={scope === 'all'} onClick={() => setScope('all')} label="All" />
         </Group>
-        {listSource === 'all' && <p className="-mt-4 text-sm text-amber-300">Includes in-progress or unseen content and may contain spoilers.</p>}
+        {scope === 'all' && (
+          <p className="-mt-4 text-sm text-amber-300">
+            Includes in-progress or unseen anime and may contain spoilers.
+          </p>
+        )}
 
         <Group label="Length">
           <Pill active={length === 5} onClick={() => setLength(5)} label="5" />
@@ -210,21 +143,27 @@ export default function VaQuizPage() {
           <Pill active={length === 20} onClick={() => setLength(20)} label="20" />
         </Group>
 
-        <div className="space-y-2 pt-1">
-          <label className="flex cursor-pointer items-center gap-2 text-base text-gray-300">
-            <input
-              type="checkbox"
-              checked={timerEnabled}
-              onChange={(e) => setTimerEnabled(e.target.checked)}
-            />
-            Countdown timer (20s per question)
-          </label>
-        </div>
+        <label className="flex cursor-pointer items-center gap-2 text-base text-gray-300">
+          <input
+            type="checkbox"
+            checked={timerEnabled}
+            onChange={(event) => setTimerEnabled(event.target.checked)}
+          />
+          Countdown timer (20s per question)
+        </label>
 
+        <p className="text-sm text-gray-400">
+          Options match the answer character's gender, then prefer similar role prominence and
+          release era. Re-import anime cast to populate gender for existing characters.
+        </p>
         {error && <p className="text-sm text-red-400">{error}</p>}
 
-        <button className="btn-primary w-full py-3 text-base" disabled={loading} onClick={startGame}>
-          {loading ? 'Loading credits…' : 'Start quiz'}
+        <button
+          className="btn-primary w-full py-3 text-base"
+          disabled={loading}
+          onClick={startGame}
+        >
+          {loading ? 'Loading voice connections…' : 'Start quiz'}
         </button>
       </div>
 

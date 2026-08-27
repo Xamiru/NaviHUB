@@ -49,7 +49,7 @@ export default function MusicStatsPage() {
     staleTime: 0
   })
   const { data: recent = [] } = useQuery({
-    queryKey: qk.music.recent,
+    queryKey: qk.music.recent(20),
     queryFn: () => api.music.recent(20),
     staleTime: 0
   })

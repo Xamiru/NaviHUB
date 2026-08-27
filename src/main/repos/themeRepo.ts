@@ -101,6 +101,13 @@ export function setFavorite(themeId: number, favorite: boolean): void {
     .run(favorite ? 1 : 0, themeId)
 }
 
+export function favorite(themeId: number): boolean {
+  const row = getSqlite()
+    .prepare('SELECT favorite FROM theme_song WHERE id = ?')
+    .get(themeId) as { favorite: number } | undefined
+  return !!row?.favorite
+}
+
 // Header counts for the Songs page: how much of the library it can play at all,
 // and how much of that is hearted. Deliberately unfiltered — like mediaRepo's
 // facets, these are the "of N" denominators the active filters narrow.

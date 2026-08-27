@@ -15,3 +15,6 @@
 
 **Phone sync / Android companion — REMOVED (2026-08-01).** A LAN sync server (`sync.ts`, `syncOps.ts`, `SyncOp`/`SYNC_PROTOCOL_VERSION`, the `sync:*` IPC group, the Settings "Phone sync" card, `sync_batch`) shipped 2026-07-16 as Phase 0 of a Capacitor companion app. **The user scrapped the idea — do not rebuild it, and do not treat it as pending work.** NaviHUB is desktop-only. Two deliberate leftovers: the `sync_batch` table and the `sync.*` settings keys still exist in the user's live DB (removing them from init.sql doesn't drop them) so sanitizeSql.cjs keeps wiping both — `sanitizeDb` skips tables a DB doesn't have, so it's a no-op on fresh installs. Git history has the code if it's ever wanted back.
 
+## Odd One Out quiz
+
+**Odd One Out — REMOVED (2026-08-27).** The central-library format that asked which of four titles lacked a stated company, credited-person, or genre relation was deliberately scrapped during the quiz review. Do not restore its route, hub card, Party option, challenge kind, or availability field. Old `quiz_session` rows may retain the `oddOneOut` text value; they are inert historical data and require no migration.

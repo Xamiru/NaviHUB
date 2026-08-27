@@ -21,6 +21,7 @@ import {
 import { toast, toastError } from '../lib/toast'
 import { mediaUrl } from '@shared/mediaUrl'
 import CoverImage from '../components/CoverImage'
+import FavoriteButton from '../components/FavoriteButton'
 import MediaHero from '../components/MediaHero'
 import RefreshMediaDialog from '../components/RefreshMediaDialog'
 import FranchiseBackground from '../components/FranchiseBackground'
@@ -31,7 +32,7 @@ import TvSeasonsSection from '../components/TvSeasonsSection'
 import GameLaunchSection from '../components/GameLaunchSection'
 import AchievementsSection from '../components/AchievementsSection'
 import GameLaunchButton, { useHasLaunchTarget } from '../components/GameLaunchButton'
-import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
+import { HeartIcon, PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import VideoEpisodesSection from '../components/VideoEpisodesSection'
 import CoverageSection from '../components/japanese/CoverageSection'
 import MediaImagesSection from '../components/MediaImagesSection'
@@ -240,8 +241,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               <div className="flex items-start gap-2">
                 <h1 className="text-3xl font-semibold text-white text-balance">{m.title}</h1>
                 {m.favorite && (
-                  <span className="text-yellow-400 text-xl" title="Favorite">
-                    ★
+                  <span className="text-accent" title="Favorite">
+                    <HeartIcon className="h-5 w-5" />
                   </span>
                 )}
               </div>
@@ -400,20 +401,15 @@ function QuickEdit({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
             {s}
           </button>
         ))}
-        <button
-          className="pill ml-1"
-          title={favorite ? 'Remove from favorites' : 'Add to favorites'}
-          aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
-          aria-pressed={favorite}
+        <FavoriteButton
+          active={favorite}
+          className="ml-1"
           onClick={() => {
             const next = !favorite
             setFavorite(next)
             void patch({ favorite: next }, () => setFavorite(!next))
           }}
-        >
-          {/* ♥ for a like toggle; ★ is reserved for score/rarity badges. */}
-          <span className={favorite ? 'text-accent' : 'text-gray-500'}>{favorite ? '♥' : '♡'}</span>
-        </button>
+        />
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="label mr-1">Score</span>
@@ -1000,16 +996,11 @@ function ThemeRow({ theme, onPlay }: { theme: ThemeSong; onPlay: () => void }) {
           </p>
         )}
       </div>
-      <button
-        className={`px-1 text-sm ${
-          favorite ? 'text-accent' : 'text-gray-600 opacity-0 group-hover:opacity-100'
-        } hover:text-accent`}
-        title={favorite ? 'Remove from favorites' : 'Add to favorites'}
-        aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
-        onClick={toggleFavorite}
-      >
-        {favorite ? '♥' : '♡'}
-      </button>
+      <FavoriteButton
+        active={favorite}
+        variant="compact"
+        onClick={() => void toggleFavorite()}
+      />
     </div>
   )
 }
@@ -1201,4 +1192,3 @@ function StaffSection({
 }
 
 /* ---------------- small helpers ---------------- */
-

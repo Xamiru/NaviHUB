@@ -223,9 +223,15 @@ describe('themeRepo favorites', () => {
     const t = addTheme(a, { title: 'Tank!' })
 
     themeRepo.setFavorite(t, true)
+    expect(themeRepo.favorite(t)).toBe(true)
     expect(themeRepo.list({ media: anime() })[0].favorite).toBe(true)
     themeRepo.setFavorite(t, false)
+    expect(themeRepo.favorite(t)).toBe(false)
     expect(themeRepo.list({ media: anime() })[0].favorite).toBe(false)
+  })
+
+  it('treats a missing song as not favorited', () => {
+    expect(themeRepo.favorite(999)).toBe(false)
   })
 
   it('counts the library unfiltered', () => {

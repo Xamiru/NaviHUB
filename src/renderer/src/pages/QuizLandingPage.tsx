@@ -6,12 +6,13 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useAllCompletedStatuses, useSettings } from '../lib/hooks'
 import type { QuizAvailability } from '@shared/types'
+import { parseSavedTournament } from '@shared/tournamentSave'
 
 interface GameCard {
   to: string
   title: string
   body: string
-  availability?: keyof QuizAvailability
+  availability?: Exclude<keyof QuizAvailability, 'higherLowerOptions'>
   minimum?: number
 }
 
@@ -31,18 +32,17 @@ const GROUPS: Array<{ title: string; games: GameCard[] }> = [
   {
     title: 'Connections',
     games: [
-      { to: '/quiz/connections', title: 'Connections', body: 'Find the person or studio linking two titles.', availability: 'connections', minimum: 4 },
-      { to: '/quiz/chronology', title: 'Chronology', body: 'Order four connected titles by release date.', availability: 'chronology', minimum: 4 },
-      { to: '/quiz/odd-one-out', title: 'Odd One Out', body: 'Find the entry that breaks a stated relationship.', availability: 'oddOneOut', minimum: 4 }
+      { to: '/quiz/connections', title: 'Connections', body: 'Find the actor or director connecting two movies or TV shows.', availability: 'connections', minimum: 5 },
+      { to: '/quiz/chronology', title: 'Chronology', body: 'Order four connected titles by release date.', availability: 'chronology', minimum: 4 }
     ]
   },
   {
     title: 'Library',
     games: [
-      { to: '/quiz/character', title: 'Character Quiz', body: 'Match a character to every legitimate appearance.', availability: 'character', minimum: 4 },
-      { to: '/quiz/va', title: 'Voice Actor Quiz', body: 'Match Japanese credits within the exact title.', availability: 'va', minimum: 4 },
+      { to: '/quiz/cast', title: 'Cast Quiz', body: 'Match an actor to a movie or TV show they appeared in.', availability: 'cast', minimum: 4 },
+      { to: '/quiz/va', title: 'Voice Actor Quiz', body: 'Find the character from another anime who shares the same Japanese voice actor.', availability: 'va', minimum: 4 },
       { to: '/quiz/synopsis', title: 'Synopsis Quiz', body: 'Identify a title from a spoiler-conscious excerpt.', availability: 'synopsis', minimum: 4 },
-      { to: '/quiz/higher-lower', title: 'Higher or Lower', body: 'An endless three-life comparison run.', availability: 'higherLower', minimum: 2 }
+      { to: '/quiz/higher-lower', title: 'Higher or Lower', body: 'Compare dates, lengths, or your ratings within one library category.', availability: 'higherLower', minimum: 2 }
     ]
   },
   {
@@ -52,17 +52,7 @@ const GROUPS: Array<{ title: string; games: GameCard[] }> = [
 ]
 
 function hasValidTournamentSave(raw: string | undefined): boolean {
-  if (!raw) return false
-  try {
-    const saved = JSON.parse(raw) as Record<string, unknown>
-    return (
-      saved.version === 2 &&
-      Array.isArray(saved.contenders) &&
-      (saved.groups != null || saved.bracket != null || saved.activeTiebreak != null)
-    )
-  } catch {
-    return false
-  }
+  return parseSavedTournament(raw) != null
 }
 
 export default function QuizLandingPage() {

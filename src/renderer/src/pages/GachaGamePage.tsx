@@ -19,6 +19,7 @@ import GachaBannerDialog from '../components/gacha/GachaBannerDialog'
 import GachaGameImageDialog from '../components/gacha/GachaGameImageDialog'
 import { confirmDialog } from '../lib/confirm'
 import QuietWorkspace from '../components/QuietWorkspace'
+import { HeartIcon } from '../components/PlayerIcons'
 
 type Tab = 'roster' | 'catalog' | 'banners' | 'news'
 
@@ -491,8 +492,11 @@ function UnitCard({
           }`}
         />
         {unit.favorite && (
-          <span className="absolute right-1.5 top-1.5 text-sm text-amber-400" title="Favorite">
-            ★
+          <span
+            className="absolute right-1.5 top-1.5 rounded-full bg-black/75 p-1 text-accent"
+            title="Favorite"
+          >
+            <HeartIcon className="h-3.5 w-3.5" />
           </span>
         )}
       </div>

@@ -1,10 +1,16 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePlayer } from '../lib/player'
 import { playerShortcutsEnabled } from '../lib/playerShortcuts'
+import { musicIdOf, themeIdOf } from '../lib/playerTrackIds'
+import { qk } from '../lib/queryKeys'
+import { toastError } from '../lib/toast'
 import CoverImage from './CoverImage'
-import QueuePanel from './QueuePanel'
+import MusicPlaylistButton from './MusicPlaylistButton'
+import FavoriteButton from './FavoriteButton'
+import QueuePanel, { QueueLikeButton, useLikedTrackIds } from './QueuePanel'
 import {
   PlayIcon,
   PauseIcon,
@@ -16,6 +22,7 @@ import {
   ExpandIcon,
   PopOutIcon
 } from './PlayerIcons'
+import type { Track } from '../lib/player'
 
 // Elapsed/total clock ("3:07"); shared with the full-page now-playing view.
 export function formatTime(t: number): string {
@@ -26,9 +33,8 @@ export function formatTime(t: number): string {
 }
 const fmt = formatTime
 
-// Persistent now-playing bar at the bottom of the content area. Hidden until a
-// theme song is playing; survives navigation because the player lives at the
-// app root.
+// Persistent now-playing bar at the bottom of the content area. Hidden until
+// audio is playing; survives navigation because the player lives at the app root.
 export default function NowPlayingBar(): React.JSX.Element | null {
   const {
     track,
@@ -120,6 +126,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
               <p className="text-xs text-gray-500 truncate leading-tight">{sub}</p>
             ))}
         </div>
+        <NowPlayingTrackActions track={track} />
       </div>
 
       <div className="flex flex-[2] flex-col items-center gap-1">
@@ -261,6 +268,99 @@ export default function NowPlayingBar(): React.JSX.Element | null {
       </div>
 
       {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
+    </div>
+  )
+}
+
+export function NowPlayingTrackActions({
+  track,
+  prominent = false
+}: {
+  track: Track
+  prominent?: boolean
+}): React.JSX.Element | null {
+  const musicId = musicIdOf(track.id)
+  if (musicId != null)
+    return <MusicTrackActions key={track.id} trackId={musicId} prominent={prominent} />
+
+  const themeId = themeIdOf(track.id)
+  if (themeId != null)
+    return (
+      <ThemeLikeButton
+        key={track.id}
+        themeId={themeId}
+        mediaId={track.mediaId}
+        prominent={prominent}
+      />
+    )
+
+  return null
+}
+
+function MusicTrackActions({
+  trackId,
+  prominent
+}: {
+  trackId: number
+  prominent: boolean
+}): React.JSX.Element {
+  const likedIds = useLikedTrackIds()
+  return (
+    <div className="flex shrink-0 items-center gap-1" aria-label="Current song actions">
+      <QueueLikeButton
+        trackId={trackId}
+        likedIds={likedIds}
+        iconOnly={!prominent}
+        prominent={prominent}
+      />
+      <MusicPlaylistButton trackId={trackId} prominent={prominent} />
+    </div>
+  )
+}
+
+function ThemeLikeButton({
+  themeId,
+  mediaId,
+  prominent
+}: {
+  themeId: number
+  mediaId?: number | null
+  prominent: boolean
+}): React.JSX.Element {
+  const qc = useQueryClient()
+  const key = qk.themes.favorite(themeId)
+  const { data: favorite = false } = useQuery({
+    queryKey: key,
+    queryFn: () => api.themes.favorite(themeId)
+  })
+  const [saving, setSaving] = useState(false)
+  async function toggleFavorite(): Promise<void> {
+    if (saving) return
+    const next = !favorite
+    setSaving(true)
+    qc.setQueryData(key, next)
+    try {
+      await api.themes.setFavorite(themeId, next)
+      await qc.invalidateQueries({ queryKey: qk.themes.all })
+      if (mediaId != null) await qc.invalidateQueries({ queryKey: qk.media.detail(mediaId) })
+    } catch (error) {
+      qc.setQueryData(key, favorite)
+      toastError(error)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="flex shrink-0 items-center" aria-label="Current theme actions">
+      <FavoriteButton
+        active={favorite}
+        activeLabel="Remove from favorite themes"
+        inactiveLabel="Add to favorite themes"
+        disabled={saving}
+        variant={prominent ? 'pill' : 'default'}
+        onClick={() => void toggleFavorite()}
+      />
     </div>
   )
 }

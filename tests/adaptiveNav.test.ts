@@ -68,7 +68,7 @@ describe('adaptive archive navigation', () => {
   })
 
   it('uses the consolidated quiz context while direct game routes remain hub-owned', () => {
-    expect(archiveContextForPath('/quiz/odd-one-out').items).toEqual([
+    expect(archiveContextForPath('/quiz/chronology').items).toEqual([
       { to: '/quiz', label: 'Quiz Home' },
       { to: '/quiz/party', label: 'Party' },
       { to: '/quiz/song', label: 'Songs' },

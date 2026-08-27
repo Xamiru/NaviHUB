@@ -99,6 +99,14 @@ export const qk = {
     challengePool: (request: import('@shared/types').QuizChallengeRequest) =>
       ['quiz', 'challengePool', request] as const,
     songPool: (filter: QuizSongFilter) => ['quiz', 'songPool', filter] as const,
+    castPool: (filter: import('@shared/types').QuizLibFilter) =>
+      ['quiz', 'castPool', filter] as const,
+    vaPool: (filter: import('@shared/types').QuizLibFilter) =>
+      ['quiz', 'vaPool', filter] as const,
+    synopsisPool: (filter: import('@shared/types').QuizSynopsisFilter) =>
+      ['quiz', 'synopsisPool', filter] as const,
+    mangaPanelPool: (filter: import('@shared/types').QuizMangaPanelFilter, length: number) =>
+      ['quiz', 'mangaPanelPool', filter, length] as const,
     history: (kind: QuizKind, playMode: 'solo' | 'party' = 'solo') =>
       ['quiz', 'history', kind, playMode] as const,
     // A longer window of the same history (under the history(kind) prefix so
@@ -112,7 +120,8 @@ export const qk = {
     // into the anime detail page's theme rows.
     all: ['themes'] as const,
     list: (filter: ThemeSongFilter) => ['themes', 'list', filter] as const,
-    counts: ['themes', 'counts'] as const
+    counts: ['themes', 'counts'] as const,
+    favorite: (themeId: number) => ['themes', 'favorite', themeId] as const
   },
   torrents: {
     // Jackett searches only — results are ephemeral, nothing invalidates this
@@ -274,6 +283,7 @@ export const qk = {
     artists: (search: string) => ['music', 'artists', search] as const,
     albums: (search: string) => ['music', 'albums', search] as const,
     artist: (id: number) => ['music', 'artist', id] as const,
+    artistTracks: (id: number) => ['music', 'artistTracks', id] as const,
     album: (id: number) => ['music', 'album', id] as const,
     tracks: (filter: { search?: string; likedOnly?: boolean }) =>
       ['music', 'tracks', filter] as const,
@@ -281,12 +291,13 @@ export const qk = {
     playlists: ['music', 'playlists'] as const,
     playlist: (id: number) => ['music', 'playlist', id] as const,
     playlistsForTrack: (trackId: number) => ['music', 'playlistsForTrack', trackId] as const,
-    recent: ['music', 'recent'] as const,
+    recent: (limit: number) => ['music', 'recent', limit] as const,
     statsDetail: (days: number | null) => ['music', 'statsDetail', days] as const,
     statsDetailAll: ['music', 'statsDetail'] as const, // prefix, for invalidation
     stats: ['music', 'stats'] as const,
     scanStatus: ['music', 'scanStatus'] as const,
     downloadStatus: ['music', 'downloadStatus'] as const,
+    spotifyDetect: ['music', 'spotifyDetect'] as const,
     artStatus: ['music', 'artStatus'] as const
   },
   gacha: {

@@ -51,6 +51,29 @@ export function balancedDeal<T>(
   return out
 }
 
+// Builds a deck for callers that consume with Array.pop(). The forward deal is
+// identity-balanced, then reversed so the balanced end is played first. Across
+// a reshuffle boundary the first pop also avoids the previous identity whenever
+// the pool contains an alternative.
+export function balancedDeckAvoiding<T>(
+  values: readonly T[],
+  identity: (value: T) => string | number,
+  previous: T | null,
+  rng: () => number = Math.random
+): T[] {
+  const deal = balancedDeal(values, values.length, identity, rng)
+  if (previous != null && deal.length > 1) {
+    const previousIdentity = identity(previous)
+    if (identity(deal[0]) === previousIdentity) {
+      const swap = deal.findIndex((value) => identity(value) !== previousIdentity)
+      if (swap > 0) {
+        ;[deal[0], deal[swap]] = [deal[swap], deal[0]]
+      }
+    }
+  }
+  return deal.reverse()
+}
+
 export function shuffledDeckAvoiding<T>(
   values: readonly T[],
   previous: T | null,

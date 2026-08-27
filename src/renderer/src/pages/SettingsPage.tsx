@@ -28,6 +28,7 @@ import type {
   UpdateTestResult,
   VideoToolsResult,
   YtDlpDetectResult,
+  SpotdlDetectResult,
   MokuroDetectResult
 } from '@shared/types'
 import StartJackettButton from '../components/StartJackettButton'
@@ -213,6 +214,7 @@ export default function SettingsPage() {
           {displayTab === 'integrations' && (
             <>
               <YtdlpSettings data={data} onSave={setKey} />
+              <SpotdlSettings data={data} onSave={setKey} />
               <VideoToolsSettings data={data} onSave={setKey} />
               <MokuroSettings data={data} onSave={setKey} />
               <TorrentSettings data={data} onSave={setKey} />
@@ -976,6 +978,53 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
               downloads fail.
             </span>
           )}
+        </p>
+      )}
+    </SettingCard>
+  )
+}
+
+function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+  const [path, setPath] = useState('')
+  const [check, setCheck] = useState<SpotdlDetectResult | null>(null)
+  useEffect(() => setPath(data?.['spotdl.path'] ?? ''), [data])
+
+  async function test(): Promise<void> {
+    setCheck(null)
+    await onSave('spotdl.path', path.trim())
+    setCheck(await api.music.spotifyDetect())
+  }
+
+  return (
+    <SettingCard
+      title="spotDL (Spotify playlist imports)"
+      description={
+        <>
+          Imports public Spotify playlist metadata and downloads missing songs from YouTube Music
+          as 320 kbps MP3 files. Install spotDL and ffmpeg yourself with{' '}
+          <span className="text-gray-400">pipx install spotdl</span>. Leave blank to use{' '}
+          <span className="text-gray-400">spotdl</span> from PATH, or enter its full executable
+          path. Spotify login is not used.
+        </>
+      }
+    >
+      <div className="flex items-center gap-2">
+        <input
+          className="input"
+          type="text"
+          value={path}
+          onChange={(event) => setPath(event.target.value)}
+          placeholder="spotdl"
+        />
+        <button className="btn-ghost shrink-0" onClick={test}>
+          Save &amp; test
+        </button>
+      </div>
+      {check && (
+        <p className={`mt-3 text-sm ${check.ok ? 'text-green-400' : 'text-red-400'}`}>
+          {check.ok
+            ? `spotDL ${check.version ?? ''}; ffmpeg found`
+            : (check.error ?? 'spotDL is not ready')}
         </p>
       )}
     </SettingCard>

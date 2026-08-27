@@ -1,15 +1,15 @@
-import { useState, type ReactNode } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import EmptyState from '../components/EmptyState'
 import ActionMenu from '../components/ActionMenu'
 import PageHeader from '../components/PageHeader'
 import Tabs from '../components/Tabs'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePlayer } from '../lib/player'
 import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
-import { useDebouncedValue, useIncrementalList, useSettings } from '../lib/hooks'
+import { useDebouncedValue, useDialog, useIncrementalList, useSettings } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { toast, toastError } from '../lib/toast'
 import CoverImage from '../components/CoverImage'
@@ -124,13 +124,18 @@ export default function MusicLibraryPage() {
               </button>
             )}
             {scanning && <span className="pill">Scanning…</span>}
-            <button className="btn-ghost" onClick={() => playAll(false)}>
+            <button className="btn-primary" onClick={() => playAll(false)}>
               Play all
             </button>
-            <button className="btn-primary" onClick={() => playAll(true)}>
+            <button className="btn-ghost" onClick={() => playAll(true)}>
               Shuffle
             </button>
             <ActionMenu
+              label="Add music"
+              items={[{ label: 'Save audio from a link…', onSelect: () => setDlOpen(true) }]}
+            />
+            <ActionMenu
+              label="Library maintenance"
               items={[
                 {
                   label: 'Rescan library',
@@ -141,8 +146,7 @@ export default function MusicLibraryPage() {
                   label: 'Find missing art',
                   disabled: art.running,
                   onSelect: () => void art.run()
-                },
-                { label: 'Download from URL…', onSelect: () => setDlOpen(true) }
+                }
               ]}
             />
           </>
@@ -165,7 +169,18 @@ export default function MusicLibraryPage() {
               </span>
             )}
           </div>
-          <div className="h-1.5 overflow-hidden rounded bg-base-600">
+          <div
+            className="h-1.5 overflow-hidden rounded bg-base-600"
+            role="progressbar"
+            aria-label="Music library scan progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={
+              scanStatus.phase === 'tags' && scanStatus.total > 0
+                ? Math.round((scanStatus.done / scanStatus.total) * 100)
+                : undefined
+            }
+          >
             <div
               className="h-full bg-accent transition-all"
               style={{
@@ -218,87 +233,95 @@ export default function MusicLibraryPage() {
 }
 
 function SonicArchiveLead() {
+  const player = usePlayer()
   const { data } = useQuery({
     queryKey: qk.music.statsDetail(30),
     queryFn: () => api.music.statsDetail(30)
   })
+  const { data: recent = [] } = useQuery({
+    queryKey: qk.music.recent(8),
+    queryFn: () => api.music.recent(8)
+  })
+  const { data: libraryTracks = [] } = useQuery({
+    queryKey: qk.music.tracks({}),
+    queryFn: () => api.music.tracks({})
+  })
   const artist = data?.topArtists[0]
-  if (!data || !artist) return null
-  const topTrack = data.topTracks[0]
-  const topHour = [...data.playsByHour].sort((a, b) => b.plays - a.plays)[0]
-  const period =
-    topHour == null
-      ? 'No pattern yet'
-      : topHour.hour < 6
-        ? 'Late night'
-        : topHour.hour < 12
-          ? 'Morning'
-          : topHour.hour < 18
-            ? 'Afternoon'
-            : 'Evening'
+  if (!data) return null
+  const returnTracks =
+    recent.length > 0
+      ? recent.slice(0, 4)
+      : data.topTracks.length > 0
+        ? data.topTracks.slice(0, 4).map((row) => row.track)
+        : libraryTracks.slice(0, 4)
+  if (returnTracks.length === 0) return null
 
   return (
-    <section className="card mb-6 grid overflow-hidden lg:grid-cols-[280px_minmax(0,1fr)]">
-      <div className="relative min-h-56 overflow-hidden bg-base-700 p-6">
-        {artist.coverPath && (
-          <CoverImage
-            path={artist.coverPath}
-            alt=""
-            rounded=""
-            className="absolute inset-0 h-full w-full"
-          />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/55 to-base-800/10" />
-        <div className="relative flex h-full flex-col justify-end">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
-            Strongest signal / 30 days
-          </p>
-          <Link
-            to={`/music/artists/${artist.id}`}
-            className="mt-2 line-clamp-2 text-2xl font-semibold text-white hover:text-accent"
-          >
-            {artist.name}
-          </Link>
-          <p className="mt-1 text-xs text-gray-400">
-            {artist.plays} plays / {formatLongDuration(artist.seconds)}
-          </p>
+    <section
+      className={`card mb-6 grid overflow-hidden ${artist ? 'lg:grid-cols-[260px_minmax(0,1fr)]' : ''}`}
+    >
+      {artist && (
+        <div className="relative min-h-56 overflow-hidden bg-base-700 p-6">
+          {artist.coverPath && (
+            <CoverImage
+              path={artist.coverPath}
+              alt=""
+              rounded=""
+              className="absolute inset-0 h-full w-full"
+            />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/55 to-base-800/10" />
+          <div className="relative flex h-full flex-col justify-end">
+            <Link
+              to={`/music/artists/${artist.id}`}
+              className="line-clamp-2 text-2xl font-semibold text-white hover:text-accent"
+            >
+              {artist.name}
+            </Link>
+            <p className="mt-1 text-xs text-gray-400">
+              Most played artist in the last 30 days · {artist.plays} plays
+            </p>
+          </div>
         </div>
-      </div>
+      )}
       <div className="p-6">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-500">
-          Listen through relationships
-        </p>
-        <h2 className="mt-2 text-2xl font-semibold text-white">Your listening leaves trails</h2>
-        <p className="mt-2 max-w-3xl text-sm leading-relaxed text-gray-400">
-          Move between artists, albums and play history without leaving the local library.
-        </p>
-        <div className="mt-5 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-md border border-base-700 p-4">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500">Top track</p>
-            <p className="mt-2 truncate text-sm font-medium">{topTrack?.track.title ?? 'Keep listening'}</p>
-            <p className="mt-1 text-xs text-gray-500">
-              {topTrack ? `${topTrack.plays} plays` : 'A pattern will appear here'}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-semibold text-white">
+              {recent.length > 0
+                ? 'Pick up where you left off'
+                : data.topTracks.length > 0
+                  ? 'Return to a familiar signal'
+                  : 'Start listening'}
+            </h2>
+            <p className="mt-1 text-sm text-gray-400">
+              {data.newArtists.length > 0
+                ? `${data.newArtists.length} artist${data.newArtists.length === 1 ? '' : 's'} first heard this month.`
+                : 'Your recent listening stays close at hand.'}
             </p>
           </div>
-          <div className="rounded-md border border-base-700 p-4">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500">Listening pattern</p>
-            <p className="mt-2 text-sm font-medium">{period}</p>
-            <p className="mt-1 text-xs text-gray-500">
-              {topHour ? `Most active around ${String(topHour.hour).padStart(2, '0')}:00` : 'More plays needed'}
-            </p>
-          </div>
-          <div className="rounded-md border border-base-700 p-4">
-            <p className="text-[10px] uppercase tracking-wider text-gray-500">New signals</p>
-            <p className="mt-2 text-sm font-medium">{data.newArtists.length} artists</p>
-            <p className="mt-1 text-xs text-gray-500">First heard in this period</p>
-          </div>
+          <Link to="/music/stats" className="btn-ghost shrink-0">
+            Listening history
+          </Link>
+        </div>
+        <div className="mt-4">
+          {returnTracks.map((track, index) => (
+            <MusicTrackRow
+              key={track.id}
+              track={track}
+              showAlbum
+              onPlay={() =>
+                player.playQueue(returnTracks.map(musicTrackToPlayerTrack), index)
+              }
+            />
+          ))}
         </div>
       </div>
     </section>
   )
 }
 
-// "Find missing art" — kicks the bulk Deezer/iTunes job and shows its progress
+// "Find missing art" — kicks the strict online provider chain and shows its progress
 // while it runs (polled, like the scanner).
 // Art-fetch job state, lifted so the trigger lives in the header's More menu
 // while a progress pill (with cancel) appears only while it runs.
@@ -316,7 +339,19 @@ function useArtFetch() {
     setRunning(true)
     try {
       const res = await api.music.artFetchMissing()
-      toast(`Art fetch done — ${res.updated} image${res.updated === 1 ? '' : 's'} found`, 'success')
+      const found = `${res.updated} image${res.updated === 1 ? '' : 's'} found`
+      if (res.cancelled) {
+        toast(`Art fetch stopped — ${found}; ${res.total - res.done} not attempted`)
+      } else if (res.failed) {
+        toast(
+          `Art fetch finished — ${found}; ${res.failed} failed; ${res.missing} had no match`
+        )
+      } else {
+        toast(
+          `Art fetch done — ${found}${res.missing ? `; ${res.missing} had no match` : ''}`,
+          'success'
+        )
+      }
       qc.invalidateQueries({ queryKey: qk.music.all })
     } catch (e) {
       toastError(e)
@@ -371,14 +406,38 @@ export function AlbumCard({ album }: { album: MusicAlbumSummary }) {
 const GRID = 'grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4'
 
 function ArtistsTab() {
+  const [sort, setSort] = usePersistedState<'name' | 'albums' | 'tracks'>('musicArtistSort', 'name')
+  const [missingArt, setMissingArt] = usePersistedState('musicArtistMissingArt', false)
   const { data: artists = [], isLoading } = useQuery({
     queryKey: qk.music.artists(''),
     queryFn: () => api.music.artists()
   })
-  const { visible, sentinelRef } = useIncrementalList(artists)
+  const ordered = useMemo(() => {
+    const next = artists.filter((artist) => !missingArt || !artist.coverPath)
+    return [...next].sort((a, b) => {
+      if (sort === 'albums') return b.albumCount - a.albumCount || a.name.localeCompare(b.name)
+      if (sort === 'tracks') return b.trackCount - a.trackCount || a.name.localeCompare(b.name)
+      return a.name.localeCompare(b.name)
+    })
+  }, [artists, missingArt, sort])
+  const { visible, sentinelRef } = useIncrementalList(ordered)
   if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
   return (
     <>
+      <BrowseControls>
+        <label className="flex items-center gap-2 text-sm text-gray-400">
+          Sort
+          <select className="input w-auto py-1.5" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+            <option value="name">Artist name</option>
+            <option value="albums">Most albums</option>
+            <option value="tracks">Most tracks</option>
+          </select>
+        </label>
+        <button className={missingArt ? 'pill-active' : 'pill'} onClick={() => setMissingArt(!missingArt)}>
+          Missing photos
+        </button>
+        <span className="text-xs text-gray-500">{ordered.length} artists</span>
+      </BrowseControls>
       <div className={GRID}>
         {visible.map((a) => (
           <ArtistCard key={a.id} artist={a} />
@@ -390,14 +449,40 @@ function ArtistsTab() {
 }
 
 function AlbumsTab() {
+  const [sort, setSort] = usePersistedState<'catalog' | 'title' | 'newest' | 'oldest'>('musicAlbumSort', 'catalog')
+  const [missingArt, setMissingArt] = usePersistedState('musicAlbumMissingArt', false)
   const { data: albums = [], isLoading } = useQuery({
     queryKey: qk.music.albums(''),
     queryFn: () => api.music.albums()
   })
-  const { visible, sentinelRef } = useIncrementalList(albums)
+  const ordered = useMemo(() => {
+    const next = albums.filter((album) => !missingArt || !album.coverPath)
+    return [...next].sort((a, b) => {
+      if (sort === 'title') return a.title.localeCompare(b.title)
+      if (sort === 'newest') return (b.year ?? -Infinity) - (a.year ?? -Infinity) || a.title.localeCompare(b.title)
+      if (sort === 'oldest') return (a.year ?? Infinity) - (b.year ?? Infinity) || a.title.localeCompare(b.title)
+      return a.artistName.localeCompare(b.artistName) || (a.year ?? Infinity) - (b.year ?? Infinity) || a.title.localeCompare(b.title)
+    })
+  }, [albums, missingArt, sort])
+  const { visible, sentinelRef } = useIncrementalList(ordered)
   if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
   return (
     <>
+      <BrowseControls>
+        <label className="flex items-center gap-2 text-sm text-gray-400">
+          Sort
+          <select className="input w-auto py-1.5" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+            <option value="catalog">Artist and release</option>
+            <option value="title">Album title</option>
+            <option value="newest">Newest year</option>
+            <option value="oldest">Oldest year</option>
+          </select>
+        </label>
+        <button className={missingArt ? 'pill-active' : 'pill'} onClick={() => setMissingArt(!missingArt)}>
+          Missing covers
+        </button>
+        <span className="text-xs text-gray-500">{ordered.length} albums</span>
+      </BrowseControls>
       <div className={GRID}>
         {visible.map((a) => (
           <AlbumCard key={a.id} album={a} />
@@ -441,17 +526,56 @@ export function TrackList({
 }
 
 function TracksTab() {
+  const [sort, setSort] = usePersistedState<'catalog' | 'recent' | 'most' | 'least' | 'title'>('musicTrackSort', 'catalog')
+  const [filter, setFilter] = usePersistedState<'all' | 'unplayed' | 'missingArt'>('musicTrackFilter', 'all')
   const { data: tracks = [], isLoading } = useQuery({
     queryKey: qk.music.tracks({}),
     queryFn: () => api.music.tracks({})
   })
   if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
-  return <TrackList tracks={tracks} />
+  const ordered = [...tracks]
+    .filter((track) => filter === 'all' || (filter === 'unplayed' ? track.playCount === 0 : !track.coverPath))
+    .sort((a, b) => {
+      if (sort === 'recent') return (b.lastPlayedAt ?? '').localeCompare(a.lastPlayedAt ?? '')
+      if (sort === 'most') return b.playCount - a.playCount || a.title.localeCompare(b.title)
+      if (sort === 'least') return a.playCount - b.playCount || a.title.localeCompare(b.title)
+      if (sort === 'title') return a.title.localeCompare(b.title)
+      return 0
+    })
+  return (
+    <>
+      <BrowseControls>
+        <label className="flex items-center gap-2 text-sm text-gray-400">
+          Sort
+          <select className="input w-auto py-1.5" value={sort} onChange={(event) => setSort(event.target.value as typeof sort)}>
+            <option value="catalog">Artist and album</option>
+            <option value="recent">Recently played</option>
+            <option value="most">Most played</option>
+            <option value="least">Least played</option>
+            <option value="title">Track title</option>
+          </select>
+        </label>
+        {(['all', 'unplayed', 'missingArt'] as const).map((value) => (
+          <button key={value} className={filter === value ? 'pill-active' : 'pill'} onClick={() => setFilter(value)}>
+            {value === 'all' ? 'All' : value === 'unplayed' ? 'Unplayed' : 'Missing covers'}
+          </button>
+        ))}
+        <span className="text-xs text-gray-500">{ordered.length} tracks</span>
+      </BrowseControls>
+      <TrackList tracks={ordered} />
+    </>
+  )
+}
+
+function BrowseControls({ children }: { children: ReactNode }) {
+  return <div className="mb-4 flex flex-wrap items-center gap-2">{children}</div>
 }
 
 function PlaylistsTab() {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [newTitle, setNewTitle] = useState('')
+  const [importOpen, setImportOpen] = useState(false)
   const { data: playlists = [], isLoading } = useQuery({
     queryKey: qk.music.playlists,
     queryFn: () => api.music.playlists()
@@ -468,7 +592,7 @@ function PlaylistsTab() {
   if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
   return (
     <>
-      <div className="mb-4 flex max-w-md gap-2">
+      <div className="mb-4 flex max-w-2xl flex-col gap-2 sm:flex-row">
         <input
           className="input"
           placeholder="New playlist…"
@@ -484,7 +608,20 @@ function PlaylistsTab() {
         <button className="btn-ghost" disabled={!newTitle.trim()} onClick={create}>
           Create
         </button>
+        <button className="btn-ghost shrink-0" onClick={() => setImportOpen(true)}>
+          Import a playlist…
+        </button>
       </div>
+      {importOpen && (
+        <SpotifyImportDialog
+          onClose={() => setImportOpen(false)}
+          onImported={(playlistId) => {
+            setImportOpen(false)
+            qc.invalidateQueries({ queryKey: qk.music.playlists })
+            navigate(`/music/playlists/${playlistId}`)
+          }}
+        />
+      )}
       {playlists.length === 0 ? (
         <EmptyState title="No playlists yet" body="Create one above." />
       ) : (
@@ -495,6 +632,108 @@ function PlaylistsTab() {
         </div>
       )}
     </>
+  )
+}
+
+function SpotifyImportDialog({
+  onClose,
+  onImported
+}: {
+  onClose: () => void
+  onImported: (playlistId: number) => void
+}) {
+  const panelRef = useDialog(onClose)
+  const [url, setUrl] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const { data: readiness, isLoading } = useQuery({
+    queryKey: qk.music.spotifyDetect,
+    queryFn: () => api.music.spotifyDetect()
+  })
+
+  async function start(): Promise<void> {
+    if (!url.trim() || importing) return
+    setImporting(true)
+    setError(null)
+    try {
+      const result = await api.music.spotifyImportPlaylist(url.trim())
+      toast(
+        result.existing
+          ? 'This Spotify playlist was already imported; opening the existing copy.'
+          : `Imported ${result.imported}: ${result.matched} playable, ${result.missing} missing, ${result.duplicates} duplicate, ${result.skipped} skipped.`,
+        'success'
+      )
+      onImported(result.playlistId)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Import Spotify playlist"
+        tabIndex={-1}
+        className="card w-full max-w-lg p-5"
+      >
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Import Spotify playlist</h2>
+          <button className="px-2 text-gray-500 hover:text-white" aria-label="Close" onClick={onClose}>
+            ✕
+          </button>
+        </div>
+        <label className="label" htmlFor="spotify-playlist-url">
+          Public playlist link
+        </label>
+        <input
+          id="spotify-playlist-url"
+          className="input"
+          autoFocus
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') void start()
+          }}
+          placeholder="https://open.spotify.com/playlist/…"
+          disabled={importing}
+        />
+        <p className="mt-2 text-sm text-gray-400">
+          Public playlists only. This creates a one-time snapshot; it does not stay synced with
+          Spotify. Downloaded audio is matched by spotDL through YouTube Music.
+        </p>
+        <p
+          className={`mt-3 text-sm ${readiness?.ok ? 'text-green-400' : 'text-yellow-400'}`}
+          role="status"
+        >
+          {isLoading
+            ? 'Checking spotDL…'
+            : readiness?.ok
+              ? `spotDL ${readiness.version ?? ''} and ffmpeg are ready.`
+              : (readiness?.error ?? 'spotDL is not ready. Configure it in Settings.')}
+        </p>
+        {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
+        <div className="mt-5 flex justify-end gap-2">
+          <button className="btn-ghost" onClick={onClose} disabled={importing}>
+            Cancel
+          </button>
+          <button
+            className="btn-primary"
+            onClick={start}
+            disabled={!url.trim() || importing || !readiness?.ok}
+          >
+            {importing ? 'Importing…' : 'Import'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -530,7 +769,7 @@ function SearchResults({ query }: { query: string }) {
       {data.artists.length > 0 && (
         <Section title="Artists" className="">
           <div className={GRID}>
-            {data.artists.slice(0, 6).map((a) => (
+            {data.artists.map((a) => (
               <ArtistCard key={a.id} artist={a} />
             ))}
           </div>
@@ -539,7 +778,7 @@ function SearchResults({ query }: { query: string }) {
       {data.albums.length > 0 && (
         <Section title="Albums" className="">
           <div className={GRID}>
-            {data.albums.slice(0, 6).map((a) => (
+            {data.albums.map((a) => (
               <AlbumCard key={a.id} album={a} />
             ))}
           </div>

@@ -5,8 +5,9 @@ import type {
   QuizAvailabilityRequest,
   QuizChallengeQuestion,
   QuizChallengeRequest,
-  QuizCharacterItem,
+  QuizCastItem,
   QuizHistory,
+  QuizHigherLowerAvailability,
   QuizKind,
   QuizLibFilter,
   QuizPlayMode,
@@ -14,10 +15,14 @@ import type {
   QuizSessionInput,
   QuizSong,
   QuizSongFilter,
+  QuizSynopsisFilter,
   QuizSynopsisItem,
   QuizVaItem
 } from '@shared/types'
 import { quizScorePolicy } from '@shared/quizCore'
+import { countBuildableVaSources } from '@shared/vaQuiz'
+import { countBuildableSynopsisSources, isLikelyFirstEntry } from '@shared/synopsisQuiz'
+import { HIGHER_LOWER_MEDIA_TYPES, higherLowerValue } from '@shared/higherLowerQuiz'
 import {
   buildChallengeQuestions,
   type ChallengeCharacterCandidate,
@@ -51,69 +56,118 @@ export function availability(request: QuizAvailabilityRequest = {}): QuizAvailab
   const character = scalar(
     `SELECT COUNT(DISTINCT ch.id) AS n FROM media_character mc
      JOIN character ch ON ch.id=mc.character_id JOIN media_item mi ON mi.id=mc.media_id
-     WHERE ch.image_path IS NOT NULL ${statusSql}`
+     WHERE ch.image_path IS NOT NULL AND mi.media_type='anime' ${statusSql}`
   )
-  const va = scalar(
-    `SELECT COUNT(DISTINCT c.id) AS n FROM credit c
-     JOIN character ch ON ch.id=c.character_id JOIN media_item mi ON mi.id=c.media_id
-     WHERE c.role='voice_actor' AND c.language='Japanese' AND ch.image_path IS NOT NULL ${statusSql}`
+  const cast = scalar(
+    `SELECT COUNT(DISTINCT mi.id) AS n FROM credit c
+     JOIN person p ON p.id=c.person_id JOIN media_item mi ON mi.id=c.media_id
+     LEFT JOIN media_character mc ON mc.media_id=c.media_id AND mc.character_id=c.character_id
+     WHERE c.role='actor' AND p.photo_path IS NOT NULL AND mi.cover_path IS NOT NULL
+       AND mi.media_type IN ('movie','tv')
+       AND (mi.media_type='tv' OR COALESCE(c.importance, mc.sort_order) BETWEEN 0 AND 9) ${statusSql}`
   )
-  const synopsis = scalar(
-    `SELECT COUNT(*) AS n FROM media_item mi
-     WHERE mi.synopsis IS NOT NULL AND LENGTH(mi.synopsis)>=120 AND mi.cover_path IS NOT NULL ${statusSql}`
+  const va = countBuildableVaSources(vaPool({ statuses: statuses.length ? statuses : null }))
+  const synopsis = countBuildableSynopsisSources(
+    synopsisPool({
+      mediaTypes: ['anime', 'movie', 'tv'],
+      completedStatuses: statuses.length ? statuses : null,
+      includeSafeUnseen: true,
+      requireCover: true
+    })
   )
   const mangaPanel = scalar(
     `SELECT COUNT(DISTINCT mi.id) AS n FROM manga_chapter mc JOIN media_item mi ON mi.id=mc.media_id
      WHERE mi.media_type='manga' AND LOWER(mc.dir_path) NOT LIKE '%.epub'
-       AND (?='all' OR mc.read_at IS NOT NULL OR mc.last_read_page IS NOT NULL) ${statusSql}`,
-    [request.scope ?? 'consumed', ...statuses]
+       AND (?='all' OR mc.read_at IS NOT NULL OR mc.last_read_page IS NOT NULL)`,
+    [request.scope ?? 'consumed']
   )
   const imageReveal = scalar(
-    `SELECT COUNT(DISTINCT mi.id) AS n FROM media_item mi LEFT JOIN media_image img ON img.media_id=mi.id
-     WHERE (mi.cover_path IS NOT NULL OR mi.banner_path IS NOT NULL OR img.id IS NOT NULL) ${statusSql}`
-  )
-  const chronology = scalar(
-    `SELECT COUNT(*) AS n FROM (
-       SELECT mc.company_id FROM media_company mc JOIN media_item mi ON mi.id=mc.media_id
-       WHERE mi.release_date IS NOT NULL ${statusSql} GROUP BY mc.company_id
-       HAVING COUNT(DISTINCT mi.release_date)>=4
-       UNION ALL
-       SELECT c.person_id FROM credit c JOIN media_item mi ON mi.id=c.media_id
-       WHERE mi.release_date IS NOT NULL ${statusSql} GROUP BY c.person_id
-       HAVING COUNT(DISTINCT mi.release_date)>=4
-     )`,
-    [...statuses, ...statuses]
-  )
-  const connections = scalar(
-    `SELECT COALESCE(SUM(n * (n - 1) / 2), 0) AS n FROM (
-       SELECT COUNT(DISTINCT c.media_id) AS n FROM credit c JOIN media_item mi ON mi.id=c.media_id
-       WHERE 1=1 ${statusSql} GROUP BY c.person_id HAVING n>=2
-       UNION ALL
-       SELECT COUNT(DISTINCT mc.media_id) AS n FROM media_company mc JOIN media_item mi ON mi.id=mc.media_id
-       WHERE 1=1 ${statusSql} GROUP BY mc.company_id HAVING n>=2
-     )`,
-    [...statuses, ...statuses]
-  )
-  const oddOneOut = scalar(
-    `SELECT COUNT(*) AS n FROM (
-       SELECT mc.company_id FROM media_company mc JOIN media_item mi ON mi.id=mc.media_id
-       WHERE 1=1 ${statusSql} GROUP BY mc.company_id HAVING COUNT(DISTINCT mc.media_id)>=3
-       UNION ALL
-       SELECT c.person_id FROM credit c JOIN media_item mi ON mi.id=c.media_id
-       WHERE 1=1 ${statusSql} GROUP BY c.person_id HAVING COUNT(DISTINCT c.media_id)>=3
-       UNION ALL
-       SELECT mt.tag_id FROM media_tag mt JOIN media_item mi ON mi.id=mt.media_id
-       WHERE 1=1 ${statusSql} GROUP BY mt.tag_id HAVING COUNT(DISTINCT mt.media_id)>=3
-     )`,
-    [...statuses, ...statuses, ...statuses]
-  )
-  const higherLower = scalar(
     `SELECT COUNT(*) AS n FROM media_item mi
-     WHERE (mi.release_date IS NOT NULL OR mi.total_units IS NOT NULL OR mi.score IS NOT NULL) ${statusSql}`
+     WHERE mi.cover_path IS NOT NULL ${statusSql}
+       AND (SELECT COUNT(*) FROM media_item opt
+            WHERE opt.media_type=mi.media_type
+              ${statuses.length ? `AND opt.status IN (${statuses.map(() => '?').join(',')})` : ''}) >= 4`,
+    [...statuses, ...statuses]
+  )
+  // Use the real deterministic builder so relation components, distinct-year
+  // rules and duplicate-set rejection cannot drift from what Start can deal.
+  const chronology = challengePool({
+    kind: 'chronology',
+    seed: 1,
+    scope: request.scope ?? 'consumed',
+    statuses: statuses.length ? statuses : null,
+    length: 20
+  }).length
+  const connections = scalar(
+    `WITH scoped_people AS (
+       SELECT DISTINCT c.person_id, c.media_id, c.role,
+              COALESCE(c.importance, mch.sort_order) AS billing_order
+       FROM credit c JOIN media_item mi ON mi.id=c.media_id
+       LEFT JOIN media_character mch
+         ON mch.media_id=c.media_id AND mch.character_id=c.character_id
+       WHERE c.role IN ('actor','director') AND mi.media_type IN ('movie','tv')
+         AND mi.cover_path IS NOT NULL ${statusSql}
+     ), eligible AS (
+       SELECT person_id, media_id FROM scoped_people
+       WHERE role='director' OR billing_order BETWEEN 0 AND 9
+     ), person_count AS (
+       SELECT COUNT(DISTINCT person_id) AS n FROM eligible
+     ), pairs AS (
+       SELECT left_credit.media_id AS left_id, right_credit.media_id AS right_id
+       FROM eligible left_credit
+       JOIN eligible right_credit ON right_credit.person_id=left_credit.person_id
+         AND right_credit.media_id>left_credit.media_id
+       GROUP BY left_credit.media_id, right_credit.media_id
+     )
+     SELECT COUNT(*) AS n FROM pairs
+     WHERE (SELECT n FROM person_count) - (
+       SELECT COUNT(DISTINCT left_cast.person_id)
+       FROM scoped_people left_cast
+       JOIN scoped_people right_cast ON right_cast.person_id=left_cast.person_id
+       WHERE left_cast.media_id=pairs.left_id AND right_cast.media_id=pairs.right_id
+         AND left_cast.person_id IN (SELECT person_id FROM eligible)
+     ) >= 3`
+  )
+  const higherLowerRows = db.prepare(
+    `SELECT mi.media_type, mi.release_date, mi.total_units, mi.score
+     FROM media_item mi
+     WHERE mi.cover_path IS NOT NULL ${statusSql}`
+  ).all(...statuses) as Array<{
+    media_type: QuizHigherLowerAvailability['mediaType']
+    release_date: string | null
+    total_units: number | null
+    score: number | null
+  }>
+  const higherLowerOptions = HIGHER_LOWER_MEDIA_TYPES.map(({ key }) => {
+    const rows = higherLowerRows.filter((row) => row.media_type === key)
+    const count = (metric: 'releaseDate' | 'totalUnits' | 'personalScore') => {
+      const values = rows
+        .map((row) => higherLowerValue({
+          releaseDate: row.release_date,
+          totalUnits: row.total_units,
+          score: row.score
+        }, metric))
+        .filter((value): value is number => value != null)
+      return new Set(values).size >= 2 ? values.length : 0
+    }
+    return {
+      mediaType: key,
+      releaseDate: count('releaseDate'),
+      totalUnits: count('totalUnits'),
+      personalScore: count('personalScore')
+    }
+  })
+  const higherLower = Math.max(
+    0,
+    ...higherLowerOptions.flatMap((option) => [
+      option.releaseDate,
+      option.totalUnits,
+      option.personalScore
+    ])
   )
   return {
     song,
-    character,
+    cast,
     va,
     synopsis,
     mangaPanel,
@@ -121,20 +175,38 @@ export function availability(request: QuizAvailabilityRequest = {}): QuizAvailab
     silhouette: character,
     connections,
     chronology,
-    oddOneOut,
-    higherLower
+    higherLower,
+    higherLowerOptions
   }
 }
 
 export function challengePool(request: QuizChallengeRequest): QuizChallengeQuestion[] {
   const db = getSqlite()
   const statuses = request.statuses?.filter(Boolean) ?? []
-  const statusSql = statuses.length ? `WHERE mi.status IN (${statuses.map(() => '?').join(',')})` : ''
+  const mediaWhere: string[] = []
+  if (statuses.length) mediaWhere.push(`mi.status IN (${statuses.map(() => '?').join(',')})`)
+  if (request.kind === 'connections') {
+    mediaWhere.push(`mi.media_type IN ('movie','tv')`)
+    mediaWhere.push('mi.cover_path IS NOT NULL')
+  }
+  if (request.kind === 'higherLower') {
+    mediaWhere.push('mi.cover_path IS NOT NULL')
+    if (request.options?.higherLowerMediaType) {
+      mediaWhere.push('mi.media_type = ?')
+    }
+  }
+  const whereSql = mediaWhere.length ? `WHERE ${mediaWhere.join(' AND ')}` : ''
+  const mediaParams: unknown[] = [
+    ...statuses,
+    ...(request.kind === 'higherLower' && request.options?.higherLowerMediaType
+      ? [request.options.higherLowerMediaType]
+      : [])
+  ]
   const mediaRows = db.prepare(
     `SELECT mi.id, mi.title, mi.media_type, mi.cover_path, mi.banner_path,
             mi.release_date, mi.total_units, mi.score
-     FROM media_item mi ${statusSql} ORDER BY mi.id`
-  ).all(...statuses) as Array<Record<string, unknown>>
+     FROM media_item mi ${whereSql} ORDER BY mi.id`
+  ).all(...mediaParams) as Array<Record<string, unknown>>
   const mediaById = new Map<number, ChallengeMediaCandidate>()
   for (const row of mediaRows) {
     mediaById.set(row.id as number, {
@@ -153,6 +225,9 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
     })
   }
   if (mediaById.size === 0) return []
+  if (request.kind === 'higherLower') {
+    return buildChallengeQuestions(request, [...mediaById.values()])
+  }
   const ids = [...mediaById.keys()]
   const slots = ids.map(() => '?').join(',')
   for (const row of db.prepare(
@@ -190,11 +265,33 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
     const component = root(id)
     if ((relationSizes.get(component) ?? 0) > 1) mediaById.get(id)?.relations.push(String(component))
   }
+  const connectionCreditSql = request.kind === 'connections'
+    ? `AND c.role IN ('actor','director')`
+    : ''
   for (const row of db.prepare(
-    `SELECT c.media_id, p.id, p.name, c.role FROM credit c JOIN person p ON p.id=c.person_id
-     WHERE c.media_id IN (${slots}) ORDER BY c.media_id, c.id`
-  ).all(...ids) as Array<{ media_id: number; id: number; name: string; role: string }>) {
-    mediaById.get(row.media_id)?.people.push({ id: row.id, name: row.name, role: row.role })
+    `SELECT c.media_id, p.id, p.name, c.role, ch.name AS character_name,
+            COALESCE(c.importance, mch.sort_order) AS billing_order
+     FROM credit c JOIN person p ON p.id=c.person_id
+     LEFT JOIN character ch ON ch.id=c.character_id
+     LEFT JOIN media_character mch
+       ON mch.media_id=c.media_id AND mch.character_id=c.character_id
+     WHERE c.media_id IN (${slots}) ${connectionCreditSql}
+     ORDER BY c.media_id, COALESCE(c.importance, mch.sort_order, 999999), c.id`
+  ).all(...ids) as Array<{
+    media_id: number
+    id: number
+    name: string
+    role: string
+    character_name: string | null
+    billing_order: number | null
+  }>) {
+    mediaById.get(row.media_id)?.people.push({
+      id: row.id,
+      name: row.name,
+      role: row.role,
+      characterName: row.character_name,
+      billingOrder: row.billing_order
+    })
   }
   for (const row of db.prepare(
     `SELECT mc.media_id, co.id, co.name, mc.role FROM media_company mc
@@ -205,16 +302,17 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
   }
   const charactersById = new Map<number, ChallengeCharacterCandidate>()
   for (const row of db.prepare(
-    `SELECT ch.id, ch.name, ch.image_path, mc.media_id, mi.title
+    `SELECT ch.id, ch.name, ch.gender, ch.image_path, mc.media_id, mi.title
      FROM media_character mc JOIN character ch ON ch.id=mc.character_id
      JOIN media_item mi ON mi.id=mc.media_id
      WHERE ch.image_path IS NOT NULL AND mc.media_id IN (${slots}) ORDER BY ch.id, mc.id`
-  ).all(...ids) as Array<{ id: number; name: string; image_path: string; media_id: number; title: string }>) {
+  ).all(...ids) as Array<{ id: number; name: string; gender: string | null; image_path: string; media_id: number; title: string }>) {
     const found = charactersById.get(row.id)
     if (found) found.media.push({ id: row.media_id, title: row.title })
     else charactersById.set(row.id, {
       id: row.id,
       name: row.name,
+      gender: row.gender,
       imagePath: row.image_path,
       media: [{ id: row.media_id, title: row.title }]
     })
@@ -333,69 +431,86 @@ export function songPool(filter: QuizSongFilter = {}): QuizSong[] {
   return [...byId.values()]
 }
 
-// ---- library MCQ pools (character / VA / synopsis quizzes) ----
+// ---- library MCQ pools (cast / VA / synopsis quizzes) ----
 //
 // Like songPool these return the WHOLE matching set — a personal library is
 // small, and the renderer owns shuffling, option-picking and scoring. Each
-// pool dedupes in JS (ordered walk, first row per identity) rather than with
-// GROUP BY tricks, mirroring how songPool groups its artist rows.
+// pools normalize in JS rather than with GROUP BY tricks, mirroring how
+// songPool groups its artist rows.
 
-// Imaged characters paired with their FIRST linked title that matches the
-// filter (lowest media_character id among matching rows), for "which anime is
-// this character from?".
-export function characterPool(filter: QuizLibFilter = {}): QuizCharacterItem[] {
+// Photographed actors paired with eligible movie/TV credits. Movie questions
+// use only TMDB billing positions 0-9; TV remains uncapped. Every screen credit
+// in the selected scope still enters validMediaIds so a lower-billed movie role
+// can never be offered as a factually-wrong distractor for that actor.
+export function castPool(filter: QuizLibFilter = {}): QuizCastItem[] {
   const db = getSqlite()
-  const where: string[] = [`ch.image_path IS NOT NULL`, 'mi.cover_path IS NOT NULL']
+  const where: string[] = [
+    `c.role = 'actor'`,
+    `mi.media_type IN ('movie', 'tv')`,
+    'p.photo_path IS NOT NULL',
+    'mi.cover_path IS NOT NULL'
+  ]
   const params: unknown[] = []
   statusClause(filter, where, params)
 
   const rows = db
     .prepare(
-      `SELECT ch.id AS character_id, ch.name, ch.name_native, ch.image_path,
-              mc.id AS mc_id, mi.id AS media_id, mi.title AS media_title,
+      `SELECT c.id AS credit_id, COALESCE(c.importance, mc.sort_order) AS billing_order,
+              p.id AS person_id,
+              p.name AS person_name, p.photo_path,
+              mi.id AS media_id, mi.media_type, mi.title AS media_title,
               mi.cover_path, ${YEAR_EXPR} AS year,
               ${GENRE_CSV_EXPR} AS genre_csv
-       FROM media_character mc
-       JOIN character ch ON ch.id = mc.character_id
-       JOIN media_item mi ON mi.id = mc.media_id
+       FROM credit c
+       JOIN person p ON p.id = c.person_id
+       JOIN media_item mi ON mi.id = c.media_id
+       LEFT JOIN media_character mc ON mc.media_id=c.media_id AND mc.character_id=c.character_id
        WHERE ${where.join(' AND ')}
-       ORDER BY ch.id ASC, mc.id ASC`
+       ORDER BY p.id ASC, mi.id ASC, COALESCE(c.importance, mc.sort_order, 999999) ASC, c.id ASC`
     )
     .all(...params) as Record<string, unknown>[]
 
-  const byCharacter = new Map<number, QuizCharacterItem>()
+  const appearances = new Map<number, Set<number>>()
+  const eligible = new Map<string, QuizCastItem>()
   for (const r of rows) {
-    const id = r.character_id as number
-    const existing = byCharacter.get(id)
-    if (existing) {
-      if (!existing.validMediaIds.includes(r.media_id as number)) {
-        existing.validMediaIds.push(r.media_id as number)
-      }
-      continue
-    }
-    byCharacter.set(id, {
-      characterId: id,
-      name: r.name as string,
-      nameNative: (r.name_native as string) ?? null,
-      imagePath: (r.image_path as string) ?? null,
-      mediaId: r.media_id as number,
+    const personId = r.person_id as number
+    const mediaId = r.media_id as number
+    const mediaType = r.media_type as QuizCastItem['mediaType']
+    const personAppearances = appearances.get(personId) ?? new Set<number>()
+    personAppearances.add(mediaId)
+    appearances.set(personId, personAppearances)
+
+    const billingOrder = typeof r.billing_order === 'number' ? r.billing_order : null
+    const canSeed = mediaType === 'tv' || (billingOrder != null && billingOrder >= 0 && billingOrder < 10)
+    const pairKey = `${personId}:${mediaId}`
+    if (!canSeed || eligible.has(pairKey)) continue
+    eligible.set(pairKey, {
+      personId,
+      personName: r.person_name as string,
+      photoPath: (r.photo_path as string) ?? null,
+      mediaId,
       mediaTitle: r.media_title as string,
+      mediaType,
       coverPath: (r.cover_path as string) ?? null,
       year: (r.year as number | null) ?? null,
       genres: r.genre_csv ? String(r.genre_csv).split(',') : [],
-      validMediaIds: [r.media_id as number]
+      billingOrder,
+      validMediaIds: []
     })
   }
-  return [...byCharacter.values()]
+  for (const item of eligible.values()) {
+    item.validMediaIds = [...(appearances.get(item.personId) ?? [])]
+  }
+  return [...eligible.values()]
 }
 
-// Japanese-role voice credits with an imaged character, one per character
-// (first credit by id): seeds both VA directions. The Japanese restriction is
-// what makes "who voices X?" have exactly one right answer per seed — the
-// AniList importer only ever writes this exact literal.
+// One row per imaged anime character/title appearance, carrying every Japanese
+// VA for that exact role. The pure builder crosses those rows by person id and
+// refuses same-title/same-character matches.
 export function vaPool(filter: QuizLibFilter = {}): QuizVaItem[] {
   const db = getSqlite()
   const where: string[] = [
+    `mi.media_type = 'anime'`,
     `c.role = 'voice_actor'`,
     `c.language = 'Japanese'`,
     'ch.image_path IS NOT NULL'
@@ -405,89 +520,134 @@ export function vaPool(filter: QuizLibFilter = {}): QuizVaItem[] {
 
   const rows = db
     .prepare(
-      `SELECT c.id AS credit_id, p.id AS person_id, p.name AS person_name, p.photo_path,
-              ch.id AS character_id, ch.name AS character_name, ch.image_path AS char_image,
-              mi.id AS media_id, mi.title AS media_title
+      `SELECT c.id AS credit_id, c.importance,
+              p.id AS person_id, p.name AS person_name,
+              ch.id AS character_id, ch.name AS character_name,
+              ch.gender, ch.image_path AS char_image,
+              mi.id AS media_id, mi.title AS media_title,
+              ${YEAR_EXPR} AS year
        FROM credit c
        JOIN person p ON p.id = c.person_id
        JOIN character ch ON ch.id = c.character_id
        JOIN media_item mi ON mi.id = c.media_id
        WHERE ${where.join(' AND ')}
-       ORDER BY ch.id ASC, c.id ASC`
+       ORDER BY mi.id ASC, ch.id ASC, c.id ASC`
     )
     .all(...params) as Record<string, unknown>[]
 
-  const raw: QuizVaItem[] = rows.map((r) => ({
-    personId: r.person_id as number,
-    personName: r.person_name as string,
-    photoPath: (r.photo_path as string) ?? null,
-    characterId: r.character_id as number,
-    characterName: r.character_name as string,
-    characterImagePath: (r.char_image as string) ?? null,
-    mediaId: r.media_id as number,
-    mediaTitle: r.media_title as string,
-    validPersonIds: [],
-    validCharacterIds: []
+  const grouped = new Map<string, { item: QuizVaItem; voices: Map<number, string> }>()
+  for (const row of rows) {
+    const mediaId = row.media_id as number
+    const characterId = row.character_id as number
+    const key = `${mediaId}/${characterId}`
+    let found = grouped.get(key)
+    if (!found) {
+      found = {
+        item: {
+          characterId,
+          characterName: row.character_name as string,
+          characterImagePath: (row.char_image as string) ?? null,
+          gender: (row.gender as string) ?? null,
+          mediaId,
+          mediaTitle: row.media_title as string,
+          year: (row.year as number | null) ?? null,
+          importance: (row.importance as number | null) ?? null,
+          personIds: [],
+          personNames: []
+        },
+        voices: new Map()
+      }
+      grouped.set(key, found)
+    }
+    const importance = (row.importance as number | null) ?? null
+    if (
+      found.item.importance == null ||
+      (importance != null && importance < found.item.importance)
+    ) {
+      found.item.importance = importance
+    }
+    found.voices.set(row.person_id as number, row.person_name as string)
+  }
+  return [...grouped.values()].map(({ item, voices }) => ({
+    ...item,
+    personIds: [...voices.keys()],
+    personNames: [...voices.values()]
   }))
-  for (const item of raw) {
-    item.validPersonIds = [
-      ...new Set(
-        raw
-          .filter((r) => r.mediaId === item.mediaId && r.characterId === item.characterId)
-          .map((r) => r.personId)
-      )
-    ]
-    item.validCharacterIds = [
-      ...new Set(
-        raw
-          .filter((r) => r.mediaId === item.mediaId && r.personId === item.personId)
-          .map((r) => r.characterId)
-      )
-    ]
-  }
-  const seen = new Set<string>()
-  const out: QuizVaItem[] = []
-  for (const item of raw) {
-    const key = `${item.mediaId}/${item.characterId}/${item.personId}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    out.push(item)
-  }
-  return out
 }
 
 // Titles with enough synopsis to be recognizable but not trivially short.
-export function synopsisPool(filter: QuizLibFilter = {}): QuizSynopsisItem[] {
+export function synopsisPool(filter: QuizSynopsisFilter = {}): QuizSynopsisItem[] {
   const db = getSqlite()
-  const where: string[] = [
-    `mi.synopsis IS NOT NULL AND LENGTH(mi.synopsis) >= 120`,
-    'mi.cover_path IS NOT NULL'
-  ]
+  const where: string[] = [`mi.synopsis IS NOT NULL AND LENGTH(mi.synopsis) >= 120`]
+  if (filter.requireCover !== false) where.push('mi.cover_path IS NOT NULL')
   const params: unknown[] = []
-  statusClause(filter, where, params)
+  if (!filter.completedStatuses) statusClause(filter, where, params)
   typeClause(filter, where, params)
 
   const rows = db
     .prepare(
       `SELECT mi.id AS media_id, mi.media_type, mi.title, mi.title_original,
-              mi.cover_path, mi.synopsis,
+              mi.cover_path, mi.synopsis, mi.status,
+              EXISTS (
+                SELECT 1 FROM media_relation earlier
+                WHERE earlier.media_id=mi.id AND UPPER(earlier.relation_type)='PREQUEL'
+              ) AS has_earlier_relation,
               ${YEAR_EXPR} AS year,
               ${GENRE_CSV_EXPR} AS genre_csv
        FROM media_item mi
-       WHERE ${where.join(' AND ')}`
+       WHERE ${where.join(' AND ')}
+       ORDER BY mi.id`
     )
     .all(...params) as Record<string, unknown>[]
 
-  return rows.map((r) => ({
+  const items: QuizSynopsisItem[] = rows.map((r) => ({
     mediaId: r.media_id as number,
     mediaType: r.media_type as QuizSynopsisItem['mediaType'],
     title: r.title as string,
     titleOriginal: (r.title_original as string) ?? null,
     coverPath: (r.cover_path as string) ?? null,
     synopsis: r.synopsis as string,
+    status: (r.status as string) ?? null,
     year: (r.year as number | null) ?? null,
-    genres: r.genre_csv ? String(r.genre_csv).split(',') : []
+    genres: r.genre_csv ? String(r.genre_csv).split(',') : [],
+    relationAliases: [],
+    characterNames: [],
+    hasEarlierRelation: Boolean(r.has_earlier_relation)
   }))
+  if (items.length === 0) return []
+
+  const byId = new Map(items.map((item) => [item.mediaId, item]))
+  const ids = items.map((item) => item.mediaId)
+  const slots = ids.map(() => '?').join(',')
+  for (const row of db.prepare(
+    `SELECT media_id, related_title FROM media_relation
+     WHERE media_id IN (${slots}) AND related_title IS NOT NULL
+     ORDER BY media_id, sort_order, id`
+  ).all(...ids) as Array<{ media_id: number; related_title: string }>) {
+    const item = byId.get(row.media_id)
+    if (item && !item.relationAliases.includes(row.related_title)) {
+      item.relationAliases.push(row.related_title)
+    }
+  }
+  for (const row of db.prepare(
+    `SELECT mc.media_id, ch.name, ch.name_native
+     FROM media_character mc JOIN character ch ON ch.id=mc.character_id
+     WHERE mc.media_id IN (${slots}) ORDER BY mc.media_id, mc.sort_order, ch.id`
+  ).all(...ids) as Array<{ media_id: number; name: string; name_native: string | null }>) {
+    const item = byId.get(row.media_id)
+    if (!item) continue
+    for (const name of [row.name, row.name_native]) {
+      if (name && !item.characterNames.includes(name)) item.characterNames.push(name)
+    }
+  }
+
+  const completed = new Set(filter.completedStatuses?.filter(Boolean) ?? [])
+  if (filter.completedStatuses) {
+    return items.filter((item) =>
+      completed.has(item.status ?? '') || (filter.includeSafeUnseen === true && isLikelyFirstEntry(item))
+    )
+  }
+  return items
 }
 
 // ---- finished-round history (song + Japanese quizzes) ----

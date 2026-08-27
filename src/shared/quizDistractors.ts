@@ -15,21 +15,6 @@ export interface DistractorCandidate {
   genres: string[]
 }
 
-export interface VoiceRoleCandidate {
-  personId: number
-  characterId: number
-}
-
-// A voice actor may play several characters in the filtered pool. In the
-// person -> character direction every one of those roles is a correct answer,
-// so none may be offered as a distractor for another.
-export function characterIdsForPerson<T extends VoiceRoleCandidate>(
-  pool: T[],
-  personId: number
-): number[] {
-  return [...new Set(pool.filter((v) => v.personId === personId).map((v) => v.characterId))]
-}
-
 const DECADE_BONUS = 2
 const GENRE_BONUS_CAP = 3
 
@@ -55,7 +40,8 @@ export function pickDistractors<T extends DistractorCandidate>(
   pool: T[],
   answer: DistractorCandidate,
   count: number,
-  forbiddenMediaIds: readonly number[] = []
+  forbiddenMediaIds: readonly number[] = [],
+  rng: () => number = Math.random
 ): T[] {
   const seen = new Set<number>([answer.mediaId, ...forbiddenMediaIds])
   const tiers = new Map<number, T[]>()
@@ -69,7 +55,7 @@ export function pickDistractors<T extends DistractorCandidate>(
   }
   const out: T[] = []
   for (const s of [...tiers.keys()].sort((a, b) => b - a)) {
-    out.push(...shuffle(tiers.get(s)!))
+    out.push(...shuffle(tiers.get(s)!, rng))
     if (out.length >= count) break
   }
   return out.slice(0, count)

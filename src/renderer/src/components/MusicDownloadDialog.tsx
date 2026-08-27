@@ -5,6 +5,7 @@ import { qk } from '../lib/queryKeys'
 import { useDialog } from '../lib/hooks'
 import { toast, toastError } from '../lib/toast'
 import type { MusicDownloadEvent } from '@shared/types'
+import { DownloadIcon } from './PlayerIcons'
 
 const ACTIVE = new Set(['starting', 'downloading', 'processing'])
 
@@ -49,8 +50,9 @@ export function DownloadPill(): React.JSX.Element | null {
   const status = useDownloadStatus()
   if (!status || !ACTIVE.has(status.status)) return null
   return (
-    <span className="chip animate-pulse" title={status.title ?? undefined}>
-      ⬇ {status.status === 'processing' ? 'Processing…' : `${Math.round(status.percent ?? 0)}%`}
+    <span className="chip gap-1.5" title={status.title ?? undefined} role="status">
+      <DownloadIcon className="h-3.5 w-3.5" />
+      {status.status === 'processing' ? 'Processing…' : `${Math.round(status.percent ?? 0)}%`}
       {status.itemCount != null && ` · ${status.itemIndex}/${status.itemCount}`}
     </span>
   )
@@ -109,12 +111,17 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Download music"
+        aria-label="Save audio from a link"
         tabIndex={-1}
         className="card w-full max-w-lg p-5"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Download music</h2>
+          <div>
+            <h2 className="text-lg font-semibold">Save audio from a link</h2>
+            <p className="mt-1 text-sm text-gray-400">
+              Save audio into an artist and album folder, then add it to Sonic Archive.
+            </p>
+          </div>
           <button className="px-2 text-gray-500 hover:text-white" aria-label="Close" onClick={onClose}>
             ✕
           </button>
@@ -194,7 +201,14 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
                       {Math.round(status.percent ?? 0)}%
                     </span>
                   </div>
-                  <div className="h-1.5 overflow-hidden rounded bg-base-600">
+                  <div
+                    className="h-1.5 overflow-hidden rounded bg-base-600"
+                    role="progressbar"
+                    aria-label="Audio download progress"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-valuenow={Math.round(status.percent ?? 0)}
+                  >
                     <div
                       className="h-full bg-accent transition-all"
                       style={{ width: `${Math.min(status.percent ?? 0, 100)}%` }}

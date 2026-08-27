@@ -13,6 +13,7 @@ import CoverImage from '../components/CoverImage'
 import GachaUnitDialog from '../components/gacha/GachaUnitDialog'
 import { confirmDialog } from '../lib/confirm'
 import EditorialDetailFrame, { RelationshipTrail } from '../components/EditorialDetailFrame'
+import FavoriteButton from '../components/FavoriteButton'
 
 export default function GachaUnitPage() {
   const { id } = useParams()
@@ -84,14 +85,12 @@ export default function GachaUnitPage() {
           </p>
           <div className="mt-1 flex items-center gap-2">
             <h1 className="text-2xl font-bold">{unit.name}</h1>
-            <button
-              className={`text-xl ${unit.favorite ? 'text-amber-400' : 'text-gray-600 hover:text-gray-400'}`}
-              title={unit.favorite ? 'Unfavorite' : 'Favorite'}
-              aria-label={unit.favorite ? 'Unfavorite' : 'Favorite'}
-              onClick={() => patch({ favorite: !unit.favorite })}
-            >
-              ★
-            </button>
+            <FavoriteButton
+              active={unit.favorite}
+              activeLabel="Unfavorite"
+              inactiveLabel="Favorite"
+              onClick={() => void patch({ favorite: !unit.favorite })}
+            />
           </div>
           <p className="mt-1 text-sm text-gray-400">
             {unit.rarity ? <span className="text-amber-400">{'★'.repeat(unit.rarity)}</span> : null}

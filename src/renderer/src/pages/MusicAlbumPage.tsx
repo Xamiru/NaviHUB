@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -12,6 +12,7 @@ import PageStatus from '../components/PageStatus'
 import MusicEntityHeader from '../components/MusicEntityHeader'
 import MusicTrackRow, { formatDuration } from '../components/MusicTrackRow'
 import { confirmDialog } from '../lib/confirm'
+import SpotifyEntityDownloadDialog from '../components/SpotifyEntityDownloadDialog'
 
 export default function MusicAlbumPage() {
   const { id } = useParams()
@@ -19,6 +20,7 @@ export default function MusicAlbumPage() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const player = usePlayer()
+  const [spotifyOpen, setSpotifyOpen] = useState(false)
 
   const { data: album, isLoading } = useQuery({
     queryKey: qk.music.album(albumId),
@@ -45,7 +47,13 @@ export default function MusicAlbumPage() {
   async function findCover(): Promise<void> {
     try {
       const res = await api.music.artFetchAlbum(albumId)
-      if (!res.updated) toast('No confident cover match found online')
+      if (!res.updated) {
+        toast(
+          res.reason === 'download_failed'
+            ? 'Album cover lookup failed. Check your connection and try again.'
+            : 'No confident cover match found online'
+        )
+      }
       qc.invalidateQueries({ queryKey: qk.music.all })
     } catch (e) {
       toastError(e)
@@ -100,6 +108,12 @@ export default function MusicAlbumPage() {
         onClearArt={clearCover}
         onDelete={deleteAlbum}
         deleteLabel="Delete album"
+        addMusicItems={[
+          {
+            label: 'Complete from Spotify…',
+            onSelect: () => setSpotifyOpen(true)
+          }
+        ]}
       />
 
       <div className="max-w-5xl">
@@ -130,6 +144,14 @@ export default function MusicAlbumPage() {
           </p>
         )}
       </div>
+      {spotifyOpen && (
+        <SpotifyEntityDownloadDialog
+          kind="album"
+          entityId={albumId}
+          savedUrl={album.spotifyUrl}
+          onClose={() => setSpotifyOpen(false)}
+        />
+      )}
     </div>
   )
 }

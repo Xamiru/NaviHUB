@@ -28,16 +28,24 @@ import {
   type Bracket
 } from '@shared/bracket'
 import type { MediaType, TournamentEntry, TournamentSource } from '@shared/types'
-import type { TournamentFormat, TournamentTiebreak } from '@shared/types'
+import type { TournamentFormat, TournamentQualifier, TournamentTiebreak } from '@shared/types'
 import {
   createTournamentGroups,
   currentGroupMatch,
   groupPlacements,
   groupQualification,
   pickGroupWinner,
+  seedGroupKnockout,
   type TournamentGroupsState
 } from '@shared/tournamentGroups'
 import { quizSeed, seededRng } from '@shared/quizCore'
+import { confirmDialog } from '../lib/confirm'
+import {
+  parseSavedTournament,
+  type SavedTournament,
+  type TournamentSnapshot,
+  type TournamentStage
+} from '@shared/tournamentSave'
 
 type Phase = 'setup' | 'play' | 'summary'
 type SourceKind = TournamentSource['kind']
@@ -50,35 +58,6 @@ const KNOCKOUT_SIZES = [8, 16, 32, 64, 128, 256] as const
 // or discarding clears it; pools above SAVED_MAX_ENTRIES never autosave.
 const SAVED_KEY = 'tournament.saved'
 const SAVED_MAX_ENTRIES = 256
-
-// Serialized resume slot: entries + engine state are plain JSON, and version
-// lets an older save be ignored instead of half-restored.
-interface SavedTournament {
-  version: 2
-  sourceLabel: string
-  createdAt: string
-  contenders: TournamentEntry[]
-  format: TournamentFormat
-  stage: 'groups' | 'tiebreak' | 'knockout'
-  groups: TournamentGroupsState | null
-  groupField: TournamentEntry[] | null
-  qualified: number[]
-  tiebreakQueue: TournamentTiebreak[]
-  activeTiebreak: { spec: TournamentTiebreak; bracket: Bracket } | null
-  bracket: Bracket | null
-  seed: number
-  size: number
-}
-
-interface TournamentSnapshot {
-  contenders: TournamentEntry[]
-  stage: 'groups' | 'tiebreak' | 'knockout'
-  groups: TournamentGroupsState | null
-  qualified: number[]
-  tiebreakQueue: TournamentTiebreak[]
-  activeTiebreak: { spec: TournamentTiebreak; bracket: Bracket } | null
-  bracket: Bracket | null
-}
 
 // A named selection from one of the second-level pickers.
 interface Pick {
@@ -108,6 +87,7 @@ export default function TournamentPage() {
   const [size, setSize] = usePersistedState<number | null>('tourneySize', 16)
   const [search, setSearch] = usePersistedState('tourneySearch', '')
   const [treeOpen, setTreeOpen] = usePersistedState('tourneyTreeOpen', false)
+  const [groupsOpen, setGroupsOpen] = usePersistedState('tourneyGroupsOpen', false)
   const [format, setFormat] = usePersistedState<TournamentFormat>('tourneyFormat', 'knockout')
   const debouncedSearch = useDebouncedValue(search.trim())
 
@@ -116,16 +96,18 @@ export default function TournamentPage() {
   const [pool, setPool] = useState<TournamentEntry[]>([])
   const [contenders, setContenders] = useState<TournamentEntry[]>([])
   const [bracket, setBracket] = useState<Bracket | null>(null)
-  const [stage, setStage] = useState<'groups' | 'tiebreak' | 'knockout'>('knockout')
+  const [stage, setStage] = useState<TournamentStage>('knockout')
   const [groups, setGroups] = useState<TournamentGroupsState | null>(null)
   const [groupField, setGroupField] = useState<TournamentEntry[] | null>(null)
-  const [qualified, setQualified] = useState<number[]>([])
+  const [qualified, setQualified] = useState<TournamentQualifier[]>([])
   const [tiebreakQueue, setTiebreakQueue] = useState<TournamentTiebreak[]>([])
   const [activeTiebreak, setActiveTiebreak] = useState<{ spec: TournamentTiebreak; bracket: Bracket } | null>(null)
   const [undoStack, setUndoStack] = useState<TournamentSnapshot[]>([])
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'failed'>('idle')
+  const [interactionLocked, setInteractionLocked] = useState(false)
+  const [pendingFinalPick, setPendingFinalPick] = useState<'a' | 'b' | null>(null)
   // Resume support: describeSource() reads the setup pills, which a resumed
   // run outlives — so its label is frozen at deal/save time.
   const [sourceLabelOverride, setSourceLabelOverride] = useState<string | null>(null)
@@ -243,6 +225,7 @@ export default function TournamentPage() {
     setUndoStack([])
     loggedRef.current = false
     setSaveState('idle')
+    setPendingFinalPick(null)
     if (!preserveLabel) setSourceLabelOverride(null)
     setTournamentSeed(nextSeed)
     setSavedCreatedAt(new Date().toISOString())
@@ -264,7 +247,7 @@ export default function TournamentPage() {
     setActiveTiebreak(s.activeTiebreak)
     setTournamentSeed(s.seed)
     setTournamentSize(s.size)
-    setUndoStack([])
+    setUndoStack(s.undoStack)
     loggedRef.current = false
     setSaveState('idle')
     setSourceLabelOverride(s.sourceLabel)
@@ -272,9 +255,10 @@ export default function TournamentPage() {
     setPhase('play')
   }
 
-  function discardSaved() {
+  async function discardSaved() {
+    if (!await confirmDialog('Discard this unfinished tournament?', { confirmLabel: 'Discard', danger: true })) return
+    await api.settings.set(SAVED_KEY, '')
     setSaved(null)
-    void api.settings.set(SAVED_KEY, '').catch(() => {})
   }
 
   async function startGame() {
@@ -325,20 +309,10 @@ export default function TournamentPage() {
         if (cancelled) return
         const raw = m[SAVED_KEY]
         if (!raw) return
-        try {
-          const parsed = JSON.parse(raw) as SavedTournament
-          if (
-            parsed?.version === 2 &&
-            Array.isArray(parsed.contenders) &&
-            (parsed.groups != null || (parsed.bracket?.matches?.length ?? 0) > 0 || parsed.activeTiebreak != null)
-          ) {
-            setSaved(parsed)
-          }
-        } catch {
-          /* a malformed slot is simply no resume offer */
-        }
+        const parsed = parseSavedTournament(raw)
+        if (parsed) setSaved(parsed)
       })
-      .catch(() => {})
+      .catch((error) => { throw error })
     return () => {
       cancelled = true
     }
@@ -349,8 +323,8 @@ export default function TournamentPage() {
   useEffect(() => {
     if (phase !== 'play' || contenders.length === 0) return
     if (contenders.length > SAVED_MAX_ENTRIES) return
-    const snapshot: SavedTournament = {
-      version: 2,
+    const savedSnapshot: SavedTournament = {
+      version: 3,
       sourceLabel: sourceLabelOverride ?? describeSource(),
       createdAt: savedCreatedAt ?? new Date().toISOString(),
       contenders,
@@ -362,18 +336,27 @@ export default function TournamentPage() {
       tiebreakQueue,
       activeTiebreak,
       bracket,
+      undoStack,
       seed: tournamentSeed,
       size: tournamentSize
     }
-    void api.settings.set(SAVED_KEY, JSON.stringify(snapshot)).catch(() => {})
+    let stale = false
+    setSaveState('saving')
+    void api.settings.set(SAVED_KEY, JSON.stringify(savedSnapshot)).then(() => {
+      if (!stale) setSaveState('saved')
+    }).catch((error) => {
+      if (!stale) setSaveState('failed')
+      throw error
+    })
+    return () => { stale = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, bracket, groups, groupField, activeTiebreak, qualified, tiebreakQueue, format, stage, tournamentSeed, tournamentSize])
+  }, [phase, bracket, groups, groupField, activeTiebreak, qualified, tiebreakQueue, undoStack, format, stage, tournamentSeed, tournamentSize])
 
   function endGame(finished: Bracket) {
     stopIfOurs()
     setBracket(finished)
     // A finished run is no longer resumable.
-    void api.settings.set(SAVED_KEY, '').catch(() => {})
+    void api.settings.set(SAVED_KEY, '').catch((error) => { throw error })
     if (!loggedRef.current) {
       loggedRef.current = true
       setSaveState('saving')
@@ -382,8 +365,8 @@ export default function TournamentPage() {
       void api.quiz
         .logSession({
           kind: 'tournament',
-          score: contenders.length,
-          total: contenders.length,
+          score: tournamentSize,
+          total: tournamentSize,
           bestStreak: 0,
           settings: {
             sourceLabel: describeSource(),
@@ -427,19 +410,19 @@ export default function TournamentPage() {
     return { contenders, stage, groups, qualified, tiebreakQueue, activeTiebreak, bracket }
   }
 
-  function beginKnockout(indices: number[]) {
-    // The knockout bracket indexes a compact contender array, so retain the
-    // group qualifiers in their qualification order and replace the pool.
+  function beginKnockout(nextQualifiers: TournamentQualifier[]) {
+    if (!groups) throw new Error('Group state is required for knockout seeding')
+    const indices = seedGroupKnockout(nextQualifiers, groups.groups.length)
     const advancing = indices.map((i) => contenders[i])
     setContenders(advancing)
     setStage('knockout')
-    setQualified(indices)
+    setQualified(nextQualifiers)
     setTiebreakQueue([])
     setActiveTiebreak(null)
     setBracket(createBracket(advancing.length))
   }
 
-  function beginTiebreaks(base: number[], queue: TournamentTiebreak[]) {
+  function beginTiebreaks(base: TournamentQualifier[], queue: TournamentTiebreak[]) {
     setQualified(base)
     setTiebreakQueue(queue.slice(1))
     if (queue.length === 0) {
@@ -451,7 +434,7 @@ export default function TournamentPage() {
   }
 
   function finishGroups(nextGroups: TournamentGroupsState) {
-    const base: number[] = []
+    const base: TournamentQualifier[] = []
     const ties: TournamentTiebreak[] = []
     for (const group of nextGroups.groups) {
       const result = groupQualification(group)
@@ -461,15 +444,23 @@ export default function TournamentPage() {
     beginTiebreaks(base, ties)
   }
 
-  function pick(side: 'a' | 'b') {
+  function pick(side: 'a' | 'b', confirmedFinal = false) {
     if (interactionLock.current) return
+    if (stage === 'knockout' && bracket) {
+      const current = currentMatch(bracket)
+      if (current?.match.round === bracket.rounds - 1 && !confirmedFinal) {
+        setPendingFinalPick(side)
+        return
+      }
+    }
     interactionLock.current = true
+    setInteractionLocked(true)
     try {
       stopIfOurs()
       setUndoStack((stack) => [...stack, snapshot()])
       if (stage === 'groups' && groups) {
         const current = currentGroupMatch(groups)
-        if (!current) return
+        if (!current) throw new Error('No group match is ready')
         const next = pickGroupWinner(groups, current.groupId, current.matchIndex, side === 'a' ? current.a : current.b)
         setGroups(next)
         if (currentGroupMatch(next) == null) finishGroups(next)
@@ -477,32 +468,47 @@ export default function TournamentPage() {
       }
       if (stage === 'tiebreak' && activeTiebreak) {
         const current = currentMatch(activeTiebreak.bracket)
-        if (!current) return
+        if (!current) throw new Error('No tiebreak match is ready')
         const nextBracket = pickWinner(activeTiebreak.bracket, current.matchIndex, side)
         if (currentMatch(nextBracket) != null) {
           setActiveTiebreak({ ...activeTiebreak, bracket: nextBracket })
           return
         }
-        const additions = [activeTiebreak.spec.contenders[championOf(nextBracket)!]]
-        if (activeTiebreak.spec.needed === 2) additions.push(activeTiebreak.spec.contenders[runnerUpOf(nextBracket)!])
+        const additions: TournamentQualifier[] = [{
+          contender: activeTiebreak.spec.contenders[championOf(nextBracket)!],
+          groupId: activeTiebreak.spec.groupId,
+          place: activeTiebreak.spec.places[0]
+        }]
+        if (activeTiebreak.spec.needed === 2) additions.push({
+          contender: activeTiebreak.spec.contenders[runnerUpOf(nextBracket)!],
+          groupId: activeTiebreak.spec.groupId,
+          place: activeTiebreak.spec.places[1]
+        })
         const nextQualified = [...qualified, ...additions]
         if (tiebreakQueue.length) beginTiebreaks(nextQualified, tiebreakQueue)
         else beginKnockout(nextQualified)
         return
       }
-      if (!bracket) return
+      if (!bracket) throw new Error('No knockout bracket is loaded')
       const cur = currentMatch(bracket)
-      if (!cur) return
+      if (!cur) throw new Error('No knockout match is ready')
       const next = pickWinner(bracket, cur.matchIndex, side)
       if (currentMatch(next) === null) endGame(next)
       else setBracket(next)
-    } finally {
-      window.setTimeout(() => { interactionLock.current = false }, 0)
+    } catch (error) {
+      interactionLock.current = false
+      setInteractionLocked(false)
+      throw error
     }
   }
 
+  useEffect(() => {
+    interactionLock.current = false
+    setInteractionLocked(false)
+  }, [bracket, groups, activeTiebreak, stage])
+
   function undo() {
-    if (undoStack.length === 0) return
+    if (undoStack.length === 0 || interactionLocked || pendingFinalPick) return
     stopIfOurs()
     const previous = undoStack[undoStack.length - 1]
     setContenders(previous.contenders)
@@ -515,11 +521,47 @@ export default function TournamentPage() {
     setUndoStack((s) => s.slice(0, -1))
   }
 
+  async function saveAndExit() {
+    const savedSnapshot: SavedTournament = {
+      version: 3,
+      sourceLabel: sourceLabelOverride ?? describeSource(),
+      createdAt: savedCreatedAt ?? new Date().toISOString(),
+      contenders,
+      format,
+      stage,
+      groups,
+      groupField,
+      qualified,
+      tiebreakQueue,
+      activeTiebreak,
+      bracket,
+      undoStack,
+      seed: tournamentSeed,
+      size: tournamentSize
+    }
+    setSaveState('saving')
+    await api.settings.set(SAVED_KEY, JSON.stringify(savedSnapshot))
+    setSaved(savedSnapshot)
+    setSaveState('saved')
+    setPhase('setup')
+  }
+
+  async function abandonTournament() {
+    if (!await confirmDialog('Abandon this tournament? Its saved progress will be deleted.', {
+      confirmLabel: 'Abandon',
+      danger: true
+    })) return
+    await api.settings.set(SAVED_KEY, '')
+    setSaved(null)
+    setPhase('setup')
+  }
+
   // Keyboard: 1/left picks the left card, 2/right the right, Backspace undoes,
   // Space toggles an auditioning track (input-guarded like the other quizzes).
   useEffect(() => {
     if (phase !== 'play') return
     function onKey(e: KeyboardEvent) {
+      if (e.repeat || interactionLocked || pendingFinalPick) return
       const t = e.target as HTMLElement
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)
         return
@@ -540,7 +582,7 @@ export default function TournamentPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase, bracket, undoStack, player.track?.id])
+  }, [phase, bracket, undoStack, player.track?.id, interactionLocked, pendingFinalPick])
 
   // ---- setup phase ----
   if (phase === 'setup') {
@@ -554,7 +596,7 @@ export default function TournamentPage() {
         />
 
         {saved && (
-          <div className="card mb-6 flex items-center gap-4 p-4">
+          <div className="card mb-6 flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold">Unfinished tournament</p>
               <p className="truncate text-sm text-gray-400">
@@ -586,11 +628,16 @@ export default function TournamentPage() {
               active={format === 'groups'}
               onClick={() => {
                 setFormat('groups')
-                if (size == null || !GROUP_SIZES.includes(size as 8 | 16 | 32 | 64)) setSize(64)
+                if (size == null || !GROUP_SIZES.includes(size as 8 | 16 | 32 | 64)) setSize(16)
               }}
               label="Groups then knockout"
             />
           </Group>
+          {format === 'groups' && (
+            <p className="max-w-2xl text-sm text-gray-400">
+              Groups of four play six matchups each. The top two advance, and only a tie crossing second place creates a cutoff tiebreak.
+            </p>
+          )}
 
           {kind === 'music' && (
             <>
@@ -681,7 +728,7 @@ export default function TournamentPage() {
                   <Pill key={s} active={mediaStatus === s} onClick={() => setMediaStatus(s)} label={s} />
                 ))}
               </Group>
-              {mediaStatus === '__all__' && <p className="text-sm text-amber-300">Includes in-progress or unseen content and may contain spoilers.</p>}
+              {mediaStatus !== null && <p className="text-sm text-amber-300">Includes content outside your completed list and may contain spoilers.</p>}
             </>
           )}
 
@@ -706,6 +753,12 @@ export default function TournamentPage() {
           </Group>
           {format === 'knockout' && size === null && (
             <p className="text-sm text-gray-500">Everyone is accepted only when the resolved pool is at most 256 contenders.</p>
+          )}
+          {size != null && (
+            <p className="text-sm text-gray-500">
+              {size} contenders · {format === 'groups' ? size * 2 - 1 : size - 1} decisions
+              {format === 'groups' ? ' before any cutoff tiebreaks' : ''}
+            </p>
           )}
 
           {error && <p className="text-sm text-red-400">{error}</p>}
@@ -761,13 +814,14 @@ export default function TournamentPage() {
         subtitle={`${tournamentSize} contenders · ${describeSource()}`}
         surface={false}
       >
-        <div className="grid grid-cols-[14rem_1fr] items-start gap-6">
+        <div className="grid items-start gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
           <div className="card-glow p-6 text-center">
             <p className="text-sm uppercase tracking-widest text-gray-500">Champion</p>
             <div className="mx-auto mt-4 w-full">
               <CoverImage
                 path={champ.imagePath}
                 alt={champ.name}
+                thumbWidth={320}
                 className={`w-full ${champ.entryKind === 'music' ? 'aspect-square' : 'aspect-[2/3]'}`}
                 fallback={champ.entryKind === 'music' ? 'music' : 'initial'}
               />
@@ -835,6 +889,7 @@ export default function TournamentPage() {
                     <CoverImage
                       path={entry.imagePath}
                       alt={entry.name}
+                      thumbWidth={80}
                       rounded="rounded"
                       className="h-9 w-9 shrink-0"
                       fallback={entry.entryKind === 'music' ? 'music' : 'initial'}
@@ -915,19 +970,23 @@ export default function TournamentPage() {
           </button>}
           <button
             className="btn-ghost py-1 px-2 text-sm"
-            disabled={undoStack.length === 0}
+            disabled={undoStack.length === 0 || interactionLocked || pendingFinalPick != null}
             onClick={undo}
           >
             Undo
           </button>
-          <button className="btn-ghost py-1 px-2 text-sm" onClick={() => setPhase('setup')}>
-            End tournament
+          <button className="btn-ghost py-1 px-2 text-sm" onClick={saveAndExit}>
+            Save and exit
+          </button>
+          <button className="btn-ghost py-1 px-2 text-sm" onClick={abandonTournament}>
+            Abandon
           </button>
         </>
       }
     >
+      {format === 'groups' && <TournamentStageRoute stage={stage} />}
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid gap-4 md:grid-cols-2">
         {([left, right] as const).map((entry, i) => (
           <ContenderCard
             key={entry.key}
@@ -935,14 +994,43 @@ export default function TournamentPage() {
             keyHint={i === 0 ? '1' : '2'}
             playing={player.track?.id === `tourney-${entry.key}` && player.isPlaying}
             loaded={player.track?.id === `tourney-${entry.key}`}
+            disabled={interactionLocked || pendingFinalPick != null}
             onPick={() => pick(i === 0 ? 'a' : 'b')}
             onPlay={() => playEntry(entry)}
           />
         ))}
       </div>
 
+      {pendingFinalPick && (
+        <div className="card mt-4 p-5 text-center" role="status" aria-live="polite">
+          <p className="font-semibold">
+            Make {(pendingFinalPick === 'a' ? left : right).name} the champion?
+          </p>
+          <p className="mt-1 text-sm text-gray-400">This final choice completes and records the tournament.</p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            <button
+              className="btn-primary px-5 py-2"
+              onClick={() => {
+                const side = pendingFinalPick
+                setPendingFinalPick(null)
+                pick(side, true)
+              }}
+            >
+              Confirm champion
+            </button>
+            <button className="btn-ghost px-5 py-2" onClick={() => setPendingFinalPick(null)}>
+              Go back
+            </button>
+          </div>
+        </div>
+      )}
+
       <p className="mt-4 text-center text-sm text-gray-500">
-        Click a card (or press 1 / 2, ← / →) to send it through. Backspace undoes the last pick; Space plays or pauses.
+        Pick a contender or press 1 / 2 or the arrow keys. Backspace undoes the last pick; Space plays or pauses audio.
+      </p>
+
+      <p className={`mt-2 text-center text-xs ${saveState === 'failed' ? 'text-red-400' : 'text-gray-500'}`} role="status" aria-live="polite">
+        {saveState === 'saving' ? 'Saving progress…' : saveState === 'failed' ? 'Progress could not be saved. Use Save and exit to retry.' : saveState === 'saved' ? 'Progress saved' : ''}
       </p>
 
       {stage === 'groups' && groups && (() => {
@@ -951,10 +1039,16 @@ export default function TournamentPage() {
         const places = group ? groupPlacements(group) : []
         return group ? (
           <div className="card mt-6 p-5">
-            <p className="label mb-3">Group {group.id + 1} standings</p>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="label">Group {group.id + 1} standings</p>
+              <button className="btn-ghost px-3 py-1.5 text-sm" onClick={() => setGroupsOpen(!groupsOpen)}>
+                {groupsOpen ? 'Hide all groups' : 'Show all groups'}
+              </button>
+            </div>
+            <p className="mb-3 text-xs text-gray-400">Top two advance. A tie crossing the line triggers a cutoff tiebreak.</p>
             <div className="space-y-1">
               {group.standings.map((row, index) => (
-                <div key={row.contender} className="flex items-center gap-3 rounded-md bg-base-800 px-3 py-2 text-sm">
+                <div key={row.contender} className={`flex items-center gap-3 rounded-md bg-base-800 px-3 py-2 text-sm ${index === 1 ? 'mb-2 border-b border-accent/40' : ''}`}>
                   <span className="w-5 text-gray-500">{places.find((place) => place.contenders.includes(row.contender))?.place ?? index + 1}</span>
                   <span className="min-w-0 flex-1 truncate">{contenders[row.contender].name}</span>
                   <span className="text-gray-400">{row.wins} win{row.wins === 1 ? '' : 's'}</span>
@@ -962,6 +1056,7 @@ export default function TournamentPage() {
                 </div>
               ))}
             </div>
+            {groupsOpen && <AllGroupsOverview groups={groups} contenders={contenders} />}
           </div>
         ) : null
       })()}
@@ -981,6 +1076,7 @@ function ContenderCard({
   keyHint,
   playing,
   loaded,
+  disabled,
   onPick,
   onPlay
 }: {
@@ -988,50 +1084,120 @@ function ContenderCard({
   keyHint: string
   playing: boolean
   loaded: boolean
+  disabled: boolean
   onPick: () => void
   onPlay: () => void
 }) {
   const hasAudio = entry.audioPath != null || entry.audioUrl != null
   const square = entry.entryKind === 'music'
   return (
-    <button
-      onClick={onPick}
-      className="card group flex flex-col items-center p-5 text-center transition-colors hover:border-accent"
-    >
-      <CoverImage
-        path={entry.imagePath}
-        alt={entry.name}
-        className={`w-full max-w-[16rem] ${square ? 'aspect-square' : 'aspect-[2/3]'}`}
-        fallback={square ? 'music' : 'initial'}
-      />
-      <p className="mt-4 line-clamp-2 text-xl font-semibold group-hover:text-accent">{entry.name}</p>
-      {entry.subtitle && (
-        <p className="mt-1 line-clamp-1 text-sm text-gray-400">{entry.subtitle}</p>
-      )}
-      <div className="mt-3 flex items-center gap-3">
+    <article className="card flex min-w-0 flex-col p-5 text-center">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={onPick}
+        className="group flex min-w-0 flex-1 flex-col items-center rounded-lg disabled:cursor-not-allowed disabled:opacity-60"
+        aria-label={`Pick ${entry.name}`}
+      >
+        <CoverImage
+          path={entry.imagePath}
+          alt={entry.name}
+          thumbWidth={384}
+          className={`w-full max-w-[16rem] ${square ? 'aspect-square' : 'aspect-[2/3]'}`}
+          fallback={square ? 'music' : 'initial'}
+        />
+        <p className="mt-4 line-clamp-2 break-words text-xl font-semibold group-hover:text-accent">{entry.name}</p>
+        {entry.subtitle && (
+          <p className="mt-1 line-clamp-2 break-words text-sm text-gray-400">{entry.subtitle}</p>
+        )}
+      </button>
+      <div className="mt-3 flex items-center justify-center gap-3">
         {hasAudio && (
-          <span
-            role="button"
-            tabIndex={0}
+          <button
+            type="button"
+            disabled={disabled}
             aria-label={playing ? `Pause ${entry.name}` : `Play ${entry.name}`}
             className="btn-ghost px-4 py-1.5 text-sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              onPlay()
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.stopPropagation()
-                onPlay()
-              }
-            }}
+            onClick={onPlay}
           >
             {playing ? 'Pause' : loaded ? 'Resume' : 'Play'}
-          </span>
+          </button>
         )}
         <kbd className="kbd">{keyHint}</kbd>
       </div>
-    </button>
+    </article>
+  )
+}
+
+function TournamentStageRoute({ stage }: { stage: TournamentStage }) {
+  const stages: Array<{ key: TournamentStage; label: string }> = [
+    { key: 'groups', label: 'Groups' },
+    { key: 'tiebreak', label: 'Cutoff tiebreak' },
+    { key: 'knockout', label: 'Knockout' }
+  ]
+  const active = stages.findIndex((item) => item.key === stage)
+  return (
+    <ol className="mb-5 grid grid-cols-3 gap-2" aria-label="Tournament stages">
+      {stages.map((item, index) => (
+        <li
+          key={item.key}
+          aria-current={index === active ? 'step' : undefined}
+          className={`rounded-lg border px-3 py-2 text-center text-xs font-medium ${
+            index === active
+              ? 'border-accent bg-accent/10 text-accent'
+              : index < active
+                ? 'border-base-600 text-gray-300'
+                : 'border-base-700 text-gray-500'
+          }`}
+        >
+          {item.label}
+        </li>
+      ))}
+    </ol>
+  )
+}
+
+function visibleGroupContenders(groups: TournamentGroupsState): Set<number> {
+  const visible = new Set<number>()
+  const current = currentGroupMatch(groups)
+  for (const group of groups.groups) {
+    group.matches.forEach((match, matchIndex) => {
+      if (match.winner != null || (current?.groupId === group.id && current.matchIndex === matchIndex)) {
+        visible.add(match.a)
+        visible.add(match.b)
+      }
+    })
+  }
+  return visible
+}
+
+function AllGroupsOverview({
+  groups,
+  contenders
+}: {
+  groups: TournamentGroupsState
+  contenders: TournamentEntry[]
+}) {
+  const visible = visibleGroupContenders(groups)
+  return (
+    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+      {groups.groups.map((group) => (
+        <section key={group.id} className="rounded-lg border border-base-700 p-3">
+          <p className="mb-2 text-sm font-semibold">Group {group.id + 1}</p>
+          <ol className="space-y-1 text-sm">
+            {group.standings.map((row, index) => (
+              <li key={row.contender} className={`flex min-w-0 gap-2 ${index === 1 ? 'border-b border-base-600 pb-1' : ''}`}>
+                <span className="w-5 shrink-0 text-gray-500">{index + 1}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  {visible.has(row.contender) ? contenders[row.contender].name : 'Hidden contender'}
+                </span>
+                <span className="shrink-0 text-gray-400">{row.wins} W</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+    </div>
   )
 }
 
@@ -1124,6 +1290,7 @@ function MusicSearchPicker({
         )}
         <input
           className="input w-full"
+          aria-label={`Search ${scope}s`}
           placeholder={`Search ${scope}s…`}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -1165,6 +1332,7 @@ function MediaSearchPicker({
         )}
         <input
           className="input w-full"
+          aria-label="Search library titles"
           placeholder="Search your library…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}

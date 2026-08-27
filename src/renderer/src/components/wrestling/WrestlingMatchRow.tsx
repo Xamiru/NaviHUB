@@ -5,6 +5,7 @@ import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import StarRating from './StarRating'
 import AddToListMenu from '../AddToListMenu'
+import FavoriteButton from '../FavoriteButton'
 import type { WrestlingMatch, WrestlingParticipant } from '@shared/types'
 
 // One row of a card. Participants are already structured rows, so every name is
@@ -123,14 +124,11 @@ export default function WrestlingMatchRow({
           {duration}
           <StarRating value={match.rating} onChange={rate} />
           <AddToListMenu kind="wrestlingMatch" entityId={match.id} label="+" />
-          <button
-            onClick={toggleFavorite}
-            aria-label={match.favorite ? 'Remove from favorites' : 'Add to favorites'}
-            title={match.favorite ? 'Remove from favorites' : 'Add to favorites'}
-            className={match.favorite ? 'text-accent' : 'text-gray-600 hover:text-gray-400'}
-          >
-            ♥
-          </button>
+          <FavoriteButton
+            active={match.favorite}
+            variant="compact"
+            onClick={() => void toggleFavorite()}
+          />
         </div>
       </div>
 

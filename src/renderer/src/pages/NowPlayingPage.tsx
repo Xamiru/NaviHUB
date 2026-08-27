@@ -5,12 +5,10 @@ import { useIncrementalList } from '../lib/hooks'
 import CoverImage from '../components/CoverImage'
 import BackButton from '../components/BackButton'
 import Section from '../components/Section'
-import { formatTime } from '../components/NowPlayingBar'
+import { formatTime, NowPlayingTrackActions } from '../components/NowPlayingBar'
 import {
   QueueRow,
   EditButton,
-  QueueLikeButton,
-  musicIdOf,
   useLikedTrackIds
 } from '../components/QueuePanel'
 import {
@@ -22,7 +20,7 @@ import {
   RepeatIcon
 } from '../components/PlayerIcons'
 
-// Spotify-style full-page view of the current track: big artwork, transport
+// Art-led full-page view of the current track: big artwork, transport
 // controls and the live queue side by side. Pure view over usePlayer() — no
 // queries, no own state — so it stays in sync with the bar for free.
 export default function NowPlayingPage() {
@@ -79,7 +77,6 @@ export default function NowPlayingPage() {
   const artistLink = track.artistId != null ? `/music/artists/${track.artistId}` : null
   const dur = (Number.isFinite(duration) && duration > 0 ? duration : track.duration) || 0
   const titleLink = albumLink ?? animeLink
-  const libraryTrackId = musicIdOf(track.id)
 
   return (
     // The art-led now-playing screen. The ambient wash is the app's OWN accent,
@@ -225,11 +222,9 @@ export default function NowPlayingPage() {
             </button>
           </div>
 
-          {libraryTrackId != null && (
-            <div className="mt-5">
-              <QueueLikeButton trackId={libraryTrackId} likedIds={likedIds} prominent />
-            </div>
-          )}
+          <div className="mt-5">
+            <NowPlayingTrackActions track={track} prominent />
+          </div>
 
           <div className="mt-4 flex w-40 items-center gap-1.5">
             <span className="text-gray-500 text-[10px] uppercase tracking-wide" aria-hidden="true">

@@ -13,6 +13,7 @@ describe('central quiz kinds and score policies stay synchronized', () => {
     ['songArcade', 'points'],
     ['songReverse', 'accuracy'],
     ['character', 'accuracy'],
+    ['cast', 'accuracy'],
     ['va', 'accuracy'],
     ['synopsis', 'accuracy'],
     ['mangaPanel', 'accuracy'],
@@ -20,7 +21,6 @@ describe('central quiz kinds and score policies stay synchronized', () => {
     ['silhouette', 'accuracy'],
     ['connections', 'accuracy'],
     ['chronology', 'accuracy'],
-    ['oddOneOut', 'accuracy'],
     ['higherLower', 'points'],
     ['songRelay', 'party'],
     ['tournament', 'tournament']
@@ -32,7 +32,7 @@ describe('central quiz kinds and score policies stay synchronized', () => {
 
   it('keeps every consolidated challenge route registered in App', () => {
     const app = read('../src/renderer/src/App.tsx')
-    for (const route of ['images', 'silhouette', 'connections', 'chronology', 'odd-one-out', 'higher-lower']) {
+    for (const route of ['images', 'silhouette', 'connections', 'chronology', 'higher-lower']) {
       expect(app).toContain(`path="/quiz/${route}"`)
     }
   })

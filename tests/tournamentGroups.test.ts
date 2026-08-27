@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createTournamentGroups, currentGroupMatch, groupPlacements, groupQualification, pickGroupWinner } from '../src/shared/tournamentGroups'
+import {
+  createTournamentGroups,
+  currentGroupMatch,
+  groupPlacements,
+  groupQualification,
+  pickGroupWinner,
+  seedGroupKnockout
+} from '../src/shared/tournamentGroups'
 
 describe('tournament group stage', () => {
   it('creates every round-robin pairing once', () => {
@@ -26,8 +33,8 @@ describe('tournament group stage', () => {
       state = pickGroupWinner(state, match.groupId, match.matchIndex, winner)
     }
     const result = groupQualification(state.groups[0])
-    expect(result.qualified).toEqual([0])
-    expect(result.tiebreak).toEqual({ groupId: 0, contenders: [1, 2, 3], needed: 1 })
+    expect(result.qualified).toEqual([{ contender: 0, groupId: 0, place: 1 }])
+    expect(result.tiebreak).toEqual({ groupId: 0, contenders: [1, 2, 3], needed: 1, places: [2] })
     expect(groupPlacements(state.groups[0])[0].place).toBe(1)
   })
 
@@ -40,8 +47,22 @@ describe('tournament group stage', () => {
     expect(groupQualification(state.groups[0]).tiebreak).toEqual({
       groupId: 0,
       contenders: [0, 1, 2],
-      needed: 2
+      needed: 2,
+      places: [1, 2]
     })
     expect(JSON.parse(JSON.stringify(state))).toEqual(state)
+  })
+
+  it('cross-seeds adjacent groups instead of rematching groupmates', () => {
+    expect(seedGroupKnockout([
+      { contender: 0, groupId: 0, place: 1 },
+      { contender: 1, groupId: 0, place: 2 },
+      { contender: 2, groupId: 1, place: 1 },
+      { contender: 3, groupId: 1, place: 2 },
+      { contender: 4, groupId: 2, place: 1 },
+      { contender: 5, groupId: 2, place: 2 },
+      { contender: 6, groupId: 3, place: 1 },
+      { contender: 7, groupId: 3, place: 2 }
+    ], 4)).toEqual([0, 3, 2, 1, 4, 7, 6, 5])
   })
 })

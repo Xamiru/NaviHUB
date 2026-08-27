@@ -11,6 +11,7 @@ import type {
   MusicStatsDetail,
   MusicTrack
 } from '@shared/types'
+import { mapSpotifyItem, spotifySource } from './musicSpotifyRepo'
 
 // Queries for the standalone music library. Rows come from the scanner
 // (src/main/music.ts); this repo owns the user-state writes (likes, plays,
@@ -138,6 +139,8 @@ export function getArtist(id: number): MusicArtistDetail | null {
     id: row.id as number,
     name: row.name as string,
     coverPath: (row.cover_path as string) ?? null,
+    spotifyId: (row.spotify_id as string) ?? null,
+    spotifyUrl: row.spotify_id ? `https://open.spotify.com/artist/${row.spotify_id}` : null,
     trackCount: total.n,
     albums,
     topTracks
@@ -166,6 +169,8 @@ export function getAlbum(id: number): MusicAlbumDetail | null {
     title: row.title as string,
     year: (row.year as number) ?? null,
     coverPath: (row.cover_path as string) ?? null,
+    spotifyId: (row.spotify_id as string) ?? null,
+    spotifyUrl: row.spotify_id ? `https://open.spotify.com/album/${row.spotify_id}` : null,
     tracks
   }
 }
@@ -281,6 +286,8 @@ export function listPlaylists(): MusicPlaylistSummary[] {
   const ids = lists.map((l) => l.id as number)
   const holes = ids.map(() => '?').join(', ')
   const countMap = new Map<number, number>()
+  const playableMap = new Map<number, number>()
+  const missingMap = new Map<number, number>()
   for (const c of db
     .prepare(
       `SELECT playlist_id, COUNT(*) AS n FROM music_playlist_track
@@ -288,6 +295,20 @@ export function listPlaylists(): MusicPlaylistSummary[] {
     )
     .all(...ids) as { playlist_id: number; n: number }[]) {
     countMap.set(c.playlist_id, c.n)
+    playableMap.set(c.playlist_id, c.n)
+  }
+  for (const c of db
+    .prepare(
+      `SELECT playlist_id, COUNT(*) AS n,
+              SUM(matched_track_id IS NOT NULL) AS playable,
+              SUM(matched_track_id IS NULL) AS missing
+       FROM music_spotify_playlist_item
+       WHERE playlist_id IN (${holes}) GROUP BY playlist_id`
+    )
+    .all(...ids) as { playlist_id: number; n: number; playable: number; missing: number }[]) {
+    countMap.set(c.playlist_id, (countMap.get(c.playlist_id) ?? 0) + c.n)
+    playableMap.set(c.playlist_id, (playableMap.get(c.playlist_id) ?? 0) + c.playable)
+    missingMap.set(c.playlist_id, c.missing)
   }
   // First 4 album covers per playlist for the collage, in playlist order
   // (one windowed query for all playlists — the listRepo preview pattern).
@@ -295,16 +316,27 @@ export function listPlaylists(): MusicPlaylistSummary[] {
   for (const p of db
     .prepare(
       `SELECT playlist_id, image FROM (
-         SELECT pt.playlist_id AS playlist_id, al.cover_path AS image,
-                ROW_NUMBER() OVER (PARTITION BY pt.playlist_id ORDER BY pt.position ASC, pt.id ASC) AS rn
-         FROM music_playlist_track pt
-         JOIN music_track t ON t.id = pt.track_id
-         JOIN music_album al ON al.id = t.album_id
-         WHERE pt.playlist_id IN (${holes})
+         SELECT playlist_id, image,
+                ROW_NUMBER() OVER (PARTITION BY playlist_id ORDER BY source_order, position, item_id) AS rn
+         FROM (
+           SELECT si.playlist_id, COALESCE(al.cover_path, si.cover_path) AS image,
+                  0 AS source_order, si.position, si.id AS item_id
+           FROM music_spotify_playlist_item si
+           LEFT JOIN music_track t ON t.id = si.matched_track_id
+           LEFT JOIN music_album al ON al.id = t.album_id
+           WHERE si.playlist_id IN (${holes})
+           UNION ALL
+           SELECT pt.playlist_id, al.cover_path AS image,
+                  1 AS source_order, pt.position, pt.id AS item_id
+           FROM music_playlist_track pt
+           JOIN music_track t ON t.id = pt.track_id
+           JOIN music_album al ON al.id = t.album_id
+           WHERE pt.playlist_id IN (${holes})
+         )
        ) WHERE rn <= 4
        ORDER BY playlist_id ASC, rn ASC`
     )
-    .all(...ids) as { playlist_id: number; image: string | null }[]) {
+    .all(...ids, ...ids) as { playlist_id: number; image: string | null }[]) {
     const arr = previewMap.get(p.playlist_id) ?? []
     arr.push(p.image ?? null)
     previewMap.set(p.playlist_id, arr)
@@ -315,7 +347,10 @@ export function listPlaylists(): MusicPlaylistSummary[] {
     description: (l.description as string) ?? null,
     trackCount: countMap.get(l.id as number) ?? 0,
     previewCovers: previewMap.get(l.id as number) ?? [],
-    updatedAt: l.updated_at as string
+    updatedAt: l.updated_at as string,
+    source: spotifySource(l.id as number) ? 'spotify' : 'local',
+    playableCount: playableMap.get(l.id as number) ?? 0,
+    missingCount: missingMap.get(l.id as number) ?? 0
   }))
 }
 
@@ -325,7 +360,7 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
     | Record<string, unknown>
     | undefined
   if (!row) return null
-  const items = (
+  const localItems = (
     db
       .prepare(
         `SELECT pt.id AS item_id, pt.position,
@@ -341,17 +376,47 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
       )
       .all(id) as Record<string, unknown>[]
   ).map((r) => ({
+    kind: 'local' as const,
     itemId: r.item_id as number,
     position: r.position as number,
     track: mapTrack(r)
   }))
+  const spotifyItems = (
+    db
+      .prepare(
+        `SELECT si.id AS item_id, si.position, si.spotify_track_id,
+                si.title AS spotify_title, si.artists_json, si.primary_artist,
+                si.album_artist, si.album_title AS spotify_album_title,
+                si.duration AS spotify_duration, si.cover_path AS spotify_cover_path,
+                si.spotify_url, si.track_no AS spotify_track_no, si.disc_no AS spotify_disc_no,
+                si.year AS spotify_year,
+                t.id, t.album_id, t.artist_id, t.file_path, t.title, t.track_no, t.disc_no,
+                t.duration, t.tag_artist, t.liked_at, t.play_count, t.last_played_at,
+                al.title AS album_title, al.cover_path AS cover_path, ar.name AS artist_name
+         FROM music_spotify_playlist_item si
+         LEFT JOIN music_track t ON t.id = si.matched_track_id
+         LEFT JOIN music_album al ON al.id = t.album_id
+         LEFT JOIN music_artist ar ON ar.id = t.artist_id
+         WHERE si.playlist_id = ?
+         ORDER BY si.position ASC, si.id ASC`
+      )
+      .all(id) as Record<string, unknown>[]
+  ).map((r) => mapSpotifyItem(r, r.id == null ? null : mapTrack(r)))
+  const source = spotifySource(id)
+  const items = source ? [...spotifyItems, ...localItems] : localItems
+  const playableCount = items.filter(
+    (item) => item.kind === 'local' || item.matchedTrack != null
+  ).length
   return {
     id: row.id as number,
     title: row.title as string,
     description: (row.description as string) ?? null,
     createdAt: row.created_at as string,
     updatedAt: row.updated_at as string,
-    items
+    items,
+    source,
+    playableCount,
+    missingCount: items.length - playableCount
   }
 }
 
@@ -394,10 +459,14 @@ export function addPlaylistTracks(playlistId: number, trackIds: number[]): void 
     let next = (
       db
         .prepare(
-          'SELECT COALESCE(MAX(position), -1) + 1 AS next FROM music_playlist_track WHERE playlist_id = ?'
+          `SELECT MAX(position) + 1 AS next FROM (
+             SELECT position FROM music_playlist_track WHERE playlist_id = ?
+             UNION ALL
+             SELECT position FROM music_spotify_playlist_item WHERE playlist_id = ?
+           )`
         )
-        .get(playlistId) as { next: number }
-    ).next
+        .get(playlistId, playlistId) as { next: number | null }
+    ).next ?? 0
     const ins = db.prepare(
       'INSERT OR IGNORE INTO music_playlist_track (playlist_id, track_id, position) VALUES (?, ?, ?)'
     )

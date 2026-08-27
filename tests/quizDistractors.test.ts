@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
-  characterIdsForPerson,
   distractorScore,
   pickDistractors
 } from '../src/shared/quizDistractors'
 import type { DistractorCandidate } from '../src/shared/quizDistractors'
+import { seededRng } from '../src/shared/quizCore'
 
 function cand(mediaId: number, year: number | null = null, genres: string[] = []): DistractorCandidate {
   return { mediaId, year, genres }
@@ -71,16 +71,11 @@ describe('pickDistractors', () => {
     }
     expect(seen.size).toBeGreaterThan(3) // shuffling rotates candidates through
   })
-})
 
-describe('characterIdsForPerson', () => {
-  it('returns every distinct role belonging to the answer voice actor', () => {
-    const pool = [
-      { personId: 1, characterId: 10 },
-      { personId: 1, characterId: 11 },
-      { personId: 2, characterId: 12 },
-      { personId: 1, characterId: 10 }
-    ]
-    expect(characterIdsForPerson(pool, 1).sort((a, b) => a - b)).toEqual([10, 11])
+  it('reproduces tied distractors when an injected RNG is used', () => {
+    const pool = [cand(1, 2013, ['A']), ...Array.from({ length: 8 }, (_, i) => cand(10 + i, 2013, ['A']))]
+    const a = pickDistractors(pool, pool[0], 3, [], seededRng(42)).map((value) => value.mediaId)
+    const b = pickDistractors(pool, pool[0], 3, [], seededRng(42)).map((value) => value.mediaId)
+    expect(a).toEqual(b)
   })
 })

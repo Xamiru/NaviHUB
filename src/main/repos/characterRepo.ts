@@ -69,10 +69,13 @@ export function upsert(input: Partial<Character> & { name: string }): number {
   const db = getSqlite()
   if (input.id) {
     db.prepare(
-      `UPDATE character SET name = ?, name_native = ?, image_path = ?, description = ? WHERE id = ?`
+      `UPDATE character SET name = ?, name_native = ?, gender = COALESCE(?, gender),
+                            image_path = ?, description = ?
+       WHERE id = ?`
     ).run(
       input.name,
       input.nameNative ?? null,
+      input.gender ?? null,
       input.imagePath ?? null,
       input.description ?? null,
       input.id
@@ -81,9 +84,16 @@ export function upsert(input: Partial<Character> & { name: string }): number {
   }
   const info = db
     .prepare(
-      `INSERT INTO character (name, name_native, image_path, description) VALUES (?, ?, ?, ?)`
+      `INSERT INTO character (name, name_native, gender, image_path, description)
+       VALUES (?, ?, ?, ?, ?)`
     )
-    .run(input.name, input.nameNative ?? null, input.imagePath ?? null, input.description ?? null)
+    .run(
+      input.name,
+      input.nameNative ?? null,
+      input.gender ?? null,
+      input.imagePath ?? null,
+      input.description ?? null
+    )
   return Number(info.lastInsertRowid)
 }
 

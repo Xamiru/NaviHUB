@@ -1,4 +1,9 @@
-import type { TournamentGroup, TournamentGroupStanding, TournamentTiebreak } from './types'
+import type {
+  TournamentGroup,
+  TournamentGroupStanding,
+  TournamentQualifier,
+  TournamentTiebreak
+} from './types'
 
 export interface TournamentGroupsState {
   entryCount: number
@@ -55,7 +60,7 @@ export function pickGroupWinner(
 }
 
 export function groupQualification(group: TournamentGroup): {
-  qualified: number[]
+  qualified: TournamentQualifier[]
   tiebreak: TournamentTiebreak | null
 } {
   if (group.matches.some((m) => m.winner == null)) return { qualified: [], tiebreak: null }
@@ -64,11 +69,54 @@ export function groupQualification(group: TournamentGroup): {
   const above = table.filter((s) => s.wins > boundaryWins).map((s) => s.contender)
   const tied = table.filter((s) => s.wins === boundaryWins).map((s) => s.contender)
   const needed = 2 - above.length
-  if (tied.length <= needed) return { qualified: [...above, ...tied], tiebreak: null }
-  return {
-    qualified: above,
-    tiebreak: { groupId: group.id, contenders: tied, needed: needed as 1 | 2 }
+  if (tied.length <= needed) {
+    return {
+      qualified: [...above, ...tied].map((contender, index) => ({
+        contender,
+        groupId: group.id,
+        place: (index + 1) as 1 | 2
+      })),
+      tiebreak: null
+    }
   }
+  return {
+    qualified: above.map((contender, index) => ({
+      contender,
+      groupId: group.id,
+      place: (index + 1) as 1 | 2
+    })),
+    tiebreak: {
+      groupId: group.id,
+      contenders: tied,
+      needed: needed as 1 | 2,
+      places: Array.from({ length: needed }, (_, index) => (above.length + index + 1) as 1 | 2)
+    }
+  }
+}
+
+// Adjacent groups cross over in the first knockout round: A1 v B2 and B1 v
+// A2, then C1 v D2 and D1 v C2. Keeping the four-entry blocks adjacent also
+// ensures those pairs cannot meet again before their local bracket final.
+export function seedGroupKnockout(
+  qualifiers: TournamentQualifier[],
+  groupCount: number
+): number[] {
+  if (groupCount < 2 || groupCount % 2 !== 0) throw new Error('Knockout seeding requires paired groups')
+  const find = (groupId: number, place: 1 | 2) => {
+    const qualifier = qualifiers.find((item) => item.groupId === groupId && item.place === place)
+    if (!qualifier) throw new Error(`Missing group ${groupId + 1} place ${place}`)
+    return qualifier.contender
+  }
+  const seeded: number[] = []
+  for (let groupId = 0; groupId < groupCount; groupId += 2) {
+    seeded.push(
+      find(groupId, 1),
+      find(groupId + 1, 2),
+      find(groupId + 1, 1),
+      find(groupId, 2)
+    )
+  }
+  return seeded
 }
 
 export function groupPlacements(group: TournamentGroup): Array<{ place: number; contenders: number[] }> {

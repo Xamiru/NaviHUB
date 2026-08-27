@@ -31,7 +31,7 @@ import StudioDetailPage from './pages/StudioDetailPage'
 import CharacterDetailPage from './pages/CharacterDetailPage'
 import QuizLandingPage from './pages/QuizLandingPage'
 import SongQuizPage from './pages/SongQuizPage'
-import CharacterQuizPage from './pages/CharacterQuizPage'
+import CastQuizPage from './pages/CastQuizPage'
 import VaQuizPage from './pages/VaQuizPage'
 import SynopsisQuizPage from './pages/SynopsisQuizPage'
 import MangaPanelQuizPage from './pages/MangaPanelQuizPage'
@@ -360,7 +360,8 @@ export default function App() {
             <Route path="/quiz" element={<QuizLandingPage />} />
             <Route path="/quiz/party" element={<PartyQuizPage />} />
             <Route path="/quiz/song" element={<SongQuizPage />} />
-            <Route path="/quiz/character" element={<CharacterQuizPage />} />
+            <Route path="/quiz/cast" element={<CastQuizPage />} />
+            <Route path="/quiz/character" element={<Navigate to="/quiz/cast" replace />} />
             <Route path="/quiz/va" element={<VaQuizPage />} />
             <Route path="/quiz/synopsis" element={<SynopsisQuizPage />} />
             <Route path="/quiz/panels" element={<MangaPanelQuizPage />} />
@@ -368,7 +369,6 @@ export default function App() {
             <Route path="/quiz/silhouette" element={<ChallengeQuizPage kind="silhouette" />} />
             <Route path="/quiz/connections" element={<ChallengeQuizPage kind="connections" />} />
             <Route path="/quiz/chronology" element={<ChallengeQuizPage kind="chronology" />} />
-            <Route path="/quiz/odd-one-out" element={<ChallengeQuizPage kind="oddOneOut" />} />
             <Route path="/quiz/higher-lower" element={<ChallengeQuizPage kind="higherLower" />} />
             <Route path="/quiz/tournament" element={<TournamentPage />} />
             {/* moved into the Programming section — old link may be in history */}

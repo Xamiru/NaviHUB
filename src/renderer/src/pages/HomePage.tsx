@@ -650,7 +650,7 @@ function TimeStatsCard() {
 function MusicCard() {
   const player = usePlayer()
   const { data: tracks = [] } = useQuery({
-    queryKey: qk.music.recent,
+    queryKey: qk.music.recent(5),
     queryFn: () => api.music.recent(5)
   })
   if (tracks.length === 0) return null

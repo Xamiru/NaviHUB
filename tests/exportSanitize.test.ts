@@ -55,6 +55,13 @@ function seed(): void {
         '2025-06-30');
     INSERT INTO music_playlist (id, title) VALUES (1, 'Favorites');
     INSERT INTO music_playlist_track (playlist_id, track_id) VALUES (1, 1);
+    INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+      VALUES (1, 'spotify-list', 'https://open.spotify.com/playlist/spotify-list');
+    INSERT INTO music_spotify_playlist_item
+      (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+       album_title, spotify_url, raw_json, matched_track_id)
+      VALUES (1, 'spotify-track', 0, 'Airbag', '["Radiohead"]', 'Radiohead', 'OK Computer',
+              'https://open.spotify.com/track/spotify-track', '{"secret":"source metadata"}', 1);
     INSERT INTO music_play_log (track_id, duration) VALUES (1, 284);
 
     INSERT INTO manga_chapter (media_id, dir_path, title, last_read_page, read_at)
@@ -120,6 +127,7 @@ function seed(): void {
       ('vertex.project_id', 'my-gcp-project'),
       ('vertex.credentials_path', '/home/x/sa.json'),
       ('ytdlp.path', '/usr/local/bin/yt-dlp'),
+      ('spotdl.path', '/usr/local/bin/spotdl'),
       ('music.dir', '/media/xamir/Anglo/Music'),
       ('manga.dir', '/media/xamir/Nihon/Manga'),
       ('books.dir', '/media/xamir/Anglo/Books'),
@@ -198,7 +206,8 @@ describe('export sanitize', () => {
     for (const t of [
       'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log', 'jp_ghost',
       'music_artist', 'music_album', 'music_track', 'music_playlist',
-      'music_playlist_track', 'music_play_log', 'manga_chapter', 'media_image', 'slideshow_item',
+      'music_playlist_track', 'music_spotify_playlist', 'music_spotify_playlist_item',
+      'music_play_log', 'manga_chapter', 'media_image', 'slideshow_item',
       'quiz_session',
       'game_session',
       'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta',
@@ -222,7 +231,9 @@ describe('export sanitize', () => {
 
   it('tolerates a live DB that predates newer tables', () => {
     const older = createTestDb()
-    older.exec('DROP TABLE music_play_log; DROP TABLE music_playlist_track; DROP TABLE music_playlist')
+    older.exec(
+      'DROP TABLE music_play_log; DROP TABLE music_spotify_playlist_item; DROP TABLE music_spotify_playlist; DROP TABLE music_playlist_track; DROP TABLE music_playlist'
+    )
     older.exec(`INSERT INTO media_item (id, media_type, title, status) VALUES (1, 'anime', 'X', 'Watching')`)
     expect(() => sanitizeDb(older)).not.toThrow()
     expect(older.prepare('SELECT status FROM media_item WHERE id=1').get()).toEqual({ status: null })

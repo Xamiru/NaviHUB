@@ -180,6 +180,7 @@ export const character = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     name: text('name').notNull(),
     nameNative: text('name_native'),
+    gender: text('gender'),
     imagePath: text('image_path'),
     description: text('description'),
     externalSource: text('external_source'),
@@ -783,6 +784,7 @@ export const musicArtist = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     name: text('name').notNull(),
     dirPath: text('dir_path').notNull(),
+    spotifyId: text('spotify_id'),
     coverPath: text('cover_path'),
     artCheckedAt: text('art_checked_at'),
     artSourceUrl: text('art_source_url'),
@@ -795,7 +797,8 @@ export const musicArtist = sqliteTable(
   },
   (t) => ({
     byName: index('idx_music_artist_name').on(t.name),
-    uniqDir: unique('uniq_music_artist_dir').on(t.dirPath)
+    uniqDir: unique('uniq_music_artist_dir').on(t.dirPath),
+    uniqSpotify: unique('idx_music_artist_spotify').on(t.spotifyId)
   })
 )
 
@@ -808,6 +811,7 @@ export const musicAlbum = sqliteTable(
       .references(() => musicArtist.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
     dirPath: text('dir_path').notNull(),
+    spotifyId: text('spotify_id'),
     year: integer('year'),
     coverPath: text('cover_path'),
     artCheckedAt: text('art_checked_at'),
@@ -822,7 +826,8 @@ export const musicAlbum = sqliteTable(
   (t) => ({
     byArtist: index('idx_music_album_artist').on(t.artistId),
     byTitle: index('idx_music_album_title').on(t.title),
-    uniqDir: unique('uniq_music_album_dir').on(t.dirPath)
+    uniqDir: unique('uniq_music_album_dir').on(t.dirPath),
+    uniqSpotify: unique('idx_music_album_spotify').on(t.spotifyId)
   })
 )
 
@@ -895,6 +900,52 @@ export const musicPlaylistTrack = sqliteTable(
   (t) => ({
     byTrack: index('idx_music_playlist_track_track').on(t.trackId),
     uniq: unique('uniq_music_playlist_track').on(t.playlistId, t.trackId)
+  })
+)
+
+export const musicSpotifyPlaylist = sqliteTable('music_spotify_playlist', {
+  playlistId: integer('playlist_id')
+    .primaryKey()
+    .references(() => musicPlaylist.id, { onDelete: 'cascade' }),
+  spotifyId: text('spotify_id').notNull().unique(),
+  sourceUrl: text('source_url').notNull(),
+  importedAt: text('imported_at')
+    .notNull()
+    .default(sql`(datetime('now'))`)
+})
+
+export const musicSpotifyPlaylistItem = sqliteTable(
+  'music_spotify_playlist_item',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    playlistId: integer('playlist_id')
+      .notNull()
+      .references(() => musicPlaylist.id, { onDelete: 'cascade' }),
+    spotifyTrackId: text('spotify_track_id').notNull(),
+    position: integer('position').notNull(),
+    title: text('title').notNull(),
+    artistsJson: text('artists_json').notNull(),
+    primaryArtist: text('primary_artist').notNull(),
+    albumArtist: text('album_artist'),
+    albumTitle: text('album_title').notNull(),
+    duration: real('duration'),
+    coverPath: text('cover_path'),
+    spotifyUrl: text('spotify_url').notNull(),
+    discNo: integer('disc_no'),
+    trackNo: integer('track_no'),
+    year: integer('year'),
+    rawJson: text('raw_json').notNull(),
+    matchedTrackId: integer('matched_track_id').references(() => musicTrack.id, {
+      onDelete: 'set null'
+    }),
+    addedAt: text('added_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byPlaylist: index('idx_music_spotify_item_playlist').on(t.playlistId),
+    byMatch: index('idx_music_spotify_item_match').on(t.matchedTrackId),
+    uniq: unique('uniq_music_spotify_item').on(t.playlistId, t.spotifyTrackId)
   })
 )
 

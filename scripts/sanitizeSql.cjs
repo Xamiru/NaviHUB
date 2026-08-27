@@ -50,6 +50,8 @@ const SANITIZE_STATEMENTS = [
   // Music library: scan rows reference files under the exporter's music.dir,
   // so they'd all be dead on arrival; the recipient's first scan rebuilds.
   'DELETE FROM music_play_log',
+  'DELETE FROM music_spotify_playlist_item',
+  'DELETE FROM music_spotify_playlist',
   'DELETE FROM music_playlist_track',
   'DELETE FROM music_playlist',
   'DELETE FROM music_track',
@@ -150,7 +152,7 @@ const SANITIZE_STATEMENTS = [
   // know the top N Japanese words, inflating every comprehension figure.
   // franchise.<id>.background rows point at the user's own image files.
   `DELETE FROM settings WHERE key IN
-     ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path',
+     ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path',
       'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','slideshow.dir','video.dir','wrestling.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',

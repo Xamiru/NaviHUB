@@ -21,6 +21,7 @@ import type { MediaItem } from '@shared/types'
 import PageHeader from '../components/PageHeader'
 import CoverImage from '../components/CoverImage'
 import FranchiseBackground from '../components/FranchiseBackground'
+import { HeartIcon } from '../components/PlayerIcons'
 
 type SortKey = 'release' | 'year' | 'story' | 'score' | 'meta'
 type SortState = { key: SortKey; dir: 'asc' | 'desc' }
@@ -214,8 +215,8 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
           {avgScore != null && <span className="chip">Avg score {avgScore}</span>}
           {totalHours > 0 && <span className="chip">{totalHours} h played</span>}
           {favorite && (
-            <span className="chip" title="Your favorite entry">
-              ♥ {favorite.title}
+            <span className="chip gap-1.5" title="Your favorite entry">
+              <HeartIcon className="h-3.5 w-3.5 text-accent" /> {favorite.title}
             </span>
           )}
           {caching && artStatus?.running && (

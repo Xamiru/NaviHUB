@@ -7,6 +7,7 @@ import { usePlayer } from '../lib/player'
 import { musicTrackId, musicTrackToPlayerTrack } from '../lib/musicTracks'
 import { toast, toastError } from '../lib/toast'
 import CoverImage from './CoverImage'
+import FavoriteButton from './FavoriteButton'
 import { NextIcon } from './PlayerIcons'
 import type { MusicTrack } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
@@ -99,17 +100,13 @@ export default function MusicTrackRow({
         </p>
       </button>
       {trailing}
-      <button
-        className={`px-1 text-sm ${
-          liked ? 'text-accent' : 'text-gray-600 opacity-0 group-hover:opacity-100'
-        } hover:text-accent`}
-        title={liked ? 'Remove from Liked Songs' : 'Add to Liked Songs'}
-        aria-label={liked ? 'Remove from Liked Songs' : 'Add to Liked Songs'}
-        aria-pressed={liked}
-        onClick={toggleLike}
-      >
-        {liked ? '♥' : '♡'}
-      </button>
+      <FavoriteButton
+        active={liked}
+        variant="compact"
+        activeLabel="Remove from Liked Songs"
+        inactiveLabel="Add to Liked Songs"
+        onClick={() => void toggleLike()}
+      />
       <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-500">
         {formatDuration(track.duration)}
       </span>
@@ -136,8 +133,15 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
     function onDoc(e: MouseEvent): void {
       if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
     }
+    function onKey(e: KeyboardEvent): void {
+      if (e.key === 'Escape') setOpen(false)
+    }
     document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      document.removeEventListener('keydown', onKey)
+    }
   }, [open])
 
   function refreshPlaylists(): void {
@@ -181,14 +185,21 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
   return (
     <div ref={boxRef} className="relative">
       <button
-        className={`px-1 text-gray-500 hover:text-white ${open ? '' : 'opacity-0 group-hover:opacity-100'}`}
+        className={`px-1 text-gray-500 transition-opacity hover:text-white ${open ? '' : 'opacity-60 group-hover:opacity-100 focus-visible:opacity-100'}`}
         title="More"
+        aria-label={`More actions for ${track.title}`}
+        aria-haspopup="dialog"
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
         ⋯
       </button>
       {open && (
-        <div className="absolute right-0 z-30 mt-1 w-60 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg">
+        <div
+          className="absolute right-0 z-30 mt-1 w-60 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg"
+          role="dialog"
+          aria-label={`Actions for ${track.title}`}
+        >
           <button
             className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"
             onClick={() => {
@@ -229,7 +240,7 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
                 setOpen(false)
               }}
             >
-              ✕ Remove from this playlist
+              Remove from this playlist
             </button>
           )}
           <button

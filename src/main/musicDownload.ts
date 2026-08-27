@@ -7,6 +7,8 @@ import { startScan } from './music'
 import * as tasks from './tasks'
 import { pipeProcLines } from './childLines'
 import { processControls } from './taskControls'
+import { claimMusicMaintenance, releaseMusicMaintenance } from './musicMaintenance'
+import { clearStatus as clearSpotifyStatus, killActive as killActiveSpotify } from './musicSpotify'
 import type { TaskControls } from './tasks'
 import type {
   MusicDownloadEvent,
@@ -159,6 +161,11 @@ export function startDownload(input: MusicDownloadInput): { id: string } {
   const root = musicRootDir()
   const albumDir = resolveAlbumDir(root, artist, album)
   mkdirSync(albumDir, { recursive: true })
+  claimMusicMaintenance('music download')
+  // Only retire Spotify's settled status after this job owns the shared gate.
+  // During a Spotify batch rescan its child is intentionally absent, but the
+  // batch still owns maintenance and its status must not be cleared.
+  clearSpotifyStatus()
 
   counter += 1
   const id = `dl-${process.pid}-${counter}`
@@ -169,7 +176,11 @@ export function startDownload(input: MusicDownloadInput): { id: string } {
     itemIndex: null,
     itemCount: null,
     title: null,
-    message: null
+    message: null,
+    source: 'url',
+    playlistId: null,
+    resolvedCount: 0,
+    failedCount: 0
   }
 
   // Task registry row. This module keeps writing ONLY `status` as before; the
@@ -235,10 +246,12 @@ export function startDownload(input: MusicDownloadInput): { id: string } {
     // a no-op and let a second yt-dlp start. video/session.ts:106-107 does the
     // same on both handlers.
     if (active?.id === id) active = null
+    releaseMusicMaintenance('music download')
   })
   proc.on('close', (code) => {
     const wasCancelled = active?.id === id ? active.cancelled : false
     if (active?.id === id) active = null
+    releaseMusicMaintenance('music download')
     if (!status || status.id !== id || status.status === 'error') return
     if (wasCancelled) {
       status.status = 'cancelled'
@@ -293,7 +306,9 @@ export function killActive(): void {
     active.cancelled = true
     active.proc.kill('SIGKILL')
     active = null
+    releaseMusicMaintenance('music download')
   }
+  killActiveSpotify()
 }
 
 function version(bin: string, args: string[]): Promise<string | null> {

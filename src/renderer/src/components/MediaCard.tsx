@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { toastError } from '../lib/toast'
 import { configFor, pathForMedia, type MediaConfig } from '../lib/mediaConfig'
 import CoverImage from './CoverImage'
+import FavoriteButton from './FavoriteButton'
 import type { MediaItem } from '@shared/types'
 
 // THE media cover card (a second, diverging copy used to live on HomePage —
@@ -99,21 +100,12 @@ const MediaCard = memo(function MediaCard({
           </span>
         )}
         {showFavorite && (
-          <button
-            // ♥, not ★: the glyph rule reserves ★ for score/rarity badges —
-            // and the real one sits a few pixels away in the same yellow.
-            className={`absolute bottom-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs ${
-              favorite
-                ? 'text-accent'
-                : 'hidden text-gray-300 hover:text-accent group-hover:block group-focus-within:block'
-            }`}
-            title={favorite ? 'Remove from favorites' : 'Add to favorites'}
-            aria-label={favorite ? 'Remove from favorites' : 'Add to favorites'}
-            aria-pressed={favorite}
+          <FavoriteButton
+            active={favorite}
+            variant="overlay"
+            className="absolute bottom-1.5 right-1.5"
             onClick={(e) => void toggleFavorite(e)}
-          >
-            {favorite ? '♥' : '♡'}
-          </button>
+          />
         )}
         {pct != null && (
           <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60">

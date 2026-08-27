@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   answerIsCorrect,
+  balancedDeckAvoiding,
   balancedDeal,
   compareQuizResults,
   isNewQuizBest,
@@ -33,6 +34,18 @@ describe('quiz seeded dealing', () => {
       const deck = shuffledDeckAvoiding(values, 3, (a, b) => a === b, seededRng(seed))
       expect(deck.at(-1)).not.toBe(3)
     }
+  })
+
+  it('builds a pop-consumed deck that balances identities and avoids the previous identity', () => {
+    const values = [
+      ...Array.from({ length: 8 }, (_, i) => ({ show: 'a', i })),
+      { show: 'b', i: 8 },
+      { show: 'c', i: 9 }
+    ]
+    const deck = balancedDeckAvoiding(values, (value) => value.show, values[0], seededRng(7))
+    const first = [deck.pop(), deck.pop(), deck.pop()].map((value) => value?.show)
+    expect(first[0]).not.toBe('a')
+    expect(new Set(first)).toEqual(new Set(['a', 'b', 'c']))
   })
 })
 

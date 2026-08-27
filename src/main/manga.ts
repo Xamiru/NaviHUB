@@ -7,6 +7,7 @@ import { get as getSetting, set as setSetting } from './repos/settingsRepo'
 import * as tasks from './tasks'
 import { isUnitProgress } from '@shared/mediaProgress'
 import { shuffle } from '@shared/shuffle'
+import { seededRng } from '@shared/quizCore'
 import { absoluteMediaPath, mangaRootDir, booksRootDir } from './files'
 import { isArchiveFile, listArchivePages } from './archive'
 import { isEpubFile, epubSpineCount, listEpubPages, epubToc } from './epub'
@@ -18,7 +19,7 @@ import type {
   MangaChapter,
   MangaLibrary,
   MangaPages,
-  QuizLibFilter,
+  QuizMangaPanelFilter,
   QuizMangaPanelItem,
   ScannedChapter
 } from '@shared/types'
@@ -159,7 +160,7 @@ export interface PanelCandidate {
 // Pure seed selection for the manga-panel quiz: shuffles the candidate
 // series, takes up to `count` of them — ONE question per series, since a
 // second page of the same title would give the answer away — and picks one
-// uniformly random page from a random chapter of each. Exported for tests;
+// uniformly random page from the flattened eligible pages of each. Exported for tests;
 // panelPool() below is its thin IO half.
 export function pickPanelSeeds(
   candidates: PanelCandidate[],
@@ -172,7 +173,7 @@ export function pickPanelSeeds(
     const pages = c.chapters.flatMap((ch) => {
       const consumedEnd = ch.readAt != null ? ch.files.length - 1 : (ch.lastReadPage ?? -1)
       if (consumedEnd < 0) return []
-      const trimEdges = ch.files.length >= 6 && consumedEnd >= 2
+      const trimEdges = ch.files.length >= 6
       const start = trimEdges ? 2 : 0
       const end = trimEdges && consumedEnd >= ch.files.length - 1 ? ch.files.length - 2 : consumedEnd
       return ch.files.slice(start, end + 1).map((file) => ({ dirPath: ch.dirPath, file }))
@@ -465,12 +466,13 @@ export async function adhocPages(token: string): Promise<MangaPages | null> {
 // ---------------------------------------------------------------------------
 
 // The manga-panel quiz pool: `length` question seeds over locally-linked
-// manga. Eligibility is SQL (linked chapters + cover + status filter, EPUB
-// chapters excluded); page discovery walks only the sampled series' chapter
-// folders, so a big library costs `length` directory listings, not the whole
-// root. Read-only — it never touches page_count caches or reading state.
+// manga. Eligibility is SQL (linked chapters + cover, EPUB chapters excluded);
+// page discovery walks only the sampled series' chapter folders, so a big
+// library costs `length` directory listings, not the whole root. An optional
+// seed makes series and page selection reproducible. Read-only — it never
+// touches page_count caches or reading state.
 export async function panelPool(
-  filter: QuizLibFilter = {},
+  filter: QuizMangaPanelFilter = {},
   length = 10
 ): Promise<QuizMangaPanelItem[]> {
   const db = getSqlite()
@@ -480,12 +482,6 @@ export async function panelPool(
     // EPUB books have spine documents, not image pages — nothing to show.
     `LOWER(mc.dir_path) NOT LIKE '%.epub'`
   ]
-  const params: unknown[] = []
-  const statuses = filter.statuses?.filter((s) => s)
-  if (statuses && statuses.length > 0) {
-    where.push(`mi.status IN (${statuses.map(() => '?').join(', ')})`)
-    params.push(...statuses)
-  }
 
   const rows = db
     .prepare(
@@ -496,14 +492,15 @@ export async function panelPool(
        JOIN manga_chapter mc ON mc.media_id = mi.id
        WHERE ${where.join(' AND ')}`
     )
-    .all(...params) as Record<string, unknown>[]
+    .all() as Record<string, unknown>[]
 
   const wanted = Math.max(1, Math.min(50, Math.floor(length)))
+  const rng = filter.seed == null ? Math.random : seededRng(filter.seed)
   const root = mangaRootDir()
   const candidates: PanelCandidate[] = []
-  for (const r of shuffle(rows)) {
+  for (const r of shuffle(rows, rng)) {
     if (candidates.length >= wanted) break
-      const chRows = db
+    const chRows = db
       .prepare(
         `SELECT dir_path, last_read_page, read_at FROM manga_chapter
          WHERE media_id = ? AND LOWER(dir_path) NOT LIKE '%.epub'
@@ -536,7 +533,7 @@ export async function panelPool(
       chapters
     })
   }
-  return pickPanelSeeds(candidates, wanted)
+  return pickPanelSeeds(candidates, wanted, rng)
 }
 
 // Raises media_item.progress (chapters read) to match the local read state.

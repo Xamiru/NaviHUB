@@ -70,6 +70,7 @@ export function mapCharacter(r: any): Character {
     id: r.id,
     name: r.name,
     nameNative: r.name_native ?? null,
+    gender: r.gender ?? null,
     imagePath: r.image_path ?? null,
     description: r.description ?? null
   }

@@ -75,6 +75,8 @@ import * as updater from './updater'
 import * as music from './music'
 import * as musicRepo from './repos/musicRepo'
 import * as musicDownload from './musicDownload'
+import * as musicSpotify from './musicSpotify'
+import * as musicSpotifyRepo from './repos/musicSpotifyRepo'
 import * as musicArt from './musicArt'
 import * as mokuro from './mokuro'
 import * as mokuroRun from './mokuroRun'
@@ -217,7 +219,7 @@ export function registerIpc(): void {
   ipcMain.handle('quiz:availability', (_e, request) => quizRepo.availability(request))
   ipcMain.handle('quiz:challengePool', (_e, request) => quizRepo.challengePool(request))
   ipcMain.handle('quiz:songPool', (_e, filter) => quizRepo.songPool(filter))
-  ipcMain.handle('quiz:characterPool', (_e, filter) => quizRepo.characterPool(filter))
+  ipcMain.handle('quiz:castPool', (_e, filter) => quizRepo.castPool(filter))
   ipcMain.handle('quiz:vaPool', (_e, filter) => quizRepo.vaPool(filter))
   ipcMain.handle('quiz:synopsisPool', (_e, filter) => quizRepo.synopsisPool(filter))
   ipcMain.handle('quiz:mangaPanelPool', (_e, filter, length) =>
@@ -646,6 +648,7 @@ export function registerIpc(): void {
   )
   ipcMain.handle('themes:list', (_e, filter) => themeRepo.list(filter))
   ipcMain.handle('themes:counts', () => themeRepo.counts())
+  ipcMain.handle('themes:favorite', (_e, themeId) => themeRepo.favorite(themeId))
   ipcMain.handle('themes:setFavorite', (_e, themeId, favorite) =>
     themeRepo.setFavorite(themeId, favorite)
   )
@@ -760,14 +763,36 @@ export function registerIpc(): void {
   ipcMain.handle('music:reorderPlaylist', (_e, playlistId, orderedItemIds) =>
     musicRepo.reorderPlaylist(playlistId, orderedItemIds)
   )
+  ipcMain.handle('music:spotifyImportPlaylist', (_e, url) =>
+    withActivity('Importing Spotify playlist', () => musicSpotify.importPlaylist(url))
+  )
+  ipcMain.handle('music:spotifyDownloadPlaylist', (_e, input) =>
+    musicSpotify.startPlaylistDownload(input)
+  )
+  ipcMain.handle('music:spotifyInspectEntity', (_e, input) =>
+    withActivity(`Inspecting Spotify ${input.kind}`, () => musicSpotify.inspectEntity(input))
+  )
+  ipcMain.handle('music:spotifyDownloadEntity', (_e, input) =>
+    musicSpotify.startEntityDownload(input)
+  )
+  ipcMain.handle('music:spotifyForgetEntitySource', (_e, input) =>
+    musicSpotify.forgetEntitySource(input)
+  )
+  ipcMain.handle('music:spotifyRemoveItem', (_e, itemId) =>
+    musicSpotifyRepo.removeSpotifyItem(itemId)
+  )
+  ipcMain.handle('music:spotifyDetect', () => musicSpotify.detectBinary())
   ipcMain.handle('music:playlistsForTrack', (_e, trackId) => musicRepo.playlistsForTrack(trackId))
   ipcMain.handle('music:setLiked', (_e, trackId, liked) => musicRepo.setLiked(trackId, liked))
   ipcMain.handle('music:logPlay', (_e, trackId) => musicRepo.logPlay(trackId))
   ipcMain.handle('music:recent', (_e, limit) => musicRepo.recentlyPlayed(limit))
   ipcMain.handle('music:statsDetail', (_e, days) => musicRepo.statsDetail(days))
   ipcMain.handle('music:downloadStart', (_e, input) => musicDownload.startDownload(input))
-  ipcMain.handle('music:downloadCancel', (_e, id) => musicDownload.cancelDownload(id))
-  ipcMain.handle('music:downloadStatus', () => musicDownload.getStatus())
+  ipcMain.handle('music:downloadCancel', (_e, id) => {
+    musicDownload.cancelDownload(id)
+    musicSpotify.cancelDownload(id)
+  })
+  ipcMain.handle('music:downloadStatus', () => musicSpotify.getStatus() ?? musicDownload.getStatus())
   ipcMain.handle('music:downloadDetect', () => musicDownload.detectBinary())
   ipcMain.handle('music:artFetchAlbum', (_e, albumId) => musicArt.fetchAlbumArt(albumId))
   ipcMain.handle('music:artFetchArtist', (_e, artistId) => musicArt.fetchArtistImage(artistId))
