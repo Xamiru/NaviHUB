@@ -29,8 +29,9 @@ import type {
 } from '@shared/types'
 
 type Phase = 'setup' | 'play' | 'summary'
+type StandardChallengeKind = Exclude<QuizChallengeKind, 'libraryGrid' | 'movieChain'>
 
-const COPY: Record<QuizChallengeKind, { title: string; subtitle: string }> = {
+const COPY: Record<StandardChallengeKind, { title: string; subtitle: string }> = {
   imageReveal: { title: 'Image Reveal', subtitle: 'Identify a title as its image resolves in four stages.' },
   silhouette: { title: 'Silhouette', subtitle: 'Recognise a character from their outline.' },
   connections: { title: 'Connections', subtitle: 'Find the actor or director connecting two movies or TV shows.' },
@@ -38,7 +39,7 @@ const COPY: Record<QuizChallengeKind, { title: string; subtitle: string }> = {
   higherLower: { title: 'Higher or Lower', subtitle: 'Choose a category and keep a three-life comparison run alive.' }
 }
 
-export default function ChallengeQuizPage({ kind }: { kind: QuizChallengeKind }) {
+export default function ChallengeQuizPage({ kind }: { kind: StandardChallengeKind }) {
   const completedStatuses = useAllCompletedStatuses()
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')

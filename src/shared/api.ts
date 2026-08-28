@@ -210,6 +210,10 @@ import type {
   LogPage,
   LogTailRequest,
   TaskSnapshot,
+  LibraryExportOptions,
+  LibraryExportPreview,
+  LibraryExportStatus,
+  LibraryExportStartResult,
   UpdateStatus,
   UpdateTestResult,
   GachaBanner,
@@ -250,6 +254,7 @@ import type {
   SpotifyEntityDownloadInput,
   SpotifyEntityInspectInput,
   SpotifyEntityInspection,
+  SpotifyEntityInspectionStatus,
   SpotifyEntityRef,
   SpotifyImportResult,
   SpotdlDetectResult,
@@ -1011,6 +1016,8 @@ export interface NaviApi {
     spotifyImportPlaylist(url: string): Promise<SpotifyImportResult>
     spotifyDownloadPlaylist(input: SpotifyDownloadInput): Promise<{ id: string }>
     spotifyInspectEntity(input: SpotifyEntityInspectInput): Promise<SpotifyEntityInspection>
+    spotifyInspectionStatus(): Promise<SpotifyEntityInspectionStatus>
+    spotifyCancelInspection(): Promise<void>
     spotifyDownloadEntity(input: SpotifyEntityDownloadInput): Promise<{ id: string | null }>
     spotifyForgetEntitySource(input: SpotifyEntityRef): Promise<void>
     spotifyRemoveItem(itemId: number): Promise<void>
@@ -1248,6 +1255,13 @@ export interface NaviApi {
     // nextSeq back as afterSeq. Omit afterSeq to seed with the newest entries.
     tail(req: LogTailRequest): Promise<LogPage>
     // Opens the rolling log file's folder in the OS file manager.
+    reveal(): Promise<void>
+  }
+  libraryExport: {
+    preview(options: LibraryExportOptions): Promise<LibraryExportPreview>
+    start(options: LibraryExportOptions): Promise<LibraryExportStartResult>
+    status(): Promise<LibraryExportStatus>
+    cancel(): Promise<void>
     reveal(): Promise<void>
   }
   updates: {

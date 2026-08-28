@@ -244,6 +244,7 @@ async function buildPrepDeckInner(
     const scan = await countSeriesWords(mediaId, (done, total) => {
       status.done = done
       status.total = total
+      if (handle.cancelRequested()) throw new tasks.TaskCancelledError('Building prep deck')
     })
     const { counts } = scan
 

@@ -37,10 +37,14 @@ import {
   clearAlbumArt,
   fetchMissingArt
 } from '../src/main/musicArt'
+import { stripAlbumYearPrefix } from '../src/main/repos/musicSpotifyRepo'
 
 beforeEach(() => {
   db = createTestDb()
-  responses = { 'musicbrainz.org/ws/2/release-group': { 'release-groups': [] } }
+  responses = {
+    'musicbrainz.org/ws/2/release-group': { 'release-groups': [] },
+    'en.wikipedia.org/w/api.php': { query: { pages: {} } }
+  }
   downloadImage.mockClear()
 })
 
@@ -66,6 +70,13 @@ describe('normalizeForMatch', () => {
     expect(normalizeForMatch('Amnesiac [2001 Remaster]')).toBe('amnesiac 2001 remaster')
     expect(normalizeForMatch('Sigur Rós')).toBe('sigur ros')
     expect(normalizeForMatch("What's Going On?")).toBe('what s going on')
+  })
+
+  it('removes only a leading folder year while preserving edition markers', () => {
+    expect(stripAlbumYearPrefix('(1997) OK Computer')).toBe('OK Computer')
+    expect(stripAlbumYearPrefix('[2001] Amnesiac')).toBe('Amnesiac')
+    expect(stripAlbumYearPrefix('2007 - In Rainbows')).toBe('In Rainbows')
+    expect(stripAlbumYearPrefix('OK Computer (1997 Remaster)')).toBe('OK Computer (1997 Remaster)')
   })
 })
 
@@ -262,6 +273,19 @@ describe('fetchAlbumArt', () => {
     expect(res.sourceUrl).toBe('https://itunes/img/600x600bb.jpg')
   })
 
+  it('matches canonical provider titles when the album folder starts with a year', async () => {
+    const id = seedAlbum('Radiohead', '(1997) OK Computer')
+    responses['itunes.apple.com'] = {
+      results: [{
+        artistName: 'Radiohead',
+        collectionName: 'OK Computer',
+        artworkUrl100: 'https://itunes/img/100x100bb.jpg'
+      }]
+    }
+    const res = await fetchAlbumArt(id)
+    expect(res).toMatchObject({ updated: true, sourceUrl: 'https://itunes/img/600x600bb.jpg' })
+  })
+
   it('records not_found once (checked stamp, no cover) instead of wrong art', async () => {
     const id = seedAlbum('Doujin Circle', 'Ultra Obscure EP')
     responses['api.deezer.com'] = { data: [] }
@@ -392,5 +416,20 @@ describe('fetchArtistImage', () => {
     }
     const res = await fetchArtistImage(artistId)
     expect(res).toMatchObject({ updated: true, reason: 'ok' })
+  })
+
+  it('uses an exact non-disambiguation Wikipedia portrait before Deezer', async () => {
+    seedAlbum('Adam Levine', 'Singles')
+    const artistId = (db.prepare('SELECT id FROM music_artist LIMIT 1').get() as { id: number }).id
+    responses['en.wikipedia.org/w/api.php'] = {
+      query: {
+        pages: {
+          '1': { title: 'Adam Levine', original: { source: 'https://wikipedia/adam.jpg' } }
+        }
+      }
+    }
+    responses['api.deezer.com/search/artist'] = new Error('offline')
+    const res = await fetchArtistImage(artistId)
+    expect(res).toMatchObject({ updated: true, sourceUrl: 'https://wikipedia/adam.jpg' })
   })
 })

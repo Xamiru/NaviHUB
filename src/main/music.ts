@@ -83,19 +83,27 @@ export function parseTrackFileName(name: string): { trackNo: number | null; titl
 // routes keyboard/mouse input to the window. A sync walk (readdirSync +
 // statSync per file) over a big library — worse on an HDD or network mount —
 // blocked the event loop for minutes and froze typing app-wide.
-export async function walkMusicRoot(absRoot: string): Promise<{
+export async function walkMusicRoot(
+  absRoot: string,
+  cancelled: () => boolean = () => false
+): Promise<{
   albums: ScannedAlbumFolder[]
   skippedRootFiles: number
 }> {
   const albums: ScannedAlbumFolder[] = []
   let skippedRootFiles = 0
+  const checkpoint = (): void => {
+    if (cancelled()) throw new tasks.TaskCancelledError('Scanning music library')
+  }
 
   let rootEntries: import('fs').Dirent[]
+  checkpoint()
   try {
     rootEntries = await readdir(absRoot, { withFileTypes: true })
   } catch {
     return { albums, skippedRootFiles }
   }
+  checkpoint()
   skippedRootFiles = rootEntries.filter((e) => e.isFile() && isAudioFile(e.name)).length
 
   const statFile = async (
@@ -128,12 +136,14 @@ export async function walkMusicRoot(absRoot: string): Promise<{
     albumDir: string,
     depth: number
   ): Promise<ScannedFile[]> => {
+    checkpoint()
     let entries: import('fs').Dirent[]
     try {
       entries = await readdir(absDir, { withFileTypes: true })
     } catch {
       return []
     }
+    checkpoint()
     const files = await statAll(
       entries.filter((e) => e.isFile() && isAudioFile(e.name)).map((e) => e.name),
       absDir,
@@ -156,6 +166,7 @@ export async function walkMusicRoot(absRoot: string): Promise<{
     .sort((a, b) => collator.compare(a, b))
 
   for (const artist of artistDirs) {
+    checkpoint()
     const absArtist = join(absRoot, artist)
     let artistEntries: import('fs').Dirent[]
     try {
@@ -184,6 +195,7 @@ export async function walkMusicRoot(absRoot: string): Promise<{
       .map((e) => e.name)
       .sort((a, b) => collator.compare(a, b))
     for (const album of albumDirs) {
+      checkpoint()
       const albumDir = `${artist}/${album}`
       const absAlbum = join(absArtist, album)
       const files = (await collectAudio(absAlbum, albumDir, albumDir, 2)).sort((a, b) =>
@@ -492,7 +504,7 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
     if (!existsSync(root)) {
       throw new Error(`Music folder not found: ${root} — set it in Settings or pick one`)
     }
-    const { albums, skippedRootFiles } = await walkMusicRoot(root)
+    const { albums, skippedRootFiles } = await walkMusicRoot(root, handle.cancelRequested)
     const db = getSqlite()
 
     // Zero files with a non-empty library means the folder is wrong or the drive

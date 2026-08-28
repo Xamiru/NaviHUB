@@ -243,6 +243,56 @@ describe('quizRepo availability', () => {
     expect(safe.imageReveal).toBe(1)
     expect(all.higherLower).toBe(2)
   })
+
+  it('counts Guess the Track identities by source, excludes incomplete metadata, and honors consumed themes', () => {
+    const completed = addAnime('Completed', 'Completed')
+    const watching = addAnime('Watching', 'Watching')
+    const completedTheme = addTheme(completed, {
+      title: 'Same Song',
+      audioPath: 'audio/completed.ogg'
+    })
+    const watchingTheme = addTheme(watching, {
+      title: 'Same Song',
+      audioPath: 'audio/watching.ogg'
+    })
+    addTheme(completed, { title: '', audioPath: 'audio/no-title.ogg' })
+    addTheme(completed, { title: 'No performer', audioPath: 'audio/no-performer.ogg' })
+    const performer = Number(
+      db.prepare(`INSERT INTO person (name) VALUES ('Performer')`).run().lastInsertRowid
+    )
+    for (const themeId of [completedTheme, watchingTheme]) {
+      db.prepare(
+        `INSERT INTO theme_artist (theme_song_id, person_id, sort_order) VALUES (?, ?, 0)`
+      ).run(themeId, performer)
+    }
+
+    const artist = Number(
+      db.prepare(`INSERT INTO music_artist (name, dir_path) VALUES ('Artist', 'Artist')`).run()
+        .lastInsertRowid
+    )
+    const albumA = Number(
+      db.prepare(
+        `INSERT INTO music_album (artist_id, title, dir_path) VALUES (?, 'Album A', 'Artist/Album A')`
+      ).run(artist).lastInsertRowid
+    )
+    const albumB = Number(
+      db.prepare(
+        `INSERT INTO music_album (artist_id, title, dir_path) VALUES (?, 'Album B', 'Artist/Album B')`
+      ).run(artist).lastInsertRowid
+    )
+    db.prepare(
+      `INSERT INTO music_track (album_id, artist_id, file_path, title, tag_artist)
+       VALUES (?, ?, 'Artist/Album A/song.mp3', 'Duplicate', 'Artist'),
+              (?, ?, 'Artist/Album B/song.mp3', 'Duplicate', 'Artist'),
+              (?, ?, 'Artist/Album B/other.mp3', 'Other', 'Artist')`
+    ).run(albumA, artist, albumB, artist, albumB, artist)
+
+    const safe = quizRepo.availability({ statuses: ['Completed'] })
+    const all = quizRepo.availability({ scope: 'all' })
+    expect(safe.guessTrackOptions).toEqual({ themes: 1, music: 2 })
+    expect(all.guessTrackOptions).toEqual({ themes: 1, music: 2 })
+    expect(safe.guessTrack).toBe(2)
+  })
 })
 
 describe('quizRepo higher/lower availability', () => {
@@ -299,6 +349,105 @@ describe('quizRepo higher/lower availability', () => {
       'Movie A',
       'Movie B'
     ])
+  })
+})
+
+describe('quizRepo screen puzzle pools', () => {
+  it('reports a Grid only when one media selection can fill nine distinct intersections', () => {
+    const actor = Number(db.prepare(`INSERT INTO person (name) VALUES ('Grid Actor')`).run().lastInsertRowid)
+    const director = Number(db.prepare(`INSERT INTO person (name) VALUES ('Grid Director')`).run().lastInsertRowid)
+    const company = Number(db.prepare(`INSERT INTO company (name) VALUES ('Grid Company')`).run().lastInsertRowid)
+    const tags = ['Drama', 'Thriller', 'Science Fiction'].map((name) =>
+      Number(db.prepare(`INSERT INTO tag (name, category) VALUES (?, 'genre')`).run(name).lastInsertRowid)
+    )
+    for (let row = 0; row < 3; row++) {
+      for (let column = 0; column < 3; column++) {
+        for (let copy = 0; copy < 2; copy++) {
+          const mediaType = copy === 0 ? 'movie' : 'tv'
+          const title = `Grid ${row}-${column}-${copy}`
+          const mediaId = Number(db.prepare(
+            `INSERT INTO media_item
+             (media_type, title, title_original, status, cover_path, release_date)
+             VALUES (?, ?, ?, 'Completed', ?, ?)`
+          ).run(
+            mediaType,
+            title,
+            row === 0 && column === 0 && copy === 0 ? 'Grid Alias' : null,
+            `media/${title}.jpg`,
+            `${1992 + column * 10}-01-01`
+          ).lastInsertRowid)
+          db.prepare(`INSERT INTO media_tag (media_id, tag_id) VALUES (?, ?)`).run(mediaId, tags[column])
+          if (row === 0) {
+            db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 0)`).run(mediaId, actor)
+          } else if (row === 1) {
+            db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'director', 50)`).run(mediaId, director)
+          } else {
+            db.prepare(`INSERT INTO media_company (media_id, company_id, role) VALUES (?, ?, 'production_studio')`).run(mediaId, company)
+          }
+        }
+      }
+    }
+
+    const availability = quizRepo.availability({ statuses: ['Completed'] })
+    expect(availability.screenGameOptions.find((option) => option.mediaMode === 'both')?.libraryGrid).toBe(9)
+    expect(availability.screenGameOptions.find((option) => option.mediaMode === 'movie')?.libraryGrid).toBe(0)
+    expect(availability.libraryGrid).toBe(9)
+
+    const [question] = quizRepo.challengePool({
+      kind: 'libraryGrid',
+      seed: 18,
+      statuses: ['Completed'],
+      length: 1,
+      options: { screenMediaMode: 'both' }
+    })
+    expect(question.kind).toBe('libraryGrid')
+    if (question.kind !== 'libraryGrid') return
+    expect(question.cells).toHaveLength(9)
+    expect(question.titles.find((title) => title.label === 'Grid 0-0-0')?.aliases).toContain('Grid Alias')
+  })
+
+  it('uses consumed filters and excludes billing position 10 from Chain edges', () => {
+    const mediaIds: number[] = []
+    for (let index = 0; index < 5; index++) {
+      mediaIds.push(Number(db.prepare(
+        `INSERT INTO media_item
+         (media_type, title, status, cover_path, release_date)
+         VALUES ('movie', ?, ?, ?, ?)`
+      ).run(
+        `Chain ${index + 1}`,
+        index === 4 ? 'Watching' : 'Completed',
+        `media/chain-${index + 1}.jpg`,
+        `${2000 + index}-01-01`
+      ).lastInsertRowid))
+    }
+    for (let index = 0; index < 4; index++) {
+      const person = Number(db.prepare(`INSERT INTO person (name) VALUES (?)`).run(`Link ${index + 1}`).lastInsertRowid)
+      const role = index % 2 === 0 ? 'actor' : 'director'
+      const importance = role === 'actor' ? 0 : 50
+      for (const mediaId of [mediaIds[index], mediaIds[index + 1]]) {
+        db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, ?, ?)`).run(mediaId, person, role, importance)
+      }
+    }
+    const extra = Number(db.prepare(`INSERT INTO person (name) VALUES ('Position Ten')`).run().lastInsertRowid)
+    for (const mediaId of [mediaIds[0], mediaIds[4]]) {
+      db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 10)`).run(mediaId, extra)
+    }
+
+    const safe = quizRepo.availability({ statuses: ['Completed'] })
+    const all = quizRepo.availability({ scope: 'all' })
+    expect(safe.screenGameOptions.find((option) => option.mediaMode === 'movie')?.movieChain.hard).toBe(0)
+    expect(all.screenGameOptions.find((option) => option.mediaMode === 'movie')?.movieChain.hard).toBe(1)
+
+    const [question] = quizRepo.challengePool({
+      kind: 'movieChain',
+      seed: 4,
+      length: 1,
+      options: { screenMediaMode: 'movie', movieChainDifficulty: 'hard' }
+    })
+    expect(question.kind).toBe('movieChain')
+    if (question.kind !== 'movieChain') return
+    expect(question.optimalDistance).toBe(4)
+    expect(question.edges.flatMap((edge) => edge.connectors).some((person) => person.name === 'Position Ten')).toBe(false)
   })
 })
 
@@ -486,6 +635,26 @@ describe('quizRepo session history', () => {
     expect(h.best?.score).toBe(8)
   })
 
+  it('allows one-route Movie Chain sessions to set difficulty-specific records', () => {
+    const easy = quizRepo.logSession({
+      kind: 'movieChainEasy',
+      score: 900,
+      total: 1,
+      bestStreak: 0,
+      settings: { correct: 1, attempted: 1, playMode: 'solo', scorePolicy: 'points' }
+    })
+    const hard = quizRepo.logSession({
+      kind: 'movieChainHard',
+      score: 700,
+      total: 1,
+      bestStreak: 0,
+      settings: { correct: 1, attempted: 1, playMode: 'solo', scorePolicy: 'points' }
+    })
+    expect(quizRepo.history('movieChainEasy').best?.id).toBe(easy)
+    expect(quizRepo.history('movieChainHard').best?.id).toBe(hard)
+    expect(quizRepo.history('movieChainNormal').best).toBeNull()
+  })
+
   it('breaks accuracy ties by longer round, and tracks the max streak overall', () => {
     quizRepo.logSession({ kind: 'song', score: 4, total: 5, bestStreak: 9 })
     const longer = quizRepo.logSession({ kind: 'song', score: 8, total: 10, bestStreak: 2 })
@@ -567,6 +736,12 @@ describe('quizRepo session history', () => {
         'conjRace',
         'higherLower',
         'imageReveal',
+        'libraryGrid',
+        'movieChainEasy',
+        'movieChainHard',
+        'movieChainNormal',
+        'guessTrackMusic',
+        'guessTrackTheme',
         'kanaRace',
         'readingRace',
         'shiritori',

@@ -93,6 +93,7 @@ export function setImportProgress(done: number, total?: number): void {
 // The task behind the current runImport, so the progress setter above can see
 // a cancel without every call site threading a handle.
 let activeImport: tasks.TaskHandle | null = null
+let activeImportSignal: AbortSignal | null = null
 
 // ---- zip reader seam (importFromReader is pure of yauzl for testing) ----
 
@@ -562,6 +563,7 @@ export async function runImport<T>(fn: () => Promise<T>): Promise<T> {
   importState.phase = 'reading'
   importState.done = 0
   importState.total = 0
+  const controller = new AbortController()
   // One task for the whole gate, so dictionaries, sentence banks and stroke
   // sets all appear without each entry point needing its own wiring.
   return tasks.runTask(
@@ -569,7 +571,10 @@ export async function runImport<T>(fn: () => Promise<T>): Promise<T> {
       kind: 'dictImport',
       label: 'Dictionary import',
       route: '/settings',
-      controls: tasks.flagCancel('Dictionary imports cannot be paused'),
+      controls: {
+        cancel: () => controller.abort(),
+        pauseNote: 'Dictionary imports cannot be paused'
+      },
       project: () => ({
         detail: importState.dictTitle ?? importState.phase,
         done: importState.done,
@@ -578,13 +583,18 @@ export async function runImport<T>(fn: () => Promise<T>): Promise<T> {
     },
     async (handle) => {
       activeImport = handle
+      activeImportSignal = controller.signal
       try {
         return await fn()
       } catch (err) {
         importState.error = err instanceof Error ? err.message : String(err)
+        if (handle.cancelRequested()) {
+          throw new tasks.TaskCancelledError(importState.dictTitle ?? 'Dictionary import')
+        }
         throw err
       } finally {
         activeImport = null
+        activeImportSignal = null
         importState.running = false
         importState.phase = 'idle'
       }
@@ -599,12 +609,20 @@ export async function downloadToTemp(url: string, ext = 'zip'): Promise<string> 
   importState.phase = 'downloading'
   importState.done = 0
   importState.total = 0
-  const res = await fetchWithRetry(url, { timeoutMs: 10 * 60_000, headers: { 'User-Agent': UA } })
+  const res = await fetchWithRetry(url, {
+    timeoutMs: 10 * 60_000,
+    headers: { 'User-Agent': UA },
+    taskSignal: activeImportSignal ?? undefined
+  })
   if (!res.ok || !res.body) throw new Error(`Download failed (HTTP ${res.status})`)
   importState.total = Number(res.headers.get('content-length')) || 0
   const tmp = join(app.getPath('temp'), `navihub-dict-${Date.now()}.${ext}`)
   const counter = new Transform({
     transform(chunk, _enc, cb) {
+      if (activeImport?.cancelRequested()) {
+        cb(new tasks.TaskCancelledError(importState.dictTitle ?? 'Dictionary import'))
+        return
+      }
       importState.done += chunk.length
       cb(null, chunk)
     }

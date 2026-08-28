@@ -437,6 +437,8 @@ const api: NaviApi = {
     spotifyDownloadPlaylist: (input) =>
       ipcRenderer.invoke('music:spotifyDownloadPlaylist', input),
     spotifyInspectEntity: (input) => ipcRenderer.invoke('music:spotifyInspectEntity', input),
+    spotifyInspectionStatus: () => ipcRenderer.invoke('music:spotifyInspectionStatus'),
+    spotifyCancelInspection: () => ipcRenderer.invoke('music:spotifyCancelInspection'),
     spotifyDownloadEntity: (input) => ipcRenderer.invoke('music:spotifyDownloadEntity', input),
     spotifyForgetEntitySource: (input) =>
       ipcRenderer.invoke('music:spotifyForgetEntitySource', input),
@@ -576,6 +578,13 @@ const api: NaviApi = {
   logs: {
     tail: (req) => ipcRenderer.invoke('logs:tail', req),
     reveal: () => ipcRenderer.invoke('logs:reveal')
+  },
+  libraryExport: {
+    preview: (options) => ipcRenderer.invoke('libraryExport:preview', options),
+    start: (options) => ipcRenderer.invoke('libraryExport:start', options),
+    status: () => ipcRenderer.invoke('libraryExport:status'),
+    cancel: () => ipcRenderer.invoke('libraryExport:cancel'),
+    reveal: () => ipcRenderer.invoke('libraryExport:reveal')
   },
   updates: {
     status: () => ipcRenderer.invoke('update:status'),

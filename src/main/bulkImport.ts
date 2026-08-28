@@ -9,6 +9,7 @@ import { beginActivity, endActivity, TaskCancelledError } from './progress'
 import * as tasks from './tasks'
 import type { TaskHandle } from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
+import { runWithActivitySignal } from './activityContext'
 import { bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
 import type { BulkListParams, BulkPreviewItem, BulkRunStatus, BulkStartPayload } from '@shared/types'
 
@@ -239,7 +240,7 @@ export function start(
   })
   handle = task
 
-  void (async () => {
+  void runWithActivitySignal(runGate.signal, async () => {
     // Arms progress.ts so every title's own updateActivity/imageProgress calls
     // reach the Topbar pill — the app's only always-mounted progress surface.
     const slot = beginActivity(`Bulk import: ${cfg.label}`, { attachTo: task })
@@ -314,7 +315,7 @@ export function start(
               : { state: 'done' }
       )
     }
-  })()
+  })
 
   return getStatus()
 }

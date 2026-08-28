@@ -69,6 +69,7 @@ import * as openFile from './openFile'
 import { getActivity, withActivity } from './progress'
 import * as logBus from './logBus'
 import * as logFile from './logFile'
+import * as libraryExport from './libraryExport'
 import * as tasks from './tasks'
 import * as appMenu from './appMenu'
 import * as updater from './updater'
@@ -719,6 +720,15 @@ export function registerIpc(): void {
   ipcMain.handle('logs:tail', (_e, req) => logBus.readLog(req ?? {}))
   ipcMain.handle('logs:reveal', () => shell.openPath(logFile.logDir()))
 
+  // ---- sanitized library export ----
+  ipcMain.handle('libraryExport:preview', (_e, options) => libraryExport.preview(options))
+  ipcMain.handle('libraryExport:start', (event, options) =>
+    libraryExport.start(options, BrowserWindow.fromWebContents(event.sender))
+  )
+  ipcMain.handle('libraryExport:status', () => libraryExport.getStatus())
+  ipcMain.handle('libraryExport:cancel', () => libraryExport.cancel())
+  ipcMain.handle('libraryExport:reveal', () => libraryExport.reveal())
+
   // ---- in-app updates ----
   // Deliberately NOT withActivity: the shared slot has no terminal states and
   // clears on completion, but the updater must keep 'ready'/'error' readable
@@ -772,6 +782,8 @@ export function registerIpc(): void {
   ipcMain.handle('music:spotifyInspectEntity', (_e, input) =>
     withActivity(`Inspecting Spotify ${input.kind}`, () => musicSpotify.inspectEntity(input))
   )
+  ipcMain.handle('music:spotifyInspectionStatus', () => musicSpotify.getInspectionStatus())
+  ipcMain.handle('music:spotifyCancelInspection', () => musicSpotify.cancelInspection())
   ipcMain.handle('music:spotifyDownloadEntity', (_e, input) =>
     musicSpotify.startEntityDownload(input)
   )

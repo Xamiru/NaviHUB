@@ -648,6 +648,8 @@ export type QuizKind =
   | 'song'
   | 'songArcade' // song quiz arcade run: lives + speed points (best = most points)
   | 'songReverse' // song quiz reverse: hear clips, pick which belongs to the shown anime
+  | 'guessTrackTheme' // progressive intro clips from anime themes (best = points)
+  | 'guessTrackMusic' // progressive intro clips from the local music library (best = points)
   | 'character' // legacy character-portrait sessions; new rounds use cast
   | 'cast' // actor photo -> credited movie/TV title
   | 'va' // anime character -> different-title character sharing a Japanese VA
@@ -658,6 +660,10 @@ export type QuizKind =
   | 'connections' // shared person/studio between two titles
   | 'chronology' // order four related titles by release date
   | 'higherLower' // endless metric comparison (best = most correct)
+  | 'libraryGrid' // 3x3 movie/TV fact intersections (best = points)
+  | 'movieChainEasy' // connect movie/TV titles across two credited-person links
+  | 'movieChainNormal' // connect movie/TV titles across three credited-person links
+  | 'movieChainHard' // connect movie/TV titles across four credited-person links
   | 'songRelay' // couch-party song relay; no solo personal best
   | 'japanese'
   | 'kana'
@@ -714,6 +720,8 @@ export interface QuizAvailabilityRequest {
 
 export interface QuizAvailability {
   song: number
+  guessTrack: number
+  guessTrackOptions: QuizGuessTrackAvailability
   cast: number
   va: number
   synopsis: number
@@ -724,6 +732,23 @@ export interface QuizAvailability {
   chronology: number
   higherLower: number
   higherLowerOptions: QuizHigherLowerAvailability[]
+  libraryGrid: number
+  movieChain: number
+  screenGameOptions: QuizScreenGameAvailability[]
+}
+
+export type QuizScreenMediaMode = 'movie' | 'tv' | 'both'
+export type QuizMovieChainDifficulty = 'easy' | 'normal' | 'hard'
+
+export interface QuizScreenGameAvailability {
+  mediaMode: QuizScreenMediaMode
+  libraryGrid: number
+  movieChain: Record<QuizMovieChainDifficulty, number>
+}
+
+export interface QuizGuessTrackAvailability {
+  themes: number
+  music: number
 }
 
 export type QuizHigherLowerMetric = 'releaseDate' | 'totalUnits' | 'personalScore'
@@ -741,6 +766,8 @@ export type QuizChallengeKind =
   | 'connections'
   | 'chronology'
   | 'higherLower'
+  | 'libraryGrid'
+  | 'movieChain'
 
 export interface QuizChallengeRequest {
   kind: QuizChallengeKind
@@ -756,6 +783,8 @@ export interface QuizChallengeRequest {
     higherLowerReferenceId?: number
     higherLowerExcludeIds?: number[]
     higherLowerIndependent?: boolean
+    screenMediaMode?: QuizScreenMediaMode
+    movieChainDifficulty?: QuizMovieChainDifficulty
   }
 }
 
@@ -808,12 +837,77 @@ export interface QuizHigherLowerQuestion extends QuizChallengeBase {
   challengerValue: number
 }
 
+export type QuizLibraryGridClueKind =
+  | 'actor'
+  | 'director'
+  | 'genre'
+  | 'company'
+  | 'decade'
+
+export interface QuizScreenTitle {
+  key: string
+  label: string
+  aliases: string[]
+  imagePath: string
+  releaseYear: number | null
+  mediaType: 'movie' | 'tv'
+}
+
+export interface QuizLibraryGridClue {
+  key: string
+  kind: QuizLibraryGridClueKind
+  label: string
+}
+
+export interface QuizLibraryGridCell {
+  key: string
+  row: number
+  column: number
+  validKeys: string[]
+  revealKey: string
+  hintChoices: string[]
+}
+
+export interface QuizLibraryGridQuestion extends QuizChallengeBase {
+  kind: 'libraryGrid'
+  rows: QuizLibraryGridClue[]
+  columns: QuizLibraryGridClue[]
+  cells: QuizLibraryGridCell[]
+  titles: QuizScreenTitle[]
+}
+
+export interface QuizMovieChainConnector {
+  personId: number
+  name: string
+  leftRoles: string[]
+  rightRoles: string[]
+}
+
+export interface QuizMovieChainEdge {
+  leftKey: string
+  rightKey: string
+  connectors: QuizMovieChainConnector[]
+}
+
+export interface QuizMovieChainQuestion extends QuizChallengeBase {
+  kind: 'movieChain'
+  start: QuizScreenTitle
+  target: QuizScreenTitle
+  titles: QuizScreenTitle[]
+  edges: QuizMovieChainEdge[]
+  difficulty: QuizMovieChainDifficulty
+  optimalDistance: number
+  maxMoves: number
+}
+
 export type QuizChallengeQuestion =
   | QuizImageRevealQuestion
   | QuizSilhouetteQuestion
   | QuizConnectionsQuestion
   | QuizChronologyQuestion
   | QuizHigherLowerQuestion
+  | QuizLibraryGridQuestion
+  | QuizMovieChainQuestion
 
 export type QuizPartyParticipants = 2 | 3 | 4 | 'teams'
 export interface QuizPartyConfig {
@@ -2626,6 +2720,16 @@ export interface SpotifyEntityInspection {
   releases: SpotifyReleasePreview[]
 }
 
+export interface SpotifyEntityInspectionStatus {
+  running: boolean
+  kind: SpotifyEntityKind | null
+  entityId: number | null
+  phase: 'idle' | 'discovering' | 'catalogue' | 'matching'
+  message: string | null
+  foundCount: number | null
+  cancelled: boolean
+}
+
 export interface SpotifyEntityDownloadInput {
   inspectionId: string
   albumIds: string[]
@@ -2772,6 +2876,7 @@ export type TaskKind =
   | 'coverageScan'
   | 'torrentSearch'
   | 'franchiseArt'
+  | 'libraryExport'
 // Achievement fetches deliberately have NO kind of their own: they run through
 // withActivity in ipc.ts, so they are 'import' rows with a clear label
 // ("Fetching achievements"). Adding a kind nothing creates would be a lie the
@@ -2806,11 +2911,64 @@ export interface TaskSnapshot {
   elapsedSec: number
   error: string | null
   canCancel: boolean
-  // False renders the button DISABLED, not hidden, with pauseNote as the
-  // tooltip — so it stays visible which jobs can pause and which cannot.
+  // False omits the control; the full Tasks page renders pauseNote as readable
+  // copy so unsupported pause is not communicated only through a tooltip.
   canPause: boolean
   pauseNote: string | null
   route: string | null // renderer hash route to the owning surface
+}
+
+export type LibraryExportSection = MediaType | 'wrestling'
+export type LibraryExportFormat = 'folder' | 'zip'
+
+export interface LibraryExportOptions {
+  sections: LibraryExportSection[]
+  includeAssets: boolean
+  includeThemeAudio: boolean
+  includeSpotifyPlaylists: boolean
+  includeProgress: boolean
+  includeRatings: boolean
+  includeLists: boolean
+  format: LibraryExportFormat
+}
+
+export interface LibraryExportPreview {
+  sectionCounts: Record<LibraryExportSection, number>
+  selectedCount: number
+  spotifyPlaylistCount: number
+  assetFileCount: number
+  estimatedBytes: number
+  missingAssetCount: number
+}
+
+export type LibraryExportPhase =
+  | 'idle'
+  | 'choosing'
+  | 'snapshotting'
+  | 'sanitizing'
+  | 'copying'
+  | 'packing'
+  | 'finalizing'
+  | 'done'
+  | 'cancelled'
+  | 'error'
+
+export interface LibraryExportStatus {
+  id: string | null
+  running: boolean
+  phase: LibraryExportPhase
+  message: string | null
+  done: number
+  total: number
+  percent: number | null
+  outputPath: string | null
+  error: string | null
+  missingAssetCount: number
+}
+
+export interface LibraryExportStartResult {
+  started: boolean
+  id: string | null
 }
 
 // ---- Structured logs ----

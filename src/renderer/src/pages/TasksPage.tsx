@@ -19,6 +19,7 @@ export default function TasksPage() {
   const { visible, sentinelRef, hasMore } = useIncrementalList(finished)
 
   const failed = finished.filter((t) => t.state === 'error').length
+  const stoppable = active.filter((t) => t.canCancel)
 
   async function clearFinished(): Promise<void> {
     await api.tasks.clearFinished()
@@ -26,7 +27,6 @@ export default function TasksPage() {
   }
 
   async function cancelAll(): Promise<void> {
-    const stoppable = active.filter((t) => t.canCancel)
     if (stoppable.length === 0) return
     const ok = await confirmDialog(
       `Stop ${stoppable.length} running task${stoppable.length === 1 ? '' : 's'}?`,
@@ -46,8 +46,18 @@ export default function TasksPage() {
           <ActionMenu
             items={[
               { label: 'Open logs folder', onSelect: () => api.logs.reveal() },
-              { label: 'Stop all running', onSelect: cancelAll, disabled: active.length === 0, danger: true },
-              { label: 'Clear finished', onSelect: clearFinished, disabled: finished.length === 0, danger: true }
+              {
+                label: 'Stop all running',
+                onSelect: cancelAll,
+                disabled: stoppable.length === 0,
+                danger: true
+              },
+              {
+                label: 'Clear finished',
+                onSelect: clearFinished,
+                disabled: finished.length === 0,
+                danger: true
+              }
             ]}
           />
         }
@@ -59,7 +69,7 @@ export default function TasksPage() {
             {active.length === 0 ? (
               <EmptyState
                 title="Nothing running"
-                body="Imports, downloads, scans and conversions show up here while they work — with pause and stop."
+                body="Imports, downloads, scans and conversions show up here while they work. Each row shows only the controls that task can honor."
                 action={
                   <Link className="btn-primary" to="/bulk">
                     Bulk Import

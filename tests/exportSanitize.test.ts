@@ -236,6 +236,88 @@ describe('export sanitize', () => {
     )
     older.exec(`INSERT INTO media_item (id, media_type, title, status) VALUES (1, 'anime', 'X', 'Watching')`)
     expect(() => sanitizeDb(older)).not.toThrow()
+    expect(() =>
+      sanitizeDb(older, { sections: ['anime'], includeSpotifyPlaylists: true })
+    ).not.toThrow()
     expect(older.prepare('SELECT status FROM media_item WHERE id=1').get()).toEqual({ status: null })
+  })
+})
+
+describe('custom export policy', () => {
+  function sanitizeWith(options: Record<string, unknown>): void {
+    db = createTestDb()
+    seed()
+    sanitizeDb(db, options)
+  }
+
+  it('keeps only selected media sections and prunes their orphaned graph rows', () => {
+    db = createTestDb()
+    seed()
+    db.exec(`
+      INSERT INTO media_item (id, media_type, title) VALUES (2, 'movie', 'Heat');
+      INSERT INTO person (id, name) VALUES (2, 'Al Pacino');
+      INSERT INTO credit (media_id, person_id, role) VALUES (2, 2, 'actor');
+      INSERT INTO list_item (list_id, entity_id, sort_order) VALUES (1, 2, 1);
+    `)
+    sanitizeDb(db, { sections: ['anime'], includeLists: true })
+    expect(db.prepare('SELECT id FROM media_item ORDER BY id').all()).toEqual([{ id: 1 }])
+    expect(db.prepare('SELECT id FROM person ORDER BY id').all()).toEqual([{ id: 1 }])
+    expect(db.prepare('SELECT entity_id FROM list_item').all()).toEqual([{ entity_id: 1 }])
+  })
+
+  it('preserves only the explicitly selected media tracking groups', () => {
+    sanitizeWith({ sections: ['anime'], includeProgress: true, includeRatings: false })
+    expect(
+      db.prepare('SELECT status, progress, rewatch_count, score, notes, favorite FROM media_item').get()
+    ).toEqual({
+      status: 'Completed',
+      progress: 26,
+      rewatch_count: 2,
+      score: null,
+      notes: null,
+      favorite: 0
+    })
+
+    sanitizeWith({ sections: ['anime'], includeProgress: false, includeRatings: true })
+    expect(
+      db.prepare('SELECT status, progress, rewatch_count, score, notes, favorite FROM media_item').get()
+    ).toEqual({
+      status: null,
+      progress: 0,
+      rewatch_count: 0,
+      score: 9.5,
+      notes: 'my private notes',
+      favorite: 1
+    })
+  })
+
+  it('exports Spotify source snapshots without local music linkage', () => {
+    sanitizeWith({ sections: ['anime'], includeSpotifyPlaylists: true })
+    expect(count('music_artist')).toBe(0)
+    expect(count('music_track')).toBe(0)
+    expect(count('music_playlist')).toBe(1)
+    expect(count('music_spotify_playlist')).toBe(1)
+    expect(count('music_spotify_playlist_item')).toBe(1)
+    expect(
+      db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item').get()
+    ).toEqual({ matched_track_id: null })
+  })
+
+  it('clears omitted asset and theme-audio paths without removing metadata', () => {
+    sanitizeWith({ sections: ['anime'], includeAssets: false, includeThemeAudio: false })
+    expect(db.prepare('SELECT cover_path FROM media_item').get()).toEqual({ cover_path: null })
+    expect(db.prepare('SELECT photo_path FROM person').get()).toEqual({ photo_path: null })
+    expect(db.prepare('SELECT image_path FROM character').get()).toEqual({ image_path: null })
+    expect(db.prepare('SELECT title, audio_url, audio_path FROM theme_song').get()).toEqual({
+      title: 'Tank!',
+      audio_url: 'https://x/tank.ogg',
+      audio_path: null
+    })
+  })
+
+  it('rejects an export with no library section', () => {
+    db = createTestDb()
+    seed()
+    expect(() => sanitizeDb(db, { sections: [] })).toThrow('Select at least one')
   })
 })

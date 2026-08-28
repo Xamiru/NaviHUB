@@ -16,6 +16,7 @@ import { beginActivity, endActivity, updateActivity } from '../progress'
 import * as tasks from '../tasks'
 import type { TaskHandle } from '../tasks'
 import { cooperativeGate, type PauseGate } from '../taskControls'
+import { runWithActivitySignal } from '../activityContext'
 import { sleep } from '../http'
 import * as repo from '../repos/wrestlingRepo'
 import * as wiki from './wikipedia'
@@ -216,7 +217,7 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
   })
   handle = task
 
-  void (async () => {
+  void runWithActivitySignal(runGate.signal, async () => {
     const slot = beginActivity('Wrestling wiki import', { attachTo: task })
     try {
       let consecutiveFailures = 0
@@ -436,7 +437,9 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
       if (status.id === id) status = { ...status, state: 'done', message: null }
     } catch (err) {
       if (status.id === id) {
-        status = { ...status, state: 'error', message: (err as Error).message }
+        status = runGate.cancelled
+          ? { ...status, state: 'cancelled', message: null }
+          : { ...status, state: 'error', message: (err as Error).message }
       }
     } finally {
       // Never clear a NEWER run's slot — neither a newer wrestling run
@@ -452,7 +455,7 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
               : { state: 'done' }
       )
     }
-  })()
+  })
 
   return getStatus()
 }

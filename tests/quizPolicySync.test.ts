@@ -12,6 +12,8 @@ describe('central quiz kinds and score policies stay synchronized', () => {
     ['song', 'accuracy'],
     ['songArcade', 'points'],
     ['songReverse', 'accuracy'],
+    ['guessTrackTheme', 'points'],
+    ['guessTrackMusic', 'points'],
     ['character', 'accuracy'],
     ['cast', 'accuracy'],
     ['va', 'accuracy'],
@@ -22,6 +24,10 @@ describe('central quiz kinds and score policies stay synchronized', () => {
     ['connections', 'accuracy'],
     ['chronology', 'accuracy'],
     ['higherLower', 'points'],
+    ['libraryGrid', 'points'],
+    ['movieChainEasy', 'points'],
+    ['movieChainNormal', 'points'],
+    ['movieChainHard', 'points'],
     ['songRelay', 'party'],
     ['tournament', 'tournament']
   ]
@@ -34,6 +40,22 @@ describe('central quiz kinds and score policies stay synchronized', () => {
     const app = read('../src/renderer/src/App.tsx')
     for (const route of ['images', 'silhouette', 'connections', 'chronology', 'higher-lower']) {
       expect(app).toContain(`path="/quiz/${route}"`)
+    }
+  })
+
+  it('keeps Guess the Track registered as a separate audio route', () => {
+    const app = read('../src/renderer/src/App.tsx')
+    const hub = read('../src/renderer/src/pages/QuizLandingPage.tsx')
+    expect(app).toContain('path="/quiz/guess-track"')
+    expect(hub).toContain("to: '/quiz/guess-track'")
+  })
+
+  it('keeps both screen puzzles registered and visible on the hub', () => {
+    const app = read('../src/renderer/src/App.tsx')
+    const hub = read('../src/renderer/src/pages/QuizLandingPage.tsx')
+    for (const route of ['library-grid', 'movie-chain']) {
+      expect(app).toContain(`path="/quiz/${route}"`)
+      expect(hub).toContain(`to: '/quiz/${route}'`)
     }
   })
 })

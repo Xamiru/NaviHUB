@@ -68,7 +68,7 @@ describe('processControls on a signalling platform', () => {
       onCancel: () => order.push('flag')
     })
     c.cancel?.()
-    expect(order).toEqual(['SIGCONT', 'flag', 'SIGTERM'])
+    expect(order).toEqual(['flag', 'SIGCONT', 'SIGTERM'])
   })
 
   it('escalates to SIGKILL only if the process is still alive', () => {
@@ -94,13 +94,13 @@ describe('processControls on a signalling platform', () => {
     expect(dead.signals).not.toContain('SIGKILL')
   })
 
-  it('is a no-op when the process is already gone', () => {
-    const c = processControls(() => null, { platform: 'linux' })
-    expect(() => {
-      c.cancel?.()
-      c.pause?.()
-      c.resume?.()
-    }).not.toThrow()
+  it('records cancellation between process phases and rejects a false pause acknowledgement', () => {
+    const onCancel = vi.fn()
+    const c = processControls(() => null, { platform: 'linux', onCancel })
+    expect(() => c.cancel?.()).not.toThrow()
+    expect(onCancel).toHaveBeenCalledOnce()
+    expect(() => c.pause?.()).toThrow(/between process phases/)
+    expect(() => c.resume?.()).toThrow(/between process phases/)
   })
 })
 
@@ -115,6 +115,17 @@ describe('processControls on Windows', () => {
     c.cancel?.()
     // And no SIGCONT either — that call would itself kill the process there.
     expect(proc.signals).toEqual(['SIGTERM'])
+  })
+
+  it('kills the complete Windows process tree when a pid is available', () => {
+    const proc = recorder()
+    proc.pid = 4242
+    const killTree = vi.fn()
+    const onCancel = vi.fn()
+    processControls(() => proc, { platform: 'win32', killTree, onCancel }).cancel?.()
+    expect(onCancel).toHaveBeenCalledOnce()
+    expect(killTree).toHaveBeenCalledWith(4242)
+    expect(proc.signals).toEqual([])
   })
 })
 
@@ -153,6 +164,7 @@ describe('cooperativeGate', () => {
     await expect(waiting).resolves.toBeUndefined()
     expect(gate.cancelled).toBe(true)
     expect(gate.paused).toBe(false)
+    expect(gate.signal.aborted).toBe(true)
   })
 
   it('never blocks once cancelled', async () => {

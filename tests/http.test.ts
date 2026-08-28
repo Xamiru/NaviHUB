@@ -79,4 +79,29 @@ describe('fetchWithRetry', () => {
     expect(res.status).toBe(429)
     expect(state.calls).toBe(1)
   })
+
+  it('aborts an active request through the internal task signal without retrying', async () => {
+    const controller = new AbortController()
+    const fetchMock = vi.fn((_url: string, init: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+      })
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const pending = fetchWithRetry('http://slow', { taskSignal: controller.signal }, 3)
+    await Promise.resolve()
+    controller.abort()
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('aborts a retry wait instead of starting another request', async () => {
+    const controller = new AbortController()
+    const state = stubFetch([500, 200])
+    const pending = fetchWithRetry('http://retrying', { taskSignal: controller.signal }, 3)
+    await Promise.resolve()
+    controller.abort()
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
+    expect(state.calls).toBe(1)
+  })
 })

@@ -14,32 +14,50 @@
 // slow rather than the app hanging. URLs carry API keys; logBus redacts at
 // ingest, so they are passed through raw here.
 import { logError, logWarn } from './logBus'
+import { currentActivitySignal } from './activityContext'
 
 const MAX_RATE_LIMIT_WAITS = 5 // safety valve against a stuck 429 loop
 const DEFAULT_TIMEOUT_MS = 30_000
 
 export async function fetchWithRetry(
   url: string,
-  init?: RequestInit & { timeoutMs?: number; rateLimitWaits?: number },
+  init?: RequestInit & {
+    timeoutMs?: number
+    rateLimitWaits?: number
+    // Internal task cancellation, composed with a fresh timeout per attempt.
+    // Callers still must not pass a fixed `signal` across retries.
+    taskSignal?: AbortSignal
+  },
   retries = 3
 ): Promise<Response> {
-  const { timeoutMs = DEFAULT_TIMEOUT_MS, rateLimitWaits: maxWaits = MAX_RATE_LIMIT_WAITS, ...rest } =
-    init ?? {}
+  const {
+    timeoutMs = DEFAULT_TIMEOUT_MS,
+    rateLimitWaits: maxWaits = MAX_RATE_LIMIT_WAITS,
+    taskSignal = currentActivitySignal(),
+    ...rest
+  } = init ?? {}
   let rateLimitWaits = 0
   let attempt = 0
   while (true) {
     let res: Response
     try {
-      // Per-attempt timeout (a caller-provided signal wins) — without one, a
-      // stalled host hangs the import and the activity pill forever.
+      throwIfAborted(taskSignal)
+      // The task signal is composed with a NEW timeout for every attempt. It
+      // can stop active I/O without turning one timeout into a deadline across
+      // the entire retry loop.
+      const signals = [AbortSignal.timeout(timeoutMs)]
+      if (taskSignal) signals.push(taskSignal)
+      if (rest.signal) signals.push(rest.signal)
       res = await fetch(url, {
         ...rest,
-        signal: rest.signal ?? AbortSignal.timeout(timeoutMs)
+        signal: AbortSignal.any(signals)
       })
     } catch (err) {
+      throwIfAborted(taskSignal)
+      if (rest.signal?.aborted) throw err
       if (attempt < retries) {
         logWarn('http', `retry ${attempt + 1}/${retries} after ${errText(err)}: ${url}`)
-        await sleep(1000 * 2 ** attempt)
+        await sleep(1000 * 2 ** attempt, taskSignal)
         attempt++
         continue
       }
@@ -54,12 +72,12 @@ export async function fetchWithRetry(
         'http',
         `429 rate limited, waiting ${retryAfter}s (${rateLimitWaits}/${maxWaits}): ${url}`
       )
-      await sleep((retryAfter + 1) * 1000)
+      await sleep((retryAfter + 1) * 1000, taskSignal)
       continue
     }
     if (res.status >= 500 && attempt < retries) {
       logWarn('http', `retry ${attempt + 1}/${retries} after HTTP ${res.status}: ${url}`)
-      await sleep(1000 * 2 ** attempt)
+      await sleep(1000 * 2 ** attempt, taskSignal)
       attempt++
       continue
     }
@@ -74,6 +92,28 @@ function errText(err: unknown): string {
 }
 
 // Shared by the throttled crawlers (bulk import, steam backfill) too.
-export function sleep(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms))
+export function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+  if (!signal) return new Promise((resolve) => setTimeout(resolve, ms))
+  throwIfAborted(signal)
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    const onAbort = (): void => {
+      clearTimeout(timer)
+      reject(abortError())
+    }
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw abortError()
+}
+
+function abortError(): Error {
+  const error = new Error('Request cancelled')
+  error.name = 'AbortError'
+  return error
 }

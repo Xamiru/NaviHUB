@@ -3,12 +3,14 @@ import { fetchWithRetry, sleep } from './http'
 import { downloadImage } from './files'
 import * as tasks from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
+import { stripAlbumYearPrefix } from './repos/musicSpotifyRepo'
+import { runWithActivitySignal } from './activityContext'
 import type { MusicArtResult, MusicArtStatus } from '@shared/types'
 
-// Online fallback for art the scanner could not find locally. Albums prefer an
-// exact MusicBrainz release group and Cover Art Archive front image. Remembered
-// Spotify ids give identity-safe fallbacks; Deezer/iTunes remain strict-name
-// fallbacks. Temporary provider failures are never cached as permanent misses.
+// Online fallback for art the scanner could not find locally. Albums prefer a
+// remembered Spotify identity, then fast exact-name fallbacks. MusicBrainz/CAA
+// remains the high-quality archival fallback, while optional provider failures
+// move on quickly instead of pinning the whole bulk job for minutes.
 
 export function normalizeForMatch(s: string): string {
   return s
@@ -115,7 +117,7 @@ async function getJson(
   missingStatuses: number[] = []
 ): Promise<ProviderResult<unknown>> {
   try {
-    const res = await fetchWithRetry(url, { ...init, timeoutMs: 20_000 })
+    const res = await fetchWithRetry(url, { ...init, timeoutMs: 10_000 }, 1)
     if (missingStatuses.includes(res.status)) return { kind: 'miss' }
     if (!res.ok) return { kind: 'error' }
     return { kind: 'ok', value: await res.json() }
@@ -181,6 +183,38 @@ async function deezerArtists(
       return { name: row.name ?? '', pictureUrl: row.picture_xl ?? null }
     })
   }
+}
+
+async function wikipediaArtist(name: string): Promise<ProviderResult<string>> {
+  const params = new URLSearchParams({
+    action: 'query',
+    prop: 'pageimages|pageprops',
+    piprop: 'original|thumbnail',
+    pithumbsize: '1200',
+    redirects: '1',
+    titles: name,
+    format: 'json',
+    origin: '*'
+  })
+  const result = await getJson(`https://en.wikipedia.org/w/api.php?${params}`)
+  if (result.kind !== 'ok') return result
+  const pages = (result.value as { query?: { pages?: Record<string, unknown> } }).query?.pages
+  if (!pages) return { kind: 'error' }
+  const rows = Object.values(pages) as {
+    title?: string
+    missing?: unknown
+    pageprops?: { disambiguation?: unknown }
+    original?: { source?: string }
+    thumbnail?: { source?: string }
+  }[]
+  const matches = rows.filter((page) =>
+    page.missing === undefined &&
+    page.pageprops?.disambiguation === undefined &&
+    normalizeForMatch(page.title ?? '') === normalizeForMatch(name) &&
+    !!(page.original?.source ?? page.thumbnail?.source)
+  )
+  const urls = new Set(matches.map((page) => page.original?.source ?? page.thumbnail?.source as string))
+  return urls.size === 1 ? { kind: 'ok', value: [...urls][0] } : { kind: 'miss' }
 }
 
 async function spotifyImage(
@@ -280,43 +314,55 @@ interface ArtLookup {
   transientFailure: boolean
 }
 
+type ArtCheckpoint = () => Promise<void>
+const noArtCheckpoint: ArtCheckpoint = async () => undefined
+
 async function findAlbumCoverUrl(
   artist: string,
   album: string,
   year: number | null,
-  spotifyId: string | null
+  spotifyId: string | null,
+  checkpoint: ArtCheckpoint
 ): Promise<ArtLookup> {
   let transientFailure = false
+  await checkpoint()
+  const spotify = await spotifyImage('album', spotifyId)
+  if (spotify.kind === 'ok') return { url: spotify.value, transientFailure }
+  if (spotify.kind === 'error') transientFailure = true
+
+  await checkpoint()
+  const itunes = await itunesAlbums(artist, album)
+  if (itunes.kind === 'ok') {
+    const match = pickBestAlbumMatch(itunes.value, artist, album)
+    if (match) return { url: match.coverUrl, transientFailure }
+  } else if (itunes.kind === 'error') transientFailure = true
+
+  await checkpoint()
   const groups = await musicBrainzReleaseGroups(artist, album)
   if (groups.kind === 'error') transientFailure = true
   if (groups.kind === 'ok') {
     const group = pickMusicBrainzReleaseGroup(groups.value, artist, album, year)
     if (group) {
+      await checkpoint()
       const cover = await coverArtArchive(group.id)
       if (cover.kind === 'ok') return { url: cover.value, transientFailure }
       if (cover.kind === 'error') transientFailure = true
     }
   }
 
-  const spotify = await spotifyImage('album', spotifyId)
-  if (spotify.kind === 'ok') return { url: spotify.value, transientFailure }
-  if (spotify.kind === 'error') transientFailure = true
-
+  await checkpoint()
   const deezer = await deezerAlbums(artist, album)
   if (deezer.kind === 'ok') {
     const match = pickBestAlbumMatch(deezer.value, artist, album)
     if (match) return { url: match.coverUrl, transientFailure }
   } else if (deezer.kind === 'error') transientFailure = true
-
-  const itunes = await itunesAlbums(artist, album)
-  if (itunes.kind === 'ok') {
-    const match = pickBestAlbumMatch(itunes.value, artist, album)
-    if (match) return { url: match.coverUrl, transientFailure }
-  } else if (itunes.kind === 'error') transientFailure = true
   return { url: null, transientFailure }
 }
 
-export async function fetchAlbumArt(albumId: number): Promise<MusicArtResult> {
+export async function fetchAlbumArt(
+  albumId: number,
+  checkpoint: ArtCheckpoint = noArtCheckpoint
+): Promise<MusicArtResult> {
   const db = getSqlite()
   const row = db
     .prepare(
@@ -328,7 +374,14 @@ export async function fetchAlbumArt(albumId: number): Promise<MusicArtResult> {
     | undefined
   if (!row) return { updated: false, path: null, sourceUrl: null, reason: 'not_found' }
 
-  const lookup = await findAlbumCoverUrl(row.artist_name, row.title, row.year, row.spotify_id)
+  const lookupTitle = stripAlbumYearPrefix(row.title)
+  const lookup = await findAlbumCoverUrl(
+    row.artist_name,
+    lookupTitle,
+    row.year,
+    row.spotify_id,
+    checkpoint
+  )
   const stamp = db.prepare(
     `UPDATE music_album SET art_checked_at = datetime('now'), updated_at = datetime('now') WHERE id = ?`
   )
@@ -350,7 +403,10 @@ export async function fetchAlbumArt(albumId: number): Promise<MusicArtResult> {
   return { updated: true, path, sourceUrl: lookup.url, reason: 'ok' }
 }
 
-export async function fetchArtistImage(artistId: number): Promise<MusicArtResult> {
+export async function fetchArtistImage(
+  artistId: number,
+  checkpoint: ArtCheckpoint = noArtCheckpoint
+): Promise<MusicArtResult> {
   const db = getSqlite()
   const row = db.prepare('SELECT name, spotify_id FROM music_artist WHERE id = ?').get(artistId) as
     | { name: string; spotify_id: string | null }
@@ -358,10 +414,18 @@ export async function fetchArtistImage(artistId: number): Promise<MusicArtResult
   if (!row) return { updated: false, path: null, sourceUrl: null, reason: 'not_found' }
 
   let transientFailure = false
+  await checkpoint()
   const spotify = await spotifyImage('artist', row.spotify_id)
   let url = spotify.kind === 'ok' ? spotify.value : null
   if (spotify.kind === 'error') transientFailure = true
   if (!url) {
+    await checkpoint()
+    const wikipedia = await wikipediaArtist(row.name)
+    if (wikipedia.kind === 'ok') url = wikipedia.value
+    if (wikipedia.kind === 'error') transientFailure = true
+  }
+  if (!url) {
+    await checkpoint()
     const deezer = await deezerArtists(row.name)
     if (deezer.kind === 'ok') url = pickBestArtistMatch(deezer.value, row.name)?.pictureUrl ?? null
     if (deezer.kind === 'error') transientFailure = true
@@ -443,7 +507,7 @@ export async function fetchMissingArt(): Promise<MusicArtStatus> {
     },
     (h) => {
       handle = h
-      return fetchMissingArtInner(runGate)
+      return runWithActivitySignal(runGate.signal, () => fetchMissingArtInner(runGate))
     }
   )
 }
@@ -472,11 +536,15 @@ async function fetchMissingArtInner(runGate: PauseGate): Promise<MusicArtStatus>
     missing: 0,
     failed: 0
   })
+  const checkpoint = async (): Promise<void> => {
+    if (runGate.paused) await runGate.wait()
+    if (runGate.cancelled) throw new tasks.TaskCancelledError('Fetching missing music art')
+  }
   try {
     for (const { id } of albums) {
       if (runGate.paused) await runGate.wait()
       if (runGate.cancelled) break
-      const result = await fetchAlbumArt(id)
+      const result = await fetchAlbumArt(id, checkpoint)
       artState.done += 1
       if (result.updated) artState.updated += 1
       else if (result.reason === 'download_failed') artState.failed += 1
@@ -485,7 +553,7 @@ async function fetchMissingArtInner(runGate: PauseGate): Promise<MusicArtStatus>
     for (const { id } of artists) {
       if (runGate.paused) await runGate.wait()
       if (runGate.cancelled) break
-      const result = await fetchArtistImage(id)
+      const result = await fetchArtistImage(id, checkpoint)
       artState.done += 1
       if (result.updated) artState.updated += 1
       else if (result.reason === 'download_failed') artState.failed += 1

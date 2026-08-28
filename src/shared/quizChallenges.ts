@@ -6,10 +6,13 @@ import type {
 import { balancedDeal, seededRng } from './quizCore'
 import { higherLowerCopy, higherLowerValue } from './higherLowerQuiz'
 import type { MediaType } from './types'
+import { buildLibraryGridQuestion, type LibraryGridCandidate } from './libraryGrid'
+import { buildMovieChainQuestion, type MovieChainCandidate } from './movieChain'
 
 export interface ChallengeMediaCandidate {
   id: number
   title: string
+  aliases?: string[]
   mediaType: string
   coverPath: string | null
   artPaths: string[]
@@ -99,6 +102,51 @@ export function buildChallengeQuestions(
   const rng = seededRng(request.seed)
   const length = Math.max(1, Math.floor(request.length))
   switch (request.kind) {
+    case 'libraryGrid': {
+      const candidates: LibraryGridCandidate[] = media.flatMap((item) =>
+        item.coverPath && (item.mediaType === 'movie' || item.mediaType === 'tv')
+          ? [{
+              key: String(item.id),
+              label: item.title,
+              aliases: item.aliases ?? [],
+              imagePath: item.coverPath,
+              releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
+              mediaType: item.mediaType,
+              genres: item.genres,
+              people: item.people,
+              companies: item.studios
+            }]
+          : []
+      )
+      const question = buildLibraryGridQuestion(
+        candidates,
+        request.seed,
+        request.options?.screenMediaMode ?? 'both'
+      )
+      return question ? [question] : []
+    }
+    case 'movieChain': {
+      const candidates: MovieChainCandidate[] = media.flatMap((item) =>
+        item.coverPath && (item.mediaType === 'movie' || item.mediaType === 'tv')
+          ? [{
+              key: String(item.id),
+              label: item.title,
+              aliases: item.aliases ?? [],
+              imagePath: item.coverPath,
+              releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
+              mediaType: item.mediaType,
+              people: item.people
+            }]
+          : []
+      )
+      const question = buildMovieChainQuestion(
+        candidates,
+        request.seed,
+        request.options?.screenMediaMode ?? 'both',
+        request.options?.movieChainDifficulty ?? 'normal'
+      )
+      return question ? [question] : []
+    }
     case 'imageReveal': {
       const source = request.options?.imageSource ?? 'covers'
       const typeCounts = new Map<string, number>()

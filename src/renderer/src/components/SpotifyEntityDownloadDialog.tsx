@@ -33,8 +33,8 @@ export default function SpotifyEntityDownloadDialog({
   const [url, setUrl] = useState(savedUrl ?? '')
   const [inspection, setInspection] = useState<SpotifyEntityInspection | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(false)
-  const [replacing, setReplacing] = useState(!savedUrl)
+  const [loading, setLoading] = useState(true)
+  const [replacing, setReplacing] = useState(false)
   const [allowMismatch, setAllowMismatch] = useState(false)
   const [missingOnly, setMissingOnly] = useState(false)
   const [inspectError, setInspectError] = useState<string | null>(null)
@@ -43,6 +43,12 @@ export default function SpotifyEntityDownloadDialog({
   const { data: readiness } = useQuery({
     queryKey: qk.music.spotifyDetect,
     queryFn: () => api.music.spotifyDetect()
+  })
+  const { data: inspectionProgress } = useQuery({
+    queryKey: qk.music.spotifyInspectionStatus,
+    queryFn: () => api.music.spotifyInspectionStatus(),
+    enabled: loading,
+    refetchInterval: loading ? 700 : false
   })
 
   async function inspect(sourceUrl?: string, preserveSelection = false): Promise<void> {
@@ -57,16 +63,17 @@ export default function SpotifyEntityDownloadDialog({
       setAllowMismatch(false)
       setReplacing(false)
     } catch (error) {
-      setInspectError(error instanceof Error ? error.message : String(error))
-      toastError(error)
+      const message = error instanceof Error ? error.message : String(error)
+      setInspectError(message)
+      if (!/cancelled/i.test(message)) toastError(error)
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    if (savedUrl) void inspect()
-    // A remembered source is inspected once per dialog opening.
+    void inspect()
+    // A remembered source is reused; otherwise NaviHUB discovers one from a local track.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -125,9 +132,10 @@ export default function SpotifyEntityDownloadDialog({
       await api.music.spotifyForgetEntitySource({ kind, entityId })
       await qc.invalidateQueries({ queryKey: qk.music.all })
       setInspection(null)
-      setReplacing(true)
+      setReplacing(false)
       setUrl('')
       setInspectError(null)
+      void inspect()
     } catch (error) {
       toastError(error)
     }
@@ -184,27 +192,46 @@ export default function SpotifyEntityDownloadDialog({
 
         {readiness && !readiness.ok && <p className="mb-4 rounded bg-red-950/40 p-3 text-sm text-red-200">{readiness.error}</p>}
 
-        {!inspection && savedUrl && !replacing && (
+        {!inspection && !replacing && (
           <div className="space-y-3" aria-live="polite">
-            <p className="text-sm text-gray-300">
-              {loading ? 'Inspecting the remembered Spotify source…' : inspectError ?? 'The remembered source is ready to inspect.'}
-            </p>
+            <div className="rounded border border-base-700 bg-base-900/40 p-4">
+              <p className="font-medium text-white">
+                {loading
+                  ? (inspectionProgress?.phase === 'catalogue' || inspectionProgress?.phase === 'matching'
+                      ? 'Building the release preview'
+                      : 'Finding the Spotify source')
+                  : 'Spotify inspection stopped'}
+              </p>
+              <p className="mt-1 text-sm text-gray-300">
+                {loading
+                  ? inspectionProgress?.message ?? (savedUrl ? 'Reading the remembered Spotify source' : 'Matching a local track to Spotify')
+                  : inspectError ?? 'The source is ready to inspect again.'}
+              </p>
+              {loading && inspectionProgress?.foundCount != null && (
+                <p className="mt-2 text-xs text-gray-400">{inspectionProgress.foundCount} tracks found</p>
+              )}
+            </div>
             <div className="flex flex-wrap gap-2">
-              <button className="btn-primary" disabled={loading || readiness?.ok === false} onClick={() => void inspect()}>
-                {loading ? 'Inspecting…' : 'Try again'}
-              </button>
-              <button className="btn-ghost" disabled={loading} onClick={() => setReplacing(true)}>Replace source</button>
-              <button className="btn-ghost" disabled={loading} onClick={() => void forget()}>Forget source</button>
+              {loading ? (
+                <button className="btn-ghost" onClick={() => void api.music.spotifyCancelInspection()}>Cancel inspection</button>
+              ) : (
+                <button className="btn-primary" disabled={readiness?.ok === false} onClick={() => void inspect()}>Try again</button>
+              )}
+              <button className="btn-ghost" disabled={loading} onClick={() => setReplacing(true)}>Choose a source manually</button>
+              {savedUrl && <button className="btn-ghost" disabled={loading} onClick={() => void forget()}>Forget source</button>}
             </div>
           </div>
         )}
 
-        {(!savedUrl || replacing) && (!inspection || replacing) && (
+        {replacing && (
           <div className="space-y-3">
             <label className="label" htmlFor="spotify-entity-url">Public Spotify {kind} link</label>
             <input id="spotify-entity-url" className="input w-full" value={url} onChange={(event) => setUrl(event.target.value)} placeholder={`https://open.spotify.com/${kind}/…`} autoFocus />
-            <p className="text-sm text-gray-400">Spotify login is not used. spotDL reads the public source and finds audio through YouTube Music.</p>
-            <button className="btn-primary" disabled={loading || !url.trim() || readiness?.ok === false} onClick={() => void inspect(url)}>{loading ? 'Inspecting…' : 'Inspect source'}</button>
+            <p className="text-sm text-gray-400">Use this only when automatic matching picked the wrong source. Spotify login is not used.</p>
+            <div className="flex flex-wrap gap-2">
+              <button className="btn-primary" disabled={loading || !url.trim() || readiness?.ok === false} onClick={() => void inspect(url)}>{loading ? 'Inspecting…' : 'Inspect source'}</button>
+              <button className="btn-ghost" disabled={loading} onClick={() => setReplacing(false)}>Back</button>
+            </div>
           </div>
         )}
 

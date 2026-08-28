@@ -93,6 +93,12 @@ export const qk = {
   settings: {
     all: ['settings'] as const
   },
+  libraryExport: {
+    all: ['libraryExport'] as const,
+    preview: (options: import('@shared/types').LibraryExportOptions) =>
+      ['libraryExport', 'preview', options] as const,
+    status: ['libraryExport', 'status'] as const
+  },
   quiz: {
     all: ['quiz'] as const,
     availability: (request: QuizAvailabilityRequest) => ['quiz', 'availability', request] as const,
@@ -298,6 +304,7 @@ export const qk = {
     scanStatus: ['music', 'scanStatus'] as const,
     downloadStatus: ['music', 'downloadStatus'] as const,
     spotifyDetect: ['music', 'spotifyDetect'] as const,
+    spotifyInspectionStatus: ['music', 'spotifyInspectionStatus'] as const,
     artStatus: ['music', 'artStatus'] as const
   },
   gacha: {

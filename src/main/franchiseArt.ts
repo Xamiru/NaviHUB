@@ -10,6 +10,7 @@
 
 import { franchiseCfg, franchiseArtUrls, franchiseHeroUrls } from '@shared/franchises'
 import type { FranchiseArtStatus } from '@shared/types'
+import { runWithActivitySignal } from './activityContext'
 import { cachedDownload, downloadImage } from './files'
 import { logWarn } from './logBus'
 import * as tasks from './tasks'
@@ -67,14 +68,19 @@ function ensureUrls(
   if (missing.length === 0) return { started: false }
 
   Object.assign(artState, { running: true, franchiseId, done: 0, total: missing.length })
+  const controller = new AbortController()
   const run = tasks.runTask(
     {
       kind: 'franchiseArt',
       label,
       route,
+      controls: {
+        cancel: () => controller.abort(),
+        pauseNote: 'Artwork caching cannot be paused'
+      },
       project: () => ({ done: artState.done, total: artState.total })
     },
-    async () => {
+    async (handle) => runWithActivitySignal(controller.signal, async () => {
       let failed = 0
       // Same small-pool shape as files.downloadImages, inlined so done/total
       // land in artState (downloadImages only reports into the import
@@ -82,6 +88,7 @@ function ensureUrls(
       let next = 0
       const worker = async (): Promise<void> => {
         while (next < missing.length) {
+          if (handle.cancelRequested()) throw new tasks.TaskCancelledError(label)
           const url = missing[next++]
           if ((await downloadImage(url)) == null) failed += 1
           artState.done += 1
@@ -89,7 +96,7 @@ function ensureUrls(
       }
       await Promise.all(Array.from({ length: Math.min(5, missing.length) }, worker))
       if (failed > 0) logWarn('app', `franchise art: ${failed} of ${missing.length} downloads failed`)
-    }
+    })
   )
   void run.catch(() => {}).finally(() => {
     artState.running = false

@@ -13,11 +13,13 @@ import * as tasks from './tasks'
 import { pipeProcLines } from './childLines'
 import { processControls } from './taskControls'
 import { updateActivity } from './progress'
+import { currentActivitySignal } from './activityContext'
 import type {
   MusicDownloadEvent,
   SpotifyEntityDownloadInput,
   SpotifyEntityInspectInput,
   SpotifyEntityInspection,
+  SpotifyEntityInspectionStatus,
   SpotifyEntityKind,
   SpotifyReleasePreview,
   SpotifyDownloadInput,
@@ -167,7 +169,49 @@ export function parseSpotdlLine(line: string): SpotdlLineEvent | null {
 }
 
 export function buildSpotdlSaveArgs(url: string, saveFile: string): string[] {
-  return ['save', url, '--save-file', saveFile]
+  return ['save', url, '--threads', '4', '--save-file', saveFile]
+}
+
+export function buildSpotifyDiscoveryQuery(artist: string, title: string): string {
+  return `${artist.trim()} - ${title.trim()}`
+}
+
+export function pickDiscoveredEntity(
+  kind: SpotifyEntityKind,
+  current: NonNullable<ReturnType<typeof spotifyRepo.getEntity>>,
+  songs: spotifyRepo.SpotdlSong[]
+): ParsedSpotifyUrl | null {
+  const same = spotifyRepo.normalizeSpotifyMatch
+  const targetArtist = same(kind === 'artist' ? current.name : current.artistName ?? '')
+  const targetAlbum = same(spotifyRepo.stripAlbumYearPrefix(current.name))
+  for (const sample of current.sampleTracks) {
+    const song = songs.find((candidate) => {
+      if (same(candidate.title) !== same(sample.title)) return false
+      if (sample.duration == null || candidate.duration == null ||
+          Math.abs(sample.duration - candidate.duration) > 3) return false
+      const artists = candidate.artists.map(same)
+      if (!artists.includes(targetArtist)) return false
+      return kind === 'artist' || same(spotifyRepo.stripAlbumYearPrefix(candidate.albumTitle)) === targetAlbum
+    })
+    if (!song) continue
+    if (kind === 'album' && song.spotifyAlbumId) {
+      return {
+        kind,
+        spotifyId: song.spotifyAlbumId,
+        canonicalUrl: `https://open.spotify.com/album/${song.spotifyAlbumId}`
+      }
+    }
+    const artistIndex = song.artists.findIndex((artist) => same(artist) === targetArtist)
+    const spotifyId = artistIndex >= 0 ? song.spotifyArtistIds[artistIndex] : null
+    if (kind === 'artist' && spotifyId) {
+      return {
+        kind,
+        spotifyId,
+        canonicalUrl: `https://open.spotify.com/artist/${spotifyId}`
+      }
+    }
+  }
+  return null
 }
 
 export function buildSpotdlDownloadArgs(inputFile: string, outputRoot: string, errorFile: string): string[] {
@@ -328,6 +372,26 @@ export function groupEntityReleases(
 let counter = 0
 let active: { id: string; proc: ChildProcessWithoutNullStreams; cancelled: boolean; owner: string } | null = null
 let status: MusicDownloadEvent | null = null
+const inspectionStatus: SpotifyEntityInspectionStatus = {
+  running: false,
+  kind: null,
+  entityId: null,
+  phase: 'idle',
+  message: null,
+  foundCount: null,
+  cancelled: false
+}
+
+export function getInspectionStatus(): SpotifyEntityInspectionStatus {
+  return { ...inspectionStatus }
+}
+
+export function parseSpotdlInspectionLine(line: string): { foundCount: number; message: string } | null {
+  const found = line.match(/Found\s+(\d+)\s+songs?\s+in\s+(.+?)(?:\s+\([^)]+\))?\s*$/i)
+  return found
+    ? { foundCount: Number(found[1]), message: `Found ${found[1]} tracks; preparing the preview` }
+    : null
+}
 
 export function runSpotdl(
   args: string[],
@@ -349,14 +413,25 @@ export function runSpotdl(
       return
     }
     active = { id, proc, cancelled: false, owner }
+    const taskSignal = currentActivitySignal()
+    const abortFromTask = (): void => {
+      if (active?.id !== id) return
+      active.cancelled = true
+      processControls(() => (active?.id === id ? active.proc : null)).cancel?.()
+    }
+    if (taskSignal?.aborted) abortFromTask()
+    else taskSignal?.addEventListener('abort', abortFromTask, { once: true })
+    const cleanup = (): void => taskSignal?.removeEventListener('abort', abortFromTask)
     const handleLine = onLine ?? (() => undefined)
     pipeProcLines(proc, { tool: 'spotdl', onStdout: handleLine, onStderr: handleLine })
     proc.once('error', (error) => {
+      cleanup()
       if (active?.id === id) active = null
       releaseMusicMaintenance(owner)
       reject(new Error(`Could not run "${spotdlBin()}" — install spotDL or set its path in Settings (${error.message})`))
     })
     proc.once('close', (code) => {
+      cleanup()
       if (active?.id === id) active = null
       releaseMusicMaintenance(owner)
       resolve(code ?? 1)
@@ -367,16 +442,64 @@ export function runSpotdl(
 export async function inspectEntity(input: SpotifyEntityInspectInput): Promise<SpotifyEntityInspection> {
   const current = spotifyRepo.getEntity(input.kind, input.entityId)
   if (!current) throw new Error(`That local ${input.kind} no longer exists`)
-  const url = input.url?.trim() || (current.spotifyId
-    ? `https://open.spotify.com/${input.kind}/${current.spotifyId}`
-    : '')
-  if (!url) throw new Error(`Paste a Spotify ${input.kind} link`)
+  if (!current.sampleTracks.length) throw new Error(`This ${input.kind} has no local tracks to identify`)
+  if (inspectionStatus.running) throw new Error('A Spotify inspection is already running')
+  Object.assign(inspectionStatus, {
+    running: true,
+    kind: input.kind,
+    entityId: input.entityId,
+    phase: 'discovering',
+    message: 'Finding the matching Spotify source from your local music',
+    foundCount: null,
+    cancelled: false
+  })
   updateActivity({ phase: 'fetching', done: 0, total: 1 })
-  const parsed = await resolveEntityUrl(url, input.kind)
   const dir = mkdtempSync(join(tmpdir(), 'navihub-spotify-inspect-'))
   const saveFile = join(dir, `${input.kind}.spotdl`)
   try {
-    const code = await runSpotdl(buildSpotdlSaveArgs(parsed.canonicalUrl, saveFile), 'Spotify inspection')
+    let parsed: ParsedSpotifyUrl
+    const suppliedUrl = input.url?.trim() || (current.spotifyId
+      ? `https://open.spotify.com/${input.kind}/${current.spotifyId}`
+      : '')
+    if (suppliedUrl) {
+      parsed = await resolveEntityUrl(suppliedUrl, input.kind)
+    } else {
+      const sample = current.sampleTracks[0]
+      const discoveryFile = join(dir, 'discovery.spotdl')
+      const discoveryCode = await runSpotdl(
+        buildSpotdlSaveArgs(buildSpotifyDiscoveryQuery(sample.artist, sample.title), discoveryFile),
+        `Spotify inspection ${input.kind}:${input.entityId}`
+      )
+      if (inspectionStatus.cancelled) {
+        throw new tasks.TaskCancelledError('Spotify inspection')
+      }
+      if (discoveryCode !== 0) throw new Error('NaviHUB could not find this music on Spotify automatically')
+      let discoveryPayload: unknown
+      try {
+        discoveryPayload = JSON.parse(readFileSync(discoveryFile, 'utf8'))
+      } catch {
+        throw new Error('spotDL returned invalid search metadata')
+      }
+      parsed = pickDiscoveredEntity(input.kind, current, validateSpotdlPayload(discoveryPayload).songs) ??
+        (() => { throw new Error(`NaviHUB could not identify the matching Spotify ${input.kind}. Choose a source manually.`) })()
+    }
+    Object.assign(inspectionStatus, {
+      phase: 'catalogue',
+      message: input.kind === 'artist'
+        ? 'Reading the Spotify catalogue. Large discographies can take several minutes.'
+        : 'Reading the Spotify album tracks'
+    })
+    const code = await runSpotdl(
+      buildSpotdlSaveArgs(parsed.canonicalUrl, saveFile),
+      `Spotify inspection ${input.kind}:${input.entityId}`,
+      (line) => {
+        const event = parseSpotdlInspectionLine(line)
+        if (event) Object.assign(inspectionStatus, event)
+      }
+    )
+    if (inspectionStatus.cancelled) {
+      throw new tasks.TaskCancelledError('Spotify inspection')
+    }
     if (code !== 0) throw new Error(`spotDL could not read that ${input.kind}. It may be inaccessible.`)
     let payload: unknown
     try {
@@ -400,6 +523,11 @@ export async function inspectEntity(input: SpotifyEntityInspectInput): Promise<S
         })()
     const releases = groupEntityReleases(songs, sourceName, input.kind)
     if (!releases.length) throw new Error('spotDL metadata did not include stable Spotify album IDs')
+    Object.assign(inspectionStatus, {
+      phase: 'matching',
+      message: 'Comparing Spotify tracks with your local library',
+      foundCount: songs.length
+    })
     const inspection: SpotifyEntityInspection = {
       inspectionId: randomUUID(),
       kind: input.kind,
@@ -419,7 +547,19 @@ export async function inspectEntity(input: SpotifyEntityInspectInput): Promise<S
     updateActivity({ phase: 'fetching', done: 1, total: 1 })
     return inspection
   } finally {
+    inspectionStatus.running = false
+    if (!inspectionStatus.cancelled) inspectionStatus.phase = 'idle'
     rmSync(dir, { recursive: true, force: true })
+  }
+}
+
+export function cancelInspection(): void {
+  if (!inspectionStatus.running) return
+  inspectionStatus.cancelled = true
+  inspectionStatus.message = 'Cancelling Spotify inspection'
+  if (active?.owner.startsWith('Spotify inspection ')) {
+    active.cancelled = true
+    processControls(() => active?.proc ?? null).cancel?.()
   }
 }
 

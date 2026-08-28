@@ -5,6 +5,7 @@ import {
   balancedDeal,
   compareQuizResults,
   isNewQuizBest,
+  quizMinimumRecordSize,
   quizSeed,
   seededRng,
   shuffledDeckAvoiding
@@ -85,5 +86,18 @@ describe('quiz answers and records', () => {
     expect(
       isNewQuizBest({ score: 1, total: 1, settings: { correct: 1 } }, previous, 'accuracy')
     ).toBe(false)
+  })
+
+  it('allows one completed route only for Movie Chain records', () => {
+    expect(quizMinimumRecordSize('movieChainNormal')).toBe(1)
+    expect(quizMinimumRecordSize('libraryGrid')).toBe(5)
+    expect(
+      isNewQuizBest(
+        { score: 900, total: 1, settings: { correct: 1 } },
+        null,
+        'points',
+        'movieChainNormal'
+      )
+    ).toBe(true)
   })
 })

@@ -128,6 +128,24 @@ describe('browse', () => {
     expect(() => spotifyRepo.rememberEntitySource('artist', otherArtist.id, 'artist-source')).toThrow()
   })
 
+  it('provides representative local tracks for automatic Spotify discovery', () => {
+    const trackId = seedTrack({ artist: 'Radiohead', album: '(1997) OK Computer', title: 'Airbag' })
+    const row = db.prepare('SELECT artist_id, album_id FROM music_track WHERE id = ?').get(trackId) as {
+      artist_id: number
+      album_id: number
+    }
+    expect(spotifyRepo.getEntity('artist', row.artist_id)?.sampleTracks[0]).toEqual({
+      title: 'Airbag',
+      artist: 'Radiohead',
+      album: '(1997) OK Computer',
+      duration: 200
+    })
+    expect(spotifyRepo.getEntity('album', row.album_id)).toMatchObject({
+      name: '(1997) OK Computer',
+      artistName: 'Radiohead'
+    })
+  })
+
   it('refuses ambiguous automatic source linkage and links after resolution is unique', () => {
     const first = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'one.mp3' })
     const duplicate = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'two.mp3' })

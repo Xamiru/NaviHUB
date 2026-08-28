@@ -3,6 +3,7 @@
 // so every branch below is directly testable — the gameLaunchCore/gameLaunch
 // split applied to process control.
 import type { TaskControls } from './tasks'
+import { execFile } from 'node:child_process'
 
 // ---------------------------------------------------------------------------
 // Child processes — SIGSTOP / SIGCONT
@@ -20,21 +21,28 @@ export function canSignalPause(platform: NodeJS.Platform = process.platform): bo
 export interface Killable {
   kill(signal?: NodeJS.Signals): boolean
   exitCode: number | null
+  pid?: number
 }
 
 export interface ProcessControlOpts {
-  // Called before SIGTERM so the module can set its own `cancelled` flag —
-  // that is what makes the exit read as a cancel rather than a crash.
+  // Called before process lookup/signalling so a request made between child
+  // phases still prevents the next phase from starting.
   onCancel?: () => void
   killAfterMs?: number
   platform?: NodeJS.Platform
   // Test seam for the SIGKILL follow-up (defaults to a real unref'd timer).
   schedule?: (fn: () => void, ms: number) => void
+  // Test seam for Windows' only reliable descendant-process cancellation.
+  killTree?: (pid: number) => void
 }
 
 const defaultSchedule = (fn: () => void, ms: number): void => {
   // Unref'd: a pending kill timer must never hold the app open at quit.
   setTimeout(fn, ms).unref()
+}
+
+const defaultKillTree = (pid: number): void => {
+  execFile('taskkill', ['/PID', String(pid), '/T', '/F'], { windowsHide: true }, () => undefined)
 }
 
 export function processControls(
@@ -44,11 +52,20 @@ export function processControls(
   const platform = opts.platform ?? process.platform
   const killAfterMs = opts.killAfterMs ?? 5000
   const schedule = opts.schedule ?? defaultSchedule
+  const killTree = opts.killTree ?? defaultKillTree
 
   const cancel = (): void => {
+    // Record the user's intent even between child phases. Several multi-step
+    // jobs briefly have no active process but still need to stop before the
+    // next one starts.
+    opts.onCancel?.()
     const proc = getProc()
     if (!proc) return
-    // SIGCONT FIRST, unconditionally. A SIGSTOPped process does not act on
+    if (platform === 'win32' && Number.isInteger(proc.pid)) {
+      killTree(proc.pid as number)
+      return
+    }
+    // SIGCONT before SIGTERM, unconditionally. A SIGSTOPped process does not act on
     // SIGTERM until it is continued, so cancelling a paused job would appear to
     // hang for the whole killAfterMs and then hard-kill. (SIGKILL *is*
     // delivered to a stopped process, which is why the before-quit killers are
@@ -60,7 +77,6 @@ export function processControls(
         /* already gone */
       }
     }
-    opts.onCancel?.()
     try {
       proc.kill('SIGTERM')
     } catch {
@@ -86,8 +102,8 @@ export function processControls(
 
   return {
     cancel,
-    pause: () => void getProc()?.kill('SIGSTOP'),
-    resume: () => void getProc()?.kill('SIGCONT'),
+    pause: () => signalProcess(getProc(), 'SIGSTOP'),
+    resume: () => signalProcess(getProc(), 'SIGCONT'),
     // SIGSTOP takes effect immediately, so the row goes straight to 'paused'
     // rather than through 'pausing'.
     pauseIsInstant: true,
@@ -99,6 +115,10 @@ export function processControls(
   }
 }
 
+function signalProcess(proc: Killable | null, signal: 'SIGSTOP' | 'SIGCONT'): void {
+  if (!proc || !proc.kill(signal)) throw new Error('The task is between process phases')
+}
+
 // ---------------------------------------------------------------------------
 // Loop jobs — cooperative pause between iterations
 // ---------------------------------------------------------------------------
@@ -108,6 +128,7 @@ export interface PauseGate {
   wait(): Promise<void>
   readonly paused: boolean
   readonly cancelled: boolean
+  readonly signal: AbortSignal
   controls: TaskControls
 }
 
@@ -118,6 +139,7 @@ export interface PauseGate {
 export function cooperativeGate(onPaused?: () => void, onResumed?: () => void): PauseGate {
   let paused = false
   let cancelled = false
+  const controller = new AbortController()
   let release: (() => void) | null = null
 
   const wakeUp = (): void => {
@@ -131,6 +153,9 @@ export function cooperativeGate(onPaused?: () => void, onResumed?: () => void): 
     },
     get cancelled() {
       return cancelled
+    },
+    get signal() {
+      return controller.signal
     },
     async wait(): Promise<void> {
       if (!paused || cancelled) return
@@ -152,6 +177,7 @@ export function cooperativeGate(onPaused?: () => void, onResumed?: () => void): 
       },
       cancel: () => {
         cancelled = true
+        controller.abort()
         // MUST clear `paused` and release the waiter. Without this a paused
         // loop deadlocks forever on the promise above, and settleAllOnQuit can
         // never finish it.

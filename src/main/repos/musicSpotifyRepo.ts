@@ -41,6 +41,13 @@ export function normalizeSpotifyMatch(value: string): string {
     .trim()
 }
 
+export function stripAlbumYearPrefix(value: string): string {
+  return value
+    .replace(/^\s*[([](?:19|20)\d{2}[)\]]\s*(?:[-–—:]\s*)?/, '')
+    .replace(/^\s*(?:19|20)\d{2}\s*[-–—:]\s*/, '')
+    .trim() || value.trim()
+}
+
 export function artistComponents(value: string): string[] {
   return value
     .split(/\s*(?:,|&|\/|;|\bfeat\.?\b|\bft\.?\b|\bwith\b|\bx\b)\s*/i)
@@ -133,6 +140,7 @@ export function getEntity(kind: 'artist' | 'album', id: number): {
   name: string
   artistName: string | null
   spotifyId: string | null
+  sampleTracks: { title: string; artist: string; album: string; duration: number | null }[]
 } | null {
   const db = getSqlite()
   const row = kind === 'artist'
@@ -141,14 +149,24 @@ export function getEntity(kind: 'artist' | 'album', id: number): {
         `SELECT al.id, al.title AS name, al.spotify_id, ar.name AS artist_name
          FROM music_album al JOIN music_artist ar ON ar.id = al.artist_id WHERE al.id = ?`
       ).get(id) as Record<string, unknown> | undefined)
-  return row
-    ? {
+  if (!row) return null
+  const tracks = db.prepare(
+    `SELECT t.title, ar.name AS artist,
+            al.title AS album, t.duration
+     FROM music_track t
+     JOIN music_artist ar ON ar.id = t.artist_id
+     JOIN music_album al ON al.id = t.album_id
+     WHERE ${kind === 'artist' ? 't.artist_id' : 't.album_id'} = ?
+     ORDER BY t.duration IS NULL, t.play_count DESC, t.disc_no, t.track_no, t.id
+     LIMIT 5`
+  ).all(id) as { title: string; artist: string; album: string; duration: number | null }[]
+  return {
         id: row.id as number,
         name: row.name as string,
         artistName: (row.artist_name as string) ?? null,
-        spotifyId: (row.spotify_id as string) ?? null
+        spotifyId: (row.spotify_id as string) ?? null,
+        sampleTracks: tracks
       }
-    : null
 }
 
 export function rememberEntitySource(kind: 'artist' | 'album', id: number, spotifyId: string): void {

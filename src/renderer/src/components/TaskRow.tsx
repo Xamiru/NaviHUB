@@ -71,6 +71,7 @@ export default function TaskRow({
 }) {
   const [busy, setBusy] = useState(false)
   const paused = task.state === 'paused' || task.state === 'pausing'
+  const cancelling = task.state === 'cancelling'
   const live =
     task.state === 'running' ||
     task.state === 'pausing' ||
@@ -112,6 +113,11 @@ export default function TaskRow({
       : task.percent != null
         ? `${Math.round(task.percent)}%`
         : ''
+  const detail = task.state === 'cancelling'
+    ? 'Stopping; finishing or aborting the current operation'
+    : task.state === 'pausing'
+      ? 'Pausing after the current operation'
+      : task.error ?? task.detail ?? '—'
 
   return (
     <div
@@ -138,26 +144,57 @@ export default function TaskRow({
               task.state === 'error' ? 'text-red-400' : 'text-gray-500'
             }`}
           >
-            {task.error ?? task.detail ?? '—'}
+            {detail}
           </p>
+          {!dense && live && !task.canPause && task.pauseNote && (
+            <p className="mt-0.5 truncate text-[11px] text-gray-500">{task.pauseNote}</p>
+          )}
         </div>
 
         {live && (
           <div className="flex shrink-0 items-start gap-0.5">
-            <IconBtn
-              label={pauseLabel}
-              disabled={busy || !task.canPause}
-              onClick={() =>
-                void act(() => (paused ? api.tasks.resume(task.id) : api.tasks.pause(task.id)))
-              }
-            >
-              {/* SVG transport, never unicode — ⏸/▶ render as blue emoji pictures
-                  on Windows (components/PlayerIcons.tsx exists for this). */}
-              {paused ? <PlayIcon className="h-3 w-3" /> : <PauseIcon className="h-3 w-3" />}
-            </IconBtn>
-            <IconBtn label="Cancel" disabled={busy || !task.canCancel} onClick={() => void cancel()}>
-              ✕
-            </IconBtn>
+            {task.canPause && !cancelling && (
+              dense ? (
+                <IconBtn
+                  label={pauseLabel}
+                  disabled={busy}
+                  onClick={() =>
+                    void act(() => (paused ? api.tasks.resume(task.id) : api.tasks.pause(task.id)))
+                  }
+                >
+                  {paused ? <PlayIcon className="h-3 w-3" /> : <PauseIcon className="h-3 w-3" />}
+                </IconBtn>
+              ) : (
+                <button
+                  className="btn-ghost px-2 py-1 text-xs"
+                  disabled={busy}
+                  onClick={() =>
+                    void act(() => (paused ? api.tasks.resume(task.id) : api.tasks.pause(task.id)))
+                  }
+                >
+                  {pauseLabel}
+                </button>
+              )
+            )}
+            {task.canCancel && (
+              dense ? (
+                <IconBtn
+                  label={cancelling ? 'Stopping' : 'Stop'}
+                  disabled={busy || cancelling}
+                  onClick={() => void cancel()}
+                >
+                  ✕
+                </IconBtn>
+              ) : (
+                <button
+                  className="btn-ghost px-2 py-1 text-xs"
+                  disabled={busy || cancelling}
+                  onClick={() => void cancel()}
+                >
+                  {cancelling ? 'Stopping' : 'Stop'}
+                </button>
+              )
+            )}
           </div>
         )}
       </div>

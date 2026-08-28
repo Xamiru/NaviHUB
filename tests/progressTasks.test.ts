@@ -9,6 +9,7 @@ import {
   withActivity
 } from '../src/main/progress'
 import * as tasks from '../src/main/tasks'
+import { currentActivitySignal } from '../src/main/activityContext'
 import { __reset as resetLog } from '../src/main/logBus'
 
 // progress.ts is the adapter that turns all 17 withActivity call sites in
@@ -182,6 +183,33 @@ describe('cancellation', () => {
     // Painting a deliberate stop red is the thing to avoid.
     expect(row!.error).toBeNull()
     expect(getActivity().active).toBe(false)
+  })
+
+  it('does not report done when cancellation arrives after the final checkpoint', async () => {
+    const run = withActivity('Importing from TMDB', async () => {
+      const [row] = tasks.list()
+      tasks.cancel(row!.id)
+      return 'completed after stop'
+    })
+
+    await expect(run).rejects.toThrow('Cancelled: Importing from TMDB')
+    expect(tasks.list()[0]!.state).toBe('cancelled')
+    expect(getActivity().active).toBe(false)
+  })
+
+  it('aborts the current activity signal as soon as Stop is requested', async () => {
+    let signal: AbortSignal | undefined
+    const run = withActivity('Importing from TMDB', async () => {
+      signal = currentActivitySignal()
+      const [row] = tasks.list()
+      tasks.cancel(row!.id)
+      await new Promise<void>((_resolve, reject) => {
+        if (signal?.aborted) reject(new Error('request aborted'))
+      })
+    })
+    await expect(run).rejects.toThrow('Cancelled: Importing from TMDB')
+    expect(signal?.aborted).toBe(true)
+    expect(tasks.list()[0]!.state).toBe('cancelled')
   })
 
   it('settles cancelled — not error — when the cancel error propagates', () => {

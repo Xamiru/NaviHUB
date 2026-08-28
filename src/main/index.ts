@@ -17,6 +17,7 @@ import { abortActiveCoachTurn } from './gachaCoach'
 import { killActiveUpdate } from './updater'
 import { killActivePrepare } from './video/session'
 import { killActiveOcr } from './mokuroRun'
+import { cancelActiveLibraryExport } from './libraryExport'
 import { killSqlSandbox } from './sqlSandbox'
 import { finalizeActiveGameSession } from './gameLaunch'
 import { stopAchievementWatcher } from './achievementWatcher'
@@ -324,6 +325,9 @@ app.on('before-quit', () => {
   // A killed mokuro run loses nothing durable — finished volumes keep their
   // sidecars, and mokuro's own _ocr cache resumes the interrupted one.
   killActiveOcr()
+  // Export output is staged under a .partial name; abort and remove it before
+  // the process exits so it can never be mistaken for a complete bundle.
+  cancelActiveLibraryExport()
   // The SQL sandbox's utility process holds nothing durable — an in-memory
   // copy of a dataset that is code — so it is simply dropped.
   killSqlSandbox()

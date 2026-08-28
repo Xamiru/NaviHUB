@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
 import { PassThrough } from 'node:stream'
 import { musicMaintenanceOwner } from '../src/main/musicMaintenance'
+import { runWithActivitySignal } from '../src/main/activityContext'
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/navihub-test' } }))
 vi.mock('../src/main/files', () => ({
@@ -15,12 +16,15 @@ vi.mock('../src/main/repos/settingsRepo', () => ({ get: vi.fn() }))
 import {
   buildSpotdlDownloadArgs,
   buildSpotdlSaveArgs,
+  buildSpotifyDiscoveryQuery,
   chunkSpotifyItems,
   estimateSpotifyDownloadBytes,
   groupEntityReleases,
   parseSpotifyPlaylistUrl,
   parseSpotifyUrl,
   parseSpotdlLine,
+  parseSpotdlInspectionLine,
+  pickDiscoveredEntity,
   mismatchFor,
   killActive,
   runSpotdl,
@@ -153,6 +157,26 @@ describe('Spotify playlist import core', () => {
     expect(musicMaintenanceOwner()).toBeNull()
   })
 
+  it('stops an active spotDL inspection when its task context is cancelled', async () => {
+    const proc = Object.assign(new EventEmitter(), {
+      stdout: new PassThrough(),
+      stderr: new PassThrough(),
+      exitCode: null,
+      kill: vi.fn(() => true)
+    })
+    const controller = new AbortController()
+    const pending = runWithActivitySignal(controller.signal, () =>
+      runSpotdl([], 'activity-spotdl-fixture', undefined, 'activity-job', () => proc as never)
+    )
+    controller.abort()
+    expect(proc.kill).toHaveBeenNthCalledWith(1, 'SIGCONT')
+    expect(proc.kill).toHaveBeenNthCalledWith(2, 'SIGTERM')
+    proc.exitCode = 1
+    proc.emit('close', 1)
+    await expect(pending).resolves.toBe(1)
+    expect(musicMaintenanceOwner()).toBeNull()
+  })
+
   it('settles cancellation, partial recovery, and total failure distinctly', () => {
     expect(settleSpotifyBatch({ cancelled: true, resolved: 2, total: 5 })).toMatchObject({
       status: 'cancelled', resolvedCount: 2, failedCount: 3
@@ -254,6 +278,8 @@ describe('Spotify playlist import core', () => {
     expect(buildSpotdlSaveArgs('https://open.spotify.com/playlist/abc', '/tmp/list.spotdl')).toEqual([
       'save',
       'https://open.spotify.com/playlist/abc',
+      '--threads',
+      '4',
       '--save-file',
       '/tmp/list.spotdl'
     ])
@@ -261,6 +287,34 @@ describe('Spotify playlist import core', () => {
     expect(args).toContain('320k')
     expect(args).toContain('4')
     expect(args.at(-1)).toContain('{album-artist}/{album}/{disc-number}-{track-number} - {title}')
+  })
+
+  it('discovers artist and album ids from an exact representative local track', () => {
+    const current = {
+      id: 1,
+      name: 'Radiohead',
+      artistName: null,
+      spotifyId: null,
+      sampleTracks: [{ title: 'Airbag', artist: 'Radiohead', album: '(1997) OK Computer', duration: 287 }]
+    }
+    const song = {
+      spotifyTrackId: 'track-id', title: 'Airbag', artists: ['Radiohead'],
+      primaryArtist: 'Radiohead', albumArtist: 'Radiohead', albumTitle: 'OK Computer',
+      duration: 287, coverUrl: null, spotifyUrl: '', discNo: 1, trackNo: 1, year: 1997,
+      rawJson: '{}', spotifyAlbumId: 'album-id', spotifyArtistId: 'artist-id',
+      spotifyArtistIds: ['artist-id'], albumType: 'album'
+    } satisfies SpotdlSong
+    expect(buildSpotifyDiscoveryQuery('Radiohead', 'Airbag')).toBe('Radiohead - Airbag')
+    expect(pickDiscoveredEntity('artist', current, [song])).toMatchObject({
+      kind: 'artist', spotifyId: 'artist-id'
+    })
+    expect(pickDiscoveredEntity('album', {
+      ...current, name: '(1997) OK Computer', artistName: 'Radiohead'
+    }, [song])).toMatchObject({ kind: 'album', spotifyId: 'album-id' })
+    expect(pickDiscoveredEntity('artist', current, [{ ...song, duration: 300 }])).toBeNull()
+    expect(pickDiscoveredEntity('artist', {
+      ...current, sampleTracks: [{ ...current.sampleTracks[0], duration: null }]
+    }, [song])).toBeNull()
   })
 
   it('chunks hundreds of tracks and estimates unknown durations conservatively', () => {
@@ -281,5 +335,9 @@ describe('Spotify playlist import core', () => {
     })
     expect(parseSpotdlLine('12/100 complete')).toEqual({ kind: 'progress', done: 12, total: 100 })
     expect(parseSpotdlLine('Failed: no match')).toEqual({ kind: 'error', message: 'no match' })
+    expect(parseSpotdlInspectionLine('Found 109 songs in Gracie Abrams (Artist)')).toEqual({
+      foundCount: 109,
+      message: 'Found 109 tracks; preparing the preview'
+    })
   })
 })

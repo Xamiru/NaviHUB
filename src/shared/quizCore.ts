@@ -94,18 +94,30 @@ export function answerIsCorrect(validKeys: readonly string[], picked: string | n
 
 export const QUIZ_SCORE_POLICIES: Readonly<Partial<Record<QuizKind, QuizScorePolicy>>> = {
   songArcade: 'points',
+  guessTrackTheme: 'points',
+  guessTrackMusic: 'points',
   kanaRace: 'points',
   readingRace: 'points',
   conjRace: 'points',
   shiritori: 'points',
   imageReveal: 'points',
   higherLower: 'points',
+  libraryGrid: 'points',
+  movieChainEasy: 'points',
+  movieChainNormal: 'points',
+  movieChainHard: 'points',
   tournament: 'tournament',
   songRelay: 'party'
 }
 
 export function quizScorePolicy(kind: QuizKind): QuizScorePolicy {
   return QUIZ_SCORE_POLICIES[kind] ?? 'accuracy'
+}
+
+export function quizMinimumRecordSize(kind: QuizKind): number {
+  return kind === 'movieChainEasy' || kind === 'movieChainNormal' || kind === 'movieChainHard'
+    ? 1
+    : 5
 }
 
 export function quizSessionPlayMode(session: Pick<QuizSession, 'settings'>): QuizPlayMode {
@@ -136,9 +148,14 @@ export function compareQuizResults(
 export function isNewQuizBest(
   candidate: Pick<QuizSession, 'score' | 'total' | 'settings'>,
   previous: QuizSession | null,
-  policy: QuizScorePolicy
+  policy: QuizScorePolicy,
+  kind?: QuizKind
 ): boolean {
-  if (candidate.total < 5 || policy === 'party' || policy === 'tournament') return false
+  if (
+    candidate.total < (kind ? quizMinimumRecordSize(kind) : 5) ||
+    policy === 'party' ||
+    policy === 'tournament'
+  ) return false
   if (!previous) return true
   return compareQuizResults({ ...candidate, id: previous.id + 1 }, previous, policy) > 0
 }

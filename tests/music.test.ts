@@ -138,6 +138,13 @@ describe('walkMusicRoot', () => {
     expect(albums[0].files).toHaveLength(2)
     expect(albums[0].albumDir).toBe('Utada Hikaru/Singles Collection')
   })
+
+  it('does not swallow cancellation at a filesystem checkpoint', async () => {
+    makeFiles(['Radiohead/OK Computer/01 Airbag.mp3'])
+    await expect(walkMusicRoot(root, () => true)).rejects.toMatchObject({
+      name: 'TaskCancelledError'
+    })
+  })
 })
 
 describe('startScan', () => {

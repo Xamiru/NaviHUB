@@ -92,12 +92,15 @@ running forever.
 
 - **Windows has no signals.** `proc.kill('SIGSTOP')` there **ignores the name and terminates the
   process**. Un-gated, Pause would destroy an in-flight download on the one machine the app
-  actually runs on. `canSignalPause()` gates it; on win32 the constructor returns cancel only,
-  with a `pauseNote` the disabled button shows as its tooltip.
-- **SIGTERM is queued for a stopped process.** So `cancel()` sends **SIGCONT first**, then the
-  module's cancelled flag, then SIGTERM, then SIGKILL after 5s. Without that, cancelling a paused
+  actually runs on. `canSignalPause()` gates it; on win32 the constructor returns cancel only.
+  The full Tasks row omits Pause and prints the `pauseNote` as readable copy.
+- **SIGTERM is queued for a stopped process.** So `cancel()` records the module's cancelled flag,
+  sends **SIGCONT before SIGTERM**, then SIGKILL after 5s. Without that, cancelling a paused
   job appears to hang for five seconds. The three pre-existing `cancelDownload`/`cancelOcr`/
   `cancelPrepare` functions now route through this, so the ordering exists in one place.
+- On Windows, Stop uses `taskkill /T /F` with an argv array so a spotDL/yt-dlp child and its
+  ffmpeg descendants are terminated together. The job's cancellation flag is set before looking
+  up the current child, so a click between chunk/process phases still prevents the next phase.
 
 Pausing a task must **never** pause our stdout/stderr readers: a stopped child that fills the
 64 KB pipe buffer blocks in `write()`, and SIGCONT would not free it until we resumed reading.
@@ -125,12 +128,16 @@ tick and shift when a cancel is observed relative to the item in flight.
 Every kind is cancellable except the two folder walks (`mangaRescan`, `videoScan`), which finish in
 seconds and report `canCancel: false` honestly.
 
-The importers were the interesting case: 20 modules, no cancel, and `fetchWithRetry` must never be
-given a caller `signal` (it would win over the per-attempt timeout, making one deadline span every
-retry). The answer needed **no importer edits at all**: `updateActivity()` and `imageProgress()`
-throw `TaskCancelledError` when their task has been cancelled. Every importer already calls those,
-and `downloadImages`' worker pool calls `imageProgress` after every image — the long phase of an
-import — so a stop lands within one image.
+The importers were the interesting case: 20 modules share `withActivity`. Each activity now owns
+an `AbortController` carried through `AsyncLocalStorage`, so `fetchWithRetry` internally composes
+its task signal with a fresh per-attempt timeout and aborts active HTTP, retry backoff, and 429
+waits immediately. Callers still never pass a fixed ordinary `signal`. `updateActivity()` and
+`imageProgress()` retain their `TaskCancelledError` checkpoints for CPU/DB phases and image-pool
+boundaries. Concurrent activities get isolated signals, so stopping one cannot abort another.
+
+Dictionary streams carry their own task signal and check each chunk. Prep-deck reads and music
+folder walks check during their initial long phase. Cooperative bulk/refresh/wrestling/art jobs
+run their HTTP work inside the gate's cancellation context; music art also checks between providers.
 
 `TaskCancelledError` **rejects** rather than resolving `undefined`: callers like `ImportDialog` do
 `const item = await api.anilist.import(…)` and then read `item.id`. Its message is written for a
@@ -202,6 +209,9 @@ rail button and no second in-page tab row.
   chronological.
 - The Topbar `<header>` carries **`relative z-30`**, which is load-bearing: `backdrop-blur` creates
   a stacking context, so without it the dropdown renders behind any card it overlaps.
+- Dense Topbar rows keep icon controls; full Tasks rows use labelled Pause/Resume/Stop buttons,
+  omit unsupported actions, expose `pauseNote`, and describe `pausing`/`cancelling` as pending
+  boundaries rather than completed actions. **Stop all** enables only when something is stoppable.
 - `.log-row` is a component class rather than Tailwind's `font-mono`, because `tailwind.config.js`
   extends colors and radii only — its `font-mono` resolves to the system stack, not the bundled
   IBM Plex Mono.

@@ -3,7 +3,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import StatTile from './StatTile'
 import type { QuizKind, QuizSession } from '@shared/types'
-import { quizScorePolicy, quizSessionCorrect } from '@shared/quizCore'
+import { quizMinimumRecordSize, quizScorePolicy, quizSessionCorrect } from '@shared/quizCore'
 
 const pct = (s: QuizSession): number =>
   s.total > 0 ? Math.round((quizSessionCorrect(s) / s.total) * 100) : 0
@@ -16,6 +16,7 @@ const playedOn = (s: QuizSession): string =>
 // from the quiz_session log (written by each quiz page's endGame()).
 export default function QuizRecord({ kind }: { kind: QuizKind }) {
   const policy = quizScorePolicy(kind)
+  const minimum = quizMinimumRecordSize(kind)
   const { data: h } = useQuery({
     queryKey: qk.quiz.history(kind),
     queryFn: () => api.quiz.history(kind)
@@ -35,7 +36,7 @@ export default function QuizRecord({ kind }: { kind: QuizKind }) {
                 : `${quizSessionCorrect(h.best)}/${h.best.total}`
               : '—'
           }
-          sub={h.best ? `${pct(h.best)}% · ${playedOn(h.best)}` : 'play a round of 5+'}
+          sub={h.best ? `${pct(h.best)}% · ${playedOn(h.best)}` : `play a round of ${minimum}+`}
           accent={h.best != null}
         />
         <StatTile label="Best streak" value={h.bestStreak} />

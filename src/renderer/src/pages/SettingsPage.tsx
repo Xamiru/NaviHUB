@@ -36,6 +36,7 @@ import { useUpdateStatus } from '../lib/useUpdateStatus'
 import { confirmDialog } from '../lib/confirm'
 import EmptyState from '../components/EmptyState'
 import QuietWorkspace from '../components/QuietWorkspace'
+import LibraryExportSettings from '../components/LibraryExportSettings'
 import {
   filterSettingsSections,
   type SettingsSearchSection
@@ -76,7 +77,20 @@ const SETTINGS_SEARCH: readonly SettingsSearchSection<TabId>[] = [
   {
     key: 'data',
     title: 'Keys & Folders',
-    terms: ['api keys', 'library paths', 'music folder', 'video folder', 'pictures', 'tokens']
+    terms: [
+      'api keys',
+      'library paths',
+      'music folder',
+      'video folder',
+      'pictures',
+      'tokens',
+      'export',
+      'backup',
+      'transfer',
+      'privacy',
+      'portable',
+      'zip'
+    ]
   },
   {
     key: 'japanese',
@@ -199,6 +213,7 @@ export default function SettingsPage() {
             ))}
           {displayTab === 'data' && (
             <>
+              <LibraryExportSettings />
               <ApiKeysSettings data={data} onSave={setKey} />
               <FoldersSettings data={data} onSave={setKey} />
             </>

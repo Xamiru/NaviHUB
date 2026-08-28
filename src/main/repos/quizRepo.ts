@@ -19,10 +19,16 @@ import type {
   QuizSynopsisItem,
   QuizVaItem
 } from '@shared/types'
-import { quizScorePolicy } from '@shared/quizCore'
+import { quizMinimumRecordSize, quizScorePolicy } from '@shared/quizCore'
 import { countBuildableVaSources } from '@shared/vaQuiz'
 import { countBuildableSynopsisSources, isLikelyFirstEntry } from '@shared/synopsisQuiz'
 import { HIGHER_LOWER_MEDIA_TYPES, higherLowerValue } from '@shared/higherLowerQuiz'
+import { movieChainEndpointCounts, type MovieChainCandidate } from '@shared/movieChain'
+import {
+  guessTrackIdentityCount,
+  guessTrackMusicEntry,
+  guessTrackThemeEntry
+} from '@shared/guessTrack'
 import {
   buildChallengeQuestions,
   type ChallengeCharacterCandidate,
@@ -43,6 +49,82 @@ export const YEAR_EXPR = `CAST(COALESCE(
 export const GENRE_CSV_EXPR = `(SELECT GROUP_CONCAT(DISTINCT t.name) FROM media_tag mt
    JOIN tag t ON t.id = mt.tag_id WHERE mt.media_id = mi.id)`
 
+function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaCandidate[] {
+  const db = getSqlite()
+  const statusSql = statuses.length
+    ? `AND mi.status IN (${statuses.map(() => '?').join(',')})`
+    : ''
+  const rows = db.prepare(
+    `SELECT mi.id, mi.title, mi.title_original, mi.media_type, mi.cover_path,
+            mi.release_date, mi.total_units, mi.score
+     FROM media_item mi
+     WHERE mi.media_type IN ('movie','tv') AND mi.cover_path IS NOT NULL ${statusSql}
+     ORDER BY mi.id`
+  ).all(...statuses) as Array<Record<string, unknown>>
+  const media = new Map<number, ChallengeMediaCandidate>()
+  for (const row of rows) {
+    media.set(row.id as number, {
+      id: row.id as number,
+      title: row.title as string,
+      aliases: row.title_original && row.title_original !== row.title
+        ? [row.title_original as string]
+        : [],
+      mediaType: row.media_type as string,
+      coverPath: row.cover_path as string,
+      artPaths: [],
+      releaseDate: (row.release_date as string | null) ?? null,
+      totalUnits: (row.total_units as number | null) ?? null,
+      score: (row.score as number | null) ?? null,
+      genres: [],
+      relations: [],
+      people: [],
+      studios: []
+    })
+  }
+  const ids = [...media.keys()]
+  if (ids.length === 0) return []
+  const slots = ids.map(() => '?').join(',')
+  for (const row of db.prepare(
+    `SELECT mt.media_id, t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id
+     WHERE mt.media_id IN (${slots}) AND t.category='genre' ORDER BY mt.media_id, t.name`
+  ).all(...ids) as Array<{ media_id: number; name: string }>) {
+    media.get(row.media_id)?.genres.push(row.name)
+  }
+  for (const row of db.prepare(
+    `SELECT c.media_id, p.id, p.name, c.role, ch.name AS character_name,
+            COALESCE(c.importance, mch.sort_order) AS billing_order
+     FROM credit c JOIN person p ON p.id=c.person_id
+     LEFT JOIN character ch ON ch.id=c.character_id
+     LEFT JOIN media_character mch
+       ON mch.media_id=c.media_id AND mch.character_id=c.character_id
+     WHERE c.media_id IN (${slots}) AND c.role IN ('actor','director')
+     ORDER BY c.media_id, COALESCE(c.importance, mch.sort_order, 999999), c.id`
+  ).all(...ids) as Array<{
+    media_id: number
+    id: number
+    name: string
+    role: string
+    character_name: string | null
+    billing_order: number | null
+  }>) {
+    media.get(row.media_id)?.people.push({
+      id: row.id,
+      name: row.name,
+      role: row.role,
+      characterName: row.character_name,
+      billingOrder: row.billing_order
+    })
+  }
+  for (const row of db.prepare(
+    `SELECT mc.media_id, co.id, co.name, mc.role FROM media_company mc
+     JOIN company co ON co.id=mc.company_id WHERE mc.media_id IN (${slots})
+     ORDER BY mc.media_id, mc.id`
+  ).all(...ids) as Array<{ media_id: number; id: number; name: string; role: string }>) {
+    media.get(row.media_id)?.studios.push({ id: row.id, name: row.name, role: row.role })
+  }
+  return [...media.values()]
+}
+
 export function availability(request: QuizAvailabilityRequest = {}): QuizAvailability {
   const db = getSqlite()
   const statuses = request.statuses?.filter(Boolean) ?? []
@@ -52,6 +134,44 @@ export function availability(request: QuizAvailabilityRequest = {}): QuizAvailab
   const song = scalar(
     `SELECT COUNT(DISTINCT mi.id) AS n FROM theme_song ts JOIN media_item mi ON mi.id=ts.media_id
      WHERE (ts.audio_url IS NOT NULL OR ts.audio_path IS NOT NULL) ${statusSql}`
+  )
+  const guessTrackThemes = guessTrackIdentityCount(
+    songPool({ statuses: statuses.length ? statuses : null })
+      .map(guessTrackThemeEntry)
+      .filter((entry) => entry != null)
+  )
+  const musicRows = db
+    .prepare(
+      `SELECT t.id, t.album_id, t.artist_id, t.file_path, t.title, t.track_no, t.disc_no,
+              t.duration, t.tag_artist, t.liked_at, t.play_count, t.last_played_at,
+              al.title AS album_title, al.cover_path, ar.name AS artist_name
+       FROM music_track t
+       JOIN music_album al ON al.id=t.album_id
+       JOIN music_artist ar ON ar.id=t.artist_id`
+    )
+    .all() as Array<Record<string, unknown>>
+  const guessTrackMusic = guessTrackIdentityCount(
+    musicRows
+      .map((row) =>
+        guessTrackMusicEntry({
+          id: row.id as number,
+          albumId: row.album_id as number,
+          albumTitle: row.album_title as string,
+          artistId: row.artist_id as number,
+          artistName: row.artist_name as string,
+          tagArtist: (row.tag_artist as string | null) ?? null,
+          filePath: row.file_path as string,
+          title: row.title as string,
+          trackNo: (row.track_no as number | null) ?? null,
+          discNo: (row.disc_no as number | null) ?? null,
+          duration: (row.duration as number | null) ?? null,
+          likedAt: (row.liked_at as string | null) ?? null,
+          playCount: row.play_count as number,
+          lastPlayedAt: (row.last_played_at as string | null) ?? null,
+          coverPath: (row.cover_path as string | null) ?? null
+        })
+      )
+      .filter((entry) => entry != null)
   )
   const character = scalar(
     `SELECT COUNT(DISTINCT ch.id) AS n FROM media_character mc
@@ -165,8 +285,39 @@ export function availability(request: QuizAvailabilityRequest = {}): QuizAvailab
       option.personalScore
     ])
   )
+  const screenCandidates = screenChallengeCandidates(statuses)
+  const chainCandidates: MovieChainCandidate[] = screenCandidates.map((item) => ({
+    key: String(item.id),
+    label: item.title,
+    aliases: item.aliases ?? [],
+    imagePath: item.coverPath!,
+    releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
+    mediaType: item.mediaType as 'movie' | 'tv',
+    people: item.people
+  }))
+  const screenGameOptions = (['movie', 'tv', 'both'] as const).map((mediaMode) => {
+    const libraryGrid = buildChallengeQuestions({
+      kind: 'libraryGrid',
+      seed: 1,
+      scope: request.scope ?? 'consumed',
+      statuses: statuses.length ? statuses : null,
+      length: 1,
+      options: { screenMediaMode: mediaMode }
+    }, screenCandidates).length ? 9 : 0
+    return {
+      mediaMode,
+      libraryGrid,
+      movieChain: movieChainEndpointCounts(chainCandidates, mediaMode)
+    }
+  })
+  const libraryGrid = Math.max(...screenGameOptions.map((option) => option.libraryGrid))
+  const movieChain = Math.max(
+    ...screenGameOptions.flatMap((option) => Object.values(option.movieChain))
+  )
   return {
     song,
+    guessTrack: Math.max(guessTrackThemes, guessTrackMusic),
+    guessTrackOptions: { themes: guessTrackThemes, music: guessTrackMusic },
     cast,
     va,
     synopsis,
@@ -176,13 +327,19 @@ export function availability(request: QuizAvailabilityRequest = {}): QuizAvailab
     connections,
     chronology,
     higherLower,
-    higherLowerOptions
+    higherLowerOptions,
+    libraryGrid,
+    movieChain,
+    screenGameOptions
   }
 }
 
 export function challengePool(request: QuizChallengeRequest): QuizChallengeQuestion[] {
   const db = getSqlite()
   const statuses = request.statuses?.filter(Boolean) ?? []
+  if (request.kind === 'libraryGrid' || request.kind === 'movieChain') {
+    return buildChallengeQuestions(request, screenChallengeCandidates(statuses))
+  }
   const mediaWhere: string[] = []
   if (statuses.length) mediaWhere.push(`mi.status IN (${statuses.map(() => '?').join(',')})`)
   if (request.kind === 'connections') {
@@ -203,7 +360,7 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
       : [])
   ]
   const mediaRows = db.prepare(
-    `SELECT mi.id, mi.title, mi.media_type, mi.cover_path, mi.banner_path,
+    `SELECT mi.id, mi.title, mi.title_original, mi.media_type, mi.cover_path, mi.banner_path,
             mi.release_date, mi.total_units, mi.score
      FROM media_item mi ${whereSql} ORDER BY mi.id`
   ).all(...mediaParams) as Array<Record<string, unknown>>
@@ -212,6 +369,9 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
     mediaById.set(row.id as number, {
       id: row.id as number,
       title: row.title as string,
+      aliases: row.title_original && row.title_original !== row.title
+        ? [row.title_original as string]
+        : [],
       mediaType: row.media_type as string,
       coverPath: (row.cover_path as string | null) ?? null,
       artPaths: row.banner_path ? [row.banner_path as string] : [],
@@ -696,9 +856,15 @@ export const SCORE_RANKED_KINDS: ReadonlySet<QuizKind> = new Set<QuizKind>([
   'readingRace',
   'conjRace',
   'songArcade',
+  'guessTrackTheme',
+  'guessTrackMusic',
   'shiritori',
   'imageReveal',
-  'higherLower'
+  'higherLower',
+  'libraryGrid',
+  'movieChainEasy',
+  'movieChainNormal',
+  'movieChainHard'
 ])
 
 // Recent rounds + the personal best. "Best" is the highest accuracy among
@@ -732,11 +898,11 @@ export function history(kind: QuizKind, limit = 15, playMode: QuizPlayMode = 'so
     : (db
         .prepare(
           `SELECT * FROM quiz_session
-           WHERE kind = ? AND ${modeSql} AND total >= 5
+           WHERE kind = ? AND ${modeSql} AND total >= ?
            ORDER BY ${order}
            LIMIT 1`
         )
-        .get(kind, playMode) as Record<string, unknown> | undefined)
+        .get(kind, playMode, quizMinimumRecordSize(kind)) as Record<string, unknown> | undefined)
   const agg = db
     .prepare(
       `SELECT COUNT(*) AS n, COALESCE(MAX(best_streak), 0) AS streak

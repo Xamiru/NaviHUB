@@ -12,14 +12,21 @@ interface GameCard {
   to: string
   title: string
   body: string
-  availability?: Exclude<keyof QuizAvailability, 'higherLowerOptions'>
+  availability?: Exclude<
+    keyof QuizAvailability,
+    'higherLowerOptions' | 'guessTrackOptions' | 'screenGameOptions'
+  >
   minimum?: number
+  availabilityLabel?: (count: number) => string
 }
 
 const GROUPS: Array<{ title: string; games: GameCard[] }> = [
   {
     title: 'Audio',
-    games: [{ to: '/quiz/song', title: 'Song Quiz', body: 'Classic, arcade, or reverse theme-song rounds.', availability: 'song', minimum: 4 }]
+    games: [
+      { to: '/quiz/guess-track', title: 'Guess the Track', body: 'Identify five songs through progressively longer intro clips.', availability: 'guessTrack', minimum: 5 },
+      { to: '/quiz/song', title: 'Song Quiz', body: 'Classic, arcade, or reverse theme-song rounds.', availability: 'song', minimum: 4 }
+    ]
   },
   {
     title: 'Images',
@@ -33,6 +40,8 @@ const GROUPS: Array<{ title: string; games: GameCard[] }> = [
     title: 'Connections',
     games: [
       { to: '/quiz/connections', title: 'Connections', body: 'Find the actor or director connecting two movies or TV shows.', availability: 'connections', minimum: 5 },
+      { to: '/quiz/library-grid', title: 'Library Grid', body: 'Fill nine intersections with movies or TV shows matching both facts.', availability: 'libraryGrid', minimum: 9, availabilityLabel: (count) => `${count} solvable cells` },
+      { to: '/quiz/movie-chain', title: 'Movie Chain', body: 'Reach a target title through shared main-cast actors and directors.', availability: 'movieChain', minimum: 1, availabilityLabel: (count) => `${count} eligible endpoint pairs` },
       { to: '/quiz/chronology', title: 'Chronology', body: 'Order four connected titles by release date.', availability: 'chronology', minimum: 4 }
     ]
   },
@@ -67,9 +76,16 @@ export default function QuizLandingPage() {
     queryKey: qk.quiz.availability(request),
     queryFn: () => api.quiz.availability(request)
   })
-  const solo = GROUPS.flatMap((group) => group.games).filter(
-    (game) => game.availability && (availability?.[game.availability] ?? 0) >= (game.minimum ?? 1)
-  )
+  const solo = GROUPS.flatMap((group) => group.games).filter((game) => {
+    if (!game.availability || !availability) return false
+    if (game.to === '/quiz/library-grid') {
+      return (availability.screenGameOptions.find((option) => option.mediaMode === 'both')?.libraryGrid ?? 0) >= 9
+    }
+    if (game.to === '/quiz/movie-chain') {
+      return (availability.screenGameOptions.find((option) => option.mediaMode === 'both')?.movieChain.normal ?? 0) > 0
+    }
+    return availability[game.availability] >= (game.minimum ?? 1)
+  })
   const hasSaved = hasValidTournamentSave(settings?.['tournament.saved'])
 
   function randomChallenge() {
@@ -109,7 +125,11 @@ export default function QuizLandingPage() {
                     <p className="font-semibold">{game.title}</p>
                     <p className="mt-1 text-sm text-gray-400">{game.body}</p>
                     <p className="mt-3 text-xs text-gray-500">
-                      {count == null ? 'Uses your selected contender source' : ready ? `${count} eligible sources` : `Needs at least ${game.minimum}; ${count} eligible`}
+                      {count == null
+                        ? 'Uses your selected contender source'
+                        : ready
+                          ? game.availabilityLabel?.(count) ?? `${count} eligible sources`
+                          : `Needs at least ${game.minimum}; ${count} eligible`}
                     </p>
                   </>
                 )

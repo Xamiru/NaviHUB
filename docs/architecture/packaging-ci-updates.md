@@ -5,9 +5,9 @@
 
 **Covers** — electron-builder config, the Windows cross-build traps, the derived-version release workflow, electron-updater, the sanitized library export.
 
-**Key files** — `electron-builder.yml`, `.github/workflows/release.yml`, `scripts/dist-win.sh`, `src/main/updater.ts` + `updaterCore.ts`, `scripts/export-library.cjs`, `scripts/sanitizeSql.cjs`
+**Key files** — `electron-builder.yml`, `.github/workflows/release.yml`, `scripts/dist-win.sh`, `src/main/updater.ts` + `updaterCore.ts`, `src/main/libraryExport.ts`, `scripts/export-library.cjs`, `scripts/sanitizeSql.cjs`
 
-**Tests** — `updater`, `exportSanitize`
+**Tests** — `updater`, `exportSanitize`, `libraryExport`, `libraryExportUi`
 
 ---
 
@@ -25,5 +25,8 @@
 
 ## Library export
 
-**Library export:** `scripts/export-library.cjs` snapshots the live DB, strips personal data via `scripts/sanitizeSql.cjs` (shared with tests/exportSanitize.test.ts — edit them together when tables gain personal columns), and stages `navihub.db` + `media/` + theme audio + README into `~/navihub-export/navihub-bundle`. New personal/tracking columns or tables MUST be added to sanitizeSql.cjs or they leak into exports.
+**Library export:** `scripts/sanitizeSql.cjs` is the single privacy authority for both export paths. The older `scripts/export-library.cjs` command keeps its privacy-safe default bundle, while Settings → Keys & Folders → Library export exposes section, asset and optional personal-tracking policies without requiring npm on the destination PC. New personal/tracking columns or tables MUST be added to the sanitizer and `tests/exportSanitize.test.ts` or they leak into exports.
 
+The in-app runner in `src/main/libraryExport.ts` uses SQLite's online backup API, so an open WAL database produces one consistent copied `navihub.db`. Only that copy is sanitized. Excluded media sections cascade out before orphaned graph entities and polymorphic list entries are pruned. Spotify playlist snapshots are optional and preserve source metadata only: ordinary playlist/local scan rows are deleted and every `matched_track_id` is cleared. Managed `media/` covers and configured anime-theme `audio/` are copied only when the sanitized database still references them; local music, manga, book, video and wrestling files are never candidates.
+
+Exports are assembled beside the chosen destination as an unmistakable partial path, then atomically renamed to a unique timestamped folder or ZIP. ZIP uses the packaged `archiver` dependency in streaming store mode, so large bundles do not enter renderer or main-process memory. Destination checks reject NaviHUB's data and theme-audio source trees, and a best-effort free-space check accounts for both staging and ZIP output. Cancellation is available through the dialog and Tasks, removes partial output, and is called before database teardown on quit. `libraryExport:status` is polled; there is no push channel. A successful result remains in module state for the app session and includes `README.txt` plus a non-sensitive JSON manifest.

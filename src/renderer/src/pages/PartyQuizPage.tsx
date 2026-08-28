@@ -48,7 +48,13 @@ interface PartyQuestion {
   higherLower?: QuizHigherLowerQuestion
 }
 
-type PartyGame = 'songRelay' | 'cast' | 'va' | 'synopsis' | 'mangaPanel' | QuizChallengeKind
+type PartyGame =
+  | 'songRelay'
+  | 'cast'
+  | 'va'
+  | 'synopsis'
+  | 'mangaPanel'
+  | Exclude<QuizChallengeKind, 'libraryGrid' | 'movieChain'>
 const GAMES: Array<{ kind: PartyGame; label: string }> = [
   { kind: 'songRelay', label: 'Song Relay' },
   { kind: 'cast', label: 'Cast' },

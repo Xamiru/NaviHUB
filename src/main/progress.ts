@@ -2,6 +2,7 @@ import type { ActivityStatus } from '@shared/types'
 import * as tasks from './tasks'
 import { TaskCancelledError } from './tasks'
 import type { TaskHandle } from './tasks'
+import { runWithActivitySignal } from './activityContext'
 
 // Re-exported: importers and ipc.ts reason about cancellation through this
 // module, not the registry.
@@ -32,7 +33,10 @@ export function getActivity(): ActivityStatus {
 // settle ITS OWN task: two overlapping imports share the single slot, so
 // settling "whatever is in the slot now" would close the wrong one and leave
 // the other running forever.
-export function beginActivity(label: string, opts: { attachTo?: TaskHandle } = {}): TaskHandle {
+export function beginActivity(
+  label: string,
+  opts: { attachTo?: TaskHandle; onCancel?: () => void } = {}
+): TaskHandle {
   Object.assign(state, { active: true, label, phase: 'fetching', done: 0, total: 0 })
   handle =
     opts.attachTo ??
@@ -49,7 +53,7 @@ export function beginActivity(label: string, opts: { attachTo?: TaskHandle } = {
       // half-paused one would sit on open HTTP connections for as long as the
       // user left it.
       controls: {
-        cancel: () => undefined,
+        cancel: () => opts.onCancel?.(),
         pauseNote: 'Imports cannot be paused — stop and re-run instead'
       }
     })
@@ -119,16 +123,19 @@ function errText(err: unknown): string {
 // Wraps a long-running task in begin/end so the ipc.ts handlers stay
 // one-liners and the slot can never be left dangling on a throw.
 export async function withActivity<T>(label: string, fn: () => Promise<T>): Promise<T> {
-  const own = beginActivity(label)
+  const controller = new AbortController()
+  const own = beginActivity(label, { onCancel: () => controller.abort() })
   try {
-    const result = await fn()
+    const result = await runWithActivitySignal(controller.signal, fn)
+    if (own.cancelRequested()) throw new TaskCancelledError(label)
     finishOwn(own)
     return result
   } catch (err) {
     // Settles the task 'cancelled' rather than 'error' when the user asked for
     // it — the Tasks page must not paint a deliberate stop red.
-    finishOwn(own, err)
-    throw err
+    const outcome = own.cancelRequested() ? new TaskCancelledError(label) : err
+    finishOwn(own, outcome)
+    throw outcome
   }
 }
 

@@ -10,13 +10,15 @@
 ## Music artwork lookup
 
 Local folder and embedded artwork always wins. When the user asks NaviHUB to
-find missing art online, albums use an exact 100-score MusicBrainz release-group
-match followed by the Cover Art Archive's 1200px front image. A known album year
-may resolve otherwise ambiguous release groups; unresolved ambiguity is rejected.
-Remembered Spotify album ids provide an identity-safe oEmbed fallback, followed
-by exact normalized Deezer and iTunes matches. Artist photos use remembered
-Spotify artist ids first and exact-name Deezer second; MusicBrainz/Cover Art
-Archive does not provide an artist-photo equivalent.
+find missing art online, remembered Spotify album ids provide the first
+identity-safe oEmbed lookup, followed by a fast exact iTunes match. An exact
+100-score MusicBrainz release group plus the Cover Art Archive's 1200px front
+image is the archival fallback, with exact Deezer last. A known album year may
+resolve otherwise ambiguous release groups; unresolved ambiguity is rejected.
+Leading folder years such as `(1997) `, `[2001] `, and `2007 - ` are removed only
+for provider lookup; edition markers elsewhere remain part of the identity.
+Artist photos use remembered Spotify ids first, then an exact, non-disambiguation
+Wikipedia page image, then exact-name Deezer.
 
 Provider result order is not permission to guess: artist and album names must be
 equal after safe case/Unicode/punctuation normalization. Edition identity such as
@@ -25,7 +27,9 @@ for the same normalized result are treated as ambiguous. MusicBrainz Lucene
 values are escaped, collaborative artist credits include every credited name and
 join phrase, and requests carry NaviHUB's version plus repository contact URL in
 the User-Agent through a serialized 1.1-second gate.
-HTTP/provider failures remain retryable and do not stamp `art_checked_at`. The
+Optional art requests use one bounded 10-second attempt so an unavailable provider
+cannot hold every later album in the bulk queue. HTTP/provider failures remain
+retryable and do not stamp `art_checked_at`. The
 explicit bulk action revisits older misses so a newly added provider can fill
 them, but still excludes rows that already have art. Individual and bulk results
 distinguish provider/download failures from a confident no-match. Existing online
@@ -78,7 +82,11 @@ never bundled.
 
 Artist and album headers also open the shared Spotify inspection dialog. A matching
 source is remembered by its unique Spotify ID; reopening reinspects it without a
-login or continuous synchronization. Artist inspections group spotDL tracks by
+login or continuous synchronization. When no source is remembered, NaviHUB asks
+spotDL to identify it from a representative local track; pasting a URL is the
+explicit fallback, not the normal flow. Catalogue inspection exposes a polled
+phase/message and cancel action because large artist discographies can take spotDL
+several minutes to expand. Artist inspections group spotDL tracks by
 stable album ID, preselect primary albums and singles, and leave features and
 compilations visible but unchecked. Album inspections target exactly one release.
 
@@ -147,6 +155,8 @@ The album page needed nothing: `MusicEntityHeader` + `MusicTrackRow` were alread
 
 **Higher or Lower.** Setup chooses one media category and one concrete fact. Release dates ask older/newer and compare displayed years; episode/chapter/page counts ask more/fewer; movie runtime and game/VN length ask longer/shorter; personal scores ask higher/lower and display the user's `/10` rating. Only covered titles with valid, non-tied values enter the selected pool, and availability reports each category/fact combination separately. The screen follows the familiar two-card information pattern: the reference value is known, the challenger value stays hidden until the call, then both exact values remain visible for the reveal. Solo keeps three lives and deals one seeded comparison at a time, carrying the challenger after a correct call, retaining the reference after a miss, and avoiding recent challengers without an artificial round ceiling. Party keeps its fixed question count and deals independent pairs so one side's result cannot alter another side's question.
 
+**Library Grid and Movie Chain (2026-08-28).** The two solo screen puzzles share one completed-by-default movie/TV candidate projection and the consolidated `quiz:challengePool` channel. Library Grid proves every row/column intersection has at least two answers and proves a global nine-title matching before returning a board; original titles are search aliases, not separate identities. Its public clue families are main cast, director, genre, company and decade. Movie Chain builds undirected edges from actors billed 0-9 on both movies and TV plus uncapped directors, then chooses endpoints at exact shortest distance 2/3/4 for Easy/Normal/Hard. Availability uses one bounded BFS from each title, reports endpoint-pair counts by media selection and difficulty, and never silently downgrades a requested route. Both games use point scoring, explicit `all` spoiler warnings, no timer, no daily persistence and no Party adaptation. Chain records are separate QuizKinds by difficulty and lower the shared personal-record minimum to one route only for those kinds.
+
 **Silhouette.** `/quiz/silhouette` is anime-only because TMDB character images are actor profile photos and opaque imported portraits cannot produce a real alpha silhouette. Instead, `@shared/silhouetteQuiz.ts` applies an opaque-image-safe grayscale/contrast/blur/crop treatment and reveals the original after answering. Name the character uses unique-name distractors from other anime, matching known gender when at least three matches exist. Name the anime excludes every alternate valid appearance, prefers era/genre affinity, and balances answer titles. Both modes require four options and exact 5/10/20 rounds, request five Solo and ten Party spares, gate timers/answers on image load, and reveal the character plus anime context. Party uses the same obscuring treatment and title-only choices.
 
 **Couch party.** `/quiz/party` uses `@shared/partyQuiz.ts`: 2/3/4 fixed Player labels or Team A/B, five owned questions per side, ownership rotating independently of steals, 2 points for the owner and 1 for the next side's single five-second steal. It supports the library and challenge formats, with ordered answers editable during the steal. Song Relay uses masked `quiz-` audio, identical ten-second clips, a twenty-second owner clock, and no auto-advance. Only one final summary row is saved (`playMode:'party'`, labels, scores, winner/tie, count, scope, seed).
@@ -177,3 +187,9 @@ Consumed entity/fact/audio/image pools use `useAllCompletedStatuses()` and posit
 ## Song quiz modes
 
 **Classic / Arcade / Reverse + snippet clips (2026-08-23)** — `SongQuizPage` grew a mode pill writing THREE separate kinds so personal bests stay meaningful: classic stays `'song'` (accuracy), arcade logs `'songArcade'` (endless, timer forced on, 3 lives, speed points = 100 + 10×seconds left → joins `SCORE_RANKED_KINDS`, which now also legitimately holds `'shiritori'`), reverse logs `'songReverse'` (the anime is named; four anonymous clips audition via keys 1-4 / ▸ buttons, Pick or Enter locks one — options are keyed by themeId, so a same-anime sibling theme can never appear as a distractor). A **Clip length** pill row pauses playback N seconds into every play (10/15/20s; implemented as an effect on `player.isPlaying` so replays re-arm it) with the countdown still running. Distractors in every mode come from `pickDistractors` instead of the old blind slice.
+
+## Guess the Track
+
+**Progressive intro game (2026-08-28).** `/quiz/guess-track` is a separate five-track Solo game over either completed/all anime themes (OP/ED and era filters) or the indexed music library (all, liked, playlist, artist, or album). `@shared/guessTrack.ts` normalizes title/performer identities, groups duplicate anime uses and album copies into one recording, preserves every grouped entry as a valid answer, balances the seeded deal across anime or artists, ranks autocomplete results, and owns the full attempt state machine. The clip ladder is 1, 2, 4, 7, 11, then 16 seconds from the opening. Each unlocked clip autoplays; unlimited replay costs nothing; four misses reveal the theme performer or the first Unicode character of a music artist; a correct answer scores 6 down to 1 and a sixth miss scores zero.
+
+The reveal restarts the full recording but retains the `quiz-guess-track-` namespace and masked metadata, so it cannot increment music play counts or expose the answer through the persistent bar, widget, SMTC, or Media Session. Async local-path resolution uses a request epoch, cleanup stops only `quiz-` audio, and missing files are replaced from a seeded spare deck without spending an attempt. Availability reports theme and music identity counts separately plus a combined route-ready count through the existing `quiz:availability` invoke. Results save as distinct points-policy kinds, `guessTrackTheme` and `guessTrackMusic`, with solved count, fixed attempted count five, filters, per-track attempts/points, play mode, and seed in `quiz_session.settings`; no schema change or new IPC channel was required.

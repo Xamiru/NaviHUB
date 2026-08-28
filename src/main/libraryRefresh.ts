@@ -4,6 +4,7 @@ import { beginActivity, endActivity } from './progress'
 import * as tasks from './tasks'
 import { TaskCancelledError } from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
+import { runWithActivitySignal } from './activityContext'
 import * as anilist from './anilist'
 import * as tmdb from './tmdb'
 import * as vndb from './vndb'
@@ -190,7 +191,7 @@ export function start(
   })
   handle = task
 
-  void (async () => {
+  void runWithActivitySignal(runGate.signal, async () => {
     const slot = beginActivity(`Refresh library: ${status.label}`, { attachTo: task })
     try {
       let consecutiveFailures = 0
@@ -259,7 +260,7 @@ export function start(
               : { state: 'done' }
       )
     }
-  })()
+  })
 
   return getStatus()
 }

@@ -31,6 +31,9 @@ import StudioDetailPage from './pages/StudioDetailPage'
 import CharacterDetailPage from './pages/CharacterDetailPage'
 import QuizLandingPage from './pages/QuizLandingPage'
 import SongQuizPage from './pages/SongQuizPage'
+import GuessTrackPage from './pages/GuessTrackPage'
+import LibraryGridPage from './pages/LibraryGridPage'
+import MovieChainPage from './pages/MovieChainPage'
 import CastQuizPage from './pages/CastQuizPage'
 import VaQuizPage from './pages/VaQuizPage'
 import SynopsisQuizPage from './pages/SynopsisQuizPage'
@@ -360,6 +363,7 @@ export default function App() {
             <Route path="/quiz" element={<QuizLandingPage />} />
             <Route path="/quiz/party" element={<PartyQuizPage />} />
             <Route path="/quiz/song" element={<SongQuizPage />} />
+            <Route path="/quiz/guess-track" element={<GuessTrackPage />} />
             <Route path="/quiz/cast" element={<CastQuizPage />} />
             <Route path="/quiz/character" element={<Navigate to="/quiz/cast" replace />} />
             <Route path="/quiz/va" element={<VaQuizPage />} />
@@ -368,6 +372,8 @@ export default function App() {
             <Route path="/quiz/images" element={<ChallengeQuizPage kind="imageReveal" />} />
             <Route path="/quiz/silhouette" element={<ChallengeQuizPage kind="silhouette" />} />
             <Route path="/quiz/connections" element={<ChallengeQuizPage kind="connections" />} />
+            <Route path="/quiz/library-grid" element={<LibraryGridPage />} />
+            <Route path="/quiz/movie-chain" element={<MovieChainPage />} />
             <Route path="/quiz/chronology" element={<ChallengeQuizPage kind="chronology" />} />
             <Route path="/quiz/higher-lower" element={<ChallengeQuizPage kind="higherLower" />} />
             <Route path="/quiz/tournament" element={<TournamentPage />} />
