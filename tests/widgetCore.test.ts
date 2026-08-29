@@ -12,7 +12,7 @@ const PRIMARY = { x: 0, y: 0, width: 1920, height: 1040 } // 1080p minus taskbar
 
 describe('parseWidgetPos / formatWidgetPos', () => {
   it('keeps the pop-out wide enough for ordinary song metadata', () => {
-    expect(WIDGET_SIZE).toEqual({ width: 520, height: 64 })
+    expect(WIDGET_SIZE).toEqual({ width: 480, height: 60 })
   })
 
   it('round-trips', () => {

@@ -2,24 +2,34 @@ import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'child_proc
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
 import { tmpdir } from 'os'
 import { join } from 'path'
-import { randomUUID } from 'crypto'
 import { get as getSetting } from './repos/settingsRepo'
 import { downloadImages, musicRootDir } from './files'
 import { fetchWithRetry } from './http'
 import { startScan } from './music'
-import { claimMusicMaintenance, releaseMusicMaintenance } from './musicMaintenance'
+import {
+  claimMusicMaintenance,
+  musicMaintenanceOwner,
+  releaseMusicMaintenance
+} from './musicMaintenance'
 import * as spotifyRepo from './repos/musicSpotifyRepo'
 import * as tasks from './tasks'
 import { pipeProcLines } from './childLines'
-import { processControls } from './taskControls'
+import { processControls, type Killable } from './taskControls'
 import { updateActivity } from './progress'
 import { currentActivitySignal } from './activityContext'
+import { logInfo, logWarn } from './logBus'
 import type {
   MusicDownloadEvent,
+  SpotifyDownloadQueueAddResult,
+  SpotifyDownloadQueueSnapshot,
+  SpotifyDownloadQueueStartInput,
+  SpotifyEntityCandidate,
   SpotifyEntityDownloadInput,
   SpotifyEntityInspectInput,
   SpotifyEntityInspection,
   SpotifyEntityInspectionStatus,
+  SpotifyEntityRef,
+  SpotifyEntityState,
   SpotifyEntityKind,
   SpotifyReleasePreview,
   SpotifyDownloadInput,
@@ -168,8 +178,8 @@ export function parseSpotdlLine(line: string): SpotdlLineEvent | null {
   return item ? { kind: 'item', title: item[1].trim() } : null
 }
 
-export function buildSpotdlSaveArgs(url: string, saveFile: string): string[] {
-  return ['save', url, '--threads', '4', '--save-file', saveFile]
+export function buildSpotdlSaveArgs(url: string, saveFile: string, threads = 8): string[] {
+  return ['save', url, '--threads', String(threads), '--use-cache-file', '--save-file', saveFile]
 }
 
 export function buildSpotifyDiscoveryQuery(artist: string, title: string): string {
@@ -212,6 +222,24 @@ export function pickDiscoveredEntity(
     }
   }
   return null
+}
+
+export function pickConsensusDiscoveredEntity(
+  kind: SpotifyEntityKind,
+  current: NonNullable<ReturnType<typeof spotifyRepo.getEntity>>,
+  songs: spotifyRepo.SpotdlSong[]
+): ParsedSpotifyUrl | null {
+  const votes = new Map<string, { parsed: ParsedSpotifyUrl; count: number }>()
+  for (const sample of current.sampleTracks.slice(0, 3)) {
+    const parsed = pickDiscoveredEntity(kind, { ...current, sampleTracks: [sample] }, songs)
+    if (!parsed) continue
+    const vote = votes.get(parsed.spotifyId) ?? { parsed, count: 0 }
+    vote.count += 1
+    votes.set(parsed.spotifyId, vote)
+  }
+  const ranked = [...votes.values()].sort((a, b) => b.count - a.count)
+  if (!ranked.length || (ranked[1] && ranked[1].count === ranked[0].count)) return null
+  return ranked[0].parsed
 }
 
 export function buildSpotdlDownloadArgs(inputFile: string, outputRoot: string, errorFile: string): string[] {
@@ -280,38 +308,6 @@ async function resolveEntityUrl(input: string, kind: SpotifyEntityKind): Promise
   return parsed
 }
 
-interface CachedInspection {
-  createdAt: number
-  inspection: SpotifyEntityInspection
-  songs: spotifyRepo.SpotdlSong[]
-}
-
-export class SpotifyInspectionCache {
-  private entries = new Map<string, CachedInspection>()
-  constructor(
-    private readonly now: () => number = Date.now,
-    private readonly max = 8,
-    private readonly ttlMs = 30 * 60_000
-  ) {}
-  private prune(): void {
-    const now = this.now()
-    for (const [id, entry] of this.entries) {
-      if (now - entry.createdAt >= this.ttlMs) this.entries.delete(id)
-    }
-  }
-  set(entry: Omit<CachedInspection, 'createdAt'>): void {
-    this.prune()
-    while (this.entries.size >= this.max) this.entries.delete(this.entries.keys().next().value as string)
-    this.entries.set(entry.inspection.inspectionId, { ...entry, createdAt: this.now() })
-  }
-  get(id: string): CachedInspection | null {
-    this.prune()
-    return this.entries.get(id) ?? null
-  }
-}
-
-const inspections = new SpotifyInspectionCache()
-
 export function mismatchFor(
   input: SpotifyEntityInspectInput,
   current: NonNullable<ReturnType<typeof spotifyRepo.getEntity>>,
@@ -325,7 +321,8 @@ export function mismatchFor(
       : `Spotify calls this artist “${sourceName}”, but this page is “${current.name}”.`
   }
   const release = releases[0]
-  if (release && same(current.name) === same(release.title) &&
+  if (release && same(spotifyRepo.stripAlbumYearPrefix(current.name)) ===
+      same(spotifyRepo.stripAlbumYearPrefix(release.title)) &&
       same(current.artistName ?? '') === same(release.albumArtist)) return null
   return `Spotify identifies this as “${release?.title ?? sourceName}” by ${release?.albumArtist ?? sourceName}, which does not match this album page.`
 }
@@ -338,7 +335,7 @@ export function groupEntityReleases(
 ): SpotifyReleasePreview[] {
   const groups = new Map<string, spotifyRepo.SpotdlSong[]>()
   for (const song of songs) {
-    if (!song.spotifyAlbumId) continue
+    if (!song.spotifyAlbumId || !['album', 'single'].includes(song.albumType ?? '')) continue
     const group = groups.get(song.spotifyAlbumId) ?? []
     group.push(song)
     groups.set(song.spotifyAlbumId, group)
@@ -351,6 +348,7 @@ export function groupEntityReleases(
     const primary = ['album', 'single'].includes(first.albumType ?? '') &&
       spotifyRepo.normalizeSpotifyMatch(first.albumArtist ?? first.primaryArtist) === spotifyRepo.normalizeSpotifyMatch(sourceName)
     return {
+      releaseId: 0,
       spotifyAlbumId,
       spotifyUrl: `https://open.spotify.com/album/${spotifyAlbumId}`,
       title: first.albumTitle,
@@ -364,26 +362,329 @@ export function groupEntityReleases(
       estimatedBytes: estimateSpotifyDownloadBytes(tracks),
       missingDuration: missingTracks.reduce((sum, song) => sum + (song.duration ?? 0), 0),
       missingEstimatedBytes: estimateSpotifyDownloadBytes(missingTracks),
-      preselected: kind === 'album' || primary
+      preselected: kind === 'album' || primary,
+      metadataState: 'resolved' as const,
+      resolutionError: null
     }
   }).sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || a.title.localeCompare(b.title))
+}
+
+interface ItunesResult {
+  wrapperType?: string
+  kind?: string
+  artistId?: number
+  artistName?: string
+  primaryGenreName?: string
+  collectionId?: number
+  collectionName?: string
+  collectionType?: string
+  releaseDate?: string
+  trackCount?: number
+  trackId?: number
+  trackName?: string
+  trackTimeMillis?: number
+  discNumber?: number
+  trackNumber?: number
+}
+
+async function itunesResults(url: string, deadline?: number): Promise<ItunesResult[]> {
+  const remaining = deadline == null ? 8_000 : deadline - Date.now()
+  if (remaining <= 0) throw new Error('Fast music catalogue exceeded its 25-second budget')
+  const response = await fetchWithRetry(
+    url,
+    { timeoutMs: Math.max(250, Math.min(8_000, remaining)), rateLimitWaits: 0 },
+    1
+  )
+  if (!response.ok) throw new Error(`Fast music catalogue returned HTTP ${response.status}`)
+  const payload = await response.json() as { results?: unknown }
+  if (!Array.isArray(payload.results)) throw new Error('Fast music catalogue returned invalid data')
+  return payload.results.filter((row): row is ItunesResult => !!row && typeof row === 'object')
+}
+
+function candidateId(key: string, expected: SpotifyEntityKind): number {
+  const match = key.match(new RegExp(`^itunes:${expected}:(\\d+)$`))
+  if (!match) throw new Error('That catalogue candidate expired; search again')
+  return Number(match[1])
+}
+
+export async function findEntityCandidates(
+  input: SpotifyEntityRef & { query?: string }
+): Promise<SpotifyEntityCandidate[]> {
+  const current = spotifyRepo.getEntity(input.kind, input.entityId)
+  if (!current) throw new Error(`That local ${input.kind} no longer exists`)
+  const query = input.query?.trim() || (input.kind === 'artist'
+    ? current.name
+    : `${current.artistName ?? ''} ${spotifyRepo.stripAlbumYearPrefix(current.name)}`)
+  const entity = input.kind === 'artist' ? 'musicArtist' : 'album'
+  const rows = await itunesResults(
+    `https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&entity=${entity}&limit=12`
+  )
+  const targetName = spotifyRepo.normalizeSpotifyMatch(
+    input.kind === 'album' ? spotifyRepo.stripAlbumYearPrefix(current.name) : current.name
+  )
+  const targetArtist = spotifyRepo.normalizeSpotifyMatch(current.artistName ?? current.name)
+  const seen = new Set<number>()
+  return rows.flatMap((row): SpotifyEntityCandidate[] => {
+    const id = input.kind === 'artist' ? row.artistId : row.collectionId
+    const name = input.kind === 'artist' ? row.artistName : row.collectionName
+    if (!Number.isInteger(id) || !name || seen.has(id!)) return []
+    seen.add(id!)
+    const artist = row.artistName ?? ''
+    const exact = input.kind === 'artist'
+      ? spotifyRepo.normalizeSpotifyMatch(name) === targetName
+      : spotifyRepo.normalizeSpotifyMatch(name) === targetName &&
+        spotifyRepo.normalizeSpotifyMatch(artist) === targetArtist
+    return [{
+      candidateKey: `itunes:${input.kind}:${id}`,
+      name,
+      secondary: input.kind === 'artist' ? row.primaryGenreName ?? null : artist || null,
+      year: row.releaseDate ? Number(row.releaseDate.slice(0, 4)) || null : null,
+      exact
+    }]
+  }).sort((a, b) => Number(b.exact) - Number(a.exact) || (b.year ?? 0) - (a.year ?? 0))
+}
+
+function itunesRelease(
+  collection: ItunesResult,
+  tracks: ItunesResult[]
+): spotifyRepo.IndexedEntityRelease | null {
+  if (!collection.collectionId || !collection.collectionName || !collection.artistName) return null
+  const songs = tracks.filter((track) =>
+    track.wrapperType === 'track' && track.kind === 'song' &&
+    track.collectionId === collection.collectionId && track.trackId && track.trackName
+  )
+  if (!songs.length) return null
+  return {
+    providerReleaseId: String(collection.collectionId),
+    title: collection.collectionName,
+    albumArtist: collection.artistName,
+    year: collection.releaseDate ? Number(collection.releaseDate.slice(0, 4)) || null : null,
+    albumType: (collection.trackCount ?? songs.length) <= 3 ? 'single' : 'album',
+    tracks: songs.map((track) => ({
+      providerTrackId: String(track.trackId),
+      title: track.trackName!,
+      artists: [track.artistName ?? collection.artistName!],
+      primaryArtist: track.artistName ?? collection.artistName!,
+      albumTitle: collection.collectionName!,
+      duration: typeof track.trackTimeMillis === 'number' ? track.trackTimeMillis / 1000 : null,
+      discNo: track.discNumber ?? null,
+      trackNo: track.trackNumber ?? null
+    }))
+  }
+}
+
+async function fetchItunesSnapshot(
+  input: SpotifyEntityInspectInput,
+  current: NonNullable<ReturnType<typeof spotifyRepo.getEntity>>,
+  candidateKey: string
+): Promise<{ providerEntityId: string; sourceName: string; releases: spotifyRepo.IndexedEntityRelease[] }> {
+  const deadline = Date.now() + 25_000
+  const id = candidateId(candidateKey, input.kind)
+  if (input.kind === 'album') {
+    const rows = await itunesResults(
+      `https://itunes.apple.com/lookup?id=${id}&entity=song&limit=200`,
+      deadline
+    )
+    const collection = rows.find((row) => row.wrapperType === 'collection' && row.collectionId === id)
+    const release = collection ? itunesRelease(collection, rows) : null
+    if (!release) throw new Error('The fast catalogue did not return tracks for that album')
+    return { providerEntityId: String(id), sourceName: collection!.artistName ?? current.artistName ?? current.name, releases: [release] }
+  }
+
+  const rows = await itunesResults(
+    `https://itunes.apple.com/lookup?id=${id}&entity=album&limit=200`,
+    deadline
+  )
+  const artist = rows.find((row) => row.wrapperType === 'artist' && row.artistId === id)
+  const same = spotifyRepo.normalizeSpotifyMatch
+  const collections = rows.filter((row) =>
+    row.wrapperType === 'collection' && row.collectionId && row.collectionName &&
+    same(row.artistName ?? '') === same(artist?.artistName ?? current.name)
+  )
+  if (!collections.length) throw new Error('The fast catalogue did not return albums for that artist')
+  const releases: spotifyRepo.IndexedEntityRelease[] = []
+  for (let offset = 0; offset < collections.length; offset += 4) {
+    const batch = collections.slice(offset, offset + 4)
+    const payloads = await Promise.all(batch.map((collection) =>
+      itunesResults(
+        `https://itunes.apple.com/lookup?id=${collection.collectionId}&entity=song&limit=200`,
+        deadline
+      )
+    ))
+    batch.forEach((collection, index) => {
+      const release = itunesRelease(collection, payloads[index])
+      if (release) releases.push(release)
+    })
+  }
+  if (!releases.length) throw new Error('The fast catalogue did not return usable album tracks')
+  const unique = new Map<string, spotifyRepo.IndexedEntityRelease>()
+  for (const release of releases) {
+    const key = `${spotifyRepo.normalizeSpotifyMatch(release.title)}:${release.year ?? ''}:${release.tracks.length}`
+    if (!unique.has(key)) unique.set(key, release)
+  }
+  return {
+    providerEntityId: String(id),
+    sourceName: artist?.artistName ?? current.name,
+    releases: [...unique.values()].sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || a.title.localeCompare(b.title))
+  }
+}
+
+function snapshotInspection(snapshot: spotifyRepo.EntitySnapshotRow): SpotifyEntityInspection {
+  const current = spotifyRepo.getEntity(snapshot.kind, snapshot.entityId)
+  if (!current) throw new Error(`That local ${snapshot.kind} no longer exists`)
+  const releases: SpotifyReleasePreview[] = snapshot.releases.map((release) => {
+    const missing = release.tracks.filter((track) => track.matchedTrackId == null)
+    const duration = release.tracks.reduce((sum, track) => sum + (track.duration ?? 0), 0)
+    return {
+      releaseId: release.id,
+      spotifyAlbumId: release.spotifyAlbumId,
+      spotifyUrl: release.spotifyAlbumId
+        ? `https://open.spotify.com/album/${release.spotifyAlbumId}`
+        : null,
+      title: release.title,
+      albumArtist: release.albumArtist,
+      year: release.year,
+      albumType: release.albumType,
+      trackCount: release.tracks.length,
+      localCount: release.tracks.length - missing.length,
+      missingCount: missing.length,
+      duration,
+      estimatedBytes: estimateSpotifyDownloadBytes(release.tracks),
+      missingDuration: missing.reduce((sum, track) => sum + (track.duration ?? 0), 0),
+      missingEstimatedBytes: estimateSpotifyDownloadBytes(missing),
+      preselected: true,
+      metadataState: release.metadataState,
+      resolutionError: release.resolutionError
+    }
+  })
+  const sourceUrl = snapshot.spotifyId
+    ? `https://open.spotify.com/${snapshot.kind}/${snapshot.spotifyId}`
+    : null
+  const mismatchMessage = mismatchFor(
+    { kind: snapshot.kind, entityId: snapshot.entityId },
+    current,
+    snapshot.sourceName,
+    releases
+  )
+  return {
+    snapshotId: snapshot.id,
+    kind: snapshot.kind,
+    entityId: snapshot.entityId,
+    sourceId: snapshot.spotifyId,
+    sourceUrl,
+    sourceName: snapshot.sourceName,
+    provider: snapshot.provider,
+    refreshedAt: snapshot.refreshedAt,
+    catalogueState: snapshot.catalogueState,
+    matchesCurrentEntity: mismatchMessage == null,
+    mismatchMessage,
+    duplicateCount: 0,
+    skippedCount: 0,
+    releases
+  }
 }
 
 let counter = 0
 let active: { id: string; proc: ChildProcessWithoutNullStreams; cancelled: boolean; owner: string } | null = null
 let status: MusicDownloadEvent | null = null
+let inspectionPromise: Promise<SpotifyEntityInspection> | null = null
+let inspectionCancelled = false
 const inspectionStatus: SpotifyEntityInspectionStatus = {
   running: false,
+  jobId: null,
   kind: null,
   entityId: null,
   phase: 'idle',
   message: null,
   foundCount: null,
-  cancelled: false
+  cancelled: false,
+  startedAt: null,
+  elapsedMs: 0,
+  provider: null
+}
+
+function processTreeTarget(proc: ChildProcessWithoutNullStreams): Killable {
+  return {
+    get exitCode() {
+      return proc.exitCode
+    },
+    pid: proc.pid,
+    kill: (signal) => {
+      // spotDL starts yt-dlp and ffmpeg descendants. On POSIX it is spawned as
+      // its own process group so pause/cancel/quit reaches the complete tree.
+      if (process.platform !== 'win32' && proc.pid != null) {
+        process.kill(-proc.pid, signal)
+        return true
+      }
+      return proc.kill(signal)
+    }
+  }
+}
+
+function activeProcessTarget(id?: string): Killable | null {
+  if (!active || (id != null && active.id !== id)) return null
+  return processTreeTarget(active.proc)
+}
+
+async function discoverIdentityBounded(
+  input: SpotifyEntityInspectInput,
+  current: NonNullable<ReturnType<typeof spotifyRepo.getEntity>>,
+  dir: string
+): Promise<ParsedSpotifyUrl | null> {
+  if (input.url || current.spotifyId) return null
+  const queries = current.sampleTracks.slice(0, 3)
+    .map((sample) => buildSpotifyDiscoveryQuery(sample.artist, sample.title))
+  if (!queries.length) return null
+  const file = join(dir, 'fast-identity.spotdl')
+  const jobId = `${inspectionStatus.jobId ?? 'spotify-inspect'}-identity`
+  let timedOut = false
+  const timer = setTimeout(() => {
+    timedOut = true
+    processControls(() => activeProcessTarget(jobId), { killAfterMs: 500 }).cancel?.()
+  }, 6_000)
+  timer.unref()
+  try {
+    const code = await runSpotdl(
+      ['save', ...queries, '--threads', '8', '--use-cache-file', '--save-file', file],
+      `Spotify inspection ${input.kind}:${input.entityId}`,
+      undefined,
+      jobId
+    )
+    if (timedOut || inspectionCancelled || code !== 0) return null
+    return pickConsensusDiscoveredEntity(
+      input.kind,
+      current,
+      validateSpotdlPayload(JSON.parse(readFileSync(file, 'utf8')) as unknown).songs
+    )
+  } catch (error) {
+    if (!inspectionCancelled) {
+      logWarn('proc', `bounded Spotify identity lookup failed: ${error instanceof Error ? error.message : String(error)}`)
+    }
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
 }
 
 export function getInspectionStatus(): SpotifyEntityInspectionStatus {
-  return { ...inspectionStatus }
+  return {
+    ...inspectionStatus,
+    elapsedMs: inspectionStatus.running && inspectionStatus.startedAt
+      ? Date.now() - inspectionStatus.startedAt
+      : inspectionStatus.elapsedMs
+  }
+}
+
+export function entityState(input: SpotifyEntityRef): SpotifyEntityState {
+  if (inspectionStatus.running && inspectionStatus.kind === input.kind && inspectionStatus.entityId === input.entityId) {
+    return { state: 'building', inspection: null, jobId: inspectionStatus.jobId!, error: null }
+  }
+  const snapshot = spotifyRepo.getEntitySnapshot(input.kind, input.entityId)
+  if (snapshot) return { state: 'ready', inspection: snapshotInspection(snapshot), jobId: null, error: null }
+  if (inspectionStatus.phase === 'error' && inspectionStatus.kind === input.kind && inspectionStatus.entityId === input.entityId) {
+    return { state: 'error', inspection: null, jobId: null, error: inspectionStatus.message ?? 'Spotify catalogue failed' }
+  }
+  return { state: 'empty', inspection: null, jobId: null, error: null }
 }
 
 export function parseSpotdlInspectionLine(line: string): { foundCount: number; message: string } | null {
@@ -406,7 +707,7 @@ export function runSpotdl(
     const id = jobId ?? `spotdl-${process.pid}-${counter}`
     let proc: ChildProcessWithoutNullStreams
     try {
-      proc = spawnProcess(spotdlBin(), args)
+      proc = spawnProcess(spotdlBin(), args, { detached: process.platform !== 'win32' })
     } catch (error) {
       releaseMusicMaintenance(owner)
       reject(error)
@@ -417,7 +718,7 @@ export function runSpotdl(
     const abortFromTask = (): void => {
       if (active?.id !== id) return
       active.cancelled = true
-      processControls(() => (active?.id === id ? active.proc : null)).cancel?.()
+      processControls(() => activeProcessTarget(id)).cancel?.()
     }
     if (taskSignal?.aborted) abortFromTask()
     else taskSignal?.addEventListener('abort', abortFromTask, { once: true })
@@ -439,127 +740,245 @@ export function runSpotdl(
   })
 }
 
+async function inspectWithSpotdl(
+  input: SpotifyEntityInspectInput,
+  current: NonNullable<ReturnType<typeof spotifyRepo.getEntity>>,
+  dir: string
+): Promise<SpotifyEntityInspection> {
+  let parsed: ParsedSpotifyUrl
+  const suppliedUrl = input.url?.trim() || (current.spotifyId
+    ? `https://open.spotify.com/${input.kind}/${current.spotifyId}`
+    : '')
+  if (suppliedUrl) {
+    parsed = await resolveEntityUrl(suppliedUrl, input.kind)
+  } else {
+    inspectionStatus.message = 'Finding the Spotify source from representative local tracks'
+    const discoveryFile = join(dir, 'discovery.spotdl')
+    const queries = current.sampleTracks.slice(0, 3)
+      .map((sample) => buildSpotifyDiscoveryQuery(sample.artist, sample.title))
+    const discoveryCode = await runSpotdl(
+      ['save', ...queries, '--threads', '8', '--use-cache-file', '--save-file', discoveryFile],
+      `Spotify inspection ${input.kind}:${input.entityId}`
+    )
+    if (inspectionCancelled) throw new tasks.TaskCancelledError('Spotify inspection')
+    if (discoveryCode !== 0) throw new Error('NaviHUB could not identify this music on Spotify')
+    const discoveryPayload = JSON.parse(readFileSync(discoveryFile, 'utf8')) as unknown
+    parsed = pickDiscoveredEntity(input.kind, current, validateSpotdlPayload(discoveryPayload).songs) ??
+      (() => { throw new Error(`NaviHUB could not identify the matching Spotify ${input.kind}`) })()
+  }
+
+  Object.assign(inspectionStatus, {
+    phase: 'spotifyFallback' as const,
+    provider: 'spotdl' as const,
+    message: 'Fast catalogue unavailable; using spotDL fallback. This may take several minutes.'
+  })
+  const saveFile = join(dir, `${input.kind}.spotdl`)
+  const code = await runSpotdl(
+    buildSpotdlSaveArgs(parsed.canonicalUrl, saveFile),
+    `Spotify inspection ${input.kind}:${input.entityId}`,
+    (line) => {
+      const event = parseSpotdlInspectionLine(line)
+      if (event) Object.assign(inspectionStatus, event)
+    }
+  )
+  if (inspectionCancelled) throw new tasks.TaskCancelledError('Spotify inspection')
+  if (code !== 0) throw new Error(`spotDL could not read that ${input.kind}. It may be inaccessible.`)
+  const validated = validateSpotdlPayload(JSON.parse(readFileSync(saveFile, 'utf8')) as unknown)
+  let songs = input.kind === 'album'
+    ? validated.songs.filter((song) => song.spotifyAlbumId === parsed.spotifyId)
+    : validated.songs.filter((song) => ['album', 'single'].includes(song.albumType ?? ''))
+  if (!songs.length) throw new Error(`No downloadable albums or singles were found for that ${input.kind}`)
+  const sourceName = input.kind === 'album'
+    ? songs[0].albumArtist ?? songs[0].primaryArtist
+    : (() => {
+        for (const song of songs) {
+          const index = song.spotifyArtistIds.indexOf(parsed.spotifyId)
+          if (index >= 0 && song.artists[index]) return song.artists[index]
+        }
+        return songs[0].primaryArtist
+      })()
+  if (input.kind === 'artist') {
+    songs = songs.filter((song) =>
+      spotifyRepo.normalizeSpotifyMatch(song.albumArtist ?? song.primaryArtist) ===
+      spotifyRepo.normalizeSpotifyMatch(sourceName)
+    )
+  }
+  const grouped = new Map<string, spotifyRepo.SpotdlSong[]>()
+  for (const song of songs) {
+    if (!song.spotifyAlbumId) continue
+    const rows = grouped.get(song.spotifyAlbumId) ?? []
+    rows.push(song)
+    grouped.set(song.spotifyAlbumId, rows)
+  }
+  if (!grouped.size) throw new Error('spotDL metadata did not include stable Spotify album IDs')
+  const snapshotId = spotifyRepo.saveEntitySnapshot({
+    kind: input.kind,
+    entityId: input.entityId,
+    provider: 'spotdl',
+    providerEntityId: parsed.spotifyId,
+    sourceName,
+    releases: [...grouped].map(([albumId, tracks]) => ({
+      providerReleaseId: albumId,
+      title: tracks[0].albumTitle,
+      albumArtist: tracks[0].albumArtist ?? tracks[0].primaryArtist,
+      year: tracks[0].year,
+      albumType: tracks[0].albumType === 'single' ? 'single' : 'album',
+      tracks: tracks.map((song) => ({
+        providerTrackId: song.spotifyTrackId,
+        title: song.title,
+        artists: song.artists,
+        primaryArtist: song.primaryArtist,
+        albumTitle: song.albumTitle,
+        duration: song.duration,
+        discNo: song.discNo,
+        trackNo: song.trackNo
+      }))
+    }))
+  })
+  const saved = spotifyRepo.getEntitySnapshot(input.kind, input.entityId)!
+  for (const release of saved.releases) {
+    const releaseSongs = grouped.get(release.providerReleaseId)
+    if (releaseSongs) spotifyRepo.resolveEntityRelease(release.id, releaseSongs)
+  }
+  const result = snapshotInspection(spotifyRepo.getEntitySnapshot(input.kind, input.entityId)!)
+  if (result.matchesCurrentEntity) spotifyRepo.rememberEntitySource(input.kind, input.entityId, parsed.spotifyId)
+  return snapshotInspection(spotifyRepo.getEntitySnapshot(input.kind, input.entityId)!)
+}
+
 export async function inspectEntity(input: SpotifyEntityInspectInput): Promise<SpotifyEntityInspection> {
   const current = spotifyRepo.getEntity(input.kind, input.entityId)
   if (!current) throw new Error(`That local ${input.kind} no longer exists`)
   if (!current.sampleTracks.length) throw new Error(`This ${input.kind} has no local tracks to identify`)
-  if (inspectionStatus.running) throw new Error('A Spotify inspection is already running')
+  const saved = spotifyRepo.getEntitySnapshot(input.kind, input.entityId)
+  if (saved && !input.refresh && !input.url && !input.candidateKey) return snapshotInspection(saved)
+  if (inspectionStatus.running) {
+    if (inspectionStatus.kind === input.kind && inspectionStatus.entityId === input.entityId && inspectionPromise) {
+      return inspectionPromise
+    }
+    throw new Error(`Music metadata is busy with ${inspectionStatus.kind ?? 'another'} inspection. Open Tasks to manage it.`)
+  }
+  const maintenance = musicMaintenanceOwner()
+  if (maintenance) throw new Error(`Music maintenance is busy: ${maintenance}. Open Tasks to manage it.`)
+  counter += 1
+  const jobId = `spotify-inspect-${process.pid}-${counter}`
   Object.assign(inspectionStatus, {
     running: true,
+    jobId,
     kind: input.kind,
     entityId: input.entityId,
-    phase: 'discovering',
-    message: 'Finding the matching Spotify source from your local music',
+    phase: 'candidateSearch',
+    message: 'Finding a fast catalogue match',
     foundCount: null,
-    cancelled: false
+    cancelled: false,
+    startedAt: Date.now(),
+    elapsedMs: 0,
+    provider: null
   })
-  updateActivity({ phase: 'fetching', done: 0, total: 1 })
+  inspectionCancelled = false
+  const route = `/music/${input.kind === 'artist' ? 'artists' : 'albums'}/${input.entityId}`
+  const handle = tasks.create({
+    kind: 'musicMetadata',
+    label: `Prepare ${input.kind} catalogue`,
+    route,
+    controls: { cancel: () => cancelInspection(jobId), pauseNote: 'Catalogue lookup cannot be paused' },
+    project: () => inspectionStatus.jobId === jobId ? {
+      state: inspectionStatus.phase === 'cancelling' ? 'cancelling' : 'running',
+      detail: inspectionStatus.message,
+      done: inspectionStatus.foundCount ?? 0,
+      total: 0,
+      error: inspectionStatus.phase === 'error' ? inspectionStatus.message : null
+    } : null
+  })
   const dir = mkdtempSync(join(tmpdir(), 'navihub-spotify-inspect-'))
-  const saveFile = join(dir, `${input.kind}.spotdl`)
-  try {
-    let parsed: ParsedSpotifyUrl
-    const suppliedUrl = input.url?.trim() || (current.spotifyId
-      ? `https://open.spotify.com/${input.kind}/${current.spotifyId}`
-      : '')
-    if (suppliedUrl) {
-      parsed = await resolveEntityUrl(suppliedUrl, input.kind)
-    } else {
-      const sample = current.sampleTracks[0]
-      const discoveryFile = join(dir, 'discovery.spotdl')
-      const discoveryCode = await runSpotdl(
-        buildSpotdlSaveArgs(buildSpotifyDiscoveryQuery(sample.artist, sample.title), discoveryFile),
-        `Spotify inspection ${input.kind}:${input.entityId}`
-      )
-      if (inspectionStatus.cancelled) {
+  inspectionPromise = (async () => {
+    const started = Date.now()
+    try {
+      let candidateKey = input.candidateKey
+      if (!candidateKey && !input.url) {
+        try {
+          const candidates = await findEntityCandidates(input)
+          const exact = candidates.filter((candidate) => candidate.exact)
+          if (exact.length === 1) candidateKey = exact[0].candidateKey
+          else if (candidates.length > 0) throw new Error('Choose the matching catalogue source')
+        } catch (error) {
+          if (error instanceof Error && error.message === 'Choose the matching catalogue source') throw error
+          logWarn('proc', `fast music candidate search failed; falling back to spotDL: ${error instanceof Error ? error.message : String(error)}`)
+        }
+      }
+      if (candidateKey && !input.url) {
+        Object.assign(inspectionStatus, {
+          phase: 'catalogue' as const,
+          provider: 'itunes' as const,
+          message: 'Reading albums and tracklists from the fast catalogue'
+        })
+        const identityPromise = discoverIdentityBounded(input, current, dir)
+        try {
+          const indexed = await fetchItunesSnapshot(input, current, candidateKey)
+          const identity = await identityPromise
+          if (inspectionCancelled) throw new tasks.TaskCancelledError('Spotify inspection')
+          spotifyRepo.saveEntitySnapshot({
+            kind: input.kind,
+            entityId: input.entityId,
+            provider: 'itunes',
+            providerEntityId: indexed.providerEntityId,
+            sourceName: indexed.sourceName,
+            releases: indexed.releases
+          })
+          Object.assign(inspectionStatus, {
+            phase: 'matching' as const,
+            message: 'Comparing the saved catalogue with your local library',
+            foundCount: indexed.releases.reduce((sum, release) => sum + release.tracks.length, 0)
+          })
+          const result = snapshotInspection(spotifyRepo.getEntitySnapshot(input.kind, input.entityId)!)
+          if (identity && result.matchesCurrentEntity) {
+            try {
+              spotifyRepo.rememberEntitySource(input.kind, input.entityId, identity.spotifyId)
+            } catch (error) {
+              logWarn('proc', `Spotify identity was already linked elsewhere: ${error instanceof Error ? error.message : String(error)}`)
+            }
+          }
+          logInfo('proc', `Spotify ${input.kind} fast catalogue ready in ${Date.now() - started}ms (${result.releases.length} releases)`)
+          return snapshotInspection(spotifyRepo.getEntitySnapshot(input.kind, input.entityId)!)
+        } catch (error) {
+          await identityPromise
+          if (error instanceof tasks.TaskCancelledError) throw error
+          logWarn('proc', `fast music catalogue failed; falling back to spotDL: ${error instanceof Error ? error.message : String(error)}`)
+        }
+      }
+      return await inspectWithSpotdl(input, current, dir)
+    } catch (error) {
+      if (inspectionCancelled || error instanceof tasks.TaskCancelledError) {
+        handle.settle({ state: 'cancelled' })
         throw new tasks.TaskCancelledError('Spotify inspection')
       }
-      if (discoveryCode !== 0) throw new Error('NaviHUB could not find this music on Spotify automatically')
-      let discoveryPayload: unknown
-      try {
-        discoveryPayload = JSON.parse(readFileSync(discoveryFile, 'utf8'))
-      } catch {
-        throw new Error('spotDL returned invalid search metadata')
-      }
-      parsed = pickDiscoveredEntity(input.kind, current, validateSpotdlPayload(discoveryPayload).songs) ??
-        (() => { throw new Error(`NaviHUB could not identify the matching Spotify ${input.kind}. Choose a source manually.`) })()
+      Object.assign(inspectionStatus, {
+        phase: 'error' as const,
+        message: error instanceof Error ? error.message : String(error)
+      })
+      handle.settle({ state: 'error', error: inspectionStatus.message })
+      throw error
+    } finally {
+      inspectionStatus.elapsedMs = Date.now() - (inspectionStatus.startedAt ?? Date.now())
+      inspectionStatus.running = false
+      if (inspectionStatus.phase !== 'error' && !inspectionCancelled) inspectionStatus.phase = 'done'
+      if (!inspectionCancelled && inspectionStatus.phase === 'done') handle.settle({ state: 'done' })
+      rmSync(dir, { recursive: true, force: true })
+      inspectionPromise = null
     }
-    Object.assign(inspectionStatus, {
-      phase: 'catalogue',
-      message: input.kind === 'artist'
-        ? 'Reading the Spotify catalogue. Large discographies can take several minutes.'
-        : 'Reading the Spotify album tracks'
-    })
-    const code = await runSpotdl(
-      buildSpotdlSaveArgs(parsed.canonicalUrl, saveFile),
-      `Spotify inspection ${input.kind}:${input.entityId}`,
-      (line) => {
-        const event = parseSpotdlInspectionLine(line)
-        if (event) Object.assign(inspectionStatus, event)
-      }
-    )
-    if (inspectionStatus.cancelled) {
-      throw new tasks.TaskCancelledError('Spotify inspection')
-    }
-    if (code !== 0) throw new Error(`spotDL could not read that ${input.kind}. It may be inaccessible.`)
-    let payload: unknown
-    try {
-      payload = JSON.parse(readFileSync(saveFile, 'utf8'))
-    } catch {
-      throw new Error(`spotDL returned invalid ${input.kind} metadata`)
-    }
-    const validated = validateSpotdlPayload(payload)
-    const songs = input.kind === 'album'
-      ? validated.songs.filter((song) => song.spotifyAlbumId === parsed.spotifyId)
-      : validated.songs
-    if (!songs.length) throw new Error(`No downloadable tracks were found for that ${input.kind}`)
-    const sourceName = input.kind === 'album'
-      ? songs[0].albumTitle
-      : (() => {
-          for (const song of songs) {
-            const index = song.spotifyArtistIds.indexOf(parsed.spotifyId)
-            if (index >= 0 && song.artists[index]) return song.artists[index]
-          }
-          return songs[0].primaryArtist
-        })()
-    const releases = groupEntityReleases(songs, sourceName, input.kind)
-    if (!releases.length) throw new Error('spotDL metadata did not include stable Spotify album IDs')
-    Object.assign(inspectionStatus, {
-      phase: 'matching',
-      message: 'Comparing Spotify tracks with your local library',
-      foundCount: songs.length
-    })
-    const inspection: SpotifyEntityInspection = {
-      inspectionId: randomUUID(),
-      kind: input.kind,
-      entityId: input.entityId,
-      sourceId: parsed.spotifyId,
-      sourceUrl: parsed.canonicalUrl,
-      sourceName,
-      matchesCurrentEntity: false,
-      mismatchMessage: null,
-      duplicateCount: validated.duplicates,
-      skippedCount: validated.skipped,
-      releases
-    }
-    inspection.mismatchMessage = mismatchFor(input, current, sourceName, releases)
-    inspection.matchesCurrentEntity = inspection.mismatchMessage == null
-    inspections.set({ inspection, songs })
-    updateActivity({ phase: 'fetching', done: 1, total: 1 })
-    return inspection
-  } finally {
-    inspectionStatus.running = false
-    if (!inspectionStatus.cancelled) inspectionStatus.phase = 'idle'
-    rmSync(dir, { recursive: true, force: true })
-  }
+  })()
+  return inspectionPromise
 }
 
-export function cancelInspection(): void {
+export function cancelInspection(jobId?: string): void {
   if (!inspectionStatus.running) return
+  if (jobId && inspectionStatus.jobId !== jobId) return
+  inspectionCancelled = true
   inspectionStatus.cancelled = true
+  inspectionStatus.phase = 'cancelling'
   inspectionStatus.message = 'Cancelling Spotify inspection'
   if (active?.owner.startsWith('Spotify inspection ')) {
     active.cancelled = true
-    processControls(() => active?.proc ?? null).cancel?.()
+    processControls(() => activeProcessTarget()).cancel?.()
   }
 }
 
@@ -630,8 +1049,12 @@ export async function importPlaylist(url: string): Promise<SpotifyImportResult> 
 
 const DOWNLOAD_STATE: Record<MusicDownloadEvent['status'], TaskState> = {
   starting: 'running',
+  resolving: 'running',
   downloading: 'running',
   processing: 'running',
+  pausing: 'pausing',
+  paused: 'paused',
+  cancelling: 'cancelling',
   done: 'done',
   error: 'error',
   cancelled: 'cancelled'
@@ -642,7 +1065,7 @@ export function getStatus(): MusicDownloadEvent | null {
 }
 
 export function clearStatus(): void {
-  if (!active) status = null
+  if (!active && !entityRun && !queueRun) status = null
 }
 
 export function startPlaylistDownload(input: SpotifyDownloadInput): { id: string } {
@@ -667,7 +1090,7 @@ export function startPlaylistDownload(input: SpotifyDownloadInput): { id: string
     resolvedCount: 0,
     failedCount: 0
   }
-  const controls = processControls(() => (active?.id === id ? active.proc : null), {
+  const controls = processControls(() => activeProcessTarget(id), {
     onCancel: () => {
       if (active) active.cancelled = true
     }
@@ -681,7 +1104,7 @@ export function startPlaylistDownload(input: SpotifyDownloadInput): { id: string
     cancelProcess?.()
   }
   try {
-    tasks.create({
+    const task = tasks.create({
       kind: 'musicDownload',
       label: `Download Spotify playlist (${pending.length})`,
       route: `/music/playlists/${input.playlistId}`,
@@ -698,27 +1121,13 @@ export function startPlaylistDownload(input: SpotifyDownloadInput): { id: string
             }
           : null
     })
+    if (status?.id === id) status.taskId = task.id
     void runPlaylistDownload(id, input.playlistId, pending, owner)
   } catch (error) {
     releaseMusicMaintenance(owner)
     throw error
   }
   return { id }
-}
-
-export function selectInspectionSongs(
-  entry: Pick<CachedInspection, 'inspection' | 'songs'>,
-  albumIds: string[]
-): spotifyRepo.SpotdlSong[] {
-  const allowed = new Set(entry.inspection.releases.map((release) => release.spotifyAlbumId))
-  const selected = new Set(albumIds)
-  if (!selected.size || [...selected].some((id) => !allowed.has(id))) {
-    throw new Error('Select at least one release from this inspection')
-  }
-  if (entry.inspection.kind === 'album' && selected.size !== 1) {
-    throw new Error('An album download must target its inspected release')
-  }
-  return entry.songs.filter((song) => song.spotifyAlbumId && selected.has(song.spotifyAlbumId))
 }
 
 export function settleSpotifyBatch(input: {
@@ -754,146 +1163,294 @@ export function settleSpotifyBatch(input: {
   }
 }
 
+interface SpotifyRunControl {
+  id: string
+  owner: string
+  intent: 'running' | 'pause' | 'cancel'
+  active: boolean
+}
+
+interface EntityRun extends SpotifyRunControl {
+  input: SpotifyEntityDownloadInput
+}
+
+let entityRun: EntityRun | null = null
+
+function stopEntityRun(run: EntityRun, intent: 'pause' | 'cancel'): void {
+  if (entityRun?.id !== run.id) return
+  run.intent = intent
+  if (status?.id === run.id) {
+    status.status = intent === 'pause' ? 'pausing' : 'cancelling'
+    status.message = intent === 'pause'
+      ? 'Pausing safely; completed files will be scanned first'
+      : 'Cancelling safely; completed files will be scanned first'
+  }
+  if (active?.id === run.id) {
+    const proc = active.proc
+    active.cancelled = true
+    processControls(() => processTreeTarget(proc)).cancel?.()
+  } else if (intent === 'cancel' && !run.active) {
+    // A paused run owns the maintenance gate but has no child or cleanup loop
+    // alive. Settle it here instead of leaving an immortal cancelling task.
+    if (status?.id === run.id) {
+      status.status = 'cancelled'
+      status.phase = 'cancelled'
+      status.message = 'Download cancelled; completed files were kept and scanned'
+    }
+    entityRun = null
+    releaseMusicMaintenance(run.owner)
+  }
+}
+
+function resumeEntityRun(run: EntityRun): void {
+  if (entityRun?.id !== run.id || run.intent !== 'pause' || run.active) return
+  run.intent = 'running'
+  if (status?.id === run.id) {
+    status.status = 'starting'
+    status.message = 'Resuming unresolved releases'
+  }
+  void runEntityDownload(run)
+}
+
 export function startEntityDownload(input: SpotifyEntityDownloadInput): { id: string | null } {
-  if (active) throw new Error('Music maintenance is already running')
-  const entry = inspections.get(input.inspectionId)
-  if (!entry) throw new Error('This Spotify preview expired. Inspect the source again.')
-  if (!entry.inspection.matchesCurrentEntity && !input.allowMismatch) {
+  const maintenance = musicMaintenanceOwner()
+  if (maintenance) throw new Error(`Music maintenance is busy: ${maintenance}. Open Tasks to manage it.`)
+  const snapshot = spotifyRepo.getEntitySnapshotById(input.snapshotId)
+  if (!snapshot) throw new Error('This saved catalogue no longer exists. Refresh it and try again.')
+  const inspection = snapshotInspection(snapshot)
+  if (!inspection.matchesCurrentEntity && !input.allowMismatch) {
     throw new Error('Confirm the source mismatch before downloading')
   }
-  const selected = selectInspectionSongs(entry, input.albumIds)
-  const matches = spotifyRepo.matchDetails(selected)
-  const pending = selected.filter((song) => !matches.has(song.spotifyTrackId))
-  if (entry.inspection.matchesCurrentEntity) {
-    spotifyRepo.rememberEntitySource(
-      entry.inspection.kind,
-      entry.inspection.entityId,
-      entry.inspection.sourceId
-    )
+  const selected = new Set(input.releaseIds)
+  if (!selected.size || [...selected].some((id) => !snapshot.releases.some((release) => release.id === id))) {
+    throw new Error('Select at least one release from this catalogue')
   }
-  const selectedReleases = input.albumIds.map((spotifyAlbumId) => ({
-    spotifyAlbumId,
-    songs: selected.filter((song) => song.spotifyAlbumId === spotifyAlbumId)
-  }))
-  if (!pending.length) {
-    spotifyRepo.linkUnambiguousSources(
-      entry.inspection.kind === 'artist' ? entry.inspection.sourceId : null,
-      selectedReleases
-    )
-    return { id: null }
-  }
+  if (snapshot.kind === 'album' && selected.size !== 1) throw new Error('An album download must target one release')
+  const selectedReleases = snapshot.releases.filter((release) => selected.has(release.id))
+  const estimatedPending = selectedReleases.flatMap((release) => release.tracks)
+    .filter((track) => track.matchedTrackId == null)
+  if (!estimatedPending.length) return { id: null }
   if (!getSetting('music.dir')?.trim()) throw new Error('Set your music folder first')
   counter += 1
   const id = `spotify-entity-dl-${process.pid}-${counter}`
   const owner = `Spotify entity download ${id}`
   claimMusicMaintenance(owner)
-  const route = `/music/${entry.inspection.kind === 'artist' ? 'artists' : 'albums'}/${entry.inspection.entityId}`
+  const route = `/music/${snapshot.kind === 'artist' ? 'artists' : 'albums'}/${snapshot.entityId}`
   status = {
     id,
     status: 'starting',
-    percent: 0,
-    itemIndex: 0,
-    itemCount: pending.length,
+    percent: null,
+    itemIndex: null,
+    itemCount: null,
     title: null,
     message: null,
     source: 'spotifyEntity',
     playlistId: null,
-    entityKind: entry.inspection.kind,
-    entityId: entry.inspection.entityId,
+    entityKind: snapshot.kind,
+    entityId: snapshot.entityId,
     route,
     resolvedCount: 0,
-    failedCount: 0
+    failedCount: 0,
+    phase: 'starting',
+    releaseIndex: 0,
+    releaseCount: selectedReleases.length,
+    releaseTitle: null,
+    startedAt: Date.now()
   }
-  const controls = processControls(() => (active?.id === id ? active.proc : null), {
-    onCancel: () => { if (active) active.cancelled = true }
-  })
-  const cancelProcess = controls.cancel
-  controls.cancel = () => {
-    if (status?.id === id) {
-      status.status = 'cancelled'
-      status.message = 'Stopping after completed files are scanned'
-    }
-    cancelProcess?.()
-  }
+  const run: EntityRun = { id, input, owner, intent: 'running', active: false }
+  entityRun = run
   try {
-    tasks.create({
+    const task = tasks.create({
       kind: 'musicDownload',
-      label: `Download Spotify ${entry.inspection.kind} (${pending.length})`,
+      label: `Download Spotify ${snapshot.kind} (${estimatedPending.length})`,
       route,
-      controls,
+      controls: {
+        cancel: () => stopEntityRun(run, 'cancel'),
+        pause: () => stopEntityRun(run, 'pause'),
+        resume: () => resumeEntityRun(run),
+        pauseNote: null
+      },
       project: () => status?.id === id ? {
         state: DOWNLOAD_STATE[status.status], detail: status.title ?? status.message,
         percent: status.percent, done: status.itemIndex ?? 0, total: status.itemCount ?? 0,
         error: status.status === 'error' ? status.message : null
       } : null
     })
-    void runEntityDownload(id, entry, pending, selectedReleases, owner)
+    if (status?.id === id) status.taskId = task.id
+    void runEntityDownload(run)
   } catch (error) {
+    entityRun = null
     releaseMusicMaintenance(owner)
     throw error
   }
   return { id }
 }
 
-async function runEntityDownload(
-  id: string,
-  entry: CachedInspection,
-  songs: spotifyRepo.SpotdlSong[],
-  releases: { spotifyAlbumId: string; songs: spotifyRepo.SpotdlSong[] }[],
-  owner: string
-): Promise<void> {
+async function resolveReleaseForDownload(
+  run: SpotifyRunControl,
+  snapshot: spotifyRepo.EntitySnapshotRow,
+  release: spotifyRepo.EntitySnapshotRow['releases'][number],
+  dir: string
+): Promise<spotifyRepo.EntitySnapshotRow['releases'][number]> {
+  if (release.metadataState === 'resolved' && release.tracks.every((track) => track.rawJson)) return release
+  if (status?.id === run.id) {
+    status.status = 'resolving'
+    status.phase = 'resolvingRelease'
+    status.releaseTitle = release.title
+    status.message = `Resolving ${release.title} through Spotify`
+  }
+  const saveFile = join(dir, `release-${release.id}.spotdl`)
+  const query = release.spotifyAlbumId
+    ? `https://open.spotify.com/album/${release.spotifyAlbumId}`
+    : `album:${release.albumArtist} ${release.title}`
+  const code = await runSpotdl(buildSpotdlSaveArgs(query, saveFile), run.owner, undefined, run.id)
+  if (run.intent !== 'running') throw new tasks.TaskCancelledError('Spotify release resolution')
+  if (code !== 0) throw new Error(`spotDL could not resolve ${release.title}`)
+  const validated = validateSpotdlPayload(JSON.parse(readFileSync(saveFile, 'utf8')) as unknown)
+  const same = spotifyRepo.normalizeSpotifyMatch
+  const songs = validated.songs.filter((song) =>
+    same(song.albumTitle) === same(release.title) &&
+    same(song.albumArtist ?? song.primaryArtist) === same(release.albumArtist) &&
+    song.albumType !== 'compilation'
+  )
+  if (!songs.length || !songs[0].spotifyAlbumId) {
+    throw new Error(`Spotify returned a different release for ${release.title}`)
+  }
+  const indexedTitles = new Set(release.tracks.map((track) => spotifyRepo.normalizeSpotifyMatch(track.title)))
+  const overlap = songs.filter((song) => indexedTitles.has(spotifyRepo.normalizeSpotifyMatch(song.title))).length
+  const requiredOverlap = Math.max(1, Math.ceil(Math.min(release.tracks.length, songs.length) / 2))
+  if (overlap < requiredOverlap) {
+    throw new Error(`Spotify returned a tracklist that does not match ${release.title}`)
+  }
+  spotifyRepo.resolveEntityRelease(release.id, songs)
+  spotifyRepo.linkUnambiguousSources(
+    snapshot.kind === 'artist'
+      ? songs[0].spotifyArtistIds[songs[0].artists.findIndex((artist) => same(artist) === same(snapshot.sourceName))] ?? null
+      : null,
+    [{ spotifyAlbumId: songs[0].spotifyAlbumId, songs }]
+  )
+  const sourceArtistId = snapshot.kind === 'artist'
+    ? songs[0].spotifyArtistIds[songs[0].artists.findIndex((artist) => same(artist) === same(snapshot.sourceName))]
+    : null
+  if (sourceArtistId && snapshotInspection(snapshot).matchesCurrentEntity) {
+    spotifyRepo.rememberEntitySource('artist', snapshot.entityId, sourceArtistId)
+  }
+  const updated = spotifyRepo.getEntitySnapshotById(snapshot.id)!
+  return updated.releases.find((item) => item.id === release.id)!
+}
+
+async function runEntityDownload(run: EntityRun): Promise<void> {
+  if (run.active) return
+  run.active = true
   let dir: string | null = null
-  const chunks = chunkSpotifyItems(songs)
-  let processed = 0
+  let terminal = false
   try {
     dir = mkdtempSync(join(tmpdir(), 'navihub-spotdl-entity-'))
-    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-      if (status?.id !== id || status.status === 'cancelled') break
-      const file = join(dir, `chunk-${chunkIndex}.spotdl`)
-      const errors = join(dir, `chunk-${chunkIndex}.errors.spotdl`)
-      writeFileSync(file, JSON.stringify(chunks[chunkIndex].map((song) => JSON.parse(song.rawJson))), {
-        encoding: 'utf8', mode: 0o600
-      })
-      status.status = 'downloading'
-      const code = await runSpotdl(buildSpotdlDownloadArgs(file, musicRootDir(), errors), owner, (line) => {
-        const event = parseSpotdlLine(line)
-        if (!event || status?.id !== id) return
-        if (event.kind === 'item') status.title = event.title
-        if (event.kind === 'progress') {
-          status.itemIndex = processed + event.done
-          status.percent = Math.round(((processed + event.done) / songs.length) * 100)
+    let snapshot = spotifyRepo.getEntitySnapshotById(run.input.snapshotId)
+    if (!snapshot) throw new Error('This saved catalogue no longer exists')
+    const selected = new Set(run.input.releaseIds)
+    const releases = snapshot.releases.filter((release) => selected.has(release.id))
+    for (let releaseIndex = 0; releaseIndex < releases.length; releaseIndex++) {
+      if (run.intent !== 'running') break
+      if (status?.id === run.id) {
+        status.releaseIndex = releaseIndex + 1
+        status.releaseCount = releases.length
+        status.releaseTitle = releases[releaseIndex].title
+      }
+      let release: typeof releases[number]
+      try {
+        release = await resolveReleaseForDownload(run, snapshot, releases[releaseIndex], dir)
+      } catch (error) {
+        if (run.intent !== 'running') break
+        const message = error instanceof Error ? error.message : String(error)
+        spotifyRepo.markEntityReleaseError(releases[releaseIndex].id, message)
+        if (status?.id === run.id) {
+          status.failedCount = (status.failedCount ?? 0) + releases[releaseIndex].tracks.length
+          status.message = message
         }
-        if (event.kind === 'error') status.message = event.message
-      }, id)
-      processed += chunks[chunkIndex].length
-      status.itemIndex = processed
-      status.status = 'processing'
-      status.message = 'Updating library'
-      try { await startScan(undefined, owner) } catch { if (code !== 0) throw new Error(`spotDL exited with code ${code}`) }
-      const resolved = spotifyRepo.matchDetails(songs).size
-      status.resolvedCount = resolved
-      status.failedCount = songs.length - resolved
-      spotifyRepo.linkUnambiguousSources(
-        entry.inspection.kind === 'artist' ? entry.inspection.sourceId : null,
-        releases
-      )
-      if (code !== 0 && resolved === 0) throw new Error(`spotDL exited with code ${code}`)
+        continue
+      }
+      const pending = release.tracks.filter((track) => track.matchedTrackId == null && track.rawJson)
+      let processed = 0
+      if (status?.id === run.id) {
+        status.itemIndex = 0
+        status.itemCount = pending.length
+        status.percent = pending.length ? 0 : 100
+      }
+      const chunks = chunkSpotifyItems(pending)
+      for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+        if (run.intent !== 'running') break
+        const file = join(dir, `release-${release.id}-chunk-${chunkIndex}.spotdl`)
+        const errors = join(dir, `release-${release.id}-chunk-${chunkIndex}.errors.spotdl`)
+        writeFileSync(file, JSON.stringify(chunks[chunkIndex].map((track) => JSON.parse(track.rawJson!))), {
+          encoding: 'utf8', mode: 0o600
+        })
+        if (status?.id === run.id) {
+          status.status = 'downloading'
+          status.phase = 'downloading'
+          status.message = null
+        }
+        const code = await runSpotdl(buildSpotdlDownloadArgs(file, musicRootDir(), errors), run.owner, (line) => {
+          const event = parseSpotdlLine(line)
+          if (!event || status?.id !== run.id) return
+          if (event.kind === 'item') status.title = event.title
+          if (event.kind === 'progress') {
+            status.itemIndex = processed + event.done
+            status.percent = status.itemCount
+              ? Math.min(99, Math.round(((processed + event.done) / status.itemCount) * 100))
+              : null
+          }
+          if (event.kind === 'error') status.message = event.message
+        }, run.id)
+        processed += chunks[chunkIndex].length
+        if (status?.id === run.id) status.itemIndex = processed
+        if (run.intent !== 'running') break
+        if (code !== 0) logWarn('proc', `spotDL release download exited with code ${code}: ${release.title}`)
+      }
+      if (status?.id === run.id) {
+        status.status = 'processing'
+        status.phase = 'scanning'
+        status.message = `Scanning ${release.title} into the library`
+      }
+      try { await startScan(undefined, run.owner) } catch (error) {
+        if (run.intent === 'running') logWarn('proc', `music scan after Spotify release failed: ${error instanceof Error ? error.message : String(error)}`)
+      }
+      snapshot = spotifyRepo.getEntitySnapshotById(run.input.snapshotId)!
     }
-    if (!status || status.id !== id) return
-    const resolved = spotifyRepo.matchDetails(songs).size
-    Object.assign(status, settleSpotifyBatch({
-      cancelled: status.status === 'cancelled',
-      resolved,
-      total: songs.length
-    }))
+    if (!status || status.id !== run.id) return
+    if (run.intent === 'pause') {
+      status.status = 'paused'
+      status.phase = 'paused'
+      status.message = 'Paused safely; Resume continues unresolved releases'
+      return
+    }
+    if (run.intent === 'cancel') {
+      status.status = 'cancelled'
+      status.phase = 'cancelled'
+      status.message = 'Download cancelled; completed files were kept and scanned'
+      terminal = true
+      return
+    }
+    const finalSnapshot = spotifyRepo.getEntitySnapshotById(run.input.snapshotId)!
+    const finalTracks = finalSnapshot.releases.filter((release) => selected.has(release.id)).flatMap((release) => release.tracks)
+    const resolved = finalTracks.filter((track) => track.matchedTrackId != null).length
+    Object.assign(status, settleSpotifyBatch({ cancelled: false, resolved, total: finalTracks.length }))
+    status.phase = 'done'
+    terminal = true
   } catch (error) {
-    if (status?.id === id) {
-      status.status = status.status === 'cancelled' ? 'cancelled' : 'error'
+    if (status?.id === run.id) {
+      status.status = run.intent === 'cancel' ? 'cancelled' : run.intent === 'pause' ? 'paused' : 'error'
       status.message = error instanceof Error ? error.message : String(error)
+      status.phase = status.status
     }
+    terminal = run.intent !== 'pause'
   } finally {
     if (dir) rmSync(dir, { recursive: true, force: true })
-    releaseMusicMaintenance(owner)
+    run.active = false
+    if (terminal) {
+      if (entityRun?.id === run.id) entityRun = null
+      releaseMusicMaintenance(run.owner)
+    }
   }
 }
 
@@ -909,7 +1466,7 @@ async function runPlaylistDownload(
   try {
     dir = mkdtempSync(join(tmpdir(), 'navihub-spotdl-download-'))
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-      if (status?.id !== id || status.status === 'cancelled') break
+      if (status?.id !== id || ['cancelled', 'cancelling'].includes(status.status)) break
       const file = join(dir, `chunk-${chunkIndex}.spotdl`)
       const errors = join(dir, `chunk-${chunkIndex}.errors.spotdl`)
       writeFileSync(
@@ -950,13 +1507,13 @@ async function runPlaylistDownload(
     if (!status || status.id !== id) return
     const remaining = spotifyRepo.pendingSpotifyItems(playlistId, rows.map((row) => row.id as number))
     Object.assign(status, settleSpotifyBatch({
-      cancelled: active?.cancelled === true || status.status === 'cancelled',
+      cancelled: active?.cancelled === true || ['cancelled', 'cancelling'].includes(status.status),
       resolved: rows.length - remaining.length,
       total: rows.length
     }))
   } catch (error) {
     if (status?.id === id) {
-      status.status = active?.cancelled ? 'cancelled' : 'error'
+      status.status = active?.cancelled || status.status === 'cancelling' ? 'cancelled' : 'error'
       status.message = error instanceof Error ? error.message : String(error)
     }
   } finally {
@@ -965,22 +1522,552 @@ async function runPlaylistDownload(
   }
 }
 
+interface QueueRun extends SpotifyRunControl {
+  mode: 'all' | 'single'
+  targetJobId: number | null
+  activeCardId: number | null
+  processed: Set<number>
+  needsRecoveryScan: boolean
+}
+
+let queueRun: QueueRun | null = null
+
+export function initializeDownloadQueue(): void {
+  spotifyRepo.normalizeInterruptedDownloadQueue()
+}
+
+export function getDownloadQueue(): SpotifyDownloadQueueSnapshot {
+  return spotifyRepo.listDownloadQueue()
+}
+
+export function addEntityDownloadQueue(
+  input: SpotifyEntityDownloadInput
+): SpotifyDownloadQueueAddResult {
+  const snapshot = spotifyRepo.getEntitySnapshotById(input.snapshotId)
+  if (!snapshot) throw new Error('This saved catalogue no longer exists. Refresh it and try again.')
+  if (!snapshotInspection(snapshot).matchesCurrentEntity && !input.allowMismatch) {
+    throw new Error('Confirm the source mismatch before adding it to the queue')
+  }
+  return spotifyRepo.addEntityToDownloadQueue(input)
+}
+
+export function addPlaylistDownloadQueue(input: SpotifyDownloadInput): SpotifyDownloadQueueAddResult {
+  return spotifyRepo.addPlaylistToDownloadQueue(input)
+}
+
+export function reorderDownloadQueue(ids: number[]): void {
+  spotifyRepo.reorderDownloadQueue(ids)
+}
+
+export function removeDownloadQueueCard(id: number): void {
+  if (queueRun?.activeCardId === id) throw new Error('Pause or cancel this download before removing it')
+  spotifyRepo.removeDownloadQueueCard(id)
+}
+
+export function removeDownloadQueueSelection(id: number): void {
+  const activeCard = queueRun?.activeCardId == null
+    ? null
+    : spotifyRepo.getDownloadQueueCard(queueRun.activeCardId)
+  if (activeCard?.selections.some((selection) => selection.id === id)) {
+    throw new Error('Pause or cancel this download before editing it')
+  }
+  spotifyRepo.removeDownloadQueueSelection(id)
+}
+
+export function clearCompletedDownloadQueue(): number {
+  return spotifyRepo.clearCompletedDownloadQueue()
+}
+
+function updateQueueStatusCard(card: NonNullable<ReturnType<typeof spotifyRepo.getDownloadQueueCard>>): void {
+  if (!status || status.id !== queueRun?.id) return
+  status.queueCardId = card.id
+  status.route = '/music/downloads'
+  status.playlistId = card.playlistId
+  status.entityKind = card.entityKind ?? undefined
+  status.entityId = card.entityId
+  status.releaseTitle = null
+  status.releaseIndex = 0
+  status.releaseCount = card.sourceKind === 'entity' ? card.selections.length : null
+  status.itemIndex = 0
+  status.itemCount = card.missingCount
+  status.percent = card.missingCount ? 0 : 100
+  status.title = null
+  status.message = `Preparing ${card.title}`
+}
+
+async function scanQueueFiles(run: QueueRun, message: string): Promise<void> {
+  if (status?.id === run.id) {
+    status.status = 'processing'
+    status.phase = 'scanning'
+    status.message = message
+  }
+  try {
+    await startScan(undefined, run.owner)
+  } catch (error) {
+    if (run.intent === 'running') {
+      logWarn('proc', `music scan during Spotify queue failed: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+}
+
+async function processEntityQueueCard(
+  run: QueueRun,
+  card: NonNullable<ReturnType<typeof spotifyRepo.getDownloadQueueCard>>,
+  dir: string
+): Promise<{ total: number; resolved: number; error: string | null }> {
+  if (!card.entityKind || card.entityId == null) throw new Error('The queued catalogue source no longer exists')
+  let snapshot = spotifyRepo.getEntitySnapshot(card.entityKind, card.entityId)
+  if (!snapshot) throw new Error('The queued catalogue source no longer exists')
+  if (!snapshotInspection(snapshot).matchesCurrentEntity && !card.allowMismatch) {
+    throw new Error('The queued Spotify source no longer matches this local page')
+  }
+  const releaseIds = card.selections
+    .filter((selection) => selection.kind === 'release')
+    .map((selection) => selection.sourceId)
+  const total = snapshot.releases
+    .filter((release) => releaseIds.includes(release.id))
+    .flatMap((release) => release.tracks).length
+  const failures: string[] = []
+  for (let releaseIndex = 0; releaseIndex < releaseIds.length; releaseIndex++) {
+    if (run.intent !== 'running') break
+    const queuedRelease = snapshot.releases.find((release) => release.id === releaseIds[releaseIndex])
+    if (!queuedRelease) continue
+    if (queuedRelease.tracks.length > 0 && queuedRelease.tracks.every((track) => track.matchedTrackId != null)) {
+      continue
+    }
+    if (status?.id === run.id) {
+      status.releaseIndex = releaseIndex + 1
+      status.releaseCount = releaseIds.length
+      status.releaseTitle = queuedRelease.title
+      status.message = `Preparing ${queuedRelease.title}`
+    }
+    let release = queuedRelease
+    try {
+      release = await resolveReleaseForDownload(run, snapshot, queuedRelease, dir)
+    } catch (error) {
+      if (run.intent !== 'running') break
+      const message = error instanceof Error ? error.message : String(error)
+      spotifyRepo.markEntityReleaseError(queuedRelease.id, message)
+      failures.push(message)
+      continue
+    }
+    const pending = release.tracks.filter((track) => track.matchedTrackId == null && track.rawJson)
+    let processed = 0
+    if (status?.id === run.id) {
+      status.itemIndex = 0
+      status.itemCount = pending.length
+      status.percent = pending.length ? 0 : 100
+    }
+    const chunks = chunkSpotifyItems(pending)
+    for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+      if (run.intent !== 'running') break
+      const file = join(dir, `queue-${card.id}-release-${release.id}-chunk-${chunkIndex}.spotdl`)
+      const errors = join(dir, `queue-${card.id}-release-${release.id}-chunk-${chunkIndex}.errors.spotdl`)
+      writeFileSync(
+        file,
+        JSON.stringify(chunks[chunkIndex].map((track) => JSON.parse(track.rawJson!))),
+        { encoding: 'utf8', mode: 0o600 }
+      )
+      if (status?.id === run.id) {
+        status.status = 'downloading'
+        status.phase = 'downloading'
+        status.message = null
+      }
+      const code = await runSpotdl(buildSpotdlDownloadArgs(file, musicRootDir(), errors), run.owner, (line) => {
+        const event = parseSpotdlLine(line)
+        if (!event || status?.id !== run.id) return
+        if (event.kind === 'item') status.title = event.title
+        if (event.kind === 'progress') {
+          status.itemIndex = processed + event.done
+          status.percent = status.itemCount
+            ? Math.min(99, Math.round(((processed + event.done) / status.itemCount) * 100))
+            : null
+        }
+        if (event.kind === 'error') status.message = event.message
+      }, run.id)
+      processed += chunks[chunkIndex].length
+      if (status?.id === run.id) status.itemIndex = processed
+      if (run.intent !== 'running') break
+      if (code !== 0) failures.push(`spotDL exited with code ${code} for ${release.title}`)
+    }
+    await scanQueueFiles(run, `Scanning ${release.title} into the library`)
+    snapshot = spotifyRepo.getEntitySnapshot(card.entityKind, card.entityId) ?? snapshot
+  }
+  const current = spotifyRepo.getEntitySnapshot(card.entityKind, card.entityId)
+  const selectedTracks = current?.releases
+    .filter((release) => releaseIds.includes(release.id))
+    .flatMap((release) => release.tracks) ?? []
+  const resolved = selectedTracks.filter((track) => track.matchedTrackId != null).length
+  const missing = Math.max(0, total - resolved)
+  return {
+    total,
+    resolved,
+    error: missing > 0 ? failures[0] ?? `${missing} track${missing === 1 ? '' : 's'} could not be downloaded` : null
+  }
+}
+
+async function processPlaylistQueueCard(
+  run: QueueRun,
+  card: NonNullable<ReturnType<typeof spotifyRepo.getDownloadQueueCard>>,
+  dir: string
+): Promise<{ total: number; resolved: number; error: string | null }> {
+  if (card.playlistId == null) throw new Error('The queued playlist no longer exists')
+  const itemIds = card.selections
+    .filter((selection) => selection.kind === 'playlistItem')
+    .map((selection) => selection.sourceId)
+  const rows = spotifyRepo.pendingSpotifyItems(card.playlistId, itemIds)
+  const total = itemIds.length
+  if (!rows.length) return { total, resolved: total, error: null }
+  let processed = 0
+  const failures: string[] = []
+  if (status?.id === run.id) {
+    status.itemIndex = 0
+    status.itemCount = rows.length
+    status.releaseCount = null
+    status.releaseIndex = null
+  }
+  const chunks = chunkSpotifyItems(rows)
+  for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+    if (run.intent !== 'running') break
+    const file = join(dir, `queue-${card.id}-playlist-chunk-${chunkIndex}.spotdl`)
+    const errors = join(dir, `queue-${card.id}-playlist-chunk-${chunkIndex}.errors.spotdl`)
+    writeFileSync(
+      file,
+      JSON.stringify(chunks[chunkIndex].map((row) => JSON.parse(row.raw_json as string))),
+      { encoding: 'utf8', mode: 0o600 }
+    )
+    if (status?.id === run.id) {
+      status.status = 'downloading'
+      status.phase = 'downloading'
+      status.message = null
+    }
+    const code = await runSpotdl(buildSpotdlDownloadArgs(file, musicRootDir(), errors), run.owner, (line) => {
+      const event = parseSpotdlLine(line)
+      if (!event || status?.id !== run.id) return
+      if (event.kind === 'item') status.title = event.title
+      if (event.kind === 'progress') {
+        status.itemIndex = processed + event.done
+        status.percent = rows.length
+          ? Math.min(99, Math.round(((processed + event.done) / rows.length) * 100))
+          : null
+      }
+      if (event.kind === 'error') status.message = event.message
+    }, run.id)
+    processed += chunks[chunkIndex].length
+    if (status?.id === run.id) status.itemIndex = processed
+    await scanQueueFiles(run, `Scanning downloads from ${card.title}`)
+    if (run.intent !== 'running') break
+    if (code !== 0) failures.push(`spotDL exited with code ${code}`)
+  }
+  const remaining = spotifyRepo.pendingSpotifyItems(card.playlistId, itemIds)
+  const resolved = total - remaining.length
+  return {
+    total,
+    resolved,
+    error: remaining.length > 0
+      ? failures[0] ?? `${remaining.length} track${remaining.length === 1 ? '' : 's'} could not be downloaded`
+      : null
+  }
+}
+
+function stopQueueRun(run: QueueRun, intent: 'pause' | 'cancel'): void {
+  if (queueRun?.id !== run.id) return
+  run.intent = intent
+  if (status?.id === run.id) {
+    status.status = intent === 'pause' ? 'pausing' : 'cancelling'
+    status.phase = intent === 'pause' ? 'pausing' : 'cancelling'
+    status.message = intent === 'pause'
+      ? 'Pausing safely; completed files will be scanned first'
+      : 'Cancelling safely; completed files will be kept'
+  }
+  if (active?.id === run.id) {
+    active.cancelled = true
+    processControls(() => activeProcessTarget(run.id)).cancel?.()
+  } else if (!run.active && intent === 'cancel') {
+    if (run.activeCardId != null) spotifyRepo.setDownloadQueueCardState(run.activeCardId, 'queued', null, false)
+    if (status?.id === run.id) {
+      status.status = 'cancelled'
+      status.phase = 'cancelled'
+      status.message = 'Queue run cancelled; completed files were kept'
+    }
+    queueRun = null
+    releaseMusicMaintenance(run.owner)
+  }
+}
+
+function resumeQueueRun(run: QueueRun): void {
+  if (queueRun?.id !== run.id || run.intent !== 'pause' || run.active) return
+  run.intent = 'running'
+  run.needsRecoveryScan = true
+  if (status?.id === run.id) {
+    status.status = 'starting'
+    status.phase = 'starting'
+    status.message = 'Resuming the paused Spotify queue'
+  }
+  void runDownloadQueue(run)
+}
+
+function nextQueueCard(run: QueueRun): NonNullable<ReturnType<typeof spotifyRepo.getDownloadQueueCard>> | null {
+  const snapshot = spotifyRepo.listDownloadQueue()
+  if (run.activeCardId != null && !run.processed.has(run.activeCardId)) {
+    const interrupted = snapshot.pending.find((card) => card.id === run.activeCardId)
+    if (interrupted?.state === 'paused') return interrupted
+  }
+  if (run.mode === 'single') {
+    if (run.targetJobId == null || run.processed.has(run.targetJobId)) return null
+    return snapshot.pending.find((card) => card.id === run.targetJobId) ?? null
+  }
+  return snapshot.pending.find((card) => !run.processed.has(card.id)) ?? null
+}
+
+function currentQueueIntent(run: QueueRun): QueueRun['intent'] {
+  return run.intent
+}
+
+async function runDownloadQueue(run: QueueRun): Promise<void> {
+  if (run.active) return
+  run.active = true
+  let dir: string | null = null
+  let terminal = false
+  let completedCards = 0
+  let failedCards = 0
+  let resolvedTracks = 0
+  let totalTracks = 0
+  try {
+    dir = mkdtempSync(join(tmpdir(), 'navihub-spotify-queue-'))
+    if (run.needsRecoveryScan) {
+      run.needsRecoveryScan = false
+      await scanQueueFiles(run, 'Recovering completed files before resume')
+    }
+    while (run.intent === 'running') {
+      const card = nextQueueCard(run)
+      if (!card) break
+      run.activeCardId = card.id
+      spotifyRepo.setDownloadQueueCardState(card.id, 'running', null, run.mode === 'all')
+      updateQueueStatusCard(card)
+      let result: { total: number; resolved: number; error: string | null }
+      try {
+        result = card.sourceKind === 'entity'
+          ? await processEntityQueueCard(run, card, dir)
+          : await processPlaylistQueueCard(run, card, dir)
+      } catch (error) {
+        result = {
+          total: card.missingCount,
+          resolved: 0,
+          error: error instanceof Error ? error.message : String(error)
+        }
+      }
+      totalTracks += result.total
+      resolvedTracks += result.resolved
+      const intent = currentQueueIntent(run)
+      if (intent === 'pause') {
+        spotifyRepo.setDownloadQueueCardState(card.id, 'paused', null, run.mode === 'all')
+        if (status?.id === run.id) {
+          status.status = 'paused'
+          status.phase = 'paused'
+          status.message = 'Paused safely; Resume continues unresolved queue work'
+        }
+        return
+      }
+      if (intent === 'cancel') {
+        spotifyRepo.setDownloadQueueCardState(card.id, 'queued', null, false)
+        if (status?.id === run.id) {
+          status.status = 'cancelled'
+          status.phase = 'cancelled'
+          status.message = 'Queue run cancelled; completed files were kept'
+        }
+        terminal = true
+        return
+      }
+      run.processed.add(card.id)
+      if (result.error) {
+        failedCards += 1
+        spotifyRepo.setDownloadQueueCardState(card.id, 'failed', result.error, false)
+      } else {
+        completedCards += 1
+        spotifyRepo.setDownloadQueueCardState(card.id, 'completed', null, false)
+      }
+    }
+    if (!status || status.id !== run.id) return
+    status.resolvedCount = resolvedTracks
+    status.failedCount = Math.max(0, totalTracks - resolvedTracks)
+    status.percent = totalTracks ? Math.round((resolvedTracks / totalTracks) * 100) : 100
+    status.phase = failedCards > 0 && completedCards === 0 ? 'error' : 'done'
+    status.status = failedCards > 0 && completedCards === 0 ? 'error' : 'done'
+    status.message = failedCards > 0
+      ? `${failedCards} queue card${failedCards === 1 ? '' : 's'} remain available to retry`
+      : null
+    terminal = true
+  } catch (error) {
+    if (run.activeCardId != null) {
+      spotifyRepo.setDownloadQueueCardState(
+        run.activeCardId,
+        run.intent === 'pause' ? 'paused' : run.intent === 'cancel' ? 'queued' : 'failed',
+        run.intent === 'running' ? (error instanceof Error ? error.message : String(error)) : null,
+        run.intent === 'pause' && run.mode === 'all'
+      )
+    }
+    if (status?.id === run.id) {
+      status.status = run.intent === 'pause' ? 'paused' : run.intent === 'cancel' ? 'cancelled' : 'error'
+      status.phase = status.status
+      status.message = error instanceof Error ? error.message : String(error)
+    }
+    terminal = run.intent !== 'pause'
+  } finally {
+    if (dir) rmSync(dir, { recursive: true, force: true })
+    run.active = false
+    if (terminal) {
+      if (queueRun?.id === run.id) queueRun = null
+      releaseMusicMaintenance(run.owner)
+    }
+  }
+}
+
+export function startDownloadQueue(input: SpotifyDownloadQueueStartInput = {}): { id: string | null } {
+  if (queueRun) {
+    if (input.prioritize && input.jobId != null) {
+      queueRun.processed.delete(input.jobId)
+      spotifyRepo.prioritizeDownloadQueueCard(input.jobId)
+      return { id: queueRun.id }
+    }
+    throw new Error('The Spotify download queue is already running. Open Downloads to manage it.')
+  }
+  const maintenance = musicMaintenanceOwner()
+  if (maintenance) throw new Error(`Music maintenance is busy: ${maintenance}. Open Tasks to manage it.`)
+  if (input.prioritize && input.jobId != null) spotifyRepo.prioritizeDownloadQueueCard(input.jobId)
+  const snapshot = spotifyRepo.listDownloadQueue()
+  const paused = snapshot.pending.find((card) => card.state === 'paused')
+  const target = input.jobId != null
+    ? snapshot.pending.find((card) => card.id === input.jobId)
+    : input.resume && paused ? paused : snapshot.pending[0]
+  if (!target) return { id: null }
+  if (input.resume) spotifyRepo.prioritizeDownloadQueueCard(target.id)
+  const mode = input.resume && target.continueAfter ? 'all' : input.jobId != null ? 'single' : 'all'
+  if (snapshot.pendingTracks > 0 && !getSetting('music.dir')?.trim()) {
+    throw new Error('Set your music folder first')
+  }
+  counter += 1
+  const id = `spotify-queue-${process.pid}-${counter}`
+  const owner = `Spotify download queue ${id}`
+  claimMusicMaintenance(owner)
+  status = {
+    id,
+    status: 'starting',
+    percent: null,
+    itemIndex: 0,
+    itemCount: snapshot.pendingTracks,
+    title: null,
+    message: input.resume ? 'Resuming the paused Spotify queue' : 'Preparing the Spotify download queue',
+    source: 'spotifyQueue',
+    playlistId: null,
+    entityId: null,
+    route: '/music/downloads',
+    resolvedCount: 0,
+    failedCount: 0,
+    phase: 'starting',
+    releaseIndex: 0,
+    releaseCount: null,
+    releaseTitle: null,
+    startedAt: Date.now(),
+    queueCardId: null
+  }
+  const run: QueueRun = {
+    id,
+    owner,
+    intent: 'running',
+    active: false,
+    mode,
+    targetJobId: mode === 'single' ? target.id : null,
+    activeCardId: null,
+    processed: new Set(),
+    needsRecoveryScan: Boolean(input.resume)
+  }
+  queueRun = run
+  try {
+    const task = tasks.create({
+      kind: 'musicDownload',
+      label: mode === 'single' ? `Download ${target.title}` : `Download Spotify queue (${snapshot.pendingSources})`,
+      route: '/music/downloads',
+      controls: {
+        cancel: () => stopQueueRun(run, 'cancel'),
+        pause: () => stopQueueRun(run, 'pause'),
+        resume: () => resumeQueueRun(run),
+        pauseNote: null
+      },
+      project: () => status?.id === id ? {
+        state: DOWNLOAD_STATE[status.status],
+        detail: status.title ?? status.message,
+        percent: status.percent,
+        done: status.itemIndex ?? 0,
+        total: status.itemCount ?? 0,
+        error: status.status === 'error' ? status.message : null
+      } : null
+    })
+    if (status?.id === id) status.taskId = task.id
+    void runDownloadQueue(run)
+  } catch (error) {
+    queueRun = null
+    releaseMusicMaintenance(owner)
+    throw error
+  }
+  return { id }
+}
+
 export function cancelDownload(id: string): void {
   if (status?.id !== id) return
-  status.status = 'cancelled'
+  if (queueRun?.id === id) {
+    stopQueueRun(queueRun, 'cancel')
+    return
+  }
+  if (entityRun?.id === id) {
+    stopEntityRun(entityRun, 'cancel')
+    return
+  }
+  status.status = 'cancelling'
   status.message = 'Stopping after completed files are scanned'
   if (active?.id) {
     active.cancelled = true
-    processControls(() => active?.proc ?? null).cancel?.()
+    processControls(() => activeProcessTarget()).cancel?.()
   }
 }
 
 export function killActive(): void {
-  if (!active) return
+  inspectionCancelled = true
+  inspectionStatus.running = false
+  inspectionStatus.cancelled = true
+  inspectionStatus.phase = 'idle'
+  if (entityRun) entityRun.intent = 'cancel'
+  if (queueRun) {
+    queueRun.intent = 'pause'
+    if (queueRun.activeCardId != null) {
+      spotifyRepo.setDownloadQueueCardState(
+        queueRun.activeCardId,
+        'paused',
+        'Paused when NaviHUB closed',
+        queueRun.mode === 'all'
+      )
+    }
+  }
+  if (!active) {
+    if (entityRun) {
+      releaseMusicMaintenance(entityRun.owner)
+      entityRun = null
+    }
+    if (queueRun) {
+      releaseMusicMaintenance(queueRun.owner)
+      queueRun = null
+    }
+    return
+  }
   const owner = active.owner
+  const proc = active.proc
   active.cancelled = true
-  active.proc.kill('SIGKILL')
+  // Keep the child reference alive for the SIGKILL follow-up after clearing
+  // module state. Otherwise a stubborn process survives app shutdown invisibly.
+  processControls(() => processTreeTarget(proc), { killAfterMs: 1_000 }).cancel?.()
   active = null
+  entityRun = null
+  queueRun = null
   releaseMusicMaintenance(owner)
 }
 

@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { SpotifyEntityInspection, SpotifyEntityKind } from '@shared/types'
+import type {
+  SpotifyEntityCandidate,
+  SpotifyEntityInspection,
+  SpotifyEntityKind,
+  SpotifyReleasePreview
+} from '@shared/types'
 import { api } from '../lib/api'
 import { confirmDialog } from '../lib/confirm'
 import { useDialog } from '../lib/hooks'
@@ -10,10 +15,25 @@ import { formatDuration } from './MusicTrackRow'
 import { useDownloadStatus } from './MusicDownloadDialog'
 
 const TWO_GB = 2 * 1024 * 1024 * 1024
+const ACTIVE_DOWNLOAD = new Set([
+  'starting',
+  'resolving',
+  'downloading',
+  'processing',
+  'pausing',
+  'paused',
+  'cancelling'
+])
 
 function formatBytes(bytes: number): string {
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} GB`
   return `${Math.ceil(bytes / 1024 ** 2)} MB`
+}
+
+function formatElapsed(ms: number): string {
+  const seconds = Math.max(0, Math.floor(ms / 1000))
+  if (seconds < 60) return `${seconds}s`
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`
 }
 
 export default function SpotifyEntityDownloadDialog({
@@ -29,75 +49,149 @@ export default function SpotifyEntityDownloadDialog({
 }) {
   const qc = useQueryClient()
   const panelRef = useDialog(onClose)
-  const status = useDownloadStatus()
-  const [url, setUrl] = useState(savedUrl ?? '')
+  const downloadStatus = useDownloadStatus()
+  const bootstrapped = useRef(false)
+  const settledDownload = useRef<string | null>(null)
   const [inspection, setInspection] = useState<SpotifyEntityInspection | null>(null)
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [loading, setLoading] = useState(true)
-  const [replacing, setReplacing] = useState(false)
+  const [candidates, setCandidates] = useState<SpotifyEntityCandidate[]>([])
+  const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [loading, setLoading] = useState(false)
+  const [advanced, setAdvanced] = useState(false)
+  const [url, setUrl] = useState(savedUrl ?? '')
   const [allowMismatch, setAllowMismatch] = useState(false)
   const [missingOnly, setMissingOnly] = useState(false)
-  const [inspectError, setInspectError] = useState<string | null>(null)
-  const refreshedStatus = useRef<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
+  const ref = useMemo(() => ({ kind, entityId }), [kind, entityId])
   const { data: readiness } = useQuery({
     queryKey: qk.music.spotifyDetect,
     queryFn: () => api.music.spotifyDetect()
   })
+  const { data: entityState, refetch: refetchEntityState } = useQuery({
+    queryKey: qk.music.spotifyEntityState(kind, entityId),
+    queryFn: () => api.music.spotifyEntityState(ref),
+    refetchInterval: (query) => query.state.data?.state === 'building' ? 700 : false
+  })
   const { data: inspectionProgress } = useQuery({
     queryKey: qk.music.spotifyInspectionStatus,
     queryFn: () => api.music.spotifyInspectionStatus(),
-    enabled: loading,
-    refetchInterval: loading ? 700 : false
+    enabled: entityState?.state === 'building' || loading,
+    refetchInterval: entityState?.state === 'building' || loading ? 700 : false
+  })
+  const { data: downloadQueue } = useQuery({
+    queryKey: qk.music.spotifyQueue,
+    queryFn: () => api.music.spotifyDownloadQueue()
   })
 
-  async function inspect(sourceUrl?: string, preserveSelection = false): Promise<void> {
+  function applyInspection(next: SpotifyEntityInspection, preserveSelection = false): void {
+    setInspection(next)
+    setSelected((old) => new Set(next.releases
+      .filter((release) => preserveSelection ? old.has(release.releaseId) : release.preselected)
+      .map((release) => release.releaseId)))
+    setCandidates([])
+    setSelectedCandidate(null)
+    setAllowMismatch(false)
+    setAdvanced(false)
+    setError(null)
+  }
+
+  async function startInspection(input: {
+    candidateKey?: string
+    url?: string
+    refresh?: boolean
+  } = {}): Promise<void> {
     setLoading(true)
-    setInspectError(null)
+    setError(null)
     try {
-      const result = await api.music.spotifyInspectEntity({ kind, entityId, url: sourceUrl })
-      setInspection(result)
-      setSelected((old) => new Set(result.releases
-        .filter((release) => preserveSelection ? old.has(release.spotifyAlbumId) : release.preselected)
-        .map((release) => release.spotifyAlbumId)))
-      setAllowMismatch(false)
-      setReplacing(false)
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-      setInspectError(message)
-      if (!/cancelled/i.test(message)) toastError(error)
+      const result = await api.music.spotifyStartEntityInspection({ kind, entityId, ...input })
+      applyInspection(result)
+      await qc.invalidateQueries({ queryKey: qk.music.spotifyEntityState(kind, entityId) })
+    } catch (caught) {
+      const message = caught instanceof Error ? caught.message : String(caught)
+      setError(message)
+      if (!/cancelled/i.test(message)) toastError(caught)
+    } finally {
+      setLoading(false)
+      void refetchEntityState()
+    }
+  }
+
+  async function discoverCandidates(): Promise<void> {
+    setLoading(true)
+    setError(null)
+    try {
+      const found = await api.music.spotifyFindEntityCandidates(ref)
+      const exact = found.filter((candidate) => candidate.exact)
+      if (exact.length === 1) {
+        await startInspection({ candidateKey: exact[0].candidateKey })
+        return
+      }
+      if (found.length === 0) {
+        await startInspection()
+        return
+      }
+      setCandidates(found)
+      setSelectedCandidate((exact[0] ?? found[0]).candidateKey)
+    } catch {
+      // Candidate search is only the fast path. The spotDL fallback owns its
+      // own useful error and remains the best automatic recovery.
+      await startInspection()
     } finally {
       setLoading(false)
     }
   }
 
   useEffect(() => {
-    void inspect()
-    // A remembered source is reused; otherwise NaviHUB discovers one from a local track.
+    if (!entityState || bootstrapped.current) return
+    if (entityState.state === 'ready') {
+      bootstrapped.current = true
+      applyInspection(entityState.inspection)
+    } else if (entityState.state === 'building') {
+      setLoading(true)
+    } else if (entityState.state === 'error') {
+      bootstrapped.current = true
+      setLoading(false)
+      setError(entityState.error)
+    } else {
+      bootstrapped.current = true
+      void discoverCandidates()
+    }
+    // This is a one-time bootstrap. Subsequent state refreshes are applied by
+    // the building-to-ready effect below without starting another inspection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [entityState?.state])
 
   useEffect(() => {
-    if (!inspection || status?.source !== 'spotifyEntity' || status.entityKind !== kind ||
-        status.entityId !== entityId || !['done', 'cancelled', 'error'].includes(status.status) ||
-        refreshedStatus.current === `${status.id}:${status.status}`) return
-    refreshedStatus.current = `${status.id}:${status.status}`
-    void inspect(inspection.sourceUrl, true)
-    // Refresh exactly once when this page's download settles.
+    if (entityState?.state !== 'ready') return
+    applyInspection(entityState.inspection, inspection != null)
+    setLoading(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status?.id, status?.status])
+  }, [entityState?.state === 'ready' ? entityState.inspection.snapshotId : null])
+
+  useEffect(() => {
+    if (!downloadStatus || downloadStatus.source !== 'spotifyEntity' ||
+        downloadStatus.entityKind !== kind || downloadStatus.entityId !== entityId ||
+        !['done', 'cancelled', 'error'].includes(downloadStatus.status)) return
+    const key = `${downloadStatus.id}:${downloadStatus.status}`
+    if (settledDownload.current === key) return
+    settledDownload.current = key
+    // Downloads finish with a local scan. Re-read the persisted snapshot only;
+    // never launch another catalogue inspection here.
+    void qc.invalidateQueries({ queryKey: qk.music.spotifyEntityState(kind, entityId) })
+    void qc.invalidateQueries({ queryKey: qk.music.all })
+  }, [downloadStatus, entityId, kind, qc])
 
   const totals = useMemo(() => inspection?.releases
-    .filter((release) => selected.has(release.spotifyAlbumId))
+    .filter((release) => selected.has(release.releaseId))
     .reduce((sum, release) => ({
-      tracks: sum.tracks + release.missingCount,
       missing: sum.missing + release.missingCount,
       bytes: sum.bytes + release.missingEstimatedBytes
-    }), { tracks: 0, missing: 0, bytes: 0 }) ?? { tracks: 0, missing: 0, bytes: 0 }, [inspection, selected])
+    }), { missing: 0, bytes: 0 }) ?? { missing: 0, bytes: 0 }, [inspection, selected])
 
-  async function download(): Promise<void> {
+  async function addToQueue(startNow: boolean): Promise<void> {
     if (!inspection) return
-    if (totals.tracks > 100 || totals.bytes > TWO_GB) {
+    if (startNow && (totals.missing > 100 || totals.bytes > TWO_GB)) {
       const ok = await confirmDialog(
         `Download ${totals.missing} missing track(s)? The estimated size is ${formatBytes(totals.bytes)}.`,
         { confirmLabel: 'Download' }
@@ -105,202 +199,325 @@ export default function SpotifyEntityDownloadDialog({
       if (!ok) return
     }
     try {
-      const result = await api.music.spotifyDownloadEntity({
-        inspectionId: inspection.inspectionId,
-        albumIds: [...selected],
+      const result = await api.music.spotifyQueueAddEntity({
+        snapshotId: inspection.snapshotId,
+        releaseIds: [...selected],
         allowMismatch
       })
-      await qc.invalidateQueries({ queryKey: qk.music.all })
-      if (result.id) {
+      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      if (result.jobId == null) {
+        toast('Every selected track is already in the local library', 'success')
+        return
+      }
+      if (startNow) {
+        await api.music.spotifyQueueStart({ jobId: result.jobId, prioritize: true })
         await qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
+        toast(`Starting ${inspection.sourceName}`, 'success')
       } else {
         toast(
-          inspection.matchesCurrentEntity
-            ? 'Spotify source saved; every selected track is already local'
-            : 'Every selected track is already local; the mismatched source was not saved',
-          'success'
+          result.addedSelections > 0
+            ? `Added ${result.addedSelections} release${result.addedSelections === 1 ? '' : 's'} to Music Downloads`
+            : 'Those releases are already in Music Downloads',
+          'success',
+          { label: 'View downloads', route: '/music/downloads' }
         )
-        await inspect(inspection.sourceUrl, true)
       }
-    } catch (error) {
-      toastError(error)
+      onClose()
+    } catch (caught) {
+      toastError(caught)
     }
   }
 
   async function forget(): Promise<void> {
     try {
-      await api.music.spotifyForgetEntitySource({ kind, entityId })
+      const queued = queueCard
+      if (queued) {
+        if (queued.state === 'running') {
+          toast('Pause or cancel this download before forgetting its source')
+          return
+        }
+        const ok = await confirmDialog(
+          `Forget this Spotify source and remove its ${queued.state === 'completed' ? 'completed' : 'saved'} download queue card? Local audio will not be deleted.`,
+          { confirmLabel: 'Forget', danger: true }
+        )
+        if (!ok) return
+      }
+      await api.music.spotifyForgetEntitySource(ref)
       await qc.invalidateQueries({ queryKey: qk.music.all })
+      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      await qc.invalidateQueries({ queryKey: qk.music.spotifyEntityState(kind, entityId) })
       setInspection(null)
-      setReplacing(false)
+      setCandidates([])
       setUrl('')
-      setInspectError(null)
-      void inspect()
-    } catch (error) {
-      toastError(error)
+      setAdvanced(false)
+      setError(null)
+      void discoverCandidates()
+    } catch (caught) {
+      toastError(caught)
     }
   }
 
-  const runningHere = status?.source === 'spotifyEntity' && status.entityKind === kind &&
-    status.entityId === entityId && ['starting', 'downloading', 'processing'].includes(status.status)
-  const primary = inspection?.releases.filter((release) => release.preselected) ?? []
-  const appearances = inspection?.releases.filter((release) => !release.preselected) ?? []
-  const visiblePrimary = missingOnly
-    ? primary.filter((release) => release.missingCount > 0)
-    : primary
-  const visibleAppearances = missingOnly
-    ? appearances.filter((release) => release.missingCount > 0)
-    : appearances
-  const visibleReleases = [...visiblePrimary, ...visibleAppearances]
+  async function control(action: 'pause' | 'resume' | 'cancel'): Promise<void> {
+    if (!downloadStatus) return
+    if (action === 'cancel') await api.music.downloadCancel(downloadStatus.id)
+    else if (downloadStatus.taskId) await api.tasks[action](downloadStatus.taskId)
+    await qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
+  }
 
-  function releaseRows(releases: typeof primary) {
-    return releases.map((release) => (
-      <label key={release.spotifyAlbumId} className="flex gap-3 border-b border-base-700 px-1 py-3 last:border-0">
+  const queueCard = [...(downloadQueue?.pending ?? []), ...(downloadQueue?.completed ?? [])]
+    .find((card) => card.sourceKind === 'entity' && card.entityKind === kind && card.entityId === entityId)
+  const directRunning = downloadStatus?.source === 'spotifyEntity' &&
+    downloadStatus.entityKind === kind && downloadStatus.entityId === entityId &&
+    ACTIVE_DOWNLOAD.has(downloadStatus.status)
+  const runningHere = directRunning || queueCard?.state === 'running'
+  const releases = inspection?.releases.filter((release) =>
+    !missingOnly || release.missingCount > 0) ?? []
+
+  function releaseRows(rows: SpotifyReleasePreview[]): React.JSX.Element[] {
+    return rows.map((release) => (
+      <label
+        key={release.releaseId}
+        className="flex gap-3 border-b border-base-700 px-1 py-3 last:border-0"
+      >
         {kind === 'artist' && (
           <input
             type="checkbox"
-            checked={selected.has(release.spotifyAlbumId)}
+            checked={selected.has(release.releaseId)}
             onChange={(event) => setSelected((old) => {
               const next = new Set(old)
-              if (event.target.checked) next.add(release.spotifyAlbumId)
-              else next.delete(release.spotifyAlbumId)
+              if (event.target.checked) next.add(release.releaseId)
+              else next.delete(release.releaseId)
               return next
             })}
           />
         )}
         <span className="min-w-0 flex-1">
-          <span className="block truncate font-medium text-white">{release.title}</span>
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="truncate font-medium text-white">{release.title}</span>
+            {release.metadataState === 'resolved' && <span className="chip text-xs">Spotify verified</span>}
+            {release.metadataState === 'indexed' && <span className="chip text-xs">Catalogue estimate</span>}
+            {release.metadataState === 'error' && <span className="text-xs text-red-300">Retry available</span>}
+          </span>
           <span className="mt-1 block text-xs text-gray-400">
             {[release.year, release.albumType].filter(Boolean).join(' · ')} · {release.trackCount} tracks · {release.localCount} local · {release.missingCount} missing · {formatDuration(release.duration)}
             {release.missingCount > 0 && ` · about ${formatBytes(release.missingEstimatedBytes)} to add`}
           </span>
+          {release.resolutionError && <span className="mt-1 block text-xs text-red-300">{release.resolutionError}</span>}
         </span>
       </label>
     ))
   }
 
+  const building = entityState?.state === 'building' || loading
+  const fallback = inspectionProgress?.phase === 'spotifyFallback'
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} aria-label={`Complete ${kind} from Spotify`} className="card max-h-[88vh] w-full max-w-3xl overflow-y-auto p-5">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        aria-label={`Download ${kind} releases`}
+        className="card max-h-[88vh] w-full max-w-3xl overflow-y-auto p-5"
+      >
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-semibold text-white">Complete {kind} from Spotify</h2>
-            <p className="mt-1 text-sm text-gray-400">Compare a public Spotify source with this local {kind}, then save only the tracks that are missing.</p>
+            <h2 className="text-xl font-semibold text-white">Download {kind} releases</h2>
+            <p className="mt-1 text-sm text-gray-400">
+              NaviHUB finds the catalogue for you, remembers it, and downloads only missing tracks.
+            </p>
           </div>
           <button className="px-2 text-gray-400 hover:text-white" aria-label="Close" onClick={onClose}>✕</button>
         </div>
 
-        {readiness && !readiness.ok && <p className="mb-4 rounded bg-red-950/40 p-3 text-sm text-red-200">{readiness.error}</p>}
+        {readiness && !readiness.ok && (
+          <p className="mb-4 rounded bg-amber-950/40 p-3 text-sm text-amber-100">
+            Catalogue previews can still work, but downloading requires spotDL. {readiness.error}
+          </p>
+        )}
 
-        {!inspection && !replacing && (
+        {building && (
           <div className="space-y-3" aria-live="polite">
             <div className="rounded border border-base-700 bg-base-900/40 p-4">
               <p className="font-medium text-white">
-                {loading
-                  ? (inspectionProgress?.phase === 'catalogue' || inspectionProgress?.phase === 'matching'
-                      ? 'Building the release preview'
-                      : 'Finding the Spotify source')
-                  : 'Spotify inspection stopped'}
+                {fallback ? 'Using the full spotDL fallback' : 'Building the release catalogue'}
               </p>
               <p className="mt-1 text-sm text-gray-300">
-                {loading
-                  ? inspectionProgress?.message ?? (savedUrl ? 'Reading the remembered Spotify source' : 'Matching a local track to Spotify')
-                  : inspectError ?? 'The source is ready to inspect again.'}
+                {inspectionProgress?.message ?? 'Searching for the closest catalogue match'}
               </p>
-              {loading && inspectionProgress?.foundCount != null && (
-                <p className="mt-2 text-xs text-gray-400">{inspectionProgress.foundCount} tracks found</p>
+              <p className="mt-2 text-xs text-gray-400">
+                {formatElapsed(inspectionProgress?.elapsedMs ?? 0)} elapsed
+                {inspectionProgress?.foundCount != null && ` · ${inspectionProgress.foundCount} tracks found`}
+              </p>
+              {fallback && (
+                <p className="mt-2 text-xs text-gray-400">
+                  The fast catalogue was unavailable. spotDL is enumerating the artist and may take several minutes.
+                </p>
               )}
             </div>
+            <button
+              className="btn-ghost"
+              onClick={() => void api.music.spotifyCancelInspection(entityState?.state === 'building' ? entityState.jobId : undefined)}
+            >
+              Cancel inspection
+            </button>
+          </div>
+        )}
+
+        {!building && candidates.length > 0 && !inspection && !advanced && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="font-semibold text-white">Choose the matching catalogue entry</h3>
+              <p className="mt-1 text-sm text-gray-400">More than one close match was found. This choice is saved until you refresh or forget it.</p>
+            </div>
+            <div className="space-y-2">
+              {candidates.map((candidate) => (
+                <label key={candidate.candidateKey} className="flex cursor-pointer gap-3 rounded border border-base-700 p-3 hover:bg-base-700/40">
+                  <input
+                    type="radio"
+                    name="spotify-candidate"
+                    checked={selectedCandidate === candidate.candidateKey}
+                    onChange={() => setSelectedCandidate(candidate.candidateKey)}
+                  />
+                  <span>
+                    <span className="block font-medium text-white">{candidate.name}</span>
+                    <span className="text-sm text-gray-400">
+                      {[candidate.secondary, candidate.year].filter(Boolean).join(' · ') || 'Catalogue result'}
+                    </span>
+                  </span>
+                </label>
+              ))}
+            </div>
             <div className="flex flex-wrap gap-2">
-              {loading ? (
-                <button className="btn-ghost" onClick={() => void api.music.spotifyCancelInspection()}>Cancel inspection</button>
-              ) : (
-                <button className="btn-primary" disabled={readiness?.ok === false} onClick={() => void inspect()}>Try again</button>
-              )}
-              <button className="btn-ghost" disabled={loading} onClick={() => setReplacing(true)}>Choose a source manually</button>
-              {savedUrl && <button className="btn-ghost" disabled={loading} onClick={() => void forget()}>Forget source</button>}
+              <button className="btn-primary" disabled={!selectedCandidate || loading} onClick={() => void startInspection({ candidateKey: selectedCandidate ?? undefined })}>Use selected source</button>
+              <button className="btn-ghost" onClick={() => setAdvanced(true)}>Advanced source replacement</button>
             </div>
           </div>
         )}
 
-        {replacing && (
+        {!building && advanced && (
           <div className="space-y-3">
             <label className="label" htmlFor="spotify-entity-url">Public Spotify {kind} link</label>
-            <input id="spotify-entity-url" className="input w-full" value={url} onChange={(event) => setUrl(event.target.value)} placeholder={`https://open.spotify.com/${kind}/…`} autoFocus />
-            <p className="text-sm text-gray-400">Use this only when automatic matching picked the wrong source. Spotify login is not used.</p>
+            <input
+              id="spotify-entity-url"
+              className="input w-full"
+              value={url}
+              onChange={(event) => setUrl(event.target.value)}
+              placeholder={`https://open.spotify.com/${kind}/…`}
+              autoFocus
+            />
+            <p className="text-sm text-gray-400">Manual links are only needed when automatic matching selected the wrong source.</p>
             <div className="flex flex-wrap gap-2">
-              <button className="btn-primary" disabled={loading || !url.trim() || readiness?.ok === false} onClick={() => void inspect(url)}>{loading ? 'Inspecting…' : 'Inspect source'}</button>
-              <button className="btn-ghost" disabled={loading} onClick={() => setReplacing(false)}>Back</button>
+              <button className="btn-primary" disabled={!url.trim() || loading || readiness?.ok === false} onClick={() => void startInspection({ url: url.trim(), refresh: true })}>Inspect source</button>
+              <button className="btn-ghost" disabled={loading} onClick={() => setAdvanced(false)}>Back</button>
             </div>
           </div>
         )}
 
-        {inspection && !replacing && (
+        {!building && error && !inspection && candidates.length === 0 && !advanced && (
+          <div className="space-y-3" aria-live="polite">
+            <p className="rounded bg-red-950/40 p-3 text-sm text-red-200">{error}</p>
+            <div className="flex flex-wrap gap-2">
+              <button className="btn-primary" onClick={() => void discoverCandidates()}>Try again</button>
+              <button className="btn-ghost" onClick={() => setAdvanced(true)}>Advanced source replacement</button>
+            </div>
+          </div>
+        )}
+
+        {inspection && !advanced && (
           <div>
-            <div className="mb-4">
-              <p className="mb-2 text-sm text-gray-300">
-                Spotify source: <span className="font-medium text-white">{inspection.sourceName}</span>
-                {(inspection.duplicateCount > 0 || inspection.skippedCount > 0) &&
-                  ` · ${inspection.duplicateCount} duplicate · ${inspection.skippedCount} skipped`}
-              </p>
-              <div className="flex flex-wrap items-center gap-2">
-              <button className="btn-ghost" onClick={() => void api.app.openExternal(inspection.sourceUrl)}>Open in Spotify</button>
-              <button className="btn-ghost" onClick={() => setReplacing(true)}>Replace source</button>
-              {savedUrl && <button className="btn-ghost" onClick={() => void forget()}>Forget source</button>}
+            <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-sm text-gray-300">
+                  <span className="font-medium text-white">{inspection.sourceName}</span> · {inspection.provider === 'itunes' ? 'Fast catalogue' : 'spotDL catalogue'}
+                </p>
+                <p className="mt-1 text-xs text-gray-400">
+                  Saved {new Intl.DateTimeFormat().format(new Date(inspection.refreshedAt))} · reopening is instant
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {inspection.sourceUrl && <button className="btn-ghost" onClick={() => void api.app.openExternal(inspection.sourceUrl!)}>Open in Spotify</button>}
+                <button className="btn-ghost" disabled={runningHere} onClick={() => void startInspection({ refresh: true })}>Refresh</button>
+                <button className="btn-ghost" disabled={runningHere} onClick={() => setAdvanced(true)}>Advanced source replacement</button>
+                <button className="btn-ghost" disabled={runningHere} onClick={() => void forget()}>Forget</button>
               </div>
             </div>
+
             {inspection.mismatchMessage && (
               <div className="mb-4 rounded bg-amber-950/40 p-3 text-sm text-amber-100">
-                <p>{inspection.mismatchMessage} You can download it elsewhere, but NaviHUB will not remember it for this page.</p>
-                <label className="mt-3 flex items-center gap-2"><input type="checkbox" checked={allowMismatch} onChange={(event) => setAllowMismatch(event.target.checked)} />Use this source once</label>
+                <p>{inspection.mismatchMessage} This one-time download will not replace the saved source.</p>
+                <label className="mt-3 flex items-center gap-2">
+                  <input type="checkbox" checked={allowMismatch} onChange={(event) => setAllowMismatch(event.target.checked)} />
+                  Use this source once
+                </label>
               </div>
             )}
-            {kind === 'artist' ? (
-              <div className="space-y-5">
-                <div className="flex flex-wrap items-center gap-2 border-y border-base-700 py-3">
-                  <button
-                    className="btn-ghost px-2 py-1 text-xs"
-                    onClick={() => setSelected(new Set(primary.map((release) => release.spotifyAlbumId)))}
-                  >
-                    Select primary
-                  </button>
-                  <button
-                    className="btn-ghost px-2 py-1 text-xs"
-                    onClick={() => setSelected(new Set(visibleReleases.map((release) => release.spotifyAlbumId)))}
-                  >
-                    Select all visible
-                  </button>
-                  <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setSelected(new Set())}>
-                    Clear selection
-                  </button>
-                  <button
-                    className={missingOnly ? 'pill-active' : 'pill'}
-                    onClick={() => setMissingOnly((value) => !value)}
-                  >
-                    Missing releases only
-                  </button>
-                  <span className="text-xs text-gray-500">{selected.size} selected</span>
-                </div>
-                <section><h3 className="mb-1 font-semibold text-white">Albums and singles</h3>{visiblePrimary.length ? releaseRows(visiblePrimary) : <p className="text-sm text-gray-400">{missingOnly ? 'No missing primary releases.' : 'No primary releases found.'}</p>}</section>
-                <section><h3 className="mb-1 font-semibold text-white">Features, compilations, and other appearances</h3>{visibleAppearances.length ? releaseRows(visibleAppearances) : <p className="text-sm text-gray-400">{missingOnly ? 'No missing appearances.' : 'No other appearances found.'}</p>}</section>
+
+            {kind === 'artist' && (
+              <div className="mb-3 flex flex-wrap items-center gap-2 border-y border-base-700 py-3">
+                <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setSelected(new Set(inspection.releases.filter((release) => release.preselected).map((release) => release.releaseId)))}>Select albums and singles</button>
+                <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setSelected(new Set())}>Clear selection</button>
+                <button className={missingOnly ? 'pill-active' : 'pill'} onClick={() => setMissingOnly((value) => !value)}>Missing releases only</button>
+                <span className="text-xs text-gray-400">{selected.size} selected</span>
               </div>
-            ) : releaseRows(inspection.releases)}
+            )}
+
+            <section>
+              <h3 className="mb-1 font-semibold text-white">Albums and singles</h3>
+              {releases.length ? releaseRows(releases) : (
+                <p className="text-sm text-gray-400">{missingOnly ? 'No releases are missing.' : 'No albums or singles were found.'}</p>
+              )}
+            </section>
 
             <div className="sticky bottom-0 mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-base-700 bg-base-800 pt-4" aria-live="polite">
               <div className="min-w-0 text-sm text-gray-400">
                 <p>{totals.missing} missing selected · about {formatBytes(totals.bytes)}</p>
-                {runningHere && (
+                {directRunning && (
                   <p className="mt-1 truncate text-gray-300">
-                    {status.title ?? status.message ?? 'Preparing download'} · {status.itemIndex ?? 0}/{status.itemCount ?? totals.missing}
-                    {(status.resolvedCount ?? 0) > 0 && ` · ${status.resolvedCount} resolved`}
-                    {(status.failedCount ?? 0) > 0 && ` · ${status.failedCount} failed`}
+                    {downloadStatus.releaseTitle ?? downloadStatus.title ?? downloadStatus.message ?? 'Preparing release'}
+                    {downloadStatus.releaseCount != null && ` · release ${downloadStatus.releaseIndex ?? 0}/${downloadStatus.releaseCount}`}
+                    {downloadStatus.itemCount != null && ` · track ${downloadStatus.itemIndex ?? 0}/${downloadStatus.itemCount}`}
+                    {(downloadStatus.failedCount ?? 0) > 0 && ` · ${downloadStatus.failedCount} failed`}
                   </p>
                 )}
               </div>
-              {runningHere ? (
-                <button className="btn-ghost" onClick={() => status && api.music.downloadCancel(status.id)}>Cancel {status.percent ?? 0}%</button>
+              {queueCard?.state === 'running' ? (
+                <button
+                  className="btn-primary"
+                  onClick={() => { window.location.hash = '#/music/downloads' }}
+                >
+                  View active download
+                </button>
+              ) : directRunning ? (
+                <div className="flex flex-wrap gap-2">
+                  {downloadStatus.status === 'paused' ? (
+                    <button className="btn-primary" disabled={!downloadStatus.taskId} onClick={() => void control('resume')}>Resume</button>
+                  ) : (
+                    <button className="btn-ghost" disabled={!downloadStatus.taskId || downloadStatus.status === 'pausing' || downloadStatus.status === 'cancelling'} onClick={() => void control('pause')}>Pause</button>
+                  )}
+                  <button className="btn-ghost" disabled={downloadStatus.status === 'cancelling'} onClick={() => void control('cancel')}>{downloadStatus.status === 'cancelling' ? 'Cancelling…' : 'Cancel'}</button>
+                </div>
               ) : (
-                <button className="btn-primary" disabled={!selected.size || (!!inspection.mismatchMessage && !allowMismatch)} onClick={() => void download()}>{totals.missing ? `Download missing (${totals.missing})` : 'Save source'}</button>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className="btn-ghost"
+                    disabled={!selected.size || (!!inspection.mismatchMessage && !allowMismatch)}
+                    onClick={() => void addToQueue(true)}
+                  >
+                    Download now
+                  </button>
+                  <button
+                    className="btn-primary"
+                    disabled={!selected.size || (!!inspection.mismatchMessage && !allowMismatch)}
+                    onClick={() => void addToQueue(false)}
+                  >
+                    {totals.missing ? `Add to queue (${totals.missing})` : 'Check selected releases'}
+                  </button>
+                </div>
               )}
             </div>
           </div>

@@ -80,29 +80,77 @@ never bundled.
 
 ### Artist and album downloads
 
-Artist and album headers also open the shared Spotify inspection dialog. A matching
-source is remembered by its unique Spotify ID; reopening reinspects it without a
-login or continuous synchronization. When no source is remembered, NaviHUB asks
-spotDL to identify it from a representative local track; pasting a URL is the
-explicit fallback, not the normal flow. Catalogue inspection exposes a polled
-phase/message and cancel action because large artist discographies can take spotDL
-several minutes to expand. Artist inspections group spotDL tracks by
-stable album ID, preselect primary albums and singles, and leave features and
-compilations visible but unchecked. Album inspections target exactly one release.
+Artist and album headers open a persistent release catalogue rather than expanding
+the full Spotify discography every time. The first open searches Apple's public
+iTunes metadata catalogue, presents candidate cards only when an exact result is
+ambiguous, and fetches release tracklists in batches of four within a 25-second
+fast-path budget. It needs no Apple or Spotify credentials. Only albums and singles
+whose album artist matches the selected artist are indexed; appearances,
+compilations and features are excluded. A public Spotify URL remains available only
+under Advanced source replacement. In parallel, one bounded six-second spotDL query
+checks up to three representative local tracks for a non-tied Spotify identity; it
+never expands the artist and cannot delay the otherwise-ready preview beyond that bound.
 
-Inspections are opaque process-memory tokens, capped at eight and lazily expired
-after 30 minutes. Downloads re-run strict local matching and submit only unmatched
-tracks through the same 320 kbps, 100-track/four-worker pipeline. A user-confirmed
-name mismatch can download as a one-off but never changes the page's remembered
-source. After each scan, album or artist IDs are associated only when all relevant
-source tracks resolve to one unambiguous local entity; deletion never removes local
-audio and there is no Spotify sync.
+The indexed catalogue is stored in `music_spotify_entity_snapshot`,
+`music_spotify_entity_release` and `music_spotify_entity_track`. Reopening reads that
+snapshot immediately with no network process. Refresh atomically replaces provider
+metadata but retains authoritative spotDL payloads when the provider release identity
+is unchanged; Forget deletes the snapshot and remembered Spotify IDs but never local
+audio. Snapshot track matches are nullable and revalidated by every music scan, so a
+deleted file turns grey and a restored or downloaded file resolves again. Sanitized
+and in-app library exports always wipe all three tables.
+
+When the fast provider fails, the same visible metadata task automatically falls back
+to spotDL with eight metadata workers and its persistent cache. The fallback has no
+fake percentage or hard completion promise because spotDL enumerates every release,
+but it reports elapsed time and found tracks and remains cancellable. Duplicate opens
+for the same artist or album attach to that job; a conflicting maintenance task is
+named and linked through Tasks. Normal app shutdown terminates the complete spotDL
+process tree and clears the in-process owner, so relaunch cannot inherit a stale
+inspection.
+
+Downloads resolve only the selected releases. An indexed release is queried by its
+known Spotify album URL or exact album identity, then its artist, title and track
+overlap are validated before the authoritative payload is persisted. Strict matching
+runs again and only unmatched tracks enter the existing 320 kbps, 100-track/four-worker
+pipeline. Releases continue independently after one failure and remain selectable for
+Retry. Pause is restartable on every platform: the current spotDL tree is stopped,
+completed files are scanned and kept, and Resume starts only unresolved work. Cancel
+uses the same recovery path and releases the maintenance gate after cleanup. A
+user-confirmed mismatch is one-shot and never overwrites the page source; source IDs
+auto-link only after all relevant source tracks resolve to one unambiguous local entity.
 
 The batch owns the music-maintenance gate from start through its final rescan.
 Child spotDL runs and scans re-enter that same unique owner; competing Spotify,
 yt-dlp, and manual scan requests fail without replacing the active batch status.
 Release previews retain both full-release and strictly-missing size estimates so
 large-batch confirmation describes only the files that will actually download.
+
+### Persistent Spotify download queue
+
+Artist/album release selections and missing rows from imported Spotify playlists are
+saved under `/music/downloads` before they run. `music_spotify_download_queue` owns one
+ordered card per persistent source and `music_spotify_download_queue_selection` keeps
+the exact release or playlist-item IDs. Repeated additions merge into that card. Source,
+release and item deletion cascades naturally; Refresh keeps selections whose stable
+provider release identity survives. Both tables are personal local-music state and are
+wiped from every sanitized or in-app library export.
+
+Adding is inert: the user explicitly starts all cards or one card. The mixed runner
+holds one re-entrant music-maintenance owner, fetches the next card from the current DB
+order after each completion, and rechecks strict local matches immediately before work.
+Already-local tracks are skipped without spotDL. Entity cards retain release-by-release
+resolution and scanning; playlist cards retain 100-track chunks and scan after each
+chunk. One failed card stays visible for Retry while later cards continue. Completed
+cards stay until Clear completed.
+
+Pause terminates the active spotDL/yt-dlp/ffmpeg process tree, scans recoverable files,
+and persists the current card as paused while preserving whether Resume should continue
+the whole queue or only that card. Cancel settles the runtime task and returns unfinished
+work to queued; it never removes audio or queue cards. Startup converts any interrupted
+`running` row to `paused`, and Resume performs a recovery scan before recalculating the
+unresolved remainder. No queued work starts automatically on launch. Arbitrary yt-dlp
+URL jobs remain immediate and outside this queue.
 
 ## Sonic Archive browsing and acquisition language
 
@@ -122,7 +170,7 @@ separate **Add music** and **Library maintenance** menus. User-facing acquisitio
 language describes intent rather than the executable: **Import a playlist**,
 **Complete from Spotify**, and **Save audio from a link**. spotDL, yt-dlp, matching,
 and destination-folder details remain visible inside their dialogs and readiness
-help. Spotify artist inspection provides primary/all-visible/clear selection and a
+help. Spotify artist catalogues provide albums-and-singles/clear selection and a
 missing-release filter for large discographies.
 
 ## Player bar layout and the now-playing wash
@@ -137,7 +185,7 @@ The album page needed nothing: `MusicEntityHeader` + `MusicTrackRow` were alread
 
 ## OS media integration + pop-out widget
 
-**OS media integration + pop-out widget (2026-08-13)** — the global player surfaces on the OS (Windows SMTC flyout + hardware media keys via the `navigator.mediaSession` wiring in `player.tsx`, Windows taskbar thumbnail prev/play/next via `src/main/playerBridge.ts` + the pure `src/main/playerGlyphs.ts` rasterizer — no binary icon assets) and in a frameless always-on-top 440×64 pill for gaming (`src/main/widget.ts`, opened from the NowPlayingBar's pop-out button, `showInactive` so it never steals game focus, `screen-saver` z-level so it floats over borderless-windowed games — exclusive fullscreen bypasses the compositor and cannot be overlaid). The pill carries cover + title, transport, a volume slider, and close; its **song block is a button back into the app** (`player:showMain` → `playerBridge.activateMainWindow`, the same restore/show/focus `receiveOpen` does). Chromium delivers no mouse events inside a `-webkit-app-region: drag` region, so every interactive part is `app-no-drag` and the `flex-1` gutter between the song block and the controls is load-bearing — it is what is left to drag the window by. Data flow: the main window's provider publishes a compact `PlayerSnapshot` (`player:publishState`, no position — the pill has no scrubber) on every track/transport/volume change; main stores it, redraws the thumbbar and mirrors it to the widget over `player:state`; widget buttons and thumbbar clicks funnel into `playerBridge.dispatchCommand`, forwarded to the main window over `player:cmd` — these two are the app's ONLY push channels (frozen by `tests/pushBridge.test.ts`). `PlayerCommand` is a TAGGED union (`{kind:'volume', value}` carries a payload); the thumbbar is rebuilt only when `isPlaying/hasNext/hasPrev` change (a volume drag publishes dozens of snapshots a second), and the pill holds a local volume until its own value echoes back so the slider can't fight the echo mid-drag. Every OS-facing surface renders `displayMeta()` from `lib/playerMeta.ts`, which masks `quiz-` tracks ("Song Quiz", no artist/album/cover) so the overlay can't spoil a quiz answer. The widget window renders `PlayerWidgetPage` alone (a `#/widget` hash branch in `main.tsx` — no router/query client/second `AudioPlayerProvider`/BootSequence), is excluded from the UI-zoom and menu-bar `getAllWindows` loops in `ipc.ts`, closes with the main window, and persists its position (clamped to live displays by `src/main/widgetCore.ts`) in the `widget.pos` setting. Tests: playerMeta, playerGlyphs, widgetCore, pushBridge.
+**OS media integration + pop-out widget (2026-08-13)** — the global player surfaces on the OS (Windows SMTC flyout + hardware media keys via the `navigator.mediaSession` wiring in `player.tsx`, Windows taskbar thumbnail prev/play/next via `src/main/playerBridge.ts` + the pure `src/main/playerGlyphs.ts` rasterizer — no binary icon assets) and in a frameless always-on-top 480×60 pill for gaming (`src/main/widget.ts`, opened from the NowPlayingBar's pop-out button, `showInactive` so it never steals game focus, `screen-saver` z-level so it floats over borderless-windowed games — exclusive fullscreen bypasses the compositor and cannot be overlaid). The pill carries cover + title, transport, a volume slider, and close; its **song block is a button back into the app** (`player:showMain` → `playerBridge.activateMainWindow`, the same restore/show/focus `receiveOpen` does). Chromium delivers no mouse events inside a `-webkit-app-region: drag` region, so every interactive part is `app-no-drag` and the `flex-1` gutter between the song block and the controls is load-bearing — it is what is left to drag the window by. Data flow: the main window's provider publishes a compact `PlayerSnapshot` (`player:publishState`, no position — the pill has no scrubber) on every track/transport/volume change; main stores it, redraws the thumbbar and mirrors it to the widget over `player:state`; widget buttons and thumbbar clicks funnel into `playerBridge.dispatchCommand`, forwarded to the main window over `player:cmd` — these two are the app's ONLY push channels (frozen by `tests/pushBridge.test.ts`). `PlayerCommand` is a TAGGED union (`{kind:'volume', value}` carries a payload); the thumbbar is rebuilt only when `isPlaying/hasNext/hasPrev` change (a volume drag publishes dozens of snapshots a second), and the pill holds a local volume until its own value echoes back so the slider can't fight the echo mid-drag. Every OS-facing surface renders `displayMeta()` from `lib/playerMeta.ts`, which masks `quiz-` tracks ("Song Quiz", no artist/album/cover) so the overlay can't spoil a quiz answer. The widget window renders `PlayerWidgetPage` alone (a `#/widget` hash branch in `main.tsx` — no router/query client/second `AudioPlayerProvider`/BootSequence), is excluded from the UI-zoom and menu-bar `getAllWindows` loops in `ipc.ts`, closes with the main window, and persists its position (clamped to live displays by `src/main/widgetCore.ts`) in the `widget.pos` setting. Tests: playerMeta, playerGlyphs, widgetCore, pushBridge.
 
 **Tests** — `themeRepo`, `themeImport`, `bracket`, `tournamentRepo`, `quizRepo`, `music`, `musicRepo`, `playerMeta`, `playerGlyphs`, `widgetCore`, `pushBridge`
 

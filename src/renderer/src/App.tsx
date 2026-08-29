@@ -116,6 +116,7 @@ import MusicAlbumPage from './pages/MusicAlbumPage'
 import MusicPlaylistPage from './pages/MusicPlaylistPage'
 import MusicLikedPage from './pages/MusicLikedPage'
 import MusicStatsPage from './pages/MusicStatsPage'
+import MusicDownloadsPage from './pages/MusicDownloadsPage'
 import NowPlayingPage from './pages/NowPlayingPage'
 import GachaHomePage from './pages/GachaHomePage'
 import WrestlingHomePage from './pages/WrestlingHomePage'
@@ -412,6 +413,7 @@ export default function App() {
             <Route path="/music/playlists/:id" element={<MusicPlaylistPage />} />
             <Route path="/music/liked" element={<MusicLikedPage />} />
             <Route path="/music/stats" element={<MusicStatsPage />} />
+            <Route path="/music/downloads" element={<MusicDownloadsPage />} />
             {/* Full-page view of the player (any audio, not just music) */}
             <Route path="/now-playing" element={<NowPlayingPage />} />
             {/* pre-stats sessions may still have /music/history in back-history */}

@@ -25,12 +25,11 @@ import {
   parseSpotdlLine,
   parseSpotdlInspectionLine,
   pickDiscoveredEntity,
+  pickConsensusDiscoveredEntity,
   mismatchFor,
   killActive,
   runSpotdl,
-  selectInspectionSongs,
   settleSpotifyBatch,
-  SpotifyInspectionCache,
   validateSpotdlPayload
 } from '../src/main/musicSpotify'
 import {
@@ -63,37 +62,19 @@ describe('Spotify playlist import core', () => {
     expect(parseSpotifyPlaylistUrl('https://open.spotify.com/artist/1234567890ab')).toBeNull()
   })
 
-  it('expires inspection tokens lazily and evicts the oldest beyond eight', () => {
-    let now = 0
-    const cache = new SpotifyInspectionCache(() => now, 8, 100)
-    const inspection = (inspectionId: string) => ({
-      inspection: { inspectionId } as never,
-      songs: []
-    })
-    for (let index = 1; index <= 9; index++) cache.set(inspection(String(index)))
-    expect(cache.get('1')).toBeNull()
-    expect(cache.get('9')).not.toBeNull()
-    now = 101
-    expect(cache.get('9')).toBeNull()
-  })
-
-  it('rejects mismatched entity names and invalid release selections', () => {
+  it('rejects mismatched entity names', () => {
     expect(mismatchFor(
       { kind: 'artist', entityId: 1 },
       { id: 1, name: 'Local Artist', artistName: null, spotifyId: null },
       'Different Artist',
       []
     )).toMatch(/Different Artist/)
-    const entry = {
-      inspection: {
-        kind: 'album',
-        releases: [{ spotifyAlbumId: 'album-one' }]
-      },
-      songs: [{ spotifyAlbumId: 'album-one' }]
-    } as never
-    expect(() => selectInspectionSongs(entry, [])).toThrow(/Select at least one/)
-    expect(() => selectInspectionSongs(entry, ['album-one', 'album-two'])).toThrow()
-    expect(selectInspectionSongs(entry, ['album-one'])).toHaveLength(1)
+    expect(mismatchFor(
+      { kind: 'album', entityId: 1 },
+      { id: 1, name: '(1997) OK Computer', artistName: 'Radiohead', spotifyId: null },
+      'Radiohead',
+      [{ title: 'OK Computer', albumArtist: 'Radiohead' } as never]
+    )).toBeNull()
   })
 
   it('groups stable albums, preselects primary releases, and estimates only missing audio', () => {
@@ -127,7 +108,7 @@ describe('Spotify playlist import core', () => {
       missingDuration: 100
     })
     expect(releases[0].missingEstimatedBytes).toBeLessThan(releases[0].estimatedBytes)
-    expect(releases[1]).toMatchObject({ spotifyAlbumId: 'album-b', preselected: false })
+    expect(releases).toHaveLength(1)
   })
 
   it('settles a missing spotDL process and releases its maintenance owner', async () => {
@@ -146,12 +127,15 @@ describe('Spotify playlist import core', () => {
     const proc = Object.assign(new EventEmitter(), {
       stdout: new PassThrough(),
       stderr: new PassThrough(),
-      kill: vi.fn()
+      exitCode: null,
+      kill: vi.fn(() => true)
     })
     const pending = runSpotdl([], 'cancelled-spotdl-fixture', undefined, 'fixture-job', () => proc as never)
     killActive()
-    expect(proc.kill).toHaveBeenCalledWith('SIGKILL')
+    expect(proc.kill).toHaveBeenNthCalledWith(1, 'SIGCONT')
+    expect(proc.kill).toHaveBeenNthCalledWith(2, 'SIGTERM')
     expect(musicMaintenanceOwner()).toBeNull()
+    proc.exitCode = 1
     proc.emit('close', 1)
     await expect(pending).resolves.toBe(1)
     expect(musicMaintenanceOwner()).toBeNull()
@@ -279,7 +263,8 @@ describe('Spotify playlist import core', () => {
       'save',
       'https://open.spotify.com/playlist/abc',
       '--threads',
-      '4',
+      '8',
+      '--use-cache-file',
       '--save-file',
       '/tmp/list.spotdl'
     ])
@@ -315,6 +300,36 @@ describe('Spotify playlist import core', () => {
     expect(pickDiscoveredEntity('artist', {
       ...current, sampleTracks: [{ ...current.sampleTracks[0], duration: null }]
     }, [song])).toBeNull()
+  })
+
+  it('uses representative-track consensus and rejects a tied Spotify identity', () => {
+    const current = {
+      id: 1,
+      name: 'Radiohead',
+      artistName: null,
+      spotifyId: null,
+      sampleTracks: [
+        { title: 'Airbag', artist: 'Radiohead', album: 'OK Computer', duration: 200 },
+        { title: 'Paranoid Android', artist: 'Radiohead', album: 'OK Computer', duration: 201 },
+        { title: 'Karma Police', artist: 'Radiohead', album: 'OK Computer', duration: 202 }
+      ]
+    }
+    const song = (title: string, duration: number, artistId: string): SpotdlSong => ({
+      spotifyTrackId: title, title, artists: ['Radiohead'], primaryArtist: 'Radiohead',
+      albumArtist: 'Radiohead', albumTitle: 'OK Computer', duration, coverUrl: null,
+      spotifyUrl: '', discNo: 1, trackNo: 1, year: 1997, rawJson: '{}',
+      spotifyAlbumId: 'album-id', spotifyArtistId: artistId,
+      spotifyArtistIds: [artistId], albumType: 'album'
+    })
+    expect(pickConsensusDiscoveredEntity('artist', current, [
+      song('Airbag', 200, 'artist-a'),
+      song('Paranoid Android', 201, 'artist-a'),
+      song('Karma Police', 202, 'artist-b')
+    ])).toMatchObject({ spotifyId: 'artist-a' })
+    expect(pickConsensusDiscoveredEntity('artist', { ...current, sampleTracks: current.sampleTracks.slice(0, 2) }, [
+      song('Airbag', 200, 'artist-a'),
+      song('Paranoid Android', 201, 'artist-b')
+    ])).toBeNull()
   })
 
   it('chunks hundreds of tracks and estimates unknown durations conservatively', () => {

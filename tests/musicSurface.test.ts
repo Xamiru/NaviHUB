@@ -13,6 +13,7 @@ describe('Sonic Archive product surface', () => {
   const playlist = read('src/renderer/src/pages/MusicPlaylistPage.tsx')
   const downloader = read('src/renderer/src/components/MusicDownloadDialog.tsx')
   const spotify = read('src/renderer/src/components/SpotifyEntityDownloadDialog.tsx')
+  const downloads = read('src/renderer/src/pages/MusicDownloadsPage.tsx')
   const queryKeys = read('src/renderer/src/lib/queryKeys.ts')
 
   it('makes the personal lead and archive browsing actionable', () => {
@@ -42,9 +43,21 @@ describe('Sonic Archive product surface', () => {
     expect(playlist).toContain('Rename')
     expect(playlist).toContain('Searching tracks…')
     expect(playlist).toContain('No available tracks match')
-    expect(spotify).toContain('Select primary')
-    expect(spotify).toContain('Select all visible')
+    expect(spotify).toContain('Choose the matching catalogue entry')
+    expect(spotify).toContain('Select albums and singles')
+    expect(spotify).toContain('reopening is instant')
     expect(spotify).toContain('Missing releases only')
+    expect(spotify).toContain('Add to queue')
+    expect(playlist).toContain('Add missing to queue')
+  })
+
+  it('keeps deferred Spotify downloads in a dedicated persistent workspace', () => {
+    expect(downloads).toContain('title="Music downloads"')
+    expect(downloads).toContain('Start all')
+    expect(downloads).toContain('Start this')
+    expect(downloads).toContain('Clear completed')
+    expect(downloads).toContain('spotifyQueueReorder')
+    expect(downloads).toContain('Resume')
   })
 
   it('uses semantic progress and an SVG download indicator', () => {

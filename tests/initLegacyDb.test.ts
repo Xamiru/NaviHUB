@@ -75,7 +75,7 @@ describe('a live DB that predates newer columns', () => {
     })
   })
 
-  it('adds Spotify playlist snapshot tables without harming old music playlists', () => {
+  it('adds Spotify playlist and entity snapshot tables without harming old music playlists', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')
     db.exec(`CREATE TABLE music_playlist (
@@ -92,10 +92,20 @@ describe('a live DB that predates newer columns', () => {
     const tables = db
       .prepare(
         `SELECT name FROM sqlite_master WHERE type = 'table'
-         AND name IN ('music_spotify_playlist', 'music_spotify_playlist_item') ORDER BY name`
+         AND name IN (
+           'music_spotify_playlist', 'music_spotify_playlist_item',
+           'music_spotify_entity_snapshot', 'music_spotify_entity_release',
+           'music_spotify_entity_track', 'music_spotify_download_queue',
+           'music_spotify_download_queue_selection'
+         ) ORDER BY name`
       )
       .all()
     expect(tables).toEqual([
+      { name: 'music_spotify_download_queue' },
+      { name: 'music_spotify_download_queue_selection' },
+      { name: 'music_spotify_entity_release' },
+      { name: 'music_spotify_entity_snapshot' },
+      { name: 'music_spotify_entity_track' },
       { name: 'music_spotify_playlist' },
       { name: 'music_spotify_playlist_item' }
     ])

@@ -110,6 +110,17 @@ Pause is **best-effort by design**: `kill()` signals the direct child only, so p
 yt-dlp's `[ExtractAudio]` stops yt-dlp but not the ffmpeg it spawned. Process groups would change
 the quit semantics of three existing killers — a separate, riskier change.
 
+The persistent Spotify download queue is the deliberate restartable exception. spotDL is spawned
+in its own POSIX process group (and stopped with `taskkill /T /F` on Windows), so Pause terminates
+spotDL plus yt-dlp/ffmpeg descendants instead of freezing them. The mixed entity/playlist runner
+performs its final local scan, persists the active queue card as `paused`, and keeps the single
+music-maintenance owner reserved while the app remains open. Resume starts only still-unmatched
+work. Cancel settles the task, returns unfinished work to `queued`, and releases that owner.
+On startup an interrupted durable `running` card normalizes to `paused`; the new Resume task scans
+before continuing and never starts automatically. The task registry remains only the live/recent
+projection — durable future intent belongs to `/music/downloads`. Spotify catalogue discovery uses
+the separate `musicMetadata` task kind; audio acquisition remains `musicDownload`.
+
 **`cooperativeGate()`** — for loop jobs (bulk import, wrestling import, art fetch). Pause means
 *"stop starting new work"*: the item in flight finishes first, which for an import can be a whole
 `fetchWithRetry` timeout plus 429 waits. Hence the two-phase state — `pausing` (requested) →

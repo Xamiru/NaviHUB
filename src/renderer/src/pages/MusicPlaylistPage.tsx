@@ -42,6 +42,10 @@ export default function MusicPlaylistPage() {
     queryKey: qk.music.playlist(playlistId),
     queryFn: () => api.music.playlist(playlistId)
   })
+  const { data: downloadQueue } = useQuery({
+    queryKey: qk.music.spotifyQueue,
+    queryFn: () => api.music.spotifyDownloadQueue()
+  })
 
   const invalidate = (): void => {
     qc.invalidateQueries({ queryKey: qk.music.playlists })
@@ -88,7 +92,7 @@ export default function MusicPlaylistPage() {
   })
   const incremental = useIncrementalList(filteredItems, 96)
   const busy =
-    downloadStatus?.source === 'spotify' &&
+    (downloadStatus?.source === 'spotify' || downloadStatus?.source === 'spotifyQueue') &&
     downloadStatus.playlistId === playlistId &&
     ['starting', 'downloading', 'processing'].includes(downloadStatus.status)
 
@@ -111,9 +115,13 @@ export default function MusicPlaylistPage() {
   async function removeSpotifyItem(itemId: number): Promise<void> {
     await api.music.spotifyRemoveItem(itemId)
     invalidate()
+    qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
   }
 
-  async function download(itemsToDownload: MusicSpotifyPlaylistEntry[]): Promise<void> {
+  async function queueDownload(
+    itemsToDownload: MusicSpotifyPlaylistEntry[],
+    startNow = false
+  ): Promise<void> {
     if (itemsToDownload.length === 0 || busy) return
     const bytes = Math.ceil(
       itemsToDownload.reduce(
@@ -121,7 +129,7 @@ export default function MusicPlaylistPage() {
         0
       ) * 1.05
     )
-    if (itemsToDownload.length > 100 || bytes > 2 * 1024 ** 3) {
+    if (startNow && (itemsToDownload.length > 100 || bytes > 2 * 1024 ** 3)) {
       const size =
         bytes >= 1024 ** 3
           ? `${(bytes / 1024 ** 3).toFixed(1)} GB`
@@ -133,16 +141,42 @@ export default function MusicPlaylistPage() {
       if (!ok) return
     }
     try {
-      await api.music.spotifyDownloadPlaylist({
+      const result = await api.music.spotifyQueueAddPlaylist({
         playlistId,
         itemIds: itemsToDownload.map((item) => item.itemId)
       })
+      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      if (result.jobId == null) {
+        toast('Every selected song is already in the local library', 'success')
+        return
+      }
+      if (startNow) {
+        await api.music.spotifyQueueStart({ jobId: result.jobId, prioritize: true })
+        toast(`Starting ${itemsToDownload.length} song${itemsToDownload.length === 1 ? '' : 's'}`, 'success')
+      } else {
+        toast(
+          result.addedSelections > 0
+            ? `Added ${result.addedSelections} song${result.addedSelections === 1 ? '' : 's'} to Music Downloads`
+            : 'Those songs are already in Music Downloads',
+          'success',
+          { label: 'View downloads', route: '/music/downloads' }
+        )
+      }
       qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
-      toast(`Downloading ${itemsToDownload.length} song${itemsToDownload.length === 1 ? '' : 's'}`)
     } catch (error) {
       toastError(error)
     }
   }
+
+  const playlistQueueCard = [...(downloadQueue?.pending ?? []), ...(downloadQueue?.completed ?? [])]
+    .find((card) => card.sourceKind === 'playlist' && card.playlistId === playlistId)
+  const queuedItemIds = new Set(
+    playlistQueueCard?.selections
+      .filter((selection) => selection.kind === 'playlistItem')
+      .map((selection) => selection.sourceId) ?? []
+  )
+  const allMissingQueued = missingSpotify.length > 0 &&
+    missingSpotify.every((item) => queuedItemIds.has(item.itemId))
 
   async function saveTitle(): Promise<void> {
     const t = title.trim()
@@ -209,13 +243,27 @@ export default function MusicPlaylistPage() {
           <button
             className="btn-primary"
             onClick={() => {
-              if (missingSpotify.length > 0) void download(missingSpotify)
+              if (missingSpotify.length > 0) {
+                if (allMissingQueued) navigate('/music/downloads')
+                else void queueDownload(missingSpotify)
+              }
               else if (playable[0]) playItem(playable[0].item)
             }}
             disabled={missingSpotify.length > 0 ? busy : !playable.length}
           >
-            {playlist.missingCount > 0 && isSpotify ? `Download missing (${playlist.missingCount})` : 'Play'}
+            {playlist.missingCount > 0 && isSpotify
+              ? allMissingQueued ? 'View downloads' : `Add missing to queue (${playlist.missingCount})`
+              : 'Play'}
           </button>
+          {missingSpotify.length > 0 && (
+            <button
+              className="btn-ghost"
+              disabled={busy}
+              onClick={() => void queueDownload(missingSpotify, true)}
+            >
+              Download now
+            </button>
+          )}
           {missingSpotify.length > 0 && (
             <button
               className="btn-ghost"
@@ -353,7 +401,11 @@ export default function MusicPlaylistPage() {
                   key={`spotify-${item.itemId}`}
                   item={item}
                   busy={busy}
-                  onDownload={() => download([item])}
+                  queued={queuedItemIds.has(item.itemId)}
+                  onQueue={() => {
+                    if (queuedItemIds.has(item.itemId)) navigate('/music/downloads')
+                    else void queueDownload([item])
+                  }}
                   onRemove={() => removeSpotifyItem(item.itemId)}
                 />
               )
@@ -385,12 +437,14 @@ export default function MusicPlaylistPage() {
 function SpotifyMissingRow({
   item,
   busy,
-  onDownload,
+  queued,
+  onQueue,
   onRemove
 }: {
   item: MusicSpotifyPlaylistEntry
   busy: boolean
-  onDownload: () => void
+  queued: boolean
+  onQueue: () => void
   onRemove: () => void
 }) {
   return (
@@ -411,8 +465,8 @@ function SpotifyMissingRow({
       <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-500">
         {formatDuration(item.duration)}
       </span>
-      <button className="btn-ghost px-2 py-1 text-xs" disabled={busy} onClick={onDownload}>
-        Download
+      <button className="btn-ghost px-2 py-1 text-xs" disabled={busy} onClick={onQueue}>
+        {queued ? 'View queue' : 'Add to queue'}
       </button>
       <button className="btn-ghost px-2 py-1 text-xs" onClick={onRemove}>
         Remove

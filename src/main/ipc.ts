@@ -113,6 +113,7 @@ export function registerIpc(): void {
   // injectable seam (the music.ts:TagReader pattern) so its tests never spawn
   // a binary; this is the one place the two halves meet.
   video.installProber()
+  musicSpotify.initializeDownloadQueue()
 
   // The app's one "today": the LOCAL calendar day. Recurring features (gacha
   // goals, checklist periods) take it as a parameter so the renderer never
@@ -779,13 +780,39 @@ export function registerIpc(): void {
   ipcMain.handle('music:spotifyDownloadPlaylist', (_e, input) =>
     musicSpotify.startPlaylistDownload(input)
   )
-  ipcMain.handle('music:spotifyInspectEntity', (_e, input) =>
-    withActivity(`Inspecting Spotify ${input.kind}`, () => musicSpotify.inspectEntity(input))
+  ipcMain.handle('music:spotifyEntityState', (_e, input) => musicSpotify.entityState(input))
+  ipcMain.handle('music:spotifyFindEntityCandidates', (_e, input) =>
+    musicSpotify.findEntityCandidates(input)
+  )
+  ipcMain.handle('music:spotifyStartEntityInspection', (_e, input) =>
+    musicSpotify.inspectEntity(input)
   )
   ipcMain.handle('music:spotifyInspectionStatus', () => musicSpotify.getInspectionStatus())
-  ipcMain.handle('music:spotifyCancelInspection', () => musicSpotify.cancelInspection())
+  ipcMain.handle('music:spotifyCancelInspection', (_e, jobId) => musicSpotify.cancelInspection(jobId))
   ipcMain.handle('music:spotifyDownloadEntity', (_e, input) =>
     musicSpotify.startEntityDownload(input)
+  )
+  ipcMain.handle('music:spotifyDownloadQueue', () => musicSpotify.getDownloadQueue())
+  ipcMain.handle('music:spotifyQueueAddEntity', (_e, input) =>
+    musicSpotify.addEntityDownloadQueue(input)
+  )
+  ipcMain.handle('music:spotifyQueueAddPlaylist', (_e, input) =>
+    musicSpotify.addPlaylistDownloadQueue(input)
+  )
+  ipcMain.handle('music:spotifyQueueReorder', (_e, orderedCardIds) =>
+    musicSpotify.reorderDownloadQueue(orderedCardIds)
+  )
+  ipcMain.handle('music:spotifyQueueRemoveCard', (_e, cardId) =>
+    musicSpotify.removeDownloadQueueCard(cardId)
+  )
+  ipcMain.handle('music:spotifyQueueRemoveSelection', (_e, selectionId) =>
+    musicSpotify.removeDownloadQueueSelection(selectionId)
+  )
+  ipcMain.handle('music:spotifyQueueStart', (_e, input) =>
+    musicSpotify.startDownloadQueue(input)
+  )
+  ipcMain.handle('music:spotifyQueueClearCompleted', () =>
+    musicSpotify.clearCompletedDownloadQueue()
   )
   ipcMain.handle('music:spotifyForgetEntitySource', (_e, input) =>
     musicSpotify.forgetEntitySource(input)

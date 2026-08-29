@@ -12,6 +12,7 @@ export interface Toast {
   // is the in-app half, for when NaviHUB is what the user is looking at.
   iconUrl?: string | null
   sub?: string | null
+  action?: { label: string; route: string }
 }
 
 const DISMISS_MS = 6000
@@ -38,7 +39,11 @@ export function dismissToast(id: number): void {
   emit()
 }
 
-export function toast(message: string, kind: Toast['kind'] = 'error'): void {
+export function toast(
+  message: string,
+  kind: Toast['kind'] = 'error',
+  action?: Toast['action']
+): void {
   // A repeated message refreshes the existing toast instead of stacking dupes
   // (e.g. several queries failing with the same IPC error at once).
   const existing = toasts.find((t) => t.message === message && t.kind === kind)
@@ -46,7 +51,7 @@ export function toast(message: string, kind: Toast['kind'] = 'error'): void {
     dismissToast(existing.id)
   }
   const id = nextId++
-  toasts = [...toasts, { id, message, kind }]
+  toasts = [...toasts, { id, message, kind, action }]
   emit()
   setTimeout(() => dismissToast(id), DISMISS_MS)
 }

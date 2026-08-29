@@ -305,6 +305,9 @@ export const qk = {
     downloadStatus: ['music', 'downloadStatus'] as const,
     spotifyDetect: ['music', 'spotifyDetect'] as const,
     spotifyInspectionStatus: ['music', 'spotifyInspectionStatus'] as const,
+    spotifyQueue: ['music', 'spotifyQueue'] as const,
+    spotifyEntityState: (kind: 'artist' | 'album', id: number) =>
+      ['music', 'spotifyEntityState', kind, id] as const,
     artStatus: ['music', 'artStatus'] as const
   },
   gacha: {

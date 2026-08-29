@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -22,8 +22,21 @@ export default function MusicArtistPage() {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const player = usePlayer()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [torrentsOpen, setTorrentsOpen] = useState(false)
   const [spotifyOpen, setSpotifyOpen] = useState(false)
+
+  useEffect(() => {
+    if (searchParams.get('spotify') === 'download') setSpotifyOpen(true)
+  }, [searchParams])
+
+  function closeSpotify(): void {
+    setSpotifyOpen(false)
+    if (searchParams.get('spotify') !== 'download') return
+    const next = new URLSearchParams(searchParams)
+    next.delete('spotify')
+    setSearchParams(next, { replace: true })
+  }
 
   const { data: artist, isLoading } = useQuery({
     queryKey: qk.music.artist(artistId),
@@ -158,7 +171,7 @@ export default function MusicArtistPage() {
           kind="artist"
           entityId={artistId}
           savedUrl={artist.spotifyUrl}
-          onClose={() => setSpotifyOpen(false)}
+          onClose={closeSpotify}
         />
       )}
     </div>

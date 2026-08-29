@@ -71,10 +71,10 @@ export default function PlayerWidgetPage(): React.JSX.Element {
             <CoverImage
               path={snap.coverPath}
               alt={snap.title}
-              className="h-12 w-12 shrink-0"
+              className="h-11 w-11 shrink-0"
               fallback="music"
             />
-            <span className="block w-44 min-w-0">
+            <span className="block w-40 min-w-0">
               <span className="block truncate text-xs font-medium leading-tight">{snap.title}</span>
               {snap.artist && (
                 <span className="block truncate text-[10px] leading-tight text-gray-400">

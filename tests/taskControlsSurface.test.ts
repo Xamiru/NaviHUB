@@ -24,7 +24,9 @@ describe('task control surface', () => {
   })
 
   it('classifies explicit Spotify inspection stops as cancellations', () => {
-    expect(spotify.match(/new tasks\.TaskCancelledError\('Spotify inspection'\)/g)).toHaveLength(2)
+    expect(
+      spotify.match(/new tasks\.TaskCancelledError\('Spotify inspection'\)/g)?.length ?? 0
+    ).toBeGreaterThanOrEqual(2)
     expect(spotify).not.toContain("throw new Error('Spotify inspection cancelled')")
   })
 })

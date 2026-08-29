@@ -1,5 +1,13 @@
 import { getSqlite } from '../db/connection'
-import type { MusicTrack, MusicSpotifyPlaylistEntry } from '@shared/types'
+import type {
+  MusicTrack,
+  MusicSpotifyPlaylistEntry,
+  SpotifyDownloadQueueAddResult,
+  SpotifyDownloadQueueCard,
+  SpotifyDownloadQueueCardState,
+  SpotifyDownloadQueueSelection,
+  SpotifyDownloadQueueSnapshot
+} from '@shared/types'
 
 export interface SpotdlSong {
   spotifyTrackId: string
@@ -30,6 +38,407 @@ export interface LocalMatchCandidate {
   tagArtist: string | null
   albumTitle: string
   duration: number | null
+}
+
+export interface IndexedEntityTrack {
+  providerTrackId: string
+  title: string
+  artists: string[]
+  primaryArtist: string
+  albumTitle: string
+  duration: number | null
+  discNo: number | null
+  trackNo: number | null
+}
+
+export interface IndexedEntityRelease {
+  providerReleaseId: string
+  title: string
+  albumArtist: string
+  year: number | null
+  albumType: 'album' | 'single'
+  tracks: IndexedEntityTrack[]
+}
+
+export interface EntitySnapshotRow {
+  id: number
+  kind: 'artist' | 'album'
+  entityId: number
+  provider: 'itunes' | 'spotdl'
+  providerEntityId: string
+  sourceName: string
+  catalogueState: 'complete' | 'partial'
+  refreshedAt: string
+  spotifyId: string | null
+  releases: Array<{
+    id: number
+    providerReleaseId: string
+    spotifyAlbumId: string | null
+    title: string
+    albumArtist: string
+    year: number | null
+    albumType: 'album' | 'single' | null
+    metadataState: 'indexed' | 'resolved' | 'error'
+    resolutionError: string | null
+    tracks: Array<IndexedEntityTrack & {
+      id: number
+      spotifyTrackId: string | null
+      spotifyUrl: string | null
+      rawJson: string | null
+      matchedTrackId: number | null
+    }>
+  }>
+}
+
+const DOWNLOAD_BYTES_PER_SECOND = 40_000
+const UNKNOWN_TRACK_BYTES = 10 * 1024 * 1024
+
+function estimatedBytes(duration: number | null): number {
+  return Math.ceil((duration == null ? UNKNOWN_TRACK_BYTES : duration * DOWNLOAD_BYTES_PER_SECOND) * 1.05)
+}
+
+function pruneEmptyDownloadQueueCards(): void {
+  getSqlite().prepare(
+    `DELETE FROM music_spotify_download_queue
+     WHERE NOT EXISTS (
+       SELECT 1 FROM music_spotify_download_queue_selection s WHERE s.queue_id = music_spotify_download_queue.id
+     )`
+  ).run()
+}
+
+export function normalizeInterruptedDownloadQueue(): number {
+  return getSqlite().prepare(
+    `UPDATE music_spotify_download_queue
+     SET state='paused', last_error=COALESCE(last_error, 'Paused when NaviHUB closed'),
+         updated_at=datetime('now')
+     WHERE state='running'`
+  ).run().changes
+}
+
+function queuePosition(): number {
+  const row = getSqlite().prepare(
+    'SELECT COALESCE(MAX(position), -1) + 1 AS position FROM music_spotify_download_queue'
+  ).get() as { position: number }
+  return row.position
+}
+
+function queueCardForSource(
+  source: 'entity' | 'playlist',
+  sourceId: number
+): { id: number; state: SpotifyDownloadQueueCardState; allow_mismatch: number } | null {
+  const column = source === 'entity' ? 'snapshot_id' : 'playlist_id'
+  return (getSqlite().prepare(
+    `SELECT id, state, allow_mismatch FROM music_spotify_download_queue WHERE ${column}=?`
+  ).get(sourceId) as { id: number; state: SpotifyDownloadQueueCardState; allow_mismatch: number } | undefined) ?? null
+}
+
+function prepareQueueCard(
+  source: 'entity' | 'playlist',
+  sourceId: number,
+  allowMismatch = false
+): { id: number; state: SpotifyDownloadQueueCardState } {
+  const db = getSqlite()
+  const existing = queueCardForSource(source, sourceId)
+  if (existing) {
+    if (existing.state === 'running') {
+      throw new Error('That source is downloading now. Add more after it finishes or pause it first.')
+    }
+    const nextState = existing.state === 'paused' ? 'paused' : 'queued'
+    db.prepare(
+      `UPDATE music_spotify_download_queue
+       SET state=?, allow_mismatch=?, continue_after=0, last_error=NULL,
+           completed_at=NULL, updated_at=datetime('now') WHERE id=?`
+    ).run(nextState, Number(Boolean(existing.allow_mismatch || allowMismatch)), existing.id)
+    return { id: existing.id, state: nextState }
+  }
+  const snapshotId = source === 'entity' ? sourceId : null
+  const playlistId = source === 'playlist' ? sourceId : null
+  const id = Number(db.prepare(
+    `INSERT INTO music_spotify_download_queue
+     (source_kind, snapshot_id, playlist_id, position, allow_mismatch)
+     VALUES (?, ?, ?, ?, ?)`
+  ).run(source, snapshotId, playlistId, queuePosition(), Number(allowMismatch)).lastInsertRowid)
+  return { id, state: 'queued' }
+}
+
+export function addEntityToDownloadQueue(input: {
+  snapshotId: number
+  releaseIds: number[]
+  allowMismatch?: boolean
+}): SpotifyDownloadQueueAddResult {
+  const db = getSqlite()
+  const snapshot = getEntitySnapshotById(input.snapshotId)
+  if (!snapshot) throw new Error('This saved catalogue no longer exists. Refresh it and try again.')
+  const requested = [...new Set(input.releaseIds.filter(Number.isInteger))]
+  if (!requested.length || requested.some((id) => !snapshot.releases.some((release) => release.id === id))) {
+    throw new Error('Select at least one release from this catalogue')
+  }
+  if (snapshot.kind === 'album' && requested.length !== 1) {
+    throw new Error('An album queue card must target one release')
+  }
+  const missing = snapshot.releases
+    .filter((release) => requested.includes(release.id))
+    .map((release) => ({
+      id: release.id,
+      missing: release.tracks.filter((track) => track.matchedTrackId == null).length
+    }))
+    .filter((release) => release.missing > 0)
+  if (!missing.length) return { jobId: null, addedSelections: 0, missingCount: 0 }
+  let jobId = 0
+  let addedSelections = 0
+  db.transaction(() => {
+    jobId = prepareQueueCard('entity', input.snapshotId, input.allowMismatch)
+      .id
+    const next = db.prepare(
+      `SELECT COALESCE(MAX(position), -1) + 1 AS position
+       FROM music_spotify_download_queue_selection WHERE queue_id=?`
+    )
+    const insert = db.prepare(
+      `INSERT OR IGNORE INTO music_spotify_download_queue_selection
+       (queue_id, release_id, position) VALUES (?, ?, ?)`
+    )
+    for (const release of missing) {
+      const position = (next.get(jobId) as { position: number }).position
+      addedSelections += insert.run(jobId, release.id, position).changes
+    }
+  })()
+  return {
+    jobId,
+    addedSelections,
+    missingCount: missing.reduce((sum, release) => sum + release.missing, 0)
+  }
+}
+
+export function addPlaylistToDownloadQueue(input: {
+  playlistId: number
+  itemIds?: number[]
+}): SpotifyDownloadQueueAddResult {
+  const db = getSqlite()
+  if (!spotifySource(input.playlistId)) throw new Error('That imported Spotify playlist no longer exists')
+  const pending = pendingSpotifyItems(input.playlistId, input.itemIds)
+  if (!pending.length) return { jobId: null, addedSelections: 0, missingCount: 0 }
+  let jobId = 0
+  let addedSelections = 0
+  db.transaction(() => {
+    jobId = prepareQueueCard('playlist', input.playlistId).id
+    const next = db.prepare(
+      `SELECT COALESCE(MAX(position), -1) + 1 AS position
+       FROM music_spotify_download_queue_selection WHERE queue_id=?`
+    )
+    const insert = db.prepare(
+      `INSERT OR IGNORE INTO music_spotify_download_queue_selection
+       (queue_id, playlist_item_id, position) VALUES (?, ?, ?)`
+    )
+    for (const item of pending) {
+      const position = (next.get(jobId) as { position: number }).position
+      addedSelections += insert.run(jobId, item.id as number, position).changes
+    }
+  })()
+  return { jobId, addedSelections, missingCount: pending.length }
+}
+
+function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
+  const db = getSqlite()
+  const releaseRows = db.prepare(
+    `SELECT qs.id, r.id AS source_id, r.title, r.album_artist, r.metadata_state,
+            r.resolution_error,
+            COUNT(t.id) AS track_count,
+            COALESCE(SUM(t.matched_track_id IS NULL), 0) AS missing_count,
+            COALESCE(SUM(t.duration), 0) AS duration,
+            COALESCE(SUM(CASE WHEN t.matched_track_id IS NULL THEN
+              CASE WHEN t.duration IS NULL THEN ? ELSE t.duration * ? END ELSE 0 END), 0) AS missing_bytes
+     FROM music_spotify_download_queue_selection qs
+     JOIN music_spotify_entity_release r ON r.id=qs.release_id
+     LEFT JOIN music_spotify_entity_track t ON t.release_id=r.id
+     WHERE qs.queue_id=? AND qs.release_id IS NOT NULL
+     GROUP BY qs.id, r.id
+     ORDER BY qs.position, qs.id`
+  ).all(UNKNOWN_TRACK_BYTES, DOWNLOAD_BYTES_PER_SECOND, queueId) as Record<string, unknown>[]
+  const playlistRows = db.prepare(
+    `SELECT qs.id, i.id AS source_id, i.title, i.primary_artist, i.duration,
+            i.matched_track_id
+     FROM music_spotify_download_queue_selection qs
+     JOIN music_spotify_playlist_item i ON i.id=qs.playlist_item_id
+     WHERE qs.queue_id=? AND qs.playlist_item_id IS NOT NULL
+     ORDER BY qs.position, qs.id`
+  ).all(queueId) as Record<string, unknown>[]
+  return [
+    ...releaseRows.map((row): SpotifyDownloadQueueSelection => ({
+      id: row.id as number,
+      kind: 'release',
+      sourceId: row.source_id as number,
+      title: row.title as string,
+      subtitle: (row.album_artist as string) ?? null,
+      trackCount: Number(row.track_count),
+      missingCount: Number(row.missing_count),
+      duration: Number(row.duration),
+      missingEstimatedBytes: Math.ceil(Number(row.missing_bytes) * 1.05),
+      metadataState: row.metadata_state as 'indexed' | 'resolved' | 'error',
+      error: (row.resolution_error as string) ?? null
+    })),
+    ...playlistRows.map((row): SpotifyDownloadQueueSelection => {
+      const duration = (row.duration as number) ?? null
+      const missing = row.matched_track_id == null
+      return {
+        id: row.id as number,
+        kind: 'playlistItem',
+        sourceId: row.source_id as number,
+        title: row.title as string,
+        subtitle: (row.primary_artist as string) ?? null,
+        trackCount: 1,
+        missingCount: missing ? 1 : 0,
+        duration: duration ?? 0,
+        missingEstimatedBytes: missing ? estimatedBytes(duration) : 0,
+        metadataState: null,
+        error: null
+      }
+    })
+  ]
+}
+
+export function listDownloadQueue(): SpotifyDownloadQueueSnapshot {
+  pruneEmptyDownloadQueueCards()
+  const rows = getSqlite().prepare(
+    `SELECT q.*, s.artist_id, s.album_id, s.source_name,
+            ar.name AS artist_name, ar.spotify_id AS artist_spotify_id,
+            al.title AS album_title, al.spotify_id AS album_spotify_id,
+            aar.name AS album_artist_name,
+            p.title AS playlist_title, sp.source_url AS playlist_source_url
+     FROM music_spotify_download_queue q
+     LEFT JOIN music_spotify_entity_snapshot s ON s.id=q.snapshot_id
+     LEFT JOIN music_artist ar ON ar.id=s.artist_id
+     LEFT JOIN music_album al ON al.id=s.album_id
+     LEFT JOIN music_artist aar ON aar.id=al.artist_id
+     LEFT JOIN music_playlist p ON p.id=q.playlist_id
+     LEFT JOIN music_spotify_playlist sp ON sp.playlist_id=q.playlist_id
+     ORDER BY q.position, q.id`
+  ).all() as Record<string, unknown>[]
+  const cards = rows.map((row): SpotifyDownloadQueueCard => {
+    const sourceKind = row.source_kind as 'entity' | 'playlist'
+    const entityKind = sourceKind === 'entity'
+      ? row.artist_id != null ? 'artist' : 'album'
+      : null
+    const entityId = entityKind === 'artist'
+      ? row.artist_id as number
+      : entityKind === 'album' ? row.album_id as number : null
+    const playlistId = sourceKind === 'playlist' ? row.playlist_id as number : null
+    const selections = queueSelections(row.id as number)
+    const spotifyId = entityKind === 'artist'
+      ? row.artist_spotify_id as string | null
+      : entityKind === 'album' ? row.album_spotify_id as string | null : null
+    return {
+      id: row.id as number,
+      sourceKind,
+      entityKind,
+      entityId,
+      playlistId,
+      title: sourceKind === 'playlist'
+        ? row.playlist_title as string
+        : entityKind === 'artist' ? row.artist_name as string : row.album_title as string,
+      subtitle: sourceKind === 'playlist'
+        ? 'Imported Spotify playlist'
+        : entityKind === 'artist' ? 'Artist catalogue' : `${row.album_artist_name as string} · Album`,
+      route: sourceKind === 'playlist'
+        ? `/music/playlists/${playlistId}`
+        : `/music/${entityKind === 'artist' ? 'artists' : 'albums'}/${entityId}`,
+      sourceUrl: sourceKind === 'playlist'
+        ? row.playlist_source_url as string
+        : spotifyId ? `https://open.spotify.com/${entityKind}/${spotifyId}` : null,
+      state: row.state as SpotifyDownloadQueueCardState,
+      allowMismatch: Boolean(row.allow_mismatch),
+      continueAfter: Boolean(row.continue_after),
+      error: (row.last_error as string) ?? null,
+      createdAt: row.created_at as string,
+      updatedAt: row.updated_at as string,
+      completedAt: (row.completed_at as string) ?? null,
+      trackCount: selections.reduce((sum, selection) => sum + selection.trackCount, 0),
+      missingCount: selections.reduce((sum, selection) => sum + selection.missingCount, 0),
+      missingEstimatedBytes: selections.reduce(
+        (sum, selection) => sum + selection.missingEstimatedBytes,
+        0
+      ),
+      selections
+    }
+  })
+  const pending = cards.filter((card) => card.state !== 'completed')
+  const completed = cards
+    .filter((card) => card.state === 'completed')
+    .sort((a, b) => (b.completedAt ?? '').localeCompare(a.completedAt ?? ''))
+  return {
+    pending,
+    completed,
+    pendingSources: pending.length,
+    pendingTracks: pending.reduce((sum, card) => sum + card.missingCount, 0),
+    pendingEstimatedBytes: pending.reduce((sum, card) => sum + card.missingEstimatedBytes, 0),
+    activeCardId: cards.find((card) => card.state === 'running')?.id ?? null
+  }
+}
+
+export function getDownloadQueueCard(id: number): SpotifyDownloadQueueCard | null {
+  const snapshot = listDownloadQueue()
+  return [...snapshot.pending, ...snapshot.completed].find((card) => card.id === id) ?? null
+}
+
+export function setDownloadQueueCardState(
+  id: number,
+  state: SpotifyDownloadQueueCardState,
+  error: string | null = null,
+  continueAfter?: boolean
+): void {
+  getSqlite().prepare(
+    `UPDATE music_spotify_download_queue
+     SET state=?, last_error=?, continue_after=COALESCE(?, continue_after),
+         completed_at=CASE WHEN ?='completed' THEN datetime('now') ELSE NULL END,
+         updated_at=datetime('now') WHERE id=?`
+  ).run(state, error, continueAfter == null ? null : Number(continueAfter), state, id)
+}
+
+export function prioritizeDownloadQueueCard(id: number): void {
+  const db = getSqlite()
+  db.transaction(() => {
+    db.prepare('UPDATE music_spotify_download_queue SET position=position+1 WHERE state <> ?').run('running')
+    db.prepare(
+      `UPDATE music_spotify_download_queue SET position=0, updated_at=datetime('now')
+       WHERE id=? AND state <> 'running'`
+    ).run(id)
+  })()
+}
+
+export function reorderDownloadQueue(ids: number[]): void {
+  const unique = [...new Set(ids.filter(Number.isInteger))]
+  const db = getSqlite()
+  const allowed = new Set((db.prepare(
+    `SELECT id FROM music_spotify_download_queue WHERE state NOT IN ('running','completed')`
+  ).all() as { id: number }[]).map((row) => row.id))
+  if (unique.length !== allowed.size || unique.some((id) => !allowed.has(id))) {
+    throw new Error('The download queue changed; reload it before reordering')
+  }
+  db.transaction(() => {
+    const update = db.prepare(
+      `UPDATE music_spotify_download_queue SET position=?, updated_at=datetime('now') WHERE id=?`
+    )
+    unique.forEach((id, position) => update.run(position, id))
+  })()
+}
+
+export function removeDownloadQueueSelection(id: number): void {
+  const db = getSqlite()
+  db.transaction(() => {
+    db.prepare('DELETE FROM music_spotify_download_queue_selection WHERE id=?').run(id)
+    pruneEmptyDownloadQueueCards()
+  })()
+}
+
+export function removeDownloadQueueCard(id: number): void {
+  getSqlite().prepare(
+    `DELETE FROM music_spotify_download_queue WHERE id=? AND state <> 'running'`
+  ).run(id)
+}
+
+export function clearCompletedDownloadQueue(): number {
+  return getSqlite().prepare(
+    `DELETE FROM music_spotify_download_queue WHERE state='completed'`
+  ).run().changes
 }
 
 export function normalizeSpotifyMatch(value: string): string {
@@ -179,7 +588,258 @@ export function rememberEntitySource(kind: 'artist' | 'album', id: number, spoti
 
 export function forgetEntitySource(kind: 'artist' | 'album', id: number): void {
   const table = kind === 'artist' ? 'music_artist' : 'music_album'
-  getSqlite().prepare(`UPDATE ${table} SET spotify_id = NULL, updated_at = datetime('now') WHERE id = ?`).run(id)
+  const db = getSqlite()
+  db.transaction(() => {
+    db.prepare(`DELETE FROM music_spotify_entity_snapshot WHERE ${kind}_id = ?`).run(id)
+    db.prepare(`UPDATE ${table} SET spotify_id = NULL, updated_at = datetime('now') WHERE id = ?`).run(id)
+  })()
+}
+
+export function saveEntitySnapshot(input: {
+  kind: 'artist' | 'album'
+  entityId: number
+  provider: 'itunes' | 'spotdl'
+  providerEntityId: string
+  sourceName: string
+  catalogueState?: 'complete' | 'partial'
+  releases: IndexedEntityRelease[]
+}): number {
+  const db = getSqlite()
+  let snapshotId = 0
+  db.transaction(() => {
+    const idColumn = `${input.kind}_id`
+    const otherColumn = input.kind === 'artist' ? 'album_id' : 'artist_id'
+    const existing = db.prepare(
+      `SELECT id FROM music_spotify_entity_snapshot WHERE ${idColumn} = ?`
+    ).get(input.entityId) as { id: number } | undefined
+    if (existing) {
+      snapshotId = existing.id
+      db.prepare(
+        `UPDATE music_spotify_entity_snapshot
+         SET provider=?, provider_entity_id=?, source_name=?, catalogue_state=?, refreshed_at=datetime('now')
+         WHERE id=?`
+      ).run(
+        input.provider,
+        input.providerEntityId,
+        input.sourceName,
+        input.catalogueState ?? 'complete',
+        snapshotId
+      )
+    } else {
+      snapshotId = Number(db.prepare(
+        `INSERT INTO music_spotify_entity_snapshot
+         (${idColumn}, ${otherColumn}, provider, provider_entity_id, source_name, catalogue_state)
+         VALUES (?, NULL, ?, ?, ?, ?)`
+      ).run(
+        input.entityId,
+        input.provider,
+        input.providerEntityId,
+        input.sourceName,
+        input.catalogueState ?? 'complete'
+      ).lastInsertRowid)
+    }
+
+    const keep = new Set(input.releases.map((release) => release.providerReleaseId))
+    const old = db.prepare(
+      'SELECT id, provider_release_id, metadata_state FROM music_spotify_entity_release WHERE snapshot_id=?'
+    ).all(snapshotId) as { id: number; provider_release_id: string; metadata_state: string }[]
+    const oldByProvider = new Map(old.map((row) => [row.provider_release_id, row]))
+    for (const row of old) {
+      if (!keep.has(row.provider_release_id)) {
+        db.prepare('DELETE FROM music_spotify_entity_release WHERE id=?').run(row.id)
+      }
+    }
+
+    const insertRelease = db.prepare(
+      `INSERT INTO music_spotify_entity_release
+       (snapshot_id, provider_release_id, position, title, album_artist, year, album_type)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    const updateRelease = db.prepare(
+      `UPDATE music_spotify_entity_release
+       SET position=?, title=?, album_artist=?, year=?, album_type=? WHERE id=?`
+    )
+    const insertTrack = db.prepare(
+      `INSERT INTO music_spotify_entity_track
+       (release_id, provider_track_id, position, title, artists_json, primary_artist,
+        album_title, duration, disc_no, track_no, matched_track_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    const candidates = allCandidates()
+    const byTitle = indexCandidates(candidates)
+    input.releases.forEach((release, releaseIndex) => {
+      const previous = oldByProvider.get(release.providerReleaseId)
+      let releaseId: number
+      if (previous) {
+        releaseId = previous.id
+        updateRelease.run(
+          releaseIndex,
+          release.title,
+          release.albumArtist,
+          release.year,
+          release.albumType,
+          releaseId
+        )
+        if (previous.metadata_state === 'resolved') return
+        db.prepare('DELETE FROM music_spotify_entity_track WHERE release_id=?').run(releaseId)
+        db.prepare(
+          `UPDATE music_spotify_entity_release
+           SET metadata_state='indexed', resolution_error=NULL WHERE id=?`
+        ).run(releaseId)
+      } else {
+        releaseId = Number(insertRelease.run(
+          snapshotId,
+          release.providerReleaseId,
+          releaseIndex,
+          release.title,
+          release.albumArtist,
+          release.year,
+          release.albumType
+        ).lastInsertRowid)
+      }
+      release.tracks.forEach((track, trackIndex) => {
+        const matched = matchSpotifySong(
+          {
+            title: track.title,
+            primaryArtist: track.primaryArtist,
+            albumTitle: track.albumTitle,
+            duration: track.duration
+          },
+          byTitle.get(normalizeSpotifyMatch(track.title)) ?? []
+        )
+        insertTrack.run(
+          releaseId,
+          track.providerTrackId,
+          trackIndex,
+          track.title,
+          JSON.stringify(track.artists),
+          track.primaryArtist,
+          track.albumTitle,
+          track.duration,
+          track.discNo,
+          track.trackNo,
+          matched
+        )
+      })
+    })
+  })()
+  pruneEmptyDownloadQueueCards()
+  return snapshotId
+}
+
+export function getEntitySnapshot(kind: 'artist' | 'album', entityId: number): EntitySnapshotRow | null {
+  const db = getSqlite()
+  const snapshot = db.prepare(
+    `SELECT s.*, ${kind === 'artist' ? 'ar.spotify_id' : 'al.spotify_id'} AS spotify_id
+     FROM music_spotify_entity_snapshot s
+     ${kind === 'artist' ? 'JOIN music_artist ar ON ar.id=s.artist_id' : 'JOIN music_album al ON al.id=s.album_id'}
+     WHERE s.${kind}_id=?`
+  ).get(entityId) as Record<string, unknown> | undefined
+  if (!snapshot) return null
+  const releaseRows = db.prepare(
+    'SELECT * FROM music_spotify_entity_release WHERE snapshot_id=? ORDER BY position, id'
+  ).all(snapshot.id) as Record<string, unknown>[]
+  const trackStmt = db.prepare(
+    'SELECT * FROM music_spotify_entity_track WHERE release_id=? ORDER BY position, id'
+  )
+  return {
+    id: snapshot.id as number,
+    kind,
+    entityId,
+    provider: snapshot.provider as 'itunes' | 'spotdl',
+    providerEntityId: snapshot.provider_entity_id as string,
+    sourceName: snapshot.source_name as string,
+    catalogueState: snapshot.catalogue_state as 'complete' | 'partial',
+    refreshedAt: snapshot.refreshed_at as string,
+    spotifyId: (snapshot.spotify_id as string) ?? null,
+    releases: releaseRows.map((release) => ({
+      id: release.id as number,
+      providerReleaseId: release.provider_release_id as string,
+      spotifyAlbumId: (release.spotify_album_id as string) ?? null,
+      title: release.title as string,
+      albumArtist: release.album_artist as string,
+      year: (release.year as number) ?? null,
+      albumType: (release.album_type as 'album' | 'single') ?? null,
+      metadataState: release.metadata_state as 'indexed' | 'resolved' | 'error',
+      resolutionError: (release.resolution_error as string) ?? null,
+      tracks: (trackStmt.all(release.id) as Record<string, unknown>[]).map((track) => ({
+        id: track.id as number,
+        providerTrackId: track.provider_track_id as string,
+        spotifyTrackId: (track.spotify_track_id as string) ?? null,
+        title: track.title as string,
+        artists: JSON.parse(track.artists_json as string) as string[],
+        primaryArtist: track.primary_artist as string,
+        albumTitle: track.album_title as string,
+        duration: (track.duration as number) ?? null,
+        discNo: (track.disc_no as number) ?? null,
+        trackNo: (track.track_no as number) ?? null,
+        spotifyUrl: (track.spotify_url as string) ?? null,
+        rawJson: (track.raw_json as string) ?? null,
+        matchedTrackId: (track.matched_track_id as number) ?? null
+      }))
+    }))
+  }
+}
+
+export function getEntitySnapshotById(snapshotId: number): EntitySnapshotRow | null {
+  const row = getSqlite().prepare(
+    'SELECT artist_id, album_id FROM music_spotify_entity_snapshot WHERE id=?'
+  ).get(snapshotId) as { artist_id: number | null; album_id: number | null } | undefined
+  if (!row) return null
+  return row.artist_id != null
+    ? getEntitySnapshot('artist', row.artist_id)
+    : row.album_id != null
+      ? getEntitySnapshot('album', row.album_id)
+      : null
+}
+
+export function resolveEntityRelease(releaseId: number, songs: SpotdlSong[]): void {
+  const db = getSqlite()
+  if (!songs.length) throw new Error('No Spotify tracks were resolved for that release')
+  const release = db.prepare(
+    `SELECT r.id, r.snapshot_id, s.artist_id, s.album_id
+     FROM music_spotify_entity_release r
+     JOIN music_spotify_entity_snapshot s ON s.id=r.snapshot_id WHERE r.id=?`
+  ).get(releaseId) as Record<string, unknown> | undefined
+  if (!release) throw new Error('That saved release no longer exists')
+  const matches = matchDetails(songs)
+  db.transaction(() => {
+    db.prepare(
+      `UPDATE music_spotify_entity_release
+       SET spotify_album_id=?, metadata_state='resolved', resolution_error=NULL WHERE id=?`
+    ).run(songs[0].spotifyAlbumId, releaseId)
+    db.prepare('DELETE FROM music_spotify_entity_track WHERE release_id=?').run(releaseId)
+    const insert = db.prepare(
+      `INSERT INTO music_spotify_entity_track
+       (release_id, provider_track_id, spotify_track_id, position, title, artists_json,
+        primary_artist, album_title, duration, disc_no, track_no, spotify_url, raw_json,
+        matched_track_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    songs.forEach((song, index) => insert.run(
+      releaseId,
+      song.spotifyTrackId,
+      song.spotifyTrackId,
+      index,
+      song.title,
+      JSON.stringify(song.artists),
+      song.primaryArtist,
+      song.albumTitle,
+      song.duration,
+      song.discNo,
+      song.trackNo,
+      song.spotifyUrl,
+      song.rawJson,
+      matches.get(song.spotifyTrackId)?.id ?? null
+    ))
+  })()
+}
+
+export function markEntityReleaseError(releaseId: number, message: string): void {
+  getSqlite().prepare(
+    `UPDATE music_spotify_entity_release
+     SET metadata_state='error', resolution_error=? WHERE id=?`
+  ).run(message, releaseId)
 }
 
 export function linkUnambiguousSources(
@@ -236,6 +896,15 @@ export function resolveAllSpotifyItems(): number {
   const update = db.prepare(
     'UPDATE music_spotify_playlist_item SET matched_track_id = ? WHERE id = ?'
   )
+  const entityItems = db
+    .prepare(
+      `SELECT id, title, primary_artist, album_title, duration
+       FROM music_spotify_entity_track`
+    )
+    .all() as Record<string, unknown>[]
+  const updateEntity = db.prepare(
+    'UPDATE music_spotify_entity_track SET matched_track_id = ? WHERE id = ?'
+  )
   let resolved = 0
   const tx = db.transaction(() => {
     for (const row of items) {
@@ -249,6 +918,19 @@ export function resolveAllSpotifyItems(): number {
         byTitle.get(normalizeSpotifyMatch(row.title as string)) ?? []
       )
       update.run(match, row.id)
+      if (match != null) resolved += 1
+    }
+    for (const row of entityItems) {
+      const match = matchSpotifySong(
+        {
+          title: row.title as string,
+          primaryArtist: row.primary_artist as string,
+          albumTitle: row.album_title as string,
+          duration: (row.duration as number) ?? null
+        },
+        byTitle.get(normalizeSpotifyMatch(row.title as string)) ?? []
+      )
+      updateEntity.run(match, row.id)
       if (match != null) resolved += 1
     }
   })
@@ -339,6 +1021,7 @@ export function removeSpotifyItem(itemId: number): void {
     .get(itemId) as { playlist_id: number } | undefined
   if (!row) return
   db.prepare('DELETE FROM music_spotify_playlist_item WHERE id = ?').run(itemId)
+  pruneEmptyDownloadQueueCards()
   db.prepare(`UPDATE music_playlist SET updated_at = datetime('now') WHERE id = ?`).run(
     row.playlist_id
   )

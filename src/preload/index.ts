@@ -436,10 +436,26 @@ const api: NaviApi = {
     spotifyImportPlaylist: (url) => ipcRenderer.invoke('music:spotifyImportPlaylist', url),
     spotifyDownloadPlaylist: (input) =>
       ipcRenderer.invoke('music:spotifyDownloadPlaylist', input),
-    spotifyInspectEntity: (input) => ipcRenderer.invoke('music:spotifyInspectEntity', input),
+    spotifyEntityState: (input) => ipcRenderer.invoke('music:spotifyEntityState', input),
+    spotifyFindEntityCandidates: (input) =>
+      ipcRenderer.invoke('music:spotifyFindEntityCandidates', input),
+    spotifyStartEntityInspection: (input) =>
+      ipcRenderer.invoke('music:spotifyStartEntityInspection', input),
     spotifyInspectionStatus: () => ipcRenderer.invoke('music:spotifyInspectionStatus'),
-    spotifyCancelInspection: () => ipcRenderer.invoke('music:spotifyCancelInspection'),
+    spotifyCancelInspection: (jobId) => ipcRenderer.invoke('music:spotifyCancelInspection', jobId),
     spotifyDownloadEntity: (input) => ipcRenderer.invoke('music:spotifyDownloadEntity', input),
+    spotifyDownloadQueue: () => ipcRenderer.invoke('music:spotifyDownloadQueue'),
+    spotifyQueueAddEntity: (input) => ipcRenderer.invoke('music:spotifyQueueAddEntity', input),
+    spotifyQueueAddPlaylist: (input) => ipcRenderer.invoke('music:spotifyQueueAddPlaylist', input),
+    spotifyQueueReorder: (orderedCardIds) =>
+      ipcRenderer.invoke('music:spotifyQueueReorder', orderedCardIds),
+    spotifyQueueRemoveCard: (cardId) =>
+      ipcRenderer.invoke('music:spotifyQueueRemoveCard', cardId),
+    spotifyQueueRemoveSelection: (selectionId) =>
+      ipcRenderer.invoke('music:spotifyQueueRemoveSelection', selectionId),
+    spotifyQueueStart: (input) => ipcRenderer.invoke('music:spotifyQueueStart', input),
+    spotifyQueueClearCompleted: () =>
+      ipcRenderer.invoke('music:spotifyQueueClearCompleted'),
     spotifyForgetEntitySource: (input) =>
       ipcRenderer.invoke('music:spotifyForgetEntitySource', input),
     spotifyRemoveItem: (itemId) => ipcRenderer.invoke('music:spotifyRemoveItem', itemId),

@@ -949,6 +949,139 @@ export const musicSpotifyPlaylistItem = sqliteTable(
   })
 )
 
+export const musicSpotifyEntitySnapshot = sqliteTable(
+  'music_spotify_entity_snapshot',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    artistId: integer('artist_id').references(() => musicArtist.id, { onDelete: 'cascade' }),
+    albumId: integer('album_id').references(() => musicAlbum.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    providerEntityId: text('provider_entity_id').notNull(),
+    sourceName: text('source_name').notNull(),
+    catalogueState: text('catalogue_state').notNull().default('complete'),
+    refreshedAt: text('refreshed_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    uniqArtist: unique('uniq_music_spotify_entity_snapshot_artist').on(t.artistId),
+    uniqAlbum: unique('uniq_music_spotify_entity_snapshot_album').on(t.albumId)
+  })
+)
+
+export const musicSpotifyEntityRelease = sqliteTable(
+  'music_spotify_entity_release',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    snapshotId: integer('snapshot_id')
+      .notNull()
+      .references(() => musicSpotifyEntitySnapshot.id, { onDelete: 'cascade' }),
+    providerReleaseId: text('provider_release_id').notNull(),
+    spotifyAlbumId: text('spotify_album_id'),
+    position: integer('position').notNull().default(0),
+    title: text('title').notNull(),
+    albumArtist: text('album_artist').notNull(),
+    year: integer('year'),
+    albumType: text('album_type'),
+    metadataState: text('metadata_state').notNull().default('indexed'),
+    resolutionError: text('resolution_error')
+  },
+  (t) => ({
+    bySnapshot: index('idx_music_spotify_entity_release_snapshot').on(t.snapshotId),
+    bySpotify: index('idx_music_spotify_entity_release_spotify').on(t.spotifyAlbumId),
+    uniq: unique('uniq_music_spotify_entity_release').on(t.snapshotId, t.providerReleaseId)
+  })
+)
+
+export const musicSpotifyEntityTrack = sqliteTable(
+  'music_spotify_entity_track',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    releaseId: integer('release_id')
+      .notNull()
+      .references(() => musicSpotifyEntityRelease.id, { onDelete: 'cascade' }),
+    providerTrackId: text('provider_track_id').notNull(),
+    spotifyTrackId: text('spotify_track_id'),
+    position: integer('position').notNull().default(0),
+    title: text('title').notNull(),
+    artistsJson: text('artists_json').notNull(),
+    primaryArtist: text('primary_artist').notNull(),
+    albumTitle: text('album_title').notNull(),
+    duration: real('duration'),
+    discNo: integer('disc_no'),
+    trackNo: integer('track_no'),
+    spotifyUrl: text('spotify_url'),
+    rawJson: text('raw_json'),
+    matchedTrackId: integer('matched_track_id').references(() => musicTrack.id, {
+      onDelete: 'set null'
+    })
+  },
+  (t) => ({
+    byRelease: index('idx_music_spotify_entity_track_release').on(t.releaseId),
+    byMatch: index('idx_music_spotify_entity_track_match').on(t.matchedTrackId),
+    uniq: unique('uniq_music_spotify_entity_track').on(t.releaseId, t.providerTrackId)
+  })
+)
+
+export const musicSpotifyDownloadQueue = sqliteTable(
+  'music_spotify_download_queue',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    sourceKind: text('source_kind').notNull(),
+    snapshotId: integer('snapshot_id').references(() => musicSpotifyEntitySnapshot.id, {
+      onDelete: 'cascade'
+    }),
+    playlistId: integer('playlist_id').references(() => musicSpotifyPlaylist.playlistId, {
+      onDelete: 'cascade'
+    }),
+    position: integer('position').notNull().default(0),
+    state: text('state').notNull().default('queued'),
+    allowMismatch: integer('allow_mismatch', { mode: 'boolean' }).notNull().default(false),
+    continueAfter: integer('continue_after', { mode: 'boolean' }).notNull().default(false),
+    lastError: text('last_error'),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`),
+    completedAt: text('completed_at')
+  },
+  (t) => ({
+    byOrder: index('idx_music_spotify_download_queue_order').on(t.state, t.position, t.id),
+    uniqSnapshot: unique('uniq_music_spotify_download_queue_snapshot').on(t.snapshotId),
+    uniqPlaylist: unique('uniq_music_spotify_download_queue_playlist').on(t.playlistId)
+  })
+)
+
+export const musicSpotifyDownloadQueueSelection = sqliteTable(
+  'music_spotify_download_queue_selection',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    queueId: integer('queue_id')
+      .notNull()
+      .references(() => musicSpotifyDownloadQueue.id, { onDelete: 'cascade' }),
+    releaseId: integer('release_id').references(() => musicSpotifyEntityRelease.id, {
+      onDelete: 'cascade'
+    }),
+    playlistItemId: integer('playlist_item_id').references(() => musicSpotifyPlaylistItem.id, {
+      onDelete: 'cascade'
+    }),
+    position: integer('position').notNull().default(0)
+  },
+  (t) => ({
+    byQueue: index('idx_music_spotify_download_queue_selection_queue').on(
+      t.queueId,
+      t.position,
+      t.id
+    ),
+    uniqRelease: unique('uniq_music_spotify_download_queue_selection_release').on(
+      t.queueId,
+      t.releaseId
+    ),
+    uniqPlaylistItem: unique('uniq_music_spotify_download_queue_selection_playlist_item').on(
+      t.queueId,
+      t.playlistItemId
+    )
+  })
+)
+
 export const musicPlayLog = sqliteTable(
   'music_play_log',
   {

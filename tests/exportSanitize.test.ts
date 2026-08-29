@@ -62,6 +62,22 @@ function seed(): void {
        album_title, spotify_url, raw_json, matched_track_id)
       VALUES (1, 'spotify-track', 0, 'Airbag', '["Radiohead"]', 'Radiohead', 'OK Computer',
               'https://open.spotify.com/track/spotify-track', '{"secret":"source metadata"}', 1);
+    INSERT INTO music_spotify_entity_snapshot
+      (id, artist_id, provider, provider_entity_id, source_name)
+      VALUES (1, 1, 'itunes', 'itunes-artist', 'Radiohead');
+    INSERT INTO music_spotify_entity_release
+      (id, snapshot_id, provider_release_id, position, title, album_artist, album_type)
+      VALUES (1, 1, 'itunes-album', 0, 'OK Computer', 'Radiohead', 'album');
+    INSERT INTO music_spotify_entity_track
+      (release_id, provider_track_id, position, title, artists_json, primary_artist,
+       album_title, duration, matched_track_id)
+      VALUES (1, 'itunes-track', 0, 'Airbag', '["Radiohead"]', 'Radiohead',
+              'OK Computer', 200, 1);
+    INSERT INTO music_spotify_download_queue
+      (id, source_kind, snapshot_id, position, state)
+      VALUES (1, 'entity', 1, 0, 'queued');
+    INSERT INTO music_spotify_download_queue_selection
+      (queue_id, release_id, position) VALUES (1, 1, 0);
     INSERT INTO music_play_log (track_id, duration) VALUES (1, 284);
 
     INSERT INTO manga_chapter (media_id, dir_path, title, last_read_page, read_at)
@@ -207,6 +223,9 @@ describe('export sanitize', () => {
       'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log', 'jp_ghost',
       'music_artist', 'music_album', 'music_track', 'music_playlist',
       'music_playlist_track', 'music_spotify_playlist', 'music_spotify_playlist_item',
+      'music_spotify_entity_snapshot', 'music_spotify_entity_release',
+      'music_spotify_entity_track', 'music_spotify_download_queue',
+      'music_spotify_download_queue_selection',
       'music_play_log', 'manga_chapter', 'media_image', 'slideshow_item',
       'quiz_session',
       'game_session',
@@ -232,7 +251,7 @@ describe('export sanitize', () => {
   it('tolerates a live DB that predates newer tables', () => {
     const older = createTestDb()
     older.exec(
-      'DROP TABLE music_play_log; DROP TABLE music_spotify_playlist_item; DROP TABLE music_spotify_playlist; DROP TABLE music_playlist_track; DROP TABLE music_playlist'
+      'DROP TABLE music_play_log; DROP TABLE music_spotify_download_queue_selection; DROP TABLE music_spotify_download_queue; DROP TABLE music_spotify_entity_track; DROP TABLE music_spotify_entity_release; DROP TABLE music_spotify_entity_snapshot; DROP TABLE music_spotify_playlist_item; DROP TABLE music_spotify_playlist; DROP TABLE music_playlist_track; DROP TABLE music_playlist'
     )
     older.exec(`INSERT INTO media_item (id, media_type, title, status) VALUES (1, 'anime', 'X', 'Watching')`)
     expect(() => sanitizeDb(older)).not.toThrow()
@@ -298,6 +317,9 @@ describe('custom export policy', () => {
     expect(count('music_playlist')).toBe(1)
     expect(count('music_spotify_playlist')).toBe(1)
     expect(count('music_spotify_playlist_item')).toBe(1)
+    expect(count('music_spotify_entity_snapshot')).toBe(0)
+    expect(count('music_spotify_download_queue')).toBe(0)
+    expect(count('music_spotify_download_queue_selection')).toBe(0)
     expect(
       db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item').get()
     ).toEqual({ matched_track_id: null })

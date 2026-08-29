@@ -60,6 +60,10 @@ describe('adaptive archive navigation', () => {
 
   it('switches contextual navigation with the active section', () => {
     expect(archiveContextForPath('/music/liked').title).toBe('Sonic archive')
+    expect(archiveContextForPath('/music/downloads').items).toContainEqual({
+      to: '/music/downloads',
+      label: 'Downloads'
+    })
     expect(archiveContextForPath('/english/review').title).toBe('English mistake ledger')
     expect(archiveContextForPath('/programming/sql').items).toContainEqual({
       to: '/programming/sql',

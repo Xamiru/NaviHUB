@@ -2687,11 +2687,22 @@ export interface SpotifyEntityInspectInput {
   kind: SpotifyEntityKind
   entityId: number
   url?: string
+  candidateKey?: string
+  refresh?: boolean
+}
+
+export interface SpotifyEntityCandidate {
+  candidateKey: string
+  name: string
+  secondary: string | null
+  year: number | null
+  exact: boolean
 }
 
 export interface SpotifyReleasePreview {
-  spotifyAlbumId: string
-  spotifyUrl: string
+  releaseId: number
+  spotifyAlbumId: string | null
+  spotifyUrl: string | null
   title: string
   albumArtist: string
   year: number | null
@@ -2704,15 +2715,20 @@ export interface SpotifyReleasePreview {
   missingDuration: number
   missingEstimatedBytes: number
   preselected: boolean
+  metadataState: 'indexed' | 'resolved' | 'error'
+  resolutionError: string | null
 }
 
 export interface SpotifyEntityInspection {
-  inspectionId: string
+  snapshotId: number
   kind: SpotifyEntityKind
   entityId: number
-  sourceId: string
-  sourceUrl: string
+  sourceId: string | null
+  sourceUrl: string | null
   sourceName: string
+  provider: 'itunes' | 'spotdl'
+  refreshedAt: string
+  catalogueState: 'complete' | 'partial'
   matchesCurrentEntity: boolean
   mismatchMessage: string | null
   duplicateCount: number
@@ -2720,20 +2736,95 @@ export interface SpotifyEntityInspection {
   releases: SpotifyReleasePreview[]
 }
 
+export type SpotifyEntityState =
+  | { state: 'empty'; inspection: null; jobId: null; error: null }
+  | { state: 'building'; inspection: null; jobId: string; error: null }
+  | { state: 'ready'; inspection: SpotifyEntityInspection; jobId: null; error: null }
+  | { state: 'error'; inspection: null; jobId: null; error: string }
+
 export interface SpotifyEntityInspectionStatus {
   running: boolean
+  jobId: string | null
   kind: SpotifyEntityKind | null
   entityId: number | null
-  phase: 'idle' | 'discovering' | 'catalogue' | 'matching'
+  phase: 'idle' | 'candidateSearch' | 'catalogue' | 'spotifyFallback' | 'matching' | 'cancelling' | 'done' | 'error'
   message: string | null
   foundCount: number | null
   cancelled: boolean
+  startedAt: number | null
+  elapsedMs: number
+  provider: 'itunes' | 'spotdl' | null
 }
 
 export interface SpotifyEntityDownloadInput {
-  inspectionId: string
-  albumIds: string[]
+  snapshotId: number
+  releaseIds: number[]
   allowMismatch?: boolean
+}
+
+export type SpotifyDownloadQueueCardState =
+  | 'queued'
+  | 'running'
+  | 'paused'
+  | 'failed'
+  | 'completed'
+
+export interface SpotifyDownloadQueueSelection {
+  id: number
+  kind: 'release' | 'playlistItem'
+  sourceId: number
+  title: string
+  subtitle: string | null
+  trackCount: number
+  missingCount: number
+  duration: number
+  missingEstimatedBytes: number
+  metadataState: 'indexed' | 'resolved' | 'error' | null
+  error: string | null
+}
+
+export interface SpotifyDownloadQueueCard {
+  id: number
+  sourceKind: 'entity' | 'playlist'
+  entityKind: SpotifyEntityKind | null
+  entityId: number | null
+  playlistId: number | null
+  title: string
+  subtitle: string | null
+  route: string
+  sourceUrl: string | null
+  state: SpotifyDownloadQueueCardState
+  allowMismatch: boolean
+  continueAfter: boolean
+  error: string | null
+  createdAt: string
+  updatedAt: string
+  completedAt: string | null
+  trackCount: number
+  missingCount: number
+  missingEstimatedBytes: number
+  selections: SpotifyDownloadQueueSelection[]
+}
+
+export interface SpotifyDownloadQueueSnapshot {
+  pending: SpotifyDownloadQueueCard[]
+  completed: SpotifyDownloadQueueCard[]
+  pendingSources: number
+  pendingTracks: number
+  pendingEstimatedBytes: number
+  activeCardId: number | null
+}
+
+export interface SpotifyDownloadQueueAddResult {
+  jobId: number | null
+  addedSelections: number
+  missingCount: number
+}
+
+export interface SpotifyDownloadQueueStartInput {
+  jobId?: number
+  prioritize?: boolean
+  resume?: boolean
 }
 
 export interface SpotifyEntityRef {
@@ -2798,19 +2889,26 @@ export interface MusicDownloadInput {
 // Live status of the (single) active or last-finished download; polled.
 export interface MusicDownloadEvent {
   id: string
-  status: 'starting' | 'downloading' | 'processing' | 'done' | 'error' | 'cancelled'
+  taskId?: string | null
+  status: 'starting' | 'resolving' | 'downloading' | 'processing' | 'pausing' | 'paused' | 'cancelling' | 'done' | 'error' | 'cancelled'
   percent: number | null
   itemIndex: number | null // "item 3 of 12" for playlist/album URLs
   itemCount: number | null
   title: string | null // current file being downloaded
   message: string | null // error text / phase note
-  source?: 'url' | 'spotify' | 'spotifyEntity'
+  source?: 'url' | 'spotify' | 'spotifyEntity' | 'spotifyQueue'
   playlistId?: number | null
   entityKind?: SpotifyEntityKind
   entityId?: number | null
   route?: string | null
   resolvedCount?: number
   failedCount?: number
+  phase?: string | null
+  releaseIndex?: number | null
+  releaseCount?: number | null
+  releaseTitle?: string | null
+  startedAt?: number | null
+  queueCardId?: number | null
 }
 
 export interface YtDlpDetectResult {
@@ -2863,6 +2961,7 @@ export type TaskKind =
   | 'libraryRefresh'
   | 'wrestlingImport'
   | 'musicDownload'
+  | 'musicMetadata'
   | 'mangaOcr'
   | 'videoPrepare'
   | 'appUpdate'

@@ -282,6 +282,7 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
       title: 'Sonic archive',
       items: [
         { to: '/music', label: 'Library' },
+        { to: '/music/downloads', label: 'Downloads' },
         { to: '/music/liked', label: 'Liked' },
         { to: '/music/stats', label: 'Listening Stats' },
         { to: '/now-playing', label: 'Now Playing' }

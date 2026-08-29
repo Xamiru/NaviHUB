@@ -103,6 +103,7 @@ export function SortableRow({
     <button
       className="cursor-grab touch-none px-1 text-gray-500 hover:text-white"
       title="Drag to reorder"
+      aria-label="Drag to reorder"
       {...attributes}
       {...listeners}
     >

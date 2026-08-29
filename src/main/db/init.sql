@@ -687,6 +687,101 @@ CREATE TABLE IF NOT EXISTS music_spotify_playlist_item (
 CREATE INDEX IF NOT EXISTS idx_music_spotify_item_playlist ON music_spotify_playlist_item(playlist_id);
 CREATE INDEX IF NOT EXISTS idx_music_spotify_item_match ON music_spotify_playlist_item(matched_track_id);
 
+-- Persistent artist/album completion snapshots. The fast catalogue index is
+-- stored independently from the local scan, while authoritative spotDL rows
+-- progressively replace indexed metadata release by release.
+CREATE TABLE IF NOT EXISTS music_spotify_entity_snapshot (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  artist_id           INTEGER REFERENCES music_artist(id) ON DELETE CASCADE,
+  album_id            INTEGER REFERENCES music_album(id) ON DELETE CASCADE,
+  provider            TEXT NOT NULL CHECK(provider IN ('itunes','spotdl')),
+  provider_entity_id  TEXT NOT NULL,
+  source_name         TEXT NOT NULL,
+  catalogue_state     TEXT NOT NULL DEFAULT 'complete' CHECK(catalogue_state IN ('complete','partial')),
+  refreshed_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  CHECK((artist_id IS NULL) <> (album_id IS NULL)),
+  UNIQUE(artist_id),
+  UNIQUE(album_id)
+);
+
+CREATE TABLE IF NOT EXISTS music_spotify_entity_release (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  snapshot_id         INTEGER NOT NULL REFERENCES music_spotify_entity_snapshot(id) ON DELETE CASCADE,
+  provider_release_id TEXT NOT NULL,
+  spotify_album_id    TEXT,
+  position            INTEGER NOT NULL DEFAULT 0,
+  title               TEXT NOT NULL,
+  album_artist        TEXT NOT NULL,
+  year                INTEGER,
+  album_type          TEXT CHECK(album_type IN ('album','single')),
+  metadata_state      TEXT NOT NULL DEFAULT 'indexed' CHECK(metadata_state IN ('indexed','resolved','error')),
+  resolution_error    TEXT,
+  UNIQUE(snapshot_id, provider_release_id)
+);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_entity_release_snapshot ON music_spotify_entity_release(snapshot_id);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_entity_release_spotify ON music_spotify_entity_release(spotify_album_id);
+
+CREATE TABLE IF NOT EXISTS music_spotify_entity_track (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  release_id          INTEGER NOT NULL REFERENCES music_spotify_entity_release(id) ON DELETE CASCADE,
+  provider_track_id   TEXT NOT NULL,
+  spotify_track_id    TEXT,
+  position            INTEGER NOT NULL DEFAULT 0,
+  title               TEXT NOT NULL,
+  artists_json        TEXT NOT NULL,
+  primary_artist      TEXT NOT NULL,
+  album_title         TEXT NOT NULL,
+  duration            REAL,
+  disc_no             INTEGER,
+  track_no            INTEGER,
+  spotify_url         TEXT,
+  raw_json            TEXT,
+  matched_track_id    INTEGER REFERENCES music_track(id) ON DELETE SET NULL,
+  UNIQUE(release_id, provider_track_id)
+);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_entity_track_release ON music_spotify_entity_track(release_id);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_entity_track_match ON music_spotify_entity_track(matched_track_id);
+
+-- Durable download intent for saved Spotify catalogues and imported playlist
+-- snapshots. Runtime task state remains in the task registry; these rows are
+-- what make queued, paused, failed and completed work survive app restarts.
+CREATE TABLE IF NOT EXISTS music_spotify_download_queue (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  source_kind         TEXT NOT NULL CHECK(source_kind IN ('entity','playlist')),
+  snapshot_id         INTEGER REFERENCES music_spotify_entity_snapshot(id) ON DELETE CASCADE,
+  playlist_id         INTEGER REFERENCES music_spotify_playlist(playlist_id) ON DELETE CASCADE,
+  position            INTEGER NOT NULL DEFAULT 0,
+  state               TEXT NOT NULL DEFAULT 'queued'
+                      CHECK(state IN ('queued','running','paused','failed','completed')),
+  allow_mismatch      INTEGER NOT NULL DEFAULT 0 CHECK(allow_mismatch IN (0,1)),
+  continue_after      INTEGER NOT NULL DEFAULT 0 CHECK(continue_after IN (0,1)),
+  last_error          TEXT,
+  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  completed_at        TEXT,
+  CHECK(
+    (source_kind = 'entity' AND snapshot_id IS NOT NULL AND playlist_id IS NULL) OR
+    (source_kind = 'playlist' AND snapshot_id IS NULL AND playlist_id IS NOT NULL)
+  ),
+  UNIQUE(snapshot_id),
+  UNIQUE(playlist_id)
+);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_download_queue_order
+  ON music_spotify_download_queue(state, position, id);
+
+CREATE TABLE IF NOT EXISTS music_spotify_download_queue_selection (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  queue_id            INTEGER NOT NULL REFERENCES music_spotify_download_queue(id) ON DELETE CASCADE,
+  release_id          INTEGER REFERENCES music_spotify_entity_release(id) ON DELETE CASCADE,
+  playlist_item_id    INTEGER REFERENCES music_spotify_playlist_item(id) ON DELETE CASCADE,
+  position            INTEGER NOT NULL DEFAULT 0,
+  CHECK((release_id IS NULL) <> (playlist_item_id IS NULL)),
+  UNIQUE(queue_id, release_id),
+  UNIQUE(queue_id, playlist_item_id)
+);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_download_queue_selection_queue
+  ON music_spotify_download_queue_selection(queue_id, position, id);
+
 -- Append-only play log (one row per counted play — the same 10s rule as
 -- play_count, see MusicPlayLogger). duration snapshots the track length at
 -- play time so listening-time math survives later re-tags. Rows die with the

@@ -251,11 +251,16 @@ import type {
   MusicPlaylistDetail,
   MusicPlaylistSummary,
   SpotifyDownloadInput,
+  SpotifyDownloadQueueAddResult,
+  SpotifyDownloadQueueSnapshot,
+  SpotifyDownloadQueueStartInput,
   SpotifyEntityDownloadInput,
+  SpotifyEntityCandidate,
   SpotifyEntityInspectInput,
   SpotifyEntityInspection,
   SpotifyEntityInspectionStatus,
   SpotifyEntityRef,
+  SpotifyEntityState,
   SpotifyImportResult,
   SpotdlDetectResult,
   MusicScanStatus,
@@ -1015,10 +1020,20 @@ export interface NaviApi {
     reorderPlaylist(playlistId: number, orderedItemIds: number[]): Promise<void>
     spotifyImportPlaylist(url: string): Promise<SpotifyImportResult>
     spotifyDownloadPlaylist(input: SpotifyDownloadInput): Promise<{ id: string }>
-    spotifyInspectEntity(input: SpotifyEntityInspectInput): Promise<SpotifyEntityInspection>
+    spotifyEntityState(input: SpotifyEntityRef): Promise<SpotifyEntityState>
+    spotifyFindEntityCandidates(input: SpotifyEntityRef & { query?: string }): Promise<SpotifyEntityCandidate[]>
+    spotifyStartEntityInspection(input: SpotifyEntityInspectInput): Promise<SpotifyEntityInspection>
     spotifyInspectionStatus(): Promise<SpotifyEntityInspectionStatus>
-    spotifyCancelInspection(): Promise<void>
+    spotifyCancelInspection(jobId?: string): Promise<void>
     spotifyDownloadEntity(input: SpotifyEntityDownloadInput): Promise<{ id: string | null }>
+    spotifyDownloadQueue(): Promise<SpotifyDownloadQueueSnapshot>
+    spotifyQueueAddEntity(input: SpotifyEntityDownloadInput): Promise<SpotifyDownloadQueueAddResult>
+    spotifyQueueAddPlaylist(input: SpotifyDownloadInput): Promise<SpotifyDownloadQueueAddResult>
+    spotifyQueueReorder(orderedCardIds: number[]): Promise<void>
+    spotifyQueueRemoveCard(cardId: number): Promise<void>
+    spotifyQueueRemoveSelection(selectionId: number): Promise<void>
+    spotifyQueueStart(input?: SpotifyDownloadQueueStartInput): Promise<{ id: string | null }>
+    spotifyQueueClearCompleted(): Promise<number>
     spotifyForgetEntitySource(input: SpotifyEntityRef): Promise<void>
     spotifyRemoveItem(itemId: number): Promise<void>
     spotifyDetect(): Promise<SpotdlDetectResult>

@@ -518,3 +518,175 @@ describe('computeStreaks', () => {
     expect(musicRepo.computeStreaks([], today)).toEqual({ current: 0, longest: 0 })
   })
 })
+
+describe('persistent Spotify entity catalogue', () => {
+  function indexedRelease(title = 'Airbag'): spotifyRepo.IndexedEntityRelease {
+    return {
+      providerReleaseId: 'itunes-album-1',
+      title: 'OK Computer',
+      albumArtist: 'Radiohead',
+      year: 1997,
+      albumType: 'album',
+      tracks: [{
+        providerTrackId: 'itunes-track-1',
+        title,
+        artists: ['Radiohead'],
+        primaryArtist: 'Radiohead',
+        albumTitle: 'OK Computer',
+        duration: 200,
+        discNo: 1,
+        trackNo: 1
+      }]
+    }
+  }
+
+  function resolvedSong(): spotifyRepo.SpotdlSong {
+    return {
+      spotifyTrackId: 'spotify-track-1',
+      title: 'Airbag',
+      artists: ['Radiohead'],
+      primaryArtist: 'Radiohead',
+      albumArtist: 'Radiohead',
+      albumTitle: 'OK Computer',
+      duration: 200,
+      coverUrl: null,
+      spotifyUrl: 'https://open.spotify.com/track/spotify-track-1',
+      discNo: 1,
+      trackNo: 1,
+      year: 1997,
+      rawJson: '{"song_id":"spotify-track-1"}',
+      spotifyAlbumId: 'spotify-album-1',
+      spotifyArtistId: 'spotify-artist-1',
+      spotifyArtistIds: ['spotify-artist-1'],
+      albumType: 'album'
+    }
+  }
+
+  it('persists indexed releases, matches locally, and returns the saved snapshot on repeat reads', () => {
+    const trackId = seedTrack({ title: 'Airbag' })
+    const artistId = (db.prepare('SELECT artist_id FROM music_track WHERE id=?').get(trackId) as { artist_id: number }).artist_id
+    const snapshotId = spotifyRepo.saveEntitySnapshot({
+      kind: 'artist',
+      entityId: artistId,
+      provider: 'itunes',
+      providerEntityId: 'itunes-artist-1',
+      sourceName: 'Radiohead',
+      releases: [indexedRelease()]
+    })
+
+    const first = spotifyRepo.getEntitySnapshot('artist', artistId)!
+    const repeat = spotifyRepo.getEntitySnapshotById(snapshotId)!
+    expect(first.releases[0].tracks[0].matchedTrackId).toBe(trackId)
+    expect(repeat).toEqual(first)
+  })
+
+  it('preserves authoritative spotDL payloads across catalogue refreshes with the same release identity', () => {
+    const trackId = seedTrack({ title: 'Airbag' })
+    const artistId = (db.prepare('SELECT artist_id FROM music_track WHERE id=?').get(trackId) as { artist_id: number }).artist_id
+    spotifyRepo.saveEntitySnapshot({
+      kind: 'artist', entityId: artistId, provider: 'itunes', providerEntityId: 'itunes-artist-1',
+      sourceName: 'Radiohead', releases: [indexedRelease()]
+    })
+    const releaseId = spotifyRepo.getEntitySnapshot('artist', artistId)!.releases[0].id
+    spotifyRepo.resolveEntityRelease(releaseId, [resolvedSong()])
+    spotifyRepo.saveEntitySnapshot({
+      kind: 'artist', entityId: artistId, provider: 'itunes', providerEntityId: 'itunes-artist-1',
+      sourceName: 'Radiohead', releases: [indexedRelease('Provider renamed this track')]
+    })
+
+    expect(spotifyRepo.getEntitySnapshot('artist', artistId)!.releases[0]).toMatchObject({
+      metadataState: 'resolved',
+      spotifyAlbumId: 'spotify-album-1',
+      tracks: [{ title: 'Airbag', rawJson: '{"song_id":"spotify-track-1"}' }]
+    })
+  })
+
+  it('turns deleted matches grey, resolves replacements after a scan, and cascades with the artist', () => {
+    const trackId = seedTrack({ title: 'Airbag' })
+    const artistId = (db.prepare('SELECT artist_id FROM music_track WHERE id=?').get(trackId) as { artist_id: number }).artist_id
+    spotifyRepo.saveEntitySnapshot({
+      kind: 'artist', entityId: artistId, provider: 'itunes', providerEntityId: 'itunes-artist-1',
+      sourceName: 'Radiohead', releases: [indexedRelease()]
+    })
+    db.prepare('DELETE FROM music_track WHERE id=?').run(trackId)
+    expect(spotifyRepo.getEntitySnapshot('artist', artistId)!.releases[0].tracks[0].matchedTrackId).toBeNull()
+
+    const replacement = seedTrack({ title: 'Airbag', path: 'Radiohead/OK Computer/replacement.mp3' })
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(spotifyRepo.getEntitySnapshot('artist', artistId)!.releases[0].tracks[0].matchedTrackId).toBe(replacement)
+
+    db.prepare('DELETE FROM music_artist WHERE id=?').run(artistId)
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_spotify_entity_snapshot').get()).toEqual({ n: 0 })
+  })
+
+  it('merges duplicate release selections and preserves their order through catalogue refreshes', () => {
+    const trackId = seedTrack({ title: 'Different local song' })
+    const artistId = (db.prepare('SELECT artist_id FROM music_track WHERE id=?').get(trackId) as { artist_id: number }).artist_id
+    const snapshotId = spotifyRepo.saveEntitySnapshot({
+      kind: 'artist', entityId: artistId, provider: 'itunes', providerEntityId: 'itunes-artist-1',
+      sourceName: 'Radiohead', releases: [indexedRelease('Missing song')]
+    })
+    const releaseId = spotifyRepo.getEntitySnapshotById(snapshotId)!.releases[0].id
+
+    expect(spotifyRepo.addEntityToDownloadQueue({ snapshotId, releaseIds: [releaseId] })).toMatchObject({
+      addedSelections: 1,
+      missingCount: 1
+    })
+    expect(spotifyRepo.addEntityToDownloadQueue({ snapshotId, releaseIds: [releaseId] })).toMatchObject({
+      addedSelections: 0,
+      missingCount: 1
+    })
+    expect(spotifyRepo.listDownloadQueue().pending).toHaveLength(1)
+    expect(spotifyRepo.listDownloadQueue().pending[0].selections).toHaveLength(1)
+
+    spotifyRepo.saveEntitySnapshot({
+      kind: 'artist', entityId: artistId, provider: 'itunes', providerEntityId: 'itunes-artist-1',
+      sourceName: 'Radiohead', releases: [indexedRelease('Missing song')]
+    })
+    expect(spotifyRepo.listDownloadQueue().pending[0].selections[0].sourceId).toBe(releaseId)
+  })
+
+  it('keeps completed cards until cleared and normalizes interrupted work to paused', () => {
+    const trackId = seedTrack({ title: 'Different local song' })
+    const artistId = (db.prepare('SELECT artist_id FROM music_track WHERE id=?').get(trackId) as { artist_id: number }).artist_id
+    const snapshotId = spotifyRepo.saveEntitySnapshot({
+      kind: 'artist', entityId: artistId, provider: 'itunes', providerEntityId: 'itunes-artist-1',
+      sourceName: 'Radiohead', releases: [indexedRelease('Missing song')]
+    })
+    const releaseId = spotifyRepo.getEntitySnapshotById(snapshotId)!.releases[0].id
+    const jobId = spotifyRepo.addEntityToDownloadQueue({ snapshotId, releaseIds: [releaseId] }).jobId!
+
+    spotifyRepo.setDownloadQueueCardState(jobId, 'running', null, true)
+    expect(spotifyRepo.normalizeInterruptedDownloadQueue()).toBe(1)
+    expect(spotifyRepo.getDownloadQueueCard(jobId)).toMatchObject({ state: 'paused', continueAfter: true })
+    spotifyRepo.setDownloadQueueCardState(jobId, 'completed')
+    expect(spotifyRepo.listDownloadQueue().completed).toHaveLength(1)
+    expect(spotifyRepo.clearCompletedDownloadQueue()).toBe(1)
+    expect(spotifyRepo.listDownloadQueue().completed).toHaveLength(0)
+  })
+
+  it('queues imported playlist rows and prunes queue cards when their sources disappear', () => {
+    const created = spotifyRepo.createSpotifyPlaylist({
+      spotifyId: 'playlist-source',
+      sourceUrl: 'https://open.spotify.com/playlist/playlist-source',
+      title: 'Imported mix',
+      songs: [{ ...resolvedSong(), spotifyTrackId: 'playlist-track', title: 'Missing playlist song', coverPath: null }]
+    })
+    const itemId = (db.prepare(
+      'SELECT id FROM music_spotify_playlist_item WHERE playlist_id=?'
+    ).get(created.playlistId) as { id: number }).id
+    const added = spotifyRepo.addPlaylistToDownloadQueue({
+      playlistId: created.playlistId,
+      itemIds: [itemId]
+    })
+    expect(added).toMatchObject({ addedSelections: 1, missingCount: 1 })
+    expect(spotifyRepo.listDownloadQueue().pending[0]).toMatchObject({
+      sourceKind: 'playlist',
+      playlistId: created.playlistId,
+      missingCount: 1
+    })
+
+    spotifyRepo.removeSpotifyItem(itemId)
+    expect(spotifyRepo.listDownloadQueue().pending).toHaveLength(0)
+  })
+})

@@ -7,7 +7,8 @@ import { toast, toastError } from '../lib/toast'
 import type { MusicDownloadEvent } from '@shared/types'
 import { DownloadIcon } from './PlayerIcons'
 
-const ACTIVE = new Set(['starting', 'downloading', 'processing'])
+const ACTIVE = new Set(['starting', 'resolving', 'downloading', 'processing', 'pausing', 'cancelling'])
+const BUSY = new Set([...ACTIVE, 'paused'])
 
 // Module-level, not per-hook: the header pill and an open dialog both run
 // useDownloadStatus, and the settled toast/invalidate must fire once per
@@ -48,7 +49,7 @@ export function useDownloadStatus(): MusicDownloadEvent | null {
 // runs (the dialog itself can be closed without stopping anything).
 export function DownloadPill(): React.JSX.Element | null {
   const status = useDownloadStatus()
-  if (!status || !ACTIVE.has(status.status)) return null
+  if (!status || !BUSY.has(status.status)) return null
   return (
     <span className="chip gap-1.5" title={status.title ?? undefined} role="status">
       <DownloadIcon className="h-3.5 w-3.5" />
@@ -64,7 +65,7 @@ export function DownloadPill(): React.JSX.Element | null {
 export default function MusicDownloadDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
   const status = useDownloadStatus()
-  const busy = status != null && ACTIVE.has(status.status)
+  const busy = status != null && BUSY.has(status.status)
 
   const [url, setUrl] = useState('')
   const [artist, setArtist] = useState('')

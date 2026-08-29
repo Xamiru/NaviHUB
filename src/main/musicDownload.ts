@@ -133,8 +133,12 @@ let status: MusicDownloadEvent | null = null
 // stuck on 'running' forever.
 const DOWNLOAD_STATE: Record<NonNullable<MusicDownloadEvent>['status'], TaskState> = {
   starting: 'running',
+  resolving: 'running',
   downloading: 'running',
   processing: 'running',
+  pausing: 'pausing',
+  paused: 'paused',
+  cancelling: 'cancelling',
   done: 'done',
   error: 'error',
   cancelled: 'cancelled'
