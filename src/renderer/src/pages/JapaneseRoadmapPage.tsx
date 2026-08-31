@@ -109,7 +109,7 @@ function KanaStepRow() {
   return (
     <Link to="/japanese/kana" className="card group relative z-[1] block border-l-2 border-l-base-700 p-4">
       <div className="flex items-baseline gap-2">
-        <span className="font-mono text-[11px] uppercase tracking-widest text-gray-600">
+        <span className="font-mono text-[11px] uppercase tracking-widest text-gray-500">
           Step 00
         </span>
         {practiced && <span className="chip bg-signal-affirmative/20 text-signal-affirmative">Practiced</span>}
@@ -140,7 +140,7 @@ function StepRow({ course, state }: { course: JpRoadmapCourse; state: StepState 
         {course.difficulty != null && (
           <span
             className={`font-mono text-[11px] uppercase tracking-widest ${
-              state === 'current' ? 'text-accent' : 'text-gray-600'
+              state === 'current' ? 'text-accent' : 'text-gray-500'
             }`}
           >
             Step {String(course.difficulty).padStart(2, '0')}

@@ -261,6 +261,7 @@ export default function JapaneseReviewPage() {
               {[0, 5, 10, 20].map((n) => (
                 <button
                   key={n}
+                  aria-pressed={newLimit === n}
                   onClick={() => setNewLimit(n)}
                   className={newLimit === n ? 'pill pill-active' : 'pill'}
                 >
@@ -285,6 +286,7 @@ export default function JapaneseReviewPage() {
               {[0, 25, 50, 100].map((n) => (
                 <button
                   key={n}
+                  aria-pressed={dueCap === n}
                   onClick={() => setDueCap(n)}
                   className={dueCap === n ? 'pill pill-active' : 'pill'}
                 >
@@ -419,7 +421,11 @@ export default function JapaneseReviewPage() {
       }
     >
 
-      <div className="flex min-h-[260px] flex-col items-center justify-center text-center">
+      <div
+        className="flex min-h-[260px] flex-col items-center justify-center text-center"
+        aria-live="polite"
+        aria-atomic="true"
+      >
         {prompt ? (
           <>
             <p className="text-3xl leading-relaxed">{prompt.display}</p>

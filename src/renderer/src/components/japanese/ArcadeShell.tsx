@@ -241,7 +241,7 @@ export default function ArcadeShell({
             <span className="ml-2 text-xs text-gray-500">Enter to move on</span>
           </span>
         ) : (
-          <span className="text-xs text-gray-600">Enter reveals the answer</span>
+          <span className="text-xs text-gray-500">Enter reveals the answer</span>
         )}
       </p>
     </StudySessionFrame>

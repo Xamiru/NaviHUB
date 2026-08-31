@@ -50,6 +50,7 @@ export default function NumbersDrillSetup() {
           {CATEGORIES.map((c) => (
             <button
               key={c.key}
+              aria-pressed={set.has(c.key)}
               onClick={() => toggle(c.key)}
               className={set.has(c.key) ? 'chip-toggle chip-toggle-active' : 'chip-toggle'}
             >

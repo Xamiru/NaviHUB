@@ -121,6 +121,7 @@ export default function JapaneseLessonPage() {
           !isGrammar && lesson.cards.length > 0 ? (
             <button
               className={`btn-ghost text-sm ${practice ? 'text-accent' : ''}`}
+              aria-pressed={practice}
               onClick={() => setPractice(!practice)}
               title="Hide readings and meanings — click a cell to reveal it"
             >
@@ -216,8 +217,13 @@ function SentenceCard({ card }: { card: JpCard }) {
 function VocabTable({ cards, practice }: { cards: JpCard[]; practice: boolean }) {
   const hasSource = cards.some((c) => c.sourceTitle)
   return (
-    <div className="card overflow-hidden">
-      <table className="w-full text-sm">
+    <div
+      className="card overflow-x-auto"
+      role="region"
+      aria-label="Vocabulary cards"
+      tabIndex={0}
+    >
+      <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="border-b border-base-700 text-left text-xs uppercase tracking-wide text-gray-500">
             <th className="px-4 py-2.5 font-medium">Word</th>
@@ -270,8 +276,13 @@ function VocabTable({ cards, practice }: { cards: JpCard[]; practice: boolean })
 
 function KanjiTable({ cards, practice }: { cards: JpCard[]; practice: boolean }) {
   return (
-    <div className="card overflow-hidden">
-      <table className="w-full text-sm">
+    <div
+      className="card overflow-x-auto"
+      role="region"
+      aria-label="Kanji cards"
+      tabIndex={0}
+    >
+      <table className="w-full min-w-[720px] text-sm">
         <thead>
           <tr className="border-b border-base-700 text-left text-xs uppercase tracking-wide text-gray-500">
             <th className="px-4 py-2.5 font-medium">Kanji</th>

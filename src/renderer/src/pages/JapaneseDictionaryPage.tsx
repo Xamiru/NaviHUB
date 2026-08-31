@@ -53,6 +53,13 @@ export default function JapaneseDictionaryPage() {
     queryFn: () => api.dict.lookup(debounced),
     enabled: debounced.length > 0
   })
+  const searchStatus = debounced.length === 0
+    ? 'Dictionary ready for a search.'
+    : isFetching && entries.length === 0
+      ? `Searching for ${debounced}.`
+      : entries.length === 0
+        ? `No results found for ${debounced}.`
+        : `${entries.length} result${entries.length === 1 ? '' : 's'} found for ${debounced}.`
 
   return (
     <EditorialDetailFrame
@@ -97,6 +104,7 @@ export default function JapaneseDictionaryPage() {
       />
 
       <div className="mt-5 space-y-4">
+        <p className="sr-only" role="status" aria-live="polite">{searchStatus}</p>
         {debounced.length === 0 ? (
           <p className="text-sm text-gray-500">Start typing to search.</p>
         ) : isFetching && entries.length === 0 ? (
@@ -143,6 +151,7 @@ function ResultsList({
           {words.length > 0 && (
             <button
               className="mb-2 text-sm text-gray-500 hover:text-gray-300"
+              aria-expanded={namesOpen}
               onClick={() => setShowNames(!showNames)}
             >
               {namesOpen ? '▾' : '▸'} Names ({names.length})
@@ -234,7 +243,11 @@ function EntryCard({
             )}
           </div>
         </div>
-        <button className="btn-ghost shrink-0 text-sm" onClick={() => setMining((v) => !v)}>
+        <button
+          className="btn-ghost shrink-0 text-sm"
+          aria-expanded={mining}
+          onClick={() => setMining((v) => !v)}
+        >
           {mining ? 'Close' : 'Mine'}
         </button>
       </div>
@@ -259,6 +272,7 @@ function EntryCard({
         <div className="mt-3 border-t border-base-700 pt-2">
           <button
             className="text-xs text-gray-500 hover:text-gray-300"
+            aria-expanded={showExamples}
             onClick={() => setShowExamples((v) => !v)}
           >
             {showExamples ? '▾' : '▸'} Examples
@@ -271,6 +285,7 @@ function EntryCard({
         <div className="mt-3 border-t border-base-700 pt-2">
           <button
             className="text-xs text-gray-500 hover:text-gray-300"
+            aria-expanded={showKanji}
             onClick={() => setShowKanji((v) => !v)}
           >
             {showKanji ? '▾' : '▸'} Kanji ({kanjiChars.join('')})
@@ -380,7 +395,7 @@ function KanjiRow({ k }: { k: KanjiInfo }) {
           <p className="text-xs text-gray-500">訓 {k.kunyomi.join('、')}</p>
         )}
         {(k.stats.strokes || k.stats.grade) && (
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-gray-500">
             {k.stats.strokes && <span>{k.stats.strokes} strokes</span>}
             {k.stats.strokes && k.stats.grade && ' · '}
             {k.stats.grade && <span>grade {k.stats.grade}</span>}
@@ -388,7 +403,7 @@ function KanjiRow({ k }: { k: KanjiInfo }) {
         )}
         {k.components.length > 0 && (
           <p className="mt-1 flex flex-wrap items-center gap-1">
-            <span className="text-xs text-gray-600">parts</span>
+            <span className="text-xs text-gray-500">parts</span>
             {k.components.map((c) => (
               <Link
                 key={c}
@@ -417,7 +432,7 @@ function SimilarKanjiRow({ char }: { char: string }) {
   if (similar.length === 0) return null
   return (
     <p className="mt-1 flex flex-wrap items-center gap-1">
-      <span className="text-xs text-gray-600">looks like</span>
+      <span className="text-xs text-gray-500">looks like</span>
       {similar.map((s) => (
         <Link
           key={s.character}

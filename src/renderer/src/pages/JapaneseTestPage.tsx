@@ -287,6 +287,7 @@ export default function JapaneseTestPage() {
             {LEVELS.map((l) => (
               <button
                 key={l}
+                aria-pressed={level === l}
                 onClick={() => setLevel(l)}
                 className={level === l ? 'pill pill-active' : 'pill'}
               >
@@ -313,7 +314,7 @@ export default function JapaneseTestPage() {
       pct >= 80
         ? { title: `Comfortable at ${level}`, sub: 'Worth trying the level above.', cls: 'text-signal-affirmative' }
         : pct >= 60
-          ? { title: `Close at ${level}`, sub: 'Review the weakest section below and retake.', cls: 'text-yellow-400' }
+          ? { title: `Close at ${level}`, sub: 'Review the weakest section below and retake.', cls: 'text-signal-caution' }
           : { title: `Not yet at ${level}`, sub: 'Keep working this level; retake in a few weeks.', cls: 'text-signal-anomaly' }
     return (
       <div className="p-6 max-w-md mx-auto">
@@ -337,7 +338,7 @@ export default function JapaneseTestPage() {
                   <li key={m.key} className="flex items-baseline justify-between gap-3">
                     <span className="text-gray-300">
                       {m.label}
-                      {m.note && <span className="ml-1 text-xs text-gray-600">({m.note})</span>}
+                      {m.note && <span className="ml-1 text-xs text-gray-500">({m.note})</span>}
                     </span>
                     <span className="shrink-0 tabular-nums text-gray-400">
                       {got} / {n}

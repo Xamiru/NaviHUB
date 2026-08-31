@@ -11,9 +11,11 @@ import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
 import StatTile from '../components/StatTile'
 import EmptyState from '../components/EmptyState'
-import HubCard from '../components/HubCard'
+import PageStatus from '../components/PageStatus'
+import Tabs from '../components/Tabs'
 import CoreDeckDialog from '../components/japanese/CoreDeckDialog'
 import SetupChecklist from '../components/japanese/SetupChecklist'
+import { currentCourseWindow } from '@shared/japanese/courseWindow'
 
 type ToolGroup = 'practice' | 'games' | 'read' | 'reference'
 interface ToolLink { title: string; body: string; to?: string; action?: 'core' }
@@ -73,19 +75,54 @@ export default function JapaneseHomePage() {
   const [coreDeck, setCoreDeck] = useState(false)
   const [toolGroup, setToolGroup] = useState<ToolGroup>('practice')
   const [dailyTarget] = useState(loadJpDailyTarget)
-  const { data: stats } = useQuery({ queryKey: qk.japanese.stats, queryFn: () => api.japanese.stats() })
-  const { data: roadmap } = useQuery({ queryKey: qk.japanese.roadmap, queryFn: () => api.japanese.roadmap() })
-  const { data: settings } = useSettings()
-  const { data: manga = [] } = useQuery({
+  const statsQuery = useQuery({ queryKey: qk.japanese.stats, queryFn: () => api.japanese.stats() })
+  const roadmapQuery = useQuery({ queryKey: qk.japanese.roadmap, queryFn: () => api.japanese.roadmap() })
+  const settingsQuery = useSettings()
+  const mangaQuery = useQuery({
     queryKey: qk.media.home('manga'),
     queryFn: () => api.media.list({ mediaType: 'manga' })
   })
+
+  const loading = statsQuery.isLoading || roadmapQuery.isLoading || settingsQuery.isLoading || mangaQuery.isLoading
+  const failed = statsQuery.isError || roadmapQuery.isError || settingsQuery.isError || mangaQuery.isError
+  if (loading) return <PageStatus>Preparing today’s Japanese plan…</PageStatus>
+  if (failed) {
+    return (
+      <div className="mx-auto max-w-3xl p-4 sm:p-6">
+        <PageHeader title="Knowledge map" subtitle="Your offline Japanese study workspace." />
+        <EmptyState
+          title="Japanese study data could not be loaded"
+          body="The local database did not return the information needed for today’s plan. Try loading it again; your study data has not been changed."
+          action={
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={() => void Promise.all([
+                statsQuery.refetch(),
+                roadmapQuery.refetch(),
+                settingsQuery.refetch(),
+                mangaQuery.refetch()
+              ])}
+            >
+              Try again
+            </button>
+          }
+        />
+      </div>
+    )
+  }
+
+  const stats = statsQuery.data
+  const roadmap = roadmapQuery.data
+  const settings = settingsQuery.data
+  const manga = mangaQuery.data ?? []
 
   const due = stats?.dueCount ?? 0
   const unseen = stats?.newAvailableCount ?? 0
   const daily = jpDailyPacing(dailyTarget, stats?.introducedToday ?? 0, unseen)
   const reviewable = due + daily.newThisSession
   const frontier = roadmap?.steps.find((c) => c.id === roadmap.frontierCourseId) ?? null
+  const visibleCourses = currentCourseWindow(roadmap?.steps ?? [], roadmap?.frontierCourseId ?? null)
   const hasCourses = (roadmap?.steps.length ?? 0) + (roadmap?.unscheduled.length ?? 0) > 0
   const inProgress = statusesFrom(settings, MANGA_CFG)[0]
   const reading = manga.find((m) => m.status === inProgress)
@@ -115,51 +152,6 @@ export default function JapaneseHomePage() {
         <StatTile label="New today" value={`${daily.introducedToday} / ${daily.dailyTarget}`} />
         <StatTile label="Reviews today" value={stats?.reviewsToday ?? 0} />
       </div>
-
-      {roadmap && roadmap.steps.length > 0 && (
-        <Section title="Course path" subtitle="Progress moves from left to right; every node remains open.">
-          <div className="card p-5">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {roadmap.steps.slice(0, 5).map((course) => {
-                const current = course.id === roadmap.frontierCourseId
-                const complete = course.lessonCount > 0 && course.learnedLessonCount >= course.lessonCount
-                const pct = course.lessonCount
-                  ? Math.round((course.learnedLessonCount / course.lessonCount) * 100)
-                  : 0
-                return (
-                  <Link
-                    key={course.id}
-                    to={`/japanese/courses/${course.id}`}
-                    className={`rounded-lg border p-4 transition-colors hover:border-accent ${
-                      current
-                        ? 'border-accent/60 bg-accent/10'
-                        : complete
-                          ? 'border-accent/25 bg-base-700/50'
-                          : 'border-base-700'
-                    }`}
-                  >
-                    <p className={`text-[10px] font-semibold uppercase tracking-wider ${current ? 'text-accent' : 'text-gray-500'}`}>
-                      {current ? 'Current node' : complete ? 'Learned' : `Step ${course.difficulty}`}
-                    </p>
-                    <p className="mt-2 line-clamp-2 text-sm font-medium">{course.title}</p>
-                    <div className="mt-4 h-1 overflow-hidden rounded-full bg-base-700">
-                      <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
-                    </div>
-                    <p className="mt-2 text-xs text-gray-500">
-                      {course.learnedLessonCount} / {course.lessonCount} lessons
-                    </p>
-                  </Link>
-                )
-              })}
-            </div>
-            {roadmap.steps.length > 5 && (
-              <Link to="/japanese/roadmap" className="btn-ghost mt-4">
-                Open full roadmap
-              </Link>
-            )}
-          </div>
-        </Section>
-      )}
 
       {hasCourses ? (
         <Section title="Today" subtitle="A balanced hour: recall, hear, then read.">
@@ -195,14 +187,60 @@ export default function JapaneseHomePage() {
           action={<Link to="/japanese/courses/new" className="btn-primary">Create a course</Link>} />
       )}
 
-      {frontier && (
-        <Section title="Continue course">
-          <div className="card flex flex-wrap items-center justify-between gap-3 p-4">
-            <div>
-              <Link to={`/japanese/courses/${frontier.id}`} className="font-medium hover:text-accent">{frontier.title}</Link>
-              <p className="mt-1 text-xs text-gray-500">Step {frontier.difficulty} · {frontier.learnedLessonCount} / {frontier.lessonCount} lessons learned</p>
+      {roadmap && roadmap.steps.length > 0 && (
+        <Section
+          title="Course path"
+          subtitle={frontier
+            ? `Centered on ${frontier.title}; every course remains open.`
+            : 'Progress moves from left to right; every course remains open.'}
+        >
+          <div className="card p-5">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+              {visibleCourses.map((course) => {
+                const current = course.id === roadmap.frontierCourseId
+                const complete = course.lessonCount > 0 && course.learnedLessonCount >= course.lessonCount
+                const pct = course.lessonCount
+                  ? Math.round((course.learnedLessonCount / course.lessonCount) * 100)
+                  : 0
+                return (
+                  <Link
+                    key={course.id}
+                    to={`/japanese/courses/${course.id}`}
+                    aria-current={current ? 'step' : undefined}
+                    className={`rounded-lg border p-4 transition-colors hover:border-accent ${
+                      current
+                        ? 'border-accent/60 bg-accent/10'
+                        : complete
+                          ? 'border-accent/25 bg-base-700/50'
+                          : 'border-base-700'
+                    }`}
+                  >
+                    <p className={`text-[10px] font-semibold uppercase tracking-wider ${current ? 'text-accent' : 'text-gray-500'}`}>
+                      {current ? 'Current node' : complete ? 'Learned' : `Step ${course.difficulty}`}
+                    </p>
+                    <p className="mt-2 line-clamp-2 text-sm font-medium">{course.title}</p>
+                    <div
+                      className="mt-4 h-1 overflow-hidden rounded-full bg-base-700"
+                      role="progressbar"
+                      aria-label={`${course.title} lesson progress`}
+                      aria-valuemin={0}
+                      aria-valuemax={Math.max(1, course.lessonCount)}
+                      aria-valuenow={course.learnedLessonCount}
+                    >
+                      <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      {course.learnedLessonCount} / {course.lessonCount} lessons
+                    </p>
+                  </Link>
+                )
+              })}
             </div>
-            <Link to={`/japanese/courses/${frontier.id}`} className="btn-ghost">Open course</Link>
+            {roadmap.steps.length > visibleCourses.length && (
+              <Link to="/japanese/roadmap" className="btn-ghost mt-4">
+                Open all {roadmap.steps.length} courses
+              </Link>
+            )}
           </div>
         </Section>
       )}
@@ -210,14 +248,20 @@ export default function JapaneseHomePage() {
       <SetupChecklist />
 
       <Section title="Toolbox" subtitle="Choose a category; the full tool list stays one click away.">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {(Object.keys(TOOL_GROUPS) as ToolGroup[]).map((key) => (
-            <HubCard key={key} onClick={() => setToolGroup(key)} title={TOOL_GROUPS[key].title}
-              body={TOOL_GROUPS[key].body} meta={toolGroup === key ? 'Open' : undefined} />
-          ))}
-        </div>
-        <div className="card mt-3 p-4">
-          <p className="mb-3 text-sm font-semibold">{selected.title}</p>
+        <Tabs
+          tabs={(Object.keys(TOOL_GROUPS) as ToolGroup[]).map((key) => ({
+            key,
+            label: TOOL_GROUPS[key].title,
+            count: TOOL_GROUPS[key].tools.length
+          }))}
+          value={toolGroup}
+          onChange={setToolGroup}
+        />
+        <div className="card mt-4 p-4" role="tabpanel" aria-label={`${selected.title} tools`}>
+          <div className="mb-4">
+            <p className="text-sm font-semibold">{selected.title}</p>
+            <p className="mt-1 text-xs text-gray-500">{selected.body}</p>
+          </div>
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {selected.tools.map((tool) => tool.action === 'core' ? (
               <button key={tool.title} className="rounded-lg border border-base-700 p-3 text-left hover:border-accent"

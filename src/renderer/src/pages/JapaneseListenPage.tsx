@@ -352,7 +352,7 @@ function GuidedRound({
             <p className="mt-2 text-xs text-signal-caution">New word: {current.unknownWord}</p>
           )}
           {current.attribution && (
-            <p className="mt-2 text-xs text-gray-600">Recording: {current.attribution}</p>
+            <p className="mt-2 text-xs text-gray-500">Recording: {current.attribution}</p>
           )}
 
           <div className="mt-5 border-t border-base-700 pt-4">
@@ -656,7 +656,7 @@ function DictationRound({ items, onExit }: { items: AudioSentence[]; onExit: () 
             </p>
           )}
           {current.attribution && (
-            <p className="mt-2 text-xs text-gray-600">Recording: {current.attribution}</p>
+            <p className="mt-2 text-xs text-gray-500">Recording: {current.attribution}</p>
           )}
           <button className="btn-primary mt-4" onClick={advance} autoFocus>
             {index + 1 >= items.length ? 'Finish (Enter)' : 'Next (Enter)'}

@@ -99,6 +99,7 @@ export default function MinimalPairsDrill() {
           {available.map((b) => (
             <button
               key={b}
+              aria-pressed={active.has(b)}
               onClick={() =>
                 setBuckets(active.has(b) ? buckets.filter((x) => x !== b) : [...buckets, b])
               }

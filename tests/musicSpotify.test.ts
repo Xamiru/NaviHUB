@@ -22,6 +22,7 @@ import {
   groupEntityReleases,
   parseSpotifyPlaylistUrl,
   parseSpotifyUrl,
+  parseSpotdlRateLimitWait,
   parseSpotdlLine,
   parseSpotdlInspectionLine,
   pickDiscoveredEntity,
@@ -264,7 +265,6 @@ describe('Spotify playlist import core', () => {
       'https://open.spotify.com/playlist/abc',
       '--threads',
       '8',
-      '--use-cache-file',
       '--save-file',
       '/tmp/list.spotdl'
     ])
@@ -306,6 +306,33 @@ describe('Spotify playlist import core', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('parses provider waits and stops day-long spotDL rate limits immediately', async () => {
+    expect(parseSpotdlRateLimitWait(
+      'Your application has reached a rate/request limit. Retry will occur after: 86400 s'
+    )).toBe(86400)
+    expect(parseSpotdlRateLimitWait('Downloading track')).toBeNull()
+
+    const proc = Object.assign(new EventEmitter(), {
+      stdout: new PassThrough(),
+      stderr: new PassThrough(),
+      exitCode: null as number | null,
+      kill: vi.fn(() => true)
+    })
+    const pending = runSpotdl(
+      [],
+      'rate-limited-spotdl-fixture',
+      undefined,
+      'rate-limited-job',
+      () => proc as never
+    )
+    proc.stderr.write('Your application has reached a rate/request limit. Retry will occur after: 86400 s\n')
+    await vi.waitFor(() => expect(proc.kill).toHaveBeenCalledWith('SIGTERM'))
+    proc.exitCode = 1
+    proc.emit('close', 1)
+    await expect(pending).rejects.toThrow(/rate-limited for about 24 hours/i)
+    expect(musicMaintenanceOwner()).toBeNull()
   })
 
   it('discovers artist and album ids from an exact representative local track', () => {

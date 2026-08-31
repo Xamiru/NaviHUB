@@ -292,6 +292,7 @@ export default function JapaneseQuizPage() {
             {(Object.keys(DIRECTION_LABELS) as Direction[]).map((d) => (
               <button
                 key={d}
+                aria-pressed={directions.includes(d)}
                 onClick={() =>
                   setDirections(
                     directions.includes(d)

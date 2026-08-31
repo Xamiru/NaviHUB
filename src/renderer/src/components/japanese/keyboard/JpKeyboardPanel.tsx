@@ -202,7 +202,7 @@ export default function JpKeyboardPanel({
       {/* composition bar */}
       <div className="flex min-h-[2rem] items-center rounded-md border border-base-700 bg-base-800/60 px-2 text-lg">
         {isEmpty(state) ? (
-          <span className="text-xs text-gray-600">
+          <span className="text-xs text-gray-500">
             {prefs.layout === 'qwerty' ? 'Type romaji below' : 'Tap kana below'}
           </span>
         ) : (
@@ -234,7 +234,7 @@ export default function JpKeyboardPanel({
                 <span className="flex items-baseline gap-1.5">
                   {c.text}
                   {c.gloss && (
-                    <span className="max-w-32 truncate text-[10px] text-gray-600">{c.gloss}</span>
+                    <span className="max-w-32 truncate text-[10px] text-gray-500">{c.gloss}</span>
                   )}
                 </span>
               </Key>

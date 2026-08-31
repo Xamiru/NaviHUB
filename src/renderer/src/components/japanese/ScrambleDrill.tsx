@@ -219,7 +219,7 @@ function Round({ items, length, onExit }: { items: ScrambleQuizItem[]; length: n
         <p className="mt-1 text-sm text-gray-500">{current.en}</p>
         {/* answer row */}
         <div className="mt-4 flex min-h-[3.5rem] flex-wrap items-center gap-2 rounded-lg border border-base-700 bg-base-900/50 p-3">
-          {placed.length === 0 && <span className="text-sm text-gray-600">tap the chunks below in order</span>}
+          {placed.length === 0 && <span className="text-sm text-gray-500">Tap the chunks below in order</span>}
           {placed.map((c, i) => (
             <button
               key={`${c}-${i}`}

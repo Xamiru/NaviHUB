@@ -41,7 +41,15 @@ export default function StudySessionFrame({
           {actions && <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
         </div>
         {progress && (
-          <div className="mt-5" aria-label={`${progress.label ?? 'Session'} progress`}>
+          <div
+            className="mt-5"
+            role="progressbar"
+            aria-label={`${progress.label ?? 'Session'} progress`}
+            aria-valuemin={0}
+            aria-valuemax={safeTotal}
+            aria-valuenow={safeCurrent}
+            aria-valuetext={`${safeCurrent} of ${safeTotal}`}
+          >
             <div className="mb-2 flex items-center justify-between gap-3 text-xs tabular-nums">
               <span className="text-gray-400">{progress.label ?? 'Session progress'}</span>
               <span className="text-gray-300">
@@ -57,6 +65,15 @@ export default function StudySessionFrame({
           </div>
         )}
       </header>
+
+      {rail && (
+        <details className="card mb-5 p-4 lg:hidden">
+          <summary className="cursor-pointer text-sm font-medium text-white">
+            Session guidance and evidence
+          </summary>
+          <div className="mt-4 space-y-4">{rail}</div>
+        </details>
+      )}
 
       <div className={rail ? 'grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]' : ''}>
         <div className="min-w-0">
@@ -93,8 +110,8 @@ export function SessionFeedback({
 }) {
   const tones = {
     neutral: 'border-base-600',
-    correct: 'border-green-500/40',
-    incorrect: 'border-red-500/40'
+    correct: 'border-signal-affirmative/40',
+    incorrect: 'border-signal-anomaly/40'
   }
   return (
     <section className={`card border-t ${tones[tone]} p-5`} aria-live="polite">

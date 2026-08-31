@@ -212,7 +212,7 @@ export default function JapaneseShiritoriPage() {
         <div>
           <p className="mb-2 text-center text-sm text-gray-400">
             Next word starts with <span className="text-2xl text-gray-100">{required}</span>
-            <span className="ml-3 text-xs text-gray-600">chain {userWords}</span>
+            <span className="ml-3 text-xs text-gray-500">chain {userWords}</span>
           </p>
           <div className="flex gap-2">
             <JpKeyboardInput

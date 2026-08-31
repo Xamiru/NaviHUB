@@ -150,7 +150,7 @@ function LessonRow({ lesson, index }: { lesson: JpLessonSummary; index: number }
         {lesson.cardCount} {lesson.cardCount === 1 ? 'card' : 'cards'}
       </span>
       <span
-        className={`w-6 shrink-0 text-center ${lesson.learned ? 'text-signal-affirmative' : 'text-gray-600'}`}
+        className={`w-6 shrink-0 text-center ${lesson.learned ? 'text-signal-affirmative' : 'text-gray-500'}`}
         title={lesson.learned ? 'Learned' : 'Not learned yet'}
       >
         {lesson.learned ? '✓' : '○'}

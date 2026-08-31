@@ -106,6 +106,7 @@ export default function KeigoDrillSetup() {
           ).map(([key, label]) => (
             <button
               key={key}
+              aria-pressed={register === key}
               onClick={() => setRegister(key)}
               className={register === key ? 'pill pill-active' : 'pill'}
             >
@@ -125,6 +126,7 @@ export default function KeigoDrillSetup() {
           ).map(([key, label]) => (
             <button
               key={key}
+              aria-pressed={content === key}
               onClick={() => setContent(key)}
               className={content === key ? 'pill pill-active' : 'pill'}
             >
@@ -138,6 +140,7 @@ export default function KeigoDrillSetup() {
           {[10, 20, 40].map((n) => (
             <button
               key={n}
+              aria-pressed={length === n}
               onClick={() => setLength(n)}
               className={length === n ? 'pill pill-active' : 'pill'}
             >

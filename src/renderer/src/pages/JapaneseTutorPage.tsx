@@ -29,6 +29,7 @@ export default function JapaneseTutorPage() {
   const [errorLabel, setErrorLabel] = useState('')
   const [errorDetail, setErrorDetail] = useState('')
   const [savingError, setSavingError] = useState(false)
+  const [showAllErrors, setShowAllErrors] = useState(false)
 
   if (!model.ready) {
     return <PageStatus>Preparing your tutor plan…</PageStatus>
@@ -48,6 +49,7 @@ export default function JapaneseTutorPage() {
     tutorErrors
   } = model
   const openErrors = tutorErrors.filter((item) => !item.resolvedAt)
+  const visibleErrors = showAllErrors ? openErrors : openErrors.slice(0, 7)
   const occurrenceCount = new Map<string, number>()
   for (const item of tutorErrors) {
     const key = `${item.skill}:${item.label}`
@@ -186,33 +188,52 @@ export default function JapaneseTutorPage() {
               </div>
 
               <div className="min-w-0">
-                <h3 className="font-medium text-white">Open error ledger</h3>
+                <div className="flex flex-wrap items-baseline justify-between gap-3">
+                  <h3 className="font-medium text-white">Open error ledger</h3>
+                  {openErrors.length > 0 && (
+                    <span className="text-xs tabular-nums text-gray-500">
+                      {openErrors.length} open
+                    </span>
+                  )}
+                </div>
                 {openErrors.length === 0 ? (
                   <p className="mt-3 text-sm leading-6 text-gray-400">
                     Weak measured results and problems you report will stay here until resolved.
                   </p>
                 ) : (
-                  <div className="mt-3 divide-y divide-base-700">
-                    {openErrors.slice(0, 7).map((item) => {
-                      const repeats = occurrenceCount.get(`${item.skill}:${item.label}`) ?? 1
-                      return (
-                        <div key={item.id} className="py-3">
-                          <div className="flex flex-wrap items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="break-words text-sm font-medium text-white">{item.label}</p>
-                              <p className="mt-1 break-words text-xs leading-5 text-gray-500">{item.detail}</p>
-                              <p className="mt-1 text-xs text-gray-500">
-                                {SKILL_LABEL[item.skill]}{repeats > 1 ? ` · ${repeats} occurrences` : ''}
-                                {item.score == null ? '' : ` · ${item.score}% against ${item.threshold}%`}
-                              </p>
+                  <div className="mt-3" aria-live="polite">
+                    <div className="divide-y divide-base-700">
+                      {visibleErrors.map((item) => {
+                        const repeats = occurrenceCount.get(`${item.skill}:${item.label}`) ?? 1
+                        return (
+                          <div key={item.id} className="py-3">
+                            <div className="flex flex-wrap items-start justify-between gap-3">
+                              <div className="min-w-0">
+                                <p className="break-words text-sm font-medium text-white">{item.label}</p>
+                                <p className="mt-1 break-words text-xs leading-5 text-gray-500">{item.detail}</p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  {SKILL_LABEL[item.skill]}{repeats > 1 ? ` · ${repeats} occurrences` : ''}
+                                  {item.score == null ? '' : ` · ${item.score}% against ${item.threshold}%`}
+                                </p>
+                              </div>
+                              <button type="button" className="btn-ghost shrink-0" onClick={() => void resolveProblem(item.id)}>
+                                Resolve
+                              </button>
                             </div>
-                            <button type="button" className="btn-ghost shrink-0" onClick={() => void resolveProblem(item.id)}>
-                              Resolve
-                            </button>
                           </div>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
+                    {openErrors.length > 7 && (
+                      <button
+                        type="button"
+                        className="btn-ghost mt-3 w-full"
+                        aria-expanded={showAllErrors}
+                        onClick={() => setShowAllErrors((value) => !value)}
+                      >
+                        {showAllErrors ? 'Show the most recent 7' : `Show all ${openErrors.length} open problems`}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

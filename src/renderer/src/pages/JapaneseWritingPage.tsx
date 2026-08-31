@@ -243,6 +243,7 @@ function WritingSetup({
           <Pill active={round === 0} onClick={() => setRound(0)} label="All" />
         </Group>
         <button
+          aria-pressed={grouped}
           className={`chip-toggle ${grouped ? 'chip-toggle-active' : ''}`}
           onClick={() => setGrouped((v) => !v)}
           title="Deal kanji that share a component one after another (needs the KRADFILE pack)"

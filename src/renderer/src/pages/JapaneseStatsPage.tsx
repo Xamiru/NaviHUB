@@ -229,7 +229,7 @@ function Leeches() {
               <div className="min-w-0 flex-1">
                 <p className="truncate">
                   <span className="font-medium">{pair.a.front}</span>
-                  <span className="mx-2 text-gray-600">×</span>
+                  <span className="mx-2 text-gray-500">×</span>
                   <span className="font-medium">{pair.b.front}</span>
                 </p>
                 <p className="truncate text-xs text-gray-500">

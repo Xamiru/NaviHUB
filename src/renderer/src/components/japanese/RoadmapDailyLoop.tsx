@@ -66,7 +66,7 @@ export default function RoadmapDailyLoop({
           >
             <p
               className={`font-mono text-[11px] uppercase tracking-widest ${
-                t.hot ? 'text-accent' : 'text-gray-600'
+                t.hot ? 'text-accent' : 'text-gray-500'
               }`}
             >
               {t.eyebrow}

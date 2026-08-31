@@ -109,6 +109,7 @@ function KanaRace() {
               {section.rows.map((r) => (
                 <button
                   key={r.key}
+                  aria-pressed={rows.includes(r.key)}
                   className={`chip-toggle ${rows.includes(r.key) ? 'chip-toggle-active' : ''}`}
                   onClick={() => toggle(r.key)}
                 >
@@ -261,6 +262,7 @@ function ConjRace() {
             {DOJO_FORMS.map((f) => (
               <button
                 key={f}
+                aria-pressed={forms.includes(f)}
                 className={`chip-toggle ${forms.includes(f) ? 'chip-toggle-active' : ''}`}
                 onClick={() => toggleForm(f)}
               >
@@ -270,6 +272,7 @@ function ConjRace() {
           </div>
         </div>
         <button
+          aria-pressed={useCards}
           className={`chip-toggle ${useCards ? 'chip-toggle-active' : ''}`}
           onClick={() => setUseCards((v) => !v)}
         >

@@ -285,12 +285,13 @@ function ComponentDrill({
           return (
             <button
               key={chip.char}
+              aria-pressed={isPicked}
               onClick={() => toggle(chip.char)}
               className={`min-w-[2.4rem] text-lg ${cls}`}
               disabled={revealed}
             >
               {chip.char}
-              <span className="ml-1 align-super text-[9px] text-gray-600">{i + 1}</span>
+              <span className="ml-1 align-super text-[9px] text-gray-500">{i + 1}</span>
             </button>
           )
         })}

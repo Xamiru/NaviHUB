@@ -173,7 +173,11 @@ export default function JapaneseReadingPage() {
           progress={{ current: index + 1, total: questions.length, label: 'Comprehension' }}
           actions={
             <>
-              <button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setFurigana((v) => !v)}>
+              <button
+                className="btn-ghost px-2 py-0.5 text-xs"
+                aria-pressed={furigana}
+                onClick={() => setFurigana((v) => !v)}
+              >
                 {furigana ? 'Hide furigana' : 'Show furigana'}
               </button>
               <button className="btn-ghost px-2 py-0.5 text-xs" onClick={() => setPhase('setup')}>
@@ -196,7 +200,7 @@ export default function JapaneseReadingPage() {
           <div className="mx-auto max-w-3xl">
 
             <div className="card max-h-[45vh] overflow-y-auto p-5">
-              <p className="mb-3 text-xs uppercase tracking-widest text-gray-600">
+              <p className="mb-3 text-xs uppercase tracking-widest text-gray-500">
                 {passage.level} · {passage.topic}
               </p>
               <h2 className="mb-3 text-lg">
@@ -290,7 +294,7 @@ export default function JapaneseReadingPage() {
         title="Graded reading"
         subtitle="Connected passages N5 to N1 with optional furigana, four comprehension questions, and the mining panel one double-click away."
         actions={
-          <button className="btn-ghost" onClick={() => setFurigana((v) => !v)}>
+          <button className="btn-ghost" aria-pressed={furigana} onClick={() => setFurigana((v) => !v)}>
             {furigana ? 'Furigana on' : 'Furigana off'}
           </button>
         }

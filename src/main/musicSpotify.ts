@@ -179,7 +179,12 @@ export function parseSpotdlLine(line: string): SpotdlLineEvent | null {
 }
 
 export function buildSpotdlSaveArgs(url: string, saveFile: string, threads = 8): string[] {
-  return ['save', url, '--threads', String(threads), '--use-cache-file', '--save-file', saveFile]
+  return ['save', url, '--threads', String(threads), '--save-file', saveFile]
+}
+
+export function parseSpotdlRateLimitWait(line: string): number | null {
+  const match = line.match(/rate\/request limit.*?after:\s*(\d+)\s*s/i)
+  return match ? Number(match[1]) : null
 }
 
 export function buildSpotifyDiscoveryQuery(artist: string, title: string): string {
@@ -653,7 +658,7 @@ async function discoverIdentityBounded(
   timer.unref()
   try {
     const code = await runSpotdl(
-      ['save', ...queries, '--threads', '8', '--use-cache-file', '--save-file', file],
+      ['save', ...queries, '--threads', '8', '--save-file', file],
       `Spotify inspection ${input.kind}:${input.entityId}`,
       undefined,
       jobId
@@ -724,6 +729,7 @@ export function runSpotdl(
     }
     active = { id, proc, cancelled: false, owner }
     let stalled = false
+    let rateLimitWaitSec: number | null = null
     let stallTimer: NodeJS.Timeout | null = null
     const clearStallTimer = (): void => {
       if (stallTimer) clearTimeout(stallTimer)
@@ -756,6 +762,12 @@ export function runSpotdl(
     const observeLine = (line: string): void => {
       armStallTimer()
       handleLine(line)
+      const wait = parseSpotdlRateLimitWait(line)
+      if (wait != null && wait >= 300 && active?.id === id) {
+        rateLimitWaitSec = wait
+        active.cancelled = true
+        processControls(() => activeProcessTarget(id), { killAfterMs: 1_000 }).cancel?.()
+      }
     }
     armStallTimer()
     pipeProcLines(proc, { tool: 'spotdl', onStdout: observeLine, onStderr: observeLine })
@@ -769,7 +781,12 @@ export function runSpotdl(
       cleanup()
       if (active?.id === id) active = null
       releaseMusicMaintenance(owner)
-      if (stalled) {
+      if (rateLimitWaitSec != null) {
+        const hours = Math.max(1, Math.ceil(rateLimitWaitSec / 3600))
+        reject(new Error(
+          `spotDL's Spotify metadata provider is rate-limited for about ${hours} hour${hours === 1 ? '' : 's'}. NaviHUB stopped the wait; retry after updating spotDL or when the provider limit clears.`
+        ))
+      } else if (stalled) {
         reject(new Error('spotDL stopped responding. Retry this release or check spotDL and yt-dlp in Settings.'))
       } else {
         resolve(code ?? 1)
@@ -800,7 +817,7 @@ async function inspectWithSpotdl(
       )
     }
     const discoveryCode = await runSpotdl(
-      ['save', ...queries, '--threads', '8', '--use-cache-file', '--save-file', discoveryFile],
+      ['save', ...queries, '--threads', '8', '--save-file', discoveryFile],
       `Spotify inspection ${input.kind}:${input.entityId}`,
       undefined,
       undefined,

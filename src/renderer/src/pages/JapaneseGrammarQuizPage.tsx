@@ -210,6 +210,7 @@ export default function JapaneseGrammarQuizPage() {
             {LEVELS.map((l) => (
               <button
                 key={l}
+                aria-pressed={levels.includes(l)}
                 onClick={() => toggleLevel(l)}
                 className={levels.includes(l) ? 'chip-toggle chip-toggle-active' : 'chip-toggle'}
               >

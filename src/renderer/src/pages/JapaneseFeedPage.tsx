@@ -198,7 +198,11 @@ function FeedRow({
     <div className="card p-3">
       <p className="text-lg leading-relaxed">{renderJp()}</p>
       <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-        <button className="hover:text-gray-300" onClick={() => setShowEn(!showEn)}>
+        <button
+          className="hover:text-gray-300"
+          aria-expanded={showEn}
+          onClick={() => setShowEn(!showEn)}
+        >
           {showEn ? '▾' : '▸'} translation
         </button>
         {item.audioPath && (
@@ -220,7 +224,7 @@ function FeedRow({
       </div>
       {showEn && <p className="mt-1.5 text-sm text-gray-400">{item.en}</p>}
       {showEn && item.attribution && (
-        <p className="mt-0.5 text-xs text-gray-600">{item.attribution}</p>
+        <p className="mt-0.5 text-xs text-gray-500">{item.attribution}</p>
       )}
       {mineOpen && item.unknownWord && !inDeck && (
         <InlineMine item={item} onMined={onMined} onCancel={onToggleMine} />

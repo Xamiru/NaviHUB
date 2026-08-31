@@ -30,7 +30,7 @@ const TOKEN_CLASS: Record<JpWordTier | 'nonword', string> = {
   learning: 'text-signal-caution',
   unstarted: 'text-sky-300',
   unknown: 'text-gray-100 underline decoration-gray-600 decoration-dotted underline-offset-4',
-  nonword: 'text-gray-600'
+  nonword: 'text-gray-500'
 }
 
 export default function JapaneseAnalyzePage() {

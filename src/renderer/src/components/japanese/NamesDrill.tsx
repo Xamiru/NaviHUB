@@ -72,6 +72,7 @@ export default function NamesDrillSetup() {
           ).map(([k, label]) => (
             <button
               key={k}
+              aria-pressed={kind === k}
               onClick={() => setKind(k)}
               className={kind === k ? 'pill pill-active' : 'pill'}
             >
@@ -85,6 +86,7 @@ export default function NamesDrillSetup() {
           {[10, 20, 40].map((n) => (
             <button
               key={n}
+              aria-pressed={length === n}
               onClick={() => setLength(n)}
               className={length === n ? 'pill pill-active' : 'pill'}
             >

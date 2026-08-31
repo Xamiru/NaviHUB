@@ -350,6 +350,7 @@ function DojoSetup() {
           {DOJO_FORMS.map((f) => (
             <button
               key={f}
+              aria-pressed={formSet.has(f)}
               onClick={() => toggleForm(f)}
               className={formSet.has(f) ? 'chip-toggle chip-toggle-active' : 'chip-toggle'}
             >
@@ -364,6 +365,7 @@ function DojoSetup() {
           {[10, 20, 40].map((n) => (
             <button
               key={n}
+              aria-pressed={length === n}
               onClick={() => setLength(n)}
               className={length === n ? 'pill pill-active' : 'pill'}
             >
@@ -435,6 +437,7 @@ function KanaDrillSetup() {
               {section.rows.map((row) => (
                 <button
                   key={row.key}
+                  aria-pressed={selectedSet.has(row.key)}
                   onClick={() => toggle(row.key)}
                   className={
                     selectedSet.has(row.key) ? 'chip-toggle chip-toggle-active' : 'chip-toggle'

@@ -115,6 +115,7 @@ export default function JapaneseGrammarPage() {
               {LEVELS.map((l) => (
                 <button
                   key={l}
+                  aria-pressed={level === l}
                   onClick={() => setLevel(l)}
                   className={level === l ? 'pill pill-active' : 'pill'}
                 >

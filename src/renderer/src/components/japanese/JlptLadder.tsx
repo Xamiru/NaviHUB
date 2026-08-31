@@ -91,7 +91,7 @@ export default function JlptLadder() {
         <LevelRow key={l.level} level={l} current={l.level === data.current} />
       ))}
 
-      <p className="pt-1 text-[10px] leading-relaxed text-gray-600">
+      <p className="pt-1 text-xs leading-relaxed text-gray-500">
         Passed = the card&apos;s next review is {PASSED_INTERVAL_DAYS} days or more away. A level
         clears at {Math.round(LEVEL_PASS_RATIO * 100)}%, so a few stubborn cards can&apos;t stall
         it. Levels never lock anything — study whatever you like, whenever.

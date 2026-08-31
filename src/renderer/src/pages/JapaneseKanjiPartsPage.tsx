@@ -101,13 +101,14 @@ export default function JapaneseKanjiPartsPage() {
             <div className="space-y-2">
               {groups.map(([strokes, list]) => (
                 <div key={strokes} className="flex items-start gap-2">
-                  <span className="mt-1.5 w-6 shrink-0 text-right text-xs text-gray-600">
+                  <span className="mt-1.5 w-6 shrink-0 text-right text-xs text-gray-500">
                     {strokes || '?'}
                   </span>
                   <div className="flex flex-wrap gap-1">
                     {list.map((c) => (
                       <button
                         key={c.component}
+                        aria-pressed={selectedSet.has(c.component)}
                         onClick={() => toggle(c.component)}
                         title={`${c.kanjiCount} kanji`}
                         className={`min-w-[2.1rem] text-base ${
@@ -148,7 +149,7 @@ export default function JapaneseKanjiPartsPage() {
                       className="card flex flex-col items-center p-2 hover:border-accent"
                     >
                       <span className="text-2xl">{h.character}</span>
-                      <span className="text-xs text-gray-600">
+                      <span className="text-xs text-gray-500">
                         {h.strokeCount != null ? `${h.strokeCount} parts` : ''}
                       </span>
                     </Link>

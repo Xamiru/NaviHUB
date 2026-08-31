@@ -60,7 +60,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Kana drill',
         to: '/japanese/kana',
-        text: 'Pick rows, type romaji. Checks every keystroke, so a right answer advances on its own; a wrong one shows か = ka in red and waits while you fix it. Enter on an empty box reveals; Enter again skips and brings it back later. Endless — Stop when done. Grind one row until automatic, then add the next.'
+        text: 'Pick rows, type romaji. Checks every keystroke, so a right answer advances on its own; a wrong one shows か = ka in warning text and waits while you fix it. Enter on an empty box reveals; Enter again skips and brings it back later. Endless — Stop when done. Grind one row until automatic, then add the next.'
       },
       {
         name: 'Kanji readings',
@@ -95,7 +95,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Long-form listening',
         to: '/japanese/immersion',
-        text: 'A ladder over anime files attached to the local player: cold pass, Japanese-subtitle pass, focused transcript work, shadowing, and a retell. Start with a known two-minute scene and grow toward a full cold episode. You may log an incomplete protocol; the ladder guides rather than locks.'
+        text: 'A ladder over locally attached anime files opened in your system player: cold pass, Japanese-subtitle pass, focused transcript work, shadowing, and a retell. NaviHUB keeps the exact seek range visible while you pause at its boundary. Start with a known two-minute scene and grow toward a full cold episode.'
       },
       {
         name: 'Controlled output',
@@ -105,7 +105,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Branching role-play',
         to: '/japanese/roleplay',
-        text: 'Three authored offline conversations for repairing an order, negotiating plans, and discussing a story interpretation. Produce each turn before seeing the natural paths; your choice changes the next turn. The check detects required language functions and never claims to judge every valid answer.'
+        text: 'Twelve authored offline conversations spanning everyday repairs, travel and health situations, workplace negotiation, interviews, academic disagreement, and client recovery. Produce each turn before seeing the natural paths; your choice changes the next turn. The check detects required language functions and never claims to judge every valid answer.'
       },
       {
         name: 'Grammar drill',
@@ -288,7 +288,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
 
 export default function JapaneseGuidePage() {
   return (
-    <div className="mx-auto max-w-3xl p-6">
+    <div className="mx-auto max-w-6xl p-4 sm:p-6">
       <PageHeader
         back={{ to: "/japanese", label: "Japanese" }}
         title="Guide"
@@ -296,58 +296,94 @@ export default function JapaneseGuidePage() {
         className="mb-6"
       />
 
-      <Section title="A day">
-        <div className="card p-4">
-          <ol className="list-inside list-decimal space-y-1 text-sm text-gray-300">
-            <li>Clear due reviews and stay inside the daily new-card budget.</li>
-            <li>Listen for ten minutes: guided sentences early, local video from Step 10.</li>
-            <li>Read for twenty minutes and mine only recurring or scene-critical language.</li>
-            <li>Produce one controlled response, compare it, and repair it.</li>
-            <li>Use the final five minutes for a lesson only when the unseen backlog is clear.</li>
-          </ol>
-          <dl className="mt-4 space-y-3">
-            <div>
-              <dt className="font-medium">One hour</dt>
-              <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
-                Use 15 minutes for review, 10 listening, 20 reading, 10 controlled output, and 5
-                for the next lesson or the weakest measured skill. Short on time? Keep review,
-                listening, and reading; the lesson keeps.
-              </dd>
+      <div className="grid min-w-0 gap-8 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="min-w-0 lg:sticky lg:top-6 lg:self-start">
+          <nav className="card p-4" aria-label="Japanese guide contents">
+            <p className="text-sm font-semibold text-white">Guide contents</p>
+            <div className="mt-3 flex flex-wrap gap-1 lg:flex-col">
+              <GuideJump id="jp-guide-day" label="A day" />
+              {GROUPS.map((group) => (
+                <GuideJump key={group.title} id={guideId(group.title)} label={group.title} />
+              ))}
             </div>
-            <div>
-              <dt className="font-medium">Starting out (kana done)</dt>
-              <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
-                Install the core packs first (the Set up list on the Japanese page), keep the kana
-                drill in rotation until reading it is automatic, and start Step 01 at ~10 new cards
-                a day. Reading starts week one, not after grammar — the sentence feed works from
-                your very first learned words, and around Step 03 an easy manga plus its Vocab deck
-                takes over.
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </Section>
+          </nav>
+        </aside>
 
-      {GROUPS.map((group) => (
-        <Section key={group.title} title={group.title}>
-          <dl className="space-y-4">
-            {group.entries.map((e) => (
-              <div key={e.name}>
-                <dt className="font-medium">
-                  {e.to ? (
-                    <Link to={e.to} className="hover:text-accent">
-                      {e.name}
-                    </Link>
-                  ) : (
-                    e.name
-                  )}
-                </dt>
-                <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">{e.text}</dd>
+        <div className="min-w-0">
+          <div id="jp-guide-day" className="scroll-mt-6">
+            <Section title="A day">
+              <div className="card p-4">
+                <ol className="list-inside list-decimal space-y-1 text-sm text-gray-300">
+                  <li>Clear due reviews and stay inside the daily new-card budget.</li>
+                  <li>Listen for ten minutes: guided sentences early, local video from Step 10.</li>
+                  <li>Read for twenty minutes and mine only recurring or scene-critical language.</li>
+                  <li>Produce one controlled response, compare it, and repair it.</li>
+                  <li>Use the final five minutes for a lesson only when the unseen backlog is clear.</li>
+                </ol>
+                <dl className="mt-4 space-y-3">
+                  <div>
+                    <dt className="font-medium">One hour</dt>
+                    <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
+                      Use 15 minutes for review, 10 listening, 20 reading, 10 controlled output, and 5
+                      for the next lesson or the weakest measured skill. Short on time? Keep review,
+                      listening, and reading; the lesson keeps.
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="font-medium">Starting out (kana done)</dt>
+                    <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
+                      Install the core packs first (the Set up list on the Japanese page), keep the kana
+                      drill in rotation until reading it is automatic, and start Step 01 at ~10 new cards
+                      a day. Reading starts week one, not after grammar — the sentence feed works from
+                      your very first learned words, and around Step 03 an easy manga plus its Vocab deck
+                      takes over.
+                    </dd>
+                  </div>
+                </dl>
               </div>
-            ))}
-          </dl>
-        </Section>
-      ))}
+            </Section>
+          </div>
+
+          {GROUPS.map((group) => (
+            <div key={group.title} id={guideId(group.title)} className="scroll-mt-6">
+              <Section title={group.title}>
+                <dl className="space-y-4">
+                  {group.entries.map((e) => (
+                    <div key={e.name}>
+                      <dt className="font-medium">
+                        {e.to ? (
+                          <Link to={e.to} className="hover:text-accent">
+                            {e.name}
+                          </Link>
+                        ) : (
+                          e.name
+                        )}
+                      </dt>
+                      <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">{e.text}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </Section>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
+  )
+}
+
+function guideId(title: string): string {
+  return `jp-guide-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}`
+}
+
+function GuideJump({ id, label }: { id: string; label: string }) {
+  return (
+    <button
+      type="button"
+      className="rounded px-2 py-1.5 text-left text-sm text-gray-400 hover:bg-base-700 hover:text-white"
+      onClick={() => document.getElementById(id)?.scrollIntoView({ block: 'start' })}
+    >
+      {label}
+    </button>
   )
 }

@@ -105,7 +105,9 @@ deleted file turns grey and a restored or downloaded file resolves again. Saniti
 and in-app library exports always wipe all three tables.
 
 When the fast provider fails, the same visible metadata task automatically falls back
-to spotDL with eight metadata workers and its persistent cache. The fallback has no
+to spotDL with eight metadata workers. NaviHUB deliberately omits `--use-cache-file`:
+current spotDL uses that flag to select its official Spotify Web API path, and an
+application-level limit there can demand a 24-hour wait. The fallback has no
 fake percentage or hard completion promise because spotDL enumerates every release,
 but it reports elapsed time and found tracks and remains cancellable. Duplicate opens
 for the same artist or album attach to that job; a conflicting maintenance task is
@@ -126,6 +128,9 @@ auto-link only after all relevant source tracks resolve to one unambiguous local
 Metadata and audio child processes also have output-silence watchdogs: a stalled spotDL
 tree is terminated with an actionable Retry/Settings error instead of occupying the
 maintenance gate indefinitely.
+Provider rate-limit messages that request a multi-minute wait are also treated as a
+terminal failure and tree-killed immediately, rather than leaving a task apparently
+running until the provider's timer expires.
 
 The batch owns the music-maintenance gate from start through its final rescan.
 Child spotDL runs and scans re-enter that same unique owner; competing Spotify,

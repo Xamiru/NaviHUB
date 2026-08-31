@@ -184,6 +184,7 @@ export default function JapaneseRoleplayPage() {
             <button
               key={item.id}
               type="button"
+              aria-pressed={item.id === scenario.id}
               className={item.id === scenario.id ? 'pill pill-active' : 'pill'}
               onClick={() => reset(item.id)}
             >
