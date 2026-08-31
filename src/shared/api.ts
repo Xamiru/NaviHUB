@@ -92,6 +92,10 @@ import type {
   JpLessonDetail,
   JpLessonInput,
   JpMiningInbox,
+  JpTutorDay,
+  JpTutorDebriefInput,
+  JpTutorError,
+  JpTutorErrorInput,
   EnDictEntry,
   EnFreqInfo,
   EnglishDictInfo,
@@ -199,11 +203,8 @@ import type {
   MokuroPageOcr,
   OpenTarget,
   VideoAttachResult,
-  VideoCacheStats,
+  VideoFileRef,
   VideoLibrary,
-  VideoPrepareStatus,
-  VideoSource,
-  VideoSourceRef,
   VideoToolsResult,
   JpToken,
   ActivityStatus,
@@ -285,6 +286,31 @@ import type {
   WrestlingPromotionId,
   WrestlingWrestler,
   WrestlingWrestlerDetail,
+  FootballCompetition,
+  FootballCompetitionDetail,
+  FootballCompetitionKey,
+  FootballCurrentSnapshot,
+  FootballEntityFilter,
+  FootballEntityKind,
+  FootballExternalLink,
+  FootballExternalProvider,
+  FootballJournalInput,
+  FootballMatchDetail,
+  FootballMatchFilter,
+  FootballMatchSummary,
+  FootballMedia,
+  FootballMediaInput,
+  FootballOverview,
+  FootballPersonDetail,
+  FootballPersonSummary,
+  FootballSearchResults,
+  FootballSeason,
+  FootballSeasonDetail,
+  FootballSyncOverview,
+  FootballSyncRequest,
+  FootballSyncStatus,
+  FootballTeamDetail,
+  FootballTeamSummary,
   YtDlpDetectResult
 } from './types'
 
@@ -705,6 +731,13 @@ export interface NaviApi {
     jlptLadder(): Promise<JpJlptLadder>
     // Review history (heatmap/streaks/grades) + due forecast for the stats page.
     statsDetail(): Promise<JpStatsDetail>
+    // Guided Tutor history and the recurring-error ledger. These are durable
+    // local evidence snapshots; live recommendations still read current state.
+    saveTutorDebrief(input: JpTutorDebriefInput): Promise<number>
+    tutorDays(limit?: number): Promise<JpTutorDay[]>
+    addTutorError(input: JpTutorErrorInput): Promise<number>
+    tutorErrors(limit?: number): Promise<JpTutorError[]>
+    resolveTutorError(id: number, resolved: boolean): Promise<void>
     // Vocab mining: find-or-create the capture course/lesson.
     // Grammar points staged as small unlearned lessons under a shared course.
     // Marking a lesson learned introduces its ordinary SRS cards.
@@ -941,7 +974,7 @@ export interface NaviApi {
     adhocPages(token: string): Promise<MangaPages | null>
   }
   video: {
-    // Local video player. Episodes are attached PER TITLE, mirroring manga:
+    // Linked local videos. Episodes are attached PER TITLE, mirroring manga:
     // a folder under the video root (settings key video.dir, bootstrapped from
     // the first attach) becomes video_file rows on an anime/movie/tv item.
     attachFolder(mediaId: number): Promise<VideoAttachResult>
@@ -949,39 +982,14 @@ export interface NaviApi {
     detach(mediaId: number): Promise<void>
     files(mediaId: number): Promise<VideoLibrary>
 
-    // Playback. `source` never converts anything — it reports what Chromium
-    // can do with the file (direct / an already-cached copy / needs an ffmpeg
-    // pass / unsupported) plus the track lists. null = no such file row.
-    source(ref: VideoSourceRef, opts?: { audioStream?: number | null }): Promise<VideoSource | null>
-    // Native picker for the ad-hoc path: returns a SESSION token, so the file
-    // is playable until the app restarts and nothing is persisted about it.
-    pickFile(): Promise<VideoSourceRef | null>
-
-    // Conversion (action:'needsPrepare'). Fire-and-poll like the music
-    // downloader — prepare returns as soon as ffmpeg is spawned, then poll
-    // prepareStatus. One job at a time; prepare throws if another is running.
-    prepare(ref: VideoSourceRef, opts?: { audioStream?: number | null }): Promise<{ id: string }>
-    prepareStatus(): Promise<VideoPrepareStatus | null>
-    prepareCancel(id: string): Promise<void>
-    // Whether ffmpeg/ffprobe are on PATH (or at their configured paths).
+    // Opens the tracked path in the OS default video application. Configure
+    // VLC as the system default to make it the player NaviHUB launches.
+    openExternal(ref: VideoFileRef): Promise<void>
+    // Whether ffmpeg/ffprobe are available for metadata and subtitle-corpus
+    // extraction. External playback does not depend on these tools.
     tools(): Promise<VideoToolsResult>
-    cacheStats(): Promise<VideoCacheStats>
-    clearCache(): Promise<VideoCacheStats>
-
-    // Mining extras: clip one subtitle line's audio out of the source for the
-    // card. null = ffmpeg missing or the clip failed — the card still saves.
-    clipAudio(req: {
-      ref: VideoSourceRef
-      startSec: number
-      endSec: number
-    }): Promise<{ audioPath: string } | null>
-
-    // Called ~every 5s while playing; `markWatched` also advances the media
-    // item's own progress and credits the checklist the first time.
-    // Take a ref, not a bare id: the same player serves the media library and
-    // the wrestling collection, and a file id is only unique within its table.
-    markProgress(ref: VideoSourceRef, seconds: number): Promise<void>
-    markWatched(ref: VideoSourceRef, watched: boolean): Promise<void>
+    // Manual watched tracking. A file id is only unique within its table.
+    markWatched(ref: VideoFileRef, watched: boolean): Promise<void>
   }
   music: {
     // Standalone local-music library (<root>/<Artist>/<Album>/<tracks>).
@@ -1188,6 +1196,68 @@ export interface NaviApi {
     }): Promise<WrestlingImportStatus>
     importStatus(): Promise<WrestlingImportStatus>
     cancelImport(): Promise<void>
+  }
+
+  football: {
+    overview(): Promise<FootballOverview>
+    competitions(): Promise<FootballCompetition[]>
+    competition(key: FootballCompetitionKey): Promise<FootballCompetitionDetail | null>
+    seasons(key?: FootballCompetitionKey | null): Promise<FootballSeason[]>
+    season(id: number): Promise<FootballSeasonDetail | null>
+    teams(filter?: FootballEntityFilter): Promise<FootballTeamSummary[]>
+    team(id: number): Promise<FootballTeamDetail | null>
+    people(filter?: FootballEntityFilter): Promise<FootballPersonSummary[]>
+    person(id: number): Promise<FootballPersonDetail | null>
+    matches(filter?: FootballMatchFilter): Promise<FootballMatchSummary[]>
+    match(id: number): Promise<FootballMatchDetail | null>
+    current(
+      competitionKey?: FootballCompetitionKey | null,
+      dateFrom?: string | null,
+      dateTo?: string | null
+    ): Promise<FootballCurrentSnapshot>
+    search(query: string): Promise<FootballSearchResults>
+
+    setFavorite(kind: FootballEntityKind, entityId: number, favorite: boolean): Promise<void>
+    saveJournal(matchId: number, input: FootballJournalInput): Promise<void>
+
+    media(filter?: {
+      kind?: FootballMedia['kind'] | null
+      search?: string | null
+      limit?: number
+      offset?: number
+    }): Promise<FootballMedia[]>
+    mediaFor(kind: FootballEntityKind, entityId: number): Promise<FootballMedia[]>
+    saveMedia(input: FootballMediaInput): Promise<FootballMedia>
+    removeMedia(id: number): Promise<void>
+    pickMediaFile(): Promise<string | null>
+    openMedia(localPath: string): Promise<void>
+
+    externalLinks(
+      kind: FootballEntityKind,
+      entityId: number
+    ): Promise<FootballExternalLink[]>
+    saveExternalLink(input: {
+      id?: number
+      entityKind: FootballEntityKind
+      entityId: number
+      provider: FootballExternalProvider
+      label?: string | null
+      url: string
+    }): Promise<FootballExternalLink>
+    removeExternalLink(id: number): Promise<void>
+    openExternalLink(provider: FootballExternalProvider, url: string): Promise<void>
+
+    syncOverview(): Promise<FootballSyncOverview>
+    startSync(request: FootballSyncRequest): Promise<FootballSyncStatus>
+    syncStatus(): Promise<FootballSyncStatus>
+    pauseSync(): Promise<void>
+    resumeSync(): Promise<void>
+    cancelSync(): Promise<void>
+    resolveConflict(
+      id: number,
+      status: 'resolved' | 'ignored',
+      resolution?: string | null
+    ): Promise<void>
   }
 
   player: {

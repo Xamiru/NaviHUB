@@ -54,7 +54,10 @@ type PartyGame =
   | 'va'
   | 'synopsis'
   | 'mangaPanel'
-  | Exclude<QuizChallengeKind, 'libraryGrid' | 'movieChain'>
+  | Exclude<
+      QuizChallengeKind,
+      'libraryGrid' | 'movieChain' | 'libraryle' | 'mysteryCareer' | 'linkWall'
+    >
 const GAMES: Array<{ kind: PartyGame; label: string }> = [
   { kind: 'songRelay', label: 'Song Relay' },
   { kind: 'cast', label: 'Cast' },

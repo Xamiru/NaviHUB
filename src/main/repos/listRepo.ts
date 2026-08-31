@@ -42,6 +42,30 @@ export const KIND: Record<
     nameCol: 'name',
     imageCol: 'e.photo_path',
     subCol: 'billed_from'
+  },
+  footballCompetition: {
+    table: 'football_competition',
+    nameCol: 'name',
+    imageCol: 'NULL',
+    subCol: 'country'
+  },
+  footballTeam: {
+    table: 'football_team',
+    nameCol: 'name',
+    imageCol: 'e.image_path',
+    subCol: 'country'
+  },
+  footballPerson: {
+    table: 'football_person',
+    nameCol: 'name',
+    imageCol: 'e.image_path',
+    subCol: 'nationality'
+  },
+  footballMatch: {
+    table: 'football_match',
+    nameCol: 'title',
+    imageCol: 'NULL',
+    subCol: 'match_date'
   }
 }
 

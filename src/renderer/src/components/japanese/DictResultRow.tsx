@@ -36,9 +36,9 @@ export default function DictResultRow({
           <PitchAccent reading={entry.pitches[0].reading || entry.reading || entry.expression} position={entry.pitches[0].position} />
         </span>
       )}
-      {mined && <span className="chip ml-2 bg-green-500/20 text-green-300">✓ mined</span>}
+      {mined && <span className="chip ml-2 bg-signal-affirmative/20 text-signal-affirmative">✓ mined</span>}
       {entry.isName && <span className="chip ml-1 bg-base-700 text-gray-400">name</span>}
-      {entry.isCommon && <span className="chip ml-1 bg-green-500/20 text-green-300">common</span>}
+      {entry.isCommon && <span className="chip ml-1 bg-signal-affirmative/20 text-signal-affirmative">common</span>}
       {entry.source === 'jisho' && (
         <span className="chip ml-1 bg-base-700 text-gray-400">jisho</span>
       )}

@@ -51,7 +51,7 @@ export default function ScrambleDrill() {
           Rebuild the sentence from its chunks (3-6 per sentence). This checks against the original
           sentence — Japanese word order is flexible, so a different order may still be grammatical.
         </p>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-signal-anomaly">{error}</p>}
         <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
           {loading ? 'Sampling sentences…' : 'Start'}
         </button>
@@ -227,10 +227,10 @@ function Round({ items, length, onExit }: { items: ScrambleQuizItem[]; length: n
                 checked === null
                   ? 'border-accent/60 bg-base-800 hover:bg-base-700'
                   : checked
-                    ? 'border-green-500/60 bg-green-500/10 text-green-300'
+                    ? 'border-signal-affirmative/60 bg-signal-affirmative/10 text-signal-affirmative'
                     : c === current.chunks[i]
-                      ? 'border-green-500/60 bg-green-500/10 text-green-300'
-                      : 'border-red-500/60 bg-red-500/10 text-red-300'
+                      ? 'border-signal-affirmative/60 bg-signal-affirmative/10 text-signal-affirmative'
+                      : 'border-signal-anomaly/60 bg-signal-anomaly/10 text-signal-anomaly'
               }`}
               disabled={checked !== null}
               onClick={() => unpick(i)}
@@ -260,7 +260,7 @@ function Round({ items, length, onExit }: { items: ScrambleQuizItem[]; length: n
 
       {checked !== null && (
         <div className="card mt-4 p-4">
-          <p className={`text-xs font-semibold uppercase tracking-wide ${checked ? 'text-green-400' : 'text-red-400'}`}>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${checked ? 'text-signal-affirmative' : 'text-signal-anomaly'}`}>
             {checked ? 'Matches the original' : 'Not the original order (yours may still be grammatical)'}
           </p>
           <p className="mt-1 text-lg">

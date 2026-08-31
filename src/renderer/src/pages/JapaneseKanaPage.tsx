@@ -199,6 +199,7 @@ function KanaDrill({
 
       <div className="mx-auto mt-6 max-w-xs">
         <input
+          aria-label="Kana reading answer"
           ref={inputRef}
           className="input w-full text-center text-lg"
           placeholder="type the reading…"
@@ -223,7 +224,7 @@ function KanaDrill({
           while you correct the typing. */}
       <p className="mt-4 text-center text-sm">
         {wrong && current ? (
-          <span className="text-red-400">
+          <span className="text-signal-anomaly">
             {current.kana} = {current.answers[0]}
             <span className="ml-2 text-xs text-gray-500">Enter to skip</span>
           </span>
@@ -525,6 +526,7 @@ function KanjiDrillSetup() {
       </p>
       <div className="mb-4 flex items-center gap-2">
         <select
+          aria-label="Kanji reading course"
           className="input max-w-sm"
           value={effectiveCourseId ?? ''}
           onChange={(e) => setCourseId(Number(e.target.value))}

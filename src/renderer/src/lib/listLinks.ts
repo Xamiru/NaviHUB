@@ -25,6 +25,14 @@ export function pathForEntity(
       return `/wrestling/match/${entityId}`
     case 'wrestlingWrestler':
       return `/wrestling/wrestler/${entityId}`
+    case 'footballCompetition':
+      return `/football/competition/${entityId}`
+    case 'footballTeam':
+      return `/football/team/${entityId}`
+    case 'footballPerson':
+      return `/football/person/${entityId}`
+    case 'footballMatch':
+      return `/football/match/${entityId}`
   }
 }
 
@@ -35,7 +43,11 @@ export const KIND_LABEL: Record<ListKind, string> = {
   company: 'Studios',
   wrestlingEvent: 'Wrestling events',
   wrestlingMatch: 'Wrestling matches',
-  wrestlingWrestler: 'Wrestlers'
+  wrestlingWrestler: 'Wrestlers',
+  footballCompetition: 'Football competitions',
+  footballTeam: 'Football teams',
+  footballPerson: 'Football people',
+  footballMatch: 'Football matches'
 }
 
 // Singular noun for "Add {singular}…" prompts and empty states.
@@ -46,5 +58,9 @@ export const KIND_NOUN: Record<ListKind, string> = {
   company: 'studio',
   wrestlingEvent: 'event',
   wrestlingMatch: 'match',
-  wrestlingWrestler: 'wrestler'
+  wrestlingWrestler: 'wrestler',
+  footballCompetition: 'competition',
+  footballTeam: 'team',
+  footballPerson: 'person',
+  footballMatch: 'match'
 }

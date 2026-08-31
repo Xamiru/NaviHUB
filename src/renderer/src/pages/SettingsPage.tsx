@@ -41,6 +41,13 @@ import {
   filterSettingsSections,
   type SettingsSearchSection
 } from '../lib/settingsFilter'
+import {
+  parseSignalClarity,
+  SIGNAL_CLARITY_OPTIONS,
+  SIGNAL_CLARITY_SETTING
+} from '../lib/signalClarity'
+import { APP_THEME_OPTIONS, APP_THEME_SETTING, type AppTheme } from '@shared/appTheme'
+import { persistAppTheme, resolveAppTheme, stampAppTheme } from '../lib/theme'
 
 // Persist a setting and refresh the settings cache. Passed down to every
 // section so they all save the same way.
@@ -67,7 +74,21 @@ const SETTINGS_SEARCH: readonly SettingsSearchSection<TabId>[] = [
   {
     key: 'general',
     title: 'General',
-    terms: ['appearance', 'ui scale', 'zoom', 'menu bar', 'sidebar', 'score', 'time stats']
+    terms: [
+      'appearance',
+      'theme',
+      'lain',
+      'metal gear',
+      'tactical',
+      'signal clarity',
+      'effects',
+      'ui scale',
+      'zoom',
+      'menu bar',
+      'sidebar',
+      'score',
+      'time stats'
+    ]
   },
   {
     key: 'statuses',
@@ -200,6 +221,10 @@ export default function SettingsPage() {
           ) : null}
           {displayTab === 'general' && (
             <>
+              <ThemeSettings data={data} onSave={setKey} />
+              {resolveAppTheme(data?.[APP_THEME_SETTING]) === 'lain' && (
+                <SignalClaritySettings data={data} onSave={setKey} />
+              )}
               <UiScaleSettings data={data} onSave={setKey} />
               <MenuBarSettings data={data} onSave={setKey} />
               <SidebarSettings data={data} onSave={setKey} />
@@ -230,7 +255,7 @@ export default function SettingsPage() {
             <>
               <YtdlpSettings data={data} onSave={setKey} />
               <SpotdlSettings data={data} onSave={setKey} />
-              <VideoToolsSettings data={data} onSave={setKey} />
+              <VideoSubtitleToolsSettings data={data} onSave={setKey} />
               <MokuroSettings data={data} onSave={setKey} />
               <TorrentSettings data={data} onSave={setKey} />
             </>
@@ -307,6 +332,111 @@ function TextSetting({
 }
 
 // ---- Appearance -------------------------------------------------------------
+
+function ThemeSettings({
+  data,
+  onSave
+}: {
+  data?: Record<string, string>
+  onSave: SaveFn
+}) {
+  const current = resolveAppTheme(data?.[APP_THEME_SETTING])
+  const [saving, setSaving] = useState(false)
+
+  async function selectTheme(theme: AppTheme): Promise<void> {
+    // Save through the same local settings path as the rest of this page, then
+    // mirror and stamp it. A failed database write must not leave a false choice.
+    setSaving(true)
+    try {
+      await onSave(APP_THEME_SETTING, theme)
+      stampAppTheme(theme)
+      persistAppTheme(theme)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <SettingCard
+      title="Theme"
+      description="Choose the visual language for NaviHUB. Your library, layout and features stay exactly the same."
+    >
+      <div className="grid gap-3 sm:grid-cols-2" role="group" aria-label="Application theme">
+        {APP_THEME_OPTIONS.map((option) => {
+          const active = current === option.value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              className={`theme-choice text-left ${active ? 'theme-choice-active' : ''}`}
+              aria-pressed={active}
+              disabled={saving}
+              onClick={() => void selectTheme(option.value)}
+            >
+              <span className={`theme-swatch theme-swatch-${option.value}`} aria-hidden="true">
+                <span className="theme-swatch-field" />
+                <span className="theme-swatch-rule" />
+              </span>
+              <span className="mt-3 flex items-baseline justify-between gap-3">
+                <span className="text-sm font-semibold text-ink">{option.label}</span>
+                <span className="text-[10px] uppercase tracking-[0.16em] text-signal-link">
+                  {option.subtitle}
+                </span>
+              </span>
+              <span className="mt-1.5 block text-xs leading-relaxed text-ink-muted">
+                {option.description}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <p className="mt-3 text-xs leading-relaxed text-ink-muted">
+        The Metal Gear theme is an original tactical interface inspired by the series. It does not copy logos, character art or game screens.
+      </p>
+    </SettingCard>
+  )
+}
+
+function SignalClaritySettings({
+  data,
+  onSave
+}: {
+  data?: Record<string, string>
+  onSave: SaveFn
+}) {
+  const current = parseSignalClarity(data?.[SIGNAL_CLARITY_SETTING])
+
+  return (
+    <SettingCard
+      title="Signal clarity"
+      description="Controls how strongly the Lain atmosphere appears. Route moods still keep readers chromeless and workspaces calm."
+    >
+      <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label="Signal clarity">
+        {SIGNAL_CLARITY_OPTIONS.map((option) => {
+          const active = current === option.value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              className={`rounded-md border p-3 text-left transition-colors ${
+                active
+                  ? 'border-signal-live/50 bg-signal-live/10 text-ink'
+                  : 'border-line-subtle bg-surface-panel text-ink-secondary hover:border-line-strong hover:text-ink'
+              }`}
+              aria-pressed={active}
+              onClick={() => void onSave(SIGNAL_CLARITY_SETTING, option.value)}
+            >
+              <span className="block text-sm font-semibold">{option.label}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
+                {option.description}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+    </SettingCard>
+  )
+}
 
 // UI scale = Electron's zoom factor. Applied live on click (so the effect is
 // visible while choosing) and persisted, since main re-applies it on load.
@@ -614,6 +744,15 @@ function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSa
           </>
         }
       />
+      <TextSetting
+        settingKey="football.api_key"
+        data={data}
+        onSave={onSave}
+        title="API-Football key"
+        type="password"
+        placeholder="Paste your API-Football key…"
+        description="Optional. Enables manual current-season refreshes for Football. The key is sent only in API-Football's authorization header and stays on this machine. History installation uses keyless bulk datasets."
+      />
       {/* Games IMPORT runs on Steam's keyless storefront API — no key needed.
           The key below is only for achievement lists, which come from the
           separate Web API. (RAWG and IGDB both remain in code but need
@@ -701,6 +840,14 @@ function FoldersSettings({ data, onSave }: { data?: Record<string, string>; onSa
         title="Wrestling library folder"
         placeholder="/home/you/Wrestling"
         description="The root folder your PPV and match rips live in. Set automatically the first time you attach a folder from an event page; file paths are stored relative to this root, so if you move the library, just update this and rescan."
+      />
+      <TextSetting
+        settingKey="football.dir"
+        data={data}
+        onSave={onSave}
+        title="Football media folder"
+        placeholder="/home/you/Football"
+        description="The root containing Football clips, highlights, full matches, interviews and documentaries. Attachments stay in place and are opened in the OS player; NaviHUB never scans, copies, moves or deletes these files."
       />
       <TextSetting
         settingKey="music.dir"
@@ -1091,23 +1238,23 @@ function MokuroSettings({ data, onSave }: { data?: Record<string, string>; onSav
   )
 }
 
-// ffmpeg/ffprobe for the video player: probing files and converting the ones
-// Chromium can't demux (MKV) or decode (HEVC, AC3) into a cached playable copy.
-// Same posture as yt-dlp — user-installed, never bundled.
-function VideoToolsSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+// ffmpeg/ffprobe remain optional helpers for linked-video metadata and offline
+// Japanese subtitle-corpus extraction. Playback is external and never uses
+// either binary.
+function VideoSubtitleToolsSettings({
+  data,
+  onSave
+}: {
+  data?: Record<string, string>
+  onSave: SaveFn
+}) {
   const [ffmpegPath, setFfmpegPath] = useState('')
   const [ffprobePath, setFfprobePath] = useState('')
   const [check, setCheck] = useState<VideoToolsResult | null>(null)
-  const [clearing, setClearing] = useState(false)
   useEffect(() => {
     setFfmpegPath(data?.['ffmpeg.path'] ?? '')
     setFfprobePath(data?.['ffprobe.path'] ?? '')
   }, [data])
-
-  const { data: cache, refetch } = useQuery({
-    queryKey: qk.video.cacheStats,
-    queryFn: () => api.video.cacheStats()
-  })
 
   async function test() {
     setCheck(null)
@@ -1116,27 +1263,14 @@ function VideoToolsSettings({ data, onSave }: { data?: Record<string, string>; o
     setCheck(await api.video.tools())
   }
 
-  async function clearCache() {
-    setClearing(true)
-    try {
-      await api.video.clearCache()
-      await refetch()
-    } finally {
-      setClearing(false)
-    }
-  }
-
-  const gb = (bytes: number): string => `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`
-
   return (
     <SettingCard
-      title="ffmpeg (video player)"
+      title="ffmpeg (video library tools)"
       description={
         <>
-          The player uses ffprobe to inspect files and ffmpeg to convert the ones this app
-          can&apos;t play natively — MKV containers, HEVC video, AC3/DTS audio — into a cached copy.
-          Without ffmpeg only .mp4 and .webm play. Install it yourself (your package manager); leave
-          the fields blank to use PATH.
+          Optional: ffprobe reads duration and codec metadata, while ffmpeg extracts embedded text
+          subtitles for offline Japanese coverage and prep decks. Files always open in your system
+          video player, whether these tools are installed or not. Leave the fields blank to use PATH.
         </>
       }
     >
@@ -1168,21 +1302,6 @@ function VideoToolsSettings({ data, onSave }: { data?: Record<string, string>; o
               ? `✓ ${check.ffmpegVersion ?? 'ffmpeg found'}`
               : `${check.ffmpeg ? 'ffmpeg found' : 'ffmpeg not found'} · ${check.ffprobe ? 'ffprobe found' : 'ffprobe not found'}`}
           </p>
-        )}
-        {cache && (
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <span>
-              Converted copies: {cache.entries} file{cache.entries === 1 ? '' : 's'} ·{' '}
-              {gb(cache.bytes)} of {gb(cache.capBytes)}
-            </span>
-            <button
-              className="btn-ghost px-2 py-0.5 text-xs"
-              disabled={clearing || cache.entries === 0}
-              onClick={clearCache}
-            >
-              Clear
-            </button>
-          </div>
         )}
       </div>
     </SettingCard>

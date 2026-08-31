@@ -15,7 +15,6 @@ describe('wired surface moods', () => {
     ['/quiz/song', 'standard'],
     ['/gacha/fgo', 'standard'],
     ['/search', 'standard'],
-    ['/watch/file/12', 'immersive'],
     ['/manga/8/read/13', 'immersive'],
     ['/read/book/token', 'immersive']
   ] as const)('classifies %s as %s', (pathname, mood) => {

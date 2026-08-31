@@ -81,7 +81,7 @@ export default function CalendarHeatmap({
               ) : (
                 <span
                   key={cell.day}
-                  className={`h-2.5 w-2.5 rounded-[2px] ${bucketClass(cell.count, max)}`}
+                  className={`h-2.5 w-2.5 rounded-md ${bucketClass(cell.count, max)}`}
                   title={`${cell.day} · ${cell.count} ${unit}`}
                 />
               )

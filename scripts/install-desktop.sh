@@ -12,9 +12,8 @@
 # reaches the system unless the AppImage is desktop-integrated (appimaged /
 # AppImageLauncher). This writes a real entry either way.
 #
-# Deliberately does NOT make NaviHUB the DEFAULT handler for anything. It adds
-# NaviHUB to the "Open with" list; changing your default video player is your
-# call (the command to do it is printed at the end).
+# Deliberately does NOT make NaviHUB the DEFAULT handler for anything. It only
+# adds NaviHUB to the "Open with" list.
 set -euo pipefail
 
 REPO="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
@@ -30,8 +29,6 @@ ENTRY="$APPS_DIR/navihub.desktop"
 # claiming the generic zip type would put it in the "Open with" menu of every
 # archive on the system, which is hostile. Explicitly picking NaviHUB still works.
 MIMES=(
-  video/x-matroska video/mp4 video/webm video/x-msvideo video/quicktime
-  video/mp2t video/x-ms-wmv video/x-flv video/mpeg video/ogg
   application/epub+zip
   application/vnd.comicbook+zip application/x-cbz
   audio/mpeg audio/flac audio/x-flac audio/mp4 audio/aac
@@ -162,7 +159,7 @@ command -v gtk-update-icon-cache >/dev/null 2>&1 && \
   gtk-update-icon-cache -f -t "${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor" >/dev/null 2>&1 || true
 
 echo "Installed $ENTRY"
-echo "NaviHUB now appears under 'Open with' for video, EPUB, CBZ and audio files."
+echo "NaviHUB now appears under 'Open with' for EPUB, CBZ and audio files."
 echo
 echo "To make it the DEFAULT for a type (optional), e.g.:"
-echo "  xdg-mime default navihub.desktop video/x-matroska"
+echo "  xdg-mime default navihub.desktop application/epub+zip"

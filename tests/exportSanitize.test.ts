@@ -131,6 +131,26 @@ function seed(): void {
     INSERT INTO prog_cli_miss (cmd_key, misses) VALUES ('files/ls -la', 2);
     INSERT INTO prog_solve (kind, key, best, answer) VALUES ('regex', 'digits', 5, '\\d+');
 
+    INSERT INTO football_competition (id,key,name,scope,format)
+      VALUES (1,'premier-league','Premier League','domestic','league');
+    INSERT INTO football_season (id,competition_id,key,label) VALUES (1,1,'2025','2025/26');
+    INSERT INTO football_team (id,name,image_path) VALUES (1,'Arsenal','media/football-arsenal.jpg'),(2,'Chelsea',NULL);
+    INSERT INTO football_person (id,name,role,bio,image_path)
+      VALUES (1,'Player','player','private cached biography','media/football-player.jpg');
+    INSERT INTO football_match
+      (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score)
+      VALUES (1,'Arsenal vs Chelsea',1,1,2,'2026-01-01','finished',2,1);
+    INSERT INTO football_favorite (entity_kind,entity_id) VALUES ('match',1);
+    INSERT INTO football_match_journal (match_id,watched_at,rating,note)
+      VALUES (1,'2026-01-02',4.5,'private note');
+    INSERT INTO football_media (id,title,kind,local_path)
+      VALUES (1,'Full match','fullMatch','final.mkv');
+    INSERT INTO football_media_link (media_id,entity_kind,entity_id) VALUES (1,'match',1);
+    INSERT INTO football_external_link (entity_kind,entity_id,provider,label,url)
+      VALUES ('match',1,'fotmob','FotMob','https://www.fotmob.com/matches/a/b#1');
+    INSERT INTO list (id,title,entity_kind) VALUES (2,'Football finals','footballMatch');
+    INSERT INTO list_item (list_id,entity_id,note) VALUES (2,1,'private list note');
+
     INSERT INTO settings (key, value) VALUES
       ('tmdb.api_key', 'secret-tmdb'),
       ('franchise.zelda.background', 'media/my-wallpaper-1234-1.png'),
@@ -158,6 +178,10 @@ function seed(): void {
       ('qbittorrent.password', 'secret-qbit'),
       ('github.token', 'ghp_secret-updater-token'),
       ('video.dir', '/media/xamir/Anglo/Video'),
+      ('football.dir', '/media/xamir/Anglo/Football'),
+      ('football.api_key', 'secret-football'),
+      ('football.api_quota', '{"date":"2026-08-30","used":91,"backlog":4}'),
+      ('football.entitlement.premier-league', '{"entitled":true,"checkedAt":"2026-08-30"}'),
       ('ffmpeg.path', '/usr/bin/ffmpeg'),
       ('ffprobe.path', '/usr/bin/ffprobe'),
       ('mokuro.path', '/home/xamir/.local/bin/mokuro'),
@@ -248,6 +272,13 @@ describe('export sanitize', () => {
     expect(keys).toEqual(['anime.statuses', 'score.max', 'theme'])
   })
 
+  it('excludes the complete Football catalogue and its personal/provider data', () => {
+    const tables = (db.prepare(`
+      SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'football_%'
+    `).all() as { name: string }[]).map((row) => row.name)
+    for (const table of tables) expect(count(table), table).toBe(0)
+  })
+
   it('tolerates a live DB that predates newer tables', () => {
     const older = createTestDb()
     older.exec(
@@ -323,6 +354,11 @@ describe('custom export policy', () => {
     expect(
       db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item').get()
     ).toEqual({ matched_track_id: null })
+  })
+
+  it('removes orphaned Football entries when ordinary lists are included', () => {
+    sanitizeWith({ sections: ['anime'], includeLists: true })
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM list_item WHERE list_id=2`).get()).toEqual({ n: 0 })
   })
 
   it('clears omitted asset and theme-audio paths without removing metadata', () => {

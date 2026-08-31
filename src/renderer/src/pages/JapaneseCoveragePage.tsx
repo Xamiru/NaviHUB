@@ -89,9 +89,9 @@ export default function JapaneseCoveragePage() {
                     <span className="truncate font-medium text-gray-500">{row.title}</span>
                   )}
                   <span className="shrink-0 text-sm">
-                    <span className="font-semibold text-green-300">{pct(knownShare(row.tiers))}</span>
+                    <span className="font-semibold text-signal-affirmative">{pct(knownShare(row.tiers))}</span>
                     {learningShare(row.tiers) > 0 && (
-                      <span className="text-amber-300"> +{pct(learningShare(row.tiers))}</span>
+                      <span className="text-signal-caution"> +{pct(learningShare(row.tiers))}</span>
                     )}
                   </span>
                 </div>

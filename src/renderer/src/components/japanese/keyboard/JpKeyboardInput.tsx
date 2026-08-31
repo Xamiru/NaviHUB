@@ -15,6 +15,7 @@ export default function JpKeyboardInput({
   className = '',
   wrapClassName = '',
   autoFocus,
+  ariaLabel,
   inputRef
 }: {
   value: string
@@ -24,6 +25,7 @@ export default function JpKeyboardInput({
   className?: string
   wrapClassName?: string // layout classes for the positioning wrapper (flex-1…)
   autoFocus?: boolean
+  ariaLabel: string
   inputRef?: RefObject<HTMLInputElement | null>
 }) {
   const [open, setOpen] = useState(false)
@@ -74,6 +76,7 @@ export default function JpKeyboardInput({
   return (
     <div className={`relative ${wrapClassName}`}>
       <input
+        aria-label={ariaLabel}
         ref={setRefs}
         className={`input pr-10 ${className}`}
         value={value}

@@ -77,6 +77,7 @@ export default function JapaneseMinePage() {
           <div className="label mb-1">Look up (offline dictionaries · English works too)</div>
           <div className="flex gap-2">
             <input
+              aria-label="Search offline Japanese dictionaries"
               ref={searchRef}
               className="input flex-1"
               placeholder="e.g. 沼, 面白い, or an English word…"
@@ -118,12 +119,14 @@ export default function JapaneseMinePage() {
         <div className="border-t border-base-700 pt-4 space-y-3">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
             <input
+              aria-label="Word"
               className="input"
               placeholder="Word"
               value={draft.front}
               onChange={(e) => setDraft((d) => ({ ...d, front: e.target.value }))}
             />
             <input
+              aria-label="Reading in kana"
               className="input"
               placeholder="Reading (kana)"
               value={draft.reading}
@@ -132,12 +135,14 @@ export default function JapaneseMinePage() {
           </div>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1fr]">
             <input
+              aria-label="Meaning"
               className="input"
               placeholder="Meaning"
               value={draft.back}
               onChange={(e) => setDraft((d) => ({ ...d, back: e.target.value }))}
             />
             <input
+              aria-label="Part of speech"
               className="input"
               placeholder="Part of speech"
               value={draft.pos}
@@ -145,18 +150,21 @@ export default function JapaneseMinePage() {
             />
           </div>
           <input
+            aria-label="Japanese example sentence"
             className="input"
             placeholder="Example sentence (JP, optional)"
             value={draft.exampleJp}
             onChange={(e) => setDraft((d) => ({ ...d, exampleJp: e.target.value }))}
           />
           <input
+            aria-label="Example sentence translation"
             className="input"
             placeholder="Example translation (EN, optional)"
             value={draft.exampleEn}
             onChange={(e) => setDraft((d) => ({ ...d, exampleEn: e.target.value }))}
           />
           <input
+            aria-label="Mining note"
             className="input"
             placeholder="Note (optional — e.g. where you found it)"
             value={draft.notes}
@@ -170,7 +178,7 @@ export default function JapaneseMinePage() {
                 <CoverImage path={source.imagePath} alt={source.name} className="h-8 w-8 shrink-0" />
                 <span className="min-w-0 flex-1 truncate text-sm">{source.name}</span>
                 <button
-                  className="btn-ghost py-1 px-2 text-xs text-gray-500 hover:text-red-400"
+                  className="btn-ghost py-1 px-2 text-xs text-gray-500 hover:text-signal-anomaly"
                   onClick={() => setSource(null)}
                   aria-label="Clear source"
                 >
@@ -190,6 +198,7 @@ export default function JapaneseMinePage() {
           <div>
             <div className="label mb-1">Save to</div>
             <select
+              aria-label="Review deck for mined word"
               className="input"
               value={targetLessonId ?? ''}
               onChange={(e) => setLessonId(Number(e.target.value))}

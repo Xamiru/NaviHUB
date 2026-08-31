@@ -540,6 +540,45 @@ CREATE TABLE IF NOT EXISTS jp_review_log (
 CREATE INDEX IF NOT EXISTS idx_jp_review_log_card ON jp_review_log(card_id);
 CREATE INDEX IF NOT EXISTS idx_jp_review_log_time ON jp_review_log(reviewed_at);
 
+-- One durable row per completed Tutor day. tasks_json is the evidence snapshot
+-- shown at close, not a second source of truth for live SRS/quiz state.
+CREATE TABLE IF NOT EXISTS jp_tutor_day (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  day               TEXT NOT NULL UNIQUE,
+  phase_id          TEXT NOT NULL,
+  started_at        TEXT NOT NULL,
+  ended_at          TEXT NOT NULL,
+  planned_minutes   INTEGER NOT NULL,
+  completed_minutes INTEGER NOT NULL,
+  completed_blocks  INTEGER NOT NULL,
+  total_blocks      INTEGER NOT NULL,
+  strongest         TEXT,
+  tomorrow_focus    TEXT NOT NULL,
+  tasks_json        TEXT NOT NULL,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_jp_tutor_day_ended ON jp_tutor_day(ended_at);
+
+-- Weak measured results and learner-reported problems form the Tutor's error
+-- ledger. Automatic rows carry their quiz-session id so closing a debrief
+-- twice cannot duplicate an error. Manual rows deliberately have no source id.
+CREATE TABLE IF NOT EXISTS jp_tutor_error (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  day               TEXT NOT NULL,
+  skill             TEXT NOT NULL,
+  label             TEXT NOT NULL,
+  detail            TEXT NOT NULL,
+  source_kind       TEXT,
+  source_session_id INTEGER,
+  score             INTEGER,
+  threshold         INTEGER,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at       TEXT,
+  UNIQUE(day, skill, label, source_session_id)
+);
+CREATE INDEX IF NOT EXISTS idx_jp_tutor_error_open ON jp_tutor_error(resolved_at, created_at);
+
 -- Speeds the coverage/analyze tier joins (and minedFronts, which predates them).
 CREATE INDEX IF NOT EXISTS idx_jp_card_front ON jp_card(front);
 
@@ -1354,3 +1393,393 @@ CREATE TABLE IF NOT EXISTS wrestling_video (
   UNIQUE(event_id, file_path)
 );
 CREATE INDEX IF NOT EXISTS idx_wrestling_video_event ON wrestling_video(event_id);
+
+-- ---- Football Archive ----
+-- A local-first, source-auditable history graph. Football is deliberately a
+-- standalone section rather than media_item rows: seasons, tables, fixtures,
+-- careers and source coverage are facts, while the personal layer is limited
+-- to favorites, match journal entries and manually attached media.
+--
+-- Every football_* table is excluded from shareable exports. The archive mixes
+-- personal data, machine paths and providers whose datasets are licensed for
+-- personal use rather than redistribution.
+CREATE TABLE IF NOT EXISTS football_competition (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  key              TEXT NOT NULL UNIQUE,
+  name             TEXT NOT NULL,
+  short_name       TEXT,
+  country          TEXT,
+  scope            TEXT NOT NULL, -- domestic | continental | international
+  format           TEXT NOT NULL, -- league | cup
+  start_year       INTEGER,
+  lineage_note     TEXT,
+  summary          TEXT,
+  current_season_id INTEGER,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS football_era (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  competition_id INTEGER NOT NULL REFERENCES football_competition(id) ON DELETE CASCADE,
+  name           TEXT NOT NULL,
+  start_season   TEXT,
+  end_season     TEXT,
+  points_win     INTEGER,
+  points_draw    INTEGER,
+  rank_rules     TEXT,
+  narrative      TEXT,
+  sort_order     INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(competition_id, name, start_season)
+);
+CREATE INDEX IF NOT EXISTS idx_football_era_competition ON football_era(competition_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS football_season (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  competition_id    INTEGER NOT NULL REFERENCES football_competition(id) ON DELETE CASCADE,
+  key               TEXT NOT NULL,
+  label             TEXT NOT NULL,
+  start_date        TEXT,
+  end_date          TEXT,
+  status            TEXT NOT NULL DEFAULT 'complete', -- upcoming | current | complete | void
+  edition_number    INTEGER,
+  team_count        INTEGER,
+  champion_verified INTEGER NOT NULL DEFAULT 0,
+  narrative         TEXT,
+  data_revision     TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(competition_id, key)
+);
+CREATE INDEX IF NOT EXISTS idx_football_season_competition ON football_season(competition_id, start_date);
+
+CREATE TABLE IF NOT EXISTS football_stage (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  season_id  INTEGER NOT NULL REFERENCES football_season(id) ON DELETE CASCADE,
+  parent_id  INTEGER REFERENCES football_stage(id) ON DELETE CASCADE,
+  key        TEXT NOT NULL,
+  name       TEXT NOT NULL,
+  kind       TEXT NOT NULL, -- league | group | knockout | final | qualifier
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(season_id, key)
+);
+CREATE INDEX IF NOT EXISTS idx_football_stage_season ON football_stage(season_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS football_team (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  name           TEXT NOT NULL,
+  short_name     TEXT,
+  country        TEXT,
+  founded_year   INTEGER,
+  is_national    INTEGER NOT NULL DEFAULT 0,
+  bio            TEXT,
+  image_path     TEXT,
+  enrichment_state TEXT NOT NULL DEFAULT 'not_requested',
+  enriched_at    TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_football_team_name ON football_team(name);
+
+CREATE TABLE IF NOT EXISTS football_person (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  name             TEXT NOT NULL,
+  role             TEXT NOT NULL, -- player | manager | both
+  birth_date       TEXT,
+  death_date       TEXT,
+  nationality      TEXT,
+  bio              TEXT,
+  image_path       TEXT,
+  enrichment_state TEXT NOT NULL DEFAULT 'not_requested',
+  enriched_at      TEXT,
+  quiz_pack        INTEGER NOT NULL DEFAULT 0,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_football_person_name ON football_person(name);
+
+CREATE TABLE IF NOT EXISTS football_tenure (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  person_id   INTEGER NOT NULL REFERENCES football_person(id) ON DELETE CASCADE,
+  team_id     INTEGER NOT NULL REFERENCES football_team(id) ON DELETE CASCADE,
+  role        TEXT NOT NULL, -- player | manager
+  start_date  TEXT,
+  end_date    TEXT,
+  loan        INTEGER NOT NULL DEFAULT 0,
+  appearances INTEGER,
+  goals       INTEGER,
+  verified    INTEGER NOT NULL DEFAULT 0,
+  complete    INTEGER NOT NULL DEFAULT 0,
+  sort_order  INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_football_tenure_person ON football_tenure(person_id, role, sort_order);
+CREATE INDEX IF NOT EXISTS idx_football_tenure_team ON football_tenure(team_id, role);
+
+CREATE TABLE IF NOT EXISTS football_match (
+  id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+  title               TEXT NOT NULL, -- denormalized "Home vs Away" for lists/search
+  season_id           INTEGER NOT NULL REFERENCES football_season(id) ON DELETE CASCADE,
+  stage_id            INTEGER REFERENCES football_stage(id) ON DELETE SET NULL,
+  home_team_id        INTEGER NOT NULL REFERENCES football_team(id) ON DELETE RESTRICT,
+  away_team_id        INTEGER NOT NULL REFERENCES football_team(id) ON DELETE RESTRICT,
+  kickoff_at          TEXT,
+  match_date          TEXT NOT NULL,
+  round               TEXT,
+  status              TEXT NOT NULL DEFAULT 'scheduled',
+  home_score          INTEGER,
+  away_score          INTEGER,
+  home_halftime       INTEGER,
+  away_halftime       INTEGER,
+  home_extra_time     INTEGER,
+  away_extra_time     INTEGER,
+  home_penalties      INTEGER,
+  away_penalties      INTEGER,
+  aggregate_home      INTEGER,
+  aggregate_away      INTEGER,
+  awarded             INTEGER NOT NULL DEFAULT 0,
+  venue               TEXT,
+  city                TEXT,
+  attendance          INTEGER,
+  referee             TEXT,
+  event_coverage      TEXT NOT NULL DEFAULT 'not_supplied',
+  lineup_coverage     TEXT NOT NULL DEFAULT 'not_supplied',
+  conflicted          INTEGER NOT NULL DEFAULT 0,
+  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_football_match_season ON football_match(season_id, match_date);
+CREATE INDEX IF NOT EXISTS idx_football_match_home ON football_match(home_team_id, match_date);
+CREATE INDEX IF NOT EXISTS idx_football_match_away ON football_match(away_team_id, match_date);
+
+CREATE TABLE IF NOT EXISTS football_lineup (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_id   INTEGER NOT NULL REFERENCES football_match(id) ON DELETE CASCADE,
+  team_id    INTEGER NOT NULL REFERENCES football_team(id) ON DELETE CASCADE,
+  person_id  INTEGER NOT NULL REFERENCES football_person(id) ON DELETE CASCADE,
+  role       TEXT NOT NULL DEFAULT 'player',
+  starter    INTEGER NOT NULL DEFAULT 0,
+  shirt      INTEGER,
+  position   TEXT,
+  captain    INTEGER NOT NULL DEFAULT 0,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  UNIQUE(match_id, team_id, person_id, role)
+);
+CREATE INDEX IF NOT EXISTS idx_football_lineup_match ON football_lineup(match_id, team_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_football_lineup_person ON football_lineup(person_id);
+
+CREATE TABLE IF NOT EXISTS football_event (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  match_id          INTEGER NOT NULL REFERENCES football_match(id) ON DELETE CASCADE,
+  team_id           INTEGER REFERENCES football_team(id) ON DELETE SET NULL,
+  person_id         INTEGER REFERENCES football_person(id) ON DELETE SET NULL,
+  related_person_id INTEGER REFERENCES football_person(id) ON DELETE SET NULL,
+  type              TEXT NOT NULL,
+  detail            TEXT,
+  minute            INTEGER,
+  extra_minute      INTEGER,
+  own_goal          INTEGER NOT NULL DEFAULT 0,
+  penalty           INTEGER NOT NULL DEFAULT 0,
+  score_home        INTEGER,
+  score_away        INTEGER,
+  sort_order        INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_football_event_match ON football_event(match_id, sort_order);
+CREATE INDEX IF NOT EXISTS idx_football_event_person ON football_event(person_id);
+
+CREATE TABLE IF NOT EXISTS football_standing (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  season_id     INTEGER NOT NULL REFERENCES football_season(id) ON DELETE CASCADE,
+  stage_id      INTEGER REFERENCES football_stage(id) ON DELETE CASCADE,
+  team_id       INTEGER NOT NULL REFERENCES football_team(id) ON DELETE CASCADE,
+  rank          INTEGER,
+  rank_official INTEGER NOT NULL DEFAULT 0,
+  played        INTEGER NOT NULL,
+  won           INTEGER NOT NULL,
+  drawn         INTEGER NOT NULL,
+  lost          INTEGER NOT NULL,
+  goals_for     INTEGER NOT NULL,
+  goals_against INTEGER NOT NULL,
+  goal_difference INTEGER NOT NULL,
+  points        INTEGER NOT NULL,
+  deduction     INTEGER NOT NULL DEFAULT 0,
+  note          TEXT,
+  UNIQUE(season_id, stage_id, team_id)
+);
+CREATE INDEX IF NOT EXISTS idx_football_standing_season ON football_standing(season_id, stage_id, rank);
+
+CREATE TABLE IF NOT EXISTS football_honour (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  competition_id INTEGER NOT NULL REFERENCES football_competition(id) ON DELETE CASCADE,
+  season_id      INTEGER REFERENCES football_season(id) ON DELETE CASCADE,
+  team_id        INTEGER REFERENCES football_team(id) ON DELETE CASCADE,
+  person_id      INTEGER REFERENCES football_person(id) ON DELETE CASCADE,
+  title          TEXT NOT NULL,
+  placement      TEXT NOT NULL, -- winner | runner-up | individual
+  verified       INTEGER NOT NULL DEFAULT 0,
+  shared         INTEGER NOT NULL DEFAULT 0,
+  sort_order     INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_football_honour_season ON football_honour(season_id, placement);
+CREATE INDEX IF NOT EXISTS idx_football_honour_team ON football_honour(team_id);
+CREATE INDEX IF NOT EXISTS idx_football_honour_person ON football_honour(person_id);
+
+-- Identity and source-integrity layer. Entity links are polymorphic on purpose:
+-- conflicts and aliases can exist before a canonical row has been resolved.
+CREATE TABLE IF NOT EXISTS football_alias (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_kind     TEXT NOT NULL,
+  entity_id       INTEGER NOT NULL,
+  source          TEXT NOT NULL,
+  alias           TEXT NOT NULL,
+  normalized      TEXT NOT NULL,
+  external_id     TEXT,
+  UNIQUE(entity_kind, source, normalized, external_id)
+);
+CREATE INDEX IF NOT EXISTS idx_football_alias_lookup ON football_alias(entity_kind, source, normalized);
+
+CREATE TABLE IF NOT EXISTS football_source_ref (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_kind     TEXT NOT NULL,
+  entity_id       INTEGER NOT NULL,
+  source          TEXT NOT NULL,
+  external_id     TEXT NOT NULL,
+  source_url      TEXT,
+  revision        TEXT,
+  checksum        TEXT,
+  raw_fingerprint TEXT,
+  fetched_at      TEXT,
+  UNIQUE(entity_kind, source, external_id)
+);
+CREATE INDEX IF NOT EXISTS idx_football_source_ref_entity ON football_source_ref(entity_kind, entity_id);
+
+CREATE TABLE IF NOT EXISTS football_assertion (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_kind TEXT NOT NULL,
+  entity_id   INTEGER NOT NULL,
+  facet       TEXT NOT NULL,
+  value       TEXT,
+  source      TEXT NOT NULL,
+  source_ref_id INTEGER REFERENCES football_source_ref(id) ON DELETE SET NULL,
+  status      TEXT NOT NULL DEFAULT 'accepted',
+  confidence  REAL,
+  observed_at TEXT,
+  UNIQUE(entity_kind, entity_id, facet, source, value)
+);
+CREATE INDEX IF NOT EXISTS idx_football_assertion_entity ON football_assertion(entity_kind, entity_id, facet);
+
+CREATE TABLE IF NOT EXISTS football_coverage (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  competition_id INTEGER REFERENCES football_competition(id) ON DELETE CASCADE,
+  season_id      INTEGER REFERENCES football_season(id) ON DELETE CASCADE,
+  source         TEXT NOT NULL,
+  facet          TEXT NOT NULL,
+  state          TEXT NOT NULL, -- complete | partial | conflicted | not_supplied
+  item_count     INTEGER,
+  expected_count INTEGER,
+  note           TEXT,
+  revision       TEXT,
+  checked_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(competition_id, season_id, source, facet)
+);
+CREATE INDEX IF NOT EXISTS idx_football_coverage_season ON football_coverage(season_id, facet);
+
+CREATE TABLE IF NOT EXISTS football_conflict (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_kind TEXT NOT NULL,
+  entity_id   INTEGER,
+  facet       TEXT NOT NULL,
+  source_a    TEXT NOT NULL,
+  value_a     TEXT,
+  source_b    TEXT NOT NULL,
+  value_b     TEXT,
+  status      TEXT NOT NULL DEFAULT 'open',
+  resolution  TEXT,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  resolved_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_football_conflict_status ON football_conflict(status, entity_kind);
+
+CREATE TABLE IF NOT EXISTS football_import_run (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind            TEXT NOT NULL,
+  source          TEXT NOT NULL,
+  competition_key TEXT,
+  season_key      TEXT,
+  state           TEXT NOT NULL,
+  version         TEXT,
+  etag            TEXT,
+  checksum        TEXT,
+  raw_fingerprint TEXT,
+  request_count   INTEGER NOT NULL DEFAULT 0,
+  item_count      INTEGER NOT NULL DEFAULT 0,
+  started_at      TEXT NOT NULL,
+  finished_at     TEXT,
+  message         TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_football_import_run_source ON football_import_run(source, started_at);
+
+CREATE TABLE IF NOT EXISTS football_article (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_kind      TEXT NOT NULL,
+  entity_id        INTEGER NOT NULL,
+  title            TEXT NOT NULL,
+  body             TEXT,
+  source_url       TEXT NOT NULL,
+  revision         TEXT,
+  license          TEXT,
+  attribution      TEXT,
+  state            TEXT NOT NULL DEFAULT 'not_requested',
+  fetched_at       TEXT,
+  UNIQUE(entity_kind, entity_id, source_url)
+);
+CREATE INDEX IF NOT EXISTS idx_football_article_entity ON football_article(entity_kind, entity_id);
+
+-- Personal layer. Removing a media row only removes the attachment record; the
+-- file beneath football.dir remains in place and remote URLs are never fetched.
+CREATE TABLE IF NOT EXISTS football_favorite (
+  entity_kind TEXT NOT NULL,
+  entity_id   INTEGER NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY(entity_kind, entity_id)
+);
+
+CREATE TABLE IF NOT EXISTS football_match_journal (
+  match_id    INTEGER PRIMARY KEY REFERENCES football_match(id) ON DELETE CASCADE,
+  watched_at  TEXT,
+  rating      REAL,
+  note        TEXT,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS football_media (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  title      TEXT NOT NULL,
+  kind       TEXT NOT NULL, -- clip | highlight | fullMatch | interview | documentary
+  local_path TEXT,
+  url        TEXT,
+  note       TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  CHECK ((local_path IS NOT NULL AND url IS NULL) OR (local_path IS NULL AND url IS NOT NULL))
+);
+CREATE INDEX IF NOT EXISTS idx_football_media_kind ON football_media(kind, created_at);
+
+CREATE TABLE IF NOT EXISTS football_media_link (
+  media_id    INTEGER NOT NULL REFERENCES football_media(id) ON DELETE CASCADE,
+  entity_kind TEXT NOT NULL,
+  entity_id   INTEGER NOT NULL,
+  PRIMARY KEY(media_id, entity_kind, entity_id)
+);
+CREATE INDEX IF NOT EXISTS idx_football_media_link_entity ON football_media_link(entity_kind, entity_id);
+
+CREATE TABLE IF NOT EXISTS football_external_link (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  entity_kind TEXT NOT NULL,
+  entity_id   INTEGER NOT NULL,
+  provider    TEXT NOT NULL,
+  label       TEXT,
+  url         TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(entity_kind, entity_id, provider, url)
+);
+CREATE INDEX IF NOT EXISTS idx_football_external_link_entity ON football_external_link(entity_kind, entity_id);

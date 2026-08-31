@@ -272,7 +272,7 @@ function ImportProgress() {
       </div>
       <div className="h-1.5 overflow-hidden rounded bg-base-600">
         <div
-          className={`h-full bg-accent transition-all ${pct == null ? 'w-full animate-pulse' : ''}`}
+          className={`h-full bg-accent transition-all motion-reduce:transition-none ${pct == null ? 'w-full motion-safe:animate-pulse' : ''}`}
           style={pct != null ? { width: `${pct}%` } : undefined}
         />
       </div>

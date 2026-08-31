@@ -72,7 +72,7 @@ export default function ParticleDrill() {
         )}
         renderReveal={(mc, correct) => (
           <>
-            <p className={`text-xs font-semibold uppercase tracking-wide ${correct ? 'text-green-400' : 'text-red-400'}`}>
+            <p className={`text-xs font-semibold uppercase tracking-wide ${correct ? 'text-signal-affirmative' : 'text-signal-anomaly'}`}>
               {correct ? 'Correct' : 'Incorrect'}
             </p>
             <p className="mt-1 text-lg">
@@ -107,7 +107,7 @@ export default function ParticleDrill() {
           One particle from は・が・を・に・で・へ・と・から・まで・も・の・より is blanked; the English is shown so
           the meaning fixes the answer. Sentence-final の/か and compound particles are never blanked.
         </p>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-signal-anomaly">{error}</p>}
         <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
           {loading ? 'Sampling sentences…' : 'Start'}
         </button>

@@ -17,8 +17,16 @@ const KIND_FILTERS: (ListKind | null)[] = [
   'company',
   'wrestlingEvent',
   'wrestlingWrestler',
-  'wrestlingMatch'
+  'wrestlingMatch',
+  'footballCompetition',
+  'footballTeam',
+  'footballPerson',
+  'footballMatch'
 ]
+
+const TIER_KIND_FILTERS = KIND_FILTERS.filter(
+  (kind) => kind == null || !kind.startsWith('football')
+)
 
 type Tab = 'lists' | 'tiers'
 
@@ -52,13 +60,19 @@ export default function ListsIndexPage() {
         <button className={`pill ${!isTiers ? 'pill-active' : ''}`} onClick={() => setTab('lists')}>
           Lists
         </button>
-        <button className={`pill ${isTiers ? 'pill-active' : ''}`} onClick={() => setTab('tiers')}>
+        <button
+          className={`pill ${isTiers ? 'pill-active' : ''}`}
+          onClick={() => {
+            setTab('tiers')
+            if (kind?.startsWith('football')) setKind(null)
+          }}
+        >
           Tier lists
         </button>
       </div>
 
       <div className="flex flex-wrap gap-2 mb-6">
-        {KIND_FILTERS.map((k) => (
+        {(isTiers ? TIER_KIND_FILTERS : KIND_FILTERS).map((k) => (
           <button
             key={k ?? 'all'}
             onClick={() => setKind(k)}

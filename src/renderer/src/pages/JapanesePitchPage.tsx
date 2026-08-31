@@ -235,7 +235,7 @@ function PatternQuizSetup() {
             <Pill active={length === 20} onClick={() => setLength(20)} label="20 questions" />
             <Pill active={length === 0} onClick={() => setLength(0)} label="Endless" />
           </Group>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-signal-anomaly">{error}</p>}
           <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
             {loading ? 'Loading…' : 'Start quiz'}
           </button>
@@ -327,9 +327,9 @@ function PatternQuizSetup() {
               onClick={() => handleAnswer(pos)}
               className={`rounded-lg border p-3 text-left transition-colors ${
                 isCorrect
-                  ? 'border-green-500 bg-green-500/15'
+                  ? 'border-signal-affirmative bg-signal-affirmative/15'
                   : wrongPick
-                    ? 'border-red-500 bg-red-500/15'
+                    ? 'border-signal-anomaly bg-signal-anomaly/15'
                     : 'border-base-700 bg-base-800 hover:border-accent hover:bg-base-700'
               } ${answered ? 'cursor-default' : ''}`}
             >
@@ -347,7 +347,7 @@ function PatternQuizSetup() {
         <div className="card mt-4 p-4">
           <p
             className={`text-xs font-semibold uppercase tracking-wide ${
-              picked !== null && item.positions.includes(picked) ? 'text-green-400' : 'text-red-400'
+              picked !== null && item.positions.includes(picked) ? 'text-signal-affirmative' : 'text-signal-anomaly'
             }`}
           >
             {picked !== null && item.positions.includes(picked)

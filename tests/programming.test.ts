@@ -81,6 +81,283 @@ describe('course catalog content', () => {
   })
 })
 
+describe('data science and engineering mastery course', () => {
+  const course = progCourse('data-science-engineering')!
+  const expectedOrder = [
+    'data-lifecycle',
+    'python-foundations',
+    'reproducible-projects',
+    'numpy-arrays',
+    'pandas-dataframes',
+    'cleaning-and-types',
+    'analytical-sql',
+    'exploration-and-visualization',
+    'descriptive-statistics',
+    'probability-and-sampling',
+    'estimation-and-uncertainty',
+    'experiments-and-causality',
+    'ml-problem-framing',
+    'preprocessing-and-leakage',
+    'regression',
+    'classification',
+    'trees-and-ensembles',
+    'model-selection',
+    'unsupervised-learning',
+    'time-series',
+    'neural-networks',
+    'nlp-and-embeddings',
+    'interpretability-and-fairness',
+    'production-ml',
+    'ingestion-and-apis',
+    'etl-elt-idempotency',
+    'data-modeling',
+    'parquet-and-partitioning',
+    'warehouses-and-lakehouses',
+    'analytics-transformations',
+    'airflow-orchestration',
+    'spark-distributed-compute',
+    'kafka-streaming',
+    'quality-governance-operations',
+    'capstone-analytics-platform',
+    'capstone-ml-and-streaming'
+  ]
+
+  it('keeps the complete beginner-to-master path in dependency order', () => {
+    expect(course).toBeTruthy()
+    expect(course.lessons.map((lesson) => lesson.key)).toEqual(expectedOrder)
+  })
+
+  it('keeps every lesson substantial, self-contained, and assessed', () => {
+    expect(course.lessons).toHaveLength(36)
+    expect(course.lessons.flatMap((lesson) => lesson.questions)).toHaveLength(144)
+    for (const lesson of course.lessons) {
+      expect(lesson.body, `${lesson.key}: guided practice`).toContain('## Guided practice')
+      expect(lesson.body, `${lesson.key}: worked solution`).toContain('## Worked solution')
+      expect(
+        lesson.body.trim().split(/\s+/).length,
+        `${lesson.key}: substantial standalone lesson`
+      ).toBeGreaterThanOrEqual(350)
+      expect(lesson.questions, `${lesson.key}: four-question check`).toHaveLength(4)
+    }
+  })
+})
+
+describe('devops engineering mastery course', () => {
+  const course = progCourse('devops-engineering')!
+  const expectedOrder = [
+    'devops-system',
+    'shell-and-automation',
+    'linux-files-permissions',
+    'processes-and-services',
+    'networking-foundations',
+    'git-collaboration',
+    'scripting-and-configuration',
+    'application-operability',
+    'testing-strategy',
+    'continuous-integration',
+    'continuous-delivery',
+    'container-foundations',
+    'container-builds',
+    'compose-local-systems',
+    'cloud-foundations',
+    'infrastructure-as-code',
+    'iac-state-and-modules',
+    'configuration-management',
+    'kubernetes-architecture',
+    'kubernetes-workloads',
+    'kubernetes-networking',
+    'kubernetes-config-storage',
+    'kubernetes-resources-scaling',
+    'kubernetes-security',
+    'kubernetes-packaging',
+    'gitops-reconciliation',
+    'observability-signals',
+    'prometheus-alerting',
+    'slos-error-budgets',
+    'incident-response',
+    'resilience-disaster-recovery',
+    'supply-chain-security',
+    'platform-engineering',
+    'cost-performance-sustainability',
+    'database-operations',
+    'advanced-operations',
+    'capstone-local-delivery',
+    'capstone-platform-sre'
+  ]
+
+  it('keeps the complete beginner-to-master path in dependency order', () => {
+    expect(course).toBeTruthy()
+    expect(course.lessons.map((lesson) => lesson.key)).toEqual(expectedOrder)
+  })
+
+  it('keeps every lesson substantial, self-contained, and assessed', () => {
+    expect(course.lessons).toHaveLength(38)
+    expect(course.lessons.flatMap((lesson) => lesson.questions)).toHaveLength(152)
+    for (const lesson of course.lessons) {
+      expect(lesson.body, `${lesson.key}: guided practice`).toContain('## Guided practice')
+      expect(lesson.body, `${lesson.key}: worked solution`).toContain('## Worked solution')
+      expect(
+        lesson.body.trim().split(/\s+/).length,
+        `${lesson.key}: substantial standalone lesson`
+      ).toBeGreaterThanOrEqual(350)
+      expect(lesson.questions, `${lesson.key}: four-question check`).toHaveLength(4)
+    }
+  })
+})
+
+describe('six self-contained programming mastery courses', () => {
+  const expected: Record<string, string[]> = {
+    'cybersecurity-engineering': [
+      'security-risk',
+      'ethical-lab',
+      'cryptography-foundations',
+      'identity-authentication',
+      'authorization-iam',
+      'threat-modeling',
+      'secure-coding',
+      'web-security',
+      'browser-security',
+      'api-security',
+      'network-defense',
+      'endpoint-hardening',
+      'vulnerability-management',
+      'cloud-container-security',
+      'secrets-key-management',
+      'detection-engineering',
+      'incident-forensics',
+      'penetration-testing',
+      'governance-privacy',
+      'capstone-security-operations'
+    ],
+    'full-stack-web': [
+      'web-platform',
+      'semantic-html',
+      'css-cascade',
+      'layout-responsive',
+      'javascript-language',
+      'dom-events',
+      'async-web-apis',
+      'typescript-tooling',
+      'accessibility-forms',
+      'react-components',
+      'state-routing',
+      'server-api',
+      'auth-data',
+      'testing-quality',
+      'performance-delivery',
+      'capstone-fullstack'
+    ],
+    'backend-distributed-systems': [
+      'backend-contracts',
+      'api-design',
+      'domain-data',
+      'concurrency',
+      'transactions-idempotency',
+      'queues-events',
+      'caching',
+      'service-boundaries',
+      'time-order',
+      'replication-consistency',
+      'consensus-coordination',
+      'partitioning-sharding',
+      'resilience',
+      'observability',
+      'performance-security',
+      'capstone-distributed'
+    ],
+    'computer-systems-c': [
+      'machine-model',
+      'c-toolchain',
+      'types-control-functions',
+      'pointers-arrays',
+      'memory-ownership',
+      'strings-buffers',
+      'structs-bits-abi',
+      'compilation-linking',
+      'debugging-testing',
+      'files-syscalls',
+      'processes-signals',
+      'threads-sync',
+      'atomics-memory-model',
+      'os-memory-filesystems',
+      'sockets-protocols',
+      'performance-security',
+      'capstone-systems'
+    ],
+    'database-engineering': [
+      'relational-model',
+      'sql-querying',
+      'storage-pages',
+      'indexes',
+      'query-planning',
+      'transactions',
+      'isolation-mvcc',
+      'schema-evolution',
+      'partitioning-retention',
+      'replication-ha',
+      'distributed-databases',
+      'backup-recovery',
+      'observability-tuning',
+      'security-governance',
+      'capstone-database'
+    ],
+    'ai-llm-engineering': [
+      'ai-system-framing',
+      'ml-foundations',
+      'neural-transformers',
+      'tokens-embeddings',
+      'inference-decoding',
+      'prompting-structured',
+      'model-integration',
+      'retrieval-rag',
+      'evaluation',
+      'grounding-uncertainty',
+      'agents-tools',
+      'memory-workflows',
+      'adaptation-serving',
+      'safety-security-privacy',
+      'observability-governance',
+      'capstone-ai-systems'
+    ]
+  }
+
+  it('freezes all 100 lessons in prerequisite order', () => {
+    expect(Object.values(expected).reduce((total, keys) => total + keys.length, 0)).toBe(100)
+    for (const [courseKey, lessonKeys] of Object.entries(expected)) {
+      expect(progCourse(courseKey)?.lessons.map((lesson) => lesson.key), courseKey).toEqual(lessonKeys)
+    }
+  })
+
+  it('keeps all 400 lessons checks and standalone teaching structure', () => {
+    let questionCount = 0
+    const shortLessons: string[] = []
+    for (const courseKey of Object.keys(expected)) {
+      const course = progCourse(courseKey)!
+      expect(course.title.toLowerCase(), `${courseKey}: beginner-to-master title`).toContain(
+        'beginner to master'
+      )
+      expect(course.description.toLowerCase(), `${courseKey}: self-contained description`).toContain(
+        'self-contained'
+      )
+      for (const lesson of course.lessons) {
+        const id = `${courseKey}/${lesson.key}`
+        expect(lesson.body, `${id}: foundations`).toContain('## Foundations')
+        expect(lesson.body, `${id}: engineering model`).toContain('## Engineering model')
+        expect(lesson.body, `${id}: failure judgment`).toContain('## Failure modes and judgment')
+        expect(lesson.body, `${id}: guided practice`).toContain('## Guided practice')
+        expect(lesson.body, `${id}: worked solution`).toContain('## Worked solution')
+        expect(lesson.body, `${id}: mastery standard`).toContain('## Mastery standard')
+        const words = lesson.body.trim().split(/\s+/).length
+        if (words < 250) shortLessons.push(`${id}: ${words} words`)
+        expect(lesson.questions, `${id}: four explained checks`).toHaveLength(4)
+        questionCount += lesson.questions.length
+      }
+    }
+    expect(shortLessons, 'every mastery lesson has at least 250 words').toEqual([])
+    expect(questionCount).toBe(400)
+  })
+})
+
 describe('cheatsheet content', () => {
   it('has unique sheet keys and non-empty entries', () => {
     const keys = CHEAT_SHEETS.map((s) => s.key)

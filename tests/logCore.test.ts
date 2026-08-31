@@ -60,6 +60,11 @@ describe('redact', () => {
     expect(redact('Authorization: token 0123456789')).toBe('Authorization: token ***')
   })
 
+  it('masks the API-Football authorization header', () => {
+    expect(redact('x-apisports-key: secret-football-key')).toBe('x-apisports-key: ***')
+    expect(redact('"x-apisports-key":"secret-football-key"')).toBe('"x-apisports-key":"***"')
+  })
+
   it('masks GitHub tokens anywhere in the line', () => {
     expect(redact('bad credentials for ghp_abcdefghijklmnopqrstuvwxyz')).toBe(
       'bad credentials for ghp_***'
@@ -181,17 +186,9 @@ describe('Ring', () => {
 
 describe('makeProcLineFilter', () => {
   it('drops blank lines for every tool', () => {
-    for (const tool of ['ytdlp', 'ffmpeg', 'mokuro'] as const) {
+    for (const tool of ['ytdlp', 'spotdl', 'mokuro'] as const) {
       expect(makeProcLineFilter(tool)('   ')).toBe(false)
     }
-  })
-
-  it('drops ffmpeg per-frame status lines but keeps real stderr', () => {
-    const keep = makeProcLineFilter('ffmpeg')
-    expect(keep('frame= 1234 fps=250 q=-1.0 size=  40960kB time=00:01:00.00')).toBe(false)
-    expect(keep('size=   40960kB time=00:01:00.00 bitrate=5000.0kbits/s')).toBe(false)
-    expect(keep('[matroska @ 0x55] Could not find codec parameters')).toBe(true)
-    expect(keep('Stream #0:0: Video: h264, yuv420p, 1920x1080')).toBe(true)
   })
 
   it('thins yt-dlp download percentages to 10% buckets', () => {

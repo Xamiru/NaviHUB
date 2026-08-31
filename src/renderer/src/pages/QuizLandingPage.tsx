@@ -14,8 +14,9 @@ interface GameCard {
   body: string
   availability?: Exclude<
     keyof QuizAvailability,
-    'higherLowerOptions' | 'guessTrackOptions' | 'screenGameOptions'
+    'higherLowerOptions' | 'guessTrackOptions' | 'screenGameOptions' | 'football'
   >
+  footballAvailability?: keyof QuizAvailability['football']
   minimum?: number
   availabilityLabel?: (count: number) => string
 }
@@ -42,6 +43,7 @@ const GROUPS: Array<{ title: string; games: GameCard[] }> = [
       { to: '/quiz/connections', title: 'Connections', body: 'Find the actor or director connecting two movies or TV shows.', availability: 'connections', minimum: 5 },
       { to: '/quiz/library-grid', title: 'Library Grid', body: 'Fill nine intersections with movies or TV shows matching both facts.', availability: 'libraryGrid', minimum: 9, availabilityLabel: (count) => `${count} solvable cells` },
       { to: '/quiz/movie-chain', title: 'Movie Chain', body: 'Reach a target title through shared main-cast actors and directors.', availability: 'movieChain', minimum: 1, availabilityLabel: (count) => `${count} eligible endpoint pairs` },
+      { to: '/quiz/link-wall', title: 'Link Wall', body: 'Sort sixteen movies and TV shows into four hidden connection groups.', availability: 'linkWall', minimum: 16, availabilityLabel: () => 'Solvable wall ready' },
       { to: '/quiz/chronology', title: 'Chronology', body: 'Order four connected titles by release date.', availability: 'chronology', minimum: 4 }
     ]
   },
@@ -51,7 +53,19 @@ const GROUPS: Array<{ title: string; games: GameCard[] }> = [
       { to: '/quiz/cast', title: 'Cast Quiz', body: 'Match an actor to a movie or TV show they appeared in.', availability: 'cast', minimum: 4 },
       { to: '/quiz/va', title: 'Voice Actor Quiz', body: 'Find the character from another anime who shares the same Japanese voice actor.', availability: 'va', minimum: 4 },
       { to: '/quiz/synopsis', title: 'Synopsis Quiz', body: 'Identify a title from a spoiler-conscious excerpt.', availability: 'synopsis', minimum: 4 },
+      { to: '/quiz/libraryle', title: 'Libraryle', body: 'Find a hidden movie or TV title from attribute feedback.', availability: 'libraryle', minimum: 8, availabilityLabel: (count) => `${count} possible targets` },
+      { to: '/quiz/mystery-career', title: 'Mystery Career', body: 'Identify an actor or director from progressively revealed credits.', availability: 'mysteryCareer', minimum: 1, availabilityLabel: (count) => `${count} possible careers` },
       { to: '/quiz/higher-lower', title: 'Higher or Lower', body: 'Compare dates, lengths, or your ratings within one library category.', availability: 'higherLower', minimum: 2 }
+    ]
+  },
+  {
+    title: 'Football',
+    games: [
+      { to: '/football/quiz/champion', title: 'Football Champion', body: 'Name verified edition winners from nine competition lineages.', footballAvailability: 'champion', minimum: 5 },
+      { to: '/football/quiz/scoreline', title: 'Football Scoreline', body: 'Recover exact final scores from archived match records.', footballAvailability: 'scoreline', minimum: 5 },
+      { to: '/football/quiz/career-path', title: 'Football Career Path', body: 'Identify a player from verified senior-club spells.', footballAvailability: 'careerPath', minimum: 5 },
+      { to: '/football/quiz/chronology', title: 'Football Chronology', body: 'Order four champion editions from one competition.', footballAvailability: 'chronology', minimum: 4 },
+      { to: '/football/quiz/player-grid', title: 'Football Player Grid', body: 'Fill a 3x3 player grid from verified career intersections.', footballAvailability: 'playerGrid', minimum: 1, availabilityLabel: () => 'Solvable board ready' }
     ]
   },
   {
@@ -77,12 +91,26 @@ export default function QuizLandingPage() {
     queryFn: () => api.quiz.availability(request)
   })
   const solo = GROUPS.flatMap((group) => group.games).filter((game) => {
-    if (!game.availability || !availability) return false
+    if (!availability) return false
+    if (game.footballAvailability) {
+      const value = availability.football[game.footballAvailability]
+      return typeof value === 'number' && value >= (game.minimum ?? 1)
+    }
+    if (!game.availability) return false
     if (game.to === '/quiz/library-grid') {
       return (availability.screenGameOptions.find((option) => option.mediaMode === 'both')?.libraryGrid ?? 0) >= 9
     }
     if (game.to === '/quiz/movie-chain') {
       return (availability.screenGameOptions.find((option) => option.mediaMode === 'both')?.movieChain.normal ?? 0) > 0
+    }
+    if (game.to === '/quiz/libraryle') {
+      return (availability.screenGameOptions.find((option) => option.mediaMode === 'both')?.libraryle ?? 0) >= 8
+    }
+    if (game.to === '/quiz/mystery-career') {
+      return (availability.screenGameOptions.find((option) => option.mediaMode === 'both')?.mysteryCareer ?? 0) > 0
+    }
+    if (game.to === '/quiz/link-wall') {
+      return (availability.screenGameOptions.find((option) => option.mediaMode === 'both')?.linkWall ?? 0) >= 16
     }
     return availability[game.availability] >= (game.minimum ?? 1)
   })
@@ -118,7 +146,14 @@ export default function QuizLandingPage() {
             <h2 className="label mb-3">{group.title}</h2>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-4">
               {group.games.map((game) => {
-                const count = game.availability ? availability?.[game.availability] ?? 0 : null
+                const footballCount = game.footballAvailability
+                  ? availability?.football[game.footballAvailability]
+                  : null
+                const count = game.availability
+                  ? availability?.[game.availability] ?? 0
+                  : typeof footballCount === 'number'
+                    ? footballCount
+                    : null
                 const ready = count == null || count >= (game.minimum ?? 1)
                 const inner = (
                   <>

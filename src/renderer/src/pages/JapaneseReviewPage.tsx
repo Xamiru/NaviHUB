@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
 import PageHeader from '../components/PageHeader'
-import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -12,6 +11,7 @@ import { jpDailyPacing } from '@shared/japanese/dailyPlan'
 import CardSourceBadge from '../components/CardSourceBadge'
 import CardAttachments from '../components/japanese/CardAttachments'
 import StudySessionFrame from '../components/StudySessionFrame'
+import TutorSessionContinue from '../components/TutorSessionContinue'
 import type { JpReviewCard, SrsGrade } from '@shared/types'
 
 type Phase = 'setup' | 'review' | 'done'
@@ -43,9 +43,9 @@ function toItem(card: JpReviewCard): SessionItem {
 
 const GRADE_KEYS: Record<string, SrsGrade> = { '1': 'again', '2': 'hard', '3': 'good', '4': 'easy' }
 const GRADE_STYLE: Record<SrsGrade, string> = {
-  again: 'border-red-500/50 hover:bg-red-500/15 text-red-300',
-  hard: 'border-amber-500/50 hover:bg-amber-500/15 text-amber-300',
-  good: 'border-green-500/50 hover:bg-green-500/15 text-green-300',
+  again: 'border-signal-anomaly/50 hover:bg-signal-anomaly/15 text-signal-anomaly',
+  hard: 'border-signal-caution/50 hover:bg-signal-caution/15 text-signal-caution',
+  good: 'border-signal-affirmative/50 hover:bg-signal-affirmative/15 text-signal-affirmative',
   easy: 'border-sky-500/50 hover:bg-sky-500/15 text-sky-300'
 }
 const GRADE_LABEL: Record<SrsGrade, string> = {
@@ -57,7 +57,6 @@ const GRADE_LABEL: Record<SrsGrade, string> = {
 
 export default function JapaneseReviewPage() {
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const [initialNewLimit] = useState(loadJpDailyTarget)
   const [newLimit, setNewLimitState] = usePersistedState<number>('jpNewLimit', initialNewLimit)
   // Bunpro-style typed answers. Only suggests a grade — the four buttons still
@@ -274,7 +273,7 @@ export default function JapaneseReviewPage() {
               daily budget. Starting another session will not add a second full batch.
             </p>
             {newLimit > 0 && daily.remainingToday === 0 && (
-              <p className="mt-1 text-xs text-amber-300">
+              <p className="mt-1 text-xs text-signal-caution">
                 Daily target reached; this session will contain due and ghost reviews only.
               </p>
             )}
@@ -304,6 +303,7 @@ export default function JapaneseReviewPage() {
           <div>
             <label className="flex cursor-pointer items-start gap-2.5">
               <input
+                aria-label="Include ghost reviews"
                 type="checkbox"
                 className="mt-0.5"
                 checked={ghostsOn}
@@ -322,6 +322,7 @@ export default function JapaneseReviewPage() {
           <div>
             <label className="flex cursor-pointer items-start gap-2.5">
               <input
+                aria-label="Use typed answers"
                 type="checkbox"
                 className="mt-0.5"
                 checked={typedMode}
@@ -337,7 +338,7 @@ export default function JapaneseReviewPage() {
             </label>
           </div>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-signal-anomaly">{error}</p>}
 
           <button className="btn-primary w-full" disabled={loading} onClick={start}>
             {loading ? 'Loading…' : 'Start review'}
@@ -364,11 +365,12 @@ export default function JapaneseReviewPage() {
             <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
               Review more
             </button>
-            {/* Back where you came from: the two common entries are the
-                Checklist row and Home's Japanese card, not the hub. */}
-            <button className="btn-ghost flex-1" onClick={() => navigate(-1)}>
-              Done
-            </button>
+            <TutorSessionContinue
+              fallbackTo="/japanese"
+              fallbackLabel="Done"
+              fallbackBack
+              className="btn-ghost flex-1 text-center"
+            />
           </div>
         </div>
       </div>
@@ -398,10 +400,10 @@ export default function JapaneseReviewPage() {
           )}
           {srs.status === 'new' && !current.ghost && <span className="chip bg-sky-500/20 text-sky-300">new</span>}
           {srs.status === 'learning' && (
-            <span className="chip bg-amber-500/20 text-amber-300">learning</span>
+            <span className="chip bg-signal-caution/20 text-signal-caution">learning</span>
           )}
           {srs.lapses >= LEECH_LAPSES && (
-            <span className="chip bg-red-500/20 text-red-300" title={`Lapsed ${srs.lapses} times`}>
+            <span className="chip bg-signal-anomaly/20 text-signal-anomaly" title={`Lapsed ${srs.lapses} times`}>
               leech
             </span>
           )}
@@ -424,7 +426,7 @@ export default function JapaneseReviewPage() {
             {prompt.hint && <p className="mt-3 text-sm text-gray-400">{prompt.hint}</p>}
             {checked && (
               <p
-                className={`mt-3 text-sm ${checked.correct ? 'text-green-300' : 'text-red-300'}`}
+                className={`mt-3 text-sm ${checked.correct ? 'text-signal-affirmative' : 'text-signal-anomaly'}`}
               >
                 {checked.correct ? 'Correct' : `Answer: ${prompt.reveal}`}
                 {!checked.correct && typed.trim() && (
@@ -486,6 +488,7 @@ export default function JapaneseReviewPage() {
         {prompt && !checked ? (
           <div className="flex gap-2">
             <input
+              aria-label="Typed review answer"
               className="input flex-1"
               autoFocus
               placeholder="Type the missing part — kana or romaji"

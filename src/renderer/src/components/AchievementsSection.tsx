@@ -68,9 +68,9 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
   if (query.isLoading || !query.data) {
     return (
       <div className="card p-5" aria-label="Loading achievements">
-        <div className="h-3 w-48 animate-pulse rounded bg-base-600" />
-        <div className="mt-4 h-16 animate-pulse rounded bg-base-700" />
-        <div className="mt-3 h-16 animate-pulse rounded bg-base-700" />
+        <div className="h-3 w-48 motion-safe:animate-pulse rounded bg-base-600" />
+        <div className="mt-4 h-16 motion-safe:animate-pulse rounded bg-base-700" />
+        <div className="mt-3 h-16 motion-safe:animate-pulse rounded bg-base-700" />
       </div>
     )
   }

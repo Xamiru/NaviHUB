@@ -9,6 +9,14 @@ import { TS_COURSE } from './tsCourse'
 import { PYTHON_COURSE } from './pythonCourse'
 import { LINUX_COURSE } from './linuxCourse'
 import { ALGO_COURSE } from './algoCourse'
+import { DATA_SCIENCE_ENGINEERING_COURSE } from './dataScienceEngineeringCourse'
+import { DEVOPS_ENGINEERING_COURSE } from './devopsEngineeringCourse'
+import { CYBERSECURITY_ENGINEERING_COURSE } from './cybersecurityEngineeringCourse'
+import { FULL_STACK_WEB_COURSE } from './fullStackWebCourse'
+import { BACKEND_DISTRIBUTED_COURSE } from './backendDistributedCourse'
+import { COMPUTER_SYSTEMS_C_COURSE } from './computerSystemsCCourse'
+import { DATABASE_ENGINEERING_COURSE } from './databaseEngineeringCourse'
+import { AI_LLM_ENGINEERING_COURSE } from './aiLlmEngineeringCourse'
 
 // The course catalog. Adding a course = one file exporting a ProgCourseDef +
 // an entry here; the DB (prog_progress) only ever sees the frozen keys.
@@ -23,7 +31,15 @@ export const PROG_COURSES: ProgCourseDef[] = [
   TS_COURSE,
   PYTHON_COURSE,
   LINUX_COURSE,
-  ALGO_COURSE
+  ALGO_COURSE,
+  DATA_SCIENCE_ENGINEERING_COURSE,
+  DEVOPS_ENGINEERING_COURSE,
+  CYBERSECURITY_ENGINEERING_COURSE,
+  FULL_STACK_WEB_COURSE,
+  BACKEND_DISTRIBUTED_COURSE,
+  COMPUTER_SYSTEMS_C_COURSE,
+  DATABASE_ENGINEERING_COURSE,
+  AI_LLM_ENGINEERING_COURSE
 ]
 
 export function progCourse(key: string): ProgCourseDef | null {

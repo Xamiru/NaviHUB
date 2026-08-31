@@ -240,7 +240,7 @@ export function cancelOcr(id: string): void {
   ocrControls(id).cancel?.()
 }
 
-// Joins killActiveMusicDownload / killActivePrepare / … in the before-quit list.
+// Joins killActiveMusicDownload / killActiveUpdate / … in the before-quit list.
 export function killActiveOcr(): void {
   if (!active) return
   active.cancelled = true

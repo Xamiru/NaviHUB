@@ -216,6 +216,7 @@ export default function JapaneseShiritoriPage() {
           </p>
           <div className="flex gap-2">
             <JpKeyboardInput
+              ariaLabel="Next shiritori word"
               inputRef={inputRef}
               wrapClassName="flex-1"
               className="w-full text-center text-lg"

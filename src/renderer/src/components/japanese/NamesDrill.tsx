@@ -94,7 +94,7 @@ export default function NamesDrillSetup() {
         </div>
       </Section>
       {error && (
-        <p className="mb-3 text-sm text-red-400">
+        <p className="mb-3 text-sm text-signal-anomaly">
           {error}{' '}
           <Link to="/settings" className="underline hover:text-accent">
             Open Settings

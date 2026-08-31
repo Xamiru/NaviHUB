@@ -48,7 +48,7 @@ export default function FranchiseBackground({ url }: { url: string | null }) {
   return (
     <div
       aria-hidden
-      className={`pointer-events-none absolute inset-0 overflow-hidden transition-opacity duration-700 ${
+      className={`pointer-events-none absolute inset-0 overflow-hidden transition-opacity duration-700 motion-reduce:transition-none ${
         shown ? 'opacity-100' : 'opacity-0'
       }`}
     >
@@ -80,7 +80,7 @@ function FixedImage({ url, on: initiallyOn = false }: { url: string; on?: boolea
   }, [initiallyOn])
   return (
     <div
-      className={`absolute inset-0 transition-opacity duration-700 ${on ? 'opacity-100' : 'opacity-0'}`}
+      className={`absolute inset-0 transition-opacity duration-700 motion-reduce:transition-none ${on ? 'opacity-100' : 'opacity-0'}`}
       style={{
         backgroundImage: `url("${url.replace(/"/g, '%22')}")`,
         backgroundAttachment: 'fixed',

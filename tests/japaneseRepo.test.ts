@@ -78,6 +78,71 @@ describe('japaneseRepo — courses & lessons', () => {
   })
 })
 
+describe('japaneseRepo — Tutor history and error ledger', () => {
+  it('upserts one durable debrief per local day and deduplicates measured errors', () => {
+    const input = {
+      day: '2026-08-30',
+      phaseId: 'bridge',
+      startedAt: '2026-08-30T10:00:00.000Z',
+      endedAt: '2026-08-30T11:00:00.000Z',
+      plannedMinutes: 60,
+      completedMinutes: 45,
+      completedBlocks: 4,
+      totalBlocks: 5,
+      strongest: 'Reading: 100%',
+      tomorrowFocus: 'Repair one listening segment',
+      tasks: [
+        {
+          key: '0:recall',
+          skill: 'recall' as const,
+          title: 'Review',
+          plannedMinutes: 15,
+          complete: true,
+          evidence: 'Review target reached.',
+          score: null
+        }
+      ],
+      errors: [
+        {
+          day: '2026-08-30',
+          skill: 'listening' as const,
+          label: 'Replay one missed listening segment',
+          detail: 'Cold replay before subtitles.',
+          sourceKind: 'listening' as const,
+          sourceSessionId: 77,
+          score: 60,
+          threshold: 75
+        }
+      ]
+    }
+
+    const first = jp.saveTutorDebrief(input)
+    const second = jp.saveTutorDebrief({ ...input, completedMinutes: 60, completedBlocks: 5 })
+    expect(second).toBe(first)
+    expect(jp.listTutorDays()).toMatchObject([
+      { day: '2026-08-30', completedMinutes: 60, completedBlocks: 5, tasks: input.tasks }
+    ])
+    expect(jp.listTutorErrors()).toHaveLength(1)
+    expect(jp.listTutorErrors()[0]).toMatchObject({ sourceSessionId: 77, score: 60 })
+  })
+
+  it('records and resolves learner-reported problems separately', () => {
+    const id = jp.addTutorError({
+      day: '2026-08-30',
+      skill: 'output',
+      label: 'Particles in explanations',
+      detail: 'I keep switching は and が when giving reasons.'
+    })
+    expect(id).toBeGreaterThan(0)
+    expect(jp.listTutorErrors()[0]).toMatchObject({ id, sourceKind: 'manual', resolvedAt: null })
+
+    jp.resolveTutorError(id, true)
+    expect(jp.listTutorErrors()[0].resolvedAt).not.toBeNull()
+    jp.resolveTutorError(id, false)
+    expect(jp.listTutorErrors()[0].resolvedAt).toBeNull()
+  })
+})
+
 describe('japaneseRepo — learned gating', () => {
   it('unlearned lessons feed neither the review queue nor the quiz pool', () => {
     seedCourseWithLesson(false)

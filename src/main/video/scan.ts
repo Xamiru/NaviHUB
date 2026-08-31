@@ -8,7 +8,6 @@ import * as tasks from '../tasks'
 import { VIDEO_SCOPES, type VideoScope } from './scope'
 import { episodeTitle, isVideoFile, looksLikeSample, parseEpisodeName } from './names'
 import type {
-  MediaType,
   ScannedVideo,
   VideoAttachResult,
   VideoFile,
@@ -101,8 +100,8 @@ export interface VideoProbeResult {
 }
 
 // Injected so tests never spawn ffprobe. The real implementation lands with the
-// ffmpeg tier; until then (and whenever ffprobe isn't installed) it returns null
-// for everything and .mp4/.webm still play.
+// optional ffprobe helper; whenever ffprobe is absent it returns null while
+// external playback remains available.
 export type Prober = (absPath: string) => Promise<VideoProbeResult | null>
 
 const nullProber: Prober = async () => null
@@ -180,9 +179,7 @@ export function files(mediaId: number): VideoLibrary {
   }
 }
 
-// A file row normalized across scopes — what the player needs, with the owner
-// column read through the scope so `source()` never learns which table it came
-// from.
+// A file row normalized across scopes for external launch and manual tracking.
 export interface ScopedFileRow {
   id: number
   ownerId: number | null
@@ -209,13 +206,6 @@ export function scopedFileById(scope: VideoScope, fileId: number): ScopedFileRow
     resumeSeconds: (r.resume_seconds as number | null) ?? null,
     watchedAt: (r.watched_at as string | null) ?? null
   }
-}
-
-export function fileById(fileId: number): VideoFile | null {
-  const row = getSqlite().prepare('SELECT * FROM video_file WHERE id = ?').get(fileId) as
-    | Record<string, unknown>
-    | undefined
-  return row ? rowToFile(row) : null
 }
 
 // Upserts the scanned files in ONE transaction. Matched by (media_id,
@@ -466,21 +456,6 @@ export const rescan = (mediaId: number): Promise<VideoAttachResult> =>
   rescanIn(VIDEO_SCOPES.video, mediaId)
 export const detach = (mediaId: number): void => detachIn(VIDEO_SCOPES.video, mediaId)
 
-// ---------------------------------------------------------------------------
-// Progress
-// ---------------------------------------------------------------------------
-
-export function markProgressIn(scope: VideoScope, fileId: number, seconds: number): void {
-  getSqlite()
-    .prepare(
-      `UPDATE ${scope.table} SET resume_seconds = ?, updated_at = datetime('now') WHERE id = ?`
-    )
-    .run(Math.max(0, seconds), fileId)
-}
-
-export const markProgress = (fileId: number, seconds: number): void =>
-  markProgressIn(VIDEO_SCOPES.video, fileId, seconds)
-
 // Flips the file's watched flag and reports whether this was the FIRST such
 // transition. It deliberately does NOT touch media_item.progress: the caller
 // hands a first-time transition to checklistRepo.logProgress, which is the
@@ -521,41 +496,4 @@ export function markWatched(
 ): { mediaId: number; firstTime: boolean } | null {
   const r = markWatchedIn(VIDEO_SCOPES.video, fileId, watched)
   return r ? { mediaId: r.ownerId, firstTime: r.firstTime } : null
-}
-
-// Neighbours in the attached folder's order, for the player's prev/next.
-export function neighboursIn(
-  scope: VideoScope,
-  fileId: number
-): {
-  prev: { fileId: number; title: string } | null
-  next: { fileId: number; title: string } | null
-} {
-  const db = getSqlite()
-  const row = db
-    .prepare(`SELECT ${scope.ownerCol} AS owner_id, sort_order FROM ${scope.table} WHERE id = ?`)
-    .get(fileId) as { owner_id: number | null; sort_order: number } | undefined
-  // A loose file has no owner and therefore no card to step through.
-  if (!row || row.owner_id == null) return { prev: null, next: null }
-  const pick = (order: 'DESC' | 'ASC', cmp: '<' | '>'): { fileId: number; title: string } | null => {
-    const r = db
-      .prepare(
-        `SELECT id, title FROM ${scope.table}
-         WHERE ${scope.ownerCol} = ? AND (sort_order, id) ${cmp} (?, ?)
-         ORDER BY sort_order ${order}, id ${order} LIMIT 1`
-      )
-      .get(row.owner_id, row.sort_order, fileId) as { id: number; title: string } | undefined
-    return r ? { fileId: r.id, title: r.title } : null
-  }
-  return { prev: pick('DESC', '<'), next: pick('ASC', '>') }
-}
-
-export const neighbours = (fileId: number): ReturnType<typeof neighboursIn> =>
-  neighboursIn(VIDEO_SCOPES.video, fileId)
-
-export function seriesOf(mediaId: number): { title: string; mediaType: MediaType } | null {
-  const row = getSqlite()
-    .prepare('SELECT title, media_type FROM media_item WHERE id = ?')
-    .get(mediaId) as { title: string; media_type: MediaType } | undefined
-  return row ? { title: row.title, mediaType: row.media_type } : null
 }

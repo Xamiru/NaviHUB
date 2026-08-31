@@ -27,6 +27,9 @@ const REDACTIONS: [RegExp, string][] = [
   [/([?&](?:api[_-]?key|apikey|access[_-]?token|token|key|secret)=)[^&\s"']+/gi, '$1***'],
   // Authorization: Bearer … / Token … (AniList, GitHub releases)
   [/(authorization"?\s*[:=]\s*"?(?:bearer|token)\s+)[^\s"',]+/gi, '$1***'],
+  // API-Football uses a nonstandard authorization header. http.ts does not log
+  // headers today, but defense-in-depth keeps future diagnostics safe.
+  [/(x-apisports-key"?\s*[:=]\s*"?)[^\s"',}]+/gi, '$1***'],
   // GitHub PATs, which the updater takes as a setting and could echo in an error
   [/\bghp_[A-Za-z0-9]{16,}/g, 'ghp_***'],
   [/\bgithub_pat_[A-Za-z0-9_]{16,}/g, 'github_pat_***']
@@ -147,12 +150,12 @@ export class Ring<T extends { seq: number }> {
 }
 
 // ---- child-process line filtering ----
-// Not an optimization — a correctness requirement. ffmpeg and mokuro emit a
-// progress line per frame/page on a bare \r; unfiltered, one conversion floods
+// Not an optimization — a correctness requirement. mokuro emits a
+// progress line per page on a bare \r; unfiltered, one run floods
 // a 3000-entry ring in under a minute and evicts everything worth reading.
-export type ProcTool = 'ytdlp' | 'spotdl' | 'ffmpeg' | 'mokuro'
+export type ProcTool = 'ytdlp' | 'spotdl' | 'mokuro'
 
-const PERCENT_STEP: Record<ProcTool, number> = { ytdlp: 10, spotdl: 10, ffmpeg: 10, mokuro: 25 }
+const PERCENT_STEP: Record<ProcTool, number> = { ytdlp: 10, spotdl: 10, mokuro: 25 }
 
 // Returns a stateful keep/drop predicate — one per spawn, never shared.
 export function makeProcLineFilter(tool: ProcTool): (line: string) => boolean {
@@ -161,10 +164,6 @@ export function makeProcLineFilter(tool: ProcTool): (line: string) => boolean {
   return (line: string): boolean => {
     const text = line.trim()
     if (text === '') return false
-
-    // ffmpeg's per-frame status line. The real progress is already in
-    // VideoPrepareStatus (parsed from the -progress pipe); this is noise.
-    if (tool === 'ffmpeg' && /^(frame|size)=/.test(text)) return false
 
     const percent = matchPercent(tool, text)
     if (percent == null) return true

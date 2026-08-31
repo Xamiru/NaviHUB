@@ -222,13 +222,13 @@ export default function JapaneseLeechDrillPage() {
               <p className="mt-1 text-base text-gray-200">{current!.back}</p>
               <div className="mt-5 flex justify-center gap-2">
                 <button
-                  className="btn rounded-lg border border-red-500/60 px-4 text-red-300 hover:bg-red-500/10"
+                  className="btn rounded-lg border border-signal-anomaly/60 px-4 text-signal-anomaly hover:bg-signal-anomaly/10"
                   onClick={() => grade(false)}
                 >
                   Missed <kbd className="kbd ml-1">1</kbd>
                 </button>
                 <button
-                  className="btn rounded-lg border border-green-500/60 px-4 text-green-300 hover:bg-green-500/10"
+                  className="btn rounded-lg border border-signal-affirmative/60 px-4 text-signal-affirmative hover:bg-signal-affirmative/10"
                   onClick={() => grade(true)}
                 >
                   Got it <kbd className="kbd ml-1">2</kbd>

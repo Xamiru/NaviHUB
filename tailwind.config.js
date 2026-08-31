@@ -1,7 +1,8 @@
 /** @type {import('tailwindcss').Config} */
-// Every themable color routes through CSS variables declared in styles.css
-// (:root = normal theme, [data-theme='lain'] = lain theme). The vars hold
-// "R G B" triplets so opacity modifiers (bg-base-800/60 …) keep working.
+// Every themable color routes through CSS variables declared in styles.css.
+// Semantic roles are preferred for shared chrome; the base/accent/gray palette
+// remains available for content-specific composition and gradual migration.
+// Vars hold "R G B" triplets so opacity modifiers keep working.
 const v = (name) => `rgb(var(--${name}) / <alpha-value>)`
 
 export default {
@@ -19,6 +20,30 @@ export default {
         accent: {
           DEFAULT: v('accent'),
           hover: v('accent-hover')
+        },
+        surface: {
+          canvas: v('surface-canvas'),
+          panel: v('surface-panel'),
+          raised: v('surface-raised'),
+          active: v('surface-active')
+        },
+        ink: {
+          DEFAULT: v('ink-primary'),
+          secondary: v('ink-secondary'),
+          muted: v('ink-muted'),
+          decorative: v('ink-decorative'),
+          inverse: v('ink-inverse')
+        },
+        line: {
+          subtle: v('line-subtle'),
+          strong: v('line-strong')
+        },
+        signal: {
+          live: v('signal-live'),
+          link: v('signal-link'),
+          anomaly: v('signal-anomaly'),
+          affirmative: v('signal-affirmative'),
+          caution: v('signal-caution')
         },
         gray: {
           50: v('gray-50'),

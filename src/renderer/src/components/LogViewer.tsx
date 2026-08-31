@@ -19,7 +19,7 @@ import type { LogEntry, LogLevel, LogSource } from '@shared/types'
 // sentinel means "load older", and it is correct by construction.
 
 const LEVELS: LogLevel[] = ['debug', 'info', 'warn', 'error']
-const SOURCES: LogSource[] = ['app', 'db', 'http', 'task', 'proc', 'ipc']
+const SOURCES: LogSource[] = ['app', 'db', 'http', 'task', 'proc', 'ipc', 'football']
 const LEVEL_ORDER: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 }
 
 const LEVEL_TAG: Record<LogLevel, { tag: string; cls: string }> = {

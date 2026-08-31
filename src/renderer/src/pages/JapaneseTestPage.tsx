@@ -294,7 +294,7 @@ export default function JapaneseTestPage() {
               </button>
             ))}
           </div>
-          {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+          {error && <p className="mb-3 text-sm text-signal-anomaly">{error}</p>}
           <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
             {loading ? 'Building test…' : `Start ${level} checkpoint`}
           </button>
@@ -311,10 +311,10 @@ export default function JapaneseTestPage() {
     const pct = total ? Math.round((score / total) * 100) : 0
     const verdict =
       pct >= 80
-        ? { title: `Comfortable at ${level}`, sub: 'Worth trying the level above.', cls: 'text-green-400' }
+        ? { title: `Comfortable at ${level}`, sub: 'Worth trying the level above.', cls: 'text-signal-affirmative' }
         : pct >= 60
           ? { title: `Close at ${level}`, sub: 'Review the weakest section below and retake.', cls: 'text-yellow-400' }
-          : { title: `Not yet at ${level}`, sub: 'Keep working this level; retake in a few weeks.', cls: 'text-red-400' }
+          : { title: `Not yet at ${level}`, sub: 'Keep working this level; retake in a few weeks.', cls: 'text-signal-anomaly' }
     return (
       <div className="p-6 max-w-md mx-auto">
         <div className="card p-8 text-center">
@@ -374,7 +374,7 @@ export default function JapaneseTestPage() {
       progress={{ current: index + 1, total: questions.length, label: 'Checkpoint' }}
       actions={
         <>
-          <span className={`px-2 text-sm tabular-nums ${secondsLeft <= 60 ? 'text-red-400' : 'text-gray-300'}`}>
+          <span className={`px-2 text-sm tabular-nums ${secondsLeft <= 60 ? 'text-signal-anomaly' : 'text-gray-300'}`}>
             {mmss(secondsLeft)}
           </span>
           <button className="btn-ghost py-1 px-2 text-xs" onClick={() => setSecondsLeft(0)}>
@@ -413,9 +413,9 @@ export default function JapaneseTestPage() {
               onClick={() => choose(i)}
               className={`rounded-lg border p-3 text-left transition-colors ${
                 correct
-                  ? 'border-green-500 bg-green-500/15'
+                  ? 'border-signal-affirmative bg-signal-affirmative/15'
                   : wrongPick
-                    ? 'border-red-500 bg-red-500/15'
+                    ? 'border-signal-anomaly bg-signal-anomaly/15'
                     : 'border-base-700 bg-base-800 hover:border-accent hover:bg-base-700'
               }`}
             >

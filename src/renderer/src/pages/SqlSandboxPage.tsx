@@ -217,7 +217,7 @@ function Workbench({
 
       <textarea
         ref={textRef}
-        className="input min-h-[180px] w-full resize-y border-base-600 bg-base-950 font-mono text-sm leading-6"
+        className="code-input input min-h-[180px] w-full resize-y border-base-600 bg-base-950 text-sm leading-6"
         placeholder="SELECT …"
         value={sql}
         spellCheck={false}

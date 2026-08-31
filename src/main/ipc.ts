@@ -92,8 +92,11 @@ import * as wrestlingImport from './wrestling/importRun'
 import * as playerBridge from './playerBridge'
 import * as widget from './widget'
 import * as looseMatch from './wrestling/looseMatch'
+import * as footballRepo from './repos/footballRepo'
+import * as footballSync from './football/sync'
+import * as footballMedia from './football/media'
 import * as scan from './video/scan'
-import type { VideoSourceRef } from '@shared/types'
+import type { VideoFileRef } from '@shared/types'
 import { VIDEO_SCOPES, type VideoScope } from './video/scope'
 import * as tokenizer from './tokenizer'
 import * as dictImporter from './dict/importer'
@@ -380,6 +383,13 @@ export function registerIpc(): void {
   ipcMain.handle('japanese:stats', () => japaneseRepo.stats())
   ipcMain.handle('japanese:jlptLadder', () => japaneseRepo.jlptLadder())
   ipcMain.handle('japanese:statsDetail', () => japaneseRepo.statsDetail())
+  ipcMain.handle('japanese:saveTutorDebrief', (_e, input) => japaneseRepo.saveTutorDebrief(input))
+  ipcMain.handle('japanese:tutorDays', (_e, limit) => japaneseRepo.listTutorDays(limit))
+  ipcMain.handle('japanese:addTutorError', (_e, input) => japaneseRepo.addTutorError(input))
+  ipcMain.handle('japanese:tutorErrors', (_e, limit) => japaneseRepo.listTutorErrors(limit))
+  ipcMain.handle('japanese:resolveTutorError', (_e, id, resolved) =>
+    japaneseRepo.resolveTutorError(id, resolved)
+  )
   ipcMain.handle('japanese:ensureMiningInbox', () => japaneseRepo.ensureMiningInbox())
   ipcMain.handle('japanese:markWordsKnown', (_e, words) => japaneseRepo.markWordsKnown(words))
   ipcMain.handle('japanese:addGrammarPoints', (_e, ids) => jpGrammarDeck.addGrammarPoints(ids))
@@ -528,36 +538,16 @@ export function registerIpc(): void {
   ipcMain.handle('manga:ocrOverview', (_e, mediaId) => mokuroRun.ocrOverview(mediaId))
   ipcMain.handle('manga:adhocPages', (_e, token) => manga.adhocPages(token))
 
-  // ---- local video player ----
-  // A ref names both the table and the row; 'adhoc' has no row, so nothing to
-  // persist against.
-  const videoScopeFor = (ref: VideoSourceRef): VideoScope | null =>
-    ref.kind === 'file'
-      ? VIDEO_SCOPES.video
-      : ref.kind === 'wrestling'
-        ? VIDEO_SCOPES.wrestling
-        : null
+  // ---- linked local videos ----
+  const videoScopeFor = (ref: VideoFileRef): VideoScope =>
+    ref.kind === 'file' ? VIDEO_SCOPES.video : VIDEO_SCOPES.wrestling
 
   ipcMain.handle('video:attachFolder', (_e, mediaId) => video.attachFolder(mediaId))
   ipcMain.handle('video:rescan', (_e, mediaId) => video.rescan(mediaId))
   ipcMain.handle('video:detach', (_e, mediaId) => video.detach(mediaId))
   ipcMain.handle('video:files', (_e, mediaId) => video.files(mediaId))
-  ipcMain.handle('video:source', (_e, ref, opts) => video.source(ref, opts))
-  ipcMain.handle('video:pickFile', () => video.pickFile())
-  ipcMain.handle('video:prepare', (_e, ref, opts) => video.prepare(ref, opts))
-  ipcMain.handle('video:prepareStatus', () => video.getPrepareStatus())
-  ipcMain.handle('video:prepareCancel', (_e, id) => video.cancelPrepare(id))
+  ipcMain.handle('video:openExternal', (_e, ref) => video.openExternal(ref))
   ipcMain.handle('video:tools', () => video.detectTools())
-  ipcMain.handle('video:cacheStats', () => video.cacheStats())
-  ipcMain.handle('video:clearCache', () => video.clearCache())
-  ipcMain.handle('video:clipAudio', (_e, req) => video.clipAudio(req))
-  // Both take a VideoSourceRef, not a bare id: the same player drives the media
-  // library and the wrestling collection, and a file id is only unique WITHIN
-  // its table.
-  ipcMain.handle('video:markProgress', (_e, ref, seconds) => {
-    const scope = videoScopeFor(ref)
-    if (scope) video.markProgressIn(scope, ref.fileId, seconds)
-  })
   // Finishing an episode is a media-progress event, so the FIRST time a file
   // becomes watched it goes through checklistRepo.logProgress — the app's one
   // "I watched another one" write (status promotion, rewatch wrap, checklist
@@ -569,7 +559,6 @@ export function registerIpc(): void {
   // nothing.
   ipcMain.handle('video:markWatched', (_e, ref, watched) => {
     const scope = videoScopeFor(ref)
-    if (!scope) return
     const res = video.markWatchedIn(scope, ref.fileId, watched)
     if (res?.firstTime && scope.id === 'video') {
       checklistRepo.logProgress(res.ownerId, todayLocal())
@@ -950,6 +939,60 @@ export function registerIpc(): void {
   ipcMain.handle('wrestling:startImport', (_e, opts) => wrestlingImport.start(opts ?? {}))
   ipcMain.handle('wrestling:importStatus', () => wrestlingImport.getStatus())
   ipcMain.handle('wrestling:cancelImport', () => wrestlingImport.cancel())
+
+  // ---- football (local archive + current snapshots + private journal) ----
+  // Every long operation goes through the one footballSync singleton and is
+  // polled. FotMob is stored/opened only as a validated user-pasted link.
+  ipcMain.handle('football:overview', () => footballRepo.overview())
+  ipcMain.handle('football:competitions', () => footballRepo.listCompetitions())
+  ipcMain.handle('football:competition', (_e, key) => footballRepo.getCompetition(key))
+  ipcMain.handle('football:seasons', (_e, key) => footballRepo.listSeasons(key))
+  ipcMain.handle('football:season', (_e, id) => footballRepo.getSeason(id))
+  ipcMain.handle('football:teams', (_e, filter) => footballRepo.listTeams(filter ?? {}))
+  ipcMain.handle('football:team', (_e, id) => footballRepo.getTeam(id))
+  ipcMain.handle('football:people', (_e, filter) => footballRepo.listPeople(filter ?? {}))
+  ipcMain.handle('football:person', (_e, id) => footballRepo.getPerson(id))
+  ipcMain.handle('football:matches', (_e, filter) => footballRepo.listMatches(filter ?? {}))
+  ipcMain.handle('football:match', (_e, id) => footballRepo.getMatch(id))
+  ipcMain.handle('football:current', (_e, key, from, to) =>
+    footballRepo.currentSnapshot(key, from, to)
+  )
+  ipcMain.handle('football:search', (_e, query) => footballRepo.search(query))
+  ipcMain.handle('football:setFavorite', (_e, kind, entityId, favorite) =>
+    footballRepo.setFavorite(kind, entityId, favorite)
+  )
+  ipcMain.handle('football:saveJournal', (_e, matchId, input) =>
+    footballRepo.saveJournal(matchId, input)
+  )
+  ipcMain.handle('football:media', (_e, filter) => footballRepo.listMedia(filter ?? {}))
+  ipcMain.handle('football:mediaFor', (_e, kind, entityId) =>
+    footballRepo.mediaForEntity(kind, entityId)
+  )
+  ipcMain.handle('football:saveMedia', (_e, input) => footballRepo.saveMedia(input))
+  ipcMain.handle('football:removeMedia', (_e, id) => footballRepo.removeMedia(id))
+  ipcMain.handle('football:pickMediaFile', () => footballMedia.pickFile())
+  ipcMain.handle('football:openMedia', (_e, localPath) => footballMedia.openLocal(localPath))
+  ipcMain.handle('football:externalLinks', (_e, kind, entityId) =>
+    footballRepo.listExternalLinks(kind, entityId)
+  )
+  ipcMain.handle('football:saveExternalLink', (_e, input) =>
+    footballRepo.saveExternalLink(input)
+  )
+  ipcMain.handle('football:removeExternalLink', (_e, id) =>
+    footballRepo.removeExternalLink(id)
+  )
+  ipcMain.handle('football:openExternalLink', (_e, provider, url) =>
+    footballMedia.openExternal(provider, url)
+  )
+  ipcMain.handle('football:syncOverview', () => footballSync.getOverview())
+  ipcMain.handle('football:startSync', (_e, request) => footballSync.start(request))
+  ipcMain.handle('football:syncStatus', () => footballSync.getStatus())
+  ipcMain.handle('football:pauseSync', () => footballSync.pause())
+  ipcMain.handle('football:resumeSync', () => footballSync.resume())
+  ipcMain.handle('football:cancelSync', () => footballSync.cancel())
+  ipcMain.handle('football:resolveConflict', (_e, id, status, resolution) =>
+    footballRepo.resolveConflict(id, status, resolution)
+  )
 
   // ---- player (remote transport: thumbbar + pop-out widget) ----
   ipcMain.handle('player:publishState', (_e, snapshot) => playerBridge.publishState(snapshot))

@@ -26,14 +26,14 @@ export default function ContextPanel({
   return (
     <aside className={`hidden lg:block ${className}`} aria-label={`${title} context`}>
       <SignalResolve identity={identity ?? title} className="sticky top-6">
-        <div className="card overflow-hidden p-0">
-          {image && <div className="border-b border-base-700">{image}</div>}
+        <div className="context-panel card overflow-hidden p-0">
+          {image && <div className="border-b border-line-subtle">{image}</div>}
           <div className="p-5">
-            <h2 className="text-xl font-semibold text-white text-balance">{title}</h2>
-            {subtitle && <div className="mt-1.5 text-sm text-gray-400">{subtitle}</div>}
+            <h2 className="text-xl font-semibold text-ink text-balance">{title}</h2>
+            {subtitle && <div className="mt-1.5 text-sm text-ink-muted">{subtitle}</div>}
             <div className="mt-5">{children}</div>
           </div>
-          {footer && <div className="border-t border-base-700 px-5 py-4">{footer}</div>}
+          {footer && <div className="border-t border-line-subtle px-5 py-4">{footer}</div>}
         </div>
       </SignalResolve>
     </aside>
@@ -42,9 +42,9 @@ export default function ContextPanel({
 
 export function ContextFact({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="border-t border-base-700 py-3 first:border-t-0 first:pt-0">
-      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-gray-500">{label}</p>
-      <div className="mt-1 text-sm text-gray-300">{children}</div>
+    <div className="border-t border-line-subtle py-3 first:border-t-0 first:pt-0">
+      <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-signal-link">{label}</p>
+      <div className="mt-1 text-sm text-ink-secondary">{children}</div>
     </div>
   )
 }

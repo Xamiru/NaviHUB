@@ -47,6 +47,39 @@ async function search(kind: ListKind, q: string): Promise<PickedEntity[]> {
     }))
   }
   if (kind === 'wrestlingMatch') return []
+  if (kind.startsWith('football')) {
+    const rows = await api.football.search(q)
+    if (kind === 'footballCompetition') {
+      return rows.competitions.map((item) => ({
+        entityId: item.id,
+        name: item.name,
+        imagePath: null,
+        mediaType: null
+      }))
+    }
+    if (kind === 'footballTeam') {
+      return rows.teams.map((item) => ({
+        entityId: item.id,
+        name: item.name,
+        imagePath: item.imagePath,
+        mediaType: null
+      }))
+    }
+    if (kind === 'footballPerson') {
+      return rows.people.map((item) => ({
+        entityId: item.id,
+        name: item.name,
+        imagePath: item.imagePath,
+        mediaType: null
+      }))
+    }
+    return rows.matches.map((item) => ({
+      entityId: item.id,
+      name: `${item.home.name} vs ${item.away.name}`,
+      imagePath: null,
+      mediaType: null
+    }))
+  }
 
   const r = await api.search.global(q)
   switch (kind) {
@@ -78,6 +111,8 @@ async function search(kind: ListKind, q: string): Promise<PickedEntity[]> {
         imagePath: c.logoPath,
         mediaType: null
       }))
+    default:
+      return []
   }
 }
 

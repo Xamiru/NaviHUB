@@ -745,6 +745,54 @@ export const jpReviewLog = sqliteTable(
   })
 )
 
+export const jpTutorDay = sqliteTable(
+  'jp_tutor_day',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    day: text('day').notNull().unique(),
+    phaseId: text('phase_id').notNull(),
+    startedAt: text('started_at').notNull(),
+    endedAt: text('ended_at').notNull(),
+    plannedMinutes: integer('planned_minutes').notNull(),
+    completedMinutes: integer('completed_minutes').notNull(),
+    completedBlocks: integer('completed_blocks').notNull(),
+    totalBlocks: integer('total_blocks').notNull(),
+    strongest: text('strongest'),
+    tomorrowFocus: text('tomorrow_focus').notNull(),
+    tasksJson: text('tasks_json').notNull(),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({ byEnded: index('idx_jp_tutor_day_ended').on(t.endedAt) })
+)
+
+export const jpTutorError = sqliteTable(
+  'jp_tutor_error',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    day: text('day').notNull(),
+    skill: text('skill').notNull(),
+    label: text('label').notNull(),
+    detail: text('detail').notNull(),
+    sourceKind: text('source_kind'),
+    sourceSessionId: integer('source_session_id'),
+    score: integer('score'),
+    threshold: integer('threshold'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`(datetime('now'))`),
+    resolvedAt: text('resolved_at')
+  },
+  (t) => ({
+    byOpen: index('idx_jp_tutor_error_open').on(t.resolvedAt, t.createdAt),
+    sourceOnce: unique().on(t.day, t.skill, t.label, t.sourceSessionId)
+  })
+)
+
 // Series comprehension coverage: a scan's text facts only. The known/learning
 // split is recomputed against jp_card at read time, so these rows never go
 // stale as the user learns. media_id deliberately carries no FK.
@@ -1772,5 +1820,539 @@ export const wrestlingVideo = sqliteTable(
   (t) => ({
     byEvent: index('idx_wrestling_video_event').on(t.eventId),
     uniq: unique('uniq_wrestling_video_path').on(t.eventId, t.filePath)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// Football Archive — standalone historical graph, source-integrity evidence,
+// and a small private journal/media layer. Every table is export-excluded.
+// ---------------------------------------------------------------------------
+export const footballCompetition = sqliteTable(
+  'football_competition',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    key: text('key').notNull().unique(),
+    name: text('name').notNull(),
+    shortName: text('short_name'),
+    country: text('country'),
+    scope: text('scope').notNull(),
+    format: text('format').notNull(),
+    startYear: integer('start_year'),
+    lineageNote: text('lineage_note'),
+    summary: text('summary'),
+    currentSeasonId: integer('current_season_id'),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+  }
+)
+
+export const footballEra = sqliteTable(
+  'football_era',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    competitionId: integer('competition_id')
+      .notNull()
+      .references(() => footballCompetition.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    startSeason: text('start_season'),
+    endSeason: text('end_season'),
+    pointsWin: integer('points_win'),
+    pointsDraw: integer('points_draw'),
+    rankRules: text('rank_rules'),
+    narrative: text('narrative'),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    byCompetition: index('idx_football_era_competition').on(t.competitionId, t.sortOrder),
+    uniq: unique('uniq_football_era').on(t.competitionId, t.name, t.startSeason)
+  })
+)
+
+export const footballSeason = sqliteTable(
+  'football_season',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    competitionId: integer('competition_id')
+      .notNull()
+      .references(() => footballCompetition.id, { onDelete: 'cascade' }),
+    key: text('key').notNull(),
+    label: text('label').notNull(),
+    startDate: text('start_date'),
+    endDate: text('end_date'),
+    status: text('status').notNull().default('complete'),
+    editionNumber: integer('edition_number'),
+    teamCount: integer('team_count'),
+    championVerified: integer('champion_verified').notNull().default(0),
+    narrative: text('narrative'),
+    dataRevision: text('data_revision'),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byCompetition: index('idx_football_season_competition').on(t.competitionId, t.startDate),
+    uniq: unique('uniq_football_season_key').on(t.competitionId, t.key)
+  })
+)
+
+export const footballStage = sqliteTable(
+  'football_stage',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    seasonId: integer('season_id')
+      .notNull()
+      .references(() => footballSeason.id, { onDelete: 'cascade' }),
+    parentId: integer('parent_id'),
+    key: text('key').notNull(),
+    name: text('name').notNull(),
+    kind: text('kind').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    bySeason: index('idx_football_stage_season').on(t.seasonId, t.sortOrder),
+    uniq: unique('uniq_football_stage_key').on(t.seasonId, t.key)
+  })
+)
+
+export const footballTeam = sqliteTable(
+  'football_team',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    shortName: text('short_name'),
+    country: text('country'),
+    foundedYear: integer('founded_year'),
+    isNational: integer('is_national').notNull().default(0),
+    bio: text('bio'),
+    imagePath: text('image_path'),
+    enrichmentState: text('enrichment_state').notNull().default('not_requested'),
+    enrichedAt: text('enriched_at'),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({ byName: index('idx_football_team_name').on(t.name) })
+)
+
+export const footballPerson = sqliteTable(
+  'football_person',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    name: text('name').notNull(),
+    role: text('role').notNull(),
+    birthDate: text('birth_date'),
+    deathDate: text('death_date'),
+    nationality: text('nationality'),
+    bio: text('bio'),
+    imagePath: text('image_path'),
+    enrichmentState: text('enrichment_state').notNull().default('not_requested'),
+    enrichedAt: text('enriched_at'),
+    quizPack: integer('quiz_pack').notNull().default(0),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({ byName: index('idx_football_person_name').on(t.name) })
+)
+
+export const footballTenure = sqliteTable(
+  'football_tenure',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    personId: integer('person_id')
+      .notNull()
+      .references(() => footballPerson.id, { onDelete: 'cascade' }),
+    teamId: integer('team_id')
+      .notNull()
+      .references(() => footballTeam.id, { onDelete: 'cascade' }),
+    role: text('role').notNull(),
+    startDate: text('start_date'),
+    endDate: text('end_date'),
+    loan: integer('loan').notNull().default(0),
+    appearances: integer('appearances'),
+    goals: integer('goals'),
+    verified: integer('verified').notNull().default(0),
+    complete: integer('complete').notNull().default(0),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    byPerson: index('idx_football_tenure_person').on(t.personId, t.role, t.sortOrder),
+    byTeam: index('idx_football_tenure_team').on(t.teamId, t.role)
+  })
+)
+
+export const footballMatch = sqliteTable(
+  'football_match',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    title: text('title').notNull(),
+    seasonId: integer('season_id')
+      .notNull()
+      .references(() => footballSeason.id, { onDelete: 'cascade' }),
+    stageId: integer('stage_id').references(() => footballStage.id, { onDelete: 'set null' }),
+    homeTeamId: integer('home_team_id')
+      .notNull()
+      .references(() => footballTeam.id, { onDelete: 'restrict' }),
+    awayTeamId: integer('away_team_id')
+      .notNull()
+      .references(() => footballTeam.id, { onDelete: 'restrict' }),
+    kickoffAt: text('kickoff_at'),
+    matchDate: text('match_date').notNull(),
+    round: text('round'),
+    status: text('status').notNull().default('scheduled'),
+    homeScore: integer('home_score'),
+    awayScore: integer('away_score'),
+    homeHalftime: integer('home_halftime'),
+    awayHalftime: integer('away_halftime'),
+    homeExtraTime: integer('home_extra_time'),
+    awayExtraTime: integer('away_extra_time'),
+    homePenalties: integer('home_penalties'),
+    awayPenalties: integer('away_penalties'),
+    aggregateHome: integer('aggregate_home'),
+    aggregateAway: integer('aggregate_away'),
+    awarded: integer('awarded').notNull().default(0),
+    venue: text('venue'),
+    city: text('city'),
+    attendance: integer('attendance'),
+    referee: text('referee'),
+    eventCoverage: text('event_coverage').notNull().default('not_supplied'),
+    lineupCoverage: text('lineup_coverage').notNull().default('not_supplied'),
+    conflicted: integer('conflicted').notNull().default(0),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    bySeason: index('idx_football_match_season').on(t.seasonId, t.matchDate),
+    byHome: index('idx_football_match_home').on(t.homeTeamId, t.matchDate),
+    byAway: index('idx_football_match_away').on(t.awayTeamId, t.matchDate)
+  })
+)
+
+export const footballLineup = sqliteTable(
+  'football_lineup',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    matchId: integer('match_id')
+      .notNull()
+      .references(() => footballMatch.id, { onDelete: 'cascade' }),
+    teamId: integer('team_id')
+      .notNull()
+      .references(() => footballTeam.id, { onDelete: 'cascade' }),
+    personId: integer('person_id')
+      .notNull()
+      .references(() => footballPerson.id, { onDelete: 'cascade' }),
+    role: text('role').notNull().default('player'),
+    starter: integer('starter').notNull().default(0),
+    shirt: integer('shirt'),
+    position: text('position'),
+    captain: integer('captain').notNull().default(0),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    byMatch: index('idx_football_lineup_match').on(t.matchId, t.teamId, t.sortOrder),
+    byPerson: index('idx_football_lineup_person').on(t.personId),
+    uniq: unique('uniq_football_lineup').on(t.matchId, t.teamId, t.personId, t.role)
+  })
+)
+
+export const footballEvent = sqliteTable(
+  'football_event',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    matchId: integer('match_id')
+      .notNull()
+      .references(() => footballMatch.id, { onDelete: 'cascade' }),
+    teamId: integer('team_id').references(() => footballTeam.id, { onDelete: 'set null' }),
+    personId: integer('person_id').references(() => footballPerson.id, {
+      onDelete: 'set null'
+    }),
+    relatedPersonId: integer('related_person_id').references(() => footballPerson.id, {
+      onDelete: 'set null'
+    }),
+    type: text('type').notNull(),
+    detail: text('detail'),
+    minute: integer('minute'),
+    extraMinute: integer('extra_minute'),
+    ownGoal: integer('own_goal').notNull().default(0),
+    penalty: integer('penalty').notNull().default(0),
+    scoreHome: integer('score_home'),
+    scoreAway: integer('score_away'),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    byMatch: index('idx_football_event_match').on(t.matchId, t.sortOrder),
+    byPerson: index('idx_football_event_person').on(t.personId)
+  })
+)
+
+export const footballStanding = sqliteTable(
+  'football_standing',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    seasonId: integer('season_id')
+      .notNull()
+      .references(() => footballSeason.id, { onDelete: 'cascade' }),
+    stageId: integer('stage_id').references(() => footballStage.id, { onDelete: 'cascade' }),
+    teamId: integer('team_id')
+      .notNull()
+      .references(() => footballTeam.id, { onDelete: 'cascade' }),
+    rank: integer('rank'),
+    rankOfficial: integer('rank_official').notNull().default(0),
+    played: integer('played').notNull(),
+    won: integer('won').notNull(),
+    drawn: integer('drawn').notNull(),
+    lost: integer('lost').notNull(),
+    goalsFor: integer('goals_for').notNull(),
+    goalsAgainst: integer('goals_against').notNull(),
+    goalDifference: integer('goal_difference').notNull(),
+    points: integer('points').notNull(),
+    deduction: integer('deduction').notNull().default(0),
+    note: text('note')
+  },
+  (t) => ({
+    bySeason: index('idx_football_standing_season').on(t.seasonId, t.stageId, t.rank),
+    uniq: unique('uniq_football_standing').on(t.seasonId, t.stageId, t.teamId)
+  })
+)
+
+export const footballHonour = sqliteTable(
+  'football_honour',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    competitionId: integer('competition_id')
+      .notNull()
+      .references(() => footballCompetition.id, { onDelete: 'cascade' }),
+    seasonId: integer('season_id').references(() => footballSeason.id, { onDelete: 'cascade' }),
+    teamId: integer('team_id').references(() => footballTeam.id, { onDelete: 'cascade' }),
+    personId: integer('person_id').references(() => footballPerson.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    placement: text('placement').notNull(),
+    verified: integer('verified').notNull().default(0),
+    shared: integer('shared').notNull().default(0),
+    sortOrder: integer('sort_order').notNull().default(0)
+  },
+  (t) => ({
+    bySeason: index('idx_football_honour_season').on(t.seasonId, t.placement),
+    byTeam: index('idx_football_honour_team').on(t.teamId),
+    byPerson: index('idx_football_honour_person').on(t.personId)
+  })
+)
+
+export const footballAlias = sqliteTable(
+  'football_alias',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    entityKind: text('entity_kind').notNull(),
+    entityId: integer('entity_id').notNull(),
+    source: text('source').notNull(),
+    alias: text('alias').notNull(),
+    normalized: text('normalized').notNull(),
+    externalId: text('external_id')
+  },
+  (t) => ({
+    byLookup: index('idx_football_alias_lookup').on(t.entityKind, t.source, t.normalized),
+    uniq: unique('uniq_football_alias').on(t.entityKind, t.source, t.normalized, t.externalId)
+  })
+)
+
+export const footballSourceRef = sqliteTable(
+  'football_source_ref',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    entityKind: text('entity_kind').notNull(),
+    entityId: integer('entity_id').notNull(),
+    source: text('source').notNull(),
+    externalId: text('external_id').notNull(),
+    sourceUrl: text('source_url'),
+    revision: text('revision'),
+    checksum: text('checksum'),
+    rawFingerprint: text('raw_fingerprint'),
+    fetchedAt: text('fetched_at')
+  },
+  (t) => ({
+    byEntity: index('idx_football_source_ref_entity').on(t.entityKind, t.entityId),
+    uniq: unique('uniq_football_source_ref').on(t.entityKind, t.source, t.externalId)
+  })
+)
+
+export const footballAssertion = sqliteTable(
+  'football_assertion',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    entityKind: text('entity_kind').notNull(),
+    entityId: integer('entity_id').notNull(),
+    facet: text('facet').notNull(),
+    value: text('value'),
+    source: text('source').notNull(),
+    sourceRefId: integer('source_ref_id').references(() => footballSourceRef.id, {
+      onDelete: 'set null'
+    }),
+    status: text('status').notNull().default('accepted'),
+    confidence: real('confidence'),
+    observedAt: text('observed_at')
+  },
+  (t) => ({
+    byEntity: index('idx_football_assertion_entity').on(t.entityKind, t.entityId, t.facet),
+    uniq: unique('uniq_football_assertion').on(
+      t.entityKind,
+      t.entityId,
+      t.facet,
+      t.source,
+      t.value
+    )
+  })
+)
+
+export const footballCoverage = sqliteTable(
+  'football_coverage',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    competitionId: integer('competition_id').references(() => footballCompetition.id, {
+      onDelete: 'cascade'
+    }),
+    seasonId: integer('season_id').references(() => footballSeason.id, { onDelete: 'cascade' }),
+    source: text('source').notNull(),
+    facet: text('facet').notNull(),
+    state: text('state').notNull(),
+    itemCount: integer('item_count'),
+    expectedCount: integer('expected_count'),
+    note: text('note'),
+    revision: text('revision'),
+    checkedAt: text('checked_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    bySeason: index('idx_football_coverage_season').on(t.seasonId, t.facet),
+    uniq: unique('uniq_football_coverage').on(
+      t.competitionId,
+      t.seasonId,
+      t.source,
+      t.facet
+    )
+  })
+)
+
+export const footballConflict = sqliteTable(
+  'football_conflict',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    entityKind: text('entity_kind').notNull(),
+    entityId: integer('entity_id'),
+    facet: text('facet').notNull(),
+    sourceA: text('source_a').notNull(),
+    valueA: text('value_a'),
+    sourceB: text('source_b').notNull(),
+    valueB: text('value_b'),
+    status: text('status').notNull().default('open'),
+    resolution: text('resolution'),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    resolvedAt: text('resolved_at')
+  },
+  (t) => ({ byStatus: index('idx_football_conflict_status').on(t.status, t.entityKind) })
+)
+
+export const footballImportRun = sqliteTable(
+  'football_import_run',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    kind: text('kind').notNull(),
+    source: text('source').notNull(),
+    competitionKey: text('competition_key'),
+    seasonKey: text('season_key'),
+    state: text('state').notNull(),
+    version: text('version'),
+    etag: text('etag'),
+    checksum: text('checksum'),
+    rawFingerprint: text('raw_fingerprint'),
+    requestCount: integer('request_count').notNull().default(0),
+    itemCount: integer('item_count').notNull().default(0),
+    startedAt: text('started_at').notNull(),
+    finishedAt: text('finished_at'),
+    message: text('message')
+  },
+  (t) => ({ bySource: index('idx_football_import_run_source').on(t.source, t.startedAt) })
+)
+
+export const footballArticle = sqliteTable(
+  'football_article',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    entityKind: text('entity_kind').notNull(),
+    entityId: integer('entity_id').notNull(),
+    title: text('title').notNull(),
+    body: text('body'),
+    sourceUrl: text('source_url').notNull(),
+    revision: text('revision'),
+    license: text('license'),
+    attribution: text('attribution'),
+    state: text('state').notNull().default('not_requested'),
+    fetchedAt: text('fetched_at')
+  },
+  (t) => ({
+    byEntity: index('idx_football_article_entity').on(t.entityKind, t.entityId),
+    uniq: unique('uniq_football_article').on(t.entityKind, t.entityId, t.sourceUrl)
+  })
+)
+
+export const footballFavorite = sqliteTable(
+  'football_favorite',
+  {
+    entityKind: text('entity_kind').notNull(),
+    entityId: integer('entity_id').notNull(),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({ pk: primaryKey({ columns: [t.entityKind, t.entityId] }) })
+)
+
+export const footballMatchJournal = sqliteTable('football_match_journal', {
+  matchId: integer('match_id')
+    .primaryKey()
+    .references(() => footballMatch.id, { onDelete: 'cascade' }),
+  watchedAt: text('watched_at'),
+  rating: real('rating'),
+  note: text('note'),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+})
+
+export const footballMedia = sqliteTable(
+  'football_media',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    title: text('title').notNull(),
+    kind: text('kind').notNull(),
+    localPath: text('local_path'),
+    url: text('url'),
+    note: text('note'),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+    updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({ byKind: index('idx_football_media_kind').on(t.kind, t.createdAt) })
+)
+
+export const footballMediaLink = sqliteTable(
+  'football_media_link',
+  {
+    mediaId: integer('media_id')
+      .notNull()
+      .references(() => footballMedia.id, { onDelete: 'cascade' }),
+    entityKind: text('entity_kind').notNull(),
+    entityId: integer('entity_id').notNull()
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.mediaId, t.entityKind, t.entityId] }),
+    byEntity: index('idx_football_media_link_entity').on(t.entityKind, t.entityId)
+  })
+)
+
+export const footballExternalLink = sqliteTable(
+  'football_external_link',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    entityKind: text('entity_kind').notNull(),
+    entityId: integer('entity_id').notNull(),
+    provider: text('provider').notNull(),
+    label: text('label'),
+    url: text('url').notNull(),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byEntity: index('idx_football_external_link_entity').on(t.entityKind, t.entityId),
+    uniq: unique('uniq_football_external_link').on(t.entityKind, t.entityId, t.provider, t.url)
   })
 )

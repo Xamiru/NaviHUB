@@ -50,11 +50,6 @@ publish:
 # No per-extension `icon:` keys: electron-builder falls back to the app icon,
 # which is the honest result anyway (there is no distinct NaviHUB document type).
 fileAssociations:
-  - ext: [mkv, mp4, m4v, webm, avi, mov, ts, m2ts, mts, wmv, flv, mpg, mpeg, ogv, divx]
-    name: Video
-    description: Video
-    mimeType: video/x-matroska
-    role: Viewer
   - ext: [epub]
     name: EPUB Book
     description: EPUB book

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
+import { parseAppTheme } from '@shared/appTheme'
 
 const BOOT_KEY = 'ui.booted'
 
 // Decided ONCE at module load with the flag set immediately: StrictMode
 // remounts can't re-trigger it. sessionStorage survives in-app reloads but
-// resets per app launch, so each launch of the Wired boots exactly once.
+// resets per app launch, so each launch boots exactly once.
 const shouldBoot = ((): boolean => {
   try {
     if (sessionStorage.getItem(BOOT_KEY)) return false
@@ -16,38 +17,46 @@ const shouldBoot = ((): boolean => {
 })()
 
 // ASCII "..." on purpose — VT323 has no '…' glyph.
-const SCRIPT = [
-  'TACHIBANA GENERAL LABORATORIES',
-  'COPLAND OS ENTERPRISE',
-  'connecting to the Wired...',
-  'Present day. Present time.'
-].join('\n')
+const SCRIPTS = {
+  lain: [
+    'TACHIBANA GENERAL LABORATORIES',
+    'COPLAND OS ENTERPRISE',
+    'connecting to the Wired...',
+    'Present day. Present time.'
+  ].join('\n'),
+  'metal-gear': [
+    'NAVI TACTICAL ARCHIVE',
+    'LOCAL DATABASE LINK',
+    'MISSION INDEX ONLINE',
+    'operations ready.'
+  ].join('\n')
+} as const
 const CHAR_MS = 14
 const HOLD_MS = 400
 const FADE_MS = 200
 
 type Phase = 'typing' | 'fading' | 'done'
 
-// Fullscreen Copland OS boot splash. Sits at z-[70]: above all app UI (which
-// tops out at z-50) but below the CRT scanline overlay (z 80/81), so the boot
-// text flickers like everything else. The app mounts and loads data beneath
-// it the whole time.
+// Fullscreen themed boot splash. The app mounts and loads data beneath it the
+// whole time, and any input dismisses it immediately.
 export default function BootSequence() {
+  const theme = parseAppTheme(document.documentElement.dataset.theme)
+  const script = SCRIPTS[theme]
   const [chars, setChars] = useState(0)
   const [phase, setPhase] = useState<Phase>(shouldBoot ? 'typing' : 'done')
 
   useEffect(() => {
     if (phase !== 'typing') return
-    const iv = setInterval(() => setChars((c) => Math.min(c + 1, SCRIPT.length)), CHAR_MS)
+    const iv = setInterval(() => setChars((c) => Math.min(c + 1, script.length)), CHAR_MS)
     return () => clearInterval(iv)
-  }, [phase])
+  }, [phase, script.length])
 
   // Fully typed → hold, then fade, then unmount.
   useEffect(() => {
-    if (phase !== 'typing' || chars < SCRIPT.length) return
+    if (phase !== 'typing' || chars < script.length) return
     const t = setTimeout(() => setPhase('fading'), HOLD_MS)
     return () => clearTimeout(t)
-  }, [phase, chars])
+  }, [phase, chars, script.length])
 
   useEffect(() => {
     if (phase !== 'fading') return
@@ -74,22 +83,19 @@ export default function BootSequence() {
   }, [phase])
 
   if (phase === 'done') return null
-  const lines = SCRIPT.slice(0, chars).split('\n')
+  const lines = script.slice(0, chars).split('\n')
   return (
     <div
       aria-hidden="true"
-      className={`lain-crt fixed inset-0 z-[70] flex items-center justify-center bg-base-900 transition-opacity duration-200 ${
+      className={`${theme === 'lain' ? 'lain-crt' : 'tactical-boot'} fixed inset-0 z-[70] flex items-center justify-center bg-base-900 transition-opacity duration-200 ${
         phase === 'fading' ? 'opacity-0' : ''
       }`}
     >
-      <div
-        className="text-accent text-2xl leading-relaxed"
-        style={{ textShadow: '0 0 8px rgb(var(--accent) / 0.5)' }}
-      >
+      <div className="boot-copy text-signal-live text-2xl leading-relaxed">
         {lines.map((l, i) => (
           <p key={i}>
             {l}
-            {i === lines.length - 1 && <span className="lain-cursor">▮</span>}
+            {i === lines.length - 1 && <span className="boot-cursor">▮</span>}
           </p>
         ))}
       </div>

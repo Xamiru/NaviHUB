@@ -71,7 +71,7 @@ Retention: live forever; finished for 30 minutes capped at the newest 40; `ephem
 | Shape | Modules | How |
 |---|---|---|
 | `withActivity` | all 17 importers + achievements + catalog install | free, via the `progress.ts` adapter — **no call-site edits at all** |
-| `let status` + own id | musicDownload, mokuroRun, video/session, updater, bulkImport, wrestlingImport, jackett | a `project()` beside the existing status object |
+| `let status` + own id | musicDownload, mokuroRun, updater, bulkImport, wrestlingImport, jackett | a `project()` beside the existing status object |
 | `const state = { running }` | music scan, musicArt, dictImport, prepDeck, coreDeck, coverage, video scan | wrapped in `tasks.runTask()` |
 | nothing at all | manga rescan | registry-sourced via `handle.progress()` — this scan used to be completely dark |
 
@@ -97,7 +97,7 @@ running forever.
 - **SIGTERM is queued for a stopped process.** So `cancel()` records the module's cancelled flag,
   sends **SIGCONT before SIGTERM**, then SIGKILL after 5s. Without that, cancelling a paused
   job appears to hang for five seconds. The three pre-existing `cancelDownload`/`cancelOcr`/
-  `cancelPrepare` functions now route through this, so the ordering exists in one place.
+  cancellation functions route through this, so the ordering exists in one place.
 - On Windows, Stop uses `taskkill /T /F` with an argv array so a spotDL/yt-dlp child and its
   ffmpeg descendants are terminated together. The job's cancellation flag is set before looking
   up the current child, so a click between chunk/process phases still prevents the next phase.
@@ -237,5 +237,5 @@ is hidden; rebuilding it by hand risks silently dropping one. The bar stays opt-
 Menu items **cannot push to the renderer** (the push surface is frozen at `player:cmd` /
 `player:state`). Tasks and Logs park a route in `appMenu.takePendingRoute()`, drained by the poll
 `OpenFileHandler` already runs on focus/visibility/backstop — zero new timers. No accelerators on
-purpose: a hidden menu keeps its accelerators, and one here would fire inside the manga reader and
-the video player, which own their keyboards.
+purpose: a hidden menu keeps its accelerators, and one here would fire inside the manga reader,
+which owns its keyboard.

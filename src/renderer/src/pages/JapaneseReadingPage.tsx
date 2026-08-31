@@ -10,12 +10,13 @@ import { Group, Pill } from '../components/PillGroup'
 import Furigana from '../components/japanese/Furigana'
 import MiningPanel from '../components/reader/MiningPanel'
 import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
+import TutorSessionContinue from '../components/TutorSessionContinue'
 import { JP_PASSAGES } from '@shared/japanese/readings'
 import { stripFurigana } from '@shared/japanese/furigana'
 import type { JpPassage, JpReadingLevel } from '@shared/japanese/types'
 import { shuffle } from '@shared/shuffle'
 
-// Graded reading: short authored passages N5-N2 with furigana you can switch
+// Graded reading: short authored passages N5-N1 with furigana you can switch
 // off, comprehension questions, a glossary, and the reader's own mining panel
 // on any paragraph. Per-passage bests come from the quiz history (rounds are
 // four questions, so they never reach the `total >= 5` personal-best rule —
@@ -23,7 +24,7 @@ import { shuffle } from '@shared/shuffle'
 
 type Phase = 'setup' | 'play' | 'summary'
 type LevelFilter = 'all' | JpReadingLevel
-const LEVELS: JpReadingLevel[] = ['N5', 'N4', 'N3', 'N2']
+const LEVELS: JpReadingLevel[] = ['N5', 'N4', 'N3', 'N2', 'N1']
 
 interface Question {
   prompt: string
@@ -153,9 +154,7 @@ export default function JapaneseReadingPage() {
             <button className="btn-primary flex-1" onClick={() => setPhase('setup')}>
               Another passage
             </button>
-            <Link to="/japanese" className="btn-ghost flex-1 text-center">
-              Done
-            </Link>
+            <TutorSessionContinue fallbackTo="/japanese" fallbackLabel="Done" className="btn-ghost flex-1 text-center" />
           </div>
         </div>
       </div>
@@ -240,8 +239,8 @@ export default function JapaneseReadingPage() {
                 {q.options.map((opt, i) => {
                   let cls = 'border-base-700 hover:bg-base-700/60'
                   if (answered) {
-                    if (i === q.correct) cls = 'border-green-500/60 bg-green-500/10 text-green-300'
-                    else if (i === picked) cls = 'border-red-500/60 bg-red-500/10 text-red-300'
+                    if (i === q.correct) cls = 'border-signal-affirmative/60 bg-signal-affirmative/10 text-signal-affirmative'
+                    else if (i === picked) cls = 'border-signal-anomaly/60 bg-signal-anomaly/10 text-signal-anomaly'
                     else cls = 'border-base-700 opacity-60'
                   }
                   return (
@@ -289,7 +288,7 @@ export default function JapaneseReadingPage() {
       <PageHeader
         back={{ to: '/japanese', label: 'Japanese' }}
         title="Graded reading"
-        subtitle="Short passages N5 to N2 with furigana you can switch off, four questions each, and the mining panel one double-click away."
+        subtitle="Connected passages N5 to N1 with optional furigana, four comprehension questions, and the mining panel one double-click away."
         actions={
           <button className="btn-ghost" onClick={() => setFurigana((v) => !v)}>
             {furigana ? 'Furigana on' : 'Furigana off'}

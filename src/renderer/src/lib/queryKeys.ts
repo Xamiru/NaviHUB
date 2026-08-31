@@ -174,17 +174,10 @@ export const qk = {
     ocrOverview: (mediaId: number) => ['manga', 'ocrOverview', mediaId] as const
   },
   video: {
-    // Local video player: attached episodes, the playback contract, and parsed
-    // subtitle cues. Progress/watched writes invalidate the `all` prefix —
-    // watched state is denormalized into both the episode list and the source.
+    // Linked local videos and their manual watched marks.
     all: ['video'] as const,
     library: (mediaId: number) => ['video', 'library', mediaId] as const,
-    source: (kind: string, ref: string) => ['video', 'source', kind, ref] as const,
-    scanStatus: ['video', 'scanStatus'] as const,
-    prepareStatus: ['video', 'prepareStatus'] as const,
-    cacheStats: ['video', 'cacheStats'] as const,
-    // One subtitle track's parsed cues, keyed by its navimg URL (immutable).
-    cues: (url: string) => ['video', 'cues', url] as const
+    scanStatus: ['video', 'scanStatus'] as const
   },
   japanese: {
     all: ['japanese'] as const,
@@ -206,6 +199,8 @@ export const qk = {
     leeches: ['japanese', 'leeches'] as const,
     stats: ['japanese', 'stats'] as const,
     statsDetail: ['japanese', 'statsDetail'] as const,
+    tutorDays: ['japanese', 'tutorDays'] as const,
+    tutorErrors: ['japanese', 'tutorErrors'] as const,
     quizPool: (scope: JpQuizScope) => ['japanese', 'quizPool', scope] as const,
     lessonQuizPool: (lessonId: number) => ['japanese', 'lessonQuizPool', lessonId] as const,
     prepDeckStatus: ['japanese', 'prepDeckStatus'] as const,
@@ -353,6 +348,37 @@ export const qk = {
     loose: ['wrestling', 'loose'] as const,
     recent: ['wrestling', 'recent'] as const,
     importStatus: ['wrestling', 'importStatus'] as const
+  },
+  football: {
+    all: ['football'] as const,
+    overview: ['football', 'overview'] as const,
+    competitions: ['football', 'competitions'] as const,
+    competition: (key: import('@shared/types').FootballCompetitionKey) =>
+      ['football', 'competition', key] as const,
+    seasons: (key?: import('@shared/types').FootballCompetitionKey | null) =>
+      ['football', 'seasons', key ?? null] as const,
+    season: (id: number) => ['football', 'season', id] as const,
+    teams: (filter: import('@shared/types').FootballEntityFilter) =>
+      ['football', 'teams', filter] as const,
+    team: (id: number) => ['football', 'team', id] as const,
+    people: (filter: import('@shared/types').FootballEntityFilter) =>
+      ['football', 'people', filter] as const,
+    person: (id: number) => ['football', 'person', id] as const,
+    matches: (filter: import('@shared/types').FootballMatchFilter) =>
+      ['football', 'matches', filter] as const,
+    match: (id: number) => ['football', 'match', id] as const,
+    current: (
+      key?: import('@shared/types').FootballCompetitionKey | null,
+      from?: string | null,
+      to?: string | null
+    ) => ['football', 'current', key ?? null, from ?? null, to ?? null] as const,
+    search: (query: string) => ['football', 'search', query] as const,
+    media: (filter?: { kind?: string | null; search?: string | null }) =>
+      ['football', 'media', filter ?? {}] as const,
+    mediaFor: (kind: import('@shared/types').FootballEntityKind, id: number) =>
+      ['football', 'mediaFor', kind, id] as const,
+    sync: ['football', 'sync'] as const,
+    syncStatus: ['football', 'syncStatus'] as const
   },
   update: {
     // In-app updater (Settings → Tools). Status polls while checking/downloading.

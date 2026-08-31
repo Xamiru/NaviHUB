@@ -2,11 +2,11 @@
 // keys; the furigana notation and its rules live in ./furigana.ts, and
 // tests/jpReadings.test.ts enforces both.
 
-export type JpReadingLevel = 'N5' | 'N4' | 'N3' | 'N2'
+export type JpReadingLevel = 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
 export type JpReadingQuestionKind = 'detail' | 'main-idea' | 'inference' | 'vocab'
 
 export interface JpReadingQuestion {
-  prompt: string // English for N5/N4, Japanese (furigana notation) for N3/N2
+  prompt: string // English for N5/N4, Japanese (furigana notation) from N3 up
   kind: JpReadingQuestionKind
   options: string[] // exactly 4
   correct: number
@@ -20,7 +20,7 @@ export interface JpGlossEntry {
 }
 
 export interface JpPassage {
-  key: string // FROZEN '<n5|n4|n3|n2>-<nn>-<slug>'
+  key: string // FROZEN '<n5|n4|n3|n2|n1>-<nn>-<slug>'
   title: string // furigana notation allowed
   level: JpReadingLevel
   topic: string // short eyebrow label

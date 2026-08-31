@@ -8,13 +8,15 @@ import { createTestDb } from './helpers'
 let db: Database.Database
 let root: string
 const showOpenDialog = vi.fn()
+const openPath = vi.fn()
 const settings = new Map<string, string>()
 
 vi.mock('../src/main/db/connection', () => ({
   getSqlite: () => db
 }))
 vi.mock('electron', () => ({
-  dialog: { showOpenDialog: (...args: unknown[]) => showOpenDialog(...args) }
+  dialog: { showOpenDialog: (...args: unknown[]) => showOpenDialog(...args) },
+  shell: { openPath: (...args: unknown[]) => openPath(...args) }
 }))
 // The scanner reads/writes video.dir through settingsRepo and resolves the
 // library root through files.ts — both replaced so the module runs under plain
@@ -29,16 +31,20 @@ vi.mock('../src/main/files', () => ({
   videoRootDir: () => root,
   // The scanner is shared with the wrestling collection (video/scope.ts), so
   // both roots have to exist even though these tests only use the media one.
-  wrestlingRootDir: () => root
+  wrestlingRootDir: () => root,
+  absoluteMediaPath: (relPath: string) => join(root, relPath.replace(/^[^/]+\//, ''))
 }))
 
 import * as scan from '../src/main/video/scan'
+import * as video from '../src/main/video'
 
 beforeEach(() => {
   db = createTestDb()
   root = mkdtempSync(join(os.tmpdir(), 'navihub-video-'))
   settings.clear()
   showOpenDialog.mockReset()
+  openPath.mockReset()
+  openPath.mockResolvedValue('')
   scan.setProber(async () => null)
 })
 
@@ -149,7 +155,7 @@ describe('rescan', () => {
     await attach(mediaId, dir)
 
     const before = scan.files(mediaId).files
-    scan.markProgress(before[0].id, 723.5)
+    db.prepare('UPDATE video_file SET resume_seconds = ? WHERE id = ?').run(723.5, before[0].id)
     scan.markWatched(before[1].id, true)
 
     // A rename changes the parsed title; the rescan must adopt it without
@@ -173,7 +179,7 @@ describe('rescan', () => {
     const dir = makeSeries('Frieren', ['Frieren - 01.mkv', 'Frieren - 02.mkv'])
     await attach(mediaId, dir)
     const before = scan.files(mediaId).files
-    scan.markProgress(before[0].id, 300)
+    db.prepare('UPDATE video_file SET resume_seconds = ? WHERE id = ?').run(300, before[0].id)
     scan.markWatched(before[1].id, true)
 
     await scan.rescan(mediaId)
@@ -270,6 +276,55 @@ describe('probe seam', () => {
   })
 })
 
+describe('external playback', () => {
+  it('opens the tracked absolute path with the operating system', async () => {
+    const mediaId = makeMedia()
+    const dir = makeSeries('Frieren', ['Frieren - 01.mkv'])
+    await attach(mediaId, dir)
+    const file = scan.files(mediaId).files[0]
+
+    await video.openExternal({ kind: 'file', fileId: file.id })
+
+    expect(openPath).toHaveBeenCalledWith(join(dir, 'Frieren - 01.mkv'))
+  })
+
+  it('surfaces a system-player launch failure', async () => {
+    const mediaId = makeMedia()
+    await attach(mediaId, makeSeries('Frieren', ['Frieren - 01.mkv']))
+    const file = scan.files(mediaId).files[0]
+    openPath.mockResolvedValue('No application is associated with this file')
+
+    await expect(video.openExternal({ kind: 'file', fileId: file.id })).rejects.toThrow(
+      /No application is associated/
+    )
+  })
+
+  it('opens a wrestling row from the wrestling root', async () => {
+    const eventId = Number(
+      db
+        .prepare(
+          `INSERT INTO wrestling_event (promotion, name, wiki_title)
+           VALUES ('wwe', 'WrestleMania', 'WrestleMania')`
+        )
+        .run().lastInsertRowid
+    )
+    mkdirSync(join(root, 'WM17'), { recursive: true })
+    writeFileSync(join(root, 'WM17', 'main.mkv'), 'x')
+    const fileId = Number(
+      db
+        .prepare(
+          `INSERT INTO wrestling_video (event_id, file_path, title, sort_order)
+           VALUES (?, 'WM17/main.mkv', 'Main event', 0)`
+        )
+        .run(eventId).lastInsertRowid
+    )
+
+    await video.openExternal({ kind: 'wrestling', fileId })
+
+    expect(openPath).toHaveBeenCalledWith(join(root, 'WM17', 'main.mkv'))
+  })
+})
+
 describe('markWatched', () => {
   it('reports only the FIRST transition, so an episode is logged once', async () => {
     const mediaId = makeMedia()
@@ -280,11 +335,11 @@ describe('markWatched', () => {
     expect(scan.files(mediaId).files[0].watchedAt).not.toBeNull()
   })
 
-  it('clears the resume position when un-watched, and re-arms the first flag', async () => {
+  it('clears a legacy resume position when un-watched, and re-arms the first flag', async () => {
     const mediaId = makeMedia()
     await attach(mediaId, makeSeries('Frieren', ['F - 01.mkv']))
     const id = scan.files(mediaId).files[0].id
-    scan.markProgress(id, 500)
+    db.prepare('UPDATE video_file SET resume_seconds = 500 WHERE id = ?').run(id)
     scan.markWatched(id, true)
     scan.markWatched(id, false)
     expect(scan.files(mediaId).files[0]).toMatchObject({ resumeSeconds: null, watchedAt: null })
@@ -306,20 +361,6 @@ describe('markWatched', () => {
 
   it('returns null for a file that does not exist', () => {
     expect(scan.markWatched(9999, true)).toBeNull()
-  })
-})
-
-describe('neighbours', () => {
-  it('walks the attached folder order for the player prev/next', async () => {
-    const mediaId = makeMedia()
-    await attach(mediaId, makeSeries('Frieren', ['F - 01.mkv', 'F - 02.mkv', 'F - 03.mkv']))
-    const [a, b, c] = scan.files(mediaId).files
-    expect(scan.neighbours(a.id)).toEqual({ prev: null, next: { fileId: b.id, title: b.title } })
-    expect(scan.neighbours(b.id)).toEqual({
-      prev: { fileId: a.id, title: a.title },
-      next: { fileId: c.id, title: c.title }
-    })
-    expect(scan.neighbours(c.id).next).toBeNull()
   })
 })
 

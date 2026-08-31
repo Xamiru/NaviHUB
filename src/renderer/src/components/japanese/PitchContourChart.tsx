@@ -102,9 +102,9 @@ export default function PitchContourChart({
                 fontSize="11"
                 className={
                   result.moraVerdicts[i] === 'ok'
-                    ? 'fill-green-400'
+                    ? 'fill-signal-affirmative'
                     : result.moraVerdicts[i] === 'miss'
-                      ? 'fill-red-400'
+                      ? 'fill-signal-anomaly'
                       : 'fill-gray-500'
                 }
               >

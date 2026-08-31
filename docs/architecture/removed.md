@@ -18,3 +18,7 @@
 ## Odd One Out quiz
 
 **Odd One Out — REMOVED (2026-08-27).** The central-library format that asked which of four titles lacked a stated company, credited-person, or genre relation was deliberately scrapped during the quiz review. Do not restore its route, hub card, Party option, challenge kind, or availability field. Old `quiz_session` rows may retain the `oddOneOut` text value; they are inert historical data and require no migration.
+
+## Internal video player
+
+**Internal video player — REMOVED (2026-08-30).** The `/watch` routes, Chromium playback page, ffmpeg remux/transcode workflow, conversion task/cache UI, transcript overlay, and player-side subtitle mining were deliberately removed. Do not restore them as unfinished work. Linked episode and wrestling-video folders remain, but their Open actions use the operating system's default video application; the intended setup is VLC as that default. Watched marks stay manual. Legacy `resume_seconds`, `playability`, `video_cache`, and converted files may remain in existing data without driving any current behavior.

@@ -30,6 +30,7 @@ describe('sidebarSectionDefs', () => {
       'stats',
       'music',
       'wrestling',
+      'football',
       'lists',
       'tags',
       'quiz',

@@ -88,7 +88,7 @@ export default function TransitivityDrill() {
             <>
               <p
                 className={`text-xs font-semibold uppercase tracking-wide ${
-                  correct ? 'text-green-400' : 'text-red-400'
+                  correct ? 'text-signal-affirmative' : 'text-signal-anomaly'
                 }`}
               >
                 {correct ? 'Correct' : 'Incorrect'}

@@ -312,7 +312,7 @@ export default function JapaneseQuizPage() {
             <Pill active={length === 0} onClick={() => setLength(0)} label="Endless" />
           </Group>
 
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-signal-anomaly">{error}</p>}
 
           <button
             className="btn-primary w-full"
@@ -431,9 +431,9 @@ export default function JapaneseQuizPage() {
               onClick={() => handleAnswer(o.id)}
               className={`rounded-lg border p-3 text-left transition-colors ${
                 correct
-                  ? 'border-green-500 bg-green-500/15'
+                  ? 'border-signal-affirmative bg-signal-affirmative/15'
                   : wrongPick
-                    ? 'border-red-500 bg-red-500/15'
+                    ? 'border-signal-anomaly bg-signal-anomaly/15'
                     : 'border-base-700 bg-base-800 hover:border-accent hover:bg-base-700'
               } ${answered ? 'cursor-default' : ''}`}
             >
@@ -452,7 +452,7 @@ export default function JapaneseQuizPage() {
         <div className="card mt-4 p-4">
           <p
             className={`text-xs font-semibold uppercase tracking-wide ${
-              picked === current.id ? 'text-green-400' : 'text-red-400'
+              picked === current.id ? 'text-signal-affirmative' : 'text-signal-anomaly'
             }`}
           >
             {picked === current.id ? 'Correct' : picked === null ? 'Skipped' : 'Incorrect'}

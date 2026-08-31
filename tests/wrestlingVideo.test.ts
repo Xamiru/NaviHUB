@@ -63,20 +63,13 @@ describe('the wrestling video scope', () => {
     expect(scan.rowsFor(VIDEO_SCOPES.video, eventId)).toHaveLength(0)
   })
 
-  it('resolves the owner to the event page, with no media identity', () => {
+  it('resolves the owner without treating it as a media item', () => {
     const eventId = makeEvent()
-    expect(WRESTLING.owner(eventId)).toEqual({
-      title: 'WrestleMania X-Seven',
-      backPath: `/wrestling/event/${eventId}`,
-      // Load-bearing: an event is NOT a media_item, so nothing downstream may
-      // treat this id as one — see the markWatched checklist guard in ipc.ts.
-      mediaId: null,
-      mediaType: null
-    })
+    expect(WRESTLING.owner(eventId)).toEqual({ title: 'WrestleMania X-Seven' })
     expect(WRESTLING.owner(9999)).toBeNull()
   })
 
-  it('reads and writes resume position through the scope', () => {
+  it('still reads legacy resume position through the scope', () => {
     const eventId = makeEvent()
     const fileId = Number(
       db
@@ -86,31 +79,11 @@ describe('the wrestling video scope', () => {
         )
         .run(eventId, 'WM17/main.mkv', 'Main event').lastInsertRowid
     )
-    scan.markProgressIn(WRESTLING, fileId, 1234)
+    db.prepare('UPDATE wrestling_video SET resume_seconds = 1234 WHERE id = ?').run(fileId)
     expect(scan.scopedFileById(WRESTLING, fileId)).toMatchObject({
       ownerId: eventId,
       resumeSeconds: 1234
     })
-  })
-
-  it('reports the previous and next file on the card', () => {
-    const eventId = makeEvent()
-    const ids = ['a.mkv', 'b.mkv', 'c.mkv'].map((f, i) =>
-      Number(
-        db
-          .prepare(
-            `INSERT INTO wrestling_video (event_id, file_path, title, sort_order)
-             VALUES (?, ?, ?, ?)`
-          )
-          .run(eventId, f, f, i).lastInsertRowid
-      )
-    )
-    expect(scan.neighboursIn(WRESTLING, ids[1])).toEqual({
-      prev: { fileId: ids[0], title: 'a.mkv' },
-      next: { fileId: ids[2], title: 'c.mkv' }
-    })
-    expect(scan.neighboursIn(WRESTLING, ids[0]).prev).toBeNull()
-    expect(scan.neighboursIn(WRESTLING, ids[2]).next).toBeNull()
   })
 
   it('reports the owner id on watched, so the caller can refuse to log it', () => {

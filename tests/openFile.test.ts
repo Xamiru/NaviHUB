@@ -12,8 +12,6 @@ import { classifyPath, parseArgvFiles, OPENABLE_EXTS } from '../src/main/openFil
 
 describe('classifyPath', () => {
   it('routes each supported format to its reader', () => {
-    expect(classifyPath('/x/Show - 03.mkv')).toBe('video')
-    expect(classifyPath('/x/film.MP4')).toBe('video')
     expect(classifyPath('/x/book.epub')).toBe('book')
     expect(classifyPath('/x/Vol 1.cbz')).toBe('manga')
     expect(classifyPath('/x/archive.zip')).toBe('manga')
@@ -22,7 +20,16 @@ describe('classifyPath', () => {
   })
 
   it('refuses everything it has no page for', () => {
-    for (const p of ['/x/a.txt', '/x/a.png', '/x/a.srt', '/x/a.pdf', '/x/noext', '/x/.hidden']) {
+    for (const p of [
+      '/x/a.txt',
+      '/x/a.png',
+      '/x/a.srt',
+      '/x/a.pdf',
+      '/x/a.mkv',
+      '/x/a.mp4',
+      '/x/noext',
+      '/x/.hidden'
+    ]) {
       expect(classifyPath(p)).toBeNull()
     }
   })
@@ -34,23 +41,23 @@ describe('parseArgvFiles', () => {
     const argv = [
       '/usr/lib/navihub/electron',
       '--no-sandbox',
-      '/home/u/Videos/Show - 03.mkv',
+      '/home/u/Books/story.epub',
       '--allow-file-access-from-files',
       '/home/u/Docs/notes.txt'
     ]
-    expect(parseArgvFiles(argv, '/home/u')).toEqual(['/home/u/Videos/Show - 03.mkv'])
+    expect(parseArgvFiles(argv, '/home/u')).toEqual(['/home/u/Books/story.epub'])
   })
 
   it('resolves a relative path against the launching directory', () => {
     // A second instance carries its own cwd; a shell-completed relative path is
     // meaningless without it.
-    expect(parseArgvFiles(['electron', 'Videos/ep.mkv'], '/home/u')).toEqual([
-      '/home/u/Videos/ep.mkv'
+    expect(parseArgvFiles(['electron', 'Books/story.epub'], '/home/u')).toEqual([
+      '/home/u/Books/story.epub'
     ])
   })
 
   it('never treats the binary or a flag as a file', () => {
-    expect(parseArgvFiles(['/usr/bin/x.mkv'], '/tmp')).toEqual([])
+    expect(parseArgvFiles(['/usr/bin/x.epub'], '/tmp')).toEqual([])
     expect(parseArgvFiles(['electron', '--inspect=5858', '-h', ''], '/tmp')).toEqual([])
   })
 
@@ -79,7 +86,7 @@ describe('OS registration stays in step with the code', () => {
 
   it('every extension the installer claims is one the app can actually open', () => {
     const exts = declared()
-    expect(exts.length).toBeGreaterThan(10)
+    expect(exts.length).toBeGreaterThan(8)
     for (const ext of exts) {
       expect(classifyPath(`/x/file.${ext}`), `.${ext} is registered but unhandled`).not.toBeNull()
     }

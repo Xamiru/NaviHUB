@@ -89,7 +89,7 @@ export default function SetupChecklist() {
           const inner = (
             <>
               <span
-                className={`w-6 shrink-0 text-center ${r.installed ? 'text-green-400' : 'text-gray-600'}`}
+                className={`w-6 shrink-0 text-center ${r.installed ? 'text-signal-affirmative' : 'text-gray-600'}`}
                 title={r.installed ? 'Installed' : 'Not installed'}
               >
                 {r.installed ? '✓' : '○'}

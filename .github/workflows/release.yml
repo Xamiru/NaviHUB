@@ -1,10 +1,9 @@
 name: Release
 
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
-# Two pushes in quick succession queue instead of racing to publish.
+# Two manual runs in quick succession queue instead of racing to publish.
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false

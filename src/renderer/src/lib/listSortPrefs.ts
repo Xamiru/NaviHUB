@@ -1,7 +1,7 @@
 import type { MediaSort } from '@shared/types'
 
 // The library list's sort choice, remembered per media type across sessions —
-// the videoPrefs / jp.keyboardPrefs localStorage idiom. usePersistedState is
+// the jp.keyboardPrefs localStorage idiom. usePersistedState is
 // per-history-entry, which is right for a search box but wrong here: every
 // fresh visit to a library snapped back to 'updated' no matter what the user
 // had picked. Whichever sort you leave a library on IS its default now.

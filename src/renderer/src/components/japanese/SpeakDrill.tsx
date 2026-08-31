@@ -225,7 +225,7 @@ export default function SpeakDrill() {
             <Pill active={source === 'both'} onClick={() => setSource('both')} label="Both" />
           </Group>
           {error && (
-            <p className="text-sm text-red-400">
+            <p className="text-sm text-signal-anomaly">
               {error}{' '}
               <Link to="/settings" className="underline hover:text-accent">
                 Open Settings
@@ -318,7 +318,7 @@ export default function SpeakDrill() {
       {takeResult && (
         <div className="mt-5">
           {takeResult.contour === null ? (
-            <p className="text-center text-sm text-amber-300">
+            <p className="text-center text-sm text-signal-caution">
               Didn&apos;t catch a voice — get closer to the mic and try again.
             </p>
           ) : (
@@ -334,7 +334,7 @@ export default function SpeakDrill() {
                   <p
                     className={
                       result.graded > 0 && result.matched === result.graded && !result.spuriousFall
-                        ? 'text-green-400'
+                        ? 'text-signal-affirmative'
                         : 'text-gray-300'
                     }
                   >

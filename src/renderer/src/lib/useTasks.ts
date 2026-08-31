@@ -22,7 +22,6 @@ const IDLE_MS = 5000
 //   mangaOcr        lib/useOcrRun.ts
 //   appUpdate       lib/useUpdateStatus.ts
 //   musicDownload   components/MusicDownloadDialog.tsx
-//   videoPrepare    components/video/PreparePanel.tsx
 //   wrestlingImport lib/useWrestlingImport.ts
 //   torrentSearch   the /torrents page renders its own result state
 const OWNED: ReadonlySet<TaskKind> = new Set<TaskKind>([
@@ -31,7 +30,6 @@ const OWNED: ReadonlySet<TaskKind> = new Set<TaskKind>([
   'mangaOcr',
   'appUpdate',
   'musicDownload',
-  'videoPrepare',
   'wrestlingImport',
   'torrentSearch'
 ])

@@ -1,16 +1,14 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
-import { toast } from '../../lib/toast'
+import { toast, toastError } from '../../lib/toast'
 import { confirmDialog } from '../../lib/confirm'
 import Section from '../Section'
 import type { WrestlingVideo } from '@shared/types'
 
-// The collection half of an event page: attach a folder of rips, then play them
-// in the app's own player. A VideoEpisodesSection port — with no watched-toggle
-// column, since the user asked for ratings, not watched marks.
+// The collection half of an event page: attach a folder of rips, then open them
+// in the operating system's default video player.
 
 function fmtDuration(seconds: number | null): string {
   if (seconds == null) return ''
@@ -20,18 +18,15 @@ function fmtDuration(seconds: number | null): string {
 }
 
 function Row({ file }: { file: WrestlingVideo }): JSX.Element {
-  const navigate = useNavigate()
-  const resumed = (file.resumeSeconds ?? 0) > 30
   return (
     <button
-      onClick={() => navigate(`/watch/wrestling/${file.id}`)}
+      onClick={() =>
+        void api.video.openExternal({ kind: 'wrestling', fileId: file.id }).catch(toastError)
+      }
       className="flex w-full items-baseline justify-between gap-4 border-b border-base-700 py-2 text-left last:border-0 hover:text-accent"
     >
       <span className="min-w-0 truncate text-sm">{file.title}</span>
-      <span className="shrink-0 text-xs text-gray-500">
-        {resumed && <span className="mr-2 text-accent">resume</span>}
-        {fmtDuration(file.duration)}
-      </span>
+      <span className="shrink-0 text-xs text-gray-500">{fmtDuration(file.duration)}</span>
     </button>
   )
 }

@@ -176,7 +176,7 @@ function ReadingRace() {
         <p className="text-xs text-gray-500">
           Type the reading in romaji or kana. Every reading the dictionary attests for the word counts.
         </p>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-signal-anomaly">{error}</p>}
         <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
           {loading ? 'Building the deck…' : 'Start 60 s race'}
         </button>
@@ -278,7 +278,7 @@ function ConjRace() {
         <p className="text-xs text-gray-500">
           Answers are checked on Enter — these are long, and a typo should not cost the clock twice.
         </p>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-signal-anomaly">{error}</p>}
         <button className="btn-primary w-full" disabled={loading || forms.length === 0} onClick={() => void start()}>
           {loading ? 'Building the deck…' : 'Start 60 s race'}
         </button>

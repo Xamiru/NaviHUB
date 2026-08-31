@@ -16,6 +16,11 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
     title: 'The path',
     entries: [
       {
+        name: 'Tutor',
+        to: '/japanese/tutor',
+        text: 'The page to open first. It turns your live review load, retention, course frontier, local media, and recent skill checks into one sixty-minute prescription. Its five phases describe the complete route to independent manga, visual novels, and anime. Recommendations never lock a later lesson or tool.'
+      },
+      {
         name: 'Roadmap',
         to: '/japanese/roadmap',
         text: 'Every course in study order, 26 steps N5 → N1. "You are here" marks the first course with lessons left. Nothing is locked — jump wherever you like. The strip up top is the daily loop (reviews, lesson, immersion — a bit of each, in parallel), and Milestones track finished anime and books against the long-term targets. Decks you or the app generated sit under Unscheduled.'
@@ -47,6 +52,11 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
   {
     title: 'Practice',
     entries: [
+      {
+        name: 'Sound foundation',
+        to: '/japanese/phonology',
+        text: 'Eight offline units on mora timing, long vowels, small っ, ん, devoicing, particle readings, pitch, and connected speech. Generated beats teach timing; the checks measure sound-system decisions without pretending to grade your accent.'
+      },
       {
         name: 'Kana drill',
         to: '/japanese/kana',
@@ -81,6 +91,21 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
         name: 'Listening',
         to: '/japanese/listen',
         text: 'Guided mode picks recordings made only of known words or exactly one new word: choose the meaning before seeing the transcript, then shadow and compare your take with the native audio. Dictation remains as the second tab and grades readings, so kanji or kana both count. Needs the sentence-audio pack.'
+      },
+      {
+        name: 'Long-form listening',
+        to: '/japanese/immersion',
+        text: 'A ladder over anime files attached to the local player: cold pass, Japanese-subtitle pass, focused transcript work, shadowing, and a retell. Start with a known two-minute scene and grow toward a full cold episode. You may log an incomplete protocol; the ladder guides rather than locks.'
+      },
+      {
+        name: 'Controlled output',
+        to: '/japanese/output',
+        text: 'Thirty prompts across sentence building, transformation, response, role-play, retelling, and reasoned writing. Produce before revealing the model, repair your answer, then self-rate independence. The deterministic check only detects required language signals and says so.'
+      },
+      {
+        name: 'Branching role-play',
+        to: '/japanese/roleplay',
+        text: 'Three authored offline conversations for repairing an order, negotiating plans, and discussing a story interpretation. Produce each turn before seeing the natural paths; your choice changes the next turn. The check detects required language functions and never claims to judge every valid answer.'
       },
       {
         name: 'Grammar drill',
@@ -160,7 +185,7 @@ const GROUPS: { title: string; entries: Entry[] }[] = [
       {
         name: 'Graded reading',
         to: '/japanese/reading',
-        text: 'Twenty-four short passages, six each at N5 to N2, with furigana you can switch off and four questions apiece. Prompts are English at N5/N4 and Japanese from N3 up. Double-click a paragraph to open the mining panel on it; the best score per passage is kept.'
+        text: 'Forty-two connected passages from N5 to N1, with furigana you can switch off, a glossary, and four questions apiece. Prompts are English at N5/N4 and Japanese from N3 up. Double-click a paragraph to open the mining panel; the best score per passage is kept.'
       },
       {
         name: 'Dictionary',
@@ -274,18 +299,19 @@ export default function JapaneseGuidePage() {
       <Section title="A day">
         <div className="card p-4">
           <ol className="list-inside list-decimal space-y-1 text-sm text-gray-300">
-            <li>Clear your reviews.</li>
-            <li>Do a short guided-listening round and shadow each revealed sentence once.</li>
-            <li>Read something and mine what you don&apos;t know. This is the part that matters.</li>
-            <li>Learn the next roadmap lesson only when the unseen-card backlog is clear.</li>
+            <li>Clear due reviews and stay inside the daily new-card budget.</li>
+            <li>Listen for ten minutes: guided sentences early, local video from Step 10.</li>
+            <li>Read for twenty minutes and mine only recurring or scene-critical language.</li>
+            <li>Produce one controlled response, compare it, and repair it.</li>
+            <li>Use the final five minutes for a lesson only when the unseen backlog is clear.</li>
           </ol>
           <dl className="mt-4 space-y-3">
             <div>
               <dt className="font-medium">One hour</dt>
               <dd className="mt-0.5 text-sm leading-relaxed text-gray-400">
-                A split that works: ~20 minutes of reviews, ~10 guided listening and shadowing,
-                ~25 reading, and ~5 to start a lesson only when the unseen backlog is clear. Short
-                on time? Reviews, listening, then reading; the lesson keeps.
+                Use 15 minutes for review, 10 listening, 20 reading, 10 controlled output, and 5
+                for the next lesson or the weakest measured skill. Short on time? Keep review,
+                listening, and reading; the lesson keeps.
               </dd>
             </div>
             <div>

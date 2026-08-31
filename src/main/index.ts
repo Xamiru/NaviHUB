@@ -13,9 +13,9 @@ import { parseByteRange } from './httpRange'
 import { killActive as killActiveMusicDownload } from './musicDownload'
 import { get as getSetting } from './repos/settingsRepo'
 import { parseUiScale } from '@shared/uiScale'
+import { APP_THEME_SETTING, appThemeBackground, parseAppTheme } from '@shared/appTheme'
 import { abortActiveCoachTurn } from './gachaCoach'
 import { killActiveUpdate } from './updater'
-import { killActivePrepare } from './video/session'
 import { killActiveOcr } from './mokuroRun'
 import { cancelActiveLibraryExport } from './libraryExport'
 import { killSqlSandbox } from './sqlSandbox'
@@ -29,6 +29,7 @@ import { closeAchPopup } from './achPopup'
 import { logError, logInfo } from './logBus'
 import { startFileSink, stopFileSink } from './logFile'
 import { settleAllOnQuit as settleAllTasksOnQuit } from './tasks'
+import { cancelActiveFootballSync } from './football/sync'
 import { installAppMenu } from './appMenu'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
@@ -41,7 +42,7 @@ protocol.registerSchemesAsPrivileged([
 
 // SINGLE INSTANCE — load-bearing, not politeness. Everything about this app is
 // one better-sqlite3 connection to one WAL database plus process-lifetime state
-// (the video prepare session, the dictionary handle, the ad-hoc token map). A
+// (the dictionary handle and the ad-hoc token map). A
 // second process opening the same DB is a corruption risk and would silently
 // run its own conversions. It matters now because file associations mean the OS
 // launches the app again for every double-clicked file.
@@ -85,14 +86,20 @@ app.on('open-file', (event, filePath) => {
 })
 
 function createWindow(): void {
+  let backgroundColor = appThemeBackground('lain')
+  try {
+    backgroundColor = appThemeBackground(parseAppTheme(getSetting(APP_THEME_SETTING)))
+  } catch {
+    /* the default fill must never depend on a readable setting */
+  }
   const win = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 940,
     minHeight: 600,
     show: false,
-    // Pre-paint window fill = the theme's base-900 (styles.css :root).
-    backgroundColor: '#0a0f0b',
+    // Pre-paint window fill = the selected theme's base-900 (styles.css).
+    backgroundColor,
     title: 'NaviHUB',
     icon: app.isPackaged
       ? join(process.resourcesPath, 'assets', 'icon.png')
@@ -313,15 +320,15 @@ app.on('before-quit', () => {
   // killers below produce SIGKILL exit codes, which the subsystems' own status
   // objects would otherwise report as errors the user never caused.
   settleAllTasksOnQuit()
+  // Football writes one complete source slice per transaction. Abort active
+  // network work before the DB closes; completed slices remain resumable.
+  cancelActiveFootballSync()
   // Don't let a half-finished yt-dlp outlive the app; its .part files survive
   // and resume on the next try.
   killActiveMusicDownload()
   abortActiveCoachTurn()
   // A half-downloaded update is resumable; don't let it outlive the app.
   killActiveUpdate()
-  // A half-converted video is NOT resumable — kill it and drop the .part, or a
-  // truncated file could be mistaken for a cache hit next launch.
-  killActivePrepare()
   // A killed mokuro run loses nothing durable — finished volumes keep their
   // sidecars, and mokuro's own _ocr cache resumes the interrupted one.
   killActiveOcr()

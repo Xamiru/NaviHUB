@@ -37,6 +37,12 @@ import type {
   GrammarDeckResult,
   JpGhostCard,
   JpGhostOutcome,
+  JpTutorDay,
+  JpTutorDebriefInput,
+  JpTutorError,
+  JpTutorErrorInput,
+  JpTutorSkill,
+  JpTutorTaskRecord,
   MediaType,
   SrsGrade,
   SrsStatus,
@@ -680,7 +686,8 @@ export const JP_QUIZ_KINDS: QuizKind[] = [
   'pitch', 'pairs', 'components', 'grammar', 'names', 'numbers',
   'dictation', 'listening', 'shiritori', 'lookalike', 'transitivity', 'homophone',
   'loanword', 'keigo', 'leech', 'speak',
-  'particles', 'scramble', 'contextReading', 'kanaRace', 'readingRace', 'conjRace', 'jpReading'
+  'particles', 'scramble', 'contextReading', 'kanaRace', 'readingRace', 'conjRace', 'jpReading',
+  'jpPhonology', 'jpOutput', 'jpImmersion'
 ]
 
 // Find-or-create the capture target for mined words. Looked up by title (not a
@@ -957,6 +964,199 @@ export function stats(): JpStats {
        )`
     )
   }
+}
+
+// ---- Tutor history and error ledger ----
+
+const TUTOR_SKILLS = new Set<JpTutorSkill>([
+  'recall',
+  'sound',
+  'listening',
+  'reading',
+  'output',
+  'curriculum'
+])
+
+function tutorText(value: string, label: string, max: number): string {
+  const clean = value.trim()
+  if (!clean) throw new Error(`${label} is required`)
+  return clean.slice(0, max)
+}
+
+function tutorDay(value: string): string {
+  const day = value.trim()
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) throw new Error('Tutor day must be YYYY-MM-DD')
+  return day
+}
+
+function tutorSkill(value: JpTutorSkill): JpTutorSkill {
+  if (!TUTOR_SKILLS.has(value)) throw new Error('Unknown Tutor skill')
+  return value
+}
+
+function count(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.max(0, Math.round(value))
+}
+
+function parseTutorTasks(value: string): JpTutorTaskRecord[] {
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return Array.isArray(parsed) ? (parsed as JpTutorTaskRecord[]) : []
+  } catch {
+    return []
+  }
+}
+
+function mapTutorDay(row: Record<string, unknown>): JpTutorDay {
+  return {
+    id: row.id as number,
+    day: row.day as string,
+    phaseId: row.phase_id as string,
+    startedAt: row.started_at as string,
+    endedAt: row.ended_at as string,
+    plannedMinutes: row.planned_minutes as number,
+    completedMinutes: row.completed_minutes as number,
+    completedBlocks: row.completed_blocks as number,
+    totalBlocks: row.total_blocks as number,
+    strongest: (row.strongest as string) ?? null,
+    tomorrowFocus: row.tomorrow_focus as string,
+    tasks: parseTutorTasks(row.tasks_json as string),
+    createdAt: row.created_at as string,
+    updatedAt: row.updated_at as string
+  }
+}
+
+function mapTutorError(row: Record<string, unknown>): JpTutorError {
+  return {
+    id: row.id as number,
+    day: row.day as string,
+    skill: row.skill as JpTutorSkill,
+    label: row.label as string,
+    detail: row.detail as string,
+    sourceKind: (row.source_kind as JpTutorError['sourceKind']) ?? null,
+    sourceSessionId: (row.source_session_id as number) ?? null,
+    score: (row.score as number) ?? null,
+    threshold: (row.threshold as number) ?? null,
+    createdAt: row.created_at as string,
+    resolvedAt: (row.resolved_at as string) ?? null
+  }
+}
+
+function insertTutorError(input: JpTutorErrorInput): number {
+  const info = getSqlite()
+    .prepare(
+      `INSERT INTO jp_tutor_error
+         (day, skill, label, detail, source_kind, source_session_id, score, threshold)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(day, skill, label, source_session_id) DO UPDATE SET
+         detail = excluded.detail,
+         score = excluded.score,
+         threshold = excluded.threshold,
+         resolved_at = NULL`
+    )
+    .run(
+      tutorDay(input.day),
+      tutorSkill(input.skill),
+      tutorText(input.label, 'Error label', 160),
+      tutorText(input.detail, 'Error detail', 1200),
+      input.sourceKind ?? null,
+      input.sourceSessionId ?? null,
+      input.score == null ? null : Math.min(100, count(input.score)),
+      input.threshold == null ? null : Math.min(100, count(input.threshold))
+    )
+  if (info.lastInsertRowid) return Number(info.lastInsertRowid)
+  const existing = getSqlite()
+    .prepare(
+      `SELECT id FROM jp_tutor_error
+       WHERE day = ? AND skill = ? AND label = ? AND source_session_id = ?`
+    )
+    .get(input.day, input.skill, input.label.trim(), input.sourceSessionId ?? null) as
+    | { id: number }
+    | undefined
+  return existing?.id ?? 0
+}
+
+export function saveTutorDebrief(input: JpTutorDebriefInput): number {
+  const db = getSqlite()
+  const tx = db.transaction((): number => {
+    const day = tutorDay(input.day)
+    const tasks: JpTutorTaskRecord[] = input.tasks.slice(0, 20).map((task) => ({
+      key: tutorText(task.key, 'Tutor task key', 80),
+      skill: tutorSkill(task.skill),
+      title: tutorText(task.title, 'Tutor task title', 240),
+      plannedMinutes: Math.min(240, count(task.plannedMinutes)),
+      complete: !!task.complete,
+      evidence: tutorText(task.evidence, 'Tutor task evidence', 800),
+      score: task.score == null ? null : Math.min(100, count(task.score))
+    }))
+    db.prepare(
+      `INSERT INTO jp_tutor_day
+         (day, phase_id, started_at, ended_at, planned_minutes, completed_minutes,
+          completed_blocks, total_blocks, strongest, tomorrow_focus, tasks_json)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(day) DO UPDATE SET
+         phase_id = excluded.phase_id,
+         started_at = excluded.started_at,
+         ended_at = excluded.ended_at,
+         planned_minutes = excluded.planned_minutes,
+         completed_minutes = excluded.completed_minutes,
+         completed_blocks = excluded.completed_blocks,
+         total_blocks = excluded.total_blocks,
+         strongest = excluded.strongest,
+         tomorrow_focus = excluded.tomorrow_focus,
+         tasks_json = excluded.tasks_json,
+         updated_at = datetime('now')`
+    ).run(
+      day,
+      tutorText(input.phaseId, 'Tutor phase', 48),
+      tutorText(input.startedAt, 'Tutor start', 64),
+      tutorText(input.endedAt, 'Tutor end', 64),
+      count(input.plannedMinutes),
+      count(input.completedMinutes),
+      count(input.completedBlocks),
+      count(input.totalBlocks),
+      input.strongest?.trim().slice(0, 240) || null,
+      tutorText(input.tomorrowFocus, 'Tomorrow focus', 320),
+      JSON.stringify(tasks)
+    )
+    for (const error of input.errors.slice(0, 20)) insertTutorError({ ...error, day })
+    return (
+      db.prepare('SELECT id FROM jp_tutor_day WHERE day = ?').get(day) as { id: number }
+    ).id
+  })
+  return tx()
+}
+
+export function listTutorDays(limit = 30): JpTutorDay[] {
+  const take = Math.min(365, Math.max(1, Math.round(limit) || 30))
+  return (
+    getSqlite()
+      .prepare('SELECT * FROM jp_tutor_day ORDER BY ended_at DESC, id DESC LIMIT ?')
+      .all(take) as Record<string, unknown>[]
+  ).map(mapTutorDay)
+}
+
+export function addTutorError(input: JpTutorErrorInput): number {
+  return insertTutorError({ ...input, sourceKind: input.sourceKind ?? 'manual' })
+}
+
+export function listTutorErrors(limit = 100): JpTutorError[] {
+  const take = Math.min(500, Math.max(1, Math.round(limit) || 100))
+  return (
+    getSqlite()
+      .prepare(
+        `SELECT * FROM jp_tutor_error
+         ORDER BY (resolved_at IS NULL) DESC, created_at DESC, id DESC LIMIT ?`
+      )
+      .all(take) as Record<string, unknown>[]
+  ).map(mapTutorError)
+}
+
+export function resolveTutorError(id: number, resolved: boolean): void {
+  getSqlite()
+    .prepare(`UPDATE jp_tutor_error SET resolved_at = ${resolved ? "datetime('now')" : 'NULL'} WHERE id = ?`)
+    .run(id)
 }
 
 // Everything the Japanese stats page needs, in one invoke (mirrors

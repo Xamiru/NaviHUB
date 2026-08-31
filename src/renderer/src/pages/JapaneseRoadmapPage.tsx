@@ -112,7 +112,7 @@ function KanaStepRow() {
         <span className="font-mono text-[11px] uppercase tracking-widest text-gray-600">
           Step 00
         </span>
-        {practiced && <span className="chip bg-green-500/20 text-green-300">Practiced</span>}
+        {practiced && <span className="chip bg-signal-affirmative/20 text-signal-affirmative">Practiced</span>}
       </div>
       <p className="mt-1 font-medium group-hover:text-accent">Kana</p>
       <p className="mt-1.5 text-xs text-gray-500">
@@ -147,10 +147,10 @@ function StepRow({ course, state }: { course: JpRoadmapCourse; state: StepState 
           </span>
         )}
         {course.level && <span className="chip bg-base-700 text-gray-400">{course.level}</span>}
-        {state === 'cleared' && <span className="chip bg-green-500/20 text-green-300">Cleared</span>}
+        {state === 'cleared' && <span className="chip bg-signal-affirmative/20 text-signal-affirmative">Cleared</span>}
         {state === 'current' && <span className="chip bg-accent/20 text-accent">You are here</span>}
         {course.dueCardCount > 0 && (
-          <span className="ml-auto text-xs text-amber-300">{course.dueCardCount} due</span>
+          <span className="ml-auto text-xs text-signal-caution">{course.dueCardCount} due</span>
         )}
       </div>
       <p className="mt-1 font-medium group-hover:text-accent">{course.title}</p>

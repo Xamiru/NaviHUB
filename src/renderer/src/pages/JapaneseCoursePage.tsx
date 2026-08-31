@@ -16,7 +16,7 @@ import ContextPanel, { ContextFact } from '../components/ContextPanel'
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
   grammar: { cls: 'bg-purple-500/20 text-purple-300', label: '文法 Grammar' },
   vocab: { cls: 'bg-sky-500/20 text-sky-300', label: '語彙 Vocab' },
-  kanji: { cls: 'bg-amber-500/20 text-amber-300', label: '漢字 Kanji' }
+  kanji: { cls: 'bg-signal-caution/20 text-signal-caution', label: '漢字 Kanji' }
 }
 
 export default function JapaneseCoursePage() {
@@ -150,7 +150,7 @@ function LessonRow({ lesson, index }: { lesson: JpLessonSummary; index: number }
         {lesson.cardCount} {lesson.cardCount === 1 ? 'card' : 'cards'}
       </span>
       <span
-        className={`w-6 shrink-0 text-center ${lesson.learned ? 'text-green-400' : 'text-gray-600'}`}
+        className={`w-6 shrink-0 text-center ${lesson.learned ? 'text-signal-affirmative' : 'text-gray-600'}`}
         title={lesson.learned ? 'Learned' : 'Not learned yet'}
       >
         {lesson.learned ? '✓' : '○'}

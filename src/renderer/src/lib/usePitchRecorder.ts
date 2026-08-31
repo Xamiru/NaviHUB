@@ -22,6 +22,7 @@ export function usePitchRecorder(): {
   seconds: number
   start(): Promise<void>
   stop(): Take | null
+  release(): void
   replay(take: Take): void
 } {
   const [status, setStatus] = useState<RecorderStatus>('idle')
@@ -141,6 +142,11 @@ export function usePitchRecorder(): {
     return { samples, sampleRate: ctxRef.current?.sampleRate ?? 48000 }
   }, [teardownGraph])
 
+  const release = useCallback((): void => {
+    stop()
+    releaseMic()
+  }, [releaseMic, stop])
+
   // In-memory replay — no blob URLs, no CSP involvement.
   const replay = useCallback((take: Take) => {
     const ctx = ctxRef.current ?? new AudioContext()
@@ -153,5 +159,5 @@ export function usePitchRecorder(): {
     node.start()
   }, [])
 
-  return { status, level, seconds, start, stop, replay }
+  return { status, level, seconds, start, stop, release, replay }
 }

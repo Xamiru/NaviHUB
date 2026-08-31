@@ -135,8 +135,8 @@ describe('projection', () => {
 
   it('a throwing projection degrades ONE row and never breaks the list', () => {
     tasks.create({
-      kind: 'videoPrepare',
-      label: 'Converting',
+      kind: 'musicMetadata',
+      label: 'Reading metadata',
       project: () => {
         throw new Error('status object exploded')
       }
@@ -146,7 +146,7 @@ describe('projection', () => {
     const rows = tasks.list()
     expect(rows).toHaveLength(2)
     expect(rows.find((r) => r.kind === 'import')!.done).toBe(4)
-    expect(rows.find((r) => r.kind === 'videoPrepare')!.state).toBe('running')
+    expect(rows.find((r) => r.kind === 'musicMetadata')!.state).toBe('running')
     expect(readLog({ afterSeq: 0.5 }).entries.some((e) => e.message.includes('projection failed')))
       .toBe(true)
   })

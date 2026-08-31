@@ -451,7 +451,7 @@ function Timeline({
               <span
                 className="absolute -left-[0.8rem] top-[2.55rem] h-2.5 w-2.5 rounded-full border-2"
                 style={{
-                  borderColor: item ? cfg.color : 'rgb(75 85 99)',
+                  borderColor: item ? cfg.color : 'rgb(var(--line-strong))',
                   background: done ? cfg.color : 'rgb(var(--base-900))'
                 }}
               />

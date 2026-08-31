@@ -21,11 +21,14 @@ import { usePlayer } from '../lib/player'
 import { playTracks } from '../lib/musicTracks'
 import { TYPE_COLORS } from './StatsPage'
 import { GACHA_GAMES } from '@shared/gacha'
-import lainIcon from '../assets/lain.png'
+import { APP_THEME_SETTING, type AppTheme } from '@shared/appTheme'
+import AppMark from '../components/AppMark'
+import { resolveAppTheme } from '../lib/theme'
 import { readerPath } from '../lib/readerPath'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { MediaItem, ResumePoint, SettingsMap } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
+import { toastError } from '../lib/toast'
 
 // The status that marks an item as in-progress is the FIRST status of its
 // media type's *configured* list ("Watching" for anime/TV, "Playing" for VNs
@@ -61,6 +64,7 @@ export default function HomePage() {
   })
   const isLoading = lists.some((q) => q.isLoading)
   const { data: settings } = useSettings()
+  const theme = resolveAppTheme(settings?.[APP_THEME_SETTING])
   const { data: resumePoints = [] } = useQuery({
     queryKey: qk.media.resumePoints,
     queryFn: () => api.media.resumePoints()
@@ -151,14 +155,17 @@ export default function HomePage() {
         stats={stats}
         resume={resumePoints[0]}
         continuing={continuing[0]}
+        theme={theme}
       />
 
       <div className="mt-6 flex items-end justify-between border-b border-base-700 pb-3">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-accent">
-            Personal transmission
+            {theme === 'metal-gear' ? 'Operations overview' : 'Personal transmission'}
           </p>
-          <h2 className="mt-1 text-xl font-semibold text-white">Your archive, in motion</h2>
+          <h2 className="mt-1 text-xl font-semibold text-white">
+            {theme === 'metal-gear' ? 'Your archive, mission-ready' : 'Your archive, in motion'}
+          </h2>
         </div>
         <button className="btn-ghost text-xs" onClick={() => setCustomising(true)}>
           Customise Home
@@ -217,7 +224,8 @@ function Hero({
   items,
   stats,
   resume,
-  continuing
+  continuing,
+  theme
 }: {
   items: MediaItem[]
   stats: {
@@ -229,6 +237,7 @@ function Hero({
   }
   resume?: ResumePoint
   continuing?: MediaItem
+  theme: AppTheme
 }) {
   // Re-shuffles only when the library itself changes, so the wall doesn't
   // twitch on every render.
@@ -269,10 +278,10 @@ function Hero({
       <div className="relative grid min-h-[330px] items-center gap-8 p-7 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.78fr)] lg:p-10">
         <div className="max-w-2xl">
           <div className="flex items-center gap-4">
-            <img src={lainIcon} alt="NaviHUB logo" className="h-14 w-14 drop-shadow-lg" />
+            <AppMark theme={theme} className="h-14 w-14 drop-shadow-lg" />
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-accent">
-                Archive broadcast
+                {theme === 'metal-gear' ? 'Tactical archive' : 'Archive broadcast'}
               </p>
               <h1 className="mt-1 text-4xl font-bold tracking-tight sm:text-5xl">
                 Navi<span className="text-accent">HUB</span>
@@ -280,10 +289,19 @@ function Hero({
             </div>
           </div>
           <p className="mt-6 text-base text-gray-300">
-            {greeting}. {stats.inProgress > 0 ? 'Your next signal is ready.' : 'The archive is listening.'}
+            {greeting}.{' '}
+            {theme === 'metal-gear'
+              ? stats.inProgress > 0
+                ? 'Your next operation is ready.'
+                : 'The mission index is standing by.'
+              : stats.inProgress > 0
+                ? 'Your next signal is ready.'
+                : 'The archive is listening.'}
           </p>
           <p className="mt-1 max-w-lg text-sm leading-relaxed text-gray-500">
-            Continue a saved session first, then drift through the people, worlds and patterns already connected in your library.
+            {theme === 'metal-gear'
+              ? 'Resume an active file first, then trace the people, worlds and evidence connected across your local library.'
+              : 'Continue a saved session first, then drift through the people, worlds and patterns already connected in your library.'}
           </p>
 
           {stats.titles > 0 && (
@@ -312,7 +330,7 @@ function Hero({
           )}
         </div>
 
-        <HeroContinuation resume={resume} continuing={continuing} />
+        <HeroContinuation resume={resume} continuing={continuing} theme={theme} />
       </div>
     </section>
   )
@@ -320,15 +338,17 @@ function Hero({
 
 function HeroContinuation({
   resume,
-  continuing
+  continuing,
+  theme
 }: {
   resume?: ResumePoint
   continuing?: MediaItem
+  theme: AppTheme
 }) {
   if (resume) {
     return (
-      <Link
-        to={resumeHref(resume)}
+      <ResumeAction
+        point={resume}
         className="group relative min-h-52 overflow-hidden rounded-xl border border-accent/30 bg-base-800/90 p-5 shadow-2xl transition-colors hover:border-accent"
       >
         {resume.media.coverPath && (
@@ -350,7 +370,7 @@ function HeroContinuation({
           />
           <div className="flex min-w-0 flex-1 flex-col py-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
-              Resume transmission
+              {theme === 'metal-gear' ? 'Resume operation' : 'Resume transmission'}
             </p>
             <h2 className="mt-2 line-clamp-2 text-xl font-semibold leading-tight text-white group-hover:text-accent">
               {resume.media.title}
@@ -360,7 +380,7 @@ function HeroContinuation({
             <span className="btn-primary mt-auto self-start">Continue</span>
           </div>
         </div>
-      </Link>
+      </ResumeAction>
     )
   }
 
@@ -396,7 +416,7 @@ function HeroContinuation({
   return (
     <div className="flex min-h-52 flex-col justify-end rounded-xl border border-base-600 bg-base-800/80 p-6">
       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
-        First transmission
+        {theme === 'metal-gear' ? 'First operation' : 'First transmission'}
       </p>
       <h2 className="mt-2 text-xl font-semibold text-white">Build your personal archive</h2>
       <p className="mt-2 text-sm leading-relaxed text-gray-400">
@@ -786,8 +806,8 @@ function TopPeople() {
 // (Continue watching, Recently added, Favorites). Without a title it renders
 // just the row, for embedding inside another Section.
 // "You were on page 143." Deliberately distinct from Continue below it, which
-// is "in progress by status": these link STRAIGHT into the reader or player at
-// the saved position, skipping the detail page entirely. Capped at 4 so it
+// is "in progress by status": these open the saved reader position or tracked
+// video file, skipping the detail page entirely. Capped at 4 so it
 // stays a shortcut rather than a second library.
 function ResumeStrip({ points }: { points: ResumePoint[] }) {
   const shown = points.slice(0, 4)
@@ -796,9 +816,9 @@ function ResumeStrip({ points }: { points: ResumePoint[] }) {
     <Section title="Pick up where you left off">
       <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
         {shown.map((p) => (
-          <Link
+          <ResumeAction
             key={`${p.kind}-${p.refId}`}
-            to={resumeHref(p)}
+            point={p}
             className="group flex w-[280px] shrink-0 gap-3 rounded-lg bg-base-800 p-2 hover:bg-base-700"
           >
             <CoverImage
@@ -814,7 +834,7 @@ function ResumeStrip({ points }: { points: ResumePoint[] }) {
               <p className="truncate text-xs text-gray-400">{p.partTitle}</p>
               <p className="text-xs text-gray-500">{resumeLabel(p)}</p>
             </div>
-          </Link>
+          </ResumeAction>
         ))}
       </div>
     </Section>
@@ -833,9 +853,35 @@ function resumeLabel(p: ResumePoint): string {
 }
 
 function resumeHref(p: ResumePoint): string {
-  if (p.kind === 'video') return `/watch/file/${p.refId}`
   const basePath = p.media.mediaType === 'book' ? '/books' : '/manga'
   return readerPath(basePath, p.media.id, { id: p.refId, dirPath: p.dirPath })
+}
+
+function ResumeAction({
+  point,
+  className,
+  children
+}: {
+  point: ResumePoint
+  className: string
+  children: ReactNode
+}): JSX.Element {
+  if (point.kind === 'video') {
+    return (
+      <button
+        type="button"
+        className={`${className} text-left`}
+        onClick={() => void api.video.openExternal({ kind: 'file', fileId: point.refId }).catch(toastError)}
+      >
+        {children}
+      </button>
+    )
+  }
+  return (
+    <Link to={resumeHref(point)} className={className}>
+      {children}
+    </Link>
+  )
 }
 
 function Strip({

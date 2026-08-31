@@ -21,7 +21,7 @@ describe('adaptive archive navigation', () => {
     ['/anime/42', 'library'],
     ['/tv', 'library'],
     ['/tv/42/edit', 'library'],
-    ['/watch', 'library'],
+    ['/football/match/42', 'library'],
     ['/quiz/song', 'play'],
     ['/gacha/fgo', 'play'],
     ['/japanese/review', 'learn'],
@@ -59,15 +59,25 @@ describe('adaptive archive navigation', () => {
   })
 
   it('switches contextual navigation with the active section', () => {
-    expect(archiveContextForPath('/music/liked').title).toBe('Sonic archive')
+    expect(archiveContextForPath('/music/liked')).toMatchObject({
+      title: 'Music',
+      descriptor: 'Sonic archive'
+    })
     expect(archiveContextForPath('/music/downloads').items).toContainEqual({
       to: '/music/downloads',
       label: 'Downloads'
     })
-    expect(archiveContextForPath('/english/review').title).toBe('English mistake ledger')
+    expect(archiveContextForPath('/english/review')).toMatchObject({
+      title: 'English',
+      descriptor: 'Mistake ledger'
+    })
     expect(archiveContextForPath('/programming/sql').items).toContainEqual({
       to: '/programming/sql',
       label: 'SQL Sandbox'
+    })
+    expect(archiveContextForPath('/japanese/output').items).toContainEqual({
+      to: '/japanese/tutor',
+      label: 'Tutor'
     })
   })
 
@@ -82,18 +92,41 @@ describe('adaptive archive navigation', () => {
     ])
   })
 
+  it('keeps Football inside one compact archive context', () => {
+    expect(archiveContextForPath('/football/match/42')).toEqual({
+      title: 'Football',
+      descriptor: 'History archive',
+      items: [
+        { to: '/football', label: 'Overview' },
+        { to: '/football/current', label: 'Current' },
+        { to: '/football/competitions', label: 'Competitions' },
+        { to: '/football/teams', label: 'Teams' },
+        { to: '/football/people', label: 'People' },
+        { to: '/football/media', label: 'Media' },
+        { to: '/football/quiz', label: 'Quiz' },
+        { to: '/football/sync', label: 'Sync' }
+      ]
+    })
+  })
+
   it.each([
-    ['/people', 'Anime archive'],
-    ['/people/42', 'Anime archive'],
-    ['/artists', 'Anime archive'],
-    ['/studios/7', 'Anime archive'],
-    ['/characters/9', 'Anime archive'],
-    ['/mangaka', 'Manga archive'],
-    ['/authors', 'Book archive'],
-    ['/actors', 'Screen archive'],
-    ['/directors', 'Screen archive']
+    ['/people', 'Anime'],
+    ['/people/42', 'Connections'],
+    ['/artists', 'Anime'],
+    ['/studios/7', 'Connections'],
+    ['/characters/9', 'Connections'],
+    ['/mangaka', 'Manga'],
+    ['/authors', 'Books'],
+    ['/actors', 'Movies & TV'],
+    ['/directors', 'Movies & TV']
   ])('keeps relationship route %s in %s', (path, title) => {
     expect(archiveContextForPath(path).title).toBe(title)
+  })
+
+  it('uses neutral context for cross-library entity details', () => {
+    const context = archiveContextForPath('/authors/12')
+    expect(context.descriptor).toBe('Connected archive')
+    expect(context.items).toContainEqual({ to: '/authors', label: 'Authors' })
   })
 
   it('keeps relationship tabs owned by their natural archive', () => {

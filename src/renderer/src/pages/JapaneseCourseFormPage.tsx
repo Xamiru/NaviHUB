@@ -71,6 +71,7 @@ export default function JapaneseCourseFormPage() {
         <div>
           <label className="label">Title</label>
           <input
+            aria-label="Course title"
             className="input"
             placeholder="e.g. JLPT N4 Grammar"
             value={title}
@@ -82,6 +83,7 @@ export default function JapaneseCourseFormPage() {
         <div>
           <label className="label">Description</label>
           <textarea
+            aria-label="Course description"
             className="input min-h-[80px]"
             placeholder="Optional — what this course covers"
             value={description}
@@ -93,6 +95,7 @@ export default function JapaneseCourseFormPage() {
           <div>
             <label className="label">Level</label>
             <input
+              aria-label="Course level"
               className="input"
               placeholder="e.g. N4, N4–N3"
               value={level}
@@ -102,6 +105,7 @@ export default function JapaneseCourseFormPage() {
           <div>
             <label className="label">Study-order step</label>
             <input
+              aria-label="Course study-order step"
               className="input"
               type="number"
               min={1}

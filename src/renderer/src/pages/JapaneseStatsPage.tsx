@@ -266,7 +266,7 @@ function Leeches() {
               </p>
               <p className="truncate text-xs text-gray-500">{l.back}</p>
             </div>
-            <span className="shrink-0 text-xs text-red-300">
+            <span className="shrink-0 text-xs text-signal-anomaly">
               {l.lapses} lapses{l.agains > 0 ? ` · ${l.agains} misses` : ''}
             </span>
             <span className="shrink-0 text-xs text-gray-500">ease {l.ease.toFixed(2)}</span>
@@ -278,7 +278,7 @@ function Leeches() {
               Lesson
             </Link>
             <button
-              className="btn-ghost shrink-0 py-1 px-2 text-xs text-gray-500 hover:text-red-400"
+              className="btn-ghost shrink-0 py-1 px-2 text-xs text-gray-500 hover:text-signal-anomaly"
               onClick={() => void reset(l.id, l.front)}
             >
               Reset

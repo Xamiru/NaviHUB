@@ -23,6 +23,7 @@ const TOOL_GROUPS: Record<ToolGroup, { title: string; body: string; tools: ToolL
   practice: {
     title: 'Practice', body: 'Recall, listening, typing and production drills.',
     tools: [
+      { to: '/japanese/phonology', title: 'Sound foundation', body: 'Mora timing, vowel length and connected speech.' },
       { to: '/japanese/quiz', title: 'Practice quiz', body: 'Multiple choice, no scheduling.' },
       { to: '/japanese/kana', title: 'Typing drills', body: 'Kana, readings, forms, numbers and keigo.' },
       { to: '/japanese/write', title: 'Writing drill', body: 'Draw kanji stroke by stroke.' },
@@ -31,6 +32,9 @@ const TOOL_GROUPS: Record<ToolGroup, { title: string; body: string; tools: ToolL
       { to: '/japanese/confusables', title: 'Confusables', body: 'Look-alikes, verb pairs and homophones.' },
       { to: '/japanese/loanwords', title: 'Loanwords', body: 'Katakana words you may already know.' },
       { to: '/japanese/listen', title: 'Listening', body: 'Comprehension, shadowing and dictation.' },
+      { to: '/japanese/immersion', title: 'Long-form listening', body: 'A five-pass ladder over local anime video.' },
+      { to: '/japanese/output', title: 'Controlled output', body: 'Produce, compare, repair and self-rate.' },
+      { to: '/japanese/roleplay', title: 'Branching role-play', body: 'Carry an authored offline conversation through changing turns.' },
       { to: '/japanese/grammar/quiz', title: 'Grammar drill', body: 'Fill blanks across N5-N1 points.' },
       { to: '/japanese/kanji/quiz', title: 'Build-a-kanji', body: 'Assemble kanji from their parts.' }
     ]
@@ -50,7 +54,7 @@ const TOOL_GROUPS: Record<ToolGroup, { title: string; body: string; tools: ToolL
       { action: 'core', title: 'Core deck', body: "Stage frequent words you don't know." },
       { to: '/japanese/feed', title: 'Sentence feed', body: 'Read sentences one new word at a time.' },
       { to: '/japanese/mine', title: 'Mine words', body: 'Capture useful words into the SRS.' },
-      { to: '/japanese/reading', title: 'Graded reading', body: 'Short N5-N2 passages with questions.' },
+      { to: '/japanese/reading', title: 'Graded reading', body: 'Connected N5-N1 passages with questions.' },
       { to: '/japanese/analyze', title: 'Analyze text', body: 'Measure a pasted text before reading.' },
       { to: '/japanese/coverage', title: 'Comprehension', body: 'Known-word scores for your series.' }
     ]
@@ -91,16 +95,17 @@ export default function JapaneseHomePage() {
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
         title="Knowledge map"
-        subtitle="See the course path, today’s pressure and the offline tools that strengthen each skill."
+        subtitle="Follow the tutor’s balanced hour, then use the map and offline toolbox when you need a specific repair."
         actions={<>
           <Link to="/japanese/guide" className="btn-ghost">Guide</Link>
           <Link to="/japanese/stats" className="btn-ghost">Stats</Link>
           {hasCourses && <Link to="/japanese/courses/new" className="btn-ghost">New course</Link>}
           {roadmap?.nextLesson && (
-            <Link to={`/japanese/lessons/${roadmap.nextLesson.id}`} className="btn-primary">
+            <Link to={`/japanese/lessons/${roadmap.nextLesson.id}`} className="btn-ghost">
               Continue lesson
             </Link>
           )}
+          <Link to="/japanese/tutor" className="btn-primary">Open tutor plan</Link>
         </>}
       />
 
@@ -172,7 +177,7 @@ export default function JapaneseHomePage() {
             <div className="mt-4 border-t border-base-700 pt-4 text-sm">
               {daily.holdNextLesson && roadmap?.nextLesson ? (
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-amber-300">Lesson pace held: clear the {unseen}-card unseen backlog before adding more.</p>
+                  <p className="text-signal-caution">Lesson pace held: clear the {unseen}-card unseen backlog before adding more.</p>
                   <Link to={`/japanese/lessons/${roadmap.nextLesson.id}`} className="btn-ghost">Open next lesson anyway</Link>
                 </div>
               ) : roadmap?.nextLesson ? (

@@ -28,9 +28,9 @@ export default function PageHeader({
   return (
     <>
       {back === 'history' && <BackButton />}
-      <div className={`${className} border-b border-base-700 pb-4`}>
+      <div className={`${className} border-b border-line-subtle pb-4`}>
         {back && back !== 'history' && (
-          <Link to={back.to} className="text-sm text-gray-500 hover:text-gray-300">
+          <Link to={back.to} className="text-sm text-ink-muted hover:text-ink-secondary">
             ← {back.label}
           </Link>
         )}
@@ -41,7 +41,7 @@ export default function PageHeader({
         )}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h1
-            className={`text-3xl font-semibold tracking-tight text-white ${
+            className={`text-3xl font-semibold tracking-tight text-ink ${
               (back && back !== 'history') || eyebrow ? 'mt-1' : ''
             }`}
           >
@@ -49,7 +49,7 @@ export default function PageHeader({
           </h1>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </div>
-        {subtitle && <p className="mt-1.5 max-w-4xl text-sm leading-relaxed text-gray-400">{subtitle}</p>}
+        {subtitle && <p className="mt-1.5 max-w-4xl text-sm leading-relaxed text-ink-muted">{subtitle}</p>}
       </div>
     </>
   )

@@ -85,7 +85,7 @@ export default function TournamentTree({
           alt={entry.name}
           thumbWidth={64}
           rounded="rounded"
-          className={`h-7 w-7 shrink-0 ${state === 'live' ? 'animate-pulse' : ''}`}
+          className={`h-7 w-7 shrink-0 ${state === 'live' ? 'motion-safe:animate-pulse' : ''}`}
           fallback={entry.entryKind === 'music' ? 'music' : 'initial'}
         />
         <span

@@ -29,7 +29,19 @@ import type {
 } from '@shared/types'
 
 type Phase = 'setup' | 'play' | 'summary'
-type StandardChallengeKind = Exclude<QuizChallengeKind, 'libraryGrid' | 'movieChain'>
+type StandardChallengeKind = Exclude<
+  QuizChallengeKind,
+  | 'libraryGrid'
+  | 'movieChain'
+  | 'libraryle'
+  | 'mysteryCareer'
+  | 'linkWall'
+  | 'footballChampion'
+  | 'footballScoreline'
+  | 'footballCareerPath'
+  | 'footballChronology'
+  | 'footballPlayerGrid'
+>
 
 const COPY: Record<StandardChallengeKind, { title: string; subtitle: string }> = {
   imageReveal: { title: 'Image Reveal', subtitle: 'Identify a title as its image resolves in four stages.' },

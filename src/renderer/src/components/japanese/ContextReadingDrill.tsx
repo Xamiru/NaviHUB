@@ -77,7 +77,7 @@ export default function ContextReadingDrill() {
           Romaji or kana both work. Every reading JMdict attests for the word is accepted — the
           sentence often does not settle 魚 as さかな or うお.
         </p>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-signal-anomaly">{error}</p>}
         <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
           {loading ? 'Sampling sentences…' : 'Start'}
         </button>

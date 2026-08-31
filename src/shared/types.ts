@@ -195,6 +195,10 @@ export type ListKind =
   | 'wrestlingEvent'
   | 'wrestlingMatch'
   | 'wrestlingWrestler'
+  | 'footballCompetition'
+  | 'footballTeam'
+  | 'footballPerson'
+  | 'footballMatch'
 
 export interface List {
   id: number
@@ -664,6 +668,9 @@ export type QuizKind =
   | 'movieChainEasy' // connect movie/TV titles across two credited-person links
   | 'movieChainNormal' // connect movie/TV titles across three credited-person links
   | 'movieChainHard' // connect movie/TV titles across four credited-person links
+  | 'libraryle' // identify one movie/TV title through attribute feedback (best = points)
+  | 'mysteryCareer' // identify an actor/director from progressively revealed credits (best = points)
+  | 'linkWall' // sort sixteen movie/TV titles into four connection groups (best = points)
   | 'songRelay' // couch-party song relay; no solo personal best
   | 'japanese'
   | 'kana'
@@ -701,13 +708,21 @@ export type QuizKind =
   | 'englishPunctuate' // Punctuate-it game (place marks and apostrophes)
   | 'englishSpotError' // Spot-the-error game (click the wrong word)
   | 'englishMatch' // collocation / phrasal-verb match game
+  | 'footballChampion' // verified edition champion, era-near distractors
+  | 'footballScoreline' // verified complete match -> exact final score
+  | 'footballCareerPath' // structured senior career trail -> player
+  | 'footballChronology' // order four verified champion editions
+  | 'footballPlayerGrid' // 3x3 verified player intersections (best = points)
   | 'particles' // sentence-bank particle fill (MC over は/が/を/に/で…)
   | 'scramble' // sentence-bank chunk reordering (graded against the original)
   | 'contextReading' // typed reading of a kanji word inside a bank sentence
   | 'kanaRace' // 60 s arcade: kana → romaji, per keystroke (best = most correct)
   | 'readingRace' // 60 s arcade: kanji word → reading, per keystroke
   | 'conjRace' // 60 s arcade: conjugation sprint, Enter to submit
-  | 'jpReading' // graded reading passages N5-N2 (per-passage bests via settings.passageKey)
+  | 'jpReading' // graded reading passages N5-N1 (per-passage bests via settings.passageKey)
+  | 'jpPhonology' // offline sound-system foundation: morae, timing and spelling contrasts
+  | 'jpOutput' // controlled sentence production, role-play and short writing self-checks
+  | 'jpImmersion' // four-pass listening sessions over attached local anime/video
 
 export type QuizPlayMode = 'solo' | 'party'
 export type QuizConsumptionScope = 'consumed' | 'all'
@@ -734,7 +749,21 @@ export interface QuizAvailability {
   higherLowerOptions: QuizHigherLowerAvailability[]
   libraryGrid: number
   movieChain: number
+  libraryle: number
+  mysteryCareer: number
+  linkWall: number
+  football: QuizFootballAvailability
   screenGameOptions: QuizScreenGameAvailability[]
+}
+
+export interface QuizFootballAvailability {
+  champion: number
+  scoreline: number
+  careerPath: number
+  chronology: number
+  playerGrid: number
+  playerGridPlayers: number
+  datasetRevision: string | null
 }
 
 export type QuizScreenMediaMode = 'movie' | 'tv' | 'both'
@@ -744,6 +773,9 @@ export interface QuizScreenGameAvailability {
   mediaMode: QuizScreenMediaMode
   libraryGrid: number
   movieChain: Record<QuizMovieChainDifficulty, number>
+  libraryle: number
+  mysteryCareer: number
+  linkWall: number
 }
 
 export interface QuizGuessTrackAvailability {
@@ -768,6 +800,14 @@ export type QuizChallengeKind =
   | 'higherLower'
   | 'libraryGrid'
   | 'movieChain'
+  | 'libraryle'
+  | 'mysteryCareer'
+  | 'linkWall'
+  | 'footballChampion'
+  | 'footballScoreline'
+  | 'footballCareerPath'
+  | 'footballChronology'
+  | 'footballPlayerGrid'
 
 export interface QuizChallengeRequest {
   kind: QuizChallengeKind
@@ -785,6 +825,7 @@ export interface QuizChallengeRequest {
     higherLowerIndependent?: boolean
     screenMediaMode?: QuizScreenMediaMode
     movieChainDifficulty?: QuizMovieChainDifficulty
+    footballCompetitionKeys?: FootballCompetitionKey[]
   }
 }
 
@@ -900,6 +941,138 @@ export interface QuizMovieChainQuestion extends QuizChallengeBase {
   maxMoves: number
 }
 
+export interface QuizIdentityLabel {
+  key: string
+  label: string
+}
+
+export interface QuizLibraryleTitle extends QuizScreenTitle {
+  genres: QuizIdentityLabel[]
+  companies: QuizIdentityLabel[]
+  directors: QuizIdentityLabel[]
+  cast: QuizIdentityLabel[]
+}
+
+export interface QuizLibraryleQuestion extends QuizChallengeBase {
+  kind: 'libraryle'
+  targetKey: string
+  titles: QuizLibraryleTitle[]
+  maxGuesses: number
+}
+
+export interface QuizCareerPerson extends QuizIdentityLabel {
+  roles: Array<'actor' | 'director'>
+}
+
+export interface QuizCareerCredit {
+  title: QuizScreenTitle
+  roles: string[]
+}
+
+export interface QuizMysteryCareerQuestion extends QuizChallengeBase {
+  kind: 'mysteryCareer'
+  targetKey: string
+  people: QuizCareerPerson[]
+  credits: QuizCareerCredit[]
+  maxGuesses: number
+}
+
+export type QuizLinkWallFamily =
+  | 'actor'
+  | 'director'
+  | 'company'
+  | 'franchise'
+  | 'genre'
+  | 'decade'
+
+export interface QuizLinkWallGroup {
+  key: string
+  family: QuizLinkWallFamily
+  labels: string[]
+  titleKeys: string[]
+}
+
+export interface QuizLinkWallQuestion extends QuizChallengeBase {
+  kind: 'linkWall'
+  titles: QuizScreenTitle[]
+  groups: QuizLinkWallGroup[]
+  maxMistakes: number
+}
+
+export interface QuizFootballChampionQuestion extends QuizChallengeBase {
+  kind: 'footballChampion'
+  competitionKey: FootballCompetitionKey
+  competitionName: string
+  seasonId: number
+  seasonLabel: string
+  datasetRevision: string
+}
+
+export interface QuizFootballScorelineQuestion extends QuizChallengeBase {
+  kind: 'footballScoreline'
+  competitionKey: FootballCompetitionKey
+  matchId: number
+  homeTeam: string
+  awayTeam: string
+  matchDate: string
+  stage: string | null
+  reveal: string
+  datasetRevision: string
+}
+
+export interface QuizFootballCareerSpell {
+  team: string
+  start: string | null
+  end: string | null
+  loan: boolean
+  ellipsisBefore: boolean
+}
+
+export interface QuizFootballCareerPathQuestion extends QuizChallengeBase {
+  kind: 'footballCareerPath'
+  spells: QuizFootballCareerSpell[]
+  datasetRevision: string
+}
+
+export interface QuizFootballChronologyQuestion extends QuizChallengeBase {
+  kind: 'footballChronology'
+  competitionKey: FootballCompetitionKey
+  competitionName: string
+  entries: Array<QuizChallengeChoice & { seasonId: number; year: number }>
+  validKeys: string[]
+  datasetRevision: string
+}
+
+export type QuizFootballGridClueKind = 'club' | 'nationalTeam' | 'competitionEdition'
+
+export interface QuizFootballGridClue {
+  key: string
+  kind: QuizFootballGridClueKind
+  label: string
+}
+
+export interface QuizFootballGridPlayer extends QuizChallengeChoice {
+  aliases: string[]
+}
+
+export interface QuizFootballGridCell {
+  key: string
+  row: number
+  column: number
+  validKeys: string[]
+  revealKey: string
+  hintChoices: string[]
+}
+
+export interface QuizFootballPlayerGridQuestion extends QuizChallengeBase {
+  kind: 'footballPlayerGrid'
+  rows: QuizFootballGridClue[]
+  columns: QuizFootballGridClue[]
+  cells: QuizFootballGridCell[]
+  players: QuizFootballGridPlayer[]
+  datasetRevision: string
+}
+
 export type QuizChallengeQuestion =
   | QuizImageRevealQuestion
   | QuizSilhouetteQuestion
@@ -908,6 +1081,14 @@ export type QuizChallengeQuestion =
   | QuizHigherLowerQuestion
   | QuizLibraryGridQuestion
   | QuizMovieChainQuestion
+  | QuizLibraryleQuestion
+  | QuizMysteryCareerQuestion
+  | QuizLinkWallQuestion
+  | QuizFootballChampionQuestion
+  | QuizFootballScorelineQuestion
+  | QuizFootballCareerPathQuestion
+  | QuizFootballChronologyQuestion
+  | QuizFootballPlayerGridQuestion
 
 export type QuizPartyParticipants = 2 | 3 | 4 | 'teams'
 export interface QuizPartyConfig {
@@ -1556,6 +1737,70 @@ export interface JpStats {
   // "new cards introduced today" count. Ghost answers write no log rows, so
   // they can't inflate it.
   introducedToday: number
+}
+
+export type JpTutorSkill =
+  | 'recall'
+  | 'sound'
+  | 'listening'
+  | 'reading'
+  | 'output'
+  | 'curriculum'
+
+export interface JpTutorTaskRecord {
+  key: string
+  skill: JpTutorSkill
+  title: string
+  plannedMinutes: number
+  complete: boolean
+  evidence: string
+  score: number | null
+}
+
+export interface JpTutorErrorInput {
+  day: string
+  skill: JpTutorSkill
+  label: string
+  detail: string
+  sourceKind?: QuizKind | 'manual' | null
+  sourceSessionId?: number | null
+  score?: number | null
+  threshold?: number | null
+}
+
+export interface JpTutorDebriefInput {
+  day: string
+  phaseId: string
+  startedAt: string
+  endedAt: string
+  plannedMinutes: number
+  completedMinutes: number
+  completedBlocks: number
+  totalBlocks: number
+  strongest: string | null
+  tomorrowFocus: string
+  tasks: JpTutorTaskRecord[]
+  errors: JpTutorErrorInput[]
+}
+
+export interface JpTutorDay extends Omit<JpTutorDebriefInput, 'errors'> {
+  id: number
+  createdAt: string
+  updatedAt: string
+}
+
+export interface JpTutorError {
+  id: number
+  day: string
+  skill: JpTutorSkill
+  label: string
+  detail: string
+  sourceKind: QuizKind | 'manual' | null
+  sourceSessionId: number | null
+  score: number | null
+  threshold: number | null
+  createdAt: string
+  resolvedAt: string | null
 }
 
 // Everything the Japanese stats page needs in one invoke: review history off
@@ -2322,39 +2567,26 @@ export interface ScannedChapter {
 // macOS open-file). It is ad-hoc: read through a session token, never scanned,
 // never attached to a media item, nothing persisted.
 
-export type OpenKind = 'video' | 'book' | 'manga' | 'audio'
+export type OpenKind = 'book' | 'manga' | 'audio'
 
 export interface OpenTarget {
   kind: OpenKind
   token: string // the "open/<token>" segment; carries the original extension
   relPath: string // "open/<token>" — feed to mediaUrl()
-  title: string // the file's base name, for the window/player label
+  title: string // the file's base name, for its reader/player display label
   route: string // where the renderer should go; '' for audio (no page)
 }
 
-// ---- Local video player ----
-// Episodes/films attached to an anime/movie/tv media_item, plus the playback
-// contract the player page consumes. The player is SOURCE-AGNOSTIC: it speaks
-// only VideoSource, so a library row and an ad-hoc "open this file" session
-// drive exactly the same page.
-
-// Which video to play. 'file' is a video_file row (progress is persisted);
-// 'adhoc' is a session token minted by the native picker (nothing persists —
-// see files.ts:registerOpenedFile).
-// Which library a playable file came from. 'file' is the media library
-// (video_file), 'wrestling' the wrestling collection (wrestling_video), 'adhoc'
-// a file opened from the OS with no row at all. Everything downstream of
-// resolving it — playability tiering, the ffmpeg cache, subtitles, mining — is
-// path-only and scope-blind.
-export type VideoSourceRef =
+// ---- Linked local videos ----
+// A row in one of the two tracked video libraries. Playback itself belongs to
+// the operating system's default video application; NaviHUB keeps discovery
+// metadata and the user's manual watched marks.
+export type VideoFileRef =
   | { kind: 'file'; fileId: number }
   | { kind: 'wrestling'; fileId: number }
-  | { kind: 'adhoc'; token: string }
 
-// How Chromium can get at this file. 'direct' plays the source as-is;
-// 'cached' plays an already-converted copy; 'needsPrepare' requires an ffmpeg
-// pass first; 'unsupported' can't be played (and says why in `reason`).
-export type VideoPlayAction = 'direct' | 'cached' | 'needsPrepare' | 'unsupported'
+// Legacy scanner values retained on existing rows. External players do their
+// own compatibility handling; new scans need not calculate this field.
 export type VideoPlanAction = 'direct' | 'remux' | 'transcode' | 'unsupported'
 
 export interface VideoFile {
@@ -2410,66 +2642,15 @@ export interface VideoSubtitleTrack {
   textual: boolean // false = a bitmap track (PGS/VobSub) that can never be text
 }
 
-export interface VideoAudioTrack {
-  index: number // absolute ffprobe stream index
-  label: string
-  lang: string | null
-  codec: string
-  channels: number | null
-  isDefault: boolean
-}
-
-export interface VideoSource {
-  ref: VideoSourceRef
-  title: string
-  seriesTitle: string | null
-  mediaId: number | null // null for ad-hoc and wrestling — mining still works
-  mediaType: MediaType | null // with mediaId, enough to link back to the detail page
-  // Where the player's Back should go, built in main so a new scope needs no
-  // player change (the openFile.ts:routeFor precedent). null = the picker.
-  backPath: string | null
-  fileId: number | null
-  action: VideoPlayAction
-  url: string | null // navimg:// URL for <video src>; null when a prepare is needed
-  reason: string | null // human sentence for needsPrepare/unsupported
-  warnings: string[]
-  plan: VideoPlanAction | null
-  durationSeconds: number | null
-  resumeSeconds: number | null
-  watchedAt: string | null
-  audioTracks: VideoAudioTrack[]
-  subtitles: VideoSubtitleTrack[]
-  prev: { fileId: number; title: string } | null
-  next: { fileId: number; title: string } | null
-}
-
-export interface VideoPrepareStatus {
-  id: string
-  sourceLabel: string
-  state: 'probing' | 'converting' | 'finalizing' | 'done' | 'error' | 'cancelled'
-  action: 'remux' | 'transcode' | null
-  percent: number | null
-  speed: number | null
-  etaSec: number | null
-  outputRelPath: string | null // "videocache/<key>.mp4"; only when done
-  message: string | null
-}
-
 export interface VideoToolsResult {
   ffmpeg: boolean
   ffprobe: boolean
   ffmpegVersion: string | null
 }
 
-export interface VideoCacheStats {
-  entries: number
-  bytes: number
-  capBytes: number
-}
-
 // Scanner output for one discovered video (filePath relative to the ATTACHED
 // folder). The probe half is filled in separately and stays null without
-// ffprobe — a .mp4 still plays.
+// ffprobe — external playback remains available without these fields.
 export interface ScannedVideo {
   filePath: string
   title: string
@@ -2960,10 +3141,10 @@ export type TaskKind =
   | 'bulkImport'
   | 'libraryRefresh'
   | 'wrestlingImport'
+  | 'footballSync'
   | 'musicDownload'
   | 'musicMetadata'
   | 'mangaOcr'
-  | 'videoPrepare'
   | 'appUpdate'
   | 'musicScan'
   | 'mangaRescan'
@@ -3086,7 +3267,7 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 //   task  task registry lifecycle (started / finished / cancelled / failed)
 //   proc  child-process output (yt-dlp, ffmpeg, mokuro)
 //   ipc   an IPC handler threw
-export type LogSource = 'app' | 'db' | 'http' | 'task' | 'proc' | 'ipc'
+export type LogSource = 'app' | 'db' | 'http' | 'task' | 'proc' | 'ipc' | 'football'
 
 export interface LogEntry {
   // Strictly increasing, never reused — the renderer holds it as a cursor, so
@@ -4115,6 +4296,506 @@ export interface WrestlingImportStatus {
   wrestlers: number
   failed: number
   message: string | null
+}
+
+// ---- Football Archive (/football) ----
+// Frozen competition keys are stored in source refs, saved filters and quiz
+// settings. Football is a standalone history graph, not a MediaType.
+export type FootballCompetitionKey =
+  | 'premier-league'
+  | 'la-liga'
+  | 'serie-a'
+  | 'bundesliga'
+  | 'champions-league'
+  | 'europa-league'
+  | 'conference-league'
+  | 'world-cup'
+  | 'euros'
+
+export type FootballEntityKind = 'competition' | 'team' | 'person' | 'match'
+export type FootballPersonRole = 'player' | 'manager' | 'both'
+export type FootballCoverageState = 'complete' | 'partial' | 'conflicted' | 'not_supplied'
+export type FootballMediaKind =
+  | 'clip'
+  | 'highlight'
+  | 'fullMatch'
+  | 'interview'
+  | 'documentary'
+export type FootballSource =
+  | 'engsoccerdata'
+  | 'openfootball'
+  | 'international_results'
+  | 'wikimedia'
+  | 'wikidata'
+  | 'api-football'
+  | 'statsbomb'
+  | 'wyscout'
+export type FootballExternalProvider = 'fotmob' | 'website'
+
+export interface FootballCompetition {
+  id: number
+  key: FootballCompetitionKey
+  name: string
+  shortName: string | null
+  country: string | null
+  scope: 'domestic' | 'continental' | 'international'
+  format: 'league' | 'cup'
+  startYear: number | null
+  lineageNote: string | null
+  summary: string | null
+  currentSeasonId: number | null
+  seasonCount: number
+  matchCount: number
+  favorite: boolean
+  latestSeason: string | null
+}
+
+export interface FootballEra {
+  id: number
+  competitionId: number
+  name: string
+  startSeason: string | null
+  endSeason: string | null
+  pointsWin: number | null
+  pointsDraw: number | null
+  rankRules: string | null
+  narrative: string | null
+  sortOrder: number
+}
+
+export type FootballSeasonStatus = 'upcoming' | 'current' | 'complete' | 'void'
+
+export interface FootballSeason {
+  id: number
+  competitionId: number
+  competitionKey: FootballCompetitionKey
+  competitionName: string
+  key: string
+  label: string
+  startDate: string | null
+  endDate: string | null
+  status: FootballSeasonStatus
+  editionNumber: number | null
+  teamCount: number | null
+  championVerified: boolean
+  champion: FootballTeamSummary | null
+  runnerUp: FootballTeamSummary | null
+  narrative: string | null
+  dataRevision: string | null
+  matchCount: number
+}
+
+export interface FootballTeamSummary {
+  id: number
+  name: string
+  shortName: string | null
+  country: string | null
+  isNational: boolean
+  imagePath: string | null
+  favorite: boolean
+}
+
+export interface FootballPersonSummary {
+  id: number
+  name: string
+  role: FootballPersonRole
+  nationality: string | null
+  imagePath: string | null
+  favorite: boolean
+  enrichmentState: 'not_requested' | 'queued' | 'ready' | 'error'
+  quizPack: boolean
+}
+
+export interface FootballTenure {
+  id: number
+  personId: number
+  person: FootballPersonSummary | null
+  team: FootballTeamSummary
+  role: 'player' | 'manager'
+  startDate: string | null
+  endDate: string | null
+  loan: boolean
+  appearances: number | null
+  goals: number | null
+  verified: boolean
+  complete: boolean
+  sortOrder: number
+}
+
+export type FootballMatchStatus =
+  | 'scheduled'
+  | 'live'
+  | 'finished'
+  | 'postponed'
+  | 'cancelled'
+  | 'abandoned'
+  | 'awarded'
+
+export interface FootballMatchSummary {
+  id: number
+  seasonId: number
+  competitionId: number
+  competitionKey: FootballCompetitionKey
+  competitionName: string
+  seasonLabel: string
+  stageId: number | null
+  stageName: string | null
+  home: FootballTeamSummary
+  away: FootballTeamSummary
+  kickoffAt: string | null
+  matchDate: string
+  round: string | null
+  status: FootballMatchStatus
+  homeScore: number | null
+  awayScore: number | null
+  homeExtraTime: number | null
+  awayExtraTime: number | null
+  homePenalties: number | null
+  awayPenalties: number | null
+  favorite: boolean
+  watchedAt: string | null
+  rating: number | null
+  eventCoverage: FootballCoverageState
+  conflicted: boolean
+}
+
+export interface FootballLineupEntry {
+  id: number
+  teamId: number
+  person: FootballPersonSummary
+  role: 'player' | 'manager'
+  starter: boolean
+  shirt: number | null
+  position: string | null
+  captain: boolean
+  sortOrder: number
+}
+
+export interface FootballMatchEvent {
+  id: number
+  teamId: number | null
+  person: FootballPersonSummary | null
+  relatedPerson: FootballPersonSummary | null
+  type: string
+  detail: string | null
+  minute: number | null
+  extraMinute: number | null
+  ownGoal: boolean
+  penalty: boolean
+  scoreHome: number | null
+  scoreAway: number | null
+  sortOrder: number
+}
+
+export interface FootballStanding {
+  team: FootballTeamSummary
+  rank: number | null
+  rankOfficial: boolean
+  played: number
+  won: number
+  drawn: number
+  lost: number
+  goalsFor: number
+  goalsAgainst: number
+  goalDifference: number
+  points: number
+  deduction: number
+  note: string | null
+}
+
+export interface FootballHonour {
+  id: number
+  competitionId: number
+  seasonId: number | null
+  seasonLabel: string | null
+  team: FootballTeamSummary | null
+  person: FootballPersonSummary | null
+  title: string
+  placement: 'winner' | 'runner-up' | 'individual'
+  verified: boolean
+  shared: boolean
+}
+
+export interface FootballCoverage {
+  id: number
+  competitionId: number | null
+  competitionKey: FootballCompetitionKey | null
+  competitionName: string | null
+  seasonId: number | null
+  source: FootballSource
+  facet: string
+  state: FootballCoverageState
+  itemCount: number | null
+  expectedCount: number | null
+  note: string | null
+  revision: string | null
+  checkedAt: string
+}
+
+export interface FootballSourceRef {
+  id: number
+  source: FootballSource
+  externalId: string
+  sourceUrl: string | null
+  revision: string | null
+  checksum: string | null
+  fetchedAt: string | null
+}
+
+export interface FootballArticle {
+  id: number
+  title: string
+  body: string | null
+  sourceUrl: string
+  revision: string | null
+  license: string | null
+  attribution: string | null
+  state: 'not_requested' | 'queued' | 'ready' | 'error'
+  fetchedAt: string | null
+}
+
+export interface FootballMediaLink {
+  entityKind: FootballEntityKind
+  entityId: number
+  label: string | null
+}
+
+export interface FootballMedia {
+  id: number
+  title: string
+  kind: FootballMediaKind
+  localPath: string | null
+  url: string | null
+  note: string | null
+  links: FootballMediaLink[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface FootballMediaInput {
+  id?: number
+  title: string
+  kind: FootballMediaKind
+  localPath?: string | null
+  url?: string | null
+  note?: string | null
+  links: Array<{ entityKind: FootballEntityKind; entityId: number }>
+}
+
+export interface FootballExternalLink {
+  id: number
+  entityKind: FootballEntityKind
+  entityId: number
+  provider: FootballExternalProvider
+  label: string | null
+  url: string
+}
+
+export interface FootballJournalInput {
+  watchedAt?: string | null
+  rating?: number | null
+  note?: string | null
+}
+
+export interface FootballMatchDetail extends FootballMatchSummary {
+  homeHalftime: number | null
+  awayHalftime: number | null
+  aggregateHome: number | null
+  aggregateAway: number | null
+  awarded: boolean
+  venue: string | null
+  city: string | null
+  attendance: number | null
+  referee: string | null
+  lineupCoverage: FootballCoverageState
+  lineups: FootballLineupEntry[]
+  events: FootballMatchEvent[]
+  note: string | null
+  media: FootballMedia[]
+  externalLinks: FootballExternalLink[]
+  sources: FootballSourceRef[]
+}
+
+export interface FootballTopScorer {
+  rank: number
+  person: FootballPersonSummary
+  team: FootballTeamSummary | null
+  goals: number
+  tied: boolean
+}
+
+export interface FootballSeasonDetail extends FootballSeason {
+  eras: FootballEra[]
+  stages: Array<{ id: number; name: string; kind: string; sortOrder: number }>
+  standings: FootballStanding[]
+  matches: FootballMatchSummary[]
+  topScorers: FootballTopScorer[]
+  honours: FootballHonour[]
+  coverage: FootballCoverage[]
+  article: FootballArticle | null
+}
+
+export interface FootballCompetitionDetail extends FootballCompetition {
+  eras: FootballEra[]
+  seasons: FootballSeason[]
+  honours: FootballHonour[]
+  media: FootballMedia[]
+  coverage: FootballCoverage[]
+  article: FootballArticle | null
+}
+
+export interface FootballTeamDetail extends FootballTeamSummary {
+  foundedYear: number | null
+  bio: string | null
+  enrichmentState: 'not_requested' | 'queued' | 'ready' | 'error'
+  tenures: FootballTenure[]
+  honours: FootballHonour[]
+  matches: FootballMatchSummary[]
+  seasonRecords: FootballStanding[]
+  media: FootballMedia[]
+  article: FootballArticle | null
+}
+
+export interface FootballPersonDetail extends FootballPersonSummary {
+  birthDate: string | null
+  deathDate: string | null
+  bio: string | null
+  tenures: FootballTenure[]
+  honours: FootballHonour[]
+  appearances: FootballMatchSummary[]
+  media: FootballMedia[]
+  article: FootballArticle | null
+}
+
+export interface FootballOverview {
+  installed: boolean
+  competitions: FootballCompetition[]
+  currentMatches: FootballMatchSummary[]
+  recentJournal: FootballMatchSummary[]
+  recentMedia: FootballMedia[]
+  totals: { seasons: number; matches: number; teams: number; people: number }
+  coverage: FootballCoverage[]
+  lastSyncAt: string | null
+}
+
+export interface FootballCurrentSnapshot {
+  matches: FootballMatchSummary[]
+  standings: FootballStanding[]
+  topScorers: FootballTopScorer[]
+  coverage: FootballCoverage[]
+  entitlement: FootballEntitlement | null
+  lastRefreshAt: string | null
+  quota: FootballQuota
+}
+
+export interface FootballEntityFilter {
+  search?: string | null
+  competitionKey?: FootballCompetitionKey | null
+  seasonId?: number | null
+  country?: string | null
+  role?: FootballPersonRole | null
+  favoriteOnly?: boolean
+  limit?: number
+  offset?: number
+}
+
+export interface FootballMatchFilter extends FootballEntityFilter {
+  dateFrom?: string | null
+  dateTo?: string | null
+  teamId?: number | null
+  status?: FootballMatchStatus | null
+  watchedOnly?: boolean
+}
+
+export interface FootballSearchResults {
+  competitions: FootballCompetition[]
+  seasons: FootballSeason[]
+  teams: FootballTeamSummary[]
+  people: FootballPersonSummary[]
+  matches: FootballMatchSummary[]
+}
+
+export interface FootballEntitlement {
+  competitionKey: FootballCompetitionKey
+  season: string
+  entitled: boolean
+  fixtures: boolean
+  standings: boolean
+  events: boolean
+  lineups: boolean
+  topScorers: boolean
+  message: string | null
+  checkedAt: string
+}
+
+export interface FootballQuota {
+  date: string
+  limit: number
+  used: number
+  remaining: number
+  backlog: number
+}
+
+export type FootballSyncKind = 'history' | 'current' | 'deepPack' | 'playerQuizPack' | 'enrich'
+
+export interface FootballSyncRequest {
+  kind: FootballSyncKind
+  competitionKeys?: FootballCompetitionKey[]
+  deepSource?: 'statsbomb' | 'wyscout'
+  seasonKey?: string
+  entityKind?: 'team' | 'person'
+  entityId?: number
+}
+
+export interface FootballSyncStatus {
+  id: number
+  state: 'idle' | 'running' | 'pausing' | 'paused' | 'done' | 'error' | 'cancelled'
+  kind: FootballSyncKind | null
+  phase: 'preparing' | 'downloading' | 'validating' | 'writing' | 'quota' | null
+  source: FootballSource | null
+  competitionKey: FootballCompetitionKey | null
+  done: number
+  total: number
+  requests: number
+  imported: number
+  conflicts: number
+  message: string | null
+}
+
+export interface FootballConflict {
+  id: number
+  entityKind: string
+  entityId: number | null
+  entityLabel: string | null
+  facet: string
+  sourceA: FootballSource
+  valueA: string | null
+  sourceB: FootballSource
+  valueB: string | null
+  status: 'open' | 'resolved' | 'ignored'
+  resolution: string | null
+  createdAt: string
+}
+
+export interface FootballSyncOverview {
+  installed: boolean
+  status: FootballSyncStatus
+  quota: FootballQuota
+  entitlements: FootballEntitlement[]
+  coverage: FootballCoverage[]
+  conflicts: FootballConflict[]
+  playerQuizEligible: number
+  playerQuizTarget: number
+  lastRuns: Array<{
+    id: number
+    kind: FootballSyncKind
+    source: FootballSource
+    state: string
+    startedAt: string
+    finishedAt: string | null
+    itemCount: number
+    message: string | null
+  }>
 }
 
 // ---- player bridge (OS media controls + pop-out widget) ----

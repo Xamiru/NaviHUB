@@ -34,6 +34,34 @@ function normalizeExportOptions(input = {}) {
 }
 
 const FIXED_WIPES = [
+  // Football is always excluded: the archive combines personal annotations,
+  // machine paths and provider datasets that are not redistributable.
+  'DELETE FROM football_media_link',
+  'DELETE FROM football_external_link',
+  'DELETE FROM football_favorite',
+  'DELETE FROM football_match_journal',
+  'DELETE FROM football_assertion',
+  'DELETE FROM football_coverage',
+  'DELETE FROM football_conflict',
+  'DELETE FROM football_article',
+  'DELETE FROM football_source_ref',
+  'DELETE FROM football_import_run',
+  'DELETE FROM football_lineup',
+  'DELETE FROM football_event',
+  'DELETE FROM football_standing',
+  'DELETE FROM football_honour',
+  'DELETE FROM football_tenure',
+  'DELETE FROM football_media',
+  'DELETE FROM football_match',
+  'DELETE FROM football_stage',
+  'DELETE FROM football_season',
+  'DELETE FROM football_era',
+  'DELETE FROM football_alias',
+  'DELETE FROM football_person',
+  'DELETE FROM football_team',
+  'DELETE FROM football_competition',
+  'DELETE FROM jp_tutor_error',
+  'DELETE FROM jp_tutor_day',
   'DELETE FROM jp_ghost',
   'DELETE FROM jp_review_log',
   'DELETE FROM jp_card',
@@ -84,16 +112,17 @@ const FIXED_WIPES = [
   'DELETE FROM sync_batch',
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path',
-      'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','slideshow.dir','video.dir','wrestling.dir',
+      'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','slideshow.dir','video.dir','wrestling.dir','football.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
-      'steam.web_api_key','ra.username','ra.api_key',
+      'steam.web_api_key','ra.username','ra.api_key','football.api_key','football.api_quota',
       'vertex.project_id','vertex.region','vertex.credentials_path',
       'sync.token','sync.device','sync.port',
       'jackett.url','jackett.api_key','jackett.start_cmd',
       'qbittorrent.url','qbittorrent.username','qbittorrent.password',
       'github.token','checklist.seeded','jp.knownBaseline')
-     OR key LIKE 'japanese.seeded%' OR key LIKE 'franchise.%'`
+     OR key LIKE 'japanese.seeded%' OR key LIKE 'franchise.%'
+     OR key LIKE 'football.entitlement.%'`
 ]
 
 function tableOf(sql) {
@@ -211,7 +240,11 @@ function filterPolymorphicCollections(db, hasTable) {
     company: 'company',
     wrestlingEvent: 'wrestling_event',
     wrestlingMatch: 'wrestling_match',
-    wrestlingWrestler: 'wrestling_wrestler'
+    wrestlingWrestler: 'wrestling_wrestler',
+    footballCompetition: 'football_competition',
+    footballTeam: 'football_team',
+    footballPerson: 'football_person',
+    footballMatch: 'football_match'
   }
   if (hasTable('list') && hasTable('list_item')) {
     for (const [kind, table] of Object.entries(kinds)) {

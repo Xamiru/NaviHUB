@@ -9,7 +9,19 @@ import QuietWorkspace from '../components/QuietWorkspace'
 import { KIND_LABEL } from '../lib/listLinks'
 import type { ListKind } from '@shared/types'
 
-const KINDS: ListKind[] = ['media', 'person', 'character', 'company', 'wrestlingEvent', 'wrestlingWrestler', 'wrestlingMatch']
+const KINDS: ListKind[] = [
+  'media',
+  'person',
+  'character',
+  'company',
+  'wrestlingEvent',
+  'wrestlingWrestler',
+  'wrestlingMatch',
+  'footballCompetition',
+  'footballTeam',
+  'footballPerson',
+  'footballMatch'
+]
 
 export default function ListFormPage() {
   const { id } = useParams()

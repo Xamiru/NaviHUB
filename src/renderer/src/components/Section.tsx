@@ -16,11 +16,11 @@ export default function Section({
   return (
     <section className={className}>
       <div className="mb-3 flex items-center gap-3">
-        <h2 className="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">
+        <h2 className="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-ink-secondary">
           {title}
         </h2>
-        <span className="h-px flex-1 bg-base-700" aria-hidden="true" />
-        {subtitle && <span className="text-xs text-gray-500">{subtitle}</span>}
+        <span className="h-px flex-1 bg-line-subtle" aria-hidden="true" />
+        {subtitle && <span className="text-xs text-ink-muted">{subtitle}</span>}
       </div>
       {children}
     </section>

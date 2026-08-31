@@ -24,17 +24,17 @@ export default function HubCard({
 }) {
   const inner = (
     <>
-      <p className="font-semibold transition-colors group-hover:text-accent">
+      <p className="font-semibold transition-colors group-hover:text-signal-live">
         {title}
-        {badge && <span className="ml-2 text-xs font-normal text-accent">{badge}</span>}
+        {badge && <span className="ml-2 text-xs font-normal text-signal-live">{badge}</span>}
       </p>
-      {body && <p className="mt-1 text-sm text-gray-500">{body}</p>}
+      {body && <p className="mt-1 text-sm text-ink-muted">{body}</p>}
       {children}
-      {meta && <p className="mt-3 text-xs text-gray-500">{meta}</p>}
+      {meta && <p className="mt-3 text-xs text-ink-muted">{meta}</p>}
     </>
   )
   const cls =
-    'card group block h-full min-h-[126px] p-5 text-left transition-colors hover:border-accent hover:bg-base-700/60'
+    'card group block h-full min-h-[126px] p-5 text-left transition-colors hover:border-signal-live hover:bg-surface-raised/60'
   return to ? (
     <Link to={to} className={cls}>
       {inner}

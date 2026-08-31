@@ -1,7 +1,6 @@
 import { basename, extname, isAbsolute, resolve } from 'path'
 import { existsSync, statSync } from 'fs'
 import { registerOpenedFile } from './files'
-import { VIDEO_EXTS } from './video/names'
 import type { OpenTarget, OpenKind } from '@shared/types'
 
 // "Open with NaviHUB": the OS hands us a path (startup argv, a second-instance
@@ -17,13 +16,12 @@ const MANGA_EXTS = new Set(['.cbz', '.zip'])
 const AUDIO_EXTS = new Set(['.mp3', '.flac', '.m4a', '.aac', '.ogg', '.opus', '.wav'])
 
 // Pure: what kind of thing is this, by extension alone. null = we don't open it.
-// Mirrors the per-feature extension sets (video/names.ts:VIDEO_EXTS,
-// music.ts:AUDIO_EXTS, archive.ts:ARCHIVE_EXTS, epub.ts:isEpubFile) — keep them
+// Mirrors the per-feature extension sets (music.ts:AUDIO_EXTS,
+// archive.ts:ARCHIVE_EXTS, epub.ts:isEpubFile) — keep them
 // in step, and keep this list in step with electron-builder.yml's
 // fileAssociations, which is what the OS actually offers NaviHUB for.
 export function classifyPath(filePath: string): OpenKind | null {
   const ext = extname(filePath).toLowerCase()
-  if (VIDEO_EXTS.has(ext)) return 'video'
   if (BOOK_EXTS.has(ext)) return 'book'
   if (MANGA_EXTS.has(ext)) return 'manga'
   if (AUDIO_EXTS.has(ext)) return 'audio'
@@ -31,7 +29,6 @@ export function classifyPath(filePath: string): OpenKind | null {
 }
 
 export const OPENABLE_EXTS: string[] = [
-  ...VIDEO_EXTS,
   ...BOOK_EXTS,
   ...MANGA_EXTS,
   ...AUDIO_EXTS
@@ -80,8 +77,6 @@ export function openTargetFor(absPath: string): OpenTarget | null {
 
 function routeFor(kind: OpenKind, token: string): string {
   switch (kind) {
-    case 'video':
-      return `/watch/adhoc/${token}`
     case 'book':
       return `/read/book/${token}`
     case 'manga':

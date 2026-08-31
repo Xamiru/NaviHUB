@@ -109,6 +109,7 @@ export default function JapaneseFeedPage() {
         </Group>
         <label className="flex items-center gap-2 text-sm text-gray-400">
           <input
+            aria-label="Count learning cards as known"
             type="checkbox"
             checked={includeLearning}
             onChange={(e) => setIncludeLearning(e.target.checked)}
@@ -207,7 +208,7 @@ function FeedRow({
         )}
         {item.unknownWord &&
           (inDeck ? (
-            <span className="chip bg-green-500/20 text-green-300">
+            <span className="chip bg-signal-affirmative/20 text-signal-affirmative">
               {item.unknownWord} in your deck
             </span>
           ) : (
@@ -260,12 +261,14 @@ function InlineMine({
     <div className="mt-3 space-y-2 border-t border-base-700 pt-3">
       <div className="grid grid-cols-2 gap-2">
         <input
+          aria-label="Word to mine"
           className="input"
           placeholder="word"
           value={draft.front}
           onChange={(e) => setDraft({ ...draft, front: e.target.value })}
         />
         <input
+          aria-label="Reading of word to mine"
           className="input"
           placeholder="reading"
           value={draft.reading}
@@ -273,6 +276,7 @@ function InlineMine({
         />
       </div>
       <input
+        aria-label="Meaning of word to mine"
         className="input w-full"
         placeholder="meaning"
         value={draft.back}
@@ -280,6 +284,7 @@ function InlineMine({
       />
       <div className="flex items-center gap-2">
         <select
+          aria-label="Review deck for mined word"
           className="input flex-1"
           value={targetLessonId ?? ''}
           onChange={(e) => setLessonId(Number(e.target.value))}

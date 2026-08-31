@@ -2,7 +2,6 @@ export type SurfaceMood = 'cinematic' | 'standard' | 'quiet' | 'immersive'
 
 const IMMERSIVE_ROUTES = [
   /^\/(manga|books)\/\d+\/(read|book)\//,
-  /^\/watch\/(file|wrestling|adhoc)\//,
   /^\/read\/(manga|book)\//
 ]
 
@@ -27,6 +26,7 @@ const CINEMATIC_PREFIXES = [
   '/music',
   '/now-playing',
   '/wrestling',
+  '/football',
   '/lists',
   '/tags',
   '/people',

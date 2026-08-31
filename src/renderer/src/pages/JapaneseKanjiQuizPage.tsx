@@ -86,7 +86,7 @@ export default function JapaneseKanjiQuizPage() {
               <Pill active={length === 10} onClick={() => setLength(10)} label="10 kanji" />
               <Pill active={length === 20} onClick={() => setLength(20)} label="20 kanji" />
             </Group>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-signal-anomaly">{error}</p>}
             <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
               {loading ? 'Loading…' : 'Start drill'}
             </button>
@@ -276,10 +276,10 @@ function ComponentDrill({
             // Green = correct part, red = wrong pick, outline = missed part.
             cls = inKanji
               ? isPicked
-                ? 'chip-toggle border-green-500 bg-green-500/15 text-green-300'
-                : 'chip-toggle border-green-500/60 text-green-400'
+                ? 'chip-toggle border-signal-affirmative bg-signal-affirmative/15 text-signal-affirmative'
+                : 'chip-toggle border-signal-affirmative/60 text-signal-affirmative'
               : isPicked
-                ? 'chip-toggle border-red-500 bg-red-500/15 text-red-300'
+                ? 'chip-toggle border-signal-anomaly bg-signal-anomaly/15 text-signal-anomaly'
                 : 'chip-toggle opacity-50'
           }
           return (

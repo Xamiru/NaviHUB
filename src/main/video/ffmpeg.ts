@@ -1,17 +1,13 @@
-import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'child_process'
+import { execFile } from 'child_process'
 import { statSync } from 'fs'
 import { get as getSetting } from '../repos/settingsRepo'
 import { buildProbeArgs } from './playability'
 import { parseProbeJson, type MediaProbe } from './probeParse'
-import { applyProgressLine, emptyProgress, type FfProgress } from './progressParse'
-import { pipeProcLines } from '../childLines'
 import type { VideoToolsResult } from '@shared/types'
 
-// Spawning ffmpeg/ffprobe. Every DECISION lives in playability.ts (pure); this
-// file only runs things. Same posture as musicDownload.ts: external binaries
-// the user installs, never bundled — `execFile` for short probes that resolve
-// null on failure and never throw, `spawn` with an argv array (never a shell)
-// for the long job.
+// Thin execution layer for the optional ffprobe metadata read and one-shot
+// embedded-subtitle extraction. The user installs these binaries; playback is
+// external and never waits on them.
 
 export function ffmpegBin(): string {
   return getSetting('ffmpeg.path')?.trim() || 'ffmpeg'
@@ -86,66 +82,7 @@ export async function probeFile(absPath: string): Promise<MediaProbe | null> {
   return result
 }
 
-// ---------------------------------------------------------------------------
-// Run
-// ---------------------------------------------------------------------------
-
-export interface FfmpegRun {
-  proc: ChildProcessWithoutNullStreams
-  done: Promise<{ code: number | null; stderr: string }>
-}
-
-// Spawns ffmpeg with an argv ARRAY and no shell (musicDownload's rule), feeding
-// -progress lines to the caller. The last stderr lines are kept because
-// ffmpeg's real error is always the final one, and that's what the status
-// message should show rather than "exited with code 1".
-export function runFfmpeg(
-  args: string[],
-  onProgress: (p: FfProgress) => void,
-  taskId?: string | null
-): FfmpegRun {
-  const proc = spawn(ffmpegBin(), args) as ChildProcessWithoutNullStreams
-  let state = emptyProgress()
-  const tail: string[] = []
-
-  // The stderr tail is KEPT as well as logged — it is what produces the real
-  // error message on VideoPrepareStatus, and losing it would degrade the panel
-  // to "exited with code 1".
-  //
-  // logStdout:false because ffmpeg's stdout here is the -progress key=value
-  // protocol, already parsed into the status object. Routing a line per frame
-  // into the ring would evict everything else in under a minute.
-  pipeProcLines(proc, {
-    tool: 'ffmpeg',
-    taskId,
-    logStdout: false,
-    onStdout: (line) => {
-      state = applyProgressLine(state, line)
-      onProgress(state)
-    },
-    onStderr: (line) => {
-      tail.push(line)
-      if (tail.length > 20) tail.shift()
-    }
-  })
-
-  const done = new Promise<{ code: number | null; stderr: string }>((resolve) => {
-    let settled = false
-    const finish = (code: number | null, err?: string): void => {
-      if (settled) return
-      settled = true
-      resolve({ code, stderr: err ?? tail.join('\n') })
-    }
-    // A spawn failure (ENOENT — ffmpeg not installed) may never produce a
-    // 'close' with a code, so this path must settle the promise itself.
-    proc.on('error', (err) => finish(null, err.message))
-    proc.on('close', (code) => finish(code))
-  })
-
-  return { proc, done }
-}
-
-// Short one-shot runs (subtitle extraction, clips, frame grabs). Resolves an
+// Short one-shot subtitle extraction. Resolves an
 // error string rather than throwing, so callers can degrade rather than crash.
 export function runFfmpegOnce(args: string[], timeoutMs = 60_000): Promise<string | null> {
   return new Promise((resolve) => {

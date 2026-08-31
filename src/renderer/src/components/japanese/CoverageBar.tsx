@@ -11,15 +11,15 @@ export const TIER_LABEL: Record<JpWordTier, string> = {
 }
 
 export const TIER_TEXT: Record<JpWordTier, string> = {
-  known: 'text-green-300',
-  learning: 'text-amber-300',
+  known: 'text-signal-affirmative',
+  learning: 'text-signal-caution',
   unstarted: 'text-sky-300',
   unknown: 'text-gray-300'
 }
 
 const TIER_BG: Record<JpWordTier, string> = {
-  known: 'bg-green-400',
-  learning: 'bg-amber-400',
+  known: 'bg-signal-affirmative',
+  learning: 'bg-signal-caution',
   unstarted: 'bg-sky-400',
   unknown: 'bg-base-700'
 }

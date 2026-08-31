@@ -26,8 +26,8 @@ import QuietWorkspace from '../components/QuietWorkspace'
 // mine the new ones without leaving the page.
 
 const TOKEN_CLASS: Record<JpWordTier | 'nonword', string> = {
-  known: 'text-green-300',
-  learning: 'text-amber-300',
+  known: 'text-signal-affirmative',
+  learning: 'text-signal-caution',
   unstarted: 'text-sky-300',
   unknown: 'text-gray-100 underline decoration-gray-600 decoration-dotted underline-offset-4',
   nonword: 'text-gray-600'
@@ -89,6 +89,7 @@ export default function JapaneseAnalyzePage() {
         description="Tokenization, coverage and dictionary evidence stay on this device."
       >
         <textarea
+          aria-label="Japanese source text to analyze"
           className="input min-h-[180px] w-full font-normal leading-7"
           placeholder="Paste Japanese text here…"
           value={text}

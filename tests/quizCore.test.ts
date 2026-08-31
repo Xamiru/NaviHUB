@@ -88,8 +88,11 @@ describe('quiz answers and records', () => {
     ).toBe(false)
   })
 
-  it('allows one completed route only for Movie Chain records', () => {
+  it('allows one completed board for dedicated screen-game records', () => {
     expect(quizMinimumRecordSize('movieChainNormal')).toBe(1)
+    expect(quizMinimumRecordSize('libraryle')).toBe(1)
+    expect(quizMinimumRecordSize('mysteryCareer')).toBe(1)
+    expect(quizMinimumRecordSize('linkWall')).toBe(1)
     expect(quizMinimumRecordSize('libraryGrid')).toBe(5)
     expect(
       isNewQuizBest(

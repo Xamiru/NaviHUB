@@ -8,6 +8,9 @@ import { higherLowerCopy, higherLowerValue } from './higherLowerQuiz'
 import type { MediaType } from './types'
 import { buildLibraryGridQuestion, type LibraryGridCandidate } from './libraryGrid'
 import { buildMovieChainQuestion, type MovieChainCandidate } from './movieChain'
+import { buildLibraryleQuestion, type LibraryleCandidate } from './libraryle'
+import { buildMysteryCareerQuestion, type MysteryCareerCandidate } from './mysteryCareer'
+import { buildLinkWallQuestion, type LinkWallCandidate } from './linkWall'
 
 export interface ChallengeMediaCandidate {
   id: number
@@ -102,6 +105,94 @@ export function buildChallengeQuestions(
   const rng = seededRng(request.seed)
   const length = Math.max(1, Math.floor(request.length))
   switch (request.kind) {
+    case 'libraryle': {
+      const candidates: LibraryleCandidate[] = media.flatMap((item) =>
+        item.coverPath && (item.mediaType === 'movie' || item.mediaType === 'tv')
+          ? [{
+              key: String(item.id),
+              label: item.title,
+              aliases: item.aliases ?? [],
+              imagePath: item.coverPath,
+              releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
+              mediaType: item.mediaType,
+              genres: item.genres.map((label) => ({ key: label.toLocaleLowerCase(), label })),
+              companies: item.studios.map((company) => ({ key: String(company.id), label: company.name })),
+              directors: item.people
+                .filter((person) => person.role === 'director')
+                .map((person) => ({ key: String(person.id), label: person.name })),
+              cast: item.people
+                .filter(
+                  (person) =>
+                    person.role === 'actor' &&
+                    person.billingOrder != null &&
+                    person.billingOrder >= 0 &&
+                    person.billingOrder < 10
+                )
+                .map((person) => ({ key: String(person.id), label: person.name }))
+            }]
+          : []
+      )
+      const question = buildLibraryleQuestion(
+        candidates,
+        request.seed,
+        request.options?.screenMediaMode ?? 'both'
+      )
+      return question ? [question] : []
+    }
+    case 'mysteryCareer': {
+      const candidates: MysteryCareerCandidate[] = media.flatMap((item) =>
+        item.coverPath && (item.mediaType === 'movie' || item.mediaType === 'tv')
+          ? [{
+              key: String(item.id),
+              label: item.title,
+              aliases: item.aliases ?? [],
+              imagePath: item.coverPath,
+              releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
+              mediaType: item.mediaType,
+              people: item.people
+            }]
+          : []
+      )
+      const question = buildMysteryCareerQuestion(
+        candidates,
+        request.seed,
+        request.options?.screenMediaMode ?? 'both'
+      )
+      return question ? [question] : []
+    }
+    case 'linkWall': {
+      const relationLabels = new Map<string, string>()
+      for (const item of [...media].sort((left, right) => left.id - right.id)) {
+        for (const key of item.relations) {
+          if (!relationLabels.has(key)) relationLabels.set(key, `${item.title} series`)
+        }
+      }
+      const candidates: LinkWallCandidate[] = media.flatMap((item) =>
+        item.coverPath && (item.mediaType === 'movie' || item.mediaType === 'tv')
+          ? [{
+              key: String(item.id),
+              label: item.title,
+              aliases: item.aliases ?? [],
+              imagePath: item.coverPath,
+              releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
+              mediaType: item.mediaType,
+              genres: item.genres.map((label) => ({ key: label.toLocaleLowerCase(), label })),
+              companies: item.studios.map((company) => ({ key: String(company.id), label: company.name })),
+              relations: item.relations.map((key) => ({
+                key,
+                label: relationLabels.get(key) ?? 'Related titles'
+              })),
+              people: item.people
+            }]
+          : []
+      )
+      const question = buildLinkWallQuestion(
+        candidates,
+        request.seed,
+        request.options?.screenMediaMode ?? 'both'
+      )
+      return question ? [question] : []
+    }
     case 'libraryGrid': {
       const candidates: LibraryGridCandidate[] = media.flatMap((item) =>
         item.coverPath && (item.mediaType === 'movie' || item.mediaType === 'tv')
@@ -564,5 +655,7 @@ export function buildChallengeQuestions(
       }
       return out
     }
+    default:
+      return []
   }
 }

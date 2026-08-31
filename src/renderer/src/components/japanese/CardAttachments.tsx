@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { JpCard } from '@shared/types'
+import { PlayIcon } from '../PlayerIcons'
 
 // The frame and sentence audio captured when a card was mined off the video
 // player. Rendered wherever a card's back is shown — a screenshot and a clip
@@ -27,7 +28,7 @@ export default function CardAttachments({
       {imgUrl && (
         <img
           src={imgUrl}
-          alt=""
+          alt="Captured source frame for this review card"
           className="max-h-40 rounded border border-base-700 object-contain"
           onError={(e) => {
             e.currentTarget.style.display = 'none'
@@ -45,7 +46,8 @@ export default function CardAttachments({
             void el.play().catch(() => undefined)
           }}
         >
-          ▶ Sentence audio
+          <PlayIcon className="h-3.5 w-3.5" />
+          Sentence audio
         </button>
       )}
     </div>

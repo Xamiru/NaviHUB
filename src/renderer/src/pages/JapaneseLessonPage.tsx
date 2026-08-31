@@ -23,7 +23,7 @@ import ContextPanel, { ContextFact } from '../components/ContextPanel'
 const KIND_CHIP: Record<JpLessonKind, { cls: string; label: string }> = {
   grammar: { cls: 'bg-purple-500/20 text-purple-300', label: '文法 Grammar' },
   vocab: { cls: 'bg-sky-500/20 text-sky-300', label: '語彙 Vocab' },
-  kanji: { cls: 'bg-amber-500/20 text-amber-300', label: '漢字 Kanji' }
+  kanji: { cls: 'bg-signal-caution/20 text-signal-caution', label: '漢字 Kanji' }
 }
 
 export default function JapaneseLessonPage() {
@@ -93,7 +93,7 @@ export default function JapaneseLessonPage() {
             <span className={`chip ${KIND_CHIP[lesson.kind].cls}`}>
               {KIND_CHIP[lesson.kind].label}
             </span>
-            {lesson.learned && <span className="chip bg-green-500/20 text-green-300">✓ Learned</span>}
+            {lesson.learned && <span className="chip bg-signal-affirmative/20 text-signal-affirmative">✓ Learned</span>}
           </>
         }
         actions={

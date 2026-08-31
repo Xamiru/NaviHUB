@@ -187,8 +187,7 @@ export async function ensureExtracted(
     return track
   }
 
-  // Keyed WITHOUT the playback plan, so an extracted track survives an
-  // audio-track switch that changes the video cache key.
+  // Keyed by source identity so an unchanged file reuses its extracted track.
   const base = cache.sourceKey(absVideo, st.mtimeMs, st.size)
   const fileName = `${base}-s${typeIndex}.${track.format}`
   const absOut = join(cache.subsDir(), fileName)

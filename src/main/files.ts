@@ -51,6 +51,13 @@ export function wrestlingRootDir(): string {
   return custom && custom.length ? custom : join(app.getPath('userData'), 'wrestling')
 }
 
+// Football attachments are references to files the user already keeps beneath
+// one configured root. NaviHUB never scans, copies, moves or deletes them.
+export function footballRootDir(): string {
+  const custom = getSetting('football.dir')?.trim()
+  return custom && custom.length ? custom : join(app.getPath('userData'), 'football')
+}
+
 // Local music library root (settings key `music.dir`, set from the Music page's
 // folder picker or Settings). DB rows and navimg URLs use a virtual "music/"
 // prefix, mirroring the manga/ scheme above.
@@ -238,6 +245,9 @@ export function absoluteMediaPath(relPath: string): string {
   if (norm.startsWith('video/')) return join(videoRootDir(), norm.slice('video/'.length))
   if (norm.startsWith('wrestling/')) {
     return join(wrestlingRootDir(), norm.slice('wrestling/'.length))
+  }
+  if (norm.startsWith('football/')) {
+    return join(footballRootDir(), norm.slice('football/'.length))
   }
   // "jpaudio/" and "videocache/" would resolve identically through the default
   // branch (both live under userData) — the explicit lines document the prefix

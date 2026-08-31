@@ -28,6 +28,9 @@ describe('central quiz kinds and score policies stay synchronized', () => {
     ['movieChainEasy', 'points'],
     ['movieChainNormal', 'points'],
     ['movieChainHard', 'points'],
+    ['libraryle', 'points'],
+    ['mysteryCareer', 'points'],
+    ['linkWall', 'points'],
     ['songRelay', 'party'],
     ['tournament', 'tournament']
   ]
@@ -50,10 +53,10 @@ describe('central quiz kinds and score policies stay synchronized', () => {
     expect(hub).toContain("to: '/quiz/guess-track'")
   })
 
-  it('keeps both screen puzzles registered and visible on the hub', () => {
+  it('keeps every dedicated screen puzzle registered and visible on the hub', () => {
     const app = read('../src/renderer/src/App.tsx')
     const hub = read('../src/renderer/src/pages/QuizLandingPage.tsx')
-    for (const route of ['library-grid', 'movie-chain']) {
+    for (const route of ['library-grid', 'movie-chain', 'libraryle', 'mystery-career', 'link-wall']) {
       expect(app).toContain(`path="/quiz/${route}"`)
       expect(hub).toContain(`to: '/quiz/${route}'`)
     }

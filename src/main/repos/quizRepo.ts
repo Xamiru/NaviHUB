@@ -24,6 +24,8 @@ import { countBuildableVaSources } from '@shared/vaQuiz'
 import { countBuildableSynopsisSources, isLikelyFirstEntry } from '@shared/synopsisQuiz'
 import { HIGHER_LOWER_MEDIA_TYPES, higherLowerValue } from '@shared/higherLowerQuiz'
 import { movieChainEndpointCounts, type MovieChainCandidate } from '@shared/movieChain'
+import { libraryleTargetCount, type LibraryleCandidate } from '@shared/libraryle'
+import { mysteryCareerTargetCount, type MysteryCareerCandidate } from '@shared/mysteryCareer'
 import {
   guessTrackIdentityCount,
   guessTrackMusicEntry,
@@ -34,6 +36,191 @@ import {
   type ChallengeCharacterCandidate,
   type ChallengeMediaCandidate
 } from '@shared/quizChallenges'
+import {
+  buildFootballCareerQuestions,
+  buildFootballChampionQuestions,
+  buildFootballChronologyQuestions,
+  buildFootballPlayerGrid,
+  buildFootballScorelineQuestions,
+  type FootballCareerCandidate,
+  type FootballChampionCandidate,
+  type FootballGridPool,
+  type FootballScorelineCandidate
+} from '@shared/footballQuiz'
+import type { FootballCompetitionKey, QuizFootballGridClue } from '@shared/types'
+
+function footballChampionCandidates(): FootballChampionCandidate[] {
+  return getSqlite().prepare(`
+    SELECT s.id AS seasonId,c.key AS competitionKey,c.name AS competitionName,
+      s.label AS seasonLabel,CAST(substr(COALESCE(s.start_date,s.key),1,4) AS INTEGER) AS year,
+      t.id AS teamId,t.name AS teamName,COALESCE(s.data_revision,'unknown') AS datasetRevision
+    FROM football_season s
+    JOIN football_competition c ON c.id=s.competition_id
+    JOIN football_honour h ON h.season_id=s.id AND h.placement='winner'
+      AND h.verified=1 AND h.shared=0
+    JOIN football_team t ON t.id=h.team_id
+    WHERE s.status='complete' AND s.champion_verified=1
+      AND EXISTS(SELECT 1 FROM football_coverage cv
+        WHERE cv.competition_id=c.id AND cv.season_id IS NULL
+          AND cv.facet='honours' AND cv.state='complete')
+      AND NOT EXISTS(SELECT 1 FROM football_conflict fc
+        WHERE fc.status='open' AND ((fc.entity_kind='season' AND fc.entity_id=s.id)
+          OR (fc.entity_kind='honour' AND fc.entity_id=h.id)))
+    ORDER BY c.id,year,s.id
+  `).all() as FootballChampionCandidate[]
+}
+
+function footballScorelineCandidates(): FootballScorelineCandidate[] {
+  return getSqlite().prepare(`
+    SELECT m.id AS matchId,c.key AS competitionKey,c.name AS competitionName,
+      ht.name AS homeTeam,at.name AS awayTeam,m.match_date AS matchDate,
+      st.name AS stage,m.home_score AS homeScore,m.away_score AS awayScore,
+      m.home_extra_time AS homeExtraTime,m.away_extra_time AS awayExtraTime,
+      m.home_penalties AS homePenalties,m.away_penalties AS awayPenalties,
+      COALESCE(s.data_revision,'unknown') AS datasetRevision
+    FROM football_match m
+    JOIN football_season s ON s.id=m.season_id
+    JOIN football_competition c ON c.id=s.competition_id
+    JOIN football_team ht ON ht.id=m.home_team_id
+    JOIN football_team at ON at.id=m.away_team_id
+    LEFT JOIN football_stage st ON st.id=m.stage_id
+    WHERE m.status='finished' AND m.home_score IS NOT NULL AND m.away_score IS NOT NULL
+      AND m.awarded=0 AND m.conflicted=0
+      AND EXISTS(SELECT 1 FROM football_coverage cv
+        WHERE cv.season_id=s.id AND cv.facet='results' AND cv.state='complete')
+      AND NOT EXISTS(SELECT 1 FROM football_conflict fc
+        WHERE fc.status='open' AND fc.entity_kind='match' AND fc.entity_id=m.id)
+    ORDER BY c.id,m.match_date,m.id
+  `).all() as FootballScorelineCandidate[]
+}
+
+function footballCareerCandidates(): FootballCareerCandidate[] {
+  const rows = getSqlite().prepare(`
+    SELECT p.id AS personId,p.name,t.name AS team,ft.start_date AS start,
+      ft.end_date AS end,ft.loan,COALESCE(MAX(sr.revision),'unknown') AS datasetRevision
+    FROM football_person p
+    JOIN football_tenure ft ON ft.person_id=p.id AND ft.role='player'
+      AND ft.verified=1 AND ft.complete=1
+    JOIN football_team t ON t.id=ft.team_id
+    LEFT JOIN football_source_ref sr ON sr.entity_kind='person' AND sr.entity_id=p.id
+    WHERE p.quiz_pack=1 AND p.role IN ('player','both')
+      AND NOT EXISTS(SELECT 1 FROM football_tenure bad
+        WHERE bad.person_id=p.id AND bad.role='player' AND (bad.verified=0 OR bad.complete=0))
+      AND NOT EXISTS(SELECT 1 FROM football_conflict fc
+        WHERE fc.status='open' AND fc.entity_kind='person' AND fc.entity_id=p.id)
+    GROUP BY ft.id ORDER BY p.id,ft.sort_order,COALESCE(ft.start_date,''),ft.id
+  `).all() as Array<{
+    personId: number
+    name: string
+    team: string
+    start: string | null
+    end: string | null
+    loan: number
+    datasetRevision: string
+  }>
+  const grouped = new Map<number, FootballCareerCandidate>()
+  for (const row of rows) {
+    const current = grouped.get(row.personId) ?? {
+      personId: row.personId,
+      name: row.name,
+      datasetRevision: row.datasetRevision,
+      spells: []
+    }
+    current.spells.push({
+      team: row.team,
+      start: row.start,
+      end: row.end,
+      loan: !!row.loan
+    })
+    grouped.set(row.personId, current)
+  }
+  return [...grouped.values()]
+}
+
+function footballGridPool(): FootballGridPool {
+  const db = getSqlite()
+  const clues: QuizFootballGridClue[] = []
+  const playerClues = new Map<number, Set<string>>()
+  const players = new Map<number, { name: string; aliases: string[] }>()
+  const add = (personId: number, name: string, key: string): void => {
+    players.set(personId, players.get(personId) ?? { name, aliases: [] })
+    const set = playerClues.get(personId) ?? new Set<string>()
+    set.add(key)
+    playerClues.set(personId, set)
+  }
+  const teamRows = db.prepare(`
+    SELECT DISTINCT p.id AS personId,p.name,t.id AS teamId,t.name AS teamName,t.is_national AS national
+    FROM football_person p JOIN football_tenure ft ON ft.person_id=p.id
+    JOIN football_team t ON t.id=ft.team_id
+    WHERE p.quiz_pack=1 AND ft.role='player' AND ft.verified=1 AND ft.complete=1
+      AND NOT EXISTS(SELECT 1 FROM football_conflict fc
+        WHERE fc.status='open' AND fc.entity_kind='person' AND fc.entity_id=p.id)
+    UNION
+    SELECT DISTINCT p.id AS personId,p.name,t.id AS teamId,t.name AS teamName,1 AS national
+    FROM football_person p JOIN football_lineup fl ON fl.person_id=p.id AND fl.role='player'
+    JOIN football_team t ON t.id=fl.team_id AND t.is_national=1
+    JOIN football_match m ON m.id=fl.match_id AND m.lineup_coverage='complete' AND m.conflicted=0
+    WHERE p.quiz_pack=1
+      AND NOT EXISTS(SELECT 1 FROM football_conflict fc
+        WHERE fc.status='open' AND fc.entity_kind='person' AND fc.entity_id=p.id)
+  `).all() as Array<{
+    personId: number
+    name: string
+    teamId: number
+    teamName: string
+    national: number
+  }>
+  const clueSeen = new Set<string>()
+  for (const row of teamRows) {
+    const key = `${row.national ? 'nation' : 'club'}:${row.teamId}`
+    if (!clueSeen.has(key)) {
+      clues.push({ key, kind: row.national ? 'nationalTeam' : 'club', label: row.teamName })
+      clueSeen.add(key)
+    }
+    add(row.personId, row.name, key)
+  }
+  const editionRows = db.prepare(`
+    SELECT DISTINCT p.id AS personId,p.name,s.id AS seasonId,
+      c.name || ' ' || s.label AS label
+    FROM football_person p JOIN football_lineup fl ON fl.person_id=p.id AND fl.role='player'
+    JOIN football_match m ON m.id=fl.match_id
+    JOIN football_season s ON s.id=m.season_id
+    JOIN football_competition c ON c.id=s.competition_id
+    WHERE p.quiz_pack=1 AND m.conflicted=0 AND m.lineup_coverage='complete'
+      AND NOT EXISTS(SELECT 1 FROM football_conflict fc
+        WHERE fc.status='open' AND fc.entity_kind='person' AND fc.entity_id=p.id)
+  `).all() as Array<{ personId: number; name: string; seasonId: number; label: string }>
+  for (const row of editionRows) {
+    const key = `edition:${row.seasonId}`
+    if (!clueSeen.has(key)) {
+      clues.push({ key, kind: 'competitionEdition', label: row.label })
+      clueSeen.add(key)
+    }
+    add(row.personId, row.name, key)
+  }
+  const aliases = db.prepare(`
+    SELECT entity_id AS personId,alias FROM football_alias WHERE entity_kind='person'
+  `).all() as Array<{ personId: number; alias: string }>
+  for (const alias of aliases) {
+    const player = players.get(alias.personId)
+    if (player && alias.alias !== player.name && !player.aliases.includes(alias.alias)) {
+      player.aliases.push(alias.alias)
+    }
+  }
+  const revision = (db.prepare(`
+    SELECT MAX(COALESCE(revision,fetched_at)) AS revision FROM football_source_ref
+  `).get() as { revision: string | null }).revision ?? 'unknown'
+  return {
+    clues,
+    players: [...players].map(([personId, player]) => ({
+      personId,
+      name: player.name,
+      aliases: player.aliases,
+      clueKeys: [...(playerClues.get(personId) ?? [])]
+    })),
+    datasetRevision: revision
+  }
+}
 
 // An anime's year for era filtering: canonical AniList seasonYear from the
 // metadata JSON when present (json_valid guards malformed blobs from throwing),
@@ -121,6 +308,30 @@ function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaC
      ORDER BY mc.media_id, mc.id`
   ).all(...ids) as Array<{ media_id: number; id: number; name: string; role: string }>) {
     media.get(row.media_id)?.studios.push({ id: row.id, name: row.name, role: row.role })
+  }
+  const parents = new Map(ids.map((id) => [id, id]))
+  const root = (id: number): number => {
+    const parent = parents.get(id) ?? id
+    if (parent === id) return id
+    const found = root(parent)
+    parents.set(id, found)
+    return found
+  }
+  for (const row of db.prepare(
+    `SELECT mr.media_id, related.id AS related_id FROM media_relation mr
+     JOIN media_item related ON related.external_source=mr.related_source
+       AND related.external_id=mr.related_external_id
+     WHERE mr.media_id IN (${slots}) AND related.id IN (${slots})`
+  ).all(...ids, ...ids) as Array<{ media_id: number; related_id: number }>) {
+    const left = root(row.media_id)
+    const right = root(row.related_id)
+    if (left !== right) parents.set(Math.max(left, right), Math.min(left, right))
+  }
+  const relationSizes = new Map<number, number>()
+  for (const id of ids) relationSizes.set(root(id), (relationSizes.get(root(id)) ?? 0) + 1)
+  for (const id of ids) {
+    const component = root(id)
+    if ((relationSizes.get(component) ?? 0) > 1) media.get(id)?.relations.push(String(component))
   }
   return [...media.values()]
 }
@@ -295,6 +506,37 @@ export function availability(request: QuizAvailabilityRequest = {}): QuizAvailab
     mediaType: item.mediaType as 'movie' | 'tv',
     people: item.people
   }))
+  const libraryleCandidates: LibraryleCandidate[] = screenCandidates.map((item) => ({
+    key: String(item.id),
+    label: item.title,
+    aliases: item.aliases ?? [],
+    imagePath: item.coverPath!,
+    releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
+    mediaType: item.mediaType as 'movie' | 'tv',
+    genres: item.genres.map((label) => ({ key: label.toLocaleLowerCase(), label })),
+    companies: item.studios.map((company) => ({ key: String(company.id), label: company.name })),
+    directors: item.people
+      .filter((person) => person.role === 'director')
+      .map((person) => ({ key: String(person.id), label: person.name })),
+    cast: item.people
+      .filter(
+        (person) =>
+          person.role === 'actor' &&
+          person.billingOrder != null &&
+          person.billingOrder >= 0 &&
+          person.billingOrder < 10
+      )
+      .map((person) => ({ key: String(person.id), label: person.name }))
+  }))
+  const careerCandidates: MysteryCareerCandidate[] = screenCandidates.map((item) => ({
+    key: String(item.id),
+    label: item.title,
+    aliases: item.aliases ?? [],
+    imagePath: item.coverPath!,
+    releaseYear: item.releaseDate ? Number(item.releaseDate.slice(0, 4)) || null : null,
+    mediaType: item.mediaType as 'movie' | 'tv',
+    people: item.people
+  }))
   const screenGameOptions = (['movie', 'tv', 'both'] as const).map((mediaMode) => {
     const libraryGrid = buildChallengeQuestions({
       kind: 'libraryGrid',
@@ -304,16 +546,41 @@ export function availability(request: QuizAvailabilityRequest = {}): QuizAvailab
       length: 1,
       options: { screenMediaMode: mediaMode }
     }, screenCandidates).length ? 9 : 0
+    const linkWall = buildChallengeQuestions({
+      kind: 'linkWall',
+      seed: 1,
+      scope: request.scope ?? 'consumed',
+      statuses: statuses.length ? statuses : null,
+      length: 1,
+      options: { screenMediaMode: mediaMode }
+    }, screenCandidates).length ? 16 : 0
     return {
       mediaMode,
       libraryGrid,
-      movieChain: movieChainEndpointCounts(chainCandidates, mediaMode)
+      movieChain: movieChainEndpointCounts(chainCandidates, mediaMode),
+      libraryle: libraryleTargetCount(libraryleCandidates, mediaMode),
+      mysteryCareer: mysteryCareerTargetCount(careerCandidates, mediaMode),
+      linkWall
     }
   })
   const libraryGrid = Math.max(...screenGameOptions.map((option) => option.libraryGrid))
   const movieChain = Math.max(
     ...screenGameOptions.flatMap((option) => Object.values(option.movieChain))
   )
+  const libraryle = Math.max(...screenGameOptions.map((option) => option.libraryle))
+  const mysteryCareer = Math.max(...screenGameOptions.map((option) => option.mysteryCareer))
+  const linkWall = Math.max(...screenGameOptions.map((option) => option.linkWall))
+  const footballChampions = footballChampionCandidates()
+  const footballScores = footballScorelineCandidates()
+  const footballCareers = footballCareerCandidates()
+  const footballGrid = footballGridPool()
+  const footballGridReady = buildFootballPlayerGrid(footballGrid, 1).length > 0
+  const footballRevision = [
+    ...footballChampions.map((item) => item.datasetRevision),
+    ...footballScores.map((item) => item.datasetRevision),
+    ...footballCareers.map((item) => item.datasetRevision),
+    footballGrid.datasetRevision
+  ].filter((value) => value !== 'unknown').sort().at(-1) ?? null
   return {
     song,
     guessTrack: Math.max(guessTrackThemes, guessTrackMusic),
@@ -330,6 +597,18 @@ export function availability(request: QuizAvailabilityRequest = {}): QuizAvailab
     higherLowerOptions,
     libraryGrid,
     movieChain,
+    libraryle,
+    mysteryCareer,
+    linkWall,
+    football: {
+      champion: footballChampions.length,
+      scoreline: footballScores.length,
+      careerPath: footballCareers.length,
+      chronology: footballChampions.length,
+      playerGrid: footballGridReady ? 1 : 0,
+      playerGridPlayers: footballGrid.players.length,
+      datasetRevision: footballRevision
+    },
     screenGameOptions
   }
 }
@@ -337,7 +616,43 @@ export function availability(request: QuizAvailabilityRequest = {}): QuizAvailab
 export function challengePool(request: QuizChallengeRequest): QuizChallengeQuestion[] {
   const db = getSqlite()
   const statuses = request.statuses?.filter(Boolean) ?? []
-  if (request.kind === 'libraryGrid' || request.kind === 'movieChain') {
+  const footballKeys = request.options?.footballCompetitionKeys
+  const acceptsFootballKey = (key: FootballCompetitionKey): boolean =>
+    !footballKeys?.length || footballKeys.includes(key)
+  if (request.kind === 'footballChampion') {
+    return buildFootballChampionQuestions(
+      footballChampionCandidates().filter((item) => acceptsFootballKey(item.competitionKey)),
+      request.length,
+      request.seed
+    )
+  }
+  if (request.kind === 'footballScoreline') {
+    return buildFootballScorelineQuestions(
+      footballScorelineCandidates().filter((item) => acceptsFootballKey(item.competitionKey)),
+      request.length,
+      request.seed
+    )
+  }
+  if (request.kind === 'footballCareerPath') {
+    return buildFootballCareerQuestions(footballCareerCandidates(), request.length, request.seed)
+  }
+  if (request.kind === 'footballChronology') {
+    return buildFootballChronologyQuestions(
+      footballChampionCandidates().filter((item) => acceptsFootballKey(item.competitionKey)),
+      request.length,
+      request.seed
+    )
+  }
+  if (request.kind === 'footballPlayerGrid') {
+    return buildFootballPlayerGrid(footballGridPool(), request.seed)
+  }
+  if (
+    request.kind === 'libraryGrid' ||
+    request.kind === 'movieChain' ||
+    request.kind === 'libraryle' ||
+    request.kind === 'mysteryCareer' ||
+    request.kind === 'linkWall'
+  ) {
     return buildChallengeQuestions(request, screenChallengeCandidates(statuses))
   }
   const mediaWhere: string[] = []
@@ -864,7 +1179,11 @@ export const SCORE_RANKED_KINDS: ReadonlySet<QuizKind> = new Set<QuizKind>([
   'libraryGrid',
   'movieChainEasy',
   'movieChainNormal',
-  'movieChainHard'
+  'movieChainHard',
+  'libraryle',
+  'mysteryCareer',
+  'linkWall',
+  'footballPlayerGrid'
 ])
 
 // Recent rounds + the personal best. "Best" is the highest accuracy among

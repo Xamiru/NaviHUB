@@ -193,7 +193,7 @@ export default function ArcadeShell({
     >
       <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-base-700">
         <div
-          className={`h-full rounded-full transition-[width] duration-200 ${left <= 10 ? 'bg-red-500' : 'bg-accent'}`}
+          className={`h-full rounded-full transition-[width] duration-200 ${left <= 10 ? 'bg-signal-anomaly' : 'bg-accent'}`}
           style={{ width: `${pct}%` }}
           aria-hidden="true"
         />
@@ -203,7 +203,7 @@ export default function ArcadeShell({
           {correct} correct · {attempted} attempted
         </span>
         <span>
-          streak {streak} · <span className={left <= 10 ? 'text-red-400' : ''}>{left}s</span>
+          streak {streak} · <span className={left <= 10 ? 'text-signal-anomaly' : ''}>{left}s</span>
         </span>
       </div>
 
@@ -214,8 +214,9 @@ export default function ArcadeShell({
 
       <div className="mx-auto mt-6 max-w-sm">
         <input
+          aria-label="Arcade answer"
           ref={inputRef}
-          className={`input w-full text-center text-lg ${wrong ? 'text-red-400' : ''}`}
+          className={`input w-full text-center text-lg ${wrong ? 'text-signal-anomaly' : ''}`}
           placeholder="type it…"
           value={input}
           autoFocus
@@ -234,7 +235,7 @@ export default function ArcadeShell({
 
       <p className="mt-4 text-center text-sm">
         {wrong ? (
-          <span className="text-red-400">
+          <span className="text-signal-anomaly">
             <span className="text-lg text-gray-100">{item.reveal}</span>
             {item.sub && <span className="ml-2 text-xs text-gray-500">{item.sub}</span>}
             <span className="ml-2 text-xs text-gray-500">Enter to move on</span>

@@ -269,6 +269,12 @@ const api: NaviApi = {
     stats: () => ipcRenderer.invoke('japanese:stats'),
     jlptLadder: () => ipcRenderer.invoke('japanese:jlptLadder'),
     statsDetail: () => ipcRenderer.invoke('japanese:statsDetail'),
+    saveTutorDebrief: (input) => ipcRenderer.invoke('japanese:saveTutorDebrief', input),
+    tutorDays: (limit) => ipcRenderer.invoke('japanese:tutorDays', limit),
+    addTutorError: (input) => ipcRenderer.invoke('japanese:addTutorError', input),
+    tutorErrors: (limit) => ipcRenderer.invoke('japanese:tutorErrors', limit),
+    resolveTutorError: (id, resolved) =>
+      ipcRenderer.invoke('japanese:resolveTutorError', id, resolved),
     addGrammarPoints: (ids) => ipcRenderer.invoke('japanese:addGrammarPoints', ids),
     addGrammarLevel: (level) => ipcRenderer.invoke('japanese:addGrammarLevel', level),
     ensureMiningInbox: () => ipcRenderer.invoke('japanese:ensureMiningInbox'),
@@ -394,16 +400,8 @@ const api: NaviApi = {
     rescan: (mediaId) => ipcRenderer.invoke('video:rescan', mediaId),
     detach: (mediaId) => ipcRenderer.invoke('video:detach', mediaId),
     files: (mediaId) => ipcRenderer.invoke('video:files', mediaId),
-    source: (ref, opts) => ipcRenderer.invoke('video:source', ref, opts),
-    pickFile: () => ipcRenderer.invoke('video:pickFile'),
-    prepare: (ref, opts) => ipcRenderer.invoke('video:prepare', ref, opts),
-    prepareStatus: () => ipcRenderer.invoke('video:prepareStatus'),
-    prepareCancel: (id) => ipcRenderer.invoke('video:prepareCancel', id),
+    openExternal: (ref) => ipcRenderer.invoke('video:openExternal', ref),
     tools: () => ipcRenderer.invoke('video:tools'),
-    cacheStats: () => ipcRenderer.invoke('video:cacheStats'),
-    clearCache: () => ipcRenderer.invoke('video:clearCache'),
-    clipAudio: (req) => ipcRenderer.invoke('video:clipAudio', req),
-    markProgress: (ref, seconds) => ipcRenderer.invoke('video:markProgress', ref, seconds),
     markWatched: (ref, watched) => ipcRenderer.invoke('video:markWatched', ref, watched)
   },
   music: {
@@ -548,6 +546,45 @@ const api: NaviApi = {
     startImport: (opts) => ipcRenderer.invoke('wrestling:startImport', opts),
     importStatus: () => ipcRenderer.invoke('wrestling:importStatus'),
     cancelImport: () => ipcRenderer.invoke('wrestling:cancelImport')
+  },
+  football: {
+    overview: () => ipcRenderer.invoke('football:overview'),
+    competitions: () => ipcRenderer.invoke('football:competitions'),
+    competition: (key) => ipcRenderer.invoke('football:competition', key),
+    seasons: (key) => ipcRenderer.invoke('football:seasons', key),
+    season: (id) => ipcRenderer.invoke('football:season', id),
+    teams: (filter) => ipcRenderer.invoke('football:teams', filter),
+    team: (id) => ipcRenderer.invoke('football:team', id),
+    people: (filter) => ipcRenderer.invoke('football:people', filter),
+    person: (id) => ipcRenderer.invoke('football:person', id),
+    matches: (filter) => ipcRenderer.invoke('football:matches', filter),
+    match: (id) => ipcRenderer.invoke('football:match', id),
+    current: (competitionKey, dateFrom, dateTo) =>
+      ipcRenderer.invoke('football:current', competitionKey, dateFrom, dateTo),
+    search: (query) => ipcRenderer.invoke('football:search', query),
+    setFavorite: (kind, entityId, favorite) =>
+      ipcRenderer.invoke('football:setFavorite', kind, entityId, favorite),
+    saveJournal: (matchId, input) => ipcRenderer.invoke('football:saveJournal', matchId, input),
+    media: (filter) => ipcRenderer.invoke('football:media', filter),
+    mediaFor: (kind, entityId) => ipcRenderer.invoke('football:mediaFor', kind, entityId),
+    saveMedia: (input) => ipcRenderer.invoke('football:saveMedia', input),
+    removeMedia: (id) => ipcRenderer.invoke('football:removeMedia', id),
+    pickMediaFile: () => ipcRenderer.invoke('football:pickMediaFile'),
+    openMedia: (localPath) => ipcRenderer.invoke('football:openMedia', localPath),
+    externalLinks: (kind, entityId) =>
+      ipcRenderer.invoke('football:externalLinks', kind, entityId),
+    saveExternalLink: (input) => ipcRenderer.invoke('football:saveExternalLink', input),
+    removeExternalLink: (id) => ipcRenderer.invoke('football:removeExternalLink', id),
+    openExternalLink: (provider, url) =>
+      ipcRenderer.invoke('football:openExternalLink', provider, url),
+    syncOverview: () => ipcRenderer.invoke('football:syncOverview'),
+    startSync: (request) => ipcRenderer.invoke('football:startSync', request),
+    syncStatus: () => ipcRenderer.invoke('football:syncStatus'),
+    pauseSync: () => ipcRenderer.invoke('football:pauseSync'),
+    resumeSync: () => ipcRenderer.invoke('football:resumeSync'),
+    cancelSync: () => ipcRenderer.invoke('football:cancelSync'),
+    resolveConflict: (id, status, resolution) =>
+      ipcRenderer.invoke('football:resolveConflict', id, status, resolution)
   },
   player: {
     publishState: (snapshot) => ipcRenderer.invoke('player:publishState', snapshot),

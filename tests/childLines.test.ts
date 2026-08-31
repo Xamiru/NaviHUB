@@ -88,14 +88,13 @@ describe('pipeProcLines', () => {
     const out: string[] = []
     const err: string[] = []
     pipeProcLines(proc as never, {
-      tool: 'ffmpeg',
+      tool: 'mokuro',
       onStdout: (l) => out.push(l),
       onStderr: (l) => err.push(l)
     })
     proc.stdout.feed('out_time_ms=1000\n')
     proc.stderr.feed('Stream #0:0: Video: h264\n')
-    // Per-stream, because ffmpeg speaks key=value on one and prose on the other
-    // and no content heuristic separates them reliably.
+    // Each stream is delivered independently.
     expect(out).toEqual(['out_time_ms=1000'])
     expect(err).toEqual(['Stream #0:0: Video: h264'])
   })
@@ -131,11 +130,11 @@ describe('pipeProcLines', () => {
     expect(readLog({ afterSeq: 0.5, limit: 2000 }).entries).toHaveLength(10)
   })
 
-  it('never logs ffmpeg stdout — that is the -progress protocol, already parsed', () => {
+  it('can keep machine-readable stdout out of the log', () => {
     const proc = fakeProc()
     const seen: string[] = []
     pipeProcLines(proc as never, {
-      tool: 'ffmpeg',
+      tool: 'ytdlp',
       logStdout: false,
       onStdout: (l) => seen.push(l),
       onStderr: () => undefined

@@ -15,6 +15,7 @@ import { mediaUrl } from '@shared/mediaUrl'
 import { diffChars, normalizeDictation, readingsKey } from '@shared/dictation'
 import { shuffle } from '@shared/shuffle'
 import { usePitchRecorder, type Take } from '../lib/usePitchRecorder'
+import TutorSessionContinue from '../components/TutorSessionContinue'
 import type { AudioSentence, JpListeningItem } from '@shared/types'
 
 type ListeningTab = 'guided' | 'dictation'
@@ -108,6 +109,7 @@ function GuidedListening() {
         </Group>
         <label className="flex cursor-pointer items-start gap-2.5">
           <input
+            aria-label="Count learning cards as known"
             type="checkbox"
             className="mt-0.5"
             checked={includeLearning}
@@ -128,7 +130,7 @@ function GuidedListening() {
           Hear the sentence before seeing it, choose its meaning, then reveal the transcript and
           shadow it. Pronunciation is self-compared; the app does not pretend to grade your accent.
         </p>
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && <p className="text-sm text-signal-anomaly">{error}</p>}
         <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
           {loading ? 'Matching recordings…' : 'Start guided listening'}
         </button>
@@ -288,9 +290,7 @@ function GuidedRound({
           <button className="btn-primary flex-1" onClick={onExit}>
             Again
           </button>
-          <Link to="/japanese" className="btn-ghost flex-1 text-center">
-            Back
-          </Link>
+          <TutorSessionContinue fallbackTo="/japanese" fallbackLabel="Back" className="btn-ghost flex-1 text-center" />
         </div>
       </div>
     )
@@ -335,21 +335,21 @@ function GuidedRound({
         </div>
       ) : (
         <div className="card mt-4 p-5">
-          <p className={`text-xs font-semibold uppercase tracking-wide ${picked !== -1 && options[picked ?? -1] === current.en ? 'text-green-400' : 'text-amber-300'}`}>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${picked !== -1 && options[picked ?? -1] === current.en ? 'text-signal-affirmative' : 'text-signal-caution'}`}>
             {picked !== -1 && options[picked ?? -1] === current.en ? 'Meaning understood' : 'Study the transcript'}
           </p>
           <p className="mt-2 text-xl leading-relaxed">
             {at >= 0 && surface ? (
               <>
                 {current.jp.slice(0, at)}
-                <span className="rounded bg-amber-500/20 px-0.5 text-amber-200">{surface}</span>
+                <span className="rounded bg-signal-caution/20 px-0.5 text-signal-caution">{surface}</span>
                 {current.jp.slice(at + surface.length)}
               </>
             ) : current.jp}
           </p>
           <p className="mt-1 text-sm text-gray-400">{current.en}</p>
           {current.unknownWord && (
-            <p className="mt-2 text-xs text-amber-300">New word: {current.unknownWord}</p>
+            <p className="mt-2 text-xs text-signal-caution">New word: {current.unknownWord}</p>
           )}
           {current.attribution && (
             <p className="mt-2 text-xs text-gray-600">Recording: {current.attribution}</p>
@@ -372,7 +372,7 @@ function GuidedRound({
               {take && <button className="btn-ghost" onClick={() => recorder.replay(take)}>My take</button>}
             </div>
             {(recorder.status === 'denied' || recorder.status === 'no-mic' || recorder.status === 'error') && (
-              <p className="mt-2 text-xs text-amber-300">
+              <p className="mt-2 text-xs text-signal-caution">
                 Microphone unavailable. Shadow aloud without recording; it is optional.
               </p>
             )}
@@ -419,7 +419,7 @@ function DictationSetup() {
               <Pill active={length === 5} onClick={() => setLength(5)} label="5" />
               <Pill active={length === 10} onClick={() => setLength(10)} label="10" />
             </Group>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-signal-anomaly">{error}</p>}
             <button className="btn-primary w-full" disabled={loading} onClick={() => void start()}>
               {loading ? 'Loading…' : 'Start'}
             </button>
@@ -559,9 +559,7 @@ function DictationRound({ items, onExit }: { items: AudioSentence[]; onExit: () 
           <button className="btn-primary flex-1" onClick={onExit}>
             Again
           </button>
-          <Link to="/japanese" className="btn-ghost flex-1 text-center">
-            Back
-          </Link>
+          <TutorSessionContinue fallbackTo="/japanese" fallbackLabel="Back" className="btn-ghost flex-1 text-center" />
         </div>
       </div>
     )
@@ -609,6 +607,7 @@ function DictationRound({ items, onExit }: { items: AudioSentence[]; onExit: () 
       {!answered ? (
         <div className="mt-4">
           <JpKeyboardInput
+            ariaLabel="Dictation answer"
             inputRef={inputRef}
             className="w-full text-center text-lg"
             placeholder="type what you heard…"
@@ -631,7 +630,7 @@ function DictationRound({ items, onExit }: { items: AudioSentence[]; onExit: () 
         <div className="card mt-4 p-4">
           <p
             className={`text-xs font-semibold uppercase tracking-wide ${
-              wasCorrect ? 'text-green-400' : 'text-red-400'
+              wasCorrect ? 'text-signal-affirmative' : 'text-signal-anomaly'
             }`}
           >
             {wasCorrect ? 'Heard it right' : 'Not quite'}
@@ -647,8 +646,8 @@ function DictationRound({ items, onExit }: { items: AudioSentence[]; onExit: () 
                     c.state === 'same'
                       ? 'text-gray-300'
                       : c.state === 'add'
-                        ? 'bg-green-500/20 text-green-300'
-                        : 'bg-red-500/20 text-red-300 line-through'
+                        ? 'bg-signal-affirmative/20 text-signal-affirmative'
+                        : 'bg-signal-anomaly/20 text-signal-anomaly line-through'
                   }
                 >
                   {c.ch}

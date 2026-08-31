@@ -208,6 +208,7 @@ function WritingSetup({
       </p>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <select
+          aria-label="Kanji writing course"
           className="input max-w-sm"
           value={effectiveCourseId ?? ''}
           onChange={(e) => {
@@ -222,6 +223,7 @@ function WritingSetup({
           ))}
         </select>
         <select
+          aria-label="Kanji writing lesson"
           className="input max-w-sm"
           value={lessonId ?? ''}
           onChange={(e) => setLessonId(e.target.value ? Number(e.target.value) : null)}

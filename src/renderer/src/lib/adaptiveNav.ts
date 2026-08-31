@@ -12,6 +12,7 @@ export interface ArchiveNavItem {
 
 export interface ArchiveContext {
   title: string
+  descriptor: string
   items: ArchiveNavItem[]
 }
 
@@ -29,9 +30,9 @@ const MEDIA_DRAWER_ITEMS: ArchiveNavItem[] = [
   })),
   { to: '/music', label: 'Music', visibilityKey: 'music' },
   { to: '/wrestling', label: 'Wrestling', visibilityKey: 'wrestling' },
+  { to: '/football', label: 'Football', visibilityKey: 'football' },
   { to: '/lists', label: 'Lists', visibilityKey: 'lists' },
-  { to: '/tags', label: 'Tags', visibilityKey: 'tags' },
-  { to: '/watch', label: 'Watch' }
+  { to: '/tags', label: 'Tags', visibilityKey: 'tags' }
 ]
 
 const PLAY_DRAWER_ITEMS: ArchiveNavItem[] = [
@@ -132,13 +133,32 @@ export function archiveAreaForPath(pathname: string): ArchiveArea {
 
 function mediaContext(pathname: string): ArchiveContext | null {
   if (
+    /^\/(people|actors|directors|authors|mangaka|artists|studios|characters)\/[^/]+/.test(pathname)
+  ) {
+    return {
+      title: 'Connections',
+      descriptor: 'Connected archive',
+      items: [
+        { to: '/people', label: 'Voice Actors' },
+        { to: '/actors', label: 'Actors' },
+        { to: '/directors', label: 'Directors' },
+        { to: '/authors', label: 'Authors' },
+        { to: '/mangaka', label: 'Mangaka' },
+        { to: '/artists', label: 'Artists' },
+        { to: '/studios', label: 'Studios' },
+        { to: '/characters', label: 'Characters' }
+      ]
+    }
+  }
+  if (
     pathname.startsWith('/anime') ||
     ['/people', '/artists', '/studios', '/characters'].some(
       (route) => pathname === route || pathname.startsWith(`${route}/`)
     )
   ) {
     return {
-      title: 'Anime archive',
+      title: 'Anime',
+      descriptor: 'Archive directory',
       items: [
         { to: '/anime', label: 'Anime' },
         { to: '/anime/seasonal', label: 'Seasonal' },
@@ -151,7 +171,8 @@ function mediaContext(pathname: string): ArchiveContext | null {
   }
   if (pathname.startsWith('/manga') || pathname.startsWith('/mangaka')) {
     return {
-      title: 'Manga archive',
+      title: 'Manga',
+      descriptor: 'Archive directory',
       items: [
         { to: '/manga', label: 'Manga' },
         { to: '/mangaka', label: 'Mangaka' }
@@ -160,13 +181,15 @@ function mediaContext(pathname: string): ArchiveContext | null {
   }
   if (pathname.startsWith('/visual-novels')) {
     return {
-      title: 'Visual novel archive',
+      title: 'Visual novels',
+      descriptor: 'Archive directory',
       items: [{ to: '/visual-novels', label: 'Visual Novels' }]
     }
   }
   if (pathname.startsWith('/games')) {
     return {
-      title: 'Game archive',
+      title: 'Games',
+      descriptor: 'Archive directory',
       items: [
         { to: '/games', label: 'Games' },
         { to: '/games/installed', label: 'Installed' },
@@ -177,7 +200,8 @@ function mediaContext(pathname: string): ArchiveContext | null {
   }
   if (pathname.startsWith('/books') || pathname.startsWith('/authors')) {
     return {
-      title: 'Book archive',
+      title: 'Books',
+      descriptor: 'Archive directory',
       items: [
         { to: '/books', label: 'Books' },
         { to: '/authors', label: 'Authors' }
@@ -191,7 +215,8 @@ function mediaContext(pathname: string): ArchiveContext | null {
     pathname.startsWith('/directors')
   ) {
     return {
-      title: 'Screen archive',
+      title: 'Movies & TV',
+      descriptor: 'Screen archive',
       items: [
         { to: '/movies', label: 'Movies' },
         { to: '/tv', label: 'TV Shows' },
@@ -204,11 +229,29 @@ function mediaContext(pathname: string): ArchiveContext | null {
 }
 
 export function archiveContextForPath(pathname: string): ArchiveContext {
+  if (pathname.startsWith('/football')) {
+    return {
+      title: 'Football',
+      descriptor: 'History archive',
+      items: [
+        { to: '/football', label: 'Overview' },
+        { to: '/football/current', label: 'Current' },
+        { to: '/football/competitions', label: 'Competitions' },
+        { to: '/football/teams', label: 'Teams' },
+        { to: '/football/people', label: 'People' },
+        { to: '/football/media', label: 'Media' },
+        { to: '/football/quiz', label: 'Quiz' },
+        { to: '/football/sync', label: 'Sync' }
+      ]
+    }
+  }
   if (pathname.startsWith('/japanese')) {
     return {
-      title: 'Japanese knowledge map',
+      title: 'Japanese',
+      descriptor: 'Knowledge map',
       items: [
         { to: '/japanese', label: 'Today' },
+        { to: '/japanese/tutor', label: 'Tutor' },
         { to: '/japanese/roadmap', label: 'Roadmap' },
         { to: '/japanese/review', label: 'Review' },
         { to: '/japanese/dictionary', label: 'Dictionary' },
@@ -219,7 +262,8 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
   }
   if (pathname.startsWith('/english')) {
     return {
-      title: 'English mistake ledger',
+      title: 'English',
+      descriptor: 'Mistake ledger',
       items: [
         { to: '/english', label: 'Overview' },
         { to: '/english/dictionary', label: 'Dictionary' },
@@ -231,7 +275,8 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
   }
   if (pathname.startsWith('/programming')) {
     return {
-      title: 'Programming skill graph',
+      title: 'Programming',
+      descriptor: 'Skill graph',
       items: [
         { to: '/programming', label: 'Skill Graph' },
         { to: '/programming/cheatsheets', label: 'Cheatsheets' },
@@ -243,7 +288,8 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
   }
   if (pathname.startsWith('/quiz')) {
     return {
-      title: 'Challenge broadcast',
+      title: 'Quiz',
+      descriptor: 'Challenge broadcast',
       items: [
         { to: '/quiz', label: 'Quiz Home' },
         { to: '/quiz/party', label: 'Party' },
@@ -256,7 +302,8 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
   }
   if (pathname.startsWith('/gacha')) {
     return {
-      title: 'Gacha operations board',
+      title: 'Gacha',
+      descriptor: 'Operations board',
       items: [
         { to: '/gacha', label: 'Operations' },
         ...GACHA_GAMES.map((game) => ({ to: `/gacha/${game.id}`, label: game.short }))
@@ -265,7 +312,8 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
   }
   if (pathname.startsWith('/wrestling')) {
     return {
-      title: 'Wrestling chronology',
+      title: 'Wrestling',
+      descriptor: 'Chronology',
       items: [
         { to: '/wrestling', label: 'Chronology' },
         { to: '/wrestling/rated', label: 'Rated' },
@@ -279,7 +327,8 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
   }
   if (pathname.startsWith('/music') || pathname.startsWith('/now-playing')) {
     return {
-      title: 'Sonic archive',
+      title: 'Music',
+      descriptor: 'Sonic archive',
       items: [
         { to: '/music', label: 'Library' },
         { to: '/music/downloads', label: 'Downloads' },
@@ -291,19 +340,11 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
   }
   if (pathname.startsWith('/lists') || pathname.startsWith('/tags')) {
     return {
-      title: 'Curated collections',
+      title: 'Collections',
+      descriptor: 'Curated archive',
       items: [
         { to: '/lists', label: 'Lists' },
         { to: '/tags', label: 'Tags' }
-      ]
-    }
-  }
-  if (pathname.startsWith('/watch')) {
-    return {
-      title: 'Transcript-first watch',
-      items: [
-        { to: '/watch', label: 'Watch' },
-        { to: '/wrestling/collection', label: 'Wrestling Video' }
       ]
     }
   }
@@ -313,11 +354,11 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
     pathname.startsWith('/torrents') ||
     pathname.startsWith('/settings')
   ) {
-    return { title: 'Task canvas', items: SYSTEM_DRAWER_ITEMS }
+    return { title: 'System', descriptor: 'Tasks and settings', items: SYSTEM_DRAWER_ITEMS }
   }
 
   const media = mediaContext(pathname)
   if (media) return media
 
-  return { title: 'Archive broadcast', items: HOME_ITEMS }
+  return { title: 'Home', descriptor: 'Archive broadcast', items: HOME_ITEMS }
 }

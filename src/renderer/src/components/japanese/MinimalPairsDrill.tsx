@@ -302,9 +302,9 @@ function PairsPlay({
               onClick={() => answer(idx)}
               className={`rounded-lg border p-4 text-center transition-colors ${
                 isPlayed
-                  ? 'border-green-500 bg-green-500/15'
+                  ? 'border-signal-affirmative bg-signal-affirmative/15'
                   : wrongPick
-                    ? 'border-red-500 bg-red-500/15'
+                    ? 'border-signal-anomaly bg-signal-anomaly/15'
                     : 'border-base-700 bg-base-800 hover:border-accent hover:bg-base-700'
               } ${answered ? 'cursor-default' : ''}`}
             >

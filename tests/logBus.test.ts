@@ -103,7 +103,7 @@ describe('readLog filters', () => {
 
   it('filters by task id', () => {
     log('info', 'task', 'started', 'import-1')
-    log('info', 'proc', 'converting', 'videoPrepare-2')
+    log('info', 'proc', 'reading metadata', 'musicMetadata-2')
     log('info', 'task', 'finished', 'import-1')
     const page = readLog({ afterSeq: 0.5, taskId: 'import-1' })
     expect(page.entries.map((e) => e.message)).toEqual(['started', 'finished'])

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* Theme variables — the Lain "Wired terminal" palette (the app's ONE theme).
+  /* Theme variables — Lain is the default "Wired terminal" palette.
      Tailwind's base/accent/gray/white tokens and the radius scale resolve
      through these (tailwind.config.js), so every utility class keys off this
      block. Color vars are "R G B" triplets so /alpha modifiers work. The
@@ -19,18 +19,47 @@
     --accent-hover: 51 255 133; /* hover glows brighter — terminal idiom */
     --signal-warm: 222 72 76;
     --signal-cool: 36 190 168;
+    --signal-affirmative: 134 239 172;
+    --signal-caution: 252 211 77;
     --white: 240 255 244;
     --gray-50: 234 255 240;
     --gray-100: 221 247 228;
     --gray-200: 201 236 212;
     --gray-300: 169 211 183;
     --gray-400: 127 174 144;
-    --gray-500: 86 130 102;
+    /* AA-safe on base-700 (4.73:1); readable secondary copy may use this.
+       gray-600 and below remain decorative telemetry only. */
+    --gray-500: 100 148 118;
     --gray-600: 63 99 80;
     --gray-700: 47 75 60;
     --gray-800: 32 52 42;
     --gray-900: 21 35 28;
     --gray-950: 11 19 14;
+    /* Semantic roles. Shared chrome should consume these so later themes can
+       change meaning without remapping every palette-number utility. */
+    --surface-canvas: var(--base-900);
+    --surface-panel: var(--base-800);
+    --surface-raised: var(--base-700);
+    --surface-active: var(--base-600);
+    --ink-primary: var(--gray-100);
+    --ink-secondary: var(--gray-300);
+    --ink-muted: var(--gray-500);
+    --ink-decorative: var(--gray-600);
+    --ink-inverse: var(--base-900);
+    --line-subtle: var(--base-700);
+    --line-strong: var(--base-600);
+    --signal-live: var(--accent);
+    --signal-link: var(--signal-cool);
+    --signal-anomaly: var(--signal-warm);
+    /* Signal clarity changes atmosphere, never focus or state legibility. */
+    --scanline-strength: 0.055;
+    --chrome-scanline-strength: 0.025;
+    --vignette-strength: 0.2;
+    --heading-glow: 0.16;
+    --panel-glow: 0.025;
+    --control-glow: 0.2;
+    --primary-glow: 0.28;
+    --chromatic-split: 0.32;
     --radius-sm: 1px;
     --radius: 2px;
     --radius-md: 2px;
@@ -40,6 +69,93 @@
     --font-mono:
       'IBM Plex Mono', 'Noto Sans Mono CJK JP', 'Noto Sans CJK JP', 'MS Gothic',
       ui-monospace, monospace;
+    --font-body:
+      'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+  html:not([data-theme='metal-gear'])[data-signal='clean'] {
+    --scanline-strength: 0;
+    --chrome-scanline-strength: 0;
+    --vignette-strength: 0.08;
+    --heading-glow: 0;
+    --panel-glow: 0;
+    --control-glow: 0;
+    --primary-glow: 0;
+    --chromatic-split: 0;
+  }
+  html:not([data-theme='metal-gear'])[data-signal='deep'] {
+    --scanline-strength: 0.09;
+    --chrome-scanline-strength: 0.045;
+    --vignette-strength: 0.3;
+    --heading-glow: 0.24;
+    --panel-glow: 0.045;
+    --control-glow: 0.28;
+    --primary-glow: 0.42;
+    --chromatic-split: 0.48;
+  }
+  /* Metal Gear-inspired tactical archive. Amber is the current action, green
+     is linked intelligence, and red is reserved for warnings/destruction.
+     These are original NaviHUB tokens rather than colors sampled from a game. */
+  html[data-theme='metal-gear'] {
+    --base-900: 12 14 10;
+    --base-800: 21 24 16;
+    --base-700: 32 38 25;
+    --base-600: 48 57 37;
+    --base-500: 68 78 51;
+    --accent: 226 173 73;
+    --accent-hover: 244 197 98;
+    --signal-warm: 215 76 61;
+    --signal-cool: 147 184 102;
+    --signal-affirmative: 174 206 120;
+    --signal-caution: 244 197 98;
+    --white: 239 237 213;
+    --gray-50: 244 242 221;
+    --gray-100: 230 230 206;
+    --gray-200: 207 211 184;
+    --gray-300: 177 186 155;
+    --gray-400: 145 157 126;
+    /* AA-safe on base-700 (4.65:1). */
+    --gray-500: 130 146 112;
+    --gray-600: 90 103 77;
+    --gray-700: 65 76 53;
+    --gray-800: 43 51 34;
+    --gray-900: 27 32 21;
+    --gray-950: 15 18 11;
+    --scanline-strength: 0;
+    --chrome-scanline-strength: 0;
+    --vignette-strength: 0.16;
+    --heading-glow: 0;
+    --panel-glow: 0.018;
+    --control-glow: 0.16;
+    --primary-glow: 0.18;
+    --chromatic-split: 0;
+    --radius-sm: 0px;
+    --radius: 1px;
+    --radius-md: 1px;
+    --radius-lg: 2px;
+    --radius-xl: 2px;
+    --radius-2xl: 2px;
+  }
+  html[data-mood='quiet'] {
+    --scanline-strength: 0;
+    --chrome-scanline-strength: 0;
+    --vignette-strength: 0.06;
+    --heading-glow: 0;
+    --panel-glow: 0;
+    --control-glow: 0;
+    --primary-glow: 0.12;
+    --chromatic-split: 0;
+  }
+  @media (prefers-contrast: more) {
+    :root {
+      --ink-muted: var(--gray-400);
+      --scanline-strength: 0;
+      --chrome-scanline-strength: 0;
+      --vignette-strength: 0.04;
+      --heading-glow: 0;
+      --panel-glow: 0;
+      --control-glow: 0;
+      --chromatic-split: 0;
+    }
   }
   html,
   body,
@@ -48,15 +164,14 @@
   }
   body {
     @apply bg-base-900 text-gray-200 antialiased;
-    font-family:
-      'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    font-family: var(--font-body);
     overflow: hidden;
   }
   /* Keyboard navigation: a visible accent ring on any keyboard-focused
      control. Mouse clicks don't trigger :focus-visible, so pointer UX keeps
      the quieter per-component styles. */
   :focus-visible {
-    @apply outline-none ring-2 ring-accent/70;
+    @apply outline-none ring-2 ring-signal-live/70;
   }
   /* Slim square terminal scrollbars with a faint phosphor edge */
   ::-webkit-scrollbar {
@@ -74,52 +189,52 @@
 
 @layer components {
   .input {
-    @apply w-full rounded-md bg-base-700 border border-base-500 px-3 py-2 text-sm
-           text-gray-100 placeholder-gray-500 outline-none focus:border-accent;
+    @apply w-full rounded-md bg-surface-raised border border-line-strong px-3 py-2 text-sm
+           text-ink placeholder-ink-muted outline-none focus:border-signal-live;
   }
   .label {
-    @apply block text-xs font-medium uppercase tracking-wide text-gray-400 mb-1;
+    @apply block text-xs font-medium uppercase tracking-wide text-ink-muted mb-1;
   }
   .btn {
     @apply inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm
            font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .btn-primary {
-    @apply btn bg-accent text-white hover:bg-accent-hover;
+    @apply btn bg-signal-live text-ink-inverse hover:bg-accent-hover;
   }
   .btn-ghost {
-    @apply btn bg-base-700 text-gray-200 hover:bg-base-600;
+    @apply btn bg-surface-raised text-ink-secondary hover:bg-surface-active hover:text-ink;
   }
   .btn-danger {
-    @apply btn bg-red-600/90 text-white hover:bg-red-600;
+    @apply btn bg-signal-anomaly text-ink-inverse hover:bg-signal-anomaly/90;
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full bg-base-700 px-2.5 py-0.5 text-xs
-           text-gray-300;
+    @apply inline-flex items-center gap-1 rounded-full bg-surface-raised px-2.5 py-0.5 text-xs
+           text-ink-secondary;
   }
   .card {
-    @apply rounded-lg bg-base-800 border border-base-700;
+    @apply rounded-lg bg-surface-panel border border-line-subtle;
   }
   /* Single-select pill (filters, nav-adjacent choices). THE active-pill look —
      don't invent new ones. Active text is set explicitly because the global
      inverse-video selector matches literal markup classes, never @apply'd ones. */
   .pill {
-    @apply inline-flex items-center gap-1.5 rounded-full bg-base-700 px-3 py-1 text-sm
-           text-gray-300 transition-colors hover:bg-base-600 hover:text-white
+    @apply inline-flex items-center gap-1.5 rounded-full bg-surface-raised px-3 py-1 text-sm
+           text-ink-secondary transition-colors hover:bg-surface-active hover:text-ink
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
   .pill-active {
-    @apply bg-accent hover:bg-accent-hover;
-    color: rgb(var(--base-900));
+    @apply bg-signal-live hover:bg-accent-hover;
+    color: rgb(var(--ink-inverse));
   }
   /* Multi-select toggle (check-many grids: kana rows, dojo forms). Square +
      hairline border on purpose — visually distinct from the choose-one pill. */
   .chip-toggle {
-    @apply rounded-md border border-base-700 bg-base-800 px-2.5 py-1.5 text-sm
-           text-gray-400 transition-colors hover:border-base-600;
+    @apply rounded-md border border-line-subtle bg-surface-panel px-2.5 py-1.5 text-sm
+           text-ink-muted transition-colors hover:border-line-strong;
   }
   .chip-toggle-active {
-    @apply border-accent bg-accent/10 text-accent;
+    @apply border-signal-live bg-signal-live/10 text-signal-live;
   }
   /* The accent gradient card (Home door cards, Stats/Checklist heroes). */
   .card-glow {
@@ -127,7 +242,16 @@
   }
   /* Keyboard hint (quiz options, shortcut lines). Call sites add positioning. */
   .kbd {
-    @apply rounded bg-base-700/70 px-1.5 py-0.5 text-[10px] text-gray-600;
+    @apply rounded bg-surface-raised/70 px-1.5 py-0.5 text-[10px] text-ink-muted;
+  }
+  .theme-choice {
+    @apply rounded-md border border-line-subtle bg-surface-panel p-3 transition-colors
+           hover:border-line-strong hover:bg-surface-raised/55 disabled:cursor-not-allowed
+           disabled:opacity-50;
+  }
+  .theme-choice-active {
+    @apply border-signal-live/60 bg-signal-live/5;
+    box-shadow: inset 0 0 0 1px rgb(var(--signal-live) / 0.16);
   }
   /* Frameless pop-out widget: the whole pill is a drag handle, interactive
      controls opt back out (clicks never reach a drag region). */
@@ -139,10 +263,22 @@
   }
 }
 
-/* Archive Broadcast shell: a quiet, fixed atmospheric field behind every
-   standard routed page. Content art remains responsible for strong color. */
+/* The field is part of the shell background, never a viewport overlay. Cards,
+   dialogs, media art and text therefore keep their true color and contrast. */
 .archive-main {
   background:
+    repeating-linear-gradient(
+      to bottom,
+      rgb(0 0 0 / var(--scanline-strength)) 0,
+      rgb(0 0 0 / var(--scanline-strength)) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    radial-gradient(
+      ellipse at center,
+      transparent 54%,
+      rgb(2 10 4 / var(--vignette-strength)) 100%
+    ),
     radial-gradient(circle at 18% -8%, rgb(var(--accent) / 0.07), transparent 34rem),
     linear-gradient(180deg, rgb(var(--base-900) / 0.28), rgb(var(--base-900)) 34rem);
 }
@@ -152,6 +288,18 @@
    prose, prompts and editors stay visually still. */
 .archive-main[data-mood='cinematic'] {
   background:
+    repeating-linear-gradient(
+      to bottom,
+      rgb(0 0 0 / var(--scanline-strength)) 0,
+      rgb(0 0 0 / var(--scanline-strength)) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    radial-gradient(
+      ellipse at center,
+      transparent 52%,
+      rgb(2 10 4 / var(--vignette-strength)) 100%
+    ),
     radial-gradient(circle at 14% -5%, rgb(var(--accent) / 0.11), transparent 35rem),
     radial-gradient(circle at 88% 18%, rgb(var(--signal-cool) / 0.045), transparent 28rem),
     linear-gradient(180deg, rgb(var(--base-800) / 0.18), rgb(var(--base-900)) 38rem);
@@ -159,8 +307,124 @@
 
 .archive-main[data-mood='quiet'] {
   background:
-    radial-gradient(circle at 50% -12%, rgb(var(--accent) / 0.045), transparent 30rem),
+    radial-gradient(
+      ellipse at center,
+      transparent 62%,
+      rgb(2 10 4 / var(--vignette-strength)) 100%
+    ),
+    radial-gradient(circle at 50% -12%, rgb(var(--accent) / 0.025), transparent 30rem),
     linear-gradient(180deg, rgb(var(--base-900) / 0.25), rgb(var(--base-900)) 28rem);
+}
+
+/* A restrained underlay for fixed shell chrome. It is below all descendants,
+   unlike the retired body pseudo-element overlay. */
+.wired-surface {
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgb(0 0 0 / var(--chrome-scanline-strength)) 0,
+    rgb(0 0 0 / var(--chrome-scanline-strength)) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}
+
+/* Tactical theme: information-map geometry below the content. The grid and
+   contour rings stop on quiet routes so editors and study surfaces stay calm. */
+html[data-theme='metal-gear'] .archive-main {
+  background:
+    repeating-radial-gradient(
+      ellipse at 92% 8%,
+      transparent 0,
+      transparent 35px,
+      rgb(var(--signal-link) / 0.032) 36px,
+      transparent 37px
+    ),
+    linear-gradient(rgb(var(--signal-link) / 0.026) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--signal-link) / 0.026) 1px, transparent 1px),
+    radial-gradient(circle at 10% -6%, rgb(var(--accent) / 0.075), transparent 34rem),
+    linear-gradient(180deg, rgb(var(--base-800) / 0.3), rgb(var(--base-900)) 38rem);
+  background-size: auto, 48px 48px, 48px 48px, auto, auto;
+}
+
+html[data-theme='metal-gear'] .archive-main[data-mood='cinematic'] {
+  background:
+    repeating-radial-gradient(
+      ellipse at 88% 12%,
+      transparent 0,
+      transparent 31px,
+      rgb(var(--signal-link) / 0.052) 32px,
+      transparent 33px
+    ),
+    linear-gradient(rgb(var(--signal-link) / 0.034) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--signal-link) / 0.034) 1px, transparent 1px),
+    radial-gradient(circle at 12% -4%, rgb(var(--accent) / 0.11), transparent 36rem),
+    linear-gradient(180deg, rgb(var(--base-800) / 0.34), rgb(var(--base-900)) 42rem);
+  background-size: auto, 48px 48px, 48px 48px, auto, auto;
+}
+
+html[data-theme='metal-gear'] .archive-main[data-mood='quiet'] {
+  background:
+    radial-gradient(circle at 50% -12%, rgb(var(--accent) / 0.03), transparent 30rem),
+    linear-gradient(180deg, rgb(var(--base-800) / 0.18), rgb(var(--base-900)) 30rem);
+}
+
+html[data-theme='metal-gear'] .wired-surface {
+  background-image:
+    linear-gradient(rgb(var(--signal-link) / 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--signal-link) / 0.025) 1px, transparent 1px);
+  background-size: 24px 24px;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.theme-swatch {
+  position: relative;
+  display: block;
+  height: 4.5rem;
+  overflow: hidden;
+  border: 1px solid rgb(var(--line-strong));
+  background: rgb(var(--base-900));
+}
+.theme-swatch-lain {
+  --swatch-live: 0 224 90;
+  --swatch-link: 36 190 168;
+  --swatch-bg: 10 15 11;
+  background: rgb(var(--swatch-bg));
+}
+.theme-swatch-metal-gear {
+  --swatch-live: 226 173 73;
+  --swatch-link: 147 184 102;
+  --swatch-bg: 12 14 10;
+  background: rgb(var(--swatch-bg));
+}
+.theme-swatch-field {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgb(var(--swatch-link) / 0.11) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--swatch-link) / 0.11) 1px, transparent 1px),
+    radial-gradient(circle at 75% 20%, rgb(var(--swatch-live) / 0.2), transparent 46%);
+  background-size: 18px 18px, 18px 18px, auto;
+}
+.theme-swatch-lain .theme-swatch-field {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgb(0 0 0 / 0.12) 0,
+      rgb(0 0 0 / 0.12) 1px,
+      transparent 1px,
+      transparent 4px
+    ),
+    radial-gradient(circle at 75% 20%, rgb(var(--swatch-live) / 0.23), transparent 48%);
+}
+.theme-swatch-rule {
+  position: absolute;
+  bottom: 0.75rem;
+  left: 0.75rem;
+  width: 42%;
+  height: 2px;
+  background: rgb(var(--swatch-live));
+  box-shadow: 3.25rem -1rem 0 -0.5px rgb(var(--swatch-link));
 }
 
 /* EPUB book reader (BookContent) — typography for sanitized novel text.
@@ -360,15 +624,14 @@
 }
 
 /* ============================ WIRED CHROME ============================
-   The Lain "Wired terminal" dressing: mono chrome, CRT overlay, glows.
-   Always on — the palette itself lives in the :root vars above.
-   Every animation sits behind prefers-reduced-motion: no-preference. */
+   The Lain dressing: mono metadata, semantic signals and restrained glows.
+   Atmosphere is user-controlled and route-aware; motion additionally obeys
+   prefers-reduced-motion. */
 
-/* --- mono chrome: headings, nav, labels, buttons, inputs go monospace;
-   body/long text stays Inter. aside = Sidebar, header = Topbar (their inputs
-   inherit via preflight); .btn-* listed explicitly because @apply does not
-   add .btn at runtime; .uppercase catches all the micro-label idiom uses. */
-:is(h1, h2, h3, h4, h5, h6, button, input, textarea, select, kbd, th,
+/* --- mono chrome: headings, nav, labels, buttons and compact controls use
+   metadata typography. Textareas stay in the body face so writing does not
+   feel like code; code editors opt back in with .code-input. */
+:is(h1, h2, h3, h4, h5, h6, button, input, select, kbd, th,
     .btn, .btn-primary, .btn-ghost, .btn-danger, .label, .chip, .uppercase),
 aside,
 header {
@@ -379,7 +642,8 @@ header {
    the system stack (ui-monospace, SFMono-Regular, …), not the bundled face in
    --font-mono. And a log row matches none of the WIRED CHROME selectors above,
    so without this the logs render in a foreign font with ragged columns. */
-.log-row {
+.log-row,
+.code-input {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
@@ -394,74 +658,61 @@ header {
   font-size: 1.375rem;
 }
 
-/* --- CRT overlay: scanlines (::before) + vignette (::after). App UI tops
-   out at z-50 and the boot splash at z-[70]; the overlay sits above both
-   (scanlines run across the boot text too) and is pointer-events:none so
-   every click lands on the UI beneath. Disabled on the chromeless readers
-   via [data-reader], stamped by App.tsx. */
-html:not([data-reader]) body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 80;
-  pointer-events: none;
-  background: repeating-linear-gradient(
-    to bottom,
-    rgb(0 0 0 / 0.15) 0px,
-    rgb(0 0 0 / 0.15) 1px,
-    transparent 1px,
-    transparent 3px
-  );
-}
-html:not([data-reader]) body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 81;
-  pointer-events: none;
-  background: radial-gradient(ellipse at center, transparent 55%, rgb(2 10 4 / 0.34) 100%);
-}
-@media (prefers-reduced-motion: no-preference) {
-  html:not([data-reader]) body::before {
-    animation: lain-flicker 7s infinite;
-  }
-}
-/* Imperceptible amplitude, rare blip — opacity only (compositor-cheap). */
-@keyframes lain-flicker {
-  0%, 96.9%, 98.1%, 100% { opacity: 1; }
-  97.2% { opacity: 0.82; }
-  97.6% { opacity: 0.96; }
-  97.9% { opacity: 0.88; }
-}
-
 /* --- brand glitch: static chromatic split, with an occasional burst. */
 .brand-glitch {
   text-shadow:
-    0.5px 0 rgb(var(--signal-warm) / 0.35),
-    -0.5px 0 rgb(var(--signal-cool) / 0.35);
+    0.5px 0 rgb(var(--signal-anomaly) / var(--chromatic-split)),
+    -0.5px 0 rgb(var(--signal-link) / var(--chromatic-split));
 }
 @media (prefers-reduced-motion: no-preference) {
-  .brand-glitch {
+  html:not([data-theme='metal-gear']):not([data-signal='clean']):not([data-mood='quiet'])
+    .brand-glitch {
     animation: lain-glitch 6s infinite;
   }
 }
 @keyframes lain-glitch {
   0%, 92%, 100% {
-    text-shadow: 0.5px 0 rgb(var(--signal-warm) / 0.35), -0.5px 0 rgb(var(--signal-cool) / 0.35);
+    text-shadow:
+      0.5px 0 rgb(var(--signal-anomaly) / var(--chromatic-split)),
+      -0.5px 0 rgb(var(--signal-link) / var(--chromatic-split));
     transform: none;
   }
   93% {
-    text-shadow: -2px 0 rgb(var(--signal-warm) / 0.7), 2px 0 rgb(var(--signal-cool) / 0.7);
+    text-shadow: -2px 0 rgb(var(--signal-anomaly) / 0.7), 2px 0 rgb(var(--signal-link) / 0.7);
     transform: translateX(1px);
   }
   94% {
-    text-shadow: 1.5px 0 rgb(var(--signal-warm) / 0.6), -1.5px 0 rgb(var(--signal-cool) / 0.6);
+    text-shadow: 1.5px 0 rgb(var(--signal-anomaly) / 0.6), -1.5px 0 rgb(var(--signal-link) / 0.6);
     transform: translateX(-1px) skewX(3deg);
   }
   95% {
-    text-shadow: -1px 0 rgb(var(--signal-warm) / 0.5), 1px 0 rgb(var(--signal-cool) / 0.5);
+    text-shadow: -1px 0 rgb(var(--signal-anomaly) / 0.5), 1px 0 rgb(var(--signal-link) / 0.5);
     transform: none;
   }
+}
+
+.tactical-brand,
+.tactical-boot {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+.tactical-brand {
+  letter-spacing: 0.06em;
+}
+.tactical-mark {
+  fill: none;
+  stroke: rgb(var(--signal-link));
+  stroke-width: 1.5;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(2px 3px 5px rgb(0 0 0 / 0.45));
+}
+.tactical-mark-lock {
+  fill: rgb(var(--signal-live));
+  stroke: none;
+}
+.boot-copy {
+  text-shadow: 2px 3px 8px rgb(0 0 0 / 0.6);
 }
 
 /* Selection-driven relationship panels resolve like a short database scan.
@@ -472,10 +723,12 @@ html:not([data-reader]) body::after {
   isolation: isolate;
 }
 @media (prefers-reduced-motion: no-preference) {
-  .signal-resolve {
+  html:not([data-theme='metal-gear']):not([data-signal='clean']):not([data-mood='quiet'])
+    .signal-resolve {
     animation: signal-lock 0.18s ease-out both;
   }
-  .signal-resolve::after {
+  html:not([data-theme='metal-gear']):not([data-signal='clean']):not([data-mood='quiet'])
+    .signal-resolve::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -485,12 +738,27 @@ html:not([data-reader]) body::after {
       to bottom,
       transparent 0,
       transparent 42%,
-      rgb(var(--accent) / 0.34) 49%,
-      rgb(var(--signal-cool) / 0.18) 51%,
+      rgb(var(--signal-live) / 0.34) 49%,
+      rgb(var(--signal-link) / 0.18) 51%,
       transparent 58%,
       transparent 100%
     );
     animation: signal-scan 0.18s linear both;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html[data-theme='metal-gear']:not([data-mood='quiet']) .signal-resolve {
+    animation: tactical-acquire 0.16s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+@keyframes tactical-acquire {
+  from {
+    opacity: 0.58;
+    clip-path: inset(0 6% 0 0);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0);
   }
 }
 @keyframes signal-lock {
@@ -511,21 +779,33 @@ html:not([data-reader]) body::after {
 /* --- phosphor glow + terminal chrome (colors/shadows only, no extra
    border widths — these dress the component classes without reflow). */
 :is(h1, h2) {
-  text-shadow: 0 0 6px rgb(var(--accent) / 0.2);
+  text-shadow: 0 0 6px rgb(var(--signal-live) / var(--heading-glow));
 }
 .card {
-  border-color: rgb(var(--accent) / 0.15);
-  box-shadow: inset 0 0 22px rgb(var(--accent) / 0.03);
+  border-color: rgb(var(--line-subtle));
+  box-shadow: inset 0 0 22px rgb(var(--signal-live) / var(--panel-glow));
+}
+html[data-theme='metal-gear'] .card {
+  box-shadow:
+    inset 0 1px 0 rgb(var(--signal-live) / 0.13),
+    3px 5px 14px rgb(0 0 0 / 0.16);
+}
+.context-panel {
+  border-color: rgb(var(--signal-link) / 0.28);
+  background-image: linear-gradient(135deg, rgb(var(--signal-link) / 0.045), transparent 34%);
+  box-shadow:
+    inset 0 1px 0 rgb(var(--signal-link) / 0.16),
+    inset 0 0 24px rgb(var(--signal-link) / var(--panel-glow));
 }
 .input {
-  border-color: rgb(var(--accent) / 0.25);
+  border-color: rgb(var(--line-strong));
 }
 .input:focus {
-  box-shadow: 0 0 10px rgb(var(--accent) / 0.25);
+  box-shadow: 0 0 10px rgb(var(--signal-live) / var(--control-glow));
 }
 .chip,
 .btn-ghost {
-  box-shadow: inset 0 0 0 1px rgb(var(--accent) / 0.12);
+  box-shadow: inset 0 0 0 1px rgb(var(--line-strong) / 0.4);
 }
 /* Inverse video: white text on phosphor green is unreadable (1.7:1). Covers
    .btn-primary (@apply — no runtime .bg-accent class) AND every markup spot
@@ -533,10 +813,15 @@ html:not([data-reader]) body::after {
    `bg-accent text-white` in markup; this flips it globally. */
 .btn-primary,
 .bg-accent.text-white {
-  color: rgb(var(--base-900));
+  color: rgb(var(--ink-inverse));
 }
 .btn-primary {
-  box-shadow: 0 0 12px rgb(var(--accent) / 0.35);
+  box-shadow: 0 0 12px rgb(var(--signal-live) / var(--primary-glow));
+}
+html[data-theme='metal-gear'] .btn-primary {
+  box-shadow:
+    inset 0 1px 0 rgb(var(--white) / 0.18),
+    2px 3px 8px rgb(0 0 0 / 0.38);
 }
 
 /* --- dual-thumb range (RangeSlider.tsx): the two inputs stack transparently
@@ -578,7 +863,8 @@ html:not([data-reader]) body::after {
 
 /* --- sidebar "connected" status dot (Sidebar.tsx footer) --- */
 @media (prefers-reduced-motion: no-preference) {
-  .wired-dot {
+  html:not([data-theme='metal-gear']):not([data-signal='clean']):not([data-mood='quiet'])
+    .wired-dot {
     animation: lain-pulse 2.4s ease-in-out infinite;
   }
 }
@@ -588,7 +874,7 @@ html:not([data-reader]) body::after {
 
 /* --- boot splash cursor (BootSequence.tsx) --- */
 @media (prefers-reduced-motion: no-preference) {
-  .lain-cursor {
+  .boot-cursor {
     animation: lain-blink 1s steps(1) infinite;
   }
 }

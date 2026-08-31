@@ -8,18 +8,19 @@ import type { JpReadingLevel } from '../src/shared/japanese/types'
 // carry a reading, or the reader renders a run the learner cannot read with
 // the toggle on.
 
-const LEVELS: JpReadingLevel[] = ['N5', 'N4', 'N3', 'N2']
+const LEVELS: JpReadingLevel[] = ['N5', 'N4', 'N3', 'N2', 'N1']
 const BANDS: Record<JpReadingLevel, [number, number]> = {
   N5: [80, 130],
   N4: [110, 170],
   N3: [150, 220],
-  N2: [180, 250]
+  N2: [180, 250],
+  N1: [210, 310]
 }
 const KINDS = ['detail', 'main-idea', 'inference', 'vocab']
 
 describe('graded reading passages', () => {
-  it('has 6 per level with unique level-prefixed keys', () => {
-    expect(JP_PASSAGES.length).toBeGreaterThanOrEqual(24)
+  it('has a substantial N5–N1 library with unique level-prefixed keys', () => {
+    expect(JP_PASSAGES.length).toBeGreaterThanOrEqual(42)
     const keys = JP_PASSAGES.map((p) => p.key)
     expect(new Set(keys).size).toBe(keys.length)
     for (const l of LEVELS) {

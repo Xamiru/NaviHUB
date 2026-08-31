@@ -195,6 +195,7 @@ export default function JapaneseLessonFormPage() {
         <div>
           <label className="label">Title</label>
           <input
+            aria-label="Lesson title"
             className="input"
             placeholder={isGrammar ? 'e.g. The particle が' : 'e.g. Weather words'}
             value={title}
@@ -207,6 +208,7 @@ export default function JapaneseLessonFormPage() {
           <div>
             <label className="label">Explanation</label>
             <textarea
+              aria-label="Grammar lesson explanation"
               className="input min-h-[180px] leading-relaxed"
               placeholder="Explain the grammar point — patterns, usage, pitfalls…"
               value={body}
@@ -233,6 +235,7 @@ export default function JapaneseLessonFormPage() {
               <div key={row.key} className="card p-3">
                 <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
                   <input
+                    aria-label={`${isGrammar ? 'Japanese sentence' : kind === 'kanji' ? 'Kanji character' : 'Vocabulary word'} ${row.key}`}
                     className="input"
                     placeholder={
                       isGrammar ? 'Japanese sentence' : kind === 'kanji' ? 'Kanji character' : 'Word (kanji/kana)'
@@ -241,13 +244,14 @@ export default function JapaneseLessonFormPage() {
                     onChange={(e) => patchRow(row.key, { front: e.target.value })}
                   />
                   <input
+                    aria-label={`Reading ${row.key}`}
                     className="input"
                     placeholder={kind === 'kanji' ? 'Primary reading (kana)' : 'Reading (kana)'}
                     value={row.reading ?? ''}
                     onChange={(e) => patchRow(row.key, { reading: e.target.value })}
                   />
                   <button
-                    className="btn-ghost px-3 text-gray-500 hover:text-red-400"
+                    className="btn-ghost px-3 text-gray-500 hover:text-signal-anomaly"
                     title="Remove card"
                     aria-label="Remove card"
                     onClick={() => removeRow(row.key)}
@@ -257,6 +261,7 @@ export default function JapaneseLessonFormPage() {
                 </div>
                 <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-[2fr_1fr]">
                   <input
+                    aria-label={`${isGrammar ? 'Translation' : 'Meaning'} ${row.key}`}
                     className="input"
                     placeholder={isGrammar ? 'Translation' : 'Meaning'}
                     value={row.back}
@@ -264,6 +269,7 @@ export default function JapaneseLessonFormPage() {
                   />
                   {isGrammar ? (
                     <input
+                      aria-label={`Grammar note ${row.key}`}
                       className="input"
                       placeholder="Note (optional)"
                       value={row.notes ?? ''}
@@ -271,6 +277,7 @@ export default function JapaneseLessonFormPage() {
                     />
                   ) : kind === 'kanji' ? (
                     <input
+                      aria-label={`Kanji note ${row.key}`}
                       className="input"
                       placeholder="Note (optional)"
                       value={row.notes ?? ''}
@@ -278,6 +285,7 @@ export default function JapaneseLessonFormPage() {
                     />
                   ) : (
                     <input
+                      aria-label={`Part of speech ${row.key}`}
                       className="input"
                       placeholder="Part of speech (optional)"
                       value={row.pos ?? ''}
@@ -289,12 +297,14 @@ export default function JapaneseLessonFormPage() {
                   <>
                     <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <input
+                        aria-label={`On-yomi ${row.key}`}
                         className="input"
                         placeholder="On'yomi (音) — e.g. ニチ, ジツ"
                         value={row.onyomi ?? ''}
                         onChange={(e) => patchRow(row.key, { onyomi: e.target.value })}
                       />
                       <input
+                        aria-label={`Kun-yomi ${row.key}`}
                         className="input"
                         placeholder="Kun'yomi (訓) — e.g. ひ, か"
                         value={row.kunyomi ?? ''}
@@ -303,18 +313,21 @@ export default function JapaneseLessonFormPage() {
                     </div>
                     <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
                       <input
+                        aria-label={`Example word ${row.key}`}
                         className="input"
                         placeholder="Example word"
                         value={row.exampleJp ?? ''}
                         onChange={(e) => patchRow(row.key, { exampleJp: e.target.value })}
                       />
                       <input
+                        aria-label={`Example reading ${row.key}`}
                         className="input"
                         placeholder="Example reading"
                         value={row.exampleReading ?? ''}
                         onChange={(e) => patchRow(row.key, { exampleReading: e.target.value })}
                       />
                       <input
+                        aria-label={`Example meaning ${row.key}`}
                         className="input"
                         placeholder="Example meaning"
                         value={row.exampleEn ?? ''}

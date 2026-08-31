@@ -123,6 +123,7 @@ export default function JapaneseGrammarPage() {
               ))}
             </div>
             <input
+              aria-label="Search grammar points"
               className="input ml-auto max-w-xs"
               placeholder="Search points…"
               value={query}

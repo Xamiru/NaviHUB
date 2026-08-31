@@ -451,6 +451,99 @@ describe('quizRepo screen puzzle pools', () => {
   })
 })
 
+describe('quizRepo deduction and grouping pools', () => {
+  it('filters Libraryle and Mystery Career by consumed status and top-ten billing', () => {
+    const genre = Number(db.prepare(`INSERT INTO tag (name, category) VALUES ('Drama', 'genre')`).run().lastInsertRowid)
+    const target = Number(db.prepare(`INSERT INTO person (name) VALUES ('Career Target')`).run().lastInsertRowid)
+    const lowBilled = Number(db.prepare(`INSERT INTO person (name) VALUES ('Background Career')`).run().lastInsertRowid)
+    const fillers = Array.from({ length: 8 }, (_, index) =>
+      Number(db.prepare(`INSERT INTO person (name) VALUES (?)`).run(`Career Guess ${index}`).lastInsertRowid)
+    )
+    const ids: number[] = []
+    for (let index = 0; index < 10; index++) {
+      const mediaId = Number(db.prepare(
+        `INSERT INTO media_item (media_type, title, status, cover_path, release_date)
+         VALUES (?, ?, ?, ?, ?)`
+      ).run(
+        index % 2 ? 'tv' : 'movie',
+        `Career Film ${index}`,
+        index === 9 ? 'Watching' : 'Completed',
+        `media/career-${index}.jpg`,
+        `${2000 + index}-01-01`
+      ).lastInsertRowid)
+      ids.push(mediaId)
+      db.prepare(`INSERT INTO media_tag (media_id, tag_id) VALUES (?, ?)`).run(mediaId, genre)
+      const filler = fillers[index % fillers.length]
+      db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'director', 99)`).run(mediaId, filler)
+      db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'director', 99)`).run(mediaId, fillers[(index + 1) % fillers.length])
+      if (index < 6) {
+        db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 0)`).run(mediaId, target)
+        db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 10)`).run(mediaId, lowBilled)
+      }
+    }
+
+    const consumed = quizRepo.availability({ statuses: ['Completed'] })
+    const all = quizRepo.availability({ scope: 'all' })
+    expect(consumed.screenGameOptions.find((option) => option.mediaMode === 'both')?.libraryle).toBe(9)
+    expect(all.screenGameOptions.find((option) => option.mediaMode === 'both')?.libraryle).toBe(10)
+    expect(consumed.screenGameOptions.find((option) => option.mediaMode === 'both')?.mysteryCareer).toBe(1)
+
+    const [career] = quizRepo.challengePool({
+      kind: 'mysteryCareer',
+      seed: 3,
+      statuses: ['Completed'],
+      length: 1,
+      options: { screenMediaMode: 'both' }
+    })
+    expect(career.kind).toBe('mysteryCareer')
+    if (career.kind !== 'mysteryCareer') return
+    expect(career.people.find((person) => person.label === 'Background Career')).toBeUndefined()
+    expect(career.credits).toHaveLength(6)
+  })
+
+  it('reports and returns only a provably solvable Link Wall', () => {
+    const actor = Number(db.prepare(`INSERT INTO person (name) VALUES ('Wall Actor')`).run().lastInsertRowid)
+    const director = Number(db.prepare(`INSERT INTO person (name) VALUES ('Wall Director')`).run().lastInsertRowid)
+    const company = Number(db.prepare(`INSERT INTO company (name) VALUES ('Wall Company')`).run().lastInsertRowid)
+    const groupGenre = Number(db.prepare(`INSERT INTO tag (name, category) VALUES ('Wall Mystery', 'genre')`).run().lastInsertRowid)
+    for (let index = 0; index < 16; index++) {
+      const group = Math.floor(index / 4)
+      const mediaId = Number(db.prepare(
+        `INSERT INTO media_item (media_type, title, status, cover_path, release_date)
+         VALUES (?, ?, 'Completed', ?, ?)`
+      ).run(
+        index % 2 ? 'tv' : 'movie',
+        `Wall ${index + 1}`,
+        `media/wall-${index + 1}.jpg`,
+        `${1800 + index * 10}-01-01`
+      ).lastInsertRowid)
+      if (group === 0) {
+        db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'actor', 0)`).run(mediaId, actor)
+      } else if (group === 1) {
+        db.prepare(`INSERT INTO credit (media_id, person_id, role, importance) VALUES (?, ?, 'director', 99)`).run(mediaId, director)
+      } else if (group === 2) {
+        db.prepare(`INSERT INTO media_company (media_id, company_id, role) VALUES (?, ?, 'production_studio')`).run(mediaId, company)
+      } else {
+        db.prepare(`INSERT INTO media_tag (media_id, tag_id) VALUES (?, ?)`).run(mediaId, groupGenre)
+      }
+    }
+
+    const availability = quizRepo.availability({ statuses: ['Completed'] })
+    expect(availability.screenGameOptions.find((option) => option.mediaMode === 'both')?.linkWall).toBe(16)
+    const [wall] = quizRepo.challengePool({
+      kind: 'linkWall',
+      seed: 8,
+      statuses: ['Completed'],
+      length: 1,
+      options: { screenMediaMode: 'both' }
+    })
+    expect(wall.kind).toBe('linkWall')
+    if (wall.kind !== 'linkWall') return
+    expect(wall.titles).toHaveLength(16)
+    expect(wall.groups).toHaveLength(4)
+  })
+})
+
 describe('quizRepo silhouette challenge pool', () => {
   it('uses imported anime character portraits and excludes movie roles', () => {
     for (let index = 0; index < 4; index++) {
@@ -734,12 +827,16 @@ describe('quizRepo session history', () => {
     expect([...quizRepo.SCORE_RANKED_KINDS].sort()).toEqual(
       [
         'conjRace',
+        'footballPlayerGrid',
         'higherLower',
         'imageReveal',
         'libraryGrid',
+        'libraryle',
+        'linkWall',
         'movieChainEasy',
         'movieChainHard',
         'movieChainNormal',
+        'mysteryCareer',
         'guessTrackMusic',
         'guessTrackTheme',
         'kanaRace',

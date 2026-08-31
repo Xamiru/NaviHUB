@@ -95,12 +95,12 @@ export default function CoverageSection({ m }: { m: MediaDetail }) {
         <div className="card p-4">
           <div className="flex flex-wrap items-baseline justify-between gap-3">
             <p className="text-sm">
-              <span className="text-2xl font-semibold text-green-300">
+              <span className="text-2xl font-semibold text-signal-affirmative">
                 {pct(knownShare(coverage.tiers))}
               </span>{' '}
               <span className="text-gray-400">known</span>
               {learningShare(coverage.tiers) > 0 && (
-                <span className="text-amber-300"> +{pct(learningShare(coverage.tiers))} learning</span>
+                <span className="text-signal-caution"> +{pct(learningShare(coverage.tiers))} learning</span>
               )}
             </p>
             <p className="text-xs text-gray-500">
@@ -132,7 +132,7 @@ export default function CoverageSection({ m }: { m: MediaDetail }) {
                   .map((step) => (
                     <p key={step.learnWords} className="text-gray-400">
                       learn the top {step.learnWords} unknown →{' '}
-                      <span className="text-green-300">{pct(step.share)}</span>
+                      <span className="text-signal-affirmative">{pct(step.share)}</span>
                     </p>
                   ))}
               </div>

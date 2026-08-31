@@ -112,7 +112,7 @@ export interface MediaConfig {
   // local folder, read in-app) on the detail page.
   hasLocalReader?: boolean
   // Local video player (anime, movies, TV) — shows a Video tab holding the
-  // Episodes section (attach a folder, watch in-app with mineable subtitles).
+  // Episodes section (attach a folder, open files in the system video player).
   // Its own tab rather than folding into the media tab: ?tab=media keeps
   // meaning Theme Songs / Chapters, and movies/TV have no media tab at all.
   hasVideoLibrary?: boolean

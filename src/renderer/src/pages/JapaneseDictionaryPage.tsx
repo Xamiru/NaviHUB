@@ -88,6 +88,7 @@ export default function JapaneseDictionaryPage() {
       )}
 
       <JpKeyboardInput
+        ariaLabel="Search the Japanese dictionary"
         className="w-full text-lg"
         placeholder="e.g. 食べる, 面白い, sunset…"
         value={query}
@@ -198,7 +199,7 @@ function EntryCard({
           </div>
           <div className="mt-1 flex flex-wrap gap-1">
             {entry.isName && <span className="chip bg-base-700 text-gray-400">name</span>}
-            {entry.isCommon && <span className="chip bg-green-500/20 text-green-300">common</span>}
+            {entry.isCommon && <span className="chip bg-signal-affirmative/20 text-signal-affirmative">common</span>}
             {(() => {
               // Pure shared lookup, no IPC: the classic transitivity partner.
               const hit = transitivityPartner(entry.expression)
@@ -453,12 +454,14 @@ function MineForm({ entry, onDone }: { entry: DictEntry; onDone: () => void }) {
     <div className="mt-3 space-y-2 border-t border-base-700 pt-3">
       <div className="grid grid-cols-2 gap-2">
         <input
+          aria-label="Mined word"
           className="input"
           placeholder="Word"
           value={draft.front}
           onChange={(e) => setDraft((d) => ({ ...d, front: e.target.value }))}
         />
         <input
+          aria-label="Mined word reading"
           className="input"
           placeholder="Reading"
           value={draft.reading}
@@ -466,12 +469,14 @@ function MineForm({ entry, onDone }: { entry: DictEntry; onDone: () => void }) {
         />
       </div>
       <textarea
+        aria-label="Mined word meaning"
         className="input min-h-[60px]"
         placeholder="Meaning"
         value={draft.back}
         onChange={(e) => setDraft((d) => ({ ...d, back: e.target.value }))}
       />
       <select
+        aria-label="Review deck for mined word"
         className="input"
         value={targetLessonId ?? ''}
         onChange={(e) => setLessonId(Number(e.target.value))}

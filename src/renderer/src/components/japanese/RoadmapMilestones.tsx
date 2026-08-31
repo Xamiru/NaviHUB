@@ -29,7 +29,7 @@ function LadderRow({ label, value, ladder }: { label: string; value: number; lad
           <span
             key={t}
             className={`chip ${
-              value >= t ? 'bg-green-500/20 text-green-300' : 'bg-base-700 text-gray-500'
+              value >= t ? 'bg-signal-affirmative/20 text-signal-affirmative' : 'bg-base-700 text-gray-500'
             }`}
           >
             {value >= t ? '✓ ' : ''}

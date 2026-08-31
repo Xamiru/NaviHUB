@@ -106,6 +106,10 @@ export const QUIZ_SCORE_POLICIES: Readonly<Partial<Record<QuizKind, QuizScorePol
   movieChainEasy: 'points',
   movieChainNormal: 'points',
   movieChainHard: 'points',
+  libraryle: 'points',
+  mysteryCareer: 'points',
+  linkWall: 'points',
+  footballPlayerGrid: 'points',
   tournament: 'tournament',
   songRelay: 'party'
 }
@@ -115,7 +119,13 @@ export function quizScorePolicy(kind: QuizKind): QuizScorePolicy {
 }
 
 export function quizMinimumRecordSize(kind: QuizKind): number {
-  return kind === 'movieChainEasy' || kind === 'movieChainNormal' || kind === 'movieChainHard'
+  return kind === 'movieChainEasy' ||
+    kind === 'movieChainNormal' ||
+    kind === 'movieChainHard' ||
+    kind === 'libraryle' ||
+    kind === 'mysteryCareer' ||
+    kind === 'linkWall' ||
+    kind === 'footballPlayerGrid'
     ? 1
     : 5
 }

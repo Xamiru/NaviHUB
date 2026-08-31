@@ -211,6 +211,7 @@ function NumbersDrill({
 
       <div className="mx-auto mt-6 max-w-xs">
         <input
+          aria-label="Number reading answer"
           ref={inputRef}
           className="input w-full text-center text-lg"
           placeholder="type the reading…"
@@ -232,7 +233,7 @@ function NumbersDrill({
 
       <p className="mt-4 text-center text-sm">
         {wrong ? (
-          <span className="text-red-400">
+          <span className="text-signal-anomaly">
             {current.prompt} = {current.answers[0]}
             <span className="ml-2 text-xs text-gray-500">Enter to skip</span>
           </span>

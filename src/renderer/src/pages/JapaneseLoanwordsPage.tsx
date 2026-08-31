@@ -90,7 +90,7 @@ export default function JapaneseLoanwordsPage() {
             <>
               <p
                 className={`text-xs font-semibold uppercase tracking-wide ${
-                  correct ? 'text-green-400' : 'text-red-400'
+                  correct ? 'text-signal-affirmative' : 'text-signal-anomaly'
                 }`}
               >
                 {correct ? 'Correct' : 'Incorrect'}
@@ -115,7 +115,7 @@ export default function JapaneseLoanwordsPage() {
               <Pill active={length === 0} onClick={() => setLength(0)} label="Endless" />
             </Group>
             {error && (
-              <p className="text-sm text-red-400">
+              <p className="text-sm text-signal-anomaly">
                 {error}{' '}
                 <Link to="/settings" className="underline hover:text-accent">
                   Open Settings

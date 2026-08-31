@@ -9,6 +9,7 @@ import BootSequence from './components/BootSequence'
 import PlayerWidgetPage from './pages/PlayerWidgetPage'
 import AchPopupPage from './pages/AchPopupPage'
 import { toastError } from './lib/toast'
+import { readStoredAppTheme, stampAppTheme } from './lib/theme'
 import './styles.css'
 // Wired-chrome fonts, bundled as self-origin assets (CSP has no remote
 // font-src). Referenced by the --font-mono stack + .lain-crt in styles.css.
@@ -17,6 +18,11 @@ import '@fontsource/ibm-plex-mono/500.css'
 import '@fontsource/ibm-plex-mono/600.css'
 import '@fontsource/ibm-plex-mono/700.css'
 import '@fontsource/vt323'
+
+// The database setting is mirrored to localStorage whenever it is read or
+// changed. Stamp that mirror before React mounts so startup uses one palette
+// from the first renderer paint; App reconciles it with the database below.
+stampAppTheme(readStoredAppTheme())
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 5_000 } },
@@ -55,8 +61,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           {/* Inside the provider (not App) so play counts survive the chromeless
               manga-reader route, which renders without the normal shell. */}
           <MusicPlayLogger />
-          {/* Same placement rationale: the once-per-launch Copland OS boot
-              splash (lain theme only) covers deep links into the readers too. */}
+          {/* Same placement rationale: the once-per-launch themed boot splash
+              covers deep links into the readers too. */}
           <BootSequence />
           <HashRouter>
             <App />

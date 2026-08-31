@@ -196,8 +196,8 @@ export default function LessonCheck({
             {current.options.map((opt, i) => {
               let cls = 'border-base-700 bg-base-800 hover:border-accent'
               if (chosen !== null) {
-                if (i === current.correct) cls = 'border-green-500/60 bg-green-500/10'
-                else if (i === chosen) cls = 'border-red-500/60 bg-red-500/10'
+                if (i === current.correct) cls = 'border-signal-affirmative/60 bg-signal-affirmative/10'
+                else if (i === chosen) cls = 'border-signal-anomaly/60 bg-signal-anomaly/10'
                 else cls = 'border-base-700 bg-base-800 opacity-60'
               }
               return (
@@ -258,6 +258,7 @@ function ProductionCheck({
         </p>
         <p className="mt-4 text-lg">{current.promptEn}</p>
         <textarea
+          aria-label="Japanese production answer"
           className="input mt-3 min-h-20 w-full"
           autoFocus
           value={typed}

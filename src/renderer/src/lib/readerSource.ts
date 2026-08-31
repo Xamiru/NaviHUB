@@ -11,7 +11,7 @@ import { qk } from './queryKeys'
 //
 // The ad-hoc side has no chapter row, no series and no media item, so the page
 // gets chapterId/mediaId 0 and an empty chapter list. Callers guard persistence
-// on `adhoc` — the same shape VideoPlayerPage uses with its nullable fileId.
+// on `adhoc`, so callers can skip persistence for files outside the library.
 
 const EMPTY_LIBRARY: MangaLibrary = { localDir: null, chapters: [] }
 

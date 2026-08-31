@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useScrollRestoration } from './lib/navState'
 import { api } from './lib/api'
@@ -10,6 +10,7 @@ import PlayerShortcuts from './components/PlayerShortcuts'
 import Toaster from './components/Toaster'
 import ConfirmHost from './components/ConfirmHost'
 import LearningContextBand from './components/LearningContextBand'
+import TutorSessionStrip from './components/TutorSessionStrip'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
 import SearchPage from './pages/SearchPage'
@@ -34,6 +35,9 @@ import SongQuizPage from './pages/SongQuizPage'
 import GuessTrackPage from './pages/GuessTrackPage'
 import LibraryGridPage from './pages/LibraryGridPage'
 import MovieChainPage from './pages/MovieChainPage'
+import LibrarylePage from './pages/LibrarylePage'
+import MysteryCareerPage from './pages/MysteryCareerPage'
+import LinkWallPage from './pages/LinkWallPage'
 import CastQuizPage from './pages/CastQuizPage'
 import VaQuizPage from './pages/VaQuizPage'
 import SynopsisQuizPage from './pages/SynopsisQuizPage'
@@ -53,37 +57,6 @@ import TierListFormPage from './pages/TierListFormPage'
 import TierListEditorPage from './pages/TierListEditorPage'
 import TagsIndexPage from './pages/TagsIndexPage'
 import TagDetailPage from './pages/TagDetailPage'
-import JapaneseHomePage from './pages/JapaneseHomePage'
-import JapaneseRoadmapPage from './pages/JapaneseRoadmapPage'
-import JapaneseGuidePage from './pages/JapaneseGuidePage'
-import JapaneseAnalyzePage from './pages/JapaneseAnalyzePage'
-import JapaneseCoveragePage from './pages/JapaneseCoveragePage'
-import JapaneseWritingPage from './pages/JapaneseWritingPage'
-import JapaneseCoursePage from './pages/JapaneseCoursePage'
-import JapaneseCourseFormPage from './pages/JapaneseCourseFormPage'
-import JapaneseLessonPage from './pages/JapaneseLessonPage'
-import JapaneseLessonFormPage from './pages/JapaneseLessonFormPage'
-import JapaneseReviewPage from './pages/JapaneseReviewPage'
-import JapaneseQuizPage from './pages/JapaneseQuizPage'
-import JapaneseMinePage from './pages/JapaneseMinePage'
-import JapaneseDictionaryPage from './pages/JapaneseDictionaryPage'
-import JapaneseKanaPage from './pages/JapaneseKanaPage'
-import JapaneseTestPage from './pages/JapaneseTestPage'
-import JapaneseStatsPage from './pages/JapaneseStatsPage'
-import JapanesePitchPage from './pages/JapanesePitchPage'
-import JapaneseKanjiPartsPage from './pages/JapaneseKanjiPartsPage'
-import JapaneseKanjiQuizPage from './pages/JapaneseKanjiQuizPage'
-import JapaneseGrammarPage from './pages/JapaneseGrammarPage'
-import JapaneseGrammarQuizPage from './pages/JapaneseGrammarQuizPage'
-import JapaneseListenPage from './pages/JapaneseListenPage'
-import JapaneseShiritoriPage from './pages/JapaneseShiritoriPage'
-import JapaneseConfusablesPage from './pages/JapaneseConfusablesPage'
-import JapaneseLoanwordsPage from './pages/JapaneseLoanwordsPage'
-import JapaneseFeedPage from './pages/JapaneseFeedPage'
-import JapaneseSentencesPage from './pages/JapaneseSentencesPage'
-import JapaneseArcadePage from './pages/JapaneseArcadePage'
-import JapaneseReadingPage from './pages/JapaneseReadingPage'
-import JapaneseLeechDrillPage from './pages/JapaneseLeechDrillPage'
 import EnglishDictionaryPage from './pages/EnglishDictionaryPage'
 import EnglishHomePage from './pages/EnglishHomePage'
 import EnglishReviewPage from './pages/EnglishReviewPage'
@@ -107,14 +80,13 @@ import SqlSandboxPage from './pages/SqlSandboxPage'
 import RegexGolfPage from './pages/RegexGolfPage'
 import MangaReaderPage from './pages/MangaReaderPage'
 import BookReaderPage from './pages/BookReaderPage'
-import VideoPlayerPage from './pages/VideoPlayerPage'
 import OpenFileHandler from './components/OpenFileHandler'
-import WatchLandingPage from './pages/WatchLandingPage'
 import MusicLibraryPage from './pages/MusicLibraryPage'
 import MusicArtistPage from './pages/MusicArtistPage'
 import MusicAlbumPage from './pages/MusicAlbumPage'
 import MusicPlaylistPage from './pages/MusicPlaylistPage'
 import MusicLikedPage from './pages/MusicLikedPage'
+
 import MusicStatsPage from './pages/MusicStatsPage'
 import MusicDownloadsPage from './pages/MusicDownloadsPage'
 import NowPlayingPage from './pages/NowPlayingPage'
@@ -127,36 +99,97 @@ import WrestlingRatedPage from './pages/WrestlingRatedPage'
 import WrestlingYearPage from './pages/WrestlingYearPage'
 import WrestlingMatchRedirect from './pages/WrestlingMatchRedirect'
 import WrestlingCollectionPage from './pages/WrestlingCollectionPage'
+import FootballHomePage from './pages/FootballHomePage'
+import FootballCurrentPage from './pages/FootballCurrentPage'
+import FootballCompetitionsPage from './pages/FootballCompetitionsPage'
+import FootballCompetitionPage from './pages/FootballCompetitionPage'
+import FootballSeasonPage from './pages/FootballSeasonPage'
+import FootballDirectoryPage from './pages/FootballDirectoryPage'
+import FootballTeamPage from './pages/FootballTeamPage'
+import FootballPersonPage from './pages/FootballPersonPage'
+import FootballMatchPage from './pages/FootballMatchPage'
+import FootballMediaPage from './pages/FootballMediaPage'
+import FootballSyncPage from './pages/FootballSyncPage'
+import FootballQuizPage from './pages/FootballQuizPage'
+import FootballQuizGamePage from './pages/FootballQuizGamePage'
+import FootballSearchPage from './pages/FootballSearchPage'
 import GachaGamePage from './pages/GachaGamePage'
 import GachaUnitPage from './pages/GachaUnitPage'
 import GachaCoachPage from './pages/GachaCoachPage'
 import { ANIME, MANGA, VISUAL_NOVEL, GAME, BOOK, MOVIE, TV } from './lib/mediaConfig'
 import { surfaceMoodForPath } from './lib/surfaceMood'
+import { useSettings } from './lib/hooks'
+import { parseSignalClarity, SIGNAL_CLARITY_SETTING } from './lib/signalClarity'
+import { APP_THEME_SETTING } from '@shared/appTheme'
+import { persistAppTheme, resolveAppTheme, stampAppTheme } from './lib/theme'
+
+// Japanese is the app's largest standalone learning vertical. Keep it out of
+// the startup bundle and load only the requested study surface.
+const JapaneseHomePage = lazy(() => import('./pages/JapaneseHomePage'))
+const JapaneseTutorPage = lazy(() => import('./pages/JapaneseTutorPage'))
+const JapaneseTutorSessionPage = lazy(() => import('./pages/JapaneseTutorSessionPage'))
+const JapaneseRoadmapPage = lazy(() => import('./pages/JapaneseRoadmapPage'))
+const JapaneseGuidePage = lazy(() => import('./pages/JapaneseGuidePage'))
+const JapaneseAnalyzePage = lazy(() => import('./pages/JapaneseAnalyzePage'))
+const JapaneseCoveragePage = lazy(() => import('./pages/JapaneseCoveragePage'))
+const JapaneseWritingPage = lazy(() => import('./pages/JapaneseWritingPage'))
+const JapaneseCoursePage = lazy(() => import('./pages/JapaneseCoursePage'))
+const JapaneseCourseFormPage = lazy(() => import('./pages/JapaneseCourseFormPage'))
+const JapaneseLessonPage = lazy(() => import('./pages/JapaneseLessonPage'))
+const JapaneseLessonFormPage = lazy(() => import('./pages/JapaneseLessonFormPage'))
+const JapaneseReviewPage = lazy(() => import('./pages/JapaneseReviewPage'))
+const JapaneseQuizPage = lazy(() => import('./pages/JapaneseQuizPage'))
+const JapaneseMinePage = lazy(() => import('./pages/JapaneseMinePage'))
+const JapaneseDictionaryPage = lazy(() => import('./pages/JapaneseDictionaryPage'))
+const JapaneseKanaPage = lazy(() => import('./pages/JapaneseKanaPage'))
+const JapaneseTestPage = lazy(() => import('./pages/JapaneseTestPage'))
+const JapaneseStatsPage = lazy(() => import('./pages/JapaneseStatsPage'))
+const JapanesePitchPage = lazy(() => import('./pages/JapanesePitchPage'))
+const JapaneseKanjiPartsPage = lazy(() => import('./pages/JapaneseKanjiPartsPage'))
+const JapaneseKanjiQuizPage = lazy(() => import('./pages/JapaneseKanjiQuizPage'))
+const JapaneseGrammarPage = lazy(() => import('./pages/JapaneseGrammarPage'))
+const JapaneseGrammarQuizPage = lazy(() => import('./pages/JapaneseGrammarQuizPage'))
+const JapaneseListenPage = lazy(() => import('./pages/JapaneseListenPage'))
+const JapaneseShiritoriPage = lazy(() => import('./pages/JapaneseShiritoriPage'))
+const JapaneseConfusablesPage = lazy(() => import('./pages/JapaneseConfusablesPage'))
+const JapaneseLoanwordsPage = lazy(() => import('./pages/JapaneseLoanwordsPage'))
+const JapaneseFeedPage = lazy(() => import('./pages/JapaneseFeedPage'))
+const JapaneseSentencesPage = lazy(() => import('./pages/JapaneseSentencesPage'))
+const JapaneseArcadePage = lazy(() => import('./pages/JapaneseArcadePage'))
+const JapaneseReadingPage = lazy(() => import('./pages/JapaneseReadingPage'))
+const JapanesePhonologyPage = lazy(() => import('./pages/JapanesePhonologyPage'))
+const JapaneseOutputPage = lazy(() => import('./pages/JapaneseOutputPage'))
+const JapaneseRoleplayPage = lazy(() => import('./pages/JapaneseRoleplayPage'))
+const JapaneseImmersionPage = lazy(() => import('./pages/JapaneseImmersionPage'))
+const JapaneseLeechDrillPage = lazy(() => import('./pages/JapaneseLeechDrillPage'))
 
 export default function App() {
   const mainRef = useRef<HTMLElement>(null)
   const location = useLocation()
   const surfaceMood = surfaceMoodForPath(location.pathname)
+  const { data: settings } = useSettings()
+  const appTheme = resolveAppTheme(settings?.[APP_THEME_SETTING])
+  const signalClarity = parseSignalClarity(settings?.[SIGNAL_CLARITY_SETTING])
   useScrollRestoration(mainRef)
 
-  // The manga/book readers and the video player are immersive: no
+  // The manga/book readers are immersive: no
   // sidebar/topbar/now-playing chrome, full-bleed. Audio keeps playing — the
   // <audio> element lives in AudioPlayerProvider, not in the (unmounted)
-  // NowPlayingBar. Note the trailing "/" on the /watch branches: the bare
-  // /watch landing page is a picker and deliberately keeps the shell.
+  // NowPlayingBar.
   const isReader =
-    /^\/(manga|books)\/\d+\/(read|book)\/|^\/watch\/(file|wrestling|adhoc)\/|^\/read\/(manga|book)\//.test(
+    /^\/(manga|books)\/\d+\/(read|book)\/|^\/read\/(manga|book)\//.test(
       location.pathname
     )
 
-  // The lain theme's CRT overlay (styles.css) keys off this attribute so
-  // scanlines never sit over the readers. Layout effect: no scanline frame
-  // flashes when entering a reader. Idempotent → StrictMode-safe.
+  // Theme and route atmosphere key off these attributes. Effects are painted
+  // into shell backgrounds, never over content; readers render no shell at all.
+  // Layout effect prevents an old route mood or palette lingering for one frame.
   useLayoutEffect(() => {
-    if (isReader) document.documentElement.dataset.reader = 'true'
-    else delete document.documentElement.dataset.reader
+    stampAppTheme(appTheme)
     document.documentElement.dataset.mood = surfaceMood
-  }, [isReader, surfaceMood])
+    document.documentElement.dataset.signal = signalClarity
+    if (settings?.[APP_THEME_SETTING] != null) persistAppTheme(appTheme)
+  }, [appTheme, settings, signalClarity, surfaceMood])
 
   // Ctrl+wheel = UI zoom (Electron has no built-in handler for it). Steps the
   // same persisted ui.scale the Settings pills write, via app:bumpUiScale.
@@ -188,14 +221,6 @@ export default function App() {
           {/* Books reuse the same readers; a books folder may hold CBZ volumes too. */}
           <Route path="/books/:id/read/:chapterId" element={<MangaReaderPage />} />
           <Route path="/books/:id/book/:chapterId" element={<BookReaderPage />} />
-          <Route path="/watch/file/:fileId" element={<VideoPlayerPage />} />
-          {/* Same player, different table — the wrestling collection's rows
-              live in wrestling_video, so the route names the scope. */}
-          <Route
-            path="/watch/wrestling/:fileId"
-            element={<VideoPlayerPage refKind="wrestling" />}
-          />
-          <Route path="/watch/adhoc/:token" element={<VideoPlayerPage />} />
           {/* "Open with NaviHUB" — a .cbz/.epub from outside the library. */}
           <Route path="/read/manga/:token" element={<MangaReaderPage />} />
           <Route path="/read/book/:token" element={<BookReaderPage />} />
@@ -220,7 +245,15 @@ export default function App() {
           data-mood={surfaceMood}
         >
           <LearningContextBand />
+          <TutorSessionStrip />
           <ErrorBoundary key={location.pathname}>
+          <Suspense
+            fallback={
+              <div className="mx-auto max-w-3xl p-6 text-sm text-gray-400" role="status">
+                Loading study surface…
+              </div>
+            }
+          >
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />
@@ -375,6 +408,9 @@ export default function App() {
             <Route path="/quiz/connections" element={<ChallengeQuizPage kind="connections" />} />
             <Route path="/quiz/library-grid" element={<LibraryGridPage />} />
             <Route path="/quiz/movie-chain" element={<MovieChainPage />} />
+            <Route path="/quiz/libraryle" element={<LibrarylePage />} />
+            <Route path="/quiz/mystery-career" element={<MysteryCareerPage />} />
+            <Route path="/quiz/link-wall" element={<LinkWallPage />} />
             <Route path="/quiz/chronology" element={<ChallengeQuizPage kind="chronology" />} />
             <Route path="/quiz/higher-lower" element={<ChallengeQuizPage kind="higherLower" />} />
             <Route path="/quiz/tournament" element={<TournamentPage />} />
@@ -382,7 +418,6 @@ export default function App() {
             <Route path="/quiz/programming" element={<Navigate to="/programming/quiz" replace />} />
 
             {/* Lists — user-curated, type-scoped collections */}
-            <Route path="/watch" element={<WatchLandingPage />} />
             <Route path="/torrents" element={<TorrentsPage />} />
             <Route path="/bulk" element={<BulkImportPage />} />
             {/* Two routes rather than a ?tab= param, so the native Tools menu
@@ -421,6 +456,8 @@ export default function App() {
 
             {/* Japanese learning — standalone section (courses, SRS review, quiz) */}
             <Route path="/japanese" element={<JapaneseHomePage />} />
+            <Route path="/japanese/tutor" element={<JapaneseTutorPage />} />
+            <Route path="/japanese/tutor/session" element={<JapaneseTutorSessionPage />} />
             <Route path="/japanese/roadmap" element={<JapaneseRoadmapPage />} />
             <Route path="/japanese/guide" element={<JapaneseGuidePage />} />
             <Route path="/japanese/analyze" element={<JapaneseAnalyzePage />} />
@@ -450,6 +487,10 @@ export default function App() {
             <Route path="/japanese/sentences" element={<JapaneseSentencesPage />} />
             <Route path="/japanese/arcade" element={<JapaneseArcadePage />} />
             <Route path="/japanese/reading" element={<JapaneseReadingPage />} />
+            <Route path="/japanese/phonology" element={<JapanesePhonologyPage />} />
+            <Route path="/japanese/output" element={<JapaneseOutputPage />} />
+            <Route path="/japanese/roleplay" element={<JapaneseRoleplayPage />} />
+            <Route path="/japanese/immersion" element={<JapaneseImmersionPage />} />
             <Route path="/japanese/leeches/drill" element={<JapaneseLeechDrillPage />} />
             <Route path="/japanese/test" element={<JapaneseTestPage />} />
             <Route path="/japanese/stats" element={<JapaneseStatsPage />} />
@@ -501,9 +542,32 @@ export default function App() {
             <Route path="/wrestling/event/:id" element={<WrestlingEventPage />} />
             <Route path="/wrestling/wrestler/:id" element={<WrestlingWrestlerPage />} />
 
+            {/* Football Archive — scored history volumes, current snapshots,
+                private match journal, manual media shelves and offline quizzes. */}
+            <Route path="/football" element={<FootballHomePage />} />
+            <Route path="/football/current" element={<FootballCurrentPage />} />
+            <Route path="/football/search" element={<FootballSearchPage />} />
+            <Route path="/football/competitions" element={<FootballCompetitionsPage />} />
+            <Route path="/football/competition/:key" element={<FootballCompetitionPage />} />
+            <Route path="/football/season/:id" element={<FootballSeasonPage />} />
+            <Route path="/football/teams" element={<FootballDirectoryPage kind="teams" />} />
+            <Route path="/football/team/:id" element={<FootballTeamPage />} />
+            <Route path="/football/people" element={<FootballDirectoryPage kind="people" />} />
+            <Route path="/football/person/:id" element={<FootballPersonPage />} />
+            <Route path="/football/match/:id" element={<FootballMatchPage />} />
+            <Route path="/football/media" element={<FootballMediaPage />} />
+            <Route path="/football/sync" element={<FootballSyncPage />} />
+            <Route path="/football/quiz" element={<FootballQuizPage />} />
+            <Route path="/football/quiz/champion" element={<FootballQuizGamePage kind="footballChampion" />} />
+            <Route path="/football/quiz/scoreline" element={<FootballQuizGamePage kind="footballScoreline" />} />
+            <Route path="/football/quiz/career-path" element={<FootballQuizGamePage kind="footballCareerPath" />} />
+            <Route path="/football/quiz/chronology" element={<FootballQuizGamePage kind="footballChronology" />} />
+            <Route path="/football/quiz/player-grid" element={<FootballQuizGamePage kind="footballPlayerGrid" />} />
+
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
           </ErrorBoundary>
         </main>
         <NowPlayingBar />

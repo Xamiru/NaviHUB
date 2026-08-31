@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { toast } from '../lib/toast'
+import { toast, toastError } from '../lib/toast'
 import { confirmDialog } from '../lib/confirm'
 import { usePersistedState } from '../lib/navState'
 import { useIncrementalList } from '../lib/hooks'
@@ -26,7 +26,6 @@ type Tab = 'events' | 'loose'
 // ratings, hearts, wrestlers and list membership like any other match.
 export default function WrestlingCollectionPage(): JSX.Element {
   const qc = useQueryClient()
-  const navigate = useNavigate()
   const [tab, setTab] = usePersistedState<Tab>('wrestling.collectionTab', 'loose')
   const [editing, setEditing] = useState<WrestlingMatchWithEvent | null>(null)
   const [busy, setBusy] = useState(false)
@@ -151,9 +150,13 @@ export default function WrestlingCollectionPage(): JSX.Element {
                     {m.videoId != null && (
                       <button
                         className="hover:text-accent"
-                        onClick={() => navigate(`/watch/wrestling/${m.videoId}`)}
+                        onClick={() =>
+                          void api.video
+                            .openExternal({ kind: 'wrestling', fileId: m.videoId! })
+                            .catch(toastError)
+                        }
                       >
-                        Play
+                        Open
                       </button>
                     )}
                     <button className="hover:text-accent" onClick={() => setEditing(m)}>

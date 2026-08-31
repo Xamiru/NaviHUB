@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { formatTime } from '@shared/subtitles'
 import type { MediaDetail, VideoFile } from '@shared/types'
@@ -9,13 +8,11 @@ import { toast, toastError } from '../lib/toast'
 import Section from './Section'
 import { confirmDialog } from '../lib/confirm'
 
-// Local video player entry point on an anime/movie/tv detail page. Mirrors
+// Linked-video entry point on an anime/movie/tv detail page. Mirrors
 // MangaChaptersSection: attach a folder from the video library, list what was
-// scanned, jump into the player. Resume positions live in video_file rows;
-// finishing an episode goes through checklistRepo.logProgress like every other
-// "I watched another one" in the app.
+// scanned, then launch files in the operating system's default video app.
+// Watched marks remain manual and credit progress through the usual path.
 export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Element {
-  const navigate = useNavigate()
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
 
@@ -56,7 +53,7 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
     })
 
   const detach = async (): Promise<void> => {
-    const ok = await confirmDialog('Unlink the local folder? Resume positions will be forgotten.', {
+    const ok = await confirmDialog('Unlink the local folder? Watched marks will be forgotten.', {
       confirmLabel: 'Unlink',
       danger: true
     })
@@ -67,12 +64,12 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
   }
 
   const files = data?.files ?? []
-  // Continue = the file mid-watch, else the first unwatched one.
-  const continueFile =
-    files.find((f) => f.resumeSeconds != null && !f.watchedAt) ?? files.find((f) => !f.watchedAt)
+  const continueFile = files.find((f) => !f.watchedAt)
   const watched = files.filter((f) => f.watchedAt).length
 
-  const open = (f: VideoFile): void => navigate(`/watch/file/${f.id}`)
+  const open = (f: VideoFile): void => {
+    void api.video.openExternal({ kind: 'file', fileId: f.id }).catch(toastError)
+  }
 
   return (
     <Section
@@ -85,7 +82,7 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
             Link video folder
           </button>
           <span className="text-xs text-gray-400">
-            Point at this title&apos;s folder to watch it here, with clickable subtitles.
+            Point at this title&apos;s folder to open episodes in your system video player.
           </span>
         </div>
       ) : (
@@ -93,14 +90,14 @@ export default function VideoEpisodesSection({ m }: { m: MediaDetail }): JSX.Ele
           <div className="mb-2 flex items-center gap-2 text-sm">
             {continueFile && (
               <button className="btn-ghost px-3 py-1" onClick={() => open(continueFile)}>
-                ▶ {continueFile.resumeSeconds != null ? 'Continue' : 'Start'} · {continueFile.title}
+                Open next · {continueFile.title}
               </button>
             )}
             <button className="btn-ghost px-3 py-1" disabled={busy} onClick={() => void rescan()}>
               Rescan
             </button>
             <button className="btn-ghost px-3 py-1" disabled={busy} onClick={() => void detach()}>
-              ✕ Unlink
+              Unlink
             </button>
             <span className="truncate text-xs text-gray-400" title={data.localDir}>
               {data.localDir}
@@ -126,8 +123,6 @@ function EpisodeRow({
   onOpen: () => void
   onChange: () => void
 }): JSX.Element {
-  const inProgress = f.resumeSeconds != null && !f.watchedAt
-
   async function toggleWatched(): Promise<void> {
     try {
       await api.video.markWatched({ kind: 'file', fileId: f.id }, !f.watchedAt)
@@ -150,22 +145,13 @@ function EpisodeRow({
       <button className="min-w-0 flex-1 truncate text-left text-sm" onClick={onOpen}>
         {f.title}
       </button>
-      {inProgress && f.resumeSeconds != null && (
+      {f.duration != null && (
         <span className="chip shrink-0 text-[10px]">
-          {formatTime(f.resumeSeconds)}
-          {f.duration ? ` / ${formatTime(f.duration)}` : ''}
-        </span>
-      )}
-      {f.playability === 'transcode' && (
-        <span
-          className="chip shrink-0 text-[10px]"
-          title="Needs re-encoding before it can play — this one takes a while"
-        >
-          transcode
+          {formatTime(f.duration)}
         </span>
       )}
       <button className="btn-ghost shrink-0 px-2 py-0.5 text-xs" onClick={onOpen}>
-        Watch
+        Open
       </button>
     </div>
   )

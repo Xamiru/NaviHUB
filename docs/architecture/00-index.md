@@ -12,13 +12,14 @@ things that were tried and rejected, and the gotchas that were paid for once alr
 | Adding or changing a media type; wallpapers/fan art; books; game launching and playtime; seasonal shelves; list filtering and sorting | [media-types.md](media-types.md) |
 | A games importer, or wondering why RAWG/IGDB/Steam all appear in the tree | [importers.md](importers.md) |
 | The manga scanner, EPUB books, the manga/book readers, mokuro OCR | [readers.md](readers.md) |
-| The local video player, ffmpeg transcoding, subtitles, subtitle mining | [video.md](video.md) |
+| Linked local videos, external playback, metadata and subtitle corpus | [video.md](video.md) |
 | "Open with NaviHUB", double-click handling, desktop registration | [file-associations.md](file-associations.md) |
 | The Japanese section — packs, drills, SRS, ghosts, the i+1 feed, the kana keyboard | [japanese.md](japanese.md) |
 | The English section — dictionaries, SRS, drills, writing feedback | [english.md](english.md) |
 | The programming section — courses, cheatsheets, the CLI drill | [programming.md](programming.md) |
 | The gacha section or the FGO Coach (the app's LLM feature) | [gacha-fgo.md](gacha-fgo.md) |
 | The wrestling section — the Wikipedia importer, matches, the local collection | [wrestling.md](wrestling.md) |
+| The Football Archive — history sources, current snapshots, journal, media, quizzes | [football.md](football.md) |
 | Torrent search (Jackett/qBittorrent) or the bulk importer | [torrents-bulk.md](torrents-bulk.md) |
 | Theme songs, the music library, the tournament bracket | [music-quiz.md](music-quiz.md) |
 | The checklist, streaks, or anything that advances progress on a title | [checklist-progress.md](checklist-progress.md) |

@@ -174,6 +174,7 @@ export default function TypedDrill({
       ) : (
         <div className={`mx-auto mt-6 ${wide ? 'max-w-lg' : 'max-w-xs'}`}>
           <input
+            aria-label="Drill answer"
             ref={inputRef}
             className="input w-full text-center text-lg"
             placeholder={placeholder}
