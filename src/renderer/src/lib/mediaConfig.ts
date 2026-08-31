@@ -1,4 +1,4 @@
-import type { MediaItem, MediaType, CreditRole, MediaCompanyRole } from '@shared/types'
+import type { MediaSummary, MediaType, CreditRole, MediaCompanyRole } from '@shared/types'
 
 // One config object per media type drives the shared list / detail / form pages
 // and the sidebar, so adding a media type is mostly a matter of adding an entry
@@ -65,8 +65,8 @@ export interface MediaConfig {
   noProgress?: boolean
   // detail / card display
   progressStatLabel: string // "Progress" / "Runtime"
-  formatProgressStat: (m: MediaItem) => string
-  formatCardSub: (m: MediaItem) => string
+  formatProgressStat: (m: MediaSummary) => string
+  formatCardSub: (m: MediaSummary) => string
   // cast (character + the person who plays/voices them)
   castRole: CreditRole // 'voice_actor' / 'actor'
   castSectionTitle: string // "Characters" / "Cast"
@@ -518,6 +518,6 @@ export function configFor(key: MediaType): MediaConfig {
 
 // Detail-page route for a media item, by its type (used by shared entity pages
 // that link back to the work — a person/character/company can span types).
-export function pathForMedia(m: Pick<MediaItem, 'id' | 'mediaType'>): string {
+export function pathForMedia(m: Pick<MediaSummary, 'id' | 'mediaType'>): string {
   return `${configFor(m.mediaType).basePath}/${m.id}`
 }

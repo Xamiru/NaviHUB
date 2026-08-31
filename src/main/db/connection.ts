@@ -1,17 +1,12 @@
 import { app } from 'electron'
 import { join } from 'path'
 import Database from 'better-sqlite3'
-import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3'
 import initSql from './init.sql?raw'
 import { seedJapanese } from './japaneseSeed'
 import { CHECKLIST_SEED } from '@shared/checklist'
 import { logInfo } from '../logBus'
-import * as schema from './schema'
-
-export type DB = BetterSQLite3Database<typeof schema>
 
 let _sqlite: Database.Database | null = null
-let _db: DB | null = null
 
 // Default customization values, seeded once on first run.
 const DEFAULT_SETTINGS: Record<string, string> = {
@@ -240,6 +235,53 @@ export function runMigrations(sqlite: Database.Database): void {
   // such column: status"). tests/initLegacyDb.test.ts replays that DB shape.
   sqlite.exec('CREATE INDEX IF NOT EXISTS idx_en_word_due ON en_word(status, due_at)')
 
+  // init.sql creates the FTS table and its maintenance triggers on both fresh
+  // and old databases. Existing entity rows predate those triggers, so rebuild
+  // once when the projection count proves it is incomplete.
+  const sourceCount = (
+    sqlite
+      .prepare(
+        `SELECT
+          (SELECT COUNT(*) FROM media_item) +
+          (SELECT COUNT(*) FROM person) +
+          (SELECT COUNT(*) FROM company) +
+          (SELECT COUNT(*) FROM character) AS n`
+      )
+      .get() as { n: number }
+  ).n
+  const indexedCount = (
+    sqlite.prepare('SELECT COUNT(*) AS n FROM global_search_fts').get() as { n: number }
+  ).n
+  if (sourceCount !== indexedCount) {
+    sqlite.transaction(() => {
+      sqlite.prepare('DELETE FROM global_search_fts').run()
+      sqlite
+        .prepare(
+          `INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+           SELECT 'media', id, title, title_original FROM media_item`
+        )
+        .run()
+      sqlite
+        .prepare(
+          `INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+           SELECT 'person', id, name, name_native FROM person`
+        )
+        .run()
+      sqlite
+        .prepare(
+          `INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+           SELECT 'company', id, name, name_native FROM company`
+        )
+        .run()
+      sqlite
+        .prepare(
+          `INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+           SELECT 'character', id, name, name_native FROM character`
+        )
+        .run()
+    })()
+  }
+
   // Movies used to store "times watched" in the generic `progress` column;
   // it's now unified into `rewatch_count` (the universal times-consumed counter)
   // like every other media type. Copy the old value across once, then blank the
@@ -257,8 +299,8 @@ export function runMigrations(sqlite: Database.Database): void {
   dropColumn(sqlite, 'media_item', 'finished_at')
 }
 
-export function initDatabase(): DB {
-  if (_db) return _db
+export function initDatabase(): Database.Database {
+  if (_sqlite) return _sqlite
 
   const sqlite = new Database(getDbPath())
   sqlite.pragma('journal_mode = WAL')
@@ -277,13 +319,7 @@ export function initDatabase(): DB {
   seedChecklist(sqlite)
 
   _sqlite = sqlite
-  _db = drizzle(sqlite, { schema })
-  return _db
-}
-
-export function getDb(): DB {
-  if (!_db) return initDatabase()
-  return _db
+  return sqlite
 }
 
 export function getSqlite(): Database.Database {
@@ -301,5 +337,4 @@ export function closeDatabase(): void {
   }
   _sqlite?.close()
   _sqlite = null
-  _db = null
 }

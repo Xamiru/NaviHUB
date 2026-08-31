@@ -4,7 +4,7 @@ import QuizRecord from '../QuizRecord'
 import { Group, Pill } from '../PillGroup'
 import { api } from '../../lib/api'
 import { usePersistedState } from '../../lib/navState'
-import { usePlayer } from '../../lib/player'
+import { usePlayerControls } from '../../lib/player'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { ParticleQuizItem } from '@shared/types'
 
@@ -18,7 +18,7 @@ export default function ParticleDrill() {
   const [items, setItems] = useState<ParticleQuizItem[] | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const player = usePlayer()
+  const player = usePlayerControls()
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
   useEffect(() => () => audioRef.current?.pause(), [])

@@ -1,13 +1,13 @@
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import EmptyState from '../components/EmptyState'
 import ActionMenu from '../components/ActionMenu'
 import PageHeader from '../components/PageHeader'
 import Tabs from '../components/Tabs'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
 import { useDebouncedValue, useDialog, useIncrementalList, useSettings } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
@@ -16,13 +16,20 @@ import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import MusicTrackRow, { formatLongDuration } from '../components/MusicTrackRow'
 import MusicDownloadDialog, { DownloadPill } from '../components/MusicDownloadDialog'
-import type { MusicAlbumSummary, MusicArtist, MusicPlaylistSummary, MusicTrack } from '@shared/types'
+import type {
+  MusicAlbumSummary,
+  MusicArtist,
+  MusicPlaylistSummary,
+  MusicTrack,
+  MusicTrackBrowseFilter,
+  MusicTrackBrowseSort
+} from '@shared/types'
 
 type Tab = 'artists' | 'albums' | 'tracks' | 'playlists'
 
 export default function MusicLibraryPage() {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const [tab, setTab] = usePersistedState<Tab>('musicTab', 'artists')
   const [search, setSearch] = usePersistedState('musicSearch', '')
   const query = useDebouncedValue(search.trim())
@@ -233,7 +240,7 @@ export default function MusicLibraryPage() {
 }
 
 function SonicArchiveLead() {
-  const player = usePlayer()
+  const player = usePlayerControls()
   const { data } = useQuery({
     queryKey: qk.music.statsDetail(30),
     queryFn: () => api.music.statsDetail(30)
@@ -266,6 +273,7 @@ function SonicArchiveLead() {
             <CoverImage
               path={artist.coverPath}
               alt=""
+              thumbWidth={320}
               rounded=""
               className="absolute inset-0 h-full w-full"
             />
@@ -369,6 +377,7 @@ export function ArtistCard({ artist }: { artist: MusicArtist }) {
       <CoverImage
         path={artist.coverPath}
         alt={artist.name}
+        thumbWidth={320}
         rounded="rounded-full"
         className="mx-auto aspect-square w-full"
         fallback="music"
@@ -389,6 +398,7 @@ export function AlbumCard({ album }: { album: MusicAlbumSummary }) {
       <CoverImage
         path={album.coverPath}
         alt={album.title}
+        thumbWidth={320}
         className="aspect-square w-full"
         fallback="music"
       />
@@ -499,14 +509,16 @@ function AlbumsTab() {
 export function TrackList({
   tracks,
   showAlbum = true,
-  renderTrailing
+  renderTrailing,
+  batch = 96
 }: {
   tracks: MusicTrack[]
   showAlbum?: boolean
   renderTrailing?: (t: MusicTrack) => ReactNode
+  batch?: number
 }) {
-  const player = usePlayer()
-  const { visible, sentinelRef } = useIncrementalList(tracks)
+  const player = usePlayerControls()
+  const { visible, sentinelRef } = useIncrementalList(tracks, batch)
   return (
     <>
       <div>
@@ -526,22 +538,36 @@ export function TrackList({
 }
 
 function TracksTab() {
-  const [sort, setSort] = usePersistedState<'catalog' | 'recent' | 'most' | 'least' | 'title'>('musicTrackSort', 'catalog')
-  const [filter, setFilter] = usePersistedState<'all' | 'unplayed' | 'missingArt'>('musicTrackFilter', 'all')
-  const { data: tracks = [], isLoading } = useQuery({
-    queryKey: qk.music.tracks({}),
-    queryFn: () => api.music.tracks({})
+  const [sort, setSort] = usePersistedState<MusicTrackBrowseSort>('musicTrackSort', 'catalog')
+  const [filter, setFilter] = usePersistedState<MusicTrackBrowseFilter>('musicTrackFilter', 'all')
+  const {
+    data: pages,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfiniteQuery({
+    queryKey: qk.music.trackPage(sort, filter),
+    queryFn: ({ pageParam }) => api.music.trackPage({ sort, filter, offset: pageParam, limit: 192 }),
+    initialPageParam: 0,
+    getNextPageParam: (last) => (last.hasMore ? last.offset + last.items.length : undefined)
   })
+  const tracks = useMemo(() => pages?.pages.flatMap((page) => page.items) ?? [], [pages])
+  const total = pages?.pages[0]?.total ?? 0
+  const pageSentinelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const element = pageSentinelRef.current
+    if (!element || !hasNextPage || isFetchingNextPage) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void fetchNextPage()
+      },
+      { rootMargin: '600px' }
+    )
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
   if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
-  const ordered = [...tracks]
-    .filter((track) => filter === 'all' || (filter === 'unplayed' ? track.playCount === 0 : !track.coverPath))
-    .sort((a, b) => {
-      if (sort === 'recent') return (b.lastPlayedAt ?? '').localeCompare(a.lastPlayedAt ?? '')
-      if (sort === 'most') return b.playCount - a.playCount || a.title.localeCompare(b.title)
-      if (sort === 'least') return a.playCount - b.playCount || a.title.localeCompare(b.title)
-      if (sort === 'title') return a.title.localeCompare(b.title)
-      return 0
-    })
   return (
     <>
       <BrowseControls>
@@ -560,9 +586,15 @@ function TracksTab() {
             {value === 'all' ? 'All' : value === 'unplayed' ? 'Unplayed' : 'Missing covers'}
           </button>
         ))}
-        <span className="text-xs text-gray-500">{ordered.length} tracks</span>
+        <span className="text-xs text-gray-500">{total} tracks</span>
       </BrowseControls>
-      <TrackList tracks={ordered} />
+      <TrackList tracks={tracks} batch={Number.MAX_SAFE_INTEGER} />
+      <div ref={pageSentinelRef} />
+      {(hasNextPage || isFetchingNextPage) && (
+        <p className="mt-3 text-center text-xs text-gray-500">
+          {isFetchingNextPage ? 'Loading more tracks…' : `Showing ${tracks.length} of ${total}`}
+        </p>
+      )}
     </>
   )
 }

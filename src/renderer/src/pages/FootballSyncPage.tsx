@@ -7,7 +7,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { FOOTBALL_COMPETITIONS } from '@shared/football'
 import type { FootballCompetitionKey, FootballSyncRequest } from '@shared/types'
-import { FootballCoverageStrip, FootballSectionTitle } from '../components/football/FootballCommon'
+import { FootballCoverageStrip, FootballFlag, FootballSectionTitle } from '../components/football/FootballCommon'
 
 export default function FootballSyncPage() {
   const qc = useQueryClient()
@@ -68,8 +68,8 @@ export default function FootballSyncPage() {
 
       <div className="grid gap-10 xl:grid-cols-[minmax(0,1.3fr)_minmax(340px,0.7fr)]">
         <div className="space-y-10">
-          <section>
-            <FootballSectionTitle title="Optional match-detail packs" detail="User-started only" />
+          <details className="border-y border-line-subtle py-4">
+            <summary className="cursor-pointer text-sm font-medium text-ink">Optional match-detail packs</summary>
             <p className="mb-4 max-w-3xl text-sm leading-relaxed text-ink-muted">
               Add verified lineups and goal events for one public competition-season. StatsBomb uses the entered season, or its newest supported season when blank. Wyscout has fixed public editions and downloads a 74 MB event archive.
             </p>
@@ -119,7 +119,7 @@ export default function FootballSyncPage() {
             <p className="mt-3 text-xs leading-relaxed text-ink-muted">
               Wyscout availability: Premier League, La Liga, Serie A, and Bundesliga 2017/18; World Cup 2018; Euros 2016. Unsupported selections fail without changing the archive.
             </p>
-          </section>
+          </details>
 
           <section>
             <FootballSectionTitle title="Coverage matrix" detail="Missing means not supplied" />
@@ -131,7 +131,7 @@ export default function FootballSyncPage() {
                     const coverage = data.coverage.filter((item) => item.competitionKey === competition.key)
                     const entitlement = data.entitlements.find((item) => item.competitionKey === competition.key)
                     const state = (facet: string) => coverage.find((item) => item.facet === facet)?.state ?? 'not supplied'
-                    return <tr key={competition.key}><td className="py-3 font-medium text-ink">{competition.shortName}</td><td className="text-ink-muted">{state('results')}</td><td className="text-ink-muted">{state('scorers')}</td><td className="text-ink-muted">{state('lineups')}</td><td className="text-ink-muted">{entitlement?.entitled ? 'available' : entitlement ? 'unavailable' : 'unchecked'}</td></tr>
+                    return <tr key={competition.key}><td className="py-3 font-medium text-ink"><span className="flex items-center gap-3"><FootballFlag competitionKey={competition.key} />{competition.shortName}</span></td><td className="text-ink-muted">{state('results')}</td><td className="text-ink-muted">{state('scorers')}</td><td className="text-ink-muted">{state('lineups')}</td><td className="text-ink-muted">{entitlement?.entitled ? 'available' : entitlement ? 'unavailable' : 'unchecked'}</td></tr>
                   })}
                 </tbody>
               </table>
@@ -139,8 +139,8 @@ export default function FootballSyncPage() {
             <div className="mt-5"><FootballCoverageStrip coverage={data.coverage.slice(0, 20)} /></div>
           </section>
 
-          <section>
-            <FootballSectionTitle title="Resolution queue" detail={`${data.conflicts.filter((item) => item.status === 'open').length} open`} />
+          <details className="border-y border-line-subtle py-4" open={data.conflicts.some((item) => item.status === 'open')}>
+            <summary className="cursor-pointer text-sm font-medium text-ink">Resolution queue / {data.conflicts.filter((item) => item.status === 'open').length} open</summary>
             <div className="divide-y divide-line-subtle">
               {data.conflicts.filter((item) => item.status === 'open').map((conflict) => (
                 <div key={conflict.id} className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
@@ -150,7 +150,7 @@ export default function FootballSyncPage() {
               ))}
               {!data.conflicts.some((item) => item.status === 'open') && <p className="py-5 text-sm text-ink-muted">No quarantined identities or source conflicts.</p>}
             </div>
-          </section>
+          </details>
         </div>
 
         <aside className="space-y-9">

@@ -48,11 +48,13 @@ describe('Sonic Archive product surface', () => {
     expect(spotify).toContain('reopening is instant')
     expect(spotify).toContain('Missing releases only')
     expect(spotify).toContain('Add to queue')
-    expect(playlist).toContain('Add missing to queue')
+    expect(playlist).toContain('className="btn-primary"')
+    expect(playlist).toContain('Add missing (')
+    expect(playlist).toContain('Download missing now')
   })
 
   it('keeps deferred Spotify downloads in a dedicated persistent workspace', () => {
-    expect(downloads).toContain('title="Music downloads"')
+    expect(downloads).toContain('title="Spotify download queue"')
     expect(downloads).toContain('Start all')
     expect(downloads).toContain('Start this')
     expect(downloads).toContain('Clear completed')

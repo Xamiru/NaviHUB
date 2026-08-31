@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useIncrementalList } from '../lib/hooks'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
 import { toast, toastError } from '../lib/toast'
 import BackButton from '../components/BackButton'
@@ -19,7 +19,7 @@ export default function MusicAlbumPage() {
   const albumId = Number(id)
   const qc = useQueryClient()
   const navigate = useNavigate()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const [searchParams, setSearchParams] = useSearchParams()
   const [spotifyOpen, setSpotifyOpen] = useState(false)
 

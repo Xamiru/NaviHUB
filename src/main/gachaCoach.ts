@@ -224,8 +224,8 @@ async function runTurn(
 
     const result =
       provider === 'gemini'
-        ? await runGeminiTurn(makeGemini(), model, turn, game, st)
-        : await runAnthropicTurn(makeAnthropic(provider), model, turn, game, st)
+        ? await runGeminiTurn(await makeGemini(), model, turn, game, st)
+        : await runAnthropicTurn(await makeAnthropic(provider), model, turn, game, st)
 
     if (!st()) return
     coachRepo.appendMessage({

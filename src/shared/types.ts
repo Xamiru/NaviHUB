@@ -53,6 +53,28 @@ export interface MediaItem {
   updatedAt: string
 }
 
+// Lightweight projection for cover cards and Home shelves. Detail-only fields
+// (banner, notes, provider ids and the full metadata blob) deliberately stay
+// out of browse IPC payloads. `metadata` contains only card-visible values.
+export interface MediaSummary {
+  id: number
+  mediaType: MediaType
+  title: string
+  titleOriginal: string | null
+  synopsis: string | null
+  coverPath: string | null
+  releaseDate: string | null
+  totalUnits: number | null
+  status: string | null
+  score: number | null
+  progress: number
+  rewatchCount: number
+  favorite: boolean
+  metadata: Record<string, unknown> | null
+  createdAt: string
+  updatedAt: string
+}
+
 export interface Person {
   id: number
   name: string
@@ -171,6 +193,35 @@ export interface MediaListFacets {
   yearMax: number | null
   unitsMax: number | null
   total: number
+}
+
+export interface MediaListPageRequest {
+  filter: MediaListFilter
+  offset: number
+  limit: number
+}
+
+export interface MediaListPage {
+  items: MediaSummary[]
+  total: number
+  offset: number
+  hasMore: boolean
+}
+
+export interface HomeLibraryOverview {
+  wall: MediaSummary[]
+  recent: MediaSummary[]
+  continuing: MediaSummary[]
+  favorites: MediaSummary[]
+  spotlight: MediaSummary[]
+  spotlightFromBacklog: boolean
+  stats: {
+    titles: number
+    inProgress: number
+    completed: number
+    favorites: number
+    avgScore: string | null
+  }
 }
 
 // Grouped results for the global search bar.
@@ -2765,6 +2816,23 @@ export interface MusicTrack {
   coverPath: string | null // the album's cover
 }
 
+export type MusicTrackBrowseSort = 'catalog' | 'recent' | 'most' | 'least' | 'title'
+export type MusicTrackBrowseFilter = 'all' | 'unplayed' | 'missingArt'
+
+export interface MusicTrackPageRequest {
+  sort: MusicTrackBrowseSort
+  filter: MusicTrackBrowseFilter
+  offset: number
+  limit: number
+}
+
+export interface MusicTrackPage {
+  items: MusicTrack[]
+  total: number
+  offset: number
+  hasMore: boolean
+}
+
 export interface MusicArtistDetail {
   id: number
   name: string
@@ -4489,6 +4557,10 @@ export interface FootballMatchEvent {
 
 export interface FootballStanding {
   team: FootballTeamSummary
+  seasonId?: number
+  seasonLabel?: string
+  competitionKey?: FootballCompetitionKey
+  competitionName?: string
   rank: number | null
   rankOfficial: boolean
   played: number

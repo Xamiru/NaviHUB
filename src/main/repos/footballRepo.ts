@@ -503,11 +503,19 @@ export function getTeam(id: number): FootballTeamDetail | null {
     honours: honoursFor('h.team_id', id),
     matches: listMatches({ teamId: id, limit: 200 }),
     seasonRecords: (getSqlite().prepare(`
-      SELECT fs.*, ${TEAM_SELECT} FROM football_standing fs
+      SELECT fs.*, s.id AS season_id, s.label AS season_label,
+        c.key AS competition_key, c.name AS competition_name, ${TEAM_SELECT}
+      FROM football_standing fs
+      JOIN football_season s ON s.id=fs.season_id
+      JOIN football_competition c ON c.id=s.competition_id
       JOIN football_team t ON t.id=fs.team_id WHERE fs.team_id=?
       ORDER BY fs.season_id DESC
     `).all(id) as Row[]).map((standing) => ({
       team: asTeam(standing, 'team_'),
+      seasonId: standing.season_id as number,
+      seasonLabel: standing.season_label as string,
+      competitionKey: standing.competition_key as FootballCompetitionKey,
+      competitionName: standing.competition_name as string,
       rank: (standing.rank as number) ?? null,
       rankOfficial: bool(standing.rank_official),
       played: standing.played as number,

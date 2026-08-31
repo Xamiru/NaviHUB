@@ -13,115 +13,121 @@ import LearningContextBand from './components/LearningContextBand'
 import TutorSessionStrip from './components/TutorSessionStrip'
 import ErrorBoundary from './components/ErrorBoundary'
 import HomePage from './pages/HomePage'
-import SearchPage from './pages/SearchPage'
-import StatsPage from './pages/StatsPage'
-import MediaListPage from './pages/MediaListPage'
-import MediaDetailPage from './pages/MediaDetailPage'
-import MediaFormPage from './pages/MediaFormPage'
-import SeasonalAnimePage from './pages/SeasonalAnimePage'
-import InstalledGamesPage from './pages/InstalledGamesPage'
-import FranchisesPage from './pages/FranchisesPage'
-import FranchisePage from './pages/FranchisePage'
-import AchievementsPage from './pages/AchievementsPage'
-import ThemeSongsPage from './pages/ThemeSongsPage'
-import EntityListView from './components/EntityListView'
-import SettingsPage from './pages/SettingsPage'
-import PersonDetailPage from './pages/PersonDetailPage'
-import StudioListPage from './pages/StudioListPage'
-import StudioDetailPage from './pages/StudioDetailPage'
-import CharacterDetailPage from './pages/CharacterDetailPage'
-import QuizLandingPage from './pages/QuizLandingPage'
-import SongQuizPage from './pages/SongQuizPage'
-import GuessTrackPage from './pages/GuessTrackPage'
-import LibraryGridPage from './pages/LibraryGridPage'
-import MovieChainPage from './pages/MovieChainPage'
-import LibrarylePage from './pages/LibrarylePage'
-import MysteryCareerPage from './pages/MysteryCareerPage'
-import LinkWallPage from './pages/LinkWallPage'
-import CastQuizPage from './pages/CastQuizPage'
-import VaQuizPage from './pages/VaQuizPage'
-import SynopsisQuizPage from './pages/SynopsisQuizPage'
-import MangaPanelQuizPage from './pages/MangaPanelQuizPage'
-import ChallengeQuizPage from './pages/ChallengeQuizPage'
-import PartyQuizPage from './pages/PartyQuizPage'
-import TournamentPage from './pages/TournamentPage'
-import ChecklistPage from './pages/ChecklistPage'
-import ListsIndexPage from './pages/ListsIndexPage'
-import TorrentsPage from './pages/TorrentsPage'
-import BulkImportPage from './pages/BulkImportPage'
-import TasksPage from './pages/TasksPage'
-import LogsPage from './pages/LogsPage'
-import ListFormPage from './pages/ListFormPage'
-import ListDetailPage from './pages/ListDetailPage'
-import TierListFormPage from './pages/TierListFormPage'
-import TierListEditorPage from './pages/TierListEditorPage'
-import TagsIndexPage from './pages/TagsIndexPage'
-import TagDetailPage from './pages/TagDetailPage'
-import EnglishDictionaryPage from './pages/EnglishDictionaryPage'
-import EnglishHomePage from './pages/EnglishHomePage'
-import EnglishReviewPage from './pages/EnglishReviewPage'
-import EnglishDeckPage from './pages/EnglishDeckPage'
-import EnglishUsePage from './pages/EnglishUsePage'
-import EnglishPunctuatePage from './pages/EnglishPunctuatePage'
-import EnglishSpotErrorPage from './pages/EnglishSpotErrorPage'
-import EnglishMatchPage from './pages/EnglishMatchPage'
-import EnglishVocabQuizPage from './pages/EnglishVocabQuizPage'
-import EnglishSpellingPage from './pages/EnglishSpellingPage'
-import EnglishReadingPage from './pages/EnglishReadingPage'
-import EnglishMechanicsPage from './pages/EnglishMechanicsPage'
-import EnglishWritingPage from './pages/EnglishWritingPage'
-import ProgrammingHomePage from './pages/ProgrammingHomePage'
-import ProgCoursePage from './pages/ProgCoursePage'
-import ProgLessonPage from './pages/ProgLessonPage'
-import CheatsheetsPage from './pages/CheatsheetsPage'
-import CliPracticePage from './pages/CliPracticePage'
-import ProgrammingQuizPage from './pages/ProgrammingQuizPage'
-import SqlSandboxPage from './pages/SqlSandboxPage'
-import RegexGolfPage from './pages/RegexGolfPage'
-import MangaReaderPage from './pages/MangaReaderPage'
-import BookReaderPage from './pages/BookReaderPage'
 import OpenFileHandler from './components/OpenFileHandler'
-import MusicLibraryPage from './pages/MusicLibraryPage'
-import MusicArtistPage from './pages/MusicArtistPage'
-import MusicAlbumPage from './pages/MusicAlbumPage'
-import MusicPlaylistPage from './pages/MusicPlaylistPage'
-import MusicLikedPage from './pages/MusicLikedPage'
-
-import MusicStatsPage from './pages/MusicStatsPage'
-import MusicDownloadsPage from './pages/MusicDownloadsPage'
-import NowPlayingPage from './pages/NowPlayingPage'
-import GachaHomePage from './pages/GachaHomePage'
-import WrestlingHomePage from './pages/WrestlingHomePage'
-import WrestlingPromotionPage from './pages/WrestlingPromotionPage'
-import WrestlingEventPage from './pages/WrestlingEventPage'
-import WrestlingWrestlerPage from './pages/WrestlingWrestlerPage'
-import WrestlingRatedPage from './pages/WrestlingRatedPage'
-import WrestlingYearPage from './pages/WrestlingYearPage'
-import WrestlingMatchRedirect from './pages/WrestlingMatchRedirect'
-import WrestlingCollectionPage from './pages/WrestlingCollectionPage'
-import FootballHomePage from './pages/FootballHomePage'
-import FootballCurrentPage from './pages/FootballCurrentPage'
-import FootballCompetitionsPage from './pages/FootballCompetitionsPage'
-import FootballCompetitionPage from './pages/FootballCompetitionPage'
-import FootballSeasonPage from './pages/FootballSeasonPage'
-import FootballDirectoryPage from './pages/FootballDirectoryPage'
-import FootballTeamPage from './pages/FootballTeamPage'
-import FootballPersonPage from './pages/FootballPersonPage'
-import FootballMatchPage from './pages/FootballMatchPage'
-import FootballMediaPage from './pages/FootballMediaPage'
-import FootballSyncPage from './pages/FootballSyncPage'
-import FootballQuizPage from './pages/FootballQuizPage'
-import FootballQuizGamePage from './pages/FootballQuizGamePage'
-import FootballSearchPage from './pages/FootballSearchPage'
-import GachaGamePage from './pages/GachaGamePage'
-import GachaUnitPage from './pages/GachaUnitPage'
-import GachaCoachPage from './pages/GachaCoachPage'
 import { ANIME, MANGA, VISUAL_NOVEL, GAME, BOOK, MOVIE, TV } from './lib/mediaConfig'
 import { surfaceMoodForPath } from './lib/surfaceMood'
 import { useSettings } from './lib/hooks'
 import { parseSignalClarity, SIGNAL_CLARITY_SETTING } from './lib/signalClarity'
 import { APP_THEME_SETTING } from '@shared/appTheme'
 import { persistAppTheme, resolveAppTheme, stampAppTheme } from './lib/theme'
+
+// Home and shell chrome are the launch surface. Every secondary destination is
+// loaded on first visit so opening NaviHUB does not parse the entire library,
+// tooling and editor surface up front.
+const SearchPage = lazy(() => import('./pages/SearchPage'))
+const StatsPage = lazy(() => import('./pages/StatsPage'))
+const MediaListPage = lazy(() => import('./pages/MediaListPage'))
+const MediaDetailPage = lazy(() => import('./pages/MediaDetailPage'))
+const MediaFormPage = lazy(() => import('./pages/MediaFormPage'))
+const SeasonalAnimePage = lazy(() => import('./pages/SeasonalAnimePage'))
+const InstalledGamesPage = lazy(() => import('./pages/InstalledGamesPage'))
+const FranchisesPage = lazy(() => import('./pages/FranchisesPage'))
+const FranchisePage = lazy(() => import('./pages/FranchisePage'))
+const AchievementsPage = lazy(() => import('./pages/AchievementsPage'))
+const ThemeSongsPage = lazy(() => import('./pages/ThemeSongsPage'))
+const EntityListView = lazy(() => import('./components/EntityListView'))
+const PersonDetailPage = lazy(() => import('./pages/PersonDetailPage'))
+const StudioListPage = lazy(() => import('./pages/StudioListPage'))
+const StudioDetailPage = lazy(() => import('./pages/StudioDetailPage'))
+const CharacterDetailPage = lazy(() => import('./pages/CharacterDetailPage'))
+const ChecklistPage = lazy(() => import('./pages/ChecklistPage'))
+const ListsIndexPage = lazy(() => import('./pages/ListsIndexPage'))
+const TorrentsPage = lazy(() => import('./pages/TorrentsPage'))
+const BulkImportPage = lazy(() => import('./pages/BulkImportPage'))
+const TasksPage = lazy(() => import('./pages/TasksPage'))
+const LogsPage = lazy(() => import('./pages/LogsPage'))
+const ListFormPage = lazy(() => import('./pages/ListFormPage'))
+const ListDetailPage = lazy(() => import('./pages/ListDetailPage'))
+const TierListFormPage = lazy(() => import('./pages/TierListFormPage'))
+const TierListEditorPage = lazy(() => import('./pages/TierListEditorPage'))
+const TagsIndexPage = lazy(() => import('./pages/TagsIndexPage'))
+const TagDetailPage = lazy(() => import('./pages/TagDetailPage'))
+
+// The self-contained learning libraries carry large offline lesson bodies.
+// Route-level chunks keep them out of launch and load only the chosen surface.
+const EnglishDictionaryPage = lazy(() => import('./pages/EnglishDictionaryPage'))
+const EnglishHomePage = lazy(() => import('./pages/EnglishHomePage'))
+const EnglishReviewPage = lazy(() => import('./pages/EnglishReviewPage'))
+const EnglishDeckPage = lazy(() => import('./pages/EnglishDeckPage'))
+const EnglishUsePage = lazy(() => import('./pages/EnglishUsePage'))
+const EnglishPunctuatePage = lazy(() => import('./pages/EnglishPunctuatePage'))
+const EnglishSpotErrorPage = lazy(() => import('./pages/EnglishSpotErrorPage'))
+const EnglishMatchPage = lazy(() => import('./pages/EnglishMatchPage'))
+const EnglishVocabQuizPage = lazy(() => import('./pages/EnglishVocabQuizPage'))
+const EnglishSpellingPage = lazy(() => import('./pages/EnglishSpellingPage'))
+const EnglishReadingPage = lazy(() => import('./pages/EnglishReadingPage'))
+const EnglishMechanicsPage = lazy(() => import('./pages/EnglishMechanicsPage'))
+const EnglishWritingPage = lazy(() => import('./pages/EnglishWritingPage'))
+const ProgrammingHomePage = lazy(() => import('./pages/ProgrammingHomePage'))
+const ProgCoursePage = lazy(() => import('./pages/ProgCoursePage'))
+const ProgLessonPage = lazy(() => import('./pages/ProgLessonPage'))
+const CheatsheetsPage = lazy(() => import('./pages/CheatsheetsPage'))
+const CliPracticePage = lazy(() => import('./pages/CliPracticePage'))
+const ProgrammingQuizPage = lazy(() => import('./pages/ProgrammingQuizPage'))
+const SqlSandboxPage = lazy(() => import('./pages/SqlSandboxPage'))
+const RegexGolfPage = lazy(() => import('./pages/RegexGolfPage'))
+const SettingsPage = lazy(() => import('./pages/SettingsPage'))
+const QuizLandingPage = lazy(() => import('./pages/QuizLandingPage'))
+const SongQuizPage = lazy(() => import('./pages/SongQuizPage'))
+const GuessTrackPage = lazy(() => import('./pages/GuessTrackPage'))
+const LibraryGridPage = lazy(() => import('./pages/LibraryGridPage'))
+const MovieChainPage = lazy(() => import('./pages/MovieChainPage'))
+const LibrarylePage = lazy(() => import('./pages/LibrarylePage'))
+const MysteryCareerPage = lazy(() => import('./pages/MysteryCareerPage'))
+const LinkWallPage = lazy(() => import('./pages/LinkWallPage'))
+const CastQuizPage = lazy(() => import('./pages/CastQuizPage'))
+const VaQuizPage = lazy(() => import('./pages/VaQuizPage'))
+const SynopsisQuizPage = lazy(() => import('./pages/SynopsisQuizPage'))
+const MangaPanelQuizPage = lazy(() => import('./pages/MangaPanelQuizPage'))
+const ChallengeQuizPage = lazy(() => import('./pages/ChallengeQuizPage'))
+const PartyQuizPage = lazy(() => import('./pages/PartyQuizPage'))
+const TournamentPage = lazy(() => import('./pages/TournamentPage'))
+const MangaReaderPage = lazy(() => import('./pages/MangaReaderPage'))
+const BookReaderPage = lazy(() => import('./pages/BookReaderPage'))
+const MusicLibraryPage = lazy(() => import('./pages/MusicLibraryPage'))
+const MusicArtistPage = lazy(() => import('./pages/MusicArtistPage'))
+const MusicAlbumPage = lazy(() => import('./pages/MusicAlbumPage'))
+const MusicPlaylistPage = lazy(() => import('./pages/MusicPlaylistPage'))
+const MusicLikedPage = lazy(() => import('./pages/MusicLikedPage'))
+const MusicStatsPage = lazy(() => import('./pages/MusicStatsPage'))
+const MusicDownloadsPage = lazy(() => import('./pages/MusicDownloadsPage'))
+const NowPlayingPage = lazy(() => import('./pages/NowPlayingPage'))
+const GachaHomePage = lazy(() => import('./pages/GachaHomePage'))
+const GachaGamePage = lazy(() => import('./pages/GachaGamePage'))
+const GachaUnitPage = lazy(() => import('./pages/GachaUnitPage'))
+const GachaCoachPage = lazy(() => import('./pages/GachaCoachPage'))
+const WrestlingHomePage = lazy(() => import('./pages/WrestlingHomePage'))
+const WrestlingPromotionPage = lazy(() => import('./pages/WrestlingPromotionPage'))
+const WrestlingEventPage = lazy(() => import('./pages/WrestlingEventPage'))
+const WrestlingWrestlerPage = lazy(() => import('./pages/WrestlingWrestlerPage'))
+const WrestlingRatedPage = lazy(() => import('./pages/WrestlingRatedPage'))
+const WrestlingYearPage = lazy(() => import('./pages/WrestlingYearPage'))
+const WrestlingMatchRedirect = lazy(() => import('./pages/WrestlingMatchRedirect'))
+const WrestlingCollectionPage = lazy(() => import('./pages/WrestlingCollectionPage'))
+const FootballHomePage = lazy(() => import('./pages/FootballHomePage'))
+const FootballCurrentPage = lazy(() => import('./pages/FootballCurrentPage'))
+const FootballCompetitionsPage = lazy(() => import('./pages/FootballCompetitionsPage'))
+const FootballCompetitionPage = lazy(() => import('./pages/FootballCompetitionPage'))
+const FootballSeasonPage = lazy(() => import('./pages/FootballSeasonPage'))
+const FootballDirectoryPage = lazy(() => import('./pages/FootballDirectoryPage'))
+const FootballTeamPage = lazy(() => import('./pages/FootballTeamPage'))
+const FootballPersonPage = lazy(() => import('./pages/FootballPersonPage'))
+const FootballMatchPage = lazy(() => import('./pages/FootballMatchPage'))
+const FootballMediaPage = lazy(() => import('./pages/FootballMediaPage'))
+const FootballSyncPage = lazy(() => import('./pages/FootballSyncPage'))
+const FootballQuizPage = lazy(() => import('./pages/FootballQuizPage'))
+const FootballQuizGamePage = lazy(() => import('./pages/FootballQuizGamePage'))
+const FootballSearchPage = lazy(() => import('./pages/FootballSearchPage'))
 
 // Japanese is the app's largest standalone learning vertical. Keep it out of
 // the startup bundle and load only the requested study surface.
@@ -215,16 +221,18 @@ export default function App() {
   if (isReader) {
     return (
       <ErrorBoundary key={location.pathname}>
-        <Routes>
-          <Route path="/manga/:id/read/:chapterId" element={<MangaReaderPage />} />
-          <Route path="/manga/:id/book/:chapterId" element={<BookReaderPage />} />
-          {/* Books reuse the same readers; a books folder may hold CBZ volumes too. */}
-          <Route path="/books/:id/read/:chapterId" element={<MangaReaderPage />} />
-          <Route path="/books/:id/book/:chapterId" element={<BookReaderPage />} />
-          {/* "Open with NaviHUB" — a .cbz/.epub from outside the library. */}
-          <Route path="/read/manga/:token" element={<MangaReaderPage />} />
-          <Route path="/read/book/:token" element={<BookReaderPage />} />
-        </Routes>
+        <Suspense fallback={<RouteLoading label="Loading reader…" />}>
+          <Routes>
+            <Route path="/manga/:id/read/:chapterId" element={<MangaReaderPage />} />
+            <Route path="/manga/:id/book/:chapterId" element={<BookReaderPage />} />
+            {/* Books reuse the same readers; a books folder may hold CBZ volumes too. */}
+            <Route path="/books/:id/read/:chapterId" element={<MangaReaderPage />} />
+            <Route path="/books/:id/book/:chapterId" element={<BookReaderPage />} />
+            {/* "Open with NaviHUB" — a .cbz/.epub from outside the library. */}
+            <Route path="/read/manga/:token" element={<MangaReaderPage />} />
+            <Route path="/read/book/:token" element={<BookReaderPage />} />
+          </Routes>
+        </Suspense>
         {/* Mounted in BOTH branches: a file opened while you're already in a
             reader still has to land somewhere. */}
         <OpenFileHandler />
@@ -247,13 +255,7 @@ export default function App() {
           <LearningContextBand />
           <TutorSessionStrip />
           <ErrorBoundary key={location.pathname}>
-          <Suspense
-            fallback={
-              <div className="mx-auto max-w-3xl p-6 text-sm text-gray-400" role="status">
-                Loading study surface…
-              </div>
-            }
-          >
+          <Suspense fallback={<RouteLoading label="Loading section…" />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/search" element={<SearchPage />} />
@@ -577,6 +579,14 @@ export default function App() {
       <CommandPalette />
       <PlayerShortcuts />
       <OpenFileHandler />
+    </div>
+  )
+}
+
+function RouteLoading({ label }: { label: string }): React.JSX.Element {
+  return (
+    <div className="mx-auto max-w-3xl p-6 text-sm text-gray-400" role="status">
+      {label}
     </div>
   )
 }

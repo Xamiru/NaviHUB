@@ -16,7 +16,7 @@ release/
 
 # UI mockups built by the ui-preview skill — local, disposable, never pushed
 previews/
-
+scratch/
 # Logs
 *.log
 npm-debug.log*

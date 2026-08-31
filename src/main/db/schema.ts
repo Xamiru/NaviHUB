@@ -2356,3 +2356,12 @@ export const footballExternalLink = sqliteTable(
     uniq: unique('uniq_football_external_link').on(t.entityKind, t.entityId, t.provider, t.url)
   })
 )
+
+// Type-only mirror of the FTS5 virtual table declared in init.sql. Repositories
+// use raw SQL; Drizzle never creates or queries this projection.
+export const globalSearchFts = sqliteTable('global_search_fts', {
+  kind: text('kind').notNull(),
+  entityId: integer('entity_id').notNull(),
+  name: text('name'),
+  altName: text('alt_name')
+})

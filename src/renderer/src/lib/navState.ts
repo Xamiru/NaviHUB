@@ -7,6 +7,17 @@ import { useLocation, useNavigationType } from 'react-router-dom'
 // state. Lives for the session (cleared on full reload), which is all that
 // back/forward restoration needs.
 const store = new Map<string, unknown>()
+const MAX_STORE_ENTRIES = 2000
+
+function storeValue(key: string, value: unknown): void {
+  store.delete(key)
+  store.set(key, value)
+  while (store.size > MAX_STORE_ENTRIES) {
+    const oldest = store.keys().next().value
+    if (oldest === undefined) break
+    store.delete(oldest)
+  }
+}
 
 // Drop-in replacement for useState whose value survives back/forward navigation.
 // Pass a unique `name` per piece of state on a page (e.g. 'castPage', 'search').
@@ -22,7 +33,7 @@ export function usePersistedState<T>(name: string, initial: T) {
     (next: T | ((prev: T) => T)) => {
       setValue((prev) => {
         const resolved = typeof next === 'function' ? (next as (p: T) => T)(prev) : next
-        store.set(storeKey, resolved)
+        storeValue(storeKey, resolved)
         return resolved
       })
     },
@@ -43,7 +54,7 @@ export function useScrollRestoration(ref: RefObject<HTMLElement | null>): void {
     const el = ref.current
     if (!el) return
     const onScroll = (): void => {
-      store.set(`${key}:scroll`, el.scrollTop)
+      storeValue(`${key}:scroll`, el.scrollTop)
     }
     el.addEventListener('scroll', onScroll, { passive: true })
     return () => el.removeEventListener('scroll', onScroll)

@@ -8,7 +8,7 @@ import PitchAccent from './PitchAccent'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { usePersistedState } from '../../lib/navState'
-import { usePlayer } from '../../lib/player'
+import { usePlayerControls } from '../../lib/player'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { MinimalPair, MinimalPairItem } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
@@ -157,7 +157,7 @@ function PairsPlay({
   onExit: () => void
 }) {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [round, setRound] = useState<Round | null>(null)
   const [picked, setPicked] = useState<number | null>(null)

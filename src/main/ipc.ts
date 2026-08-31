@@ -21,7 +21,6 @@ import * as english from './english'
 import * as wordnet from './dict/wordnet'
 import * as enFreq from './dict/enFreq'
 import * as englishDrills from './englishDrills'
-import * as englishWriting from './englishWriting'
 import * as dictKanjium from './dict/kanjium'
 import * as dictKrad from './dict/krad'
 import * as dictGrammar from './dict/grammar'
@@ -36,7 +35,6 @@ import * as jpGrammarDeck from './jpGrammarDeck'
 import * as dictSimilarKanji from './dict/similarKanji'
 import * as imeCandidates from './dict/imeCandidates'
 import * as englishRepo from './repos/englishRepo'
-import * as programmingRepo from './repos/programmingRepo'
 import * as sqlSandbox from './sqlSandbox'
 import * as englishDeck from './englishDeck'
 import * as jpSentenceGames from './jpSentenceGames'
@@ -60,7 +58,6 @@ import * as gameLaunch from './gameLaunch'
 import * as gameSessionRepo from './repos/gameSessionRepo'
 import * as achievements from './achievements'
 import * as achievementWatcher from './achievementWatcher'
-import * as retroAchievements from './retroAchievements'
 import * as achievementRepo from './repos/achievementRepo'
 import * as files from './files'
 import * as manga from './manga'
@@ -109,6 +106,14 @@ import * as coverage from './coverage'
 import * as coverageRepo from './repos/coverageRepo'
 import * as analyzeText from './analyzeText'
 
+// These feature modules carry large offline content catalogs. Their IPC
+// channels are always registered, but the implementation is parsed only on
+// first use. import() is module-cached, so later calls reuse the same instance.
+const loadEnglishWriting = (): Promise<typeof import('./englishWriting')> =>
+  import('./englishWriting')
+const loadProgrammingRepo = (): Promise<typeof import('./repos/programmingRepo')> =>
+  import('./repos/programmingRepo')
+
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
 export function registerIpc(): void {
@@ -128,6 +133,8 @@ export function registerIpc(): void {
 
   // ---- media ----
   ipcMain.handle('media:list', (_e, filter) => mediaRepo.list(filter))
+  ipcMain.handle('media:listPage', (_e, request) => mediaRepo.listPage(request))
+  ipcMain.handle('media:homeOverview', () => mediaRepo.homeOverview())
   ipcMain.handle('media:get', (_e, id) => mediaRepo.get(id))
   ipcMain.handle('media:create', (_e, input) => mediaRepo.create(input))
   ipcMain.handle('media:update', (_e, id, input) => mediaRepo.update(id, input))
@@ -262,12 +269,16 @@ export function registerIpc(): void {
   ipcMain.handle('achievements:setupSteam', (_e, mediaId, appid) =>
     withActivity('Fetching achievements', () => achievements.fetchSteamSchema(mediaId, appid))
   )
-  ipcMain.handle('achievements:raConsoles', () => retroAchievements.consoles())
-  ipcMain.handle('achievements:raSearch', (_e, query, consoleId) =>
-    retroAchievements.searchGames(query, consoleId)
+  ipcMain.handle('achievements:raConsoles', async () =>
+    (await import('./retroAchievements')).consoles()
+  )
+  ipcMain.handle('achievements:raSearch', async (_e, query, consoleId) =>
+    (await import('./retroAchievements')).searchGames(query, consoleId)
   )
   ipcMain.handle('achievements:setupRa', (_e, mediaId, raGameId) =>
-    withActivity('Fetching achievements', () => retroAchievements.fetchRaGame(mediaId, raGameId))
+    withActivity('Fetching achievements', async () =>
+      (await import('./retroAchievements')).fetchRaGame(mediaId, raGameId)
+    )
   )
   ipcMain.handle('achievements:refresh', (_e, mediaId) =>
     withActivity('Refreshing achievements', () => achievements.refresh(mediaId))
@@ -488,7 +499,9 @@ export function registerIpc(): void {
   ipcMain.handle('english:freqInfo', () => enFreq.getEnFreqInfo())
   ipcMain.handle('english:importFreq', () => enFreq.importEnFreq())
   ipcMain.handle('english:removeFreq', () => enFreq.removeEnFreq())
-  ipcMain.handle('english:writingFeedback', (_e, req) => englishWriting.getWritingFeedback(req))
+  ipcMain.handle('english:writingFeedback', async (_e, req) =>
+    (await loadEnglishWriting()).getWritingFeedback(req)
+  )
   ipcMain.handle('english:listWritings', () => englishRepo.listWritings())
   ipcMain.handle('english:removeWriting', (_e, id) => englishRepo.removeWriting(id))
   ipcMain.handle('english:errorTally', () => englishRepo.writingErrorTally())
@@ -497,17 +510,25 @@ export function registerIpc(): void {
   ipcMain.handle('english:removeWords', (_e, ids) => englishRepo.removeWords(ids))
 
   // ---- programming (learn section; content is code, only completion is data) ----
-  ipcMain.handle('programming:progress', () => programmingRepo.progress())
-  ipcMain.handle('programming:complete', (_e, lessonKey) => programmingRepo.complete(lessonKey))
-  ipcMain.handle('programming:uncomplete', (_e, lessonKey) =>
-    programmingRepo.uncomplete(lessonKey)
+  ipcMain.handle('programming:progress', async () => (await loadProgrammingRepo()).progress())
+  ipcMain.handle('programming:complete', async (_e, lessonKey) =>
+    (await loadProgrammingRepo()).complete(lessonKey)
   )
-  ipcMain.handle('programming:recordAttempt', (_e, input) => programmingRepo.recordAttempt(input))
-  ipcMain.handle('programming:attempts', () => programmingRepo.attempts())
-  ipcMain.handle('programming:recordCliRound', (_e, input) => programmingRepo.recordCliRound(input))
-  ipcMain.handle('programming:cliMisses', () => programmingRepo.cliMisses())
-  ipcMain.handle('programming:solves', () => programmingRepo.solves())
-  ipcMain.handle('programming:recordSolve', (_e, input) => programmingRepo.recordSolve(input))
+  ipcMain.handle('programming:uncomplete', async (_e, lessonKey) =>
+    (await loadProgrammingRepo()).uncomplete(lessonKey)
+  )
+  ipcMain.handle('programming:recordAttempt', async (_e, input) =>
+    (await loadProgrammingRepo()).recordAttempt(input)
+  )
+  ipcMain.handle('programming:attempts', async () => (await loadProgrammingRepo()).attempts())
+  ipcMain.handle('programming:recordCliRound', async (_e, input) =>
+    (await loadProgrammingRepo()).recordCliRound(input)
+  )
+  ipcMain.handle('programming:cliMisses', async () => (await loadProgrammingRepo()).cliMisses())
+  ipcMain.handle('programming:solves', async () => (await loadProgrammingRepo()).solves())
+  ipcMain.handle('programming:recordSolve', async (_e, input) =>
+    (await loadProgrammingRepo()).recordSolve(input)
+  )
   ipcMain.handle('programming:sqlRun', (_e, input) => sqlSandbox.runExercise(input))
   ipcMain.handle('programming:sqlExpected', (_e, key) => sqlSandbox.expectedTable(key))
 
@@ -739,6 +760,7 @@ export function registerIpc(): void {
   ipcMain.handle('music:artist', (_e, id) => musicRepo.getArtist(id))
   ipcMain.handle('music:album', (_e, id) => musicRepo.getAlbum(id))
   ipcMain.handle('music:tracks', (_e, filter) => musicRepo.listTracks(filter))
+  ipcMain.handle('music:trackPage', (_e, request) => musicRepo.listTrackPage(request))
   ipcMain.handle('music:artistTracks', (_e, artistId) => musicRepo.artistTracks(artistId))
   ipcMain.handle('music:search', (_e, query) => musicRepo.searchAll(query))
   ipcMain.handle('music:stats', () => musicRepo.stats())

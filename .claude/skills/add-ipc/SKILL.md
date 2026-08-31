@@ -9,7 +9,7 @@ Every backend capability crosses the same five files in the same order. Sessions
 re-derive this by reading `types.ts` (23 sessions), `api.ts` (20), `preload/index.ts` (17) and
 `ipc.ts` (16) before the first edit. Follow the chain instead.
 
-There are currently **375 channels** across **41 namespaces**. You are adding to a working system,
+There are currently **514 channels** across **41 namespaces**. You are adding to a working system,
 so copy the shape of the neighbours rather than inventing one.
 
 ## 1. Payload types — `src/shared/types.ts`

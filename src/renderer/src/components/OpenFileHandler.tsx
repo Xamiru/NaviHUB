@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { OpenTarget } from '@shared/types'
 import { api } from '../lib/api'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { toast } from '../lib/toast'
 
 // "Open with NaviHUB". The OS hands main a path; main parks it; this collects
@@ -16,7 +16,7 @@ import { toast } from '../lib/toast'
 // Headless and mounted once in the App shell, like MusicPlayLogger.
 export default function OpenFileHandler(): null {
   const navigate = useNavigate()
-  const player = usePlayer()
+  const player = usePlayerControls()
   // The player identity changes on every playback state change; keeping it in a
   // ref stops the poll effect from tearing down and re-arming constantly.
   const playerRef = useRef(player)
@@ -81,18 +81,33 @@ export default function OpenFileHandler(): null {
     // the file lands in the queue, so this fires right after. The interval is
     // only a backstop for the cases focus can't cover (already-focused window,
     // a compositor that ignores the raise).
-    const onFocus = (): void => void collect()
-    window.addEventListener('focus', onFocus)
-    document.addEventListener('visibilitychange', onFocus)
-    const timer = setInterval(() => {
+    let timer: number | null = null
+    const schedule = (): void => {
+      if (timer != null) window.clearTimeout(timer)
+      timer = null
+      if (cancelled || document.visibilityState !== 'visible') return
+      timer = window.setTimeout(() => {
+        timer = null
+        void collect().finally(schedule)
+      }, 5000)
+    }
+    const onFocus = (): void => {
+      void collect()
+      schedule()
+    }
+    const onVisibility = (): void => {
       if (document.visibilityState === 'visible') void collect()
-    }, 2000)
+      schedule()
+    }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVisibility)
+    schedule()
 
     return () => {
       cancelled = true
       window.removeEventListener('focus', onFocus)
-      document.removeEventListener('visibilitychange', onFocus)
-      clearInterval(timer)
+      document.removeEventListener('visibilitychange', onVisibility)
+      if (timer != null) window.clearTimeout(timer)
     }
   }, [navigate])
 

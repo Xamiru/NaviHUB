@@ -419,6 +419,22 @@ describe('Football repository', () => {
     expect(football.listMatches()[0]).toMatchObject({ homeScore: 2, awayScore: 1, favorite: false })
   })
 
+  it('labels team season records with their season and competition', () => {
+    db.prepare(`
+      INSERT INTO football_standing
+        (season_id,team_id,rank,rank_official,played,won,drawn,lost,goals_for,goals_against,goal_difference,points)
+      VALUES (1,1,1,1,38,28,5,5,91,29,62,89)
+    `).run()
+    expect(football.getTeam(1)?.seasonRecords).toMatchObject([{
+      seasonId: 1,
+      seasonLabel: '2023/24',
+      competitionKey: 'premier-league',
+      competitionName: 'Premier League',
+      rank: 1,
+      points: 89
+    }])
+  })
+
   it('shows tied verified season scorers at the same rank and excludes own goals', () => {
     db.exec(`
       INSERT INTO football_person (id,name,role) VALUES (20,'Scorer A','player'),(21,'Scorer B','player');

@@ -90,6 +90,10 @@ compilations and features are excluded. A public Spotify URL remains available o
 under Advanced source replacement. In parallel, one bounded six-second spotDL query
 checks up to three representative local tracks for a non-tied Spotify identity; it
 never expands the artist and cannot delay the otherwise-ready preview beyond that bound.
+An empty local artist or album is a supported first-download case: automatic discovery
+uses the page name, while an Advanced Spotify link inspects that exact source. Local
+sample tracks improve identity discovery but are never a prerequisite for building the
+catalogue.
 
 The indexed catalogue is stored in `music_spotify_entity_snapshot`,
 `music_spotify_entity_release` and `music_spotify_entity_track`. Reopening reads that
@@ -119,6 +123,9 @@ completed files are scanned and kept, and Resume starts only unresolved work. Ca
 uses the same recovery path and releases the maintenance gate after cleanup. A
 user-confirmed mismatch is one-shot and never overwrites the page source; source IDs
 auto-link only after all relevant source tracks resolve to one unambiguous local entity.
+Metadata and audio child processes also have output-silence watchdogs: a stalled spotDL
+tree is terminated with an actionable Retry/Settings error instead of occupying the
+maintenance gate indefinitely.
 
 The batch owns the music-maintenance gate from start through its final rescan.
 Child spotDL runs and scans re-enter that same unique owner; competing Spotify,
@@ -144,6 +151,14 @@ resolution and scanning; playlist cards retain 100-track chunks and scan after e
 chunk. One failed card stays visible for Retry while later cards continue. Completed
 cards stay until Clear completed.
 
+A failed-card Retry asks spotDL to replace unresolved destination files so a bad or
+partial prior output cannot be skipped forever; ordinary first runs and Pause/Resume
+continue to preserve completed files. Queue reads also re-open a completed card when a
+selected local match disappears. Immediate-start confirmation is based on the complete
+merged card after new selections are saved, so the 100-track/2 GB warning cannot
+understate previously queued work. Partial runs finish with a warning and keep failed
+cards visible rather than presenting a generic success.
+
 Pause terminates the active spotDL/yt-dlp/ffmpeg process tree, scans recoverable files,
 and persists the current card as paused while preserving whether Resume should continue
 the whole queue or only that card. Cancel settles the runtime task and returns unfinished
@@ -151,6 +166,9 @@ work to queued; it never removes audio or queue cards. Startup converts any inte
 `running` row to `paused`, and Resume performs a recovery scan before recalculating the
 unresolved remainder. No queued work starts automatically on launch. Arbitrary yt-dlp
 URL jobs remain immediate and outside this queue.
+Shutdown marks the current durable card paused before the database closes, tree-kills
+the active child, and abandons late async scan/write work. Reopening the app therefore
+cannot inherit a hidden process, stale maintenance owner, or post-close database write.
 
 ## Sonic Archive browsing and acquisition language
 
@@ -161,7 +179,9 @@ and links to the full listening history. Artists expose their complete track
 catalog after the album shelf. Artists, albums, and tracks have history-entry
 persisted sort/filter controls for large collections; search renders every result
 returned by the bounded backend query rather than silently hiding results after
-the sixth card. Recent-track query keys include their requested limit because
+the sixth card. The all-tracks tab uses `music:trackPage`: filtering and ordering
+happen in SQL and the renderer pulls 192 rows at a time, while explicit Play All
+continues to request the complete queue. Recent-track query keys include their requested limit because
 Home, Sonic Archive, and Listening Stats intentionally request different windows.
 
 Playback remains the header hierarchy: Play is the single primary action and

@@ -17,16 +17,10 @@ import BookSettingsGroups, {
 import ReaderSettingsDrawer from '../components/reader/ReaderSettingsDrawer'
 import { PrevIcon, NextIcon } from '../components/PlayerIcons'
 import type { EpubTocEntry, MangaChapter } from '@shared/types'
-// Mincho face for the serif reading option — unicode-range split woff2s, so
-// only the glyphs actually rendered are fetched (self-origin, CSP-safe).
-//
-// The `japanese-` subset entry points, NOT the bare `400.css`/`600.css`: those
-// pull all 124 subsets in BOTH woff2 and woff — 496 files and ~17 MB, 86% of
-// the whole renderer output, in a build that ships as an installer and
-// self-updates over the network. Chromium always picks woff2, so half of that
-// could never load. Same family name, so BOOK_SERIF_STACK is unchanged.
-import '@fontsource/noto-serif-jp/japanese-400.css'
-import '@fontsource/noto-serif-jp/japanese-600.css'
+// Mincho face for the serif reading option. This local stylesheet references
+// only Chromium's woff2 format, avoiding unused woff fallbacks in installers.
+// Same family name, so BOOK_SERIF_STACK is unchanged.
+import './BookReaderFonts.css'
 
 // Immersive EPUB (light novel) reader — the book sibling of MangaReaderPage,
 // routed chrome-free from App.tsx. "Pages" are the book's spine documents,

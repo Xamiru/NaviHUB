@@ -5,6 +5,7 @@ import type { SpotifyDownloadQueueCard } from '@shared/types'
 import ActionMenu from '../components/ActionMenu'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
 import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
 import { useDownloadStatus } from '../components/MusicDownloadDialog'
@@ -16,6 +17,7 @@ import { toast, toastError } from '../lib/toast'
 
 const TWO_GB = 2 * 1024 * 1024 * 1024
 const ACTIVE = new Set(['starting', 'resolving', 'downloading', 'processing', 'pausing', 'paused', 'cancelling'])
+const POLLING = new Set(['starting', 'resolving', 'downloading', 'processing', 'pausing', 'cancelling'])
 
 type SortableCard = SpotifyDownloadQueueCard & { itemId: number }
 
@@ -28,10 +30,10 @@ export default function MusicDownloadsPage() {
   const qc = useQueryClient()
   const downloadStatus = useDownloadStatus()
   const [completedOpen, setCompletedOpen] = useState(false)
-  const { data: queue } = useQuery({
+  const { data: queue, isLoading, isError, error } = useQuery({
     queryKey: qk.music.spotifyQueue,
     queryFn: () => api.music.spotifyDownloadQueue(),
-    refetchInterval: downloadStatus?.source === 'spotifyQueue' && ACTIVE.has(downloadStatus.status)
+    refetchInterval: downloadStatus?.source === 'spotifyQueue' && POLLING.has(downloadStatus.status)
       ? 700
       : false
   })
@@ -39,7 +41,7 @@ export default function MusicDownloadsPage() {
     ? downloadStatus
     : null
   const sortableSource: SortableCard[] | undefined = queue?.pending
-    .filter((card) => card.state !== 'running')
+    .filter((card) => card.id !== active?.queueCardId)
     .map((card) => ({ ...card, itemId: card.id }))
   const { items, setItems, sensors, onDragEnd } = useOptimisticReorder(
     sortableSource,
@@ -83,7 +85,12 @@ export default function MusicDownloadsPage() {
   async function prioritize(card: SpotifyDownloadQueueCard): Promise<void> {
     try {
       await api.music.spotifyQueueStart({ jobId: card.id, prioritize: true })
-      toast(`“${card.title}” will run next`, 'success')
+      toast(
+        active?.status === 'paused'
+          ? `“${card.title}” will run after the paused download resumes`
+          : `“${card.title}” will run next`,
+        'success'
+      )
       await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
     } catch (error) {
       toastError(error)
@@ -146,11 +153,20 @@ export default function MusicDownloadsPage() {
 
   const paused = queue?.pending.find((card) => card.state === 'paused')
   const runningCard = queue?.pending.find((card) => card.id === active?.queueCardId)
+  const settled = downloadStatus?.source === 'spotifyQueue' &&
+    ['done', 'error', 'cancelled'].includes(downloadStatus.status)
+    ? downloadStatus
+    : null
+
+  if (isLoading) return <PageStatus>Loading saved Spotify downloads…</PageStatus>
+  if (isError) {
+    return <PageStatus>Could not load Music Downloads: {error instanceof Error ? error.message : String(error)}</PageStatus>
+  }
 
   return (
     <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
       <PageHeader
-        title="Music downloads"
+        title="Spotify download queue"
         subtitle={queue && queue.pendingSources > 0
           ? `${queue.pendingSources} source${queue.pendingSources === 1 ? '' : 's'} · ${queue.pendingTracks} missing track${queue.pendingTracks === 1 ? '' : 's'} · about ${formatBytes(queue.pendingEstimatedBytes)}`
           : 'Save Spotify releases and imported-playlist tracks here, then download when you are ready.'}
@@ -187,11 +203,13 @@ export default function MusicDownloadsPage() {
       />
 
       {active && runningCard && (
-        <div className="mb-7 border-y border-base-700 bg-base-800/60 px-4 py-4" aria-live="polite">
+        <div className="mb-7 border-y border-base-700 bg-base-800/60 px-4 py-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="font-medium text-white">{runningCard.title}</p>
-              <p className="mt-1 truncate text-sm text-gray-300">
+              <Link to={runningCard.route} className="font-medium text-white hover:text-accent">
+                {runningCard.title}
+              </Link>
+              <p className="mt-1 truncate text-sm text-gray-300" role="status" aria-live="polite">
                 {active.releaseTitle ?? active.title ?? active.message ?? 'Preparing download'}
               </p>
             </div>
@@ -201,18 +219,46 @@ export default function MusicDownloadsPage() {
             </p>
           </div>
           {active.percent != null && (
-            <div className="mt-3 h-1.5 overflow-hidden rounded bg-base-600" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={active.percent}>
+            <div className="mt-3 h-1.5 overflow-hidden rounded bg-base-600" role="progressbar" aria-label={`Download progress for ${runningCard.title}`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={active.percent}>
               <div className="h-full bg-accent transition-[width]" style={{ width: `${active.percent}%` }} />
             </div>
           )}
+          <p className="mt-3 text-xs text-gray-400">
+            Finished files are kept. Pausing or cancelling scans them before this run settles.
+          </p>
         </div>
       )}
 
-      <Section title="Queued" subtitle={queue?.pending.length ? `${queue.pending.length}` : undefined}>
-        {!queue?.pending.length ? (
+      {settled && !active && (
+        <div className={`mb-7 border-y px-4 py-3 text-sm ${
+          settled.status === 'error'
+            ? 'border-red-800/70 bg-red-950/30 text-red-200'
+            : (settled.failedCount ?? 0) > 0
+              ? 'border-amber-800/70 bg-amber-950/30 text-amber-100'
+              : 'border-base-700 bg-base-800/50 text-gray-300'
+        }`} role="status">
+          <p className="font-medium">
+            {settled.status === 'cancelled'
+              ? 'Download run cancelled'
+              : settled.status === 'error'
+                ? 'Download run failed'
+                : (settled.failedCount ?? 0) > 0
+                  ? 'Download run finished with unresolved tracks'
+                  : 'Download run complete'}
+          </p>
+          <p className="mt-1">
+            {settled.message ?? `${settled.resolvedCount ?? 0} resolved · ${settled.failedCount ?? 0} failed`}
+          </p>
+        </div>
+      )}
+
+      <Section title="Queued" subtitle={items.length ? `${items.length}` : undefined}>
+        {!items.length ? (
           <EmptyState
-            title="No Spotify downloads saved"
-            body="Open a local artist, album, or imported Spotify playlist and add the missing music you want to download later."
+            title={active ? 'No later downloads queued' : 'No Spotify downloads saved'}
+            body={active
+              ? 'This run will stop after the active card unless more music is added.'
+              : 'Open a local artist, album, or imported Spotify playlist and add the missing music you want to download later.'}
             action={<Link className="btn-primary" to="/music">Open music library</Link>}
           />
         ) : (
@@ -250,13 +296,13 @@ export default function MusicDownloadsPage() {
       {queue?.completed.length ? (
         <Section title="Completed" subtitle={`${queue.completed.length}`}>
           <div className="mb-3 flex justify-end gap-2">
-            <button className="btn-ghost" onClick={() => setCompletedOpen((open) => !open)}>
+            <button className="btn-ghost" aria-expanded={completedOpen} aria-controls="completed-download-cards" onClick={() => setCompletedOpen((open) => !open)}>
               {completedOpen ? 'Hide' : 'Show'} completed
             </button>
             <button className="btn-ghost" onClick={() => void clearCompleted()}>Clear completed</button>
           </div>
           {completedOpen && (
-            <div className="card overflow-hidden p-0">
+            <div id="completed-download-cards" className="card overflow-hidden p-0">
               {completed.visible.map((card) => (
                 <QueueCardRow
                   key={card.id}
@@ -323,9 +369,14 @@ function QueueCardRow({
             </span>
           </div>
           <p className="mt-1 text-sm text-gray-400">
-            {card.subtitle} · {card.missingCount} missing · about {formatBytes(card.missingEstimatedBytes)}
+            {[card.subtitle, `${card.missingCount} missing`, `about ${formatBytes(card.missingEstimatedBytes)}`].filter(Boolean).join(' · ')}
           </p>
           {card.error && <p className="mt-2 text-sm text-red-300">{card.error}</p>}
+          {card.error && /spotdl|ffmpeg/i.test(card.error) && (
+            <Link className="mt-2 inline-block text-xs text-accent hover:underline" to="/settings">
+              Check downloader settings
+            </Link>
+          )}
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
           {card.state !== 'completed' && !active && (
@@ -335,14 +386,19 @@ function QueueCardRow({
                 : card.state === 'failed' ? 'Retry' : card.state === 'paused' ? 'Resume' : 'Start this'}
             </button>
           )}
-          <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setOpen((value) => !value)}>
-            {open ? 'Hide details' : 'Edit details'}
+          <button
+            className="btn-ghost px-2 py-1 text-xs"
+            aria-expanded={open}
+            aria-controls={`download-card-${card.id}-selections`}
+            onClick={() => setOpen((value) => !value)}
+          >
+            {open ? 'Hide details' : card.sourceKind === 'playlist' ? 'Show tracks' : 'Show releases'}
           </button>
-          {card.sourceKind === 'entity' && (
-            <Link className="btn-ghost px-2 py-1 text-xs" to={addRoute}>Add releases</Link>
-          )}
           <ActionMenu
             items={[
+              ...(card.sourceKind === 'entity'
+                ? [{ label: 'Add releases', onSelect: () => { window.location.hash = `#${addRoute}` } }]
+                : []),
               ...(card.sourceUrl ? [{ label: 'Open in Spotify', onSelect: () => api.app.openExternal(card.sourceUrl!) }] : []),
               { label: 'Remove from downloads', onSelect: onRemove, danger: true },
               ...(onMoveUp ? [{ label: 'Move up', onSelect: onMoveUp, disabled: !canMoveUp }] : []),
@@ -352,7 +408,7 @@ function QueueCardRow({
         </div>
       </div>
       {open && (
-        <div className="ml-8 mt-4 divide-y divide-base-700 border-t border-base-700">
+        <div id={`download-card-${card.id}-selections`} className="ml-8 mt-4 divide-y divide-base-700 border-t border-base-700">
           {card.selections.map((selection) => (
             <div key={selection.id} className="flex items-center gap-3 py-3 text-sm">
               <div className="min-w-0 flex-1">
@@ -366,6 +422,7 @@ function QueueCardRow({
               </div>
               <button
                 className="btn-ghost px-2 py-1 text-xs"
+                aria-label={`Remove ${selection.title} from downloads`}
                 disabled={active}
                 onClick={() => onRemoveSelection(selection.id)}
               >

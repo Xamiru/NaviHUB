@@ -1783,3 +1783,66 @@ CREATE TABLE IF NOT EXISTS football_external_link (
   UNIQUE(entity_kind, entity_id, provider, url)
 );
 CREATE INDEX IF NOT EXISTS idx_football_external_link_entity ON football_external_link(entity_kind, entity_id);
+
+-- One cross-entity substring index for Ctrl+K and /search. The trigram
+-- tokenizer makes contains-search indexable; one- and two-character queries
+-- retain a bounded LIKE fallback in searchRepo.
+CREATE VIRTUAL TABLE IF NOT EXISTS global_search_fts USING fts5(
+  kind UNINDEXED,
+  entity_id UNINDEXED,
+  name,
+  alt_name,
+  tokenize='trigram'
+);
+
+CREATE TRIGGER IF NOT EXISTS global_search_media_insert AFTER INSERT ON media_item BEGIN
+  INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+  VALUES ('media', new.id, new.title, new.title_original);
+END;
+CREATE TRIGGER IF NOT EXISTS global_search_media_update AFTER UPDATE OF title, title_original ON media_item BEGIN
+  DELETE FROM global_search_fts WHERE kind = 'media' AND entity_id = old.id;
+  INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+  VALUES ('media', new.id, new.title, new.title_original);
+END;
+CREATE TRIGGER IF NOT EXISTS global_search_media_delete AFTER DELETE ON media_item BEGIN
+  DELETE FROM global_search_fts WHERE kind = 'media' AND entity_id = old.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS global_search_person_insert AFTER INSERT ON person BEGIN
+  INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+  VALUES ('person', new.id, new.name, new.name_native);
+END;
+CREATE TRIGGER IF NOT EXISTS global_search_person_update AFTER UPDATE OF name, name_native ON person BEGIN
+  DELETE FROM global_search_fts WHERE kind = 'person' AND entity_id = old.id;
+  INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+  VALUES ('person', new.id, new.name, new.name_native);
+END;
+CREATE TRIGGER IF NOT EXISTS global_search_person_delete AFTER DELETE ON person BEGIN
+  DELETE FROM global_search_fts WHERE kind = 'person' AND entity_id = old.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS global_search_company_insert AFTER INSERT ON company BEGIN
+  INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+  VALUES ('company', new.id, new.name, new.name_native);
+END;
+CREATE TRIGGER IF NOT EXISTS global_search_company_update AFTER UPDATE OF name, name_native ON company BEGIN
+  DELETE FROM global_search_fts WHERE kind = 'company' AND entity_id = old.id;
+  INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+  VALUES ('company', new.id, new.name, new.name_native);
+END;
+CREATE TRIGGER IF NOT EXISTS global_search_company_delete AFTER DELETE ON company BEGIN
+  DELETE FROM global_search_fts WHERE kind = 'company' AND entity_id = old.id;
+END;
+
+CREATE TRIGGER IF NOT EXISTS global_search_character_insert AFTER INSERT ON character BEGIN
+  INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+  VALUES ('character', new.id, new.name, new.name_native);
+END;
+CREATE TRIGGER IF NOT EXISTS global_search_character_update AFTER UPDATE OF name, name_native ON character BEGIN
+  DELETE FROM global_search_fts WHERE kind = 'character' AND entity_id = old.id;
+  INSERT INTO global_search_fts(kind, entity_id, name, alt_name)
+  VALUES ('character', new.id, new.name, new.name_native);
+END;
+CREATE TRIGGER IF NOT EXISTS global_search_character_delete AFTER DELETE ON character BEGIN
+  DELETE FROM global_search_fts WHERE kind = 'character' AND entity_id = old.id;
+END;

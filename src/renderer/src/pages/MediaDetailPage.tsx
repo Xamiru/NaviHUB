@@ -9,7 +9,7 @@ import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
 import { useScoreMax, useStatuses } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
-import { usePlayer, type Track } from '../lib/player'
+import { usePlayerControls, type Track } from '../lib/player'
 import {
   CAST_ROLES,
   configFor,
@@ -888,7 +888,7 @@ function ThemesSection({ m, onChange }: { m: MediaDetail; onChange: () => void }
   // Playing any theme queues the whole anime's playable OP/EDs (across pages),
   // so the bar's next/prev walk this anime's songs. Src resolution is lazy in
   // the player, so this is just a cheap mapping.
-  const player = usePlayer()
+  const player = usePlayerControls()
   const playable = themes.filter((t) => t.audioPath || t.audioUrl)
   function playTheme(theme: ThemeSong) {
     const start = playable.findIndex((t) => t.id === theme.id)
@@ -943,7 +943,7 @@ function ThemeRow({ theme, onPlay }: { theme: ThemeSong; onPlay: () => void }) {
   // The player resolves local-vs-remote audio lazily when the track starts, so
   // the row no longer pre-checks the local file (one IPC per row saved).
   const hasAudio = !!(theme.audioPath || theme.audioUrl)
-  const player = usePlayer()
+  const player = usePlayerControls()
   const qc = useQueryClient()
   const id = `theme-${theme.id}`
   const isCurrent = player.track?.id === id

@@ -9,7 +9,7 @@ import { Group, Pill } from '../PillGroup'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { usePersistedState } from '../../lib/navState'
-import { usePlayer } from '../../lib/player'
+import { usePlayerControls } from '../../lib/player'
 import { usePitchRecorder, type Take } from '../../lib/usePitchRecorder'
 import { splitMora, toHiragana } from '@shared/kana'
 import {
@@ -41,7 +41,7 @@ interface TakeResult {
 
 export default function SpeakDrill() {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const recorder = usePitchRecorder()
   const [source, setSource] = usePersistedState<Source>('jpSpeakSource', 'both')
   const [pool, setPool] = useState<PitchPoolItem[] | null>(null)

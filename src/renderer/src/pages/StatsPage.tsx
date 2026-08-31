@@ -13,22 +13,12 @@ import CalendarHeatmap from '../components/CalendarHeatmap'
 import { Group, Pill } from '../components/PillGroup'
 import { usePersistedState } from '../lib/navState'
 import { configFor, fmtMinutesAsHours, pathForMedia } from '../lib/mediaConfig'
-import type { LibraryTimeStats, TimeStatsByType, TimeStatsItem, MediaType } from '@shared/types'
+import { MEDIA_TYPE_COLORS } from '../lib/mediaColors'
+import type { LibraryTimeStats, TimeStatsByType, TimeStatsItem } from '@shared/types'
 
 // "Days watched" across the whole library — total time consumed, normalized to
 // minutes by mediaRepo.timeStats, split by type and ranked into leaderboards.
-// Fixed per-type hues (color follows the entity, never rank); validated for
-// contrast + CVD on the base-800 card surface. Estimated types (anime/tv/manga)
-// are labeled with a leading ≈ throughout.
-export const TYPE_COLORS: Record<MediaType, string> = {
-  anime: '#7c5cff', // the app accent
-  tv: '#3987e5',
-  movie: '#e66767',
-  game: '#199e70',
-  manga: '#c98500',
-  visual_novel: '#d55181',
-  book: '#3aa6a6'
-}
+// Estimated types (anime/tv/manga) are labeled with a leading ≈ throughout.
 
 const MINUTES_PER_DAY = 1440
 
@@ -199,7 +189,7 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
                 type="button"
                 onClick={() => scrollToType(t.mediaType)}
                 className="h-full transition-opacity hover:opacity-80"
-                style={{ width: `${pct}%`, background: TYPE_COLORS[t.mediaType] }}
+                style={{ width: `${pct}%`, background: MEDIA_TYPE_COLORS[t.mediaType] }}
                 title={`${cfg.plural} · ${t.estimated ? '≈ ' : ''}${fmtHours(t.minutes)} · ${pct.toFixed(0)}%`}
                 aria-label={`Jump to ${cfg.plural}`}
               />
@@ -219,7 +209,7 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
               >
                 <span
                   className="h-3 w-3 shrink-0 rounded-sm"
-                  style={{ background: TYPE_COLORS[t.mediaType] }}
+                  style={{ background: MEDIA_TYPE_COLORS[t.mediaType] }}
                 />
                 <span>{cfg.plural}</span>
                 <span className="text-gray-500">
@@ -283,7 +273,7 @@ function StatsContent({ stats }: { stats: LibraryTimeStats }) {
 
 function TypeLeaderboard({ t }: { t: TimeStatsByType }) {
   const cfg = configFor(t.mediaType)
-  const color = TYPE_COLORS[t.mediaType]
+  const color = MEDIA_TYPE_COLORS[t.mediaType]
   const topMinutes = t.topItems[0]?.minutes || 1
   return (
     <div id={`type-${t.mediaType}`} className="card p-4">

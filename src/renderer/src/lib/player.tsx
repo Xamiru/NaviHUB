@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type ReactNode
@@ -42,11 +43,9 @@ export interface Track {
 
 export type RepeatMode = 'off' | 'all' | 'one'
 
-interface PlayerContextValue {
+interface PlayerControlsValue {
   track: Track | null
   isPlaying: boolean
-  currentTime: number
-  duration: number
   volume: number
   queue: Track[]
   index: number
@@ -75,12 +74,27 @@ interface PlayerContextValue {
   stop: () => void
 }
 
-const PlayerContext = createContext<PlayerContextValue | null>(null)
+interface PlayerPositionValue {
+  currentTime: number
+  duration: number
+}
+
+export type PlayerContextValue = PlayerControlsValue & PlayerPositionValue
+
+const PlayerControlsContext = createContext<PlayerControlsValue | null>(null)
+const PlayerPositionContext = createContext<PlayerPositionValue | null>(null)
+
+export function usePlayerControls(): PlayerControlsValue {
+  const ctx = useContext(PlayerControlsContext)
+  if (!ctx) throw new Error('usePlayerControls must be used within an AudioPlayerProvider')
+  return ctx
+}
 
 export function usePlayer(): PlayerContextValue {
-  const ctx = useContext(PlayerContext)
-  if (!ctx) throw new Error('usePlayer must be used within an AudioPlayerProvider')
-  return ctx
+  const controls = usePlayerControls()
+  const position = useContext(PlayerPositionContext)
+  if (!position) throw new Error('usePlayer must be used within an AudioPlayerProvider')
+  return useMemo(() => ({ ...controls, ...position }), [controls, position])
 }
 
 export function shuffleArray<T>(arr: T[]): T[] {
@@ -402,6 +416,59 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
 
   const hasNext = index + 1 < queue.length || (repeat === 'all' && queue.length > 1)
   const hasPrev = queue.length > 0 // previous() always at least restarts
+  const controls = useMemo<PlayerControlsValue>(
+    () => ({
+      track,
+      isPlaying,
+      volume,
+      queue,
+      index,
+      hasNext,
+      hasPrev,
+      shuffled,
+      repeat,
+      play,
+      playQueue,
+      enqueue,
+      playAt,
+      next,
+      previous,
+      toggleShuffle,
+      cycleRepeat,
+      removeFromQueue,
+      moveInQueue,
+      toggle,
+      seek,
+      setVolume,
+      stop
+    }),
+    [
+      track,
+      isPlaying,
+      volume,
+      queue,
+      index,
+      hasNext,
+      hasPrev,
+      shuffled,
+      repeat,
+      play,
+      playQueue,
+      enqueue,
+      playAt,
+      next,
+      previous,
+      toggleShuffle,
+      cycleRepeat,
+      removeFromQueue,
+      moveInQueue,
+      toggle,
+      seek,
+      setVolume,
+      stop
+    ]
+  )
+  const position = useMemo(() => ({ currentTime, duration }), [currentTime, duration])
 
   // OS media integration: metadata for the system overlay + hardware media keys.
   // Everything OS-facing goes through displayMeta() so quiz- tracks are masked
@@ -530,46 +597,20 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
   }, [track, startAt])
 
   return (
-    <PlayerContext.Provider
-      value={{
-        track,
-        isPlaying,
-        currentTime,
-        duration,
-        volume,
-        queue,
-        index,
-        hasNext,
-        hasPrev,
-        shuffled,
-        repeat,
-        play,
-        playQueue,
-        enqueue,
-        playAt,
-        next,
-        previous,
-        toggleShuffle,
-        cycleRepeat,
-        removeFromQueue,
-        moveInQueue,
-        toggle,
-        seek,
-        setVolume,
-        stop
-      }}
-    >
-      <audio
-        ref={audioRef}
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
-        onDurationChange={(e) => setDuration(e.currentTarget.duration || 0)}
-        onEnded={onEnded}
-        onError={onError}
-      />
-      {children}
-    </PlayerContext.Provider>
+    <PlayerControlsContext.Provider value={controls}>
+      <PlayerPositionContext.Provider value={position}>
+        <audio
+          ref={audioRef}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+          onLoadedMetadata={(e) => setDuration(e.currentTarget.duration || 0)}
+          onDurationChange={(e) => setDuration(e.currentTarget.duration || 0)}
+          onEnded={onEnded}
+          onError={onError}
+        />
+        {children}
+      </PlayerPositionContext.Provider>
+    </PlayerControlsContext.Provider>
   )
 }

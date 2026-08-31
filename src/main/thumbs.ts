@@ -1,5 +1,6 @@
 import { createHash } from 'crypto'
-import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import { existsSync } from 'fs'
+import { mkdir, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { app, nativeImage } from 'electron'
 import { absoluteMediaPath } from './files'
@@ -58,6 +59,18 @@ function thumbsDir(): string {
 // One decode/resize per image even when several requests land together (a grid
 // mounts all its visible covers in the same frame).
 const inflight = new Map<string, Promise<string | null>>()
+let generationTail: Promise<void> = Promise.resolve()
+
+function enqueueGeneration<T>(work: () => Promise<T>): Promise<T> {
+  const job = generationTail
+    .then(() => new Promise<void>((resolve) => setImmediate(resolve)))
+    .then(work)
+  generationTail = job.then(
+    () => undefined,
+    () => undefined
+  )
+  return job
+}
 
 // Returns the absolute path of the cached thumbnail, generating it first if
 // needed, or null when the source is missing or can't be decoded.
@@ -65,7 +78,9 @@ export async function ensureThumb(width: number, sourceRel: string): Promise<str
   const key = `${width}:${sourceRel}`
   const existing = inflight.get(key)
   if (existing) return existing
-  const job = generateThumb(width, sourceRel).finally(() => inflight.delete(key))
+  const job = enqueueGeneration(() => generateThumb(width, sourceRel)).finally(() =>
+    inflight.delete(key)
+  )
   inflight.set(key, job)
   return job
 }
@@ -82,15 +97,16 @@ async function generateThumb(width: number, sourceRel: string): Promise<string |
   const outPath = join(thumbsDir(), thumbCacheName(sourceRel, width))
   if (existsSync(outPath)) return outPath
 
-  // nativeImage decodes png/jpeg synchronously on main — acceptable because
-  // the result is cached to disk and every later request streams the file.
+  // nativeImage decoding is synchronous. The global queue bounds it to one
+  // image at a time and yields between covers so a cold grid cannot run an
+  // uninterrupted burst of decode + resize + disk writes on the main thread.
   const img = nativeImage.createFromPath(absSource)
   if (img.isEmpty()) return null
   const size = img.getSize()
   const scaled = size.width > width ? img.resize({ width }) : img
   const jpeg = scaled.toJPEG(80)
 
-  mkdirSync(thumbsDir(), { recursive: true })
-  writeFileSync(outPath, jpeg)
+  await mkdir(thumbsDir(), { recursive: true })
+  await writeFile(outPath, jpeg)
   return outPath
 }

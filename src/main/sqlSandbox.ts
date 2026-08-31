@@ -12,7 +12,6 @@ import {
   type SandboxDb
 } from './sqlSandboxCore'
 import { sqlExercise } from '@shared/programming/sqlExercises'
-import * as programmingRepo from './repos/programmingRepo'
 import type { SqlRunInput, SqlRunResult, SqlTable } from '@shared/types'
 
 // IO half of the SQL sandbox. The user's query runs in a utility process
@@ -154,7 +153,12 @@ export async function runExercise(input: SqlRunInput): Promise<SqlRunResult> {
     // toast — the user solved it either way. Losing the solve row costs a
     // green tick on the exercise list, which re-solving restores.
     try {
-      programmingRepo.recordSolve({ kind: 'sql', key: ex.key, answer: input.sql.trim() })
+      const programmingRepo = await import('./repos/programmingRepo')
+      programmingRepo.recordSolve({
+        kind: 'sql',
+        key: ex.key,
+        answer: input.sql.trim()
+      })
     } catch (e) {
       logWarn('proc', `sql sandbox: could not record solve for ${ex.key}: ${String(e)}`)
     }

@@ -163,6 +163,7 @@ export default function EntityListView({
                 <CoverImage
                   path={r.imgPath}
                   alt={r.name}
+                  thumbWidth={160}
                   rounded="rounded-full"
                   className="w-24 h-24 mx-auto"
                 />
@@ -182,7 +183,7 @@ export default function EntityListView({
                 subtitle={selected.nameNative ?? `${selectedWorks.length} linked works`}
                 image={
                   <div className="flex h-40 items-center justify-center bg-base-900 p-6">
-                    <CoverImage path={selected.imgPath} alt="" className="h-24 w-24 rounded-lg object-contain" />
+                    <CoverImage path={selected.imgPath} alt="" className="h-24 w-24 rounded-lg object-contain" thumbWidth={160} />
                   </div>
                 }
                 footer={<Link to={`${basePath}/${selected.id}`} className="text-sm text-accent">Open studio archive</Link>}

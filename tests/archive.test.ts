@@ -8,6 +8,7 @@ import {
   splitArchivePath,
   mimeFor,
   listArchivePages,
+  openArchiveEntryStream,
   readArchiveEntry
 } from '../src/main/archive'
 
@@ -82,6 +83,15 @@ describe('listArchivePages / readArchiveEntry', () => {
     const buf = await readArchiveEntry(cbz, '0001.png')
     expect(buf?.toString()).toBe('PNGDATA-page-one')
     expect(await readArchiveEntry(cbz, 'missing.png')).toBeNull()
+  })
+
+  it('opens protocol entries as streams without buffering the whole page', async () => {
+    const cbz = makeCbz('Stream.cbz', { '0001.png': 'streamed-page' })
+    const opened = await openArchiveEntryStream(cbz, '0001.png')
+    expect(opened?.size).toBe(Buffer.byteLength('streamed-page'))
+    const chunks: Buffer[] = []
+    for await (const chunk of opened!.stream) chunks.push(Buffer.from(chunk))
+    expect(Buffer.concat(chunks).toString()).toBe('streamed-page')
   })
 
   it('returns []/null for a corrupt or missing archive', async () => {

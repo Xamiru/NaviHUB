@@ -106,6 +106,30 @@ function pruneEmptyDownloadQueueCards(): void {
   ).run()
 }
 
+function reopenCompletedDownloadQueueCards(): number {
+  return getSqlite().prepare(
+    `UPDATE music_spotify_download_queue
+     SET state='queued', completed_at=NULL, last_error=NULL, continue_after=0,
+         updated_at=datetime('now')
+     WHERE state='completed' AND (
+       EXISTS (
+         SELECT 1
+         FROM music_spotify_download_queue_selection qs
+         JOIN music_spotify_entity_track t ON t.release_id=qs.release_id
+         WHERE qs.queue_id=music_spotify_download_queue.id
+           AND t.matched_track_id IS NULL
+       )
+       OR EXISTS (
+         SELECT 1
+         FROM music_spotify_download_queue_selection qs
+         JOIN music_spotify_playlist_item i ON i.id=qs.playlist_item_id
+         WHERE qs.queue_id=music_spotify_download_queue.id
+           AND i.matched_track_id IS NULL
+       )
+     )`
+  ).run().changes
+}
+
 export function normalizeInterruptedDownloadQueue(): number {
   return getSqlite().prepare(
     `UPDATE music_spotify_download_queue
@@ -125,11 +149,22 @@ function queuePosition(): number {
 function queueCardForSource(
   source: 'entity' | 'playlist',
   sourceId: number
-): { id: number; state: SpotifyDownloadQueueCardState; allow_mismatch: number } | null {
+): {
+  id: number
+  state: SpotifyDownloadQueueCardState
+  allow_mismatch: number
+  continue_after: number
+} | null {
   const column = source === 'entity' ? 'snapshot_id' : 'playlist_id'
   return (getSqlite().prepare(
-    `SELECT id, state, allow_mismatch FROM music_spotify_download_queue WHERE ${column}=?`
-  ).get(sourceId) as { id: number; state: SpotifyDownloadQueueCardState; allow_mismatch: number } | undefined) ?? null
+    `SELECT id, state, allow_mismatch, continue_after
+     FROM music_spotify_download_queue WHERE ${column}=?`
+  ).get(sourceId) as {
+    id: number
+    state: SpotifyDownloadQueueCardState
+    allow_mismatch: number
+    continue_after: number
+  } | undefined) ?? null
 }
 
 function prepareQueueCard(
@@ -148,7 +183,16 @@ function prepareQueueCard(
       `UPDATE music_spotify_download_queue
        SET state=?, allow_mismatch=?, continue_after=0, last_error=NULL,
            completed_at=NULL, updated_at=datetime('now') WHERE id=?`
-    ).run(nextState, Number(Boolean(existing.allow_mismatch || allowMismatch)), existing.id)
+    ).run(
+      nextState,
+      Number(Boolean(existing.allow_mismatch || allowMismatch)),
+      existing.id
+    )
+    if (nextState === 'paused' && existing.continue_after) {
+      db.prepare(
+        `UPDATE music_spotify_download_queue SET continue_after=1 WHERE id=?`
+      ).run(existing.id)
+    }
     return { id: existing.id, state: nextState }
   }
   const snapshotId = source === 'entity' ? sourceId : null
@@ -298,6 +342,7 @@ function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
 
 export function listDownloadQueue(): SpotifyDownloadQueueSnapshot {
   pruneEmptyDownloadQueueCards()
+  reopenCompletedDownloadQueueCards()
   const rows = getSqlite().prepare(
     `SELECT q.*, s.artist_id, s.album_id, s.source_name,
             ar.name AS artist_name, ar.spotify_id AS artist_spotify_id,

@@ -1,14 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { playTracks } from '../lib/musicTracks'
 import PageHeader from '../components/PageHeader'
 import { TrackList } from './MusicLibraryPage'
 
 // The automatic "Liked Songs" collection — every hearted track, newest first.
 export default function MusicLikedPage() {
-  const player = usePlayer()
+  const player = usePlayerControls()
   const { data: tracks = [], isLoading } = useQuery({
     queryKey: qk.music.tracks({ likedOnly: true }),
     queryFn: () => api.music.tracks({ likedOnly: true })

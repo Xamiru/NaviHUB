@@ -42,7 +42,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useAllCompletedStatuses } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 
 type Phase = 'setup' | 'play' | 'summary'
 type ThemeScope = 'completed' | 'all'
@@ -85,7 +85,7 @@ function PlayIcon(): React.JSX.Element {
 }
 
 export default function GuessTrackPage() {
-  const player = usePlayer()
+  const player = usePlayerControls()
   const qc = useQueryClient()
   const completedStatuses = useAllCompletedStatuses()
 

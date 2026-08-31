@@ -63,6 +63,58 @@ describe('mediaRepo.list', () => {
   })
 })
 
+describe('mediaRepo browse projections', () => {
+  it('pages lightweight summaries without detail-only payloads', () => {
+    for (let i = 0; i < 120; i++) {
+      addAnime(`Title ${String(i).padStart(3, '0')}`, {
+        synopsis: 'A long synopsis that belongs on the detail page.',
+        notes: 'Private notes',
+        metadata: { averageScore: 80, large: 'x'.repeat(500) }
+      })
+    }
+
+    const first = mediaRepo.listPage({
+      filter: { mediaType: 'anime', sort: 'title', sortDir: 'asc' },
+      offset: 0,
+      limit: 96
+    })
+    const second = mediaRepo.listPage({
+      filter: { mediaType: 'anime', sort: 'title', sortDir: 'asc' },
+      offset: 96,
+      limit: 96
+    })
+
+    expect(first.items).toHaveLength(96)
+    expect(first.total).toBe(120)
+    expect(first.hasMore).toBe(true)
+    expect(first.items[0]).toMatchObject({ title: 'Title 000', synopsis: null, metadata: null })
+    expect(second.items).toHaveLength(24)
+    expect(second.hasMore).toBe(false)
+  })
+
+  it('returns a bounded Home overview with positional status semantics', () => {
+    settingsRepo.set('anime.statuses', JSON.stringify(['Active', 'Done', 'Later']))
+    addAnime('Continue', { status: 'Active', score: 8, favorite: true })
+    addAnime('Finished', { status: 'Done', score: 10 })
+    addAnime('Tonight', { status: 'Later', synopsis: 'Keep this for the spotlight.' })
+
+    const overview = mediaRepo.homeOverview()
+    expect(overview.stats).toEqual({
+      titles: 3,
+      inProgress: 1,
+      completed: 1,
+      favorites: 1,
+      avgScore: '9.0'
+    })
+    expect(overview.continuing.map((item) => item.title)).toEqual(['Continue'])
+    expect(overview.spotlightFromBacklog).toBe(true)
+    expect(overview.spotlight[0]).toMatchObject({
+      title: 'Tonight',
+      synopsis: 'Keep this for the spotlight.'
+    })
+  })
+})
+
 describe('mediaRepo.list advanced filters', () => {
   it('filters by multiple statuses', () => {
     addAnime('A', { status: 'Watching' })

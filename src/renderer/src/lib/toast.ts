@@ -6,7 +6,7 @@
 export interface Toast {
   id: number
   message: string
-  kind: 'error' | 'success' | 'unlock'
+  kind: 'error' | 'warning' | 'success' | 'unlock'
   // 'unlock' only: the achievement's art and the game it belongs to. The OS
   // notification is raised from main (it has to reach a fullscreen game); this
   // is the in-app half, for when NaviHUB is what the user is looking at.

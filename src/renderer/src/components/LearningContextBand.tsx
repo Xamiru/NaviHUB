@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useLocation } from 'react-router-dom'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { PROG_COURSES } from '@shared/programming/courses'
+import { PROG_LESSON_COUNT } from '@shared/programming/catalog'
 
 const ERROR_LABEL: Record<string, string> = {
   articles: 'article slips',
@@ -83,11 +83,10 @@ function ProgrammingBand() {
     queryKey: qk.programming.progress,
     queryFn: () => api.programming.progress()
   })
-  const total = PROG_COURSES.reduce((count, course) => count + course.lessons.length, 0)
   return (
     <Band>
       <span className="font-medium text-gray-200">Skill graph</span>
-      <span>{data.length} of {total} lesson nodes complete</span>
+      <span>{data.length} of {PROG_LESSON_COUNT} lesson nodes complete</span>
       <span>CLI, SQL and Regex evidence remain local to their tools.</span>
       <Link to="/programming" className="ml-auto text-accent hover:text-accent-hover">
         Open graph

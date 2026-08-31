@@ -36,7 +36,24 @@ export function useDownloadStatus(): MusicDownloadEvent | null {
     if (lastSettled === key) return
     lastSettled = key
     if (status.status === 'done') {
-      toast('Download finished — library updated', 'success')
+      if (status.source === 'spotifyQueue' && (status.failedCount ?? 0) > 0) {
+        toast(
+          status.message ?? `${status.failedCount} track${status.failedCount === 1 ? '' : 's'} still need attention`,
+          'warning',
+          { label: 'Review downloads', route: '/music/downloads' }
+        )
+      } else {
+        const count = status.source === 'spotifyQueue' ? status.resolvedCount : null
+        toast(
+          count != null
+            ? `${count} track${count === 1 ? '' : 's'} ready in the music library`
+            : 'Download finished — library updated',
+          'success',
+          status.source === 'spotifyQueue'
+            ? { label: 'View downloads', route: '/music/downloads' }
+            : undefined
+        )
+      }
       qc.invalidateQueries({ queryKey: qk.music.all })
     } else if (status.status === 'error' && status.message) {
       toast(status.message, 'error')
@@ -50,10 +67,17 @@ export function useDownloadStatus(): MusicDownloadEvent | null {
 export function DownloadPill(): React.JSX.Element | null {
   const status = useDownloadStatus()
   if (!status || !BUSY.has(status.status)) return null
+  const label = status.status === 'paused'
+    ? 'Paused'
+    : status.status === 'pausing' ? 'Pausing…'
+      : status.status === 'cancelling' ? 'Cancelling…'
+        : status.status === 'resolving' ? 'Resolving…'
+          : status.status === 'processing' ? 'Processing…'
+            : `${Math.round(status.percent ?? 0)}%`
   return (
-    <span className="chip gap-1.5" title={status.title ?? undefined} role="status">
+    <span className="chip gap-1.5" title={status.title ?? undefined}>
       <DownloadIcon className="h-3.5 w-3.5" />
-      {status.status === 'processing' ? 'Processing…' : `${Math.round(status.percent ?? 0)}%`}
+      {label}
       {status.itemCount != null && ` · ${status.itemIndex}/${status.itemCount}`}
     </span>
   )
@@ -130,8 +154,9 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
 
         <div className="space-y-3">
           <div>
-            <label className="label">YouTube / YouTube Music URL</label>
+            <label className="label" htmlFor="music-download-url">YouTube / YouTube Music URL</label>
             <input
+              id="music-download-url"
               className="input"
               placeholder="https://music.youtube.com/… (video, album or playlist)"
               value={url}
@@ -139,10 +164,11 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
               disabled={busy}
             />
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row">
             <div className="flex-1">
-              <label className="label">Artist folder</label>
+              <label className="label" htmlFor="music-download-artist">Artist folder</label>
               <input
+                id="music-download-artist"
                 className="input"
                 list="music-dl-artists"
                 placeholder="Artist"
@@ -157,8 +183,9 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
               </datalist>
             </div>
             <div className="flex-1">
-              <label className="label">Album folder</label>
+              <label className="label" htmlFor="music-download-album">Album folder</label>
               <input
+                id="music-download-album"
                 className="input"
                 list="music-dl-albums"
                 placeholder="Album"
@@ -173,8 +200,9 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
               </datalist>
             </div>
             <div>
-              <label className="label">Format</label>
-              <select
+            <label className="label" htmlFor="music-download-format">Format</label>
+            <select
+              id="music-download-format"
                 className="input"
                 value={format}
                 onChange={(e) => setFormat(e.target.value as typeof format)}

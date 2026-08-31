@@ -9,6 +9,8 @@ import type {
   ListKind,
   MediaListFilter,
   MediaType,
+  MusicTrackBrowseFilter,
+  MusicTrackBrowseSort,
   QuizKind,
   QuizAvailabilityRequest,
   QuizSongFilter,
@@ -38,9 +40,11 @@ const entity = (ns: EntityNamespace) => ({
 export const qk = {
   media: {
     all: ['media'] as const,
-    list: (filter: MediaListFilter) => ['media', filter] as const,
+    lists: ['media', 'list'] as const,
+    list: (filter: MediaListFilter) => ['media', 'list', filter] as const,
     detail: (mediaId: number) => ['media', 'detail', mediaId] as const,
     home: (mediaType: MediaType) => ['media', { mediaType, home: true }] as const,
+    homeOverview: ['media', 'homeOverview'] as const,
     // Under the ['media'] prefix on purpose: every media mutation invalidates it.
     timeStats: ['media', 'timeStats'] as const,
     // Same rationale — logging an episode should refresh the roadmap milestones.
@@ -288,6 +292,8 @@ export const qk = {
     album: (id: number) => ['music', 'album', id] as const,
     tracks: (filter: { search?: string; likedOnly?: boolean }) =>
       ['music', 'tracks', filter] as const,
+    trackPage: (sort: MusicTrackBrowseSort, filter: MusicTrackBrowseFilter) =>
+      ['music', 'trackPage', sort, filter] as const,
     search: (q: string) => ['music', 'search', q] as const,
     playlists: ['music', 'playlists'] as const,
     playlist: (id: number) => ['music', 'playlist', id] as const,

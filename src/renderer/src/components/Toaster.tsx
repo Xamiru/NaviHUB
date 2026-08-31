@@ -12,7 +12,11 @@ export default function Toaster() {
         <div
           key={t.id}
           className={`flex items-center gap-3 rounded-lg border bg-base-700 px-4 py-3 text-left text-sm shadow-lg ${
-            t.kind === 'error' ? 'border-red-500/60 text-red-300' : 'border-accent/60 text-gray-200'
+            t.kind === 'error'
+              ? 'border-red-500/60 text-red-300'
+              : t.kind === 'warning'
+                ? 'border-amber-500/60 text-amber-100'
+                : 'border-accent/60 text-gray-200'
           }`}
         >
           <button className="min-w-0 flex-1 text-left" onClick={() => dismissToast(t.id)}>

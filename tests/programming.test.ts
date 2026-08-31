@@ -9,6 +9,7 @@ vi.mock('../src/main/db/connection', () => ({
 
 import * as programmingRepo from '../src/main/repos/programmingRepo'
 import { PROG_COURSES, progCourse, progLesson, progLessonKey } from '../src/shared/programming/courses'
+import { PROG_LESSON_COUNT } from '../src/shared/programming/catalog'
 import { CHEAT_SHEETS, normalizeCmd, practicePool } from '../src/shared/programming/cheatsheets'
 import { bestAttempts, passedChecks } from '../src/shared/programming/attempts'
 import type { ProgAttempt } from '../src/shared/types'
@@ -21,6 +22,12 @@ import { parseMarkdown } from '../src/shared/markdown'
 const KEBAB = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 describe('course catalog content', () => {
+  it('keeps the lightweight shell lesson count in sync', () => {
+    expect(PROG_LESSON_COUNT).toBe(
+      PROG_COURSES.reduce((total, course) => total + course.lessons.length, 0)
+    )
+  })
+
   it('has unique kebab-case course and lesson keys', () => {
     const courseKeys = PROG_COURSES.map((c) => c.key)
     expect(new Set(courseKeys).size).toBe(courseKeys.length)

@@ -271,7 +271,41 @@ describe('Spotify playlist import core', () => {
     const args = buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl')
     expect(args).toContain('320k')
     expect(args).toContain('4')
+    expect(args.slice(args.indexOf('--overwrite'), args.indexOf('--overwrite') + 2)).toEqual([
+      '--overwrite',
+      'skip'
+    ])
     expect(args.at(-1)).toContain('{album-artist}/{album}/{disc-number}-{track-number} - {title}')
+    expect(
+      buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl', 'force')
+    ).toContain('force')
+  })
+
+  it('terminates and rejects a spotDL process that stops producing output', async () => {
+    vi.useFakeTimers()
+    const proc = Object.assign(new EventEmitter(), {
+      stdout: new PassThrough(),
+      stderr: new PassThrough(),
+      exitCode: null as number | null,
+      kill: vi.fn(() => true)
+    })
+    try {
+      const pending = runSpotdl(
+        [],
+        'stalled-spotdl-fixture',
+        undefined,
+        'stalled-job',
+        () => proc as never,
+        5_000
+      )
+      await vi.advanceTimersByTimeAsync(5_000)
+      expect(proc.kill).toHaveBeenCalledWith('SIGTERM')
+      proc.exitCode = 1
+      proc.emit('close', 1)
+      await expect(pending).rejects.toThrow(/stopped responding/i)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('discovers artist and album ids from an exact representative local track', () => {

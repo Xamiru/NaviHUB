@@ -6,7 +6,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useStatuses, useDebouncedValue, useIncrementalList } from '../lib/hooks'
-import { usePlayer, type Track } from '../lib/player'
+import { usePlayerControls, type Track } from '../lib/player'
 import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
@@ -61,7 +61,7 @@ function toTrack(s: ThemeSongEntry): Track {
 }
 
 export default function ThemeSongsPage(): JSX.Element {
-  const player = usePlayer()
+  const player = usePlayerControls()
   const statuses = useStatuses(ANIME)
 
   const [selStatuses, setSelStatuses] = usePersistedState<string[]>('statuses', [])
@@ -377,7 +377,7 @@ export default function ThemeSongsPage(): JSX.Element {
 
 function SongRow({ song, index, onPlay }: { song: ThemeSongEntry; index: number; onPlay: () => void }): JSX.Element {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const id = `theme-${song.themeId}`
   const isCurrent = player.track?.id === id
   const isPlaying = isCurrent && player.isPlaying

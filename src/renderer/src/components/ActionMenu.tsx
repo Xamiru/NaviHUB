@@ -26,6 +26,11 @@ export default function ActionMenu({
 }) {
   const [open, setOpen] = useState(false)
   const boxRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+
+  function menuItems(): HTMLButtonElement[] {
+    return [...(boxRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ?? [])]
+  }
 
   useEffect(() => {
     if (!open) return
@@ -33,7 +38,19 @@ export default function ActionMenu({
       if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
+      if (e.key === 'Escape') {
+        setOpen(false)
+        triggerRef.current?.focus()
+        return
+      }
+      const buttons = menuItems()
+      if (!buttons.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return
+      e.preventDefault()
+      const current = buttons.indexOf(document.activeElement as HTMLButtonElement)
+      if (e.key === 'Home') buttons[0].focus()
+      else if (e.key === 'End') buttons[buttons.length - 1].focus()
+      else if (e.key === 'ArrowDown') buttons[(current + 1 + buttons.length) % buttons.length].focus()
+      else buttons[(current - 1 + buttons.length) % buttons.length].focus()
     }
     document.addEventListener('mousedown', onDoc)
     document.addEventListener('keydown', onKey)
@@ -43,12 +60,17 @@ export default function ActionMenu({
     }
   }, [open])
 
+  useEffect(() => {
+    if (open) menuItems()[0]?.focus()
+  }, [open])
+
   const plain = items.filter((i) => !i.danger)
   const danger = items.filter((i) => i.danger)
 
   const renderItem = (item: ActionItem): JSX.Element => (
     <button
       key={item.label}
+      role="menuitem"
       className={`w-full rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-base-700 disabled:cursor-not-allowed disabled:opacity-50 ${
         item.danger ? 'text-red-400' : 'text-gray-200'
       }`}
@@ -66,10 +88,17 @@ export default function ActionMenu({
   return (
     <div ref={boxRef} className="relative">
       <button
+        ref={triggerRef}
         className={buttonClassName}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
+        onKeyDown={(event) => {
+          if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+            event.preventDefault()
+            setOpen(true)
+          }
+        }}
       >
         {label}
       </button>

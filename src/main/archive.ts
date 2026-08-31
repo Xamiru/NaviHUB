@@ -1,5 +1,6 @@
 import { statSync } from 'fs'
 import { extname } from 'path'
+import type { Readable } from 'stream'
 import yauzl from 'yauzl'
 
 // CBZ/ZIP chapter support for the manga reader. yauzl reads the central
@@ -12,6 +13,7 @@ export const ARCHIVE_EXTS = new Set(['.cbz', '.zip'])
 // too, but deliberately NOT in ARCHIVE_EXTS — the scanner must treat a .epub
 // as a book (src/main/epub.ts), never as a CBZ of its embedded images.
 const ZIPLIKE_EXTS = new Set([...ARCHIVE_EXTS, '.epub'])
+export const MAX_ARCHIVE_ENTRY_BYTES = 128 * 1024 * 1024
 
 export function isArchiveFile(name: string): boolean {
   return ARCHIVE_EXTS.has(extname(name).toLowerCase())
@@ -194,19 +196,36 @@ export async function listArchiveEntries(absPath: string): Promise<string[] | nu
   }
 }
 
-export async function readArchiveEntry(absPath: string, entryName: string): Promise<Buffer | null> {
+export async function openArchiveEntryStream(
+  absPath: string,
+  entryName: string
+): Promise<{ stream: Readable; size: number } | null> {
   try {
     const { zipfile, entries } = await cachedArchive(absPath)
     const entry = entries.get(entryName)
     if (!entry) return null
-    return await new Promise((resolve, reject) => {
+    if (entry.uncompressedSize > MAX_ARCHIVE_ENTRY_BYTES) return null
+    const stream = await new Promise<Readable>((resolve, reject) => {
       zipfile.openReadStream(entry, (err, stream) => {
         if (err || !stream) return reject(err ?? new Error('no stream'))
-        const chunks: Buffer[] = []
-        stream.on('data', (c: Buffer) => chunks.push(c))
-        stream.on('end', () => resolve(Buffer.concat(chunks)))
-        stream.on('error', reject)
+        resolve(stream)
       })
+    })
+    return { stream, size: entry.uncompressedSize }
+  } catch {
+    return null
+  }
+}
+
+export async function readArchiveEntry(absPath: string, entryName: string): Promise<Buffer | null> {
+  try {
+    const opened = await openArchiveEntryStream(absPath, entryName)
+    if (!opened) return null
+    return await new Promise((resolve, reject) => {
+      const chunks: Buffer[] = []
+      opened.stream.on('data', (c: Buffer) => chunks.push(c))
+      opened.stream.on('end', () => resolve(Buffer.concat(chunks)))
+      opened.stream.on('error', reject)
     })
   } catch {
     return null

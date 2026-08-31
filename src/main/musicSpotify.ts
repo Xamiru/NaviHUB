@@ -242,7 +242,12 @@ export function pickConsensusDiscoveredEntity(
   return ranked[0].parsed
 }
 
-export function buildSpotdlDownloadArgs(inputFile: string, outputRoot: string, errorFile: string): string[] {
+export function buildSpotdlDownloadArgs(
+  inputFile: string,
+  outputRoot: string,
+  errorFile: string,
+  overwrite: 'skip' | 'force' = 'skip'
+): string[] {
   return [
     'download',
     inputFile,
@@ -253,7 +258,7 @@ export function buildSpotdlDownloadArgs(inputFile: string, outputRoot: string, e
     '--threads',
     '4',
     '--overwrite',
-    'skip',
+    overwrite,
     '--simple-tui',
     '--save-errors',
     errorFile,
@@ -587,6 +592,9 @@ function snapshotInspection(snapshot: spotifyRepo.EntitySnapshotRow): SpotifyEnt
 let counter = 0
 let active: { id: string; proc: ChildProcessWithoutNullStreams; cancelled: boolean; owner: string } | null = null
 let status: MusicDownloadEvent | null = null
+const SPOTDL_METADATA_STALL_MS = 5 * 60_000
+const SPOTDL_AUDIO_STALL_MS = 10 * 60_000
+const abandonedRuns = new Set<string>()
 let inspectionPromise: Promise<SpotifyEntityInspection> | null = null
 let inspectionCancelled = false
 const inspectionStatus: SpotifyEntityInspectionStatus = {
@@ -699,7 +707,8 @@ export function runSpotdl(
   owner: string,
   onLine?: (line: string) => void,
   jobId?: string,
-  spawnProcess: typeof spawn = spawn
+  spawnProcess: typeof spawn = spawn,
+  stallTimeoutMs?: number
 ): Promise<number> {
   claimMusicMaintenance(owner)
   return new Promise((resolve, reject) => {
@@ -714,6 +723,23 @@ export function runSpotdl(
       return
     }
     active = { id, proc, cancelled: false, owner }
+    let stalled = false
+    let stallTimer: NodeJS.Timeout | null = null
+    const clearStallTimer = (): void => {
+      if (stallTimer) clearTimeout(stallTimer)
+      stallTimer = null
+    }
+    const armStallTimer = (): void => {
+      clearStallTimer()
+      if (!stallTimeoutMs) return
+      stallTimer = setTimeout(() => {
+        if (active?.id !== id) return
+        stalled = true
+        active.cancelled = true
+        processControls(() => activeProcessTarget(id), { killAfterMs: 1_000 }).cancel?.()
+      }, stallTimeoutMs)
+      stallTimer.unref()
+    }
     const taskSignal = currentActivitySignal()
     const abortFromTask = (): void => {
       if (active?.id !== id) return
@@ -722,9 +748,17 @@ export function runSpotdl(
     }
     if (taskSignal?.aborted) abortFromTask()
     else taskSignal?.addEventListener('abort', abortFromTask, { once: true })
-    const cleanup = (): void => taskSignal?.removeEventListener('abort', abortFromTask)
+    const cleanup = (): void => {
+      clearStallTimer()
+      taskSignal?.removeEventListener('abort', abortFromTask)
+    }
     const handleLine = onLine ?? (() => undefined)
-    pipeProcLines(proc, { tool: 'spotdl', onStdout: handleLine, onStderr: handleLine })
+    const observeLine = (line: string): void => {
+      armStallTimer()
+      handleLine(line)
+    }
+    armStallTimer()
+    pipeProcLines(proc, { tool: 'spotdl', onStdout: observeLine, onStderr: observeLine })
     proc.once('error', (error) => {
       cleanup()
       if (active?.id === id) active = null
@@ -735,7 +769,11 @@ export function runSpotdl(
       cleanup()
       if (active?.id === id) active = null
       releaseMusicMaintenance(owner)
-      resolve(code ?? 1)
+      if (stalled) {
+        reject(new Error('spotDL stopped responding. Retry this release or check spotDL and yt-dlp in Settings.'))
+      } else {
+        resolve(code ?? 1)
+      }
     })
   })
 }
@@ -756,9 +794,18 @@ async function inspectWithSpotdl(
     const discoveryFile = join(dir, 'discovery.spotdl')
     const queries = current.sampleTracks.slice(0, 3)
       .map((sample) => buildSpotifyDiscoveryQuery(sample.artist, sample.title))
+    if (!queries.length) {
+      throw new Error(
+        `The fast catalogue could not identify this ${input.kind}. Use Advanced source replacement to paste its Spotify link.`
+      )
+    }
     const discoveryCode = await runSpotdl(
       ['save', ...queries, '--threads', '8', '--use-cache-file', '--save-file', discoveryFile],
-      `Spotify inspection ${input.kind}:${input.entityId}`
+      `Spotify inspection ${input.kind}:${input.entityId}`,
+      undefined,
+      undefined,
+      undefined,
+      SPOTDL_METADATA_STALL_MS
     )
     if (inspectionCancelled) throw new tasks.TaskCancelledError('Spotify inspection')
     if (discoveryCode !== 0) throw new Error('NaviHUB could not identify this music on Spotify')
@@ -779,7 +826,10 @@ async function inspectWithSpotdl(
     (line) => {
       const event = parseSpotdlInspectionLine(line)
       if (event) Object.assign(inspectionStatus, event)
-    }
+    },
+    undefined,
+    undefined,
+    SPOTDL_METADATA_STALL_MS
   )
   if (inspectionCancelled) throw new tasks.TaskCancelledError('Spotify inspection')
   if (code !== 0) throw new Error(`spotDL could not read that ${input.kind}. It may be inaccessible.`)
@@ -848,7 +898,6 @@ async function inspectWithSpotdl(
 export async function inspectEntity(input: SpotifyEntityInspectInput): Promise<SpotifyEntityInspection> {
   const current = spotifyRepo.getEntity(input.kind, input.entityId)
   if (!current) throw new Error(`That local ${input.kind} no longer exists`)
-  if (!current.sampleTracks.length) throw new Error(`This ${input.kind} has no local tracks to identify`)
   const saved = spotifyRepo.getEntitySnapshot(input.kind, input.entityId)
   if (saved && !input.refresh && !input.url && !input.candidateKey) return snapshotInspection(saved)
   if (inspectionStatus.running) {
@@ -1006,7 +1055,14 @@ export async function importPlaylist(url: string): Promise<SpotifyImportResult> 
   const dir = mkdtempSync(join(tmpdir(), 'navihub-spotify-'))
   const saveFile = join(dir, 'playlist.spotdl')
   try {
-    const code = await runSpotdl(buildSpotdlSaveArgs(parsed.canonicalUrl, saveFile), 'Spotify import')
+    const code = await runSpotdl(
+      buildSpotdlSaveArgs(parsed.canonicalUrl, saveFile),
+      'Spotify import',
+      undefined,
+      undefined,
+      undefined,
+      SPOTDL_METADATA_STALL_MS
+    )
     updateActivity({ phase: 'fetching', done: 1, total: 1 })
     if (code !== 0) {
       throw new Error('spotDL could not read that playlist. It may be private or inaccessible.')
@@ -1303,7 +1359,14 @@ async function resolveReleaseForDownload(
   const query = release.spotifyAlbumId
     ? `https://open.spotify.com/album/${release.spotifyAlbumId}`
     : `album:${release.albumArtist} ${release.title}`
-  const code = await runSpotdl(buildSpotdlSaveArgs(query, saveFile), run.owner, undefined, run.id)
+  const code = await runSpotdl(
+    buildSpotdlSaveArgs(query, saveFile),
+    run.owner,
+    undefined,
+    run.id,
+    undefined,
+    SPOTDL_METADATA_STALL_MS
+  )
   if (run.intent !== 'running') throw new tasks.TaskCancelledError('Spotify release resolution')
   if (code !== 0) throw new Error(`spotDL could not resolve ${release.title}`)
   const validated = validateSpotdlPayload(JSON.parse(readFileSync(saveFile, 'utf8')) as unknown)
@@ -1352,6 +1415,7 @@ async function runEntityDownload(run: EntityRun): Promise<void> {
     const releases = snapshot.releases.filter((release) => selected.has(release.id))
     for (let releaseIndex = 0; releaseIndex < releases.length; releaseIndex++) {
       if (run.intent !== 'running') break
+      if (abandonedRuns.has(run.id)) return
       if (status?.id === run.id) {
         status.releaseIndex = releaseIndex + 1
         status.releaseCount = releases.length
@@ -1390,18 +1454,25 @@ async function runEntityDownload(run: EntityRun): Promise<void> {
           status.phase = 'downloading'
           status.message = null
         }
-        const code = await runSpotdl(buildSpotdlDownloadArgs(file, musicRootDir(), errors), run.owner, (line) => {
-          const event = parseSpotdlLine(line)
-          if (!event || status?.id !== run.id) return
-          if (event.kind === 'item') status.title = event.title
-          if (event.kind === 'progress') {
-            status.itemIndex = processed + event.done
-            status.percent = status.itemCount
-              ? Math.min(99, Math.round(((processed + event.done) / status.itemCount) * 100))
-              : null
-          }
-          if (event.kind === 'error') status.message = event.message
-        }, run.id)
+        const code = await runSpotdl(
+          buildSpotdlDownloadArgs(file, musicRootDir(), errors),
+          run.owner,
+          (line) => {
+            const event = parseSpotdlLine(line)
+            if (!event || status?.id !== run.id) return
+            if (event.kind === 'item') status.title = event.title
+            if (event.kind === 'progress') {
+              status.itemIndex = processed + event.done
+              status.percent = status.itemCount
+                ? Math.min(99, Math.round(((processed + event.done) / status.itemCount) * 100))
+                : null
+            }
+            if (event.kind === 'error') status.message = event.message
+          },
+          run.id,
+          undefined,
+          SPOTDL_AUDIO_STALL_MS
+        )
         processed += chunks[chunkIndex].length
         if (status?.id === run.id) status.itemIndex = processed
         if (run.intent !== 'running') break
@@ -1417,7 +1488,7 @@ async function runEntityDownload(run: EntityRun): Promise<void> {
       }
       snapshot = spotifyRepo.getEntitySnapshotById(run.input.snapshotId)!
     }
-    if (!status || status.id !== run.id) return
+    if (abandonedRuns.has(run.id) || !status || status.id !== run.id) return
     if (run.intent === 'pause') {
       status.status = 'paused'
       status.phase = 'paused'
@@ -1488,10 +1559,13 @@ async function runPlaylistDownload(
           }
           if (event.kind === 'error') status.message = event.message
         },
-        id
+        id,
+        undefined,
+        SPOTDL_AUDIO_STALL_MS
       )
       processed += chunks[chunkIndex].length
       status.itemIndex = processed
+      if (abandonedRuns.has(id)) return
       status.status = 'processing'
       status.message = 'Updating library'
       try {
@@ -1504,7 +1578,7 @@ async function runPlaylistDownload(
       status.failedCount = remaining.length
       if (code !== 0 && status.resolvedCount === 0) throw new Error(`spotDL exited with code ${code}`)
     }
-    if (!status || status.id !== id) return
+    if (abandonedRuns.has(id) || !status || status.id !== id) return
     const remaining = spotifyRepo.pendingSpotifyItems(playlistId, rows.map((row) => row.id as number))
     Object.assign(status, settleSpotifyBatch({
       cancelled: active?.cancelled === true || ['cancelled', 'cancelling'].includes(status.status),
@@ -1596,6 +1670,7 @@ function updateQueueStatusCard(card: NonNullable<ReturnType<typeof spotifyRepo.g
 }
 
 async function scanQueueFiles(run: QueueRun, message: string): Promise<void> {
+  if (abandonedRuns.has(run.id)) return
   if (status?.id === run.id) {
     status.status = 'processing'
     status.phase = 'scanning'
@@ -1624,9 +1699,6 @@ async function processEntityQueueCard(
   const releaseIds = card.selections
     .filter((selection) => selection.kind === 'release')
     .map((selection) => selection.sourceId)
-  const total = snapshot.releases
-    .filter((release) => releaseIds.includes(release.id))
-    .flatMap((release) => release.tracks).length
   const failures: string[] = []
   for (let releaseIndex = 0; releaseIndex < releaseIds.length; releaseIndex++) {
     if (run.intent !== 'running') break
@@ -1673,30 +1745,45 @@ async function processEntityQueueCard(
         status.phase = 'downloading'
         status.message = null
       }
-      const code = await runSpotdl(buildSpotdlDownloadArgs(file, musicRootDir(), errors), run.owner, (line) => {
-        const event = parseSpotdlLine(line)
-        if (!event || status?.id !== run.id) return
-        if (event.kind === 'item') status.title = event.title
-        if (event.kind === 'progress') {
-          status.itemIndex = processed + event.done
-          status.percent = status.itemCount
-            ? Math.min(99, Math.round(((processed + event.done) / status.itemCount) * 100))
-            : null
-        }
-        if (event.kind === 'error') status.message = event.message
-      }, run.id)
+      const code = await runSpotdl(
+        buildSpotdlDownloadArgs(
+          file,
+          musicRootDir(),
+          errors,
+          card.state === 'failed' ? 'force' : 'skip'
+        ),
+        run.owner,
+        (line) => {
+          const event = parseSpotdlLine(line)
+          if (!event || status?.id !== run.id) return
+          if (event.kind === 'item') status.title = event.title
+          if (event.kind === 'progress') {
+            status.itemIndex = processed + event.done
+            status.percent = status.itemCount
+              ? Math.min(99, Math.round(((processed + event.done) / status.itemCount) * 100))
+              : null
+          }
+          if (event.kind === 'error') status.message = event.message
+        },
+        run.id,
+        undefined,
+        SPOTDL_AUDIO_STALL_MS
+      )
       processed += chunks[chunkIndex].length
       if (status?.id === run.id) status.itemIndex = processed
       if (run.intent !== 'running') break
       if (code !== 0) failures.push(`spotDL exited with code ${code} for ${release.title}`)
     }
+    if (abandonedRuns.has(run.id)) return { total: 0, resolved: 0, error: null }
     await scanQueueFiles(run, `Scanning ${release.title} into the library`)
     snapshot = spotifyRepo.getEntitySnapshot(card.entityKind, card.entityId) ?? snapshot
   }
+  if (abandonedRuns.has(run.id)) return { total: 0, resolved: 0, error: null }
   const current = spotifyRepo.getEntitySnapshot(card.entityKind, card.entityId)
   const selectedTracks = current?.releases
     .filter((release) => releaseIds.includes(release.id))
     .flatMap((release) => release.tracks) ?? []
+  const total = selectedTracks.length
   const resolved = selectedTracks.filter((track) => track.matchedTrackId != null).length
   const missing = Math.max(0, total - resolved)
   return {
@@ -1741,24 +1828,38 @@ async function processPlaylistQueueCard(
       status.phase = 'downloading'
       status.message = null
     }
-    const code = await runSpotdl(buildSpotdlDownloadArgs(file, musicRootDir(), errors), run.owner, (line) => {
-      const event = parseSpotdlLine(line)
-      if (!event || status?.id !== run.id) return
-      if (event.kind === 'item') status.title = event.title
-      if (event.kind === 'progress') {
-        status.itemIndex = processed + event.done
-        status.percent = rows.length
-          ? Math.min(99, Math.round(((processed + event.done) / rows.length) * 100))
-          : null
-      }
-      if (event.kind === 'error') status.message = event.message
-    }, run.id)
+    const code = await runSpotdl(
+      buildSpotdlDownloadArgs(
+        file,
+        musicRootDir(),
+        errors,
+        card.state === 'failed' ? 'force' : 'skip'
+      ),
+      run.owner,
+      (line) => {
+        const event = parseSpotdlLine(line)
+        if (!event || status?.id !== run.id) return
+        if (event.kind === 'item') status.title = event.title
+        if (event.kind === 'progress') {
+          status.itemIndex = processed + event.done
+          status.percent = rows.length
+            ? Math.min(99, Math.round(((processed + event.done) / rows.length) * 100))
+            : null
+        }
+        if (event.kind === 'error') status.message = event.message
+      },
+      run.id,
+      undefined,
+      SPOTDL_AUDIO_STALL_MS
+    )
     processed += chunks[chunkIndex].length
     if (status?.id === run.id) status.itemIndex = processed
+    if (abandonedRuns.has(run.id)) return { total: 0, resolved: 0, error: null }
     await scanQueueFiles(run, `Scanning downloads from ${card.title}`)
     if (run.intent !== 'running') break
     if (code !== 0) failures.push(`spotDL exited with code ${code}`)
   }
+  if (abandonedRuns.has(run.id)) return { total: 0, resolved: 0, error: null }
   const remaining = spotifyRepo.pendingSpotifyItems(card.playlistId, itemIds)
   const resolved = total - remaining.length
   return {
@@ -1825,11 +1926,10 @@ function currentQueueIntent(run: QueueRun): QueueRun['intent'] {
 }
 
 async function runDownloadQueue(run: QueueRun): Promise<void> {
-  if (run.active) return
+  if (run.active || abandonedRuns.has(run.id)) return
   run.active = true
   let dir: string | null = null
   let terminal = false
-  let completedCards = 0
   let failedCards = 0
   let resolvedTracks = 0
   let totalTracks = 0
@@ -1857,6 +1957,7 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
           error: error instanceof Error ? error.message : String(error)
         }
       }
+      if (abandonedRuns.has(run.id)) return
       totalTracks += result.total
       resolvedTracks += result.resolved
       const intent = currentQueueIntent(run)
@@ -1884,21 +1985,48 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
         failedCards += 1
         spotifyRepo.setDownloadQueueCardState(card.id, 'failed', result.error, false)
       } else {
-        completedCards += 1
         spotifyRepo.setDownloadQueueCardState(card.id, 'completed', null, false)
       }
+    }
+    if (run.intent === 'pause') {
+      const next = nextQueueCard(run)
+      if (next) {
+        run.activeCardId = next.id
+        spotifyRepo.setDownloadQueueCardState(next.id, 'paused', null, run.mode === 'all')
+        if (status?.id === run.id) {
+          status.queueCardId = next.id
+          status.status = 'paused'
+          status.phase = 'paused'
+          status.message = 'Paused safely; Resume continues unresolved queue work'
+        }
+        return
+      }
+    }
+    if (run.intent === 'cancel') {
+      if (status?.id === run.id) {
+        status.status = 'cancelled'
+        status.phase = 'cancelled'
+        status.message = 'Queue run cancelled; completed files were kept'
+      }
+      terminal = true
+      return
     }
     if (!status || status.id !== run.id) return
     status.resolvedCount = resolvedTracks
     status.failedCount = Math.max(0, totalTracks - resolvedTracks)
-    status.percent = totalTracks ? Math.round((resolvedTracks / totalTracks) * 100) : 100
-    status.phase = failedCards > 0 && completedCards === 0 ? 'error' : 'done'
-    status.status = failedCards > 0 && completedCards === 0 ? 'error' : 'done'
+    status.percent = totalTracks
+      ? Math.min(100, Math.round((resolvedTracks / totalTracks) * 100))
+      : 100
+    status.title = null
+    const totalFailure = failedCards > 0 && resolvedTracks === 0
+    status.phase = totalFailure ? 'error' : 'done'
+    status.status = totalFailure ? 'error' : 'done'
     status.message = failedCards > 0
       ? `${failedCards} queue card${failedCards === 1 ? '' : 's'} remain available to retry`
       : null
     terminal = true
   } catch (error) {
+    if (abandonedRuns.has(run.id)) return
     if (run.activeCardId != null) {
       spotifyRepo.setDownloadQueueCardState(
         run.activeCardId,
@@ -1916,6 +2044,7 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
   } finally {
     if (dir) rmSync(dir, { recursive: true, force: true })
     run.active = false
+    abandonedRuns.delete(run.id)
     if (terminal) {
       if (queueRun?.id === run.id) queueRun = null
       releaseMusicMaintenance(run.owner)
@@ -2036,6 +2165,9 @@ export function killActive(): void {
   inspectionStatus.running = false
   inspectionStatus.cancelled = true
   inspectionStatus.phase = 'idle'
+  if (active) abandonedRuns.add(active.id)
+  if (entityRun) abandonedRuns.add(entityRun.id)
+  if (queueRun) abandonedRuns.add(queueRun.id)
   if (entityRun) entityRun.intent = 'cancel'
   if (queueRun) {
     queueRun.intent = 'pause'

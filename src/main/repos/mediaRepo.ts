@@ -1,12 +1,16 @@
 import { getSqlite } from '../db/connection'
-import { mapMedia, mapTag, mapPerson, mapCompany, mapCharacter } from './mappers'
+import { mapMedia, mapMediaSummary, mapTag, mapPerson, mapCompany, mapCharacter } from './mappers'
 import * as listRepo from './listRepo'
 import * as tierListRepo from './tierListRepo'
 import * as settingsRepo from './settingsRepo'
 import type {
   MediaItem,
+  MediaSummary,
   MediaItemInput,
   MediaListFilter,
+  MediaListPageRequest,
+  MediaListPage,
+  HomeLibraryOverview,
   MediaListFacets,
   MediaDetail,
   CastEntry,
@@ -25,6 +29,7 @@ import type {
   ActivitySourceKey
 } from '@shared/types'
 import { parseStatuses } from '@shared/mediaProgress'
+import { shuffle } from '@shared/shuffle'
 
 // Columns that map 1:1 from MediaItemInput -> media_item (excluding tags).
 const COL = {
@@ -85,6 +90,18 @@ const SEASON_SQL = `CASE
 END`
 
 const SEASON_KEYS = new Set(['winter', 'spring', 'summer', 'fall'])
+
+// Card queries never ship detail prose or the full provider metadata object.
+// Metacritic is the one metadata value rendered by a card today.
+const MEDIA_SUMMARY_SQL = `m.id, m.media_type, m.title, m.title_original,
+  NULL AS synopsis, m.cover_path, m.release_date, m.total_units, m.status,
+  m.score, m.progress, m.rewatch_count, m.favorite,
+  CASE WHEN json_valid(m.metadata) THEN
+    CASE WHEN json_type(m.metadata, '$.metacritic') IN ('integer', 'real')
+      THEN json_object('metacritic', json_extract(m.metadata, '$.metacritic'))
+      ELSE NULL END
+    ELSE NULL END AS metadata,
+  m.created_at, m.updated_at`
 
 // Sort key -> column/expression. A whitelist on purpose: the value reaches SQL
 // by interpolation, so it must never come from the filter object directly.
@@ -229,6 +246,93 @@ export function list(filter: MediaListFilter): MediaItem[] {
     .all(...params)
   return rows.map(mapMedia)
 }
+
+export function listPage(request: MediaListPageRequest): MediaListPage {
+  const db = getSqlite()
+  const limit = Math.max(24, Math.min(192, Math.trunc(request.limit) || 96))
+  const offset = Math.max(0, Math.trunc(request.offset) || 0)
+  const { where, params } = buildWhere(request.filter)
+  const countParams = [...params]
+  const order = buildOrder(request.filter, params)
+  const clause = where.join(' AND ')
+  const total = (
+    db.prepare(`SELECT COUNT(*) AS n FROM media_item m WHERE ${clause}`).get(...countParams) as {
+      n: number
+    }
+  ).n
+  const rows = db
+    .prepare(
+      `SELECT ${MEDIA_SUMMARY_SQL} FROM media_item m
+       WHERE ${clause}
+       ORDER BY ${order}
+       LIMIT ? OFFSET ?`
+    )
+    .all(...params, limit, offset)
+  const items = rows.map(mapMediaSummary)
+  return { items, total, offset, hasMore: offset + items.length < total }
+}
+
+export function homeOverview(): HomeLibraryOverview {
+  const db = getSqlite()
+  const rows = db
+    .prepare(`SELECT ${MEDIA_SUMMARY_SQL} FROM media_item m`)
+    .all()
+    .map(mapMediaSummary)
+  const statusesByType = new Map<MediaType, string[]>()
+  const statusesFor = (type: MediaType): string[] => {
+    const existing = statusesByType.get(type)
+    if (existing) return existing
+    const statuses = parseStatuses(settingsRepo.get(`${type}.statuses`), type)
+    statusesByType.set(type, statuses)
+    return statuses
+  }
+  const statusAt = (item: MediaSummary, index: number): boolean =>
+    item.status === (statusesFor(item.mediaType)[index] ?? '')
+  const continuing = rows.filter((item) => statusAt(item, 0)).sort(byUpdatedDesc)
+  const completed = rows.filter((item) => statusAt(item, 1))
+  const planned = rows.filter((item) => {
+    const statuses = statusesFor(item.mediaType)
+    return item.status === statuses.at(-1)
+  })
+  const spotlightBase = planned.length ? planned : rows
+  const spotlightIds = spotlightBase.slice(0, 24).map((item) => item.id)
+  const synopsisById = new Map<number, string | null>()
+  if (spotlightIds.length) {
+    for (const row of db
+      .prepare(
+        `SELECT id, synopsis FROM media_item WHERE id IN (${spotlightIds.map(() => '?').join(',')})`
+      )
+      .all(...spotlightIds) as { id: number; synopsis: string | null }[]) {
+      synopsisById.set(row.id, row.synopsis ?? null)
+    }
+  }
+  const scores = rows.map((item) => item.score).filter((score): score is number => score != null)
+  return {
+    wall: shuffle(rows.filter((item) => item.coverPath)).slice(0, 24),
+    recent: [...rows].sort(byCreatedDesc).slice(0, 10),
+    continuing: continuing.slice(0, 12),
+    favorites: rows.filter((item) => item.favorite).sort(byUpdatedDesc).slice(0, 12),
+    spotlight: spotlightBase.slice(0, 24).map((item) => ({
+      ...item,
+      synopsis: synopsisById.get(item.id) ?? null
+    })),
+    spotlightFromBacklog: planned.length > 0,
+    stats: {
+      titles: rows.length,
+      inProgress: continuing.length,
+      completed: completed.length,
+      favorites: rows.filter((item) => item.favorite).length,
+      avgScore: scores.length
+        ? (scores.reduce((total, score) => total + score, 0) / scores.length).toFixed(1)
+        : null
+    }
+  }
+}
+
+const byCreatedDesc = (a: MediaSummary, b: MediaSummary): number =>
+  b.createdAt.localeCompare(a.createdAt)
+const byUpdatedDesc = (a: MediaSummary, b: MediaSummary): number =>
+  b.updatedAt.localeCompare(a.updatedAt)
 
 // Slider bounds for the list page's filter panel. Deliberately ignores the
 // active filters: the sliders must not collapse around the current selection.

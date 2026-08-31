@@ -97,14 +97,11 @@ describe('adaptive archive navigation', () => {
       title: 'Football',
       descriptor: 'History archive',
       items: [
-        { to: '/football', label: 'Overview' },
-        { to: '/football/current', label: 'Current' },
-        { to: '/football/competitions', label: 'Competitions' },
-        { to: '/football/teams', label: 'Teams' },
-        { to: '/football/people', label: 'People' },
-        { to: '/football/media', label: 'Media' },
-        { to: '/football/quiz', label: 'Quiz' },
-        { to: '/football/sync', label: 'Sync' }
+        { to: '/football', label: 'Home' },
+        { to: '/football/current', label: 'Matchday' },
+        { to: '/football/competitions', label: 'History' },
+        { to: '/football/media', label: 'My Archive' },
+        { to: '/football/quiz', label: 'Quiz' }
       ]
     })
   })

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { musicTrackId, musicTrackToPlayerTrack } from '../lib/musicTracks'
 import { toast, toastError } from '../lib/toast'
 import CoverImage from './CoverImage'
@@ -50,7 +50,7 @@ export default function MusicTrackRow({
   onRemove?: () => void
 }) {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const isCurrent = player.track?.id === musicTrackId(track)
 
   // Optimistic heart: flip locally, persist, then let the invalidation settle.
@@ -117,7 +117,7 @@ export default function MusicTrackRow({
 
 function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => void }) {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const [open, setOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const boxRef = useRef<HTMLDivElement>(null)

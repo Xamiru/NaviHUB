@@ -20,6 +20,7 @@ interface LinkDraft {
 export default function FootballMediaPage() {
   const [params] = useSearchParams()
   const qc = useQueryClient()
+  const [showAttach, setShowAttach] = useState(() => params.has('match'))
   const [filterKind, setFilterKind] = usePersistedState<FootballMediaKind | null>('footballMediaKind', null)
   const [filterSearch, setFilterSearch] = usePersistedState('footballMediaSearch', '')
   const filter = useMemo(() => ({ kind: filterKind, search: filterSearch || null }), [filterKind, filterSearch])
@@ -42,6 +43,7 @@ export default function FootballMediaPage() {
   useEffect(() => {
     const matchId = Number(params.get('match'))
     if (!Number.isInteger(matchId) || matchId < 1 || links.length) return
+    setShowAttach(true)
     api.football.match(matchId).then((match) => {
       if (!match) return
       setLinks([{ entityKind: 'match', entityId: match.id, label: `${match.home.name} vs ${match.away.name}` }])
@@ -85,6 +87,7 @@ export default function FootballMediaPage() {
         links: links.map(({ entityKind, entityId }) => ({ entityKind, entityId }))
       })
       reset()
+      setShowAttach(false)
       qc.invalidateQueries({ queryKey: qk.football.all })
     } finally {
       setSaving(false)
@@ -99,9 +102,14 @@ export default function FootballMediaPage() {
 
   return (
     <div className="mx-auto max-w-[1500px] p-6">
-      <PageHeader title="Football media" subtitle="Manual shelves for clips, highlights, full matches, interviews and documentaries. Local files stay beneath one root and HTTP links open in the browser." back={{ to: '/football', label: 'Football Archive' }} />
+      <PageHeader
+        title="My football archive"
+        subtitle="Clips, highlights, full matches, interviews and documentaries collected around the history record. Files stay where you put them."
+        back={{ to: '/football', label: 'Football Archive' }}
+        actions={<button className={showAttach ? 'btn-ghost' : 'btn-primary'} onClick={() => setShowAttach((value) => !value)}>{showAttach ? 'Close form' : 'Add media'}</button>}
+      />
 
-      <section className="mb-10 border-y border-line-subtle py-6">
+      {showAttach && <section className="mb-10 border-y border-line-subtle py-6">
         <h2 className="text-xl font-semibold text-ink">Attach media</h2>
         <div className="mt-5 grid gap-5 lg:grid-cols-2">
           <div className="space-y-4">
@@ -122,16 +130,16 @@ export default function FootballMediaPage() {
           </div>
         </div>
         <button className="btn-primary mt-5" disabled={saving || !title.trim() || (!localPath && !url.trim()) || !links.length} onClick={save}>Save attachment</button>
-      </section>
+      </section>}
 
       <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-        <Group label="Shelf"><Pill active={filterKind == null} onClick={() => setFilterKind(null)} label="All" />{FOOTBALL_MEDIA_KINDS.map((value) => <Pill key={value} active={filterKind === value} onClick={() => setFilterKind(value)} label={value === 'fullMatch' ? 'Full matches' : value} />)}</Group>
+        <div><p className="mb-3 text-xs uppercase tracking-[0.14em] text-ink-muted">{data.length} saved records</p><Group label="Shelf"><Pill active={filterKind == null} onClick={() => setFilterKind(null)} label="All" />{FOOTBALL_MEDIA_KINDS.map((value) => <Pill key={value} active={filterKind === value} onClick={() => setFilterKind(value)} label={value === 'fullMatch' ? 'Full matches' : value} />)}</Group></div>
         <input className="input max-w-sm" value={filterSearch} onChange={(event) => setFilterSearch(event.target.value)} placeholder="Filter saved media..." aria-label="Filter saved Football media" />
       </div>
       <div className="divide-y divide-line-subtle border-y border-line-subtle">
         {data.map((item) => (
           <div key={item.id} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,1fr)_minmax(220px,0.8fr)_auto] sm:items-center">
-            <div><p className="font-medium text-ink">{item.title}</p><p className="mt-1 text-xs text-ink-muted">{item.kind === 'fullMatch' ? 'Full match' : item.kind} / {item.localPath ? 'local file' : 'web link'}</p></div>
+            <div className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3"><span className="border-r border-line-subtle pr-3 text-center font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">{item.kind === 'fullMatch' ? 'match' : item.kind}</span><span><span className="block font-medium text-ink">{item.title}</span><span className="mt-1 block text-xs text-ink-muted">{item.localPath ? 'Local file' : 'Web link'}</span></span></div>
             <p className="truncate text-sm text-ink-muted">{item.links.map((link) => link.label).filter(Boolean).join(', ')}</p>
             <div className="flex gap-2"><button className="btn-ghost" onClick={() => item.localPath ? api.football.openMedia(item.localPath) : item.url && api.football.openExternalLink('website', item.url)}>Open</button><button className="btn-ghost text-signal-anomaly" onClick={() => remove(item.id, item.title)}>Remove</button></div>
           </div>

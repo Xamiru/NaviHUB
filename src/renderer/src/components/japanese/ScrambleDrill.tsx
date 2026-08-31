@@ -5,7 +5,7 @@ import { Group, Pill } from '../PillGroup'
 import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { usePersistedState } from '../../lib/navState'
-import { usePlayer } from '../../lib/player'
+import { usePlayerControls } from '../../lib/player'
 import { mediaUrl } from '@shared/mediaUrl'
 import { shuffle } from '@shared/shuffle'
 import type { ScrambleQuizItem } from '@shared/types'
@@ -63,7 +63,7 @@ export default function ScrambleDrill() {
 
 function Round({ items, length, onExit }: { items: ScrambleQuizItem[]; length: number; onExit: () => void }) {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const deckRef = useRef<ScrambleQuizItem[]>(shuffle(items))
   const [current, setCurrent] = useState<ScrambleQuizItem>(() => deckRef.current.shift()!)

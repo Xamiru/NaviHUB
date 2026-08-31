@@ -21,6 +21,18 @@ const read = (rel: string): string =>
 const initSql = read('../src/main/db/init.sql')
 
 describe('a live DB that predates newer columns', () => {
+  it('backfills the global search projection for rows that predate its triggers', () => {
+    const db = new Database(':memory:')
+    db.exec(initSql)
+    db.prepare(`INSERT INTO media_item (media_type, title) VALUES ('anime', 'Legacy Search Title')`).run()
+    db.prepare('DELETE FROM global_search_fts').run()
+
+    expect(() => runMigrations(db)).not.toThrow()
+    expect(
+      db.prepare(`SELECT name FROM global_search_fts WHERE global_search_fts MATCH 'Search'`).all()
+    ).toEqual([{ name: 'Legacy Search Title' }])
+  })
+
   it('adds unique Spotify IDs to legacy music artists and albums without losing rows', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')

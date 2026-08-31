@@ -38,7 +38,7 @@ export default function CoverageSection({ m }: { m: MediaDetail }) {
   const { data: deckStatus } = useQuery({
     queryKey: qk.japanese.prepDeckStatus,
     queryFn: () => api.japanese.prepDeckStatus(),
-    refetchInterval: 1000
+    refetchInterval: (query) => (query.state.data?.running ? 400 : 5000)
   })
 
   // Files the word as a review-status card so every knowledge-derived number

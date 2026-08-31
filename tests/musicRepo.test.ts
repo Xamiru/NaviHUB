@@ -64,6 +64,20 @@ function seedTrack(opts: {
 }
 
 describe('browse', () => {
+  it('pages and sorts the track catalogue in SQL', () => {
+    for (let i = 0; i < 60; i++) {
+      const id = seedTrack({ title: `Track ${String(i).padStart(2, '0')}`, path: `track/${i}` })
+      db.prepare('UPDATE music_track SET play_count = ? WHERE id = ?').run(i, id)
+    }
+
+    const first = musicRepo.listTrackPage({ sort: 'most', filter: 'all', offset: 0, limit: 48 })
+    const second = musicRepo.listTrackPage({ sort: 'most', filter: 'all', offset: 48, limit: 48 })
+    expect(first).toMatchObject({ total: 60, offset: 0, hasMore: true })
+    expect(first.items[0].title).toBe('Track 59')
+    expect(second.items).toHaveLength(12)
+    expect(second.hasMore).toBe(false)
+  })
+
   it('lists artists with album/track counts and supports search', () => {
     seedTrack({ artist: 'Radiohead', album: 'OK Computer', title: 'Airbag' })
     seedTrack({ artist: 'Radiohead', album: 'Kid A', title: 'Idioteque' })
@@ -659,8 +673,25 @@ describe('persistent Spotify entity catalogue', () => {
     spotifyRepo.setDownloadQueueCardState(jobId, 'running', null, true)
     expect(spotifyRepo.normalizeInterruptedDownloadQueue()).toBe(1)
     expect(spotifyRepo.getDownloadQueueCard(jobId)).toMatchObject({ state: 'paused', continueAfter: true })
+    spotifyRepo.addEntityToDownloadQueue({ snapshotId, releaseIds: [releaseId] })
+    expect(spotifyRepo.getDownloadQueueCard(jobId)).toMatchObject({ state: 'paused', continueAfter: true })
+
+    const downloadedTrackId = seedTrack({
+      title: 'Missing song',
+      path: 'Radiohead/OK Computer/downloaded.mp3'
+    })
+    spotifyRepo.resolveAllSpotifyItems()
     spotifyRepo.setDownloadQueueCardState(jobId, 'completed')
     expect(spotifyRepo.listDownloadQueue().completed).toHaveLength(1)
+
+    db.prepare('DELETE FROM music_track WHERE id=?').run(downloadedTrackId)
+    expect(spotifyRepo.listDownloadQueue().pending[0]).toMatchObject({
+      id: jobId,
+      state: 'queued',
+      missingCount: 1
+    })
+    spotifyRepo.resolveAllSpotifyItems()
+    spotifyRepo.setDownloadQueueCardState(jobId, 'completed')
     expect(spotifyRepo.clearCompletedDownloadQueue()).toBe(1)
     expect(spotifyRepo.listDownloadQueue().completed).toHaveLength(0)
   })

@@ -1,12 +1,12 @@
-import { memo, useState } from 'react'
+import { memo, useEffect, useMemo, useRef, useState } from 'react'
 import Tabs from '../components/Tabs'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
-import { useStatuses, useDebouncedValue, useIncrementalList } from '../lib/hooks'
+import { useStatuses, useDebouncedValue } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
 import { configFor, type MediaConfig } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
@@ -20,7 +20,7 @@ import MediaFilterPanel, {
 } from '../components/MediaFilterPanel'
 import { seasonLabel } from '@shared/season'
 import { loadListSort, saveListSort } from '../lib/listSortPrefs'
-import type { MediaItem, MediaListFilter, MediaSort } from '@shared/types'
+import type { MediaListFilter, MediaSort, MediaSummary } from '@shared/types'
 
 // Sort menu. `random` is a seeded shuffle — it has no direction, so the page
 // swaps the direction toggle for a Shuffle button that re-seeds it.
@@ -104,13 +104,34 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
     (selStatuses.length ? 1 : 0) +
     (debouncedSearch.trim() ? 1 : 0)
 
-  const { data: items = [], isLoading } = useQuery({
+  const {
+    data: pages,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfiniteQuery({
     queryKey: qk.media.list(filter),
-    queryFn: () => api.media.list(filter)
+    queryFn: ({ pageParam }) => api.media.listPage({ filter, offset: pageParam, limit: 96 }),
+    initialPageParam: 0,
+    getNextPageParam: (last) => (last.hasMore ? last.offset + last.items.length : undefined)
   })
+  const items = useMemo(() => pages?.pages.flatMap((page) => page.items) ?? [], [pages])
+  const matched = pages?.pages[0]?.total ?? 0
   const contextItem = items.find((item) => item.id === contextId) ?? items[0]
-  // Big libraries render in scroll-fed batches, same as the entity grids.
-  const { visible, sentinelRef, hasMore } = useIncrementalList(items)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  useEffect(() => {
+    const el = sentinelRef.current
+    if (!el || !hasNextPage || isFetchingNextPage) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) void fetchNextPage()
+      },
+      { rootMargin: '600px' }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage])
 
   // One map for the whole grid rather than a query per card — only a handful of
   // games are ever tracked, and untracked ones simply aren't in it.
@@ -363,12 +384,12 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
         <>
           {(nFilters > 0 || debouncedSearch.trim()) && (
             <p className="mb-3 text-xs text-gray-400">
-              {items.length} of {total} {cfg.plural.toLowerCase()} match
+              {matched} of {total} {cfg.plural.toLowerCase()} match
             </p>
           )}
           <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
             <div className="grid grid-cols-[repeat(auto-fill,minmax(145px,1fr))] gap-4">
-              {visible.map((m) => (
+              {items.map((m) => (
                 <div
                   key={m.id}
                   onMouseEnter={() => setContextId(m.id)}
@@ -387,9 +408,11 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
             <ContextLens item={contextItem} cfg={cfg} />
           </div>
           <div ref={sentinelRef} />
-          {hasMore && (
+          {(hasNextPage || isFetchingNextPage) && (
             <p className="mt-4 text-center text-xs text-gray-400">
-              Showing {visible.length} of {items.length} — scroll for more
+              {isFetchingNextPage
+                ? 'Loading more titles…'
+                : `Showing ${items.length} of ${matched} — scroll for more`}
             </p>
           )}
         </>
@@ -398,7 +421,7 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   )
 }
 
-function ContextLens({ item, cfg }: { item: MediaItem; cfg: MediaConfig }) {
+function ContextLens({ item, cfg }: { item: MediaSummary; cfg: MediaConfig }) {
   const year = item.releaseDate?.slice(0, 4)
   return (
     <aside className="card sticky top-5 hidden overflow-hidden lg:block">

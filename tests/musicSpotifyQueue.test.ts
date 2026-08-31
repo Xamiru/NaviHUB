@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
+import { writeFileSync } from 'node:fs'
 import { PassThrough } from 'node:stream'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
@@ -16,6 +17,12 @@ function fakeProcess() {
   })
 }
 
+function recordFakeProcess() {
+  const proc = fakeProcess()
+  spawned.push(proc)
+  return proc
+}
+
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/navihub-test' } }))
 vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
 vi.mock('../src/main/repos/settingsRepo', () => ({ get: (key: string) => key === 'music.dir' ? '/tmp/music' : null }))
@@ -23,16 +30,13 @@ vi.mock('../src/main/files', () => ({
   downloadImages: vi.fn(),
   musicRootDir: () => '/tmp/music'
 }))
+vi.mock('../src/main/http', () => ({ fetchWithRetry: vi.fn() }))
 vi.mock('../src/main/music', () => ({ startScan: vi.fn(async () => undefined) }))
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>()
   return {
     ...actual,
-    spawn: vi.fn(() => {
-      const proc = fakeProcess()
-      spawned.push(proc)
-      return proc
-    })
+    spawn: vi.fn(() => recordFakeProcess())
   }
 })
 
@@ -40,10 +44,14 @@ import * as spotifyRepo from '../src/main/repos/musicSpotifyRepo'
 import * as spotify from '../src/main/musicSpotify'
 import * as tasks from '../src/main/tasks'
 import { musicMaintenanceOwner } from '../src/main/musicMaintenance'
+import { fetchWithRetry } from '../src/main/http'
+import { spawn } from 'node:child_process'
 
 beforeEach(() => {
   db = createTestDb()
   spawned = []
+  vi.mocked(fetchWithRetry).mockReset()
+  vi.mocked(spawn).mockImplementation(() => recordFakeProcess() as never)
   spotify.killActive()
 })
 
@@ -88,6 +96,86 @@ function seedQueuedRelease(): { jobId: number; artistId: number } {
 }
 
 describe('persistent Spotify download queue process', () => {
+  it('builds a first artist catalogue without requiring a representative local track', async () => {
+    db.prepare(`INSERT INTO music_artist (id, name, dir_path) VALUES (1, 'Sabrina Carpenter', 'Sabrina Carpenter')`).run()
+    vi.mocked(fetchWithRetry).mockImplementation(async (url) => {
+      const rows = String(url).includes('id=123')
+        ? [
+            { wrapperType: 'artist', artistId: 123, artistName: 'Sabrina Carpenter' },
+            {
+              wrapperType: 'collection', collectionId: 456, collectionName: "Short n' Sweet",
+              artistName: 'Sabrina Carpenter', releaseDate: '2024-08-23T00:00:00Z', trackCount: 1
+            }
+          ]
+        : [
+            {
+              wrapperType: 'collection', collectionId: 456, collectionName: "Short n' Sweet",
+              artistName: 'Sabrina Carpenter', releaseDate: '2024-08-23T00:00:00Z', trackCount: 1
+            },
+            {
+              wrapperType: 'track', kind: 'song', collectionId: 456, trackId: 789,
+              trackName: 'Espresso', artistName: 'Sabrina Carpenter', trackTimeMillis: 175_000,
+              discNumber: 1, trackNumber: 1
+            }
+          ]
+      return new Response(JSON.stringify({ results: rows }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' }
+      })
+    })
+
+    const inspection = await spotify.inspectEntity({
+      kind: 'artist',
+      entityId: 1,
+      candidateKey: 'itunes:artist:123'
+    })
+
+    expect(inspection).toMatchObject({
+      sourceName: 'Sabrina Carpenter',
+      releases: [{ title: "Short n' Sweet", trackCount: 1, missingCount: 1 }]
+    })
+    expect(spawned).toHaveLength(0)
+  })
+
+  it('accepts an explicit artist link when the local artist has no tracks', async () => {
+    db.prepare(`INSERT INTO music_artist (id, name, dir_path) VALUES (1, 'Sabrina Carpenter', 'Sabrina Carpenter')`).run()
+    vi.mocked(spawn).mockImplementation((_command, args) => {
+      const proc = recordFakeProcess()
+      const argv = args as string[]
+      const saveFile = argv[argv.indexOf('--save-file') + 1]
+      writeFileSync(saveFile, JSON.stringify([{
+        song_id: '2qSkIjg1o9h3YT9RAgYN75',
+        name: 'Espresso',
+        artists: ['Sabrina Carpenter'],
+        album_artist: 'Sabrina Carpenter',
+        artist_ids: ['74KM79TiuVKeVCqs8QtB0B'],
+        album_name: "Short n' Sweet",
+        album_id: '3iPSVi54hsacKKl1xIR2eH',
+        album_type: 'album',
+        duration: 175,
+        url: 'https://open.spotify.com/track/2qSkIjg1o9h3YT9RAgYN75'
+      }]))
+      queueMicrotask(() => {
+        proc.exitCode = 0
+        proc.emit('close', 0)
+      })
+      return proc as never
+    })
+
+    const inspection = await spotify.inspectEntity({
+      kind: 'artist',
+      entityId: 1,
+      url: 'https://open.spotify.com/artist/74KM79TiuVKeVCqs8QtB0B'
+    })
+
+    expect(inspection).toMatchObject({
+      sourceId: '74KM79TiuVKeVCqs8QtB0B',
+      sourceName: 'Sabrina Carpenter',
+      matchesCurrentEntity: true,
+      releases: [{ title: "Short n' Sweet", missingCount: 1 }]
+    })
+  })
+
   it('rechecks local matches and completes without launching spotDL', async () => {
     const { jobId } = seedQueuedRelease()
     db.prepare(

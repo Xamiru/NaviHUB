@@ -34,6 +34,9 @@ function normalizeExportOptions(input = {}) {
 }
 
 const FIXED_WIPES = [
+  // Derived from canonical titles/names and rebuilt on startup. Wipe first so
+  // an export that excludes a section cannot retain its searchable names.
+  'DELETE FROM global_search_fts',
   // Football is always excluded: the archive combines personal annotations,
   // machine paths and provider datasets that are not redistributable.
   'DELETE FROM football_media_link',

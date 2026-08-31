@@ -432,7 +432,7 @@ html[data-theme='metal-gear'] .wired-surface {
 
    Reading-surface themes: `data-book-theme` on the reader viewport scopes a
    set of --book-* vars. These are CONTENT-level colors (deliberately literal,
-   like StatsPage TYPE_COLORS) — the Lain :root palette is app chrome and the
+   like lib/mediaColors MEDIA_TYPE_COLORS) — the Lain :root palette is app chrome and the
    HUD bars stay chrome-dark in every theme. --book-bg paints the viewport
    (and is the text background in vertical/full-bleed mode); --book-sheet is
    the floating page surface in horizontal mode, so the two must stay close in

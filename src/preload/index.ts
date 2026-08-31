@@ -5,6 +5,8 @@ import type { NaviApi } from '@shared/api'
 const api: NaviApi = {
   media: {
     list: (filter) => ipcRenderer.invoke('media:list', filter),
+    listPage: (request) => ipcRenderer.invoke('media:listPage', request),
+    homeOverview: () => ipcRenderer.invoke('media:homeOverview'),
     get: (id) => ipcRenderer.invoke('media:get', id),
     create: (input) => ipcRenderer.invoke('media:create', input),
     update: (id, input) => ipcRenderer.invoke('media:update', id, input),
@@ -413,6 +415,7 @@ const api: NaviApi = {
     artist: (id) => ipcRenderer.invoke('music:artist', id),
     album: (id) => ipcRenderer.invoke('music:album', id),
     tracks: (filter) => ipcRenderer.invoke('music:tracks', filter),
+    trackPage: (request) => ipcRenderer.invoke('music:trackPage', request),
     artistTracks: (artistId) => ipcRenderer.invoke('music:artistTracks', artistId),
     search: (query) => ipcRenderer.invoke('music:search', query),
     stats: () => ipcRenderer.invoke('music:stats'),

@@ -9,7 +9,9 @@ import type {
   MusicPlaylistSummary,
   MusicSearchResults,
   MusicStatsDetail,
-  MusicTrack
+  MusicTrack,
+  MusicTrackPage,
+  MusicTrackPageRequest
 } from '@shared/types'
 import { mapSpotifyItem, spotifySource } from './musicSpotifyRepo'
 
@@ -193,6 +195,36 @@ export function listTracks(filter: { search?: string; likedOnly?: boolean } = {}
     .prepare(`${TRACK_SELECT} ${where} ${order}`)
     .all(...params) as Record<string, unknown>[]
   return rows.map(mapTrack)
+}
+
+export function listTrackPage(request: MusicTrackPageRequest): MusicTrackPage {
+  const db = getSqlite()
+  const limit = Math.max(48, Math.min(240, Math.trunc(request.limit) || 96))
+  const offset = Math.max(0, Math.trunc(request.offset) || 0)
+  const where =
+    request.filter === 'unplayed'
+      ? 'WHERE t.play_count = 0'
+      : request.filter === 'missingArt'
+        ? 'WHERE al.cover_path IS NULL'
+        : ''
+  const orders = {
+    catalog: `ar.name COLLATE NOCASE ASC, al.year ASC, al.title COLLATE NOCASE ASC,
+      COALESCE(t.disc_no, 1) ASC, COALESCE(t.track_no, 9999) ASC, t.title COLLATE NOCASE ASC`,
+    recent: `(t.last_played_at IS NULL) ASC, t.last_played_at DESC, t.title COLLATE NOCASE ASC`,
+    most: 't.play_count DESC, t.title COLLATE NOCASE ASC',
+    least: 't.play_count ASC, t.title COLLATE NOCASE ASC',
+    title: 't.title COLLATE NOCASE ASC'
+  } as const
+  const order = orders[request.sort] ?? orders.catalog
+  const total = (
+    db.prepare(`SELECT COUNT(*) AS n ${TRACK_JOINS} ${where}`).get() as { n: number }
+  ).n
+  const items = (
+    db
+      .prepare(`${TRACK_SELECT} ${where} ORDER BY ${order} LIMIT ? OFFSET ?`)
+      .all(limit, offset) as Record<string, unknown>[]
+  ).map(mapTrack)
+  return { items, total, offset, hasMore: offset + items.length < total }
 }
 
 // Play-all for an artist page: album order, then track order.

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { useIncrementalList } from '../lib/hooks'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -15,7 +15,8 @@ import { PlayIcon, PauseIcon } from './PlayerIcons'
 // "Next up" rows can be reordered (▲▼) or removed (×) — the playing track
 // itself is never editable, which keeps the player's index bookkeeping trivial.
 export default function QueuePanel({ onClose }: { onClose: () => void }) {
-  const { queue, index, isPlaying, playAt, toggle, removeFromQueue, moveInQueue } = usePlayer()
+  const { queue, index, isPlaying, playAt, toggle, removeFromQueue, moveInQueue } =
+    usePlayerControls()
   const likedIds = useLikedTrackIds()
   const listRef = useRef<HTMLDivElement>(null)
 
@@ -36,8 +37,8 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
 
   const current = queue[index]
   // Memoized so the slice's identity only changes when the queue really does —
-  // usePlayer() re-renders on every timeupdate tick, and a fresh array each
-  // tick would reset the incremental list below back to its first batch.
+  // Preserve identity across transport updates so the incremental list below
+  // does not reset to its first batch.
   const upNext = useMemo(() => queue.slice(index + 1), [queue, index])
   // A queue can hold thousands of tracks (a whole huge album); mounting a row
   // for each froze the popover, so reveal in scroll batches.

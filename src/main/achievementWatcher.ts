@@ -3,7 +3,6 @@ import { exeDirOf, nodeFileIO, scanUnlocks, windowsEnv } from './emuScan'
 import type { EmuFileIO } from './emuScan'
 import type { EmuEnv } from './achievementsCore'
 import { getSqlite } from './db/connection'
-import * as retroAchievements from './retroAchievements'
 import * as achPopup from './achPopup'
 import { ACH_POPUP_BURST_AT } from '@shared/achievements'
 import type {
@@ -182,7 +181,7 @@ export async function pollOnce(
   const now = deps.now ?? Date.now
 
   if (w.provider === 'ra') {
-    const fetchRecent = deps.raRecent ?? retroAchievements.recentUnlocks
+    const fetchRecent = deps.raRecent ?? (await import('./retroAchievements')).recentUnlocks
     // Only what could have happened during this session, plus a minute of slack
     // for clock skew between here and RA.
     const minutes = Math.ceil((now() - w.startedAtMs) / 60_000) + 1

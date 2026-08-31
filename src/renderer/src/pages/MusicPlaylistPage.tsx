@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
 import { useDebouncedValue, useIncrementalList } from '../lib/hooks'
 import BackButton from '../components/BackButton'
@@ -25,12 +25,29 @@ import type {
   MusicTrack
 } from '@shared/types'
 
+const TWO_GB = 2 * 1024 ** 3
+const ACTIVE_DOWNLOAD = new Set([
+  'starting',
+  'resolving',
+  'downloading',
+  'processing',
+  'pausing',
+  'paused',
+  'cancelling'
+])
+
+function formatBytes(bytes: number): string {
+  return bytes >= 1024 ** 3
+    ? `${(bytes / 1024 ** 3).toFixed(1)} GB`
+    : `${Math.ceil(bytes / 1024 ** 2)} MB`
+}
+
 export default function MusicPlaylistPage() {
   const { id } = useParams()
   const playlistId = Number(id)
   const navigate = useNavigate()
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const downloadStatus = useDownloadStatus()
   const [search, setSearch] = usePersistedState('spotifyPlaylistSearch', '')
   const [availability, setAvailability] = usePersistedState<'all' | 'playable' | 'missing'>(
@@ -94,7 +111,7 @@ export default function MusicPlaylistPage() {
   const busy =
     (downloadStatus?.source === 'spotify' || downloadStatus?.source === 'spotifyQueue') &&
     downloadStatus.playlistId === playlistId &&
-    ['starting', 'downloading', 'processing'].includes(downloadStatus.status)
+    ACTIVE_DOWNLOAD.has(downloadStatus.status)
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
   if (!playlist) return <PageStatus>Playlist not found.</PageStatus>
@@ -123,23 +140,6 @@ export default function MusicPlaylistPage() {
     startNow = false
   ): Promise<void> {
     if (itemsToDownload.length === 0 || busy) return
-    const bytes = Math.ceil(
-      itemsToDownload.reduce(
-        (total, item) => total + (item.duration == null ? 10 * 1024 * 1024 : item.duration * 40_000),
-        0
-      ) * 1.05
-    )
-    if (startNow && (itemsToDownload.length > 100 || bytes > 2 * 1024 ** 3)) {
-      const size =
-        bytes >= 1024 ** 3
-          ? `${(bytes / 1024 ** 3).toFixed(1)} GB`
-          : `${Math.ceil(bytes / 1024 ** 2)} MB`
-      const ok = await confirmDialog(
-        `Download ${itemsToDownload.length} missing songs as 320 kbps MP3 files? Estimated size: ${size}. Completed chunks are kept if you cancel.`,
-        { confirmLabel: 'Download' }
-      )
-      if (!ok) return
-    }
     try {
       const result = await api.music.spotifyQueueAddPlaylist({
         playlistId,
@@ -151,8 +151,40 @@ export default function MusicPlaylistPage() {
         return
       }
       if (startNow) {
+        const freshQueue = await api.music.spotifyDownloadQueue()
+        const mergedCard = freshQueue.pending.find((card) => card.id === result.jobId)
+        const missingCount = mergedCard?.missingCount ?? result.missingCount
+        const estimatedBytes = mergedCard?.missingEstimatedBytes ?? Math.ceil(
+          itemsToDownload.reduce(
+            (total, item) => total + (item.duration == null ? 10 * 1024 * 1024 : item.duration * 40_000),
+            0
+          ) * 1.05
+        )
+        if (missingCount > 100 || estimatedBytes > TWO_GB) {
+          const ok = await confirmDialog(
+            `Download ${missingCount} missing song${missingCount === 1 ? '' : 's'} as 320 kbps MP3 files? The current queue estimate is ${formatBytes(estimatedBytes)}. Finished files are kept if you pause or cancel.`,
+            { confirmLabel: 'Download' }
+          )
+          if (!ok) {
+            toast('Saved to Music Downloads without starting', 'success', {
+              label: 'View downloads',
+              route: '/music/downloads'
+            })
+            return
+          }
+        }
+        const queueWasActive = downloadStatus?.source === 'spotifyQueue' &&
+          ACTIVE_DOWNLOAD.has(downloadStatus.status)
         await api.music.spotifyQueueStart({ jobId: result.jobId, prioritize: true })
-        toast(`Starting ${itemsToDownload.length} song${itemsToDownload.length === 1 ? '' : 's'}`, 'success')
+        toast(
+          queueWasActive
+            ? downloadStatus.status === 'paused'
+              ? 'Saved to run after the paused download resumes'
+              : 'Saved first; this playlist will run next'
+            : `Starting ${missingCount} song${missingCount === 1 ? '' : 's'}`,
+          'success',
+          { label: 'View downloads', route: '/music/downloads' }
+        )
       } else {
         toast(
           result.addedSelections > 0
@@ -211,6 +243,7 @@ export default function MusicPlaylistPage() {
         <div className="min-w-0">
           {editing ? (
             <input
+              aria-label="Playlist name"
               className="input text-xl font-bold"
               value={title}
               autoFocus
@@ -242,35 +275,21 @@ export default function MusicPlaylistPage() {
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
           <button
             className="btn-primary"
-            onClick={() => {
-              if (missingSpotify.length > 0) {
-                if (allMissingQueued) navigate('/music/downloads')
-                else void queueDownload(missingSpotify)
-              }
-              else if (playable[0]) playItem(playable[0].item)
-            }}
-            disabled={missingSpotify.length > 0 ? busy : !playable.length}
+            onClick={() => playable[0] && playItem(playable[0].item)}
+            disabled={!playable.length}
           >
-            {playlist.missingCount > 0 && isSpotify
-              ? allMissingQueued ? 'View downloads' : `Add missing to queue (${playlist.missingCount})`
-              : 'Play'}
+            Play
           </button>
           {missingSpotify.length > 0 && (
             <button
               className="btn-ghost"
-              disabled={busy}
-              onClick={() => void queueDownload(missingSpotify, true)}
+              disabled={busy && !allMissingQueued}
+              onClick={() => {
+                if (allMissingQueued) navigate('/music/downloads')
+                else void queueDownload(missingSpotify)
+              }}
             >
-              Download now
-            </button>
-          )}
-          {missingSpotify.length > 0 && (
-            <button
-              className="btn-ghost"
-              disabled={!playable.length}
-              onClick={() => playable[0] && playItem(playable[0].item)}
-            >
-              Play
+              {allMissingQueued ? 'View downloads' : `Add missing (${playlist.missingCount})`}
             </button>
           )}
           <button
@@ -288,6 +307,15 @@ export default function MusicPlaylistPage() {
           </button>
           <ActionMenu
             items={[
+              ...(missingSpotify.length > 0
+                ? [{
+                    label: downloadStatus?.source === 'spotifyQueue' && ACTIVE_DOWNLOAD.has(downloadStatus.status)
+                      ? downloadStatus.status === 'paused' ? 'Run missing after paused' : 'Run missing next'
+                      : 'Download missing now',
+                    disabled: busy,
+                    onSelect: () => queueDownload(missingSpotify, true)
+                  }]
+                : []),
               ...(playlist.source
                 ? [
                     {
@@ -322,15 +350,19 @@ export default function MusicPlaylistPage() {
                   ` · ${downloadStatus.resolvedCount} resolved · ${downloadStatus.failedCount ?? 0} remaining`}
               </p>
             </div>
-            <button
-              className="btn-ghost shrink-0"
-              onClick={async () => {
-                await api.music.downloadCancel(downloadStatus.id)
-                qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
-              }}
-            >
-              Cancel download
-            </button>
+            {downloadStatus.source === 'spotifyQueue' ? (
+              <Link className="btn-ghost shrink-0" to="/music/downloads">View downloads</Link>
+            ) : (
+              <button
+                className="btn-ghost shrink-0"
+                onClick={async () => {
+                  await api.music.downloadCancel(downloadStatus.id)
+                  qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
+                }}
+              >
+                Cancel download
+              </button>
+            )}
           </div>
           <div
             className="mt-2 h-1.5 overflow-hidden rounded bg-base-600"
@@ -350,21 +382,26 @@ export default function MusicPlaylistPage() {
 
       {isSpotify && (
         <div className="mb-5 flex flex-wrap items-center gap-2">
+          <label className="sr-only" htmlFor="spotify-playlist-search">Search this playlist</label>
           <input
+            id="spotify-playlist-search"
             className="input min-w-56 flex-1"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search this playlist"
           />
-          {(['all', 'playable', 'missing'] as const).map((value) => (
-            <button
-              key={value}
-              className={availability === value ? 'pill-active' : 'pill'}
-              onClick={() => setAvailability(value)}
-            >
-              {value === 'all' ? 'All' : value === 'playable' ? 'Playable' : 'Missing'}
-            </button>
-          ))}
+          <div className="flex flex-wrap gap-2" role="group" aria-label="Track availability">
+            {(['all', 'playable', 'missing'] as const).map((value) => (
+              <button
+                key={value}
+                className={availability === value ? 'pill-active' : 'pill'}
+                aria-pressed={availability === value}
+                onClick={() => setAvailability(value)}
+              >
+                {value === 'all' ? 'All' : value === 'playable' ? 'Playable' : 'Missing'}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
@@ -448,7 +485,7 @@ function SpotifyMissingRow({
   onRemove: () => void
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-md px-2 py-1.5 text-gray-400 hover:bg-base-700">
+    <div className="flex flex-wrap items-center gap-3 rounded-md px-2 py-1.5 text-gray-400 hover:bg-base-700 sm:flex-nowrap">
       <CoverImage
         path={item.coverPath}
         alt={item.title}
@@ -465,10 +502,10 @@ function SpotifyMissingRow({
       <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-500">
         {formatDuration(item.duration)}
       </span>
-      <button className="btn-ghost px-2 py-1 text-xs" disabled={busy} onClick={onQueue}>
+      <button className="btn-ghost px-2 py-1 text-xs" disabled={busy && !queued} onClick={onQueue}>
         {queued ? 'View queue' : 'Add to queue'}
       </button>
-      <button className="btn-ghost px-2 py-1 text-xs" onClick={onRemove}>
+      <button className="btn-ghost px-2 py-1 text-xs" aria-label={`Remove ${item.title} from playlist`} onClick={onRemove}>
         Remove
       </button>
     </div>
@@ -498,12 +535,15 @@ function AddTracksPicker({
 
   async function add(trackId: number): Promise<void> {
     await api.music.addPlaylistTracks(playlistId, [trackId])
+    setSearch('')
     onAdded()
   }
 
   return (
     <div className="relative mb-5">
+      <label className="sr-only" htmlFor={`playlist-${playlistId}-add-track`}>Add a track to this playlist</label>
       <input
+        id={`playlist-${playlistId}-add-track`}
         className="input"
         placeholder="Add tracks — search by title…"
         value={search}

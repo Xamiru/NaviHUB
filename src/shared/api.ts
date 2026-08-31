@@ -9,7 +9,10 @@ import type {
   MediaType,
   MediaItemInput,
   MediaListFilter,
+  MediaListPageRequest,
+  MediaListPage,
   MediaListFacets,
+  HomeLibraryOverview,
   MediaDetail,
   RefreshPreview,
   RefreshRunStatus,
@@ -269,6 +272,8 @@ import type {
   MusicSearchResults,
   MusicStatsDetail,
   MusicTrack,
+  MusicTrackPage,
+  MusicTrackPageRequest,
   MediaProgressLogged,
   PlayerCommand,
   PlayerSnapshot,
@@ -317,6 +322,8 @@ import type {
 export interface NaviApi {
   media: {
     list(filter: MediaListFilter): Promise<MediaItem[]>
+    listPage(request: MediaListPageRequest): Promise<MediaListPage>
+    homeOverview(): Promise<HomeLibraryOverview>
     get(id: number): Promise<MediaDetail | null>
     create(input: MediaItemInput): Promise<number>
     update(id: number, input: Partial<MediaItemInput>): Promise<void>
@@ -1005,6 +1012,7 @@ export interface NaviApi {
     artist(id: number): Promise<MusicArtistDetail | null>
     album(id: number): Promise<MusicAlbumDetail | null>
     tracks(filter: { search?: string; likedOnly?: boolean }): Promise<MusicTrack[]>
+    trackPage(request: MusicTrackPageRequest): Promise<MusicTrackPage>
     artistTracks(artistId: number): Promise<MusicTrack[]>
     search(query: string): Promise<MusicSearchResults>
     stats(): Promise<MusicLibraryStats>

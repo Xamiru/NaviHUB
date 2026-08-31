@@ -1,4 +1,4 @@
-import type { MediaItem, Person, Company, Character, Tag } from '@shared/types'
+import type { MediaItem, MediaSummary, Person, Company, Character, Tag } from '@shared/types'
 
 // SQLite returns snake_case rows with 0/1 for booleans and JSON-as-text.
 // These mappers convert a raw row into the typed camelCase shape the UI uses.
@@ -35,6 +35,27 @@ export function mapMedia(r: any): MediaItem {
     metadata: r.metadata ? safeParseMetadata(r.metadata) : null,
     externalSource: r.external_source ?? null,
     externalId: r.external_id ?? null,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at
+  }
+}
+
+export function mapMediaSummary(r: any): MediaSummary {
+  return {
+    id: r.id,
+    mediaType: r.media_type,
+    title: r.title,
+    titleOriginal: r.title_original ?? null,
+    synopsis: r.synopsis ?? null,
+    coverPath: r.cover_path ?? null,
+    releaseDate: r.release_date ?? null,
+    totalUnits: r.total_units ?? null,
+    status: r.status ?? null,
+    score: r.score ?? null,
+    progress: r.progress ?? 0,
+    rewatchCount: r.rewatch_count ?? 0,
+    favorite: !!r.favorite,
+    metadata: r.metadata ? safeParseMetadata(r.metadata) : null,
     createdAt: r.created_at,
     updatedAt: r.updated_at
   }

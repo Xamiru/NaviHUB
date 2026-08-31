@@ -3,7 +3,7 @@ import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { playTracks } from '../lib/musicTracks'
 import { toast, toastError } from '../lib/toast'
 import BackButton from '../components/BackButton'
@@ -21,7 +21,7 @@ export default function MusicArtistPage() {
   const artistId = Number(id)
   const qc = useQueryClient()
   const navigate = useNavigate()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const [searchParams, setSearchParams] = useSearchParams()
   const [torrentsOpen, setTorrentsOpen] = useState(false)
   const [spotifyOpen, setSpotifyOpen] = useState(false)

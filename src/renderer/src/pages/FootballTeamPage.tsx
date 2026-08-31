@@ -11,7 +11,8 @@ import { qk } from '../lib/queryKeys'
 import {
   FootballMatchRow,
   FootballMediaShelf,
-  FootballSectionTitle
+  FootballSectionTitle,
+  FootballTeamMark
 } from '../components/football/FootballCommon'
 
 export default function FootballTeamPage() {
@@ -69,13 +70,13 @@ export default function FootballTeamPage() {
   }
   return (
     <div className="mx-auto max-w-[1500px] p-6">
-      <div className="grid gap-6 md:grid-cols-[150px_minmax(0,1fr)]">
-        <CoverImage path={data.imagePath} alt={data.name} className="h-36 w-36" rounded="rounded-full" thumbWidth={256} />
+      <div className="grid items-center gap-6 md:grid-cols-[150px_minmax(0,1fr)]">
+        <div className="flex justify-center md:justify-start"><FootballTeamMark team={data} size="lg" /></div>
         <PageHeader
           title={data.name}
           subtitle={[data.country, data.foundedYear ? `Founded ${data.foundedYear}` : null].filter(Boolean).join(' / ') || 'Team archive'}
           back={{ to: '/football/teams', label: 'Teams' }}
-          actions={<><FavoriteButton active={data.favorite} onClick={favorite} variant="pill" activeText="Saved" inactiveText="Save" /><button className="btn-ghost" disabled={syncActive} onClick={enrich}>{syncActive ? 'Football sync active' : data.enrichmentState === 'ready' ? 'Refresh reference' : 'Fetch reference'}</button><AddToListMenu kind="footballTeam" entityId={id} /></>}
+          actions={<><FavoriteButton active={data.favorite} onClick={favorite} variant="pill" activeText="Saved" inactiveText="Save" /><AddToListMenu kind="footballTeam" entityId={id} /></>}
         />
       </div>
 
@@ -88,9 +89,9 @@ export default function FootballTeamPage() {
             {!data.matches.length && <p className="text-sm text-ink-muted">No matches are linked yet.</p>}
           </section>
           <section>
-            <FootballSectionTitle title="Season record" />
+            <FootballSectionTitle title="Season history" detail={`${data.seasonRecords.length} tables`} />
             <div className="overflow-x-auto">
-              <table className="w-full text-sm"><thead className="text-left text-xs text-ink-muted"><tr><th className="py-2">Rank</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>Pts</th></tr></thead><tbody className="divide-y divide-line-subtle">{data.seasonRecords.map((row, index) => <tr key={index}><td className="py-2.5">{row.rankOfficial ? row.rank : '-'}</td>{[row.played,row.won,row.drawn,row.lost,row.goalsFor,row.goalsAgainst,row.points].map((value, i) => <td key={i} className="tabular-nums text-ink-secondary">{value}</td>)}</tr>)}</tbody></table>
+              <table className="w-full text-sm"><thead className="text-left text-xs text-ink-muted"><tr><th className="py-2">Season</th><th>Competition</th><th>Rank</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>Pts</th></tr></thead><tbody className="divide-y divide-line-subtle">{data.seasonRecords.map((row, index) => <tr key={row.seasonId ?? index}><td className="py-2.5">{row.seasonId ? <Link to={`/football/season/${row.seasonId}`} className="font-medium text-ink hover:text-signal-link">{row.seasonLabel}</Link> : 'Unknown'}</td><td className="text-ink-muted">{row.competitionName ?? 'Not supplied'}</td><td>{row.rankOfficial ? row.rank : '-'}</td>{[row.played,row.won,row.drawn,row.lost,row.goalsFor,row.goalsAgainst,row.points].map((value, i) => <td key={i} className="tabular-nums text-ink-secondary">{value}</td>)}</tr>)}</tbody></table>
             </div>
           </section>
         </div>
@@ -99,7 +100,8 @@ export default function FootballTeamPage() {
             <FootballSectionTitle title="Players and managers" />
             <div className="divide-y divide-line-subtle">
               {data.tenures.slice(0, 80).map((tenure) => (
-                <Link key={tenure.id} to={`/football/person/${tenure.personId}`} className="flex items-center justify-between gap-4 py-2.5 text-sm">
+                <Link key={tenure.id} to={`/football/person/${tenure.personId}`} className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 py-2.5 text-sm">
+                  <CoverImage path={tenure.person?.imagePath} alt={tenure.person?.name ?? `Person ${tenure.personId}`} className="h-9 w-9" rounded="rounded-full" thumbWidth={72} />
                   <span className="truncate font-medium text-ink hover:text-signal-link">{tenure.person?.name ?? `Person ${tenure.personId}`}</span>
                   <span className="shrink-0 text-xs text-ink-muted">{tenure.role}{tenure.loan ? ' / loan' : ''}</span>
                 </Link>
@@ -114,6 +116,13 @@ export default function FootballTeamPage() {
           <section><FootballSectionTitle title="Derived media" /><FootballMediaShelf media={data.media} /></section>
         </aside>
       </div>
+      <details className="mt-10 border-y border-line-subtle py-4">
+        <summary className="cursor-pointer text-sm font-medium text-ink">Reference and image source</summary>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+          <p className="max-w-3xl text-sm text-ink-muted">Licensed Wikimedia biography and imagery are fetched lazily. Canonical match and career facts remain available without them.</p>
+          <button className="btn-ghost" disabled={syncActive} onClick={enrich}>{syncActive ? 'Football sync active' : data.enrichmentState === 'ready' ? 'Refresh reference' : 'Fetch reference'}</button>
+        </div>
+      </details>
     </div>
   )
 }

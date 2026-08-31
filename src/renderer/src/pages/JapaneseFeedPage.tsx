@@ -10,7 +10,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useIncrementalList } from '../lib/hooks'
 import { useMiningDraft } from '../lib/useMining'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { JpFeedItem } from '@shared/types'
 import EditorialDetailFrame from '../components/EditorialDetailFrame'
@@ -24,7 +24,7 @@ import ContextPanel, { ContextFact } from '../components/ContextPanel'
 
 export default function JapaneseFeedPage() {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const [mode, setMode] = usePersistedState<'one' | 'flood'>('jpFeedMode', 'one')
   const [includeLearning, setIncludeLearning] = usePersistedState<boolean>('jpFeedLearning', false)
   const [minedWords, setMinedWords] = useState<Set<string>>(new Set())

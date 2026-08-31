@@ -6,9 +6,9 @@
 // streaming agentic loops stay in gachaCoach.ts and import the client
 // builders from here.
 
-import { GoogleGenAI } from '@google/genai'
-import Anthropic from '@anthropic-ai/sdk'
-import { AnthropicVertex } from '@anthropic-ai/vertex-sdk'
+import type { GoogleGenAI } from '@google/genai'
+import type Anthropic from '@anthropic-ai/sdk'
+import type { AnthropicVertex } from '@anthropic-ai/vertex-sdk'
 import { get as getSetting } from './repos/settingsRepo'
 import { buildModelParams } from './coachTools'
 
@@ -28,16 +28,18 @@ export function coachModel(provider: Provider): string {
   return provider === 'gemini' ? DEFAULT_GEMINI_MODEL : DEFAULT_CLAUDE_MODEL
 }
 
-export function makeGemini(): GoogleGenAI {
+export async function makeGemini(): Promise<GoogleGenAI> {
   const apiKey = getSetting('gemini.api_key')?.trim()
   if (!apiKey) throw new Error('Add your Gemini API key in Settings to use AI features.')
+  const { GoogleGenAI } = await import('@google/genai')
   return new GoogleGenAI({ apiKey })
 }
 
-export function makeAnthropic(provider: Provider): Anthropic | AnthropicVertex {
+export async function makeAnthropic(provider: Provider): Promise<Anthropic | AnthropicVertex> {
   if (provider === 'anthropic') {
     const apiKey = getSetting('anthropic.api_key')?.trim()
     if (!apiKey) throw new Error('Add your Anthropic API key in Settings to use AI features.')
+    const { default: Anthropic } = await import('@anthropic-ai/sdk')
     return new Anthropic({ apiKey })
   }
   const projectId = getSetting('vertex.project_id')?.trim()
@@ -45,16 +47,18 @@ export function makeAnthropic(provider: Provider): Anthropic | AnthropicVertex {
   const credsPath = getSetting('vertex.credentials_path')?.trim()
   if (credsPath) process.env.GOOGLE_APPLICATION_CREDENTIALS = credsPath
   const region = getSetting('vertex.region')?.trim() || 'global'
+  const { AnthropicVertex } = await import('@anthropic-ai/vertex-sdk')
   return new AnthropicVertex({ projectId, region })
 }
 
 export function friendlyError(e: unknown): string {
-  if (e instanceof Anthropic.AuthenticationError)
+  const name = e instanceof Error ? e.name : ''
+  if (name === 'AuthenticationError')
     return 'Authentication failed — check your API key / credentials in Settings.'
-  if (e instanceof Anthropic.PermissionDeniedError)
+  if (name === 'PermissionDeniedError')
     return 'Permission denied — is Claude enabled in your Vertex project (Model Garden)?'
-  if (e instanceof Anthropic.RateLimitError) return 'Rate limited — wait a moment and try again.'
-  if (e instanceof Anthropic.APIConnectionError)
+  if (name === 'RateLimitError') return 'Rate limited — wait a moment and try again.'
+  if (name === 'APIConnectionError')
     return 'Could not reach the model — check your connection.'
   const msg = (e as Error)?.message ?? String(e)
   if (/api[_ ]?key|unauthenticated|permission|invalid.*key|401|403/i.test(msg))
@@ -81,14 +85,16 @@ export async function completeOnce(req: CompleteRequest): Promise<string> {
     // and re-grading the same essay twice should not move the rubric. Gemini
     // only — the Anthropic path sets thinking:{type:'adaptive'} via
     // buildModelParams, which requires temperature 1.
-    const res = await makeGemini().models.generateContent({
+    const gemini = await makeGemini()
+    const res = await gemini.models.generateContent({
       model,
       contents: req.prompt,
       config: { systemInstruction: req.system, maxOutputTokens: maxTokens, temperature: 0 }
     })
     return (res.text ?? '').trim()
   }
-  const res = await makeAnthropic(provider).messages.create({
+  const anthropic = await makeAnthropic(provider)
+  const res = await anthropic.messages.create({
     model,
     max_tokens: maxTokens,
     ...buildModelParams(model),

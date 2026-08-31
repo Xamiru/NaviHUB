@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 
@@ -15,7 +15,7 @@ import { qk } from '../lib/queryKeys'
 const LOG_AFTER_MS = 10_000
 
 export default function MusicPlayLogger(): null {
-  const { track, isPlaying } = usePlayer()
+  const { track, isPlaying } = usePlayerControls()
   const queryClient = useQueryClient()
   const playingRef = useRef(isPlaying)
   playingRef.current = isPlaying

@@ -10,7 +10,7 @@ import JpKeyboardInput from '../components/japanese/keyboard/JpKeyboardInput'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { mediaUrl } from '@shared/mediaUrl'
 import { diffChars, normalizeDictation, readingsKey } from '@shared/dictation'
 import { shuffle } from '@shared/shuffle'
@@ -150,7 +150,7 @@ function GuidedRound({
   onExit: () => void
 }) {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const recorder = usePitchRecorder()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const [index, setIndex] = useState(0)
@@ -431,7 +431,7 @@ function DictationSetup() {
 
 function DictationRound({ items, onExit }: { items: AudioSentence[]; onExit: () => void }) {
   const qc = useQueryClient()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const [index, setIndex] = useState(0)

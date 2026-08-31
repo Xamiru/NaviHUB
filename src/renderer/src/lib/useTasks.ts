@@ -12,7 +12,8 @@ import type { TaskKind, TaskSnapshot } from '@shared/types'
 // stop entirely. This one is the app's discovery surface: it is mounted by the
 // Topbar pill on every page, and a job started from the native Tools menu, from
 // main's own watchers, or from a dialog that forgot to kick() must still show
-// up. 5s idle is cheaper than the 2s heartbeat ActivityIndicator already ran.
+// up. Five seconds keeps native-menu starts discoverable without a constant
+// active-rate wakeup; TanStack pauses the interval in background windows.
 const ACTIVE_MS = 700
 const IDLE_MS = 5000
 

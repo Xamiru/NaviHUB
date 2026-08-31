@@ -7,7 +7,7 @@ import { toastError } from '../lib/toast'
 import { configFor, pathForMedia, type MediaConfig } from '../lib/mediaConfig'
 import CoverImage from './CoverImage'
 import FavoriteButton from './FavoriteButton'
-import type { MediaItem } from '@shared/types'
+import type { MediaSummary } from '@shared/types'
 
 // THE media cover card (a second, diverging copy used to live on HomePage —
 // don't grow another). Badges:
@@ -25,7 +25,7 @@ const MediaCard = memo(function MediaCard({
   showFavorite = false,
   achievements
 }: {
-  item: MediaItem
+  item: MediaSummary
   cfg?: MediaConfig
   showTypeBadge?: boolean
   showProgressBar?: boolean
@@ -45,11 +45,11 @@ const MediaCard = memo(function MediaCard({
     setFavorite(next)
     try {
       await api.media.update(item.id, { favorite: next })
-      // Scoped, not the whole ['media'] prefix: on Home that prefix matches
-      // seven full-library queries plus timeStats, resumePoints and the
-      // activity heatmap — about nine reads for one boolean, on an interaction
-      // designed to be rapid. Only this type's lists can show the change.
+      // Refresh card projections without refetching unrelated media stats,
+      // resume points or the activity heatmap.
+      await qc.invalidateQueries({ queryKey: qk.media.lists })
       await qc.invalidateQueries({ queryKey: qk.media.home(item.mediaType) })
+      await qc.invalidateQueries({ queryKey: qk.media.homeOverview })
       await qc.invalidateQueries({ queryKey: qk.media.detail(item.id) })
     } catch (err) {
       setFavorite(!next)
@@ -69,6 +69,7 @@ const MediaCard = memo(function MediaCard({
         <CoverImage
           path={item.coverPath}
           alt={item.title}
+          thumbWidth={360}
           rounded="rounded-lg"
           className="h-full w-full transition-transform group-hover:scale-105"
         />

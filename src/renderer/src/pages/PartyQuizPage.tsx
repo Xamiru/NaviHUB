@@ -9,7 +9,7 @@ import HigherLowerRound from '../components/quiz/HigherLowerRound'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useAllCompletedStatuses } from '../lib/hooks'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { mediaUrl } from '@shared/mediaUrl'
 import { balancedDeal, quizSeed, seededRng } from '@shared/quizCore'
 import { advanceParty, answerParty, createPartyState, partyResult, type PartyQuizState } from '@shared/partyQuiz'
@@ -82,7 +82,7 @@ function shuffleWith<T>(items: T[], rng: () => number): T[] {
 
 export default function PartyQuizPage() {
   const completedStatuses = useAllCompletedStatuses()
-  const player = usePlayer()
+  const player = usePlayerControls()
   const qc = useQueryClient()
   const [participants, setParticipants] = useState<QuizPartyParticipants>(2)
   const [kind, setKind] = useState<PartyGame>('songRelay')

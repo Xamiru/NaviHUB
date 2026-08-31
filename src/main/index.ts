@@ -8,7 +8,7 @@ import { closeDictDb } from './dict/dictDb'
 import { registerIpc } from './ipc'
 import { absoluteMediaPath } from './files'
 import { parseThumbRequest, ensureThumb } from './thumbs'
-import { splitArchivePath, readArchiveEntry, mimeFor } from './archive'
+import { splitArchivePath, openArchiveEntryStream, mimeFor } from './archive'
 import { parseByteRange } from './httpRange'
 import { killActive as killActiveMusicDownload } from './musicDownload'
 import { get as getSetting } from './repos/settingsRepo'
@@ -222,12 +222,16 @@ app.whenReady().then(() => {
         ? splitArchivePath(relPath)
         : null
     if (archived) {
-      const data = await readArchiveEntry(absoluteMediaPath(archived.archiveRel), archived.entryName)
-      if (!data) return new Response('Not found', { status: 404 })
-      // Buffer is a valid Response body at runtime; TS's dom BodyInit just
-      // doesn't admit Node's Buffer/Uint8Array<ArrayBufferLike> generics.
-      return new Response(data as unknown as BodyInit, {
-        headers: { 'content-type': mimeFor(archived.entryName) }
+      const opened = await openArchiveEntryStream(
+        absoluteMediaPath(archived.archiveRel),
+        archived.entryName
+      )
+      if (!opened) return new Response('Not found', { status: 404 })
+      return new Response(Readable.toWeb(opened.stream) as unknown as BodyInit, {
+        headers: {
+          'content-type': mimeFor(archived.entryName),
+          'content-length': String(opened.size)
+        }
       })
     }
 

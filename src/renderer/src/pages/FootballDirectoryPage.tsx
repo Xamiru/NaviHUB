@@ -7,6 +7,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue } from '../lib/hooks'
+import { FootballTeamMark } from '../components/football/FootballCommon'
 
 export default function FootballDirectoryPage({ kind }: { kind: 'teams' | 'people' }) {
   const [search, setSearch] = usePersistedState(`football${kind}Search`, '')
@@ -28,30 +29,34 @@ export default function FootballDirectoryPage({ kind }: { kind: 'teams' | 'peopl
     <div className="mx-auto max-w-[1450px] p-6">
       <PageHeader
         title={kind === 'teams' ? 'Teams' : 'Players and managers'}
-        subtitle={kind === 'teams' ? 'Club and national-team records across the installed competition archive.' : 'One identity for senior playing and managerial careers, with ambiguous source matches quarantined.'}
+        subtitle={kind === 'teams' ? 'Club and national-team records across the installed competition archive.' : 'Portraits, senior club spells, appearances and honours across playing and managerial careers.'}
         back={{ to: '/football', label: 'Football Archive' }}
       />
-      <div className="mb-6 max-w-xl">
-        <input className="input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={kind === 'teams' ? 'Search teams...' : 'Search players and managers...'} />
+      <div className="mb-7 max-w-xl">
+        <label className="label mb-2 block" htmlFor={`football-${kind}-search`}>Search the directory</label>
+        <input id={`football-${kind}-search`} className="input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={kind === 'teams' ? 'Club or national team' : 'Player or manager'} />
       </div>
       {isLoading ? <PageStatus>Reading the directory...</PageStatus> : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(240px,1fr))] gap-x-6">
-          {data.map((entity) => (
-            <Link
-              key={entity.id}
-              to={`/football/${kind === 'teams' ? 'team' : 'person'}/${entity.id}`}
-              className="flex items-center gap-3 border-b border-line-subtle py-4 hover:bg-surface-raised/35"
-            >
-              <CoverImage path={entity.imagePath} alt={entity.name} className="h-12 w-12" rounded="rounded-full" thumbWidth={96} />
-              <span className="min-w-0">
-                <span className="block truncate font-medium text-ink">{entity.name}</span>
-                <span className="mt-0.5 block truncate text-xs text-ink-muted">
-                  {'role' in entity ? `${entity.role} / ${entity.nationality ?? 'nationality not supplied'}` : entity.country ?? (entity.isNational ? 'National team' : 'Country not supplied')}
-                </span>
-              </span>
-            </Link>
-          ))}
-        </div>
+        kind === 'teams' ? (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-px bg-line-subtle border-y border-line-subtle">
+            {(teams.data ?? []).map((team) => (
+              <Link key={team.id} to={`/football/team/${team.id}`} className="flex min-h-28 items-center gap-4 bg-surface-canvas p-4 hover:bg-surface-raised/70">
+                <FootballTeamMark team={team} size="md" />
+                <span className="min-w-0"><span className="block truncate font-semibold text-ink">{team.name}</span><span className="mt-1 block truncate text-xs text-ink-muted">{team.country ?? (team.isNational ? 'National team' : 'Country not supplied')}</span></span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-x-5 gap-y-8">
+            {(people.data ?? []).map((person) => (
+              <Link key={person.id} to={`/football/person/${person.id}`} className="group min-w-0">
+                <CoverImage path={person.imagePath} alt={person.name} className="aspect-[3/4] w-full bg-surface-raised object-cover" rounded="rounded-sm" thumbWidth={320} />
+                <span className="mt-3 block truncate font-semibold text-ink group-hover:text-signal-link">{person.name}</span>
+                <span className="mt-1 block truncate text-xs text-ink-muted">{person.role} / {person.nationality ?? 'nationality not supplied'}</span>
+              </Link>
+            ))}
+          </div>
+        )
       )}
       {!isLoading && !data.length && <p className="py-8 text-sm text-ink-muted">No entries match this search.</p>}
     </div>

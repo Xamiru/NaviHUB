@@ -9,60 +9,38 @@ import {
 } from '../lib/homeWidgets'
 import MediaCard from '../components/MediaCard'
 import { Link } from 'react-router-dom'
-import { useQueries, useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { MEDIA_CONFIGS, configFor, pathForMedia } from '../lib/mediaConfig'
+import { configFor, pathForMedia } from '../lib/mediaConfig'
 import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import EmptyState from '../components/EmptyState'
-import { statusesFrom, useSettings } from '../lib/hooks'
-import { usePlayer } from '../lib/player'
+import { useSettings } from '../lib/hooks'
+import { usePlayerControls } from '../lib/player'
 import { playTracks } from '../lib/musicTracks'
-import { TYPE_COLORS } from './StatsPage'
+import { MEDIA_TYPE_COLORS } from '../lib/mediaColors'
 import { GACHA_GAMES } from '@shared/gacha'
 import { APP_THEME_SETTING, type AppTheme } from '@shared/appTheme'
 import AppMark from '../components/AppMark'
 import { resolveAppTheme } from '../lib/theme'
 import { readerPath } from '../lib/readerPath'
 import { mediaUrl } from '@shared/mediaUrl'
-import type { MediaItem, ResumePoint, SettingsMap } from '@shared/types'
+import type { MediaSummary, ResumePoint } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
 import { toastError } from '../lib/toast'
 
-// The status that marks an item as in-progress is the FIRST status of its
-// media type's *configured* list ("Watching" for anime/TV, "Playing" for VNs
-// and games, "Reading" for manga) — "Continue watching" keys off that per
-// item. The SECOND is by the same positional convention "completed", and the
-// LAST is the plan-to-enjoy backlog ("Plan to Watch" / "Plan to Play"), which
-// feeds the Tonight's-pick spotlight. Resolved from settings (not the
-// defaults) so renamed statuses keep the Home sections working.
-function statusMatchers(settings: SettingsMap | undefined) {
-  const pick = (m: MediaItem, at: (s: string[]) => string | undefined): boolean =>
-    m.status != null && m.status === at(statusesFrom(settings, configFor(m.mediaType)))
-  return {
-    inProgress: (m: MediaItem) => pick(m, (s) => s[0]),
-    completed: (m: MediaItem) => pick(m, (s) => s[1]),
-    planned: (m: MediaItem) => pick(m, (s) => s.at(-1))
-  }
-}
-
 // The same seiyuu pool the /people browse page shows (anime + VN + games).
-const VA_TYPES: MediaItem['mediaType'][] = ['anime', 'visual_novel', 'game']
+const VA_TYPES: MediaSummary['mediaType'][] = ['anime', 'visual_novel', 'game']
 
 // Landing page: the library itself as a backdrop, what you're in the middle of,
 // a backlog pick for tonight, the people your taste keeps coming back to, and
 // quick ways deeper in. Everything derives from data already in the DB.
 export default function HomePage() {
-  // One list per media type, fetched once and reused to derive every section
-  // below. It's a local single-user DB, so pulling each type's full list is cheap.
-  const lists = useQueries({
-    queries: MEDIA_CONFIGS.map((cfg) => ({
-      queryKey: qk.media.home(cfg.key),
-      queryFn: () => api.media.list({ mediaType: cfg.key })
-    }))
+  const { data: overview, isLoading } = useQuery({
+    queryKey: qk.media.homeOverview,
+    queryFn: () => api.media.homeOverview()
   })
-  const isLoading = lists.some((q) => q.isLoading)
   const { data: settings } = useSettings()
   const theme = resolveAppTheme(settings?.[APP_THEME_SETTING])
   const { data: resumePoints = [] } = useQuery({
@@ -70,31 +48,18 @@ export default function HomePage() {
     queryFn: () => api.media.resumePoints()
   })
 
-  // Derive the sections only when a query's data actually changes, not on every
-  // render (these sort/filter over the whole library). MEDIA_CONFIGS is a fixed
-  // module constant, so the deps array keeps a stable length across renders.
-  const { all, recent, continuing, favorites, backlog, stats } = useMemo(() => {
-    const { inProgress, completed, planned } = statusMatchers(settings)
-    const all: MediaItem[] = lists.flatMap((q) => q.data ?? [])
-    const scores = all.map((m) => m.score).filter((s): s is number => s != null)
-    return {
-      all,
-      recent: [...all].sort(byCreatedDesc).slice(0, 10),
-      continuing: all.filter(inProgress).sort(byUpdatedDesc),
-      favorites: all.filter((m) => m.favorite).sort(byUpdatedDesc),
-      backlog: all.filter(planned),
-      stats: {
-        titles: all.length,
-        inProgress: all.filter(inProgress).length,
-        completed: all.filter(completed).length,
-        favorites: all.filter((m) => m.favorite).length,
-        avgScore: scores.length
-          ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1)
-          : null
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [...lists.map((q) => q.data), settings])
+  const wall = overview?.wall ?? []
+  const recent = overview?.recent ?? []
+  const continuing = overview?.continuing ?? []
+  const favorites = overview?.favorites ?? []
+  const spotlight = overview?.spotlight ?? []
+  const stats = overview?.stats ?? {
+    titles: 0,
+    inProgress: 0,
+    completed: 0,
+    favorites: 0,
+    avgScore: null
+  }
 
   // The stored layout, or every widget in catalogue order when there is none.
   // The Hero is deliberately not in it: the wall of your own covers is Home's
@@ -120,7 +85,9 @@ export default function HomePage() {
       continuing.length > 0 ? (
         <Strip title="Continue" items={continuing.slice(0, 12)} showProgress />
       ) : null,
-    spotlight: <Spotlight pool={backlog.length ? backlog : all} fromBacklog={backlog.length > 0} />,
+    spotlight: (
+      <Spotlight pool={spotlight} fromBacklog={overview?.spotlightFromBacklog ?? false} />
+    ),
     timeStats: <TimeStatsCard />,
     music: <MusicCard />,
     unlocks: <RecentUnlocks />,
@@ -151,7 +118,7 @@ export default function HomePage() {
   return (
     <div className="mx-auto max-w-[1760px] p-5 sm:p-6 xl:p-8">
       <Hero
-        items={all}
+        items={wall}
         stats={stats}
         resume={resumePoints[0]}
         continuing={continuing[0]}
@@ -206,9 +173,7 @@ export default function HomePage() {
   )
 }
 
-const byCreatedDesc = (a: MediaItem, b: MediaItem) => b.createdAt.localeCompare(a.createdAt)
-const byUpdatedDesc = (a: MediaItem, b: MediaItem) => b.updatedAt.localeCompare(a.updatedAt)
-const cardKey = (m: MediaItem) => `${m.mediaType}-${m.id}`
+const cardKey = (m: MediaSummary) => `${m.mediaType}-${m.id}`
 
 function greetingFor(hour: number): string {
   if (hour < 5) return 'Up late?'
@@ -227,7 +192,7 @@ function Hero({
   continuing,
   theme
 }: {
-  items: MediaItem[]
+  items: MediaSummary[]
   stats: {
     titles: number
     inProgress: number
@@ -236,7 +201,7 @@ function Hero({
     avgScore: string | null
   }
   resume?: ResumePoint
-  continuing?: MediaItem
+  continuing?: MediaSummary
   theme: AppTheme
 }) {
   // Re-shuffles only when the library itself changes, so the wall doesn't
@@ -266,6 +231,7 @@ function Hero({
               key={cardKey(m)}
               path={m.coverPath}
               alt=""
+              thumbWidth={320}
               rounded="rounded"
               className="h-full w-full"
             />
@@ -342,7 +308,7 @@ function HeroContinuation({
   theme
 }: {
   resume?: ResumePoint
-  continuing?: MediaItem
+  continuing?: MediaSummary
   theme: AppTheme
 }) {
   if (resume) {
@@ -356,6 +322,7 @@ function HeroContinuation({
             <CoverImage
               path={resume.media.coverPath}
               alt=""
+              thumbWidth={320}
               rounded=""
               className="h-full w-full scale-125"
             />
@@ -365,6 +332,7 @@ function HeroContinuation({
           <CoverImage
             path={resume.media.coverPath}
             alt={resume.media.title}
+            thumbWidth={160}
             rounded="rounded-lg"
             className="w-28 shrink-0 shadow-lg"
           />
@@ -395,6 +363,7 @@ function HeroContinuation({
           <CoverImage
             path={continuing.coverPath}
             alt={continuing.title}
+            thumbWidth={160}
             rounded="rounded-lg"
             className="w-28 shrink-0 shadow-lg"
           />
@@ -439,7 +408,7 @@ function daySeed(): number {
   return h
 }
 
-function Spotlight({ pool, fromBacklog }: { pool: MediaItem[]; fromBacklog: boolean }) {
+function Spotlight({ pool, fromBacklog }: { pool: MediaSummary[]; fromBacklog: boolean }) {
   const [seed, setSeed] = useState(daySeed)
   if (pool.length === 0) return null
   const pick = pool[seed % pool.length]
@@ -451,13 +420,14 @@ function Spotlight({ pool, fromBacklog }: { pool: MediaItem[]; fromBacklog: bool
       {/* the pick's own art as a soft backdrop */}
       {pick.coverPath && (
         <div className="absolute inset-0 opacity-20 blur-2xl scale-125" aria-hidden>
-          <CoverImage path={pick.coverPath} alt="" className="h-full w-full" rounded="" />
+          <CoverImage path={pick.coverPath} alt="" className="h-full w-full" rounded="" thumbWidth={320} />
         </div>
       )}
       <Link to={pathForMedia(pick)} className="relative shrink-0 self-center">
         <CoverImage
           path={pick.coverPath}
           alt={pick.title}
+          thumbWidth={320}
           rounded="rounded-lg"
           className="w-32 aspect-[2/3] shadow-lg"
         />
@@ -652,7 +622,7 @@ function TimeStatsCard() {
                 key={t.mediaType}
                 style={{
                   width: `${(t.minutes / stats!.totalMinutes) * 100}%`,
-                  background: TYPE_COLORS[t.mediaType]
+                  background: MEDIA_TYPE_COLORS[t.mediaType]
                 }}
                 title={configFor(t.mediaType).plural}
               />
@@ -668,7 +638,7 @@ function TimeStatsCard() {
 // Recent listening with a one-click way back into it. Plain card, not a
 // DoorCard — it holds real controls, and the glow stays on the Today band.
 function MusicCard() {
-  const player = usePlayer()
+  const player = usePlayerControls()
   const { data: tracks = [] } = useQuery({
     queryKey: qk.music.recent(5),
     queryFn: () => api.music.recent(5)
@@ -890,7 +860,7 @@ function Strip({
   showProgress = false
 }: {
   title?: string
-  items: MediaItem[]
+  items: MediaSummary[]
   showProgress?: boolean
 }) {
   const row = (

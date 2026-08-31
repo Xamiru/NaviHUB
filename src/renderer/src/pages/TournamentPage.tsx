@@ -6,7 +6,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useAllCompletedStatuses, useDebouncedValue, useStatuses } from '../lib/hooks'
-import { usePlayer } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
 import { ANIME, MEDIA_CONFIGS } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import StatTile from '../components/StatTile'
@@ -66,7 +66,7 @@ interface Pick {
 }
 
 export default function TournamentPage() {
-  const player = usePlayer()
+  const player = usePlayerControls()
   const qc = useQueryClient()
   const animeStatuses = useStatuses(ANIME)
   const completedStatuses = useAllCompletedStatuses()
