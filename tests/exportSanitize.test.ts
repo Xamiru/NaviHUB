@@ -59,9 +59,11 @@ function seed(): void {
       VALUES (1, 'spotify-list', 'https://open.spotify.com/playlist/spotify-list');
     INSERT INTO music_spotify_playlist_item
       (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
-       album_title, spotify_url, raw_json, matched_track_id)
+       album_title, spotify_url, raw_json, audio_source_url, allow_unverified,
+       download_error, matched_track_id)
       VALUES (1, 'spotify-track', 0, 'Airbag', '["Radiohead"]', 'Radiohead', 'OK Computer',
-              'https://open.spotify.com/track/spotify-track', '{"secret":"source metadata"}', 1);
+              'https://open.spotify.com/track/spotify-track', '{"secret":"source metadata"}',
+              'https://youtu.be/private-source', 1, 'private failure', 1);
     INSERT INTO music_spotify_entity_snapshot
       (id, artist_id, provider, provider_entity_id, source_name)
       VALUES (1, 1, 'itunes', 'itunes-artist', 'Radiohead');
@@ -164,6 +166,7 @@ function seed(): void {
       ('vertex.credentials_path', '/home/x/sa.json'),
       ('ytdlp.path', '/usr/local/bin/yt-dlp'),
       ('spotdl.path', '/usr/local/bin/spotdl'),
+      ('spotdl.cookieFile', '/home/x/private-youtube-cookies.txt'),
       ('music.dir', '/media/xamir/Anglo/Music'),
       ('manga.dir', '/media/xamir/Nihon/Manga'),
       ('books.dir', '/media/xamir/Anglo/Books'),
@@ -352,8 +355,14 @@ describe('custom export policy', () => {
     expect(count('music_spotify_download_queue')).toBe(0)
     expect(count('music_spotify_download_queue_selection')).toBe(0)
     expect(
-      db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item').get()
-    ).toEqual({ matched_track_id: null })
+      db.prepare(`SELECT matched_track_id, audio_source_url, allow_unverified,
+                         download_error FROM music_spotify_playlist_item`).get()
+    ).toEqual({
+      matched_track_id: null,
+      audio_source_url: null,
+      allow_unverified: 0,
+      download_error: null
+    })
   })
 
   it('removes orphaned Football entries when ordinary lists are included', () => {

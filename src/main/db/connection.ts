@@ -122,6 +122,12 @@ export function runMigrations(sqlite: Database.Database): void {
   // be created after ALTER TABLE or a pre-feature database cannot start.
   ensureColumn(sqlite, 'music_artist', 'spotify_id', 'spotify_id TEXT')
   ensureColumn(sqlite, 'music_album', 'spotify_id', 'spotify_id TEXT')
+  ensureColumn(sqlite, 'music_spotify_playlist_item', 'audio_source_url', 'audio_source_url TEXT')
+  ensureColumn(sqlite, 'music_spotify_playlist_item', 'allow_unverified', 'allow_unverified INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(sqlite, 'music_spotify_playlist_item', 'download_error', 'download_error TEXT')
+  ensureColumn(sqlite, 'music_spotify_entity_track', 'audio_source_url', 'audio_source_url TEXT')
+  ensureColumn(sqlite, 'music_spotify_entity_track', 'allow_unverified', 'allow_unverified INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(sqlite, 'music_spotify_entity_track', 'download_error', 'download_error TEXT')
   sqlite
     .prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_music_artist_spotify ON music_artist(spotify_id)')
     .run()

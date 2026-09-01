@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { SpotifyDownloadQueueCard } from '@shared/types'
+import type { SpotifyDownloadQueueCard, SpotifyDownloadQueueTrack } from '@shared/types'
 import ActionMenu from '../components/ActionMenu'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
@@ -11,7 +11,7 @@ import { SortableList, SortableRow, useOptimisticReorder } from '../components/S
 import { useDownloadStatus } from '../components/MusicDownloadDialog'
 import { api } from '../lib/api'
 import { confirmDialog } from '../lib/confirm'
-import { useIncrementalList } from '../lib/hooks'
+import { useDialog, useIncrementalList } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
 import { toast, toastError } from '../lib/toast'
 
@@ -348,7 +348,27 @@ function QueueCardRow({
   onRemove: () => void
   onRemoveSelection: (id: number) => void
 }) {
+  const qc = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [sourceTrack, setSourceTrack] = useState<SpotifyDownloadQueueTrack | null>(null)
+
+  async function configureTrack(
+    track: SpotifyDownloadQueueTrack,
+    patch: { audioSourceUrl?: string | null; allowUnverified?: boolean }
+  ): Promise<void> {
+    try {
+      await api.music.spotifySetTrackDownloadOptions({
+        sourceKind: track.sourceKind,
+        trackId: track.id,
+        ...patch
+      })
+      setSourceTrack(null)
+      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      toast('Download choice saved; the track is ready to retry', 'success')
+    } catch (error) {
+      toastError(error)
+    }
+  }
   const stateLabel = card.state === 'failed'
     ? 'Needs retry'
     : card.state === 'paused' ? 'Paused' : card.state === 'completed' ? 'Completed' : 'Queued'
@@ -419,6 +439,38 @@ function QueueCardRow({
                   {` · ${selection.missingCount} missing`}
                 </p>
                 {selection.error && <p className="mt-1 text-xs text-red-300">{selection.error}</p>}
+                {selection.tracks.filter((track) => track.missing).map((track) => (
+                  <div key={`${track.sourceKind}-${track.id}`} className="mt-3 rounded border border-base-700 bg-base-900/40 p-3">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate text-xs text-gray-200">{track.title}</p>
+                        <p className="mt-0.5 truncate text-xs text-gray-500">{track.artist}</p>
+                        {track.error && <p className="mt-1 text-xs text-red-300">{track.error}</p>}
+                        {track.audioSourceUrl && <p className="mt-1 text-xs text-green-400">Manual YouTube source saved</p>}
+                        {track.allowUnverified && !track.audioSourceUrl && <p className="mt-1 text-xs text-amber-300">Broader matching enabled</p>}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <button
+                          className="btn-ghost px-2 py-1 text-xs"
+                          onClick={() => void configureTrack(track, { allowUnverified: !track.allowUnverified })}
+                        >
+                          {track.allowUnverified ? 'Use verified only' : 'Try broader match'}
+                        </button>
+                        <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setSourceTrack(track)}>
+                          Replace source
+                        </button>
+                        {track.audioSourceUrl && (
+                          <button
+                            className="btn-ghost px-2 py-1 text-xs"
+                            onClick={() => void configureTrack(track, { audioSourceUrl: null })}
+                          >
+                            Clear source
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
               <button
                 className="btn-ghost px-2 py-1 text-xs"
@@ -432,6 +484,70 @@ function QueueCardRow({
           ))}
         </div>
       )}
+      {sourceTrack && (
+        <AudioSourceDialog
+          track={sourceTrack}
+          onClose={() => setSourceTrack(null)}
+          onSave={(audioSourceUrl) => configureTrack(sourceTrack, { audioSourceUrl })}
+        />
+      )}
     </article>
+  )
+}
+
+function AudioSourceDialog({
+  track,
+  onClose,
+  onSave
+}: {
+  track: SpotifyDownloadQueueTrack
+  onClose: () => void
+  onSave: (url: string) => Promise<void>
+}) {
+  const [url, setUrl] = useState(track.audioSourceUrl ?? '')
+  const [saving, setSaving] = useState(false)
+  const panelRef = useDialog(onClose)
+
+  async function save(): Promise<void> {
+    if (!url.trim()) return
+    setSaving(true)
+    try {
+      await onSave(url.trim())
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} className="card w-full max-w-lg p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Replace audio source</h2>
+            <p className="mt-1 text-sm text-gray-400">{track.artist} · {track.title}</p>
+          </div>
+          <button className="btn-ghost px-2" aria-label="Close" onClick={onClose}>✕</button>
+        </div>
+        <p className="mt-4 text-sm text-gray-300">
+          Paste the exact YouTube or YouTube Music video for this recording. spotDL keeps the
+          saved Spotify metadata and uses only this audio source on future retries.
+        </p>
+        <label className="label mt-4" htmlFor={`spotify-audio-source-${track.id}`}>YouTube URL</label>
+        <input
+          id={`spotify-audio-source-${track.id}`}
+          className="input"
+          autoFocus
+          value={url}
+          onChange={(event) => setUrl(event.target.value)}
+          placeholder="https://music.youtube.com/watch?v=…"
+        />
+        <div className="mt-5 flex justify-end gap-2">
+          <button className="btn-ghost" onClick={onClose}>Cancel</button>
+          <button className="btn-primary" disabled={saving || !url.trim()} onClick={() => void save()}>
+            {saving ? 'Saving…' : 'Save source'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

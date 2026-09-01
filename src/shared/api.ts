@@ -258,6 +258,7 @@ import type {
   SpotifyDownloadQueueAddResult,
   SpotifyDownloadQueueSnapshot,
   SpotifyDownloadQueueStartInput,
+  SpotifyTrackDownloadOptionsInput,
   SpotifyEntityDownloadInput,
   SpotifyEntityCandidate,
   SpotifyEntityInspectInput,
@@ -1050,9 +1051,11 @@ export interface NaviApi {
     spotifyQueueRemoveSelection(selectionId: number): Promise<void>
     spotifyQueueStart(input?: SpotifyDownloadQueueStartInput): Promise<{ id: string | null }>
     spotifyQueueClearCompleted(): Promise<number>
+    spotifySetTrackDownloadOptions(input: SpotifyTrackDownloadOptionsInput): Promise<void>
     spotifyForgetEntitySource(input: SpotifyEntityRef): Promise<void>
     spotifyRemoveItem(itemId: number): Promise<void>
     spotifyDetect(): Promise<SpotdlDetectResult>
+    spotifyInstallDeno(): Promise<SpotdlDetectResult>
     playlistsForTrack(
       trackId: number
     ): Promise<{ id: number; title: string; contains: boolean }[]>

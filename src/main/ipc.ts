@@ -825,6 +825,9 @@ export function registerIpc(): void {
   ipcMain.handle('music:spotifyQueueClearCompleted', () =>
     musicSpotify.clearCompletedDownloadQueue()
   )
+  ipcMain.handle('music:spotifySetTrackDownloadOptions', (_e, input) =>
+    musicSpotify.setTrackDownloadOptions(input)
+  )
   ipcMain.handle('music:spotifyForgetEntitySource', (_e, input) =>
     musicSpotify.forgetEntitySource(input)
   )
@@ -832,6 +835,7 @@ export function registerIpc(): void {
     musicSpotifyRepo.removeSpotifyItem(itemId)
   )
   ipcMain.handle('music:spotifyDetect', () => musicSpotify.detectBinary())
+  ipcMain.handle('music:spotifyInstallDeno', () => musicSpotify.installDeno())
   ipcMain.handle('music:playlistsForTrack', (_e, trackId) => musicRepo.playlistsForTrack(trackId))
   ipcMain.handle('music:setLiked', (_e, trackId, liked) => musicRepo.setLiked(trackId, liked))
   ipcMain.handle('music:logPlay', (_e, trackId) => musicRepo.logPlay(trackId))

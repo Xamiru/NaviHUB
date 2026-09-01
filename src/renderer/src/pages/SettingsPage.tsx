@@ -102,6 +102,11 @@ const SETTINGS_SEARCH: readonly SettingsSearchSection<TabId>[] = [
       'api keys',
       'library paths',
       'music folder',
+      'spotify',
+      'spotdl',
+      'deno',
+      'youtube music',
+      'premium cookies',
       'video folder',
       'pictures',
       'tokens',
@@ -1148,25 +1153,45 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
 
 function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
   const [path, setPath] = useState('')
+  const [cookieFile, setCookieFile] = useState('')
+  const [audioProviders, setAudioProviders] = useState('youtube-music')
   const [check, setCheck] = useState<SpotdlDetectResult | null>(null)
+  const [installingDeno, setInstallingDeno] = useState(false)
   useEffect(() => setPath(data?.['spotdl.path'] ?? ''), [data])
+  useEffect(() => setCookieFile(data?.['spotdl.cookieFile'] ?? ''), [data])
+  useEffect(() => setAudioProviders(data?.['spotdl.audioProviders'] ?? 'youtube-music'), [data])
 
   async function test(): Promise<void> {
     setCheck(null)
     await onSave('spotdl.path', path.trim())
+    await onSave('spotdl.cookieFile', cookieFile.trim())
+    await onSave('spotdl.audioProviders', audioProviders)
     setCheck(await api.music.spotifyDetect())
+  }
+
+  async function installDeno(): Promise<void> {
+    setInstallingDeno(true)
+    try {
+      await onSave('spotdl.path', path.trim())
+      setCheck(await api.music.spotifyInstallDeno())
+    } finally {
+      setInstallingDeno(false)
+    }
   }
 
   return (
     <SettingCard
-      title="spotDL (Spotify playlist imports)"
+      title="spotDL (Spotify music downloads)"
       description={
         <>
           Imports public Spotify playlist metadata and downloads missing songs from YouTube Music
-          as 320 kbps MP3 files. Install spotDL and ffmpeg yourself with{' '}
+          as source-preserved Opus files. YouTube Music Premium cookies switch downloads to
+          native M4A and can provide 256 kbps where YouTube offers it. Install spotDL 4.5.2 or
+          newer and ffmpeg with{' '}
           <span className="text-gray-400">pipx install spotdl</span>. Leave blank to use{' '}
           <span className="text-gray-400">spotdl</span> from PATH, or enter its full executable
-          path. Spotify login is not used.
+          path. Spotify login is not used. NaviHUB disables lyrics and tries verified music
+          matches first.
         </>
       }
     >
@@ -1182,12 +1207,51 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
           Save &amp; test
         </button>
       </div>
+      <label className="label mt-4" htmlFor="spotdl-cookie-file">
+        YouTube Music Premium cookies.txt (optional)
+      </label>
+      <input
+        id="spotdl-cookie-file"
+        className="input"
+        type="text"
+        value={cookieFile}
+        onChange={(event) => setCookieFile(event.target.value)}
+        placeholder="C:\\Users\\you\\Documents\\youtube-music-cookies.txt"
+      />
+      <p className="mt-2 text-xs text-gray-400">
+        Use an absolute path to a cookies.txt exported from music.youtube.com. Treat this file
+        like a password; NaviHUB never copies it into a library export.
+      </p>
+      <label className="label mt-4" htmlFor="spotdl-audio-providers">Audio source fallback</label>
+      <select
+        id="spotdl-audio-providers"
+        className="input"
+        value={audioProviders}
+        onChange={(event) => setAudioProviders(event.target.value)}
+      >
+        <option value="youtube-music">YouTube Music only (recommended)</option>
+        <option value="piped">YouTube Music, then Piped</option>
+        <option value="catalogues">YouTube Music, Piped, Bandcamp, then SoundCloud</option>
+      </select>
+      <p className="mt-2 text-xs text-gray-400">
+        Extra providers can rescue unavailable songs, but may return a less exact recording.
+        They are never enabled automatically.
+      </p>
       {check && (
-        <p className={`mt-3 text-sm ${check.ok ? 'text-green-400' : 'text-red-400'}`}>
-          {check.ok
-            ? `spotDL ${check.version ?? ''}; ffmpeg found`
-            : (check.error ?? 'spotDL is not ready')}
-        </p>
+        <div className="mt-3 text-sm">
+          <p className={check.ok ? 'text-green-400' : 'text-red-400'}>
+            {check.ok ? `spotDL ${check.version ?? ''} is ready` : (check.error ?? 'spotDL is not ready')}
+          </p>
+          <p className="mt-1 text-gray-400">
+            ffmpeg: {check.ffmpeg ? 'ready' : 'missing'} · Deno: {check.deno ? 'ready' : 'missing'}
+            {check.premiumCookieConfigured && ` · Premium cookies: ${check.premiumCookieValid ? 'ready' : 'invalid'}`}
+          </p>
+          {!check.deno && check.version && (
+            <button className="btn-ghost mt-3" disabled={installingDeno} onClick={() => void installDeno()}>
+              {installingDeno ? 'Installing Deno…' : 'Install Deno for spotDL'}
+            </button>
+          )}
+        </div>
       )}
     </SettingCard>
   )

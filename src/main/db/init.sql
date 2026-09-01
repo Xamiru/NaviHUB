@@ -719,6 +719,9 @@ CREATE TABLE IF NOT EXISTS music_spotify_playlist_item (
   track_no          INTEGER,
   year              INTEGER,
   raw_json          TEXT NOT NULL,
+  audio_source_url  TEXT,
+  allow_unverified  INTEGER NOT NULL DEFAULT 0 CHECK(allow_unverified IN (0,1)),
+  download_error    TEXT,
   matched_track_id  INTEGER REFERENCES music_track(id) ON DELETE SET NULL,
   added_at          TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(playlist_id, spotify_track_id)
@@ -775,6 +778,9 @@ CREATE TABLE IF NOT EXISTS music_spotify_entity_track (
   track_no            INTEGER,
   spotify_url         TEXT,
   raw_json            TEXT,
+  audio_source_url    TEXT,
+  allow_unverified    INTEGER NOT NULL DEFAULT 0 CHECK(allow_unverified IN (0,1)),
+  download_error      TEXT,
   matched_track_id    INTEGER REFERENCES music_track(id) ON DELETE SET NULL,
   UNIQUE(release_id, provider_track_id)
 );

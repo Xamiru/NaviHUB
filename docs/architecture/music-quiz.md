@@ -69,8 +69,22 @@ artist or one component of `tag_artist`, and both durations within three seconds
 Album title can break one unique tie; missing duration or remaining ambiguity stays
 unmatched. Unmatched source rows never enter the player queue.
 
-**Download and resume.** Missing rows are written as 320 kbps MP3 files under
-`<music root>/<album artist>/<album>/<disc>-<track> - <title>.mp3`. The runner feeds
+**Download and resume.** NaviHUB requires spotDL 4.5.2 or newer, ffmpeg and Deno before
+starting acquisition. Settings detects all three and can run spotDL's official
+`--download-deno` setup action; missing Deno is a readiness failure because current
+YouTube extraction otherwise commonly ends in `YT-DLP download error`. Lyrics are
+explicitly disabled. Missing rows preserve YouTube Music's native Opus stream under
+`<music root>/<album artist>/<album>/<disc>-<track> - <title>.opus`. Free-provider audio
+is normally about 128 kbps; bitrate conversion is disabled because converting an already
+lossy source into a 320 kbps MP3 only makes a larger file and can add generation loss.
+Verified provider results are attempted first, preferring a retryable missing track over an
+unofficial cover, live upload or low-quality match. An unresolved row can explicitly opt into
+a broader match or store one exact YouTube/YouTube Music URL in spotDL's `download_url` field;
+both choices and the track-specific failure survive restarts. Optional YouTube Music Premium
+cookies are passed only from local `spotdl.cookieFile`, switch output to native M4A, and can
+provide 256 kbps when the account and source expose it. The cookie path is sanitized from
+exports and its contents are never copied or logged. Piped, Bandcamp and SoundCloud are
+available only through an explicit Settings fallback choice. The runner feeds
 stored payloads to spotDL in 100-track chunks with four workers, then scans and
 re-resolves after every chunk. Cancellation keeps completed files and performs the
 same scan path, so Retry selects only rows still unmatched. spotDL, yt-dlp, and
@@ -125,7 +139,7 @@ identify the standard edition of a Deluxe release. Apple-only terminal `- Single
 presentation suffixes are ignored without weakening Deluxe, Live or Remaster markers. The
 album's artist, title and track overlap are validated before its authoritative payload is
 persisted. Strict matching
-runs again and only unmatched tracks enter the existing 320 kbps, 100-track/four-worker
+runs again and only unmatched tracks enter the source-preserved Opus, 100-track/four-worker
 pipeline. Releases continue independently after one failure and remain selectable for
 Retry. Pause is restartable on every platform: the current spotDL tree is stopped,
 completed files are scanned and kept, and Resume starts only unresolved work. Cancel
@@ -162,6 +176,13 @@ Already-local tracks are skipped without spotDL. Entity cards retain release-by-
 resolution and scanning; playlist cards retain 100-track chunks and scan after each
 chunk. One failed card stays visible for Retry while later cards continue. Completed
 cards stay until Clear completed.
+
+Every failed source row retains its last exact spotDL error. The expanded card offers
+verified-only/broader retry and an exact YouTube source replacement without rerunning artist
+inspection. Changing either option returns its card to Queued; a later scan clears the error
+as soon as a strict local match appears. Entity source rows and all queue rows are wiped from
+sanitized exports; imported-playlist snapshots may remain, but their local match, error,
+fallback policy and manual source are cleared.
 
 A failed-card Retry asks spotDL to replace unresolved destination files so a bad or
 partial prior output cannot be skipped forever; ordinary first runs and Pause/Resume

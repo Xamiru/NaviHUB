@@ -1,7 +1,7 @@
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs'
-import { tmpdir } from 'os'
-import { join } from 'path'
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'fs'
+import { homedir, tmpdir } from 'os'
+import { isAbsolute, join } from 'path'
 import { get as getSetting } from './repos/settingsRepo'
 import { downloadImages, musicRootDir } from './files'
 import { fetchWithRetry } from './http'
@@ -34,6 +34,7 @@ import type {
   SpotifyReleasePreview,
   SpotifyDownloadInput,
   SpotifyImportResult,
+  SpotifyTrackDownloadOptionsInput,
   SpotdlDetectResult,
   TaskState
 } from '@shared/types'
@@ -154,11 +155,11 @@ export function chunkSpotifyItems<T>(items: T[], size = 100): T[][] {
 
 export function estimateSpotifyDownloadBytes(
   items: { duration: number | null }[],
-  fallbackBytes = 10 * 1024 * 1024
+  fallbackBytes = 4 * 1024 * 1024
 ): number {
   return Math.ceil(
     items.reduce(
-      (total, item) => total + (item.duration == null ? fallbackBytes : item.duration * 40_000),
+      (total, item) => total + (item.duration == null ? fallbackBytes : item.duration * 16_000),
       0
     ) * 1.05
   )
@@ -167,13 +168,15 @@ export function estimateSpotifyDownloadBytes(
 export type SpotdlLineEvent =
   | { kind: 'item'; title: string }
   | { kind: 'progress'; done: number; total: number }
-  | { kind: 'error'; message: string }
+  | { kind: 'error'; message: string; spotifyTrackId: string | null }
 
 export function parseSpotdlLine(line: string): SpotdlLineEvent | null {
   const progress = line.match(/(?:^|\s)(\d+)\s*\/\s*(\d+)\s+(?:complete|completed)/i)
   if (progress) return { kind: 'progress', done: Number(progress[1]), total: Number(progress[2]) }
+  const printed = line.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)(?:\?\S*)?\s+-\s+(.+)$/i)
+  if (printed) return { kind: 'error', spotifyTrackId: printed[1], message: printed[2].trim() }
   const error = line.match(/(?:error|failed)\s*:\s*(.+)$/i)
-  if (error) return { kind: 'error', message: error[1].trim() }
+  if (error) return { kind: 'error', spotifyTrackId: null, message: error[1].trim() }
   const item = line.match(/^(.+?):\s*(?:Searching|Downloading|Converting|Done)/i)
   return item ? { kind: 'item', title: item[1].trim() } : null
 }
@@ -310,20 +313,34 @@ export function buildSpotdlDownloadArgs(
   inputFile: string,
   outputRoot: string,
   errorFile: string,
-  overwrite: 'skip' | 'force' = 'skip'
+  overwrite: 'skip' | 'force' = 'skip',
+  options: {
+    allowUnverified?: boolean
+    cookieFile?: string | null
+    audioProviders?: string[]
+  } = {}
 ): string[] {
-  return [
+  const audioProviders = options.audioProviders?.length
+    ? options.audioProviders
+    : ['youtube-music']
+  const args = [
     'download',
     inputFile,
+    '--audio',
+    ...audioProviders,
+    '--lyrics',
     '--format',
-    'mp3',
+    options.cookieFile ? 'm4a' : 'opus',
     '--bitrate',
-    '320k',
+    'disable',
     '--threads',
     '4',
     '--overwrite',
     overwrite,
     '--simple-tui',
+    '--print-errors',
+    '--max-retries',
+    '5',
     '--save-errors',
     errorFile,
     '--output',
@@ -334,6 +351,53 @@ export function buildSpotdlDownloadArgs(
       '{disc-number}-{track-number} - {title}.{output-ext}'
     )
   ]
+  if (!options.allowUnverified) args.splice(args.indexOf('--simple-tui'), 0, '--only-verified-results')
+  if (options.cookieFile) args.splice(args.indexOf('--output'), 0, '--cookie-file', options.cookieFile)
+  return args
+}
+
+export function payloadWithAudioSource(rawJson: string, audioSourceUrl: string | null): unknown {
+  const parsed = JSON.parse(rawJson) as Record<string, unknown>
+  if (audioSourceUrl) parsed.download_url = audioSourceUrl
+  return parsed
+}
+
+export function parseSpotdlVersion(value: string | null): { version: string | null; supported: boolean } {
+  const match = value?.match(/(\d+)\.(\d+)\.(\d+)/)
+  if (!match) return { version: value, supported: false }
+  const version = `${match[1]}.${match[2]}.${match[3]}`
+  const parts = match.slice(1).map(Number)
+  const supported = parts[0] > 4 ||
+    (parts[0] === 4 && (parts[1] > 5 || (parts[1] === 5 && parts[2] >= 2)))
+  return { version, supported }
+}
+
+function premiumCookieFile(): string | null {
+  const value = getSetting('spotdl.cookieFile')?.trim()
+  if (!value) return null
+  if (!isAbsolute(value) || !existsSync(value) || !statSync(value).isFile()) {
+    throw new Error('The YouTube Music Premium cookie file is missing or is not an absolute file path')
+  }
+  return value
+}
+
+function configuredAudioProviders(): string[] {
+  const value = getSetting('spotdl.audioProviders')?.trim()
+  if (value === 'piped') return ['youtube-music', 'piped']
+  if (value === 'catalogues') return ['youtube-music', 'piped', 'bandcamp', 'soundcloud']
+  return ['youtube-music']
+}
+
+function downloadCliOptions(allowUnverified = false): {
+  allowUnverified: boolean
+  cookieFile: string | null
+  audioProviders: string[]
+} {
+  return {
+    allowUnverified,
+    cookieFile: premiumCookieFile(),
+    audioProviders: configuredAudioProviders()
+  }
 }
 
 function spotdlBin(): string {
@@ -1515,6 +1579,8 @@ async function runEntityDownload(run: EntityRun): Promise<void> {
   let dir: string | null = null
   let terminal = false
   try {
+    const readiness = await detectBinary()
+    if (!readiness.ok) throw new Error(readiness.error ?? 'spotDL is not ready')
     dir = mkdtempSync(join(tmpdir(), 'navihub-spotdl-entity-'))
     let snapshot = spotifyRepo.getEntitySnapshotById(run.input.snapshotId)
     if (!snapshot) throw new Error('This saved catalogue no longer exists')
@@ -1553,7 +1619,9 @@ async function runEntityDownload(run: EntityRun): Promise<void> {
         if (run.intent !== 'running') break
         const file = join(dir, `release-${release.id}-chunk-${chunkIndex}.spotdl`)
         const errors = join(dir, `release-${release.id}-chunk-${chunkIndex}.errors.spotdl`)
-        writeFileSync(file, JSON.stringify(chunks[chunkIndex].map((track) => JSON.parse(track.rawJson!))), {
+        writeFileSync(file, JSON.stringify(chunks[chunkIndex].map((track) =>
+          payloadWithAudioSource(track.rawJson!, track.audioSourceUrl)
+        )), {
           encoding: 'utf8', mode: 0o600
         })
         if (status?.id === run.id) {
@@ -1562,7 +1630,7 @@ async function runEntityDownload(run: EntityRun): Promise<void> {
           status.message = null
         }
         const code = await runSpotdl(
-          buildSpotdlDownloadArgs(file, musicRootDir(), errors),
+          buildSpotdlDownloadArgs(file, musicRootDir(), errors, 'skip', downloadCliOptions()),
           run.owner,
           (line) => {
             const event = parseSpotdlLine(line)
@@ -1642,6 +1710,8 @@ async function runPlaylistDownload(
   const chunks = chunkSpotifyItems(rows)
   let processed = 0
   try {
+    const readiness = await detectBinary()
+    if (!readiness.ok) throw new Error(readiness.error ?? 'spotDL is not ready')
     dir = mkdtempSync(join(tmpdir(), 'navihub-spotdl-download-'))
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       if (status?.id !== id || ['cancelled', 'cancelling'].includes(status.status)) break
@@ -1649,12 +1719,14 @@ async function runPlaylistDownload(
       const errors = join(dir, `chunk-${chunkIndex}.errors.spotdl`)
       writeFileSync(
         file,
-        JSON.stringify(chunks[chunkIndex].map((row) => JSON.parse(row.raw_json as string))),
+        JSON.stringify(chunks[chunkIndex].map((row) =>
+          payloadWithAudioSource(row.raw_json as string, (row.audio_source_url as string) ?? null)
+        )),
         { encoding: 'utf8', mode: 0o600 }
       )
       status.status = 'downloading'
       const code = await runSpotdl(
-        buildSpotdlDownloadArgs(file, musicRootDir(), errors),
+        buildSpotdlDownloadArgs(file, musicRootDir(), errors, 'skip', downloadCliOptions()),
         owner,
         (line) => {
           const event = parseSpotdlLine(line)
@@ -1831,20 +1903,26 @@ async function processEntityQueueCard(
       continue
     }
     const pending = release.tracks.filter((track) => track.matchedTrackId == null && track.rawJson)
+    spotifyRepo.clearTrackDownloadErrors('entityTrack', pending.map((track) => track.id))
     let processed = 0
     if (status?.id === run.id) {
       status.itemIndex = 0
       status.itemCount = pending.length
       status.percent = pending.length ? 0 : 100
     }
-    const chunks = chunkSpotifyItems(pending)
+    const chunks = [false, true].flatMap((allowUnverified) =>
+      chunkSpotifyItems(pending.filter((track) => track.allowUnverified === allowUnverified))
+        .map((items) => ({ items, allowUnverified }))
+    )
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
       if (run.intent !== 'running') break
       const file = join(dir, `queue-${card.id}-release-${release.id}-chunk-${chunkIndex}.spotdl`)
       const errors = join(dir, `queue-${card.id}-release-${release.id}-chunk-${chunkIndex}.errors.spotdl`)
       writeFileSync(
         file,
-        JSON.stringify(chunks[chunkIndex].map((track) => JSON.parse(track.rawJson!))),
+        JSON.stringify(chunks[chunkIndex].items.map((track) =>
+          payloadWithAudioSource(track.rawJson!, track.audioSourceUrl)
+        )),
         { encoding: 'utf8', mode: 0o600 }
       )
       if (status?.id === run.id) {
@@ -1852,12 +1930,15 @@ async function processEntityQueueCard(
         status.phase = 'downloading'
         status.message = null
       }
+      const trackErrors = new Map<number, string>()
+      const bySpotifyId = new Map(chunks[chunkIndex].items.map((track) => [track.spotifyTrackId, track.id]))
       const code = await runSpotdl(
         buildSpotdlDownloadArgs(
           file,
           musicRootDir(),
           errors,
-          card.state === 'failed' ? 'force' : 'skip'
+          card.state === 'failed' ? 'force' : 'skip',
+          downloadCliOptions(chunks[chunkIndex].allowUnverified)
         ),
         run.owner,
         (line) => {
@@ -1870,13 +1951,18 @@ async function processEntityQueueCard(
               ? Math.min(99, Math.round(((processed + event.done) / status.itemCount) * 100))
               : null
           }
-          if (event.kind === 'error') status.message = event.message
+          if (event.kind === 'error') {
+            status.message = event.message
+            const trackId = event.spotifyTrackId ? bySpotifyId.get(event.spotifyTrackId) : null
+            if (trackId != null) trackErrors.set(trackId, event.message)
+          }
         },
         run.id,
         undefined,
         SPOTDL_AUDIO_STALL_MS
       )
-      processed += chunks[chunkIndex].length
+      if (trackErrors.size) spotifyRepo.setTrackDownloadErrors('entityTrack', trackErrors)
+      processed += chunks[chunkIndex].items.length
       if (status?.id === run.id) status.itemIndex = processed
       if (run.intent !== 'running') break
       if (code !== 0) failures.push(`spotDL exited with code ${code} for ${release.title}`)
@@ -1893,6 +1979,15 @@ async function processEntityQueueCard(
   const total = selectedTracks.length
   const resolved = selectedTracks.filter((track) => track.matchedTrackId != null).length
   const missing = Math.max(0, total - resolved)
+  if (missing > 0) {
+    const generic = failures[0] ?? 'No verified YouTube Music match was found'
+    spotifyRepo.setTrackDownloadErrors(
+      'entityTrack',
+      new Map(selectedTracks
+        .filter((track) => track.matchedTrackId == null && !track.downloadError)
+        .map((track) => [track.id, generic]))
+    )
+  }
   return {
     total,
     resolved,
@@ -1920,14 +2015,20 @@ async function processPlaylistQueueCard(
     status.releaseCount = null
     status.releaseIndex = null
   }
-  const chunks = chunkSpotifyItems(rows)
+  spotifyRepo.clearTrackDownloadErrors('playlistItem', rows.map((row) => row.id as number))
+  const chunks = [false, true].flatMap((allowUnverified) =>
+    chunkSpotifyItems(rows.filter((row) => Boolean(row.allow_unverified) === allowUnverified))
+      .map((items) => ({ items, allowUnverified }))
+  )
   for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
     if (run.intent !== 'running') break
     const file = join(dir, `queue-${card.id}-playlist-chunk-${chunkIndex}.spotdl`)
     const errors = join(dir, `queue-${card.id}-playlist-chunk-${chunkIndex}.errors.spotdl`)
     writeFileSync(
       file,
-      JSON.stringify(chunks[chunkIndex].map((row) => JSON.parse(row.raw_json as string))),
+      JSON.stringify(chunks[chunkIndex].items.map((row) =>
+        payloadWithAudioSource(row.raw_json as string, (row.audio_source_url as string) ?? null)
+      )),
       { encoding: 'utf8', mode: 0o600 }
     )
     if (status?.id === run.id) {
@@ -1935,12 +2036,15 @@ async function processPlaylistQueueCard(
       status.phase = 'downloading'
       status.message = null
     }
+    const trackErrors = new Map<number, string>()
+    const bySpotifyId = new Map(chunks[chunkIndex].items.map((row) => [row.spotify_track_id as string, row.id as number]))
     const code = await runSpotdl(
       buildSpotdlDownloadArgs(
         file,
         musicRootDir(),
         errors,
-        card.state === 'failed' ? 'force' : 'skip'
+        card.state === 'failed' ? 'force' : 'skip',
+        downloadCliOptions(chunks[chunkIndex].allowUnverified)
       ),
       run.owner,
       (line) => {
@@ -1953,13 +2057,18 @@ async function processPlaylistQueueCard(
             ? Math.min(99, Math.round(((processed + event.done) / rows.length) * 100))
             : null
         }
-        if (event.kind === 'error') status.message = event.message
+        if (event.kind === 'error') {
+          status.message = event.message
+          const trackId = event.spotifyTrackId ? bySpotifyId.get(event.spotifyTrackId) : null
+          if (trackId != null) trackErrors.set(trackId, event.message)
+        }
       },
       run.id,
       undefined,
       SPOTDL_AUDIO_STALL_MS
     )
-    processed += chunks[chunkIndex].length
+    if (trackErrors.size) spotifyRepo.setTrackDownloadErrors('playlistItem', trackErrors)
+    processed += chunks[chunkIndex].items.length
     if (status?.id === run.id) status.itemIndex = processed
     if (abandonedRuns.has(run.id)) return { total: 0, resolved: 0, error: null }
     await scanQueueFiles(run, `Scanning downloads from ${card.title}`)
@@ -1968,6 +2077,15 @@ async function processPlaylistQueueCard(
   }
   if (abandonedRuns.has(run.id)) return { total: 0, resolved: 0, error: null }
   const remaining = spotifyRepo.pendingSpotifyItems(card.playlistId, itemIds)
+  if (remaining.length > 0) {
+    const generic = failures[0] ?? 'No verified YouTube Music match was found'
+    spotifyRepo.setTrackDownloadErrors(
+      'playlistItem',
+      new Map(remaining
+        .filter((row) => !row.download_error)
+        .map((row) => [row.id as number, generic]))
+    )
+  }
   const resolved = total - remaining.length
   return {
     total,
@@ -2041,6 +2159,8 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
   let resolvedTracks = 0
   let totalTracks = 0
   try {
+    const readiness = await detectBinary()
+    if (!readiness.ok) throw new Error(readiness.error ?? 'spotDL is not ready')
     dir = mkdtempSync(join(tmpdir(), 'navihub-spotify-queue-'))
     if (run.needsRecoveryScan) {
       run.needsRecoveryScan = false
@@ -2318,21 +2438,114 @@ function version(bin: string, args: string[]): Promise<string | null> {
   })
 }
 
+async function denoAvailable(): Promise<boolean> {
+  if (await version('deno', ['--version'])) return true
+  const executable = process.platform === 'win32' ? 'deno.exe' : 'deno'
+  const candidates = process.platform === 'linux'
+    ? [join(homedir(), '.config', 'spotdl', executable), join(homedir(), '.spotdl', executable)]
+    : [join(homedir(), '.spotdl', executable)]
+  return candidates.some((candidate) => {
+    try {
+      return existsSync(candidate) && statSync(candidate).isFile()
+    } catch {
+      return false
+    }
+  })
+}
+
 export async function detectBinary(): Promise<SpotdlDetectResult> {
   const bin = spotdlBin()
-  const [spotdl, ffmpeg] = await Promise.all([
+  const cookieConfigured = Boolean(getSetting('spotdl.cookieFile')?.trim())
+  let cookieValid = !cookieConfigured
+  if (cookieConfigured) {
+    try {
+      cookieValid = premiumCookieFile() != null
+    } catch {
+      cookieValid = false
+    }
+  }
+  const [spotdlRaw, ffmpeg, deno] = await Promise.all([
     version(bin, ['--version']),
-    version('ffmpeg', ['-version'])
+    version('ffmpeg', ['-version']),
+    denoAvailable()
   ])
+  const parsed = parseSpotdlVersion(spotdlRaw)
   return {
-    ok: spotdl != null && ffmpeg != null,
-    version: spotdl,
+    ok: spotdlRaw != null && parsed.supported && ffmpeg != null && deno && cookieValid,
+    version: parsed.version,
     ffmpeg: ffmpeg != null,
+    deno,
+    supportedVersion: parsed.supported,
+    premiumCookieConfigured: cookieConfigured,
+    premiumCookieValid: cookieValid,
     error:
-      spotdl == null
+      spotdlRaw == null
         ? `Could not run "${bin}" — install spotDL or set its path`
+        : !parsed.supported
+          ? `spotDL 4.5.2 or newer is required; found ${parsed.version ?? 'an unknown version'}`
         : ffmpeg == null
-          ? 'ffmpeg not found on PATH — spotDL needs it to create MP3 files'
+          ? 'ffmpeg not found on PATH — spotDL needs it to finish audio files'
+          : !deno
+            ? 'Deno is missing — install it here so yt-dlp can access current YouTube audio'
+            : !cookieValid
+              ? 'The configured YouTube Music Premium cookie file could not be read'
           : null
   }
+}
+
+export async function installDeno(): Promise<SpotdlDetectResult> {
+  const owner = `spotify-deno-${Date.now()}`
+  claimMusicMaintenance(owner)
+  try {
+    await tasks.runTask(
+      {
+        kind: 'musicMetadata',
+        label: 'Installing Deno for spotDL',
+        route: '/settings',
+        controls: { pauseNote: 'Deno installation cannot be paused.' }
+      },
+      async (handle) => {
+        const controls = processControls(() => activeProcessTarget(handle.id), {
+          onCancel: () => {
+            if (active?.id === handle.id) active.cancelled = true
+          }
+        })
+        handle.setControls({
+          cancel: controls.cancel,
+          pauseNote: 'Deno installation cannot be paused.'
+        })
+        const code = await runSpotdl(['--download-deno'], owner, undefined, handle.id, spawn, 120_000)
+        if (handle.cancelRequested()) throw new tasks.TaskCancelledError('Installing Deno for spotDL')
+        if (code !== 0) throw new Error(`spotDL could not install Deno (exit code ${code})`)
+      }
+    )
+  } finally {
+    releaseMusicMaintenance(owner)
+  }
+  return detectBinary()
+}
+
+export function setTrackDownloadOptions(input: SpotifyTrackDownloadOptionsInput): void {
+  let audioSourceUrl = input.audioSourceUrl
+  if (audioSourceUrl != null) {
+    audioSourceUrl = audioSourceUrl.trim()
+    if (audioSourceUrl) {
+      let url: URL
+      try {
+        url = new URL(audioSourceUrl)
+      } catch {
+        throw new Error('Paste a full YouTube or YouTube Music URL')
+      }
+      const host = url.hostname.toLowerCase()
+      if (url.protocol !== 'https:' || !['youtube.com', 'www.youtube.com', 'music.youtube.com', 'youtu.be'].includes(host)) {
+        throw new Error('The replacement audio source must be a YouTube or YouTube Music URL')
+      }
+    } else audioSourceUrl = null
+  }
+  spotifyRepo.setTrackDownloadOptions({
+    ...input,
+    audioSourceUrl,
+    allowUnverified:
+      input.allowUnverified ?? (input.audioSourceUrl !== undefined ? Boolean(audioSourceUrl) : undefined)
+  })
 }

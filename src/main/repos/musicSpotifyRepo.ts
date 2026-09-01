@@ -85,13 +85,18 @@ export interface EntitySnapshotRow {
       spotifyTrackId: string | null
       spotifyUrl: string | null
       rawJson: string | null
+      audioSourceUrl: string | null
+      allowUnverified: boolean
+      downloadError: string | null
       matchedTrackId: number | null
     }>
   }>
 }
 
-const DOWNLOAD_BYTES_PER_SECOND = 40_000
-const UNKNOWN_TRACK_BYTES = 10 * 1024 * 1024
+// Free YouTube Music audio is normally 128 kbps. Preserve its native Opus
+// stream instead of inflating it through a second lossy MP3 encode.
+const DOWNLOAD_BYTES_PER_SECOND = 16_000
+const UNKNOWN_TRACK_BYTES = 4 * 1024 * 1024
 
 function estimatedBytes(duration: number | null): number {
   return Math.ceil((duration == null ? UNKNOWN_TRACK_BYTES : duration * DOWNLOAD_BYTES_PER_SECOND) * 1.05)
@@ -300,12 +305,19 @@ function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
   ).all(UNKNOWN_TRACK_BYTES, DOWNLOAD_BYTES_PER_SECOND, queueId) as Record<string, unknown>[]
   const playlistRows = db.prepare(
     `SELECT qs.id, i.id AS source_id, i.title, i.primary_artist, i.duration,
+            i.spotify_url, i.audio_source_url, i.allow_unverified, i.download_error,
             i.matched_track_id
      FROM music_spotify_download_queue_selection qs
      JOIN music_spotify_playlist_item i ON i.id=qs.playlist_item_id
      WHERE qs.queue_id=? AND qs.playlist_item_id IS NOT NULL
      ORDER BY qs.position, qs.id`
   ).all(queueId) as Record<string, unknown>[]
+  const releaseTracks = db.prepare(
+    `SELECT t.id, t.title, t.primary_artist, t.spotify_url, t.matched_track_id,
+            t.audio_source_url, t.allow_unverified, t.download_error
+     FROM music_spotify_entity_track t
+     WHERE t.release_id=? ORDER BY t.position, t.id`
+  )
   return [
     ...releaseRows.map((row): SpotifyDownloadQueueSelection => ({
       id: row.id as number,
@@ -318,7 +330,18 @@ function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
       duration: Number(row.duration),
       missingEstimatedBytes: Math.ceil(Number(row.missing_bytes) * 1.05),
       metadataState: row.metadata_state as 'indexed' | 'resolved' | 'error',
-      error: (row.resolution_error as string) ?? null
+      error: (row.resolution_error as string) ?? null,
+      tracks: (releaseTracks.all(row.source_id) as Record<string, unknown>[]).map((track) => ({
+        id: track.id as number,
+        sourceKind: 'entityTrack' as const,
+        title: track.title as string,
+        artist: track.primary_artist as string,
+        spotifyUrl: (track.spotify_url as string) ?? null,
+        missing: track.matched_track_id == null,
+        audioSourceUrl: (track.audio_source_url as string) ?? null,
+        allowUnverified: Boolean(track.allow_unverified),
+        error: (track.download_error as string) ?? null
+      }))
     })),
     ...playlistRows.map((row): SpotifyDownloadQueueSelection => {
       const duration = (row.duration as number) ?? null
@@ -334,7 +357,18 @@ function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
         duration: duration ?? 0,
         missingEstimatedBytes: missing ? estimatedBytes(duration) : 0,
         metadataState: null,
-        error: null
+        error: (row.download_error as string) ?? null,
+        tracks: [{
+          id: row.source_id as number,
+          sourceKind: 'playlistItem',
+          title: row.title as string,
+          artist: row.primary_artist as string,
+          spotifyUrl: (row.spotify_url as string) ?? null,
+          missing,
+          audioSourceUrl: (row.audio_source_url as string) ?? null,
+          allowUnverified: Boolean(row.allow_unverified),
+          error: (row.download_error as string) ?? null
+        }]
       }
     })
   ]
@@ -820,6 +854,9 @@ export function getEntitySnapshot(kind: 'artist' | 'album', entityId: number): E
         trackNo: (track.track_no as number) ?? null,
         spotifyUrl: (track.spotify_url as string) ?? null,
         rawJson: (track.raw_json as string) ?? null,
+        audioSourceUrl: (track.audio_source_url as string) ?? null,
+        allowUnverified: Boolean(track.allow_unverified),
+        downloadError: (track.download_error as string) ?? null,
         matchedTrackId: (track.matched_track_id as number) ?? null
       }))
     }))
@@ -939,7 +976,7 @@ export function resolveAllSpotifyItems(): number {
     )
     .all() as Record<string, unknown>[]
   const update = db.prepare(
-    'UPDATE music_spotify_playlist_item SET matched_track_id = ? WHERE id = ?'
+    'UPDATE music_spotify_playlist_item SET matched_track_id = ?, download_error = CASE WHEN ? IS NOT NULL THEN NULL ELSE download_error END WHERE id = ?'
   )
   const entityItems = db
     .prepare(
@@ -948,7 +985,7 @@ export function resolveAllSpotifyItems(): number {
     )
     .all() as Record<string, unknown>[]
   const updateEntity = db.prepare(
-    'UPDATE music_spotify_entity_track SET matched_track_id = ? WHERE id = ?'
+    'UPDATE music_spotify_entity_track SET matched_track_id = ?, download_error = CASE WHEN ? IS NOT NULL THEN NULL ELSE download_error END WHERE id = ?'
   )
   let resolved = 0
   const tx = db.transaction(() => {
@@ -962,7 +999,7 @@ export function resolveAllSpotifyItems(): number {
         },
         byTitle.get(normalizeSpotifyMatch(row.title as string)) ?? []
       )
-      update.run(match, row.id)
+      update.run(match, match, row.id)
       if (match != null) resolved += 1
     }
     for (const row of entityItems) {
@@ -975,7 +1012,7 @@ export function resolveAllSpotifyItems(): number {
         },
         byTitle.get(normalizeSpotifyMatch(row.title as string)) ?? []
       )
-      updateEntity.run(match, row.id)
+      updateEntity.run(match, match, row.id)
       if (match != null) resolved += 1
     }
   })
@@ -1084,6 +1121,75 @@ export function pendingSpotifyItems(playlistId: number, itemIds?: number[]): Rec
     .all(playlistId, ...ids) as Record<string, unknown>[]
 }
 
+export function setTrackDownloadOptions(input: {
+  sourceKind: 'entityTrack' | 'playlistItem'
+  trackId: number
+  audioSourceUrl?: string | null
+  allowUnverified?: boolean
+}): void {
+  const db = getSqlite()
+  const table = input.sourceKind === 'entityTrack'
+    ? 'music_spotify_entity_track'
+    : 'music_spotify_playlist_item'
+  const sets: string[] = ['download_error=NULL']
+  const values: unknown[] = []
+  if (input.audioSourceUrl !== undefined) {
+    sets.push('audio_source_url=?')
+    values.push(input.audioSourceUrl)
+  }
+  if (input.allowUnverified !== undefined) {
+    sets.push('allow_unverified=?')
+    values.push(input.allowUnverified ? 1 : 0)
+  }
+  const result = db.prepare(`UPDATE ${table} SET ${sets.join(', ')} WHERE id=?`)
+    .run(...values, input.trackId)
+  if (!result.changes) throw new Error('That saved Spotify track no longer exists')
+  const card = db.prepare(
+    input.sourceKind === 'entityTrack'
+      ? `SELECT q.id FROM music_spotify_download_queue q
+         JOIN music_spotify_download_queue_selection qs ON qs.queue_id=q.id
+         JOIN music_spotify_entity_track t ON t.release_id=qs.release_id
+         WHERE t.id=? LIMIT 1`
+      : `SELECT q.id FROM music_spotify_download_queue q
+         JOIN music_spotify_download_queue_selection qs ON qs.queue_id=q.id
+         WHERE qs.playlist_item_id=? LIMIT 1`
+  ).get(input.trackId) as { id: number } | undefined
+  if (card) {
+    db.prepare(
+      `UPDATE music_spotify_download_queue
+       SET state='queued', last_error=NULL, completed_at=NULL, updated_at=datetime('now')
+       WHERE id=? AND state!='running'`
+    ).run(card.id)
+  }
+}
+
+export function clearTrackDownloadErrors(
+  sourceKind: 'entityTrack' | 'playlistItem',
+  trackIds: number[]
+): void {
+  if (!trackIds.length) return
+  const table = sourceKind === 'entityTrack'
+    ? 'music_spotify_entity_track'
+    : 'music_spotify_playlist_item'
+  getSqlite().prepare(
+    `UPDATE ${table} SET download_error=NULL WHERE id IN (${trackIds.map(() => '?').join(',')})`
+  ).run(...trackIds)
+}
+
+export function setTrackDownloadErrors(
+  sourceKind: 'entityTrack' | 'playlistItem',
+  errors: Map<number, string>
+): void {
+  if (!errors.size) return
+  const table = sourceKind === 'entityTrack'
+    ? 'music_spotify_entity_track'
+    : 'music_spotify_playlist_item'
+  const update = getSqlite().prepare(`UPDATE ${table} SET download_error=? WHERE id=?`)
+  getSqlite().transaction(() => {
+    for (const [id, message] of errors) update.run(message, id)
+  })()
+}
+
 export function spotifySource(playlistId: number): {
   spotifyId: string
   sourceUrl: string
@@ -1128,6 +1234,9 @@ export function mapSpotifyItem(row: Record<string, unknown>, track: MusicTrack |
     trackNo: (row.spotify_track_no as number) ?? null,
     discNo: (row.spotify_disc_no as number) ?? null,
     year: (row.spotify_year as number) ?? null,
+    audioSourceUrl: (row.audio_source_url as string) ?? null,
+    allowUnverified: Boolean(row.allow_unverified),
+    downloadError: (row.download_error as string) ?? null,
     matchedTrack: track
   }
 }

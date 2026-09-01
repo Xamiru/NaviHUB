@@ -24,6 +24,8 @@ import {
   parseSpotifyUrl,
   parseSpotdlRateLimitWait,
   parseSpotdlLine,
+  parseSpotdlVersion,
+  payloadWithAudioSource,
   parseSpotdlInspectionLine,
   pickDiscoveredEntity,
   pickConsensusDiscoveredEntity,
@@ -276,8 +278,21 @@ describe('Spotify playlist import core', () => {
       '/tmp/list.spotdl'
     ])
     const args = buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl')
-    expect(args).toContain('320k')
+    expect(args.slice(args.indexOf('--format'), args.indexOf('--format') + 2)).toEqual([
+      '--format',
+      'opus'
+    ])
+    expect(args.slice(args.indexOf('--bitrate'), args.indexOf('--bitrate') + 2)).toEqual([
+      '--bitrate',
+      'disable'
+    ])
     expect(args).toContain('4')
+    expect(args).toContain('--only-verified-results')
+    expect(args).toContain('--print-errors')
+    expect(args.slice(args.indexOf('--audio'), args.indexOf('--audio') + 2)).toEqual([
+      '--audio', 'youtube-music'
+    ])
+    expect(args[args.indexOf('--lyrics') + 1]).toBe('--format')
     expect(args.slice(args.indexOf('--overwrite'), args.indexOf('--overwrite') + 2)).toEqual([
       '--overwrite',
       'skip'
@@ -286,6 +301,30 @@ describe('Spotify playlist import core', () => {
     expect(
       buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl', 'force')
     ).toContain('force')
+    const broader = buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl', 'skip', {
+      allowUnverified: true,
+      cookieFile: '/tmp/cookies.txt'
+    })
+    expect(broader).not.toContain('--only-verified-results')
+    expect(broader.slice(broader.indexOf('--format'), broader.indexOf('--format') + 2)).toEqual([
+      '--format', 'm4a'
+    ])
+    expect(broader.slice(broader.indexOf('--cookie-file'), broader.indexOf('--cookie-file') + 2))
+      .toEqual(['--cookie-file', '/tmp/cookies.txt'])
+  })
+
+  it('parses spotDL readiness and exact per-track errors safely', () => {
+    expect(parseSpotdlVersion('spotdl 4.5.2')).toEqual({ version: '4.5.2', supported: true })
+    expect(parseSpotdlVersion('4.5.1')).toEqual({ version: '4.5.1', supported: false })
+    expect(parseSpotdlLine(
+      'https://open.spotify.com/track/abc123 - AudioProviderError: YT-DLP download error'
+    )).toEqual({
+      kind: 'error',
+      spotifyTrackId: 'abc123',
+      message: 'AudioProviderError: YT-DLP download error'
+    })
+    expect(payloadWithAudioSource('{"name":"Song","download_url":null}', 'https://youtu.be/abc'))
+      .toEqual({ name: 'Song', download_url: 'https://youtu.be/abc' })
   })
 
   it('discovers a deluxe album from a release-unique track instead of a shared lead track', () => {
@@ -446,7 +485,7 @@ describe('Spotify playlist import core', () => {
       5
     ])
     expect(estimateSpotifyDownloadBytes([{ duration: 100 }, { duration: null }])).toBe(
-      Math.ceil((4_000_000 + 10 * 1024 * 1024) * 1.05)
+      Math.ceil((1_600_000 + 4 * 1024 * 1024) * 1.05)
     )
   })
 
@@ -456,7 +495,9 @@ describe('Spotify playlist import core', () => {
       title: 'Artist - Song'
     })
     expect(parseSpotdlLine('12/100 complete')).toEqual({ kind: 'progress', done: 12, total: 100 })
-    expect(parseSpotdlLine('Failed: no match')).toEqual({ kind: 'error', message: 'no match' })
+    expect(parseSpotdlLine('Failed: no match')).toEqual({
+      kind: 'error', message: 'no match', spotifyTrackId: null
+    })
     expect(parseSpotdlInspectionLine('Found 109 songs in Gracie Abrams (Artist)')).toEqual({
       foundCount: 109,
       message: 'Found 109 tracks; preparing the preview'

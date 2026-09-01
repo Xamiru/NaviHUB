@@ -97,6 +97,16 @@ describe('a live DB that predates newer columns', () => {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     );`)
+    db.exec(`
+      CREATE TABLE music_spotify_playlist_item (
+        id INTEGER PRIMARY KEY, playlist_id INTEGER NOT NULL, spotify_track_id TEXT NOT NULL,
+        matched_track_id INTEGER, UNIQUE(playlist_id, spotify_track_id)
+      );
+      CREATE TABLE music_spotify_entity_track (
+        id INTEGER PRIMARY KEY, release_id INTEGER NOT NULL, provider_track_id TEXT NOT NULL,
+        matched_track_id INTEGER, UNIQUE(release_id, provider_track_id)
+      );
+    `)
     db.prepare(`INSERT INTO music_playlist (title) VALUES ('Old mix')`).run()
 
     expect(() => db.exec(initSql)).not.toThrow()
@@ -122,6 +132,13 @@ describe('a live DB that predates newer columns', () => {
       { name: 'music_spotify_playlist_item' }
     ])
     expect(db.prepare('SELECT title FROM music_playlist').all()).toEqual([{ title: 'Old mix' }])
+    for (const table of ['music_spotify_playlist_item', 'music_spotify_entity_track']) {
+      const columns = new Set((db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[])
+        .map((column) => column.name))
+      expect(columns.has('audio_source_url')).toBe(true)
+      expect(columns.has('allow_unverified')).toBe(true)
+      expect(columns.has('download_error')).toBe(true)
+    }
   })
 
   it('survives init.sql + migrations with its data intact (the en_word crash)', () => {

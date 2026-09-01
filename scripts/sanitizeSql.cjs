@@ -114,7 +114,7 @@ const FIXED_WIPES = [
   // Legacy table retained by old live databases.
   'DELETE FROM sync_batch',
   `DELETE FROM settings WHERE key IN
-     ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path',
+     ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path','spotdl.cookieFile',
       'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','slideshow.dir','video.dir','wrestling.dir','football.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
@@ -189,7 +189,9 @@ function sanitizeDb(db, input) {
       hasTable('music_playlist') &&
       hasTable('music_spotify_playlist')
     ) {
-      run('UPDATE music_spotify_playlist_item SET matched_track_id=NULL')
+      run(`UPDATE music_spotify_playlist_item
+           SET matched_track_id=NULL, audio_source_url=NULL, allow_unverified=0,
+               download_error=NULL`)
       run(
         'DELETE FROM music_playlist WHERE id NOT IN (SELECT playlist_id FROM music_spotify_playlist)'
       )

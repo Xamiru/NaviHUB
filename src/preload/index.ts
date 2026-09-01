@@ -457,10 +457,13 @@ const api: NaviApi = {
     spotifyQueueStart: (input) => ipcRenderer.invoke('music:spotifyQueueStart', input),
     spotifyQueueClearCompleted: () =>
       ipcRenderer.invoke('music:spotifyQueueClearCompleted'),
+    spotifySetTrackDownloadOptions: (input) =>
+      ipcRenderer.invoke('music:spotifySetTrackDownloadOptions', input),
     spotifyForgetEntitySource: (input) =>
       ipcRenderer.invoke('music:spotifyForgetEntitySource', input),
     spotifyRemoveItem: (itemId) => ipcRenderer.invoke('music:spotifyRemoveItem', itemId),
     spotifyDetect: () => ipcRenderer.invoke('music:spotifyDetect'),
+    spotifyInstallDeno: () => ipcRenderer.invoke('music:spotifyInstallDeno'),
     playlistsForTrack: (trackId) => ipcRenderer.invoke('music:playlistsForTrack', trackId),
     setLiked: (trackId, liked) => ipcRenderer.invoke('music:setLiked', trackId, liked),
     logPlay: (trackId) => ipcRenderer.invoke('music:logPlay', trackId),

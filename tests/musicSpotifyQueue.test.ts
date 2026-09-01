@@ -36,7 +36,10 @@ vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>()
   return {
     ...actual,
-    spawn: vi.fn(() => recordFakeProcess())
+    spawn: vi.fn(() => recordFakeProcess()),
+    execFile: vi.fn((bin: string, _args: string[], _options: unknown, callback: Function) => {
+      callback(null, bin === 'ffmpeg' ? 'ffmpeg version 7' : bin === 'deno' ? 'deno 2.0.0' : 'spotDL 4.5.2', '')
+    })
   }
 })
 
@@ -193,6 +196,30 @@ describe('persistent Spotify download queue process', () => {
     expect(spawned).toHaveLength(0)
     expect(spotifyRepo.getDownloadQueueCard(jobId)?.state).toBe('completed')
     expect(musicMaintenanceOwner()).toBeNull()
+  })
+
+  it('persists a broader retry and exact audio source on one queued track', () => {
+    const { jobId } = seedQueuedRelease()
+    const track = db.prepare(
+      `SELECT t.id FROM music_spotify_entity_track t
+       JOIN music_spotify_download_queue_selection qs ON qs.release_id=t.release_id
+       WHERE qs.queue_id=? AND t.matched_track_id IS NULL`
+    ).get(jobId) as { id: number }
+    spotifyRepo.setTrackDownloadOptions({
+      sourceKind: 'entityTrack',
+      trackId: track.id,
+      allowUnverified: true,
+      audioSourceUrl: 'https://youtu.be/exact-source'
+    })
+    const queuedTrack = spotifyRepo.getDownloadQueueCard(jobId)!.selections[0].tracks[0]
+    expect(queuedTrack).toMatchObject({
+      id: track.id,
+      sourceKind: 'entityTrack',
+      missing: true,
+      allowUnverified: true,
+      audioSourceUrl: 'https://youtu.be/exact-source',
+      error: null
+    })
   })
 
   it('kills metadata resolution on Pause, persists paused state, and Cancel returns it to the queue', async () => {

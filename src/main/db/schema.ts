@@ -983,6 +983,9 @@ export const musicSpotifyPlaylistItem = sqliteTable(
     trackNo: integer('track_no'),
     year: integer('year'),
     rawJson: text('raw_json').notNull(),
+    audioSourceUrl: text('audio_source_url'),
+    allowUnverified: integer('allow_unverified', { mode: 'boolean' }).notNull().default(false),
+    downloadError: text('download_error'),
     matchedTrackId: integer('matched_track_id').references(() => musicTrack.id, {
       onDelete: 'set null'
     }),
@@ -1060,6 +1063,9 @@ export const musicSpotifyEntityTrack = sqliteTable(
     trackNo: integer('track_no'),
     spotifyUrl: text('spotify_url'),
     rawJson: text('raw_json'),
+    audioSourceUrl: text('audio_source_url'),
+    allowUnverified: integer('allow_unverified', { mode: 'boolean' }).notNull().default(false),
+    downloadError: text('download_error'),
     matchedTrackId: integer('matched_track_id').references(() => musicTrack.id, {
       onDelete: 'set null'
     })

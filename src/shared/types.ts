@@ -2891,6 +2891,9 @@ export interface MusicSpotifyPlaylistEntry {
   trackNo: number | null
   discNo: number | null
   year: number | null
+  audioSourceUrl: string | null
+  allowUnverified: boolean
+  downloadError: string | null
   matchedTrack: MusicTrack | null
 }
 
@@ -3030,6 +3033,26 @@ export interface SpotifyDownloadQueueSelection {
   missingEstimatedBytes: number
   metadataState: 'indexed' | 'resolved' | 'error' | null
   error: string | null
+  tracks: SpotifyDownloadQueueTrack[]
+}
+
+export interface SpotifyDownloadQueueTrack {
+  id: number
+  sourceKind: 'entityTrack' | 'playlistItem'
+  title: string
+  artist: string
+  spotifyUrl: string | null
+  missing: boolean
+  audioSourceUrl: string | null
+  allowUnverified: boolean
+  error: string | null
+}
+
+export interface SpotifyTrackDownloadOptionsInput {
+  sourceKind: 'entityTrack' | 'playlistItem'
+  trackId: number
+  audioSourceUrl?: string | null
+  allowUnverified?: boolean
 }
 
 export interface SpotifyDownloadQueueCard {
@@ -3085,6 +3108,10 @@ export interface SpotdlDetectResult {
   ok: boolean
   version: string | null
   ffmpeg: boolean
+  deno: boolean
+  supportedVersion: boolean
+  premiumCookieConfigured: boolean
+  premiumCookieValid: boolean
   error: string | null
 }
 

@@ -156,13 +156,13 @@ export default function MusicPlaylistPage() {
         const missingCount = mergedCard?.missingCount ?? result.missingCount
         const estimatedBytes = mergedCard?.missingEstimatedBytes ?? Math.ceil(
           itemsToDownload.reduce(
-            (total, item) => total + (item.duration == null ? 10 * 1024 * 1024 : item.duration * 40_000),
+            (total, item) => total + (item.duration == null ? 4 * 1024 * 1024 : item.duration * 16_000),
             0
           ) * 1.05
         )
         if (missingCount > 100 || estimatedBytes > TWO_GB) {
           const ok = await confirmDialog(
-            `Download ${missingCount} missing song${missingCount === 1 ? '' : 's'} as 320 kbps MP3 files? The current queue estimate is ${formatBytes(estimatedBytes)}. Finished files are kept if you pause or cancel.`,
+            `Download ${missingCount} missing song${missingCount === 1 ? '' : 's'} as source-preserved Opus files? The current queue estimate is ${formatBytes(estimatedBytes)}. Finished files are kept if you pause or cancel.`,
             { confirmLabel: 'Download' }
           )
           if (!ok) {
@@ -498,6 +498,9 @@ function SpotifyMissingRow({
         <p className="line-clamp-1 text-xs text-gray-500">
           {item.artists.join(', ')} · {item.albumTitle} · Missing locally
         </p>
+        {item.downloadError && <p className="line-clamp-2 text-xs text-red-300">{item.downloadError}</p>}
+        {item.audioSourceUrl && <p className="text-xs text-green-400">Manual YouTube source saved</p>}
+        {item.allowUnverified && !item.audioSourceUrl && <p className="text-xs text-amber-300">Broader matching enabled</p>}
       </div>
       <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-500">
         {formatDuration(item.duration)}
