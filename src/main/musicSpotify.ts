@@ -191,6 +191,65 @@ export function buildSpotifyDiscoveryQuery(artist: string, title: string): strin
   return `${artist.trim()} - ${title.trim()}`
 }
 
+export function stripCatalogReleaseTypeSuffix(albumTitle: string): string {
+  const trimmed = albumTitle.trim()
+  const stripped = trimmed.replace(/\s+[-–—]\s+(?:single|ep)$/i, '').trim()
+  return stripped || trimmed
+}
+
+export function spotifyReleaseTitlesMatch(indexedTitle: string, spotifyTitle: string): boolean {
+  const same = spotifyRepo.normalizeSpotifyMatch
+  return same(indexedTitle) === same(spotifyTitle) ||
+    same(stripCatalogReleaseTypeSuffix(indexedTitle)) ===
+      same(stripCatalogReleaseTypeSuffix(spotifyTitle))
+}
+
+interface ReleaseDiscoveryTrack {
+  title: string
+  duration: number | null
+}
+
+interface ReleaseDiscoverySource {
+  tracks: ReleaseDiscoveryTrack[]
+}
+
+export function rankSpotifyReleaseDiscoveryTracks<T extends ReleaseDiscoveryTrack>(
+  releases: ReleaseDiscoverySource[],
+  target: { tracks: T[] }
+): T[] {
+  const releaseCounts = new Map<string, number>()
+  for (const release of releases) {
+    const titles = new Set(release.tracks.map((track) => spotifyRepo.normalizeSpotifyMatch(track.title)))
+    for (const title of titles) releaseCounts.set(title, (releaseCounts.get(title) ?? 0) + 1)
+  }
+  return target.tracks
+    .map((track, index) => ({
+      track,
+      index,
+      releaseCount: releaseCounts.get(spotifyRepo.normalizeSpotifyMatch(track.title)) ?? 0
+    }))
+    .sort((a, b) => a.releaseCount - b.releaseCount || b.index - a.index)
+    .map(({ track }) => track)
+}
+
+export function spotifyAlbumIdFromTrackLookup(
+  release: { title: string; albumArtist: string },
+  track: ReleaseDiscoveryTrack,
+  songs: spotifyRepo.SpotdlSong[]
+): string | null {
+  const same = spotifyRepo.normalizeSpotifyMatch
+  const ids = new Set(songs.flatMap((song) => {
+    if (same(song.title) !== same(track.title)) return []
+    if (track.duration == null || song.duration == null || Math.abs(track.duration - song.duration) > 3) {
+      return []
+    }
+    if (same(song.albumArtist ?? song.primaryArtist) !== same(release.albumArtist)) return []
+    if (!spotifyReleaseTitlesMatch(release.title, song.albumTitle)) return []
+    return song.spotifyAlbumId ? [song.spotifyAlbumId] : []
+  }))
+  return ids.size === 1 ? [...ids][0] : null
+}
+
 export function pickDiscoveredEntity(
   kind: SpotifyEntityKind,
   current: NonNullable<ReturnType<typeof spotifyRepo.getEntity>>,
@@ -1372,10 +1431,41 @@ async function resolveReleaseForDownload(
     status.releaseTitle = release.title
     status.message = `Resolving ${release.title} through Spotify`
   }
+  let spotifyAlbumId = release.spotifyAlbumId
+  if (!spotifyAlbumId) {
+    const candidates = rankSpotifyReleaseDiscoveryTracks(snapshot.releases, release).slice(0, 3)
+    for (let index = 0; index < candidates.length; index++) {
+      const candidate = candidates[index]
+      if (status?.id === run.id) {
+        status.message = `Identifying ${release.title} from ${candidate.title}`
+      }
+      const identityFile = join(dir, `release-${release.id}-identity-${index}.spotdl`)
+      const code = await runSpotdl(
+        buildSpotdlSaveArgs(buildSpotifyDiscoveryQuery(release.albumArtist, candidate.title), identityFile),
+        run.owner,
+        undefined,
+        run.id,
+        undefined,
+        SPOTDL_METADATA_STALL_MS
+      )
+      if (run.intent !== 'running') throw new tasks.TaskCancelledError('Spotify release resolution')
+      if (code !== 0) continue
+      let lookup: SpotdlValidation
+      try {
+        lookup = validateSpotdlPayload(JSON.parse(readFileSync(identityFile, 'utf8')) as unknown)
+      } catch {
+        continue
+      }
+      spotifyAlbumId = spotifyAlbumIdFromTrackLookup(release, candidate, lookup.songs)
+      if (spotifyAlbumId) break
+    }
+    if (!spotifyAlbumId) {
+      throw new Error(`spotDL could not identify the Spotify edition for ${release.title}`)
+    }
+  }
   const saveFile = join(dir, `release-${release.id}.spotdl`)
-  const query = release.spotifyAlbumId
-    ? `https://open.spotify.com/album/${release.spotifyAlbumId}`
-    : `album:${release.albumArtist} ${release.title}`
+  const query = `https://open.spotify.com/album/${spotifyAlbumId}`
+  if (status?.id === run.id) status.message = `Loading ${release.title} from Spotify`
   const code = await runSpotdl(
     buildSpotdlSaveArgs(query, saveFile),
     run.owner,
@@ -1389,7 +1479,7 @@ async function resolveReleaseForDownload(
   const validated = validateSpotdlPayload(JSON.parse(readFileSync(saveFile, 'utf8')) as unknown)
   const same = spotifyRepo.normalizeSpotifyMatch
   const songs = validated.songs.filter((song) =>
-    same(song.albumTitle) === same(release.title) &&
+    spotifyReleaseTitlesMatch(release.title, song.albumTitle) &&
     same(song.albumArtist ?? song.primaryArtist) === same(release.albumArtist) &&
     song.albumType !== 'compilation'
   )

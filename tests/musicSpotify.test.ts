@@ -27,10 +27,14 @@ import {
   parseSpotdlInspectionLine,
   pickDiscoveredEntity,
   pickConsensusDiscoveredEntity,
+  rankSpotifyReleaseDiscoveryTracks,
   mismatchFor,
   killActive,
   runSpotdl,
   settleSpotifyBatch,
+  spotifyAlbumIdFromTrackLookup,
+  spotifyReleaseTitlesMatch,
+  stripCatalogReleaseTypeSuffix,
   validateSpotdlPayload
 } from '../src/main/musicSpotify'
 import {
@@ -260,6 +264,9 @@ describe('Spotify playlist import core', () => {
   })
 
   it('builds fixed safe spotDL arguments and a nested album layout', () => {
+    expect(stripCatalogReleaseTypeSuffix('Release Name — EP')).toBe('Release Name')
+    expect(spotifyReleaseTitlesMatch('Sue Me (A Cappella) - Single', 'Sue Me (A Cappella)')).toBe(true)
+    expect(spotifyReleaseTitlesMatch('Album (Deluxe)', 'Album')).toBe(false)
     expect(buildSpotdlSaveArgs('https://open.spotify.com/playlist/abc', '/tmp/list.spotdl')).toEqual([
       'save',
       'https://open.spotify.com/playlist/abc',
@@ -279,6 +286,45 @@ describe('Spotify playlist import core', () => {
     expect(
       buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl', 'force')
     ).toContain('force')
+  })
+
+  it('discovers a deluxe album from a release-unique track instead of a shared lead track', () => {
+    const standard = {
+      tracks: [
+        { title: 'Taste', duration: 157 },
+        { title: 'Juno', duration: 223 }
+      ]
+    }
+    const deluxe = {
+      title: "Short n' Sweet (Deluxe)",
+      albumArtist: 'Sabrina Carpenter',
+      tracks: [
+        { title: 'Taste', duration: 157 },
+        { title: 'Juno', duration: 223 },
+        { title: 'Bad Reviews', duration: 141 }
+      ]
+    }
+    expect(rankSpotifyReleaseDiscoveryTracks([standard, deluxe], deluxe).map((track) => track.title))
+      .toEqual(['Bad Reviews', 'Juno', 'Taste'])
+
+    const song = {
+      spotifyTrackId: 'track-id', title: 'Bad Reviews', artists: ['Sabrina Carpenter'],
+      primaryArtist: 'Sabrina Carpenter', albumArtist: 'Sabrina Carpenter',
+      albumTitle: "Short n' Sweet (Deluxe)", duration: 141, coverUrl: null,
+      spotifyUrl: 'https://open.spotify.com/track/track-id', discNo: 1, trackNo: 17,
+      year: 2025, rawJson: '{}', spotifyAlbumId: '3WzBIQmn2hrulLeTY9smkk',
+      spotifyArtistId: 'artist-id', spotifyArtistIds: ['artist-id'], albumType: 'album'
+    } satisfies SpotdlSong
+    expect(spotifyAlbumIdFromTrackLookup(deluxe, deluxe.tracks[2], [song])).toBe(
+      '3WzBIQmn2hrulLeTY9smkk'
+    )
+    expect(spotifyAlbumIdFromTrackLookup(deluxe, deluxe.tracks[0], [{
+      ...song,
+      title: 'Taste',
+      duration: 157,
+      albumTitle: "Short n' Sweet",
+      spotifyAlbumId: 'standard-id'
+    }])).toBeNull()
   })
 
   it('terminates and rejects a spotDL process that stops producing output', async () => {

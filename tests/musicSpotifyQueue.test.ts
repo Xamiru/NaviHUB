@@ -51,6 +51,7 @@ beforeEach(() => {
   db = createTestDb()
   spawned = []
   vi.mocked(fetchWithRetry).mockReset()
+  vi.mocked(spawn).mockClear()
   vi.mocked(spawn).mockImplementation(() => recordFakeProcess() as never)
   spotify.killActive()
 })
@@ -198,6 +199,7 @@ describe('persistent Spotify download queue process', () => {
     const { jobId } = seedQueuedRelease()
     const run = spotify.startDownloadQueue({ jobId })
     await vi.waitFor(() => expect(spawned).toHaveLength(1))
+    expect(vi.mocked(spawn).mock.calls.at(-1)?.[1]).toContain('Artist - Missing song')
     const status = spotify.getStatus()!
     expect(status.taskId).toBeTruthy()
 
@@ -212,6 +214,52 @@ describe('persistent Spotify download queue process', () => {
     spotify.cancelDownload(run.id!)
     await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('cancelled'))
     expect(spotifyRepo.getDownloadQueueCard(jobId)?.state).toBe('queued')
+    expect(musicMaintenanceOwner()).toBeNull()
+  })
+
+  it('discovers an album id from a track before expanding the canonical album URL', async () => {
+    const { jobId } = seedQueuedRelease()
+    const payload = [{
+      song_id: 'spotify-track',
+      name: 'Missing song',
+      artists: ['Artist'],
+      album_artist: 'Artist',
+      artist_ids: ['artist-id'],
+      album_name: 'Missing album',
+      album_id: 'spotify-album',
+      album_type: 'album',
+      duration: 200,
+      url: 'https://open.spotify.com/track/spotify-track'
+    }]
+    vi.mocked(spawn).mockImplementation((_command, args) => {
+      const proc = recordFakeProcess()
+      const argv = args as string[]
+      if (argv[0] === 'save') {
+        const saveFile = argv[argv.indexOf('--save-file') + 1]
+        writeFileSync(saveFile, JSON.stringify(payload))
+        queueMicrotask(() => {
+          proc.exitCode = 0
+          proc.emit('close', 0)
+        })
+      }
+      return proc as never
+    })
+
+    const run = spotify.startDownloadQueue({ jobId })
+    await vi.waitFor(() => expect(spawned).toHaveLength(3))
+    expect(vi.mocked(spawn).mock.calls[0][1]).toContain('Artist - Missing song')
+    expect(vi.mocked(spawn).mock.calls[1][1]).toContain(
+      'https://open.spotify.com/album/spotify-album'
+    )
+    expect((vi.mocked(spawn).mock.calls[2][1] as string[])[0]).toBe('download')
+
+    const taskId = spotify.getStatus()!.taskId!
+    tasks.pause(taskId)
+    spawned[2].exitCode = 1
+    spawned[2].emit('close', 1)
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('paused'))
+    spotify.cancelDownload(run.id!)
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('cancelled'))
     expect(musicMaintenanceOwner()).toBeNull()
   })
 

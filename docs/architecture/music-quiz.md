@@ -116,8 +116,15 @@ process tree and clears the in-process owner, so relaunch cannot inherit a stale
 inspection.
 
 Downloads resolve only the selected releases. An indexed release is queried by its
-known Spotify album URL or exact album identity, then its artist, title and track
-overlap are validated before the authoritative payload is persisted. Strict matching
+known Spotify album URL when available. For an unresolved iTunes release, NaviHUB ranks
+release-unique tracks before shared tracks and later tracks before earlier ones, then tries
+at most three strict artist/title/duration/edition track lookups to discover one Spotify
+album id. It expands only that canonical album URL because spotDL 4.5.2's default provider
+failed real `album:` text lookups despite the documented syntax, and shared lead tracks can
+identify the standard edition of a Deluxe release. Apple-only terminal `- Single` / `- EP`
+presentation suffixes are ignored without weakening Deluxe, Live or Remaster markers. The
+album's artist, title and track overlap are validated before its authoritative payload is
+persisted. Strict matching
 runs again and only unmatched tracks enter the existing 320 kbps, 100-track/four-worker
 pipeline. Releases continue independently after one failure and remain selectable for
 Retry. Pause is restartable on every platform: the current spotDL tree is stopped,
