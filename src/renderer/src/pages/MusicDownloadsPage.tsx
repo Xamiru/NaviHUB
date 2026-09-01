@@ -455,7 +455,7 @@ function QueueCardRow({
           {card.state === 'failed' && broaderCandidates.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 py-3">
               <p className="text-xs text-gray-400">
-                Verified YouTube Music matching failed for these tracks.
+                Normal filtered YouTube matching failed for these tracks.
               </p>
               <button
                 className="btn-ghost px-2 py-1 text-xs"
@@ -491,7 +491,7 @@ function QueueCardRow({
                           className="btn-ghost px-2 py-1 text-xs"
                           onClick={() => void configureTrack(track, { allowUnverified: !track.allowUnverified })}
                         >
-                          {track.allowUnverified ? 'Use verified only' : 'Try broader match'}
+                          {track.allowUnverified ? 'Use normal matching' : 'Try broader match'}
                         </button>
                         <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setSourceTrack(track)}>
                           Replace source

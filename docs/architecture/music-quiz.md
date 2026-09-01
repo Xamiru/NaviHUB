@@ -52,8 +52,8 @@ playlist link through the user-installed `spotDL` executable (`spotdl.path`, wit
 `spotdl` on PATH as the default). NaviHUB does not log into Spotify and does not
 sync after import. The normalized Spotify playlist id is unique, so importing the
 same source again opens its existing local snapshot. spotDL supplies the playlist
-compatibility layer and resolves downloaded audio through YouTube Music; Spotify
-does not supply audio files.
+compatibility layer and resolves downloaded audio through YouTube Music with ordinary
+YouTube as the built-in fallback; Spotify does not supply audio files.
 
 `music_spotify_playlist` owns source identity and `music_spotify_playlist_item`
 keeps the ordered Spotify metadata, downloaded cover, and original spotDL payload.
@@ -77,14 +77,20 @@ explicitly disabled. Missing rows preserve YouTube Music's native Opus stream un
 `<music root>/<album artist>/<album>/<disc>-<track> - <title>.opus`. Free-provider audio
 is normally about 128 kbps; bitrate conversion is disabled because converting an already
 lossy source into a 320 kbps MP3 only makes a larger file and can add generation loss.
-Verified provider results are attempted first, preferring a retryable missing track over an
-unofficial cover, live upload or low-quality match. An unresolved row can explicitly opt into
-a broader match or store one exact YouTube/YouTube Music URL in spotDL's `download_url` field;
+Normal acquisition uses spotDL's filtered artist/title/duration ranking across YouTube Music
+and YouTube. It deliberately does not pass `--only-verified-results`, because that flag drops
+otherwise strong official-channel matches when YouTube has not attached its music-verification
+marker. An unresolved row can explicitly disable the normal filter for a broader match or store
+one exact YouTube/YouTube Music URL in spotDL's `download_url` field;
 both choices and the track-specific failure survive restarts. Optional YouTube Music Premium
 cookies are passed only from local `spotdl.cookieFile`, switch output to native M4A, and can
 provide 256 kbps when the account and source expose it. The cookie path is sanitized from
 exports and its contents are never copied or logged. Piped, Bandcamp and SoundCloud are
-available only through an explicit Settings fallback choice. The runner feeds
+available only through an explicit Settings fallback choice. Metadata-only `save` calls select
+the YouTube provider solely to bypass spotDL's unrelated YouTube Music startup probe. When an
+album `save` still returns a partial payload, NaviHUB keeps the complete indexed catalogue and
+invokes spotDL's supported canonical album-URL download directly; the following strict scan
+decides which tracks actually resolved. The runner feeds
 stored payloads to spotDL in 100-track chunks with four workers, then scans and
 re-resolves after every chunk. Cancellation keeps completed files and performs the
 same scan path, so Retry selects only rows still unmatched. spotDL, yt-dlp, and
@@ -187,7 +193,7 @@ chunk. One failed card stays visible for Retry while later cards continue. Compl
 cards stay until Clear completed.
 
 Every failed source row retains its last exact spotDL error. The expanded card offers
-verified-only/broader retry and an exact YouTube source replacement without rerunning artist
+normal-filtered/broader retry and an exact YouTube source replacement without rerunning artist
 inspection. Changing either option returns its card to Queued; a later scan clears the error
 as soon as a strict local match appears. Entity source rows and all queue rows are wiped from
 sanitized exports; imported-playlist snapshots may remain, but their local match, error,

@@ -182,7 +182,11 @@ export function parseSpotdlLine(line: string): SpotdlLineEvent | null {
 }
 
 export function buildSpotdlSaveArgs(url: string, saveFile: string, threads = 8): string[] {
-  return ['save', url, '--threads', String(threads), '--save-file', saveFile]
+  // `save` does not need an audio provider, but spotDL still probes YouTube Music at
+  // startup when it is present in the provider list. That probe can hang before any
+  // Spotify metadata is read. Selecting YouTube avoids the irrelevant YTM health
+  // check while leaving the saved Spotify payload unchanged.
+  return ['save', url, '--audio', 'youtube', '--threads', String(threads), '--save-file', saveFile]
 }
 
 export function parseSpotdlRateLimitWait(line: string): number | null {
@@ -420,7 +424,7 @@ export function buildSpotdlDownloadArgs(
 ): string[] {
   const audioProviders = options.audioProviders?.length
     ? options.audioProviders
-    : ['youtube-music']
+    : ['youtube-music', 'youtube']
   const args = [
     'download',
     inputFile,
@@ -449,7 +453,12 @@ export function buildSpotdlDownloadArgs(
       '{disc-number}-{track-number} - {title}.{output-ext}'
     )
   ]
-  if (!options.allowUnverified) args.splice(args.indexOf('--simple-tui'), 0, '--only-verified-results')
+  // spotDL's normal filtered ranking already validates artist/title/duration and is
+  // the default used by its CLI and maintained wrappers. `--only-verified-results`
+  // discards otherwise strong matches when YouTube has not marked the upload as an
+  // official music result. The explicit broader retry goes one step further by
+  // disabling spotDL's normal result filter.
+  if (options.allowUnverified) args.splice(args.indexOf('--simple-tui'), 0, '--dont-filter-results')
   if (options.cookieFile) args.splice(args.indexOf('--output'), 0, '--cookie-file', options.cookieFile)
   return args
 }
@@ -481,9 +490,11 @@ function premiumCookieFile(): string | null {
 
 function configuredAudioProviders(): string[] {
   const value = getSetting('spotdl.audioProviders')?.trim()
-  if (value === 'piped') return ['youtube-music', 'piped']
-  if (value === 'catalogues') return ['youtube-music', 'piped', 'bandcamp', 'soundcloud']
-  return ['youtube-music']
+  if (value === 'piped') return ['youtube-music', 'youtube', 'piped']
+  if (value === 'catalogues') {
+    return ['youtube-music', 'youtube', 'piped', 'bandcamp', 'soundcloud']
+  }
+  return ['youtube-music', 'youtube']
 }
 
 function downloadCliOptions(allowUnverified = false): {
@@ -1610,6 +1621,15 @@ async function repairTruncatedIndexedRelease(
   return repaired
 }
 
+class DirectReleaseDownloadRequired extends Error {
+  constructor(
+    readonly spotifyAlbumId: string,
+    readonly missingCount: number
+  ) {
+    super('spotDL metadata was incomplete; downloading the canonical Spotify album directly')
+  }
+}
+
 async function resolveReleaseForDownload(
   run: SpotifyRunControl,
   snapshot: spotifyRepo.EntitySnapshotRow,
@@ -1721,11 +1741,12 @@ async function resolveReleaseForDownload(
     }
   }
   if (complete.missing.length) {
-    throw new Error(
-      `spotDL returned incomplete metadata for ${release.title} ` +
-      `(${complete.songs.length} of ${release.tracks.length} tracks). ` +
-      `NaviHUB kept the full catalogue ready for Retry.`
-    )
+    // spotDL's supported CLI path can download an album URL even when its separate
+    // `save` operation returns a partial payload. Keep the complete Apple catalogue
+    // in the database and let the caller use the canonical URL directly; the scan
+    // below remains the authority for which indexed tracks were actually acquired.
+    spotifyRepo.rememberEntityReleaseSpotifyAlbum(release.id, spotifyAlbumId)
+    throw new DirectReleaseDownloadRequired(spotifyAlbumId, complete.missing.length)
   }
   songs = complete.songs
   spotifyRepo.resolveEntityRelease(release.id, songs)
@@ -1743,6 +1764,49 @@ async function resolveReleaseForDownload(
   }
   const updated = spotifyRepo.getEntitySnapshotById(snapshot.id)!
   return updated.releases.find((item) => item.id === release.id)!
+}
+
+async function downloadCanonicalSpotifyRelease(
+  run: SpotifyRunControl,
+  release: spotifyRepo.EntitySnapshotRow['releases'][number],
+  spotifyAlbumId: string,
+  errorFile: string,
+  overwrite: 'skip' | 'force'
+): Promise<number> {
+  if (status?.id === run.id) {
+    status.status = 'downloading'
+    status.phase = 'downloading'
+    status.message = `Downloading ${release.title} directly from its Spotify release`
+    status.itemIndex = 0
+    status.itemCount = release.tracks.length
+    status.percent = 0
+  }
+  return runSpotdl(
+    buildSpotdlDownloadArgs(
+      `https://open.spotify.com/album/${spotifyAlbumId}`,
+      musicRootDir(),
+      errorFile,
+      overwrite,
+      downloadCliOptions()
+    ),
+    run.owner,
+    (line) => {
+      const event = parseSpotdlLine(line)
+      if (!event || status?.id !== run.id) return
+      if (event.kind === 'item') status.title = event.title
+      if (event.kind === 'progress') {
+        status.itemIndex = event.done
+        status.itemCount = event.total
+        status.percent = event.total
+          ? Math.min(99, Math.round((event.done / event.total) * 100))
+          : null
+      }
+      if (event.kind === 'error') status.message = event.message
+    },
+    run.id,
+    undefined,
+    SPOTDL_AUDIO_STALL_MS
+  )
 }
 
 async function runEntityDownload(run: EntityRun): Promise<void> {
@@ -1767,16 +1831,45 @@ async function runEntityDownload(run: EntityRun): Promise<void> {
         status.releaseTitle = releases[releaseIndex].title
       }
       let release: typeof releases[number]
+      let directAlbumId: string | null = null
       try {
         release = await resolveReleaseForDownload(run, snapshot, releases[releaseIndex], dir)
       } catch (error) {
         if (run.intent !== 'running') break
-        const message = error instanceof Error ? error.message : String(error)
-        spotifyRepo.markEntityReleaseError(releases[releaseIndex].id, message)
-        if (status?.id === run.id) {
-          status.failedCount = (status.failedCount ?? 0) + releases[releaseIndex].tracks.length
-          status.message = message
+        if (error instanceof DirectReleaseDownloadRequired) {
+          directAlbumId = error.spotifyAlbumId
+          release = spotifyRepo.getEntitySnapshotById(snapshot.id)
+            ?.releases.find((item) => item.id === releases[releaseIndex].id) ?? releases[releaseIndex]
+        } else {
+          const message = error instanceof Error ? error.message : String(error)
+          spotifyRepo.markEntityReleaseError(releases[releaseIndex].id, message)
+          if (status?.id === run.id) {
+            status.failedCount = (status.failedCount ?? 0) + releases[releaseIndex].tracks.length
+            status.message = message
+          }
+          continue
         }
+      }
+      if (directAlbumId) {
+        const errors = join(dir, `release-${release.id}-direct.errors.spotdl`)
+        const code = await downloadCanonicalSpotifyRelease(
+          run, release, directAlbumId, errors, 'skip'
+        )
+        if (run.intent !== 'running') break
+        if (code !== 0) {
+          logWarn('proc', `direct spotDL release download exited with code ${code}: ${release.title}`)
+        }
+        if (status?.id === run.id) {
+          status.status = 'processing'
+          status.phase = 'scanning'
+          status.message = `Scanning ${release.title} into the library`
+        }
+        try { await startScan(undefined, run.owner) } catch (error) {
+          if (run.intent === 'running') {
+            logWarn('proc', `music scan after direct Spotify release failed: ${error instanceof Error ? error.message : String(error)}`)
+          }
+        }
+        snapshot = spotifyRepo.getEntitySnapshotById(run.input.snapshotId)!
         continue
       }
       const pending = release.tracks.filter((track) => track.matchedTrackId == null && track.rawJson)
@@ -2065,13 +2158,36 @@ async function processEntityQueueCard(
       status.message = `Preparing ${queuedRelease.title}`
     }
     let release = queuedRelease
+    let directAlbumId: string | null = null
     try {
       release = await resolveReleaseForDownload(run, snapshot, queuedRelease, dir)
     } catch (error) {
       if (run.intent !== 'running') break
-      const message = error instanceof Error ? error.message : String(error)
-      spotifyRepo.markEntityReleaseError(queuedRelease.id, message)
-      failures.push(message)
+      if (error instanceof DirectReleaseDownloadRequired) {
+        directAlbumId = error.spotifyAlbumId
+        release = spotifyRepo.getEntitySnapshot(card.entityKind, card.entityId)
+          ?.releases.find((item) => item.id === queuedRelease.id) ?? queuedRelease
+      } else {
+        const message = error instanceof Error ? error.message : String(error)
+        spotifyRepo.markEntityReleaseError(queuedRelease.id, message)
+        failures.push(message)
+        continue
+      }
+    }
+    if (directAlbumId) {
+      const errors = join(dir, `queue-${card.id}-release-${release.id}-direct.errors.spotdl`)
+      const code = await downloadCanonicalSpotifyRelease(
+        run,
+        release,
+        directAlbumId,
+        errors,
+        'skip'
+      )
+      if (run.intent !== 'running') break
+      if (code !== 0) failures.push(`spotDL exited with code ${code} for ${release.title}`)
+      if (abandonedRuns.has(run.id)) return { total: 0, resolved: 0, error: null }
+      await scanQueueFiles(run, `Scanning ${release.title} into the library`)
+      snapshot = spotifyRepo.getEntitySnapshot(card.entityKind, card.entityId) ?? snapshot
       continue
     }
     const pending = release.tracks.filter((track) => track.matchedTrackId == null && track.rawJson)
@@ -2152,7 +2268,7 @@ async function processEntityQueueCard(
   const resolved = selectedTracks.filter((track) => track.matchedTrackId != null).length
   const missing = Math.max(0, total - resolved)
   if (missing > 0) {
-    const generic = failures[0] ?? 'No verified YouTube Music match was found'
+    const generic = failures[0] ?? 'No suitable YouTube audio match was found'
     spotifyRepo.setTrackDownloadErrors(
       'entityTrack',
       new Map(selectedTracks
@@ -2250,7 +2366,7 @@ async function processPlaylistQueueCard(
   if (abandonedRuns.has(run.id)) return { total: 0, resolved: 0, error: null }
   const remaining = spotifyRepo.pendingSpotifyItems(card.playlistId, itemIds)
   if (remaining.length > 0) {
-    const generic = failures[0] ?? 'No verified YouTube Music match was found'
+    const generic = failures[0] ?? 'No suitable YouTube audio match was found'
     spotifyRepo.setTrackDownloadErrors(
       'playlistItem',
       new Map(remaining

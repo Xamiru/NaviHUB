@@ -927,6 +927,13 @@ export function resolveEntityRelease(releaseId: number, songs: SpotdlSong[]): vo
   })()
 }
 
+export function rememberEntityReleaseSpotifyAlbum(releaseId: number, spotifyAlbumId: string): void {
+  getSqlite().prepare(
+    `UPDATE music_spotify_entity_release
+     SET spotify_album_id=?, resolution_error=NULL WHERE id=?`
+  ).run(spotifyAlbumId, releaseId)
+}
+
 export function restoreIndexedEntityRelease(
   releaseId: number,
   release: IndexedEntityRelease

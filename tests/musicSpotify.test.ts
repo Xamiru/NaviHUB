@@ -275,6 +275,8 @@ describe('Spotify playlist import core', () => {
     expect(buildSpotdlSaveArgs('https://open.spotify.com/playlist/abc', '/tmp/list.spotdl')).toEqual([
       'save',
       'https://open.spotify.com/playlist/abc',
+      '--audio',
+      'youtube',
       '--threads',
       '8',
       '--save-file',
@@ -290,10 +292,11 @@ describe('Spotify playlist import core', () => {
       'disable'
     ])
     expect(args).toContain('4')
-    expect(args).toContain('--only-verified-results')
+    expect(args).not.toContain('--only-verified-results')
+    expect(args).not.toContain('--dont-filter-results')
     expect(args).toContain('--print-errors')
-    expect(args.slice(args.indexOf('--audio'), args.indexOf('--audio') + 2)).toEqual([
-      '--audio', 'youtube-music'
+    expect(args.slice(args.indexOf('--audio'), args.indexOf('--audio') + 3)).toEqual([
+      '--audio', 'youtube-music', 'youtube'
     ])
     expect(args[args.indexOf('--lyrics') + 1]).toBe('--format')
     expect(args.slice(args.indexOf('--overwrite'), args.indexOf('--overwrite') + 2)).toEqual([
@@ -301,6 +304,15 @@ describe('Spotify playlist import core', () => {
       'skip'
     ])
     expect(args.at(-1)).toContain('{album-artist}/{album}/{disc-number}-{track-number} - {title}')
+    const direct = buildSpotdlDownloadArgs(
+      'https://open.spotify.com/album/3WzBIQmn2hrulLeTY9smkk',
+      '/music',
+      '/tmp/direct-errors.spotdl'
+    )
+    expect(direct.slice(0, 2)).toEqual([
+      'download',
+      'https://open.spotify.com/album/3WzBIQmn2hrulLeTY9smkk'
+    ])
     expect(
       buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl', 'force')
     ).toContain('force')
@@ -309,6 +321,7 @@ describe('Spotify playlist import core', () => {
       cookieFile: '/tmp/cookies.txt'
     })
     expect(broader).not.toContain('--only-verified-results')
+    expect(broader).toContain('--dont-filter-results')
     expect(broader.slice(broader.indexOf('--format'), broader.indexOf('--format') + 2)).toEqual([
       '--format', 'm4a'
     ])
