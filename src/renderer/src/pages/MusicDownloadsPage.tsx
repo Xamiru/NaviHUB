@@ -369,6 +369,29 @@ function QueueCardRow({
       toastError(error)
     }
   }
+  const broaderCandidates = card.selections.flatMap((selection) =>
+    selection.tracks.filter((track) =>
+      track.missing && !track.allowUnverified && !track.audioSourceUrl
+    )
+  )
+  async function configureAllBroader(): Promise<void> {
+    try {
+      await Promise.all(broaderCandidates.map((track) =>
+        api.music.spotifySetTrackDownloadOptions({
+          sourceKind: track.sourceKind,
+          trackId: track.id,
+          allowUnverified: true
+        })
+      ))
+      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      toast(
+        `Broader matching enabled for ${broaderCandidates.length} track${broaderCandidates.length === 1 ? '' : 's'}`,
+        'success'
+      )
+    } catch (error) {
+      toastError(error)
+    }
+  }
   const stateLabel = card.state === 'failed'
     ? 'Needs retry'
     : card.state === 'paused' ? 'Paused' : card.state === 'completed' ? 'Completed' : 'Queued'
@@ -429,6 +452,20 @@ function QueueCardRow({
       </div>
       {open && (
         <div id={`download-card-${card.id}-selections`} className="ml-8 mt-4 divide-y divide-base-700 border-t border-base-700">
+          {card.state === 'failed' && broaderCandidates.length > 0 && (
+            <div className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <p className="text-xs text-gray-400">
+                Verified YouTube Music matching failed for these tracks.
+              </p>
+              <button
+                className="btn-ghost px-2 py-1 text-xs"
+                disabled={active}
+                onClick={() => void configureAllBroader()}
+              >
+                Try broader matching for all failed ({broaderCandidates.length})
+              </button>
+            </div>
+          )}
           {card.selections.map((selection) => (
             <div key={selection.id} className="flex items-center gap-3 py-3 text-sm">
               <div className="min-w-0 flex-1">

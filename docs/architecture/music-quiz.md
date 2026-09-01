@@ -118,6 +118,15 @@ audio. Snapshot track matches are nullable and revalidated by every music scan, 
 deleted file turns grey and a restored or downloaded file resolves again. Sanitized
 and in-app library exports always wipe all three tables.
 
+spotDL album expansion is not trusted merely because the process exits successfully.
+The expanded payload must cover every indexed catalogue track before it can replace
+that release. Missing rows are recovered together through strict artist/title/duration
+queries; a shared standard-edition recording may supply audio only after that identity
+check, while its metadata is rewritten to the selected edition. If recovery remains
+partial, the original complete indexed tracklist stays in the database and the release
+remains retryable. Older truncated iTunes-backed snapshots are detected from broken
+disc/track numbering and automatically restored from the fast catalogue on Retry.
+
 When the fast provider fails, the same visible metadata task automatically falls back
 to spotDL with eight metadata workers. NaviHUB deliberately omits `--use-cache-file`:
 current spotDL uses that flag to select its official Spotify Web API path, and an

@@ -60,6 +60,7 @@ describe('Sonic Archive product surface', () => {
     expect(downloads).toContain('Clear completed')
     expect(downloads).toContain('spotifyQueueReorder')
     expect(downloads).toContain('Resume')
+    expect(downloads).toContain('Try broader matching for all failed')
   })
 
   it('uses semantic progress and an SVG download indicator', () => {

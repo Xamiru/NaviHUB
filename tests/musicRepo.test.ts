@@ -615,6 +615,46 @@ describe('persistent Spotify entity catalogue', () => {
     })
   })
 
+  it('restores a complete indexed tracklist when a previous Spotify resolution was truncated', () => {
+    const trackId = seedTrack({ title: 'Different local song' })
+    const artistId = (db.prepare('SELECT artist_id FROM music_track WHERE id=?').get(trackId) as { artist_id: number }).artist_id
+    const release = indexedRelease('Song 1')
+    release.tracks = [1, 2, 3].map((trackNo) => ({
+      providerTrackId: `itunes-${trackNo}`,
+      title: `Song ${trackNo}`,
+      artists: ['Radiohead'],
+      primaryArtist: 'Radiohead',
+      albumTitle: 'OK Computer',
+      duration: 200 + trackNo,
+      discNo: 1,
+      trackNo
+    }))
+    spotifyRepo.saveEntitySnapshot({
+      kind: 'artist', entityId: artistId, provider: 'itunes', providerEntityId: 'itunes-artist-1',
+      sourceName: 'Radiohead', releases: [release]
+    })
+    const releaseId = spotifyRepo.getEntitySnapshot('artist', artistId)!.releases[0].id
+    spotifyRepo.resolveEntityRelease(releaseId, [1, 3].map((trackNo) => ({
+      ...resolvedSong(),
+      spotifyTrackId: `spotify-${trackNo}`,
+      title: `Song ${trackNo}`,
+      duration: 200 + trackNo,
+      trackNo,
+      rawJson: JSON.stringify({ song_id: `spotify-${trackNo}` })
+    })))
+
+    spotifyRepo.saveEntitySnapshot({
+      kind: 'artist', entityId: artistId, provider: 'itunes', providerEntityId: 'itunes-artist-1',
+      sourceName: 'Radiohead', releases: [release]
+    })
+
+    const restored = spotifyRepo.getEntitySnapshot('artist', artistId)!.releases[0]
+    expect(restored.metadataState).toBe('indexed')
+    expect(restored.tracks).toHaveLength(3)
+    expect(restored.tracks.map((track) => track.title)).toEqual(['Song 1', 'Song 2', 'Song 3'])
+    expect(restored.tracks.every((track) => track.rawJson == null)).toBe(true)
+  })
+
   it('turns deleted matches grey, resolves replacements after a scan, and cascades with the artist', () => {
     const trackId = seedTrack({ title: 'Airbag' })
     const artistId = (db.prepare('SELECT artist_id FROM music_track WHERE id=?').get(trackId) as { artist_id: number }).artist_id

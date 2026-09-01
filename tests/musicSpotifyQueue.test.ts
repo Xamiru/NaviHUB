@@ -290,6 +290,92 @@ describe('persistent Spotify download queue process', () => {
     expect(musicMaintenanceOwner()).toBeNull()
   })
 
+  it('repairs a truncated resolved album and fills missing metadata before download', async () => {
+    const { jobId } = seedQueuedRelease()
+    const releaseId = spotifyRepo.getDownloadQueueCard(jobId)!.selections[0].sourceId
+    const indexed = {
+      providerReleaseId: '456',
+      title: 'Missing album',
+      albumArtist: 'Artist',
+      year: 2026,
+      albumType: 'album' as const,
+      tracks: [1, 2, 3].map((trackNo) => ({
+        providerTrackId: `itunes-${trackNo}`,
+        title: `Song ${trackNo}`,
+        artists: ['Artist'],
+        primaryArtist: 'Artist',
+        albumTitle: 'Missing album',
+        duration: 200 + trackNo,
+        discNo: 1,
+        trackNo
+      }))
+    }
+    db.prepare(
+      'UPDATE music_spotify_entity_release SET provider_release_id=? WHERE id=?'
+    ).run('456', releaseId)
+    spotifyRepo.restoreIndexedEntityRelease(releaseId, indexed)
+    const payload = (trackNo: number) => ({
+      song_id: `spotify-${trackNo}`,
+      name: `Song ${trackNo}`,
+      artists: ['Artist'],
+      album_artist: 'Artist',
+      artist_ids: ['artist-id'],
+      album_name: 'Missing album',
+      album_id: 'spotify-album',
+      album_type: 'album',
+      duration: 200 + trackNo,
+      disc_number: 1,
+      track_number: trackNo,
+      url: `https://open.spotify.com/track/spotify-${trackNo}`
+    })
+    spotifyRepo.resolveEntityRelease(
+      releaseId,
+      [1, 3].map((trackNo) => spotify.validateSpotdlPayload([payload(trackNo)]).songs[0])
+    )
+    vi.mocked(fetchWithRetry).mockResolvedValue(new Response(JSON.stringify({
+      results: [
+        {
+          wrapperType: 'collection', collectionId: 456, collectionName: 'Missing album',
+          artistName: 'Artist', releaseDate: '2026-01-01T00:00:00Z', trackCount: 3
+        },
+        ...[1, 2, 3].map((trackNo) => ({
+          wrapperType: 'track', kind: 'song', collectionId: 456, trackId: 100 + trackNo,
+          trackName: `Song ${trackNo}`, artistName: 'Artist', trackTimeMillis: (200 + trackNo) * 1000,
+          discNumber: 1, trackNumber: trackNo
+        }))
+      ]
+    }), { status: 200, headers: { 'content-type': 'application/json' } }))
+    vi.mocked(spawn).mockImplementation((_command, args) => {
+      const proc = recordFakeProcess()
+      const argv = args as string[]
+      if (argv[0] === 'save') {
+        const saveFile = argv[argv.indexOf('--save-file') + 1]
+        const rows = argv.includes('Artist - Song 2') ? [payload(2)] : [payload(1), payload(3)]
+        writeFileSync(saveFile, JSON.stringify(rows))
+        queueMicrotask(() => {
+          proc.exitCode = 0
+          proc.emit('close', 0)
+        })
+      }
+      return proc as never
+    })
+
+    const run = spotify.startDownloadQueue({ jobId })
+    await vi.waitFor(() => expect(spawned).toHaveLength(3))
+    const repaired = spotifyRepo.getEntitySnapshot('artist', 1)!.releases[0]
+    expect(repaired.metadataState).toBe('resolved')
+    expect(repaired.tracks.map((track) => track.title)).toEqual(['Song 1', 'Song 2', 'Song 3'])
+    expect((vi.mocked(spawn).mock.calls[2][1] as string[])[0]).toBe('download')
+
+    const taskId = spotify.getStatus()!.taskId!
+    tasks.pause(taskId)
+    spawned[2].exitCode = 1
+    spawned[2].emit('close', 1)
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('paused'))
+    spotify.cancelDownload(run.id!)
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('cancelled'))
+  })
+
   it('retains a failed card and continues to later queue work', async () => {
     const first = seedQueuedRelease()
     const playlist = spotifyRepo.createSpotifyPlaylist({

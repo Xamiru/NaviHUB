@@ -14,10 +14,12 @@ vi.mock('../src/main/db/connection', () => ({ getSqlite: vi.fn() }))
 vi.mock('../src/main/repos/settingsRepo', () => ({ get: vi.fn() }))
 
 import {
+  adaptRecoveredReleaseSongs,
   buildSpotdlDownloadArgs,
   buildSpotdlSaveArgs,
   buildSpotifyDiscoveryQuery,
   chunkSpotifyItems,
+  completeResolvedReleaseSongs,
   estimateSpotifyDownloadBytes,
   groupEntityReleases,
   parseSpotifyPlaylistUrl,
@@ -30,6 +32,7 @@ import {
   pickDiscoveredEntity,
   pickConsensusDiscoveredEntity,
   rankSpotifyReleaseDiscoveryTracks,
+  releaseTrackNumberingIsIncomplete,
   mismatchFor,
   killActive,
   runSpotdl,
@@ -364,6 +367,66 @@ describe('Spotify playlist import core', () => {
       albumTitle: "Short n' Sweet",
       spotifyAlbumId: 'standard-id'
     }])).toBeNull()
+  })
+
+  it('rejects partial album metadata and identifies missing numbered tracks', () => {
+    const indexed = {
+      title: 'Album',
+      albumArtist: 'Artist',
+      tracks: [1, 2, 3].map((trackNo) => ({
+        providerTrackId: `itunes-${trackNo}`,
+        title: `Song ${trackNo}`,
+        artists: ['Artist'],
+        primaryArtist: 'Artist',
+        albumTitle: 'Album',
+        duration: 180 + trackNo,
+        discNo: 1,
+        trackNo
+      }))
+    }
+    const songs = [1, 3].map((trackNo) => ({
+      spotifyTrackId: `spotify-${trackNo}`,
+      title: `Song ${trackNo}`,
+      artists: ['Artist'],
+      primaryArtist: 'Artist',
+      albumArtist: 'Artist',
+      albumTitle: 'Album',
+      duration: 180 + trackNo,
+      coverUrl: null,
+      spotifyUrl: `https://open.spotify.com/track/spotify-${trackNo}`,
+      discNo: 1,
+      trackNo,
+      year: 2026,
+      rawJson: '{}',
+      spotifyAlbumId: 'album-id',
+      spotifyArtistId: 'artist-id',
+      spotifyArtistIds: ['artist-id'],
+      albumType: 'album' as const
+    }))
+    expect(completeResolvedReleaseSongs(indexed, songs)).toMatchObject({
+      songs: [{ title: 'Song 1' }, { title: 'Song 3' }],
+      missing: [{ title: 'Song 2' }]
+    })
+    expect(releaseTrackNumberingIsIncomplete(songs)).toBe(true)
+    expect(releaseTrackNumberingIsIncomplete(indexed.tracks)).toBe(false)
+
+    const adapted = adaptRecoveredReleaseSongs(
+      indexed,
+      [indexed.tracks[1]],
+      [{ ...songs[0], spotifyTrackId: 'standard-track', title: 'Song 2', duration: 182,
+        albumTitle: 'Album (Standard)', spotifyAlbumId: 'standard-album', trackNo: 2 }],
+      'deluxe-album'
+    )
+    expect(adapted[0]).toMatchObject({
+      spotifyTrackId: 'standard-track',
+      spotifyAlbumId: 'deluxe-album',
+      albumTitle: 'Album',
+      trackNo: 2
+    })
+    expect(JSON.parse(adapted[0].rawJson)).toMatchObject({
+      album_id: 'deluxe-album',
+      album_name: 'Album'
+    })
   })
 
   it('terminates and rejects a spotDL process that stops producing output', async () => {

@@ -720,8 +720,15 @@ export function saveEntitySnapshot(input: {
 
     const keep = new Set(input.releases.map((release) => release.providerReleaseId))
     const old = db.prepare(
-      'SELECT id, provider_release_id, metadata_state FROM music_spotify_entity_release WHERE snapshot_id=?'
-    ).all(snapshotId) as { id: number; provider_release_id: string; metadata_state: string }[]
+      `SELECT r.id, r.provider_release_id, r.metadata_state,
+              (SELECT COUNT(*) FROM music_spotify_entity_track t WHERE t.release_id=r.id) AS track_count
+       FROM music_spotify_entity_release r WHERE r.snapshot_id=?`
+    ).all(snapshotId) as {
+      id: number
+      provider_release_id: string
+      metadata_state: string
+      track_count: number
+    }[]
     const oldByProvider = new Map(old.map((row) => [row.provider_release_id, row]))
     for (const row of old) {
       if (!keep.has(row.provider_release_id)) {
@@ -759,7 +766,10 @@ export function saveEntitySnapshot(input: {
           release.albumType,
           releaseId
         )
-        if (previous.metadata_state === 'resolved') return
+        // A provider can return a partial album while still exiting successfully. Preserve
+        // authoritative payloads only when they cover at least the refreshed catalogue count;
+        // otherwise Refresh must restore the complete indexed tracklist for another resolution.
+        if (previous.metadata_state === 'resolved' && previous.track_count >= release.tracks.length) return
         db.prepare('DELETE FROM music_spotify_entity_track WHERE release_id=?').run(releaseId)
         db.prepare(
           `UPDATE music_spotify_entity_release
@@ -914,6 +924,78 @@ export function resolveEntityRelease(releaseId: number, songs: SpotdlSong[]): vo
       song.rawJson,
       matches.get(song.spotifyTrackId)?.id ?? null
     ))
+  })()
+}
+
+export function restoreIndexedEntityRelease(
+  releaseId: number,
+  release: IndexedEntityRelease
+): void {
+  const db = getSqlite()
+  const owner = db.prepare(
+    'SELECT id FROM music_spotify_entity_release WHERE id=?'
+  ).get(releaseId)
+  if (!owner) throw new Error('That saved release no longer exists')
+  const old = db.prepare(
+    `SELECT * FROM music_spotify_entity_track WHERE release_id=? ORDER BY position, id`
+  ).all(releaseId) as Record<string, unknown>[]
+  const same = normalizeSpotifyMatch
+  const candidates = allCandidates()
+  const byTitle = indexCandidates(candidates)
+  db.transaction(() => {
+    db.prepare(
+      `UPDATE music_spotify_entity_release
+       SET title=?, album_artist=?, year=?, album_type=?, metadata_state='indexed',
+           resolution_error=NULL WHERE id=?`
+    ).run(release.title, release.albumArtist, release.year, release.albumType, releaseId)
+    db.prepare('DELETE FROM music_spotify_entity_track WHERE release_id=?').run(releaseId)
+    const insert = db.prepare(
+      `INSERT INTO music_spotify_entity_track
+       (release_id, provider_track_id, spotify_track_id, position, title, artists_json,
+        primary_artist, album_title, duration, disc_no, track_no, spotify_url, raw_json,
+        audio_source_url, allow_unverified, download_error, matched_track_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    release.tracks.forEach((track, index) => {
+      const previous = old.filter((row) =>
+        same(row.title as string) === same(track.title) &&
+        same(row.primary_artist as string) === same(track.primaryArtist) &&
+        (row.duration == null || track.duration == null ||
+          Math.abs(Number(row.duration) - track.duration) <= 3)
+      )
+      const retained = previous.length === 1 ? previous[0] : null
+      const matchInput = retained?.raw_json
+        ? {
+            title: retained.title as string,
+            primaryArtist: retained.primary_artist as string,
+            albumTitle: retained.album_title as string,
+            duration: (retained.duration as number) ?? null
+          }
+        : track
+      const matched = matchSpotifySong(
+        matchInput,
+        byTitle.get(normalizeSpotifyMatch(matchInput.title)) ?? []
+      )
+      insert.run(
+        releaseId,
+        track.providerTrackId,
+        retained?.spotify_track_id ?? null,
+        index,
+        track.title,
+        JSON.stringify(track.artists),
+        track.primaryArtist,
+        track.albumTitle,
+        track.duration,
+        track.discNo,
+        track.trackNo,
+        retained?.spotify_url ?? null,
+        retained?.raw_json ?? null,
+        retained?.audio_source_url ?? null,
+        retained?.allow_unverified ?? 0,
+        retained?.download_error ?? null,
+        matched
+      )
+    })
   })()
 }
 

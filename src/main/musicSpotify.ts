@@ -207,6 +207,104 @@ export function spotifyReleaseTitlesMatch(indexedTitle: string, spotifyTitle: st
       same(stripCatalogReleaseTypeSuffix(spotifyTitle))
 }
 
+export function completeResolvedReleaseSongs(
+  release: Pick<spotifyRepo.IndexedEntityRelease, 'title' | 'albumArtist' | 'tracks'>,
+  candidates: spotifyRepo.SpotdlSong[]
+): { songs: spotifyRepo.SpotdlSong[]; missing: spotifyRepo.IndexedEntityTrack[] } {
+  const same = spotifyRepo.normalizeSpotifyMatch
+  const unused = [...candidates]
+  const songs: spotifyRepo.SpotdlSong[] = []
+  const missing: spotifyRepo.IndexedEntityTrack[] = []
+  for (const track of release.tracks) {
+    const matches = unused
+      .map((song, index) => ({ song, index }))
+      .filter(({ song }) =>
+        same(song.title) === same(track.title) &&
+        same(song.albumArtist ?? song.primaryArtist) === same(release.albumArtist) &&
+        spotifyReleaseTitlesMatch(release.title, song.albumTitle) &&
+        (track.duration == null || song.duration == null || Math.abs(track.duration - song.duration) <= 3)
+      )
+      .sort((a, b) => {
+        const aPosition = Number(a.song.discNo === track.discNo && a.song.trackNo === track.trackNo)
+        const bPosition = Number(b.song.discNo === track.discNo && b.song.trackNo === track.trackNo)
+        return bPosition - aPosition
+      })
+    if (!matches.length) {
+      missing.push(track)
+      continue
+    }
+    songs.push(matches[0].song)
+    unused.splice(matches[0].index, 1)
+  }
+  return { songs, missing }
+}
+
+export function adaptRecoveredReleaseSongs(
+  release: Pick<spotifyRepo.IndexedEntityRelease, 'title' | 'albumArtist'>,
+  missing: spotifyRepo.IndexedEntityTrack[],
+  candidates: spotifyRepo.SpotdlSong[],
+  spotifyAlbumId: string
+): spotifyRepo.SpotdlSong[] {
+  const same = spotifyRepo.normalizeSpotifyMatch
+  const used = new Set<string>()
+  return missing.flatMap((track): spotifyRepo.SpotdlSong[] => {
+    const matches = candidates.filter((song) =>
+      !used.has(song.spotifyTrackId) &&
+      same(song.title) === same(track.title) &&
+      same(song.albumArtist ?? song.primaryArtist) === same(release.albumArtist) &&
+      (track.duration == null || song.duration == null || Math.abs(track.duration - song.duration) <= 3)
+    )
+    const preferred = matches.filter((song) => song.spotifyAlbumId === spotifyAlbumId)
+    const source = preferred.length === 1
+      ? preferred[0]
+      : matches.length === 1 ? matches[0] : null
+    if (!source) return []
+    used.add(source.spotifyTrackId)
+    let raw: Record<string, unknown>
+    try {
+      raw = JSON.parse(source.rawJson) as Record<string, unknown>
+    } catch {
+      raw = {}
+    }
+    Object.assign(raw, {
+      name: track.title,
+      album_name: release.title,
+      album_artist: release.albumArtist,
+      album_id: spotifyAlbumId,
+      disc_number: track.discNo,
+      track_number: track.trackNo
+    })
+    return [{
+      ...source,
+      title: track.title,
+      albumArtist: release.albumArtist,
+      albumTitle: release.title,
+      duration: track.duration ?? source.duration,
+      discNo: track.discNo,
+      trackNo: track.trackNo,
+      rawJson: JSON.stringify(raw),
+      spotifyAlbumId
+    }]
+  })
+}
+
+export function releaseTrackNumberingIsIncomplete(
+  tracks: Array<{ discNo: number | null; trackNo: number | null }>
+): boolean {
+  if (!tracks.length || tracks.some((track) => track.trackNo == null)) return false
+  const discs = new Map<number, number[]>()
+  for (const track of tracks) {
+    const disc = track.discNo ?? 1
+    const numbers = discs.get(disc) ?? []
+    numbers.push(track.trackNo!)
+    discs.set(disc, numbers)
+  }
+  return [...discs.values()].some((numbers) => {
+    const unique = [...new Set(numbers)].sort((a, b) => a - b)
+    return unique[0] !== 1 || unique.some((value, index) => value !== index + 1)
+  })
+}
+
 interface ReleaseDiscoveryTrack {
   title: string
   duration: number | null
@@ -1482,12 +1580,43 @@ export function startEntityDownload(input: SpotifyEntityDownloadInput): { id: st
   return { id }
 }
 
+async function repairTruncatedIndexedRelease(
+  snapshot: spotifyRepo.EntitySnapshotRow,
+  release: spotifyRepo.EntitySnapshotRow['releases'][number]
+): Promise<spotifyRepo.EntitySnapshotRow['releases'][number]> {
+  if (
+    snapshot.provider !== 'itunes' ||
+    release.metadataState !== 'resolved' ||
+    !releaseTrackNumberingIsIncomplete(release.tracks) ||
+    !/^\d+$/.test(release.providerReleaseId)
+  ) return release
+  const collectionId = Number(release.providerReleaseId)
+  const rows = await itunesResults(
+    `https://itunes.apple.com/lookup?id=${collectionId}&entity=song&limit=200`
+  )
+  const collection = rows.find((row) =>
+    row.wrapperType === 'collection' && row.collectionId === collectionId
+  )
+  const indexed = collection ? itunesRelease(collection, rows) : null
+  if (!indexed || indexed.tracks.length <= release.tracks.length) return release
+  logWarn(
+    'proc',
+    `repairing truncated Spotify metadata for ${release.title}: ${release.tracks.length}/${indexed.tracks.length} tracks`
+  )
+  spotifyRepo.restoreIndexedEntityRelease(release.id, indexed)
+  const repaired = spotifyRepo.getEntitySnapshotById(snapshot.id)
+    ?.releases.find((item) => item.id === release.id)
+  if (!repaired) throw new Error(`Could not restore the full catalogue for ${release.title}`)
+  return repaired
+}
+
 async function resolveReleaseForDownload(
   run: SpotifyRunControl,
   snapshot: spotifyRepo.EntitySnapshotRow,
-  release: spotifyRepo.EntitySnapshotRow['releases'][number],
+  initialRelease: spotifyRepo.EntitySnapshotRow['releases'][number],
   dir: string
 ): Promise<spotifyRepo.EntitySnapshotRow['releases'][number]> {
+  const release = await repairTruncatedIndexedRelease(snapshot, initialRelease)
   if (release.metadataState === 'resolved' && release.tracks.every((track) => track.rawJson)) return release
   if (status?.id === run.id) {
     status.status = 'resolving'
@@ -1542,26 +1671,69 @@ async function resolveReleaseForDownload(
   if (code !== 0) throw new Error(`spotDL could not resolve ${release.title}`)
   const validated = validateSpotdlPayload(JSON.parse(readFileSync(saveFile, 'utf8')) as unknown)
   const same = spotifyRepo.normalizeSpotifyMatch
-  const songs = validated.songs.filter((song) =>
+  let songs = validated.songs.filter((song) =>
+    song.spotifyAlbumId === spotifyAlbumId &&
     spotifyReleaseTitlesMatch(release.title, song.albumTitle) &&
     same(song.albumArtist ?? song.primaryArtist) === same(release.albumArtist) &&
     song.albumType !== 'compilation'
   )
-  if (!songs.length || !songs[0].spotifyAlbumId) {
-    throw new Error(`Spotify returned a different release for ${release.title}`)
+  let complete = completeResolvedReleaseSongs(release, songs)
+  if (complete.missing.length) {
+    if (status?.id === run.id) {
+      status.message = `Recovering ${complete.missing.length} missing metadata track${complete.missing.length === 1 ? '' : 's'} for ${release.title}`
+    }
+    const recoveryFile = join(dir, `release-${release.id}-recovery.spotdl`)
+    const recoveryArgs = [
+      'save',
+      ...complete.missing.map((track) => buildSpotifyDiscoveryQuery(release.albumArtist, track.title)),
+      '--threads',
+      '8',
+      '--save-file',
+      recoveryFile
+    ]
+    const recoveryCode = await runSpotdl(
+      recoveryArgs,
+      run.owner,
+      undefined,
+      run.id,
+      undefined,
+      SPOTDL_METADATA_STALL_MS
+    )
+    if (run.intent !== 'running') throw new tasks.TaskCancelledError('Spotify release resolution')
+    if (recoveryCode === 0) {
+      try {
+        const recoveredCandidates = validateSpotdlPayload(
+          JSON.parse(readFileSync(recoveryFile, 'utf8')) as unknown
+        ).songs
+        const recovered = adaptRecoveredReleaseSongs(
+          release,
+          complete.missing,
+          recoveredCandidates,
+          spotifyAlbumId
+        )
+        const byId = new Map(songs.map((song) => [song.spotifyTrackId, song]))
+        for (const song of recovered) byId.set(song.spotifyTrackId, song)
+        songs = [...byId.values()]
+        complete = completeResolvedReleaseSongs(release, songs)
+      } catch (error) {
+        logWarn('proc', `spotDL recovery metadata was invalid for ${release.title}: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    }
   }
-  const indexedTitles = new Set(release.tracks.map((track) => spotifyRepo.normalizeSpotifyMatch(track.title)))
-  const overlap = songs.filter((song) => indexedTitles.has(spotifyRepo.normalizeSpotifyMatch(song.title))).length
-  const requiredOverlap = Math.max(1, Math.ceil(Math.min(release.tracks.length, songs.length) / 2))
-  if (overlap < requiredOverlap) {
-    throw new Error(`Spotify returned a tracklist that does not match ${release.title}`)
+  if (complete.missing.length) {
+    throw new Error(
+      `spotDL returned incomplete metadata for ${release.title} ` +
+      `(${complete.songs.length} of ${release.tracks.length} tracks). ` +
+      `NaviHUB kept the full catalogue ready for Retry.`
+    )
   }
+  songs = complete.songs
   spotifyRepo.resolveEntityRelease(release.id, songs)
   spotifyRepo.linkUnambiguousSources(
     snapshot.kind === 'artist'
       ? songs[0].spotifyArtistIds[songs[0].artists.findIndex((artist) => same(artist) === same(snapshot.sourceName))] ?? null
       : null,
-    [{ spotifyAlbumId: songs[0].spotifyAlbumId, songs }]
+    [{ spotifyAlbumId, songs }]
   )
   const sourceArtistId = snapshot.kind === 'artist'
     ? songs[0].spotifyArtistIds[songs[0].artists.findIndex((artist) => same(artist) === same(snapshot.sourceName))]
