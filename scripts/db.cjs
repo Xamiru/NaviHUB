@@ -84,7 +84,7 @@ try {
 } catch (e) {
   console.error(
     '\nCould not load better-sqlite3. Run this through the npm script ' +
-      '(`npm run db:query -- …`) — it needs Electron\'s ABI, plain node will not do.\n'
+      '(`npm run db:query -- …`) so it uses NaviHUB\'s Electron/Node runtime.\n'
   )
   process.exit(3)
 }

@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo, useRef, useState } from 'react'
-import Tabs from '../components/Tabs'
+import { RouteTabs } from '../components/Tabs'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
@@ -21,6 +21,7 @@ import MediaFilterPanel, {
 import { seasonLabel } from '@shared/season'
 import { loadListSort, saveListSort } from '../lib/listSortPrefs'
 import type { MediaListFilter, MediaSort, MediaSummary } from '@shared/types'
+import { Field } from '../components/Field'
 
 // Sort menu. `random` is a seeded shuffle — it has no direction, so the page
 // swaps the direction toggle for a Shuffle button that re-seeds it.
@@ -153,7 +154,8 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       {cfg.listTabs && (
-        <Tabs
+        <RouteTabs
+          label={`${cfg.plural} sibling libraries`}
           className="mb-5"
           value={cfg.key}
           tabs={cfg.listTabs.map((t) => ({
@@ -224,12 +226,14 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
 
       {/* Search + filters + sort */}
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <input
-          className="input max-w-xs"
-          placeholder="Search titles…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <Field label={`Search ${cfg.plural.toLowerCase()}`} hiddenLabel className="contents">
+          <input
+            className="input max-w-xs"
+            placeholder="Search titles…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </Field>
         <button
           className={`btn py-1.5 ${showFilters || nFilters ? 'bg-accent text-white' : 'bg-base-700 text-gray-300 hover:bg-base-600'}`}
           onClick={() => setShowFilters((v) => !v)}
@@ -247,8 +251,11 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
         {/* Both controls write the choice back to listSortPrefs: this library
             reopens on whatever you picked last, here and after a restart. */}
         <div className="flex items-center gap-2 ml-auto text-sm">
-          <span className="text-gray-500">Sort</span>
+          <label className="text-gray-500" htmlFor={`${cfg.key}-library-sort`}>
+            Sort
+          </label>
           <select
+            id={`${cfg.key}-library-sort`}
             className="input w-auto py-1.5"
             value={sort}
             title="Your last choice becomes this library's default"

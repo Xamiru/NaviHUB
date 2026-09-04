@@ -60,10 +60,12 @@ export default function CalendarHeatmap({
     }
     return { grid, monthLabels, max }
   }, [days, weeks])
+  const activeDays = days.filter((day) => day.count > 0)
+  const total = activeDays.reduce((sum, day) => sum + day.count, 0)
 
   return (
     <div className="overflow-x-auto pb-1">
-      <div className="relative ml-0 flex gap-[3px]" style={{ paddingTop: 16 }}>
+      <div aria-hidden="true" className="relative ml-0 flex gap-[3px]" style={{ paddingTop: 16 }}>
         {monthLabels.map((m) => (
           <span
             key={`${m.label}-${m.col}`}
@@ -89,6 +91,28 @@ export default function CalendarHeatmap({
           </div>
         ))}
       </div>
+      <p className="sr-only">
+        {total} {unit} across {activeDays.length} active {activeDays.length === 1 ? 'day' : 'days'}.
+      </p>
+      {activeDays.length > 0 && (
+        <table className="sr-only">
+          <caption>Daily {unit}</caption>
+          <thead>
+            <tr>
+              <th scope="col">Date</th>
+              <th scope="col">Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {activeDays.map((day) => (
+              <tr key={day.day}>
+                <th scope="row">{day.day}</th>
+                <td>{day.count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }

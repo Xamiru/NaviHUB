@@ -38,9 +38,10 @@ already fixed, and two of the review's own claims have themselves gone stale.
 
 ## House rules for this folder
 
-- These files are **reference**, not instructions. Anything that is a rule — something an agent
-  must or must not do — belongs in `CLAUDE.md`'s *Hard invariants* section, not here. If you find
-  yourself writing "NEVER" in this folder, that sentence is in the wrong file.
+- These files are scoped subsystem references, not globally loaded instructions. `AGENTS.md`
+  tells an agent when to read one; once selected, its current design contracts must be preserved
+  unless the user's task explicitly changes them. Cross-subsystem rules and hard prohibitions
+  still belong in the mirrored contract.
 - Dated headings are fine here. Narrative is fine here. Length is fine here.
 - When a feature changes, **update its file in place** — do not append a new dated block to
   `CLAUDE.md`. That habit is what grew `CLAUDE.md` to 135 KB.

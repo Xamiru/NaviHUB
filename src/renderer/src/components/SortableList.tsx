@@ -1,6 +1,7 @@
 import { useEffect, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react'
 import {
   DndContext,
+  KeyboardSensor,
   closestCenter,
   PointerSensor,
   useSensor,
@@ -13,7 +14,8 @@ import {
   SortableContext,
   verticalListSortingStrategy,
   useSortable,
-  arrayMove
+  arrayMove,
+  sortableKeyboardCoordinates
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { toastError } from '../lib/toast'
@@ -35,7 +37,10 @@ export function useOptimisticReorder<T extends { itemId: number }>(
   useEffect(() => {
     if (source) setItems(source)
   }, [source])
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   async function onDragEnd(e: DragEndEvent): Promise<void> {
     const { active, over } = e
@@ -80,8 +85,8 @@ export function SortableList({
   )
 }
 
-// One draggable row: applies the drag transform/fade and hands the renderer a
-// ready-made grab handle to place wherever the row layout wants it.
+// One sortable row: the shared handle supports pointer drag and dnd-kit's
+// Space/Arrow/Space keyboard flow, then hands the renderer one control to place.
 export function SortableRow({
   id,
   className,
@@ -102,8 +107,8 @@ export function SortableRow({
   const handle = (
     <button
       className="cursor-grab touch-none px-1 text-gray-500 hover:text-white"
-      title="Drag to reorder"
-      aria-label="Drag to reorder"
+      title="Move item (Space, Arrow keys, Space)"
+      aria-label="Move item"
       {...attributes}
       {...listeners}
     >

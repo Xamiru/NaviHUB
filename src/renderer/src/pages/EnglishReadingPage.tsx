@@ -207,14 +207,14 @@ export default function EnglishReadingPage() {
     >
 
       <div className="card max-h-[45vh] overflow-y-auto p-5">
-        <p className="mb-2 text-xs uppercase tracking-widest text-gray-600">
+        <p className="mb-2 text-xs uppercase tracking-widest text-gray-500">
           {passage.title} · {passage.level}
         </p>
         <Markdown text={passage.text} />
       </div>
 
       <div className="card mt-3 p-4">
-        <p className="mb-1 text-xs uppercase tracking-widest text-gray-600">
+        <p className="mb-1 text-xs uppercase tracking-widest text-gray-500">
           {KIND_LABEL[current.q.kind]}
         </p>
         <p className="text-base leading-snug">{current.q.prompt}</p>

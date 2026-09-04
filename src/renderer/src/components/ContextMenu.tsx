@@ -33,6 +33,7 @@ export default function ContextMenu({
   onClose: () => void
 }): React.JSX.Element {
   const boxRef = useRef<HTMLDivElement>(null)
+  const openerRef = useRef(document.activeElement as HTMLElement | null)
   const [pos, setPos] = useState<{ left: number; top: number }>({ left: x, top: y })
 
   // Measure, clamp, then focus the first enabled item so the menu is keyboard
@@ -49,8 +50,6 @@ export default function ContextMenu({
   }, [x, y])
 
   useEffect(() => {
-    const opener = document.activeElement as HTMLElement | null
-
     function itemButtons(): HTMLButtonElement[] {
       const box = boxRef.current
       if (!box) return []
@@ -65,7 +64,7 @@ export default function ContextMenu({
         // Capture phase + stopPropagation: an open menu owns Escape, so pressing
         // it inside the Lightbox closes the menu only.
         e.preventDefault()
-        e.stopPropagation()
+        e.stopImmediatePropagation()
         onClose()
         return
       }
@@ -102,7 +101,7 @@ export default function ContextMenu({
       document.removeEventListener('scroll', onLeave, true)
       window.removeEventListener('resize', onLeave)
       window.removeEventListener('blur', onLeave)
-      opener?.focus?.()
+      if (openerRef.current?.isConnected) openerRef.current.focus()
     }
   }, [onClose])
 
@@ -110,6 +109,8 @@ export default function ContextMenu({
     <div
       ref={boxRef}
       role="menu"
+      aria-label="Context menu"
+      data-player-shortcuts="suspend"
       style={{ left: pos.left, top: pos.top }}
       className="fixed z-50 min-w-44 rounded-md border border-base-500 bg-base-800 p-1 shadow-lg"
       onContextMenu={(e) => e.preventDefault()}

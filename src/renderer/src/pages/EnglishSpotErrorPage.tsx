@@ -229,7 +229,7 @@ export default function EnglishSpotErrorPage() {
     >
 
       <div className="card p-5">
-        <p className="mb-3 text-xs uppercase tracking-widest text-gray-600">{CAT_LABEL[current.category]}</p>
+        <p className="mb-3 text-xs uppercase tracking-widest text-gray-500">{CAT_LABEL[current.category]}</p>
         <p className="text-xl leading-loose">
           {current.tokens.map((tok, i) => {
             let cls = 'hover:text-accent'

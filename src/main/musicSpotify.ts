@@ -81,7 +81,22 @@ export function validateSpotdlPayload(payload: unknown): SpotdlValidation {
   let duplicates = 0
   let skipped = 0
   let title = 'Spotify playlist'
-  for (const raw of payload) {
+  const orderedPayload = payload.map((raw, index) => ({
+    raw,
+    index,
+    position: raw && typeof raw === 'object' &&
+      typeof (raw as Record<string, unknown>).list_position === 'number'
+      ? (raw as Record<string, unknown>).list_position as number
+      : null
+  }))
+  if (orderedPayload.filter((entry) => entry.position != null).length > 1) {
+    orderedPayload.sort((a, b) => {
+      if (a.position == null) return b.position == null ? a.index - b.index : 1
+      if (b.position == null) return -1
+      return a.position - b.position || a.index - b.index
+    })
+  }
+  for (const { raw } of orderedPayload) {
     if (!raw || typeof raw !== 'object') {
       skipped += 1
       continue
@@ -140,7 +155,8 @@ export function validateSpotdlPayload(payload: unknown): SpotdlValidation {
         : typeof row.artist_id === 'string' ? [row.artist_id] : [],
       albumType: ['album', 'single', 'compilation'].includes(String(row.album_type))
         ? (row.album_type as 'album' | 'single' | 'compilation')
-        : null
+        : null,
+      listPosition: number(row.list_position)
     })
   }
   return { songs, duplicates, skipped, title }

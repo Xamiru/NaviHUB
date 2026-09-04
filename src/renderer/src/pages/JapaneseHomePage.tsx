@@ -12,7 +12,7 @@ import Section from '../components/Section'
 import StatTile from '../components/StatTile'
 import EmptyState from '../components/EmptyState'
 import PageStatus from '../components/PageStatus'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import CoreDeckDialog from '../components/japanese/CoreDeckDialog'
 import SetupChecklist from '../components/japanese/SetupChecklist'
 import { currentCourseWindow } from '@shared/japanese/courseWindow'
@@ -249,6 +249,8 @@ export default function JapaneseHomePage() {
 
       <Section title="Toolbox" subtitle="Choose a category; the full tool list stays one click away.">
         <Tabs
+          id="japanese-toolbox"
+          label="Toolbox category"
           tabs={(Object.keys(TOOL_GROUPS) as ToolGroup[]).map((key) => ({
             key,
             label: TOOL_GROUPS[key].title,
@@ -257,7 +259,7 @@ export default function JapaneseHomePage() {
           value={toolGroup}
           onChange={setToolGroup}
         />
-        <div className="card mt-4 p-4" role="tabpanel" aria-label={`${selected.title} tools`}>
+        <TabPanel tabsId="japanese-toolbox" value={toolGroup} className="card mt-4 p-4">
           <div className="mb-4">
             <p className="text-sm font-semibold">{selected.title}</p>
             <p className="mt-1 text-xs text-gray-500">{selected.body}</p>
@@ -272,7 +274,7 @@ export default function JapaneseHomePage() {
               </Link>
             ))}
           </div>
-        </div>
+        </TabPanel>
       </Section>
 
       {coreDeck && <CoreDeckDialog onClose={() => setCoreDeck(false)} />}

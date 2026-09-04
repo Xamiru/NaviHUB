@@ -78,7 +78,7 @@ export default function WrestlingImportPanel({
             <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
           </div>
           {status.message && status.phase !== 'enumerating' && (
-            <p className="mt-2 truncate text-xs text-gray-600">{status.message}</p>
+            <p className="mt-2 truncate text-xs text-gray-500">{status.message}</p>
           )}
           <button
             className="btn mt-4"

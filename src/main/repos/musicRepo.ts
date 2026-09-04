@@ -13,7 +13,12 @@ import type {
   MusicTrackPage,
   MusicTrackPageRequest
 } from '@shared/types'
-import { mapSpotifyItem, spotifySource } from './musicSpotifyRepo'
+import {
+  mapSpotifyItem,
+  normalizeSpotifyMatch,
+  spotifyPlaylistMatchAlternatives,
+  spotifySource
+} from './musicSpotifyRepo'
 
 // Queries for the standalone music library. Rows come from the scanner
 // (src/main/music.ts); this repo owns the user-state writes (likes, plays,
@@ -413,7 +418,7 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
     position: r.position as number,
     track: mapTrack(r)
   }))
-  const spotifyItems = (
+  let spotifyItems = (
     db
       .prepare(
         `SELECT si.id AS item_id, si.position, si.spotify_track_id,
@@ -435,6 +440,38 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
       )
       .all(id) as Record<string, unknown>[]
   ).map((r) => mapSpotifyItem(r, r.id == null ? null : mapTrack(r)))
+  if (spotifyItems.length > 0) {
+    const localTracks = (db.prepare(`${TRACK_SELECT} ORDER BY t.id`).all() as Record<string, unknown>[])
+      .map(mapTrack)
+    const localById = new Map(localTracks.map((track) => [track.id, track]))
+    const candidates = localTracks.map((track) => ({
+      id: track.id,
+      albumId: track.albumId,
+      artistId: track.artistId,
+      title: track.title,
+      folderArtist: track.artistName,
+      tagArtist: track.tagArtist,
+      albumTitle: track.albumTitle,
+      duration: track.duration
+    }))
+    const candidatesByTitle = new Map<string, typeof candidates>()
+    for (const candidate of candidates) {
+      const key = normalizeSpotifyMatch(candidate.title)
+      const rows = candidatesByTitle.get(key) ?? []
+      rows.push(candidate)
+      candidatesByTitle.set(key, rows)
+    }
+    spotifyItems = spotifyItems.map((item) => ({
+      ...item,
+      localAlternatives: spotifyPlaylistMatchAlternatives(
+        item,
+        candidatesByTitle.get(normalizeSpotifyMatch(item.title)) ?? []
+      )
+        .filter((candidate) => candidate.id !== item.matchedTrack?.id)
+        .slice(0, 5)
+        .map((candidate) => localById.get(candidate.id)!)
+    }))
+  }
   const source = spotifySource(id)
   const items = source ? [...spotifyItems, ...localItems] : localItems
   const playableCount = items.filter(

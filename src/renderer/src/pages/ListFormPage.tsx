@@ -8,6 +8,7 @@ import PageStatus from '../components/PageStatus'
 import QuietWorkspace from '../components/QuietWorkspace'
 import { KIND_LABEL } from '../lib/listLinks'
 import type { ListKind } from '@shared/types'
+import { Field } from '../components/Field'
 
 const KINDS: ListKind[] = [
   'media',
@@ -86,8 +87,7 @@ export default function ListFormPage() {
         description="Name the point of view first; membership and ordering stay on the collection page."
       >
       <div className="space-y-4">
-        <div>
-          <label className="label">Title</label>
+        <Field label="Title">
           <input
             className="input"
             placeholder="e.g. Best anime by opening"
@@ -95,34 +95,37 @@ export default function ListFormPage() {
             autoFocus
             onChange={(e) => setTitle(e.target.value)}
           />
-        </div>
+        </Field>
 
-        <div>
-          <label className="label">Description</label>
+        <Field label="Description">
           <textarea
             className="input min-h-[80px]"
             placeholder="Optional — what this list is about"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
-        </div>
+        </Field>
 
         <div>
-          <label className="label">Kind</label>
           {editing ? (
-            <p className="text-sm text-gray-400">{KIND_LABEL[kind]} (can’t be changed)</p>
+            <div>
+              <p className="label">Kind</p>
+              <p className="text-sm text-gray-400">{KIND_LABEL[kind]} (can’t be changed)</p>
+            </div>
           ) : (
-            <select
-              className="input"
-              value={kind}
-              onChange={(e) => setKind(e.target.value as ListKind)}
-            >
-              {KINDS.map((k) => (
-                <option key={k} value={k}>
-                  {KIND_LABEL[k]}
-                </option>
-              ))}
-            </select>
+            <Field label="Kind">
+              <select
+                className="input"
+                value={kind}
+                onChange={(e) => setKind(e.target.value as ListKind)}
+              >
+                {KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {KIND_LABEL[k]}
+                  </option>
+                ))}
+              </select>
+            </Field>
           )}
         </div>
 

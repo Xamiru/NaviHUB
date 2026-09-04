@@ -306,6 +306,53 @@ describe('playlists', () => {
     expect(musicRepo.getPlaylist(playlistId)!.missingCount).toBe(0)
   })
 
+  it('reuses a unique deluxe recording and preserves an explicit local-version choice', () => {
+    const deluxe = seedTrack({ artist: 'Artist', album: 'Album (Deluxe)', title: 'Song', path: 'deluxe.mp3' })
+    db.prepare('UPDATE music_track SET duration=205 WHERE id=?').run(deluxe)
+    const playlistId = musicRepo.createPlaylist({ title: 'Imported mix' })
+    db.prepare(
+      `INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+       VALUES (?, 'compatible-source', 'https://open.spotify.com/playlist/compatible-source')`
+    ).run(playlistId)
+    db.prepare(
+      `INSERT INTO music_spotify_playlist_item
+       (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+        album_title, duration, spotify_url, raw_json)
+       VALUES (?, 'song-id', 0, 'Song', '["Artist"]', 'Artist', 'Album', 200,
+               'https://open.spotify.com/track/song-id', '{}')`
+    ).run(playlistId)
+
+    expect(spotifyRepo.resolveAllSpotifyItems()).toBe(1)
+    expect(musicRepo.getPlaylist(playlistId)!.items[0]).toMatchObject({
+      kind: 'spotify',
+      matchedTrack: { id: deluxe, albumTitle: 'Album (Deluxe)' }
+    })
+
+    const hits = seedTrack({ artist: 'Artist', album: 'Greatest Hits', title: 'Song', path: 'hits.mp3' })
+    db.prepare('UPDATE music_track SET duration=211 WHERE id=?').run(hits)
+    db.prepare('UPDATE music_track SET duration=210 WHERE id=?').run(deluxe)
+    db.prepare('UPDATE music_spotify_playlist_item SET matched_track_id=NULL WHERE playlist_id=?').run(playlistId)
+    spotifyRepo.resolveAllSpotifyItems()
+    const unresolved = musicRepo.getPlaylist(playlistId)!.items[0]
+    expect(unresolved).toMatchObject({ kind: 'spotify', matchedTrack: null })
+    if (unresolved.kind !== 'spotify') throw new Error('Expected Spotify item')
+    expect(unresolved.localAlternatives.map((track) => track.id)).toEqual([deluxe, hits])
+
+    const queued = spotifyRepo.addPlaylistToDownloadQueue({
+      playlistId,
+      itemIds: [unresolved.itemId]
+    })
+    expect(queued.jobId).not.toBeNull()
+    spotifyRepo.matchPlaylistItemToLocalTrack({ itemId: unresolved.itemId, trackId: hits })
+    expect(spotifyRepo.getDownloadQueueCard(queued.jobId!)).toBeNull()
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(musicRepo.getPlaylist(playlistId)!.items[0]).toMatchObject({
+      kind: 'spotify',
+      matchedTrack: { id: hits, albumTitle: 'Greatest Hits' },
+      localAlternatives: [{ id: deluxe, albumTitle: 'Album (Deluxe)' }]
+    })
+  })
+
   it('finds an existing Spotify playlist and removes only its source item', () => {
     const playlistId = musicRepo.createPlaylist({ title: 'Imported mix' })
     db.prepare(

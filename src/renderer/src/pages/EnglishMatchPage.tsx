@@ -281,7 +281,7 @@ function MatchSet({
   return (
     <div className="space-y-3">
       <div className="card p-4">
-        <p className="text-xs uppercase tracking-widest text-gray-600">{THEME_LABEL[set.theme]}</p>
+        <p className="text-xs uppercase tracking-widest text-gray-500">{THEME_LABEL[set.theme]}</p>
         <h2 className="text-lg font-medium">{set.title}</h2>
       </div>
       <div className="grid grid-cols-2 gap-3">

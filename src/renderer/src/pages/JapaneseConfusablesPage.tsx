@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import { usePersistedState } from '../lib/navState'
 import LookalikeDrill from '../components/japanese/LookalikeDrill'
 import TransitivityDrill from '../components/japanese/TransitivityDrill'
@@ -30,6 +30,8 @@ export default function JapaneseConfusablesPage() {
       />
 
       <Tabs
+        id="japanese-confusables"
+        label="Confusable type"
         className="mb-5"
         value={tab}
         onChange={setTab}
@@ -40,13 +42,15 @@ export default function JapaneseConfusablesPage() {
         ]}
       />
 
-      {tab === 'lookalike' ? (
-        <LookalikeDrill />
-      ) : tab === 'pairs' ? (
-        <TransitivityDrill />
-      ) : (
-        <HomophoneDrill />
-      )}
+      <TabPanel tabsId="japanese-confusables" value={tab}>
+        {tab === 'lookalike' ? (
+          <LookalikeDrill />
+        ) : tab === 'pairs' ? (
+          <TransitivityDrill />
+        ) : (
+          <HomophoneDrill />
+        )}
+      </TabPanel>
     </div>
   )
 }

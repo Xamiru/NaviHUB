@@ -70,7 +70,7 @@ export default function ChronologyOrder({
                   className={target === index ? 'pill pill-active min-w-9 justify-center' : 'pill min-w-9 justify-center'}
                   disabled={disabled}
                   aria-label={`Move ${item.label} to position ${target + 1}`}
-                  aria-current={target === index ? 'true' : undefined}
+                  aria-pressed={target === index}
                   onClick={() => move(target)}
                 >
                   {target + 1}

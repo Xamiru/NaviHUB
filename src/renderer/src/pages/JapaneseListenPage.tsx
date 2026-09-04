@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import QuizRecord from '../components/QuizRecord'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import { Group, Pill } from '../components/PillGroup'
 import JpKeyboardInput from '../components/japanese/keyboard/JpKeyboardInput'
 import { api } from '../lib/api'
@@ -48,6 +48,8 @@ export default function JapaneseListenPage() {
       ) : (
         <>
           <Tabs
+            id="japanese-listening"
+            label="Listening activity"
             tabs={[
               { key: 'guided', label: 'Guided listening' },
               { key: 'dictation', label: 'Dictation' }
@@ -56,7 +58,9 @@ export default function JapaneseListenPage() {
             onChange={setTab}
             className="mb-5"
           />
-          {tab === 'guided' ? <GuidedListening /> : <DictationSetup />}
+          <TabPanel tabsId="japanese-listening" value={tab}>
+            {tab === 'guided' ? <GuidedListening /> : <DictationSetup />}
+          </TabPanel>
         </>
       )}
     </div>

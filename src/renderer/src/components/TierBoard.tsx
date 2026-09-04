@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import {
   DndContext,
   DragOverlay,
+  KeyboardSensor,
   PointerSensor,
   closestCenter,
   pointerWithin,
@@ -13,7 +14,13 @@ import {
   type DragOverEvent,
   type DragStartEvent
 } from '@dnd-kit/core'
-import { SortableContext, arrayMove, rectSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import {
+  SortableContext,
+  arrayMove,
+  rectSortingStrategy,
+  sortableKeyboardCoordinates,
+  useSortable
+} from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -25,7 +32,7 @@ import type { TierBoard as TierBoardData, TierEntry, TierPlacement, TierRowGroup
 // The tiermaker-style board: draggable cover tiles inside colored tier rows,
 // plus the unranked pool below. One custom DndContext drives ALL containers —
 // SortableList (vertical single-container) doesn't fit a grid board — reusing
-// its PointerSensor distance and optimistic-persist-rollback shape.
+// its pointer/keyboard sensors and optimistic-persist-rollback shape.
 //
 // Every drop persists the WHOLE placement in one persistBoard transaction;
 // a failure rolls the visible board back to the server state with a toast.
@@ -90,7 +97,10 @@ export default function TierBoard({
     applyState(fresh)
   }, [board])
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
 
   // Prefer whatever is literally under the pointer (tiles + their tray), so
   // dropping into a crowded row lands where aimed; fall back to nearest.
@@ -265,25 +275,38 @@ function DropTray({
 
 function TrayHint() {
   return (
-    <span className="self-center px-2 py-1 text-xs text-gray-600">Drop here</span>
+    <span className="self-center px-2 py-1 text-xs text-gray-500">Drop here</span>
   )
 }
 
 function Tile({ item, onRemove }: { item: TierEntry; onRemove: (itemId: number) => void }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: item.itemId
-  })
+  const {
+    attributes,
+    listeners,
+    setActivatorNodeRef,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: item.itemId })
   return (
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 }}
       className="group/tile relative touch-none"
-      {...attributes}
-      {...listeners}
     >
-      <TileVisual item={item} />
       <button
-        className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-base-900 text-xs text-gray-300 ring-1 ring-base-500 hover:text-red-400 group-hover/tile:flex"
+        ref={setActivatorNodeRef}
+        className="block cursor-grab touch-none"
+        title={`Move ${item.name} (Space, Arrow keys, Space)`}
+        aria-label={`Move ${item.name}`}
+        {...attributes}
+        {...listeners}
+      >
+        <TileVisual item={item} />
+      </button>
+      <button
+        className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-base-900 text-xs text-gray-300 opacity-0 ring-1 ring-base-500 hover:text-red-400 group-hover/tile:pointer-events-auto group-hover/tile:opacity-100 group-focus-within/tile:pointer-events-auto group-focus-within/tile:opacity-100"
         onPointerDown={(e) => e.stopPropagation()}
         onClick={() => onRemove(item.itemId)}
         title={`Remove ${item.name}`}

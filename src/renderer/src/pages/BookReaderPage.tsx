@@ -9,6 +9,7 @@ import BookContent from '../components/reader/BookContent'
 import MiningPanel from '../components/reader/MiningPanel'
 import BarButton from '../components/reader/BarButton'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
+import Dialog from '../components/Dialog'
 import BookSettingsGroups, {
   BOOK_DEFAULTS,
   BOOK_SERIF_STACK,
@@ -272,6 +273,7 @@ export default function BookReaderPage() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const t = e.target as HTMLElement
+      if (t.closest('[role="dialog"]')) return
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)
         return
       switch (e.key) {
@@ -439,25 +441,27 @@ export default function BookReaderPage() {
 
         {/* end-of-book overlay */}
         {showEnd && (
-          <div
-            className="absolute inset-0 z-30 flex items-center justify-center bg-black/70"
-            onMouseDown={(e) => e.target === e.currentTarget && setShowEnd(false)}
+          <Dialog
+            labelledBy="book-end-title"
+            onClose={() => setShowEnd(false)}
+            overlayClassName="absolute inset-0 z-30 bg-black/70"
+            panelClassName="card max-w-sm p-8 text-center"
           >
-            <div className="card p-8 text-center max-w-sm">
-              <p className="text-lg font-semibold">Book finished</p>
-              <p className="mt-1 text-sm text-gray-400">{doc.title}</p>
-              <div className="mt-5 flex flex-col gap-2">
-                {nextChapter && (
-                  <button className="btn-primary" onClick={() => goToChapter(nextChapter)}>
-                    Next: {nextChapter.title} →
-                  </button>
-                )}
-                <button className="btn-ghost" onClick={exitToDetail}>
-                  Back to series
+            <h2 id="book-end-title" className="text-lg font-semibold">
+              Book finished
+            </h2>
+            <p className="mt-1 text-sm text-gray-400">{doc.title}</p>
+            <div className="mt-5 flex flex-col gap-2">
+              {nextChapter && (
+                <button className="btn-primary" onClick={() => goToChapter(nextChapter)}>
+                  Next: {nextChapter.title} →
                 </button>
-              </div>
+              )}
+              <button className="btn-ghost" onClick={exitToDetail}>
+                Back to series
+              </button>
             </div>
-          </div>
+          </Dialog>
         )}
 
         {/* bottom bar */}
@@ -537,7 +541,7 @@ export default function BookReaderPage() {
         <ReaderSettingsDrawer title="Typography" onClose={() => setSettingsOpen(false)}>
           <BookSettingsGroups prefs={prefs} setPref={setPref} />
           <div className="border-t border-base-700 pt-3">
-            <p className="text-[10px] leading-relaxed text-gray-600">
+            <p className="text-xs leading-relaxed text-gray-500">
               Settings apply to every book. Keyboard: ← → section, V vertical text, T contents,
               Esc closes.
             </p>

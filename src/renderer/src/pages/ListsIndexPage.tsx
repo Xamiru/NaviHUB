@@ -140,7 +140,7 @@ function CardFace({
     <Link to={to} className="card overflow-hidden group">
       <div className="grid grid-cols-4 aspect-[16/6] bg-base-700">
         {shown.length === 0 ? (
-          <div className="col-span-4 flex items-center justify-center text-xs uppercase tracking-widest text-gray-600">
+          <div className="col-span-4 flex items-center justify-center text-xs uppercase tracking-widest text-gray-500">
             {eyebrow}
           </div>
         ) : (

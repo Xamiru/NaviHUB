@@ -7,6 +7,7 @@ import { useDebouncedValue, useDialog } from '../lib/hooks'
 import { MEDIA_CONFIGS, configFor, pathForMedia } from '../lib/mediaConfig'
 import { GACHA_GAMES } from '@shared/gacha'
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
+import { Field } from './Field'
 
 interface PaletteItem {
   key: string
@@ -242,17 +243,19 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
         tabIndex={-1}
         className="card mt-24 w-full max-w-xl overflow-hidden p-0"
       >
-        <input
-          className="input rounded-none border-0 border-b border-base-700 px-4 py-3"
-          placeholder="Search your library, or jump to a section…"
-          value={query}
-          autoFocus
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setSel(0)
-          }}
-          onKeyDown={onKeyDown}
-        />
+        <Field label="Search commands and library" hiddenLabel className="contents">
+          <input
+            className="input rounded-none border-0 border-b border-base-700 px-4 py-3"
+            placeholder="Search your library, or jump to a section…"
+            value={query}
+            autoFocus
+            onChange={(e) => {
+              setQuery(e.target.value)
+              setSel(0)
+            }}
+            onKeyDown={onKeyDown}
+          />
+        </Field>
         <div ref={listRef} className="max-h-80 overflow-y-auto py-1">
           {items.length === 0 ? (
             <p className="px-4 py-3 text-sm text-gray-500">

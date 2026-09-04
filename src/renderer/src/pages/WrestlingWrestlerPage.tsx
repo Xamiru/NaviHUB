@@ -8,7 +8,7 @@ import { useIncrementalList } from '../lib/hooks'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import CoverImage from '../components/CoverImage'
 import Markdown from '../components/Markdown'
 import AddToListMenu from '../components/AddToListMenu'
@@ -25,7 +25,7 @@ type Tab = 'honours' | 'matches'
 function Fact({ label, value }: { label: string; value: string }): JSX.Element {
   return (
     <div>
-      <div className="text-xs uppercase tracking-wider text-gray-600">{label}</div>
+      <div className="text-xs uppercase tracking-wider text-gray-500">{label}</div>
       <div className="text-sm text-gray-200">{value}</div>
     </div>
   )
@@ -132,7 +132,7 @@ export default function WrestlingWrestlerPage(): JSX.Element {
           )}
           {w.championships.length > 0 && (
             <div>
-              <div className="text-xs uppercase tracking-wider text-gray-600">Titles won on a card</div>
+              <div className="text-xs uppercase tracking-wider text-gray-500">Titles won on a card</div>
               <ul className="mt-1 space-y-0.5 text-sm text-gray-300">
                 {w.championships.map((c) => (
                   <li key={c}>{c}</li>
@@ -150,6 +150,8 @@ export default function WrestlingWrestlerPage(): JSX.Element {
           )}
 
           <Tabs
+            id="wrestler-record"
+            label="Wrestler record view"
             className="mb-4"
             value={tab}
             onChange={setTab}
@@ -159,30 +161,32 @@ export default function WrestlingWrestlerPage(): JSX.Element {
             ]}
           />
 
-          {tab === 'honours' ? (
-            w.honours.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                No championships or accomplishments were found on this wrestler&apos;s article.
-              </p>
+          <TabPanel tabsId="wrestler-record" value={tab}>
+            {tab === 'honours' ? (
+              w.honours.length === 0 ? (
+                <p className="text-sm text-gray-500">
+                  No championships or accomplishments were found on this wrestler&apos;s article.
+                </p>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {w.honours.map((g) => (
+                    <div key={g.org} className="card p-4">
+                      <p className="mb-2 text-sm font-semibold">{g.org}</p>
+                      <ul className="space-y-1 text-sm text-gray-400">
+                        {g.items.map((it, i) => (
+                          <li key={i}>{it}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )
+            ) : !matches?.length ? (
+              <p className="text-sm text-gray-500">No matches recorded.</p>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {w.honours.map((g) => (
-                  <div key={g.org} className="card p-4">
-                    <p className="mb-2 text-sm font-semibold">{g.org}</p>
-                    <ul className="space-y-1 text-sm text-gray-400">
-                      {g.items.map((it, i) => (
-                        <li key={i}>{it}</li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-            )
-          ) : !matches?.length ? (
-            <p className="text-sm text-gray-500">No matches recorded.</p>
-          ) : (
-            <MatchList matches={matches} />
-          )}
+              <MatchList matches={matches} />
+            )}
+          </TabPanel>
         </div>
       </div>
     </EditorialDetailFrame>

@@ -95,7 +95,9 @@ export const qk = {
     media: (id: number) => ['tags', 'media', id] as const
   },
   settings: {
-    all: ['settings'] as const
+    all: ['settings'] as const,
+    values: ['settings', 'values'] as const,
+    secretStorage: ['settings', 'secretStorage'] as const
   },
   libraryExport: {
     all: ['libraryExport'] as const,

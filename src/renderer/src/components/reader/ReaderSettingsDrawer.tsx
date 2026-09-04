@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 
 // The reader settings panel, shared by the manga and book readers.
 //
@@ -20,20 +20,22 @@ export default function ReaderSettingsDrawer({
   onClose: () => void
   children: ReactNode
 }) {
+  const titleId = useId()
   return (
-    <div
+    <aside
       className="panel-in h-full w-[320px] shrink-0 overflow-y-auto border-l border-base-700 bg-base-900 p-4"
-      role="dialog"
-      aria-label={title}
+      aria-labelledby={titleId}
     >
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-widest text-gray-500">{title}</h2>
+        <h2 id={titleId} className="text-sm font-semibold uppercase tracking-widest text-gray-500">
+          {title}
+        </h2>
         <button className="text-gray-400 hover:text-white" aria-label="Close" onClick={onClose}>
           ✕
         </button>
       </div>
       <div className="space-y-4">{children}</div>
-    </div>
+    </aside>
   )
 }
 

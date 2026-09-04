@@ -23,7 +23,7 @@ const SOURCES: LogSource[] = ['app', 'db', 'http', 'task', 'proc', 'ipc', 'footb
 const LEVEL_ORDER: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 }
 
 const LEVEL_TAG: Record<LogLevel, { tag: string; cls: string }> = {
-  debug: { tag: 'DBG', cls: 'text-gray-600' },
+  debug: { tag: 'DBG', cls: 'text-gray-500' },
   info: { tag: 'INF', cls: 'text-gray-500' },
   warn: { tag: 'WRN', cls: 'text-amber-400' },
   error: { tag: 'ERR', cls: 'text-red-400' }
@@ -45,7 +45,7 @@ function LogLine({ row }: { row: LogEntry }) {
         row.level === 'error' ? 'bg-red-500/5' : ''
       }`}
     >
-      <span className="text-gray-600">{fmtTs(row.ts)}</span>
+      <span className="text-gray-500">{fmtTs(row.ts)}</span>
       <span className={`font-semibold ${lv.cls}`}>{lv.tag}</span>
       <span className="truncate text-gray-500" title={row.taskId ?? row.source}>
         {row.source}

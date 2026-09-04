@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import EmptyState from '../components/EmptyState'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -116,6 +116,8 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
 
       <section aria-label={`${cfg.name} workspace`}>
         <Tabs
+          id="gacha-workspace"
+          label={`${cfg.name} workspace view`}
           className="mb-5"
           value={tab}
           onChange={setTab}
@@ -123,10 +125,12 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
           actions={cfg.coach ? <CoachTab cfg={cfg} /> : undefined}
         />
 
-        {tab === 'roster' && <RosterTab cfg={cfg} />}
-        {tab === 'catalog' && cfg.catalog && <CatalogTab cfg={cfg} />}
-        {tab === 'banners' && <BannersTab cfg={cfg} />}
-        {tab === 'news' && <NewsTab cfg={cfg} />}
+        <TabPanel tabsId="gacha-workspace" value={tab}>
+          {tab === 'roster' && <RosterTab cfg={cfg} />}
+          {tab === 'catalog' && cfg.catalog && <CatalogTab cfg={cfg} />}
+          {tab === 'banners' && <BannersTab cfg={cfg} />}
+          {tab === 'news' && <NewsTab cfg={cfg} />}
+        </TabPanel>
       </section>
 
       {editingImage && (

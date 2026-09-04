@@ -6,6 +6,7 @@ import { useDialog } from '../lib/hooks'
 import { useActivity, activityText } from './ActivityIndicator'
 import type { MediaConfig } from '../lib/mediaConfig'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
+import { Field } from './Field'
 
 interface Props {
   cfg: MediaConfig
@@ -181,13 +182,15 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
           }}
           className="flex gap-2 mb-4"
         >
-          <input
-            className="input"
-            placeholder={source.placeholder}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            autoFocus
-          />
+          <Field label={`Search ${source.label}`} hiddenLabel className="contents">
+            <input
+              className="input"
+              placeholder={source.placeholder}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              autoFocus
+            />
+          </Field>
           <button className="btn-primary" type="submit">
             Search
           </button>

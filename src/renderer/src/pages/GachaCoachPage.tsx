@@ -3,7 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { useSettings } from '../lib/hooks'
+import { useSecretStorage, useSettings } from '../lib/hooks'
 import { toast, toastError } from '../lib/toast'
 import { gachaGame, type GachaGameCfg } from '@shared/gacha'
 import type { GachaChatAction, GachaChatMessage } from '@shared/types'
@@ -43,13 +43,14 @@ export default function GachaCoachPage() {
 function Coach({ cfg }: { cfg: GachaGameCfg }) {
   const qc = useQueryClient()
   const { data: settings } = useSettings()
+  const { data: secretStorage } = useSecretStorage()
   const provider = settings?.['coach.provider'] ?? 'gemini'
   const configured =
     provider === 'anthropic'
-      ? !!settings?.['anthropic.api_key']
+      ? !!secretStorage?.configured['anthropic.api_key']
       : provider === 'vertex'
         ? !!settings?.['vertex.project_id']
-        : !!settings?.['gemini.api_key']
+        : !!secretStorage?.configured['gemini.api_key']
 
   const { data: thread } = useQuery({
     queryKey: qk.gacha.coachThread(cfg.id),
@@ -312,9 +313,9 @@ function MessageBubble({ message, price }: { message: GachaChatMessage; price: n
       <div className="card p-3">
         <Markdown text={message.text} />
       </div>
-      <div className="mt-1 flex items-center gap-3 text-[11px] text-gray-600">
+      <div className="mt-1 flex items-center gap-3 text-xs text-gray-500">
         <button
-          className="opacity-0 transition-opacity group-hover:opacity-100 hover:text-gray-400"
+          className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100 hover:text-gray-400"
           onClick={() => navigator.clipboard.writeText(message.text)}
         >
           Copy

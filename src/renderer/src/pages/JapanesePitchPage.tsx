@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import QuizRecord from '../components/QuizRecord'
 import PitchAccent from '../components/japanese/PitchAccent'
 import { Group, Pill } from '../components/PillGroup'
@@ -40,6 +40,8 @@ export default function JapanesePitchPage() {
       />
 
       <Tabs
+        id="japanese-pitch"
+        label="Pitch accent activity"
         className="mb-5"
         value={tab}
         onChange={setTab}
@@ -50,13 +52,15 @@ export default function JapanesePitchPage() {
         ]}
       />
 
-      {tab === 'patterns' ? (
-        <PatternQuizSetup />
-      ) : tab === 'pairs' ? (
-        <MinimalPairsDrill />
-      ) : (
-        <SpeakDrill />
-      )}
+      <TabPanel tabsId="japanese-pitch" value={tab}>
+        {tab === 'patterns' ? (
+          <PatternQuizSetup />
+        ) : tab === 'pairs' ? (
+          <MinimalPairsDrill />
+        ) : (
+          <SpeakDrill />
+        )}
+      </TabPanel>
     </div>
   )
 }

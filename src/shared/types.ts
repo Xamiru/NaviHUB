@@ -1472,6 +1472,14 @@ export interface CharacterAppearance {
 
 export type SettingsMap = Record<string, string>
 
+export interface SecretStorageState {
+  available: boolean
+  backend: string
+  protection: 'secure' | 'weak' | 'unavailable'
+  configured: Record<string, boolean>
+  unreadable: string[]
+}
+
 // ---- External import (AniList for anime, TMDB for movies) ----
 // One result shape covers both sources. For movies, `native` is the original
 // title, `format` is e.g. "Movie", and `episodes` is left null.
@@ -2895,6 +2903,7 @@ export interface MusicSpotifyPlaylistEntry {
   allowUnverified: boolean
   downloadError: string | null
   matchedTrack: MusicTrack | null
+  localAlternatives: MusicTrack[]
 }
 
 export type MusicPlaylistItem = MusicPlaylistEntry | MusicSpotifyPlaylistEntry
@@ -2931,6 +2940,11 @@ export interface SpotifyImportResult {
 export interface SpotifyDownloadInput {
   playlistId: number
   itemIds?: number[]
+}
+
+export interface SpotifyPlaylistLocalMatchInput {
+  itemId: number
+  trackId: number
 }
 
 export type SpotifyEntityKind = 'artist' | 'album'

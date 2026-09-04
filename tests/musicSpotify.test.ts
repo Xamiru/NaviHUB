@@ -43,8 +43,11 @@ import {
   validateSpotdlPayload
 } from '../src/main/musicSpotify'
 import {
+  compatibleSpotifyDurationTolerance,
+  matchSpotifyPlaylistSong,
   matchSpotifySong,
   normalizeSpotifyMatch,
+  spotifyPlaylistMatchAlternatives,
   type LocalMatchCandidate,
   type SpotdlSong
 } from '../src/main/repos/musicSpotifyRepo'
@@ -206,6 +209,25 @@ describe('Spotify playlist import core', () => {
     expect(result.skipped).toBe(3)
   })
 
+  it('restores playlist source order after parallel spotDL metadata workers finish', () => {
+    const row = (id: string, position: number) => ({
+      song_id: id,
+      name: `Song ${position}`,
+      artists: ['Artist'],
+      album_name: 'Album',
+      duration: 180,
+      url: `https://open.spotify.com/track/${id}`,
+      list_name: 'Ordered list',
+      list_position: position
+    })
+    const result = validateSpotdlPayload([
+      row('track-three', 3),
+      row('track-one', 1),
+      row('track-two', 2)
+    ])
+    expect(result.songs.map((song) => song.title)).toEqual(['Song 1', 'Song 2', 'Song 3'])
+  })
+
   it('normalizes punctuation without erasing version words', () => {
     expect(normalizeSpotifyMatch('Ａ Song: Live (2024 Remaster)')).toBe(
       'a song live 2024 remaster'
@@ -266,6 +288,55 @@ describe('Spotify playlist import core', () => {
         candidates
       )
     ).toBeNull()
+  })
+
+  it('reuses the original-album recording for a greatest-hits playlist row without merging live', () => {
+    const candidates: LocalMatchCandidate[] = [
+      {
+        id: 1,
+        title: 'All My Life',
+        folderArtist: 'Foo Fighters',
+        tagArtist: null,
+        albumTitle: 'One by One',
+        duration: 268
+      },
+      {
+        id: 2,
+        title: 'All My Life',
+        folderArtist: 'Foo Fighters',
+        tagArtist: null,
+        albumTitle: 'Live at Wembley',
+        duration: 265
+      }
+    ]
+    const source = {
+      title: 'All My Life',
+      primaryArtist: 'Foo Fighters',
+      albumTitle: 'Greatest Hits',
+      duration: 263
+    }
+    expect(compatibleSpotifyDurationTolerance(263)).toBeCloseTo(7.89)
+    // The entity-level matcher intentionally remains unchanged; the playlist
+    // wrapper adds the release-variant protection before invoking it.
+    expect(matchSpotifySong(source, candidates)).toBe(2)
+    expect(matchSpotifyPlaylistSong(source, candidates)).toBe(1)
+    expect(spotifyPlaylistMatchAlternatives(source, candidates).map((track) => track.id)).toEqual([1])
+  })
+
+  it('leaves multiple compatible release recordings for explicit local selection', () => {
+    const candidates: LocalMatchCandidate[] = ['Album (Deluxe)', 'Greatest Hits'].map(
+      (albumTitle, index) => ({
+        id: index + 1,
+        title: 'Song',
+        folderArtist: 'Artist',
+        tagArtist: null,
+        albumTitle,
+        duration: 205 + index
+      })
+    )
+    const source = { title: 'Song', primaryArtist: 'Artist', albumTitle: 'Album', duration: 200 }
+    expect(matchSpotifyPlaylistSong(source, candidates)).toBeNull()
+    expect(spotifyPlaylistMatchAlternatives(source, candidates).map((track) => track.id)).toEqual([1, 2])
   })
 
   it('builds fixed safe spotDL arguments and a nested album layout', () => {

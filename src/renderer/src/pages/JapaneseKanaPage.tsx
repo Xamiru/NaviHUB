@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -259,6 +259,8 @@ export default function JapaneseKanaPage() {
       />
 
       <Tabs
+        id="japanese-typing"
+        label="Typing drill"
         className="mb-5"
         value={tab}
         onChange={setTab}
@@ -272,19 +274,21 @@ export default function JapaneseKanaPage() {
         ]}
       />
 
-      {tab === 'kana' ? (
-        <KanaDrillSetup />
-      ) : tab === 'kanji' ? (
-        <KanjiDrillSetup />
-      ) : tab === 'conjugation' ? (
-        <DojoSetup />
-      ) : tab === 'numbers' ? (
-        <NumbersDrillSetup />
-      ) : tab === 'names' ? (
-        <NamesDrillSetup />
-      ) : (
-        <KeigoDrillSetup />
-      )}
+      <TabPanel tabsId="japanese-typing" value={tab}>
+        {tab === 'kana' ? (
+          <KanaDrillSetup />
+        ) : tab === 'kanji' ? (
+          <KanjiDrillSetup />
+        ) : tab === 'conjugation' ? (
+          <DojoSetup />
+        ) : tab === 'numbers' ? (
+          <NumbersDrillSetup />
+        ) : tab === 'names' ? (
+          <NamesDrillSetup />
+        ) : (
+          <KeigoDrillSetup />
+        )}
+      </TabPanel>
     </div>
   )
 }

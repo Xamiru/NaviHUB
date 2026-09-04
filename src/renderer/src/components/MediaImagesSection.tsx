@@ -11,6 +11,7 @@ import ImageBrowseDialog from './ImageBrowseDialog'
 import ContextMenu from './ContextMenu'
 import type { ImageKind, MediaDetail, MediaImage } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import { Field } from './Field'
 
 // One gallery section powers both "Wallpapers" and "Fan Art" (kind prop).
 // Images come from its own query (not MediaDetail) so add/remove only refetch
@@ -197,17 +198,19 @@ export default function MediaImagesSection({
         )}
         {urlOpen && (
           <div className="flex items-center gap-2">
-            <input
-              className="input w-72"
-              placeholder="https://… image link"
-              value={url}
-              autoFocus
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') void addUrl()
-                if (e.key === 'Escape') setUrlOpen(false)
-              }}
-            />
+            <Field label="Image URL" hiddenLabel className="contents">
+              <input
+                className="input w-72"
+                placeholder="https://… image link"
+                value={url}
+                autoFocus
+                onChange={(e) => setUrl(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') void addUrl()
+                  if (e.key === 'Escape') setUrlOpen(false)
+                }}
+              />
+            </Field>
             <button className="btn-primary" onClick={addUrl} disabled={busy || !url.trim()}>
               Add
             </button>

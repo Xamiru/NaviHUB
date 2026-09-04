@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useDialog, useSettings } from '../lib/hooks'
+import { useDialog, useSecretStorage, useSettings } from '../lib/hooks'
 import { useTorrentSearch } from '../lib/useTorrentSearch'
 import TorrentResultsPanel from './TorrentResultsPanel'
+import { Field } from './Field'
 
 interface Props {
   heading: string // dialog title line, e.g. the media/artist name
@@ -22,7 +23,9 @@ export default function TorrentSearchDialog({
 }: Props): React.JSX.Element {
   const panelRef = useDialog(onClose)
   const { data: settings } = useSettings()
-  const configured = !!settings?.['jackett.url']?.trim() && !!settings?.['jackett.api_key']?.trim()
+  const { data: secretStorage } = useSecretStorage()
+  const configured =
+    !!settings?.['jackett.url']?.trim() && !!secretStorage?.configured['jackett.api_key']
 
   const [allCats, setAllCats] = useState(false)
   const cats = allCats || categories.length === 0 ? [] : categories
@@ -81,13 +84,15 @@ export default function TorrentSearchDialog({
               }}
               className="flex gap-2 mb-3"
             >
-              <input
-                className="input"
-                placeholder="Search your Jackett indexers…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                autoFocus
-              />
+              <Field label="Torrent search" hiddenLabel className="contents">
+                <input
+                  className="input"
+                  placeholder="Search your Jackett indexers…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  autoFocus
+                />
+              </Field>
               <button className="btn-primary" type="submit" disabled={!query.trim()}>
                 Search
               </button>

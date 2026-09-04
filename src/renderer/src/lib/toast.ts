@@ -17,9 +17,17 @@ export interface Toast {
 
 const DISMISS_MS = 6000
 
+interface ToastTimer {
+  handle: ReturnType<typeof setTimeout>
+  remaining: number
+  startedAt: number
+  paused: boolean
+}
+
 let nextId = 1
 let toasts: Toast[] = []
 const listeners = new Set<() => void>()
+const timers = new Map<number, ToastTimer>()
 
 function emit(): void {
   for (const l of listeners) l()
@@ -35,8 +43,34 @@ export function getToasts(): Toast[] {
 }
 
 export function dismissToast(id: number): void {
+  const timer = timers.get(id)
+  if (timer) clearTimeout(timer.handle)
+  timers.delete(id)
   toasts = toasts.filter((t) => t.id !== id)
   emit()
+}
+
+function scheduleDismiss(id: number, remaining = DISMISS_MS): void {
+  const startedAt = Date.now()
+  const handle = setTimeout(() => dismissToast(id), remaining)
+  timers.set(id, { handle, remaining, startedAt, paused: false })
+}
+
+export function pauseToast(id: number): void {
+  const timer = timers.get(id)
+  if (!timer || timer.paused) return
+  clearTimeout(timer.handle)
+  timers.set(id, {
+    ...timer,
+    remaining: Math.max(0, timer.remaining - (Date.now() - timer.startedAt)),
+    paused: true
+  })
+}
+
+export function resumeToast(id: number): void {
+  const timer = timers.get(id)
+  if (!timer || !timer.paused || !toasts.some((item) => item.id === id)) return
+  scheduleDismiss(id, timer.remaining)
 }
 
 export function toast(
@@ -53,7 +87,7 @@ export function toast(
   const id = nextId++
   toasts = [...toasts, { id, message, kind, action }]
   emit()
-  setTimeout(() => dismissToast(id), DISMISS_MS)
+  scheduleDismiss(id)
 }
 
 // An achievement unlock, shown with its art. Never deduped by message the way
@@ -62,7 +96,7 @@ export function toastUnlock(message: string, sub: string | null, iconUrl: string
   const id = nextId++
   toasts = [...toasts, { id, message, kind: 'unlock', sub, iconUrl }]
   emit()
-  setTimeout(() => dismissToast(id), DISMISS_MS)
+  scheduleDismiss(id)
 }
 
 // Electron wraps errors thrown by ipcMain.handle as

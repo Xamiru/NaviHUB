@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -56,6 +56,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
     stop
   } = usePlayer()
   const [queueOpen, setQueueOpen] = useState(false)
+  const queueTriggerRef = useRef<HTMLButtonElement>(null)
   // The study/quiz sections bind these keys themselves, so only promise them
   // where PlayerShortcuts is actually listening.
   const { pathname } = useLocation()
@@ -213,6 +214,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           )}
         </button>
         <button
+          ref={queueTriggerRef}
           onClick={() => setQueueOpen((v) => !v)}
           className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${
             queueOpen
@@ -221,6 +223,8 @@ export default function NowPlayingBar(): React.JSX.Element | null {
           }`}
           title="Queue"
           aria-label="Queue"
+          aria-expanded={queueOpen}
+          aria-controls={queueOpen ? 'playback-queue-panel' : undefined}
         >
           <QueueIcon className="h-4 w-4" />
         </button>
@@ -267,7 +271,9 @@ export default function NowPlayingBar(): React.JSX.Element | null {
         </button>
       </div>
 
-      {queueOpen && <QueuePanel onClose={() => setQueueOpen(false)} />}
+      {queueOpen && (
+        <QueuePanel triggerRef={queueTriggerRef} onClose={() => setQueueOpen(false)} />
+      )}
     </div>
   )
 }

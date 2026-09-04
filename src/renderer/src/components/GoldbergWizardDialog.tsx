@@ -43,12 +43,15 @@ export default function GoldbergWizardDialog({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="goldberg-setup-title"
         tabIndex={-1}
         className="card w-full max-w-2xl p-6 mt-10"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-medium">Set up Goldberg for this game</h2>
+            <h2 id="goldberg-setup-title" className="text-lg font-medium">
+              Set up Goldberg for this game
+            </h2>
             <p className="mt-1 text-sm text-gray-500">
               Some cracks stub achievements out entirely, so nothing is ever written to disk for
               NaviHUB to read. Swapping in the Goldberg emulator fixes that.

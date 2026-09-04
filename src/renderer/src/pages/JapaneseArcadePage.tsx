@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import QuizRecord from '../components/QuizRecord'
 import { Group, Pill } from '../components/PillGroup'
 import ArcadeShell, { type RaceItem, type RaceSpec } from '../components/japanese/ArcadeShell'
@@ -59,10 +59,19 @@ export default function JapaneseArcadePage() {
         title="Arcade"
         subtitle="Sixty-second races. The record is how many you get right in the minute — accuracy is not the score."
       />
-      <Tabs tabs={TABS} value={tab} onChange={setTab} className="mb-5" />
-      {tab === 'kana' && <KanaRace />}
-      {tab === 'reading' && <ReadingRace />}
-      {tab === 'conj' && <ConjRace />}
+      <Tabs
+        id="japanese-arcade"
+        label="Arcade game"
+        tabs={TABS}
+        value={tab}
+        onChange={setTab}
+        className="mb-5"
+      />
+      <TabPanel tabsId="japanese-arcade" value={tab}>
+        {tab === 'kana' && <KanaRace />}
+        {tab === 'reading' && <ReadingRace />}
+        {tab === 'conj' && <ConjRace />}
+      </TabPanel>
     </div>
   )
 }

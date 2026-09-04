@@ -9,6 +9,8 @@ import * as characterRepo from './repos/characterRepo'
 import * as linkRepo from './repos/linkRepo'
 import * as tagRepo from './repos/tagRepo'
 import * as settingsRepo from './repos/settingsRepo'
+import * as secretStorage from './secretStorage'
+import { isSecretSettingKey } from '@shared/secretSettings'
 import * as searchRepo from './repos/searchRepo'
 import * as quizRepo from './repos/quizRepo'
 import * as themeRepo from './repos/themeRepo'
@@ -828,6 +830,9 @@ export function registerIpc(): void {
   ipcMain.handle('music:spotifySetTrackDownloadOptions', (_e, input) =>
     musicSpotify.setTrackDownloadOptions(input)
   )
+  ipcMain.handle('music:spotifyMatchPlaylistItem', (_e, input) =>
+    musicSpotifyRepo.matchPlaylistItemToLocalTrack(input)
+  )
   ipcMain.handle('music:spotifyForgetEntitySource', (_e, input) =>
     musicSpotify.forgetEntitySource(input)
   )
@@ -1070,8 +1075,11 @@ export function registerIpc(): void {
   })
 
   // ---- settings ----
-  ipcMain.handle('settings:all', () => settingsRepo.all())
-  ipcMain.handle('settings:set', (_e, key, value) => settingsRepo.set(key, value))
+  ipcMain.handle('settings:all', () => secretStorage.settingsForRenderer())
+  ipcMain.handle('settings:secretStorage', () => secretStorage.secretStorageState())
+  ipcMain.handle('settings:set', (_e, key: string, value: string) =>
+    isSecretSettingKey(key) ? secretStorage.setSecret(key, value) : settingsRepo.set(key, value)
+  )
 
   // ---- files ----
   ipcMain.handle('files:pickImage', () => files.pickImage())

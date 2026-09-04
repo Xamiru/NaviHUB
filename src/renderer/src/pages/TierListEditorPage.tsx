@@ -183,11 +183,14 @@ function EditRowsDialog({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="tier-editor-title"
         tabIndex={-1}
         className="card w-full max-w-lg p-5 outline-none"
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Edit tiers</h2>
+          <h2 id="tier-editor-title" className="text-lg font-semibold">
+            Edit tiers
+          </h2>
           <button className="text-gray-500 hover:text-white" onClick={onClose} aria-label="Close">
             ✕
           </button>

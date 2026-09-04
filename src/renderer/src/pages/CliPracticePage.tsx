@@ -252,7 +252,7 @@ function Drill({
       rail={<SessionEvidence title="Terminal evidence"><p>{correct} correct across {answered} answers.</p><p className="mt-2">Current streak {streak}; best streak {bestStreak}.</p><p className="mt-2">{missed.size} commands need another pass.</p></SessionEvidence>}
     >
 
-      <p className="text-center text-xs uppercase tracking-widest text-gray-600">
+      <p className="text-center text-xs uppercase tracking-widest text-gray-500">
         {current?.sheetTitle}
       </p>
       <p className="mt-2 text-center text-xl leading-snug">{current?.desc}</p>
@@ -287,7 +287,7 @@ function Drill({
             <span className="ml-2 text-xs text-gray-500">Enter to skip</span>
           </span>
         ) : (
-          <span className="text-xs text-gray-600">Enter reveals the answer</span>
+          <span className="text-xs text-gray-500">Enter reveals the answer</span>
         )}
       </p>
     </StudySessionFrame>

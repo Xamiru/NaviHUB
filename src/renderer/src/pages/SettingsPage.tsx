@@ -1,10 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import PageHeader from '../components/PageHeader'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
-import { useSettings } from '../lib/hooks'
+import { useSecretStorage, useSettings } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { qk } from '../lib/queryKeys'
 import { toast } from '../lib/toast'
@@ -25,12 +25,14 @@ import {
 } from '@shared/uiScale'
 import type {
   TorrentServiceTestResult,
+  SecretStorageState,
   UpdateTestResult,
   VideoToolsResult,
   YtDlpDetectResult,
   SpotdlDetectResult,
   MokuroDetectResult
 } from '@shared/types'
+import { isSecretSettingKey, type SecretSettingKey } from '@shared/secretSettings'
 import StartJackettButton from '../components/StartJackettButton'
 import { useUpdateStatus } from '../lib/useUpdateStatus'
 import { confirmDialog } from '../lib/confirm'
@@ -48,6 +50,8 @@ import {
 } from '../lib/signalClarity'
 import { APP_THEME_OPTIONS, APP_THEME_SETTING, type AppTheme } from '@shared/appTheme'
 import { persistAppTheme, resolveAppTheme, stampAppTheme } from '../lib/theme'
+import { Field } from '../components/Field'
+import { SecretInput, SecretStateLine } from '../components/SecretField'
 
 // Persist a setting and refresh the settings cache. Passed down to every
 // section so they all save the same way.
@@ -142,6 +146,7 @@ const SETTINGS_SEARCH: readonly SettingsSearchSection<TabId>[] = [
 
 export default function SettingsPage() {
   const { data } = useSettings()
+  const { data: secretStorage } = useSecretStorage()
   const qc = useQueryClient()
   // ?tab= deep-links a section (the Japanese hub's Set up list uses
   // ?tab=japanese); one-shot seed of history-scoped state, the MediaDetailPage
@@ -190,6 +195,8 @@ export default function SettingsPage() {
             </label>
             <div className="mt-4 border-t border-base-700 pt-4">
               <Tabs
+                id="settings-sections"
+                label="Settings section"
                 orientation="vertical"
                 tabs={matches.map((section) => ({ key: section.key, label: section.title }))}
                 value={displayTab ?? tab}
@@ -224,48 +231,56 @@ export default function SettingsPage() {
               }
             />
           ) : null}
-          {displayTab === 'general' && (
-            <>
-              <ThemeSettings data={data} onSave={setKey} />
-              {resolveAppTheme(data?.[APP_THEME_SETTING]) === 'lain' && (
-                <SignalClaritySettings data={data} onSave={setKey} />
+          {displayTab != null && (
+            <TabPanel tabsId="settings-sections" value={displayTab}>
+              {displayTab === 'general' && (
+                <>
+                  <ThemeSettings data={data} onSave={setKey} />
+                  {resolveAppTheme(data?.[APP_THEME_SETTING]) === 'lain' && (
+                    <SignalClaritySettings data={data} onSave={setKey} />
+                  )}
+                  <UiScaleSettings data={data} onSave={setKey} />
+                  <MenuBarSettings data={data} onSave={setKey} />
+                  <SidebarSettings data={data} onSave={setKey} />
+                  <ScoreSettings data={data} onSave={setKey} />
+                  <TimeStatsSettings data={data} onSave={setKey} />
+                </>
               )}
-              <UiScaleSettings data={data} onSave={setKey} />
-              <MenuBarSettings data={data} onSave={setKey} />
-              <SidebarSettings data={data} onSave={setKey} />
-              <ScoreSettings data={data} onSave={setKey} />
-              <TimeStatsSettings data={data} onSave={setKey} />
-            </>
+              {displayTab === 'statuses' &&
+                MEDIA_CONFIGS.map((cfg) => (
+                  <StatusEditor key={cfg.key} cfg={cfg} data={data} onSave={setKey} />
+                ))}
+              {displayTab === 'data' && (
+                <>
+                  <LibraryExportSettings />
+                  <ApiKeysSettings data={data} secretStorage={secretStorage} onSave={setKey} />
+                  <FoldersSettings data={data} onSave={setKey} />
+                </>
+              )}
+              {displayTab === 'japanese' && (
+                <>
+                  <KnownBaselineSettings data={data} onSave={setKey} />
+                  <DictionarySettings />
+                  <EnglishDictionarySettings />
+                </>
+              )}
+              {displayTab === 'ai' && (
+                <CoachSettings data={data} secretStorage={secretStorage} onSave={setKey} />
+              )}
+              {displayTab === 'integrations' && (
+                <>
+                  <YtdlpSettings data={data} onSave={setKey} />
+                  <SpotdlSettings data={data} onSave={setKey} />
+                  <VideoSubtitleToolsSettings data={data} onSave={setKey} />
+                  <MokuroSettings data={data} onSave={setKey} />
+                  <TorrentSettings data={data} secretStorage={secretStorage} onSave={setKey} />
+                </>
+              )}
+              {displayTab === 'system' && (
+                <UpdateSettings data={data} secretStorage={secretStorage} onSave={setKey} />
+              )}
+            </TabPanel>
           )}
-          {displayTab === 'statuses' &&
-            MEDIA_CONFIGS.map((cfg) => (
-              <StatusEditor key={cfg.key} cfg={cfg} data={data} onSave={setKey} />
-            ))}
-          {displayTab === 'data' && (
-            <>
-              <LibraryExportSettings />
-              <ApiKeysSettings data={data} onSave={setKey} />
-              <FoldersSettings data={data} onSave={setKey} />
-            </>
-          )}
-          {displayTab === 'japanese' && (
-            <>
-              <KnownBaselineSettings data={data} onSave={setKey} />
-              <DictionarySettings />
-              <EnglishDictionarySettings />
-            </>
-          )}
-          {displayTab === 'ai' && <CoachSettings data={data} onSave={setKey} />}
-          {displayTab === 'integrations' && (
-            <>
-              <YtdlpSettings data={data} onSave={setKey} />
-              <SpotdlSettings data={data} onSave={setKey} />
-              <VideoSubtitleToolsSettings data={data} onSave={setKey} />
-              <MokuroSettings data={data} onSave={setKey} />
-              <TorrentSettings data={data} onSave={setKey} />
-            </>
-          )}
-          {displayTab === 'system' && <UpdateSettings data={data} onSave={setKey} />}
         </div>
       </div>
     </div>
@@ -299,6 +314,7 @@ function TextSetting({
   title,
   description,
   type = 'text',
+  secretStorage,
   placeholder,
   note,
   actions
@@ -309,28 +325,58 @@ function TextSetting({
   title: string
   description: ReactNode
   type?: 'text' | 'password'
+  secretStorage?: SecretStorageState
   placeholder?: string
   note?: ReactNode
   // Extra control(s) beside Save — e.g. "Open folder" for a directory setting.
   actions?: ReactNode
 }) {
   const [value, setValue] = useState('')
-  useEffect(() => setValue(data?.[settingKey] ?? ''), [data, settingKey])
+  const secret = type === 'password' && isSecretSettingKey(settingKey)
+  const secretKey = secret ? (settingKey as SecretSettingKey) : null
+  const configured = secretKey ? !!secretStorage?.configured[secretKey] : false
+  useEffect(() => setValue(secret ? '' : (data?.[settingKey] ?? '')), [data, settingKey, secret])
+
+  async function save(): Promise<void> {
+    if (secret && !value.trim()) return
+    await onSave(settingKey, value.trim())
+    if (secret) setValue('')
+  }
+
+  async function clear(): Promise<void> {
+    if (!secret) return
+    if (!(await confirmDialog(`Clear the saved ${title}?`, { confirmLabel: 'Clear', danger: true }))) return
+    await onSave(settingKey, '')
+    setValue('')
+  }
+
   return (
     <SettingCard title={title} description={description}>
       <div className="grid items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-        <input
-          className="input"
-          type={type}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          placeholder={placeholder}
-        />
-        <button className="btn-ghost shrink-0" onClick={() => onSave(settingKey, value.trim())}>
+        <Field label={title} hiddenLabel className="contents">
+          <input
+            className="input"
+            type={type}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={placeholder}
+          />
+        </Field>
+        <button
+          className="btn-ghost shrink-0"
+          disabled={secret && (!value.trim() || !secretStorage?.available)}
+          onClick={save}
+        >
           Save
         </button>
+        {secret && configured && (
+          <button className="btn-ghost shrink-0" onClick={clear}>
+            Clear
+          </button>
+        )}
         {actions}
       </div>
+      {secretKey && <SecretStateLine settingKey={secretKey} state={secretStorage} />}
       {note && <p className="mt-1 text-xs text-gray-500">{note}</p>}
     </SettingCard>
   )
@@ -611,13 +657,15 @@ function ScoreSettings({ data, onSave }: { data?: Record<string, string>; onSave
   return (
     <SettingCard title="Score scale" description="Maximum score value (e.g. 10 or 100).">
       <div className="flex items-center gap-2">
-        <input
-          className="input max-w-[120px]"
-          type="number"
-          min={1}
-          value={scoreMax}
-          onChange={(e) => setScoreMax(e.target.value)}
-        />
+        <Field label="Maximum score" hiddenLabel className="contents">
+          <input
+            className="input max-w-[120px]"
+            type="number"
+            min={1}
+            value={scoreMax}
+            onChange={(e) => setScoreMax(e.target.value)}
+          />
+        </Field>
         <button
           className="btn-ghost"
           onClick={() => onSave('score.max', String(Math.max(1, Number(scoreMax) || 10)))}
@@ -716,7 +764,15 @@ function TimeStatsSettings({ data, onSave }: { data?: Record<string, string>; on
 
 // ---- Import API keys --------------------------------------------------------
 
-function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+function ApiKeysSettings({
+  data,
+  secretStorage,
+  onSave
+}: {
+  data?: Record<string, string>
+  secretStorage?: SecretStorageState
+  onSave: SaveFn
+}) {
   return (
     <>
       <TextSetting
@@ -725,6 +781,7 @@ function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSa
         onSave={onSave}
         title="TMDB API key"
         type="password"
+        secretStorage={secretStorage}
         placeholder="Paste your TMDB API key…"
         description={
           <>
@@ -740,6 +797,7 @@ function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSa
         onSave={onSave}
         title="OMDb API key"
         type="password"
+        secretStorage={secretStorage}
         placeholder="Paste your OMDb API key…"
         description={
           <>
@@ -755,6 +813,7 @@ function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSa
         onSave={onSave}
         title="API-Football key"
         type="password"
+        secretStorage={secretStorage}
         placeholder="Paste your API-Football key…"
         description="Optional. Enables manual current-season refreshes for Football. The key is sent only in API-Football's authorization header and stays on this machine. History installation uses keyless bulk datasets."
       />
@@ -769,6 +828,7 @@ function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSa
         onSave={onSave}
         title="Steam Web API key"
         type="password"
+        secretStorage={secretStorage}
         placeholder="Paste your Steam Web API key…"
         description={
           <>
@@ -797,6 +857,7 @@ function ApiKeysSettings({ data, onSave }: { data?: Record<string, string>; onSa
         onSave={onSave}
         title="RetroAchievements Web API key"
         type="password"
+        secretStorage={secretStorage}
         placeholder="Paste your RA Web API key…"
         description={
           <>
@@ -908,7 +969,15 @@ function FoldersSettings({ data, onSave }: { data?: Record<string, string>; onSa
 
 // ---- AI Coach ---------------------------------------------------------------
 
-function CoachSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+function CoachSettings({
+  data,
+  secretStorage,
+  onSave
+}: {
+  data?: Record<string, string>
+  secretStorage?: SecretStorageState
+  onSave: SaveFn
+}) {
   const [coachProvider, setCoachProvider] = useState('gemini')
   const [coachModel, setCoachModel] = useState('gemini-2.5-flash')
   const [geminiKey, setGeminiKey] = useState('')
@@ -921,8 +990,8 @@ function CoachSettings({ data, onSave }: { data?: Record<string, string>; onSave
     if (!data) return
     setCoachProvider(data['coach.provider'] ?? 'gemini')
     setCoachModel(data['coach.model'] ?? 'gemini-2.5-flash')
-    setGeminiKey(data['gemini.api_key'] ?? '')
-    setAnthropicKey(data['anthropic.api_key'] ?? '')
+    setGeminiKey('')
+    setAnthropicKey('')
     setVertexProject(data['vertex.project_id'] ?? '')
     setVertexRegion(data['vertex.region'] ?? '')
     setVertexCreds(data['vertex.credentials_path'] ?? '')
@@ -940,9 +1009,10 @@ function CoachSettings({ data, onSave }: { data?: Record<string, string>; onSave
         </>
       }
     >
-      <label className="label">Provider</label>
+      <label className="label" htmlFor="coach-provider">Provider</label>
       <div className="mb-4 flex items-center gap-2">
         <select
+          id="coach-provider"
           className="input"
           value={coachProvider}
           onChange={(e) => {
@@ -962,9 +1032,9 @@ function CoachSettings({ data, onSave }: { data?: Record<string, string>; onSave
         </button>
       </div>
 
-      <label className="label">Model</label>
+      <label className="label" htmlFor="coach-model">Model</label>
       <div className="mb-4 flex items-center gap-2">
-        <select className="input" value={coachModel} onChange={(e) => setCoachModel(e.target.value)}>
+        <select id="coach-model" className="input" value={coachModel} onChange={(e) => setCoachModel(e.target.value)}>
           {coachProvider === 'gemini' ? (
             <>
               <option value="gemini-2.5-flash">Gemini 2.5 Flash (free, recommended)</option>
@@ -985,34 +1055,29 @@ function CoachSettings({ data, onSave }: { data?: Record<string, string>; onSave
       </div>
 
       {coachProvider === 'gemini' ? (
-        <div>
-          <label className="label">Gemini API key</label>
-          <div className="flex items-center gap-2">
-            <input
-              className="input"
-              type="password"
-              value={geminiKey}
-              onChange={(e) => setGeminiKey(e.target.value)}
-              placeholder="AIza…"
-            />
-            <button
-              className="btn-ghost shrink-0"
-              onClick={() => onSave('gemini.api_key', geminiKey.trim())}
-            >
-              Save
-            </button>
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            Free at <span className="text-gray-400">aistudio.google.com</span> → “Get API key”. No
-            credit card; rate-limited but $0.
-          </p>
-        </div>
+        <SecretInput
+          id="gemini-api-key"
+          label="Gemini API key"
+          settingKey="gemini.api_key"
+          value={geminiKey}
+          onChange={setGeminiKey}
+          onSave={onSave}
+          state={secretStorage}
+          placeholder="AIza…"
+          note={
+            <p className="mt-1 text-xs text-gray-500">
+              Free at <span className="text-gray-400">aistudio.google.com</span> → “Get API key”.
+              No credit card; rate-limited but $0.
+            </p>
+          }
+        />
       ) : coachProvider === 'vertex' ? (
         <div className="space-y-3">
           <div>
-            <label className="label">Google Cloud project id</label>
+            <label className="label" htmlFor="vertex-project">Google Cloud project id</label>
             <div className="flex items-center gap-2">
               <input
+                id="vertex-project"
                 className="input"
                 type="text"
                 value={vertexProject}
@@ -1028,9 +1093,10 @@ function CoachSettings({ data, onSave }: { data?: Record<string, string>; onSave
             </div>
           </div>
           <div>
-            <label className="label">Region (optional, defaults to global)</label>
+            <label className="label" htmlFor="vertex-region">Region (optional, defaults to global)</label>
             <div className="flex items-center gap-2">
               <input
+                id="vertex-region"
                 className="input"
                 type="text"
                 value={vertexRegion}
@@ -1046,9 +1112,10 @@ function CoachSettings({ data, onSave }: { data?: Record<string, string>; onSave
             </div>
           </div>
           <div>
-            <label className="label">Service-account key file (optional)</label>
+            <label className="label" htmlFor="vertex-credentials">Service-account key file (optional)</label>
             <div className="flex items-center gap-2">
               <input
+                id="vertex-credentials"
                 className="input"
                 type="text"
                 value={vertexCreds}
@@ -1070,28 +1137,22 @@ function CoachSettings({ data, onSave }: { data?: Record<string, string>; onSave
           </div>
         </div>
       ) : (
-        <div>
-          <label className="label">Anthropic API key</label>
-          <div className="flex items-center gap-2">
-            <input
-              className="input"
-              type="password"
-              value={anthropicKey}
-              onChange={(e) => setAnthropicKey(e.target.value)}
-              placeholder="sk-ant-…"
-            />
-            <button
-              className="btn-ghost shrink-0"
-              onClick={() => onSave('anthropic.api_key', anthropicKey.trim())}
-            >
-              Save
-            </button>
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            Get one at <span className="text-gray-400">platform.claude.com</span> (needs prepaid
-            credit — separate from a Claude.ai subscription).
-          </p>
-        </div>
+        <SecretInput
+          id="anthropic-api-key"
+          label="Anthropic API key"
+          settingKey="anthropic.api_key"
+          value={anthropicKey}
+          onChange={setAnthropicKey}
+          onSave={onSave}
+          state={secretStorage}
+          placeholder="sk-ant-…"
+          note={
+            <p className="mt-1 text-xs text-gray-500">
+              Get one at <span className="text-gray-400">platform.claude.com</span> (needs prepaid
+              credit — separate from a Claude.ai subscription).
+            </p>
+          }
+        />
       )}
     </SettingCard>
   )
@@ -1123,13 +1184,15 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
       }
     >
       <div className="flex items-center gap-2">
-        <input
-          className="input"
-          type="text"
-          value={ytdlpPath}
-          onChange={(e) => setYtdlpPath(e.target.value)}
-          placeholder="yt-dlp"
-        />
+        <Field label="yt-dlp executable path" hiddenLabel className="contents">
+          <input
+            className="input"
+            type="text"
+            value={ytdlpPath}
+            onChange={(e) => setYtdlpPath(e.target.value)}
+            placeholder="yt-dlp"
+          />
+        </Field>
         <button className="btn-ghost shrink-0" onClick={testYtdlp}>
           Save &amp; test
         </button>
@@ -1196,13 +1259,15 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
       }
     >
       <div className="flex items-center gap-2">
-        <input
-          className="input"
-          type="text"
-          value={path}
-          onChange={(event) => setPath(event.target.value)}
-          placeholder="spotdl"
-        />
+        <Field label="spotDL executable path" hiddenLabel className="contents">
+          <input
+            className="input"
+            type="text"
+            value={path}
+            onChange={(event) => setPath(event.target.value)}
+            placeholder="spotdl"
+          />
+        </Field>
         <button className="btn-ghost shrink-0" onClick={test}>
           Save &amp; test
         </button>
@@ -1282,13 +1347,15 @@ function MokuroSettings({ data, onSave }: { data?: Record<string, string>; onSav
       }
     >
       <div className="flex items-center gap-2">
-        <input
-          className="input"
-          type="text"
-          value={mokuroPath}
-          onChange={(e) => setMokuroPath(e.target.value)}
-          placeholder="mokuro"
-        />
+        <Field label="mokuro executable path" hiddenLabel className="contents">
+          <input
+            className="input"
+            type="text"
+            value={mokuroPath}
+            onChange={(e) => setMokuroPath(e.target.value)}
+            placeholder="mokuro"
+          />
+        </Field>
         <button className="btn-ghost shrink-0" onClick={test}>
           Save &amp; test
         </button>
@@ -1375,7 +1442,15 @@ function VideoSubtitleToolsSettings({
 // Jackett (torrent search) + qBittorrent (hand-off) — both user-installed
 // local services, like yt-dlp. "Save & test" saves every field first, then
 // probes the service; the probe never rejects, so results render inline.
-function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+function TorrentSettings({
+  data,
+  secretStorage,
+  onSave
+}: {
+  data?: Record<string, string>
+  secretStorage?: SecretStorageState
+  onSave: SaveFn
+}) {
   const [jackettUrl, setJackettUrl] = useState('')
   const [jackettKey, setJackettKey] = useState('')
   const [jackettStart, setJackettStart] = useState('')
@@ -1387,17 +1462,20 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
 
   useEffect(() => {
     setJackettUrl(data?.['jackett.url'] ?? '')
-    setJackettKey(data?.['jackett.api_key'] ?? '')
+    setJackettKey('')
     setJackettStart(data?.['jackett.start_cmd'] ?? '')
     setQbUrl(data?.['qbittorrent.url'] ?? '')
     setQbUser(data?.['qbittorrent.username'] ?? '')
-    setQbPass(data?.['qbittorrent.password'] ?? '')
+    setQbPass('')
   }, [data])
 
   async function testJackett() {
     setJackettCheck(null)
     await onSave('jackett.url', jackettUrl.trim())
-    await onSave('jackett.api_key', jackettKey.trim())
+    if (jackettKey.trim()) {
+      await onSave('jackett.api_key', jackettKey.trim())
+      setJackettKey('')
+    }
     await onSave('jackett.start_cmd', jackettStart.trim())
     setJackettCheck(await api.torrents.testJackett())
   }
@@ -1406,7 +1484,10 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
     setQbCheck(null)
     await onSave('qbittorrent.url', qbUrl.trim())
     await onSave('qbittorrent.username', qbUser.trim())
-    await onSave('qbittorrent.password', qbPass)
+    if (qbPass) {
+      await onSave('qbittorrent.password', qbPass)
+      setQbPass('')
+    }
     setQbCheck(await api.torrents.testQbittorrent())
   }
 
@@ -1419,8 +1500,9 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
       >
         <div className="space-y-2">
           <div className={field}>
-            <span className="label">URL</span>
+            <label className="label" htmlFor="jackett-url">URL</label>
             <input
+              id="jackett-url"
               className="input"
               value={jackettUrl}
               onChange={(e) => setJackettUrl(e.target.value)}
@@ -1428,17 +1510,35 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
             />
           </div>
           <div className={field}>
-            <span className="label">API key</span>
-            <input
-              className="input"
-              type="password"
-              value={jackettKey}
-              onChange={(e) => setJackettKey(e.target.value)}
-            />
+            <label className="label" htmlFor="jackett-api-key">API key</label>
+            <div className="flex items-center gap-2">
+              <input
+                id="jackett-api-key"
+                className="input"
+                type="password"
+                value={jackettKey}
+                onChange={(e) => setJackettKey(e.target.value)}
+                placeholder={secretStorage?.configured['jackett.api_key'] ? 'Saved — enter a replacement' : undefined}
+              />
+              {secretStorage?.configured['jackett.api_key'] && (
+                <button
+                  className="btn-ghost shrink-0"
+                  onClick={async () => {
+                    if (!(await confirmDialog('Clear the saved Jackett API key?', { confirmLabel: 'Clear', danger: true }))) return
+                    await onSave('jackett.api_key', '')
+                    setJackettKey('')
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
+          <SecretStateLine settingKey="jackett.api_key" state={secretStorage} />
           <div className={field}>
-            <span className="label">Start command</span>
+            <label className="label" htmlFor="jackett-start-command">Start command</label>
             <input
+              id="jackett-start-command"
               className="input"
               value={jackettStart}
               onChange={(e) => setJackettStart(e.target.value)}
@@ -1451,7 +1551,11 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
           default shown above. Run directly, not through a shell — no pipes or quoting.
         </p>
         <div className="mt-3 flex gap-2">
-          <button className="btn-ghost" onClick={testJackett}>
+          <button
+            className="btn-ghost"
+            disabled={!!jackettKey.trim() && !secretStorage?.available}
+            onClick={testJackett}
+          >
             Save &amp; test
           </button>
           <StartJackettButton />
@@ -1476,8 +1580,9 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
       >
         <div className="space-y-2">
           <div className={field}>
-            <span className="label">URL</span>
+            <label className="label" htmlFor="qbittorrent-url">URL</label>
             <input
+              id="qbittorrent-url"
               className="input"
               value={qbUrl}
               onChange={(e) => setQbUrl(e.target.value)}
@@ -1485,20 +1590,41 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
             />
           </div>
           <div className={field}>
-            <span className="label">Username</span>
-            <input className="input" value={qbUser} onChange={(e) => setQbUser(e.target.value)} />
+            <label className="label" htmlFor="qbittorrent-username">Username</label>
+            <input id="qbittorrent-username" className="input" value={qbUser} onChange={(e) => setQbUser(e.target.value)} />
           </div>
           <div className={field}>
-            <span className="label">Password</span>
-            <input
-              className="input"
-              type="password"
-              value={qbPass}
-              onChange={(e) => setQbPass(e.target.value)}
-            />
+            <label className="label" htmlFor="qbittorrent-password">Password</label>
+            <div className="flex items-center gap-2">
+              <input
+                id="qbittorrent-password"
+                className="input"
+                type="password"
+                value={qbPass}
+                onChange={(e) => setQbPass(e.target.value)}
+                placeholder={secretStorage?.configured['qbittorrent.password'] ? 'Saved — enter a replacement' : undefined}
+              />
+              {secretStorage?.configured['qbittorrent.password'] && (
+                <button
+                  className="btn-ghost shrink-0"
+                  onClick={async () => {
+                    if (!(await confirmDialog('Clear the saved qBittorrent password?', { confirmLabel: 'Clear', danger: true }))) return
+                    await onSave('qbittorrent.password', '')
+                    setQbPass('')
+                  }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
+          <SecretStateLine settingKey="qbittorrent.password" state={secretStorage} />
         </div>
-        <button className="btn-ghost mt-3" onClick={testQb}>
+        <button
+          className="btn-ghost mt-3"
+          disabled={!!qbPass && !secretStorage?.available}
+          onClick={testQb}
+        >
           Save &amp; test
         </button>
         {qbCheck && (
@@ -1519,20 +1645,31 @@ function TorrentSettings({ data, onSave }: { data?: Record<string, string>; onSa
 // green/red. Progress comes from polling update:status via useUpdateStatus —
 // there is no push channel. `environment` explains any build that can't update
 // itself (dev run, portable exe, missing token) rather than failing on click.
-function UpdateSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+function UpdateSettings({
+  data,
+  secretStorage,
+  onSave
+}: {
+  data?: Record<string, string>
+  secretStorage?: SecretStorageState
+  onSave: SaveFn
+}) {
   const { status, kick } = useUpdateStatus()
   const [token, setToken] = useState('')
   const [check, setCheck] = useState<UpdateTestResult | null>(null)
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => setToken(data?.['github.token'] ?? ''), [data])
+  useEffect(() => setToken(''), [data])
 
   const field = 'grid grid-cols-[110px_1fr] items-center gap-2'
   const canUpdate = status?.environment === 'ok'
 
   async function testToken() {
     setCheck(null)
-    await onSave('github.token', token.trim())
+    if (token.trim()) {
+      await onSave('github.token', token.trim())
+      setToken('')
+    }
     setCheck(await api.updates.testToken())
     await kick()
   }
@@ -1555,21 +1692,42 @@ function UpdateSettings({ data, onSave }: { data?: Record<string, string>; onSav
       description="Checks GitHub Releases for a newer build. Always manual — nothing checks on launch."
     >
       <div className={field}>
-        <span className="label">GitHub token</span>
-        <input
-          className="input"
-          type="password"
-          value={token}
-          onChange={(e) => setToken(e.target.value)}
-          placeholder="github_pat_…"
-        />
+        <label className="label" htmlFor="github-token">GitHub token</label>
+        <div className="flex items-center gap-2">
+          <input
+            id="github-token"
+            className="input"
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder={secretStorage?.configured['github.token'] ? 'Saved — enter a replacement' : 'github_pat_…'}
+          />
+          {secretStorage?.configured['github.token'] && (
+            <button
+              className="btn-ghost shrink-0"
+              onClick={async () => {
+                if (!(await confirmDialog('Clear the saved GitHub token?', { confirmLabel: 'Clear', danger: true }))) return
+                await onSave('github.token', '')
+                setToken('')
+                await kick()
+              }}
+            >
+              Clear
+            </button>
+          )}
+        </div>
       </div>
+      <SecretStateLine settingKey="github.token" state={secretStorage} />
       <p className="mt-2 text-sm text-gray-500">
         The repository is private, so updates need a token that can read it:
         <span className="text-gray-400"> repo</span> scope on a classic token, or
         <span className="text-gray-400"> Contents: read</span> on a fine-grained one.
       </p>
-      <button className="btn-ghost mt-3" onClick={testToken}>
+      <button
+        className="btn-ghost mt-3"
+        disabled={!!token.trim() && !secretStorage?.available}
+        onClick={testToken}
+      >
         Save &amp; test
       </button>
       {check && (
@@ -2249,13 +2407,15 @@ function StatusEditor({
       </div>
 
       <div className="flex gap-2">
-        <input
-          className="input max-w-xs"
-          value={newStatus}
-          onChange={(e) => setNewStatus(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && addStatus()}
-          placeholder="New status name"
-        />
+        <Field label={`New ${cfg.singular.toLowerCase()} status name`} hiddenLabel className="contents">
+          <input
+            className="input max-w-xs"
+            value={newStatus}
+            onChange={(e) => setNewStatus(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addStatus()}
+            placeholder="New status name"
+          />
+        </Field>
         <button className="btn-ghost" onClick={addStatus}>
           Add status
         </button>

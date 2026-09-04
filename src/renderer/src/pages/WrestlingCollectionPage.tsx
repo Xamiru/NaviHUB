@@ -10,7 +10,7 @@ import { useIncrementalList } from '../lib/hooks'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import CoverImage from '../components/CoverImage'
 import WrestlingMatchRow from '../components/wrestling/WrestlingMatchRow'
 import LooseMatchDialog from '../components/wrestling/LooseMatchDialog'
@@ -89,6 +89,8 @@ export default function WrestlingCollectionPage(): JSX.Element {
       </div>
 
       <Tabs
+        id="wrestling-collection"
+        label="Collection view"
         className="mb-5"
         value={tab}
         onChange={setTab}
@@ -98,7 +100,8 @@ export default function WrestlingCollectionPage(): JSX.Element {
         ]}
       />
 
-      {tab === 'events' ? (
+      <TabPanel tabsId="wrestling-collection" value={tab}>
+        {tab === 'events' ? (
         !owned?.length ? (
           <EmptyState
             title="No events attached yet"
@@ -186,7 +189,8 @@ export default function WrestlingCollectionPage(): JSX.Element {
           </div>
           <div ref={sentinelRef} />
         </>
-      )}
+        )}
+      </TabPanel>
 
       {editing && (
         <LooseMatchDialog

@@ -27,6 +27,7 @@ export interface SpotdlSong {
   spotifyArtistId: string | null
   spotifyArtistIds: string[]
   albumType: 'album' | 'single' | 'compilation' | null
+  listPosition?: number | null
 }
 
 export interface LocalMatchCandidate {
@@ -568,6 +569,100 @@ export function matchSpotifySong(
   return null
 }
 
+const RECORDING_VARIANT_MARKERS: [string, RegExp][] = [
+  ['live', /\blive\b/],
+  ['acoustic', /\b(?:acoustic|unplugged)\b/],
+  ['remix', /\b(?:remix|club mix|dance mix)\b/],
+  ['instrumental', /\binstrumental\b/],
+  ['demo', /\bdemo\b/],
+  ['karaoke', /\bkaraoke\b/],
+  ['radio-edit', /\bradio edit\b/],
+  ['sped-up', /\bsped up\b/],
+  ['slowed', /\bslowed\b/],
+  ['rerecorded', /\b(?:re recorded|rerecorded)\b/],
+  ['remaster', /\bremaster(?:ed)?\b/]
+]
+
+function recordingVariantSignature(title: string, albumTitle: string): string {
+  const value = normalizeSpotifyMatch(`${title} ${albumTitle}`)
+  return RECORDING_VARIANT_MARKERS
+    .filter(([, pattern]) => pattern.test(value))
+    .map(([key]) => key)
+    .join('|')
+}
+
+function spotifyArtistMatches(primaryArtist: string, candidate: LocalMatchCandidate): boolean {
+  const artist = normalizeSpotifyMatch(primaryArtist)
+  return new Set([
+    normalizeSpotifyMatch(candidate.folderArtist),
+    ...artistComponents(candidate.tagArtist ?? '')
+  ]).has(artist)
+}
+
+function samePlaylistRecordingIdentity(
+  song: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle'>,
+  candidate: LocalMatchCandidate
+): boolean {
+  return normalizeSpotifyMatch(candidate.title) === normalizeSpotifyMatch(song.title) &&
+    spotifyArtistMatches(song.primaryArtist, candidate) &&
+    recordingVariantSignature(candidate.title, candidate.albumTitle) ===
+      recordingVariantSignature(song.title, song.albumTitle)
+}
+
+export function compatibleSpotifyDurationTolerance(duration: number): number {
+  return Math.max(3, Math.min(8, duration * 0.03))
+}
+
+/** Playlist-only second tier for the same recording on another release. */
+export function matchSpotifyPlaylistSong(
+  song: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle' | 'duration'>,
+  candidates: LocalMatchCandidate[]
+): number | null {
+  const identityCandidates = candidates.filter((candidate) =>
+    samePlaylistRecordingIdentity(song, candidate)
+  )
+  const strict = matchSpotifySong(song, identityCandidates)
+  if (strict != null || song.duration == null) return strict
+  const tolerance = compatibleSpotifyDurationTolerance(song.duration)
+  let matches = identityCandidates.filter((candidate) =>
+    candidate.duration != null &&
+    Math.abs(candidate.duration - song.duration!) <= tolerance
+  )
+  if (matches.length === 1) return matches[0].id
+  if (matches.length > 1) {
+    const album = normalizeSpotifyMatch(song.albumTitle)
+    matches = matches.filter((candidate) => normalizeSpotifyMatch(candidate.albumTitle) === album)
+    if (matches.length === 1) return matches[0].id
+  }
+  return null
+}
+
+/** Conservative choices for the user's explicit "Use local version" action. */
+export function spotifyPlaylistMatchAlternatives(
+  song: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle' | 'duration'>,
+  candidates: LocalMatchCandidate[]
+): LocalMatchCandidate[] {
+  const album = normalizeSpotifyMatch(song.albumTitle)
+  return candidates
+    .filter((candidate) => {
+      if (!samePlaylistRecordingIdentity(song, candidate)) return false
+      if (song.duration == null || candidate.duration == null) return true
+      return Math.abs(candidate.duration - song.duration) <= 15
+    })
+    .sort((a, b) => {
+      const aAlbum = normalizeSpotifyMatch(a.albumTitle) === album ? 0 : 1
+      const bAlbum = normalizeSpotifyMatch(b.albumTitle) === album ? 0 : 1
+      if (aAlbum !== bAlbum) return aAlbum - bAlbum
+      const aDelta = song.duration == null || a.duration == null
+        ? Number.POSITIVE_INFINITY
+        : Math.abs(a.duration - song.duration)
+      const bDelta = song.duration == null || b.duration == null
+        ? Number.POSITIVE_INFINITY
+        : Math.abs(b.duration - song.duration)
+      return aDelta - bDelta || a.id - b.id
+    })
+}
+
 function allCandidates(): LocalMatchCandidate[] {
   return (
     getSqlite()
@@ -607,7 +702,7 @@ function rowCandidate(row: Record<string, unknown>): LocalMatchCandidate {
 }
 
 export function findMatch(song: SpotdlSong, candidates = allCandidates()): number | null {
-  return matchSpotifySong(song, candidates)
+  return matchSpotifyPlaylistSong(song, candidates)
 }
 
 export function matchDetails(songs: SpotdlSong[]): Map<string, LocalMatchCandidate> {
@@ -1058,9 +1153,10 @@ export function resolveAllSpotifyItems(): number {
     )
     .all() as Record<string, unknown>[]).map(rowCandidate)
   const byTitle = indexCandidates(candidates)
+  const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]))
   const items = db
     .prepare(
-      `SELECT id, title, primary_artist, album_title, duration
+      `SELECT id, title, primary_artist, album_title, duration, matched_track_id
        FROM music_spotify_playlist_item`
     )
     .all() as Record<string, unknown>[]
@@ -1079,15 +1175,19 @@ export function resolveAllSpotifyItems(): number {
   let resolved = 0
   const tx = db.transaction(() => {
     for (const row of items) {
-      const match = matchSpotifySong(
-        {
-          title: row.title as string,
-          primaryArtist: row.primary_artist as string,
-          albumTitle: row.album_title as string,
-          duration: (row.duration as number) ?? null
-        },
-        byTitle.get(normalizeSpotifyMatch(row.title as string)) ?? []
-      )
+      const song = {
+        title: row.title as string,
+        primaryArtist: row.primary_artist as string,
+        albumTitle: row.album_title as string,
+        duration: (row.duration as number) ?? null
+      }
+      const titleCandidates = byTitle.get(normalizeSpotifyMatch(song.title)) ?? []
+      const existing = row.matched_track_id == null
+        ? null
+        : byId.get(row.matched_track_id as number) ?? null
+      const match = existing && spotifyPlaylistMatchAlternatives(song, [existing]).length === 1
+        ? existing.id
+        : matchSpotifyPlaylistSong(song, titleCandidates)
       update.run(match, match, row.id)
       if (match != null) resolved += 1
     }
@@ -1326,6 +1426,48 @@ export function mapSpotifyItem(row: Record<string, unknown>, track: MusicTrack |
     audioSourceUrl: (row.audio_source_url as string) ?? null,
     allowUnverified: Boolean(row.allow_unverified),
     downloadError: (row.download_error as string) ?? null,
-    matchedTrack: track
+    matchedTrack: track,
+    localAlternatives: []
   }
+}
+
+export function matchPlaylistItemToLocalTrack(input: { itemId: number; trackId: number }): void {
+  const db = getSqlite()
+  const source = db.prepare(
+    `SELECT id, playlist_id, title, primary_artist, album_title, duration
+     FROM music_spotify_playlist_item WHERE id=?`
+  ).get(input.itemId) as Record<string, unknown> | undefined
+  if (!source) throw new Error('That Spotify playlist song no longer exists')
+  const track = db.prepare(
+    `SELECT t.id, t.album_id, t.artist_id, t.title, ar.name AS folder_artist,
+            t.tag_artist, al.title AS album_title, t.duration
+     FROM music_track t
+     JOIN music_artist ar ON ar.id=t.artist_id
+     JOIN music_album al ON al.id=t.album_id
+     WHERE t.id=?`
+  ).get(input.trackId) as Record<string, unknown> | undefined
+  if (!track) throw new Error('That local track no longer exists')
+  const song = {
+    title: source.title as string,
+    primaryArtist: source.primary_artist as string,
+    albumTitle: source.album_title as string,
+    duration: (source.duration as number) ?? null
+  }
+  const candidate = rowCandidate(track)
+  if (spotifyPlaylistMatchAlternatives(song, [candidate]).length !== 1) {
+    throw new Error('That local track is not a compatible version of this playlist song')
+  }
+  db.transaction(() => {
+    db.prepare(
+      `UPDATE music_spotify_playlist_item
+       SET matched_track_id=?, download_error=NULL WHERE id=?`
+    ).run(input.trackId, input.itemId)
+    db.prepare(
+      `UPDATE music_playlist SET updated_at=datetime('now') WHERE id=?`
+    ).run(source.playlist_id)
+    db.prepare(
+      `DELETE FROM music_spotify_download_queue_selection WHERE playlist_item_id=?`
+    ).run(input.itemId)
+    pruneEmptyDownloadQueueCards()
+  })()
 }

@@ -51,6 +51,10 @@ describe('Sonic Archive product surface', () => {
     expect(playlist).toContain('className="btn-primary"')
     expect(playlist).toContain('Add missing (')
     expect(playlist).toContain('Download missing now')
+    expect(playlist).toContain('Use local version')
+    expect(playlist).toContain('Change local version')
+    expect(playlist).toContain('spotifyMatchPlaylistItem')
+    expect(playlist).toContain('Live, remix, acoustic and other')
   })
 
   it('keeps deferred Spotify downloads in a dedicated persistent workspace', () => {

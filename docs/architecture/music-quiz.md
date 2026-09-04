@@ -54,6 +54,8 @@ sync after import. The normalized Spotify playlist id is unique, so importing th
 same source again opens its existing local snapshot. spotDL supplies the playlist
 compatibility layer and resolves downloaded audio through YouTube Music with ordinary
 YouTube as the built-in fallback; Spotify does not supply audio files.
+Parallel spotDL metadata workers can finish out of order, so import restores the
+authoritative `list_position` before covers, deduplication and database insertion.
 
 `music_spotify_playlist` owns source identity and `music_spotify_playlist_item`
 keeps the ordered Spotify metadata, downloaded cover, and original spotDL payload.
@@ -62,12 +64,19 @@ local file makes the source row unavailable without deleting its title, order, o
 retry state. Ordinary `music_playlist_track` rows remain the manual-add layer and
 append after the source snapshot.
 
-**Strict matching.** Import and every music scan normalize Unicode, case,
+**Recording-aware matching.** Import and every music scan normalize Unicode, case,
 punctuation, and whitespace, but keep version words such as `live` and `remaster`.
-A match requires exact normalized title, exact primary artist against the folder
+The first tier requires exact normalized title, exact primary artist against the folder
 artist or one component of `tag_artist`, and both durations within three seconds.
-Album title can break one unique tie; missing duration or remaining ambiguity stays
-unmatched. Unmatched source rows never enter the player queue.
+Album title can break one unique tie. Playlist rows alone get a second tier for a
+unique same recording on another release: album differences such as standard,
+Deluxe and greatest-hits compilations are ignored, and duration tolerance is 3% with
+a three-second floor and eight-second ceiling. Meaningful Live, Acoustic, Remix,
+Instrumental, Demo, Radio Edit, sped/slowed, re-recorded and Remaster markers must
+agree. Ambiguous rows remain missing but expose conservative local candidates through
+`Use local version`; an explicit choice survives later scans while its file exists.
+Artist/album source association keeps the strict first tier. Unmatched source rows
+never enter the player queue.
 
 **Download and resume.** NaviHUB requires spotDL 4.5.2 or newer, ffmpeg and Deno before
 starting acquisition. Settings detects all three and can run spotDL's official

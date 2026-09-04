@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { api } from '../lib/api'
-import { useDebouncedValue } from '../lib/hooks'
+import { useDebouncedValue, usePopover } from '../lib/hooks'
 import { KIND_NOUN } from '../lib/listLinks'
 import CoverImage from './CoverImage'
 import type { ListKind, MediaType } from '@shared/types'
+import { Field } from './Field'
 
 export interface PickedEntity {
   entityId: number
@@ -126,10 +127,12 @@ export default function UniversalPicker({
   excludeIds = [],
   mediaTypes
 }: Props) {
+  const resultsId = useId()
   const [text, setText] = useState('')
   const [open, setOpen] = useState(false)
   const [results, setResults] = useState<PickedEntity[]>([])
-  const boxRef = useRef<HTMLDivElement>(null)
+  const [activeIndex, setActiveIndex] = useState(0)
+  const { panelRef, triggerRef } = usePopover<HTMLInputElement>(open, () => setOpen(false))
   const exclude = new Set(excludeIds)
   // Only hit the search IPC after typing pauses, not on every keystroke.
   const query = useDebouncedValue(text, 200)
@@ -146,27 +149,13 @@ export default function UniversalPicker({
         ? r.filter((e) => e.mediaType != null && mediaTypes.includes(e.mediaType))
         : r
       setResults(typed.filter((e) => !exclude.has(e.entityId)).slice(0, 8))
+      setActiveIndex(0)
     })
     return () => {
       alive = false
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [kind, query, excludeIds.length, mediaTypes?.join(',')])
-
-  useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDoc)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [])
 
   function pick(e: PickedEntity) {
     onPick(e)
@@ -176,30 +165,65 @@ export default function UniversalPicker({
   }
 
   return (
-    <div ref={boxRef} className="relative">
-      <input
-        className="input"
-        value={text}
-        placeholder={placeholder ?? `Search a ${KIND_NOUN[kind]} to add…`}
-        autoFocus={autoFocus}
-        onFocus={() => setOpen(true)}
-        onChange={(e) => {
-          setText(e.target.value)
-          setOpen(true)
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && results.length) {
-            e.preventDefault()
-            pick(results[0])
+    <div className="relative">
+      <Field label={`Search for a ${KIND_NOUN[kind]}`} hiddenLabel className="contents">
+        <input
+          ref={triggerRef}
+          className="input"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open && results.length > 0}
+          aria-controls={open && results.length > 0 ? resultsId : undefined}
+          aria-activedescendant={
+            open && results[activeIndex] ? `${resultsId}-option-${activeIndex}` : undefined
           }
-        }}
-      />
+          value={text}
+          placeholder={placeholder ?? `Search a ${KIND_NOUN[kind]} to add…`}
+          autoFocus={autoFocus}
+          onFocus={() => setOpen(true)}
+          onChange={(e) => {
+            setText(e.target.value)
+            setOpen(true)
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'ArrowDown' && results.length) {
+              e.preventDefault()
+              setOpen(true)
+              setActiveIndex((index) => (index + 1) % results.length)
+            } else if (e.key === 'ArrowUp' && results.length) {
+              e.preventDefault()
+              setOpen(true)
+              setActiveIndex((index) => (index - 1 + results.length) % results.length)
+            } else if (e.key === 'Home' && open && results.length) {
+              e.preventDefault()
+              setActiveIndex(0)
+            } else if (e.key === 'End' && open && results.length) {
+              e.preventDefault()
+              setActiveIndex(results.length - 1)
+            } else if (e.key === 'Enter' && open && results[activeIndex]) {
+              e.preventDefault()
+              pick(results[activeIndex])
+            }
+          }}
+        />
+      </Field>
       {open && results.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-md border border-base-500 bg-base-800 shadow-lg">
-          {results.map((r) => (
+        <div
+          ref={panelRef}
+          id={resultsId}
+          role="listbox"
+          aria-label={`${KIND_NOUN[kind]} results`}
+          className="absolute z-20 mt-1 w-full max-h-72 overflow-y-auto rounded-md border border-base-500 bg-base-800 shadow-lg"
+        >
+          {results.map((r, index) => (
             <button
               key={r.entityId}
-              className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm hover:bg-base-700"
+              id={`${resultsId}-option-${index}`}
+              role="option"
+              aria-selected={index === activeIndex}
+              tabIndex={-1}
+              className={`flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm hover:bg-base-700 ${index === activeIndex ? 'bg-base-700' : ''}`}
+              onMouseEnter={() => setActiveIndex(index)}
               onClick={() => pick(r)}
             >
               <CoverImage path={r.imagePath} alt={r.name} className="h-8 w-8 shrink-0" />

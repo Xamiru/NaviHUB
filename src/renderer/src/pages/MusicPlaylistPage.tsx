@@ -5,7 +5,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePlayerControls } from '../lib/player'
 import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
-import { useDebouncedValue, useIncrementalList } from '../lib/hooks'
+import { useDebouncedValue, useDialog, useIncrementalList } from '../lib/hooks'
 import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
 import ActionMenu from '../components/ActionMenu'
@@ -85,6 +85,7 @@ export default function MusicPlaylistPage() {
 
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState('')
+  const [localMatchItem, setLocalMatchItem] = useState<MusicSpotifyPlaylistEntry | null>(null)
 
   const isSpotify = playlist?.source != null
   const allItems = isSpotify ? (playlist?.items ?? []) : sortableItems
@@ -133,6 +134,14 @@ export default function MusicPlaylistPage() {
     await api.music.spotifyRemoveItem(itemId)
     invalidate()
     qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+  }
+
+  async function useLocalVersion(itemId: number, trackId: number): Promise<void> {
+    await api.music.spotifyMatchPlaylistItem({ itemId, trackId })
+    setLocalMatchItem(null)
+    invalidate()
+    qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+    toast('Playlist song linked to the local recording', 'success')
   }
 
   async function queueDownload(
@@ -432,6 +441,14 @@ export default function MusicPlaylistPage() {
                   showAlbum
                   onPlay={() => playItem(item)}
                   onRemove={() => removeSpotifyItem(item.itemId)}
+                  trailing={item.localAlternatives.length > 0 ? (
+                    <button
+                      className="btn-ghost px-2 py-1 text-xs"
+                      onClick={() => setLocalMatchItem(item)}
+                    >
+                      Change local version
+                    </button>
+                  ) : undefined}
                 />
               ) : (
                 <SpotifyMissingRow
@@ -443,6 +460,7 @@ export default function MusicPlaylistPage() {
                     if (queuedItemIds.has(item.itemId)) navigate('/music/downloads')
                     else void queueDownload([item])
                   }}
+                  onUseLocal={() => setLocalMatchItem(item)}
                   onRemove={() => removeSpotifyItem(item.itemId)}
                 />
               )
@@ -467,6 +485,13 @@ export default function MusicPlaylistPage() {
           ))}
         </SortableList>
       )}
+      {localMatchItem && (
+        <UseLocalVersionDialog
+          item={localMatchItem}
+          onClose={() => setLocalMatchItem(null)}
+          onChoose={(trackId) => useLocalVersion(localMatchItem.itemId, trackId)}
+        />
+      )}
     </div>
   )
 }
@@ -476,12 +501,14 @@ function SpotifyMissingRow({
   busy,
   queued,
   onQueue,
+  onUseLocal,
   onRemove
 }: {
   item: MusicSpotifyPlaylistEntry
   busy: boolean
   queued: boolean
   onQueue: () => void
+  onUseLocal: () => void
   onRemove: () => void
 }) {
   return (
@@ -505,12 +532,88 @@ function SpotifyMissingRow({
       <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-500">
         {formatDuration(item.duration)}
       </span>
+      {item.localAlternatives.length > 0 && (
+        <button className="btn-ghost px-2 py-1 text-xs" onClick={onUseLocal}>
+          Use local version
+        </button>
+      )}
       <button className="btn-ghost px-2 py-1 text-xs" disabled={busy && !queued} onClick={onQueue}>
         {queued ? 'View queue' : 'Add to queue'}
       </button>
       <button className="btn-ghost px-2 py-1 text-xs" aria-label={`Remove ${item.title} from playlist`} onClick={onRemove}>
         Remove
       </button>
+    </div>
+  )
+}
+
+function UseLocalVersionDialog({
+  item,
+  onClose,
+  onChoose
+}: {
+  item: MusicSpotifyPlaylistEntry
+  onClose: () => void
+  onChoose: (trackId: number) => Promise<void>
+}) {
+  const dialogRef = useDialog(onClose)
+  const [savingId, setSavingId] = useState<number | null>(null)
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      onMouseDown={(event) => event.target === event.currentTarget && onClose()}
+    >
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="local-version-title"
+        tabIndex={-1}
+        className="card max-h-[80vh] w-full max-w-xl overflow-y-auto p-5"
+      >
+        <div className="mb-4 flex items-start justify-between gap-4">
+          <div>
+            <h2 id="local-version-title" className="text-lg font-semibold">Use a local version</h2>
+            <p className="mt-1 text-sm text-gray-400">
+              Choose the same recording from another album. Live, remix, acoustic and other
+              distinct versions are excluded.
+            </p>
+          </div>
+          <button className="btn-ghost px-2" aria-label="Close" onClick={onClose}>✕</button>
+        </div>
+        <p className="mb-3 text-sm text-gray-300">
+          {item.title} · {item.artists.join(', ')} · {item.albumTitle}
+        </p>
+        <div className="space-y-2">
+          {item.localAlternatives.map((track) => (
+            <div key={track.id} className="flex items-center gap-3 rounded-md bg-base-700/60 p-3">
+              <CoverImage
+                path={track.coverPath}
+                alt=""
+                className="h-10 w-10 shrink-0"
+                fallback="music"
+                thumbWidth={80}
+              />
+              <div className="min-w-0 flex-1">
+                <p className="line-clamp-1 text-sm font-medium text-gray-200">{track.title}</p>
+                <p className="line-clamp-1 text-xs text-gray-400">
+                  {track.artistName} · {track.albumTitle} · {formatDuration(track.duration)}
+                </p>
+              </div>
+              <button
+                className="btn-ghost shrink-0 px-3 py-1.5 text-xs"
+                disabled={savingId != null}
+                onClick={async () => {
+                  setSavingId(track.id)
+                  try { await onChoose(track.id) } finally { setSavingId(null) }
+                }}
+              >
+                {savingId === track.id ? 'Linking…' : 'Use this'}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

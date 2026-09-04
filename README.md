@@ -19,7 +19,7 @@ they were in, with the characters they played.
 ## Run it
 
 ```bash
-npm install      # also rebuilds better-sqlite3 for Electron (postinstall)
+npm install      # requires Node 22.12+; native binaries are bundled by better-sqlite3
 npm run dev      # launches the app
 ```
 
@@ -27,13 +27,13 @@ Other scripts:
 
 ```bash
 npm run build      # production build into ./out
-npm run typecheck  # tsc for both main and renderer
-npm run test       # vitest — repo + importer tests against in-memory SQLite
-npm run rebuild    # re-run electron-rebuild if you hit a native-module error
+npm run typecheck  # production and renderer-test TypeScript projects
+npm run test       # native SQLite smoke + main and renderer Vitest suites
 ```
 
-Tests run through Electron in Node mode (`ELECTRON_RUN_AS_NODE=1 electron …`)
-because better-sqlite3 is compiled for Electron's ABI, not the system Node's.
+Main-process tests run through Electron in Node mode and begin with a real
+better-sqlite3 write/reopen/integrity smoke under the shipped runtime. Renderer
+interaction tests run separately in Node + jsdom.
 
 ### Note when running from inside the VS Code integrated terminal
 

@@ -6,6 +6,7 @@ import { SEASONS, seasonLabel } from '@shared/season'
 import type { MediaConfig } from '../lib/mediaConfig'
 import type { MediaListFacets, MediaListFilter, SeasonKey } from '@shared/types'
 import RangeSlider from './RangeSlider'
+import { Field } from './Field'
 
 // The list page's advanced filters. Kept out of MediaListPage because the panel
 // owns a fair amount of derivation (bounds, chips, clearing) that the page only
@@ -217,12 +218,14 @@ export default function MediaFilterPanel({
               </button>
             ))}
           </div>
-          <input
-            className="input ml-auto max-w-[12rem] py-1 text-xs"
-            placeholder="Find a tag…"
-            value={tagSearch}
-            onChange={(e) => setTagSearch(e.target.value)}
-          />
+          <Field label="Find a tag or genre" hiddenLabel className="contents">
+            <input
+              className="input ml-auto max-w-[12rem] py-1 text-xs"
+              placeholder="Find a tag…"
+              value={tagSearch}
+              onChange={(e) => setTagSearch(e.target.value)}
+            />
+          </Field>
         </div>
         {tags.length === 0 ? (
           <p className="text-xs text-gray-500">No tags on your {cfg.plural.toLowerCase()} yet.</p>

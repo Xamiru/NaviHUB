@@ -557,10 +557,10 @@ function AudioSourceDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} className="card w-full max-w-lg p-5">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="replace-audio-title" tabIndex={-1} className="card w-full max-w-lg p-5">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">Replace audio source</h2>
+            <h2 id="replace-audio-title" className="text-lg font-semibold text-white">Replace audio source</h2>
             <p className="mt-1 text-sm text-gray-400">{track.artist} · {track.title}</p>
           </div>
           <button className="btn-ghost px-2" aria-label="Close" onClick={onClose}>✕</button>

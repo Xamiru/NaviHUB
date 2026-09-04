@@ -31,6 +31,7 @@ import { startFileSink, stopFileSink } from './logFile'
 import { settleAllOnQuit as settleAllTasksOnQuit } from './tasks'
 import { cancelActiveFootballSync } from './football/sync'
 import { installAppMenu } from './appMenu'
+import { initializeSecretStorage } from './secretStorage'
 
 // Custom scheme for serving locally-stored cover/photo images to the renderer.
 protocol.registerSchemesAsPrivileged([
@@ -180,7 +181,7 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // A second instance must never reach the database. app.exit(0) above should
   // already have ended this process; this makes it impossible rather than
   // merely likely.
@@ -200,6 +201,7 @@ app.whenReady().then(() => {
   })
 
   initDatabase()
+  await initializeSecretStorage()
   registerIpc()
 
   // navimg://media/<file> -> the real file under userData/media.

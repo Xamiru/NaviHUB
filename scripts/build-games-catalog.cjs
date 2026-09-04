@@ -7,8 +7,8 @@
  *   ELECTRON_RUN_AS_NODE=1 npx electron scripts/build-games-catalog.cjs \
  *       <games.jsonl> <out-dir>
  *
- * (electron-as-node because better-sqlite3 is built for Electron's ABI —
- * the npm-test invocation trick.)
+ * (Electron-as-Node keeps this maintenance command on the same Node/native
+ * runtime as the packaged app.)
  *
  * Filters to `added >= 1`: of ~900k rows, ~780k have added == 0 — shovelware
  * no RAWG user ever tracked; dropping them turns a 4.1 GB dump into a ~55 MB

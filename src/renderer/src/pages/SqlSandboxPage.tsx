@@ -144,7 +144,7 @@ export default function SqlSandboxPage() {
                   </ul>
                 </div>
               ))}
-              <p className="text-[11px] text-gray-600">? = may hold NULLs</p>
+              <p className="text-xs text-gray-500">? = may hold NULLs</p>
             </div>
           )}
         </div>

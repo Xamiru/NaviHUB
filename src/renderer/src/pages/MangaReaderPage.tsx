@@ -9,6 +9,7 @@ import OcrOverlay from '../components/reader/OcrOverlay'
 import MiningPanel from '../components/reader/MiningPanel'
 import BarButton from '../components/reader/BarButton'
 import ShortcutHelp from '../components/reader/ShortcutHelp'
+import Dialog from '../components/Dialog'
 import { PrevIcon, NextIcon } from '../components/PlayerIcons'
 import { PopoverRow, PopoverOption } from '../components/reader/BookSettingsPopover'
 import ReaderSettingsDrawer, { DrawerSlider } from '../components/reader/ReaderSettingsDrawer'
@@ -372,14 +373,23 @@ export default function MangaReaderPage() {
   // ---- auto-hiding bars ----
   const [barsVisible, setBarsVisible] = useState(true)
   const barsTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const topBarRef = useRef<HTMLDivElement>(null)
+  const bottomBarRef = useRef<HTMLDivElement>(null)
+  const barHasFocus = useCallback(() => {
+    const active = document.activeElement
+    return active != null &&
+      (topBarRef.current?.contains(active) || bottomBarRef.current?.contains(active))
+  }, [])
   const pokeBar = useCallback(() => {
     setBarsVisible(true)
     if (barsTimer.current) clearTimeout(barsTimer.current)
     barsTimer.current = setTimeout(() => {
       // Never hide the bar under an open chapter list or settings popover.
-      if (!chapterListOpenRef.current && !settingsOpenRef.current) setBarsVisible(false)
+      if (!chapterListOpenRef.current && !settingsOpenRef.current && !barHasFocus()) {
+        setBarsVisible(false)
+      }
     }, 2500)
-  }, [])
+  }, [barHasFocus])
   useEffect(() => {
     pokeBar()
     return () => {
@@ -391,8 +401,10 @@ export default function MangaReaderPage() {
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const t = e.target as HTMLElement
+      if (t.closest('[role="dialog"]')) return
       if (t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement || t.isContentEditable)
         return
+      if (e.key === 'Tab') pokeBar()
       switch (e.key) {
         case 'ArrowRight':
           direction === 'rtl' ? goPrev() : goNext()
@@ -574,7 +586,7 @@ export default function MangaReaderPage() {
     return nat && zoom !== 1 ? { width: nat.w * zoom } : {}
   }
 
-  const barCls = `absolute left-0 right-0 z-20 bg-base-900/90 backdrop-blur border-base-800 px-4 py-2 flex items-center gap-3 transition-opacity duration-300 motion-reduce:transition-none ${
+  const barCls = `absolute left-0 right-0 z-20 bg-base-900/90 backdrop-blur border-base-800 px-4 py-2 flex items-center gap-3 transition-opacity duration-300 motion-reduce:transition-none focus-within:opacity-100 focus-within:pointer-events-auto ${
     barsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
   }`
 
@@ -599,7 +611,12 @@ export default function MangaReaderPage() {
           />
         )}
         {/* top bar */}
-        <div className={`${barCls} top-0 border-b`}>
+        <div
+          ref={topBarRef}
+          className={`${barCls} top-0 border-b`}
+          onFocusCapture={pokeBar}
+          onBlurCapture={pokeBar}
+        >
           <button className="btn-ghost py-1 px-3 text-sm" onClick={exitToDetail}>
             ← Back
           </button>
@@ -707,30 +724,40 @@ export default function MangaReaderPage() {
 
         {/* end-of-chapter card */}
         {showEnd && (
-          <div className="absolute inset-0 z-30 bg-black/70 flex items-center justify-center" onClick={() => setShowEnd(false)}>
-            <div className="card p-6 text-center space-y-4" onClick={(e) => e.stopPropagation()}>
-              <p className="text-lg text-gray-200">End of {doc.title}</p>
-              {chapters.length > 1 && chIndex >= 0 && (
-                <p className="text-xs text-gray-500">
-                  Chapter {chIndex + 1} of {chapters.length}
-                </p>
-              )}
-              <div className="flex items-center justify-center gap-2">
-                {nextChapter && (
-                  <button className="btn-primary" onClick={() => goToChapter(nextChapter)}>
-                    Next: {nextChapter.title} →
-                  </button>
-                )}
-                <button className="btn-ghost" onClick={exitToDetail}>
-                  Back to series
+          <Dialog
+            labelledBy="manga-end-title"
+            onClose={() => setShowEnd(false)}
+            overlayClassName="absolute inset-0 z-30 bg-black/70"
+            panelClassName="card space-y-4 p-6 text-center"
+          >
+            <h2 id="manga-end-title" className="text-lg text-gray-200">
+              End of {doc.title}
+            </h2>
+            {chapters.length > 1 && chIndex >= 0 && (
+              <p className="text-xs text-gray-500">
+                Chapter {chIndex + 1} of {chapters.length}
+              </p>
+            )}
+            <div className="flex items-center justify-center gap-2">
+              {nextChapter && (
+                <button className="btn-primary" onClick={() => goToChapter(nextChapter)}>
+                  Next: {nextChapter.title} →
                 </button>
-              </div>
+              )}
+              <button className="btn-ghost" onClick={exitToDetail}>
+                Back to series
+              </button>
             </div>
-          </div>
+          </Dialog>
         )}
 
         {/* bottom bar */}
-        <div className={`${barCls} bottom-0 overflow-x-auto border-t`}>
+        <div
+          ref={bottomBarRef}
+          className={`${barCls} bottom-0 overflow-x-auto border-t`}
+          onFocusCapture={pokeBar}
+          onBlurCapture={pokeBar}
+        >
           <button
             className="btn-ghost py-1 px-2 text-xs"
             disabled={!prevChapter}
@@ -884,7 +911,7 @@ export default function MangaReaderPage() {
             />
           )}
           <div className="border-t border-base-700 pt-3">
-            <p className="text-[10px] leading-relaxed text-gray-600">
+            <p className="text-xs leading-relaxed text-gray-500">
               Settings apply to every series. Keyboard: ← → page, S/D/V mode, F fit, R direction,
               O overlay, Esc closes.
             </p>

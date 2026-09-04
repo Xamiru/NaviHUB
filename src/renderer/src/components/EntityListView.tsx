@@ -12,6 +12,7 @@ import EmptyState from './EmptyState'
 import ContextPanel, { ContextFact, ContextTrail } from './ContextPanel'
 import { pathForMedia } from '../lib/mediaConfig'
 import type { CreditRole, MediaType } from '@shared/types'
+import { Field } from './Field'
 
 type Kind = 'person' | 'company' | 'character'
 
@@ -120,20 +121,24 @@ export default function EntityListView({
       />
 
       <div className="flex flex-wrap items-center gap-3 mb-6">
-        <input
-          className="input max-w-xs"
-          placeholder={`Search ${title.toLowerCase()}...`}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <div className="flex gap-2 ml-auto">
+        <Field label={`Search ${title.toLowerCase()}`} hiddenLabel className="contents">
           <input
-            className="input"
-            placeholder="New name..."
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && add()}
+            className="input max-w-xs"
+            placeholder={`Search ${title.toLowerCase()}...`}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
+        </Field>
+        <div className="flex gap-2 ml-auto">
+          <Field label={`New ${kind} name`} hiddenLabel className="contents">
+            <input
+              className="input"
+              placeholder="New name..."
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && add()}
+            />
+          </Field>
           <button className="btn-primary" onClick={add}>
             Add
           </button>

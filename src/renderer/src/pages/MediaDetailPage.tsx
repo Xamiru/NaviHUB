@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import Pager from '../components/Pager'
 import StatTile, { StatInline } from '../components/StatTile'
 import ActionMenu from '../components/ActionMenu'
-import Tabs, { type TabDef } from '../components/Tabs'
+import Tabs, { TabPanel, type TabDef } from '../components/Tabs'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -257,10 +257,18 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           </div>
         )}
 
-      <Tabs className="mt-4 mb-6" value={tab} onChange={setTab} tabs={tabs} />
+      <Tabs
+        id="media-detail"
+        label={`${cfg.singular} detail section`}
+        className="mt-4 mb-6"
+        value={tab}
+        onChange={setTab}
+        tabs={tabs}
+      />
 
-      {tab === 'overview' && (
-        <>
+      <TabPanel tabsId="media-detail" value={tab}>
+        {tab === 'overview' && (
+          <>
           {m.synopsis && (
             <Section className="mb-6" title="Synopsis">
               <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -275,28 +283,28 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           )}
           <CompaniesSection cfg={cfg} m={m} onChange={refresh} />
           <RelatedSection cfg={cfg} m={m} />
-        </>
-      )}
+          </>
+        )}
 
-      {tab === 'cast' && (
-        <>
+        {tab === 'cast' && (
+          <>
           <CastSection cfg={cfg} m={m} onChange={refresh} />
           {cfg.hasCrew !== false && <StaffSection cfg={cfg} m={m} onChange={refresh} />}
-        </>
-      )}
+          </>
+        )}
 
-      {tab === 'video' && (
-        <>
+        {tab === 'video' && (
+          <>
           <VideoEpisodesSection m={m} />
           {/* Subtitle text feeds the same comprehension scan / prep deck as
               manga OCR (seriesText.ts:seriesCorpus), so anime gets it free —
               but only where a Japanese track is plausible. */}
           {cfg.key === 'anime' && <CoverageSection m={m} />}
-        </>
-      )}
+          </>
+        )}
 
-      {tab === 'media' && (
-        <>
+        {tab === 'media' && (
+          <>
           {cfg.key === 'tv' && <TvSeasonsSection m={m} />}
           {cfg.hasGameLaunch && <GameLaunchSection m={m} />}
           {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
@@ -305,17 +313,18 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               not every type with a local reader (books are English reading). */}
           {cfg.key === 'manga' && <CoverageSection m={m} />}
           {cfg.hasThemes && <ThemesSection m={m} onChange={refresh} />}
-        </>
-      )}
+          </>
+        )}
 
-      {tab === 'achievements' && <AchievementsSection m={m} />}
+        {tab === 'achievements' && <AchievementsSection m={m} />}
 
-      {tab === 'art' && (
-        <>
-          <MediaImagesSection m={m} kind="wallpaper" />
-          {cfg.hasFanArt && <MediaImagesSection m={m} kind="fanart" />}
-        </>
-      )}
+        {tab === 'art' && (
+          <>
+            <MediaImagesSection m={m} kind="wallpaper" />
+            {cfg.hasFanArt && <MediaImagesSection m={m} kind="fanart" />}
+          </>
+        )}
+      </TabPanel>
 
       {refreshOpen && <RefreshMediaDialog m={m} onClose={() => setRefreshOpen(false)} />}
 

@@ -6,7 +6,7 @@ import { useIncrementalList } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { useBulkRun } from '../lib/useBulkRun'
 import PageHeader from '../components/PageHeader'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import RefreshTab from '../components/RefreshTab'
 import { Group, Pill } from '../components/PillGroup'
 import { BULK_SOURCES, bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
@@ -147,6 +147,8 @@ export default function BulkImportPage(): React.JSX.Element {
       />
 
       <Tabs
+        id="bulk-import-mode"
+        label="Bulk import mode"
         className="mb-5"
         value={tab}
         onChange={setTab}
@@ -156,10 +158,11 @@ export default function BulkImportPage(): React.JSX.Element {
         ]}
       />
 
-      {tab === 'refresh' ? (
-        <RefreshTab />
-      ) : (
-        <>
+      <TabPanel tabsId="bulk-import-mode" value={tab}>
+        {tab === 'refresh' ? (
+          <RefreshTab />
+        ) : (
+          <>
           <ImportFlow
             previewReady={!!preview}
             running={!!runStatus && runStatus.state === 'running'}
@@ -333,8 +336,9 @@ export default function BulkImportPage(): React.JSX.Element {
           onNone={() => setDeselected(new Set(preview.items.map((it) => it.sourceId)))}
         />
       )}
-        </>
-      )}
+          </>
+        )}
+      </TabPanel>
     </div>
   )
 }

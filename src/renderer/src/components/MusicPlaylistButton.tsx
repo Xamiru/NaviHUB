@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useId, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toastError } from '../lib/toast'
 import { PlaylistAddIcon } from './PlayerIcons'
+import { usePopover } from '../lib/hooks'
 
 export default function MusicPlaylistButton({
   trackId,
@@ -16,21 +17,17 @@ export default function MusicPlaylistButton({
   const [open, setOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const [pending, setPending] = useState<number | 'new' | null>(null)
+  const panelId = useId()
+  const headingId = useId()
+  const { panelRef, triggerRef } = usePopover(open, () => setOpen(false), {
+    initialFocus: 'first'
+  })
 
   const { data: playlists = [], isLoading } = useQuery({
     queryKey: qk.music.playlistsForTrack(trackId),
     queryFn: () => api.music.playlistsForTrack(trackId),
     enabled: open
   })
-
-  useEffect(() => {
-    if (!open) return
-    function onKeyDown(event: KeyboardEvent): void {
-      if (event.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
-  }, [open])
 
   async function refresh(): Promise<void> {
     await qc.invalidateQueries({ queryKey: qk.music.all })
@@ -69,6 +66,7 @@ export default function MusicPlaylistButton({
   return (
     <div className="relative shrink-0">
       <button
+        ref={triggerRef}
         className={`flex items-center justify-center rounded-full ${prominent ? 'pill gap-2' : 'h-8 w-8'} ${
           open
             ? 'bg-accent/15 text-accent'
@@ -76,8 +74,8 @@ export default function MusicPlaylistButton({
         }`}
         title="Add to playlist"
         aria-label="Add to playlist"
-        aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((value) => !value)}
       >
         <PlaylistAddIcon className="h-4 w-4" />
@@ -89,14 +87,18 @@ export default function MusicPlaylistButton({
           <div
             className="fixed inset-0 z-30 cursor-default"
             aria-hidden="true"
-            onMouseDown={() => setOpen(false)}
           />
           <div
+            id={panelId}
+            ref={panelRef}
             className="absolute bottom-full left-0 z-40 mb-2 w-64 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg"
-            role="dialog"
-            aria-label="Add current song to playlist"
+            role="region"
+            aria-labelledby={headingId}
           >
-            <p className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+            <p
+              id={headingId}
+              className="px-1 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500"
+            >
               Playlists
             </p>
             <div className="max-h-48 overflow-y-auto">

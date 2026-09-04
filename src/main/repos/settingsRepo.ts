@@ -1,5 +1,15 @@
 import { getSqlite } from '../db/connection'
 import type { SettingsMap } from '@shared/types'
+import { isSecretSettingKey } from '@shared/secretSettings'
+
+let secretReader: ((key: string) => string | null) | null = null
+
+// Installed once after Electron is ready and the secret rows have been
+// decrypted into process memory. Tests and maintenance contexts that do not
+// initialize Electron keep the ordinary raw-settings behavior.
+export function setSecretReader(reader: ((key: string) => string | null) | null): void {
+  secretReader = reader
+}
 
 export function all(): SettingsMap {
   const rows = getSqlite().prepare('SELECT key, value FROM settings').all() as {
@@ -12,6 +22,7 @@ export function all(): SettingsMap {
 }
 
 export function get(key: string): string | null {
+  if (secretReader && isSecretSettingKey(key)) return secretReader(key)
   const row = getSqlite().prepare('SELECT value FROM settings WHERE key = ?').get(key) as
     | { value: string }
     | undefined

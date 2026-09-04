@@ -83,7 +83,7 @@ export default function RefreshMediaDialog({
           })}
         </div>
 
-        <p className="mt-3 text-[10px] leading-relaxed text-gray-600">
+        <p className="mt-3 text-xs leading-relaxed text-gray-500">
           Only what you tick is rewritten. Your status, score and progress stay put, and so do the
           cast, studios and genres.
         </p>

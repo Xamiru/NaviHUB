@@ -17,7 +17,7 @@ function Step({
   const year = event?.eventDate?.slice(0, 4)
   const content = (
     <>
-      <span className="block text-xs uppercase tracking-wider text-gray-600">{label}</span>
+      <span className="block text-xs uppercase tracking-wider text-gray-500">{label}</span>
       <span className="block truncate text-sm">
         {event ? (
           <>

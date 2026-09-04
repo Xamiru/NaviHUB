@@ -18,8 +18,8 @@
  * which is exactly where the recipient's app will look for them.
  *
  * IMPORTANT — how to run it:
- *   better-sqlite3 is built against ELECTRON's ABI, so plain `node` can't open
- *   the DB. Run through Electron-as-Node:
+ *   Run through Electron-as-Node so the export uses the packaged app's
+ *   Node/native runtime:
  *
  *     npm run export:library                          # -> ~/navihub-export/navihub-bundle
  *     npm run export:library -- --out /path/to/dir    # custom destination

@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { usePlayerControls } from '../lib/player'
-import { useIncrementalList } from '../lib/hooks'
+import { useIncrementalList, usePopover } from '../lib/hooks'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toastError } from '../lib/toast'
@@ -14,26 +14,27 @@ import { PlayIcon, PauseIcon } from './PlayerIcons'
 // song plus everything still to come. Clicking a row jumps straight to it;
 // "Next up" rows can be reordered (▲▼) or removed (×) — the playing track
 // itself is never editable, which keeps the player's index bookkeeping trivial.
-export default function QueuePanel({ onClose }: { onClose: () => void }) {
+export default function QueuePanel({
+  onClose,
+  triggerRef
+}: {
+  onClose: () => void
+  triggerRef: RefObject<HTMLButtonElement>
+}) {
   const { queue, index, isPlaying, playAt, toggle, removeFromQueue, moveInQueue } =
     usePlayerControls()
   const likedIds = useLikedTrackIds()
   const listRef = useRef<HTMLDivElement>(null)
+  const { panelRef } = usePopover(true, onClose, {
+    initialFocus: 'first',
+    triggerRef
+  })
 
   // A jump (or auto-advance) reshapes "Next up"; snap back to the top so the
   // now-playing row stays in view.
   useEffect(() => {
     listRef.current?.scrollTo({ top: 0 })
   }, [index])
-
-  // Popover convention: Escape closes (dialogs get this from useDialog).
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') onClose()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
 
   const current = queue[index]
   // Memoized so the slice's identity only changes when the queue really does —
@@ -49,12 +50,16 @@ export default function QueuePanel({ onClose }: { onClose: () => void }) {
       {/* click-away backdrop */}
       <div className="fixed inset-0 z-30" onClick={onClose} />
       <div
+        id="playback-queue-panel"
+        ref={panelRef}
         className="absolute bottom-full right-2 mb-2 z-40 w-80 max-w-[calc(100vw-2rem)] rounded-lg border border-base-700 bg-base-800 shadow-xl shadow-black/40 overflow-hidden"
-        role="dialog"
-        aria-label="Playback queue"
+        role="region"
+        aria-labelledby="playback-queue-title"
       >
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-base-700">
-          <span className="text-sm font-semibold">Queue</span>
+          <span id="playback-queue-title" className="text-sm font-semibold">
+            Queue
+          </span>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500">
               {upNext.length === 0 ? 'Nothing up next' : `${upNext.length} up next`}

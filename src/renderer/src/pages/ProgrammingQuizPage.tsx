@@ -360,7 +360,7 @@ export default function ProgrammingQuizPage() {
 
       <div>
         {current?.context && (
-          <p className="mb-2 text-xs uppercase tracking-widest text-gray-600">{current.context}</p>
+          <p className="mb-2 text-xs uppercase tracking-widest text-gray-500">{current.context}</p>
         )}
         {current?.code && (
           <pre className="mb-3 overflow-x-auto rounded-md bg-base-900 p-3 font-mono text-xs leading-relaxed">

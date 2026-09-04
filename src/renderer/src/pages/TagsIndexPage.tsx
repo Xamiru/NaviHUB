@@ -14,6 +14,7 @@ import { Group, Pill } from '../components/PillGroup'
 import { toastError } from '../lib/toast'
 import type { TagWithCounts } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import { Field } from '../components/Field'
 
 // Browse every tag in the library with per-type usage counts; clicking one
 // shows everything tagged with it across media types (/tags/:id).
@@ -70,12 +71,14 @@ export default function TagsIndexPage() {
         title="Tags as lenses"
         subtitle={tags ? `${tags.length} relationship lenses across your library` : undefined}
         actions={
-          <input
-            className="input max-w-xs"
-            placeholder="Filter tags…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <Field label="Filter tags" hiddenLabel className="contents">
+            <input
+              className="input max-w-xs"
+              placeholder="Filter tags…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </Field>
         }
       />
 

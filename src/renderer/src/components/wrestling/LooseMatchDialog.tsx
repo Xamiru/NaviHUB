@@ -5,6 +5,7 @@ import { qk } from '../../lib/queryKeys'
 import { useDialog } from '../../lib/hooks'
 import { useDebouncedValue } from '../../lib/hooks'
 import type { WrestlingMatchWithEvent, WrestlingWrestler } from '@shared/types'
+import { Field, Fieldset } from '../Field'
 
 // Editing a loose match: what it was, when, and who was in it. Wrestlers are
 // picked from the imported wiki, which is what puts the match on their page and
@@ -69,49 +70,52 @@ export default function LooseMatchDialog({
         ref={ref}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="loose-match-title"
         tabIndex={-1}
         className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-lg bg-base-900 p-5"
       >
         <div className="mb-4 flex items-start justify-between">
-          <p className="font-semibold">Edit match</p>
+          <h2 id="loose-match-title" className="font-semibold">
+            Edit match
+          </h2>
           <button onClick={onClose} aria-label="Close" className="text-gray-500 hover:text-white">
             ✕
           </button>
         </div>
 
-        <label className="label">Title</label>
-        <input className="input mb-3" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <Field label="Title" className="mb-3">
+          <input className="input" value={title} onChange={(e) => setTitle(e.target.value)} />
+        </Field>
 
         <div className="mb-3 grid grid-cols-2 gap-3">
-          <div>
-            <label className="label">Show</label>
+          <Field label="Show">
             <input
               className="input"
               placeholder="Raw"
               value={showLabel}
               onChange={(e) => setShowLabel(e.target.value)}
             />
-          </div>
-          <div>
-            <label className="label">Date</label>
+          </Field>
+          <Field label="Date">
             <input
               className="input"
               placeholder="1997-03-17"
               value={matchDate}
               onChange={(e) => setMatchDate(e.target.value)}
             />
-          </div>
+          </Field>
         </div>
 
-        <label className="label">Stipulation</label>
-        <input
-          className="input mb-4"
-          placeholder="Steel cage match"
-          value={stipulation}
-          onChange={(e) => setStipulation(e.target.value)}
-        />
+        <Field label="Stipulation" className="mb-4">
+          <input
+            className="input"
+            placeholder="Steel cage match"
+            value={stipulation}
+            onChange={(e) => setStipulation(e.target.value)}
+          />
+        </Field>
 
-        <label className="label">Wrestlers</label>
+        <Fieldset legend="Wrestlers">
         {current.length > 0 && (
           <div className="mb-2 space-y-1">
             {current.map((w) => (
@@ -157,12 +161,14 @@ export default function LooseMatchDialog({
             ))}
           </div>
         )}
-        <input
-          className="input"
-          placeholder="Search imported wrestlers…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <Field label="Search imported wrestlers" hiddenLabel>
+          <input
+            className="input"
+            placeholder="Search imported wrestlers…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </Field>
         {!!results?.length && search.trim().length > 1 && (
           <div className="mt-1 max-h-40 overflow-y-auto rounded border border-base-700">
             {results.slice(0, 20).map((w) => (
@@ -180,6 +186,7 @@ export default function LooseMatchDialog({
             ))}
           </div>
         )}
+        </Fieldset>
 
         <button className="btn-primary mt-5 w-full" disabled={busy} onClick={save}>
           Save

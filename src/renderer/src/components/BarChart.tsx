@@ -9,12 +9,20 @@ export interface Bar {
   title: string // native tooltip
 }
 
-export default function BarChart({ bars, height = 96 }: { bars: Bar[]; height?: number }) {
+export default function BarChart({
+  bars,
+  height = 96,
+  label = 'Chart values'
+}: {
+  bars: Bar[]
+  height?: number
+  label?: string
+}) {
   const max = Math.max(...bars.map((b) => b.value), 1)
   const maxIdx = bars.findIndex((b) => b.value === max)
   return (
     <div>
-      <div className="flex items-end gap-[2px] pt-4" style={{ height: height + 16 }}>
+      <div aria-hidden="true" className="flex items-end gap-[2px] pt-4" style={{ height: height + 16 }}>
         {bars.map((b, i) => (
           <div
             key={b.key}
@@ -35,14 +43,31 @@ export default function BarChart({ bars, height = 96 }: { bars: Bar[]; height?: 
           </div>
         ))}
       </div>
-      <div className="border-t border-base-700" />
-      <div className="mt-1 flex gap-[2px]">
+      <div aria-hidden="true" className="border-t border-base-700" />
+      <div aria-hidden="true" className="mt-1 flex gap-[2px]">
         {bars.map((b) => (
           <div key={b.key} className="flex-1 text-center text-[10px] text-gray-500">
             {b.label ?? ''}
           </div>
         ))}
       </div>
+      <table className="sr-only">
+        <caption>{label}</caption>
+        <thead>
+          <tr>
+            <th scope="col">Period</th>
+            <th scope="col">Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          {bars.map((bar) => (
+            <tr key={bar.key}>
+              <th scope="row">{bar.title}</th>
+              <td>{bar.value}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

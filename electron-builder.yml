@@ -19,10 +19,9 @@ asarUnpack:
   - node_modules/better-sqlite3/**
   # kuromoji dict (~18MB) — tokenizer.ts retargets app.asar -> app.asar.unpacked.
   - node_modules/kuromoji/dict/**
-# Off: @electron/rebuild can't cross-fetch native modules for another OS (it
-# silently keeps the Linux .node). The postinstall electron-rebuild keeps the
-# local binary correct for Linux packs; scripts/dist-win.sh swaps in the
-# win32-x64 prebuild explicitly before Windows builds.
+# better-sqlite3 13 bundles N-API binaries for the supported Linux and Windows
+# x64 targets. Keep builder rebuilding off so packaging selects those bundled
+# platform binaries instead of compiling a host-specific addon.
 npmRebuild: false
 # Required by the in-app updater (src/main/updater.ts): this block is what makes
 # electron-builder emit latest.yml / latest-linux.yml next to the artifacts AND

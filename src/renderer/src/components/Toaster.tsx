@@ -1,5 +1,11 @@
 import { useSyncExternalStore } from 'react'
-import { subscribeToasts, getToasts, dismissToast } from '../lib/toast'
+import {
+  subscribeToasts,
+  getToasts,
+  dismissToast,
+  pauseToast,
+  resumeToast
+} from '../lib/toast'
 
 // Renders the lib/toast queue as a fixed stack above the now-playing bar.
 // Click a toast to dismiss it early (they auto-dismiss after a few seconds).
@@ -7,10 +13,20 @@ export default function Toaster() {
   const toasts = useSyncExternalStore(subscribeToasts, getToasts)
   if (toasts.length === 0) return null
   return (
-    <div role="status" aria-live="polite" className="fixed bottom-20 right-4 z-50 flex flex-col gap-2 max-w-md">
+    <div className="fixed bottom-20 right-4 z-50 flex max-w-md flex-col gap-2">
       {toasts.map((t) => (
         <div
           key={t.id}
+          role={t.kind === 'error' ? 'alert' : 'status'}
+          aria-live={t.kind === 'error' ? 'assertive' : 'polite'}
+          onMouseEnter={() => pauseToast(t.id)}
+          onMouseLeave={(event) => {
+            if (!event.currentTarget.contains(document.activeElement)) resumeToast(t.id)
+          }}
+          onFocusCapture={() => pauseToast(t.id)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget)) resumeToast(t.id)
+          }}
           className={`flex items-center gap-3 rounded-lg border bg-base-700 px-4 py-3 text-left text-sm shadow-lg ${
             t.kind === 'error'
               ? 'border-red-500/60 text-red-300'
@@ -19,7 +35,7 @@ export default function Toaster() {
                 : 'border-accent/60 text-gray-200'
           }`}
         >
-          <button className="min-w-0 flex-1 text-left" onClick={() => dismissToast(t.id)}>
+          <div className="min-w-0 flex-1 text-left">
             {t.kind === 'unlock' ? (
               <span className="flex items-center gap-3">
                 {t.iconUrl ? (
@@ -36,7 +52,7 @@ export default function Toaster() {
             ) : (
               t.message
             )}
-          </button>
+          </div>
           {t.action && (
             <button
               className="shrink-0 text-xs font-medium text-accent hover:text-white"
@@ -48,6 +64,13 @@ export default function Toaster() {
               {t.action.label}
             </button>
           )}
+          <button
+            className="shrink-0 px-1 text-gray-400 hover:text-white"
+            aria-label={`Close notification: ${t.message}`}
+            onClick={() => dismissToast(t.id)}
+          >
+            ✕
+          </button>
         </div>
       ))}
     </div>

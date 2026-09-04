@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
+import { useId, useState } from 'react'
+import { usePopover } from '../lib/hooks'
 
 // Overflow menu for secondary/rare actions: a plain text trigger ("More") and a
 // popover list. This is where destructive actions live so they never sit next
@@ -25,44 +26,12 @@ export default function ActionMenu({
   buttonClassName?: string
 }) {
   const [open, setOpen] = useState(false)
-  const boxRef = useRef<HTMLDivElement>(null)
-  const triggerRef = useRef<HTMLButtonElement>(null)
-
-  function menuItems(): HTMLButtonElement[] {
-    return [...(boxRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not([disabled])') ?? [])]
-  }
-
-  useEffect(() => {
-    if (!open) return
-    function onDoc(e: MouseEvent) {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        setOpen(false)
-        triggerRef.current?.focus()
-        return
-      }
-      const buttons = menuItems()
-      if (!buttons.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) return
-      e.preventDefault()
-      const current = buttons.indexOf(document.activeElement as HTMLButtonElement)
-      if (e.key === 'Home') buttons[0].focus()
-      else if (e.key === 'End') buttons[buttons.length - 1].focus()
-      else if (e.key === 'ArrowDown') buttons[(current + 1 + buttons.length) % buttons.length].focus()
-      else buttons[(current - 1 + buttons.length) % buttons.length].focus()
-    }
-    document.addEventListener('mousedown', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDoc)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (open) menuItems()[0]?.focus()
-  }, [open])
+  const menuId = useId()
+  const triggerId = useId()
+  const { panelRef, triggerRef } = usePopover(open, () => setOpen(false), {
+    initialFocus: 'first',
+    navigation: 'menu'
+  })
 
   const plain = items.filter((i) => !i.danger)
   const danger = items.filter((i) => i.danger)
@@ -71,6 +40,7 @@ export default function ActionMenu({
     <button
       key={item.label}
       role="menuitem"
+      aria-disabled={item.disabled || undefined}
       className={`w-full rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-base-700 disabled:cursor-not-allowed disabled:opacity-50 ${
         item.danger ? 'text-red-400' : 'text-gray-200'
       }`}
@@ -86,12 +56,14 @@ export default function ActionMenu({
   )
 
   return (
-    <div ref={boxRef} className="relative">
+    <div className="relative">
       <button
+        id={triggerId}
         ref={triggerRef}
         className={buttonClassName}
         aria-haspopup="menu"
         aria-expanded={open}
+        aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((v) => !v)}
         onKeyDown={(event) => {
           if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -104,7 +76,10 @@ export default function ActionMenu({
       </button>
       {open && (
         <div
+          id={menuId}
+          ref={panelRef}
           role="menu"
+          aria-labelledby={triggerId}
           className={`absolute z-30 mt-1 w-56 rounded-md border border-base-500 bg-base-800 p-1 shadow-lg ${
             align === 'right' ? 'right-0' : 'left-0'
           }`}

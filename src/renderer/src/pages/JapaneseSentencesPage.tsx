@@ -6,7 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import ParticleDrill from '../components/japanese/ParticleDrill'
 import ScrambleDrill from '../components/japanese/ScrambleDrill'
 import ContextReadingDrill from '../components/japanese/ContextReadingDrill'
@@ -66,10 +66,19 @@ export default function JapaneseSentencesPage() {
         title="Sentence games"
         subtitle="Real sentences from the bank, tokenised on the fly — no authored content, so the pool never runs dry."
       />
-      <Tabs tabs={TABS} value={tab} onChange={setTab} className="mb-5" />
-      {tab === 'particles' && <ParticleDrill />}
-      {tab === 'scramble' && <ScrambleDrill />}
-      {tab === 'reading' && <ContextReadingDrill />}
+      <Tabs
+        id="sentence-games"
+        label="Sentence game"
+        tabs={TABS}
+        value={tab}
+        onChange={setTab}
+        className="mb-5"
+      />
+      <TabPanel tabsId="sentence-games" value={tab}>
+        {tab === 'particles' && <ParticleDrill />}
+        {tab === 'scramble' && <ScrambleDrill />}
+        {tab === 'reading' && <ContextReadingDrill />}
+      </TabPanel>
     </div>
   )
 }

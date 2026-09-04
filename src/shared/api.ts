@@ -25,6 +25,7 @@ import type {
   Tag,
   TagWithCounts,
   SettingsMap,
+  SecretStorageState,
   CastEntry,
   CharacterAppearance,
   CreditRole,
@@ -258,6 +259,7 @@ import type {
   SpotifyDownloadQueueAddResult,
   SpotifyDownloadQueueSnapshot,
   SpotifyDownloadQueueStartInput,
+  SpotifyPlaylistLocalMatchInput,
   SpotifyTrackDownloadOptionsInput,
   SpotifyEntityDownloadInput,
   SpotifyEntityCandidate,
@@ -1052,6 +1054,7 @@ export interface NaviApi {
     spotifyQueueStart(input?: SpotifyDownloadQueueStartInput): Promise<{ id: string | null }>
     spotifyQueueClearCompleted(): Promise<number>
     spotifySetTrackDownloadOptions(input: SpotifyTrackDownloadOptionsInput): Promise<void>
+    spotifyMatchPlaylistItem(input: SpotifyPlaylistLocalMatchInput): Promise<void>
     spotifyForgetEntitySource(input: SpotifyEntityRef): Promise<void>
     spotifyRemoveItem(itemId: number): Promise<void>
     spotifyDetect(): Promise<SpotdlDetectResult>
@@ -1377,6 +1380,7 @@ export interface NaviApi {
   }
   settings: {
     all(): Promise<SettingsMap>
+    secretStorage(): Promise<SecretStorageState>
     set(key: string, value: string): Promise<void>
   }
   // Library Refresh: re-run each title's importer writing only the chosen

@@ -46,12 +46,13 @@ export default function AchievementSetupDialog({
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        aria-labelledby="achievement-setup-title"
         tabIndex={-1}
         className="card w-full max-w-2xl p-6 mt-10"
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-medium">
+            <h2 id="achievement-setup-title" className="text-lg font-medium">
               {provider === 'steam' ? 'Steam achievements' : 'RetroAchievements'}
             </h2>
             <p className="mt-1 text-sm text-gray-500">

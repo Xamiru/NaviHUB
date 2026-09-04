@@ -1,6 +1,7 @@
 import AdmZip from 'adm-zip'
 import { createHash } from 'crypto'
 import { getSqlite } from '../db/connection'
+import { get as getSetting } from '../repos/settingsRepo'
 import { fetchWithRetry } from '../http'
 import { logError, logInfo, logWarn } from '../logBus'
 import * as tasks from '../tasks'
@@ -861,10 +862,7 @@ async function installPlayerQuizPack(runGate: PauseGate): Promise<void> {
 }
 
 function apiKey(): string {
-  const row = getSqlite().prepare(`SELECT value FROM settings WHERE key='football.api_key'`).get() as
-    | { value: string }
-    | undefined
-  const key = row?.value.trim()
+  const key = getSetting('football.api_key')?.trim()
   if (!key) throw new Error('Add an API-Football key in Settings first')
   return key
 }

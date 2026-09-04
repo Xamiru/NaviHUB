@@ -356,7 +356,7 @@ export default function EnglishVocabQuizPage() {
 
       <div className="card p-6 text-center">
         {effectiveMode === 'synonyms' && (
-          <p className="mb-2 text-xs uppercase tracking-widest text-gray-600">Closest in meaning</p>
+          <p className="mb-2 text-xs uppercase tracking-widest text-gray-500">Closest in meaning</p>
         )}
         <p className={effectiveMode === 'def2word' ? 'text-lg leading-snug' : 'text-3xl'}>
           {q?.prompt}

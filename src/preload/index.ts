@@ -459,6 +459,8 @@ const api: NaviApi = {
       ipcRenderer.invoke('music:spotifyQueueClearCompleted'),
     spotifySetTrackDownloadOptions: (input) =>
       ipcRenderer.invoke('music:spotifySetTrackDownloadOptions', input),
+    spotifyMatchPlaylistItem: (input) =>
+      ipcRenderer.invoke('music:spotifyMatchPlaylistItem', input),
     spotifyForgetEntitySource: (input) =>
       ipcRenderer.invoke('music:spotifyForgetEntitySource', input),
     spotifyRemoveItem: (itemId) => ipcRenderer.invoke('music:spotifyRemoveItem', itemId),
@@ -655,6 +657,7 @@ const api: NaviApi = {
   },
   settings: {
     all: () => ipcRenderer.invoke('settings:all'),
+    secretStorage: () => ipcRenderer.invoke('settings:secretStorage'),
     set: (key, value) => ipcRenderer.invoke('settings:set', key, value)
   },
   refresh: {

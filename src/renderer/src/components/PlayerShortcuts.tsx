@@ -33,8 +33,10 @@ export default function PlayerShortcuts() {
       // Space activates whatever has focus — a button, or the role="button"
       // rows in the queue panel and the art grids. Never steal it from them.
       if (e.key === ' ' && isActivatable(e.target)) return
-      // An open dialog owns the keyboard (the lightbox walks images with ←/→).
-      if (document.querySelector('[role="dialog"]')) return
+      // Modal dialogs and interactive popovers own the keyboard. Popovers use
+      // an explicit marker so their honest non-dialog semantics do not make
+      // Arrow keys change playback behind the open surface.
+      if (document.querySelector('[role="dialog"], [data-player-shortcuts="suspend"]')) return
       const p = playerRef.current
       if (!p.track) return
 

@@ -257,7 +257,7 @@ export default function EnglishMechanicsPage() {
     >
 
       <div className="card p-5">
-        <p className="mb-2 text-xs uppercase tracking-widest text-gray-600">
+        <p className="mb-2 text-xs uppercase tracking-widest text-gray-500">
           {current ? CATEGORY_LABEL[current.category] : ''}
         </p>
         <p className="text-base leading-snug">{current?.prompt}</p>

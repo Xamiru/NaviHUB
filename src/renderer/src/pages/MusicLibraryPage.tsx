@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import EmptyState from '../components/EmptyState'
 import ActionMenu from '../components/ActionMenu'
 import PageHeader from '../components/PageHeader'
-import Tabs from '../components/Tabs'
+import Tabs, { TabPanel } from '../components/Tabs'
 import { Link, useNavigate } from 'react-router-dom'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -24,6 +24,7 @@ import type {
   MusicTrackBrowseFilter,
   MusicTrackBrowseSort
 } from '@shared/types'
+import { Field } from '../components/Field'
 
 type Tab = 'artists' | 'albums' | 'tracks' | 'playlists'
 
@@ -203,12 +204,14 @@ export default function MusicLibraryPage() {
 
       <SonicArchiveLead />
 
-      <input
-        className="input mb-4 max-w-md"
-        placeholder="Search artists, albums, tracks…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <Field label="Search music library" hiddenLabel className="contents">
+        <input
+          className="input mb-4 max-w-md"
+          placeholder="Search artists, albums, tracks…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </Field>
 
       {query ? (
         <SearchResults query={query} />
@@ -217,6 +220,8 @@ export default function MusicLibraryPage() {
           {/* Liked and Stats are destinations, not views of this page — they
               live under Music in the sidebar now. */}
           <Tabs
+            id="music-library"
+            label="Music library view"
             className="mb-4"
             value={tab}
             onChange={setTab}
@@ -227,10 +232,12 @@ export default function MusicLibraryPage() {
               { key: 'playlists', label: 'Playlists' }
             ]}
           />
-          {tab === 'artists' && <ArtistsTab />}
-          {tab === 'albums' && <AlbumsTab />}
-          {tab === 'tracks' && <TracksTab />}
-          {tab === 'playlists' && <PlaylistsTab />}
+          <TabPanel tabsId="music-library" value={tab}>
+            {tab === 'artists' && <ArtistsTab />}
+            {tab === 'albums' && <AlbumsTab />}
+            {tab === 'tracks' && <TracksTab />}
+            {tab === 'playlists' && <PlaylistsTab />}
+          </TabPanel>
         </>
       )}
 
@@ -625,18 +632,20 @@ function PlaylistsTab() {
   return (
     <>
       <div className="mb-4 flex max-w-2xl flex-col gap-2 sm:flex-row">
-        <input
-          className="input"
-          placeholder="New playlist…"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              void create()
-            }
-          }}
-        />
+        <Field label="New playlist title" hiddenLabel className="contents">
+          <input
+            className="input"
+            placeholder="New playlist…"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                void create()
+              }
+            }}
+          />
+        </Field>
         <button className="btn-ghost" disabled={!newTitle.trim()} onClick={create}>
           Create
         </button>

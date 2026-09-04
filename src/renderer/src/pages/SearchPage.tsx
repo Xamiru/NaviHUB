@@ -173,7 +173,6 @@ function SearchResultRow({
       to={to}
       onMouseEnter={onSelect}
       onFocus={onSelect}
-      aria-current={selected ? 'true' : undefined}
       className={`group flex min-w-0 items-center gap-4 border-t border-base-700 px-4 py-3 first:border-t-0 ${
         selected ? 'bg-accent/10' : 'hover:bg-base-700/50'
       }`}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -11,6 +11,7 @@ import FavoriteButton from './FavoriteButton'
 import { NextIcon } from './PlayerIcons'
 import type { MusicTrack } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import { usePopover } from '../lib/hooks'
 
 export function formatDuration(seconds: number | null): string {
   if (seconds == null || !Number.isFinite(seconds)) return '–:––'
@@ -120,29 +121,17 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
   const player = usePlayerControls()
   const [open, setOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
-  const boxRef = useRef<HTMLDivElement>(null)
+  const triggerId = useId()
+  const panelId = useId()
+  const { panelRef, triggerRef } = usePopover(open, () => setOpen(false), {
+    initialFocus: 'first'
+  })
 
   const { data: playlists = [] } = useQuery({
     queryKey: qk.music.playlistsForTrack(track.id),
     queryFn: () => api.music.playlistsForTrack(track.id),
     enabled: open
   })
-
-  useEffect(() => {
-    if (!open) return
-    function onDoc(e: MouseEvent): void {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    function onKey(e: KeyboardEvent): void {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDoc)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
 
   function refreshPlaylists(): void {
     qc.invalidateQueries({ queryKey: qk.music.playlists })
@@ -183,22 +172,26 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
   }
 
   return (
-    <div ref={boxRef} className="relative">
+    <div className="relative">
       <button
+        id={triggerId}
+        ref={triggerRef}
         className={`px-1 text-gray-500 transition-opacity hover:text-white ${open ? '' : 'opacity-60 group-hover:opacity-100 focus-visible:opacity-100'}`}
         title="More"
         aria-label={`More actions for ${track.title}`}
-        aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((v) => !v)}
       >
         ⋯
       </button>
       {open && (
         <div
+          id={panelId}
+          ref={panelRef}
           className="absolute right-0 z-30 mt-1 w-60 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg"
-          role="dialog"
-          aria-label={`Actions for ${track.title}`}
+          role="region"
+          aria-labelledby={triggerId}
         >
           <button
             className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"

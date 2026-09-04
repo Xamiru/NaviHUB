@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { Link } from 'react-router-dom'
 import TaskRow from './TaskRow'
 import { useTasks } from '../lib/useTasks'
+import { usePopover } from '../lib/hooks'
 
 // Topbar pill for everything the main process is currently doing, and the
 // dropdown that lets you pause or stop any of it.
@@ -19,23 +20,11 @@ import { useTasks } from '../lib/useTasks'
 export default function TasksIndicator() {
   const { active, running, kick } = useTasks()
   const [open, setOpen] = useState(false)
-  const boxRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!open) return
-    function onDoc(e: MouseEvent): void {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    function onKey(e: KeyboardEvent): void {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDoc)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [open])
+  const panelId = useId()
+  const triggerId = useId()
+  const { panelRef, triggerRef } = usePopover(open, () => setOpen(false), {
+    initialFocus: 'first'
+  })
 
   // Close the panel when the last task settles, so it can't linger empty.
   useEffect(() => {
@@ -49,11 +38,13 @@ export default function TasksIndicator() {
     active.length === 1 ? (first?.label ?? '') : `${active.length} tasks running`
 
   return (
-    <div ref={boxRef} className="relative shrink-0">
+    <div className="relative shrink-0">
       <button
+        id={triggerId}
+        ref={triggerRef}
         className="flex shrink-0 items-center gap-2 rounded-full bg-base-700/80 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:text-white"
-        aria-haspopup="dialog"
         aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
         title={active.map((t) => t.label).join(' · ')}
         onClick={() => setOpen((v) => !v)}
       >
@@ -63,8 +54,10 @@ export default function TasksIndicator() {
 
       {open && (
         <div
-          role="dialog"
-          aria-label="Running tasks"
+          id={panelId}
+          ref={panelRef}
+          role="region"
+          aria-labelledby={triggerId}
           className="panel-in absolute right-0 z-40 mt-2 w-[26rem] overflow-hidden rounded-md border border-base-500 bg-base-800 shadow-lg"
         >
           <div className="max-h-96 overflow-y-auto">

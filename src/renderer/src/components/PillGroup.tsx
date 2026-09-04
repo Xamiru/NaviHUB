@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
+import { Fieldset } from './Field'
 
 // The quiz-setup idiom: a labelled row of single-select pills. Shared by the
 // quiz/tournament setup screens — replaces four identical local copies.
 export function Group({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div>
-      <div className="label mb-2">{label}</div>
+    <Fieldset legend={label}>
       <div className="flex flex-wrap gap-2">{children}</div>
-    </div>
+    </Fieldset>
   )
 }
 

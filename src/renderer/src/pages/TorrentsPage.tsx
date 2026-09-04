@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useSettings } from '../lib/hooks'
+import { useSecretStorage, useSettings } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { useTorrentSearch } from '../lib/useTorrentSearch'
 import { TORRENT_CATEGORY_OPTIONS } from '@shared/torrents'
@@ -8,12 +8,15 @@ import StartJackettButton from '../components/StartJackettButton'
 import PageHeader from '../components/PageHeader'
 import QuietWorkspace from '../components/QuietWorkspace'
 import EmptyState from '../components/EmptyState'
+import { Field } from '../components/Field'
 
 // Free-form Jackett search for anything not tied to a library item (music,
 // software, one-offs). Results stream in per indexer via useTorrentSearch.
 export default function TorrentsPage(): React.JSX.Element {
   const { data: settings } = useSettings()
-  const configured = !!settings?.['jackett.url']?.trim() && !!settings?.['jackett.api_key']?.trim()
+  const { data: secretStorage } = useSecretStorage()
+  const configured =
+    !!settings?.['jackett.url']?.trim() && !!secretStorage?.configured['jackett.api_key']
 
   const [query, setQuery] = usePersistedState('torrents.query', '')
   const [catIdx, setCatIdx] = usePersistedState('torrents.cat', 0)
@@ -53,25 +56,28 @@ export default function TorrentsPage(): React.JSX.Element {
               }}
               className="flex flex-wrap gap-2"
             >
-              <input
-                className="input min-w-64 flex-1"
-                placeholder="Search torrents…"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                autoFocus
-              />
-              <select
-                className="input w-auto"
-                aria-label="Category"
-                value={catIdx}
-                onChange={(e) => setCatIdx(Number(e.target.value))}
-              >
-                {TORRENT_CATEGORY_OPTIONS.map((o, i) => (
-                  <option key={o.label} value={i}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
+              <Field label="Torrent search" hiddenLabel className="contents">
+                <input
+                  className="input min-w-64 flex-1"
+                  placeholder="Search torrents…"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  autoFocus
+                />
+              </Field>
+              <Field label="Torrent category" hiddenLabel className="contents">
+                <select
+                  className="input w-auto"
+                  value={catIdx}
+                  onChange={(e) => setCatIdx(Number(e.target.value))}
+                >
+                  {TORRENT_CATEGORY_OPTIONS.map((o, i) => (
+                    <option key={o.label} value={i}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
               <button className="btn-primary" type="submit" disabled={!query.trim()}>
                 Search
               </button>

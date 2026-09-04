@@ -10,8 +10,8 @@
  * with prune, personal-tracking preservation).
  *
  * IMPORTANT — how to run it:
- *   better-sqlite3 in this project is built against ELECTRON's ABI (electron-rebuild),
- *   so a plain `node` can't open the DB. Run it through Electron-as-Node:
+ *   Run through Electron-as-Node so the importer uses the packaged app's
+ *   Node/native runtime:
  *
  *     ELECTRON_RUN_AS_NODE=1 ./node_modules/.bin/electron scripts/bulk-import.cjs <command> [flags]
  *
@@ -50,16 +50,16 @@
  *       to recent/hyped titles). OMDb scores apply as in tmdb-top.
  *
  *   tmdb-top [--type movie|tv] [--list top_rated|popular|trending] [--count N] [--omdb-key KEY] [--delay MS]
- *       Import a ranked list of titles from TMDB (uses the api key already saved
- *       in the app's Settings → settings table key `tmdb.api_key`).
+ *       Import a ranked list of titles from TMDB. Once app credentials are
+ *       protected, provide NAVIHUB_TMDB_API_KEY to this headless command.
  *       Defaults: --type movie --list top_rated --count 50.
  *       --omdb-key adds IMDb rating + Rotten Tomatoes per title (free key from
- *       omdbapi.com; otherwise read from settings `omdb.api_key` if present).
+ *       omdbapi.com; NAVIHUB_OMDB_API_KEY is the environment alternative).
  *
  *   rawg-top [--list metacritic|rating|added] [--count N] [--rawg-key KEY] [--no-hltb] [--delay MS]
- *       Import a ranked list of video games from RAWG. Key from settings
- *       `rawg.api_key` (free at rawg.io/apidocs); pass --rawg-key once and it's
- *       saved to settings so the app can use it too. Defaults: --list metacritic
+ *       Import a ranked list of video games from RAWG. Pass --rawg-key for this
+ *       run or provide NAVIHUB_RAWG_API_KEY. The headless script never writes
+ *       plaintext credentials back to settings. Defaults: --list metacritic
  *       --count 500. DLC/special editions are skipped (exclude_additions).
  *       Each game gets developers/publishers, genres, Metacritic score, and —
  *       unless --no-hltb — HowLongToBeat play times, same as the in-app
@@ -137,6 +137,25 @@ if (!characterColumns.some((column) => column.name === 'gender')) {
 
 /* ----------------------------- utilities ----------------------------- */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+const PROTECTED_SECRET_PREFIX = 'navihub-secret:v1:'
+
+// Electron safeStorage is a main-process API and is intentionally unavailable
+// under ELECTRON_RUN_AS_NODE. Headless maintenance commands accept explicit
+// environment values instead of trying to weaken or bypass protected storage.
+function maintenanceSecret(key, environmentName, required = false) {
+  const fromEnvironment = process.env[environmentName]?.trim()
+  if (fromEnvironment) return fromEnvironment
+  const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key)
+  const stored = row?.value?.trim() || ''
+  if (stored.startsWith(PROTECTED_SECRET_PREFIX)) {
+    if (!required) return null
+    throw new Error(
+      `${key} is protected by NaviHUB and cannot be decrypted by this headless command. ` +
+        `Set ${environmentName} for this run.`
+    )
+  }
+  return stored || null
+}
 
 let dlCounter = 0
 // Mirrors src/main/files.ts downloadImage(): fetch a remote image into MEDIA_DIR,
@@ -957,8 +976,7 @@ const TMDB_MAX_CAST = 30
 let OMDB_KEY = null
 function omdbKey() {
   if (OMDB_KEY) return OMDB_KEY
-  const row = db.prepare("SELECT value FROM settings WHERE key='omdb.api_key'").get()
-  return row?.value?.trim() || null
+  return maintenanceSecret('omdb.api_key', 'NAVIHUB_OMDB_API_KEY')
 }
 async function fetchOmdb(imdbId) {
   const key = omdbKey()
@@ -990,9 +1008,8 @@ async function fetchOmdb(imdbId) {
 }
 
 function tmdbApiKey() {
-  const row = db.prepare('SELECT value FROM settings WHERE key=?').get('tmdb.api_key')
-  const key = row?.value?.trim()
-  if (!key) throw new Error('No TMDB api key in settings (set it in the app: Settings → TMDB API key).')
+  const key = maintenanceSecret('tmdb.api_key', 'NAVIHUB_TMDB_API_KEY', true)
+  if (!key) throw new Error('No TMDB API key. Set NAVIHUB_TMDB_API_KEY for this run.')
   return key
 }
 async function tmdbGet(p, params = {}, attempt = 0) {
@@ -1353,14 +1370,13 @@ async function cmdImdbTop(flags) {
 const RAWG_BASE = 'https://api.rawg.io/api'
 const RAWG_SOURCE = 'rawg'
 
-// Key from the --rawg-key flag (set by cmdRawgTop, also saved to settings so
-// the app picks it up) or the settings table (rawg.api_key).
+// Key from the --rawg-key flag, an explicit environment value, or a legacy
+// plaintext settings row. Protected app values cannot be decrypted headlessly.
 let RAWG_KEY = null
 function rawgApiKey() {
   if (RAWG_KEY) return RAWG_KEY
-  const row = db.prepare("SELECT value FROM settings WHERE key='rawg.api_key'").get()
-  const key = row?.value?.trim()
-  if (!key) throw new Error('No RAWG api key. Get one free at rawg.io/apidocs, then pass --rawg-key KEY (saved for the app too) or set it in the app Settings.')
+  const key = maintenanceSecret('rawg.api_key', 'NAVIHUB_RAWG_API_KEY', true)
+  if (!key) throw new Error('No RAWG API key. Pass --rawg-key KEY or set NAVIHUB_RAWG_API_KEY for this run.')
   return key
 }
 
@@ -1643,13 +1659,10 @@ async function cmdRawgTop(flags) {
   const delay = flags.delay ? Number(flags.delay) : 250
   const withHltb = !flags['no-hltb']
 
-  // --rawg-key wins and is saved so the app's own importer works too.
+  // --rawg-key is process-local. Never write a plaintext credential into the
+  // database behind the app's protected-storage boundary.
   if (flags['rawg-key']) {
     RAWG_KEY = String(flags['rawg-key']).trim()
-    db.prepare(
-      `INSERT INTO settings (key, value) VALUES ('rawg.api_key', ?)
-       ON CONFLICT(key) DO UPDATE SET value = excluded.value`
-    ).run(RAWG_KEY)
   }
   rawgApiKey() // fail fast with a clear message before any network work
 

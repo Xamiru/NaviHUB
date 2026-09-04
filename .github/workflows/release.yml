@@ -15,7 +15,7 @@ env:
   # to deliberately re-baseline the numbering.
   BASE_COMMITS: 7
   BASE_MINOR: 2
-  NODE_VERSION: '20'
+  NODE_VERSION: '24'
 
 jobs:
   # Gate for the build jobs, and the single place the version is computed —
@@ -49,8 +49,6 @@ jobs:
           echo "version=0.$minor.0" >> "$GITHUB_OUTPUT"
           echo "$count commits -> 0.$minor.0" >> "$GITHUB_STEP_SUMMARY"
 
-      # postinstall runs electron-rebuild, so better-sqlite3 lands on disk built
-      # against Electron's ABI — which is also what `npm test` needs.
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test
@@ -93,10 +91,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
-      # Order is load-bearing: install -> stamp -> build -> package, with NO
-      # reinstall in between. `postinstall` rebuilds better-sqlite3, so a later
-      # npm install would clobber the native module packaged into the app.
+      # Order is load-bearing: install -> stamp -> build -> package. The native
+      # smoke in verify proves the bundled better-sqlite3 N-API binary loads in
+      # Electron before either platform artifact is built.
       - run: npm ci
+      - run: npm run test:native
 
       - name: Stamp version
         run: npm version "${{ needs.verify.outputs.version }}" --no-git-tag-version --allow-same-version
@@ -114,7 +113,7 @@ jobs:
         run: |
           node -e '
             const fs = require("fs")
-            const p = "dist/win-unpacked/resources/app.asar.unpacked/node_modules/better-sqlite3/build/Release/better_sqlite3.node"
+            const p = "dist/win-unpacked/resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds/win32-x64.node"
             const magic = fs.readFileSync(p).subarray(0, 2).toString("binary")
             if (magic !== "MZ") {
               console.error("better_sqlite3.node is not a PE binary (magic: " + JSON.stringify(magic) + ")")

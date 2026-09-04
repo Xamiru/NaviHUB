@@ -104,7 +104,7 @@ export default function CoachRail({
               <li key={n.id} className="group flex items-start gap-2 text-xs text-gray-300">
                 <span className="flex-1">{n.content}</span>
                 <button
-                  className="text-gray-600 opacity-0 group-hover:opacity-100 hover:text-red-400"
+                  className="text-gray-600 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-400"
                   title="Delete note"
                   aria-label="Delete note"
                   onClick={() => removeNote(n.id)}
@@ -129,7 +129,7 @@ export default function CoachRail({
                   {d.title}
                 </span>
                 <button
-                  className="text-gray-600 opacity-0 group-hover:opacity-100 hover:text-red-400"
+                  className="text-gray-600 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-red-400"
                   title="Delete import"
                   aria-label="Delete import"
                   onClick={() => removeDoc(d.id)}
@@ -180,7 +180,7 @@ function GoalRow({
         )}
       </div>
       <button
-        className="text-gray-600 opacity-0 group-hover:opacity-100 hover:text-gray-300"
+        className="text-gray-600 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 hover:text-gray-300"
         title="Drop"
         aria-label="Drop"
         onClick={() => onDrop(goal.id)}

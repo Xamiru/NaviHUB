@@ -5,6 +5,7 @@ import { qk } from '../lib/queryKeys'
 import { useDialog } from '../lib/hooks'
 import { toastError } from '../lib/toast'
 import type { ImageKind, MediaDetail, WallpaperSearchResult } from '@shared/types'
+import { Field } from './Field'
 
 interface Props {
   m: MediaDetail
@@ -134,13 +135,15 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
             }}
             className="flex gap-2 mb-4"
           >
-            <input
-              className="input"
-              placeholder="Search Wallhaven…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              autoFocus
-            />
+            <Field label="Search Wallhaven" hiddenLabel className="contents">
+              <input
+                className="input"
+                placeholder="Search Wallhaven…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                autoFocus
+              />
+            </Field>
             <button className="btn-primary" type="submit">
               Search
             </button>

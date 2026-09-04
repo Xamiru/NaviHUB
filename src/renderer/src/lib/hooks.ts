@@ -1,15 +1,37 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type RefObject } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { qk } from './queryKeys'
 import { mediaUrl } from '@shared/mediaUrl'
 import { MEDIA_CONFIGS, statusesExceptPlanned } from './mediaConfig'
-import type { SettingsMap } from '@shared/types'
+import type { SecretStorageState, SettingsMap } from '@shared/types'
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+
+function focusableWithin(root: HTMLElement): HTMLElement[] {
+  return [...root.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter((element) => {
+    for (let current: HTMLElement | null = element; current && current !== root; current = current.parentElement) {
+      const style = getComputedStyle(current)
+      if (current.hidden || current.getAttribute('aria-hidden') === 'true') return false
+      if (style.display === 'none' || style.visibility === 'hidden') return false
+    }
+    return true
+  })
+}
 
 export function useSettings() {
   return useQuery<SettingsMap>({
-    queryKey: qk.settings.all,
+    queryKey: qk.settings.values,
     queryFn: () => api.settings.all(),
+    staleTime: 60_000
+  })
+}
+
+export function useSecretStorage() {
+  return useQuery<SecretStorageState>({
+    queryKey: qk.settings.secretStorage,
+    queryFn: () => api.settings.secretStorage(),
     staleTime: 60_000
   })
 }
@@ -67,24 +89,35 @@ export function useAllCompletedStatuses(): string[] {
 // give that element role="dialog" aria-modal="true" tabIndex={-1}. An inner
 // autoFocus input wins the initial focus (autoFocus applies at commit, before
 // effects run, so the contains() check defers to it).
-export function useDialog(onClose: () => void) {
+export function useDialog(
+  onClose: () => void,
+  options: { initialFocus?: () => HTMLElement | null } = {}
+) {
   const panelRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef(onClose)
+  const initialFocusRef = useRef(options.initialFocus)
   closeRef.current = onClose
+  initialFocusRef.current = options.initialFocus
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null
     const panel = panelRef.current
-    if (panel && !panel.contains(document.activeElement)) panel.focus()
+    const initialFocus = initialFocusRef.current?.()
+    if (initialFocus && panel?.contains(initialFocus)) initialFocus.focus()
+    else if (panel && !panel.contains(document.activeElement)) panel.focus()
+
+    function focusableElements(): HTMLElement[] {
+      return panel ? focusableWithin(panel) : []
+    }
+
     function onKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
-        e.stopPropagation()
+        e.preventDefault()
+        e.stopImmediatePropagation()
         closeRef.current()
         return
       }
       if (e.key !== 'Tab' || !panel) return
-      const focusable = [...panel.querySelectorAll<HTMLElement>(
-        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-      )].filter((element) => element.offsetParent !== null)
+      const focusable = focusableElements()
       if (focusable.length === 0) {
         e.preventDefault()
         panel.focus()
@@ -100,13 +133,90 @@ export function useDialog(onClose: () => void) {
         first.focus()
       }
     }
-    window.addEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, true)
     return () => {
-      window.removeEventListener('keydown', onKey)
-      opener?.focus?.()
+      window.removeEventListener('keydown', onKey, true)
+      if (opener?.isConnected) opener.focus()
     }
   }, [])
   return panelRef
+}
+
+// Shared behavior for anchored, non-modal disclosures. Unlike useDialog this
+// does not contain Tab focus. It closes on outside press and capture-phase
+// Escape, can focus its first control, and optionally supplies menu navigation.
+export function usePopover<TTrigger extends HTMLElement = HTMLButtonElement>(
+  open: boolean,
+  onClose: () => void,
+  options: {
+    initialFocus?: 'none' | 'first' | 'panel'
+    navigation?: 'none' | 'menu'
+    triggerRef?: RefObject<TTrigger>
+  } = {}
+) {
+  const ownedTriggerRef = useRef<TTrigger>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const triggerRef = options.triggerRef ?? ownedTriggerRef
+  const closeRef = useRef(onClose)
+  const initialFocusRef = useRef(options.initialFocus ?? 'none')
+  const navigationRef = useRef(options.navigation ?? 'none')
+  closeRef.current = onClose
+  initialFocusRef.current = options.initialFocus ?? 'none'
+  navigationRef.current = options.navigation ?? 'none'
+
+  useEffect(() => {
+    if (!open) return
+    const panel = panelRef.current
+    panel?.setAttribute('data-player-shortcuts', 'suspend')
+    const initialFocus = initialFocusRef.current
+    if (panel && initialFocus === 'panel') panel.focus()
+    if (panel && initialFocus === 'first') focusableWithin(panel)[0]?.focus()
+
+    function onMouseDown(event: MouseEvent): void {
+      const target = event.target as Node
+      if (panelRef.current?.contains(target) || triggerRef.current?.contains(target)) return
+      closeRef.current()
+    }
+
+    function onKeyDown(event: KeyboardEvent): void {
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopImmediatePropagation()
+        triggerRef.current?.focus()
+        closeRef.current()
+        return
+      }
+      if (navigationRef.current !== 'menu') return
+      if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+      const items = [
+        ...(panelRef.current?.querySelectorAll<HTMLElement>(
+          '[role="menuitem"]:not([aria-disabled="true"])'
+        ) ?? [])
+      ]
+      if (items.length === 0) return
+      event.preventDefault()
+      event.stopPropagation()
+      const current = items.indexOf(document.activeElement as HTMLElement)
+      const next =
+        event.key === 'Home'
+          ? 0
+          : event.key === 'End'
+            ? items.length - 1
+            : event.key === 'ArrowDown'
+              ? (current + 1 + items.length) % items.length
+              : (current - 1 + items.length) % items.length
+      items[next]?.focus()
+    }
+
+    document.addEventListener('mousedown', onMouseDown)
+    document.addEventListener('keydown', onKeyDown, true)
+    return () => {
+      document.removeEventListener('mousedown', onMouseDown)
+      document.removeEventListener('keydown', onKeyDown, true)
+    }
+  }, [open, triggerRef])
+
+  return { panelRef, triggerRef }
 }
 
 export function useScoreMax(): number {

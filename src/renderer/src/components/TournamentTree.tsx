@@ -101,7 +101,7 @@ export default function TournamentTree({
         >
           {entry.name}
         </span>
-        {state === 'win' && <span className="ml-auto shrink-0 text-[10px] text-gray-600">win</span>}
+        {state === 'win' && <span className="ml-auto shrink-0 text-xs text-gray-500">win</span>}
       </div>
     )
   }

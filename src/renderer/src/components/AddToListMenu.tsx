@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useId, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { KIND_LABEL } from '../lib/listLinks'
 import type { ListKind } from '@shared/types'
+import { usePopover } from '../lib/hooks'
+import { Field } from './Field'
 
 // Dropdown for an entity detail page: toggle this entity in/out of any list of
 // its kind, or spin up a new list containing it. `label` overrides the button.
@@ -21,28 +23,17 @@ export default function AddToListMenu({
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
-  const boxRef = useRef<HTMLDivElement>(null)
+  const triggerId = useId()
+  const panelId = useId()
+  const { panelRef, triggerRef } = usePopover(open, () => setOpen(false), {
+    initialFocus: 'first'
+  })
 
   const { data: lists = [] } = useQuery({
     queryKey: qk.lists.forEntity(kind, entityId),
     queryFn: () => api.lists.forEntity(kind, entityId),
     enabled: open
   })
-
-  useEffect(() => {
-    function onDoc(e: MouseEvent) {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) setOpen(false)
-    }
-    function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') setOpen(false)
-    }
-    document.addEventListener('mousedown', onDoc)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDoc)
-      document.removeEventListener('keydown', onKey)
-    }
-  }, [])
 
   function refresh() {
     qc.invalidateQueries({ queryKey: qk.lists.all })
@@ -64,12 +55,25 @@ export default function AddToListMenu({
   }
 
   return (
-    <div ref={boxRef} className="relative">
-      <button className={`btn-ghost ${fullWidth ? 'w-full' : ''}`} onClick={() => setOpen((v) => !v)}>
+    <div className="relative">
+      <button
+        id={triggerId}
+        ref={triggerRef}
+        className={`btn-ghost ${fullWidth ? 'w-full' : ''}`}
+        aria-expanded={open}
+        aria-controls={open ? panelId : undefined}
+        onClick={() => setOpen((v) => !v)}
+      >
         {label ?? 'Add to list'}
       </button>
       {open && (
-        <div className="absolute right-0 z-30 mt-1 w-64 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg">
+        <div
+          id={panelId}
+          ref={panelRef}
+          role="region"
+          aria-labelledby={triggerId}
+          className="absolute right-0 z-30 mt-1 w-64 rounded-md border border-base-500 bg-base-800 p-2 shadow-lg"
+        >
           <div className="mb-1 px-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
             {KIND_LABEL[kind]} lists
           </div>
@@ -91,18 +95,20 @@ export default function AddToListMenu({
             ))}
           </div>
           <div className="mt-2 flex gap-1 border-t border-base-700 pt-2">
-            <input
-              className="input py-1 text-sm"
-              placeholder="New list…"
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  createAndAdd()
-                }
-              }}
-            />
+            <Field label="New list title" hiddenLabel className="contents">
+              <input
+                className="input py-1 text-sm"
+                placeholder="New list…"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    createAndAdd()
+                  }
+                }}
+              />
+            </Field>
             <button className="btn-primary px-2 py-1 text-sm" disabled={!newTitle.trim()} onClick={createAndAdd}>
               Add
             </button>
