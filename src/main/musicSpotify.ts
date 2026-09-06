@@ -846,6 +846,12 @@ let counter = 0
 let active: { id: string; proc: ChildProcessWithoutNullStreams; cancelled: boolean; owner: string } | null = null
 let status: MusicDownloadEvent | null = null
 const SPOTDL_METADATA_STALL_MS = 5 * 60_000
+// A large playlist can go completely quiet after printing "Found N songs"
+// while its worker pool is still fetching and serializing every track. Five
+// minutes produced repeatable false failures on a healthy 100-track import.
+// Rate-limit lines are handled immediately and the task remains cancellable,
+// so use a deliberately conservative watchdog for this metadata-only path.
+export const SPOTDL_PLAYLIST_METADATA_STALL_MS = 30 * 60_000
 const SPOTDL_AUDIO_STALL_MS = 10 * 60_000
 const abandonedRuns = new Set<string>()
 let inspectionPromise: Promise<SpotifyEntityInspection> | null = null
@@ -951,7 +957,10 @@ export function entityState(input: SpotifyEntityRef): SpotifyEntityState {
 export function parseSpotdlInspectionLine(line: string): { foundCount: number; message: string } | null {
   const found = line.match(/Found\s+(\d+)\s+songs?\s+in\s+(.+?)(?:\s+\([^)]+\))?\s*$/i)
   return found
-    ? { foundCount: Number(found[1]), message: `Found ${found[1]} tracks; preparing the preview` }
+    ? {
+        foundCount: Number(found[1]),
+        message: `Found ${found[1]} tracks; resolving Spotify metadata in parallel. spotDL may be quiet for several minutes.`
+      }
     : null
 }
 
@@ -1301,7 +1310,12 @@ export function forgetEntitySource(input: { kind: SpotifyEntityKind; entityId: n
 }
 
 export async function importPlaylist(url: string): Promise<SpotifyImportResult> {
-  updateActivity({ phase: 'fetching', done: 0, total: 1 })
+  updateActivity({
+    phase: 'fetching',
+    detail: 'Reading the public playlist with spotDL',
+    done: 0,
+    total: 0
+  })
   const parsed = await resolvePlaylistUrl(url)
   const existing = spotifyRepo.findPlaylistBySpotifyId(parsed.spotifyId)
   if (existing != null) {
@@ -1323,12 +1337,15 @@ export async function importPlaylist(url: string): Promise<SpotifyImportResult> 
     const code = await runSpotdl(
       buildSpotdlSaveArgs(parsed.canonicalUrl, saveFile),
       'Spotify import',
+      (line) => {
+        const event = parseSpotdlInspectionLine(line)
+        if (event) updateActivity({ detail: event.message, done: 0, total: 0 })
+      },
       undefined,
       undefined,
-      undefined,
-      SPOTDL_METADATA_STALL_MS
+      SPOTDL_PLAYLIST_METADATA_STALL_MS
     )
-    updateActivity({ phase: 'fetching', done: 1, total: 1 })
+    updateActivity({ phase: 'fetching', detail: 'Validating the playlist snapshot', done: 0, total: 0 })
     if (code !== 0) {
       throw new Error('spotDL could not read that playlist. It may be private or inaccessible.')
     }
@@ -1343,7 +1360,12 @@ export async function importPlaylist(url: string): Promise<SpotifyImportResult> 
       throw new Error('No importable songs were found. The playlist may be private or unavailable.')
     }
     const covers = await downloadImages(validated.songs.map((song) => song.coverUrl))
-    updateActivity({ phase: 'writing', done: validated.songs.length, total: validated.songs.length })
+    updateActivity({
+      phase: 'writing',
+      detail: `Matching and saving ${validated.songs.length} tracks`,
+      done: validated.songs.length,
+      total: validated.songs.length
+    })
     const created = spotifyRepo.createSpotifyPlaylist({
       spotifyId: parsed.spotifyId,
       sourceUrl: parsed.canonicalUrl,

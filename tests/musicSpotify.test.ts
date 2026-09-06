@@ -29,6 +29,7 @@ import {
   parseSpotdlVersion,
   payloadWithAudioSource,
   parseSpotdlInspectionLine,
+  SPOTDL_PLAYLIST_METADATA_STALL_MS,
   pickDiscoveredEntity,
   pickConsensusDiscoveredEntity,
   rankSpotifyReleaseDiscoveryTracks,
@@ -53,6 +54,15 @@ import {
 } from '../src/main/repos/musicSpotifyRepo'
 
 describe('Spotify playlist import core', () => {
+  it('allows long silent playlist metadata resolution without the five-minute false timeout', () => {
+    expect(SPOTDL_PLAYLIST_METADATA_STALL_MS).toBe(30 * 60_000)
+    expect(SPOTDL_PLAYLIST_METADATA_STALL_MS).toBeGreaterThan(5 * 60_000)
+    expect(parseSpotdlInspectionLine('Found 100 songs in RYM Top 100 Songs (Playlist)')).toEqual({
+      foundCount: 100,
+      message: 'Found 100 tracks; resolving Spotify metadata in parallel. spotDL may be quiet for several minutes.'
+    })
+  })
+
   it('accepts canonical playlist URLs and rejects other Spotify content', () => {
     expect(
       parseSpotifyPlaylistUrl('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=test')
@@ -647,7 +657,7 @@ describe('Spotify playlist import core', () => {
     })
     expect(parseSpotdlInspectionLine('Found 109 songs in Gracie Abrams (Artist)')).toEqual({
       foundCount: 109,
-      message: 'Found 109 tracks; preparing the preview'
+      message: 'Found 109 tracks; resolving Spotify metadata in parallel. spotDL may be quiet for several minutes.'
     })
   })
 })

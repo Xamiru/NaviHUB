@@ -14,8 +14,7 @@ import { __reset as resetLog } from '../src/main/logBus'
 
 // progress.ts is the adapter that turns all 17 withActivity call sites in
 // ipc.ts into registry tasks with no edits at any of them. The critical
-// property under test is that it did NOT change ActivityStatus — the Topbar
-// pill and the ImportDialog bar read that shape and have no tests of their own.
+// The Topbar pill and import dialogs share this exact status shape.
 
 beforeEach(() => {
   tasks.__reset()
@@ -29,6 +28,7 @@ describe('ActivityStatus is unchanged (Topbar pill / ImportDialog regression)', 
     expect(getActivity()).toEqual({
       active: false,
       label: '',
+      detail: null,
       phase: 'fetching',
       done: 0,
       total: 0
@@ -40,18 +40,20 @@ describe('ActivityStatus is unchanged (Topbar pill / ImportDialog regression)', 
     expect(getActivity()).toEqual({
       active: true,
       label: 'Importing from AniList',
+      detail: null,
       phase: 'fetching',
       done: 0,
       total: 0
     })
 
-    updateActivity({ phase: 'writing' })
-    expect(getActivity().phase).toBe('writing')
+    updateActivity({ phase: 'writing', detail: 'Saving imported rows' })
+    expect(getActivity()).toMatchObject({ phase: 'writing', detail: 'Saving imported rows' })
 
     imageProgress(12, 40)
     expect(getActivity()).toEqual({
       active: true,
       label: 'Importing from AniList',
+      detail: null,
       phase: 'images',
       done: 12,
       total: 40

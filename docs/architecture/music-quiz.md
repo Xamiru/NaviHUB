@@ -56,6 +56,11 @@ compatibility layer and resolves downloaded audio through YouTube Music with ord
 YouTube as the built-in fallback; Spotify does not supply audio files.
 Parallel spotDL metadata workers can finish out of order, so import restores the
 authoritative `list_position` before covers, deduplication and database insertion.
+After spotDL reports the playlist track count it can remain silent while eight workers
+resolve and serialize every track. Playlist imports therefore use a conservative
+30-minute output-silence watchdog (provider rate-limit messages still fail immediately),
+and the shared activity/task surfaces report the discovered count and explain the quiet
+metadata phase without presenting a fake percentage. This phase does not download audio.
 
 `music_spotify_playlist` owns source identity and `music_spotify_playlist_item`
 keeps the ordered Spotify metadata, downloaded cover, and original spotDL payload.

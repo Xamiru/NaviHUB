@@ -23,7 +23,8 @@ export function useActivity(fast = false): ActivityStatus | null {
 
 export function activityText(s: ActivityStatus): string {
   const counted = (s.phase === 'images' || s.phase === 'audio') && s.total > 0
-  return counted ? `${PHASE_TEXT[s.phase]} ${s.done}/${s.total}` : PHASE_TEXT[s.phase]
+  const label = s.detail ?? PHASE_TEXT[s.phase]
+  return counted ? `${label} ${s.done}/${s.total}` : label
 }
 
 // Topbar pill: shows whatever long-running task the main process is on

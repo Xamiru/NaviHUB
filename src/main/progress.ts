@@ -16,9 +16,17 @@ export { TaskCancelledError }
 // This module is ALSO the adapter that puts all 17 withActivity call sites in
 // ipc.ts into the task registry, with no edits at any of them: begin creates a
 // task, update/imageProgress forward to it, end settles it. The ActivityStatus
-// shape below is deliberately untouched, so activity:status, useActivity() and
-// the ImportDialog bar keep working byte-for-byte.
-const state: ActivityStatus = { active: false, label: '', phase: 'fetching', done: 0, total: 0 }
+// shape stays deliberately small so activity:status, useActivity() and import
+// dialogs remain one shared progress surface. `detail` lets a slow provider
+// explain an otherwise silent phase without inventing a percentage.
+const state: ActivityStatus = {
+  active: false,
+  label: '',
+  detail: null,
+  phase: 'fetching',
+  done: 0,
+  total: 0
+}
 
 let handle: TaskHandle | null = null
 // False when a caller passed its own handle (bulkImport, wrestling): that
@@ -37,7 +45,7 @@ export function beginActivity(
   label: string,
   opts: { attachTo?: TaskHandle; onCancel?: () => void } = {}
 ): TaskHandle {
-  Object.assign(state, { active: true, label, phase: 'fetching', done: 0, total: 0 })
+  Object.assign(state, { active: true, label, detail: null, phase: 'fetching', done: 0, total: 0 })
   handle =
     opts.attachTo ??
     tasks.create({
@@ -62,11 +70,14 @@ export function beginActivity(
 }
 
 export function updateActivity(
-  patch: Partial<Pick<ActivityStatus, 'phase' | 'done' | 'total'>>
+  patch: Partial<Pick<ActivityStatus, 'detail' | 'phase' | 'done' | 'total'>>
 ): void {
   if (!state.active) return
+  if (patch.phase != null && patch.phase !== state.phase && patch.detail === undefined) {
+    state.detail = null
+  }
   Object.assign(state, patch)
-  handle?.progress({ detail: state.phase, done: state.done, total: state.total })
+  handle?.progress({ detail: state.detail ?? state.phase, done: state.done, total: state.total })
   throwIfCancelled()
 }
 
@@ -76,7 +87,7 @@ export function updateActivity(
 // without a single importer having to know about it.
 export function imageProgress(done: number, total: number): void {
   if (!state.active) return
-  Object.assign(state, { phase: 'images', done, total })
+  Object.assign(state, { detail: null, phase: 'images', done, total })
   handle?.progress({
     detail: 'images',
     done,
@@ -113,7 +124,14 @@ function settleHandle(target: TaskHandle, err?: unknown): void {
 function clearSlot(): void {
   handle = null
   ownsHandle = false
-  Object.assign(state, { active: false, label: '', phase: 'fetching', done: 0, total: 0 })
+  Object.assign(state, {
+    active: false,
+    label: '',
+    detail: null,
+    phase: 'fetching',
+    done: 0,
+    total: 0
+  })
 }
 
 function errText(err: unknown): string {

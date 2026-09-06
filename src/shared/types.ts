@@ -3234,6 +3234,7 @@ export interface MusicArtStatus {
 export interface ActivityStatus {
   active: boolean
   label: string // e.g. "Importing from AniList"
+  detail: string | null // optional provider-specific stage; null uses the generic phase label
   phase: 'fetching' | 'images' | 'audio' | 'writing'
   done: number // progress within the phase (images/audio only)
   total: number

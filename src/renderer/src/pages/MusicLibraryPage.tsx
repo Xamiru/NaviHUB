@@ -25,6 +25,7 @@ import type {
   MusicTrackBrowseSort
 } from '@shared/types'
 import { Field } from '../components/Field'
+import { activityText, useActivity } from '../components/ActivityIndicator'
 
 type Tab = 'artists' | 'albums' | 'tracks' | 'playlists'
 
@@ -687,6 +688,7 @@ function SpotifyImportDialog({
   const [url, setUrl] = useState('')
   const [importing, setImporting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const activity = useActivity(importing)
   const { data: readiness, isLoading } = useQuery({
     queryKey: qk.music.spotifyDetect,
     queryFn: () => api.music.spotifyDetect()
@@ -760,6 +762,20 @@ function SpotifyImportDialog({
               ? `spotDL ${readiness.version ?? ''} and ffmpeg are ready.`
               : (readiness?.error ?? 'spotDL is not ready. Configure it in Settings.')}
         </p>
+        {importing && (
+          <div className="mt-3 rounded-md bg-base-700/60 p-3" role="status" aria-live="polite">
+            <p className="text-sm text-gray-300">
+              {activity?.active ? activityText(activity) : 'Starting playlist import…'}
+            </p>
+            <div className="mt-2 h-1.5 overflow-hidden rounded bg-base-600">
+              <div className="h-full w-1/3 bg-accent motion-safe:animate-pulse" />
+            </div>
+            <p className="mt-2 text-xs leading-5 text-gray-400">
+              This stage reads Spotify metadata only; it does not download song audio. Large
+              playlists can be quiet for several minutes after the track count appears.
+            </p>
+          </div>
+        )}
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
           <button className="btn-ghost" onClick={onClose} disabled={importing}>
