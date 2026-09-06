@@ -10,6 +10,7 @@ import * as tmdb from './tmdb'
 import * as vndb from './vndb'
 import * as steam from './steam'
 import * as openlibrary from './openlibrary'
+import * as themes from './themes'
 import { aspectsForType, isRefreshableSource, missingClause } from '@shared/refresh'
 import type { RefreshAspect, RefreshRequest } from '@shared/refresh'
 import type { MediaType, RefreshPreview, RefreshRunStatus } from '@shared/types'
@@ -48,12 +49,14 @@ interface RefreshRow {
 }
 
 // The titles a request would touch. `onlyMissing` ORs the per-aspect tests: you
-// asked for four things, so a title lacking any one of them is worth a request.
+// asked for one or more things, so a title lacking any one of them is worth a request.
 export function selectRows(req: RefreshRequest): RefreshRow[] {
   const db = getSqlite()
   if (!req.types.length || !req.aspects.length) return []
   const typePlaceholders = req.types.map(() => '?').join(', ')
   const sourceFilter = `m.external_source IN ('anilist','tmdb','vndb','steam','openlibrary')`
+  const themesOnly = req.aspects.includes('themes') && req.aspects.every((aspect) => aspect === 'themes')
+  const themeSourceFilter = themesOnly ? ` AND m.external_source = 'anilist'` : ''
   const missing = req.onlyMissing ? ` AND ${missingClause(req.aspects)}` : ''
   return db
     .prepare(
@@ -61,7 +64,7 @@ export function selectRows(req: RefreshRequest): RefreshRow[] {
          FROM media_item m
         WHERE m.media_type IN (${typePlaceholders})
           AND m.external_id IS NOT NULL
-          AND ${sourceFilter}${missing}
+          AND ${sourceFilter}${themeSourceFilter}${missing}
         ORDER BY m.external_source, m.id`
     )
     .all(...req.types) as RefreshRow[]
@@ -89,29 +92,35 @@ export function preview(req: RefreshRequest): RefreshPreview {
 
 // One title. Dispatches on the ROW's source, not its media type: a game may be
 // a live 'steam' row or a legacy 'rawg' one, and only the row knows.
-export async function refreshOne(row: RefreshRow, aspects: RefreshAspect[]): Promise<void> {
+export async function refreshOne(row: RefreshRow, aspects: RefreshAspect[]): Promise<boolean> {
   // Hand each importer only the aspects its source can actually serve, so a
   // "banner" tick on a VN is a no-op rather than an empty UPDATE.
   const only = aspectsForType(aspects, row.media_type)
-  if (!only.length) return
+  if (!only.length) return false
+  let changed = false
+  if (only.includes('themes')) {
+    changed = await themes.refreshThemes(row.id)
+  }
+  const metadataOnly = only.filter((aspect) => aspect !== 'themes')
+  if (!metadataOnly.length) return changed
   switch (row.external_source) {
     case 'anilist':
-      if (row.media_type === 'manga') await anilist.importManga(Number(row.external_id), { only })
-      else await anilist.importAnime(Number(row.external_id), { only })
-      return
+      if (row.media_type === 'manga') await anilist.importManga(Number(row.external_id), { only: metadataOnly })
+      else await anilist.importAnime(Number(row.external_id), { only: metadataOnly })
+      return true
     case 'tmdb':
-      if (row.media_type === 'tv') await tmdb.importTv(Number(row.external_id), { only })
-      else await tmdb.importMovie(Number(row.external_id), { only })
-      return
+      if (row.media_type === 'tv') await tmdb.importTv(Number(row.external_id), { only: metadataOnly })
+      else await tmdb.importMovie(Number(row.external_id), { only: metadataOnly })
+      return true
     case 'vndb':
-      await vndb.importVisualNovel(Number(row.external_id), { only })
-      return
+      await vndb.importVisualNovel(Number(row.external_id), { only: metadataOnly })
+      return true
     case 'steam':
-      await steam.importGame(Number(row.external_id), { only })
-      return
+      await steam.importGame(Number(row.external_id), { only: metadataOnly })
+      return true
     case 'openlibrary':
-      await openlibrary.importBook(row.external_id, { only })
-      return
+      await openlibrary.importBook(row.external_id, { only: metadataOnly })
+      return true
     default:
       throw new Error(`No importer for source "${row.external_source}"`)
   }
@@ -148,7 +157,7 @@ function labelFor(req: RefreshRequest): string {
 export function start(
   req: RefreshRequest,
   deps: {
-    run?: (row: RefreshRow, aspects: RefreshAspect[]) => Promise<void>
+    run?: (row: RefreshRow, aspects: RefreshAspect[]) => Promise<boolean | void>
     rows?: RefreshRow[]
     delayMs?: number
   } = {}
@@ -213,9 +222,11 @@ export function start(
           continue
         }
         try {
-          await run(row, req.aspects)
+          const changed = (await run(row, req.aspects)) !== false
           if (status.id !== id) return
-          status = { ...status, refreshed: status.refreshed + 1 }
+          status = changed
+            ? { ...status, refreshed: status.refreshed + 1 }
+            : { ...status, skipped: status.skipped + 1 }
           consecutiveFailures = 0
         } catch (err) {
           if (status.id !== id) return

@@ -11,6 +11,14 @@
 
 ---
 
+## Rule repair and transfer
+
+`/english/repair` adds a small offline teaching layer without replacing the advanced test-first tools. Twelve authored units in `shared/english/remediation.ts` teach specific article, punctuation, clause-boundary, confusable, register and spelling rules. Each includes a worked example, two guided items, two different delayed prompts, and a writing task with a self-review checklist. Exact-answer results are narrow checks; the writing record is explicitly self-assessed and does not invoke an LLM.
+
+The writing mistake ledger links to a category's repair units. Mechanics rounds retain the exact missed item keys in the personal `learning.evidence.v1.english.mistakes` setting; the Home queue and summary link those items to repair while displaying the original prompt, answer and explanation. Rule suggestions are heuristic, labelled as suggestions, and can be changed. A later correct first response clears the item; repeated post-reveal answers in the same round cannot erase a miss. `?weak=1` retests the saved items without repeating within that round, and `?category=` seeds a focused round. Interrupted rounds that never reach End are not added to this queue.
+
+Shared `LearningPractice` tracks guided/assisted versus delayed evidence, reserves exposure before showing cold prompts and labels repeats honestly. `LearningProject` saves the learner's written work and checklist separately. All evidence uses the sanitized `learning.evidence.v1.` settings prefix. Existing provider-graded full writing tasks remain unchanged and still require the configured provider; the repair layer itself works offline.
+
 ## English dictionary
 
 **English dictionary (2026-07-29)** — `/english` (Learn section, one page): English→English lookup via **dictionaryapi.dev** (no key) in `src/main/english.ts` — pure `parseEnglishEntries` (fixture-tested) + `lookup` through `fetchWithRetry` (`timeoutMs: 15s, rateLimitWaits: 0`; **404 = unknown word = `[]`, anything else throws** so the QueryCache toast fires — the deliberate opposite of jisho.ts's swallow-everything). Saving a definition writes `en_word` (word, phonetic, pos, meaning, example) via `englishRepo.saveWord` — **idempotent on exact (word, meaning)**, returns the existing id — and the saved list renders on the same page from ONE unfiltered `qk.english.words('')` query (saved-state chips + client-side filter both read it; the repo's LIKE search exists but the renderer doesn't use it). Deliberately NOT part of the jp SRS ("save it for me, just that"). `en_word` is personal → wiped in sanitizeSql.cjs.

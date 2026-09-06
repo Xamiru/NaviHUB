@@ -98,6 +98,19 @@ describe('selectRows', () => {
     expect(refresh.selectRows(r)).toHaveLength(0)
   })
 
+  it('selects only AniList anime with no theme-song rows for theme backfill', () => {
+    const missing = addMedia({ title: 'Missing themes' })
+    const complete = addMedia({ title: 'Has themes' })
+    db.prepare(
+      `INSERT INTO theme_song (media_id, external_source, external_id, title)
+       VALUES (?, 'animethemes', 'song-1', 'Song')`
+    ).run(complete)
+    addMedia({ title: 'TMDB anime', external_source: 'tmdb' })
+
+    const rows = refresh.selectRows(req({ aspects: ['themes'] }))
+    expect(rows.map((row) => row.id)).toEqual([missing])
+  })
+
   it('returns nothing when no type or no aspect is chosen', () => {
     addMedia()
     expect(refresh.selectRows(req({ types: [] }))).toEqual([])
@@ -132,6 +145,14 @@ describe('start', () => {
     expect(s.refreshed).toBe(2)
     expect(s.failed).toBe(0)
     expect(seen.sort()).toEqual(['A', 'B'])
+  })
+
+  it('counts an unchanged title as skipped when the runner reports no change', async () => {
+    addMedia({ title: 'Already current' })
+    refresh.start(req(), { run: async () => false, delayMs: 0 })
+    const s = await settled()
+    expect(s.refreshed).toBe(0)
+    expect(s.skipped).toBe(1)
   })
 
   it('hands each title only the aspects its type can serve', async () => {

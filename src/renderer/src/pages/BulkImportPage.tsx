@@ -5,12 +5,15 @@ import { qk } from '../lib/queryKeys'
 import { useIncrementalList } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { useBulkRun } from '../lib/useBulkRun'
+import { useRefreshRun } from '../lib/useRefreshRun'
+import { toastError } from '../lib/toast'
 import PageHeader from '../components/PageHeader'
 import Tabs, { TabPanel } from '../components/Tabs'
 import RefreshTab from '../components/RefreshTab'
 import { Group, Pill } from '../components/PillGroup'
 import { BULK_SOURCES, bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
 import type { BulkListParams, BulkPreviewItem } from '@shared/types'
+import type { RefreshRequest } from '@shared/refresh'
 import QuietWorkspace from '../components/QuietWorkspace'
 import EmptyState from '../components/EmptyState'
 import OperationFlow, { type OperationFlowStep } from '../components/OperationFlow'
@@ -163,6 +166,7 @@ export default function BulkImportPage(): React.JSX.Element {
           <RefreshTab />
         ) : (
           <>
+          <MissingAnimeThemesTool bulkRunning={!!runStatus && runStatus.state === 'running'} />
           <ImportFlow
             previewReady={!!preview}
             running={!!runStatus && runStatus.state === 'running'}
@@ -340,6 +344,75 @@ export default function BulkImportPage(): React.JSX.Element {
         )}
       </TabPanel>
     </div>
+  )
+}
+
+// A library-wide backfill kept beside the importer: it targets only AniList
+// anime with no local theme rows and shares the refresh task/cancel machinery.
+function MissingAnimeThemesTool({ bulkRunning }: { bulkRunning: boolean }): React.JSX.Element {
+  const [count, setCount] = useState<number | null>(null)
+  const [checking, setChecking] = useState(false)
+  const themeReq: RefreshRequest = { types: ['anime'], aspects: ['themes'], onlyMissing: true }
+  const run = useRefreshRun()
+
+  async function check(): Promise<void> {
+    setChecking(true)
+    try {
+      const preview = await api.refresh.preview(themeReq)
+      setCount(preview.total)
+    } catch (error) {
+      toastError(error)
+    } finally {
+      setChecking(false)
+    }
+  }
+
+  async function start(): Promise<void> {
+    if (!count) return
+    try {
+      await api.refresh.start(themeReq)
+      setCount(null)
+      await run.kick()
+    } catch (error) {
+      toastError(error)
+    }
+  }
+
+  async function stop(): Promise<void> {
+    await api.refresh.cancel()
+    await run.kick()
+  }
+
+  const refreshRunning = run.status?.state === 'running'
+  const ownRefresh = refreshRunning && run.status?.label.includes('themes')
+  return (
+    <QuietWorkspace
+      title="Fetch missing anime theme songs"
+      description="Find AniList anime with no imported OP/ED songs, then fetch them from AnimeThemes with local audio."
+      className="mb-6"
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <button className="btn-primary" disabled={checking || bulkRunning || refreshRunning} onClick={() => void check()}>
+          {checking ? 'Checking…' : 'Check for missing themes'}
+        </button>
+        {count != null && (
+          <button className="btn-primary" disabled={count === 0 || bulkRunning || refreshRunning} onClick={() => void start()}>
+            Fetch {count} anime theme{count === 1 ? '' : 's'}
+          </button>
+        )}
+        {ownRefresh && (
+          <button className="btn-ghost" onClick={() => void stop()}>Stop theme fetch</button>
+        )}
+        <span className="text-sm text-gray-400" aria-live="polite">
+          {count == null ? 'Nothing changes until you check.' : count === 0 ? 'Every AniList anime already has themes.' : `${count} anime ready to fetch.`}
+        </span>
+      </div>
+      {ownRefresh && run.status && (
+        <div className="mt-3 text-xs text-gray-400" aria-live="polite">
+          Fetching {run.status.done} of {run.status.total}{run.status.message ? ` · ${run.status.message}` : ''}
+        </div>
+      )}
+    </QuietWorkspace>
   )
 }
 

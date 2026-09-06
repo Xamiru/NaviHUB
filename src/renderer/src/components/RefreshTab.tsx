@@ -15,7 +15,7 @@ import type { MediaType, RefreshPreview, RefreshRunStatus } from '@shared/types'
 import QuietWorkspace from './QuietWorkspace'
 import OperationFlow from './OperationFlow'
 
-type RefreshSetup = 'missing-covers' | 'missing-hero' | 'tv-episodes' | 'custom'
+type RefreshSetup = 'missing-covers' | 'missing-hero' | 'tv-episodes' | 'anime-themes' | 'custom'
 
 const ALL_MEDIA_TYPES = MEDIA_CONFIGS.map((cfg) => cfg.key)
 
@@ -50,6 +50,14 @@ const REFRESH_SETUPS: Array<{
     types: ['tv'],
     aspects: ['episodes'],
     onlyMissing: true
+  },
+  {
+    key: 'anime-themes',
+    label: 'Update anime theme songs',
+    description: 'Compare every AniList anime with AnimeThemes and repair missing or changed songs/audio.',
+    types: ['anime'],
+    aspects: ['themes'],
+    onlyMissing: false
   }
 ]
 

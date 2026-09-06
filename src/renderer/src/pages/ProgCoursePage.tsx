@@ -6,6 +6,10 @@ import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import { progCourse, progLessonKey } from '@shared/programming/courses'
 import { bestAttempts } from '@shared/programming/attempts'
+import { recommendLesson } from '@shared/programming/recommendation'
+import { learningSettingKey, parseLearningRecord } from '@shared/learningEvidence'
+import { PROGRAMMING_APPLIED_PRACTICE } from '@shared/programming/appliedPractice'
+import LearningPractice from '../components/LearningPractice'
 
 // One course: the ordered lesson list with completion state. Fixed-parent
 // breadcrumb (the JapaneseGuidePage exception), content straight from the
@@ -23,13 +27,16 @@ export default function ProgCoursePage() {
     queryKey: qk.programming.attempts,
     queryFn: () => api.programming.attempts()
   })
+  const { data: settings = {} } = useQuery({ queryKey: qk.settings.values, queryFn: () => api.settings.all() })
 
   if (!course) return <PageStatus>Course not found.</PageStatus>
 
   const best = bestAttempts(attempts)
   const done = new Set(progress.map((p) => p.lessonKey))
   const doneCount = course.lessons.filter((l) => done.has(progLessonKey(course.key, l.key))).length
-  const next = course.lessons.find((l) => !done.has(progLessonKey(course.key, l.key)))
+  const recommendation = recommendLesson(course, progress, attempts)
+  const next = recommendation?.lesson
+  const practice = PROGRAMMING_APPLIED_PRACTICE[course.key]
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
@@ -42,7 +49,7 @@ export default function ProgCoursePage() {
       <div className="card mb-5 flex items-center justify-between gap-3 p-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-3 text-sm text-gray-400">
-            <span>{doneCount} / {course.lessons.length} lessons completed</span>
+            <span>{doneCount} / {course.lessons.length} lessons marked read</span>
             <span className="tabular-nums">{Math.round((doneCount / course.lessons.length) * 100)}%</span>
           </div>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-base-700">
@@ -57,15 +64,17 @@ export default function ProgCoursePage() {
             {doneCount === 0 ? 'Start course' : `Continue: ${next.title}`}
           </Link>
         ) : (
-          <span className="text-sm text-accent">Course complete</span>
+          <span className="text-sm text-accent">Reading and checks recorded</span>
         )}
       </div>
+      <p className="mb-5 text-sm text-gray-400">{recommendation?.reason ?? 'Apply the course in a project. Reading and quiz scores alone do not establish practical mastery.'}</p>
 
       <ol className="relative space-y-2 before:absolute before:bottom-6 before:left-[27px] before:top-6 before:w-px before:bg-base-700">
         {course.lessons.map((l, i) => {
           const fullKey = progLessonKey(course.key, l.key)
           const isDone = done.has(fullKey)
           const b = best.get(fullKey)
+          const evidence = parseLearningRecord(settings[learningSettingKey('programming', fullKey)])
           return (
             <li key={l.key}>
               <Link
@@ -88,12 +97,14 @@ export default function ProgCoursePage() {
                     {b.best.score}/{b.best.total}
                   </span>
                 )}
-                {isDone && <span className="chip shrink-0 bg-accent/15 text-accent">done</span>}
+                {evidence.project && <span className="chip shrink-0" title="Practical work recorded by you, not automatically graded">Practice recorded</span>}
+                {isDone && <span className="chip shrink-0 bg-accent/15 text-accent">read</span>}
               </Link>
             </li>
           )
         })}
       </ol>
+      {practice && <LearningPractice key={course.key} unit={practice} settingKey={learningSettingKey('programming', `course/${course.key}`)} />}
     </div>
   )
 }

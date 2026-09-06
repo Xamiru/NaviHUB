@@ -8,6 +8,9 @@ import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFr
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
 import Markdown from '../components/Markdown'
+import LearningProject from '../components/LearningProject'
+import { learningSettingKey } from '@shared/learningEvidence'
+import { lessonPracticeTask, PROJECT_CRITERIA } from '@shared/programming/recommendation'
 import { progCourse, progLessonKey } from '@shared/programming/courses'
 import type { ProgQuestion } from '@shared/programming/types'
 import { shuffle } from '@shared/shuffle'
@@ -81,8 +84,8 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
       title={lesson.title}
       subtitle={<Link to={`/programming/course/${course.key}`} className="hover:text-accent">{course.title}</Link>}
       progress={{ current: index + 1, total: course.lessons.length, label: 'Course path' }}
-      actions={<button className={isDone ? 'btn-ghost' : 'btn-primary'} disabled={busy} onClick={() => void toggleDone()}>{isDone ? 'Mark incomplete' : 'Mark lesson complete'}</button>}
-      rail={<SessionEvidence title="Skill evidence"><p>{checkDone ? `${score} of ${total} correct in this check.` : `${results.size} of ${total} checks answered.`}</p>{summary && <p className="mt-2">Best attempt {summary.best.score} of {summary.best.total}.</p>}<p className="mt-2">{isDone ? 'Completion logged locally.' : 'Completion is not yet logged.'}</p></SessionEvidence>}
+      actions={<button className={isDone ? 'btn-ghost' : 'btn-primary'} disabled={busy} onClick={() => void toggleDone()}>{isDone ? 'Mark unread' : 'Mark lesson read'}</button>}
+      rail={<SessionEvidence title="Learning evidence"><p>{checkDone ? `${score} of ${total} correct in this check.` : `${results.size} of ${total} checks answered.`}</p>{summary && <p className="mt-2">Best attempt {summary.best.score} of {summary.best.total}.</p>}<p className="mt-2">{isDone ? 'Marked read. This does not certify mastery.' : 'Not yet marked read.'}</p><p className="mt-2">Record practical work separately below. All lessons remain available.</p></SessionEvidence>}
       surface={false}
     >
 
@@ -113,7 +116,7 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
               {checkDone && summary && <span className="mx-2 text-gray-600">·</span>}
               {summary && (
                 <span>
-                  best {Math.max(summary.best.score, checkDone ? score : 0)} / {summary.best.total}
+                  best {summary.best.score} / {summary.best.total}
                   {summary.attempts > 1 ? ` over ${summary.attempts} checks` : ''}
                 </span>
               )}
@@ -121,6 +124,8 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
           )}
         </Section>
       )}
+
+      <LearningProject settingKey={learningSettingKey('programming', fullKey)} task={lessonPracticeTask(lesson.body)} criteria={PROJECT_CRITERIA} />
 
       <div className="mt-6 flex flex-wrap items-center gap-2">
         <span className="flex-1" />

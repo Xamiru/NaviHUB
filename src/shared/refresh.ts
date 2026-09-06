@@ -12,7 +12,7 @@ import type { MediaType } from './types'
 // or staff — because those code paths PRUNE, and two of the three character
 // prunes sweep orphans source-globally rather than per media id.
 
-export type RefreshAspect = 'cover' | 'banner' | 'episodes' | 'text'
+export type RefreshAspect = 'cover' | 'banner' | 'episodes' | 'text' | 'themes'
 
 export interface RefreshAspectDef {
   key: RefreshAspect
@@ -43,6 +43,12 @@ export const REFRESH_ASPECTS: RefreshAspectDef[] = [
     label: 'Episodes',
     hint: 'The season/episode catalogue. One request per season, so the slow one',
     types: ['tv']
+  },
+  {
+    key: 'themes',
+    label: 'Anime theme songs',
+    hint: 'Compare and repair OP/ED songs and missing local audio from AnimeThemes',
+    types: ['anime']
   },
   {
     key: 'text',
@@ -93,10 +99,11 @@ export const MISSING_SQL: Record<RefreshAspect, string> = {
   cover: 'm.cover_path IS NULL',
   banner: 'm.banner_path IS NULL',
   episodes: 'NOT EXISTS (SELECT 1 FROM tv_episode e WHERE e.media_id = m.id)',
+  themes: 'NOT EXISTS (SELECT 1 FROM theme_song t WHERE t.media_id = m.id)',
   text: '(m.synopsis IS NULL OR m.total_units IS NULL)'
 }
 
-// A title qualifies when ANY chosen aspect is missing — you asked for four
+// A title qualifies when ANY chosen aspect is missing — you asked for one or more
 // things, so a title lacking one of them is worth the request.
 export function missingClause(aspects: RefreshAspect[]): string {
   const parts = aspects.map((a) => MISSING_SQL[a])

@@ -8,6 +8,7 @@ import { createTestDb } from './helpers'
 // otherwise "↻ Refresh from AnimeThemes" would silently empty them.
 
 let db: Database.Database
+const fileMocks = vi.hoisted(() => ({ audioCalls: [] as string[] }))
 vi.mock('../src/main/db/connection', () => ({
   getSqlite: () => db
 }))
@@ -15,7 +16,10 @@ vi.mock('../src/main/db/connection', () => ({
 vi.mock('../src/main/files', () => ({
   downloadImages: async (urls: (string | null | undefined)[]) =>
     new Map(urls.filter(Boolean).map((u) => [u as string, null])),
-  downloadAudio: async () => null
+  downloadAudio: async (url: string) => {
+    fileMocks.audioCalls.push(url)
+    return `audio/${fileMocks.audioCalls.length}`
+  }
 }))
 
 vi.mock('../src/main/progress', () => ({ updateActivity: () => {} }))
@@ -34,7 +38,7 @@ vi.mock('../src/main/http', () => ({
   })
 }))
 
-import { importThemes } from '../src/main/themes'
+import { fetchAnimeThemes, importThemes, themeSetNeedsRefresh } from '../src/main/themes'
 
 function theme(id: number, slug: string, title: string, artist?: string) {
   return {
@@ -54,6 +58,7 @@ let mediaId: number
 
 beforeEach(() => {
   db = createTestDb()
+  fileMocks.audioCalls.length = 0
   mediaId = Number(
     db
       .prepare(
@@ -92,5 +97,40 @@ describe('importThemes', () => {
     // its canonical title was refreshed.
     expect(rows.find((s) => s.external_id === '1')?.favorite).toBe(1)
     expect(rows.find((s) => s.external_id === '3')?.favorite).toBe(0)
+  })
+
+  it('preserves retained audio and downloads only new songs or missing audio', async () => {
+    await importThemes(mediaId)
+    expect(fileMocks.audioCalls).toHaveLength(2)
+
+    // Simulate one retained row whose file is missing from the DB record.
+    db.prepare("UPDATE theme_song SET audio_path=NULL WHERE external_id='1'").run()
+    fileMocks.audioCalls.length = 0
+    await importThemes(mediaId, { onlyMissingAudio: true })
+
+    expect(fileMocks.audioCalls).toHaveLength(1)
+    expect(fileMocks.audioCalls[0]).toBe('https://x/1.ogg')
+    expect(
+      (db.prepare("SELECT audio_path FROM theme_song WHERE external_id='2'").get() as { audio_path: string }).audio_path
+    ).toBe('audio/2')
+  })
+
+  it('detects same-count replacements and treats identical complete sets as current', async () => {
+    await importThemes(mediaId)
+    const current = await fetchAnimeThemes(1)
+    expect(themeSetNeedsRefresh(db, mediaId, current)).toBe(false)
+
+    const replacement = [
+      { ...current[0] },
+      { ...current[1], externalId: '3', title: 'Rush' }
+    ]
+    expect(themeSetNeedsRefresh(db, mediaId, replacement)).toBe(true)
+  })
+
+  it('mirrors an empty upstream catalogue by removing the local song set', async () => {
+    await importThemes(mediaId)
+    themes = []
+    await importThemes(mediaId)
+    expect(songs()).toEqual([])
   })
 })

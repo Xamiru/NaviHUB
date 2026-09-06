@@ -1219,6 +1219,7 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
   const [cookieFile, setCookieFile] = useState('')
   const [audioProviders, setAudioProviders] = useState('youtube-music')
   const [check, setCheck] = useState<SpotdlDetectResult | null>(null)
+  const [testingYouTube, setTestingYouTube] = useState(false)
   const [installingDeno, setInstallingDeno] = useState(false)
   useEffect(() => setPath(data?.['spotdl.path'] ?? ''), [data])
   useEffect(() => setCookieFile(data?.['spotdl.cookieFile'] ?? ''), [data])
@@ -1239,6 +1240,25 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
       setCheck(await api.music.spotifyInstallDeno())
     } finally {
       setInstallingDeno(false)
+    }
+  }
+
+  async function chooseCookieFile(): Promise<void> {
+    const chosen = await api.music.spotifyPickCookieFile()
+    if (!chosen) return
+    setCookieFile(chosen)
+    await onSave('spotdl.cookieFile', chosen)
+    setCheck(await api.music.spotifyDetect())
+  }
+
+  async function testYouTube(): Promise<void> {
+    setTestingYouTube(true)
+    try {
+      const result = await api.music.spotifyTestYouTubeAccess(true)
+      setCheck(await api.music.spotifyDetect())
+      if (!result.ok) throw new Error(result.message)
+    } finally {
+      setTestingYouTube(false)
     }
   }
 
@@ -1272,20 +1292,21 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
           Save &amp; test
         </button>
       </div>
-      <label className="label mt-4" htmlFor="spotdl-cookie-file">
-        YouTube Music Premium cookies.txt (optional)
-      </label>
-      <input
-        id="spotdl-cookie-file"
-        className="input"
-        type="text"
-        value={cookieFile}
-        onChange={(event) => setCookieFile(event.target.value)}
-        placeholder="C:\\Users\\you\\Documents\\youtube-music-cookies.txt"
-      />
+      <label className="label mt-4" htmlFor="spotdl-cookie-file">YouTube cookies.txt (optional)</label>
+      <div className="flex gap-2">
+        <input
+          id="spotdl-cookie-file"
+          className="input min-w-0 flex-1"
+          type="text"
+          value={cookieFile}
+          onChange={(event) => setCookieFile(event.target.value)}
+          placeholder="C:\\Users\\you\\Documents\\youtube-cookies.txt"
+        />
+        <button className="btn-ghost shrink-0" onClick={() => void chooseCookieFile()}>Choose…</button>
+      </div>
       <p className="mt-2 text-xs text-gray-400">
-        Use an absolute path to a cookies.txt exported from music.youtube.com. Treat this file
-        like a password; NaviHUB never copies it into a library export.
+        Export from a fresh private YouTube session and keep the same VPN connection. Treat this
+        file like a password; NaviHUB never copies it into a library export.
       </p>
       <label className="label mt-4" htmlFor="spotdl-audio-providers">Audio source fallback</label>
       <select
@@ -1304,13 +1325,24 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
       </p>
       {check && (
         <div className="mt-3 text-sm">
-          <p className={check.ok ? 'text-green-400' : 'text-red-400'}>
-            {check.ok ? `spotDL ${check.version ?? ''} is ready` : (check.error ?? 'spotDL is not ready')}
+          <p className={check.metadataReady ?? check.ok ? 'text-green-400' : 'text-red-400'}>
+            {check.metadataReady
+              ? `spotDL ${check.version ?? ''} is ready for metadata`
+              : (check.error ?? 'spotDL is not ready')}
           </p>
           <p className="mt-1 text-gray-400">
             ffmpeg: {check.ffmpeg ? 'ready' : 'missing'} · Deno: {check.deno ? 'ready' : 'missing'}
-            {check.premiumCookieConfigured && ` · Premium cookies: ${check.premiumCookieValid ? 'ready' : 'invalid'}`}
+            {check.premiumCookieConfigured && ` · cookies file: ${check.premiumCookieValid ? 'readable' : 'invalid'}`}
           </p>
+          <p className="mt-1 text-gray-400">
+            YouTube: {check.youtubeAccess?.state === 'ready'
+              ? `working with cookies${check.youtubeAccess.bitrate ? ` · ${Math.round(check.youtubeAccess.bitrate)} kbps available` : ''}`
+              : check.youtubeAccess?.state === 'anonymous' ? 'working without cookies'
+                : check.youtubeAccess?.state === 'untested' ? 'not tested' : (check.youtubeAccess?.message ?? 'not available')}
+          </p>
+          <button className="btn-ghost mt-3" disabled={testingYouTube} onClick={() => void testYouTube()}>
+            {testingYouTube ? 'Testing YouTube…' : 'Test YouTube access'}
+          </button>
           {!check.deno && check.version && (
             <button className="btn-ghost mt-3" disabled={installingDeno} onClick={() => void installDeno()}>
               {installingDeno ? 'Installing Deno…' : 'Install Deno for spotDL'}

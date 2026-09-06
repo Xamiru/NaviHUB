@@ -37,6 +37,15 @@ export interface NormalizedTheme {
   artists: NormalizedArtist[]
 }
 
+export interface ThemeImportOptions {
+  withAudio?: boolean
+  // Bulk repair keeps healthy local files and downloads only new/missing ones.
+  onlyMissingAudio?: boolean
+  // A caller that already compared the upstream set can pass it through so
+  // refresh never performs the AnimeThemes request twice.
+  themes?: NormalizedTheme[]
+}
+
 // Readable audio filename base, e.g. "Berserk OP1 - Tell Me Why". Leads with the
 // anime so songs group by show in a file browser; song title is appended when
 // known. (downloadAudio sanitizes illegal characters.)
@@ -152,10 +161,11 @@ function upsertArtist(db: any, artist: NormalizedArtist, photo: string | null): 
 
 // Imports (or refreshes) the OP/ED songs for one anime. Replaces any previously
 // imported themes for this media so re-import stays authoritative. `withAudio`
-// downloads each .ogg locally (otherwise only the streaming URL is stored).
+// downloads .ogg files locally (otherwise only streaming URLs are stored), and
+// `onlyMissingAudio` retains healthy files during bulk repair.
 export async function importThemes(
   mediaId: number,
-  opts: { withAudio?: boolean } = {}
+  opts: ThemeImportOptions = {}
 ): Promise<ThemeImportSummary> {
   const withAudio = opts.withAudio !== false
   const db = getSqlite()
@@ -176,25 +186,35 @@ export async function importThemes(
   if (media.external_source !== 'anilist' || !media.external_id)
     throw new Error('This anime has no AniList id to match against AnimeThemes')
 
-  const themes = await fetchAnimeThemes(Number(media.external_id))
+  const themes = opts.themes ?? (await fetchAnimeThemes(Number(media.external_id)))
 
-  // Phase 1 — all network work: every audio file and artist image is on disk
-  // before a single row changes, so the clean replace below can run in one
+  // Phase 1 — all network work: required audio files and artist images are on
+  // disk before a single row changes, so the clean replace below can run in one
   // synchronous transaction (same two-phase shape as the other importers).
   updateActivity({ phase: 'audio', done: 0, total: themes.length })
   const audioPaths = new Map<string, string | null>()
+  const existingAudio = new Map(
+    (
+      db
+        .prepare('SELECT external_id, audio_path FROM theme_song WHERE media_id=?')
+        .all(mediaId) as { external_id: string | null; audio_path: string | null }[]
+    )
+      .filter((row): row is { external_id: string; audio_path: string | null } => !!row.external_id)
+      .map((row) => [row.external_id, row.audio_path] as const)
+  )
   let audioDone = 0
   for (const t of themes) {
+    const retained = opts.onlyMissingAudio ? existingAudio.get(t.externalId) : undefined
     audioPaths.set(
       t.externalId,
-      withAudio && t.audioUrl
-        ? await downloadAudio(t.audioUrl, themeFileBase(media.title, t.slug, t.title))
-        : null
+      retained || !withAudio || !t.audioUrl
+        ? retained ?? null
+        : await downloadAudio(t.audioUrl, themeFileBase(media.title, t.slug, t.title))
     )
     updateActivity({ phase: 'audio', done: ++audioDone, total: themes.length })
   }
   const artistImages = await downloadImages(
-    themes.flatMap((t) => t.artists.map((a) => a.imageUrl))
+    themes.flatMap((t) => (t.artists ?? []).map((a) => a.imageUrl))
   )
 
   // Phase 2 — one transaction: clean replace. Drop prior themes (cascades
@@ -224,7 +244,7 @@ export async function importThemes(
 
     for (const t of themes) {
       const audioPath = audioPaths.get(t.externalId) ?? null
-      if (audioPath) audioDownloaded++
+      if (audioPath && !(opts.onlyMissingAudio && existingAudio.get(t.externalId))) audioDownloaded++
       const info = db
         .prepare(
           `INSERT INTO theme_song
@@ -279,4 +299,45 @@ export async function importThemes(
 
     return { mediaId, songs, artists: artistIds.size, audioDownloaded }
   })()
+}
+
+// Compare a fetched AnimeThemes payload with the local set. IDs are the
+// authoritative identity; the audio check also repairs rows that have a
+// source clip but no local download. This is deliberately pure apart from the
+// supplied database handle so the refresh runner can test it without HTTP.
+export function themeSetNeedsRefresh(
+  db: any,
+  mediaId: number,
+  themes: NormalizedTheme[]
+): boolean {
+  const rows = db.prepare('SELECT external_id, audio_url, audio_path FROM theme_song WHERE media_id=?').all(mediaId) as {
+    external_id: string | null
+    audio_url: string | null
+    audio_path: string | null
+  }[]
+  if (rows.length !== themes.length) return true
+  const local = new Map(rows.map((row) => [row.external_id, row]))
+  for (const theme of themes) {
+    const row = local.get(theme.externalId)
+    if (!row || (theme.audioUrl && !row.audio_path)) return true
+  }
+  return local.size !== themes.length
+}
+
+// One AnimeThemes request followed by an ID/audio comparison. Returns false
+// when the title is already complete, allowing bulk refresh to count it as a
+// skip without rewriting rows or downloading anything.
+export async function refreshThemes(mediaId: number): Promise<boolean> {
+  const media = getSqlite()
+    .prepare('SELECT external_source, external_id, media_type FROM media_item WHERE id=?')
+    .get(mediaId) as { external_source: string | null; external_id: string | null; media_type: string } | undefined
+  if (!media) throw new Error('Media not found')
+  if (media.media_type !== 'anime') throw new Error('Theme songs are only available for anime')
+  if (media.external_source !== 'anilist' || !media.external_id) {
+    throw new Error('This anime has no AniList id to match against AnimeThemes')
+  }
+  const fetched = await fetchAnimeThemes(Number(media.external_id))
+  if (!themeSetNeedsRefresh(getSqlite(), mediaId, fetched)) return false
+  await importThemes(mediaId, { themes: fetched, onlyMissingAudio: true })
+  return true
 }

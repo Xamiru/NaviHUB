@@ -260,6 +260,8 @@ import type {
   SpotifyDownloadQueueSnapshot,
   SpotifyDownloadQueueStartInput,
   SpotifyPlaylistLocalMatchInput,
+  SpotifyDownloadCandidateInput,
+  SpotifyYouTubeAccessTestResult,
   SpotifyTrackDownloadOptionsInput,
   SpotifyEntityDownloadInput,
   SpotifyEntityCandidate,
@@ -1055,9 +1057,13 @@ export interface NaviApi {
     spotifyQueueClearCompleted(): Promise<number>
     spotifySetTrackDownloadOptions(input: SpotifyTrackDownloadOptionsInput): Promise<void>
     spotifyMatchPlaylistItem(input: SpotifyPlaylistLocalMatchInput): Promise<void>
+    spotifyConfirmDownloadCandidate(input: SpotifyDownloadCandidateInput): Promise<void>
+    spotifyRejectDownloadCandidate(input: SpotifyDownloadCandidateInput): Promise<void>
     spotifyForgetEntitySource(input: SpotifyEntityRef): Promise<void>
     spotifyRemoveItem(itemId: number): Promise<void>
     spotifyDetect(): Promise<SpotdlDetectResult>
+    spotifyPickCookieFile(): Promise<string | null>
+    spotifyTestYouTubeAccess(force?: boolean): Promise<SpotifyYouTubeAccessTestResult>
     spotifyInstallDeno(): Promise<SpotdlDetectResult>
     playlistsForTrack(
       trackId: number

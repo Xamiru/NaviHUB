@@ -1077,6 +1077,30 @@ export const musicSpotifyEntityTrack = sqliteTable(
   })
 )
 
+export const musicSpotifyDownloadCandidate = sqliteTable(
+  'music_spotify_download_candidate',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    playlistItemId: integer('playlist_item_id').references(() => musicSpotifyPlaylistItem.id, {
+      onDelete: 'cascade'
+    }),
+    entityTrackId: integer('entity_track_id').references(() => musicSpotifyEntityTrack.id, {
+      onDelete: 'cascade'
+    }),
+    localTrackId: integer('local_track_id')
+      .notNull()
+      .references(() => musicTrack.id, { onDelete: 'cascade' }),
+    provider: text('provider').notNull(),
+    sourceUrl: text('source_url'),
+    createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byLocal: index('idx_music_spotify_download_candidate_local').on(t.localTrackId),
+    uniqPlaylist: unique('uniq_music_spotify_download_candidate_playlist').on(t.playlistItemId),
+    uniqEntity: unique('uniq_music_spotify_download_candidate_entity').on(t.entityTrackId)
+  })
+)
+
 export const musicSpotifyDownloadQueue = sqliteTable(
   'music_spotify_download_queue',
   {

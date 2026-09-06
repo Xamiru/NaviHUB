@@ -86,7 +86,7 @@ function ProgrammingBand() {
   return (
     <Band>
       <span className="font-medium text-gray-200">Skill graph</span>
-      <span>{data.length} of {PROG_LESSON_COUNT} lesson nodes complete</span>
+      <span>{data.length} of {PROG_LESSON_COUNT} lessons marked read</span>
       <span>CLI, SQL and Regex evidence remain local to their tools.</span>
       <Link to="/programming" className="ml-auto text-accent hover:text-accent-hover">
         Open graph

@@ -34,6 +34,7 @@ describe('the aspect catalogue', () => {
     expect(banner.types).not.toContain('book')
 
     expect(REFRESH_ASPECTS.find((a) => a.key === 'episodes')!.types).toEqual(['tv'])
+    expect(REFRESH_ASPECTS.find((a) => a.key === 'themes')!.types).toEqual(['anime'])
   })
 
   it('offers cover and text everywhere', () => {
@@ -109,5 +110,10 @@ describe('missingClause', () => {
   it('tests episodes by absence of any catalogue row', () => {
     expect(MISSING_SQL.episodes).toContain('tv_episode')
     expect(MISSING_SQL.episodes).toContain('NOT EXISTS')
+  })
+
+  it('tests anime themes by absence of any local song row', () => {
+    expect(MISSING_SQL.themes).toContain('theme_song')
+    expect(MISSING_SQL.themes).toContain('NOT EXISTS')
   })
 })

@@ -83,6 +83,20 @@ agree. Ambiguous rows remain missing but expose conservative local candidates th
 Artist/album source association keeps the strict first tier. Unmatched source rows
 never enter the player queue.
 
+**Download provenance and verification (2026-09-06).** Spotify downloads use a
+temporary `[navihub-<spotify-track-id>]` filename marker so the post-download scan
+can identify the exact source row even when title, deluxe-edition, or Unicode
+metadata differs. The marker is removed after scanning. A file that is physically
+present but fails strict matching is retained in
+`music_spotify_download_candidate` and shown as **Downloaded locally; needs
+verification**; it is not redownloaded or made playable implicitly. The user may
+confirm the candidate, reject it and retry, or choose another local alternative.
+Files downloaded from an explicitly pasted source URL may be linked automatically
+only after the same title/artist/album/track-position safety checks. Automatic
+spotDL results always require this explicit confirmation when strict matching is
+not conclusive. The candidate table is personal data and is removed from sanitized
+exports.
+
 **Download and resume.** NaviHUB requires spotDL 4.5.2 or newer, ffmpeg and Deno before
 starting acquisition. Settings detects all three and can run spotDL's official
 `--download-deno` setup action; missing Deno is a readiness failure because current
@@ -111,6 +125,15 @@ same scan path, so Retry selects only rows still unmatched. spotDL, yt-dlp, and
 music scans share the music-maintenance gate; private metadata and error files are
 always temporary. spotDL, yt-dlp, and ffmpeg are external dependencies and are
 never bundled.
+
+Before an audio batch starts, NaviHUB runs one cached yt-dlp access probe per
+session (or cookie-file change). Expired cookies, bot checks, and PO-token failures
+stop the batch before any track is attempted; a probe video that is itself
+unavailable does not block the selected tracks. Settings provides a native
+cookies.txt picker and a live access test. SpotDL child processes force UTF-8 on
+Windows so artist names are not corrupted in logs or provenance matching. Provider
+errors are translated into per-track retry guidance rather than leaving only raw
+`AudioProviderError` text.
 
 ### Artist and album downloads
 
@@ -300,6 +323,8 @@ The album page needed nothing: `MusicEntityHeader` + `MusicTrackRow` were alread
 ## Songs / theme library
 
 **Songs / theme library (2026-07-25)** — `/anime/songs` (`ThemeSongsPage`, an `ANIME.children` sidebar link + CommandPalette item; route sits above `/anime/:id`) replaces the sidebar's old "Shuffle Themes" button (gone, with `player.tsx:quizSongToTrack` — the page maps its own tracks). Every imported OP/ED as a playable list, where **the anime half of the filter IS `MediaListFilter`**: `repos/themeRepo.ts:list({media, search, songType, favoriteOnly, playableOnly})` calls mediaRepo's now-exported `buildWhere`/`buildOrder` (alias the media table `m`), so statuses/tags/ranges/favorite/season mean exactly what they mean on the anime list page — the page literally reuses `MediaFilterPanel`, the sort menu and `qk.mediaCounts.facets('anime')`. `mediaType` is forced to `'anime'` in the repo. Song-level extras: OP/ED, hearts, and a search that also matches song title/slug/artist (wider than the media filter's title-only search). Ordering groups songs under their anime (`COALESCE(sort_order,1000), ts.id`) EXCEPT `random`, where `buildOrder`'s new `randomIdExpr` arg hashes `ts.id` so a shuffle deals songs, not whole shows; every play button queues the WHOLE filtered set (`theme-<id>` id namespace, unchanged). **New personal column `theme_song.favorite`** (init.sql + schema.ts + `ensureColumn`, wiped in sanitizeSql.cjs, also on the detail page's `ThemeRow` heart): the AnimeThemes import is a clean replace, so `themes.ts` snapshots hearted `external_id`s before the DELETE and restores them on insert — mirrored in bulk-import.cjs. Tests: themeRepo.test.ts (shared-filter reuse, song filters, seeded song shuffle), themeImport.test.ts (favorites survive a refresh).
+
+**Bulk theme backfill and repair (2026-09-06)** — Bulk Import exposes a dedicated local preview for AniList anime with zero `theme_song` rows; starting it reuses the Library Refresh task/status/cancel loop and fetches OP/ED metadata plus local audio. The Refresh tab's **Update anime theme songs** preset checks every AniList anime against AnimeThemes, compares external song IDs (not count alone), and counts unchanged titles as skipped. A mismatch atomically mirrors the source, preserving favorites for retained IDs and retaining healthy local audio; only new or audio-missing songs are downloaded. The comparison passes the fetched payload into the importer so each anime is requested once.
 
 ## Tournament quiz mode
 

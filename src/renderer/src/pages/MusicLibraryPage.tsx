@@ -687,6 +687,7 @@ function SpotifyImportDialog({
   const panelRef = useDialog(onClose)
   const [url, setUrl] = useState('')
   const [importing, setImporting] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const activity = useActivity(importing)
   const { data: readiness, isLoading } = useQuery({
@@ -711,6 +712,18 @@ function SpotifyImportDialog({
       setError(cause instanceof Error ? cause.message : String(cause))
     } finally {
       setImporting(false)
+      setCancelling(false)
+    }
+  }
+
+  async function cancelImport(): Promise<void> {
+    if (!activity?.taskId || cancelling) return
+    setCancelling(true)
+    try {
+      await api.tasks.cancel(activity.taskId)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : String(cause))
+      setCancelling(false)
     }
   }
 
@@ -753,13 +766,13 @@ function SpotifyImportDialog({
           Spotify. Downloaded audio is matched by spotDL through YouTube Music.
         </p>
         <p
-          className={`mt-3 text-sm ${readiness?.ok ? 'text-green-400' : 'text-yellow-400'}`}
+          className={`mt-3 text-sm ${(readiness?.metadataReady ?? readiness?.ok) ? 'text-green-400' : 'text-yellow-400'}`}
           role="status"
         >
           {isLoading
             ? 'Checking spotDL…'
-            : readiness?.ok
-              ? `spotDL ${readiness.version ?? ''} and ffmpeg are ready.`
+            : (readiness?.metadataReady ?? readiness?.ok)
+              ? `spotDL ${readiness.version ?? ''} is ready to read playlist metadata.`
               : (readiness?.error ?? 'spotDL is not ready. Configure it in Settings.')}
         </p>
         {importing && (
@@ -778,13 +791,13 @@ function SpotifyImportDialog({
         )}
         {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
         <div className="mt-5 flex justify-end gap-2">
-          <button className="btn-ghost" onClick={onClose} disabled={importing}>
-            Cancel
+          <button className="btn-ghost" onClick={importing ? () => void cancelImport() : onClose} disabled={cancelling}>
+            {importing ? (cancelling ? 'Stopping…' : 'Stop import') : 'Cancel'}
           </button>
           <button
             className="btn-primary"
             onClick={start}
-            disabled={!url.trim() || importing || !readiness?.ok}
+            disabled={!url.trim() || importing || !(readiness?.metadataReady ?? readiness?.ok)}
           >
             {importing ? 'Importing…' : 'Import'}
           </button>

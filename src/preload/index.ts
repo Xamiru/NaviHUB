@@ -461,10 +461,17 @@ const api: NaviApi = {
       ipcRenderer.invoke('music:spotifySetTrackDownloadOptions', input),
     spotifyMatchPlaylistItem: (input) =>
       ipcRenderer.invoke('music:spotifyMatchPlaylistItem', input),
+    spotifyConfirmDownloadCandidate: (input) =>
+      ipcRenderer.invoke('music:spotifyConfirmDownloadCandidate', input),
+    spotifyRejectDownloadCandidate: (input) =>
+      ipcRenderer.invoke('music:spotifyRejectDownloadCandidate', input),
     spotifyForgetEntitySource: (input) =>
       ipcRenderer.invoke('music:spotifyForgetEntitySource', input),
     spotifyRemoveItem: (itemId) => ipcRenderer.invoke('music:spotifyRemoveItem', itemId),
     spotifyDetect: () => ipcRenderer.invoke('music:spotifyDetect'),
+    spotifyPickCookieFile: () => ipcRenderer.invoke('music:spotifyPickCookieFile'),
+    spotifyTestYouTubeAccess: (force) =>
+      ipcRenderer.invoke('music:spotifyTestYouTubeAccess', force),
     spotifyInstallDeno: () => ipcRenderer.invoke('music:spotifyInstallDeno'),
     playlistsForTrack: (trackId) => ipcRenderer.invoke('music:playlistsForTrack', trackId),
     setLiked: (trackId, liked) => ipcRenderer.invoke('music:setLiked', trackId, liked),

@@ -71,6 +71,9 @@ describe('adaptive archive navigation', () => {
       title: 'English',
       descriptor: 'Mistake ledger'
     })
+    expect(archiveContextForPath('/english/repair').items).toContainEqual({
+      to: '/english/repair', label: 'Rule repair'
+    })
     expect(archiveContextForPath('/programming/sql').items).toContainEqual({
       to: '/programming/sql',
       label: 'SQL Sandbox'

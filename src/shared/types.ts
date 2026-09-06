@@ -2902,8 +2902,15 @@ export interface MusicSpotifyPlaylistEntry {
   audioSourceUrl: string | null
   allowUnverified: boolean
   downloadError: string | null
+  downloadCandidate: MusicSpotifyDownloadCandidate | null
   matchedTrack: MusicTrack | null
   localAlternatives: MusicTrack[]
+}
+
+export interface MusicSpotifyDownloadCandidate {
+  localTrack: MusicTrack
+  provider: 'youtube-music' | 'youtube' | 'piped' | 'bandcamp' | 'soundcloud' | 'manual'
+  sourceUrl: string | null
 }
 
 export type MusicPlaylistItem = MusicPlaylistEntry | MusicSpotifyPlaylistEntry
@@ -2924,6 +2931,7 @@ export interface MusicPlaylistDetail {
   source: MusicSpotifySource | null
   playableCount: number
   missingCount: number
+  verificationCount: number
 }
 
 export interface SpotifyImportResult {
@@ -3060,6 +3068,7 @@ export interface SpotifyDownloadQueueTrack {
   audioSourceUrl: string | null
   allowUnverified: boolean
   error: string | null
+  candidate: MusicSpotifyDownloadCandidate | null
 }
 
 export interface SpotifyTrackDownloadOptionsInput {
@@ -3127,6 +3136,38 @@ export interface SpotdlDetectResult {
   premiumCookieConfigured: boolean
   premiumCookieValid: boolean
   error: string | null
+  metadataReady?: boolean
+  downloadReady?: boolean
+  youtubeAccess?: SpotifyYouTubeAccess
+}
+
+export type SpotifyYouTubeAccessState =
+  | 'untested'
+  | 'testing'
+  | 'ready'
+  | 'anonymous'
+  | 'invalidCookies'
+  | 'botCheck'
+  | 'poToken'
+  | 'unavailable'
+  | 'error'
+
+export interface SpotifyYouTubeAccess {
+  state: SpotifyYouTubeAccessState
+  authenticated: boolean
+  message: string
+  testedAt: number | null
+  codec: string | null
+  bitrate: number | null
+}
+
+export interface SpotifyYouTubeAccessTestResult extends SpotifyYouTubeAccess {
+  ok: boolean
+}
+
+export interface SpotifyDownloadCandidateInput {
+  sourceKind: 'playlistItem' | 'entityTrack'
+  trackId: number
 }
 
 export interface MusicSearchResults {
@@ -3233,6 +3274,7 @@ export interface MusicArtStatus {
 // fetches). Polled by the renderer (Topbar pill + ImportDialog bar).
 export interface ActivityStatus {
   active: boolean
+  taskId: string | null
   label: string // e.g. "Importing from AniList"
   detail: string | null // optional provider-specific stage; null uses the generic phase label
   phase: 'fetching' | 'images' | 'audio' | 'writing'

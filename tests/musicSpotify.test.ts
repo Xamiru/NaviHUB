@@ -21,6 +21,7 @@ import {
   chunkSpotifyItems,
   completeResolvedReleaseSongs,
   estimateSpotifyDownloadBytes,
+  friendlySpotifyDownloadError,
   groupEntityReleases,
   parseSpotifyPlaylistUrl,
   parseSpotifyUrl,
@@ -41,6 +42,7 @@ import {
   spotifyAlbumIdFromTrackLookup,
   spotifyReleaseTitlesMatch,
   stripCatalogReleaseTypeSuffix,
+  youtubeAccessBlocksDownload,
   validateSpotdlPayload
 } from '../src/main/musicSpotify'
 import {
@@ -385,6 +387,10 @@ describe('Spotify playlist import core', () => {
       'skip'
     ])
     expect(args.at(-1)).toContain('{album-artist}/{album}/{disc-number}-{track-number} - {title}')
+    const provenance = buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl', 'skip', {
+      provenance: true
+    })
+    expect(provenance.at(-1)).toContain('[navihub-{track-id}]')
     const direct = buildSpotdlDownloadArgs(
       'https://open.spotify.com/album/3WzBIQmn2hrulLeTY9smkk',
       '/music',
@@ -422,6 +428,24 @@ describe('Spotify playlist import core', () => {
     })
     expect(payloadWithAudioSource('{"name":"Song","download_url":null}', 'https://youtu.be/abc'))
       .toEqual({ name: 'Song', download_url: 'https://youtu.be/abc' })
+  })
+
+  it('does not block a batch when only the fixed probe video is unavailable', () => {
+    expect(youtubeAccessBlocksDownload({
+      ok: false, state: 'unavailable', authenticated: false,
+      message: 'The probe video is unavailable', testedAt: Date.now(), codec: null, bitrate: null
+    })).toBe(false)
+    expect(youtubeAccessBlocksDownload({
+      ok: false, state: 'botCheck', authenticated: false,
+      message: 'Sign in to confirm you are not a bot', testedAt: Date.now(), codec: null, bitrate: null
+    })).toBe(true)
+  })
+
+  it('turns provider failures into actionable per-track messages', () => {
+    expect(friendlySpotifyDownloadError('AudioProviderError: YT-DLP download error'))
+      .toContain('No usable YouTube audio result')
+    expect(friendlySpotifyDownloadError('Sign in to confirm you are not a bot'))
+      .toContain('fresh cookies')
   })
 
   it('discovers a deluxe album from a release-unique track instead of a shared lead track', () => {

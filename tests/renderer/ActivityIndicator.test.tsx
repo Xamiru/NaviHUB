@@ -4,6 +4,7 @@ import type { ActivityStatus } from '../../src/shared/types'
 
 const base: ActivityStatus = {
   active: true,
+  taskId: 'activity-test',
   label: 'Importing Spotify playlist',
   detail: null,
   phase: 'fetching',

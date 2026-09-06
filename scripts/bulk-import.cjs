@@ -1808,6 +1808,13 @@ async function atImportThemes(mediaId, anilistId, animeTitle, { withAudio }) {
       .map((r) => r.external_id)
       .filter(Boolean)
   )
+  const existingAudio = new Map(
+    db
+      .prepare('SELECT external_id, audio_path FROM theme_song WHERE media_id=?')
+      .all(mediaId)
+      .filter((r) => r.external_id && r.audio_path)
+      .map((r) => [r.external_id, r.audio_path])
+  )
   db.prepare('DELETE FROM theme_song WHERE media_id=?').run(mediaId)
   db.prepare("DELETE FROM credit WHERE media_id=? AND role='artist'").run(mediaId)
 
@@ -1816,11 +1823,12 @@ async function atImportThemes(mediaId, anilistId, animeTitle, { withAudio }) {
   const artistIds = new Set()
   let order = 0
   for (const t of themes) {
-    const audioPath =
-      withAudio && t.audioUrl
+    const retainedAudio = existingAudio.get(t.externalId)
+    const audioPath = retainedAudio ||
+      (withAudio && t.audioUrl
         ? await downloadAudio(t.audioUrl, themeFileBase(animeTitle, t.slug, t.title))
-        : null
-    if (audioPath) audio++
+        : null)
+    if (audioPath && !retainedAudio) audio++
     const themeSongId = Number(
       db.prepare(
         `INSERT INTO theme_song

@@ -285,7 +285,7 @@ describe('export sanitize', () => {
   it('tolerates a live DB that predates newer tables', () => {
     const older = createTestDb()
     older.exec(
-      'DROP TABLE music_play_log; DROP TABLE music_spotify_download_queue_selection; DROP TABLE music_spotify_download_queue; DROP TABLE music_spotify_entity_track; DROP TABLE music_spotify_entity_release; DROP TABLE music_spotify_entity_snapshot; DROP TABLE music_spotify_playlist_item; DROP TABLE music_spotify_playlist; DROP TABLE music_playlist_track; DROP TABLE music_playlist'
+      'DROP TABLE music_play_log; DROP TABLE music_spotify_download_queue_selection; DROP TABLE music_spotify_download_queue; DROP TABLE music_spotify_download_candidate; DROP TABLE music_spotify_entity_track; DROP TABLE music_spotify_entity_release; DROP TABLE music_spotify_entity_snapshot; DROP TABLE music_spotify_playlist_item; DROP TABLE music_spotify_playlist; DROP TABLE music_playlist_track; DROP TABLE music_playlist'
     )
     older.exec(`INSERT INTO media_item (id, media_type, title, status) VALUES (1, 'anime', 'X', 'Watching')`)
     expect(() => sanitizeDb(older)).not.toThrow()

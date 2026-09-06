@@ -833,6 +833,12 @@ export function registerIpc(): void {
   ipcMain.handle('music:spotifyMatchPlaylistItem', (_e, input) =>
     musicSpotifyRepo.matchPlaylistItemToLocalTrack(input)
   )
+  ipcMain.handle('music:spotifyConfirmDownloadCandidate', (_e, input) =>
+    musicSpotifyRepo.confirmDownloadCandidate(input)
+  )
+  ipcMain.handle('music:spotifyRejectDownloadCandidate', (_e, input) =>
+    musicSpotifyRepo.rejectDownloadCandidate(input.sourceKind, input.trackId)
+  )
   ipcMain.handle('music:spotifyForgetEntitySource', (_e, input) =>
     musicSpotify.forgetEntitySource(input)
   )
@@ -840,6 +846,8 @@ export function registerIpc(): void {
     musicSpotifyRepo.removeSpotifyItem(itemId)
   )
   ipcMain.handle('music:spotifyDetect', () => musicSpotify.detectBinary())
+  ipcMain.handle('music:spotifyPickCookieFile', () => musicSpotify.pickCookieFile())
+  ipcMain.handle('music:spotifyTestYouTubeAccess', (_e, force) => musicSpotify.testYoutubeAccess(Boolean(force)))
   ipcMain.handle('music:spotifyInstallDeno', () => musicSpotify.installDeno())
   ipcMain.handle('music:playlistsForTrack', (_e, trackId) => musicRepo.playlistsForTrack(trackId))
   ipcMain.handle('music:setLiked', (_e, trackId, liked) => musicRepo.setLiked(trackId, liked))

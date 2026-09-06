@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -12,6 +12,8 @@ import { EN_MECHANICS } from '@shared/english/mechanics'
 import type { EnMechanicsCategory } from '@shared/english/types'
 import { shuffle } from '@shared/shuffle'
 import { weightedOrder } from '@shared/english/weightedDeck'
+import { EN_MECHANICS_CATEGORIES } from '@shared/english/types'
+import { ENGLISH_MISTAKES_KEY, parseEnglishMistakes, updateEnglishMistakes } from '@shared/english/mistakes'
 
 // Mechanics drill over the authored error-spot items (content is code —
 // src/shared/english/mechanics.ts): articles, punctuation, sentence
@@ -73,8 +75,15 @@ function buildPool(category: Category): Question[] {
 
 export default function EnglishMechanicsPage() {
   const qc = useQueryClient()
+  const [params] = useSearchParams()
+  const initialCategory = params.get('category') as EnMechanicsCategory
+  const [weakOnly, setWeakOnly] = usePersistedState('enMechWeak', params.get('weak') === '1')
+  const { data: settings = {}, isPending: settingsPending } = useQuery({ queryKey: qk.settings.values, queryFn: () => api.settings.all() })
+  const weakKeys = new Set(parseEnglishMistakes(settings[ENGLISH_MISTAKES_KEY]).map((item) => item.key))
+  const resultsRef = useRef<{ key: string; correct: boolean }[]>([])
   const [phase, setPhase] = useState<Phase>('setup')
-  const [category, setCategory] = usePersistedState<Category>('enMechCategory', 'all')
+  const [category, setCategory] = usePersistedState<Category>('enMechCategory', EN_MECHANICS_CATEGORIES.includes(initialCategory) ? initialCategory : 'all')
+  const [missed, setMissed] = useState<Question[]>([])
   // Read once for the round; a tally that arrives mid-round must not reshuffle.
   const { data: tally } = useQuery({
     queryKey: qk.english.errorTally,
@@ -102,14 +111,17 @@ export default function EnglishMechanicsPage() {
   const answered = picked !== null
 
   function startGame(): void {
-    const pool = buildPool(category)
+    const pool = buildPool(category).filter((item) => !weakOnly || weakKeys.has(item.key))
+    if (!pool.length) return
     poolRef.current = pool
     deckRef.current = orderDeck(pool, category === 'all' ? weights : undefined)
     statsRef.current = ZERO
-    lengthRef.current = length
+    lengthRef.current = weakOnly ? Math.min(length || pool.length, pool.length) : length
+    resultsRef.current = []
     loggedRef.current = false
     setStats(ZERO)
     setNewBest(false)
+    setMissed([])
     setPhase('play')
     nextQuestion()
   }
@@ -125,6 +137,8 @@ export default function EnglishMechanicsPage() {
     if (picked !== null || !current) return
     setPicked(index ?? -1)
     const right = index !== null && index === current.correct
+    resultsRef.current.push({ key: current.key, correct: right })
+    if (!right) setMissed((old) => [...old, current])
     const s = statsRef.current
     const streak = right ? s.streak + 1 : 0
     statsRef.current = {
@@ -140,6 +154,13 @@ export default function EnglishMechanicsPage() {
     const s = statsRef.current
     if (!loggedRef.current && s.total > 0) {
       loggedRef.current = true
+      const results = [...resultsRef.current]
+      void (async () => {
+        const values = await api.settings.all()
+        const updated = updateEnglishMistakes(parseEnglishMistakes(values[ENGLISH_MISTAKES_KEY]), results, new Date().toISOString())
+        await api.settings.set(ENGLISH_MISTAKES_KEY, JSON.stringify(updated))
+        await qc.invalidateQueries({ queryKey: qk.settings.all })
+      })()
       const prev = history?.best
       setNewBest(s.total >= 5 && (!prev || s.score / s.total > prev.score / prev.total))
       void api.quiz
@@ -184,7 +205,7 @@ export default function EnglishMechanicsPage() {
   }, [phase, current, answered])
 
   if (phase === 'setup') {
-    const poolSize = buildPool(category).length
+    const poolSize = buildPool(category).filter((item) => !weakOnly || weakKeys.has(item.key)).length
     return (
       <div className="p-6 max-w-2xl mx-auto">
         <PageHeader
@@ -210,8 +231,12 @@ export default function EnglishMechanicsPage() {
             <Pill active={length === 20} onClick={() => setLength(20)} label="20 questions" />
             <Pill active={length === 0} onClick={() => setLength(0)} label="Endless" />
           </Group>
+          <Group label="Practice pool">
+            <Pill active={!weakOnly} onClick={() => setWeakOnly(false)} label="All items" />
+            <Pill active={weakOnly} onClick={() => setWeakOnly(true)} label="Previously missed items" />
+          </Group>
 
-          <button className="btn-primary w-full" onClick={startGame}>
+          <button className="btn-primary w-full" disabled={poolSize === 0 || (weakOnly && settingsPending)} onClick={startGame}>
             Start drill ({poolSize} questions available)
           </button>
         </div>
@@ -233,6 +258,14 @@ export default function EnglishMechanicsPage() {
             {accuracy}% · best streak {stats.best}
           </p>
           {newBest && <p className="mt-3 text-sm text-accent">New personal best.</p>}
+          {missed.length > 0 && <div className="mt-5 text-left">
+            <h2 className="text-sm font-semibold">Repair missed rules</h2>
+            <ul className="mt-2 space-y-2">
+              {[...new Map(missed.map((item) => [item.key, item])).values()].map((item) => <li key={item.key}>
+                <Link className="text-sm text-accent hover:underline" to={`/english/repair?item=${item.key}`}>{item.prompt}</Link>
+              </li>)}
+            </ul>
+          </div>}
           <div className="mt-5 flex justify-center gap-2">
             <button className="btn-primary" onClick={() => setPhase('setup')}>
               Play again

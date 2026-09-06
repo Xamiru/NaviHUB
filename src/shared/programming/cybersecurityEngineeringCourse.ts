@@ -1,5 +1,149 @@
 import type { ProgCourseDef } from './types'
-import { masteryCheck as q, masteryLesson as lesson } from './masteryCourse'
+import { masteryLesson as baseLesson } from './masteryCourse'
+import type { ProgQuestion } from './types'
+
+// Questions are authored beside this course so security checks retain their
+// concrete scenarios and do not inherit generic distractor padding.
+const conciseCorrect: Record<string, string> = {
+  'Who should accept residual risk?': 'The owner accountable for consequences',
+  'What does defense in depth require?': 'Independent controls across the failure lifecycle',
+  'What does audit compliance prove?': 'Evidence met scoped audit requirements',
+  'What establishes permission for a security test?': 'Written authorization defining targets and methods',
+  'What data should a proof of vulnerability collect?': 'Minimal synthetic evidence for reproduction',
+  'Why isolate a vulnerable lab from production networks?': 'To contain unsafe traffic and lab mistakes',
+  'What should happen when a test exceeds its approved impact?': 'Stop and notify the authorized owner',
+  'What does authenticated encryption provide?': 'Confidentiality with ciphertext integrity',
+  'What must a TLS client validate?': 'Chain, hostname, dates, and intended use',
+  'Why is base64 not a security control?': 'Reversible encoding, without any key',
+  'What is authentication?': 'Evidence that requester controls an identity',
+  'What makes two checks true multi-factor authentication?': 'Independent authentication factor types',
+  'What should a service validate on a federated token?': 'Signature, issuer, audience, time, context',
+  'Where must object authorization be enforced?': 'At the trusted service data boundary',
+  'Which permission can indirectly escalate privilege?': 'Passing an admin role to a workload',
+  'What is the useful output of threat modeling?': 'Prioritized threats, controls, owners, and tests',
+  'When should a threat model be revisited?': 'When flows, identities, dependencies, or assumptions change',
+  'What is the best defense against SQL value injection?': 'Bind data values separately in parameterized queries',
+  'Why is output escaping context-specific?': 'Interpreter grammars differ by output context',
+  'What limits should a hostile archive parser enforce?': 'Bound entries, expansion, paths, depth, memory, time',
+  'What should happen after fixing a confirmed vulnerability?': 'Add a regression test for the violated property',
+  'What is SSRF?': 'Server requests controlled by attacker input',
+  'Why are uploaded file extensions insufficient?': 'Names cannot prove content type or parser safety',
+  'What creates cache poisoning risk?': 'A cache key omits data that changes the response',
+  'How should mass assignment be prevented?': 'Allowlist fields writable by the caller',
+  'What does the same-origin policy primarily restrict?': 'Script access across distinct browser origins',
+  'What is the default safe way to render user text?': 'Render with non-markup text APIs',
+  'What attack do CSRF tokens help prevent?': 'Cross-site use of ambient credentials',
+  'How should sensitive postMessage data be sent?': 'Use an exact origin and validate its schema',
+  'What prevents API mass assignment?': 'An allowlist of caller-writable input fields',
+  'What should an expensive API rate limit measure?': 'Operation cost by caller and protected resource',
+  'What makes a webhook replay-resistant?': 'Signature, timestamp, and unique event id',
+  'Which network dependency deserves control-plane protection?': 'DNS and route distribution systems',
+  'Why collect flow records?': 'Allowed network paths, identities, and context',
+  'Why avoid automatic blocking on a weak signal?': 'Weak evidence can disrupt legitimate traffic',
+  'What should be monitored about endpoint agents?': 'Agent health, coverage, policy, and delay',
+  'What makes a detection higher confidence?': 'Correlated behavior with identity context'
+}
+
+const q = (
+  prompt: string,
+  options: string[],
+  correct: number,
+  explain: string
+): ProgQuestion => {
+  const balanced = [...options]
+  if (conciseCorrect[prompt]) balanced[correct] = conciseCorrect[prompt]
+  return { prompt, options: balanced, correct, explain }
+}
+
+const applied: Record<string, { practice: string; solution: string }> = {
+  'security-risk': {
+    practice: 'Quantify one scenario over 2,000 records: plausible exposure is 10% before a control and 2% after it. Calculate both counts and the reduction; record that the percentages are assumptions rather than measured probabilities.',
+    solution: 'Initial exposure is 200 records; residual exposure is 40; reduction is 160. If a reviewer treats 10% as objective, attach its evidence, range, and owner. Revisit the estimate when exposure or controls change.'
+  },
+  'ethical-lab': {
+    practice: 'Schedule a 30-minute lab: snapshot 3 minutes, low-rate enumeration 8, one validation 7, evidence hashing 4, reset 5, notes 3. Add a stop condition at 50 requests or two server errors.',
+    solution: 'The durations total 30 minutes. Stop immediately at either threshold, preserve already collected evidence, and reset. If the exercise overruns, reduce scope rather than skipping reset or evidence handling.'
+  },
+  'cryptography-foundations': {
+    practice: 'Trace envelope encryption for files F1 and F2 using data keys D1 and D2 under wrapping key K7. Rotate writes to K8 while old files remain readable. List ciphertext, wrapped-key, and verification steps.',
+    solution: 'F1 stores AEAD ciphertext plus D1 wrapped by K7; F2 does likewise with D2. New writes wrap under K8. Reads select the recorded key version, unwrap, authenticate metadata, then decrypt. Rewrap old data keys before retiring K7; failed authentication returns no plaintext.'
+  },
+  'identity-authentication': {
+    practice: 'A service sees 500 legitimate logins with 15 false rejections and 80 attacks with 68 blocked. Calculate false-rejection rate and attack recall. Trace password reset followed by session rotation.',
+    solution: 'False rejection is 15/500=3%; attack recall is 68/80=85%. A single-use reset token is verified, consumed, and followed by credential and session rotation. If an old session still works, revocation propagation failed.'
+  },
+  'authorization-iam': {
+    practice: 'Create a 4x4 matrix for owner, editor, viewer, and revoked member against read, edit, export, and manage-members. Then trace a cached editor permission after revocation version changes from 7 to 8.',
+    solution: 'Owner gets all four; editor reads and edits; viewer reads; revoked gets none. Cache identity includes permission version, so version-7 authorization cannot serve version 8. Any successful revoked edit identifies stale mediation or an unscoped background path.'
+  },
+  'threat-modeling': {
+    practice: 'For one upload flow, enumerate browser, API, store, queue, worker, and download boundaries. Assign likelihood 1-3 and impact 1-3 to archive expansion (3,2), guessed object id (2,3), and stale file retention (2,2); calculate ordinal products only for triage.',
+    solution: 'Scores are 6, 6, and 4, so investigate the tied sixes first while preserving their different harms. The numbers rank assumptions; they are not probabilities. If boundaries omit worker credentials or deletion, redraw before choosing controls.'
+  },
+  'secure-coding': {
+    practice: 'Validate archive limits: at most 100 entries, 50 MB expanded, depth 3. Fixture A has 90 entries and 45 MB; B has 101 and 1 MB; C has 2 entries, 60 MB, depth 1. Record outcomes before extraction.',
+    solution: 'A passes these limits; B fails entry count; C fails expanded size. Reject before writing files. A still needs safe paths, links, types, and time limits. If partial files appear for B or C, validation happened too late.'
+  },
+  'web-security': {
+    practice: 'Trace a URL fetch through scheme, redirect, DNS resolution, address policy, size, and deadline checks. Input resolves publicly first, then redirects to 169.254.169.254. State the decision and log fields.',
+    solution: 'Reject after resolving the redirect target because link-local metadata addresses are forbidden. Log safe operation id, rule, host class, and timing without credentials. Checking only the first URL is the defect if the fetch proceeds.'
+  },
+  'browser-security': {
+    practice: 'Given cookie Secure, HttpOnly, SameSite=Lax and a state-changing POST, trace a cross-site form, same-site script, and stolen HTML injection. Name which controls block CSRF and XSS.',
+    solution: 'Lax reduces cross-site cookie sending but the server still validates a CSRF token or origin for protected POSTs. HttpOnly blocks script cookie reads, not authenticated actions. Context-aware output encoding and CSP limit injection impact; no single cookie flag solves XSS.'
+  },
+  'api-security': {
+    practice: 'A caller has quota 100 units/minute. List costs are 1, exports 20, and imports 30. They make 40 lists, two exports, then one import. Calculate used and remaining quota and decide a second import.',
+    solution: 'Usage is 40 + 40 + 30 = 110, so the first import already exceeds the budget unless admission rejects it at 80 used. At that point only 20 remain; reject both imports with retry information. Charge before expensive work.'
+  },
+  'network-defense': {
+    practice: 'Draw flows user-to-edge 443, edge-to-app 8443, app-to-db 5432, and deny every other path. A compromised app attempts port 22 to database and HTTPS to the internet. Record policy and evidence.',
+    solution: 'Both attempts are denied because neither flow is declared. Log source workload identity, destination class, port, rule, and operation context. If an any-egress rule permits HTTPS, segmentation cannot contain exfiltration and needs a named broker or allowlist.'
+  },
+  'endpoint-hardening': {
+    practice: 'A container runs as uid 0, mounts the host socket, has a writable root, and needs only read access to one input directory. Produce the corrected runtime profile and expected negative tests.',
+    solution: 'Run a nonzero uid, remove the host socket, use a read-only root and one read-only input mount, drop capabilities, bound memory/CPU, and restrict egress. Tests must fail writes, privilege changes, socket access, and undeclared network calls.'
+  },
+  'cloud-container-security': {
+    practice: 'Place four workloads in namespaces public, application, data, and build. Allow public-to-application on 8443 and application-to-data on 5432. Trace public-to-data, build-to-data, and application-to-internet attempts; state identity and policy evidence.',
+    solution: 'All three undeclared paths are denied. Admission also rejects privileged containers, mutable image tags, host mounts, and unbounded resources. Evidence records workload identity, signed image digest, policy version, source and destination, and decision. If a namespace label alone grants access, test spoofing and bind policy to trusted workload identity.'
+  },
+  'vulnerability-management': {
+    practice: 'Triage three findings: internet RCE on an active service, score 9; local library flaw unreachable in the build, score 10; exploited auth bypass on one tenant path, score 8. Order work and state evidence.',
+    solution: 'Contain and repair the exploited auth bypass first, then the reachable internet RCE. Document the unreachable library component and verify dependency paths rather than prioritizing its larger score blindly. Reachability, exploitation, asset, and compensating controls drive order.'
+  },
+  'secrets-key-management': {
+    practice: 'A leaked token can read repository A and mint deployment tokens for B. Build a rotation order with times: contain 5 minutes, preserve audit 10 in parallel, revoke 3 after evidence starts, rotate children 12, validate 5.',
+    solution: 'Start containment and evidence together; after evidence capture begins, revoke in three minutes, then rotate downstream authority for 12 and validate for five. Earliest sequential critical path is 5+3+12+5=25 minutes, while audit continues. Missing child rotation leaves transitive access.'
+  },
+  'detection-engineering': {
+    practice: 'A rule fires 50 times: 20 confirmed malicious, 25 benign, 5 unresolved. Calculate confirmed precision using resolved cases and a conservative lower bound treating unresolved as false.',
+    solution: 'Resolved precision is 20/(20+25)=44.4%; conservative precision is 20/50=40%. Report both with unresolved count. If telemetry source health is unknown, do not tune thresholds until missing and duplicate events are measured.'
+  },
+  'incident-forensics': {
+    practice: 'Create a UTC timeline: token use 10:02, artifact push 10:05, alert 10:08, revocation 10:14, last rejected retry 10:16. Calculate detection and containment times and distinguish observed from inferred facts.',
+    solution: 'Detection time is six minutes from first observed misuse to alert; revocation is twelve minutes after misuse and six after alert. The rejected retry supports containment by 10:16. Attacker identity remains an inference unless separate evidence proves it.'
+  },
+  'penetration-testing': {
+    practice: 'Allocate a 40-hour authorized test: 4 scope, 8 review, 12 validation, 6 safe exploitation, 6 reporting, 4 cleanup/retest. Add a stop condition and minimum evidence for cross-tenant read.',
+    solution: 'The allocation totals 40 hours. Stop on real-user data or instability. Prove cross-tenant access with one synthetic record and exact request/response, then stop expansion. If cleanup or reporting is squeezed, reduce validation breadth rather than exceed scope.'
+  },
+  'governance-privacy': {
+    practice: 'A feature collects 10 fields for 100,000 users; review finds four fields unnecessary. Calculate removed field-values and write retention for raw history, derived aggregates, logs, and backups.',
+    solution: 'Removing four fields prevents 400,000 stored values before growth and copies. Give each remaining class a purpose, owner, deletion deadline, and backup expiry. If deletion covers only the primary table, derived and retained copies violate the lifecycle.'
+  },
+  'capstone-security-operations': {
+    practice: 'Build an assurance matrix for five properties: tenant isolation, safe import, artifact integrity, secret rotation, and restore. Give each one prevention, attack fixture, detection signal, response owner, and recovery proof.',
+    solution: 'Each row needs observed evidence: scoped-query negative tests; malicious archive fixtures; digest/provenance rejection; timed leak rotation; and restore with integrity checks. The capstone fails if any property has only policy prose, no owner, or no reproducible recovery.'
+  }
+}
+
+const lesson = (...args: Parameters<typeof baseLesson>): ReturnType<typeof baseLesson> => {
+  const [key, title, foundations, engineering, judgment, practice, solution, questions] = args
+  const extra = applied[key]
+  if (!extra) throw new Error(`Missing applied security exercise for ${key}`)
+  return baseLesson(key, title, foundations, engineering, judgment, `${practice}\n\n${extra.practice}`, `${solution}\n\n${extra.solution}`, questions)
+}
 
 // Lesson keys are FROZEN: prog_progress stores
 // 'cybersecurity-engineering/<lesson-key>'.

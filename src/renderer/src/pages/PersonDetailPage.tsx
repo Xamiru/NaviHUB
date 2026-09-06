@@ -12,6 +12,7 @@ import Section from '../components/Section'
 import EditorialDetailFrame, { RelationshipTrail } from '../components/EditorialDetailFrame'
 import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
 import { chronologicalYear } from '../lib/archiveDisplay'
+import { buildCareerTimeline } from '../lib/personCareer'
 import type { PersonCredit, MediaType } from '@shared/types'
 
 export default function PersonDetailPage() {
@@ -20,11 +21,12 @@ export default function PersonDetailPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   // Where the user came from: person lists and crew sections append ?role=…
-  // (EntityListView, MediaDetailPage). A crew role means they clicked e.g. a
-  // Director, so the crew section should lead instead of the acting grids.
+  // (EntityListView, MediaDetailPage). Keep a selected crew role prominent
+  // within its own list without moving that list above the picture-led roles.
   const [searchParams] = useSearchParams()
   const contextRole = searchParams.get('role')
-  const crewFirst = !!contextRole && contextRole !== 'actor' && contextRole !== 'voice_actor'
+  const prioritizeCrewRole =
+    !!contextRole && contextRole !== 'actor' && contextRole !== 'voice_actor'
 
   const { data: person } = useQuery({
     queryKey: qk.people.get(personId),
@@ -81,15 +83,13 @@ export default function PersonDetailPage() {
   // When arriving via a crew role, float that role's rows to the top of the
   // crew list (a director's directing above their writing/staff credits).
   // Stable sort, so within each half the importance order is preserved.
-  const orderedStaff = crewFirst
+  const orderedStaff = prioritizeCrewRole
     ? [...staffRoles].sort(
         (a, b) => Number(b.role === contextRole) - Number(a.role === contextRole)
       )
     : staffRoles
 
-  const chronology = [...credits].sort((a, b) =>
-    (b.media.releaseDate ?? '').localeCompare(a.media.releaseDate ?? '')
-  )
+  const chronology = buildCareerTimeline(credits)
 
   const actingSection =
     totalActing > 0 &&
@@ -162,28 +162,6 @@ export default function PersonDetailPage() {
         actions={<AddToListMenu kind="person" entityId={personId} />}
       />
 
-      {chronology.length > 0 && (
-        <Section title={`Chronology · ${chronology.length}`} subtitle="Credits ordered by release date across every medium.">
-          <div className="card overflow-hidden p-0">
-            {chronology.map((credit) => (
-              <Link
-                key={credit.creditId}
-                to={pathForMedia(credit.media)}
-                className="grid min-w-0 grid-cols-[64px_minmax(0,1fr)] gap-4 border-t border-base-700 px-4 py-3 first:border-t-0 hover:bg-base-700/40 sm:grid-cols-[72px_minmax(0,1fr)_140px]"
-              >
-                <span className="text-sm tabular-nums text-gray-500">
-                  {chronologicalYear(credit.media.releaseDate)}
-                </span>
-                <span className="min-w-0 truncate font-medium">{credit.media.title}</span>
-                <span className="hidden text-right text-sm capitalize text-gray-400 sm:block">
-                  {credit.role.replace('_', ' ')}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </Section>
-      )}
-
       {totalActing === 0 && staffRoles.length === 0 && (
         <Section title="Roles">
           <p className="text-sm text-gray-400">
@@ -192,16 +170,49 @@ export default function PersonDetailPage() {
         </Section>
       )}
 
-      {crewFirst ? (
-        <>
-          {crewSection}
-          {actingSection}
-        </>
-      ) : (
-        <>
-          {actingSection}
-          {crewSection}
-        </>
+      {actingSection}
+      {crewSection}
+
+      {chronology.length > 0 && (
+        <Section
+          title={`Career chronology · ${chronology.length}`}
+          subtitle="Oldest to newest across every medium"
+          className="mb-0"
+        >
+          <div className="card overflow-hidden p-0">
+            {chronology.map(({ media, roleLabels }) => (
+              <Link
+                key={media.id}
+                to={pathForMedia(media)}
+                className="group/timeline grid min-w-0 grid-cols-[48px_52px_minmax(0,1fr)] items-center gap-3 border-t border-line-subtle px-3 py-3 transition-colors first:border-t-0 hover:bg-surface-raised sm:grid-cols-[64px_56px_minmax(0,1fr)_minmax(160px,0.65fr)] sm:gap-4 sm:px-4"
+              >
+                <span className="text-xs font-medium tabular-nums text-ink-muted sm:text-sm">
+                  {chronologicalYear(media.releaseDate)}
+                </span>
+                <CoverImage
+                  path={media.coverPath}
+                  alt=""
+                  thumbWidth={112}
+                  className="aspect-[2/3] h-[72px] w-12 transition-transform group-hover/timeline:scale-[1.03] sm:h-20 sm:w-14"
+                />
+                <span className="min-w-0 self-center">
+                  <span className="block line-clamp-2 text-sm font-semibold text-ink-primary group-hover/timeline:text-accent">
+                    {media.title}
+                  </span>
+                  <span className="mt-1 block text-xs capitalize text-ink-muted">
+                    {typeLabel(media.mediaType)}
+                  </span>
+                  <span className="mt-1 block line-clamp-2 text-xs capitalize text-ink-secondary sm:hidden">
+                    {roleLabels.join(' · ')}
+                  </span>
+                </span>
+                <span className="hidden line-clamp-3 text-sm capitalize leading-5 text-ink-secondary sm:block">
+                  {roleLabels.join(' · ')}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </Section>
       )}
     </EditorialDetailFrame>
   )

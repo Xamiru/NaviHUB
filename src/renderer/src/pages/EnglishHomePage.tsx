@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
 import StatTile from '../components/StatTile'
 import HubCard from '../components/HubCard'
+import EnglishRepairQueue from '../components/EnglishRepairQueue'
 
 // The English section's dashboard (the JapaneseHomePage pattern): deck stats,
 // then one quiet card per tool. Tests target C1/C2 — this section is
@@ -45,8 +46,8 @@ function ErrorLog({ due, leeches }: { due: number; leeches: number }) {
           <p className="mt-2 text-sm leading-relaxed text-gray-400">
             {top[0].count} corrections in your graded work. Start here, then return to the ledger to see whether the pattern recedes.
           </p>
-          <Link to="/english/mechanics" className="btn-ghost mt-6 self-start">
-            Practice this pattern
+          <Link to={`/english/repair?category=${top[0].category}`} className="btn-ghost mt-6 self-start">
+            Learn and repair this pattern
           </Link>
         </div>
         <div className="card overflow-hidden">
@@ -118,9 +119,11 @@ export default function EnglishHomePage() {
       </div>
 
       <ErrorLog due={due} leeches={leeches} />
+      <EnglishRepairQueue />
 
       <Section title="Study">
         <HubGrid>
+          <HubCard to="/english/repair" title="Rule repair" body="Worked examples, targeted practice, writing transfer and delayed checks for recurring mistakes." />
           <HubCard
             to="/english/dictionary"
             title="Dictionary"

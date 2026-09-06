@@ -266,6 +266,7 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
         { to: '/english/dictionary', label: 'Dictionary' },
         { to: '/english/review', label: 'Review' },
         { to: '/english/deck', label: 'Deck' },
+        { to: '/english/repair', label: 'Rule repair' },
         { to: '/english/writing', label: 'Writing' }
       ]
     }

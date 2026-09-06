@@ -284,6 +284,39 @@ describe('playlists', () => {
     })
   })
 
+  it('keeps an unverified downloaded file out of missing counts until confirmed', () => {
+    const local = seedTrack({ artist: 'Artist', album: 'Deluxe', title: 'Song', path: 'deluxe/song.mp3' })
+    const playlistId = musicRepo.createPlaylist({ title: 'Verified later' })
+    db.prepare(
+      `INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+       VALUES (?, 'candidate-source', 'https://open.spotify.com/playlist/candidate-source')`
+    ).run(playlistId)
+    const info = db.prepare(
+      `INSERT INTO music_spotify_playlist_item
+       (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+        album_title, duration, spotify_url, raw_json)
+       VALUES (?, 'candidate-song', 0, 'Song', '["Artist"]', 'Artist', 'Album', 200,
+               'https://open.spotify.com/track/candidate-song', '{}')`
+    ).run(playlistId)
+    const itemId = Number(info.lastInsertRowid)
+    db.prepare(
+      `INSERT INTO music_spotify_download_candidate
+       (playlist_item_id, local_track_id, provider, source_url)
+       VALUES (?, ?, 'youtube-music', NULL)`
+    ).run(itemId, local)
+
+    const detail = musicRepo.getPlaylist(playlistId)!
+    expect(detail.missingCount).toBe(0)
+    expect(detail.verificationCount).toBe(1)
+    expect(detail.items[0]).toMatchObject({
+      kind: 'spotify',
+      matchedTrack: null,
+      downloadCandidate: { localTrack: { id: local, title: 'Song' } }
+    })
+    spotifyRepo.confirmDownloadCandidate({ sourceKind: 'playlistItem', trackId: itemId })
+    expect(musicRepo.getPlaylist(playlistId)!.playableCount).toBe(1)
+  })
+
   it('turns a deleted matched track grey and resolves it again after a rescan', () => {
     const trackId = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'p1' })
     const playlistId = musicRepo.createPlaylist({ title: 'Imported mix' })

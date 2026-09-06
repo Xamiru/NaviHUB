@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -6,6 +7,8 @@ import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
 import StatTile from '../components/StatTile'
 import HubCard from '../components/HubCard'
+import { Field } from '../components/Field'
+import { recommendLesson } from '@shared/programming/recommendation'
 import { PROG_COURSES, progLessonKey } from '@shared/programming/courses'
 import { CHEAT_SHEETS, practicePool } from '@shared/programming/cheatsheets'
 import { passedChecks } from '@shared/programming/attempts'
@@ -17,6 +20,9 @@ import { REGEX_GOLF_PUZZLES } from '@shared/programming/regexGolf'
 // (self-check passes, weak commands, solves). Content is code
 // (src/shared/programming/) — only progress rows are fetched.
 export default function ProgrammingHomePage() {
+  const [activeCourse, setActiveCourse] = useState(() => {
+    try { return localStorage.getItem('programming.activeCourse') ?? '' } catch { return '' }
+  })
   const { data: progress = [] } = useQuery({
     queryKey: qk.programming.progress,
     queryFn: () => api.programming.progress()
@@ -58,18 +64,15 @@ export default function ProgrammingHomePage() {
     ])
   )
   const doneLessons = [...doneByCourse.values()].reduce((a, b) => a + b, 0)
-  const focusCourse =
-    PROG_COURSES.find((course) => (doneByCourse.get(course.key) ?? 0) < course.lessons.length) ??
-    PROG_COURSES[0]
-  const recommendedLesson = focusCourse?.lessons.find(
-    (lesson) => !done.has(progLessonKey(focusCourse.key, lesson.key))
-  )
+  const focusCourse = PROG_COURSES.find((course) => course.key === activeCourse)
+  const recommendation = focusCourse ? recommendLesson(focusCourse, progress, attempts) : null
+  const recommendedLesson = recommendation?.lesson
 
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
         title="Skill graph"
-        subtitle="Explore completed concepts, the next dependency and the local practice surfaces that prove each skill."
+        subtitle="Choose a course, repair missed concepts, and track reading separately from practical evidence."
         actions={
           <>
             <Link to="/programming/cheatsheets" className="btn-ghost">
@@ -87,9 +90,19 @@ export default function ProgrammingHomePage() {
         }
       />
 
+      <Field label="Course to focus on" className="mb-6" description="Recommendations use your latest checks and unread lessons in this course. You can still explore any course.">
+        <select className="input" value={focusCourse?.key ?? ''} onChange={(event) => {
+          setActiveCourse(event.target.value)
+          try { localStorage.setItem('programming.activeCourse', event.target.value) } catch { /* Preference is optional. */ }
+        }}>
+          <option value="">Choose a course</option>
+          {PROG_COURSES.map((course) => <option key={course.key} value={course.key}>{course.title}</option>)}
+        </select>
+      </Field>
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mb-6">
         <StatTile
-          label="Lessons completed"
+          label="Lessons read"
           value={`${doneLessons} / ${totalLessons}`}
           accent={doneLessons > 0}
         />
@@ -127,7 +140,7 @@ export default function ProgrammingHomePage() {
       {focusCourse && (
         <Section
           title="Skill graph"
-          subtitle={`${doneByCourse.get(focusCourse.key) ?? 0} of ${focusCourse.lessons.length} lessons complete`}
+          subtitle={`${doneByCourse.get(focusCourse.key) ?? 0} of ${focusCourse.lessons.length} lessons marked read`}
         >
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
             <div className="card p-6">
@@ -143,7 +156,7 @@ export default function ProgrammingHomePage() {
                 </Link>
               </div>
               <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {focusCourse.lessons.slice(0, 8).map((lesson) => {
+                {focusCourse.lessons.slice(Math.max(0, focusCourse.lessons.findIndex((lesson) => lesson.key === recommendedLesson?.key) - 3), Math.max(8, focusCourse.lessons.findIndex((lesson) => lesson.key === recommendedLesson?.key) + 5)).map((lesson) => {
                   const key = progLessonKey(focusCourse.key, lesson.key)
                   const complete = done.has(key)
                   const current = lesson.key === recommendedLesson?.key
@@ -160,7 +173,7 @@ export default function ProgrammingHomePage() {
                       }`}
                     >
                       <p className={`text-[10px] font-semibold uppercase tracking-wider ${current ? 'text-accent' : 'text-gray-500'}`}>
-                        {current ? 'Recommended' : complete ? 'Evidence logged' : 'Available'}
+                        {current ? 'Recommended' : complete ? 'Read' : 'Available'}
                       </p>
                       <p className="mt-2 text-sm font-medium">{lesson.title}</p>
                     </Link>
@@ -174,12 +187,10 @@ export default function ProgrammingHomePage() {
                   Recommended node
                 </p>
                 <h2 className="mt-2 text-xl font-semibold text-white">
-                  {recommendedLesson?.title ?? 'Course complete'}
+                  {recommendedLesson?.title ?? 'Apply the course'}
                 </h2>
                 <p className="mt-2 text-sm leading-relaxed text-gray-400">
-                  {recommendedLesson
-                    ? 'This is the first unfinished dependency in the active course.'
-                    : 'Choose another course or strengthen the evidence through practice.'}
+                  {recommendation?.reason ?? 'Reading and self-checks are recorded. Complete practical work and revisit the course checks after a delay.'}
                 </p>
               </div>
               <div className="card p-6">

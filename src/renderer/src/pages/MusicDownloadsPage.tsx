@@ -392,6 +392,32 @@ function QueueCardRow({
       toastError(error)
     }
   }
+  async function confirmCandidate(track: SpotifyDownloadQueueTrack): Promise<void> {
+    if (!track.candidate) return
+    try {
+      await api.music.spotifyConfirmDownloadCandidate({
+        sourceKind: track.sourceKind,
+        trackId: track.id,
+      })
+      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      toast('Downloaded file confirmed and linked', 'success')
+    } catch (error) {
+      toastError(error)
+    }
+  }
+  async function rejectCandidate(track: SpotifyDownloadQueueTrack): Promise<void> {
+    if (!track.candidate) return
+    try {
+      await api.music.spotifyRejectDownloadCandidate({
+        sourceKind: track.sourceKind,
+        trackId: track.id
+      })
+      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      toast('Candidate rejected; the track is ready to retry', 'success')
+    } catch (error) {
+      toastError(error)
+    }
+  }
   const stateLabel = card.state === 'failed'
     ? 'Needs retry'
     : card.state === 'paused' ? 'Paused' : card.state === 'completed' ? 'Completed' : 'Queued'
@@ -476,33 +502,47 @@ function QueueCardRow({
                   {` · ${selection.missingCount} missing`}
                 </p>
                 {selection.error && <p className="mt-1 text-xs text-red-300">{selection.error}</p>}
-                {selection.tracks.filter((track) => track.missing).map((track) => (
+                {selection.tracks.filter((track) => track.missing || track.candidate).map((track) => (
                   <div key={`${track.sourceKind}-${track.id}`} className="mt-3 rounded border border-base-700 bg-base-900/40 p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div className="min-w-0">
                         <p className="truncate text-xs text-gray-200">{track.title}</p>
                         <p className="mt-0.5 truncate text-xs text-gray-500">{track.artist}</p>
+                        {track.candidate && <p className="mt-1 text-xs text-amber-300">Downloaded locally; needs verification</p>}
                         {track.error && <p className="mt-1 text-xs text-red-300">{track.error}</p>}
                         {track.audioSourceUrl && <p className="mt-1 text-xs text-green-400">Manual YouTube source saved</p>}
                         {track.allowUnverified && !track.audioSourceUrl && <p className="mt-1 text-xs text-amber-300">Broader matching enabled</p>}
                       </div>
                       <div className="flex flex-wrap gap-1">
-                        <button
-                          className="btn-ghost px-2 py-1 text-xs"
-                          onClick={() => void configureTrack(track, { allowUnverified: !track.allowUnverified })}
-                        >
-                          {track.allowUnverified ? 'Use normal matching' : 'Try broader match'}
-                        </button>
-                        <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setSourceTrack(track)}>
-                          Replace source
-                        </button>
-                        {track.audioSourceUrl && (
-                          <button
-                            className="btn-ghost px-2 py-1 text-xs"
-                            onClick={() => void configureTrack(track, { audioSourceUrl: null })}
-                          >
-                            Clear source
-                          </button>
+                        {track.candidate ? (
+                          <>
+                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => void confirmCandidate(track)}>
+                              Use downloaded
+                            </button>
+                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => void rejectCandidate(track)}>
+                              Reject and retry
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              className="btn-ghost px-2 py-1 text-xs"
+                              onClick={() => void configureTrack(track, { allowUnverified: !track.allowUnverified })}
+                            >
+                              {track.allowUnverified ? 'Use normal matching' : 'Try broader match'}
+                            </button>
+                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setSourceTrack(track)}>
+                              Replace source
+                            </button>
+                            {track.audioSourceUrl && (
+                              <button
+                                className="btn-ghost px-2 py-1 text-xs"
+                                onClick={() => void configureTrack(track, { audioSourceUrl: null })}
+                              >
+                                Clear source
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </div>

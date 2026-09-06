@@ -27,6 +27,7 @@ describe('ActivityStatus is unchanged (Topbar pill / ImportDialog regression)', 
   it('is idle with the exact idle shape', () => {
     expect(getActivity()).toEqual({
       active: false,
+      taskId: null,
       label: '',
       detail: null,
       phase: 'fetching',
@@ -39,6 +40,7 @@ describe('ActivityStatus is unchanged (Topbar pill / ImportDialog regression)', 
     beginActivity('Importing from AniList')
     expect(getActivity()).toEqual({
       active: true,
+      taskId: expect.any(String),
       label: 'Importing from AniList',
       detail: null,
       phase: 'fetching',
@@ -52,6 +54,7 @@ describe('ActivityStatus is unchanged (Topbar pill / ImportDialog regression)', 
     imageProgress(12, 40)
     expect(getActivity()).toEqual({
       active: true,
+      taskId: expect.any(String),
       label: 'Importing from AniList',
       detail: null,
       phase: 'images',

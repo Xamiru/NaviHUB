@@ -338,7 +338,10 @@ export function listPlaylists(): MusicPlaylistSummary[] {
     .prepare(
       `SELECT playlist_id, COUNT(*) AS n,
               SUM(matched_track_id IS NOT NULL) AS playable,
-              SUM(matched_track_id IS NULL) AS missing
+              SUM(matched_track_id IS NULL AND NOT EXISTS (
+                SELECT 1 FROM music_spotify_download_candidate dc
+                WHERE dc.playlist_item_id=music_spotify_playlist_item.id
+              )) AS missing
        FROM music_spotify_playlist_item
        WHERE playlist_id IN (${holes}) GROUP BY playlist_id`
     )
@@ -428,6 +431,16 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
                 si.spotify_url, si.track_no AS spotify_track_no, si.disc_no AS spotify_disc_no,
                 si.year AS spotify_year, si.audio_source_url, si.allow_unverified,
                 si.download_error,
+                dc.id AS candidate_id, dc.local_track_id AS candidate_track_id,
+                dc.provider AS candidate_provider, dc.source_url AS candidate_source_url,
+                ct.album_id AS candidate_album_id, ct.artist_id AS candidate_artist_id,
+                ct.file_path AS candidate_file_path, ct.title AS candidate_title,
+                ct.track_no AS candidate_track_no, ct.disc_no AS candidate_disc_no,
+                ct.duration AS candidate_duration, ct.tag_artist AS candidate_tag_artist,
+                ct.liked_at AS candidate_liked_at, ct.play_count AS candidate_play_count,
+                ct.last_played_at AS candidate_last_played_at,
+                cal.title AS candidate_album_title, cal.cover_path AS candidate_cover_path,
+                car.name AS candidate_artist_name,
                 t.id, t.album_id, t.artist_id, t.file_path, t.title, t.track_no, t.disc_no,
                 t.duration, t.tag_artist, t.liked_at, t.play_count, t.last_played_at,
                 al.title AS album_title, al.cover_path AS cover_path, ar.name AS artist_name
@@ -435,6 +448,10 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
          LEFT JOIN music_track t ON t.id = si.matched_track_id
          LEFT JOIN music_album al ON al.id = t.album_id
          LEFT JOIN music_artist ar ON ar.id = t.artist_id
+         LEFT JOIN music_spotify_download_candidate dc ON dc.playlist_item_id = si.id
+         LEFT JOIN music_track ct ON ct.id = dc.local_track_id
+         LEFT JOIN music_album cal ON cal.id = ct.album_id
+         LEFT JOIN music_artist car ON car.id = ct.artist_id
          WHERE si.playlist_id = ?
          ORDER BY si.position ASC, si.id ASC`
       )
@@ -477,6 +494,9 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
   const playableCount = items.filter(
     (item) => item.kind === 'local' || item.matchedTrack != null
   ).length
+  const verificationCount = items.filter(
+    (item) => item.kind === 'spotify' && item.matchedTrack == null && item.downloadCandidate != null
+  ).length
   return {
     id: row.id as number,
     title: row.title as string,
@@ -486,7 +506,8 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
     items,
     source,
     playableCount,
-    missingCount: items.length - playableCount
+    missingCount: items.length - playableCount - verificationCount,
+    verificationCount
   }
 }
 

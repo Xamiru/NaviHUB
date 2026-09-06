@@ -787,6 +787,25 @@ CREATE TABLE IF NOT EXISTS music_spotify_entity_track (
 CREATE INDEX IF NOT EXISTS idx_music_spotify_entity_track_release ON music_spotify_entity_track(release_id);
 CREATE INDEX IF NOT EXISTS idx_music_spotify_entity_track_match ON music_spotify_entity_track(matched_track_id);
 
+-- A downloaded Spotify source can have a real local file even when the
+-- conservative matcher cannot prove that it is the same recording. Keep that
+-- relationship separately until the user confirms it; never make an
+-- unverified file playable implicitly.
+CREATE TABLE IF NOT EXISTS music_spotify_download_candidate (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  playlist_item_id  INTEGER REFERENCES music_spotify_playlist_item(id) ON DELETE CASCADE,
+  entity_track_id   INTEGER REFERENCES music_spotify_entity_track(id) ON DELETE CASCADE,
+  local_track_id    INTEGER NOT NULL REFERENCES music_track(id) ON DELETE CASCADE,
+  provider          TEXT NOT NULL CHECK(provider IN ('youtube-music','youtube','piped','bandcamp','soundcloud','manual')),
+  source_url        TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  CHECK((playlist_item_id IS NULL) <> (entity_track_id IS NULL)),
+  UNIQUE(playlist_item_id),
+  UNIQUE(entity_track_id)
+);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_download_candidate_local
+  ON music_spotify_download_candidate(local_track_id);
+
 -- Durable download intent for saved Spotify catalogues and imported playlist
 -- snapshots. Runtime task state remains in the task registry; these rows are
 -- what make queued, paused, failed and completed work survive app restarts.

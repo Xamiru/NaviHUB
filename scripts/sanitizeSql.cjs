@@ -75,6 +75,7 @@ const FIXED_WIPES = [
   'DELETE FROM music_play_log',
   'DELETE FROM music_spotify_download_queue_selection',
   'DELETE FROM music_spotify_download_queue',
+  'DELETE FROM music_spotify_download_candidate',
   'DELETE FROM music_spotify_entity_track',
   'DELETE FROM music_spotify_entity_release',
   'DELETE FROM music_spotify_entity_snapshot',
@@ -125,7 +126,8 @@ const FIXED_WIPES = [
       'qbittorrent.url','qbittorrent.username','qbittorrent.password',
       'github.token','checklist.seeded','jp.knownBaseline')
      OR key LIKE 'japanese.seeded%' OR key LIKE 'franchise.%'
-     OR key LIKE 'football.entitlement.%'`
+     OR key LIKE 'football.entitlement.%'
+     OR key LIKE 'learning.evidence.v1.%'`
 ]
 
 function tableOf(sql) {
@@ -138,10 +140,28 @@ function sanitizeDb(db, input) {
   const hasTable = (name) => !!hasTableStmt.get(name)
   const run = (sql, ...args) => {
     const table = tableOf(sql)
+    // A partially migrated live database can contain a child table while its
+    // newer parent tables are absent. SQLite validates foreign-key metadata
+    // when touching that child, so skip it until the complete Spotify schema
+    // exists rather than making export fail on an otherwise usable legacy DB.
+    if (
+      table === 'music_spotify_download_candidate' &&
+      (!hasTable('music_spotify_entity_track') ||
+        !hasTable('music_spotify_playlist_item') ||
+        !hasTable('music_track'))
+    ) return
     if (!table || hasTable(table)) db.prepare(sql).run(...args)
   }
 
-  db.pragma('foreign_keys = ON')
+  // SQLite refuses to enable FK enforcement when a legacy export contains a
+  // child table whose newer parent table has not been created yet. Keep the
+  // legacy path usable; current schemas still get full FK enforcement.
+  const incompleteCandidateSchema =
+    hasTable('music_spotify_download_candidate') &&
+    (!hasTable('music_spotify_entity_track') ||
+      !hasTable('music_spotify_playlist_item') ||
+      !hasTable('music_track'))
+  if (!incompleteCandidateSchema) db.pragma('foreign_keys = ON')
   db.transaction(() => {
     if (hasTable('media_item')) {
       const media = options.sections.filter((section) => MEDIA_SECTIONS.includes(section))

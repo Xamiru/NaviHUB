@@ -21,6 +21,7 @@ export { TaskCancelledError }
 // explain an otherwise silent phase without inventing a percentage.
 const state: ActivityStatus = {
   active: false,
+  taskId: null,
   label: '',
   detail: null,
   phase: 'fetching',
@@ -66,6 +67,7 @@ export function beginActivity(
       }
     })
   ownsHandle = opts.attachTo == null
+  state.taskId = handle.id
   return handle
 }
 
@@ -126,6 +128,7 @@ function clearSlot(): void {
   ownsHandle = false
   Object.assign(state, {
     active: false,
+    taskId: null,
     label: '',
     detail: null,
     phase: 'fetching',

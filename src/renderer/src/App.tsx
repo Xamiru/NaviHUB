@@ -67,6 +67,7 @@ const EnglishVocabQuizPage = lazy(() => import('./pages/EnglishVocabQuizPage'))
 const EnglishSpellingPage = lazy(() => import('./pages/EnglishSpellingPage'))
 const EnglishReadingPage = lazy(() => import('./pages/EnglishReadingPage'))
 const EnglishMechanicsPage = lazy(() => import('./pages/EnglishMechanicsPage'))
+const EnglishRepairPage = lazy(() => import('./pages/EnglishRepairPage'))
 const EnglishWritingPage = lazy(() => import('./pages/EnglishWritingPage'))
 const ProgrammingHomePage = lazy(() => import('./pages/ProgrammingHomePage'))
 const ProgCoursePage = lazy(() => import('./pages/ProgCoursePage'))
@@ -511,6 +512,7 @@ export default function App() {
             <Route path="/english/spelling" element={<EnglishSpellingPage />} />
             <Route path="/english/reading" element={<EnglishReadingPage />} />
             <Route path="/english/mechanics" element={<EnglishMechanicsPage />} />
+            <Route path="/english/repair" element={<EnglishRepairPage />} />
             <Route path="/english/writing" element={<EnglishWritingPage />} />
 
             {/* Programming — Learn section; content is code (shared/programming),

@@ -8,6 +8,10 @@ import PageHeader from '../components/PageHeader'
 import StudySessionFrame, { SessionEvidence } from '../components/StudySessionFrame'
 import TutorSessionContinue from '../components/TutorSessionContinue'
 import { OUTPUT_UNITS, checkOutput, type OutputUnit } from '@shared/japanese/output'
+import { JP_OUTPUT_TRANSFER } from '@shared/japanese/outputTransfer'
+import { learningSettingKey } from '@shared/learningEvidence'
+import LearningPractice from '../components/LearningPractice'
+import LearningProject from '../components/LearningProject'
 
 type Phase = 'setup' | 'play' | 'summary'
 type SelfRating = 'needs-work' | 'close' | 'ready'
@@ -25,12 +29,14 @@ export default function JapaneseOutputPage() {
   const [phase, setPhase] = useState<Phase>('setup')
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState('')
+  const [firstDraft, setFirstDraft] = useState('')
   const [revealed, setRevealed] = useState(false)
   const [take, setTake] = useState<Take | null>(null)
   const [score, setScore] = useState(0)
   const [ratings, setRatings] = useState<SelfRating[]>([])
   const loggedRef = useRef(false)
   const unit = OUTPUT_UNITS.find((item) => item.id === unitId) ?? OUTPUT_UNITS[0]
+  const transfer = JP_OUTPUT_TRANSFER[unit.id]
   const prompt = unit.prompts[index]
   const check = useMemo(
     () => (revealed ? checkOutput(answer, prompt) : null),
@@ -61,6 +67,7 @@ export default function JapaneseOutputPage() {
     setPhase('play')
     setIndex(0)
     setAnswer('')
+    setFirstDraft('')
     setRevealed(false)
     setTake(null)
     setScore(0)
@@ -95,7 +102,7 @@ export default function JapaneseOutputPage() {
           score: nextScore,
           total: unit.prompts.length * 2,
           bestStreak: 0,
-          settings: { unitId: unit.id, stage: unit.stage, ratings: nextRatings }
+          settings: { unitId: unit.id, stage: unit.stage, ratings: nextRatings, evidenceBasis: 'first-draft-self-assessment' }
         })
         .then(() => qc.invalidateQueries({ queryKey: qk.quiz.history('jpOutput') }))
     }
@@ -123,7 +130,7 @@ export default function JapaneseOutputPage() {
             </SessionEvidence>
             <SessionEvidence title="Unit goal">
               <p>{unit.purpose}</p>
-              <p className="mt-3">Rate the repaired answer, not the first draft.</p>
+              <p className="mt-3">Compare the first draft with the model, then rate how much help that first draft needed. Repairs are practice, not independent evidence.</p>
             </SessionEvidence>
           </>
         }
@@ -148,7 +155,7 @@ export default function JapaneseOutputPage() {
           />
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {!revealed ? (
-              <button className="btn-primary" disabled={!answer.trim()} onClick={() => setRevealed(true)}>
+              <button className="btn-primary" disabled={!answer.trim()} onClick={() => { setFirstDraft(answer); setRevealed(true) }}>
                 Compare with model
               </button>
             ) : <p className="text-sm text-gray-500">Structure check updates as you revise.</p>}
@@ -186,13 +193,15 @@ export default function JapaneseOutputPage() {
         {revealed && check && (
           <div className="mt-7 border-t border-base-700 pt-6" aria-live="polite">
             <h3 className="text-sm font-semibold text-white">Model for comparison</h3>
+            <p className="mt-2 text-sm text-gray-400">Your first draft (before the model):</p>
+            <p className="mt-1 whitespace-pre-wrap text-sm">{firstDraft}</p>
             <p className="mt-3 text-2xl leading-relaxed text-white">{prompt.model}</p>
             <p className="mt-1 text-sm text-gray-500">{prompt.reading}</p>
             <p className="mt-4 max-w-3xl text-sm leading-6 text-gray-400">{prompt.note}</p>
 
             <div className="mt-5">
               <div className="mb-2 flex items-center justify-between text-sm">
-                <span className="font-medium text-white">Required signals detected</span>
+                <span className="font-medium text-white">Target-form coverage in the revised text</span>
                 <span className="tabular-nums text-gray-400">{check.score}%</span>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -208,11 +217,11 @@ export default function JapaneseOutputPage() {
             </div>
 
             <div className="mt-7 border-t border-base-700 pt-5">
-              <p className="text-sm font-medium text-white">After revising, how independently could you produce it?</p>
+              <p className="text-sm font-medium text-white">Looking at the saved first draft, how much help did it need?</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button className="btn-ghost" onClick={() => rate('needs-work')}>Needs work</button>
-                <button className="btn-ghost" onClick={() => rate('close')}>Close with repair</button>
-                <button className="btn-primary" onClick={() => rate('ready')}>Ready independently</button>
+                <button className="btn-ghost" onClick={() => rate('needs-work')}>Needed the model</button>
+                <button className="btn-ghost" onClick={() => rate('close')}>Needed some repair</button>
+                <button className="btn-primary" onClick={() => rate('ready')}>First draft met the goal</button>
               </div>
             </div>
           </div>
@@ -228,7 +237,7 @@ export default function JapaneseOutputPage() {
         <PageHeader
           back={{ to: '/japanese/tutor', label: 'Tutor' }}
           title="Output unit complete"
-          subtitle={`${unit.title}: ${percent}% self-rated independence after comparison and repair.`}
+          subtitle={`${unit.title}: ${percent}% self-rated first-draft readiness. This is not automatic language grading.`}
         />
         <div className="flex flex-wrap gap-2">
           <button className="btn-primary" onClick={start}>Repeat unit</button>
@@ -293,9 +302,13 @@ export default function JapaneseOutputPage() {
             ))}
           </div>
           <p className="mt-5 max-w-3xl text-sm leading-6 text-gray-400">
-            Model answers are examples, not the only valid Japanese. The offline checker reports only whether expected structures appear; your self-rating records independence after repair.
+            Model answers are examples, not the only valid Japanese. The offline checker reports only whether expected structures appear; your self-rating refers to the first draft before comparison.
           </p>
           <button className="btn-primary mt-5" onClick={start}>Start this three-prompt unit</button>
+          {transfer && <>
+            <LearningPractice key={transfer.id} unit={transfer} settingKey={learningSettingKey('japanese', transfer.id)} />
+            <LearningProject key={`${transfer.id}-production`} settingKey={learningSettingKey('japanese', transfer.id)} task={transfer.production} criteria={transfer.criteria} />
+          </>}
         </div>
       </div>
     </div>

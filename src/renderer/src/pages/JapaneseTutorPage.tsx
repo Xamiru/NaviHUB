@@ -151,7 +151,7 @@ export default function JapaneseTutorPage() {
           <Section title="Weekly operating rhythm" subtitle="for roughly one hour a day">
             <div className="grid gap-x-8 gap-y-5 border-y border-base-700 py-5 sm:grid-cols-2">
               <Rhythm title="Five standard days" body="Complete the sixty-minute plan in order. If review runs long, reduce new cards before cutting reading." />
-              <Rhythm title="Two output sessions" body="Complete at least two controlled-output units. Revise after comparison; do not count an unrepaired first draft." />
+              <Rhythm title="Two output sessions" body="Save a first draft before comparison, then revise. Rate the help the original draft needed and try a different situation in the transfer practice." />
               <Rhythm title="Four reading contacts" body="Use local manga or visual-novel text on four days. Graded reading fills the gap when native text is too costly." />
               <Rhythm title="Two listening contacts" body="Use guided sentence audio early. From Step 10, replace one or both with a staged local-media session." />
               <Rhythm title="One checkpoint" body="Review the evidence rail, repeat the weakest measured skill, and move forward only when the current material feels manageable." />
@@ -357,11 +357,11 @@ export default function JapaneseTutorPage() {
               <Evidence label="Guided listening" value={formatAccuracy(historyEvidence(history.listening).accuracy)} />
               <Evidence label="Long-form listening" value={formatAccuracy(historyEvidence(history.jpImmersion).accuracy)} />
               <Evidence label="Connected reading" value={formatAccuracy(historyEvidence(history.jpReading).accuracy)} />
-              <Evidence label="Controlled output" value={formatAccuracy(historyEvidence(history.jpOutput).accuracy)} />
+              <Evidence label="Output self-assessment" value={formatAccuracy(historyEvidence(history.jpOutput).accuracy)} />
               <Evidence label="Chapters read" value={String(detail.journey.chaptersRead)} />
             </dl>
             <p className="mt-4 border-t border-base-700 pt-4 text-xs leading-5 text-gray-500">
-              Missing evidence becomes a recommendation to sample that skill. It is not treated as failure.
+              Missing evidence becomes a recommendation to sample that skill. It is not treated as failure. Output includes self-assessed practice; it does not certify independent fluency. Earlier sessions may rate the repaired response rather than the first draft.
             </p>
           </div>
 

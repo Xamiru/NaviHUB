@@ -97,6 +97,7 @@ export default function MusicPlaylistPage() {
   const missingSpotify = allItems.filter(
     (item): item is MusicSpotifyPlaylistEntry => item.kind === 'spotify' && !item.matchedTrack
   )
+  const downloadableMissing = missingSpotify.filter((item) => !item.downloadCandidate)
   const normalizedSearch = search.trim().toLocaleLowerCase()
   const filteredItems = allItems.filter((item) => {
     if (availability === 'playable' && item.kind === 'spotify' && !item.matchedTrack) return false
@@ -142,6 +143,20 @@ export default function MusicPlaylistPage() {
     invalidate()
     qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
     toast('Playlist song linked to the local recording', 'success')
+  }
+
+  async function confirmDownloaded(itemId: number): Promise<void> {
+    await api.music.spotifyConfirmDownloadCandidate({ sourceKind: 'playlistItem', trackId: itemId })
+    invalidate()
+    qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+    toast('Downloaded recording linked to the playlist', 'success')
+  }
+
+  async function rejectDownloaded(itemId: number): Promise<void> {
+    await api.music.spotifyRejectDownloadCandidate({ sourceKind: 'playlistItem', trackId: itemId })
+    invalidate()
+    qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+    toast('Candidate rejected; the song is ready to retry', 'success')
   }
 
   async function queueDownload(
@@ -216,8 +231,8 @@ export default function MusicPlaylistPage() {
       .filter((selection) => selection.kind === 'playlistItem')
       .map((selection) => selection.sourceId) ?? []
   )
-  const allMissingQueued = missingSpotify.length > 0 &&
-    missingSpotify.every((item) => queuedItemIds.has(item.itemId))
+  const allMissingQueued = downloadableMissing.length > 0 &&
+    downloadableMissing.every((item) => queuedItemIds.has(item.itemId))
 
   async function saveTitle(): Promise<void> {
     const t = title.trim()
@@ -289,16 +304,16 @@ export default function MusicPlaylistPage() {
           >
             Play
           </button>
-          {missingSpotify.length > 0 && (
+          {downloadableMissing.length > 0 && (
             <button
               className="btn-ghost"
               disabled={busy && !allMissingQueued}
               onClick={() => {
                 if (allMissingQueued) navigate('/music/downloads')
-                else void queueDownload(missingSpotify)
+                else void queueDownload(downloadableMissing)
               }}
             >
-              {allMissingQueued ? 'View downloads' : `Add missing (${playlist.missingCount})`}
+              {allMissingQueued ? 'View downloads' : `Add missing (${downloadableMissing.length})`}
             </button>
           )}
           <button
@@ -316,13 +331,13 @@ export default function MusicPlaylistPage() {
           </button>
           <ActionMenu
             items={[
-              ...(missingSpotify.length > 0
+              ...(downloadableMissing.length > 0
                 ? [{
                     label: downloadStatus?.source === 'spotifyQueue' && ACTIVE_DOWNLOAD.has(downloadStatus.status)
                       ? downloadStatus.status === 'paused' ? 'Run missing after paused' : 'Run missing next'
                       : 'Download missing now',
                     disabled: busy,
-                    onSelect: () => queueDownload(missingSpotify, true)
+                    onSelect: () => queueDownload(downloadableMissing, true)
                   }]
                 : []),
               ...(playlist.source
@@ -341,7 +356,7 @@ export default function MusicPlaylistPage() {
 
       <p className="mb-4 text-sm text-gray-400">
         {allItems.length} total · {playlist.playableCount} playable
-        {isSpotify && ` · ${playlist.missingCount} missing`}
+        {isSpotify && ` · ${playlist.missingCount} missing${playlist.verificationCount ? ` · ${playlist.verificationCount} to verify` : ''}`}
       </p>
 
       {busy && downloadStatus && (
@@ -461,6 +476,8 @@ export default function MusicPlaylistPage() {
                     else void queueDownload([item])
                   }}
                   onUseLocal={() => setLocalMatchItem(item)}
+                  onConfirmDownloaded={() => void confirmDownloaded(item.itemId)}
+                  onRejectDownloaded={() => void rejectDownloaded(item.itemId)}
                   onRemove={() => removeSpotifyItem(item.itemId)}
                 />
               )
@@ -502,6 +519,8 @@ function SpotifyMissingRow({
   queued,
   onQueue,
   onUseLocal,
+  onConfirmDownloaded,
+  onRejectDownloaded,
   onRemove
 }: {
   item: MusicSpotifyPlaylistEntry
@@ -509,6 +528,8 @@ function SpotifyMissingRow({
   queued: boolean
   onQueue: () => void
   onUseLocal: () => void
+  onConfirmDownloaded: () => void
+  onRejectDownloaded: () => void
   onRemove: () => void
 }) {
   return (
@@ -523,9 +544,10 @@ function SpotifyMissingRow({
       <div className="min-w-0 flex-1">
         <p className="line-clamp-1 text-sm font-medium text-gray-300">{item.title}</p>
         <p className="line-clamp-1 text-xs text-gray-500">
-          {item.artists.join(', ')} · {item.albumTitle} · Missing locally
+          {item.artists.join(', ')} · {item.albumTitle} · {item.downloadCandidate ? 'Downloaded locally; needs verification' : 'Missing locally'}
         </p>
         {item.downloadError && <p className="line-clamp-2 text-xs text-red-300">{item.downloadError}</p>}
+        {item.downloadCandidate && <p className="line-clamp-2 text-xs text-amber-300">Downloaded; verify the local version before playing.</p>}
         {item.audioSourceUrl && <p className="text-xs text-green-400">Manual YouTube source saved</p>}
         {item.allowUnverified && !item.audioSourceUrl && <p className="text-xs text-amber-300">Broader matching enabled</p>}
       </div>
@@ -537,8 +559,14 @@ function SpotifyMissingRow({
           Use local version
         </button>
       )}
-      <button className="btn-ghost px-2 py-1 text-xs" disabled={busy && !queued} onClick={onQueue}>
-        {queued ? 'View queue' : 'Add to queue'}
+      {item.downloadCandidate && (
+        <>
+          <button className="btn-ghost px-2 py-1 text-xs" onClick={onConfirmDownloaded}>Use downloaded</button>
+          <button className="btn-ghost px-2 py-1 text-xs" onClick={onRejectDownloaded}>Reject and retry</button>
+        </>
+      )}
+      <button className="btn-ghost px-2 py-1 text-xs" disabled={Boolean(item.downloadCandidate) || (busy && !queued)} onClick={onQueue}>
+        {queued ? 'View queue' : item.downloadCandidate ? 'Verify first' : 'Add to queue'}
       </button>
       <button className="btn-ghost px-2 py-1 text-xs" aria-label={`Remove ${item.title} from playlist`} onClick={onRemove}>
         Remove

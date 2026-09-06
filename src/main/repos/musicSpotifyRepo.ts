@@ -1,6 +1,7 @@
 import { getSqlite } from '../db/connection'
 import type {
   MusicTrack,
+  MusicSpotifyDownloadCandidate,
   MusicSpotifyPlaylistEntry,
   SpotifyDownloadQueueAddResult,
   SpotifyDownloadQueueCard,
@@ -39,6 +40,210 @@ export interface LocalMatchCandidate {
   tagArtist: string | null
   albumTitle: string
   duration: number | null
+}
+
+export interface DownloadCandidateRow {
+  localTrackId: number
+  provider: 'youtube-music' | 'youtube' | 'piped' | 'bandcamp' | 'soundcloud' | 'manual'
+  sourceUrl: string | null
+}
+
+export function downloadCandidate(
+  sourceKind: 'playlistItem' | 'entityTrack',
+  sourceId: number
+): DownloadCandidateRow | null {
+  const column = sourceKind === 'playlistItem' ? 'playlist_item_id' : 'entity_track_id'
+  const row = getSqlite().prepare(
+    `SELECT local_track_id, provider, source_url
+     FROM music_spotify_download_candidate WHERE ${column}=?`
+  ).get(sourceId) as Record<string, unknown> | undefined
+  if (!row) return null
+  return {
+    localTrackId: row.local_track_id as number,
+    provider: row.provider as DownloadCandidateRow['provider'],
+    sourceUrl: (row.source_url as string) ?? null
+  }
+}
+
+export function downloadCandidateView(
+  sourceKind: 'playlistItem' | 'entityTrack',
+  sourceId: number
+): MusicSpotifyDownloadCandidate | null {
+  const candidate = downloadCandidate(sourceKind, sourceId)
+  if (!candidate) return null
+  const row = getSqlite().prepare(
+    `SELECT t.id, t.album_id, t.artist_id, t.file_path, t.title, t.track_no, t.disc_no,
+            t.duration, t.tag_artist, t.liked_at, t.play_count, t.last_played_at,
+            al.title AS album_title, al.cover_path, ar.name AS artist_name
+     FROM music_track t
+     JOIN music_album al ON al.id=t.album_id
+     JOIN music_artist ar ON ar.id=t.artist_id WHERE t.id=?`
+  ).get(candidate.localTrackId) as Record<string, unknown> | undefined
+  if (!row) return null
+  return {
+    provider: candidate.provider,
+    sourceUrl: candidate.sourceUrl,
+    localTrack: {
+      id: row.id as number,
+      albumId: row.album_id as number,
+      albumTitle: row.album_title as string,
+      artistId: row.artist_id as number,
+      artistName: row.artist_name as string,
+      tagArtist: (row.tag_artist as string) ?? null,
+      filePath: row.file_path as string,
+      title: row.title as string,
+      trackNo: (row.track_no as number) ?? null,
+      discNo: (row.disc_no as number) ?? null,
+      duration: (row.duration as number) ?? null,
+      likedAt: (row.liked_at as string) ?? null,
+      playCount: (row.play_count as number) ?? 0,
+      lastPlayedAt: (row.last_played_at as string) ?? null,
+      coverPath: (row.cover_path as string) ?? null
+    }
+  }
+}
+
+export function hasDownloadCandidate(sourceKind: 'playlistItem' | 'entityTrack', sourceId: number): boolean {
+  return downloadCandidate(sourceKind, sourceId) != null
+}
+
+export function setDownloadCandidate(input: {
+  sourceKind: 'playlistItem' | 'entityTrack'
+  sourceId: number
+  localTrackId: number
+  provider: DownloadCandidateRow['provider']
+  sourceUrl?: string | null
+}): void {
+  const db = getSqlite()
+  const column = input.sourceKind === 'playlistItem' ? 'playlist_item_id' : 'entity_track_id'
+  db.prepare(
+    `INSERT INTO music_spotify_download_candidate
+       (${column}, local_track_id, provider, source_url)
+     VALUES (?, ?, ?, ?)
+     ON CONFLICT(${column}) DO UPDATE SET
+       local_track_id=excluded.local_track_id,
+       provider=excluded.provider,
+       source_url=excluded.source_url,
+       created_at=datetime('now')`
+  ).run(input.sourceId, input.localTrackId, input.provider, input.sourceUrl ?? null)
+}
+
+export function clearDownloadCandidate(
+  sourceKind: 'playlistItem' | 'entityTrack',
+  sourceId: number
+): void {
+  const column = sourceKind === 'playlistItem' ? 'playlist_item_id' : 'entity_track_id'
+  getSqlite().prepare(`DELETE FROM music_spotify_download_candidate WHERE ${column}=?`).run(sourceId)
+}
+
+export function confirmDownloadCandidate(input: {
+  sourceKind: 'playlistItem' | 'entityTrack'
+  trackId: number
+}): void {
+  const db = getSqlite()
+  const candidate = downloadCandidate(input.sourceKind, input.trackId)
+  if (!candidate) {
+    throw new Error('That downloaded candidate is no longer available')
+  }
+  const table = input.sourceKind === 'playlistItem'
+    ? 'music_spotify_playlist_item'
+    : 'music_spotify_entity_track'
+  const sourceColumn = input.sourceKind === 'playlistItem' ? 'id' : 'id'
+  db.transaction(() => {
+    db.prepare(`UPDATE ${table} SET matched_track_id=?, download_error=NULL WHERE ${sourceColumn}=?`)
+      .run(candidate.localTrackId, input.trackId)
+    clearDownloadCandidate(input.sourceKind, input.trackId)
+    if (input.sourceKind === 'playlistItem') {
+      const playlist = db.prepare(
+        'SELECT playlist_id FROM music_spotify_playlist_item WHERE id=?'
+      ).get(input.trackId) as { playlist_id: number } | undefined
+      if (playlist) db.prepare(
+        `UPDATE music_playlist SET updated_at=datetime('now') WHERE id=?`
+      ).run(playlist.playlist_id)
+    }
+  })()
+}
+
+export function rejectDownloadCandidate(
+  sourceKind: 'playlistItem' | 'entityTrack',
+  sourceId: number
+): void {
+  clearDownloadCandidate(sourceKind, sourceId)
+}
+
+export function linkProvenanceTracks(input: {
+  sourceKind: 'playlistItem' | 'entityTrack'
+  sourceId: number
+  spotifyTrackId: string
+  marker: string
+  manual: boolean
+  provider: DownloadCandidateRow['provider']
+  sourceUrl: string | null
+}[]): number {
+  if (!input.length) return 0
+  const db = getSqlite()
+  let linked = 0
+  db.transaction(() => {
+    for (const row of input) {
+      const table = row.sourceKind === 'playlistItem'
+        ? 'music_spotify_playlist_item'
+        : 'music_spotify_entity_track'
+      const source = db.prepare(
+        `SELECT title, primary_artist, album_title, duration, disc_no, track_no,
+                matched_track_id, audio_source_url
+         FROM ${table} WHERE id=?`
+      ).get(row.sourceId) as Record<string, unknown> | undefined
+      if (!source || source.matched_track_id != null) continue
+      const local = db.prepare(
+        `SELECT t.id, t.title, ar.name AS folder_artist, t.tag_artist,
+                al.title AS album_title, t.duration, t.disc_no, t.track_no, t.file_path
+         FROM music_track t
+         JOIN music_artist ar ON ar.id=t.artist_id
+         JOIN music_album al ON al.id=t.album_id
+         WHERE t.file_path LIKE ?`
+      ).all(`%[navihub-${row.spotifyTrackId}]%`) as Record<string, unknown>[]
+      if (local.length !== 1) continue
+      const candidate = rowCandidate(local[0])
+      const song = {
+        title: source.title as string,
+        primaryArtist: source.primary_artist as string,
+        albumTitle: source.album_title as string,
+        duration: (source.duration as number) ?? null
+      }
+      if (!spotifyArtistMatches(song.primaryArtist, candidate) ||
+          normalizeSpotifyMatch(candidate.title) !== normalizeSpotifyMatch(song.title) ||
+          recordingVariantSignature(candidate.title, candidate.albumTitle) !==
+            recordingVariantSignature(song.title, song.albumTitle)) continue
+      const sameAlbum = normalizeSpotifyMatch(candidate.albumTitle) === normalizeSpotifyMatch(song.albumTitle)
+      const samePosition = source.track_no == null || local[0].track_no == null ||
+        Number(source.track_no) === Number(local[0].track_no)
+      if (!sameAlbum || !samePosition) continue
+      if (row.manual || source.audio_source_url != null) {
+        db.prepare(`UPDATE ${table} SET matched_track_id=?, download_error=NULL WHERE id=?`)
+          .run(candidate.id, row.sourceId)
+        clearDownloadCandidate(row.sourceKind, row.sourceId)
+      } else {
+        setDownloadCandidate({
+          sourceKind: row.sourceKind,
+          sourceId: row.sourceId,
+          localTrackId: candidate.id,
+          provider: row.provider,
+          sourceUrl: row.sourceUrl
+        })
+        db.prepare(`UPDATE ${table} SET download_error=? WHERE id=?`)
+          .run('Downloaded; verify the local version before playing', row.sourceId)
+      }
+      linked += 1
+    }
+  })()
+  return linked
+}
+
+export function updateProvenanceTrackPaths(renames: { from: string; to: string }[]): void {
+  const db = getSqlite()
+  const update = db.prepare('UPDATE music_track SET file_path=? WHERE file_path=?')
+  const tx = db.transaction(() => { for (const rename of renames) update.run(rename.to, rename.from) })
+  tx()
 }
 
 export interface IndexedEntityTrack {
@@ -124,6 +329,9 @@ function reopenCompletedDownloadQueueCards(): number {
          JOIN music_spotify_entity_track t ON t.release_id=qs.release_id
          WHERE qs.queue_id=music_spotify_download_queue.id
            AND t.matched_track_id IS NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM music_spotify_download_candidate c WHERE c.entity_track_id=t.id
+           )
        )
        OR EXISTS (
          SELECT 1
@@ -131,6 +339,9 @@ function reopenCompletedDownloadQueueCards(): number {
          JOIN music_spotify_playlist_item i ON i.id=qs.playlist_item_id
          WHERE qs.queue_id=music_spotify_download_queue.id
            AND i.matched_track_id IS NULL
+           AND NOT EXISTS (
+             SELECT 1 FROM music_spotify_download_candidate c WHERE c.playlist_item_id=i.id
+           )
        )
      )`
   ).run().changes
@@ -230,7 +441,9 @@ export function addEntityToDownloadQueue(input: {
     .filter((release) => requested.includes(release.id))
     .map((release) => ({
       id: release.id,
-      missing: release.tracks.filter((track) => track.matchedTrackId == null).length
+      missing: release.tracks.filter((track) =>
+        track.matchedTrackId == null && !hasDownloadCandidate('entityTrack', track.id)
+      ).length
     }))
     .filter((release) => release.missing > 0)
   if (!missing.length) return { jobId: null, addedSelections: 0, missingCount: 0 }
@@ -293,13 +506,14 @@ function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
     `SELECT qs.id, r.id AS source_id, r.title, r.album_artist, r.metadata_state,
             r.resolution_error,
             COUNT(t.id) AS track_count,
-            COALESCE(SUM(t.matched_track_id IS NULL), 0) AS missing_count,
+            COALESCE(SUM(t.matched_track_id IS NULL AND dc.id IS NULL), 0) AS missing_count,
             COALESCE(SUM(t.duration), 0) AS duration,
-            COALESCE(SUM(CASE WHEN t.matched_track_id IS NULL THEN
+            COALESCE(SUM(CASE WHEN t.matched_track_id IS NULL AND dc.id IS NULL THEN
               CASE WHEN t.duration IS NULL THEN ? ELSE t.duration * ? END ELSE 0 END), 0) AS missing_bytes
      FROM music_spotify_download_queue_selection qs
      JOIN music_spotify_entity_release r ON r.id=qs.release_id
-     LEFT JOIN music_spotify_entity_track t ON t.release_id=r.id
+    LEFT JOIN music_spotify_entity_track t ON t.release_id=r.id
+     LEFT JOIN music_spotify_download_candidate dc ON dc.entity_track_id=t.id
      WHERE qs.queue_id=? AND qs.release_id IS NOT NULL
      GROUP BY qs.id, r.id
      ORDER BY qs.position, qs.id`
@@ -307,9 +521,10 @@ function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
   const playlistRows = db.prepare(
     `SELECT qs.id, i.id AS source_id, i.title, i.primary_artist, i.duration,
             i.spotify_url, i.audio_source_url, i.allow_unverified, i.download_error,
-            i.matched_track_id
+            i.matched_track_id, dc.id AS candidate_id
      FROM music_spotify_download_queue_selection qs
      JOIN music_spotify_playlist_item i ON i.id=qs.playlist_item_id
+     LEFT JOIN music_spotify_download_candidate dc ON dc.playlist_item_id=i.id
      WHERE qs.queue_id=? AND qs.playlist_item_id IS NOT NULL
      ORDER BY qs.position, qs.id`
   ).all(queueId) as Record<string, unknown>[]
@@ -332,21 +547,28 @@ function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
       missingEstimatedBytes: Math.ceil(Number(row.missing_bytes) * 1.05),
       metadataState: row.metadata_state as 'indexed' | 'resolved' | 'error',
       error: (row.resolution_error as string) ?? null,
-      tracks: (releaseTracks.all(row.source_id) as Record<string, unknown>[]).map((track) => ({
-        id: track.id as number,
-        sourceKind: 'entityTrack' as const,
-        title: track.title as string,
-        artist: track.primary_artist as string,
-        spotifyUrl: (track.spotify_url as string) ?? null,
-        missing: track.matched_track_id == null,
-        audioSourceUrl: (track.audio_source_url as string) ?? null,
-        allowUnverified: Boolean(track.allow_unverified),
-        error: (track.download_error as string) ?? null
-      }))
+      tracks: (releaseTracks.all(row.source_id) as Record<string, unknown>[]).map((track) => {
+        const candidate = downloadCandidateView('entityTrack', track.id as number)
+        const missing = track.matched_track_id == null && candidate == null
+        return {
+          id: track.id as number,
+          sourceKind: 'entityTrack' as const,
+          title: track.title as string,
+          artist: track.primary_artist as string,
+          spotifyUrl: (track.spotify_url as string) ?? null,
+          missing,
+          audioSourceUrl: (track.audio_source_url as string) ?? null,
+          allowUnverified: Boolean(track.allow_unverified),
+          error: (track.download_error as string) ?? null,
+          candidate
+        }
+      })
     })),
     ...playlistRows.map((row): SpotifyDownloadQueueSelection => {
       const duration = (row.duration as number) ?? null
-      const missing = row.matched_track_id == null
+      const candidate = downloadCandidateView('playlistItem', row.source_id as number)
+      const missing = row.matched_track_id == null && candidate == null
+      const downloadable = missing
       return {
         id: row.id as number,
         kind: 'playlistItem',
@@ -354,7 +576,7 @@ function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
         title: row.title as string,
         subtitle: (row.primary_artist as string) ?? null,
         trackCount: 1,
-        missingCount: missing ? 1 : 0,
+        missingCount: downloadable ? 1 : 0,
         duration: duration ?? 0,
         missingEstimatedBytes: missing ? estimatedBytes(duration) : 0,
         metadataState: null,
@@ -368,7 +590,8 @@ function queueSelections(queueId: number): SpotifyDownloadQueueSelection[] {
           missing,
           audioSourceUrl: (row.audio_source_url as string) ?? null,
           allowUnverified: Boolean(row.allow_unverified),
-          error: (row.download_error as string) ?? null
+          error: (row.download_error as string) ?? null,
+          candidate
         }]
       }
     })
@@ -1189,6 +1412,9 @@ export function resolveAllSpotifyItems(): number {
         ? existing.id
         : matchSpotifyPlaylistSong(song, titleCandidates)
       update.run(match, match, row.id)
+      if (match != null) db.prepare(
+        'DELETE FROM music_spotify_download_candidate WHERE playlist_item_id=?'
+      ).run(row.id)
       if (match != null) resolved += 1
     }
     for (const row of entityItems) {
@@ -1202,6 +1428,9 @@ export function resolveAllSpotifyItems(): number {
         byTitle.get(normalizeSpotifyMatch(row.title as string)) ?? []
       )
       updateEntity.run(match, match, row.id)
+      if (match != null) db.prepare(
+        'DELETE FROM music_spotify_download_candidate WHERE entity_track_id=?'
+      ).run(row.id)
       if (match != null) resolved += 1
     }
   })
@@ -1304,7 +1533,11 @@ export function pendingSpotifyItems(playlistId: number, itemIds?: number[]): Rec
   return getSqlite()
     .prepare(
       `SELECT * FROM music_spotify_playlist_item
-       WHERE playlist_id = ? AND matched_track_id IS NULL ${where}
+       WHERE playlist_id = ? AND matched_track_id IS NULL
+         AND NOT EXISTS (
+           SELECT 1 FROM music_spotify_download_candidate c
+           WHERE c.playlist_item_id=music_spotify_playlist_item.id
+         ) ${where}
        ORDER BY position ASC, id ASC`
     )
     .all(playlistId, ...ids) as Record<string, unknown>[]
@@ -1333,6 +1566,7 @@ export function setTrackDownloadOptions(input: {
   const result = db.prepare(`UPDATE ${table} SET ${sets.join(', ')} WHERE id=?`)
     .run(...values, input.trackId)
   if (!result.changes) throw new Error('That saved Spotify track no longer exists')
+  clearDownloadCandidate(input.sourceKind, input.trackId)
   const card = db.prepare(
     input.sourceKind === 'entityTrack'
       ? `SELECT q.id FROM music_spotify_download_queue q
@@ -1426,8 +1660,34 @@ export function mapSpotifyItem(row: Record<string, unknown>, track: MusicTrack |
     audioSourceUrl: (row.audio_source_url as string) ?? null,
     allowUnverified: Boolean(row.allow_unverified),
     downloadError: (row.download_error as string) ?? null,
+    downloadCandidate: mapDownloadCandidate(row),
     matchedTrack: track,
     localAlternatives: []
+  }
+}
+
+function mapDownloadCandidate(row: Record<string, unknown>): MusicSpotifyDownloadCandidate | null {
+  if (row.candidate_id == null || row.candidate_track_id == null) return null
+  return {
+    provider: row.candidate_provider as MusicSpotifyDownloadCandidate['provider'],
+    sourceUrl: (row.candidate_source_url as string) ?? null,
+    localTrack: {
+      id: row.candidate_track_id as number,
+      albumId: row.candidate_album_id as number,
+      albumTitle: row.candidate_album_title as string,
+      artistId: row.candidate_artist_id as number,
+      artistName: row.candidate_artist_name as string,
+      tagArtist: (row.candidate_tag_artist as string) ?? null,
+      filePath: row.candidate_file_path as string,
+      title: row.candidate_title as string,
+      trackNo: (row.candidate_track_no as number) ?? null,
+      discNo: (row.candidate_disc_no as number) ?? null,
+      duration: (row.candidate_duration as number) ?? null,
+      likedAt: (row.candidate_liked_at as string) ?? null,
+      playCount: (row.candidate_play_count as number) ?? 0,
+      lastPlayedAt: (row.candidate_last_played_at as string) ?? null,
+      coverPath: (row.candidate_cover_path as string) ?? null
+    }
   }
 }
 
