@@ -895,9 +895,12 @@ const SPOTDL_METADATA_STALL_MS = 5 * 60_000
 // A large playlist can go completely quiet after printing "Found N songs"
 // while its worker pool is still fetching and serializing every track. Five
 // minutes produced repeatable false failures on a healthy 100-track import.
-// Rate-limit lines are handled immediately and the task remains cancellable,
-// so use a deliberately conservative watchdog for this metadata-only path.
+// Rate-limit lines are handled immediately and the task remains cancellable.
+// Before the count is known use this conservative floor; after "Found N" the
+// allowance scales in 100-track blocks because spotDL emits no intermediate
+// checkpoints while rebuilding every Spotify track object.
 export const SPOTDL_PLAYLIST_METADATA_STALL_MS = 30 * 60_000
+export const SPOTDL_PLAYLIST_METADATA_MAX_STALL_MS = 8 * 60 * 60_000
 const SPOTDL_AUDIO_STALL_MS = 10 * 60_000
 const abandonedRuns = new Set<string>()
 let inspectionPromise: Promise<SpotifyEntityInspection> | null = null
@@ -1002,12 +1005,33 @@ export function entityState(input: SpotifyEntityRef): SpotifyEntityState {
 
 export function parseSpotdlInspectionLine(line: string): { foundCount: number; message: string } | null {
   const found = line.match(/Found\s+(\d+)\s+songs?\s+in\s+(.+?)(?:\s+\([^)]+\))?\s*$/i)
-  return found
-    ? {
-        foundCount: Number(found[1]),
-        message: `Found ${found[1]} tracks; resolving Spotify metadata in parallel. spotDL may be quiet for several minutes.`
-      }
-    : null
+  if (!found) return null
+  const foundCount = Number(found[1])
+  const stallMs = spotifyPlaylistMetadataStallMs(foundCount)
+  return {
+    foundCount,
+    message: `Found ${found[1]} tracks; resolving Spotify metadata with 8 workers. spotDL may be quiet for up to ${formatPlaylistWait(stallMs)}.`
+  }
+}
+
+export function spotifyPlaylistMetadataStallMs(trackCount: number): number {
+  if (!Number.isFinite(trackCount) || trackCount <= 0) return SPOTDL_PLAYLIST_METADATA_STALL_MS
+  const blocks = Math.max(1, Math.ceil(trackCount / 100))
+  return Math.min(
+    SPOTDL_PLAYLIST_METADATA_MAX_STALL_MS,
+    blocks * SPOTDL_PLAYLIST_METADATA_STALL_MS
+  )
+}
+
+function formatPlaylistWait(ms: number): string {
+  const minutes = Math.round(ms / 60_000)
+  if (minutes < 60) return `${minutes} minutes`
+  const hours = minutes / 60
+  return `${hours} hour${hours === 1 ? '' : 's'}`
+}
+
+export function completeSpotdlPlaylistSnapshot(payload: unknown, expectedCount: number | null): boolean {
+  return Array.isArray(payload) && expectedCount != null && payload.length >= expectedCount
 }
 
 export function runSpotdl(
@@ -1016,7 +1040,8 @@ export function runSpotdl(
   onLine?: (line: string) => void,
   jobId?: string,
   spawnProcess: typeof spawn = spawn,
-  stallTimeoutMs?: number
+  stallTimeoutMs?: number,
+  stallTimeoutForLine?: (line: string) => number | null
 ): Promise<number> {
   claimMusicMaintenance(owner)
   return new Promise((resolve, reject) => {
@@ -1042,21 +1067,24 @@ export function runSpotdl(
     }
     active = { id, proc, cancelled: false, owner }
     let stalled = false
+    let stalledAfterMs: number | null = null
     let rateLimitWaitSec: number | null = null
     let stallTimer: NodeJS.Timeout | null = null
+    let currentStallTimeoutMs = stallTimeoutMs
     const clearStallTimer = (): void => {
       if (stallTimer) clearTimeout(stallTimer)
       stallTimer = null
     }
     const armStallTimer = (): void => {
       clearStallTimer()
-      if (!stallTimeoutMs) return
+      if (!currentStallTimeoutMs) return
       stallTimer = setTimeout(() => {
         if (active?.id !== id) return
         stalled = true
+        stalledAfterMs = currentStallTimeoutMs ?? null
         active.cancelled = true
         processControls(() => activeProcessTarget(id), { killAfterMs: 1_000 }).cancel?.()
-      }, stallTimeoutMs)
+      }, currentStallTimeoutMs)
       stallTimer.unref()
     }
     const taskSignal = currentActivitySignal()
@@ -1073,6 +1101,10 @@ export function runSpotdl(
     }
     const handleLine = onLine ?? (() => undefined)
     const observeLine = (line: string): void => {
+      const adjustedTimeout = stallTimeoutForLine?.(line)
+      if (adjustedTimeout != null && Number.isFinite(adjustedTimeout) && adjustedTimeout > 0) {
+        currentStallTimeoutMs = adjustedTimeout
+      }
       armStallTimer()
       handleLine(line)
       const wait = parseSpotdlRateLimitWait(line)
@@ -1100,7 +1132,9 @@ export function runSpotdl(
           `spotDL's Spotify metadata provider is rate-limited for about ${hours} hour${hours === 1 ? '' : 's'}. NaviHUB stopped the wait; retry after updating spotDL or when the provider limit clears.`
         ))
       } else if (stalled) {
-        reject(new Error('spotDL stopped responding. Retry this release or check spotDL and yt-dlp in Settings.'))
+        reject(new Error(
+          `spotDL stopped responding to NaviHUB (no output for ${formatPlaylistWait(stalledAfterMs ?? SPOTDL_METADATA_STALL_MS)}), so NaviHUB stopped it. Retry or check spotDL and yt-dlp in Settings.`
+        ))
       } else {
         resolve(code ?? 1)
       }
@@ -1390,26 +1424,51 @@ export async function importPlaylist(url: string): Promise<SpotifyImportResult> 
   const dir = mkdtempSync(join(tmpdir(), 'navihub-spotify-'))
   const saveFile = join(dir, 'playlist.spotdl')
   try {
-    const code = await runSpotdl(
-      buildSpotdlSaveArgs(parsed.canonicalUrl, saveFile),
-      'Spotify import',
-      (line) => {
-        const event = parseSpotdlInspectionLine(line)
-        if (event) updateActivity({ detail: event.message, done: 0, total: 0 })
-      },
-      undefined,
-      undefined,
-      SPOTDL_PLAYLIST_METADATA_STALL_MS
-    )
-    updateActivity({ phase: 'fetching', detail: 'Validating the playlist snapshot', done: 0, total: 0 })
-    if (code !== 0) {
-      throw new Error('spotDL could not read that playlist. It may be private or inaccessible.')
+    let foundCount: number | null = null
+    let code = 1
+    let runError: unknown = null
+    try {
+      code = await runSpotdl(
+        buildSpotdlSaveArgs(parsed.canonicalUrl, saveFile),
+        'Spotify import',
+        (line) => {
+          const event = parseSpotdlInspectionLine(line)
+          if (event) {
+            foundCount = event.foundCount
+            updateActivity({ detail: event.message, done: 0, total: 0 })
+          }
+        },
+        undefined,
+        undefined,
+        SPOTDL_PLAYLIST_METADATA_STALL_MS,
+        (line) => {
+          const event = parseSpotdlInspectionLine(line)
+          return event ? spotifyPlaylistMetadataStallMs(event.foundCount) : null
+        }
+      )
+    } catch (error) {
+      runError = error
     }
+    updateActivity({ phase: 'fetching', detail: 'Validating the playlist snapshot', done: 0, total: 0 })
     let payload: unknown
     try {
       payload = JSON.parse(readFileSync(saveFile, 'utf8'))
     } catch {
+      if (runError) throw runError
+      if (code !== 0) {
+        throw new Error('spotDL could not read that playlist. It may be private or inaccessible.')
+      }
       throw new Error('spotDL returned an invalid playlist file')
+    }
+    if (runError || code !== 0) {
+      if (!completeSpotdlPlaylistSnapshot(payload, foundCount)) {
+        if (runError) throw runError
+        throw new Error('spotDL could not read that playlist. It may be private or inaccessible.')
+      }
+      logWarn(
+        'proc',
+        `spotDL exited after writing all ${foundCount} playlist tracks; continuing with the complete saved snapshot`
+      )
     }
     const validated = validateSpotdlPayload(payload)
     if (validated.songs.length === 0) {

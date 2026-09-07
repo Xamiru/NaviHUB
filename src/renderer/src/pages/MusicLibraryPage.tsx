@@ -785,7 +785,8 @@ function SpotifyImportDialog({
             </div>
             <p className="mt-2 text-xs leading-5 text-gray-400">
               This stage reads Spotify metadata only; it does not download song audio. Large
-              playlists can be quiet for several minutes after the track count appears.
+              playlists can be quiet for several hours after the track count appears; the status
+              above shows how long NaviHUB will wait.
             </p>
           </div>
         )}

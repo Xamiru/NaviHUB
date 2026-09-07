@@ -55,6 +55,8 @@ describe('Sonic Archive product surface', () => {
     expect(playlist).toContain('Change local version')
     expect(playlist).toContain('spotifyMatchPlaylistItem')
     expect(playlist).toContain('Live, remix, acoustic and other')
+    expect(library).toContain('playlists can be quiet for several hours')
+    expect(library).toContain('shows how long NaviHUB will wait')
   })
 
   it('keeps deferred Spotify downloads in a dedicated persistent workspace', () => {

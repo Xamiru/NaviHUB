@@ -57,10 +57,16 @@ YouTube as the built-in fallback; Spotify does not supply audio files.
 Parallel spotDL metadata workers can finish out of order, so import restores the
 authoritative `list_position` before covers, deduplication and database insertion.
 After spotDL reports the playlist track count it can remain silent while eight workers
-resolve and serialize every track. Playlist imports therefore use a conservative
-30-minute output-silence watchdog (provider rate-limit messages still fail immediately),
-and the shared activity/task surfaces report the discovered count and explain the quiet
-metadata phase without presenting a fake percentage. This phase does not download audio.
+resolve and serialize every track, and spotDL writes `playlist.spotdl` only after that
+whole worker pool settles. Playlist imports therefore begin with a 30-minute
+output-silence watchdog, then scale it by the reported size in 100-track/30-minute
+blocks up to eight hours (provider rate-limit messages still fail immediately). An
+800-track source gets four quiet hours rather than being killed after 30 minutes. The
+shared activity/task surfaces report the discovered count, eight-worker phase and exact
+silence allowance without presenting a fake percentage. If spotDL exits abnormally just
+after writing a JSON array containing every reported row, NaviHUB validates and imports
+that complete snapshot; a missing, malformed or short snapshot is never treated as a
+resumable playlist. This phase does not download audio.
 
 `music_spotify_playlist` owns source identity and `music_spotify_playlist_item`
 keeps the ordered Spotify metadata, downloaded cover, and original spotDL payload.

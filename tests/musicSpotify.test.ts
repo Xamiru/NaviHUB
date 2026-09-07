@@ -19,6 +19,7 @@ import {
   buildSpotdlSaveArgs,
   buildSpotifyDiscoveryQuery,
   chunkSpotifyItems,
+  completeSpotdlPlaylistSnapshot,
   completeResolvedReleaseSongs,
   estimateSpotifyDownloadBytes,
   friendlySpotifyDownloadError,
@@ -31,6 +32,8 @@ import {
   payloadWithAudioSource,
   parseSpotdlInspectionLine,
   SPOTDL_PLAYLIST_METADATA_STALL_MS,
+  SPOTDL_PLAYLIST_METADATA_MAX_STALL_MS,
+  spotifyPlaylistMetadataStallMs,
   pickDiscoveredEntity,
   pickConsensusDiscoveredEntity,
   rankSpotifyReleaseDiscoveryTracks,
@@ -59,10 +62,24 @@ describe('Spotify playlist import core', () => {
   it('allows long silent playlist metadata resolution without the five-minute false timeout', () => {
     expect(SPOTDL_PLAYLIST_METADATA_STALL_MS).toBe(30 * 60_000)
     expect(SPOTDL_PLAYLIST_METADATA_STALL_MS).toBeGreaterThan(5 * 60_000)
+    expect(spotifyPlaylistMetadataStallMs(100)).toBe(30 * 60_000)
+    expect(spotifyPlaylistMetadataStallMs(800)).toBe(4 * 60 * 60_000)
+    expect(spotifyPlaylistMetadataStallMs(10_000)).toBe(SPOTDL_PLAYLIST_METADATA_MAX_STALL_MS)
     expect(parseSpotdlInspectionLine('Found 100 songs in RYM Top 100 Songs (Playlist)')).toEqual({
       foundCount: 100,
-      message: 'Found 100 tracks; resolving Spotify metadata in parallel. spotDL may be quiet for several minutes.'
+      message: 'Found 100 tracks; resolving Spotify metadata with 8 workers. spotDL may be quiet for up to 30 minutes.'
     })
+    expect(parseSpotdlInspectionLine('Found 800 songs in Big Playlist (Playlist)')).toEqual({
+      foundCount: 800,
+      message: 'Found 800 tracks; resolving Spotify metadata with 8 workers. spotDL may be quiet for up to 4 hours.'
+    })
+  })
+
+  it('recovers only a complete spotDL playlist snapshot after an abnormal exit', () => {
+    expect(completeSpotdlPlaylistSnapshot(Array.from({ length: 800 }), 800)).toBe(true)
+    expect(completeSpotdlPlaylistSnapshot(Array.from({ length: 799 }), 800)).toBe(false)
+    expect(completeSpotdlPlaylistSnapshot(Array.from({ length: 800 }), null)).toBe(false)
+    expect(completeSpotdlPlaylistSnapshot({}, 800)).toBe(false)
   })
 
   it('accepts canonical playlist URLs and rejects other Spotify content', () => {
@@ -574,6 +591,42 @@ describe('Spotify playlist import core', () => {
     }
   })
 
+  it('rearms a playlist watchdog from its reported track count', async () => {
+    vi.useFakeTimers()
+    const proc = Object.assign(new EventEmitter(), {
+      stdout: new PassThrough(),
+      stderr: new PassThrough(),
+      exitCode: null as number | null,
+      kill: vi.fn(() => true)
+    })
+    try {
+      const pending = runSpotdl(
+        [],
+        'large-playlist-spotdl-fixture',
+        undefined,
+        'large-playlist-job',
+        () => proc as never,
+        SPOTDL_PLAYLIST_METADATA_STALL_MS,
+        (line) => {
+          const event = parseSpotdlInspectionLine(line)
+          return event ? spotifyPlaylistMetadataStallMs(event.foundCount) : null
+        }
+      )
+      proc.stdout.write('Found 800 songs in Big Playlist (Playlist)\n')
+      await vi.advanceTimersByTimeAsync(SPOTDL_PLAYLIST_METADATA_STALL_MS)
+      expect(proc.kill).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(
+        spotifyPlaylistMetadataStallMs(800) - SPOTDL_PLAYLIST_METADATA_STALL_MS
+      )
+      expect(proc.kill).toHaveBeenCalledWith('SIGTERM')
+      proc.exitCode = 1
+      proc.emit('close', 1)
+      await expect(pending).rejects.toThrow(/stopped responding/i)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('parses provider waits and stops day-long spotDL rate limits immediately', async () => {
     expect(parseSpotdlRateLimitWait(
       'Your application has reached a rate/request limit. Retry will occur after: 86400 s'
@@ -681,7 +734,7 @@ describe('Spotify playlist import core', () => {
     })
     expect(parseSpotdlInspectionLine('Found 109 songs in Gracie Abrams (Artist)')).toEqual({
       foundCount: 109,
-      message: 'Found 109 tracks; resolving Spotify metadata in parallel. spotDL may be quiet for several minutes.'
+      message: 'Found 109 tracks; resolving Spotify metadata with 8 workers. spotDL may be quiet for up to 1 hour.'
     })
   })
 })
