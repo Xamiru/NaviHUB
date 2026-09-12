@@ -11,3 +11,8 @@ declare module '*.sql?raw' {
 declare module 'seek-bzip' {
   export function decode(input: Buffer, expectedSize?: number): Buffer
 }
+
+declare module '*.py?raw' {
+  const content: string
+  export default content
+}

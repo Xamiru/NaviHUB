@@ -2884,6 +2884,8 @@ export interface MusicPlaylistEntry {
 }
 
 export interface MusicSpotifyPlaylistEntry {
+  downloadSkipped?: boolean
+  matchConfirmed?: boolean
   kind: 'spotify'
   itemId: number
   position: number
@@ -2951,6 +2953,7 @@ export interface SpotifyDownloadInput {
 }
 
 export interface SpotifyPlaylistLocalMatchInput {
+  confirm?: boolean
   itemId: number
   trackId: number
 }
@@ -2974,6 +2977,7 @@ export interface SpotifyEntityCandidate {
 }
 
 export interface SpotifyReleasePreview {
+  tracksLoaded?: boolean
   releaseId: number
   spotifyAlbumId: string | null
   spotifyUrl: string | null
@@ -2994,6 +2998,7 @@ export interface SpotifyReleasePreview {
 }
 
 export interface SpotifyEntityInspection {
+  catalogueCountry?: string
   snapshotId: number
   kind: SpotifyEntityKind
   entityId: number
@@ -3059,6 +3064,7 @@ export interface SpotifyDownloadQueueSelection {
 }
 
 export interface SpotifyDownloadQueueTrack {
+  duration?: number | null
   id: number
   sourceKind: 'entityTrack' | 'playlistItem'
   title: string
@@ -4978,4 +4984,11 @@ export interface PlayerSnapshot {
   hasNext: boolean
   hasPrev: boolean
   volume: number // 0..1, mirrors the in-app slider
+}
+
+export interface SpotifyAudioCandidate {
+  url: string
+  title: string
+  channel: string
+  duration: number | null
 }

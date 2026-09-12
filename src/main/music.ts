@@ -318,10 +318,11 @@ export interface SyncCounts {
   removed: number
 }
 
-export function syncLibrary(
+function writeMusicRows(
   albums: ScannedAlbumFolder[],
   parsed: ParsedTrack[],
-  coverByAlbumDir: Map<string, string | null>
+  coverByAlbumDir: Map<string, string | null>,
+  completeSnapshot: boolean
 ): SyncCounts {
   const db = getSqlite()
   const byAlbum = new Map<string, ParsedTrack[]>()
@@ -419,6 +420,7 @@ export function syncLibrary(
       }
     }
 
+    if (completeSnapshot) {
     // Prune vanished tracks (chunked NOT IN), then empty albums/artists.
     if (seen.length === 0) {
       counts.removed = existingPaths.size
@@ -441,12 +443,69 @@ export function syncLibrary(
       'DELETE FROM music_artist WHERE id NOT IN (SELECT DISTINCT artist_id FROM music_album)'
     ).run()
 
+    }
     counts.tracks = (db.prepare('SELECT COUNT(*) AS n FROM music_track').get() as { n: number }).n
     counts.albums = (db.prepare('SELECT COUNT(*) AS n FROM music_album').get() as { n: number }).n
     counts.artists = (db.prepare('SELECT COUNT(*) AS n FROM music_artist').get() as { n: number }).n
   })
   tx()
   return counts
+}
+
+// Only a complete filesystem snapshot may prune missing rows.
+export function syncLibrary(
+  albums: ScannedAlbumFolder[], parsed: ParsedTrack[], covers: Map<string, string | null>
+): SyncCounts {
+  return writeMusicRows(albums, parsed, covers, true)
+}
+
+/** Index known output files without walking or pruning the rest of the library. */
+export async function indexMusicFiles(
+  paths: string[], owner: string, reader: TagReader = realTagReader
+): Promise<void> {
+  claimMusicMaintenance(owner)
+  try {
+    const albums = new Map<string, ScannedAlbumFolder>()
+    for (const relPath of [...new Set(paths)]) {
+      const abs = absoluteMediaPath(`music/${relPath}`)
+      if (!abs || isAbsolute(relPath) || relPath.split(/[\\/]/).includes('..')) {
+        throw new Error('Downloaded audio must be inside the music folder')
+      }
+      if (!isAudioFile(relPath)) continue
+      const parts = relPath.replace(/\\/g, '/').split('/')
+      if (parts.length < 3) throw new Error('Audio must be inside Artist/Album folders')
+      const albumDir = parts.slice(0, 2).join('/')
+      const fileStat = await stat(abs)
+      if (!fileStat.isFile()) continue
+      const album = albums.get(albumDir) ?? {
+        artistDir: parts[0], artistName: parts[0], albumDir, albumTitle: parts[1],
+        coverFile: null, files: []
+      }
+      album.files.push({ relPath, albumDir, fileName: basename(abs), mtimeMs: fileStat.mtimeMs })
+      albums.set(albumDir, album)
+    }
+    const folders = [...albums.values()]
+    const parsed = await parseFiles(folders.flatMap((a) => a.files), reader, () => true)
+    const covers = new Map<string, string | null>()
+    for (const album of folders) {
+      const existingCover = getSqlite().prepare('SELECT cover_path FROM music_album WHERE dir_path=?')
+        .get(album.albumDir) as { cover_path: string | null } | undefined
+      if (existingCover?.cover_path) continue
+      const pic = parsed.find((track) => track.albumDir === album.albumDir && track.picture)?.picture
+      if (pic) {
+        const name = `${createHash('sha1').update(album.albumDir).digest('hex').slice(0, 16)}${extForPicture(pic.format)}`
+        const dest = join(musicCoversDir(), name)
+        if (!existsSync(dest)) writeFileSync(dest, Buffer.from(pic.data))
+        covers.set(album.albumDir, `media/music-covers/${name}`)
+      }
+    }
+    if (folders.length) {
+      writeMusicRows(folders, parsed, covers, false)
+      resolveAllSpotifyItems(parsed.map((track) => track.title))
+    }
+  } finally {
+    releaseMusicMaintenance(owner)
+  }
 }
 
 // ---------------------------------------------------------------------------

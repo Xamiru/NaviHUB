@@ -1,3 +1,4 @@
+import { Field } from './Field'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
@@ -63,6 +64,8 @@ export default function SpotifyEntityDownloadDialog({
   const [url, setUrl] = useState(savedUrl ?? '')
   const [allowMismatch, setAllowMismatch] = useState(false)
   const [missingOnly, setMissingOnly] = useState(false)
+  const [country, setCountry] = useState('US')
+  const [loadingRelease, setLoadingRelease] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const ref = useMemo(() => ({ kind, entityId }), [kind, entityId])
@@ -88,6 +91,7 @@ export default function SpotifyEntityDownloadDialog({
 
   function applyInspection(next: SpotifyEntityInspection, preserveSelection = false): void {
     setInspection(next)
+    setCountry(next.catalogueCountry ?? 'US')
     setSelected((old) => new Set(next.releases
       .filter((release) => preserveSelection ? old.has(release.releaseId) : release.preselected)
       .map((release) => release.releaseId)))
@@ -192,7 +196,8 @@ export default function SpotifyEntityDownloadDialog({
     }), { missing: 0, bytes: 0 }) ?? { missing: 0, bytes: 0 }, [inspection, selected])
 
   async function addToQueue(startNow: boolean): Promise<void> {
-    if (!inspection) return
+    if (!inspection || loading) return
+    setLoading(true)
     try {
       const result = await api.music.spotifyQueueAddEntity({
         snapshotId: inspection.snapshotId,
@@ -248,7 +253,7 @@ export default function SpotifyEntityDownloadDialog({
       onClose()
     } catch (caught) {
       toastError(caught)
-    }
+    } finally { setLoading(false) }
   }
 
   async function forget(): Promise<void> {
@@ -295,17 +300,18 @@ export default function SpotifyEntityDownloadDialog({
   const runningHere = directRunning || queueCard?.state === 'running'
   const queueActive = downloadStatus?.source === 'spotifyQueue' && ACTIVE_DOWNLOAD.has(downloadStatus.status)
   const releases = inspection?.releases.filter((release) =>
-    !missingOnly || release.missingCount > 0) ?? []
+    !missingOnly || release.tracksLoaded === false || release.missingCount > 0) ?? []
 
   function releaseRows(rows: SpotifyReleasePreview[]): React.JSX.Element[] {
     return rows.map((release) => (
-      <label
+      <div
         key={release.releaseId}
         className="flex gap-3 border-b border-base-700 px-1 py-3 last:border-0"
       >
         {kind === 'artist' && (
           <input
             type="checkbox"
+            aria-label={`Select ${release.title}`}
             checked={selected.has(release.releaseId)}
             onChange={(event) => setSelected((old) => {
               const next = new Set(old)
@@ -326,12 +332,19 @@ export default function SpotifyEntityDownloadDialog({
             {[release.year, release.albumType].filter(Boolean).join(' · ') || 'Release'}
           </span>
           <span className="mt-0.5 block text-xs text-gray-500">
-            {release.trackCount} tracks · {release.localCount} local · {release.missingCount} missing · {formatDuration(release.duration)}
-            {release.missingCount > 0 && ` · about ${formatBytes(release.missingEstimatedBytes)}`}
+            {release.tracksLoaded === false ? `${release.trackCount} advertised tracks; local matches and size not checked yet` : `${release.trackCount} tracks · ${release.localCount} local · ${release.missingCount} missing · ${formatDuration(release.duration)}`}
+            {release.tracksLoaded !== false && release.missingCount > 0 && ` · about ${formatBytes(release.missingEstimatedBytes)}`}
           </span>
+          {release.tracksLoaded === false && <button className="btn-ghost mt-2 text-xs" disabled={loadingRelease != null} onClick={async () => {
+            if (!inspection) return
+            setLoadingRelease(release.releaseId)
+            try { applyInspection(await api.music.spotifyLoadRelease(inspection.snapshotId, release.releaseId), true) }
+            catch (error) { toastError(error) }
+            finally { setLoadingRelease(null) }
+          }}>{loadingRelease === release.releaseId ? 'Checking tracklist…' : 'Load tracklist and check local files'}</button>}
           {release.resolutionError && <span className="mt-1 block text-xs text-red-300">{release.resolutionError}</span>}
         </span>
-      </label>
+      </div>
     ))
   }
 
@@ -433,6 +446,12 @@ export default function SpotifyEntityDownloadDialog({
 
         {!building && advanced && (
           <div className="space-y-3">
+            <Field label="Catalogue country (two-letter code)"><input className="input" value={country} maxLength={2} onChange={(e) => setCountry(e.target.value.toUpperCase())} /></Field>
+            <button className="btn-ghost" disabled={!/^[A-Z]{2}$/.test(country) || loading} onClick={async () => {
+              await api.settings.set('spotdl.catalogueCountry', country)
+              await startInspection({ refresh: true })
+              setAdvanced(false)
+            }}>Reload catalogue for this country</button>
             <label className="label" htmlFor="spotify-entity-url">Public Spotify {kind} link</label>
             <input
               id="spotify-entity-url"
@@ -465,7 +484,7 @@ export default function SpotifyEntityDownloadDialog({
             <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
               <div>
                 <p className="text-sm text-gray-300">
-                  <span className="font-medium text-white">{inspection.sourceName}</span> · {inspection.provider === 'itunes' ? 'Fast catalogue' : 'spotDL catalogue'}
+                  <span className="font-medium text-white">{inspection.sourceName}</span> · {inspection.provider === 'itunes' ? `Apple catalogue (${inspection.catalogueCountry ?? 'US'})` : 'spotDL catalogue'}
                 </p>
                 <p className="mt-1 text-xs text-gray-400">
                   Saved {new Intl.DateTimeFormat().format(new Date(inspection.refreshedAt))} · reopening is instant
@@ -484,6 +503,7 @@ export default function SpotifyEntityDownloadDialog({
               />
             </div>
 
+            {inspection.provider === 'itunes' && <p className="mb-3 text-sm text-gray-400">Regional catalogue, up to 200 releases. This is not a complete Spotify discography. Tracklists and local matches load when you select downloads or open a release. Change country under Replace source.</p>}
             {inspection.mismatchMessage && (
               <div className="mb-4 rounded bg-amber-950/40 p-3 text-sm text-amber-100">
                 <p>{inspection.mismatchMessage} This one-time download will not replace the saved source.</p>
@@ -514,7 +534,7 @@ export default function SpotifyEntityDownloadDialog({
 
             <div className="sticky bottom-0 mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-base-700 bg-base-800 pt-4">
               <div className="min-w-0 text-sm text-gray-400">
-                <p>{totals.missing} missing selected · about {formatBytes(totals.bytes)}</p>
+                <p>{inspection.releases.some((release) => selected.has(release.releaseId) && release.tracksLoaded === false) ? 'Selected tracklists will be checked before the download estimate' : `${totals.missing} missing selected · about ${formatBytes(totals.bytes)}`}</p>
                 {directRunning && (
                   <p className="mt-1 truncate text-gray-300">
                     {downloadStatus.releaseTitle ?? downloadStatus.title ?? downloadStatus.message ?? 'Preparing release'}

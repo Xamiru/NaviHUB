@@ -429,7 +429,7 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
                 si.album_artist, si.album_title AS spotify_album_title,
                 si.duration AS spotify_duration, si.cover_path AS spotify_cover_path,
                 si.spotify_url, si.track_no AS spotify_track_no, si.disc_no AS spotify_disc_no,
-                si.year AS spotify_year, si.audio_source_url, si.allow_unverified,
+                si.year AS spotify_year, si.audio_source_url, si.allow_unverified, si.download_skipped, si.match_confirmed,
                 si.download_error,
                 dc.id AS candidate_id, dc.local_track_id AS candidate_track_id,
                 dc.provider AS candidate_provider, dc.source_url AS candidate_source_url,

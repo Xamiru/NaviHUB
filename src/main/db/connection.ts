@@ -118,8 +118,12 @@ export function seedChecklist(sqlite: Database.Database): void {
 // Exported for tests/initLegacyDb.test.ts, which replays a pre-SRS live DB
 // against the real init.sql + migrations.
 export function runMigrations(sqlite: Database.Database): void {
+  ensureColumn(sqlite, 'music_track', 'spotify_review_required', 'spotify_review_required INTEGER NOT NULL DEFAULT 0')
   // Spotify entity sources arrived after the music library. The indexes must
   // be created after ALTER TABLE or a pre-feature database cannot start.
+  ensureColumn(sqlite, 'music_spotify_entity_snapshot', 'catalogue_country', "catalogue_country TEXT NOT NULL DEFAULT 'US'")
+  ensureColumn(sqlite, 'music_spotify_entity_release', 'expected_tracks', 'expected_tracks INTEGER')
+  ensureColumn(sqlite, 'music_spotify_entity_release', 'tracks_loaded', 'tracks_loaded INTEGER NOT NULL DEFAULT 1')
   ensureColumn(sqlite, 'music_artist', 'spotify_id', 'spotify_id TEXT')
   ensureColumn(sqlite, 'music_album', 'spotify_id', 'spotify_id TEXT')
   ensureColumn(sqlite, 'music_spotify_playlist_item', 'audio_source_url', 'audio_source_url TEXT')
@@ -128,6 +132,11 @@ export function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'music_spotify_entity_track', 'audio_source_url', 'audio_source_url TEXT')
   ensureColumn(sqlite, 'music_spotify_entity_track', 'allow_unverified', 'allow_unverified INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'music_spotify_entity_track', 'download_error', 'download_error TEXT')
+  ensureColumn(sqlite, 'music_spotify_playlist_item', 'resolved_audio_url', 'resolved_audio_url TEXT')
+  ensureColumn(sqlite, 'music_spotify_entity_track', 'resolved_audio_url', 'resolved_audio_url TEXT')
+  ensureColumn(sqlite, 'music_spotify_playlist_item', 'match_confirmed', 'match_confirmed INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(sqlite, 'music_spotify_playlist_item', 'download_skipped', 'download_skipped INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(sqlite, 'music_spotify_entity_track', 'match_confirmed', 'match_confirmed INTEGER NOT NULL DEFAULT 0')
   sqlite
     .prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_music_artist_spotify ON music_artist(spotify_id)')
     .run()

@@ -345,6 +345,7 @@ describe('custom export policy', () => {
   })
 
   it('exports Spotify source snapshots without local music linkage', () => {
+    db.prepare('UPDATE music_spotify_playlist_item SET match_confirmed=1, download_skipped=1, resolved_audio_url=?').run('https://www.youtube.com/watch?v=private')
     sanitizeWith({ sections: ['anime'], includeSpotifyPlaylists: true })
     expect(count('music_artist')).toBe(0)
     expect(count('music_track')).toBe(0)
@@ -355,10 +356,13 @@ describe('custom export policy', () => {
     expect(count('music_spotify_download_queue')).toBe(0)
     expect(count('music_spotify_download_queue_selection')).toBe(0)
     expect(
-      db.prepare(`SELECT matched_track_id, audio_source_url, allow_unverified,
+      db.prepare(`SELECT matched_track_id, match_confirmed, download_skipped, resolved_audio_url, audio_source_url, allow_unverified,
                          download_error FROM music_spotify_playlist_item`).get()
     ).toEqual({
       matched_track_id: null,
+      match_confirmed: 0,
+      download_skipped: 0,
+      resolved_audio_url: null,
       audio_source_url: null,
       allow_unverified: 0,
       download_error: null

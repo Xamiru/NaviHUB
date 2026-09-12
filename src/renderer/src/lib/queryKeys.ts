@@ -306,6 +306,7 @@ export const qk = {
     stats: ['music', 'stats'] as const,
     scanStatus: ['music', 'scanStatus'] as const,
     downloadStatus: ['music', 'downloadStatus'] as const,
+    spotifyAudioSearch: (query: string) => ['music', 'spotifyAudioSearch', query] as const,
     spotifyDetect: ['music', 'spotifyDetect'] as const,
     spotifyInspectionStatus: ['music', 'spotifyInspectionStatus'] as const,
     spotifyQueue: ['music', 'spotifyQueue'] as const,

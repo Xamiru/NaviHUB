@@ -31,7 +31,7 @@ vi.mock('../src/main/files', () => ({
   musicRootDir: () => '/tmp/music'
 }))
 vi.mock('../src/main/http', () => ({ fetchWithRetry: vi.fn() }))
-vi.mock('../src/main/music', () => ({ startScan: vi.fn(async () => undefined) }))
+vi.mock('../src/main/music', () => ({ startScan: vi.fn(async () => undefined), indexMusicFiles: vi.fn(async () => undefined) }))
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>()
   return {
@@ -48,7 +48,7 @@ import * as spotify from '../src/main/musicSpotify'
 import * as tasks from '../src/main/tasks'
 import { musicMaintenanceOwner } from '../src/main/musicMaintenance'
 import { fetchWithRetry } from '../src/main/http'
-import { spawn } from 'node:child_process'
+import { spawn, execFile } from 'node:child_process'
 
 beforeEach(() => {
   db = createTestDb()
@@ -59,7 +59,7 @@ beforeEach(() => {
   spotify.killActive()
 })
 
-function seedQueuedRelease(): { jobId: number; artistId: number } {
+async function seedQueuedRelease(): Promise<{ jobId: number; artistId: number }> {
   db.prepare(`INSERT INTO music_artist (id, name, dir_path) VALUES (1, 'Artist', 'Artist')`).run()
   db.prepare(
     `INSERT INTO music_album (id, artist_id, title, dir_path) VALUES (1, 1, 'Local', 'Artist/Local')`
@@ -94,7 +94,7 @@ function seedQueuedRelease(): { jobId: number; artistId: number } {
   })
   const releaseId = spotifyRepo.getEntitySnapshotById(snapshotId)!.releases[0].id
   return {
-    jobId: spotify.addEntityDownloadQueue({ snapshotId, releaseIds: [releaseId] }).jobId!,
+    jobId: (await spotify.addEntityDownloadQueue({ snapshotId, releaseIds: [releaseId] })).jobId!,
     artistId: 1
   }
 }
@@ -181,7 +181,7 @@ describe('persistent Spotify download queue process', () => {
   })
 
   it('rechecks local matches and completes without launching spotDL', async () => {
-    const { jobId } = seedQueuedRelease()
+    const { jobId } = await seedQueuedRelease()
     db.prepare(
       `INSERT INTO music_album (id, artist_id, title, dir_path) VALUES (2, 1, 'Missing album', 'Artist/Missing album')`
     ).run()
@@ -198,8 +198,8 @@ describe('persistent Spotify download queue process', () => {
     expect(musicMaintenanceOwner()).toBeNull()
   })
 
-  it('persists a broader retry and exact audio source on one queued track', () => {
-    const { jobId } = seedQueuedRelease()
+  it('persists a broader retry and exact audio source on one queued track', async () => {
+    const { jobId } = await seedQueuedRelease()
     const track = db.prepare(
       `SELECT t.id FROM music_spotify_entity_track t
        JOIN music_spotify_download_queue_selection qs ON qs.release_id=t.release_id
@@ -223,7 +223,7 @@ describe('persistent Spotify download queue process', () => {
   })
 
   it('kills metadata resolution on Pause, persists paused state, and Cancel returns it to the queue', async () => {
-    const { jobId } = seedQueuedRelease()
+    const { jobId } = await seedQueuedRelease()
     const run = spotify.startDownloadQueue({ jobId })
     await vi.waitFor(() => expect(spawned).toHaveLength(1))
     expect(vi.mocked(spawn).mock.calls.at(-1)?.[1]).toContain('Artist - Missing song')
@@ -245,7 +245,7 @@ describe('persistent Spotify download queue process', () => {
   })
 
   it('discovers an album id from a track before expanding the canonical album URL', async () => {
-    const { jobId } = seedQueuedRelease()
+    const { jobId } = await seedQueuedRelease()
     const payload = [{
       song_id: 'spotify-track',
       name: 'Missing song',
@@ -291,7 +291,7 @@ describe('persistent Spotify download queue process', () => {
   })
 
   it('repairs a truncated resolved album and fills missing metadata before download', async () => {
-    const { jobId } = seedQueuedRelease()
+    const { jobId } = await seedQueuedRelease()
     const releaseId = spotifyRepo.getDownloadQueueCard(jobId)!.selections[0].sourceId
     const indexed = {
       providerReleaseId: '456',
@@ -377,7 +377,7 @@ describe('persistent Spotify download queue process', () => {
   })
 
   it('retains a failed card and continues to later queue work', async () => {
-    const first = seedQueuedRelease()
+    const first = await seedQueuedRelease()
     const playlist = spotifyRepo.createSpotifyPlaylist({
       spotifyId: 'playlist-id',
       sourceUrl: 'https://open.spotify.com/playlist/playlist-id',
@@ -429,5 +429,25 @@ describe('persistent Spotify download queue process', () => {
     expect(spotifyRepo.getDownloadQueueCard(secondJobId)?.state).toBe('completed')
     expect(spotify.getStatus()?.message).toMatch(/remain available to retry/)
     expect(musicMaintenanceOwner()).toBeNull()
+  })
+})
+
+describe('YouTube access retry cache', () => {
+  it('retests failures immediately and expires successful probes after five minutes', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(1000000)
+    try {
+      vi.mocked(execFile).mockImplementationOnce(((_bin: string, _args: string[], _options: unknown, callback: Function) => {
+        callback(new Error('blocked'), '', 'Sign in to confirm you are not a bot')
+      }) as typeof execFile)
+      expect((await spotify.testYoutubeAccess(true)).ok).toBe(false)
+      const failedCalls = vi.mocked(execFile).mock.calls.length
+      expect((await spotify.testYoutubeAccess()).ok).toBe(true)
+      expect(vi.mocked(execFile).mock.calls.length).toBe(failedCalls + 1)
+      await spotify.testYoutubeAccess()
+      expect(vi.mocked(execFile).mock.calls.length).toBe(failedCalls + 1)
+      now.mockReturnValue(1300001)
+      await spotify.testYoutubeAccess()
+      expect(vi.mocked(execFile).mock.calls.length).toBe(failedCalls + 2)
+    } finally { now.mockRestore() }
   })
 })

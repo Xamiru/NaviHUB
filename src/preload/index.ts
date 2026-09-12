@@ -434,6 +434,12 @@ const api: NaviApi = {
       ipcRenderer.invoke('music:removePlaylistTrackByTrack', playlistId, trackId),
     reorderPlaylist: (playlistId, orderedItemIds) =>
       ipcRenderer.invoke('music:reorderPlaylist', playlistId, orderedItemIds),
+    spotifySearchAudio: (query) => ipcRenderer.invoke('music:spotifySearchAudio', query),
+    spotifyPreviewAudio: (url) => ipcRenderer.invoke('music:spotifyPreviewAudio', url),
+    spotifyPickLocalAudio: () => ipcRenderer.invoke('music:spotifyPickLocalAudio'),
+    spotifySkipItem: (itemId, skipped) => ipcRenderer.invoke('music:spotifySkipItem', itemId, skipped),
+    spotifyRefreshPlaylist: (playlistId) => ipcRenderer.invoke('music:spotifyRefreshPlaylist', playlistId),
+    spotifyLoadRelease: (snapshotId, releaseId) => ipcRenderer.invoke('music:spotifyLoadRelease', snapshotId, releaseId),
     spotifyImportPlaylist: (url) => ipcRenderer.invoke('music:spotifyImportPlaylist', url),
     spotifyDownloadPlaylist: (input) =>
       ipcRenderer.invoke('music:spotifyDownloadPlaylist', input),

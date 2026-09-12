@@ -613,6 +613,28 @@ describe('computeStreaks', () => {
   })
 })
 
+function resolvedSong(): spotifyRepo.SpotdlSong {
+  return {
+    spotifyTrackId: 'spotify-track-1',
+    title: 'Airbag',
+    artists: ['Radiohead'],
+    primaryArtist: 'Radiohead',
+    albumArtist: 'Radiohead',
+    albumTitle: 'OK Computer',
+    duration: 200,
+    coverUrl: null,
+    spotifyUrl: 'https://open.spotify.com/track/spotify-track-1',
+    discNo: 1,
+    trackNo: 1,
+    year: 1997,
+    rawJson: '{"song_id":"spotify-track-1"}',
+    spotifyAlbumId: 'spotify-album-1',
+    spotifyArtistId: 'spotify-artist-1',
+    spotifyArtistIds: ['spotify-artist-1'],
+    albumType: 'album'
+  }
+}
+
 describe('persistent Spotify entity catalogue', () => {
   function indexedRelease(title = 'Airbag'): spotifyRepo.IndexedEntityRelease {
     return {
@@ -631,28 +653,6 @@ describe('persistent Spotify entity catalogue', () => {
         discNo: 1,
         trackNo: 1
       }]
-    }
-  }
-
-  function resolvedSong(): spotifyRepo.SpotdlSong {
-    return {
-      spotifyTrackId: 'spotify-track-1',
-      title: 'Airbag',
-      artists: ['Radiohead'],
-      primaryArtist: 'Radiohead',
-      albumArtist: 'Radiohead',
-      albumTitle: 'OK Computer',
-      duration: 200,
-      coverUrl: null,
-      spotifyUrl: 'https://open.spotify.com/track/spotify-track-1',
-      discNo: 1,
-      trackNo: 1,
-      year: 1997,
-      rawJson: '{"song_id":"spotify-track-1"}',
-      spotifyAlbumId: 'spotify-album-1',
-      spotifyArtistId: 'spotify-artist-1',
-      spotifyArtistIds: ['spotify-artist-1'],
-      albumType: 'album'
     }
   }
 
@@ -732,7 +732,7 @@ describe('persistent Spotify entity catalogue', () => {
     expect(restored.metadataState).toBe('indexed')
     expect(restored.tracks).toHaveLength(3)
     expect(restored.tracks.map((track) => track.title)).toEqual(['Song 1', 'Song 2', 'Song 3'])
-    expect(restored.tracks.every((track) => track.rawJson == null)).toBe(true)
+    expect(restored.tracks.map((track) => track.rawJson != null)).toEqual([true, false, true])
   })
 
   it('turns deleted matches grey, resolves replacements after a scan, and cascades with the artist', () => {
@@ -839,5 +839,81 @@ describe('persistent Spotify entity catalogue', () => {
 
     spotifyRepo.removeSpotifyItem(itemId)
     expect(spotifyRepo.listDownloadQueue().pending).toHaveLength(0)
+  })
+})
+
+describe('Spotify recovery decisions', () => {
+  function fixture() {
+    const local = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'Artist/Album/1 - Song [navihub-id].opus' })
+    db.prepare('UPDATE music_track SET duration=230 WHERE id=?').run(local)
+    const playlist = musicRepo.createPlaylist({ title: 'Mix' })
+    db.prepare("INSERT INTO music_spotify_playlist (playlist_id,spotify_id,source_url) VALUES (?,'source','https://open.spotify.com/playlist/source')").run(playlist)
+    const item = Number(db.prepare(`INSERT INTO music_spotify_playlist_item
+      (playlist_id,spotify_track_id,position,title,artists_json,primary_artist,album_title,duration,spotify_url,raw_json,allow_unverified)
+      VALUES (?,'id',0,'Song','["Artist"]','Artist','Album',200,'https://open.spotify.com/track/id','{}',1)`).run(playlist).lastInsertRowid)
+    return { local, playlist, item }
+  }
+
+  it('keeps an explicit playlist recording through later scans, including large duration differences', () => {
+    const { local, item } = fixture()
+    spotifyRepo.matchPlaylistItemToLocalTrack({ itemId: item, trackId: local, confirm: true })
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(db.prepare('SELECT matched_track_id, match_confirmed FROM music_spotify_playlist_item WHERE id=?').get(item))
+      .toEqual({ matched_track_id: local, match_confirmed: 1 })
+    db.prepare('DELETE FROM music_track WHERE id=?').run(local)
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item WHERE id=?').get(item)).toEqual({ matched_track_id: null })
+  })
+
+  it('never auto-accepts a broader result even when written tags and duration match', () => {
+    const { local, item } = fixture()
+    db.prepare('UPDATE music_track SET duration=200 WHERE id=?').run(local)
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item WHERE id=?').get(item)).toEqual({ matched_track_id: null })
+    expect(db.prepare('SELECT spotify_review_required FROM music_track WHERE id=?').get(local)).toEqual({ spotify_review_required: 1 })
+    spotifyRepo.linkProvenanceTracks([{ sourceKind: 'playlistItem', sourceId: item, spotifyTrackId: 'id', marker: '[navihub-id]', manual: false, provider: 'youtube', sourceUrl: 'https://www.youtube.com/watch?v=abcdefghijk' }])
+    expect(spotifyRepo.downloadCandidate('playlistItem', item)?.localTrackId).toBe(local)
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(spotifyRepo.downloadCandidate('playlistItem', item)).not.toBeNull()
+    spotifyRepo.confirmDownloadCandidate({ sourceKind: 'playlistItem', trackId: item })
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(spotifyRepo.downloadCandidate('playlistItem', item)).toBeNull()
+  })
+
+  it('retains an explicitly confirmed entity candidate through strict rescans', () => {
+    const { local } = fixture()
+    const artist = (db.prepare('SELECT artist_id FROM music_track WHERE id=?').get(local) as { artist_id: number }).artist_id
+    const snapshot = spotifyRepo.saveEntitySnapshot({ kind: 'artist', entityId: artist, provider: 'itunes', providerEntityId: 'a', sourceName: 'Artist', releases: [{ providerReleaseId: 'r', title: 'Album', albumArtist: 'Artist', year: null, albumType: 'album', tracks: [{ providerTrackId: 't', title: 'Song', artists: ['Artist'], primaryArtist: 'Artist', albumTitle: 'Album', duration: 200, discNo: 1, trackNo: 1 }] }] })
+    const trackId = spotifyRepo.getEntitySnapshotById(snapshot)!.releases[0].tracks[0].id
+    spotifyRepo.setDownloadCandidate({ sourceKind: 'entityTrack', sourceId: trackId, localTrackId: local, provider: 'youtube' })
+    spotifyRepo.confirmDownloadCandidate({ sourceKind: 'entityTrack', trackId })
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(spotifyRepo.getEntitySnapshotById(snapshot)!.releases[0].tracks[0].matchedTrackId).toBe(local)
+  })
+
+  it('refreshes source metadata without erasing manual playlist decisions', () => {
+    const { local, item, playlist } = fixture()
+    spotifyRepo.matchPlaylistItemToLocalTrack({ itemId: item, trackId: local, confirm: true })
+    const refreshed = spotifyRepo.createSpotifyPlaylist({ playlistId: playlist, complete: true,
+      spotifyId: 'source', sourceUrl: 'https://open.spotify.com/playlist/source', title: 'Renamed remotely',
+      songs: [{ ...resolvedSong(), spotifyTrackId: 'id', title: 'Corrected title', coverPath: null }] })
+    expect(refreshed.matched).toBe(1)
+    expect(db.prepare('SELECT id, title, matched_track_id, match_confirmed FROM music_spotify_playlist_item WHERE playlist_id=?').get(playlist))
+      .toEqual({ id: item, title: 'Corrected title', matched_track_id: local, match_confirmed: 1 })
+    expect(db.prepare('SELECT title FROM music_playlist WHERE id=?').get(playlist)).toEqual({ title: 'Mix' })
+  })
+
+  it('treats an explicit empty download selection as no work', () => {
+    const { playlist } = fixture()
+    expect(spotifyRepo.pendingSpotifyItems(playlist, [])).toEqual([])
+    expect(spotifyRepo.pendingSpotifyItems(playlist)).toHaveLength(1)
+  })
+
+  it('excludes skipped tracks from bulk download and restores them explicitly', () => {
+    const { item, playlist } = fixture()
+    spotifyRepo.skipPlaylistDownload(item, true)
+    expect(spotifyRepo.pendingSpotifyItems(playlist)).toHaveLength(0)
+    spotifyRepo.skipPlaylistDownload(item, false)
+    expect(spotifyRepo.pendingSpotifyItems(playlist)).toHaveLength(1)
   })
 })

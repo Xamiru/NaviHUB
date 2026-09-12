@@ -892,6 +892,7 @@ export const musicTrack = sqliteTable(
       .references(() => musicArtist.id, { onDelete: 'cascade' }),
     filePath: text('file_path').notNull(),
     fileMtime: integer('file_mtime'),
+    spotifyReviewRequired: integer('spotify_review_required', { mode: 'boolean' }).notNull().default(false),
     title: text('title').notNull(),
     trackNo: integer('track_no'),
     discNo: integer('disc_no'),
@@ -975,6 +976,7 @@ export const musicSpotifyPlaylistItem = sqliteTable(
     artistsJson: text('artists_json').notNull(),
     primaryArtist: text('primary_artist').notNull(),
     albumArtist: text('album_artist'),
+    downloadSkipped: integer('download_skipped', { mode: 'boolean' }).notNull().default(false),
     albumTitle: text('album_title').notNull(),
     duration: real('duration'),
     coverPath: text('cover_path'),
@@ -986,6 +988,8 @@ export const musicSpotifyPlaylistItem = sqliteTable(
     audioSourceUrl: text('audio_source_url'),
     allowUnverified: integer('allow_unverified', { mode: 'boolean' }).notNull().default(false),
     downloadError: text('download_error'),
+    resolvedAudioUrl: text('resolved_audio_url'),
+    matchConfirmed: integer('match_confirmed', { mode: 'boolean' }).notNull().default(false),
     matchedTrackId: integer('matched_track_id').references(() => musicTrack.id, {
       onDelete: 'set null'
     }),
@@ -1009,6 +1013,7 @@ export const musicSpotifyEntitySnapshot = sqliteTable(
     provider: text('provider').notNull(),
     providerEntityId: text('provider_entity_id').notNull(),
     sourceName: text('source_name').notNull(),
+    catalogueCountry: text('catalogue_country').notNull().default('US'),
     catalogueState: text('catalogue_state').notNull().default('complete'),
     refreshedAt: text('refreshed_at')
       .notNull()
@@ -1034,6 +1039,8 @@ export const musicSpotifyEntityRelease = sqliteTable(
     albumArtist: text('album_artist').notNull(),
     year: integer('year'),
     albumType: text('album_type'),
+    expectedTracks: integer('expected_tracks'),
+    tracksLoaded: integer('tracks_loaded', { mode: 'boolean' }).notNull().default(true),
     metadataState: text('metadata_state').notNull().default('indexed'),
     resolutionError: text('resolution_error')
   },
@@ -1066,6 +1073,8 @@ export const musicSpotifyEntityTrack = sqliteTable(
     audioSourceUrl: text('audio_source_url'),
     allowUnverified: integer('allow_unverified', { mode: 'boolean' }).notNull().default(false),
     downloadError: text('download_error'),
+    resolvedAudioUrl: text('resolved_audio_url'),
+    matchConfirmed: integer('match_confirmed', { mode: 'boolean' }).notNull().default(false),
     matchedTrackId: integer('matched_track_id').references(() => musicTrack.id, {
       onDelete: 'set null'
     })

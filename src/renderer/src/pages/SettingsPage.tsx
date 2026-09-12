@@ -1217,17 +1217,20 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
 function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
   const [path, setPath] = useState('')
   const [cookieFile, setCookieFile] = useState('')
+  const [pythonPath, setPythonPath] = useState('')
   const [audioProviders, setAudioProviders] = useState('youtube-music')
   const [check, setCheck] = useState<SpotdlDetectResult | null>(null)
   const [testingYouTube, setTestingYouTube] = useState(false)
   const [installingDeno, setInstallingDeno] = useState(false)
   useEffect(() => setPath(data?.['spotdl.path'] ?? ''), [data])
   useEffect(() => setCookieFile(data?.['spotdl.cookieFile'] ?? ''), [data])
+  useEffect(() => setPythonPath(data?.['spotdl.pythonPath'] ?? ''), [data])
   useEffect(() => setAudioProviders(data?.['spotdl.audioProviders'] ?? 'youtube-music'), [data])
 
   async function test(): Promise<void> {
     setCheck(null)
     await onSave('spotdl.path', path.trim())
+    await onSave('spotdl.pythonPath', pythonPath.trim())
     await onSave('spotdl.cookieFile', cookieFile.trim())
     await onSave('spotdl.audioProviders', audioProviders)
     setCheck(await api.music.spotifyDetect())
@@ -1237,6 +1240,7 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
     setInstallingDeno(true)
     try {
       await onSave('spotdl.path', path.trim())
+    await onSave('spotdl.pythonPath', pythonPath.trim())
       setCheck(await api.music.spotifyInstallDeno())
     } finally {
       setInstallingDeno(false)
@@ -1292,6 +1296,9 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
           Save &amp; test
         </button>
       </div>
+      <Field label="Python executable for resumable metadata (optional)" description="Use the Python environment containing spotDL 4.5.2. Blank tries automatic discovery; unsupported versions use the normal CLI.">
+        <input className="input w-full" value={pythonPath} onChange={(event) => setPythonPath(event.target.value)} placeholder="python" />
+      </Field>
       <label className="label mt-4" htmlFor="spotdl-cookie-file">YouTube cookies.txt (optional)</label>
       <div className="flex gap-2">
         <input

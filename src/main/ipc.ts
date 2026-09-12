@@ -1,3 +1,4 @@
+import * as spotifyRecovery from './musicSpotifyRecovery'
 import { ipcMain, shell, BrowserWindow } from 'electron'
 import { clampUiScale, parseUiScale } from '@shared/uiScale'
 import * as mediaRepo from './repos/mediaRepo'
@@ -787,6 +788,12 @@ export function registerIpc(): void {
   ipcMain.handle('music:reorderPlaylist', (_e, playlistId, orderedItemIds) =>
     musicRepo.reorderPlaylist(playlistId, orderedItemIds)
   )
+  ipcMain.handle('music:spotifySearchAudio', (_e, query) => withActivity('Finding audio', () => spotifyRecovery.searchAudio(query)))
+  ipcMain.handle('music:spotifyPreviewAudio', (_e, url) => withActivity('Preparing audio preview', () => spotifyRecovery.previewAudio(url)))
+  ipcMain.handle('music:spotifyPickLocalAudio', () => spotifyRecovery.pickLocalAudio())
+  ipcMain.handle('music:spotifySkipItem', (_e, itemId, skipped) => musicSpotify.skipPlaylistDownload(itemId, skipped))
+  ipcMain.handle('music:spotifyRefreshPlaylist', (_e, playlistId) => withActivity('Refreshing Spotify playlist', () => musicSpotify.refreshPlaylist(playlistId)))
+  ipcMain.handle('music:spotifyLoadRelease', (_e, snapshotId, releaseId) => musicSpotify.loadReleaseTracks(snapshotId, releaseId))
   ipcMain.handle('music:spotifyImportPlaylist', (_e, url) =>
     withActivity('Importing Spotify playlist', () => musicSpotify.importPlaylist(url))
   )

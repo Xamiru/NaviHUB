@@ -43,20 +43,36 @@ pipeline, while the Sonic Archive owns standalone `music_*` tables. A scan also
 re-resolves every imported Spotify playlist item, so newly downloaded or restored
 files become playable without a Spotify re-import. Spotify playlists remain
 one-time snapshots, and remembered artist/album sources remain explicitly
-inspected from their own pages; Refresh never synchronizes or downloads from them.
+inspected from their own pages. Playlist source refresh is explicit and never downloads audio.
 
 ## Spotify playlist snapshots
 
-**Public, one-time import (2026-08-27).** Sonic Archive can import a public Spotify
+The playlist page memoizes its local reorder seed and filtered source rows. The
+shared incremental-list hook resets when the array changes, so allocating either
+list on every render can reset the first 96 rows or repeatedly resync reorder state.
+`tests/renderer/MusicPlaylistPage.test.tsx` covers reaching later batches, retaining
+them through unrelated renders, and resetting them when search changes.
+
+**Public snapshots with manual refresh (2026-09-12).** Sonic Archive can import a public Spotify
 playlist link through the user-installed `spotDL` executable (`spotdl.path`, with
 `spotdl` on PATH as the default). NaviHUB does not log into Spotify and does not
-sync after import. The normalized Spotify playlist id is unique, so importing the
+automatically sync after import. Refresh source updates metadata atomically, retains local audio and
+manual decisions for surviving source IDs, and removes source rows only after a complete
+provider count is validated. The normalized Spotify playlist id is unique, so importing the
 same source again opens its existing local snapshot. spotDL supplies the playlist
 compatibility layer and resolves downloaded audio through YouTube Music with ordinary
 YouTube as the built-in fallback; Spotify does not supply audio files.
 Parallel spotDL metadata workers can finish out of order, so import restores the
 authoritative `list_position` before covers, deduplication and database insertion.
-After spotDL reports the playlist track count it can remain silent while eight workers
+When the matching Python environment contains spotDL exactly 4.5.2, the bundled
+version-guarded metadata adapter pages track IDs first, reports real progress, and
+checkpoints completed track metadata under `userData/spotify-metadata`. Four workers
+resume interrupted metadata without refetching completed tracks; checkpoints are removed
+only after a successful database write. `spotdl.pythonPath` can select that environment.
+Other versions or missing Python use the supported CLI path. Neither path accepts an
+unknown count or a short successful payload as a complete snapshot.
+
+In the CLI fallback, after spotDL reports the playlist track count it can remain silent while eight workers
 resolve and serialize every track, and spotDL writes `playlist.spotdl` only after that
 whole worker pool settles. Playlist imports therefore begin with a 30-minute
 output-silence watchdog, then scale it by the reported size in 100-track/30-minute
@@ -97,10 +113,15 @@ present but fails strict matching is retained in
 `music_spotify_download_candidate` and shown as **Downloaded locally; needs
 verification**; it is not redownloaded or made playable implicitly. The user may
 confirm the candidate, reject it and retry, or choose another local alternative.
-Files downloaded from an explicitly pasted source URL may be linked automatically
-only after the same title/artist/album/track-position safety checks. Automatic
-spotDL results always require this explicit confirmation when strict matching is
-not conclusive. The candidate table is personal data and is removed from sanitized
+Manual URLs and broader unfiltered results always require explicit approval,
+even when spotDL writes matching Spotify tags and duration. `match_confirmed` preserves
+that decision while the chosen file exists. `music_track.spotify_review_required`
+prevents an unapproved or rejected recording from silently matching another playlist.
+The shared recovery dialog compares expected/local duration, plays candidates, shows
+the original audio URL, searches YouTube with title/channel/duration previews, accepts
+an exact source, and lets playlist users choose any library recording or copy an audio
+file into the library before confirming. Source options survive retries; actual resolved
+URLs from spotDL result files are retained separately. The candidate table is personal data and is removed from sanitized
 exports.
 
 **Download and resume.** NaviHUB requires spotDL 4.5.2 or newer, ffmpeg and Deno before
@@ -125,15 +146,25 @@ the YouTube provider solely to bypass spotDL's unrelated YouTube Music startup p
 album `save` still returns a partial payload, NaviHUB keeps the complete indexed catalogue and
 invokes spotDL's supported canonical album-URL download directly; the following strict scan
 decides which tracks actually resolved. The runner feeds
-stored payloads to spotDL in 100-track chunks with four workers, then scans and
-re-resolves after every chunk. Cancellation keeps completed files and performs the
-same scan path, so Retry selects only rows still unmatched. spotDL, yt-dlp, and
-music scans share the music-maintenance gate; private metadata and error files are
-always temporary. spotDL, yt-dlp, and ffmpeg are external dependencies and are
+stored payloads to spotDL in 100-track chunks with four workers. Consecutive small
+resolved releases share a process, including bounded look-ahead during the first run;
+Spotify album identities are saved before full expansion. Audio goes first into
+`<music root>/.navihub-downloads`. Completed files move without overwriting existing audio,
+and a private pending-index manifest survives interruption until indexing succeeds.
+`indexMusicFiles` parses only those outputs, never prunes unseen library rows, and
+re-resolves affected titles. Provenance normalization queries indexed paths instead of
+walking the library. A resumed queue still runs the full recovery scan. Phase timings
+are logged; no real-network speedup is assumed from unit tests.
+Cancellation retains completed audio. Retry excludes matched, skipped and pending-review
+rows. Playlist filters include Needs attention and Skipped; selections and per-song retry
+allow precise recovery. Skipping is reversible. Pending review is not counted as a
+successful match. spotDL and music scans share the music-maintenance gate; transient
+payload/error files are private and removed after the run. spotDL, yt-dlp, and ffmpeg are external dependencies and are
 never bundled.
 
-Before an audio batch starts, NaviHUB runs one cached yt-dlp access probe per
-session (or cookie-file change). Expired cookies, bot checks, and PO-token failures
+Before an audio batch starts, NaviHUB runs a yt-dlp access probe, caching successful results for at most five minutes
+with cookie-file, executable and JavaScript-runtime identity in the key. Failed probes
+are retried on the next attempt. Expired cookies, bot checks, and PO-token failures
 stop the batch before any track is attempted; a probe video that is itself
 unavailable does not block the selected tracks. Settings provides a native
 cookies.txt picker and a live access test. SpotDL child processes force UTF-8 on
@@ -146,8 +177,11 @@ errors are translated into per-track retry guidance rather than leaving only raw
 Artist and album headers open a persistent release catalogue rather than expanding
 the full Spotify discography every time. The first open searches Apple's public
 iTunes metadata catalogue, presents candidate cards only when an exact result is
-ambiguous, and fetches release tracklists in batches of four within a 25-second
-fast-path budget. It needs no Apple or Spotify credentials. Only albums and singles
+ambiguous, and loads release headers first. Tracklists load only when opened or
+selected for downloads; each loaded album must match its advertised track count before
+it replaces saved metadata. The regional catalogue is explicitly partial (up to 200
+releases), never described as the complete Spotify discography. The country defaults to
+US and can be changed under source replacement; it is saved with each snapshot. It needs no Apple or Spotify credentials. Only albums and singles
 whose album artist matches the selected artist are indexed; appearances,
 compilations and features are excluded. A public Spotify URL remains available only
 under Advanced source replacement. In parallel, one bounded six-second spotDL query
@@ -161,8 +195,8 @@ catalogue.
 The indexed catalogue is stored in `music_spotify_entity_snapshot`,
 `music_spotify_entity_release` and `music_spotify_entity_track`. Reopening reads that
 snapshot immediately with no network process. Refresh atomically replaces provider
-metadata but retains authoritative spotDL payloads when the provider release identity
-is unchanged; Forget deletes the snapshot and remembered Spotify IDs but never local
+metadata but retains source-row identities, manual choices and authoritative spotDL
+payloads for surviving recordings; Forget deletes the snapshot and remembered Spotify IDs but never local
 audio. Snapshot track matches are nullable and revalidated by every music scan, so a
 deleted file turns grey and a restored or downloaded file resolves again. Sanitized
 and in-app library exports always wipe all three tables.

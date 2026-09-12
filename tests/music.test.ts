@@ -35,6 +35,7 @@ import {
   parseTrackFileName,
   findCoverFile,
   startScan,
+  indexMusicFiles,
   deleteTracks,
   deleteAlbum,
   deleteArtist,
@@ -359,5 +360,26 @@ describe('delete (files + rows)', () => {
       db.prepare('SELECT COUNT(*) AS n FROM music_album WHERE artist_id = ?').get(queen.id)
     ).toEqual({ n: 0 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 1 }) // only ABBA
+  })
+})
+
+describe('targeted download indexing', () => {
+  it('indexes only supplied files and never prunes unrelated library rows', async () => {
+    makeFiles(['Artist/Old/old.mp3', 'Artist/New/new.opus'])
+    await startScan(fakeReader())
+    const old = db.prepare("SELECT id FROM music_track WHERE file_path='Artist/Old/old.mp3'").get()
+    rmSync(join(root, 'Artist/Old/old.mp3'))
+    const reader = vi.fn(async () => ({ title: 'Updated download', duration: 201 }))
+    await indexMusicFiles(['Artist/New/new.opus'], 'test targeted', reader)
+    expect(reader).toHaveBeenCalledTimes(1)
+    expect(db.prepare("SELECT id FROM music_track WHERE file_path='Artist/Old/old.mp3'").get()).toEqual(old)
+    expect(db.prepare("SELECT title FROM music_track WHERE file_path='Artist/New/new.opus'").get()).toEqual({ title: 'Updated download' })
+    await indexMusicFiles([], 'test targeted', reader)
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 2 })
+  })
+
+  it('rejects paths escaping the music root without touching rows', async () => {
+    await expect(indexMusicFiles(['../outside.mp3'], 'test targeted', fakeReader())).rejects.toThrow()
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 0 })
   })
 })

@@ -1,3 +1,4 @@
+import SpotifyTrackRecoveryDialog from '../components/SpotifyTrackRecoveryDialog'
 import { useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -11,7 +12,7 @@ import { SortableList, SortableRow, useOptimisticReorder } from '../components/S
 import { useDownloadStatus } from '../components/MusicDownloadDialog'
 import { api } from '../lib/api'
 import { confirmDialog } from '../lib/confirm'
-import { useDialog, useIncrementalList } from '../lib/hooks'
+import { useIncrementalList } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
 import { toast, toastError } from '../lib/toast'
 
@@ -46,14 +47,14 @@ export default function MusicDownloadsPage() {
   const { items, setItems, sensors, onDragEnd } = useOptimisticReorder(
     sortableSource,
     (next) => api.music.spotifyQueueReorder(next.map((card) => card.id)),
-    () => void qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+    () => void qc.invalidateQueries({ queryKey: qk.music.all })
   )
   const completed = useIncrementalList(queue?.completed ?? [], 96)
 
   useEffect(() => {
     if (!downloadStatus || downloadStatus.source !== 'spotifyQueue') return
     if (!['done', 'error', 'cancelled'].includes(downloadStatus.status)) return
-    void qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+    void qc.invalidateQueries({ queryKey: qk.music.all })
     void qc.invalidateQueries({ queryKey: qk.music.all })
   }, [downloadStatus, qc])
 
@@ -76,7 +77,7 @@ export default function MusicDownloadsPage() {
       })
       if (!result.id) toast('There is no pending Spotify work', 'success')
       await qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
-      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      await qc.invalidateQueries({ queryKey: qk.music.all })
     } catch (error) {
       toastError(error)
     }
@@ -91,7 +92,7 @@ export default function MusicDownloadsPage() {
           : `“${card.title}” will run next`,
         'success'
       )
-      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      await qc.invalidateQueries({ queryKey: qk.music.all })
     } catch (error) {
       toastError(error)
     }
@@ -103,7 +104,7 @@ export default function MusicDownloadsPage() {
       if (action === 'cancel') await api.music.downloadCancel(active.id)
       else if (active.taskId) await api.tasks[action](active.taskId)
       await qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
-      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      await qc.invalidateQueries({ queryKey: qk.music.all })
     } catch (error) {
       toastError(error)
     }
@@ -116,12 +117,12 @@ export default function MusicDownloadsPage() {
     )
     if (!ok) return
     await api.music.spotifyQueueRemoveCard(card.id)
-    await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+    await qc.invalidateQueries({ queryKey: qk.music.all })
   }
 
   async function removeSelection(id: number): Promise<void> {
     await api.music.spotifyQueueRemoveSelection(id)
-    await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+    await qc.invalidateQueries({ queryKey: qk.music.all })
   }
 
   async function moveCard(cardId: number, direction: -1 | 1): Promise<void> {
@@ -134,7 +135,7 @@ export default function MusicDownloadsPage() {
     setItems(next)
     try {
       await api.music.spotifyQueueReorder(next.map((item) => item.id))
-      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      await qc.invalidateQueries({ queryKey: qk.music.all })
     } catch (error) {
       setItems(items)
       toastError(error)
@@ -148,7 +149,7 @@ export default function MusicDownloadsPage() {
     )
     if (!ok) return
     await api.music.spotifyQueueClearCompleted()
-    await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+    await qc.invalidateQueries({ queryKey: qk.music.all })
   }
 
   const paused = queue?.pending.find((card) => card.state === 'paused')
@@ -350,7 +351,7 @@ function QueueCardRow({
 }) {
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
-  const [sourceTrack, setSourceTrack] = useState<SpotifyDownloadQueueTrack | null>(null)
+  const [reviewTrack, setReviewTrack] = useState<SpotifyDownloadQueueTrack | null>(null)
 
   async function configureTrack(
     track: SpotifyDownloadQueueTrack,
@@ -362,8 +363,7 @@ function QueueCardRow({
         trackId: track.id,
         ...patch
       })
-      setSourceTrack(null)
-      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      await qc.invalidateQueries({ queryKey: qk.music.all })
       toast('Download choice saved; the track is ready to retry', 'success')
     } catch (error) {
       toastError(error)
@@ -383,24 +383,11 @@ function QueueCardRow({
           allowUnverified: true
         })
       ))
-      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      await qc.invalidateQueries({ queryKey: qk.music.all })
       toast(
         `Broader matching enabled for ${broaderCandidates.length} track${broaderCandidates.length === 1 ? '' : 's'}`,
         'success'
       )
-    } catch (error) {
-      toastError(error)
-    }
-  }
-  async function confirmCandidate(track: SpotifyDownloadQueueTrack): Promise<void> {
-    if (!track.candidate) return
-    try {
-      await api.music.spotifyConfirmDownloadCandidate({
-        sourceKind: track.sourceKind,
-        trackId: track.id,
-      })
-      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
-      toast('Downloaded file confirmed and linked', 'success')
     } catch (error) {
       toastError(error)
     }
@@ -412,7 +399,7 @@ function QueueCardRow({
         sourceKind: track.sourceKind,
         trackId: track.id
       })
-      await qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+      await qc.invalidateQueries({ queryKey: qk.music.all })
       toast('Candidate rejected; the track is ready to retry', 'success')
     } catch (error) {
       toastError(error)
@@ -516,8 +503,8 @@ function QueueCardRow({
                       <div className="flex flex-wrap gap-1">
                         {track.candidate ? (
                           <>
-                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => void confirmCandidate(track)}>
-                              Use downloaded
+                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setReviewTrack(track)}>
+                              Review downloaded
                             </button>
                             <button className="btn-ghost px-2 py-1 text-xs" onClick={() => void rejectCandidate(track)}>
                               Reject and retry
@@ -531,8 +518,8 @@ function QueueCardRow({
                             >
                               {track.allowUnverified ? 'Use normal matching' : 'Try broader match'}
                             </button>
-                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setSourceTrack(track)}>
-                              Replace source
+                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setReviewTrack(track)}>
+                              Find or replace source
                             </button>
                             {track.audioSourceUrl && (
                               <button
@@ -561,70 +548,9 @@ function QueueCardRow({
           ))}
         </div>
       )}
-      {sourceTrack && (
-        <AudioSourceDialog
-          track={sourceTrack}
-          onClose={() => setSourceTrack(null)}
-          onSave={(audioSourceUrl) => configureTrack(sourceTrack, { audioSourceUrl })}
-        />
-      )}
+      {reviewTrack && <SpotifyTrackRecoveryDialog sourceKind={reviewTrack.sourceKind} trackId={reviewTrack.id}
+        title={reviewTrack.title} artist={reviewTrack.artist} duration={reviewTrack.duration ?? null}
+        candidate={reviewTrack.candidate} initialUrl={reviewTrack.audioSourceUrl ?? ''} onClose={() => setReviewTrack(null)} />}
     </article>
-  )
-}
-
-function AudioSourceDialog({
-  track,
-  onClose,
-  onSave
-}: {
-  track: SpotifyDownloadQueueTrack
-  onClose: () => void
-  onSave: (url: string) => Promise<void>
-}) {
-  const [url, setUrl] = useState(track.audioSourceUrl ?? '')
-  const [saving, setSaving] = useState(false)
-  const panelRef = useDialog(onClose)
-
-  async function save(): Promise<void> {
-    if (!url.trim()) return
-    setSaving(true)
-    try {
-      await onSave(url.trim())
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="replace-audio-title" tabIndex={-1} className="card w-full max-w-lg p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 id="replace-audio-title" className="text-lg font-semibold text-white">Replace audio source</h2>
-            <p className="mt-1 text-sm text-gray-400">{track.artist} · {track.title}</p>
-          </div>
-          <button className="btn-ghost px-2" aria-label="Close" onClick={onClose}>✕</button>
-        </div>
-        <p className="mt-4 text-sm text-gray-300">
-          Paste the exact YouTube or YouTube Music video for this recording. spotDL keeps the
-          saved Spotify metadata and uses only this audio source on future retries.
-        </p>
-        <label className="label mt-4" htmlFor={`spotify-audio-source-${track.id}`}>YouTube URL</label>
-        <input
-          id={`spotify-audio-source-${track.id}`}
-          className="input"
-          autoFocus
-          value={url}
-          onChange={(event) => setUrl(event.target.value)}
-          placeholder="https://music.youtube.com/watch?v=…"
-        />
-        <div className="mt-5 flex justify-end gap-2">
-          <button className="btn-ghost" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" disabled={saving || !url.trim()} onClick={() => void save()}>
-            {saving ? 'Saving…' : 'Save source'}
-          </button>
-        </div>
-      </div>
-    </div>
   )
 }

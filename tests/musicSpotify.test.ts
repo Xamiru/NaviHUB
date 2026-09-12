@@ -1,4 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { EventEmitter } from 'node:events'
 import { PassThrough } from 'node:stream'
 import { musicMaintenanceOwner } from '../src/main/musicMaintenance'
@@ -14,6 +17,10 @@ vi.mock('../src/main/db/connection', () => ({ getSqlite: vi.fn() }))
 vi.mock('../src/main/repos/settingsRepo', () => ({ get: vi.fn() }))
 
 import {
+  recoverSpotifyOutputs,
+  assertPlaylistSnapshotComplete,
+  itunesRelease,
+  groupResolvedReleases,
   adaptRecoveredReleaseSongs,
   buildSpotdlDownloadArgs,
   buildSpotdlSaveArgs,
@@ -736,5 +743,43 @@ describe('Spotify playlist import core', () => {
       foundCount: 109,
       message: 'Found 109 tracks; resolving Spotify metadata with 8 workers. spotDL may be quiet for up to 1 hour.'
     })
+  })
+})
+
+describe('Spotify completeness and batching', () => {
+  it('rejects short successful playlist results before any snapshot replacement', () => {
+    expect(() => assertPlaylistSnapshotComplete([{}], 2)).toThrow(/incomplete playlist/)
+    expect(() => assertPlaylistSnapshotComplete([{}, {}], 2)).not.toThrow()
+  })
+  it('detects missing final album tracks even when numbering has no gaps', () => {
+    expect(() => itunesRelease({ collectionId: 1, collectionName: 'Album', artistName: 'Artist', trackCount: 2 }, [
+      { wrapperType: 'track', kind: 'song', collectionId: 1, trackId: 1, trackName: 'First', trackNumber: 1 }
+    ])).toThrow(/1\/2/)
+  })
+  it('batches resolved singles without crossing unresolved or 100-track boundaries', () => {
+    const one = { metadataState: 'resolved', tracks: [1] }
+    const pending = { metadataState: 'indexed', tracks: [2] }
+    expect(groupResolvedReleases([one, one, pending, one]).map((group) => group.length)).toEqual([2, 1, 1])
+    expect(groupResolvedReleases(Array.from({ length: 101 }, () => one)).map((group) => group.length)).toEqual([100, 1])
+  })
+})
+
+describe('Spotify staged file recovery', () => {
+  it('keeps existing audio, ignores partial files, and remembers moved files until indexing succeeds', () => {
+    const root = mkdtempSync(join(tmpdir(), 'spotify-staging-'))
+    try {
+      const stage = join(root, '.navihub-downloads', 'Artist', 'Album')
+      mkdirSync(stage, { recursive: true })
+      mkdirSync(join(root, 'Artist', 'Album'), { recursive: true })
+      writeFileSync(join(root, 'Artist', 'Album', 'song.opus'), 'original')
+      writeFileSync(join(stage, 'song.opus'), 'downloaded')
+      writeFileSync(join(stage, 'unfinished.opus.part'), 'partial')
+      const paths = recoverSpotifyOutputs(root)
+      expect(paths).toHaveLength(1)
+      expect(readFileSync(join(root, paths[0]), 'utf8')).toBe('downloaded')
+      expect(readFileSync(join(root, 'Artist', 'Album', 'song.opus'), 'utf8')).toBe('original')
+      expect(existsSync(join(stage, 'unfinished.opus.part'))).toBe(true)
+      expect(recoverSpotifyOutputs(root)).toEqual(paths)
+    } finally { rmSync(root, { recursive: true, force: true }) }
   })
 })

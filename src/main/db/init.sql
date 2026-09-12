@@ -654,6 +654,7 @@ CREATE TABLE IF NOT EXISTS music_track (
   artist_id       INTEGER NOT NULL REFERENCES music_artist(id) ON DELETE CASCADE,
   file_path       TEXT NOT NULL,            -- "Radiohead/OK Computer/01 Airbag.mp3"
   file_mtime      INTEGER,                  -- ms; rescan skips tag-parsing unchanged files
+  spotify_review_required INTEGER NOT NULL DEFAULT 0,
   title           TEXT NOT NULL,            -- tag title, else parsed from filename
   track_no        INTEGER,
   disc_no         INTEGER,
@@ -722,6 +723,9 @@ CREATE TABLE IF NOT EXISTS music_spotify_playlist_item (
   audio_source_url  TEXT,
   allow_unverified  INTEGER NOT NULL DEFAULT 0 CHECK(allow_unverified IN (0,1)),
   download_error    TEXT,
+  resolved_audio_url TEXT,
+  match_confirmed   INTEGER NOT NULL DEFAULT 0,
+  download_skipped  INTEGER NOT NULL DEFAULT 0,
   matched_track_id  INTEGER REFERENCES music_track(id) ON DELETE SET NULL,
   added_at          TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(playlist_id, spotify_track_id)
@@ -739,6 +743,7 @@ CREATE TABLE IF NOT EXISTS music_spotify_entity_snapshot (
   provider            TEXT NOT NULL CHECK(provider IN ('itunes','spotdl')),
   provider_entity_id  TEXT NOT NULL,
   source_name         TEXT NOT NULL,
+  catalogue_country   TEXT NOT NULL DEFAULT 'US',
   catalogue_state     TEXT NOT NULL DEFAULT 'complete' CHECK(catalogue_state IN ('complete','partial')),
   refreshed_at        TEXT NOT NULL DEFAULT (datetime('now')),
   CHECK((artist_id IS NULL) <> (album_id IS NULL)),
@@ -758,6 +763,8 @@ CREATE TABLE IF NOT EXISTS music_spotify_entity_release (
   album_type          TEXT CHECK(album_type IN ('album','single')),
   metadata_state      TEXT NOT NULL DEFAULT 'indexed' CHECK(metadata_state IN ('indexed','resolved','error')),
   resolution_error    TEXT,
+  expected_tracks     INTEGER,
+  tracks_loaded       INTEGER NOT NULL DEFAULT 1,
   UNIQUE(snapshot_id, provider_release_id)
 );
 CREATE INDEX IF NOT EXISTS idx_music_spotify_entity_release_snapshot ON music_spotify_entity_release(snapshot_id);
@@ -781,6 +788,8 @@ CREATE TABLE IF NOT EXISTS music_spotify_entity_track (
   audio_source_url    TEXT,
   allow_unverified    INTEGER NOT NULL DEFAULT 0 CHECK(allow_unverified IN (0,1)),
   download_error      TEXT,
+  resolved_audio_url  TEXT,
+  match_confirmed     INTEGER NOT NULL DEFAULT 0,
   matched_track_id    INTEGER REFERENCES music_track(id) ON DELETE SET NULL,
   UNIQUE(release_id, provider_track_id)
 );

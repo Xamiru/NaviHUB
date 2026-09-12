@@ -21,6 +21,31 @@ const read = (rel: string): string =>
 const initSql = read('../src/main/db/init.sql')
 
 describe('a live DB that predates newer columns', () => {
+  it('upgrades pre-recovery Spotify tables twice without losing saved rows', () => {
+    const db = new Database(':memory:')
+    const added = ['spotify_review_required', 'match_confirmed', 'download_skipped',
+      'resolved_audio_url', 'catalogue_country', 'expected_tracks', 'tracks_loaded']
+    const legacy = initSql.split('\n').filter((line) => !added.some((column) =>
+      new RegExp(`^\\s*${column}\\s`).test(line))).join('\n')
+    db.exec(legacy)
+    db.exec("INSERT INTO music_artist(id,name,dir_path) VALUES (1,'Artist','Artist')")
+    db.exec("INSERT INTO music_spotify_entity_snapshot(id,artist_id,provider,provider_entity_id,source_name) VALUES(1,1,'itunes','one','Artist')")
+    db.exec("INSERT INTO music_spotify_entity_release(snapshot_id,provider_release_id,title,album_artist) VALUES(1,'one','Album','Artist')")
+    db.exec(initSql)
+    runMigrations(db)
+    runMigrations(db)
+    expect(db.prepare('SELECT title, expected_tracks, tracks_loaded FROM music_spotify_entity_release').get())
+      .toEqual({ title: 'Album', expected_tracks: null, tracks_loaded: 1 })
+    expect(db.prepare('SELECT catalogue_country FROM music_spotify_entity_snapshot').get())
+      .toEqual({ catalogue_country: 'US' })
+    for (const table of ['music_spotify_playlist_item', 'music_spotify_entity_track']) {
+      const columns = (db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[]).map((row) => row.name)
+      expect(columns).toContain('match_confirmed')
+      expect(columns).toContain('resolved_audio_url')
+    }
+    db.close()
+  })
+
   it('backfills the global search projection for rows that predate its triggers', () => {
     const db = new Database(':memory:')
     db.exec(initSql)
@@ -138,6 +163,8 @@ describe('a live DB that predates newer columns', () => {
       expect(columns.has('audio_source_url')).toBe(true)
       expect(columns.has('allow_unverified')).toBe(true)
       expect(columns.has('download_error')).toBe(true)
+      expect(columns.has('match_confirmed')).toBe(true)
+      if (table.endsWith('playlist_item')) expect(columns.has('download_skipped')).toBe(true)
     }
   })
 

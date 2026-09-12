@@ -1039,6 +1039,12 @@ export interface NaviApi {
     removePlaylistTrack(itemId: number): Promise<void>
     removePlaylistTrackByTrack(playlistId: number, trackId: number): Promise<void>
     reorderPlaylist(playlistId: number, orderedItemIds: number[]): Promise<void>
+    spotifySearchAudio(query: string): Promise<import('./types').SpotifyAudioCandidate[]>
+    spotifyPreviewAudio(url: string): Promise<string>
+    spotifyPickLocalAudio(): Promise<MusicTrack | null>
+    spotifySkipItem(itemId: number, skipped: boolean): Promise<void>
+    spotifyRefreshPlaylist(playlistId: number): Promise<SpotifyImportResult>
+    spotifyLoadRelease(snapshotId: number, releaseId: number): Promise<SpotifyEntityInspection>
     spotifyImportPlaylist(url: string): Promise<SpotifyImportResult>
     spotifyDownloadPlaylist(input: SpotifyDownloadInput): Promise<{ id: string }>
     spotifyEntityState(input: SpotifyEntityRef): Promise<SpotifyEntityState>
