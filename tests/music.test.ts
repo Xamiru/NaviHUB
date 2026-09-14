@@ -10,6 +10,26 @@ let root: string
 let userData: string
 const showOpenDialog = vi.fn()
 
+const fsFault = vi.hoisted(() => ({ read: '', remove: '', stat: '' }))
+vi.mock('fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs/promises')>()
+  return {
+    ...actual,
+    readdir: (...args: Parameters<typeof actual.readdir>) => {
+      if (String(args[0]) === fsFault.read) throw new Error('directory unreadable')
+      return actual.readdir(...args)
+    },
+    stat: (...args: Parameters<typeof actual.stat>) => {
+      if (String(args[0]) === fsFault.stat) throw new Error('file unreadable')
+      return actual.stat(...args)
+    },
+    rm: (...args: Parameters<typeof actual.rm>) => {
+      if (String(args[0]) === fsFault.remove) throw new Error('disk failure')
+      return actual.rm(...args)
+    }
+  }
+})
+
 vi.mock('../src/main/db/connection', () => ({
   getSqlite: () => db
 }))
@@ -51,6 +71,7 @@ beforeEach(() => {
   root = mkdtempSync(join(os.tmpdir(), 'navihub-music-'))
   userData = mkdtempSync(join(os.tmpdir(), 'navihub-userdata-'))
   showOpenDialog.mockReset()
+  fsFault.read = fsFault.remove = fsFault.stat = ''
 })
 
 afterEach(() => {
@@ -245,6 +266,8 @@ describe('startScan', () => {
   it('keeps online-fetched art when the scan finds no local art (COALESCE path)', async () => {
     makeFiles(['A/One/01 a.mp3'])
     await startScan(fakeReader())
+    mkdirSync(join(userData, 'media'), { recursive: true })
+    writeFileSync(join(userData, 'media/dl-online.jpg'), 'cover')
     db.prepare(`UPDATE music_album SET cover_path = 'media/dl-online.jpg'`).run()
     await startScan(fakeReader())
     expect((db.prepare('SELECT cover_path FROM music_album').get() as { cover_path: string }).cover_path).toBe(
@@ -381,5 +404,65 @@ describe('targeted download indexing', () => {
   it('rejects paths escaping the music root without touching rows', async () => {
     await expect(indexMusicFiles(['../outside.mp3'], 'test targeted', fakeReader())).rejects.toThrow()
     expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 0 })
+  })
+})
+
+
+describe('music filesystem failure recovery', () => {
+  it.each(['B', 'B/Album', 'B/Album/CD1'])('preserves the whole library when %s cannot be read', async (directory) => {
+    makeFiles(['A/Album/one.mp3', 'B/Album/CD1/two.mp3'])
+    await startScan(fakeReader())
+    const track = db.prepare("SELECT id FROM music_track WHERE file_path LIKE 'B/%'").get() as { id: number }
+    db.prepare("UPDATE music_track SET liked_at='2026-01-01', play_count=3 WHERE id=?").run(track.id)
+    db.prepare("INSERT INTO music_playlist(title) VALUES('Mix')").run()
+    db.prepare('INSERT INTO music_playlist_track(playlist_id,track_id,position) VALUES(1,?,0)').run(track.id)
+    db.prepare('INSERT INTO music_play_log(track_id,duration) VALUES(?,200)').run(track.id)
+    fsFault.read = join(root, directory)
+    await expect(startScan(fakeReader())).rejects.toThrow('directory unreadable')
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 2 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_playlist_track').get()).toEqual({ n: 1 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_play_log').get()).toEqual({ n: 1 })
+    expect(db.prepare('SELECT play_count FROM music_track WHERE id=?').get(track.id)).toEqual({ play_count: 3 })
+  })
+
+  it('preserves tracks if an individual file cannot be inspected', async () => {
+    makeFiles(['A/Album/one.mp3', 'A/Album/two.mp3'])
+    await startScan(fakeReader())
+    fsFault.stat = join(root, 'A/Album/one.mp3')
+    await expect(startScan(fakeReader())).rejects.toThrow('file unreadable')
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 2 })
+  })
+
+  it('keeps artist tracking and playlist rows if disk removal fails', async () => {
+    makeFiles(['A/Album/one.mp3'])
+    await startScan(fakeReader())
+    db.prepare("UPDATE music_track SET liked_at='2026-01-01', play_count=3").run()
+    db.prepare("INSERT INTO music_playlist(title) VALUES('Mix')").run()
+    db.prepare('INSERT INTO music_playlist_track(playlist_id,track_id,position) VALUES(1,1,0)').run()
+    fsFault.remove = join(root, 'A')
+    await expect(deleteArtist(1)).rejects.toThrow('disk failure')
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_artist').get()).toEqual({ n: 1 })
+    expect(db.prepare('SELECT play_count FROM music_track').get()).toEqual({ play_count: 3 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_playlist_track').get()).toEqual({ n: 1 })
+  })
+
+  it('recovers a deleted folder cover from unchanged audio embedded art', async () => {
+    makeFiles(['A/Album/one.mp3', 'A/Album/cover.jpg'])
+    await startScan(fakeReader())
+    rmSync(join(root, 'A/Album/cover.jpg'))
+    const reader = fakeReader({ 'A/Album/one.mp3': { picture: { format: 'image/jpeg', data: Buffer.from('art') } } })
+    await startScan(reader)
+    expect(reader.calls).toHaveLength(1)
+    const { cover_path } = db.prepare('SELECT cover_path FROM music_album').get() as { cover_path: string }
+    expect(cover_path).toMatch(/^media\/music-covers\//)
+    expect(existsSync(join(userData, cover_path))).toBe(true)
+  })
+
+  it('clears a missing stored cover when no replacement exists', async () => {
+    makeFiles(['A/Album/one.mp3'])
+    await startScan(fakeReader())
+    db.prepare("UPDATE music_album SET cover_path='media/missing.jpg'").run()
+    await startScan(fakeReader())
+    expect(db.prepare('SELECT cover_path FROM music_album').get()).toEqual({ cover_path: null })
   })
 })

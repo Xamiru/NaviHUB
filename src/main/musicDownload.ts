@@ -265,17 +265,21 @@ export function startDownload(input: MusicDownloadInput): { id: string } {
     if (code === 0) {
       status.status = 'processing'
       status.message = 'Updating library…'
-      // Pick the new files up; mtime fast path makes this quick. If a manual
-      // scan is already running it will see the files anyway.
+      // Pick the new files up; report indexing failures separately so a saved
+      // file is never presented as successfully added to the library.
       Promise.resolve()
         .then(() => startScan())
-        .catch(() => undefined)
         .then(() => {
           if (status?.id === id) {
             status.status = 'done'
             status.percent = 100
             status.message = null
           }
+        })
+        .catch((error: unknown) => {
+          if (status?.id !== id) return
+          status.status = 'error'
+          status.message = `Audio was saved, but library indexing failed: ${error instanceof Error ? error.message : String(error)}. Run Scan library to retry indexing.`
         })
     } else {
       status.status = 'error'

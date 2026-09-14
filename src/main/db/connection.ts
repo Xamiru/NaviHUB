@@ -136,7 +136,35 @@ export function runMigrations(sqlite: Database.Database): void {
   ensureColumn(sqlite, 'music_spotify_entity_track', 'resolved_audio_url', 'resolved_audio_url TEXT')
   ensureColumn(sqlite, 'music_spotify_playlist_item', 'match_confirmed', 'match_confirmed INTEGER NOT NULL DEFAULT 0')
   ensureColumn(sqlite, 'music_spotify_playlist_item', 'download_skipped', 'download_skipped INTEGER NOT NULL DEFAULT 0')
+  ensureColumn(sqlite, 'music_spotify_entity_track', 'spotify_track_id', 'spotify_track_id TEXT')
   ensureColumn(sqlite, 'music_spotify_entity_track', 'match_confirmed', 'match_confirmed INTEGER NOT NULL DEFAULT 0')
+  // The table itself is created by init.sql before migrations. Promote choices
+  // made by older builds so they immediately apply across playlists.
+  sqlite.prepare(
+    `INSERT OR IGNORE INTO music_spotify_track_choice (spotify_track_id, local_track_id)
+     SELECT spotify_track_id, matched_track_id FROM music_spotify_playlist_item
+     WHERE match_confirmed=1 AND matched_track_id IS NOT NULL ORDER BY id`
+  ).run()
+  sqlite.prepare(
+    `INSERT OR IGNORE INTO music_spotify_track_choice (spotify_track_id, local_track_id)
+     SELECT spotify_track_id, matched_track_id FROM music_spotify_entity_track
+     WHERE match_confirmed=1 AND matched_track_id IS NOT NULL AND spotify_track_id IS NOT NULL
+     ORDER BY id`
+  ).run()
+  sqlite.prepare(
+    `UPDATE music_spotify_playlist_item SET
+       matched_track_id=(SELECT local_track_id FROM music_spotify_track_choice c
+                         WHERE c.spotify_track_id=music_spotify_playlist_item.spotify_track_id),
+       match_confirmed=1, download_skipped=0, download_error=NULL
+     WHERE spotify_track_id IN (SELECT spotify_track_id FROM music_spotify_track_choice)`
+  ).run()
+  sqlite.prepare(
+    `UPDATE music_spotify_entity_track SET
+       matched_track_id=(SELECT local_track_id FROM music_spotify_track_choice c
+                         WHERE c.spotify_track_id=music_spotify_entity_track.spotify_track_id),
+       match_confirmed=1, download_error=NULL
+     WHERE spotify_track_id IN (SELECT spotify_track_id FROM music_spotify_track_choice)`
+  ).run()
   sqlite
     .prepare('CREATE UNIQUE INDEX IF NOT EXISTS idx_music_artist_spotify ON music_artist(spotify_id)')
     .run()

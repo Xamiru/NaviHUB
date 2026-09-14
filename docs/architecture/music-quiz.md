@@ -9,6 +9,14 @@
 
 ## Music artwork lookup
 
+Scans abort before database writes if any directory read or audio-file stat fails;
+a partial walk never prunes library records. Artist deletion removes its directory
+before cascading database records, so a filesystem failure preserves tracking data.
+Saved artwork paths are checked on scans: confirmed missing files are cleared, and
+the first unchanged audio file is re-read for embedded artwork when its cover vanished.
+Ordinary URL downloads report an indexing failure separately from saved audio and
+ask the user to retry Scan library instead of reporting success.
+
 Local folder and embedded artwork always wins. When the user asks NaviHUB to
 find missing art online, remembered Spotify album ids provide the first
 identity-safe oEmbed lookup, followed by a fast exact iTunes match. An exact
@@ -91,6 +99,17 @@ local file makes the source row unavailable without deleting its title, order, o
 retry state. Ordinary `music_playlist_track` rows remain the manual-add layer and
 append after the source snapshot.
 
+An explicit recording choice is also stored once in `music_spotify_track_choice`,
+keyed by Spotify track id. Choosing or confirming a local recording immediately
+links every playlist/entity occurrence of that Spotify song; future imports reuse
+the choice without matching or downloading again. Startup migrations promote older
+row-level confirmations into this map. Deleting the chosen local track cascades the
+choice and leaves source rows missing so they can be resolved again. Both source
+resolvers select the Spotify identity explicitly, and future playlist imports store
+reused choices as confirmed. Startup applies the existing choice migration but does
+not run a full-library metadata rematch; Scan library applies revised matching to
+older unresolved rows without a source re-import.
+
 **Recording-aware matching.** Import and every music scan normalize Unicode, case,
 punctuation, and whitespace, but keep version words such as `live` and `remaster`.
 The first tier requires exact normalized title, exact primary artist against the folder
@@ -102,8 +121,22 @@ a three-second floor and eight-second ceiling. Meaningful Live, Acoustic, Remix,
 Instrumental, Demo, Radio Edit, sped/slowed, re-recorded and Remaster markers must
 agree. Ambiguous rows remain missing but expose conservative local candidates through
 `Use local version`; an explicit choice survives later scans while its file exists.
-Artist/album source association keeps the strict first tier. Unmatched source rows
+Artist/album source association keeps the strict first tier and the same recording-version checks. Unmatched source rows
 never enter the player queue.
+
+Exact duplicate files with the same normalized title, artist set, album, recording
+markers and rounded duration collapse to the oldest library row for matching and the
+local-version picker. Distinct albums or durations remain separate choices. A source
+row with any conservative local alternative is ineligible for download in both the
+renderer and repository, so stale UI or a persisted queue cannot download over a
+known local recording. A rejected downloaded candidate is quarantined and remains
+eligible for a deliberate retry. The playlist projection and download guard exclude
+the same quarantined tracks. Matching metadata is cached per SQLite connection with
+both total-change and external data-version invalidation; playlists fetch full local
+track records only for the selected alternatives, so likes and artwork stay fresh.
+Add-to-playlist membership includes Spotify-linked rows, prevents a duplicate manual
+addition, and removes either representation when the user toggles membership off.
+An explicit source refresh can restore a removed Spotify source row.
 
 **Download provenance and verification (2026-09-06).** Spotify downloads use a
 temporary `[navihub-<spotify-track-id>]` filename marker so the post-download scan
@@ -321,6 +354,11 @@ missing-release filter for large discographies.
 ## Player bar layout and the now-playing wash
 
 **Three-zone NowPlayingBar (2026-08-16).** The bar is now `[what is playing] [transport + scrubber] [modes + volume]` rather than one flat row. The old row put the seek bar between the transport and the volume, so the control you drag most sat wherever the layout happened to leave room; stacking the scrubber under the transport buttons puts them together and gives the track text the whole left zone instead of a fixed `w-52`. Every control, handler and title is unchanged — this is layout only, and the player logic (mediaSession, the `quiz-` masking in `displayMeta`, queue rules) was not touched.
+
+Track switching pauses and clears the previous audio before publishing the next
+track or awaiting local-path resolution. Failed lookups follow the missing-file
+fallback/skip path, and an older lookup cannot replace a newer selection. Unshuffle
+restores the current queue occurrence by object identity, even when song IDs repeat.
 
 **Source-aware player actions (2026-08-27).** Both the persistent bar and full Now Playing view identify tracks by their load-bearing id namespace through one shared action component. A `music-<id>` library track shows Like plus Add to playlist; the playlist menu can toggle existing playlists or create one without leaving playback. A `theme-<id>` anime song shows only its theme Favorite action. Quiz, tournament and arbitrary-file audio show neither. Theme favorite state has a dedicated `themes:favorite` read so both player surfaces reflect changes made on the Songs or anime detail pages instead of trusting a stale queue snapshot; mutations invalidate both theme queries and the owning anime detail.
 

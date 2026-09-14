@@ -80,6 +80,7 @@ const FIXED_WIPES = [
   'DELETE FROM music_spotify_entity_release',
   'DELETE FROM music_spotify_entity_snapshot',
   'DELETE FROM music_playlist_track',
+  'DELETE FROM music_spotify_track_choice',
   'DELETE FROM music_track',
   'DELETE FROM music_album',
   'DELETE FROM music_artist',

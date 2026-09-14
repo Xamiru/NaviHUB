@@ -101,4 +101,17 @@ describe('SpotifyTrackRecoveryDialog', () => {
     await waitFor(() => expect(api.music.spotifyMatchPlaylistItem).toHaveBeenCalledWith({ itemId: 42, trackId: 7, confirm: true }))
     expect(onClose).toHaveBeenCalledOnce()
   })
+
+  it('collapses duplicate library files in manual search results', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.music.search).mockResolvedValue({
+      tracks: [track, { ...track, id: 8, filePath: 'Artist/Album/copy.mp3' }],
+      artists: [], albums: []
+    })
+    renderDialog()
+
+    await user.type(screen.getByRole('textbox', { name: 'Search the whole local library' }), 'Song')
+    await waitFor(() => expect(api.music.search).toHaveBeenCalled())
+    expect(screen.getAllByRole('button', { name: 'Song · Artist · 180s' })).toHaveLength(1)
+  })
 })

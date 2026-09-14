@@ -451,3 +451,11 @@ describe('YouTube access retry cache', () => {
     } finally { now.mockRestore() }
   })
 })
+
+
+it('normalizes interrupted queue state at startup without a library-wide rematch', () => {
+  const resolve = vi.spyOn(spotifyRepo, 'resolveAllSpotifyItems')
+  spotify.initializeDownloadQueue()
+  expect(resolve).not.toHaveBeenCalled()
+  resolve.mockRestore()
+})

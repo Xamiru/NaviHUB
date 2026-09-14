@@ -134,8 +134,7 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
   })
 
   function refreshPlaylists(): void {
-    qc.invalidateQueries({ queryKey: qk.music.playlists })
-    qc.invalidateQueries({ queryKey: qk.music.playlistsForTrack(track.id) })
+    qc.invalidateQueries({ queryKey: qk.music.all })
   }
 
   async function togglePlaylist(playlistId: number, contains: boolean): Promise<void> {

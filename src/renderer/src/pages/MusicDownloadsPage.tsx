@@ -55,7 +55,6 @@ export default function MusicDownloadsPage() {
     if (!downloadStatus || downloadStatus.source !== 'spotifyQueue') return
     if (!['done', 'error', 'cancelled'].includes(downloadStatus.status)) return
     void qc.invalidateQueries({ queryKey: qk.music.all })
-    void qc.invalidateQueries({ queryKey: qk.music.all })
   }, [downloadStatus, qc])
 
   async function confirmLarge(card?: SpotifyDownloadQueueCard): Promise<boolean> {

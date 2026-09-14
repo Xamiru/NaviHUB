@@ -675,6 +675,17 @@ CREATE INDEX IF NOT EXISTS idx_music_track_title  ON music_track(title);
 CREATE INDEX IF NOT EXISTS idx_music_track_liked  ON music_track(liked_at);
 CREATE INDEX IF NOT EXISTS idx_music_track_played ON music_track(last_played_at);
 
+-- One explicit Spotify recording choice applies everywhere that Spotify track
+-- appears. This prevents a second playlist/import from downloading the same
+-- recording after the user already chose a local file.
+CREATE TABLE IF NOT EXISTS music_spotify_track_choice (
+  spotify_track_id TEXT PRIMARY KEY,
+  local_track_id   INTEGER NOT NULL REFERENCES music_track(id) ON DELETE CASCADE,
+  chosen_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_music_spotify_track_choice_local
+  ON music_spotify_track_choice(local_track_id);
+
 CREATE TABLE IF NOT EXISTS music_playlist (
   id           INTEGER PRIMARY KEY AUTOINCREMENT,
   title        TEXT NOT NULL,

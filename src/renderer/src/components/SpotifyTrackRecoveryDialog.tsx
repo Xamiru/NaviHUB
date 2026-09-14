@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { MusicSpotifyDownloadCandidate, MusicTrack } from '@shared/types'
 import Dialog from './Dialog'
@@ -36,6 +36,18 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
     queryFn: () => api.music.spotifySearchAudio(submitted), enabled: Boolean(submitted) })
   const local = useQuery({ queryKey: qk.music.search(localSearch),
     queryFn: () => api.music.search(localSearch), enabled: Boolean(localSearch.trim()) })
+  const uniqueLocalTracks = useMemo(() => {
+    const seen = new Set<string>()
+    return (local.data?.tracks ?? []).filter((track) => {
+      const normalized = (value: string) => value.normalize('NFKC').toLocaleLowerCase()
+        .replace(/[\p{P}\p{S}]+/gu, ' ').replace(/\s+/g, ' ').trim()
+      const key = [normalized(track.title), normalized(track.tagArtist ?? track.artistName),
+        normalized(track.albumTitle), track.duration == null ? '?' : Math.round(track.duration)].join('\n')
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+  }, [local.data])
   async function action(fn: () => Promise<unknown>, close = true) {
     setBusy(true)
     setError(null)
@@ -97,7 +109,7 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
     </section>
     {sourceKind === 'playlistItem' && <section className="space-y-2" aria-label="Choose local recording">
       <Field label="Search the whole local library"><input className="input w-full" value={localQuery} onChange={(e) => setLocalQuery(e.target.value)} /></Field>
-      {local.data?.tracks.slice(0, 12).map((track) => <button key={track.id} className="btn-ghost block w-full text-left" onClick={() => setPicked(track)}>{track.title} · {track.artistName} · {formatDuration(track.duration)}</button>)}
+      {uniqueLocalTracks.slice(0, 12).map((track) => <button key={track.id} className="btn-ghost block w-full text-left" onClick={() => setPicked(track)}>{track.title} · {track.artistName} · {formatDuration(track.duration)}</button>)}
       <button className="btn-ghost" disabled={busy} onClick={() => void action(async () => setPicked(await api.music.spotifyPickLocalAudio()), false)}>Choose a file to copy into the library</button>
       {picked && <>{compare(picked)}<p className="text-xs text-gray-400">This explicitly overrides automatic matching and is remembered across scans.</p>
         <button className="btn-primary" disabled={busy} onClick={() => void action(() => api.music.spotifyMatchPlaylistItem({ itemId: trackId, trackId: picked.id, confirm: true }))}>Confirm this local recording</button></>}

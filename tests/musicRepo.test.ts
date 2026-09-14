@@ -160,7 +160,7 @@ describe('browse', () => {
     })
   })
 
-  it('refuses ambiguous automatic source linkage and links after resolution is unique', () => {
+  it('collapses exact duplicate files to the oldest row for automatic source linkage', () => {
     const first = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'one.mp3' })
     const duplicate = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'two.mp3' })
     const song: spotifyRepo.SpotdlSong = {
@@ -171,15 +171,13 @@ describe('browse', () => {
       spotifyArtistId: 'spotify-artist', spotifyArtistIds: ['spotify-artist'], albumType: 'album'
     }
     spotifyRepo.linkUnambiguousSources('spotify-artist', [{ spotifyAlbumId: 'spotify-album', songs: [song] }])
-    expect(db.prepare('SELECT spotify_id FROM music_album').get()).toEqual({ spotify_id: null })
-    db.prepare('DELETE FROM music_track WHERE id = ?').run(duplicate)
-    spotifyRepo.linkUnambiguousSources('spotify-artist', [{ spotifyAlbumId: 'spotify-album', songs: [song] }])
     const linked = db.prepare(
       `SELECT al.spotify_id AS album_source, ar.spotify_id AS artist_source
        FROM music_track t JOIN music_album al ON al.id=t.album_id
        JOIN music_artist ar ON ar.id=t.artist_id WHERE t.id=?`
     ).get(first)
     expect(linked).toEqual({ album_source: 'spotify-album', artist_source: 'spotify-artist' })
+    expect(duplicate).toBeGreaterThan(first)
   })
 
   it('searchAll matches artists, albums and tracks independently', () => {
@@ -375,14 +373,52 @@ describe('playlists', () => {
       playlistId,
       itemIds: [unresolved.itemId]
     })
-    expect(queued.jobId).not.toBeNull()
+    expect(queued.jobId).toBeNull()
     spotifyRepo.matchPlaylistItemToLocalTrack({ itemId: unresolved.itemId, trackId: hits })
-    expect(spotifyRepo.getDownloadQueueCard(queued.jobId!)).toBeNull()
     spotifyRepo.resolveAllSpotifyItems()
     expect(musicRepo.getPlaylist(playlistId)!.items[0]).toMatchObject({
       kind: 'spotify',
       matchedTrack: { id: hits, albumTitle: 'Greatest Hits' },
       localAlternatives: [{ id: deluxe, albumTitle: 'Album (Deluxe)' }]
+    })
+  })
+
+  it('does not download over conservative local alternatives', () => {
+    const first = seedTrack({ artist: 'Artist', album: 'Album (Deluxe)', title: 'Song', path: 'deluxe.mp3' })
+    const second = seedTrack({ artist: 'Artist', album: 'Greatest Hits', title: 'Song', path: 'hits.mp3' })
+    db.prepare('UPDATE music_track SET duration=205 WHERE id IN (?, ?)').run(first, second)
+    const playlistId = musicRepo.createPlaylist({ title: 'Imported mix' })
+    db.prepare(`INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+      VALUES (?, 'review-source', 'https://open.spotify.com/playlist/review-source')`).run(playlistId)
+    const itemId = Number(db.prepare(`INSERT INTO music_spotify_playlist_item
+      (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+       album_title, duration, spotify_url, raw_json)
+      VALUES (?, 'review-song', 0, 'Song', '["Artist"]', 'Artist', 'Album', 200,
+              'https://open.spotify.com/track/review-song', '{}')`).run(playlistId).lastInsertRowid)
+
+    expect(spotifyRepo.resolveAllSpotifyItems()).toBe(0)
+    expect(spotifyRepo.pendingSpotifyItems(playlistId, [itemId])).toEqual([])
+    expect(musicRepo.getPlaylist(playlistId)!.items[0]).toMatchObject({
+      localAlternatives: [{ id: first }, { id: second }]
+    })
+  })
+
+  it('automatically links an exact duplicate group to its oldest local file', () => {
+    const oldest = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'original.mp3' })
+    seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'later-copy.mp3' })
+    const playlistId = musicRepo.createPlaylist({ title: 'Imported mix' })
+    db.prepare(`INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+      VALUES (?, 'duplicate-source', 'https://open.spotify.com/playlist/duplicate-source')`).run(playlistId)
+    db.prepare(`INSERT INTO music_spotify_playlist_item
+      (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+       album_title, duration, spotify_url, raw_json)
+      VALUES (?, 'duplicate-song', 0, 'Song', '["Artist"]', 'Artist', 'Album', 200,
+              'https://open.spotify.com/track/duplicate-song', '{}')`).run(playlistId)
+
+    expect(spotifyRepo.resolveAllSpotifyItems()).toBe(1)
+    expect(musicRepo.getPlaylist(playlistId)!.items[0]).toMatchObject({
+      matchedTrack: { id: oldest },
+      localAlternatives: []
     })
   })
 
@@ -889,6 +925,11 @@ describe('Spotify recovery decisions', () => {
     spotifyRepo.confirmDownloadCandidate({ sourceKind: 'entityTrack', trackId })
     spotifyRepo.resolveAllSpotifyItems()
     expect(spotifyRepo.getEntitySnapshotById(snapshot)!.releases[0].tracks[0].matchedTrackId).toBe(local)
+    db.prepare("UPDATE music_spotify_entity_track SET spotify_track_id='chosen-song' WHERE id=?").run(trackId)
+    spotifyRepo.rememberSpotifyTrackChoice('chosen-song', local)
+    db.prepare('UPDATE music_spotify_entity_track SET matched_track_id=NULL, match_confirmed=0 WHERE id=?').run(trackId)
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(spotifyRepo.getEntitySnapshotById(snapshot)!.releases[0].tracks[0].matchedTrackId).toBe(local)
   })
 
   it('refreshes source metadata without erasing manual playlist decisions', () => {
@@ -903,6 +944,32 @@ describe('Spotify recovery decisions', () => {
     expect(db.prepare('SELECT title FROM music_playlist WHERE id=?').get(playlist)).toEqual({ title: 'Mix' })
   })
 
+  it('reuses one explicit choice across playlists and future imports', () => {
+    const { local, item } = fixture()
+    const secondPlaylist = musicRepo.createPlaylist({ title: 'Other mix' })
+    db.prepare("INSERT INTO music_spotify_playlist (playlist_id,spotify_id,source_url) VALUES (?,'other','https://open.spotify.com/playlist/other')").run(secondPlaylist)
+    const secondItem = Number(db.prepare(`INSERT INTO music_spotify_playlist_item
+      (playlist_id,spotify_track_id,position,title,artists_json,primary_artist,album_title,duration,spotify_url,raw_json)
+      VALUES (?,'id',0,'Song','["Artist"]','Artist','Album',200,'https://open.spotify.com/track/id','{}')`).run(secondPlaylist).lastInsertRowid)
+
+    spotifyRepo.matchPlaylistItemToLocalTrack({ itemId: item, trackId: local, confirm: true })
+    expect(db.prepare('SELECT matched_track_id, match_confirmed FROM music_spotify_playlist_item WHERE id=?').get(secondItem))
+      .toEqual({ matched_track_id: local, match_confirmed: 1 })
+    expect(db.prepare('SELECT local_track_id FROM music_spotify_track_choice WHERE spotify_track_id=?').get('id'))
+      .toEqual({ local_track_id: local })
+
+    const future = spotifyRepo.createSpotifyPlaylist({
+      spotifyId: 'future', sourceUrl: 'https://open.spotify.com/playlist/future', title: 'Future mix',
+      songs: [{ ...resolvedSong(), spotifyTrackId: 'id', title: 'Different provider title', coverPath: null }]
+    })
+    expect(musicRepo.getPlaylist(future.playlistId)!.items[0]).toMatchObject({ matchedTrack: { id: local } })
+    // Exercise the resolver independently of existing row-level confirmation.
+    db.prepare('UPDATE music_spotify_playlist_item SET matched_track_id=NULL, match_confirmed=0 WHERE playlist_id=?').run(future.playlistId)
+    spotifyRepo.resolveAllSpotifyItems()
+    expect(musicRepo.getPlaylist(future.playlistId)!.items[0]).toMatchObject({ matchedTrack: { id: local } })
+
+  })
+
   it('treats an explicit empty download selection as no work', () => {
     const { playlist } = fixture()
     expect(spotifyRepo.pendingSpotifyItems(playlist, [])).toEqual([])
@@ -915,5 +982,57 @@ describe('Spotify recovery decisions', () => {
     expect(spotifyRepo.pendingSpotifyItems(playlist)).toHaveLength(0)
     spotifyRepo.skipPlaylistDownload(item, false)
     expect(spotifyRepo.pendingSpotifyItems(playlist)).toHaveLength(1)
+  })
+})
+
+
+describe('music audit regressions', () => {
+  function playlistWith(trackId: number): { playlistId: number; itemId: number } {
+    const playlistId = musicRepo.createPlaylist({ title: 'Source' })
+    db.prepare("INSERT INTO music_spotify_playlist(playlist_id,spotify_id,source_url) VALUES(?,'source','url')").run(playlistId)
+    const itemId = Number(db.prepare(`INSERT INTO music_spotify_playlist_item
+      (playlist_id,spotify_track_id,position,title,artists_json,primary_artist,album_title,duration,spotify_url,raw_json,matched_track_id)
+      VALUES(?,'song',0,'Airbag','["Radiohead"]','Radiohead','OK Computer',200,'url','{}',?)`).run(playlistId, trackId).lastInsertRowid)
+    return { playlistId, itemId }
+  }
+
+  it('uses source membership for add/remove toggles and prevents double additions', () => {
+    const local = seedTrack({})
+    const { playlistId } = playlistWith(local)
+    expect(musicRepo.playlistsForTrack(local)).toContainEqual(expect.objectContaining({ id: playlistId, contains: true }))
+    musicRepo.addPlaylistTracks(playlistId, [local])
+    expect(musicRepo.getPlaylist(playlistId)!.items).toHaveLength(1)
+    musicRepo.removePlaylistTrackByTrack(playlistId, local)
+    expect(musicRepo.getPlaylist(playlistId)!.items).toHaveLength(0)
+    expect(musicRepo.playlistsForTrack(local)[0].contains).toBe(false)
+  })
+
+  it('excludes rejected candidates from local alternatives while permitting retry', () => {
+    const local = seedTrack({})
+    const { playlistId, itemId } = playlistWith(local)
+    db.prepare('UPDATE music_spotify_playlist_item SET matched_track_id=NULL').run()
+    expect(musicRepo.getPlaylist(playlistId)!.items[0].localAlternatives).toHaveLength(1)
+    spotifyRepo.setDownloadCandidate({ sourceKind: 'playlistItem', sourceId: itemId, localTrackId: local, provider: 'youtube' })
+    spotifyRepo.rejectDownloadCandidate('playlistItem', itemId)
+    expect(musicRepo.getPlaylist(playlistId)!.items[0].localAlternatives).toHaveLength(0)
+    expect(spotifyRepo.pendingSpotifyItems(playlistId)).toHaveLength(1)
+  })
+
+  it('refreshes cached alternatives after metadata changes and reads likes fresh', () => {
+    const local = seedTrack({})
+    const { playlistId } = playlistWith(local)
+    db.prepare('UPDATE music_spotify_playlist_item SET matched_track_id=NULL').run()
+    expect(musicRepo.getPlaylist(playlistId)!.items[0].localAlternatives).toHaveLength(1)
+    musicRepo.setLiked(local, true)
+    expect(musicRepo.getPlaylist(playlistId)!.items[0].localAlternatives[0].likedAt).not.toBeNull()
+    db.prepare("UPDATE music_track SET title='Different'").run()
+    expect(musicRepo.getPlaylist(playlistId)!.items[0].localAlternatives).toHaveLength(0)
+  })
+
+  it('rejects live and remastered album recordings in strict entity matching', () => {
+    const song = { title: 'Song', primaryArtist: 'Artist', albumTitle: 'Studio Album', duration: 200 }
+    for (const albumTitle of ['Live at the Arena', 'Album Remastered']) {
+      expect(spotifyRepo.matchSpotifySong(song, [{ id: 1, title: 'Song', folderArtist: 'Artist', tagArtist: null, albumTitle, duration: 200 }])).toBeNull()
+    }
   })
 })

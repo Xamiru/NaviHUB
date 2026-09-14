@@ -352,9 +352,9 @@ describe('Spotify playlist import core', () => {
       duration: 263
     }
     expect(compatibleSpotifyDurationTolerance(263)).toBeCloseTo(7.89)
-    // The entity-level matcher intentionally remains unchanged; the playlist
-    // wrapper adds the release-variant protection before invoking it.
-    expect(matchSpotifySong(source, candidates)).toBe(2)
+    // Both matchers reject the live recording. Only the playlist tier permits
+    // the five-second difference for the studio recording on another release.
+    expect(matchSpotifySong(source, candidates)).toBeNull()
     expect(matchSpotifyPlaylistSong(source, candidates)).toBe(1)
     expect(spotifyPlaylistMatchAlternatives(source, candidates).map((track) => track.id)).toEqual([1])
   })

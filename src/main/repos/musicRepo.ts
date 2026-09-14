@@ -15,8 +15,8 @@ import type {
 } from '@shared/types'
 import {
   mapSpotifyItem,
-  normalizeSpotifyMatch,
-  spotifyPlaylistMatchAlternatives,
+  playlistLocalAlternativeIds,
+  removeSpotifyItem,
   spotifySource
 } from './musicSpotifyRepo'
 
@@ -282,7 +282,7 @@ export function searchAll(query: string): MusicSearchResults {
   const tracks = (
     db
       .prepare(`${TRACK_SELECT} WHERE t.title LIKE ?
-                ORDER BY t.title COLLATE NOCASE ASC LIMIT 40`)
+                ORDER BY t.title COLLATE NOCASE ASC, t.id ASC LIMIT 40`)
       .all(like) as Record<string, unknown>[]
   ).map(mapTrack)
   return { artists, albums, tracks }
@@ -458,37 +458,26 @@ export function getPlaylist(id: number): MusicPlaylistDetail | null {
       .all(id) as Record<string, unknown>[]
   ).map((r) => mapSpotifyItem(r, r.id == null ? null : mapTrack(r)))
   if (spotifyItems.length > 0) {
-    const localTracks = (db.prepare(`${TRACK_SELECT} ORDER BY t.id`).all() as Record<string, unknown>[])
-      .map(mapTrack)
-    const localById = new Map(localTracks.map((track) => [track.id, track]))
-    const candidates = localTracks.map((track) => ({
-      id: track.id,
-      albumId: track.albumId,
-      artistId: track.artistId,
-      title: track.title,
-      folderArtist: track.artistName,
-      tagArtist: track.tagArtist,
-      albumTitle: track.albumTitle,
-      duration: track.duration
-    }))
-    const candidatesByTitle = new Map<string, typeof candidates>()
-    for (const candidate of candidates) {
-      const key = normalizeSpotifyMatch(candidate.title)
-      const rows = candidatesByTitle.get(key) ?? []
-      rows.push(candidate)
-      candidatesByTitle.set(key, rows)
+    const alternativeIds = playlistLocalAlternativeIds(spotifyItems).map((ids, index) =>
+      ids.filter((id) => id !== spotifyItems[index].matchedTrack?.id).slice(0, 5)
+    )
+    const ids = [...new Set(alternativeIds.flat())]
+    const localById = new Map<number, MusicTrack>()
+    for (let offset = 0; offset < ids.length; offset += 500) {
+      const chunk = ids.slice(offset, offset + 500)
+      const rows = db.prepare(`${TRACK_SELECT} WHERE t.id IN (${chunk.map(() => '?').join(',')})`)
+        .all(...chunk) as Record<string, unknown>[]
+      for (const row of rows) {
+        const track = mapTrack(row)
+        localById.set(track.id, track)
+      }
     }
-    spotifyItems = spotifyItems.map((item) => ({
+    spotifyItems = spotifyItems.map((item, index) => ({
       ...item,
-      localAlternatives: spotifyPlaylistMatchAlternatives(
-        item,
-        candidatesByTitle.get(normalizeSpotifyMatch(item.title)) ?? []
-      )
-        .filter((candidate) => candidate.id !== item.matchedTrack?.id)
-        .slice(0, 5)
-        .map((candidate) => localById.get(candidate.id)!)
+      localAlternatives: alternativeIds[index].map((id) => localById.get(id)!)
     }))
   }
+
   const source = spotifySource(id)
   const items = source ? [...spotifyItems, ...localItems] : localItems
   const playableCount = items.filter(
@@ -559,10 +548,12 @@ export function addPlaylistTracks(playlistId: number, trackIds: number[]): void 
         .get(playlistId, playlistId) as { next: number | null }
     ).next ?? 0
     const ins = db.prepare(
-      'INSERT OR IGNORE INTO music_playlist_track (playlist_id, track_id, position) VALUES (?, ?, ?)'
+      `INSERT OR IGNORE INTO music_playlist_track (playlist_id, track_id, position)
+       SELECT ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM music_spotify_playlist_item
+         WHERE playlist_id=? AND matched_track_id=?)`
     )
     for (const trackId of trackIds) {
-      if (ins.run(playlistId, trackId, next).changes > 0) next += 1
+      if (ins.run(playlistId, trackId, next, playlistId, trackId).changes > 0) next += 1
     }
     bump(playlistId)
   })
@@ -582,10 +573,16 @@ export function removePlaylistTrack(itemId: number): void {
 // Remove by (playlist, track) — used by the Add-to-playlist menu, which only
 // knows the track it's toggling.
 export function removePlaylistTrackByTrack(playlistId: number, trackId: number): void {
-  getSqlite()
-    .prepare('DELETE FROM music_playlist_track WHERE playlist_id = ? AND track_id = ?')
-    .run(playlistId, trackId)
-  bump(playlistId)
+  const db = getSqlite()
+  db.transaction(() => {
+    db.prepare('DELETE FROM music_playlist_track WHERE playlist_id = ? AND track_id = ?')
+      .run(playlistId, trackId)
+    const sourceRows = db.prepare(
+      'SELECT id FROM music_spotify_playlist_item WHERE playlist_id=? AND matched_track_id=?'
+    ).all(playlistId, trackId) as { id: number }[]
+    for (const row of sourceRows) removeSpotifyItem(row.id)
+    bump(playlistId)
+  })()
 }
 
 export function reorderPlaylist(playlistId: number, orderedItemIds: number[]): void {
@@ -608,10 +605,12 @@ export function playlistsForTrack(
       .prepare(
         `SELECT p.id, p.title,
                 EXISTS(SELECT 1 FROM music_playlist_track pt
-                       WHERE pt.playlist_id = p.id AND pt.track_id = ?) AS contains
+                       WHERE pt.playlist_id = p.id AND pt.track_id = ?)
+                OR EXISTS(SELECT 1 FROM music_spotify_playlist_item si
+                          WHERE si.playlist_id = p.id AND si.matched_track_id = ?) AS contains
          FROM music_playlist p ORDER BY p.updated_at DESC, p.id DESC`
       )
-      .all(trackId) as { id: number; title: string; contains: number }[]
+      .all(trackId, trackId) as { id: number; title: string; contains: number }[]
   ).map((r) => ({ id: r.id, title: r.title, contains: !!r.contains }))
 }
 

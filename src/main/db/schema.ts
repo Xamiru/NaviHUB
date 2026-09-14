@@ -919,6 +919,22 @@ export const musicTrack = sqliteTable(
   })
 )
 
+export const musicSpotifyTrackChoice = sqliteTable(
+  'music_spotify_track_choice',
+  {
+    spotifyTrackId: text('spotify_track_id').primaryKey(),
+    localTrackId: integer('local_track_id')
+      .notNull()
+      .references(() => musicTrack.id, { onDelete: 'cascade' }),
+    chosenAt: text('chosen_at')
+      .notNull()
+      .default(sql`(datetime('now'))`)
+  },
+  (t) => ({
+    byLocal: index('idx_music_spotify_track_choice_local').on(t.localTrackId)
+  })
+)
+
 export const musicPlaylist = sqliteTable('music_playlist', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(),

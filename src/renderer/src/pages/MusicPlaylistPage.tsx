@@ -101,7 +101,9 @@ export default function MusicPlaylistPage() {
   const missingSpotify = allItems.filter(
     (item): item is MusicSpotifyPlaylistEntry => item.kind === 'spotify' && !item.matchedTrack
   )
-  const downloadableMissing = missingSpotify.filter((item) => !item.downloadCandidate && !item.downloadSkipped)
+  const downloadableMissing = missingSpotify.filter((item) =>
+    !item.downloadCandidate && !item.downloadSkipped && item.localAlternatives.length === 0
+  )
   const normalizedSearch = search.trim().toLocaleLowerCase()
   // Incremental loading resets on a new array; keep it stable between renders.
   const filteredItems = useMemo(() => allItems.filter((item) => {
@@ -442,7 +444,10 @@ export default function MusicPlaylistPage() {
       )}
 
       {isSpotify && <div className="mb-4 flex flex-wrap items-center gap-2">
-        <button className="btn-ghost" onClick={() => setSelected(new Set(filteredItems.filter((item) => item.kind === 'spotify' && !item.matchedTrack && !item.downloadCandidate && !item.downloadSkipped).map((item) => item.itemId)))}>Select matching missing songs</button>
+        <button className="btn-ghost" onClick={() => setSelected(new Set(downloadableMissing
+          .filter((item) => filteredItems.includes(item)).map((item) => item.itemId)))}>
+          Select matching missing songs
+        </button>
         <button className="btn-ghost" onClick={() => setSelected(new Set())}>Clear selection</button>
         <button className="btn-primary" disabled={Boolean(busy) || !downloadableMissing.some((item) => selected.has(item.itemId))}
           onClick={async () => {
@@ -587,7 +592,7 @@ function SpotifyMissingRow({
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-md px-2 py-1.5 text-gray-400 hover:bg-base-700 sm:flex-nowrap">
       <label className="shrink-0"><span className="sr-only">Select {item.title}</span>
-        <input type="checkbox" checked={selected} disabled={Boolean(item.downloadSkipped || item.downloadCandidate)} onChange={onSelect} />
+        <input type="checkbox" checked={selected} disabled={Boolean(item.downloadSkipped || item.downloadCandidate || item.localAlternatives.length)} onChange={onSelect} />
       </label>
       <CoverImage
         path={item.coverPath}
@@ -611,9 +616,12 @@ function SpotifyMissingRow({
         {formatDuration(item.duration)}
       </span>
       {item.localAlternatives.length > 0 && (
-        <button className="btn-ghost px-2 py-1 text-xs" onClick={onUseLocal}>
-          Use local version
-        </button>
+        <>
+          <span className="text-xs text-amber-300">Local recording found</span>
+          <button className="btn-ghost px-2 py-1 text-xs" onClick={onUseLocal}>
+            Use local version
+          </button>
+        </>
       )}
       {item.downloadCandidate && (
         <>
@@ -623,11 +631,11 @@ function SpotifyMissingRow({
       )}
       <ActionMenu items={[
         { label: 'Find audio or choose local recording', onSelect: onResolve },
-        { label: 'Retry this song', disabled: busy || Boolean(item.downloadSkipped || item.downloadCandidate), onSelect: onRetry },
+        { label: 'Retry this song', disabled: busy || Boolean(item.downloadSkipped || item.downloadCandidate || item.localAlternatives.length), onSelect: onRetry },
         { label: item.downloadSkipped ? 'Include in downloads again' : 'Skip for now', disabled: busy, onSelect: onSkip }
       ]} />
-      <button className="btn-ghost px-2 py-1 text-xs" disabled={Boolean(item.downloadSkipped) || Boolean(item.downloadCandidate) || (busy && !queued)} onClick={onQueue}>
-        {queued ? 'View queue' : item.downloadCandidate ? 'Verify first' : 'Add to queue'}
+      <button className="btn-ghost px-2 py-1 text-xs" disabled={Boolean(item.downloadSkipped) || Boolean(item.downloadCandidate) || Boolean(item.localAlternatives.length) || (busy && !queued)} onClick={onQueue}>
+        {queued ? 'View queue' : item.downloadCandidate ? 'Verify first' : item.localAlternatives.length ? 'Use local first' : 'Add to queue'}
       </button>
       <button className="btn-ghost px-2 py-1 text-xs" aria-label={`Remove ${item.title} from playlist`} onClick={onRemove}>
         Remove

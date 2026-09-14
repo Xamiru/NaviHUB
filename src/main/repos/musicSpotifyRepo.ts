@@ -149,20 +149,22 @@ export function confirmDownloadCandidate(input: {
   const table = input.sourceKind === 'playlistItem'
     ? 'music_spotify_playlist_item'
     : 'music_spotify_entity_track'
-  const sourceColumn = input.sourceKind === 'playlistItem' ? 'id' : 'id'
+  const source = db.prepare(`SELECT spotify_track_id FROM ${table} WHERE id=?`)
+    .get(input.trackId) as { spotify_track_id: string | null } | undefined
+  if (!source) throw new Error('That saved Spotify track no longer exists')
+  if (source.spotify_track_id) {
+    rememberSpotifyTrackChoice(source.spotify_track_id, candidate.localTrackId)
+    return
+  }
+  // Apple-indexed entity rows receive Spotify identity later in resolution.
+  // Until then the approval remains valid for this row without pretending it
+  // can safely identify other songs.
   db.transaction(() => {
-    db.prepare(`UPDATE ${table} SET matched_track_id=?, match_confirmed=1, download_error=NULL WHERE ${sourceColumn}=?`)
+    db.prepare(`UPDATE ${table} SET matched_track_id=?, match_confirmed=1, download_error=NULL WHERE id=?`)
       .run(candidate.localTrackId, input.trackId)
-    db.prepare('UPDATE music_track SET spotify_review_required=0 WHERE id=?').run(candidate.localTrackId)
+    db.prepare('UPDATE music_track SET spotify_review_required=0 WHERE id=?')
+      .run(candidate.localTrackId)
     clearDownloadCandidate(input.sourceKind, input.trackId)
-    if (input.sourceKind === 'playlistItem') {
-      const playlist = db.prepare(
-        'SELECT playlist_id FROM music_spotify_playlist_item WHERE id=?'
-      ).get(input.trackId) as { playlist_id: number } | undefined
-      if (playlist) db.prepare(
-        `UPDATE music_playlist SET updated_at=datetime('now') WHERE id=?`
-      ).run(playlist.playlist_id)
-    }
   })()
 }
 
@@ -171,6 +173,57 @@ export function rejectDownloadCandidate(
   sourceId: number
 ): void {
   clearDownloadCandidate(sourceKind, sourceId)
+}
+
+function savedSpotifyTrackChoices(): Map<string, number> {
+  return new Map((getSqlite().prepare(
+    `SELECT c.spotify_track_id, c.local_track_id
+     FROM music_spotify_track_choice c
+     JOIN music_track t ON t.id=c.local_track_id`
+  ).all() as { spotify_track_id: string; local_track_id: number }[])
+    .map((row) => [row.spotify_track_id, row.local_track_id]))
+}
+
+/** Record one explicit decision and apply it to every occurrence of the same
+ * Spotify track. This is the control that prevents another playlist or entity
+ * import from downloading a recording the user already resolved. */
+export function rememberSpotifyTrackChoice(spotifyTrackId: string, localTrackId: number): void {
+  const db = getSqlite()
+  const local = db.prepare('SELECT id FROM music_track WHERE id=?').get(localTrackId)
+  if (!local) throw new Error('That local track no longer exists')
+  db.transaction(() => {
+    db.prepare(
+      `INSERT INTO music_spotify_track_choice (spotify_track_id, local_track_id)
+       VALUES (?, ?) ON CONFLICT(spotify_track_id) DO UPDATE SET
+         local_track_id=excluded.local_track_id, chosen_at=datetime('now')`
+    ).run(spotifyTrackId, localTrackId)
+    db.prepare(
+      `UPDATE music_spotify_playlist_item SET matched_track_id=?, match_confirmed=1,
+         download_skipped=0, download_error=NULL WHERE spotify_track_id=?`
+    ).run(localTrackId, spotifyTrackId)
+    db.prepare(
+      `UPDATE music_spotify_entity_track SET matched_track_id=?, match_confirmed=1,
+         download_error=NULL WHERE spotify_track_id=?`
+    ).run(localTrackId, spotifyTrackId)
+    db.prepare(
+      `DELETE FROM music_spotify_download_candidate WHERE playlist_item_id IN
+       (SELECT id FROM music_spotify_playlist_item WHERE spotify_track_id=?)`
+    ).run(spotifyTrackId)
+    db.prepare(
+      `DELETE FROM music_spotify_download_candidate WHERE entity_track_id IN
+       (SELECT id FROM music_spotify_entity_track WHERE spotify_track_id=?)`
+    ).run(spotifyTrackId)
+    db.prepare(
+      `DELETE FROM music_spotify_download_queue_selection WHERE playlist_item_id IN
+       (SELECT id FROM music_spotify_playlist_item WHERE spotify_track_id=?)`
+    ).run(spotifyTrackId)
+    db.prepare(
+      `UPDATE music_playlist SET updated_at=datetime('now') WHERE id IN
+       (SELECT playlist_id FROM music_spotify_playlist_item WHERE spotify_track_id=?)`
+    ).run(spotifyTrackId)
+    db.prepare('UPDATE music_track SET spotify_review_required=0 WHERE id=?').run(localTrackId)
+    pruneEmptyDownloadQueueCards()
+  })()
 }
 
 export function linkProvenanceTracks(input: {
@@ -765,16 +818,20 @@ export function matchSpotifySong(
   let matches = candidates.filter((candidate) => {
     if (candidate.duration == null || Math.abs(candidate.duration - song.duration!) > 3) return false
     if (normalizeSpotifyMatch(candidate.title) !== title) return false
+    if (recordingVariantSignature(candidate.title, candidate.albumTitle) !==
+        recordingVariantSignature(song.title, song.albumTitle)) return false
     const localArtists = new Set([
       normalizeSpotifyMatch(candidate.folderArtist),
       ...artistComponents(candidate.tagArtist ?? '')
     ])
     return localArtists.has(artist)
   })
+  matches = collapseEquivalentLocalTracks(matches)
   if (matches.length === 1) return matches[0].id
   if (matches.length > 1) {
     const album = normalizeSpotifyMatch(song.albumTitle)
     matches = matches.filter((candidate) => normalizeSpotifyMatch(candidate.albumTitle) === album)
+    matches = collapseEquivalentLocalTracks(matches)
     if (matches.length === 1) return matches[0].id
   }
   return null
@@ -824,6 +881,32 @@ export function compatibleSpotifyDurationTolerance(duration: number): number {
   return Math.max(3, Math.min(8, duration * 0.03))
 }
 
+/** Keep one stable representative when the scanner contains byte-distinct files
+ * with the same recording metadata. The oldest row wins, which normally keeps
+ * the user's original file ahead of later downloader-created copies. */
+export function collapseEquivalentLocalTracks(
+  candidates: LocalMatchCandidate[]
+): LocalMatchCandidate[] {
+  const seen = new Set<string>()
+  return [...candidates].sort((a, b) => a.id - b.id).filter((candidate) => {
+    const artists = [
+      normalizeSpotifyMatch(candidate.folderArtist),
+      ...artistComponents(candidate.tagArtist ?? '')
+    ].sort().join('|')
+    const duration = candidate.duration == null ? '?' : String(Math.round(candidate.duration))
+    const key = [
+      normalizeSpotifyMatch(candidate.title),
+      artists,
+      normalizeSpotifyMatch(candidate.albumTitle),
+      recordingVariantSignature(candidate.title, candidate.albumTitle),
+      duration
+    ].join('\n')
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+}
+
 /** Playlist-only second tier for the same recording on another release. */
 export function matchSpotifyPlaylistSong(
   song: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle' | 'duration'>,
@@ -835,14 +918,16 @@ export function matchSpotifyPlaylistSong(
   const strict = matchSpotifySong(song, identityCandidates)
   if (strict != null || song.duration == null) return strict
   const tolerance = compatibleSpotifyDurationTolerance(song.duration)
-  let matches = identityCandidates.filter((candidate) =>
+  let matches = collapseEquivalentLocalTracks(identityCandidates.filter((candidate) =>
     candidate.duration != null &&
     Math.abs(candidate.duration - song.duration!) <= tolerance
-  )
+  ))
   if (matches.length === 1) return matches[0].id
   if (matches.length > 1) {
     const album = normalizeSpotifyMatch(song.albumTitle)
-    matches = matches.filter((candidate) => normalizeSpotifyMatch(candidate.albumTitle) === album)
+    matches = collapseEquivalentLocalTracks(matches.filter(
+      (candidate) => normalizeSpotifyMatch(candidate.albumTitle) === album
+    ))
     if (matches.length === 1) return matches[0].id
   }
   return null
@@ -854,12 +939,12 @@ export function spotifyPlaylistMatchAlternatives(
   candidates: LocalMatchCandidate[]
 ): LocalMatchCandidate[] {
   const album = normalizeSpotifyMatch(song.albumTitle)
-  return candidates
+  return collapseEquivalentLocalTracks(candidates
     .filter((candidate) => {
       if (!samePlaylistRecordingIdentity(song, candidate)) return false
       if (song.duration == null || candidate.duration == null) return true
       return Math.abs(candidate.duration - song.duration) <= 15
-    })
+    }))
     .sort((a, b) => {
       const aAlbum = normalizeSpotifyMatch(a.albumTitle) === album ? 0 : 1
       const bAlbum = normalizeSpotifyMatch(b.albumTitle) === album ? 0 : 1
@@ -874,18 +959,54 @@ export function spotifyPlaylistMatchAlternatives(
     })
 }
 
+// SQLite's change counters invalidate conservatively for every write, including
+// writes outside music and rollbacks. External connections have their own version.
+// Cache only matching metadata; visible likes, artwork and paths are read fresh.
+const candidateCache = new WeakMap<ReturnType<typeof getSqlite>, {
+  changes: number
+  version: number
+  rows: LocalMatchCandidate[]
+  byTitle: Map<string, LocalMatchCandidate[]>
+}>()
+
+function localCandidateIndex(): Map<string, LocalMatchCandidate[]> {
+  const db = getSqlite()
+  const { changes } = db.prepare('SELECT total_changes() AS changes').get() as { changes: number }
+  const version = db.pragma('data_version', { simple: true }) as number
+  const cached = candidateCache.get(db)
+  if (cached?.changes === changes && cached.version === version) return cached.byTitle
+  const rows = (db.prepare(
+    `SELECT t.id, t.album_id, t.artist_id, t.title, ar.name AS folder_artist, t.tag_artist,
+            al.title AS album_title, t.duration
+     FROM music_track t
+     JOIN music_artist ar ON ar.id = t.artist_id
+     JOIN music_album al ON al.id = t.album_id`
+  ).all() as Record<string, unknown>[]).map(rowCandidate)
+  const byTitle = new Map<string, LocalMatchCandidate[]>()
+  for (const row of rows) {
+    const title = normalizeSpotifyMatch(row.title)
+    const group = byTitle.get(title) ?? []
+    group.push(row)
+    byTitle.set(title, group)
+  }
+  candidateCache.set(db, { changes, version, rows, byTitle })
+  return byTitle
+}
+
 function allCandidates(): LocalMatchCandidate[] {
-  return (
-    getSqlite()
-      .prepare(
-        `SELECT t.id, t.album_id, t.artist_id, t.title, ar.name AS folder_artist, t.tag_artist,
-                al.title AS album_title, t.duration
-         FROM music_track t
-         JOIN music_artist ar ON ar.id = t.artist_id
-         JOIN music_album al ON al.id = t.album_id`
-      )
-      .all() as Record<string, unknown>[]
-  ).map(rowCandidate)
+  localCandidateIndex()
+  return candidateCache.get(getSqlite())!.rows
+}
+
+export function playlistLocalAlternativeIds(
+  songs: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle' | 'duration'>[]
+): number[][] {
+  const byTitle = localCandidateIndex()
+  const review = reviewRequiredTrackIds()
+  return songs.map((song) => spotifyPlaylistMatchAlternatives(
+    song,
+    (byTitle.get(normalizeSpotifyMatch(song.title)) ?? []).filter((track) => !review.has(track.id))
+  ).map((track) => track.id))
 }
 
 function indexCandidates(candidates: LocalMatchCandidate[]): Map<string, LocalMatchCandidate[]> {
@@ -1313,6 +1434,7 @@ export function linkUnambiguousSources(
 
 export function resolveAllSpotifyItems(changedTitles?: string[]): number {
   const review = reviewRequiredTrackIds()
+  const choices = savedSpotifyTrackChoices()
   const changed = changedTitles ? new Set(changedTitles.map(normalizeSpotifyMatch)) : null
   const db = getSqlite()
   const candidates = (db
@@ -1328,7 +1450,7 @@ export function resolveAllSpotifyItems(changedTitles?: string[]): number {
   const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]))
   const items = db
     .prepare(
-      `SELECT id, title, primary_artist, album_title, duration, matched_track_id, match_confirmed, allow_unverified, audio_source_url
+      `SELECT id, spotify_track_id, title, primary_artist, album_title, duration, matched_track_id, match_confirmed, allow_unverified, audio_source_url
        FROM music_spotify_playlist_item`
     )
     .all() as Record<string, unknown>[]
@@ -1337,7 +1459,7 @@ export function resolveAllSpotifyItems(changedTitles?: string[]): number {
   )
   const entityItems = db
     .prepare(
-      `SELECT id, title, primary_artist, album_title, duration, matched_track_id, match_confirmed, allow_unverified, audio_source_url
+      `SELECT id, spotify_track_id, title, primary_artist, album_title, duration, matched_track_id, match_confirmed, allow_unverified, audio_source_url
        FROM music_spotify_entity_track`
     )
     .all() as Record<string, unknown>[]
@@ -1360,7 +1482,10 @@ export function resolveAllSpotifyItems(changedTitles?: string[]): number {
       const existing = row.matched_track_id == null
         ? null
         : byId.get(row.matched_track_id as number) ?? null
-      const match = row.match_confirmed && existing
+      const chosen = choices.get(String(row.spotify_track_id))
+      const match = chosen != null
+        ? chosen
+        : row.match_confirmed && existing
         ? existing.id
         : row.allow_unverified || row.audio_source_url ? null
         : existing && !review.has(existing.id) && spotifyPlaylistMatchAlternatives(song, [existing]).length === 1
@@ -1375,7 +1500,9 @@ export function resolveAllSpotifyItems(changedTitles?: string[]): number {
     for (const row of entityItems) {
       if (changed && !changed.has(normalizeSpotifyMatch(row.title as string))) continue
       const existing = byId.get(row.matched_track_id as number)
-      const match = row.match_confirmed && existing ? existing.id
+      const chosen = choices.get(String(row.spotify_track_id))
+      const match = chosen != null ? chosen
+        : row.match_confirmed && existing ? existing.id
         : row.allow_unverified || row.audio_source_url ? null : matchSpotifySong(
         {
           title: row.title as string,
@@ -1433,6 +1560,7 @@ export function createSpotifyPlaylist(input: {
   let matched = 0
   const candidates = allCandidates()
   const byTitle = indexCandidates(candidates)
+  const choices = savedSpotifyTrackChoices()
   db.transaction(() => {
     playlistId = input.playlistId ?? Number(
       db.prepare('INSERT INTO music_playlist (title) VALUES (?)').run(input.title).lastInsertRowid
@@ -1453,8 +1581,8 @@ export function createSpotifyPlaylist(input: {
       `INSERT INTO music_spotify_playlist_item
        (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
         album_artist, album_title, duration, cover_path, spotify_url, disc_no, track_no,
-        year, raw_json, matched_track_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        year, raw_json, matched_track_id, match_confirmed)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(playlist_id, spotify_track_id) DO UPDATE SET
          position=excluded.position, title=excluded.title, artists_json=excluded.artists_json,
          primary_artist=excluded.primary_artist, album_artist=excluded.album_artist,
@@ -1464,7 +1592,8 @@ export function createSpotifyPlaylist(input: {
          raw_json=excluded.raw_json`
     )
     input.songs.forEach((song, position) => {
-      const match = findMatch(song, byTitle.get(normalizeSpotifyMatch(song.title)) ?? [])
+      const match = choices.get(song.spotifyTrackId) ??
+        findMatch(song, byTitle.get(normalizeSpotifyMatch(song.title)) ?? [])
       if (match != null) matched += 1
       insert.run(
         playlistId,
@@ -1482,7 +1611,8 @@ export function createSpotifyPlaylist(input: {
         song.trackNo,
         song.year,
         song.rawJson,
-        match
+        match,
+        choices.has(song.spotifyTrackId) ? 1 : 0
       )
     })
   })()
@@ -1508,7 +1638,7 @@ export function pendingSpotifyItems(playlistId: number, itemIds?: number[]): Rec
   const ids = itemIds?.filter(Number.isInteger) ?? []
   if (itemIds !== undefined && ids.length === 0) return []
   const where = ids.length ? `AND id IN (${ids.map(() => '?').join(', ')})` : ''
-  return getSqlite()
+  const rows = getSqlite()
     .prepare(
       `SELECT * FROM music_spotify_playlist_item
        WHERE playlist_id = ? AND matched_track_id IS NULL AND download_skipped=0
@@ -1519,6 +1649,16 @@ export function pendingSpotifyItems(playlistId: number, itemIds?: number[]): Rec
        ORDER BY position ASC, id ASC`
     )
     .all(playlistId, ...ids) as Record<string, unknown>[]
+  if (!rows.length) return rows
+  const byTitle = indexCandidates(allCandidates())
+  // A conservative local candidate must be reviewed, never downloaded over.
+  // This backend guard also covers stale UI and persisted queue cards.
+  return rows.filter((row) => spotifyPlaylistMatchAlternatives({
+    title: String(row.title),
+    primaryArtist: String(row.primary_artist),
+    albumTitle: String(row.album_title),
+    duration: (row.duration as number) ?? null
+  }, byTitle.get(normalizeSpotifyMatch(String(row.title))) ?? []).length === 0)
 }
 
 export function setTrackDownloadOptions(input: {
@@ -1674,7 +1814,7 @@ function mapDownloadCandidate(row: Record<string, unknown>): MusicSpotifyDownloa
 export function matchPlaylistItemToLocalTrack(input: { itemId: number; trackId: number; confirm?: boolean }): void {
   const db = getSqlite()
   const source = db.prepare(
-    `SELECT id, playlist_id, title, primary_artist, album_title, duration
+    `SELECT id, spotify_track_id, title, primary_artist, album_title, duration
      FROM music_spotify_playlist_item WHERE id=?`
   ).get(input.itemId) as Record<string, unknown> | undefined
   if (!source) throw new Error('That Spotify playlist song no longer exists')
@@ -1697,21 +1837,7 @@ export function matchPlaylistItemToLocalTrack(input: { itemId: number; trackId: 
   if (!input.confirm && spotifyPlaylistMatchAlternatives(song, [candidate]).length !== 1) {
     throw new Error('That local track is not a compatible version of this playlist song')
   }
-  db.transaction(() => {
-    db.prepare('UPDATE music_track SET spotify_review_required=0 WHERE id=?').run(input.trackId)
-    db.prepare(
-      `UPDATE music_spotify_playlist_item
-       SET matched_track_id=?, match_confirmed=1, download_skipped=0, download_error=NULL WHERE id=?`
-    ).run(input.trackId, input.itemId)
-    db.prepare('DELETE FROM music_spotify_download_candidate WHERE playlist_item_id=?').run(input.itemId)
-    db.prepare(
-      `UPDATE music_playlist SET updated_at=datetime('now') WHERE id=?`
-    ).run(source.playlist_id)
-    db.prepare(
-      `DELETE FROM music_spotify_download_queue_selection WHERE playlist_item_id=?`
-    ).run(input.itemId)
-    pruneEmptyDownloadQueueCards()
-  })()
+  rememberSpotifyTrackChoice(String(source.spotify_track_id), input.trackId)
 }
 
 export function provenanceFilePaths(ids: string[]): string[] {

@@ -165,6 +165,11 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
     const a = audioRef.current
     const t = queueRef.current[i]
     if (!a || !t) return
+    // Stop the old source before publishing new metadata or awaiting IPC.
+    a.pause()
+    a.removeAttribute('src')
+    a.load()
+    setIsPlaying(false)
     indexRef.current = i
     setIndex(i)
     setTrack(t)
@@ -174,7 +179,14 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
     setDuration(0)
     const seq = ++loadSeqRef.current
     let src = t.src ?? srcCacheRef.current.get(t.id) ?? null
-    if (!src && t.audioPath) src = await api.files.resolveUrl(t.audioPath)
+    if (!src && t.audioPath) {
+      try {
+        src = await api.files.resolveUrl(t.audioPath)
+      } catch {
+        // A failed local lookup follows the same fallback/skip path as a missing file.
+        src = null
+      }
+    }
     if (!src) src = t.audioUrl ?? null
     if (seq !== loadSeqRef.current) return // superseded by a newer start/stop
     if (!src) {
@@ -291,7 +303,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       originalOrderRef.current = null
       queueRef.current = orig
       setQueue(orig)
-      const i = current ? orig.findIndex((t) => t.id === current.id) : 0
+      const i = current ? orig.indexOf(current) : 0
       indexRef.current = Math.max(i, 0)
       setIndex(Math.max(i, 0))
       setShuffled(false)

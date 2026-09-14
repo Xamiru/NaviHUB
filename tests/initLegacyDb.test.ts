@@ -46,6 +46,42 @@ describe('a live DB that predates newer columns', () => {
     db.close()
   })
 
+  it('promotes old row-level Spotify confirmations into reusable track choices', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(initSql)
+    db.exec(`
+      INSERT INTO music_artist (id, name, dir_path) VALUES (1, 'Artist', 'Artist');
+      INSERT INTO music_album (id, artist_id, title, dir_path) VALUES (1, 1, 'Album', 'Artist/Album');
+      INSERT INTO music_track (id, album_id, artist_id, file_path, title) VALUES (1, 1, 1, 'Artist/Album/song.mp3', 'Song');
+      INSERT INTO music_playlist (id, title) VALUES (1, 'Mix'), (2, 'Other mix');
+      INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+        VALUES (1, 'mix', 'https://open.spotify.com/playlist/mix');
+      INSERT INTO music_spotify_playlist (playlist_id, spotify_id, source_url)
+        VALUES (2, 'other-mix', 'https://open.spotify.com/playlist/other-mix');
+      INSERT INTO music_spotify_playlist_item
+        (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+         album_title, spotify_url, raw_json, matched_track_id, match_confirmed)
+        VALUES (1, 'spotify-song', 0, 'Song', '["Artist"]', 'Artist', 'Album',
+                'https://open.spotify.com/track/spotify-song', '{}', 1, 1);
+      INSERT INTO music_spotify_playlist_item
+        (playlist_id, spotify_track_id, position, title, artists_json, primary_artist,
+         album_title, spotify_url, raw_json)
+        VALUES (2, 'spotify-song', 0, 'Song', '["Artist"]', 'Artist', 'Album',
+                'https://open.spotify.com/track/spotify-song', '{}');
+    `)
+    runMigrations(db)
+    runMigrations(db)
+    expect(db.prepare('SELECT spotify_track_id, local_track_id FROM music_spotify_track_choice').all())
+      .toEqual([{ spotify_track_id: 'spotify-song', local_track_id: 1 }])
+    expect(db.prepare('SELECT matched_track_id, match_confirmed FROM music_spotify_playlist_item ORDER BY id').all())
+      .toEqual([
+        { matched_track_id: 1, match_confirmed: 1 },
+        { matched_track_id: 1, match_confirmed: 1 }
+      ])
+    db.close()
+  })
+
   it('backfills the global search projection for rows that predate its triggers', () => {
     const db = new Database(':memory:')
     db.exec(initSql)

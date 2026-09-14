@@ -96,13 +96,9 @@ export async function walkMusicRoot(
     if (cancelled()) throw new tasks.TaskCancelledError('Scanning music library')
   }
 
-  let rootEntries: import('fs').Dirent[]
   checkpoint()
-  try {
-    rootEntries = await readdir(absRoot, { withFileTypes: true })
-  } catch {
-    return { albums, skippedRootFiles }
-  }
+  // A failed read is incomplete coverage, never evidence that tracks vanished.
+  const rootEntries = await readdir(absRoot, { withFileTypes: true })
   checkpoint()
   skippedRootFiles = rootEntries.filter((e) => e.isFile() && isAudioFile(e.name)).length
 
@@ -110,13 +106,9 @@ export async function walkMusicRoot(
     abs: string,
     rel: string,
     albumDir: string
-  ): Promise<ScannedFile | null> => {
-    try {
-      return { relPath: rel, albumDir, fileName: basename(rel), mtimeMs: (await stat(abs)).mtimeMs }
-    } catch {
-      return null
-    }
-  }
+  ): Promise<ScannedFile> => ({
+    relPath: rel, albumDir, fileName: basename(rel), mtimeMs: (await stat(abs)).mtimeMs
+  })
   // Stats a directory's audio files concurrently (bounded by libuv's pool);
   // callers sort by relPath afterwards, so completion order doesn't matter.
   const statAll = (
@@ -127,7 +119,7 @@ export async function walkMusicRoot(
   ): Promise<ScannedFile[]> =>
     Promise.all(
       names.map((n) => statFile(join(absDir, n), `${relDir}/${n}`, albumDir))
-    ).then((fs) => fs.filter((f): f is ScannedFile => f !== null))
+    )
 
   // Audio files in `dir` and up to `depth` more levels down, all owned by albumDir.
   const collectAudio = async (
@@ -137,12 +129,7 @@ export async function walkMusicRoot(
     depth: number
   ): Promise<ScannedFile[]> => {
     checkpoint()
-    let entries: import('fs').Dirent[]
-    try {
-      entries = await readdir(absDir, { withFileTypes: true })
-    } catch {
-      return []
-    }
+    const entries = await readdir(absDir, { withFileTypes: true })
     checkpoint()
     const files = await statAll(
       entries.filter((e) => e.isFile() && isAudioFile(e.name)).map((e) => e.name),
@@ -168,12 +155,7 @@ export async function walkMusicRoot(
   for (const artist of artistDirs) {
     checkpoint()
     const absArtist = join(absRoot, artist)
-    let artistEntries: import('fs').Dirent[]
-    try {
-      artistEntries = await readdir(absArtist, { withFileTypes: true })
-    } catch {
-      continue
-    }
+    const artistEntries = await readdir(absArtist, { withFileTypes: true })
     const artistFileNames = artistEntries.filter((e) => e.isFile()).map((e) => e.name)
 
     // Loose tracks directly under the artist -> synthetic "Singles" album.
@@ -202,14 +184,9 @@ export async function walkMusicRoot(
         collator.compare(a.relPath, b.relPath)
       )
       if (files.length === 0) continue
-      let albumFileNames: string[] = []
-      try {
-        albumFileNames = (await readdir(absAlbum, { withFileTypes: true }))
-          .filter((e) => e.isFile())
-          .map((e) => e.name)
-      } catch {
-        /* unreadable dirs already yielded no files */
-      }
+      const albumFileNames = (await readdir(absAlbum, { withFileTypes: true }))
+        .filter((e) => e.isFile())
+        .map((e) => e.name)
       const cover = findCoverFile(albumFileNames)
       albums.push({
         artistDir: artist,
@@ -612,12 +589,36 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
       ).map((r) => [r.dir_path, r.cover_path])
     )
 
+    const missingCovers = new Set<string>()
+    const covers = [...albumCover]
+    let nextCover = 0
+    await Promise.all(Array.from({ length: Math.min(8, covers.length) }, async () => {
+      while (nextCover < covers.length) {
+        if (handle.cancelRequested()) throw new tasks.TaskCancelledError('Scanning music library')
+        const [dir, path] = covers[nextCover++]
+        if (!path) continue
+        try {
+          await stat(absoluteMediaPath(path))
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+          missingCovers.add(dir)
+          albumCover.set(dir, null)
+        }
+      }
+    }))
+    const needsEmbed = new Set(
+      albums.filter((a) => !a.coverFile && !albumCover.get(a.albumDir)).map((a) => a.albumDir)
+    )
+    const firstFileOfAlbum = new Map(albums.map((a) => [a.albumDir, a.files[0]?.relPath]))
+
     const allFiles = albums.flatMap((a) => a.files)
     const toParse: ScannedFile[] = []
     const unchanged: ParsedTrack[] = []
     for (const f of allFiles) {
       const row = existing.get(f.relPath)
-      if (row && row.file_mtime != null && Math.round(f.mtimeMs) === row.file_mtime) {
+      const needsPicture = missingCovers.has(f.albumDir) && needsEmbed.has(f.albumDir) &&
+        firstFileOfAlbum.get(f.albumDir) === f.relPath
+      if (row && row.file_mtime != null && Math.round(f.mtimeMs) === row.file_mtime && !needsPicture) {
         unchanged.push({
           ...f,
           title: row.title,
@@ -632,13 +633,6 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
         toParse.push(f)
       }
     }
-
-    // Only albums with no local folder cover and no stored art need an embedded
-    // picture extracted; ask for it on their first file only.
-    const needsEmbed = new Set(
-      albums.filter((a) => !a.coverFile && !albumCover.get(a.albumDir)).map((a) => a.albumDir)
-    )
-    const firstFileOfAlbum = new Map(albums.map((a) => [a.albumDir, a.files[0]?.relPath]))
 
     Object.assign(scanState, { phase: 'tags', done: 0, total: toParse.length })
     const freshlyParsed = await parseFiles(
@@ -673,7 +667,11 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
       }
     }
 
-    const counts = syncLibrary(albums, parsed, coverByAlbumDir)
+    const counts = db.transaction(() => {
+      const clearMissing = db.prepare('UPDATE music_album SET cover_path=NULL WHERE dir_path=?')
+      for (const dir of missingCovers) clearMissing.run(dir)
+      return syncLibrary(albums, parsed, coverByAlbumDir)
+    })()
     resolveAllSpotifyItems()
     return { ...counts, skippedRootFiles, durationMs: Date.now() - startedAt }
   } catch (e) {
@@ -793,11 +791,11 @@ export async function deleteArtist(artistId: number): Promise<MusicDeleteResult>
       n: number
     }
   ).n
-  db.prepare('DELETE FROM music_artist WHERE id = ?').run(artistId) // cascades albums + tracks
   if (artist?.dir_path) {
     const abs = absoluteMediaPath(`music/${artist.dir_path}`)
     assertInsideMusicRoot(abs)
     await rm(abs, { recursive: true, force: true })
   }
+  db.prepare('DELETE FROM music_artist WHERE id = ?').run(artistId) // only after filesystem success
   return { tracks: trackCount }
 }
