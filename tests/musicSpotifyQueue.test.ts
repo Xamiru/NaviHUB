@@ -279,6 +279,8 @@ describe('persistent Spotify download queue process', () => {
       'https://open.spotify.com/album/spotify-album'
     )
     expect((vi.mocked(spawn).mock.calls[2][1] as string[])[0]).toBe('download')
+    const downloadArgs = vi.mocked(spawn).mock.calls[2][1] as string[]
+    expect(downloadArgs[downloadArgs.indexOf('--save-file') + 1]).toMatch(/\.spotdl$/)
 
     const taskId = spotify.getStatus()!.taskId!
     tasks.pause(taskId)
@@ -366,6 +368,8 @@ describe('persistent Spotify download queue process', () => {
     expect(repaired.metadataState).toBe('resolved')
     expect(repaired.tracks.map((track) => track.title)).toEqual(['Song 1', 'Song 2', 'Song 3'])
     expect((vi.mocked(spawn).mock.calls[2][1] as string[])[0]).toBe('download')
+    const downloadArgs = vi.mocked(spawn).mock.calls[2][1] as string[]
+    expect(downloadArgs[downloadArgs.indexOf('--save-file') + 1]).toMatch(/\.spotdl$/)
 
     const taskId = spotify.getStatus()!.taskId!
     tasks.pause(taskId)

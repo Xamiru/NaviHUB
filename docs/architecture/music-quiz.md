@@ -111,17 +111,17 @@ not run a full-library metadata rematch; Scan library applies revised matching t
 older unresolved rows without a source re-import.
 
 **Recording-aware matching.** Import and every music scan normalize Unicode, case,
-punctuation, and whitespace, but keep version words such as `live` and `remaster`.
+punctuation, and whitespace. Recording-title keys ignore remaster labels and their attached years (before or after the label), so the original and remastered releases reuse one local recording. Unrelated years and other version words such as `live` remain meaningful.
 The first tier requires exact normalized title, exact primary artist against the folder
 artist or one component of `tag_artist`, and both durations within three seconds.
 Album title can break one unique tie. Playlist rows alone get a second tier for a
 unique same recording on another release: album differences such as standard,
 Deluxe and greatest-hits compilations are ignored, and duration tolerance is 3% with
 a three-second floor and eight-second ceiling. Meaningful Live, Acoustic, Remix,
-Instrumental, Demo, Radio Edit, sped/slowed, re-recorded and Remaster markers must
+Instrumental, Demo, Radio Edit, sped/slowed and re-recorded markers must
 agree. Ambiguous rows remain missing but expose conservative local candidates through
 `Use local version`; an explicit choice survives later scans while its file exists.
-Artist/album source association keeps the strict first tier and the same recording-version checks. Unmatched source rows
+Artist/album source association keeps the strict first tier and the same recording-version checks. When several compatible local remasters exist, matching prefers the oldest local row. Normal download batches coalesce original/remaster duplicates within three seconds of duration, retaining all source rows; explicit manual sources and broader retries stay separate. A scan also rechecks remaster source titles when targeted indexing reports only the original title. Unmatched source rows
 never enter the player queue.
 
 Exact duplicate files with the same normalized title, artist set, album, recording
@@ -154,7 +154,7 @@ The shared recovery dialog compares expected/local duration, plays candidates, s
 the original audio URL, searches YouTube with title/channel/duration previews, accepts
 an exact source, and lets playlist users choose any library recording or copy an audio
 file into the library before confirming. Source options survive retries; actual resolved
-URLs from spotDL result files are retained separately. The candidate table is personal data and is removed from sanitized
+URLs from spotDL result files are retained separately. Every `--save-file` output, including download-result files, must end in `.spotdl`; spotDL rejects other extensions before downloading any audio. The candidate table is personal data and is removed from sanitized
 exports.
 
 **Download and resume.** NaviHUB requires spotDL 4.5.2 or newer, ffmpeg and Deno before

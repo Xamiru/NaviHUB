@@ -1029,10 +1029,30 @@ describe('music audit regressions', () => {
     expect(musicRepo.getPlaylist(playlistId)!.items[0].localAlternatives).toHaveLength(0)
   })
 
-  it('rejects live and remastered album recordings in strict entity matching', () => {
+  it('rejects different recordings in strict entity matching', () => {
     const song = { title: 'Song', primaryArtist: 'Artist', albumTitle: 'Studio Album', duration: 200 }
-    for (const albumTitle of ['Live at the Arena', 'Album Remastered']) {
+    for (const albumTitle of ['Live at the Arena', 'Album Acoustic', 'Album Remix']) {
       expect(spotifyRepo.matchSpotifySong(song, [{ id: 1, title: 'Song', folderArtist: 'Artist', tagArtist: null, albumTitle, duration: 200 }])).toBeNull()
     }
   })
+})
+
+
+it('links remaster titles through import, targeted indexing and the download guard', () => {
+  const source = spotifyRepo.createSpotifyPlaylist({
+    spotifyId: 'remaster-list', sourceUrl: 'url', title: 'Remasters',
+    songs: [{ ...resolvedSong(), spotifyTrackId: 'hey-jude', title: 'Hey Jude Remaster 2005',
+      artists: ['The Beatles'], primaryArtist: 'The Beatles', albumTitle: 'Collection', duration: 431, coverPath: null }]
+  })
+  expect(source.matched).toBe(0)
+  const local = seedTrack({ title: 'Hey Jude', artist: 'The Beatles', album: 'Hey Jude' })
+  db.prepare('UPDATE music_track SET duration=431 WHERE id=?').run(local)
+  // A newly indexed original title must also visit remaster-named source rows.
+  spotifyRepo.resolveAllSpotifyItems(['Hey Jude'])
+  expect(musicRepo.getPlaylist(source.playlistId)!.items[0]).toMatchObject({ matchedTrack: { id: local } })
+  expect(spotifyRepo.pendingSpotifyItems(source.playlistId)).toEqual([])
+  const future = spotifyRepo.createSpotifyPlaylist({ spotifyId: 'future-remaster', sourceUrl: 'future-url', title: 'Future',
+    songs: [{ ...resolvedSong(), spotifyTrackId: 'other-edition', title: 'Hey Jude - 2009 Remastered',
+      artists: ['The Beatles'], primaryArtist: 'The Beatles', albumTitle: 'Compilation', duration: 431, coverPath: null }] })
+  expect(future.matched).toBe(1)
 })

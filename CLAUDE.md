@@ -27,6 +27,7 @@ Rules the user has stated and had to re-state. Treat these as settled — do not
 
 - **No emoji and no decorative glyphs, anywhere.** (2026-07-12, re-stated 08-01 and 08-06 — three rounds.) The user counts decorative unicode as emoji. Functional glyphs are fine: reader HUDs, `✕` close, ✓/○ state marks, ★ score/rarity, `←` back, ▸/▾/› disclosure. Like/favorite controls use the shared SVG `FavoriteButton`; player transport uses SVG from `components/PlayerIcons.tsx` — unicode hearts and ⏮/⏭ render inconsistently across platforms.
 - **Git belongs to the user.** (2026-07-01: *"leave git to me from now on"*.) Never commit, push, branch, stage or revert. Read-only `status`/`log`/`diff` is fine.
+- **Music keeps one recording across original and remastered releases.** Remaster labels and their years are interchangeable for local matching and download reuse; live, acoustic, remix and other recording variants remain separate. Preserve explicit manual source choices.
 - **No Indian movies or TV in bulk/top lists.** (2026-07-03, re-asked 08-12 after 40 days.) `EXCLUDED_ORIGINAL_LANGS` in `src/main/tmdb.ts` filters hi/ta/te/ml/kn/bn/mr/pa/gu out of every TMDB bulk list. Individual dialog imports are unaffected.
 - **No anime or daily filler in TV bulk lists.** (2026-08-13.) TV bulk lists drop anime (Animation genre + `ja` original language — anime lives in the Anime section via AniList) and talk/news/soap shows (`without_genres` 10763/10766/10767, `TV_EXCLUDED_GENRE_IDS` in `src/main/tmdb.ts`). Movies and individual dialog imports unaffected.
 - **Bulk previews contain only NEW titles.** (2026-08-13.) A top-100 preview is 100 titles not in the library — owned rows are skipped without consuming slots and the crawl tops up (`makeKeep` in `src/main/bulkImport.ts`). Don't reintroduce in-library rows into previews.
@@ -34,7 +35,7 @@ Rules the user has stated and had to re-state. Treat these as settled — do not
 - **The Data Science and Engineering programming course must be self-contained and sufficient as the user's only learning source.** (2026-08-30.) It may name optional tools, but it must teach every required Python/SQL/math prerequisite, include guided practice with worked solutions, and carry the learner from first principles through production data science, engineering, operations and capstones without sending them to external study material.
 - **The DevOps Engineering programming course must be self-contained and sufficient as the user's only learning source.** (2026-08-30.) It may name implementation tools, but it must teach the underlying Linux, networking, delivery, cloud, infrastructure, Kubernetes, observability, reliability, security and platform-engineering concepts, include guided practice with worked solutions, and carry the learner from first principles through production capstones without requiring external lessons.
 - **The Cybersecurity, Full-Stack Web, Backend and Distributed Systems, Computer Systems and C, Database Engineering, and AI and LLM Engineering programming courses must be self-contained and sufficient as the user's only learning sources.** (2026-08-30.) Every path must work fully offline, teach its prerequisites and engineering judgment from first principles, include guided practice, worked solutions, mastery standards and assessed capstones, and require no external course, account, documentation or live service at study time.
-- **`npm run dist:win` is the user's job**, on their own machine. (2026-07-12.)
+- **`npm run dist:win` may run on the VPS** for local release artifact builds; GUI verification and live-data work remain laptop-only. (2026-09-15.)
 - **Never launch the GUI on the VPS.** (2026-07-25.) See the machine table below.
 - **Home's cover-wall hero stays.** (2026-08-16, unprompted: *"keep that background that have mixed media pictures in it. i like it"*.) The tilted wall of the user's own covers behind the brand is Home's identity, NOT a widget — it is pinned above the configurable widgets and is deliberately absent from the Customise dialog.
 - **Nothing from this repo goes to the Claude account.** (2026-08-15.) No Artifact publishing, no Claude Design / DesignSync, no upload of code, mockups, docs or data to claude.ai hosting. UI previews are local files (`previews/`, gitignored — the `ui-preview` skill) that the user opens themselves. Local tools and the user's own git remote are the only places repo content may go.
@@ -64,12 +65,12 @@ Two machines, different capabilities. Mixing them up has already produced a whol
 
 | | VPS — `/home/xamir/NaviHUB` | Laptop/PC — `/home/xamir/Desktop/NaviHUB` |
 |---|---|---|
-| Purpose | code changes only | running the app, all data work |
+| Purpose | code changes and release artifact builds | running the app, all data work |
 | Display | none (headless) | yes |
 | Live DB `~/.config/navihub/` | no | **yes — the only copy** |
-| yt-dlp / ffmpeg / docker | no | yes |
+| yt-dlp / ffmpeg / docker | docker only, for release builds | yes |
 | Verification available | `npm run typecheck`, `npm run test` | those plus the real app |
-| `verify` / `dist:win` / bulk imports | **never** | yes |
+| `verify` / `dist:win` / bulk imports | `dist:win` only | `verify` / bulk imports |
 
 There is no sync channel between them (the LAN sync server was scrapped — see [`docs/architecture/removed.md`](docs/architecture/removed.md)), so two live DBs would diverge with no merge path. Delivery is: user commits and pushes → laptop pulls → `npm install` if the lockfile changed → `npm run build`.
 
@@ -85,7 +86,7 @@ npm run build        # production build to out/
 npm run db:query     # read the live/any sqlite DB — THE way to inspect data (laptop; see scripts/db.cjs)
 npm run db:generate  # drizzle-kit (rarely needed; runtime schema comes from init.sql)
 npm run pack:linux   # electron-builder packaged build to dist/linux-unpacked (packaged-mode smoke test)
-npm run dist:win     # Windows NSIS installer + portable exe — the USER runs this, not you
+npm run dist:win     # Windows NSIS installer + portable exe — VPS release build; GUI verification remains laptop-only
 npm run export:library  # sanitized shareable library bundle (see scripts/export-library.cjs)
 npm run install:desktop # register the .desktop entry + file associations (laptop)
 ```

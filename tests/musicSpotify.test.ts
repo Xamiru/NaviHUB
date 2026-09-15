@@ -60,6 +60,8 @@ import {
   matchSpotifyPlaylistSong,
   matchSpotifySong,
   normalizeSpotifyMatch,
+  normalizeSpotifyRecordingTitle,
+  singleRecordingDownloads,
   spotifyPlaylistMatchAlternatives,
   type LocalMatchCandidate,
   type SpotdlSong
@@ -402,6 +404,9 @@ describe('Spotify playlist import core', () => {
     expect(args).not.toContain('--only-verified-results')
     expect(args).not.toContain('--dont-filter-results')
     expect(args).toContain('--print-errors')
+    expect(args[args.indexOf('--save-file') + 1]).toBe('/tmp/errors.spotdl.result.spotdl')
+    const windows = buildSpotdlDownloadArgs('C:/Temp/input.spotdl', 'D:/Music', 'C:/Temp/save errors.txt')
+    expect(windows[windows.indexOf('--save-file') + 1]).toBe('C:/Temp/save errors.txt.result.spotdl')
     expect(args.slice(args.indexOf('--audio'), args.indexOf('--audio') + 3)).toEqual([
       '--audio', 'youtube-music', 'youtube'
     ])
@@ -781,5 +786,51 @@ describe('Spotify staged file recovery', () => {
       expect(existsSync(join(stage, 'unfinished.opus.part'))).toBe(true)
       expect(recoverSpotifyOutputs(root)).toEqual(paths)
     } finally { rmSync(root, { recursive: true, force: true }) }
+  })
+})
+
+
+describe('one recording across remastered releases', () => {
+  const original = { title: 'Hey Jude', primaryArtist: 'The Beatles', albumTitle: 'Hey Jude', duration: 431 }
+  const local: LocalMatchCandidate = { id: 1, title: 'Hey Jude', folderArtist: 'The Beatles', tagArtist: null, albumTitle: 'Hey Jude', duration: 431 }
+
+  it.each(['Hey Jude Remaster 2005', 'Hey Jude - 2005 Remastered', 'Hey Jude (Remastered in 2005)', 'Hey Jude - Digitally Remastered 2005 Version'])(
+    'reuses the original local recording for %s', (title) => {
+      expect(normalizeSpotifyRecordingTitle(title)).toBe('hey jude')
+      expect(matchSpotifySong({ ...original, title }, [local])).toBe(1)
+      expect(matchSpotifyPlaylistSong({ ...original, title }, [local])).toBe(1)
+      expect(matchSpotifyPlaylistSong(original, [{ ...local, title }])).toBe(1)
+    }
+  )
+
+  it('keeps one stable copy when several remastered editions are local', () => {
+    const copies = [
+      { ...local, id: 8, title: 'Hey Jude - 2009 Remaster', albumTitle: 'Compilation' },
+      { ...local, id: 2, title: 'Hey Jude - 2005 Remastered', albumTitle: 'Collection' }
+    ]
+    expect(matchSpotifyPlaylistSong(original, copies)).toBe(2)
+    expect(matchSpotifySong({ ...original, title: 'Hey Jude Remaster 2005' }, copies)).toBe(2)
+  })
+
+  it('preserves unrelated years and rejects different recordings or unsafe durations', () => {
+    expect(normalizeSpotifyRecordingTitle('1999')).toBe('1999')
+    expect(normalizeSpotifyRecordingTitle('Summer 2005')).toBe('summer 2005')
+    for (const suffix of ['Live', 'Acoustic', 'Remix', 'Demo', 'Instrumental']) {
+      expect(matchSpotifyPlaylistSong(original, [{ ...local, title: `Hey Jude - ${suffix} - 2005 Remaster` }])).toBeNull()
+    }
+    expect(matchSpotifyPlaylistSong(original, [{ ...local, title: 'Hey Jude Remaster 2005', duration: 500 }])).toBeNull()
+  })
+
+  it('downloads one original/remaster copy per batch while retaining explicit sources and other recordings', () => {
+    const rows = [
+      { ...original, manual: false },
+      { ...original, title: 'Hey Jude Remaster 2005', manual: false },
+      { ...original, title: 'Hey Jude - 2009 Remastered', manual: false },
+      { ...original, title: 'Hey Jude - Live', manual: false },
+      { ...original, title: 'Hey Jude Remaster 2005', manual: true },
+      { ...original, albumTitle: 'Live at Wembley Remastered', manual: false },
+      { ...original, albumTitle: 'Live in Paris Remastered', manual: false }
+    ]
+    expect(singleRecordingDownloads(rows, (row) => row)).toEqual([rows[0], rows[3], rows[4], rows[5], rows[6]])
   })
 })

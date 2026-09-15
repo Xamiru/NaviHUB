@@ -469,7 +469,7 @@ export function buildSpotdlDownloadArgs(
     '--save-errors',
     errorFile,
     '--save-file',
-    `${errorFile}.result`,
+    `${errorFile}.result.spotdl`,
     '--output',
     join(
       outputRoot,
@@ -2125,7 +2125,10 @@ async function runEntityDownload(run: EntityRun): Promise<void> {
         status.percent = pending.length ? 0 : 100
       }
       const chunks = [false, true].flatMap((allowUnverified) =>
-        chunkSpotifyItems(pending.filter((track) => track.allowUnverified === allowUnverified))
+        chunkSpotifyItems(spotifyRepo.singleRecordingDownloads(
+          pending.filter((track) => track.allowUnverified === allowUnverified),
+          (track) => ({ ...track, manual: Boolean(track.audioSourceUrl || track.allowUnverified) })
+        ))
           .map((items) => ({ items, allowUnverified })))
       for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
         if (run.intent !== 'running') break
@@ -2234,7 +2237,12 @@ async function runPlaylistDownload(
     await indexSpotifyOutputs(owner)
     rows = spotifyRepo.pendingSpotifyItems(playlistId, rows.map((row) => Number(row.id)))
     const chunks = [false, true].flatMap((allowUnverified) =>
-    chunkSpotifyItems(rows.filter((row) => Boolean(row.allow_unverified) === allowUnverified))
+    chunkSpotifyItems(spotifyRepo.singleRecordingDownloads(
+      rows.filter((row) => Boolean(row.allow_unverified) === allowUnverified),
+      (row) => ({ title: String(row.title), primaryArtist: String(row.primary_artist),
+        albumTitle: String(row.album_title), duration: row.duration as number | null,
+        manual: Boolean(row.audio_source_url || row.allow_unverified) })
+    ))
       .map((items) => ({ items, allowUnverified })))
     dir = mkdtempSync(join(tmpdir(), 'navihub-spotdl-download-'))
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
@@ -2494,7 +2502,10 @@ async function processEntityQueueCard(
       status.percent = pending.length ? 0 : 100
     }
     const chunks = [false, true].flatMap((allowUnverified) =>
-      chunkSpotifyItems(pending.filter((track) => track.allowUnverified === allowUnverified))
+      chunkSpotifyItems(spotifyRepo.singleRecordingDownloads(
+          pending.filter((track) => track.allowUnverified === allowUnverified),
+          (track) => ({ ...track, manual: Boolean(track.audioSourceUrl || track.allowUnverified) })
+        ))
         .map((items) => ({ items, allowUnverified }))
     )
     for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
@@ -2608,7 +2619,12 @@ async function processPlaylistQueueCard(
   }
   spotifyRepo.clearTrackDownloadErrors('playlistItem', rows.map((row) => row.id as number))
   const chunks = [false, true].flatMap((allowUnverified) =>
-    chunkSpotifyItems(rows.filter((row) => Boolean(row.allow_unverified) === allowUnverified))
+    chunkSpotifyItems(spotifyRepo.singleRecordingDownloads(
+      rows.filter((row) => Boolean(row.allow_unverified) === allowUnverified),
+      (row) => ({ title: String(row.title), primaryArtist: String(row.primary_artist),
+        albumTitle: String(row.album_title), duration: row.duration as number | null,
+        manual: Boolean(row.audio_source_url || row.allow_unverified) })
+    ))
       .map((items) => ({ items, allowUnverified }))
   )
   for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
