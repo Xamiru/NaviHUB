@@ -861,7 +861,12 @@ export function registerIpc(): void {
   ipcMain.handle('music:logPlay', (_e, trackId) => musicRepo.logPlay(trackId))
   ipcMain.handle('music:recent', (_e, limit) => musicRepo.recentlyPlayed(limit))
   ipcMain.handle('music:statsDetail', (_e, days) => musicRepo.statsDetail(days))
-  ipcMain.handle('music:downloadStart', (_e, input) => musicDownload.startDownload(input))
+  ipcMain.handle('music:queueAdd', (_e, input) => musicSpotify.addMusicQueue(input))
+  ipcMain.handle('music:queueAddUrl', (_e, input) => musicSpotify.addUrlDownloadQueue(input))
+  ipcMain.handle('music:downloadStart', (_e, input) => {
+    const result = musicSpotify.addUrlDownloadQueue(input)
+    return musicSpotify.startDownloadQueue({ jobId: result.jobId! })
+  })
   ipcMain.handle('music:downloadCancel', (_e, id) => {
     musicDownload.cancelDownload(id)
     musicSpotify.cancelDownload(id)

@@ -121,7 +121,7 @@ a three-second floor and eight-second ceiling. Meaningful Live, Acoustic, Remix,
 Instrumental, Demo, Radio Edit, sped/slowed and re-recorded markers must
 agree. Ambiguous rows remain missing but expose conservative local candidates through
 `Use local version`; an explicit choice survives later scans while its file exists.
-Artist/album source association keeps the strict first tier and the same recording-version checks. When several compatible local remasters exist, matching prefers the oldest local row. Normal download batches coalesce original/remaster duplicates within three seconds of duration, retaining all source rows; explicit manual sources and broader retries stay separate. A scan also rechecks remaster source titles when targeted indexing reports only the original title. Unmatched source rows
+Artist/album source association uses the same strict-first, conservative unique cross-release policy as playlists. When several compatible local remasters exist, matching prefers the oldest local row. Normal download batches coalesce original/remaster duplicates within three seconds of duration, retaining all source rows; explicit manual sources and broader retries stay separate. A scan also rechecks remaster source titles when targeted indexing reports only the original title. Unmatched source rows
 never enter the player queue.
 
 Exact duplicate files with the same normalized title, artist set, album, recording
@@ -138,72 +138,85 @@ Add-to-playlist membership includes Spotify-linked rows, prevents a duplicate ma
 addition, and removes either representation when the user toggles membership off.
 An explicit source refresh can restore a removed Spotify source row.
 
-**Download provenance and verification (2026-09-06).** Spotify downloads use a
-temporary `[navihub-<spotify-track-id>]` filename marker so the post-download scan
-can identify the exact source row even when title, deluxe-edition, or Unicode
-metadata differs. The marker is removed after scanning. A file that is physically
-present but fails strict matching is retained in
-`music_spotify_download_candidate` and shown as **Downloaded locally; needs
-verification**; it is not redownloaded or made playable implicitly. The user may
-confirm the candidate, reject it and retry, or choose another local alternative.
-Manual URLs and broader unfiltered results always require explicit approval,
-even when spotDL writes matching Spotify tags and duration. `match_confirmed` preserves
-that decision while the chosen file exists. `music_track.spotify_review_required`
-prevents an unapproved or rejected recording from silently matching another playlist.
-The shared recovery dialog compares expected/local duration, plays candidates, shows
-the original audio URL, searches YouTube with title/channel/duration previews, accepts
-an exact source, and lets playlist users choose any library recording or copy an audio
-file into the library before confirming. Source options survive retries; actual resolved
-URLs from spotDL result files are retained separately. Every `--save-file` output, including download-result files, must end in `.spotdl`; spotDL rejects other extensions before downloading any audio. The candidate table is personal data and is removed from sanitized
-exports.
+**Source approval and provenance (2026-09-18).** `musicSourceMatch.ts` owns remaster
+normalization and recording-variant markers for local matching and independent remote
+source assessment. Automatic acquisition requires explicit title, artist, variant and
+duration evidence. Unknown or contradictory evidence is Needs review; Spotify tags
+written onto the output are never independent evidence. Broader matching remains opt-in
+and requires review. Automatic sources are resolved with supported `spotdl save --preload`
+in bounded batches, inspected with standalone yt-dlp, then pinned using `download_url`.
 
-**Download and resume.** NaviHUB requires spotDL 4.5.2 or newer, ffmpeg and Deno before
-starting acquisition. Settings detects all three and can run spotDL's official
-`--download-deno` setup action; missing Deno is a readiness failure because current
-YouTube extraction otherwise commonly ends in `YT-DLP download error`. Lyrics are
-explicitly disabled. Missing rows preserve YouTube Music's native Opus stream under
-`<music root>/<album artist>/<album>/<disc>-<track> - <title>.opus`. Free-provider audio
-is normally about 128 kbps; bitrate conversion is disabled because converting an already
-lossy source into a 320 kbps MP3 only makes a larger file and can add generation loss.
-Normal acquisition uses spotDL's filtered artist/title/duration ranking across YouTube Music
-and YouTube. It deliberately does not pass `--only-verified-results`, because that flag drops
-otherwise strong official-channel matches when YouTube has not attached its music-verification
-marker. An unresolved row can explicitly disable the normal filter for a broader match or store
-one exact YouTube/YouTube Music URL in spotDL's `download_url` field;
-both choices and the track-specific failure survive restarts. Optional YouTube Music Premium
-cookies are passed only from local `spotdl.cookieFile`, switch output to native M4A, and can
-provide 256 kbps when the account and source expose it. The cookie path is sanitized from
-exports and its contents are never copied or logged. Piped, Bandcamp and SoundCloud are
-available only through an explicit Settings fallback choice. Metadata-only `save` calls select
-the YouTube provider solely to bypass spotDL's unrelated YouTube Music startup probe. When an
-album `save` still returns a partial payload, NaviHUB keeps the complete indexed catalogue and
-invokes spotDL's supported canonical album-URL download directly; the following strict scan
-decides which tracks actually resolved. The runner feeds
-stored payloads to spotDL in 100-track chunks with four workers. Consecutive small
-resolved releases share a process, including bounded look-ahead during the first run;
-Spotify album identities are saved before full expansion. Audio goes first into
-`<music root>/.navihub-downloads`. Completed files move without overwriting existing audio,
-and a private pending-index manifest survives interruption until indexing succeeds.
-`indexMusicFiles` parses only those outputs, never prunes unseen library rows, and
-re-resolves affected titles. Provenance normalization queries indexed paths instead of
-walking the library. A resumed queue still runs the full recovery scan. Phase timings
-are logged; no real-network speedup is assumed from unit tests.
-Cancellation retains completed audio. Retry excludes matched, skipped and pending-review
-rows. Playlist filters include Needs attention and Skipped; selections and per-song retry
-allow precise recovery. Skipping is reversible. Pending review is not counted as a
-successful match. spotDL and music scans share the music-maintenance gate; transient
-payload/error files are private and removed after the run. spotDL, yt-dlp, and ffmpeg are external dependencies and are
-never bundled.
+The recovery dialog is shared by playlist and artist/album tracks: search the library,
+choose a local recording, import a file, search YouTube and listen. **Use this version**
+approves that exact permanent source and adds it to the shared queue, optionally starting
+it. `music_source_evidence` persists observed metadata, explicit approval, validation,
+phase and an acquisition token independently of Spotify metadata. Old saved URLs have
+no approval record and remain unconfirmed. Changed or unavailable sources retain the
+choice and report the failure; they never silently substitute audio. Playback stream
+URLs are re-resolved and never used as persistent identity. Preview request generations
+prevent stale responses replacing the current choice.
 
-Before an audio batch starts, NaviHUB runs a yt-dlp access probe, caching successful results for at most five minutes
-with cookie-file, executable and JavaScript-runtime identity in the key. Failed probes
-are retried on the next attempt. Expired cookies, bot checks, and PO-token failures
-stop the batch before any track is attempted; a probe video that is itself
-unavailable does not block the selected tracks. Settings provides a native
-cookies.txt picker and a live access test. SpotDL child processes force UTF-8 on
-Windows so artist names are not corrupted in logs or provenance matching. Provider
-errors are translated into per-track retry guidance rather than leaving only raw
-`AudioProviderError` text.
+Each acquisition writes `[navirun-<token>] [navihub-<spotify-id>]` markers. Linking requires
+the exact acquisition token and a validated file duration consistent with independent
+source evidence. A successfully validated, approved source links without another approval.
+Older or unverified files remain explicit candidates. `music_track.spotify_review_required`
+quarantines rejected files from automatic matching. Conflicting manual choices remain
+separate. `music_audio_source` records validated source-to-file associations independently
+of queue history; compatible requests reuse the audio while preserving source occurrences.
+A final local-file check precedes acquisition. This does not clean up or delete duplicates
+from the existing library.
+
+**Tools and diagnostics.** `musicTools.ts` builds cookies, runtime, ffmpeg, retry and worker
+options, with explicit adaptations for standalone and embedded yt-dlp. Direct jobs ignore
+ambient yt-dlp configuration. NaviHUB does not edit external tool configuration or update
+tools automatically. Detection reports standalone and embedded versions separately, checks
+required spotDL CLI capabilities, and never claims a successful preview tested the embedded
+downloader. The internal metadata adapter remains restricted to tested spotDL 4.5.2;
+other supported versions use the CLI. Exact-source failures identify lookup, extraction,
+transfer/processing, indexing or linking, retaining useful diagnostics with authentication
+and format errors classified first. Signed stream URLs and cookie values are redacted.
+spotDL version and capability probes allow 30 seconds for Python startup. Every spotDL
+`save`/`download` process receives the configured ffmpeg path, including preload and
+metadata-only saves: spotDL checks ffmpeg before dispatching those operations too.
+A failed preload preserves its tool diagnostic on affected tracks rather than reporting
+that no recording was found.
+Probe timeouts are reported as timeouts, not missing installations or unsupported options.
+Direct downloads use yt-dlp's `before_dl` and `post_process` markers to distinguish a
+transfer refusal before the first byte from extraction and processing failures.
+
+Source access evidence is cached for five minutes, keyed by tool/runtime/ffmpeg and cookie
+file identity/mtime, and invalidated after failed acquisition. Permanent source URLs survive
+retries. Output codec is selected from observed native Opus, AAC/M4A or MP3 availability;
+cookies do not imply a codec or quality. Bitrate conversion is disabled. A filtered exact
+codec selection prevents silent transcoding. The configured spotDL worker budget is one to
+four (default four). URL jobs use the same bounded budget, with an in-flight promise per
+source identity. The queue owns every child process tree, including a separate Windows
+taskkill per PID; spotDL and URL pools never run at the same time. Transient audio-command failures have at most
+three orchestration attempts with bounded backoff and zero inner yt-dlp retries. Authentication,
+unavailable-source, format and validation errors require correction.
+
+**Completion and recovery.** Immediate Spotify actions enqueue and start the same persistent
+queue used by Downloads. Incomplete album metadata stays incomplete; no canonical-album audio
+fallback may bypass source verification. Metadata checkpoints, complete snapshots, source
+order, lazy album expansion and small-release batching remain. Completed Spotify outputs move
+from `.navihub-downloads` without overwriting existing audio; a private pending-index manifest
+survives interruption. URL jobs use per-item staging and yt-dlp's structured after-move marker.
+Each URL item checkpoints its final path before movement and persists indexing/ready/failure
+state. Partial enumeration is saved but never called complete. A retry can finish indexing
+without downloading again, and successful outputs survive a partially failed batch.
+`indexMusicFiles` parses only completed paths, does not prune unseen library rows, and keeps
+the maintenance owner through indexing and linking. Explicit resume recovers pending outputs;
+it does not run a full-library cleanup scan. Cancellation stops the owned process tree,
+retains completed files and never starts downloads automatically on relaunch.
+
+Queue updates remain polled and mutations invalidate `qk.music.all`. Music playlist and URL rows use stable scope keys for incremental rendering, preserving
+the rendered batch during polling, filtering and recovery actions. Queue/evidence/URL checkpoint
+and source-archive tables are personal state and are removed by export sanitization. The
+queue CHECK-constraint rebuild preserves old IDs, source selections and order and is replayed
+against a pre-change database. Source-resolution, transfer/processing and targeted-indexing
+elapsed times are logged; synthetic tests measure operation counts rather than promising
+network speed gains. Windows preview/download/pause/restart and large-list scrolling still
+require laptop verification.
 
 ### Artist and album downloads
 
@@ -264,8 +277,8 @@ identify the standard edition of a Deluxe release. Apple-only terminal `- Single
 presentation suffixes are ignored without weakening Deluxe, Live or Remaster markers. The
 album's artist, title and track overlap are validated before its authoritative payload is
 persisted. Strict matching
-runs again and only unmatched tracks enter the source-preserved Opus, 100-track/four-worker
-pipeline. Releases continue independently after one failure and remain selectable for
+runs again and only unmatched tracks enter the source-preserved native-audio pipeline,
+in chunks of at most 100 tracks with the configured one-to-four worker budget. Releases continue independently after one failure and remain selectable for
 Retry. Pause is restartable on every platform: the current spotDL tree is stopped,
 completed files are scanned and kept, and Resume starts only unresolved work. Cancel
 uses the same recovery path and releases the maintenance gate after cleanup. A
@@ -278,13 +291,13 @@ Provider rate-limit messages that request a multi-minute wait are also treated a
 terminal failure and tree-killed immediately, rather than leaving a task apparently
 running until the provider's timer expires.
 
-The batch owns the music-maintenance gate from start through its final rescan.
-Child spotDL runs and scans re-enter that same unique owner; competing Spotify,
+The batch owns the music-maintenance gate from start through targeted indexing and linking.
+Child processes and indexers re-enter that same unique owner; competing Spotify,
 yt-dlp, and manual scan requests fail without replacing the active batch status.
 Release previews retain both full-release and strictly-missing size estimates so
 large-batch confirmation describes only the files that will actually download.
 
-### Persistent Spotify download queue
+### Persistent music download queue
 
 Artist/album release selections and missing rows from imported Spotify playlists are
 saved under `/music/downloads` before they run. `music_spotify_download_queue` owns one
@@ -296,10 +309,10 @@ wiped from every sanitized or in-app library export.
 
 Adding is inert: the user explicitly starts all cards or one card. The mixed runner
 holds one re-entrant music-maintenance owner, fetches the next card from the current DB
-order after each completion, and rechecks strict local matches immediately before work.
+order after each completion, and rechecks strict-first, unique cross-release local matches immediately before work.
 Already-local tracks are skipped without spotDL. Entity cards retain release-by-release
-resolution and scanning; playlist cards retain 100-track chunks and scan after each
-chunk. One failed card stays visible for Retry while later cards continue. Completed
+resolution and targeted indexing; playlist cards retain 100-track chunks and index
+only completed outputs after each chunk. One failed card stays visible for Retry while later cards continue. Completed
 cards stay until Clear completed.
 
 Every failed source row retains its last exact spotDL error. The expanded card offers
@@ -309,23 +322,25 @@ as soon as a strict local match appears. Entity source rows and all queue rows a
 sanitized exports; imported-playlist snapshots may remain, but their local match, error,
 fallback policy and manual source are cleared.
 
-A failed-card Retry asks spotDL to replace unresolved destination files so a bad or
-partial prior output cannot be skipped forever; ordinary first runs and Pause/Resume
-continue to preserve completed files. Queue reads also re-open a completed card when a
+A failed-card Retry recovers completed outputs first and allocates a new acquisition token
+only for unresolved work. Transient command retries keep that token and skip completed
+siblings; no retry overwrites an existing library file. Queue reads also re-open a completed card when a
 selected local match disappears. Immediate-start confirmation is based on the complete
 merged card after new selections are saved, so the 100-track/2 GB warning cannot
 understate previously queued work. Partial runs finish with a warning and keep failed
 cards visible rather than presenting a generic success.
 
-Pause terminates the active spotDL/yt-dlp/ffmpeg process tree, scans recoverable files,
+Pause terminates every active spotDL/yt-dlp/ffmpeg process tree, indexes recoverable outputs,
 and persists the current card as paused while preserving whether Resume should continue
-the whole queue or only that card. Cancel settles the runtime task and returns unfinished
+the whole queue or only that card. Once workers and finalization settle, Pause releases
+the maintenance gate for manual recovery; Resume reacquires it before doing work. Cancel settles the runtime task and returns unfinished
 work to queued; it never removes audio or queue cards. Startup converts any interrupted
-`running` row to `paused`, and Resume performs a recovery scan before recalculating the
-unresolved remainder. No queued work starts automatically on launch. Arbitrary yt-dlp
-URL jobs remain immediate and outside this queue.
+`running` row to `paused`, and Resume recovers checkpointed outputs before recalculating the
+unresolved remainder. No queued work starts automatically on launch. Direct YouTube video and playlist jobs use `music_url_job` and per-occurrence
+`music_url_item` checkpoints in this same queue. Stable source IDs share acquired audio
+without collapsing playlist occurrences. Incomplete enumeration remains retryable.
 Shutdown marks the current durable card paused before the database closes, tree-kills
-the active child, and abandons late async scan/write work. Reopening the app therefore
+all owned children, and abandons late async indexing/write work. Reopening the app therefore
 cannot inherit a hidden process, stale maintenance owner, or post-close database write.
 
 ## Sonic Archive browsing and acquisition language

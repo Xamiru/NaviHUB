@@ -80,6 +80,11 @@ function seed(): void {
       VALUES (1, 'entity', 1, 0, 'queued');
     INSERT INTO music_spotify_download_queue_selection
       (queue_id, release_id, position) VALUES (1, 1, 0);
+    INSERT INTO music_source_evidence(source_kind,source_id,playlist_item_id,evidence_json,approved,validated) VALUES('playlistItem',1,1,'{"url":"private-source"}',1,1);
+    INSERT INTO music_spotify_download_queue(id,source_kind,position,state) VALUES(2,'url',1,'paused');
+    INSERT INTO music_url_job(queue_id,input_json) VALUES(2,'{"url":"private-list"}');
+    INSERT INTO music_url_item(queue_id,source_url,title,position,output_path,local_track_id) VALUES(2,'private-source','Airbag',0,'private-path',1);
+    INSERT INTO music_audio_source(source_url,local_track_id) VALUES('private-source',1);
     INSERT INTO music_play_log (track_id, duration) VALUES (1, 284);
 
     INSERT INTO manga_chapter (media_id, dir_path, title, last_read_page, read_at)
@@ -252,7 +257,7 @@ describe('export sanitize', () => {
       'music_playlist_track', 'music_spotify_track_choice', 'music_spotify_playlist', 'music_spotify_playlist_item',
       'music_spotify_entity_snapshot', 'music_spotify_entity_release',
       'music_spotify_entity_track', 'music_spotify_download_queue',
-      'music_spotify_download_queue_selection',
+      'music_spotify_download_queue_selection', 'music_source_evidence', 'music_url_job', 'music_url_item', 'music_audio_source',
       'music_play_log', 'manga_chapter', 'media_image', 'slideshow_item',
       'quiz_session',
       'game_session',
@@ -285,7 +290,7 @@ describe('export sanitize', () => {
   it('tolerates a live DB that predates newer tables', () => {
     const older = createTestDb()
     older.exec(
-      'DROP TABLE music_play_log; DROP TABLE music_spotify_download_queue_selection; DROP TABLE music_spotify_download_queue; DROP TABLE music_spotify_download_candidate; DROP TABLE music_spotify_entity_track; DROP TABLE music_spotify_entity_release; DROP TABLE music_spotify_entity_snapshot; DROP TABLE music_spotify_playlist_item; DROP TABLE music_spotify_playlist; DROP TABLE music_playlist_track; DROP TABLE music_spotify_track_choice; DROP TABLE music_playlist'
+      'DROP TABLE music_audio_source; DROP TABLE music_source_evidence; DROP TABLE music_url_item; DROP TABLE music_url_job; DROP TABLE music_play_log; DROP TABLE music_spotify_download_queue_selection; DROP TABLE music_spotify_download_queue; DROP TABLE music_spotify_download_candidate; DROP TABLE music_spotify_entity_track; DROP TABLE music_spotify_entity_release; DROP TABLE music_spotify_entity_snapshot; DROP TABLE music_spotify_playlist_item; DROP TABLE music_spotify_playlist; DROP TABLE music_playlist_track; DROP TABLE music_spotify_track_choice; DROP TABLE music_playlist'
     )
     older.exec(`INSERT INTO media_item (id, media_type, title, status) VALUES (1, 'anime', 'X', 'Watching')`)
     expect(() => sanitizeDb(older)).not.toThrow()

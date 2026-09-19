@@ -66,14 +66,14 @@ export function buildYtDlpArgs(opts: {
   albumDir: string
   artist: string
   album: string
-  format: 'opus' | 'm4a' | 'mp3'
+  format: 'opus' | 'm4a' | 'mp3' | 'source'
 }): string[] {
   return [
     '-f',
     'bestaudio/best',
     '-x',
     '--audio-format',
-    opts.format,
+    opts.format === 'source' ? 'best' : opts.format,
     '--audio-quality',
     '0',
     '--embed-metadata',

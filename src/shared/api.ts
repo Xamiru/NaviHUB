@@ -252,6 +252,7 @@ import type {
   MusicDeleteResult,
   MusicDownloadEvent,
   MusicDownloadInput,
+  MusicQueueInput,
   MusicLibraryStats,
   MusicPlaylistDetail,
   MusicPlaylistSummary,
@@ -1039,6 +1040,8 @@ export interface NaviApi {
     removePlaylistTrack(itemId: number): Promise<void>
     removePlaylistTrackByTrack(playlistId: number, trackId: number): Promise<void>
     reorderPlaylist(playlistId: number, orderedItemIds: number[]): Promise<void>
+    queueAdd(input: MusicQueueInput): Promise<SpotifyDownloadQueueAddResult>
+    queueAddUrl(input: MusicDownloadInput): Promise<SpotifyDownloadQueueAddResult>
     spotifySearchAudio(query: string): Promise<import('./types').SpotifyAudioCandidate[]>
     spotifyPreviewAudio(url: string): Promise<string>
     spotifyPickLocalAudio(): Promise<MusicTrack | null>

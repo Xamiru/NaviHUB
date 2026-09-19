@@ -1218,6 +1218,8 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
   const [path, setPath] = useState('')
   const [cookieFile, setCookieFile] = useState('')
   const [pythonPath, setPythonPath] = useState('')
+  const [workers, setWorkers] = useState('4')
+  const [ffmpegPath, setFfmpegPath] = useState('')
   const [audioProviders, setAudioProviders] = useState('youtube-music')
   const [check, setCheck] = useState<SpotdlDetectResult | null>(null)
   const [testingYouTube, setTestingYouTube] = useState(false)
@@ -1225,6 +1227,8 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
   useEffect(() => setPath(data?.['spotdl.path'] ?? ''), [data])
   useEffect(() => setCookieFile(data?.['spotdl.cookieFile'] ?? ''), [data])
   useEffect(() => setPythonPath(data?.['spotdl.pythonPath'] ?? ''), [data])
+  useEffect(() => setWorkers(data?.['music.downloadWorkers'] ?? '4'), [data])
+  useEffect(() => setFfmpegPath(data?.['music.ffmpegPath'] ?? ''), [data])
   useEffect(() => setAudioProviders(data?.['spotdl.audioProviders'] ?? 'youtube-music'), [data])
 
   async function test(): Promise<void> {
@@ -1233,6 +1237,8 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
     await onSave('spotdl.pythonPath', pythonPath.trim())
     await onSave('spotdl.cookieFile', cookieFile.trim())
     await onSave('spotdl.audioProviders', audioProviders)
+    await onSave('music.downloadWorkers', workers)
+    await onSave('music.ffmpegPath', ffmpegPath.trim())
     setCheck(await api.music.spotifyDetect())
   }
 
@@ -1272,8 +1278,7 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
       description={
         <>
           Imports public Spotify playlist metadata and downloads missing songs from YouTube Music
-          as source-preserved Opus files. YouTube Music Premium cookies switch downloads to
-          native M4A and can provide 256 kbps where YouTube offers it. Install spotDL 4.5.2 or
+          as native Opus or AAC audio when available. Cookies can change which formats the source offers. Install spotDL 4.5.2 or
           newer and ffmpeg with{' '}
           <span className="text-gray-400">pipx install spotdl</span>. Leave blank to use{' '}
           <span className="text-gray-400">spotdl</span> from PATH, or enter its full executable
@@ -1296,6 +1301,10 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
           Save &amp; test
         </button>
       </div>
+      <Field label="Concurrent music downloads" description="One shared limit for the queue; lower it if your connection is throttled.">
+        <select className="input" value={workers} onChange={(event) => setWorkers(event.target.value)}>{[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}</select>
+      </Field>
+      <Field label="ffmpeg executable path (optional)"><input className="input w-full" value={ffmpegPath} onChange={(event) => setFfmpegPath(event.target.value)} placeholder="ffmpeg" /></Field>
       <Field label="Python executable for resumable metadata (optional)" description="Use the Python environment containing spotDL 4.5.2. Blank tries automatic discovery; unsupported versions use the normal CLI.">
         <input className="input w-full" value={pythonPath} onChange={(event) => setPythonPath(event.target.value)} placeholder="python" />
       </Field>
@@ -1332,6 +1341,7 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
       </p>
       {check && (
         <div className="mt-3 text-sm">
+          <p className="text-xs text-gray-400">Preview yt-dlp: {check.standaloneYtdlpVersion ?? 'Not detected'}; spotDL embedded yt-dlp: {check.embeddedYtdlpVersion ?? 'Version unavailable'}. Preview access does not test the embedded downloader.</p>
           <p className={check.metadataReady ?? check.ok ? 'text-green-400' : 'text-red-400'}>
             {check.metadataReady
               ? `spotDL ${check.version ?? ''} is ready for metadata`

@@ -1,8 +1,8 @@
 import SpotifyTrackRecoveryDialog from '../components/SpotifyTrackRecoveryDialog'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import type { SpotifyDownloadQueueCard, SpotifyDownloadQueueTrack } from '@shared/types'
+import type { SpotifyDownloadQueueCard, SpotifyDownloadQueueTrack, MusicUrlQueueItem } from '@shared/types'
 import ActionMenu from '../components/ActionMenu'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
@@ -49,7 +49,7 @@ export default function MusicDownloadsPage() {
     (next) => api.music.spotifyQueueReorder(next.map((card) => card.id)),
     () => void qc.invalidateQueries({ queryKey: qk.music.all })
   )
-  const completed = useIncrementalList(queue?.completed ?? [], 96)
+  const completed = useIncrementalList(queue?.completed ?? [], 96, 'completed-music')
 
   useEffect(() => {
     if (!downloadStatus || downloadStatus.source !== 'spotifyQueue') return
@@ -447,14 +447,14 @@ function QueueCardRow({
             aria-controls={`download-card-${card.id}-selections`}
             onClick={() => setOpen((value) => !value)}
           >
-            {open ? 'Hide details' : card.sourceKind === 'playlist' ? 'Show tracks' : 'Show releases'}
+            {open ? 'Hide details' : card.sourceKind !== 'entity' ? 'Show tracks' : 'Show releases'}
           </button>
           <ActionMenu
             items={[
               ...(card.sourceKind === 'entity'
                 ? [{ label: 'Add releases', onSelect: () => { window.location.hash = `#${addRoute}` } }]
                 : []),
-              ...(card.sourceUrl ? [{ label: 'Open in Spotify', onSelect: () => api.app.openExternal(card.sourceUrl!) }] : []),
+              ...(card.sourceUrl ? [{ label: card.sourceKind === 'url' ? 'Open source' : 'Open in Spotify', onSelect: () => api.app.openExternal(card.sourceUrl!) }] : []),
               { label: 'Remove from downloads', onSelect: onRemove, danger: true },
               ...(onMoveUp ? [{ label: 'Move up', onSelect: onMoveUp, disabled: !canMoveUp }] : []),
               ...(onMoveDown ? [{ label: 'Move down', onSelect: onMoveDown, disabled: !canMoveDown }] : [])
@@ -478,6 +478,10 @@ function QueueCardRow({
               </button>
             </div>
           )}
+          {card.sourceKind === 'url' && <div className="space-y-3 py-3">
+            {!card.enumerationComplete && <p className="text-sm text-gray-400">Playlist discovery is incomplete. Start or retry to finish reading its items.</p>}
+            <UrlQueueItems items={card.urlItems ?? []} />
+          </div>}
           {card.selections.map((selection) => (
             <div key={selection.id} className="flex items-center gap-3 py-3 text-sm">
               <div className="min-w-0 flex-1">
@@ -495,8 +499,9 @@ function QueueCardRow({
                         <p className="truncate text-xs text-gray-200">{track.title}</p>
                         <p className="mt-0.5 truncate text-xs text-gray-500">{track.artist}</p>
                         {track.candidate && <p className="mt-1 text-xs text-amber-300">Downloaded locally; needs verification</p>}
+                        {track.phase === 'indexing' && <p className="mt-1 text-xs text-gray-400">Downloaded; indexing pending</p>}
                         {track.error && <p className="mt-1 text-xs text-red-300">{track.error}</p>}
-                        {track.audioSourceUrl && <p className="mt-1 text-xs text-green-400">Manual YouTube source saved</p>}
+                        {track.audioSourceUrl && <p className="mt-1 text-xs text-green-400">{track.sourceApproved ? 'Exact source approved' : 'Source available for review'}</p>}
                         {track.allowUnverified && !track.audioSourceUrl && <p className="mt-1 text-xs text-amber-300">Broader matching enabled</p>}
                       </div>
                       <div className="flex flex-wrap gap-1">
@@ -552,4 +557,19 @@ function QueueCardRow({
         candidate={reviewTrack.candidate} initialUrl={reviewTrack.audioSourceUrl ?? ''} onClose={() => setReviewTrack(null)} />}
     </article>
   )
+}
+
+function UrlQueueItems({ items }: { items: MusicUrlQueueItem[] }) {
+  const signature = items.map((item) => item.id).join(',')
+  const ids = useMemo(() => signature ? signature.split(',').map(Number) : [], [signature])
+  const list = useIncrementalList(ids, 96, 'url-items')
+  const rows = new Map(items.map((item) => [item.id, item]))
+  return <>{list.visible.map((id) => {
+    const item = rows.get(id)!
+    return <div key={id} className="text-sm">
+      <p className="break-words">{item.title}</p>
+      <p className="text-xs text-gray-400">{item.phase === 'ready' ? 'Ready' : item.outputPath ? 'Downloaded; indexing pending' : item.phase}</p>
+      {item.error && <p className="break-words text-xs text-red-300">{item.error}</p>}
+    </div>
+  })}{list.hasMore && <div ref={list.sentinelRef} className="h-8" />}</>
 }

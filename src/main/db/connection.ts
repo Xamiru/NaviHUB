@@ -117,7 +117,29 @@ export function seedChecklist(sqlite: Database.Database): void {
 
 // Exported for tests/initLegacyDb.test.ts, which replays a pre-SRS live DB
 // against the real init.sql + migrations.
+export function migrateMusicQueue(sqlite: Database.Database): void {
+  const existing = sqlite.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='music_spotify_download_queue'").get() as { sql: string } | undefined
+  if (!existing || existing.sql.includes("'url'")) return
+  const foreignKeys = sqlite.pragma('foreign_keys', { simple: true })
+  sqlite.pragma('foreign_keys = OFF')
+  try {
+    sqlite.transaction(() => {
+      const ddl = existing.sql.replace('music_spotify_download_queue', 'music_spotify_download_queue__new')
+        .replace("'entity','playlist'", "'entity','playlist','url'")
+        .replace(/(source_kind = 'playlist' AND snapshot_id IS NULL AND playlist_id IS NOT NULL\))/,
+          "$1 OR (source_kind = 'url' AND snapshot_id IS NULL AND playlist_id IS NULL)")
+      sqlite.exec(ddl)
+      sqlite.exec('INSERT INTO music_spotify_download_queue__new SELECT * FROM music_spotify_download_queue')
+      sqlite.exec('DROP TABLE music_spotify_download_queue')
+      sqlite.exec('ALTER TABLE music_spotify_download_queue__new RENAME TO music_spotify_download_queue')
+      sqlite.exec('CREATE INDEX idx_music_spotify_download_queue_order ON music_spotify_download_queue(state,position,id)')
+      if ((sqlite.pragma('foreign_key_check') as unknown[]).length) throw new Error('Music queue migration failed foreign-key validation')
+    })()
+  } finally { sqlite.pragma(`foreign_keys = ${foreignKeys ? 'ON' : 'OFF'}`) }
+}
+
 export function runMigrations(sqlite: Database.Database): void {
+  migrateMusicQueue(sqlite)
   ensureColumn(sqlite, 'music_track', 'spotify_review_required', 'spotify_review_required INTEGER NOT NULL DEFAULT 0')
   // Spotify entity sources arrived after the music library. The indexes must
   // be created after ALTER TABLE or a pre-feature database cannot start.

@@ -2953,6 +2953,7 @@ export interface SpotifyDownloadInput {
 }
 
 export interface SpotifyPlaylistLocalMatchInput {
+  sourceKind?: 'playlistItem' | 'entityTrack'
   confirm?: boolean
   itemId: number
   trackId: number
@@ -3064,6 +3065,9 @@ export interface SpotifyDownloadQueueSelection {
 }
 
 export interface SpotifyDownloadQueueTrack {
+  sourceApproved?: boolean
+  phase?: string
+
   duration?: number | null
   id: number
   sourceKind: 'entityTrack' | 'playlistItem'
@@ -3082,11 +3086,15 @@ export interface SpotifyTrackDownloadOptionsInput {
   trackId: number
   audioSourceUrl?: string | null
   allowUnverified?: boolean
+  approveSource?: boolean
+  startNow?: boolean
 }
 
 export interface SpotifyDownloadQueueCard {
   id: number
-  sourceKind: 'entity' | 'playlist'
+  sourceKind: 'entity' | 'playlist' | 'url'
+  urlItems?: MusicUrlQueueItem[]
+  enumerationComplete?: boolean
   entityKind: SpotifyEntityKind | null
   entityId: number | null
   playlistId: number | null
@@ -3134,6 +3142,10 @@ export interface SpotifyEntityRef {
 }
 
 export interface SpotdlDetectResult {
+  standaloneYtdlpVersion?: string | null
+  embeddedYtdlpVersion?: string | null
+  capabilitiesReady?: boolean
+  embeddedAccessTested?: boolean
   ok: boolean
   version: string | null
   ffmpeg: boolean
@@ -3220,7 +3232,7 @@ export interface MusicDownloadInput {
   url: string
   artist: string
   album: string
-  format: 'opus' | 'm4a' | 'mp3'
+  format: 'opus' | 'm4a' | 'mp3' | 'source'
 }
 
 // Live status of the (single) active or last-finished download; polled.
@@ -4992,3 +5004,32 @@ export interface SpotifyAudioCandidate {
   channel: string
   duration: number | null
 }
+
+export interface MusicSourceEvidence {
+  albumTitle?: string | null
+  url: string
+  title: string
+  artist: string | null
+  channel: string
+  duration: number | null
+  format: 'opus' | 'm4a' | 'mp3'
+  observedAt: number
+  accessKey?: string
+}
+
+export interface MusicUrlQueueItem {
+  id: number
+  url: string
+  title: string
+  phase: 'queued' | 'extraction' | 'transfer' | 'processing' | 'indexing' | 'ready' | 'failed'
+  outputPath: string | null
+  localTrackId: number | null
+  error: string | null
+}
+
+/** All entry points enqueue durable work; legacy Spotify methods remain adapters. */
+export type MusicQueueInput =
+  | { kind: 'entity'; input: SpotifyEntityDownloadInput }
+  | { kind: 'playlist'; input: SpotifyDownloadInput }
+  | { kind: 'url'; input: MusicDownloadInput }
+export type MusicSourceReference = { sourceKind: 'playlistItem' | 'entityTrack'; trackId: number }

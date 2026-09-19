@@ -1056,3 +1056,43 @@ it('links remaster titles through import, targeted indexing and the download gua
       artists: ['The Beatles'], primaryArtist: 'The Beatles', albumTitle: 'Compilation', duration: 431, coverPath: null }] })
   expect(future.matched).toBe(1)
 })
+
+describe('approved source provenance', () => {
+  it('links an approved artifact once, but never approves an old staged file using new evidence', () => {
+    const local = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'Artist/Album/Song [navirun-old] [navihub-abc123].opus' })
+    db.prepare('UPDATE music_track SET duration=200 WHERE id=?').run(local)
+    const playlist = musicRepo.createPlaylist({ title: 'New import' })
+    db.prepare("INSERT INTO music_spotify_playlist(playlist_id,spotify_id,source_url) VALUES(?,'new','https://open.spotify.com/playlist/new')").run(playlist)
+    const id = Number(db.prepare(`INSERT INTO music_spotify_playlist_item(playlist_id,spotify_track_id,position,title,artists_json,primary_artist,album_title,duration,spotify_url,raw_json,audio_source_url)
+      VALUES(?,'abc123',0,'Song','["Artist"]','Artist','Album',200,'https://open.spotify.com/track/abc123','{}','https://www.youtube.com/watch?v=abcdefghijk')`).run(playlist).lastInsertRowid)
+    const proof = { url: 'https://www.youtube.com/watch?v=abcdefghijk', title: 'Song', artist: 'Artist', channel: 'Artist', duration: 200, format: 'opus' as const, observedAt: Date.now() }
+    spotifyRepo.saveSourceEvidence('playlistItem', id, proof, true, true)
+    spotifyRepo.stampSourceArtifact('playlistItem', id, 'new')
+    const refs = [{ sourceKind: 'playlistItem' as const, sourceId: id, spotifyTrackId: 'abc123', marker: '[navihub-abc123]', manual: true, provider: 'manual' as const, sourceUrl: proof.url }]
+    spotifyRepo.linkProvenanceTracks(refs)
+    expect(db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item WHERE id=?').get(id)).toEqual({ matched_track_id: null })
+    db.prepare('UPDATE music_track SET file_path=? WHERE id=?').run('Artist/Album/Song [navirun-new] [navihub-abc123].opus', local)
+    spotifyRepo.linkProvenanceTracks(refs)
+    expect(db.prepare('SELECT matched_track_id,match_confirmed FROM music_spotify_playlist_item WHERE id=?').get(id)).toEqual({ matched_track_id: local, match_confirmed: 1 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_spotify_download_candidate').get()).toEqual({ n: 0 })
+  })
+})
+
+it('retains occurrences across playlists while preserving a conflicting explicit source', () => {
+  const first = seedTrack({ title: 'First', path: 'Artist/Album/first.opus' })
+  const other = seedTrack({ title: 'Other', path: 'Artist/Album/other.opus' })
+  const playlistFor = (n: number) => {
+    const id = musicRepo.createPlaylist({ title: `Repeated recording ${n}` })
+    db.prepare('INSERT INTO music_spotify_playlist(playlist_id,spotify_id,source_url) VALUES(?,?,?)').run(id, `duplicates-${n}`, `https://open.spotify.com/playlist/duplicates-${n}`)
+    return id
+  }
+  const insert = db.prepare(`INSERT INTO music_spotify_playlist_item(playlist_id,spotify_track_id,position,title,artists_json,primary_artist,album_title,spotify_url,raw_json,audio_source_url,matched_track_id)
+    VALUES(?,'same',?,'Song','["Artist"]','Artist','Album','https://open.spotify.com/track/same','{}',?,?)`)
+  for (let n = 0; n < 200; n++) insert.run(playlistFor(n), n, null, null)
+  insert.run(playlistFor(200), 200, 'https://www.youtube.com/watch?v=otherchoice', other)
+  spotifyRepo.linkVerifiedSource('same', first, 'https://www.youtube.com/watch?v=abcdefghijk')
+  expect(db.prepare('SELECT COUNT(*) AS n FROM music_spotify_playlist_item WHERE matched_track_id=?').get(first)).toEqual({ n: 200 })
+  expect(db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item WHERE position=200').get()).toEqual({ matched_track_id: other })
+  spotifyRepo.rememberSpotifyTrackChoice('same', first)
+  expect(db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item WHERE position=200').get()).toEqual({ matched_track_id: other })
+})

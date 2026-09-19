@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -80,17 +80,17 @@ describe('SpotifyTrackRecoveryDialog', () => {
     expect(playQueue).toHaveBeenCalledOnce()
     expect(onClose).not.toHaveBeenCalled()
 
-    await user.click(screen.getByRole('button', { name: 'Use this source' }))
+    await user.click(screen.getAllByRole('button', { name: 'Use this version' })[0])
     await waitFor(() => expect(api.music.spotifySetTrackDownloadOptions).toHaveBeenCalledWith({
-      sourceKind: 'playlistItem', trackId: 42, audioSourceUrl: result.url
+      sourceKind: 'playlistItem', trackId: 42, audioSourceUrl: result.url, approveSource: true, startNow: false
     }))
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('requires confirmation after choosing an arbitrary local recording', async () => {
+  it.each(['playlistItem', 'entityTrack'] as const)('supports local recording approval for %s', async (sourceKind) => {
     const user = userEvent.setup()
     vi.mocked(api.music.spotifyPickLocalAudio).mockResolvedValue(track)
-    const onClose = renderDialog()
+    const onClose = renderDialog({ sourceKind })
 
     await user.click(screen.getByRole('button', { name: 'Choose a file to copy into the library' }))
     expect(await screen.findByText('This explicitly overrides automatic matching and is remembered across scans.')).toBeInTheDocument()
@@ -98,7 +98,7 @@ describe('SpotifyTrackRecoveryDialog', () => {
     expect(onClose).not.toHaveBeenCalled()
 
     await user.click(screen.getByRole('button', { name: 'Confirm this local recording' }))
-    await waitFor(() => expect(api.music.spotifyMatchPlaylistItem).toHaveBeenCalledWith({ itemId: 42, trackId: 7, confirm: true }))
+    await waitFor(() => expect(api.music.spotifyMatchPlaylistItem).toHaveBeenCalledWith({ sourceKind, itemId: 42, trackId: 7, confirm: true }))
     expect(onClose).toHaveBeenCalledOnce()
   })
 
@@ -114,4 +114,19 @@ describe('SpotifyTrackRecoveryDialog', () => {
     await waitFor(() => expect(api.music.search).toHaveBeenCalled())
     expect(screen.getAllByRole('button', { name: 'Song · Artist · 180s' })).toHaveLength(1)
   })
+  it('does not let a delayed remote preview replace a newer local preview', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.music.spotifySearchAudio).mockResolvedValue([{ url: 'https://youtu.be/abcdefghijk', title: 'Remote result', channel: 'Artist', duration: 180 }])
+    let resolvePreview!: (value: string) => void
+    vi.mocked(api.music.spotifyPreviewAudio).mockReturnValue(new Promise((resolve) => { resolvePreview = resolve }))
+    renderDialog({ candidate: candidate() })
+    await user.click(screen.getByRole('button', { name: 'Find audio' }))
+    await screen.findByText('Remote result')
+    await user.click(screen.getByRole('button', { name: 'Listen' }))
+    await user.click(screen.getByRole('button', { name: 'Listen to local file' }))
+    await act(async () => resolvePreview('https://example.com/temporary-audio'))
+    expect(playQueue).toHaveBeenCalledTimes(1)
+    expect(playQueue.mock.calls[0][0][0].id).toBe('music-7')
+  })
+
 })

@@ -2420,3 +2420,27 @@ export const globalSearchFts = sqliteTable('global_search_fts', {
   name: text('name'),
   altName: text('alt_name')
 })
+
+export const musicSourceEvidence = sqliteTable('music_source_evidence', {
+  sourceKind: text('source_kind').notNull(), sourceId: integer('source_id').notNull(),
+  playlistItemId: integer('playlist_item_id').references(() => musicSpotifyPlaylistItem.id, { onDelete: 'cascade' }),
+  entityTrackId: integer('entity_track_id').references(() => musicSpotifyEntityTrack.id, { onDelete: 'cascade' }),
+  evidenceJson: text('evidence_json').notNull(), artifactToken: text('artifact_token'), phase: text('phase').notNull().default('selected'), approved: integer('approved').notNull().default(0),
+  validated: integer('validated').notNull().default(0)
+}, (t) => ({ pk: primaryKey({ columns: [t.sourceKind, t.sourceId] }) }))
+export const musicUrlJob = sqliteTable('music_url_job', {
+  queueId: integer('queue_id').primaryKey().references(() => musicSpotifyDownloadQueue.id, { onDelete: 'cascade' }),
+  inputJson: text('input_json').notNull(), enumerationComplete: integer('enumeration_complete').notNull().default(0)
+})
+export const musicUrlItem = sqliteTable('music_url_item', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  queueId: integer('queue_id').notNull().references(() => musicUrlJob.queueId, { onDelete: 'cascade' }),
+  sourceUrl: text('source_url').notNull(), title: text('title').notNull(), position: integer('position').notNull(),
+  phase: text('phase').notNull().default('queued'), outputPath: text('output_path'),
+  localTrackId: integer('local_track_id').references(() => musicTrack.id, { onDelete: 'set null' }), error: text('error'),
+  occurrence: integer('occurrence').notNull().default(0)
+}, (t) => ({ source: unique().on(t.queueId, t.sourceUrl, t.occurrence) }))
+
+export const musicAudioSource = sqliteTable('music_audio_source', {
+  sourceUrl: text('source_url').notNull(), localTrackId: integer('local_track_id').notNull().references(() => musicTrack.id, { onDelete: 'cascade' })
+}, (t) => ({ pk: primaryKey({ columns: [t.sourceUrl, t.localTrackId] }) }))

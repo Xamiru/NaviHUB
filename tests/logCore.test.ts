@@ -221,3 +221,7 @@ describe('makeProcLineFilter', () => {
     expect(b('[download]  50.5% of 1.00MiB')).toBe(true)
   })
 })
+
+it('redacts temporary audio stream URLs before logs can be shared', () => {
+  expect(redact('stream https://rr1.googlevideo.com/videoplayback?expire=123&sig=private')).toBe('stream [private audio stream]')
+})

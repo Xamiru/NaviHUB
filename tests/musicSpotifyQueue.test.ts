@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { EventEmitter } from 'node:events'
-import { writeFileSync } from 'node:fs'
+import { writeFileSync, readFileSync } from 'node:fs'
 import { PassThrough } from 'node:stream'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
@@ -38,7 +38,7 @@ vi.mock('node:child_process', async (importOriginal) => {
     ...actual,
     spawn: vi.fn(() => recordFakeProcess()),
     execFile: vi.fn((bin: string, _args: string[], _options: unknown, callback: Function) => {
-      callback(null, bin === 'ffmpeg' ? 'ffmpeg version 7' : bin === 'deno' ? 'deno 2.0.0' : 'spotDL 4.5.2', '')
+      callback(null, _args.includes('--help') ? '--preload --yt-dlp-args --save-file' : bin === 'ffmpeg' ? 'ffmpeg version 7' : bin === 'deno' ? 'deno 2.0.0' : 'spotDL 4.5.2', '')
     })
   }
 })
@@ -49,6 +49,7 @@ import * as tasks from '../src/main/tasks'
 import { musicMaintenanceOwner } from '../src/main/musicMaintenance'
 import { fetchWithRetry } from '../src/main/http'
 import { spawn, execFile } from 'node:child_process'
+import { musicAccessKey } from '../src/main/musicTools'
 
 beforeEach(() => {
   db = createTestDb()
@@ -57,6 +58,31 @@ beforeEach(() => {
   vi.mocked(spawn).mockClear()
   vi.mocked(spawn).mockImplementation(() => recordFakeProcess() as never)
   spotify.killActive()
+})
+
+it('allows a slow spotDL startup for version and capability checks', async () => {
+  vi.mocked(execFile).mockImplementation(((bin: string, args: string[], options: { timeout: number }, callback: Function) => {
+    if (bin === 'spotdl' && options.timeout < 8000) callback(new Error('startup timed out'), '', '')
+    else callback(null, args.includes('--help') ? '--preload --yt-dlp-args --save-file' : bin === 'spotdl' ? '4.5.2' : '1.0.0', '')
+  }) as typeof execFile)
+  try {
+    const detected = await spotify.detectBinary()
+    expect(detected).toMatchObject({ supportedVersion: true, capabilitiesReady: true, downloadReady: true })
+    vi.mocked(execFile).mockImplementation(((bin: string, args: string[], _options: unknown, callback: Function) => {
+      if (bin === 'spotdl' && args.includes('--help')) callback(Object.assign(new Error('timeout'), { killed: true }), '', '')
+      else callback(null, bin === 'spotdl' ? '4.5.2' : '1.0.0', '')
+    }) as typeof execFile)
+    expect((await spotify.detectBinary()).error).toContain('capability check timed out')
+    vi.mocked(execFile).mockImplementation(((bin: string, _args: string[], _options: unknown, callback: Function) => {
+      if (bin === 'spotdl') callback(Object.assign(new Error('timeout'), { killed: true }), '', '')
+      else callback(null, '1.0.0', '')
+    }) as typeof execFile)
+    expect((await spotify.detectBinary()).error).toContain('startup check timed out')
+  } finally {
+    vi.mocked(execFile).mockImplementation(((bin: string, args: string[], _options: unknown, callback: Function) => {
+      callback(null, args.includes('--help') ? '--preload --yt-dlp-args --save-file' : bin === 'ffmpeg' ? 'ffmpeg version 7' : bin === 'deno' ? 'deno 2.0.0' : 'spotDL 4.5.2', '')
+    }) as typeof execFile)
+  }
 })
 
 async function seedQueuedRelease(): Promise<{ jobId: number; artistId: number }> {
@@ -100,6 +126,27 @@ async function seedQueuedRelease(): Promise<{ jobId: number; artistId: number }>
 }
 
 describe('persistent Spotify download queue process', () => {
+  it('preserves preload tool failures instead of claiming no recording was found', async () => {
+    const payload = spotify.validateSpotdlPayload([{ song_id: 'song', name: 'Song', artists: ['Artist'], album_name: 'Album', duration: 200 }])
+    const playlist = spotifyRepo.createSpotifyPlaylist({ spotifyId: 'playlist', sourceUrl: 'https://open.spotify.com/playlist/playlist', title: 'Playlist', songs: payload.songs.map((song) => ({ ...song, coverPath: null })) })
+    const { jobId } = spotify.addPlaylistDownloadQueue({ playlistId: playlist.playlistId })
+    vi.mocked(spawn).mockImplementation(() => {
+      const proc = recordFakeProcess()
+      queueMicrotask(() => {
+        proc.stderr.write('FFmpegError: FFmpeg is not installed\n')
+        proc.exitCode = 1
+        proc.emit('close', 1)
+      })
+      return proc as never
+    })
+    spotify.startDownloadQueue({ jobId: jobId! })
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('error'))
+    const row = db.prepare('SELECT download_error FROM music_spotify_playlist_item').get() as { download_error: string }
+    expect(row.download_error).toContain('Lookup (spotDL preload)')
+    expect(row.download_error).toContain('FFmpeg is not installed')
+    expect(row.download_error).not.toContain('No source found')
+  })
+
   it('builds a first artist catalogue without requiring a representative local track', async () => {
     db.prepare(`INSERT INTO music_artist (id, name, dir_path) VALUES (1, 'Sabrina Carpenter', 'Sabrina Carpenter')`).run()
     vi.mocked(fetchWithRetry).mockImplementation(async (url) => {
@@ -237,6 +284,7 @@ describe('persistent Spotify download queue process', () => {
     spawned[0].emit('close', 1)
     await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('paused'))
     expect(spotifyRepo.getDownloadQueueCard(jobId)?.state).toBe('paused')
+    expect(musicMaintenanceOwner()).toBeNull()
 
     spotify.cancelDownload(run.id!)
     await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('cancelled'))
@@ -261,7 +309,21 @@ describe('persistent Spotify download queue process', () => {
     vi.mocked(spawn).mockImplementation((_command, args) => {
       const proc = recordFakeProcess()
       const argv = args as string[]
-      if (argv[0] === 'save') {
+      if (argv.includes('--dump-json')) {
+        queueMicrotask(() => {
+          for (const url of argv.slice(argv.indexOf('--') + 1)) {
+            const id = new URL(url).searchParams.get('v')!
+            const n = Number(id.at(-1))
+            proc.stdout.write(JSON.stringify({ id, webpage_url: url, title: n ? `Song ${n}` : 'Missing song', artist: 'Artist', uploader: 'Artist', duration: 200 + n, formats: [{ vcodec: 'none', acodec: 'opus', ext: 'webm' }] }) + '\n')
+          }
+          proc.exitCode = 0
+          proc.emit('close', 0)
+        })
+      } else if (argv[0] === 'save' && argv.includes('--preload')) {
+        const saved = JSON.parse(readFileSync(argv[1], 'utf8'))
+        writeFileSync(argv[argv.indexOf('--save-file') + 1], JSON.stringify(saved.map((row: Record<string, unknown>) => ({ ...row, download_url: `https://www.youtube.com/watch?v=abcdefghij${String(row.name).match(/\d$/)?.[0] ?? '0'}` }))))
+        queueMicrotask(() => { proc.exitCode = 0; proc.emit('close', 0) })
+      } else if (argv[0] === 'save') {
         const saveFile = argv[argv.indexOf('--save-file') + 1]
         writeFileSync(saveFile, JSON.stringify(payload))
         queueMicrotask(() => {
@@ -273,19 +335,19 @@ describe('persistent Spotify download queue process', () => {
     })
 
     const run = spotify.startDownloadQueue({ jobId })
-    await vi.waitFor(() => expect(spawned).toHaveLength(3))
+    await vi.waitFor(() => expect(vi.mocked(spawn).mock.calls.some((call) => (call[1] as string[])[0] === 'download')).toBe(true))
     expect(vi.mocked(spawn).mock.calls[0][1]).toContain('Artist - Missing song')
     expect(vi.mocked(spawn).mock.calls[1][1]).toContain(
       'https://open.spotify.com/album/spotify-album'
     )
-    expect((vi.mocked(spawn).mock.calls[2][1] as string[])[0]).toBe('download')
-    const downloadArgs = vi.mocked(spawn).mock.calls[2][1] as string[]
+    const downloadIndex = vi.mocked(spawn).mock.calls.findIndex((call) => (call[1] as string[])[0] === 'download')
+    const downloadArgs = vi.mocked(spawn).mock.calls[downloadIndex][1] as string[]
     expect(downloadArgs[downloadArgs.indexOf('--save-file') + 1]).toMatch(/\.spotdl$/)
 
     const taskId = spotify.getStatus()!.taskId!
     tasks.pause(taskId)
-    spawned[2].exitCode = 1
-    spawned[2].emit('close', 1)
+    spawned[downloadIndex].exitCode = 1
+    spawned[downloadIndex].emit('close', 1)
     await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('paused'))
     spotify.cancelDownload(run.id!)
     await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('cancelled'))
@@ -350,7 +412,21 @@ describe('persistent Spotify download queue process', () => {
     vi.mocked(spawn).mockImplementation((_command, args) => {
       const proc = recordFakeProcess()
       const argv = args as string[]
-      if (argv[0] === 'save') {
+      if (argv.includes('--dump-json')) {
+        queueMicrotask(() => {
+          for (const url of argv.slice(argv.indexOf('--') + 1)) {
+            const id = new URL(url).searchParams.get('v')!
+            const n = Number(id.at(-1))
+            proc.stdout.write(JSON.stringify({ id, webpage_url: url, title: n ? `Song ${n}` : 'Missing song', artist: 'Artist', uploader: 'Artist', duration: 200 + n, formats: [{ vcodec: 'none', acodec: 'opus', ext: 'webm' }] }) + '\n')
+          }
+          proc.exitCode = 0
+          proc.emit('close', 0)
+        })
+      } else if (argv[0] === 'save' && argv.includes('--preload')) {
+        const saved = JSON.parse(readFileSync(argv[1], 'utf8'))
+        writeFileSync(argv[argv.indexOf('--save-file') + 1], JSON.stringify(saved.map((row: Record<string, unknown>) => ({ ...row, download_url: `https://www.youtube.com/watch?v=abcdefghij${String(row.name).match(/\d$/)?.[0] ?? '0'}` }))))
+        queueMicrotask(() => { proc.exitCode = 0; proc.emit('close', 0) })
+      } else if (argv[0] === 'save') {
         const saveFile = argv[argv.indexOf('--save-file') + 1]
         const rows = argv.includes('Artist - Song 2') ? [payload(2)] : [payload(1), payload(3)]
         writeFileSync(saveFile, JSON.stringify(rows))
@@ -363,21 +439,48 @@ describe('persistent Spotify download queue process', () => {
     })
 
     const run = spotify.startDownloadQueue({ jobId })
-    await vi.waitFor(() => expect(spawned).toHaveLength(3))
+    await vi.waitFor(() => expect(vi.mocked(spawn).mock.calls.some((call) => (call[1] as string[])[0] === 'download')).toBe(true))
     const repaired = spotifyRepo.getEntitySnapshot('artist', 1)!.releases[0]
     expect(repaired.metadataState).toBe('resolved')
     expect(repaired.tracks.map((track) => track.title)).toEqual(['Song 1', 'Song 2', 'Song 3'])
-    expect((vi.mocked(spawn).mock.calls[2][1] as string[])[0]).toBe('download')
-    const downloadArgs = vi.mocked(spawn).mock.calls[2][1] as string[]
+    const downloadIndex = vi.mocked(spawn).mock.calls.findIndex((call) => (call[1] as string[])[0] === 'download')
+    const downloadArgs = vi.mocked(spawn).mock.calls[downloadIndex][1] as string[]
     expect(downloadArgs[downloadArgs.indexOf('--save-file') + 1]).toMatch(/\.spotdl$/)
 
     const taskId = spotify.getStatus()!.taskId!
     tasks.pause(taskId)
-    spawned[2].exitCode = 1
-    spawned[2].emit('close', 1)
+    spawned[downloadIndex].exitCode = 1
+    spawned[downloadIndex].emit('close', 1)
     await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('paused'))
     spotify.cancelDownload(run.id!)
     await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('cancelled'))
+  })
+
+  it('pins a preview-approved recording and reports an embedded downloader failure without losing approval', async () => {
+    const { jobId } = await seedQueuedRelease()
+    const releaseId = spotifyRepo.getDownloadQueueCard(jobId)!.selections[0].sourceId
+    const raw = { song_id: 'manualsong', name: 'Missing song', artists: ['Artist'], album_artist: 'Artist', album_name: 'Missing album', album_id: 'spotifyalbum', duration: 200, url: 'https://open.spotify.com/track/manualsong' }
+    spotifyRepo.resolveEntityRelease(releaseId, spotify.validateSpotdlPayload([raw]).songs)
+    const track = spotifyRepo.getEntitySnapshot('artist', 1)!.releases[0].tracks[0]
+    const url = 'https://www.youtube.com/watch?v=abcdefghijk'
+    spotifyRepo.setTrackDownloadOptions({ sourceKind: 'entityTrack', trackId: track.id, audioSourceUrl: url })
+    spotifyRepo.saveSourceEvidence('entityTrack', track.id, { url, title: 'My chosen recording', artist: 'Artist', channel: 'Artist', duration: 200, format: 'opus', observedAt: Date.now(), accessKey: musicAccessKey() }, true)
+    vi.mocked(spawn).mockImplementation((_command, args) => {
+      const proc = recordFakeProcess()
+      const argv = args as string[]
+      expect(argv[0]).toBe('download')
+      expect(JSON.parse(readFileSync(argv[1], 'utf8'))[0].download_url).toBe(url)
+      queueMicrotask(() => { proc.stderr.write('ERROR: Requested format is not available\n'); proc.exitCode = 1; proc.emit('close', 1) })
+      return proc as never
+    })
+    spotify.startDownloadQueue({ jobId })
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('error'))
+    const saved = spotifyRepo.getEntitySnapshot('artist', 1)!.releases[0].tracks[0]
+    expect(saved.audioSourceUrl).toBe(url)
+    expect(saved.downloadError).toContain('spotDL embedded yt-dlp')
+    expect(saved.downloadError).toContain('requested audio format is unavailable')
+    expect(spotifyRepo.sourceEvidence('entityTrack', track.id)?.approved).toBe(true)
+    expect(spawned).toHaveLength(1) // no second search or multiplied retries
   })
 
   it('retains a failed card and continues to later queue work', async () => {

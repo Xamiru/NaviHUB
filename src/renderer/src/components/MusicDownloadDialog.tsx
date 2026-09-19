@@ -15,7 +15,7 @@ const BUSY = new Set([...ACTIVE, 'paused'])
 // download, not once per mounted instance.
 let lastSettled: string | null = null
 
-// Polls the (single) yt-dlp download status: every 500ms while one is running,
+// Polls the shared music download status: every 500ms while one is running,
 // otherwise not at all — starting a download invalidates the key to kick the
 // polling off. Also invalidates the music library once when a download lands.
 export function useDownloadStatus(): MusicDownloadEvent | null {
@@ -85,7 +85,7 @@ export function DownloadPill(): React.JSX.Element | null {
 
 // Paste a YouTube / YouTube Music URL (single video, album or playlist) and
 // download its audio into <music root>/<Artist>/<Album>/ via yt-dlp. The
-// library rescans itself when the download finishes.
+// shared queue validates and indexes completed outputs.
 export default function MusicDownloadDialog({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
   const status = useDownloadStatus()
@@ -94,7 +94,7 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
   const [url, setUrl] = useState('')
   const [artist, setArtist] = useState('')
   const [album, setAlbum] = useState('')
-  const [format, setFormat] = useState<'opus' | 'm4a' | 'mp3'>('opus')
+  const [format, setFormat] = useState<'source' | 'opus' | 'm4a' | 'mp3'>('source')
   const panelRef = useDialog(onClose)
 
   const { data: artists = [] } = useQuery({
@@ -109,10 +109,12 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
     (a) => !artist.trim() || a.artistName.toLowerCase() === artist.trim().toLowerCase()
   )
 
-  async function start(): Promise<void> {
+  async function start(queueOnly = false): Promise<void> {
     try {
-      await api.music.downloadStart({ url, artist, album, format })
-      qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
+      const queued = await api.music.queueAdd({ kind: 'url', input: { url, artist, album, format } })
+      if (!queueOnly && queued.jobId != null) await api.music.spotifyQueueStart({ jobId: queued.jobId })
+      await qc.invalidateQueries({ queryKey: qk.music.all })
+      onClose()
     } catch (e) {
       toastError(e)
     }
@@ -208,6 +210,7 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
                 onChange={(e) => setFormat(e.target.value as typeof format)}
                 disabled={busy}
               >
+                <option value="source">Preserve source audio</option>
                 <option value="opus">opus</option>
                 <option value="m4a">m4a</option>
                 <option value="mp3">mp3</option>
@@ -260,7 +263,8 @@ export default function MusicDownloadDialog({ onClose }: { onClose: () => void }
                   Cancel download
                 </button>
               )}
-              <button className="btn-primary" disabled={!canStart} onClick={start}>
+              <button className="btn-ghost" disabled={!url.trim() || !artist.trim() || !album.trim()} onClick={() => void start(true)}>Add to downloads</button>
+              <button className="btn-primary" disabled={!canStart} onClick={() => void start()}>
                 {busy ? 'Downloading…' : 'Download'}
               </button>
             </div>

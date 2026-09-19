@@ -1,4 +1,4 @@
-import { homedir } from 'os'
+import { musicToolOptions, musicYtDlpArgs, musicFailure, musicAccessKey } from './musicTools'
 import { execFile } from 'child_process'
 import { BrowserWindow, dialog } from 'electron'
 import { copyFileSync, constants, mkdirSync, existsSync, statSync } from 'fs'
@@ -37,12 +37,11 @@ export function parseAudioCandidates(output: string): SpotifyAudioCandidate[] {
 }
 
 function ytdlp(args: string[]): Promise<string> {
-  const cookies = getSetting('spotdl.cookieFile')?.trim()
   return new Promise((resolve, reject) => execFile(
-    getSetting('ytdlp.path')?.trim() || 'yt-dlp',
-    ['--no-warnings', ...(cookies ? ['--cookies', cookies] : []), '--js-runtimes', `deno:${denoExecutable()}`, ...args],
+    musicToolOptions().ytdlp,
+    [...musicYtDlpArgs(), '--no-warnings', ...args],
     { timeout: 45_000, maxBuffer: 4 * 1024 * 1024, signal: currentActivitySignal() },
-    (error, stdout) => error ? reject(new Error('YouTube lookup failed. Check the connection and downloader settings, then retry.')) : resolve(stdout)
+    (error, stdout, stderr) => error ? reject(new Error(musicFailure('Extraction', 'standalone yt-dlp', stderr || error.message))) : resolve(stdout)
   ))
 }
 
@@ -81,17 +80,35 @@ export async function pickLocalAudio(): Promise<MusicTrack | null> {
     return listTracks().find((track) => track.id === row.id) ?? null
   } finally { releaseMusicMaintenance(owner) }
 }
-export function denoExecutable(): string | null {
-  const executable = process.platform === 'win32' ? 'deno.exe' : 'deno'
-  const candidates = [
-    ...(process.platform === 'linux' ? [
-      join(homedir(), '.config', 'spotdl', executable),
-      join(homedir(), '.spotdl', executable)
-    ] : [join(homedir(), '.spotdl', executable)])
-  ]
-  return candidates.find((candidate) => {
-    if (candidate === executable) return true
-    try { return existsSync(candidate) && statSync(candidate).isFile() } catch { return false }
-  }) ?? executable
+export function denoExecutable(): string { return musicToolOptions().deno }
+
+export async function inspectAudio(url: string): Promise<import('@shared/types').MusicSourceEvidence> {
+  const canonical = youtubeSourceUrl(url)
+  const row = JSON.parse(await ytdlp(['--no-playlist', '--skip-download', '--dump-single-json', '--', canonical]))
+  return parseSourceEvidence(canonical, row)
 }
 
+export function canonicalAudioSource(value: string): string {
+  const url = new URL(value)
+  if (url.protocol !== 'https:') throw new Error('Audio sources must use HTTPS')
+  if (['youtu.be', 'youtube.com', 'www.youtube.com', 'music.youtube.com'].includes(url.hostname)) return youtubeSourceUrl(value)
+  if (url.hostname === 'soundcloud.com' || url.hostname === 'www.soundcloud.com' || url.hostname.endsWith('.bandcamp.com')) {
+    url.hash = ''; url.search = ''
+    return url.toString().replace(/\/$/, '')
+  }
+  throw new Error('This provider did not return a supported permanent source URL; choose a manual source')
+}
+
+export function parseSourceEvidence(canonical: string, row: Record<string, any>): import('@shared/types').MusicSourceEvidence {
+  const actual = canonical.includes('youtube.com/watch') ? youtubeSourceUrl(`https://www.youtube.com/watch?v=${row.id}`) : canonicalAudioSource(String(row.webpage_url ?? ''))
+  if (actual !== canonical) throw new Error('The selected source changed')
+  const formats = (Array.isArray(row.formats) ? row.formats : [row]).filter((f: Record<string, unknown>) =>
+    (f.vcodec === 'none' || (f.vcodec == null && ['mp3', 'm4a', 'opus'].includes(String(f.ext)))) && (f.acodec === 'opus' || f.acodec === 'mp3' || String(f.acodec).startsWith('mp4a')))
+  const best = formats.sort((a: Record<string, unknown>, b: Record<string, unknown>) => Number(b.abr ?? 0) - Number(a.abr ?? 0))[0]
+  if (!best) throw new Error('Extraction: no compatible native audio is available')
+  return { albumTitle: typeof row.album === 'string' ? row.album : null, url: canonical, title: String(row.title || row.track || ''),
+    artist: typeof row.artist === 'string' ? row.artist : null,
+    channel: String(row.channel || row.uploader || ''),
+    duration: typeof row.duration === 'number' ? row.duration : null,
+    format: best.acodec === 'opus' ? 'opus' : best.acodec === 'mp3' ? 'mp3' : 'm4a', observedAt: Date.now(), accessKey: musicAccessKey() }
+}

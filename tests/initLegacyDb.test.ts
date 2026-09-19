@@ -519,3 +519,32 @@ describe('a live wrestling DB imported before loose matches existed', () => {
     db.close()
   })
 })
+
+describe('music URL queue migration', () => {
+  it('preserves saved playlist selections and queue ordering across the CHECK rebuild', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    const old = initSql.slice(0, initSql.indexOf('CREATE TABLE IF NOT EXISTS music_source_evidence'))
+      .replace("'entity','playlist','url'", "'entity','playlist'")
+      .replace(" OR\n    (source_kind = 'url' AND snapshot_id IS NULL AND playlist_id IS NULL)", '')
+    db.exec(old)
+    db.exec(`INSERT INTO music_playlist(id,title) VALUES(9,'Saved mix');
+      INSERT INTO music_spotify_playlist(playlist_id,spotify_id,source_url) VALUES(9,'saved','https://open.spotify.com/playlist/saved');
+      INSERT INTO music_spotify_playlist_item(id,playlist_id,spotify_track_id,position,title,artists_json,primary_artist,album_title,spotify_url,raw_json)
+      VALUES(12,9,'song',0,'Song','["Artist"]','Artist','Album','https://open.spotify.com/track/song','{}');
+      UPDATE music_spotify_playlist_item SET audio_source_url='https://youtu.be/abcdefghijk',match_confirmed=1 WHERE id=12;
+      INSERT INTO music_spotify_download_queue(id,source_kind,playlist_id,position,state) VALUES(17,'playlist',9,3,'paused');
+      INSERT INTO music_spotify_download_queue_selection(id,queue_id,playlist_item_id,position) VALUES(24,17,12,2);`)
+    db.exec(initSql)
+    runMigrations(db)
+    runMigrations(db)
+    expect(db.prepare('SELECT id,playlist_id,position,state FROM music_spotify_download_queue').all()).toEqual([{id:17,playlist_id:9,position:3,state:'paused'}])
+    expect(db.prepare('SELECT id,queue_id,playlist_item_id,position FROM music_spotify_download_queue_selection').all()).toEqual([{id:24,queue_id:17,playlist_item_id:12,position:2}])
+    expect(() => db.prepare("INSERT INTO music_spotify_download_queue(source_kind) VALUES('url')").run()).not.toThrow()
+    expect(db.prepare('SELECT audio_source_url,match_confirmed FROM music_spotify_playlist_item WHERE id=12').get()).toEqual({ audio_source_url: 'https://youtu.be/abcdefghijk', match_confirmed: 1 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_source_evidence').get()).toEqual({ n: 0 })
+    expect(db.pragma('foreign_key_check')).toEqual([])
+    expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
+    db.close()
+  })
+})

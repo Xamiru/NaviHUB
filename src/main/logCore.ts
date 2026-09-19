@@ -22,6 +22,7 @@ export function levelAtLeast(level: LogLevel, min: LogLevel): boolean {
 // Idempotent by construction: re-running it over '***' is a no-op, so an
 // already-redacted string can pass through again safely.
 const REDACTIONS: [RegExp, string][] = [
+  [/(?:set-cookie|cookie)\s*:\s*[^\r\n]+/gi, 'Cookie: ***'],
   // ?apikey= / &api_key= / ?token= / &key= / ?access_token= — every importer's
   // credential is a query param (TMDB, RAWG, IGDB, RetroAchievements, Jackett).
   [/([?&](?:api[_-]?key|apikey|access[_-]?token|token|key|secret)=)[^&\s"']+/gi, '$1***'],
@@ -45,7 +46,7 @@ const RA_URL = /https?:\/\/[^\s"']*retroachievements\.org[^\s"']*/gi
 const RA_CRED = /([?&][yz]=)[^&\s"']+/gi
 
 export function redact(text: string): string {
-  let out = text
+  let out = text.replace(/https?:\/\/[^\s"']*googlevideo\.com[^\s"']*/gi, '[private audio stream]')
   for (const [re, replacement] of REDACTIONS) out = out.replace(re, replacement)
   return out.replace(RA_URL, (url) => url.replace(RA_CRED, '$1***'))
 }

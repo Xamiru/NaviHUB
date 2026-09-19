@@ -118,7 +118,7 @@ export default function MusicPlaylistPage() {
         : `${item.title} ${item.artists.join(' ')} ${item.albumTitle}`
     return text.toLocaleLowerCase().includes(normalizedSearch)
   }), [allItems, availability, normalizedSearch])
-  const incremental = useIncrementalList(filteredItems, 96)
+  const incremental = useIncrementalList(filteredItems, 96, playlistId)
   const busy =
     (downloadStatus?.source === 'spotify' || downloadStatus?.source === 'spotifyQueue') &&
     downloadStatus.playlistId === playlistId &&

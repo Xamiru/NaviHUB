@@ -831,7 +831,7 @@ CREATE INDEX IF NOT EXISTS idx_music_spotify_download_candidate_local
 -- what make queued, paused, failed and completed work survive app restarts.
 CREATE TABLE IF NOT EXISTS music_spotify_download_queue (
   id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-  source_kind         TEXT NOT NULL CHECK(source_kind IN ('entity','playlist')),
+  source_kind         TEXT NOT NULL CHECK(source_kind IN ('entity','playlist','url')),
   snapshot_id         INTEGER REFERENCES music_spotify_entity_snapshot(id) ON DELETE CASCADE,
   playlist_id         INTEGER REFERENCES music_spotify_playlist(playlist_id) ON DELETE CASCADE,
   position            INTEGER NOT NULL DEFAULT 0,
@@ -845,7 +845,8 @@ CREATE TABLE IF NOT EXISTS music_spotify_download_queue (
   completed_at        TEXT,
   CHECK(
     (source_kind = 'entity' AND snapshot_id IS NOT NULL AND playlist_id IS NULL) OR
-    (source_kind = 'playlist' AND snapshot_id IS NULL AND playlist_id IS NOT NULL)
+    (source_kind = 'playlist' AND snapshot_id IS NULL AND playlist_id IS NOT NULL) OR
+    (source_kind = 'url' AND snapshot_id IS NULL AND playlist_id IS NULL)
   ),
   UNIQUE(snapshot_id),
   UNIQUE(playlist_id)
@@ -1891,3 +1892,41 @@ END;
 CREATE TRIGGER IF NOT EXISTS global_search_character_delete AFTER DELETE ON character BEGIN
   DELETE FROM global_search_fts WHERE kind = 'character' AND entity_id = old.id;
 END;
+
+CREATE TABLE IF NOT EXISTS music_source_evidence (
+  source_kind TEXT NOT NULL CHECK(source_kind IN ('playlistItem','entityTrack')),
+  source_id INTEGER NOT NULL,
+  playlist_item_id INTEGER REFERENCES music_spotify_playlist_item(id) ON DELETE CASCADE,
+  entity_track_id INTEGER REFERENCES music_spotify_entity_track(id) ON DELETE CASCADE,
+  evidence_json TEXT NOT NULL,
+  artifact_token TEXT,
+  phase TEXT NOT NULL DEFAULT 'selected' CHECK(phase IN ('selected','verified','review','transfer','indexing','ready','failed')),
+  approved INTEGER NOT NULL DEFAULT 0 CHECK(approved IN (0,1)),
+  validated INTEGER NOT NULL DEFAULT 0 CHECK(validated IN (0,1)),
+  PRIMARY KEY(source_kind, source_id),
+  CHECK((source_kind='playlistItem' AND playlist_item_id=source_id AND playlist_item_id IS NOT NULL AND entity_track_id IS NULL) OR (source_kind='entityTrack' AND entity_track_id=source_id AND entity_track_id IS NOT NULL AND playlist_item_id IS NULL))
+);
+CREATE TABLE IF NOT EXISTS music_url_job (
+  queue_id INTEGER PRIMARY KEY REFERENCES music_spotify_download_queue(id) ON DELETE CASCADE,
+  input_json TEXT NOT NULL,
+  enumeration_complete INTEGER NOT NULL DEFAULT 0 CHECK(enumeration_complete IN (0,1))
+);
+CREATE TABLE IF NOT EXISTS music_url_item (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  queue_id INTEGER NOT NULL REFERENCES music_url_job(queue_id) ON DELETE CASCADE,
+  source_url TEXT NOT NULL,
+  title TEXT NOT NULL,
+  position INTEGER NOT NULL,
+  phase TEXT NOT NULL DEFAULT 'queued' CHECK(phase IN ('queued','extraction','transfer','processing','indexing','ready','failed')),
+  output_path TEXT,
+  local_track_id INTEGER REFERENCES music_track(id) ON DELETE SET NULL,
+  error TEXT,
+  occurrence INTEGER NOT NULL DEFAULT 0 CHECK(occurrence >= 0),
+  UNIQUE(queue_id,source_url,occurrence)
+);
+
+CREATE TABLE IF NOT EXISTS music_audio_source (
+  source_url TEXT NOT NULL,
+  local_track_id INTEGER NOT NULL REFERENCES music_track(id) ON DELETE CASCADE,
+  PRIMARY KEY(source_url,local_track_id)
+);

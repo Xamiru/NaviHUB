@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { rankMusicSources } from '@shared/musicSourceMatch'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { MusicSpotifyDownloadCandidate, MusicTrack } from '@shared/types'
 import Dialog from './Dialog'
@@ -30,6 +31,9 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
   const [localQuery, setLocalQuery] = useState('')
   const localSearch = useDebouncedValue(localQuery)
   const [picked, setPicked] = useState<MusicTrack | null>(null)
+  const previewRequest = useRef(0)
+  useEffect(() => () => { previewRequest.current++ }, [sourceKind, trackId])
+  const [startNow, setStartNow] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const remote = useQuery({ queryKey: qk.music.spotifyAudioSearch(submitted),
@@ -58,9 +62,9 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
     } catch (error) { setError(error instanceof Error ? error.message : String(error)) }
     finally { setBusy(false) }
   }
-  const previewLocal = (track: MusicTrack) => player.playQueue([musicTrackToPlayerTrack(track)], 0)
+  const previewLocal = (track: MusicTrack) => { previewRequest.current++; player.playQueue([musicTrackToPlayerTrack(track)], 0) }
   const saveSource = (source: string) => action(() => api.music.spotifySetTrackDownloadOptions({
-    sourceKind, trackId, audioSourceUrl: source
+    sourceKind, trackId, audioSourceUrl: source, approveSource: true, startNow
   }))
   const compare = (track: MusicTrack) => <div className="space-y-2 rounded border border-base-600 p-3">
     <p className="text-sm text-gray-200">{track.title} · {track.tagArtist ?? track.artistName}</p>
@@ -92,27 +96,31 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
       }}>{remote.isFetching ? 'Searching…' : 'Find audio'}</button>
       {remote.error && <p role="alert" className="text-sm text-red-300">Search failed. Retry or paste a source below.</p>}
       {remote.data?.length === 0 && <p className="text-sm text-gray-400">No results. Try another search.</p>}
-      {remote.data?.map((result) => <div key={result.url} className="rounded border border-base-600 p-3">
+      {rankMusicSources({ title, artist, duration }, remote.data ?? []).map((result) => <div key={result.url} className="rounded border border-base-600 p-3">
         <p className="text-sm">{result.title}</p><p className="text-xs text-gray-400">{result.channel} · {formatDuration(result.duration)}</p>
-        <div className="mt-2 flex gap-2"><button className="btn-ghost" disabled={busy} onClick={() => void action(async () => {
+        <p className="mt-1 text-xs text-gray-400">{result.assessment.strong ? 'Title, artist and duration agree' : result.assessment.reasons.join('; ')}</p>
+        <div className="mt-2 flex flex-wrap gap-2"><button className="btn-ghost" disabled={busy} onClick={() => void action(async () => {
+          const request = ++previewRequest.current
           const audioUrl = await api.music.spotifyPreviewAudio(result.url)
+          if (previewRequest.current !== request) return
           player.playQueue([{ id: `file-preview-${result.url}`, title: result.title, subtitle: result.channel,
             audioUrl, mediaId: null }], 0)
         }, false)}>Listen</button>
         <button className="btn-ghost" onClick={() => api.app.openExternal(result.url)}>Open video</button>
-        <button className="btn-primary" disabled={busy} onClick={() => void saveSource(result.url)}>Use this source</button></div>
+        <button className="btn-primary" disabled={busy} onClick={() => void saveSource(result.url)}>Use this version</button></div>
       </div>)}
       <Field label="Exact YouTube video URL"><input className="input w-full" value={url} onChange={(e) => setUrl(e.target.value)} /></Field>
-      <button className="btn-ghost" disabled={busy || !url.trim()} onClick={() => void saveSource(url)}>Save source for retry</button>
-      <p className="text-xs text-gray-400">An exact source or broader match still needs your approval after download.</p>
+      <button className="btn-ghost" disabled={busy || !url.trim()} onClick={() => void saveSource(url)}>Use this version</button>
+      <Field label="Start this download now"><input type="checkbox" checked={startNow} onChange={(event) => setStartNow(event.target.checked)} /></Field>
+      <p className="text-xs text-gray-400">Use this version approves this exact source and adds it to Downloads. Broader automatic matches still need review.</p>
       <button className="btn-ghost" disabled={busy} onClick={() => void action(() => api.music.spotifySetTrackDownloadOptions({ sourceKind, trackId, allowUnverified: true }))}>Try broader matching on retry</button>
     </section>
-    {sourceKind === 'playlistItem' && <section className="space-y-2" aria-label="Choose local recording">
+    {<section className="space-y-2" aria-label="Choose local recording">
       <Field label="Search the whole local library"><input className="input w-full" value={localQuery} onChange={(e) => setLocalQuery(e.target.value)} /></Field>
       {uniqueLocalTracks.slice(0, 12).map((track) => <button key={track.id} className="btn-ghost block w-full text-left" onClick={() => setPicked(track)}>{track.title} · {track.artistName} · {formatDuration(track.duration)}</button>)}
       <button className="btn-ghost" disabled={busy} onClick={() => void action(async () => setPicked(await api.music.spotifyPickLocalAudio()), false)}>Choose a file to copy into the library</button>
       {picked && <>{compare(picked)}<p className="text-xs text-gray-400">This explicitly overrides automatic matching and is remembered across scans.</p>
-        <button className="btn-primary" disabled={busy} onClick={() => void action(() => api.music.spotifyMatchPlaylistItem({ itemId: trackId, trackId: picked.id, confirm: true }))}>Confirm this local recording</button></>}
+        <button className="btn-primary" disabled={busy} onClick={() => void action(() => api.music.spotifyMatchPlaylistItem({ sourceKind, itemId: trackId, trackId: picked.id, confirm: true }))}>Confirm this local recording</button></>}
     </section>}
   </Dialog>
 }

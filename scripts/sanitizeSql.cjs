@@ -73,6 +73,10 @@ const FIXED_WIPES = [
   'DELETE FROM jp_coverage_word',
   'DELETE FROM jp_coverage',
   'DELETE FROM music_play_log',
+  'DELETE FROM music_audio_source',
+  'DELETE FROM music_source_evidence',
+  'DELETE FROM music_url_item',
+  'DELETE FROM music_url_job',
   'DELETE FROM music_spotify_download_queue_selection',
   'DELETE FROM music_spotify_download_queue',
   'DELETE FROM music_spotify_download_candidate',
@@ -116,7 +120,7 @@ const FIXED_WIPES = [
   // Legacy table retained by old live databases.
   'DELETE FROM sync_batch',
   `DELETE FROM settings WHERE key IN
-     ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path','spotdl.cookieFile','spotdl.pythonPath',
+     ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path','spotdl.cookieFile','spotdl.pythonPath','music.ffmpegPath',
       'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','slideshow.dir','video.dir','wrestling.dir','football.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',

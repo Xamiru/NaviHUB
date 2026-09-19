@@ -6,6 +6,7 @@ import { afterEach, expect, it, vi } from 'vitest'
 import type { MusicPlaylistDetail } from '@shared/types'
 import { api } from '@/lib/api'
 import MusicPlaylistPage from '@/pages/MusicPlaylistPage'
+import { qk } from '@/lib/queryKeys'
 
 vi.mock('@/lib/api', () => ({ api: { music: {
   playlist: vi.fn(),
@@ -61,6 +62,10 @@ it('reaches every batch of a large Spotify playlist and retains it across unrela
   expect(screen.queryByText('Song 1')).not.toBeInTheDocument()
   await user.clear(screen.getByRole('textbox', { name: 'Search this playlist' }))
   expect(screen.getByText('Song 96')).toBeInTheDocument()
-  expect(screen.queryByText('Song 97')).not.toBeInTheDocument()
+  expect(screen.getByText('Song 205')).toBeInTheDocument()
+  await act(async () => {
+    client.setQueryData(qk.music.playlist(1), { ...playlist, items: playlist.items.map((item, i) => i === 0 ? { ...item, downloadError: 'Needs review' } : item) })
+  })
+  expect(screen.getByText('Song 205')).toBeInTheDocument()
 // This mounts hundreds of real rows alongside the other jsdom test workers.
 }, 30000)

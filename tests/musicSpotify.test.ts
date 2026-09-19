@@ -6,6 +6,7 @@ import { EventEmitter } from 'node:events'
 import { PassThrough } from 'node:stream'
 import { musicMaintenanceOwner } from '../src/main/musicMaintenance'
 import { runWithActivitySignal } from '../src/main/activityContext'
+import { get as getSetting } from '../src/main/repos/settingsRepo'
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/navihub-test' } }))
 vi.mock('../src/main/files', () => ({
@@ -68,6 +69,20 @@ import {
 } from '../src/main/repos/musicSpotifyRepo'
 
 describe('Spotify playlist import core', () => {
+  it('passes a configured ffmpeg executable to preload and metadata save operations', async () => {
+    vi.mocked(getSetting).mockImplementation((key) => key === 'music.ffmpegPath' ? '/tools/custom ffmpeg' : null)
+    try {
+      for (const args of [['save', 'playlist'], ['save', 'songs.spotdl', '--preload']]) {
+        const proc = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() })
+        const spawn = vi.fn(() => proc as never)
+        const pending = runSpotdl(args, 'ffmpeg-options-fixture', undefined, undefined, spawn)
+        expect(spawn.mock.calls[0][1]).toEqual([...args, '--ffmpeg', '/tools/custom ffmpeg'])
+        proc.emit('close', 0)
+        await pending
+      }
+    } finally { vi.mocked(getSetting).mockReset() }
+  })
+
   it('allows long silent playlist metadata resolution without the five-minute false timeout', () => {
     expect(SPOTDL_PLAYLIST_METADATA_STALL_MS).toBe(30 * 60_000)
     expect(SPOTDL_PLAYLIST_METADATA_STALL_MS).toBeGreaterThan(5 * 60_000)
@@ -189,6 +204,22 @@ describe('Spotify playlist import core', () => {
     proc.exitCode = 1
     proc.emit('close', 1)
     await expect(pending).resolves.toBe(1)
+    expect(musicMaintenanceOwner()).toBeNull()
+  })
+
+  it('cancels every owned process when URL workers are active together', async () => {
+    const children = Array.from({ length: 4 }, () => Object.assign(new EventEmitter(), {
+      stdout: new PassThrough(), stderr: new PassThrough(), exitCode: null as number | null, kill: vi.fn(() => true)
+    }))
+    const pending = children.map((proc) => runSpotdl([], 'parallel-url-fixture', undefined, 'parallel-url-job', () => proc as never))
+    killActive()
+    for (const proc of children) {
+      expect(proc.kill).toHaveBeenNthCalledWith(1, 'SIGCONT')
+      expect(proc.kill).toHaveBeenNthCalledWith(2, 'SIGTERM')
+      proc.exitCode = 1
+      proc.emit('close', 1)
+    }
+    expect(await Promise.all(pending)).toEqual([1, 1, 1, 1])
     expect(musicMaintenanceOwner()).toBeNull()
   })
 

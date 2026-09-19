@@ -438,7 +438,7 @@ export function syncLibrary(
 
 /** Index known output files without walking or pruning the rest of the library. */
 export async function indexMusicFiles(
-  paths: string[], owner: string, reader: TagReader = realTagReader
+  paths: string[], owner: string, reader: TagReader = realTagReader, alive: () => boolean = () => true
 ): Promise<void> {
   claimMusicMaintenance(owner)
   try {
@@ -461,8 +461,10 @@ export async function indexMusicFiles(
       album.files.push({ relPath, albumDir, fileName: basename(abs), mtimeMs: fileStat.mtimeMs })
       albums.set(albumDir, album)
     }
+    if (!alive()) throw new tasks.TaskCancelledError('Indexing music downloads')
     const folders = [...albums.values()]
     const parsed = await parseFiles(folders.flatMap((a) => a.files), reader, () => true)
+    if (!alive()) throw new tasks.TaskCancelledError('Indexing music downloads')
     const covers = new Map<string, string | null>()
     for (const album of folders) {
       const existingCover = getSqlite().prepare('SELECT cover_path FROM music_album WHERE dir_path=?')
