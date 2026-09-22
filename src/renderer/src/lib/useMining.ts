@@ -78,7 +78,7 @@ export function useMiningDraft(opts: { sourceMediaId: number | null; onSaved?: (
   const targetLessonId = lessonId ?? targets?.inboxLessonId ?? null
   const canSave = !!draft.front.trim() && !!draft.back.trim() && targetLessonId != null
 
-  // Fills the draft from a unified dictionary entry (offline or jisho fallback).
+  // Fills the draft from an offline dictionary entry.
   // reading is left blank for a kana-only headword (front already is the kana);
   // back is the flattened first definition; pos is the first def's tags.
   function fillFromEntry(e: DictEntry, exampleJp?: string) {

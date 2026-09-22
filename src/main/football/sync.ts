@@ -2,7 +2,7 @@ import AdmZip from 'adm-zip'
 import { createHash } from 'crypto'
 import { getSqlite } from '../db/connection'
 import { get as getSetting } from '../repos/settingsRepo'
-import { fetchWithRetry } from '../http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from '../http'
 import { logError, logInfo, logWarn } from '../logBus'
 import * as tasks from '../tasks'
 import type { TaskHandle } from '../tasks'
@@ -25,6 +25,7 @@ import {
   assertBoundedArchive,
   attachInternationalScorers,
   buildFootballLedger,
+  FOOTBALL_ARCHIVE_LIMIT,
   FOOTBALL_DEEP_ARCHIVE_LIMIT,
   footballPointsForWin,
   footballSeasonKey,
@@ -48,7 +49,7 @@ import {
 import { fetchWikimediaSnapshot, saveWikimediaSnapshot } from './wikimedia'
 import {
   fetchEntityEnrichment,
-  noteEnrichmentConflict,
+  noteEnrichmentError,
   saveEntityEnrichment
 } from './enrichment'
 
@@ -166,7 +167,11 @@ async function downloadText(url: string, source: FootballSource, signal: AbortSi
     requests: status.requests + 1,
     message: `Downloading ${source}`
   }
-  const response = await fetchWithRetry(url, { timeoutMs: 120_000, taskSignal: signal })
+  const response = await fetchWithRetry(url, {
+    timeoutMs: 120_000,
+    taskSignal: signal,
+    maxResponseBytes: FOOTBALL_ARCHIVE_LIMIT
+  })
   if (!response.ok) throw new Error(`${source} returned HTTP ${response.status}`)
   const declared = Number(response.headers.get('content-length'))
   if (Number.isFinite(declared) && declared > 0) assertBoundedArchive(declared)
@@ -196,7 +201,11 @@ async function downloadBuffer(
     requests: status.requests + 1,
     message: `Downloading ${source}`
   }
-  const response = await fetchWithRetry(url, { timeoutMs: 120_000, taskSignal: signal })
+  const response = await fetchWithRetry(url, {
+    timeoutMs: 120_000,
+    taskSignal: signal,
+    maxResponseBytes: limit
+  })
   if (!response.ok) throw new Error(`${source} returned HTTP ${response.status}`)
   const declared = Number(response.headers.get('content-length'))
   if (Number.isFinite(declared) && declared > 0) assertBoundedArchive(declared, limit)
@@ -257,6 +266,83 @@ export function footballSeasonStatus(
   if (slice.matches.some((match) => match.status !== 'scheduled')) return 'current'
   const today = now.toISOString().slice(0, 10)
   return pending.every((match) => match.date > today) ? 'upcoming' : 'current'
+}
+
+interface MatchResultAssertion {
+  status: string
+  homeScore: number | null
+  awayScore: number | null
+  homeHalftime: number | null
+  awayHalftime: number | null
+  homeExtraTime: number | null
+  awayExtraTime: number | null
+  homePenalties: number | null
+  awayPenalties: number | null
+}
+
+function sourceResult(match: SourceMatch): MatchResultAssertion {
+  return {
+    status: match.status,
+    homeScore: match.homeScore,
+    awayScore: match.awayScore,
+    homeHalftime: match.homeHalfTime,
+    awayHalftime: match.awayHalfTime,
+    homeExtraTime: match.homeExtraTime,
+    awayExtraTime: match.awayExtraTime,
+    homePenalties: match.homePenalties,
+    awayPenalties: match.awayPenalties
+  }
+}
+
+function resultsDisagree(a: MatchResultAssertion, b: MatchResultAssertion): boolean {
+  const fields: Array<keyof Omit<MatchResultAssertion, 'status'>> = [
+    'homeScore',
+    'awayScore',
+    'homeHalftime',
+    'awayHalftime',
+    'homeExtraTime',
+    'awayExtraTime',
+    'homePenalties',
+    'awayPenalties'
+  ]
+  if (fields.some((field) => a[field] != null && b[field] != null && a[field] !== b[field])) {
+    return true
+  }
+  return a.status !== 'scheduled' && b.status !== 'scheduled' && a.status !== b.status
+}
+
+function storedResultAssertions(
+  matchId: number,
+  source: FootballSource,
+  fallback: MatchResultAssertion
+): Array<{ source: FootballSource; value: MatchResultAssertion }> {
+  const db = getSqlite()
+  const rows = db.prepare(`
+    SELECT source,value FROM football_assertion
+    WHERE entity_kind='match' AND entity_id=? AND facet='result' AND source<>?
+    ORDER BY id
+  `).all(matchId, source) as Array<{ source: FootballSource; value: string | null }>
+  const bySource = new Map<FootballSource, MatchResultAssertion>()
+  for (const row of rows) {
+    try {
+      const value = JSON.parse(row.value ?? '') as MatchResultAssertion
+      if (value && typeof value === 'object' && typeof value.status === 'string') {
+        bySource.set(row.source, value)
+      }
+    } catch {
+      // A malformed retained assertion is unusable evidence, not a reason to
+      // discard the canonical match. The next source refresh replaces it.
+    }
+  }
+  if (bySource.size) {
+    return [...bySource].map(([assertionSource, value]) => ({ source: assertionSource, value }))
+  }
+  const legacySource = db.prepare(`
+    SELECT source FROM football_source_ref
+    WHERE entity_kind='match' AND entity_id=? AND source<>?
+    ORDER BY id LIMIT 1
+  `).get(matchId, source) as { source: FootballSource } | undefined
+  return legacySource ? [{ source: legacySource.source, value: fallback }] : []
 }
 
 function upsertTeam(match: SourceMatch, side: 'home' | 'away'): number {
@@ -387,6 +473,8 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
         SELECT id FROM football_season WHERE competition_id=? AND key=?
       `).get(competition.id, slice.seasonKey) as { id: number }
       let count = 0
+      let hasResultConflict = false
+      let hasScorerConflict = false
       const keepMatchIds = new Set<number>()
       for (const match of slice.matches) {
         const homeId = upsertTeam(match, 'home')
@@ -403,6 +491,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           `).get(season.id, stageKey) as { id: number }).id
         }
         let matchId = sourceRefId('match', match.source, match.sourceId)
+        let matchResultConflict = false
         if (matchId == null) {
           const exact = db.prepare(`
             SELECT id FROM football_match WHERE season_id=? AND match_date=?
@@ -438,33 +527,124 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           )
           matchId = Number(result.lastInsertRowid)
         } else {
-          db.prepare(`
-            UPDATE football_match SET title=?,stage_id=?,home_team_id=?,away_team_id=?,
-              match_date=?,round=?,status=?,home_score=?,away_score=?,home_halftime=?,
-              away_halftime=?,home_extra_time=?,away_extra_time=?,home_penalties=?,
-              away_penalties=?,event_coverage=CASE
-                WHEN ?='not_supplied' AND event_coverage='complete' THEN event_coverage ELSE ? END,
-              updated_at=datetime('now') WHERE id=?
-          `).run(
-            `${match.home.name} vs ${match.away.name}`,
-            stageId,
-            homeId,
-            awayId,
-            match.date,
-            match.round,
-            match.status,
-            match.homeScore,
-            match.awayScore,
-            match.homeHalfTime,
-            match.awayHalfTime,
-            match.homeExtraTime,
-            match.awayExtraTime,
-            match.homePenalties,
-            match.awayPenalties,
-            match.goals == null ? 'not_supplied' : 'complete',
-            match.goals == null ? 'not_supplied' : 'complete',
-            matchId
-          )
+          const current = db.prepare(`
+            SELECT status,home_score AS homeScore,away_score AS awayScore,
+              home_halftime AS homeHalftime,away_halftime AS awayHalftime,
+              home_extra_time AS homeExtraTime,away_extra_time AS awayExtraTime,
+              home_penalties AS homePenalties,away_penalties AS awayPenalties
+            FROM football_match WHERE id=?
+          `).get(matchId) as MatchResultAssertion
+          const incoming = sourceResult(match)
+          const assertions = storedResultAssertions(matchId, match.source, current)
+          for (const assertion of assertions) {
+            if (resultsDisagree(assertion.value, incoming)) continue
+            db.prepare(`
+              UPDATE football_conflict SET status='resolved',
+                resolution='Sources now agree',resolved_at=datetime('now')
+              WHERE entity_kind='match' AND entity_id=? AND facet='result'
+                AND ((source_a=? AND source_b=?) OR (source_a=? AND source_b=?))
+                AND status='open'
+            `).run(
+              matchId,
+              assertion.source,
+              match.source,
+              match.source,
+              assertion.source
+            )
+          }
+          const disagreement = assertions.find((item) => resultsDisagree(item.value, incoming))
+          if (disagreement) {
+            matchResultConflict = true
+            const unresolved = db.prepare(`
+              SELECT id,source_a AS sourceA FROM football_conflict
+              WHERE entity_kind='match' AND entity_id=? AND facet='result'
+                AND ((source_a=? AND source_b=?) OR (source_a=? AND source_b=?))
+                AND status<>'resolved'
+              ORDER BY id DESC LIMIT 1
+            `).get(
+              matchId,
+              disagreement.source,
+              match.source,
+              match.source,
+              disagreement.source
+            ) as { id: number; sourceA: FootballSource } | undefined
+            if (unresolved) {
+              db.prepare(`UPDATE football_conflict SET value_a=?,value_b=? WHERE id=?`).run(
+                JSON.stringify(
+                  unresolved.sourceA === disagreement.source ? disagreement.value : incoming
+                ),
+                JSON.stringify(
+                  unresolved.sourceA === disagreement.source ? incoming : disagreement.value
+                ),
+                unresolved.id
+              )
+            } else {
+              db.prepare(`
+                INSERT INTO football_conflict
+                  (entity_kind,entity_id,facet,source_a,value_a,source_b,value_b)
+                VALUES ('match',?,'result',?,?,?,?)
+              `).run(
+                matchId,
+                disagreement.source,
+                JSON.stringify(disagreement.value),
+                match.source,
+                JSON.stringify(incoming)
+              )
+              status = { ...status, conflicts: status.conflicts + 1 }
+            }
+            db.prepare(`
+              UPDATE football_match SET title=?,stage_id=?,home_team_id=?,away_team_id=?,
+                match_date=?,round=?,conflicted=1,updated_at=datetime('now') WHERE id=?
+            `).run(
+              `${match.home.name} vs ${match.away.name}`,
+              stageId,
+              homeId,
+              awayId,
+              match.date,
+              match.round,
+              matchId
+            )
+            hasResultConflict = true
+          } else {
+            db.prepare(`
+              UPDATE football_match SET title=?,stage_id=?,home_team_id=?,away_team_id=?,
+                match_date=?,round=?,status=CASE
+                  WHEN ?='scheduled' AND status<>'scheduled' THEN status ELSE ? END,
+                home_score=COALESCE(?,home_score),
+                away_score=COALESCE(?,away_score),home_halftime=COALESCE(?,home_halftime),
+                away_halftime=COALESCE(?,away_halftime),
+                home_extra_time=COALESCE(?,home_extra_time),
+                away_extra_time=COALESCE(?,away_extra_time),
+                home_penalties=COALESCE(?,home_penalties),
+                away_penalties=COALESCE(?,away_penalties),event_coverage=CASE
+                  WHEN ?='not_supplied' AND event_coverage='complete' THEN event_coverage ELSE ? END,
+                conflicted=CASE WHEN EXISTS(
+                  SELECT 1 FROM football_conflict c WHERE c.entity_kind='match'
+                    AND c.entity_id=football_match.id AND c.status<>'resolved'
+                ) THEN 1 ELSE 0 END,
+                updated_at=datetime('now') WHERE id=?
+            `).run(
+              `${match.home.name} vs ${match.away.name}`,
+              stageId,
+              homeId,
+              awayId,
+              match.date,
+              match.round,
+              match.status,
+              match.status,
+              match.homeScore,
+              match.awayScore,
+              match.homeHalfTime,
+              match.awayHalfTime,
+              match.homeExtraTime,
+              match.awayExtraTime,
+              match.homePenalties,
+              match.awayPenalties,
+              match.goals == null ? 'not_supplied' : 'complete',
+              match.goals == null ? 'not_supplied' : 'complete',
+              matchId
+            )
+          }
         }
         db.prepare(`
           INSERT INTO football_source_ref
@@ -482,7 +662,22 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           slice.revision,
           match.rawFingerprint
         )
-        if (match.goals != null) {
+        const sourceRef = db.prepare(`
+          SELECT id FROM football_source_ref
+          WHERE entity_kind='match' AND source=? AND external_id=?
+        `).get(match.source, match.sourceId) as { id: number }
+        db.prepare(`DELETE FROM football_assertion
+          WHERE entity_kind='match' AND entity_id=? AND facet='result' AND source=?`
+        ).run(matchId, match.source)
+        db.prepare(`INSERT INTO football_assertion
+          (entity_kind,entity_id,facet,value,source,source_ref_id,status,observed_at)
+          VALUES ('match',?,'result',?,?,?,'accepted',datetime('now'))`
+        ).run(matchId, JSON.stringify(sourceResult(match)), match.source, sourceRef.id)
+        const quarantined = db.prepare(`SELECT conflicted FROM football_match WHERE id=?`).get(
+          matchId
+        ) as { conflicted: number }
+        if (quarantined.conflicted) hasResultConflict = true
+        if (match.goals != null && !matchResultConflict) {
           db.prepare(`DELETE FROM football_event WHERE match_id=? AND type='goal'`).run(matchId)
           const event = db.prepare(`
             INSERT INTO football_event
@@ -502,6 +697,8 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
               index
             )
           })
+        } else if (match.goals != null) {
+          hasScorerConflict = true
         }
         keepMatchIds.add(matchId)
         count++
@@ -514,7 +711,16 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
         `).all(slice.source, season.id) as Array<{ refId: number; matchId: number }>
         for (const item of old) {
           if (keepMatchIds.has(item.matchId)) continue
+          db.prepare(`DELETE FROM football_assertion
+            WHERE entity_kind='match' AND entity_id=? AND facet='result' AND source=?`
+          ).run(item.matchId, slice.source)
+          db.prepare(`UPDATE football_conflict SET status='resolved',
+            resolution='Source assertion removed by complete refresh',resolved_at=datetime('now')
+            WHERE entity_kind='match' AND entity_id=? AND facet='result'
+              AND (source_a=? OR source_b=?) AND status<>'resolved'`
+          ).run(item.matchId, slice.source, slice.source)
           db.prepare(`DELETE FROM football_source_ref WHERE id=?`).run(item.refId)
+          repo.reconcileMatchResultConflicts(item.matchId, true)
           const retained = db.prepare(`
             SELECT
               EXISTS(SELECT 1 FROM football_source_ref WHERE entity_kind='match' AND entity_id=?) OR
@@ -566,6 +772,10 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
         }
       }
       for (const [facet, state] of Object.entries(slice.coverage)) {
+        const conflicted =
+          (facet === 'results' && hasResultConflict) ||
+          (facet === 'scorers' && hasScorerConflict)
+        const savedState = state === 'complete' && conflicted ? 'conflicted' : state
         db.prepare(`
           INSERT INTO football_coverage
             (competition_id,season_id,source,facet,state,item_count,revision,checked_at)
@@ -573,7 +783,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           ON CONFLICT(competition_id,season_id,source,facet) DO UPDATE SET
             state=excluded.state,item_count=excluded.item_count,revision=excluded.revision,
             checked_at=excluded.checked_at
-        `).run(competition.id, season.id, slice.source, facet, state, count, slice.revision)
+        `).run(competition.id, season.id, slice.source, facet, savedState, count, slice.revision)
       }
       return count
     })()
@@ -829,10 +1039,10 @@ async function enrichOne(
     if (!saved) status = { ...status, conflicts: status.conflicts + 1 }
     return saved
   } catch (error) {
+    if (error instanceof tasks.TaskCancelledError || runGate.cancelled) throw error
     const message = error instanceof Error ? error.message : String(error)
-    noteEnrichmentConflict(kind, entityId, row.name, message)
-    status = { ...status, conflicts: status.conflicts + 1 }
-    if (!quizPack) return false
+    noteEnrichmentError(kind, entityId)
+    if (!quizPack) throw error
     logWarn('football', `player pack skipped ${row.name}: ${message}`)
     return false
   }
@@ -846,7 +1056,7 @@ async function installPlayerQuizPack(runGate: PauseGate): Promise<void> {
     FROM football_person p
     WHERE p.role IN ('player','both') AND p.quiz_pack=0
       AND NOT EXISTS(SELECT 1 FROM football_conflict c
-        WHERE c.entity_kind='person' AND c.entity_id=p.id AND c.status='open')
+        WHERE c.entity_kind='person' AND c.entity_id=p.id AND c.status<>'resolved')
     ORDER BY connectivity DESC,p.id LIMIT 250
   `).all() as Array<{ id: number; connectivity: number }>
   status = { ...status, total: rows.length }
@@ -910,7 +1120,8 @@ async function apiJson(path: string, key: string, runGate: PauseGate): Promise<a
     headers: { 'x-apisports-key': key },
     timeoutMs: 45_000,
     taskSignal: runGate.signal,
-    rateLimitWaits: 0
+    rateLimitWaits: 0,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   writeQuota({ ...quota, used: quota.used + 1 })
   status = { ...status, requests: status.requests + 1 }
@@ -1230,70 +1441,89 @@ function deepPersonId(
   return id
 }
 
-function saveOverlayFixtureDetails(
+export function saveOverlayFixtureDetails(
   source: 'statsbomb' | 'wyscout',
   match: SourceMatch,
-  goals: SourceGoal[],
-  lineups: ReturnType<typeof parseStatsBombLineups>
-): void {
+  goals: SourceGoal[] | null,
+  lineups: ReturnType<typeof parseStatsBombLineups> | null
+): { eventsComplete: boolean; lineupsComplete: boolean } {
   const matchId = sourceRefId('match', source, match.sourceId)
   const homeId = sourceRefId('team', source, match.home.sourceId)
   const awayId = sourceRefId('team', source, match.away.sourceId)
-  if (matchId == null || homeId == null || awayId == null) return
+  if (matchId == null || homeId == null || awayId == null) {
+    return { eventsComplete: false, lineupsComplete: false }
+  }
   const db = getSqlite()
   db.transaction(() => {
-    db.prepare(`DELETE FROM football_event WHERE match_id=? AND type='goal'`).run(matchId)
-    const eventInsert = db.prepare(`
-      INSERT INTO football_event
-        (match_id,team_id,person_id,type,detail,minute,extra_minute,own_goal,penalty,sort_order)
-      VALUES (?,?,?,'goal',?,?,?,?,?,?)
-    `)
-    goals.forEach((goal, index) => {
-      const personId = goal.playerName
-        ? deepPersonId(
-            source,
-            goal.playerSourceId ?? `${match.sourceId}:goal:${normalizeFootballName(goal.playerName)}`,
-            goal.playerName
-          )
-        : null
-      eventInsert.run(
-        matchId,
-        goal.team === 'home' ? homeId : awayId,
-        personId,
-        goal.ownGoal ? 'Own goal' : goal.penalty ? 'Penalty' : null,
-        goal.minute,
-        goal.extraMinute,
-        goal.ownGoal ? 1 : 0,
-        goal.penalty ? 1 : 0,
-        index
-      )
-    })
-    db.prepare(`DELETE FROM football_lineup WHERE match_id=?`).run(matchId)
-    const lineupInsert = db.prepare(`
-      INSERT INTO football_lineup
-        (match_id,team_id,person_id,role,starter,shirt,position,captain,sort_order)
-      VALUES (?,?,?,?,?,?,?,?,?)
-    `)
-    for (const item of lineups) {
-      const teamId = sourceRefId('team', source, item.teamSourceId)
-      if (teamId == null) continue
-      lineupInsert.run(
-        matchId,
-        teamId,
-        deepPersonId(source, item.personSourceId, item.playerName, item.role),
-        item.role,
-        item.starter ? 1 : 0,
-        item.shirt,
-        item.position,
-        item.captain ? 1 : 0,
-        item.sortOrder
-      )
+    if (goals != null) {
+      db.prepare(`DELETE FROM football_event WHERE match_id=? AND type='goal'`).run(matchId)
+      const eventInsert = db.prepare(`
+        INSERT INTO football_event
+          (match_id,team_id,person_id,type,detail,minute,extra_minute,own_goal,penalty,sort_order)
+        VALUES (?,?,?,'goal',?,?,?,?,?,?)
+      `)
+      goals.forEach((goal, index) => {
+        const personId = goal.playerName
+          ? deepPersonId(
+              source,
+              goal.playerSourceId ?? `${match.sourceId}:goal:${normalizeFootballName(goal.playerName)}`,
+              goal.playerName
+            )
+          : null
+        eventInsert.run(
+          matchId,
+          goal.team === 'home' ? homeId : awayId,
+          personId,
+          goal.ownGoal ? 'Own goal' : goal.penalty ? 'Penalty' : null,
+          goal.minute,
+          goal.extraMinute,
+          goal.ownGoal ? 1 : 0,
+          goal.penalty ? 1 : 0,
+          index
+        )
+      })
+    }
+    if (lineups != null) {
+      db.prepare(`DELETE FROM football_lineup WHERE match_id=?`).run(matchId)
+      const lineupInsert = db.prepare(`
+        INSERT INTO football_lineup
+          (match_id,team_id,person_id,role,starter,shirt,position,captain,sort_order)
+        VALUES (?,?,?,?,?,?,?,?,?)
+      `)
+      for (const item of lineups) {
+        const teamId = sourceRefId('team', source, item.teamSourceId)
+        if (teamId == null) continue
+        lineupInsert.run(
+          matchId,
+          teamId,
+          deepPersonId(source, item.personSourceId, item.playerName, item.role),
+          item.role,
+          item.starter ? 1 : 0,
+          item.shirt,
+          item.position,
+          item.captain ? 1 : 0,
+          item.sortOrder
+        )
+      }
     }
     db.prepare(`
-      UPDATE football_match SET event_coverage='complete',lineup_coverage='complete',
+      UPDATE football_match SET
+        event_coverage=CASE WHEN ? THEN 'complete'
+          WHEN event_coverage='complete' THEN event_coverage ELSE 'partial' END,
+        lineup_coverage=CASE WHEN ? THEN 'complete'
+          WHEN lineup_coverage='complete' THEN lineup_coverage ELSE 'partial' END,
         updated_at=datetime('now') WHERE id=?
-    `).run(matchId)
+    `).run(goals != null ? 1 : 0, lineups != null ? 1 : 0, matchId)
   })()
+  return { eventsComplete: goals != null, lineupsComplete: lineups != null }
+}
+
+function completeLineup(
+  match: SourceMatch,
+  rows: ReturnType<typeof parseStatsBombLineups>
+): ReturnType<typeof parseStatsBombLineups> | null {
+  const teams = new Set(rows.map((row) => row.teamSourceId))
+  return teams.has(match.home.sourceId) && teams.has(match.away.sourceId) ? rows : null
 }
 
 function completeOverlayCoverage(
@@ -1301,20 +1531,43 @@ function completeOverlayCoverage(
   competitionKey: FootballCompetitionKey,
   seasonKey: string,
   revision: string,
-  matchCount: number
+  matchCount: number,
+  scorerCount: number,
+  lineupCount: number
 ): void {
   const identity = seasonIdentity(competitionKey, seasonKey)
   if (!identity) return
   const insert = getSqlite().prepare(`
     INSERT INTO football_coverage
-      (competition_id,season_id,source,facet,state,item_count,revision,checked_at)
-    VALUES (?,?,?,?, 'complete',?,?,datetime('now'))
+      (competition_id,season_id,source,facet,state,item_count,note,revision,checked_at)
+    VALUES (?,?,?,?,?,?,?,?,datetime('now'))
     ON CONFLICT(competition_id,season_id,source,facet) DO UPDATE SET
-      state='complete',item_count=excluded.item_count,note=NULL,revision=excluded.revision,
+      state=CASE WHEN football_coverage.state='complete' AND excluded.state='partial'
+        THEN football_coverage.state ELSE excluded.state END,
+      item_count=CASE WHEN football_coverage.state='complete' AND excluded.state='partial'
+        THEN football_coverage.item_count ELSE excluded.item_count END,
+      note=CASE WHEN football_coverage.state='complete' AND excluded.state='partial'
+        THEN 'Latest deep-pack refresh was partial; retained the last complete slice'
+        ELSE excluded.note END,
+      revision=CASE WHEN football_coverage.state='complete' AND excluded.state='partial'
+        THEN football_coverage.revision ELSE excluded.revision END,
       checked_at=excluded.checked_at
   `)
-  insert.run(identity.competitionId, identity.seasonId, source, 'scorers', matchCount, revision)
-  insert.run(identity.competitionId, identity.seasonId, source, 'lineups', matchCount, revision)
+  const save = (facet: string, count: number): void => {
+    const complete = count === matchCount
+    insert.run(
+      identity.competitionId,
+      identity.seasonId,
+      source,
+      facet,
+      complete ? 'complete' : 'partial',
+      count,
+      complete ? null : `${count} of ${matchCount} matches supplied complete ${facet}`,
+      revision
+    )
+  }
+  save('scorers', scorerCount)
+  save('lineups', lineupCount)
 }
 
 function markOverlayCoveragePending(
@@ -1425,6 +1678,8 @@ async function installStatsBomb(
       const imported = writeOverlayResultSlice(slice)
       status = { ...status, done: status.done + 1, imported: status.imported + imported }
     }
+    let scorerCount = 0
+    let lineupCount = 0
     for (const match of matches) {
       await checkpoint(runGate)
       status = { ...status, phase: 'downloading', competitionKey, message: `StatsBomb match ${match.sourceId}` }
@@ -1432,15 +1687,25 @@ async function installStatsBomb(
         downloadText(`${STATSBOMB_BASE}/events/${match.sourceId}.json`, 'statsbomb', runGate.signal),
         downloadText(`${STATSBOMB_BASE}/lineups/${match.sourceId}.json`, 'statsbomb', runGate.signal)
       ])
-      saveOverlayFixtureDetails(
+      const saved = saveOverlayFixtureDetails(
         'statsbomb',
         match,
         parseStatsBombEvents(JSON.parse(eventsData.text), match.home.sourceId),
-        parseStatsBombLineups(JSON.parse(lineupsData.text))
+        completeLineup(match, parseStatsBombLineups(JSON.parse(lineupsData.text)))
       )
+      if (saved.eventsComplete) scorerCount++
+      if (saved.lineupsComplete) lineupCount++
       status = { ...status, done: status.done + 1 }
     }
-    completeOverlayCoverage('statsbomb', competitionKey, seasonKey, matchData.checksum, matches.length)
+    completeOverlayCoverage(
+      'statsbomb',
+      competitionKey,
+      seasonKey,
+      matchData.checksum,
+      matches.length,
+      scorerCount,
+      lineupCount
+    )
   }
 }
 
@@ -1513,17 +1778,29 @@ async function installWyscout(
       const imported = writeOverlayResultSlice(slice)
       status = { ...status, done: status.done + 1, imported: status.imported + imported }
     }
+    let scorerCount = 0
+    let lineupCount = 0
     for (const match of pack.matches) {
       await checkpoint(runGate)
-      saveOverlayFixtureDetails(
+      const saved = saveOverlayFixtureDetails(
         'wyscout',
         match,
         events.get(match.sourceId) ?? [],
-        pack.lineups.get(match.sourceId) ?? []
+        completeLineup(match, pack.lineups.get(match.sourceId) ?? [])
       )
+      if (saved.eventsComplete) scorerCount++
+      if (saved.lineupsComplete) lineupCount++
       status = { ...status, done: status.done + 1 }
     }
-    completeOverlayCoverage('wyscout', competitionKey, spec.seasonKey, checksum, pack.matches.length)
+    completeOverlayCoverage(
+      'wyscout',
+      competitionKey,
+      spec.seasonKey,
+      checksum,
+      pack.matches.length,
+      scorerCount,
+      lineupCount
+    )
   }
 }
 
@@ -1552,13 +1829,37 @@ export function saveApiStandings(
     Array.isArray(item?.league?.standings) ? item.league.standings : []
   ) as any[][]
   const rows = groups.flat()
-  const valid = rows.length > 0 && rows.every((row) =>
-    row?.team?.id != null &&
-    String(row.team?.name ?? '').trim() &&
-    row.rank != null &&
-    Number.isFinite(Number(row.rank)) &&
-    row.all != null
-  )
+  const requiredNumbers = (row: any): unknown[] => [
+    row.rank,
+    row.all?.played,
+    row.all?.win,
+    row.all?.draw,
+    row.all?.lose,
+    row.all?.goals?.for,
+    row.all?.goals?.against,
+    row.goalsDiff,
+    row.points
+  ]
+  const teams = rows.map((row) => String(row?.team?.id ?? ''))
+  const existingCount = (getSqlite().prepare(`
+    SELECT COUNT(*) AS n FROM football_standing WHERE season_id=? AND rank_official=1
+  `).get(identity.seasonId) as { n: number }).n
+  const valid = rows.length > 0 &&
+    (existingCount === 0 || rows.length >= existingCount) &&
+    new Set(teams).size === rows.length &&
+    groups.every((group) => {
+      const ranks = group.map((row) => Number(row.rank))
+      return ranks.length > 0 && new Set(ranks).size === ranks.length
+    }) &&
+    rows.every((row) =>
+      row?.team?.id != null &&
+      String(row.team?.name ?? '').trim() &&
+      requiredNumbers(row).every((value) =>
+        value != null &&
+        !(typeof value === 'string' && !value.trim()) &&
+        Number.isFinite(Number(value))
+      )
+    )
   if (!valid) return false
   getSqlite().transaction(() => {
     const db = getSqlite()
@@ -1574,15 +1875,15 @@ export function saveApiStandings(
       insert.run(
         identity.seasonId,
         teamId,
-        Number(row.rank) || null,
-        Number(row.all?.played) || 0,
-        Number(row.all?.win) || 0,
-        Number(row.all?.draw) || 0,
-        Number(row.all?.lose) || 0,
-        Number(row.all?.goals?.for) || 0,
-        Number(row.all?.goals?.against) || 0,
-        Number(row.goalsDiff) || 0,
-        Number(row.points) || 0,
+        Number(row.rank),
+        Number(row.all.played),
+        Number(row.all.win),
+        Number(row.all.draw),
+        Number(row.all.lose),
+        Number(row.all.goals.for),
+        Number(row.all.goals.against),
+        Number(row.goalsDiff),
+        Number(row.points),
         0,
         String(row.description ?? '').trim() || null
       )

@@ -11,6 +11,7 @@ import Section from './Section'
 import CoverImage from './CoverImage'
 import type { MangaChapter, MediaDetail } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import Tabs, { TabPanel } from './Tabs'
 
 // Local manga reader entry point on the manga detail page: attach a series
 // folder from the manga library, list its scanned chapters (image folders,
@@ -51,7 +52,7 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
     }
   }
 
-  const { data } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: qk.manga.chapters(m.id),
     queryFn: () => api.manga.chapters(m.id)
   })
@@ -137,10 +138,22 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
       title={`${isBookMedia ? 'Volumes' : 'Chapters'}${chapters.length ? ` · ${readCount}/${chapters.length} read` : ''}`}
       className="mb-6"
     >
-      {!data?.localDir ? (
+      {isLoading ? (
+        <p className="text-sm text-gray-500">Loading…</p>
+      ) : isError ? (
+        <div role="alert">
+          <p className="text-sm text-red-300">
+            Could not load this {isBookMedia ? 'book' : 'manga'}'s local chapters.
+            {error instanceof Error && error.message ? ` ${error.message}` : ''}
+          </p>
+          <button className="btn-ghost mt-3" onClick={() => void refetch()}>
+            Retry
+          </button>
+        </div>
+      ) : !data?.localDir ? (
         <div className="flex items-center gap-3">
           <button className="btn-ghost py-1 px-3 text-sm" disabled={busy} onClick={attach}>
-            ⊕ Link local folder
+            Link local folder
           </button>
           <span className="text-xs text-gray-400">
             Point at this {isBookMedia ? "book's" : "manga's"} folder in your library to read it
@@ -149,10 +162,10 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2 mb-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2 mb-2 text-sm">
             {continueCh && (
               <button className="btn-ghost py-1 px-3" onClick={() => openReader(continueCh)}>
-                ▶ {continueCh.lastReadPage != null ? 'Continue' : 'Start'} · {continueCh.title}
+                {continueCh.lastReadPage != null ? 'Continue' : 'Start'} · {continueCh.title}
               </button>
             )}
             <button className="btn-ghost py-1 px-3" disabled={busy} onClick={rescan}>
@@ -212,45 +225,41 @@ export default function MangaChaptersSection({ m }: { m: MediaDetail }) {
               {data.localDir}
             </span>
           </div>
-          <div className="mb-2 flex items-center gap-1.5">
-            <button
-              className={view === 'grid' ? 'pill pill-active' : 'pill'}
-              onClick={() => setView('grid')}
-            >
-              Grid
-            </button>
-            <button
-              className={view === 'list' ? 'pill pill-active' : 'pill'}
-              onClick={() => setView('list')}
-            >
-              List
-            </button>
-          </div>
-          {view === 'grid' ? (
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-4">
-              {chapters.map((ch) => (
-                <ChapterTile
-                  key={ch.id}
-                  ch={ch}
-                  hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
-                  onOpen={() => openReader(ch)}
-                  onChange={refresh}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
-              {chapters.map((ch) => (
-                <ChapterRow
-                  key={ch.id}
-                  ch={ch}
-                  hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
-                  onOpen={() => openReader(ch)}
-                  onChange={refresh}
-                />
-              ))}
-            </div>
-          )}
+          <Tabs
+            id={`chapters-${m.id}`}
+            label={`${isBookMedia ? 'Volumes' : 'Chapters'} view`}
+            tabs={[{ key: 'grid' as const, label: 'Grid' }, { key: 'list' as const, label: 'List' }]}
+            value={view}
+            onChange={setView}
+            className="mb-2"
+          />
+          <TabPanel tabsId={`chapters-${m.id}`} value={view}>
+            {view === 'grid' ? (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-4">
+                {chapters.map((ch) => (
+                  <ChapterTile
+                    key={ch.id}
+                    ch={ch}
+                    hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
+                    onOpen={() => openReader(ch)}
+                    onChange={refresh}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
+                {chapters.map((ch) => (
+                  <ChapterRow
+                    key={ch.id}
+                    ch={ch}
+                    hasOcr={ocrByChapter.get(ch.id)?.hasSidecar ?? false}
+                    onOpen={() => openReader(ch)}
+                    onChange={refresh}
+                  />
+                ))}
+              </div>
+            )}
+          </TabPanel>
         </>
       )}
     </Section>
@@ -373,6 +382,7 @@ function ChapterRow({
       <button
         onClick={toggleRead}
         title={ch.readAt ? 'Mark unread' : 'Mark read'}
+        aria-label={`${ch.readAt ? 'Mark unread' : 'Mark read'}: ${ch.title}`}
         className={`shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs ${
           ch.readAt
             ? 'bg-accent/20 text-accent'

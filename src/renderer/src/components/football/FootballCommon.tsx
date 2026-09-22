@@ -123,7 +123,11 @@ export function FootballCoverageStrip({ coverage }: { coverage: FootballCoverage
     return <p className="text-sm text-ink-muted">No source coverage has been recorded yet.</p>
   }
   const latest = new Map<string, FootballCoverage>()
-  for (const item of coverage) if (!latest.has(item.facet)) latest.set(item.facet, item)
+  for (const item of coverage) {
+    const scope = `${item.competitionKey ?? 'global'}:${item.seasonId ?? 'all'}`
+    const key = `${scope}:${item.source}:${item.facet}`
+    if (!latest.has(key)) latest.set(key, item)
+  }
   return (
     <div className="flex flex-wrap gap-x-5 gap-y-2 text-xs">
       {[...latest.values()].map((item) => (
@@ -134,10 +138,12 @@ export function FootballCoverageStrip({ coverage }: { coverage: FootballCoverage
                 ? 'bg-signal-live'
                 : item.state === 'conflicted'
                   ? 'bg-signal-anomaly'
-                  : 'bg-ink-muted'
+                  : item.state === 'partial'
+                    ? 'bg-signal-caution'
+                    : 'bg-ink-muted'
             }`}
           />
-          <span className="text-ink-secondary">{item.facet}</span>
+          <span className="text-ink-secondary">{item.source} / {item.facet}</span>
           <span className="text-ink-muted">{item.state.replace('_', ' ')}</span>
         </span>
       ))}

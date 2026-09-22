@@ -1,12 +1,10 @@
-import { createWriteStream } from 'fs'
 import { unlink } from 'fs/promises'
 import { join } from 'path'
-import { Readable, Transform } from 'stream'
-import { pipeline } from 'stream/promises'
 import { setImmediate as yieldToLoop } from 'timers/promises'
 import yauzl from 'yauzl'
 import type Database from 'better-sqlite3'
 import { fetchWithRetry } from '../http'
+import { streamResponseToFile } from '../streamDownload'
 import * as tasks from '../tasks'
 import { getDictDb } from './dictDb'
 import { flattenGlossary } from '@shared/dictContent'
@@ -28,6 +26,9 @@ import type {
 const CHUNK = 1000
 const DELETE_CHUNK = 2000
 const UA = 'NaviHUB/1.0 (+https://github.com/yomidevs/jmdict-yomitan)'
+const MAX_DICTIONARY_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024
+const MAX_DICTIONARY_ENTRY_BYTES = 256 * 1024 * 1024
+let downloadCounter = 0
 
 // Freely-hosted presets. Other dictionaries (pitch accent, DOJG, 新和英) are
 // imported from a user-picked zip via importZipFile. The two frequency
@@ -141,11 +142,22 @@ export async function openZipReader(zipPath: string): Promise<BankReader & { clo
     new Promise((resolve, reject) => {
       const entry = entries.get(name)
       if (!entry) return reject(new Error(`Missing zip entry: ${name}`))
+      if (entry.uncompressedSize > MAX_DICTIONARY_ENTRY_BYTES) {
+        return reject(new Error(`Dictionary entry ${name} exceeds the 256 MB limit`))
+      }
       zipfile.openReadStream(entry, (err, stream) => {
         if (err || !stream) return reject(err ?? new Error('no read stream'))
         const chunks: Buffer[] = []
-        stream.on('data', (c: Buffer) => chunks.push(c))
-        stream.on('end', () => resolve(Buffer.concat(chunks)))
+        let total = 0
+        stream.on('data', (c: Buffer) => {
+          total += c.length
+          if (total > MAX_DICTIONARY_ENTRY_BYTES) {
+            stream.destroy(new Error(`Dictionary entry ${name} exceeds the 256 MB limit`))
+            return
+          }
+          chunks.push(c)
+        })
+        stream.on('end', () => resolve(Buffer.concat(chunks, total)))
         stream.on('error', reject)
       })
     })
@@ -616,18 +628,23 @@ export async function downloadToTemp(url: string, ext = 'zip'): Promise<string> 
   })
   if (!res.ok || !res.body) throw new Error(`Download failed (HTTP ${res.status})`)
   importState.total = Number(res.headers.get('content-length')) || 0
-  const tmp = join(app.getPath('temp'), `navihub-dict-${Date.now()}.${ext}`)
-  const counter = new Transform({
-    transform(chunk, _enc, cb) {
+  downloadCounter += 1
+  const tmp = join(
+    app.getPath('temp'),
+    `navihub-dict-${process.pid}-${Date.now()}-${downloadCounter}.${ext}`
+  )
+  await streamResponseToFile(res, tmp, {
+    label: 'Dictionary archive',
+    maxInputBytes: MAX_DICTIONARY_ARCHIVE_BYTES,
+    signal: activeImportSignal ?? undefined,
+    onProgress: (done, total) => {
+      importState.done = done
+      importState.total = total
       if (activeImport?.cancelRequested()) {
-        cb(new tasks.TaskCancelledError(importState.dictTitle ?? 'Dictionary import'))
-        return
+        throw new tasks.TaskCancelledError(importState.dictTitle ?? 'Dictionary import')
       }
-      importState.done += chunk.length
-      cb(null, chunk)
     }
   })
-  await pipeline(Readable.fromWeb(res.body as any), counter, createWriteStream(tmp))
   return tmp
 }
 

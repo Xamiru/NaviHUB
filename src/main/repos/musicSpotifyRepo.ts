@@ -262,14 +262,17 @@ export function linkProvenanceTracks(input: {
          JOIN music_album al ON al.id=t.album_id
          WHERE t.file_path LIKE ?`
       ).all(`%[navihub-${row.spotifyTrackId}]%`) as Record<string, unknown>[]
-      if (local.length !== 1) continue
       const proof = sourceEvidence(row.sourceKind, row.sourceId)
-      if (proof?.validated && proof.artifactToken && String(local[0].file_path).includes(`[navirun-${proof.artifactToken}]`) && local[0].duration != null && Number(local[0].duration) > 0 &&
-          (proof.evidence.duration == null ? proof.approved : Math.abs(Number(local[0].duration) - proof.evidence.duration) <= compatibleSpotifyDurationTolerance(proof.evidence.duration))) {
-        linkVerifiedSource(row.spotifyTrackId, Number(local[0].id), proof.evidence.url)
+      const verified = proof?.validated && proof.artifactToken ? local.filter((track) =>
+        String(track.file_path).includes(`[navirun-${proof.artifactToken}]`) && track.duration != null && Number(track.duration) > 0 &&
+        (proof.evidence.duration == null ? proof.approved : Math.abs(Number(track.duration) - proof.evidence.duration) <= compatibleSpotifyDurationTolerance(proof.evidence.duration))
+      ).sort((a, b) => Number(a.id) - Number(b.id))[0] : undefined
+      if (verified && proof) {
+        linkVerifiedSource(row.spotifyTrackId, Number(verified.id), proof.evidence.url)
         linked += 1
         continue
       }
+      if (local.length !== 1) continue
       setDownloadCandidate({
         sourceKind: row.sourceKind,
         sourceId: row.sourceId,
@@ -1898,7 +1901,11 @@ export function matchPlaylistItemToLocalTrack(input: { itemId: number; trackId: 
 }
 
 export function provenanceFilePaths(ids: string[]): string[] {
-  const rows = getSqlite().prepare("SELECT file_path FROM music_track WHERE file_path LIKE '%[navihub-%'").all() as { file_path: string }[]
+  // Unresolved files retain their markers: they are the only independent link
+  // between a completed acquisition and its source after interruption.
+  const rows = getSqlite().prepare(`SELECT t.file_path FROM music_track t WHERE t.file_path LIKE '%[navihub-%'
+    AND (EXISTS (SELECT 1 FROM music_audio_source a WHERE a.local_track_id=t.id)
+      OR EXISTS (SELECT 1 FROM music_spotify_download_candidate c WHERE c.local_track_id=t.id))`).all() as { file_path: string }[]
   const allowed = new Set(ids)
   return rows.filter((row) => {
     const match = row.file_path.match(/\[navihub-([A-Za-z0-9]+)\]/)

@@ -1,4 +1,6 @@
 import { getSqlite } from '../db/connection'
+import { removeEntityFromLists } from './listRepo'
+import { removeEntityFromTierLists } from './tierListRepo'
 import type {
   WrestlingEvent,
   WrestlingHonourGroup,
@@ -6,6 +8,7 @@ import type {
   WrestlingWrestlerDetail,
   WrestlingEventDetail,
   WrestlingEventFilter,
+  WrestlingFavorites,
   WrestlingMatch,
   WrestlingFavoriteKind,
   WrestlingLinkTarget,
@@ -306,7 +309,10 @@ export function saveEvent(input: SaveEvent): number {
     // is genuinely gone from the article.
     for (const ids of pool.values()) {
       for (const id of ids) {
-        if (!reused.has(id)) db.prepare('DELETE FROM wrestling_match WHERE id = ?').run(id)
+        if (!reused.has(id)) {
+          removeMatchFromCollections(id)
+          db.prepare('DELETE FROM wrestling_match WHERE id = ?').run(id)
+        }
       }
     }
     return eventId
@@ -346,6 +352,10 @@ export interface SaveWrestlerDetail {
   height?: string | null
   photoPath?: string | null
   bio?: string | null
+}
+
+export interface SaveWrestlerDetailWithHonours extends SaveWrestlerDetail {
+  honours: WrestlingHonourGroup[]
 }
 
 // Canonical fields only — `favorite` is never touched, and COALESCE keeps what
@@ -405,6 +415,78 @@ export function markWrestlersChecked(wikiTitles: string[]): void {
   db.transaction(() => {
     for (const t of wikiTitles) upd.run(t)
   })()
+}
+
+// One fetched Wikipedia batch is one fact: profile fields, honours, and the
+// "checked" watermark either all land or none do. That keeps a mid-write
+// failure retriable instead of leaving a permanently half-filled wrestler.
+export function saveWrestlerDetailBatch(
+  rows: SaveWrestlerDetailWithHonours[],
+  checkedWikiTitles: string[]
+): number {
+  if (!checkedWikiTitles.length) return 0
+  const db = getSqlite()
+  const upd = db.prepare(
+    `UPDATE wrestling_wrestler
+        SET real_name = COALESCE(?, real_name), birth_date = COALESCE(?, birth_date),
+            debut_year = COALESCE(?, debut_year), billed_from = COALESCE(?, billed_from),
+            height = COALESCE(?, height), photo_path = COALESCE(?, photo_path),
+            bio = COALESCE(?, bio), updated_at = datetime('now')
+      WHERE wiki_title = ?`
+  )
+  const wrestlerId = db.prepare('SELECT id FROM wrestling_wrestler WHERE wiki_title = ?')
+  const clearHonours = db.prepare('DELETE FROM wrestling_honour WHERE wrestler_id = ?')
+  const insertHonour = db.prepare(
+    'INSERT INTO wrestling_honour (wrestler_id, org, title, sort_order) VALUES (?, ?, ?, ?)'
+  )
+  const markChecked = db.prepare(
+    `UPDATE wrestling_wrestler SET detail_fetched_at = datetime('now')
+      WHERE wiki_title = ?`
+  )
+
+  return db.transaction(() => {
+    let saved = 0
+    for (const row of rows) {
+      saved += upd.run(
+        row.realName ?? null,
+        row.birthDate ?? null,
+        row.debutYear ?? null,
+        row.billedFrom ?? null,
+        row.height ?? null,
+        row.photoPath ?? null,
+        row.bio ?? null,
+        row.wikiTitle
+      ).changes
+      const found = wrestlerId.get(row.wikiTitle) as Row | undefined
+      if (!found) continue
+      clearHonours.run(found.id)
+      let order = 0
+      for (const group of row.honours) {
+        for (const title of group.items) insertHonour.run(found.id, group.org, title, order++)
+      }
+    }
+    for (const title of checkedWikiTitles) markChecked.run(title)
+    return saved
+  })()
+}
+
+// A refresh re-opens only wrestlers referenced by the selected promotions.
+// If the run stops, remaining NULL markers make the next run resume safely.
+export function resetWrestlerDetails(promotions: WrestlingPromotionId[]): number {
+  if (!promotions.length) return 0
+  const placeholders = promotions.map(() => '?').join(', ')
+  return getSqlite()
+    .prepare(
+      `UPDATE wrestling_wrestler SET detail_fetched_at = NULL
+        WHERE id IN (
+          SELECT DISTINCT p.wrestler_id
+            FROM wrestling_match_participant p
+            JOIN wrestling_match m ON m.id = p.match_id
+            JOIN wrestling_event e ON e.id = m.event_id
+           WHERE e.promotion IN (${placeholders})
+        )`
+    )
+    .run(...promotions).changes
 }
 
 // ---------------------------------------------------------------------------
@@ -738,20 +820,34 @@ export function pruneOrphanWrestlers(): number {
   return getSqlite()
     .prepare(
       `DELETE FROM wrestling_wrestler
-        WHERE NOT EXISTS (
+        WHERE favorite = 0
+          AND NOT EXISTS (
           SELECT 1 FROM wrestling_match_participant p WHERE p.wrestler_id = wrestling_wrestler.id
-        )`
+        )
+          AND NOT EXISTS (
+            SELECT 1 FROM list_item li
+            JOIN list l ON l.id = li.list_id
+            WHERE l.entity_kind = 'wrestlingWrestler' AND li.entity_id = wrestling_wrestler.id
+          )
+          AND NOT EXISTS (
+            SELECT 1 FROM tier_item ti
+            JOIN tier_list tl ON tl.id = ti.list_id
+            WHERE tl.entity_kind = 'wrestlingWrestler' AND ti.entity_id = wrestling_wrestler.id
+          )`
     )
     .run().changes
 }
 
-// Which event a match belongs to. A match has no page of its own — it lives on
-// its event's card — so a list entry pointing at one has to be redirected there.
-export function eventIdOfMatch(matchId: number): number | null {
+// Where a match lives. Imported matches resolve to their event; loose matches
+// resolve to the collection row that owns their edit/play affordances.
+export function matchLocation(matchId: number): { kind: 'event'; eventId: number } | { kind: 'loose' } | null {
   const row = getSqlite()
     .prepare('SELECT event_id FROM wrestling_match WHERE id = ?')
     .get(matchId) as Row | undefined
-  return (row?.event_id as number) ?? null
+  if (!row) return null
+  return row.event_id == null
+    ? { kind: 'loose' }
+    : { kind: 'event', eventId: row.event_id as number }
 }
 
 // ---------------------------------------------------------------------------
@@ -850,6 +946,44 @@ export function topRatedMatches(limit = 50): WrestlingMatchWithEvent[] {
     eventName: r.event_name as string,
     eventDate: (r.event_date_ ?? null) as string | null
   }))
+}
+
+// Bounded home projection for the two favorite kinds that otherwise have no
+// browse surface. Event favorites already have a promotion-page filter.
+export function favorites(limit = 20): WrestlingFavorites {
+  const db = getSqlite()
+  const matchRows = db
+    .prepare(
+      `SELECT m.*,
+              COALESCE(e.name, m.show_label, 'Loose match') AS event_name,
+              COALESCE(e.event_date, m.match_date)          AS event_date_
+         FROM wrestling_match m
+         LEFT JOIN wrestling_event e ON e.id = m.event_id
+        WHERE m.favorite = 1
+        ORDER BY event_date_ DESC, m.id DESC
+        LIMIT ?`
+    )
+    .all(limit) as Row[]
+  const participants = participantsFor(matchRows.map((row) => row.id as number))
+  const wrestlers = db
+    .prepare(
+      `SELECT w.*,
+              (SELECT COUNT(*) FROM wrestling_match_participant p WHERE p.wrestler_id = w.id)
+                AS match_count
+         FROM wrestling_wrestler w
+        WHERE w.favorite = 1
+        ORDER BY w.name COLLATE NOCASE ASC
+        LIMIT ?`
+    )
+    .all(limit) as Row[]
+  return {
+    matches: matchRows.map((row) => ({
+      ...mapMatch(row, participants),
+      eventName: row.event_name as string,
+      eventDate: (row.event_date_ ?? null) as string | null
+    })),
+    wrestlers: wrestlers.map(mapWrestler)
+  }
 }
 
 // Resolves wiki: link targets to the entities we hold. Titles arrive
@@ -985,6 +1119,17 @@ export function wrestlerIdByTitle(wikiTitle: string): number | null {
 export function createLooseMatch(input: WrestlingLooseMatchInput, videoId: number | null): number {
   const db = getSqlite()
   return db.transaction((): number => {
+    validateLooseMatchInput(input)
+    if (videoId != null) {
+      const video = db
+        .prepare(
+          `SELECT 1 FROM wrestling_video v
+            WHERE v.id = ? AND v.event_id IS NULL
+              AND NOT EXISTS (SELECT 1 FROM wrestling_match m WHERE m.video_id = v.id)`
+        )
+        .get(videoId)
+      if (!video) throw new Error('Loose match video does not exist or is already attached.')
+    }
     const id = Number(
       db
         .prepare(
@@ -1010,7 +1155,8 @@ export function createLooseMatch(input: WrestlingLooseMatchInput, videoId: numbe
 export function updateLooseMatch(matchId: number, input: WrestlingLooseMatchInput): void {
   const db = getSqlite()
   db.transaction(() => {
-    db.prepare(
+    validateLooseMatchInput(input)
+    const changed = db.prepare(
       `UPDATE wrestling_match
           SET show_label = ?, match_date = ?, title = ?, stipulation = ?,
               outcome = ?, updated_at = datetime('now')
@@ -1022,9 +1168,25 @@ export function updateLooseMatch(matchId: number, input: WrestlingLooseMatchInpu
       input.stipulation ?? null,
       input.winnerIds?.length ? 'decision' : 'unknown',
       matchId
-    )
+    ).changes
+    if (changed === 0) throw new Error('Loose match not found.')
     setLooseParticipants(matchId, input)
   })()
+}
+
+function validateLooseMatchInput(input: WrestlingLooseMatchInput): void {
+  const wrestlerIds = [...new Set(input.wrestlerIds ?? [])]
+  const winners = [...new Set(input.winnerIds ?? [])]
+  const selected = new Set(wrestlerIds)
+  if (winners.some((id) => !selected.has(id))) {
+    throw new Error('Every winner must be one of the selected wrestlers.')
+  }
+  if (!wrestlerIds.length) return
+  const placeholders = wrestlerIds.map(() => '?').join(', ')
+  const found = getSqlite()
+    .prepare(`SELECT COUNT(*) AS n FROM wrestling_wrestler WHERE id IN (${placeholders})`)
+    .get(...wrestlerIds) as Row
+  if (found.n !== wrestlerIds.length) throw new Error('One or more selected wrestlers do not exist.')
 }
 
 // Side 0 is the winners when any were named, so the row reads "A def. B" like
@@ -1040,7 +1202,7 @@ function setLooseParticipants(matchId: number, input: WrestlingLooseMatchInput):
   )
   let order = 0
   // Winners first so side 0 is the winning side.
-  const ids = [...(input.wrestlerIds ?? [])].sort(
+  const ids = [...new Set(input.wrestlerIds ?? [])].sort(
     (a, b) => Number(winners.has(b)) - Number(winners.has(a))
   )
   for (const wid of ids) {
@@ -1058,11 +1220,21 @@ export function removeLooseMatch(matchId: number): void {
       .prepare('SELECT video_id FROM wrestling_match WHERE id = ? AND event_id IS NULL')
       .get(matchId) as Row | undefined
     if (!row) return
+    removeMatchFromCollections(matchId)
     db.prepare('DELETE FROM wrestling_match WHERE id = ?').run(matchId)
     if (row.video_id != null) {
-      db.prepare('DELETE FROM wrestling_video WHERE id = ? AND event_id IS NULL').run(row.video_id)
+      db.prepare(
+        `DELETE FROM wrestling_video
+          WHERE id = ? AND event_id IS NULL
+            AND NOT EXISTS (SELECT 1 FROM wrestling_match WHERE video_id = ?)`
+      ).run(row.video_id, row.video_id)
     }
   })()
+}
+
+function removeMatchFromCollections(matchId: number): void {
+  removeEntityFromLists('wrestlingMatch', matchId)
+  removeEntityFromTierLists('wrestlingMatch', matchId)
 }
 
 // Registers a picked file as a loose video row (event_id NULL) so it plays

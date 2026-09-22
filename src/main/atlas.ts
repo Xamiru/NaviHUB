@@ -1,6 +1,6 @@
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { gachaGame } from '@shared/gacha'
 import * as gachaRepo from './repos/gachaRepo'
 import type { GachaCatalogUnitUpsert } from './repos/gachaRepo'
@@ -46,7 +46,10 @@ export function prettifyFgoClass(className: string): string {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 async function fetchExport(file: string): Promise<any[]> {
-  const res = await fetchWithRetry(`${BASE}/${file}`, { headers: { Accept: 'application/json' } })
+  const res = await fetchWithRetry(`${BASE}/${file}`, {
+    headers: { Accept: 'application/json' },
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
+  })
   if (!res.ok) throw new Error(`Atlas Academy request failed (${res.status})`)
   const data = await res.json()
   if (!Array.isArray(data) || data.length === 0) {

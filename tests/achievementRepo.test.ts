@@ -53,8 +53,15 @@ describe('eligibility (exe linked now or ever)', () => {
 
   it('still accepts a game that is already tracked, whatever happened to the exe', () => {
     const id = addGame('Tracked', null)
-    repo.setAssociation(id, 'steam', '1091500')
+    repo.setInitialAssociation(id, 'steam', '1091500')
     expect(repo.isEligible(id)).toBe(true)
+  })
+
+  it('cannot relabel an existing association without a complete replacement set', () => {
+    const id = addGame('Tracked', null)
+    repo.setInitialAssociation(id, 'steam', '100')
+    repo.setInitialAssociation(id, 'ra', '200')
+    expect(repo.getTracking(id)).toMatchObject({ provider: 'steam', providerGameId: '100' })
   })
 
   it('is false for a media id that does not exist', () => {
@@ -71,6 +78,14 @@ describe('upsertSchema', () => {
     expect(tracking?.providerGameId).toBe('1091500')
     expect(tracking?.schemaFetchedAt).toBeTruthy()
     expect(repo.listForMedia(id).map((a) => a.apiName)).toEqual(['A', 'B'])
+  })
+
+  it('rejects an empty replacement without changing the tracked identity', () => {
+    const id = addGame()
+    repo.upsertSchema(id, 'steam', '100', [ach('A')])
+    expect(() => repo.upsertSchema(id, 'ra', '200', [])).toThrow(/empty schema/i)
+    expect(repo.getTracking(id)).toMatchObject({ provider: 'steam', providerGameId: '100' })
+    expect(repo.listForMedia(id).map((row) => row.apiName)).toEqual(['A'])
   })
 
   it('is idempotent — a second identical fetch changes nothing', () => {
@@ -135,6 +150,55 @@ describe('upsertSchema', () => {
     repo.upsertSchema(id, 'steam', '1091500', [ach('A')])
     expect(repo.summaryFor(id)).toMatchObject({ unlocked: 0, total: 1 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM achievement_unlock').get()).toEqual({ n: 0 })
+  })
+
+  it('does not carry unlocks across provider identities with overlapping api names', () => {
+    const id = addGame()
+    repo.upsertSchema(id, 'steam', '1091500', [ach('1', { name: 'Steam achievement' })])
+    repo.insertUnlocks(id, [{ apiName: '1', unlockedAtMs: null }], 'emu', Date.now())
+
+    repo.upsertSchema(id, 'ra', '4321', [ach('1', { name: 'RA achievement', points: 10 })])
+
+    expect(repo.listForMedia(id)[0]).toMatchObject({
+      name: 'RA achievement',
+      unlockedAt: null,
+      unlockSource: null
+    })
+    expect(repo.summaryFor(id)).toEqual({ unlocked: 0, total: 1, points: 0 })
+  })
+
+  it('does not carry unlocks across game ids from the same provider', () => {
+    const id = addGame()
+    repo.upsertSchema(id, 'steam', '100', [ach('SHARED')])
+    repo.insertUnlocks(id, [{ apiName: 'SHARED', unlockedAtMs: null }], 'emu', Date.now())
+
+    repo.upsertSchema(id, 'steam', '200', [ach('SHARED')])
+
+    expect(repo.listForMedia(id)[0].unlockedAt).toBeNull()
+  })
+})
+
+describe('atomic schema and unlock replacement', () => {
+  it('rolls the whole replacement back when an unlock write fails', () => {
+    const id = addGame()
+    repo.upsertSchema(id, 'steam', '100', [ach('OLD', { name: 'Old set' })])
+    db.exec(`CREATE TRIGGER fail_unlock BEFORE INSERT ON achievement_unlock
+             BEGIN SELECT RAISE(ABORT, 'forced unlock failure'); END`)
+
+    expect(() =>
+      repo.replaceSchemaWithUnlocks(
+        id,
+        'ra',
+        '4321',
+        [ach('NEW', { name: 'New set', points: 10 })],
+        [{ apiName: 'NEW', unlockedAtMs: null }],
+        'ra',
+        Date.now()
+      )
+    ).toThrow(/forced unlock failure/)
+
+    expect(repo.getTracking(id)).toMatchObject({ provider: 'steam', providerGameId: '100' })
+    expect(repo.listForMedia(id).map((row) => row.name)).toEqual(['Old set'])
   })
 })
 
@@ -385,7 +449,7 @@ describe('cross-game views', () => {
 
   it('keeps a tracked game in the overview even before its set is fetched', () => {
     const id = addGame('Associated Only')
-    repo.setAssociation(id, 'steam', '1091500')
+    repo.setInitialAssociation(id, 'steam', '1091500')
     const { games } = repo.overview()
     expect(games).toHaveLength(1)
     expect(games[0]).toMatchObject({ mediaId: id, total: 0, unlocked: 0 })
@@ -405,13 +469,18 @@ describe('installedGames', () => {
       `INSERT INTO game_session (media_id, started_at, ended_at, duration)
        VALUES (?, '2026-08-01 10:00:00', '2026-08-01 11:00:00', 3600)`
     ).run(id)
+    db.prepare(
+      `INSERT INTO game_session (media_id, started_at, ended_at, duration)
+       VALUES (?, '2026-08-02 10:00:00', '2026-08-02 10:30:00', 1800)`
+    ).run(id)
     repo.upsertSchema(id, 'steam', '1', [ach('A'), ach('B')])
     repo.insertUnlocks(id, [{ apiName: 'A', unlockedAtMs: null }], 'emu', Date.now())
 
     const [row] = repo.installedGames()
     expect(row).toMatchObject({
-      totalSeconds: 3600,
-      lastPlayedAt: '2026-08-01 10:00:00',
+      totalSeconds: 5400,
+      lastPlayedAt: '2026-08-02 10:00:00',
+      lastSessionSeconds: 1800,
       achievements: { unlocked: 1, total: 2 }
     })
   })

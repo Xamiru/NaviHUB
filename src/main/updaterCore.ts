@@ -3,22 +3,16 @@
  * updater.ts for the same reason coachTools.ts is split out of gachaCoach.ts:
  * tests/updater.test.ts can exercise every decision without loading an SDK.
  */
-import type { UpdateEnvironment, UpdateStatus, UpdateTestResult } from '@shared/types'
+import type { UpdateEnvironment, UpdateStatus } from '@shared/types'
 
 export interface UpdateEnvInput {
   packaged: boolean // app.isPackaged
   portableExe: string | null // process.env.PORTABLE_EXECUTABLE_FILE (set only by the portable target)
-  token: string // the github.token setting, already trimmed
 }
 
-// Order matters: `dev` and `portable` are properties of the BUILD and can't be
-// fixed by pasting a token, so they must win over the missing-token case —
-// otherwise a dev run with no token would tell the user to add one, which
-// wouldn't help.
 export function updateEnvironment(input: UpdateEnvInput): UpdateEnvironment {
   if (!input.packaged) return 'dev'
   if (input.portableExe) return 'portable'
-  if (!input.token) return 'no-token'
   return 'ok'
 }
 
@@ -28,8 +22,6 @@ export function environmentMessage(environment: UpdateEnvironment): string | nul
       return 'Updates only work in a packaged build (AppImage or installer).'
     case 'portable':
       return 'The portable build cannot replace itself — use the installer or the AppImage to get updates.'
-    case 'no-token':
-      return 'Add a GitHub token below — the repository is private, so updates need one.'
     default:
       return null
   }
@@ -87,39 +79,15 @@ export function reduceUpdate(prev: UpdateStatus, ev: UpdaterEvent): UpdateStatus
   }
 }
 
-// Turns the Releases API response for the "Save & test" button into a verdict.
-// Pure so the branch mapping is tested; updater.ts only does the fetch.
-export function tokenTestResult(httpStatus: number, tagName: string | null): UpdateTestResult {
-  if (httpStatus === 404) {
-    return {
-      ok: false,
-      message:
-        '404 — the token cannot see this repository. It needs `repo` scope (classic) or Contents: read (fine-grained).'
-    }
-  }
-  if (httpStatus === 401) {
-    return { ok: false, message: '401 — GitHub rejected the token. It may be expired or mistyped.' }
-  }
-  if (httpStatus === 403) {
-    return { ok: false, message: '403 — GitHub refused the request (token access or rate limit).' }
-  }
-  if (httpStatus < 200 || httpStatus >= 300) {
-    return { ok: false, message: `GitHub returned HTTP ${httpStatus}.` }
-  }
-  return { ok: true, message: `Token works — latest release is ${tagName ?? 'unknown'}.` }
-}
-
-// electron-updater surfaces a bare HTTP status for the most likely failure here
-// (a token that can't see the private repo), which is unactionable as raw text.
 export function friendlyUpdateError(raw: string): string {
   if (/\b404\b/.test(raw)) {
-    return 'GitHub returned 404 — the token is missing, expired, or cannot see this private repository. Re-check it with Save & test.'
+    return 'GitHub returned 404 — the public release or update manifest was not found.'
   }
   if (/\b401\b/.test(raw) || /bad credentials/i.test(raw)) {
-    return 'GitHub rejected the token (401) — it may be expired or mistyped.'
+    return 'GitHub rejected the update request (401).'
   }
   if (/\b403\b/.test(raw)) {
-    return 'GitHub refused the request (403) — the token may lack repo access, or you hit a rate limit.'
+    return 'GitHub refused the update request (403) — try again after its rate limit resets.'
   }
   return raw
 }

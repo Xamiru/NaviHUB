@@ -212,6 +212,7 @@ export default function AchievementsSection({ m }: { m: MediaDetail }) {
               <button
                 key={item.key}
                 className={`pill ${filter === item.key ? 'pill-active' : ''}`}
+                aria-pressed={filter === item.key}
                 onClick={() => setFilter(item.key)}
               >
                 {item.label} <span className={filter === item.key ? 'opacity-75' : 'text-gray-500'}>{countFor(item.key)}</span>

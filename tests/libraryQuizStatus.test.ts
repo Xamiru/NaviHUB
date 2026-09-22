@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { statusesExceptPlanned } from '../src/renderer/src/lib/mediaConfig'
+import { isCompletedStatus, statusesExceptPlanned } from '../src/renderer/src/lib/mediaConfig'
 
 describe('statusesExceptPlanned', () => {
   it('excludes the positional planned status without depending on its label', () => {
@@ -15,5 +15,13 @@ describe('statusesExceptPlanned', () => {
 
   it('returns no watched statuses when planned is the only configured state', () => {
     expect(statusesExceptPlanned(['Later'])).toEqual([])
+  })
+})
+
+describe('isCompletedStatus', () => {
+  it('uses the positional completed status after the user renames it', () => {
+    const statuses = ['In progress', 'Finished my way', 'Paused', 'Someday']
+    expect(isCompletedStatus('Finished my way', statuses)).toBe(true)
+    expect(isCompletedStatus('Completed', statuses)).toBe(false)
   })
 })

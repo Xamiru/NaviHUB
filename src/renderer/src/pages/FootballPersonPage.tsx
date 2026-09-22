@@ -6,8 +6,10 @@ import PageStatus from '../components/PageStatus'
 import CoverImage from '../components/CoverImage'
 import FavoriteButton from '../components/FavoriteButton'
 import AddToListMenu from '../components/AddToListMenu'
+import FootballExternalLinks from '../components/football/FootballExternalLinks'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { useIncrementalList } from '../lib/hooks'
 import {
   FootballMatchRow,
   FootballMediaShelf,
@@ -19,8 +21,7 @@ export default function FootballPersonPage() {
   const id = Number(useParams().id)
   const qc = useQueryClient()
   const wasSyncing = useRef(false)
-  const autoQueued = useRef(false)
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: qk.football.person(id),
     queryFn: () => api.football.person(id),
     enabled: Number.isInteger(id) && id > 0
@@ -34,6 +35,7 @@ export default function FootballPersonPage() {
     }
   })
   const syncActive = !!sync && ['running', 'pausing', 'paused'].includes(sync.status.state)
+  const appearanceList = useIncrementalList(data?.appearances ?? [], 48, id)
   useEffect(() => {
     if (syncActive) {
       wasSyncing.current = true
@@ -43,17 +45,8 @@ export default function FootballPersonPage() {
     wasSyncing.current = false
     qc.invalidateQueries({ queryKey: qk.football.person(id) })
   }, [id, qc, syncActive])
-  useEffect(() => {
-    autoQueued.current = false
-  }, [id])
-  useEffect(() => {
-    if (!data || !sync || autoQueued.current || syncActive || data.enrichmentState !== 'not_requested') return
-    autoQueued.current = true
-    void api.football
-      .startSync({ kind: 'enrich', entityKind: 'person', entityId: id })
-      .then(() => qc.invalidateQueries({ queryKey: qk.football.sync }))
-  }, [data, id, qc, sync, syncActive])
   if (isLoading) return <PageStatus>Opening career record...</PageStatus>
+  if (isError) return <PageStatus>Could not load this career record.</PageStatus>
   if (!data) return <PageStatus>Person not found.</PageStatus>
   async function favorite() {
     await api.football.setFavorite('person', id, !data!.favorite)
@@ -106,7 +99,8 @@ export default function FootballPersonPage() {
           </section>
           <section>
             <FootballSectionTitle title="Recorded appearances" detail={`${data.appearances.length} matches`} />
-            {data.appearances.map((match) => <FootballMatchRow key={match.id} match={match} />)}
+            {appearanceList.visible.map((match) => <FootballMatchRow key={match.id} match={match} />)}
+            <div ref={appearanceList.sentinelRef} />
             {!data.appearances.length && <p className="text-sm text-ink-muted">Lineup appearances not supplied.</p>}
           </section>
         </div>
@@ -124,6 +118,12 @@ export default function FootballPersonPage() {
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
           <p className="max-w-3xl text-sm text-ink-muted">Licensed Wikimedia biography and portrait data are fetched lazily. Career facts stay available without them.</p>
           <button className="btn-ghost" disabled={syncActive} onClick={enrich}>{syncActive ? 'Football sync active' : data.enrichmentState === 'ready' ? 'Refresh reference' : 'Fetch reference'}</button>
+        </div>
+      </details>
+      <details className="mt-6 border-y border-line-subtle py-4">
+        <summary className="cursor-pointer text-sm font-medium text-ink">External links</summary>
+        <div className="mt-4">
+          <FootballExternalLinks entityKind="person" entityId={id} links={data.externalLinks} onChanged={() => qc.invalidateQueries({ queryKey: qk.football.all })} />
         </div>
       </details>
     </div>

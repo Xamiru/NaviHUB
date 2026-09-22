@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { toast, toastError } from '../lib/toast'
@@ -26,18 +26,22 @@ type Tab = 'events' | 'loose'
 // ratings, hearts, wrestlers and list membership like any other match.
 export default function WrestlingCollectionPage(): JSX.Element {
   const qc = useQueryClient()
+  const [searchParams] = useSearchParams()
+  const highlightedId = Number(searchParams.get('match')) || null
   const [tab, setTab] = usePersistedState<Tab>('wrestling.collectionTab', 'loose')
   const [editing, setEditing] = useState<WrestlingMatchWithEvent | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const { data: owned, isLoading } = useQuery({
+  const ownedQuery = useQuery({
     queryKey: qk.wrestling.events({ ownedOnly: true, sort: 'date' }),
     queryFn: () => api.wrestling.events({ ownedOnly: true, sort: 'date' })
   })
-  const { data: loose } = useQuery({
+  const looseQuery = useQuery({
     queryKey: qk.wrestling.loose,
     queryFn: () => api.wrestling.looseMatches()
   })
+  const owned = ownedQuery.data
+  const loose = looseQuery.data
   const { visible, sentinelRef } = useIncrementalList(loose ?? [])
 
   async function addLoose(): Promise<void> {
@@ -55,10 +59,14 @@ export default function WrestlingCollectionPage(): JSX.Element {
     }
   }
 
-  if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (ownedQuery.isLoading || looseQuery.isLoading) return <PageStatus>Loading…</PageStatus>
+  if (ownedQuery.isError || looseQuery.isError) {
+    return <PageStatus>Could not load your wrestling collection.</PageStatus>
+  }
 
   const looseCount = loose?.length ?? 0
   const ownedCount = owned?.length ?? 0
+  const activeTab: Tab = highlightedId ? 'loose' : tab
 
   return (
     <EditorialDetailFrame width="wide">
@@ -92,7 +100,7 @@ export default function WrestlingCollectionPage(): JSX.Element {
         id="wrestling-collection"
         label="Collection view"
         className="mb-5"
-        value={tab}
+        value={activeTab}
         onChange={setTab}
         tabs={[
           { key: 'loose', label: `Loose matches${looseCount ? ` (${looseCount})` : ''}` },
@@ -100,8 +108,8 @@ export default function WrestlingCollectionPage(): JSX.Element {
         ]}
       />
 
-      <TabPanel tabsId="wrestling-collection" value={tab}>
-        {tab === 'events' ? (
+      <TabPanel tabsId="wrestling-collection" value={activeTab}>
+        {activeTab === 'events' ? (
         !owned?.length ? (
           <EmptyState
             title="No events attached yet"
@@ -114,6 +122,7 @@ export default function WrestlingCollectionPage(): JSX.Element {
                 <CoverImage
                   path={e.posterPath}
                   alt={e.name}
+                  thumbWidth={360}
                   className="aspect-[2/3] w-full object-cover"
                   rounded=""
                 />
@@ -183,7 +192,7 @@ export default function WrestlingCollectionPage(): JSX.Element {
                     </button>
                   </span>
                 </div>
-                <WrestlingMatchRow match={m} />
+                <WrestlingMatchRow match={m} highlighted={m.id === highlightedId} />
               </div>
             ))}
           </div>

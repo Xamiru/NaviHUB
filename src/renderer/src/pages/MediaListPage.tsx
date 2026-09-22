@@ -108,6 +108,9 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   const {
     data: pages,
     isLoading,
+    isError,
+    error,
+    refetch,
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
@@ -370,6 +373,16 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
 
       {isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
+      ) : isError && items.length === 0 ? (
+        <div className="card p-5" role="alert">
+          <p className="text-sm text-red-300">
+            Could not load {cfg.plural.toLowerCase()}.
+            {error instanceof Error && error.message ? ` ${error.message}` : ''}
+          </p>
+          <button className="btn-ghost mt-3" onClick={() => void refetch()}>
+            Retry
+          </button>
+        </div>
       ) : items.length === 0 ? (
         nFilters > 0 || debouncedSearch.trim() ? (
           <EmptyState
@@ -415,7 +428,18 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
             <ContextLens item={contextItem} cfg={cfg} />
           </div>
           <div ref={sentinelRef} />
-          {(hasNextPage || isFetchingNextPage) && (
+          {isError && (
+            <div className="card mt-4 p-4 text-center" role="alert">
+              <p className="text-sm text-red-300">
+                Could not load more {cfg.plural.toLowerCase()}.
+                {error instanceof Error && error.message ? ` ${error.message}` : ''}
+              </p>
+              <button className="btn-ghost mt-2" onClick={() => void refetch()}>
+                Retry
+              </button>
+            </div>
+          )}
+          {!isError && (hasNextPage || isFetchingNextPage) && (
             <p className="mt-4 text-center text-xs text-gray-400">
               {isFetchingNextPage
                 ? 'Loading more titles…'
@@ -527,7 +551,7 @@ function ActiveChip({ label, onClear }: { label: string; onClear: () => void }) 
         aria-label={`Remove filter ${label}`}
         title={`Remove ${label}`}
       >
-        ×
+        ✕
       </button>
     </span>
   )

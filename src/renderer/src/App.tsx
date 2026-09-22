@@ -4,6 +4,7 @@ import { useScrollRestoration } from './lib/navState'
 import { api } from './lib/api'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
+import RouteFocus from './components/RouteFocus'
 import NowPlayingBar from './components/NowPlayingBar'
 import CommandPalette from './components/CommandPalette'
 import PlayerShortcuts from './components/PlayerShortcuts'
@@ -252,7 +253,9 @@ export default function App() {
           ref={mainRef}
           className="archive-main flex-1 min-w-0 overflow-y-auto min-h-0"
           data-mood={surfaceMood}
+          tabIndex={-1}
         >
+          <RouteFocus mainRef={mainRef} />
           <LearningContextBand />
           <TutorSessionStrip />
           <ErrorBoundary key={location.pathname}>

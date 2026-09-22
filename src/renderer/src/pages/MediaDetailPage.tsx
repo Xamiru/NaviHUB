@@ -86,7 +86,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
     requested && tabs.some((t) => t.key === requested) ? requested : 'overview'
   )
 
-  const { data: m, isLoading } = useQuery({
+  const { data: m, isLoading, isError, error, refetch } = useQuery({
     queryKey: qk.media.detail(mediaId),
     queryFn: () => api.media.get(mediaId)
   })
@@ -108,6 +108,19 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   }
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (isError) {
+    return (
+      <PageStatus>
+        <span role="alert">
+          Could not load this {cfg.singular.toLowerCase()}.
+          {error instanceof Error && error.message ? ` ${error.message}` : ''}
+        </span>
+        <button className="btn-ghost ml-3" onClick={() => void refetch()}>
+          Retry
+        </button>
+      </PageStatus>
+    )
+  }
   if (!m) return <PageStatus>Not found.</PageStatus>
 
   // Community scores captured into metadata at import time. AniList's averageScore
@@ -142,7 +155,11 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
         <GameLaunchButton mediaId={m.id} className={inline ? 'btn-primary' : 'btn-primary w-full'} />
       )}
       <LogProgressButton cfg={cfg} m={m} demoted={hasLaunch} inline={inline} />
-      <Link to={`${cfg.basePath}/${m.id}/edit`} className={inline ? 'btn-ghost' : 'btn-ghost w-full'}>
+      <Link
+        replace
+        to={`${cfg.basePath}/${m.id}/edit`}
+        className={inline ? 'btn-ghost' : 'btn-ghost w-full'}
+      >
         Edit
       </Link>
       <AddToListMenu kind="media" entityId={mediaId} fullWidth={!inline} />
@@ -463,7 +480,8 @@ function LogProgressButton({
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
 
-  const finished = isCompletedStatus(m.status) || (!!m.totalUnits && m.progress >= m.totalUnits)
+  const statuses = useStatuses(cfg)
+  const finished = isCompletedStatus(m.status, statuses) || (!!m.totalUnits && m.progress >= m.totalUnits)
   const label = finished
     ? 'Log another pass'
     : cfg.logUnitLabel
@@ -616,8 +634,13 @@ function CompaniesSection({
             </Link>
             <span className="text-gray-500">· {c.role.replace(/_/g, ' ')}</span>
             {!imported && (
-              <button className="text-gray-500 hover:text-red-400" onClick={() => remove(c.id)}>
-                ×
+              <button
+                className="text-gray-500 hover:text-red-400"
+                onClick={() => remove(c.id)}
+                aria-label={`Remove ${c.company.name}`}
+                title={`Remove ${c.company.name}`}
+              >
+                ✕
               </button>
             )}
           </span>
@@ -745,7 +768,7 @@ function ActorCard({
           title="Remove cast member"
           aria-label="Remove cast member"
         >
-          ×
+          ✕
         </button>
       )}
     </div>
@@ -816,7 +839,7 @@ function CharacterCard({
           title="Remove character"
           aria-label="Remove character"
         >
-          ×
+          ✕
         </button>
       )}
     </div>
@@ -853,7 +876,7 @@ function CharacterOnlyCard({
           title="Remove character"
           aria-label="Remove character"
         >
-          ×
+          ✕
         </button>
       )}
     </div>
@@ -1189,8 +1212,10 @@ function StaffSection({
               <button
                 className="text-gray-500 hover:text-red-400"
                 onClick={() => remove(c.creditId)}
+                aria-label={`Remove ${c.person.name}`}
+                title={`Remove ${c.person.name}`}
               >
-                ×
+                ✕
               </button>
             )}
           </div>

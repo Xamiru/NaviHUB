@@ -138,6 +138,9 @@ export function registerIpc(): void {
   ipcMain.handle('media:list', (_e, filter) => mediaRepo.list(filter))
   ipcMain.handle('media:listPage', (_e, request) => mediaRepo.listPage(request))
   ipcMain.handle('media:homeOverview', () => mediaRepo.homeOverview())
+  ipcMain.handle('media:seasonalAnime', (_e, year, includeUnknown) =>
+    mediaRepo.seasonalAnime(year, includeUnknown)
+  )
   ipcMain.handle('media:get', (_e, id) => mediaRepo.get(id))
   ipcMain.handle('media:create', (_e, input) => mediaRepo.create(input))
   ipcMain.handle('media:update', (_e, id, input) => mediaRepo.update(id, input))
@@ -752,7 +755,6 @@ export function registerIpc(): void {
   ipcMain.handle('update:download', () => updater.downloadUpdate())
   ipcMain.handle('update:cancel', () => updater.cancelUpdate())
   ipcMain.handle('update:install', () => updater.installUpdate())
-  ipcMain.handle('update:testToken', () => updater.testGithubToken())
 
   // ---- music library ----
   ipcMain.handle('music:pickRoot', () => music.pickRootAndScan())
@@ -764,6 +766,7 @@ export function registerIpc(): void {
   ipcMain.handle('music:album', (_e, id) => musicRepo.getAlbum(id))
   ipcMain.handle('music:tracks', (_e, filter) => musicRepo.listTracks(filter))
   ipcMain.handle('music:trackPage', (_e, request) => musicRepo.listTrackPage(request))
+  ipcMain.handle('music:playbackQueue', (_e, shuffle) => musicRepo.playbackQueue(shuffle))
   ipcMain.handle('music:artistTracks', (_e, artistId) => musicRepo.artistTracks(artistId))
   ipcMain.handle('music:search', (_e, query) => musicRepo.searchAll(query))
   ipcMain.handle('music:stats', () => musicRepo.stats())
@@ -946,7 +949,7 @@ export function registerIpc(): void {
   ipcMain.handle('wrestling:overview', () => wrestlingRepo.overview())
   ipcMain.handle('wrestling:events', (_e, filter) => wrestlingRepo.listEvents(filter ?? {}))
   ipcMain.handle('wrestling:event', (_e, id) => wrestlingRepo.getEvent(id))
-  ipcMain.handle('wrestling:eventIdOfMatch', (_e, id) => wrestlingRepo.eventIdOfMatch(id))
+  ipcMain.handle('wrestling:matchLocation', (_e, id) => wrestlingRepo.matchLocation(id))
   ipcMain.handle('wrestling:chronology', (_e, id) => wrestlingRepo.chronology(id))
   ipcMain.handle('wrestling:yearCounts', (_e, promotion) => wrestlingRepo.yearCounts(promotion))
   ipcMain.handle('wrestling:allYears', () => wrestlingRepo.allYears())
@@ -958,6 +961,7 @@ export function registerIpc(): void {
   ipcMain.handle('wrestling:topRatedMatches', (_e, limit) =>
     wrestlingRepo.topRatedMatches(limit ?? 50)
   )
+  ipcMain.handle('wrestling:favorites', (_e, limit) => wrestlingRepo.favorites(limit ?? 20))
   ipcMain.handle('wrestling:resolveLinks', (_e, titles) => wrestlingRepo.resolveLinks(titles ?? []))
   ipcMain.handle('wrestling:rateMatch', (_e, matchId, stars) =>
     wrestlingRepo.rateMatch(matchId, stars)
@@ -1041,8 +1045,8 @@ export function registerIpc(): void {
   ipcMain.handle('football:pauseSync', () => footballSync.pause())
   ipcMain.handle('football:resumeSync', () => footballSync.resume())
   ipcMain.handle('football:cancelSync', () => footballSync.cancel())
-  ipcMain.handle('football:resolveConflict', (_e, id, status, resolution) =>
-    footballRepo.resolveConflict(id, status, resolution)
+  ipcMain.handle('football:resolveConflict', (_e, id, resolution) =>
+    footballRepo.resolveConflict(id, resolution)
   )
 
   // ---- player (remote transport: thumbbar + pop-out widget) ----

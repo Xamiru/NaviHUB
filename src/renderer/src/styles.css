@@ -619,7 +619,9 @@ html[data-theme='metal-gear'] .wired-surface {
     animation: ach-card-in 0.3s ease-out;
   }
   .ach-card-life {
-    animation: ach-card-life 6s linear both;
+    animation-name: ach-card-life;
+    animation-timing-function: linear;
+    animation-fill-mode: both;
   }
 }
 

@@ -16,8 +16,9 @@ import {
 
 export default function FootballSeasonPage() {
   const id = Number(useParams().id)
-  const { data, isLoading } = useQuery({ queryKey: qk.football.season(id), queryFn: () => api.football.season(id), enabled: Number.isInteger(id) && id > 0 })
+  const { data, isLoading, isError } = useQuery({ queryKey: qk.football.season(id), queryFn: () => api.football.season(id), enabled: Number.isInteger(id) && id > 0 })
   if (isLoading) return <PageStatus>Opening season chapter...</PageStatus>
+  if (isError) return <PageStatus>Could not load this season chapter.</PageStatus>
   if (!data) return <PageStatus>Season not found.</PageStatus>
 
   return (

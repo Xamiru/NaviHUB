@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import type { AchievementUnlockEvent } from '@shared/types'
-import { ACH_POPUP_BURST_AT, MAX_STACK } from '@shared/achievements'
-import { mediaUrl } from '@shared/mediaUrl'
+import { ACH_POPUP_BURST_AT, ACH_POPUP_LIFE_MS } from '@shared/achievements'
 import { api } from '../lib/api'
 import CoverImage from '../components/CoverImage'
 import { playUnlockChime } from '../lib/achChime'
+import { advancePopupQueue, visiblePopups } from '../lib/achievementPopupQueue'
 
 // The in-game achievement overlay (window owned by src/main/achPopup.ts,
 // loaded at #/achpop). Rendered ALONE like PlayerWidgetPage — no router, no
@@ -21,11 +21,10 @@ import { playUnlockChime } from '../lib/achChime'
 // unlocks in one poll become ONE summary card instead of an unreadable stack.
 
 const POLL_MS = 500
-const LIFE_MS = 6_000
 
 type Card =
-  | { key: number; kind: 'unlock'; event: AchievementUnlockEvent; at: number }
-  | { key: number; kind: 'burst'; count: number; mediaTitle: string; at: number }
+  | { key: number; kind: 'unlock'; event: AchievementUnlockEvent; shownAt: number | null }
+  | { key: number; kind: 'burst'; count: number; mediaTitle: string; shownAt: number | null }
 
 let cardKey = 0
 
@@ -56,17 +55,19 @@ export default function AchPopupPage(): React.JSX.Element {
       if (!alive) return
       // Expire cards whose life is up — piggybacked on the poll rather than
       // one timeout per card.
-      setCards((cs) => cs.filter((c) => Date.now() - c.at < LIFE_MS))
+      setCards((cs) => advancePopupQueue(cs, Date.now()))
       if (!status) return
       // The test card is independent of the session seq — a test can arrive
       // with no watch running at all.
       if (status.test && status.testId && status.testId !== lastTestId.current) {
         lastTestId.current = status.testId
         playUnlockChime()
-        setCards((cs) => [
-          ...cs,
-          { key: ++cardKey, kind: 'unlock', event: status.test!, at: Date.now() }
-        ])
+        setCards((cs) =>
+          advancePopupQueue(
+            [...cs, { key: ++cardKey, kind: 'unlock', event: status.test!, shownAt: null }],
+            Date.now()
+          )
+        )
       }
       if (lastSeq.current === null) {
         lastSeq.current = status.seq
@@ -84,14 +85,14 @@ export default function AchPopupPage(): React.JSX.Element {
             kind: 'burst',
             count: fresh.length,
             mediaTitle: fresh[0]!.mediaTitle,
-            at: Date.now()
+            shownAt: null
           })
         } else {
           for (const event of fresh) {
-            next.push({ key: ++cardKey, kind: 'unlock', event, at: Date.now() })
+            next.push({ key: ++cardKey, kind: 'unlock', event, shownAt: null })
           }
         }
-        return next
+        return advancePopupQueue(next, Date.now())
       })
     }
     void tick()
@@ -102,7 +103,7 @@ export default function AchPopupPage(): React.JSX.Element {
     }
   }, [])
 
-  const visible = cards.slice(-MAX_STACK)
+  const visible = visiblePopups(cards)
 
   return (
     <div className="pointer-events-none flex h-screen select-none flex-col justify-end gap-2.5 overflow-hidden p-1">
@@ -121,8 +122,11 @@ function CardShell({ children }: { children: React.ReactNode }): React.JSX.Eleme
   return (
     <div className="ach-card relative w-full shrink-0 overflow-hidden rounded-lg border border-white/15 bg-black/85 shadow-xl shadow-black/60">
       {children}
-      {/* Lifetime strip — empties left-to-right over LIFE_MS. */}
-      <div className="absolute bottom-0 left-0 h-0.5 w-full origin-left bg-accent/80 ach-card-life" />
+      {/* Lifetime strip — empties left-to-right over ACH_POPUP_LIFE_MS. */}
+      <div
+        className="absolute bottom-0 left-0 h-0.5 w-full origin-left bg-accent/80 ach-card-life"
+        style={{ animationDuration: `${ACH_POPUP_LIFE_MS}ms` }}
+      />
     </div>
   )
 }
@@ -139,7 +143,7 @@ function UnlockCard({ e }: { e: AchievementUnlockEvent }): React.JSX.Element {
         />
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs text-gray-400">{e.mediaTitle}</div>
-          <div className="text-sm font-semibold uppercase tracking-wide text-[#6bcb3f]">
+          <div className="text-sm font-semibold uppercase tracking-wide text-signal-affirmative">
             Achievement unlocked
           </div>
           <div className="mt-0.5 truncate font-medium text-white">{e.name}</div>
@@ -150,7 +154,7 @@ function UnlockCard({ e }: { e: AchievementUnlockEvent }): React.JSX.Element {
           )}
           {(e.points != null || e.rarity) && (
             <div className="mt-1 text-xs text-gray-500">
-              {e.points != null && <span className="text-gray-300">{e.points}G</span>}
+              {e.points != null && <span className="text-gray-300">{e.points} points</span>}
               {e.points != null && e.rarity && <span> · </span>}
               {e.rarity && <span>{e.rarity.replace('-', ' ')}</span>}
             </div>
@@ -165,12 +169,12 @@ function BurstCard({ count, mediaTitle }: { count: number; mediaTitle: string })
   return (
     <CardShell>
       <div className="flex h-32 items-center gap-3 px-4 py-3">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded bg-base-700 text-2xl text-[#6bcb3f]">
-          ★
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded bg-base-700 text-lg font-semibold text-signal-affirmative">
+          +{count}
         </div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-xs text-gray-400">{mediaTitle}</div>
-          <div className="text-sm font-semibold uppercase tracking-wide text-[#6bcb3f]">
+          <div className="text-sm font-semibold uppercase tracking-wide text-signal-affirmative">
             Achievements unlocked
           </div>
           <div className="mt-0.5 truncate font-medium text-white">{count} achievements</div>

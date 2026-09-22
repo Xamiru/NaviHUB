@@ -1,5 +1,5 @@
 import { get as getSetting } from './repos/settingsRepo'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import type { TorrentAddInput, TorrentServiceTestResult } from '@shared/types'
 
 // Hand-off to a locally-running qBittorrent via its WebUI API. Session flow:
@@ -59,7 +59,8 @@ async function login(cfg: QbConfig): Promise<void> {
         headers: { 'Content-Type': FORM, Referer: cfg.base },
         body: new URLSearchParams({ username: cfg.username, password: cfg.password }).toString(),
         timeoutMs: 15_000,
-        rateLimitWaits: 0
+        rateLimitWaits: 0,
+        maxResponseBytes: MAX_API_RESPONSE_BYTES
       },
       1
     )
@@ -96,7 +97,8 @@ export async function addTorrent(input: TorrentAddInput): Promise<void> {
           },
           body: new URLSearchParams({ urls: url }).toString(),
           timeoutMs: 15_000,
-          rateLimitWaits: 0
+          rateLimitWaits: 0,
+          maxResponseBytes: MAX_API_RESPONSE_BYTES
         },
         1
       )
@@ -131,7 +133,8 @@ export async function testQbittorrent(): Promise<TorrentServiceTestResult> {
         {
           headers: sid ? { Cookie: `SID=${sid}`, Referer: cfg.base } : { Referer: cfg.base },
           timeoutMs: 10_000,
-          rateLimitWaits: 0
+          rateLimitWaits: 0,
+          maxResponseBytes: MAX_API_RESPONSE_BYTES
         },
         1
       )

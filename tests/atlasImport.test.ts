@@ -21,6 +21,7 @@ vi.mock('../src/main/files', () => ({
 let servantsFixture: unknown[]
 let equipsFixture: unknown[]
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   fetchWithRetry: async (url: string) => ({
     ok: true,
     status: 200,

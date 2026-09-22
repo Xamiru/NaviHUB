@@ -1,11 +1,15 @@
 name: Release
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
-# Two manual runs in quick succession queue instead of racing to publish.
+# Publish each main push in order; keep manual runs for recovery.
 concurrency:
   group: release-${{ github.ref }}
+  queue: max
   cancel-in-progress: false
 
 env:

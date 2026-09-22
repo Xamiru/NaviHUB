@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useDialog, useDebouncedValue } from '../lib/hooks'
 import { toast, toastError } from '../lib/toast'
+import { Field } from './Field'
 import type { AchievementProvider, AchievementSetupResult } from '@shared/types'
 
 // Picking which provider's achievement set a title should track, and which of
@@ -22,17 +23,24 @@ export default function AchievementSetupDialog({
   onClose: () => void
   onDone: (result: AchievementSetupResult) => void
 }) {
-  const panelRef = useDialog(onClose)
   const [busy, setBusy] = useState(false)
   const [manualId, setManualId] = useState('')
+  const inFlight = useRef(false)
+  const close = (): void => {
+    if (!inFlight.current) onClose()
+  }
+  const panelRef = useDialog(close)
 
   async function run(fn: () => Promise<AchievementSetupResult>): Promise<void> {
+    if (inFlight.current) return
+    inFlight.current = true
     setBusy(true)
     try {
       onDone(await fn())
     } catch (e) {
       toastError(e)
     } finally {
+      inFlight.current = false
       setBusy(false)
     }
   }
@@ -40,7 +48,7 @@ export default function AchievementSetupDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-6 overflow-y-auto"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onMouseDown={(e) => e.target === e.currentTarget && close()}
     >
       <div
         ref={panelRef}
@@ -61,7 +69,13 @@ export default function AchievementSetupDialog({
                 : 'Pick the RetroAchievements game this title is. Your unlock history syncs with it.'}
             </p>
           </div>
-          <button className="btn-ghost" onClick={onClose} aria-label="Close" title="Close">
+          <button
+            className="btn-ghost"
+            onClick={close}
+            disabled={busy}
+            aria-label="Close"
+            title={busy ? 'Wait for setup to finish' : 'Close'}
+          >
             ✕
           </button>
         </div>
@@ -107,7 +121,11 @@ export default function AchievementSetupDialog({
           </p>
         </div>
 
-        {busy && <p className="mt-4 text-sm text-gray-400">Fetching the achievement list…</p>}
+        {busy && (
+          <p className="mt-4 text-sm text-gray-400" role="status" aria-live="polite">
+            Fetching the achievement list…
+          </p>
+        )}
       </div>
     </div>
   )
@@ -190,27 +208,30 @@ function RaPicker({ busy, onPick }: { busy: boolean; onPick: (gameId: string) =>
 
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        <select
-          className="input w-56"
-          value={consoleId}
-          onChange={(e) => setConsoleId(e.target.value)}
-          aria-label="System"
-        >
-          <option value="">Pick a system…</option>
-          {(consoles ?? []).map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-        <input
-          className="input flex-1 min-w-48"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search that system’s games…"
-          disabled={!consoleId}
-        />
+      <div className="grid gap-3 sm:grid-cols-[14rem_minmax(0,1fr)] sm:items-end">
+        <Field label="System">
+          <select
+            className="input mt-1 w-full"
+            value={consoleId}
+            onChange={(e) => setConsoleId(e.target.value)}
+          >
+            <option value="">Pick a system…</option>
+            {(consoles ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Game title">
+          <input
+            className="input mt-1 w-full"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search that system’s games…"
+            disabled={!consoleId}
+          />
+        </Field>
       </div>
 
       {/* RA has no free-text search endpoint, so this pulls the system's whole

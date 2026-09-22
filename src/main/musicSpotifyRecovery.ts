@@ -52,9 +52,20 @@ export async function searchAudio(query: string): Promise<SpotifyAudioCandidate[
 }
 
 export async function previewAudio(url: string): Promise<string> {
-  const output = await ytdlp(['--no-playlist', '--skip-download', '--format', 'bestaudio', '--get-url', '--', youtubeSourceUrl(url)])
-  const stream = output.trim().split('\n')[0]
-  if (!stream?.startsWith('https://')) throw new Error('No playable preview was returned')
+  const canonical = youtubeSourceUrl(url)
+  const accessKey = musicAccessKey()
+  let row: Record<string, any>
+  try {
+    row = JSON.parse(await ytdlp(['--no-playlist', '--skip-download', '--format', 'bestaudio', '--dump-single-json', '--', canonical]))
+  } catch (error) { forgetAudioSource(canonical); throw error }
+  const stream = row.url
+  if (typeof stream !== 'string' || !stream.startsWith('https://')) {
+    forgetAudioSource(canonical)
+    throw new Error('No playable preview was returned')
+  }
+  // Keep only independent recording metadata, never the temporary stream URL.
+  try { rememberAudioSource({ ...parseSourceEvidence(canonical, row), accessKey }) }
+  catch { forgetAudioSource(canonical) } // A playable preview may lack native download formats.
   return stream
 }
 
@@ -82,10 +93,67 @@ export async function pickLocalAudio(): Promise<MusicTrack | null> {
 }
 export function denoExecutable(): string { return musicToolOptions().deno }
 
+const SOURCE_CACHE_MS = 5 * 60_000
+const sourceCache = new Map<string, import('@shared/types').MusicSourceEvidence>()
+export function forgetAudioSource(url: string): void { sourceCache.delete(url) }
+function rememberAudioSource(evidence: import('@shared/types').MusicSourceEvidence): void {
+  sourceCache.delete(evidence.url)
+  sourceCache.set(evidence.url, { ...evidence })
+  while (sourceCache.size > 128) sourceCache.delete(sourceCache.keys().next().value!)
+}
+
 export async function inspectAudio(url: string): Promise<import('@shared/types').MusicSourceEvidence> {
   const canonical = youtubeSourceUrl(url)
+  const accessKey = musicAccessKey()
+  const saved = sourceCache.get(canonical)
+  const age = saved ? Date.now() - saved.observedAt : Infinity
+  if (saved && saved.accessKey === accessKey && age >= 0 && age < SOURCE_CACHE_MS) return { ...saved }
+  forgetAudioSource(canonical)
   const row = JSON.parse(await ytdlp(['--no-playlist', '--skip-download', '--dump-single-json', '--', canonical]))
-  return parseSourceEvidence(canonical, row)
+  const evidence = { ...parseSourceEvidence(canonical, row), accessKey }
+  rememberAudioSource(evidence)
+  return evidence
+}
+
+/** Batch stderr is shared: associate diagnostics by source identity, never by last line. */
+export function audioSourceInspection(urls: string[]) {
+  const evidence = Object.assign(new Map<string, import('@shared/types').MusicSourceEvidence>(), { errors: new Map<string, string>() })
+  const allowed = new Set(urls)
+  const accessKey = musicAccessKey()
+  const diagnostics = new Map<string, { message: string; priority: number }>()
+  const note = (url: string, message: string, priority: number) => {
+    if ((diagnostics.get(url)?.priority ?? -1) <= priority) diagnostics.set(url, { message, priority })
+  }
+  return {
+    observe(line: string) {
+      let row: Record<string, any>
+      try { row = JSON.parse(line) } catch {
+        if (!/^\s*(?:ERROR|WARNING):/i.test(line)) return
+        for (const url of allowed) {
+          const id = new URL(url).searchParams.get('v')
+          if (line.includes(url) || (id && new RegExp(`(^|[^\\w-])${id}([^\\w-]|$)`).test(line))) {
+            note(url, line, /^\s*ERROR:/i.test(line) ? 2 : 0)
+          }
+        }
+        return
+      }
+      let url: string
+      try { url = canonicalAudioSource(String(row.webpage_url ?? `https://www.youtube.com/watch?v=${row.id}`)) } catch { return }
+      if (!allowed.has(url)) return
+      try {
+        const parsed = { ...parseSourceEvidence(url, row), accessKey }
+        evidence.set(url, parsed)
+        rememberAudioSource(parsed)
+      } catch (error) { note(url, error instanceof Error ? error.message : String(error), 3) }
+    },
+    finish() {
+      for (const url of allowed) if (!evidence.has(url)) {
+        forgetAudioSource(url)
+        evidence.errors.set(url, musicFailure('Extraction', 'standalone yt-dlp', diagnostics.get(url)?.message ?? 'No usable audio metadata returned for this source; inspect it individually for details'))
+      }
+      return evidence
+    }
+  }
 }
 
 export function canonicalAudioSource(value: string): string {

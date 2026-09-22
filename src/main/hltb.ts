@@ -1,5 +1,5 @@
 import { getSqlite } from './db/connection'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import type { HltbTimes } from '@shared/types'
 
 // HowLongToBeat main/extra/completionist play times for games and VNs.
@@ -34,7 +34,8 @@ async function initCreds(): Promise<Creds | null> {
   try {
     const res = await fetchWithRetry(`${BASE}/api/bleed/init?t=${Date.now()}`, {
       headers: baseHeaders(),
-      timeoutMs: 15_000
+      timeoutMs: 15_000,
+      maxResponseBytes: MAX_API_RESPONSE_BYTES
     })
     if (!res.ok) return null
     const j = (await res.json()) as Partial<Creds>
@@ -93,7 +94,8 @@ async function search(query: string): Promise<any[]> {
           'x-hp-val': c.hpVal
         },
         body: JSON.stringify(body),
-        timeoutMs: 15_000
+        timeoutMs: 15_000,
+        maxResponseBytes: MAX_API_RESPONSE_BYTES
       })
       if (res.status === 403 && attempt === 0) {
         c = await initCreds()

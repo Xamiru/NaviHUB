@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { FootballCompetitionMark } from '../components/football/FootballCommon'
@@ -14,10 +15,12 @@ const GAMES = [
 ] as const
 
 export default function FootballQuizPage() {
-  const { data } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: qk.quiz.availability({ scope: 'all' }),
     queryFn: () => api.quiz.availability({ scope: 'all' })
   })
+  if (isLoading) return <PageStatus>Preparing the Football quiz room...</PageStatus>
+  if (isError) return <PageStatus>Could not load Football quiz eligibility.</PageStatus>
   const availability = data?.football
   return (
     <div className="mx-auto max-w-[1300px] p-6">

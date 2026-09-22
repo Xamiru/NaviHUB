@@ -203,13 +203,34 @@ function integer(value: string | null): number | null {
   return Number(value)
 }
 
+function nullableScore(value: unknown): number | null {
+  if (value == null) return null
+  if (typeof value !== 'number' && typeof value !== 'string') return null
+  if (typeof value === 'string' && !/^[0-9]+(?:\.0+)?$/.test(value.trim())) return null
+  const parsed = typeof value === 'number' ? value : Number(value.trim())
+  return Number.isInteger(parsed) && parsed >= 0 ? parsed : null
+}
+
+function checkedIsoDate(year: number, month: number, day: number, original: string): string {
+  const date = new Date(Date.UTC(year, month - 1, day))
+  if (
+    date.getUTCFullYear() !== year ||
+    date.getUTCMonth() !== month - 1 ||
+    date.getUTCDate() !== day
+  ) {
+    throw new Error(`Invalid Football match date: ${original}`)
+  }
+  return date.toISOString().slice(0, 10)
+}
+
 export function isoDate(value: string): string {
   const trimmed = value.trim()
-  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+  const iso = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/)
+  if (iso) return checkedIsoDate(Number(iso[1]), Number(iso[2]), Number(iso[3]), value)
   const slash = trimmed.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{2}|\d{4})$/)
   if (slash) {
     const year = slash[3].length === 2 ? Number(slash[3]) + (Number(slash[3]) >= 50 ? 1900 : 2000) : Number(slash[3])
-    return `${year}-${slash[2].padStart(2, '0')}-${slash[1].padStart(2, '0')}`
+    return checkedIsoDate(year, Number(slash[2]), Number(slash[1]), value)
   }
   const parsed = new Date(trimmed)
   if (!Number.isFinite(parsed.getTime())) throw new Error(`Invalid Football match date: ${value}`)
@@ -354,15 +375,15 @@ function object(value: Json | undefined): { [key: string]: Json } | null {
 
 function scorePair(value: Json | undefined): [number, number] | null {
   if (Array.isArray(value) && value.length >= 2) {
-    const home = Number(value[0])
-    const away = Number(value[1])
-    return Number.isFinite(home) && Number.isFinite(away) ? [home, away] : null
+    const home = nullableScore(value[0])
+    const away = nullableScore(value[1])
+    return home != null && away != null ? [home, away] : null
   }
   const obj = object(value)
   if (!obj) return null
-  const home = Number(obj.home ?? obj[0])
-  const away = Number(obj.away ?? obj[1])
-  return Number.isFinite(home) && Number.isFinite(away) ? [home, away] : null
+  const home = nullableScore(obj.home ?? obj[0])
+  const away = nullableScore(obj.away ?? obj[1])
+  return home != null && away != null ? [home, away] : null
 }
 
 function parseMinute(value: Json | undefined): { minute: number | null; extraMinute: number | null } {
@@ -451,7 +472,7 @@ export function parseOpenFootballJson(input: {
     const penalties = scorePair(score?.p ?? score?.pen ?? score?.pens ?? score?.penalties)
     const homeGoals = openFootballGoals(match.goals1 ?? match.homeGoals, 'home')
     const awayGoals = openFootballGoals(match.goals2 ?? match.awayGoals, 'away')
-    const goals = homeGoals == null && awayGoals == null ? null : [...(homeGoals ?? []), ...(awayGoals ?? [])]
+    const goals = homeGoals == null || awayGoals == null ? null : [...homeGoals, ...awayGoals]
     const date = isoDate(dateRaw)
     return [{
       sourceId: String(match.id ?? `${input.seasonKey}:${date}:${normalizeFootballName(homeName)}:${normalizeFootballName(awayName)}`),
@@ -547,9 +568,10 @@ export function parseOpenFootballTxt(input: {
     const penaltyScore = tail.match(/(?:pen|pens|penalties)[^\d]*(\d+)\s*[-:–]\s*(\d+)/i)
     const next = lines[index + 1]?.trim() ?? ''
     const scorerLine = /^\(.+\)$/.test(next) ? next.slice(1, -1) : null
-    const goals: SourceGoal[] | null = scorerLine == null
+    const scorerSides = scorerLine?.split(';') ?? []
+    const goals: SourceGoal[] | null = scorerSides.length !== 2
       ? null
-      : scorerLine.split(';').flatMap((side, sideIndex) => {
+      : scorerSides.flatMap((side, sideIndex) => {
           const team = sideIndex === 0 ? 'home' as const : 'away' as const
           const tokens = [...side.matchAll(/([^,;]+?)\s+(\d+)(?:\+(\d+))?'(?:\s*\(([^)]+)\))?/g)]
           return tokens.map((token) => ({
@@ -739,11 +761,12 @@ export function parseStatsBombMatches(input: {
     const homeId = Number(row.home_team?.home_team_id)
     const awayId = Number(row.away_team?.away_team_id)
     const matchId = Number(row.match_id)
-    const date = String(row.match_date ?? '').slice(0, 10)
+    const dateRaw = String(row.match_date ?? '').slice(0, 10)
     if (!homeName || !awayName || !Number.isInteger(homeId) || !Number.isInteger(awayId) ||
-        !Number.isInteger(matchId) || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return []
-    const homeScore = Number(row.home_score)
-    const awayScore = Number(row.away_score)
+        !Number.isInteger(matchId) || !/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) return []
+    const date = isoDate(dateRaw)
+    const homeScore = nullableScore(row.home_score)
+    const awayScore = nullableScore(row.away_score)
     return [{
       sourceId: String(matchId),
       competitionKey: input.competitionKey,
@@ -764,9 +787,9 @@ export function parseStatsBombMatches(input: {
       },
       stage: String(row.competition_stage?.name ?? '').trim() || null,
       round: Number.isFinite(Number(row.match_week)) ? String(row.match_week) : null,
-      status: Number.isFinite(homeScore) && Number.isFinite(awayScore) ? 'finished' : 'scheduled',
-      homeScore: Number.isFinite(homeScore) ? homeScore : null,
-      awayScore: Number.isFinite(awayScore) ? awayScore : null,
+      status: homeScore != null && awayScore != null ? 'finished' : 'scheduled',
+      homeScore,
+      awayScore,
       homeHalfTime: null,
       awayHalfTime: null,
       homeExtraTime: null,
@@ -884,8 +907,9 @@ export function parseWyscoutPack(input: {
     const away = data.find((item) => item.side === 'away')
     const homeName = home ? teams.get(String(home.teamId)) : null
     const awayName = away ? teams.get(String(away.teamId)) : null
-    const date = String(row.dateutc ?? row.date ?? '').slice(0, 10)
-    if (!matchId || !home || !away || !homeName || !awayName || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return []
+    const dateRaw = String(row.dateutc ?? row.date ?? '').slice(0, 10)
+    if (!matchId || !home || !away || !homeName || !awayName || !/^\d{4}-\d{2}-\d{2}$/.test(dateRaw)) return []
+    const date = isoDate(dateRaw)
     const lineupRows: SourceLineup[] = []
     for (const team of [home, away]) {
       const sections: Array<{ starter: boolean; rows: unknown[] }> = [
@@ -914,8 +938,8 @@ export function parseWyscoutPack(input: {
     }
     lineups.set(matchId, lineupRows)
     const duration = String(row.duration ?? '')
-    const fullHome = Number(/ExtraTime|Penal/i.test(duration) ? home.scoreET : home.score)
-    const fullAway = Number(/ExtraTime|Penal/i.test(duration) ? away.scoreET : away.score)
+    const fullHome = nullableScore(/ExtraTime|Penal/i.test(duration) ? home.scoreET : home.score)
+    const fullAway = nullableScore(/ExtraTime|Penal/i.test(duration) ? away.scoreET : away.score)
     const statusText = String(row.status ?? '')
     return [{
       sourceId: matchId,
@@ -938,14 +962,14 @@ export function parseWyscoutPack(input: {
         : /Cancel|Suspend/i.test(statusText)
           ? 'abandoned'
           : 'scheduled') as SourceMatch['status'],
-      homeScore: Number.isFinite(fullHome) ? fullHome : null,
-      awayScore: Number.isFinite(fullAway) ? fullAway : null,
-      homeHalfTime: Number.isFinite(Number(home.scoreHT)) ? Number(home.scoreHT) : null,
-      awayHalfTime: Number.isFinite(Number(away.scoreHT)) ? Number(away.scoreHT) : null,
-      homeExtraTime: /ExtraTime|Penal/i.test(duration) && Number.isFinite(Number(home.scoreET)) ? Number(home.scoreET) : null,
-      awayExtraTime: /ExtraTime|Penal/i.test(duration) && Number.isFinite(Number(away.scoreET)) ? Number(away.scoreET) : null,
-      homePenalties: /Penal/i.test(duration) && Number.isFinite(Number(home.scoreP)) ? Number(home.scoreP) : null,
-      awayPenalties: /Penal/i.test(duration) && Number.isFinite(Number(away.scoreP)) ? Number(away.scoreP) : null,
+      homeScore: fullHome,
+      awayScore: fullAway,
+      homeHalfTime: nullableScore(home.scoreHT),
+      awayHalfTime: nullableScore(away.scoreHT),
+      homeExtraTime: /ExtraTime|Penal/i.test(duration) ? nullableScore(home.scoreET) : null,
+      awayExtraTime: /ExtraTime|Penal/i.test(duration) ? nullableScore(away.scoreET) : null,
+      homePenalties: /Penal/i.test(duration) ? nullableScore(home.scoreP) : null,
+      awayPenalties: /Penal/i.test(duration) ? nullableScore(away.scoreP) : null,
       goals: null,
       source: 'wyscout' as const,
       sourceUrl: input.sourceUrl,
@@ -1010,10 +1034,18 @@ export function parseApiFootballFixture(raw: unknown, competitionKey: FootballCo
         : ['FT', 'AET', 'PEN'].includes(statusShort)
           ? 'finished'
           : 'scheduled'
-  const date = String(fixture.date ?? '').slice(0, 10)
-  if (!fixture.id || !date || !teams.home?.name || !teams.away?.name) {
+  const dateRaw = String(fixture.date ?? '').slice(0, 10)
+  if (
+    fixture.id == null ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(dateRaw) ||
+    teams.home?.id == null ||
+    teams.away?.id == null ||
+    !teams.home?.name ||
+    !teams.away?.name
+  ) {
     throw new Error('API-Football fixture is missing its identity fields')
   }
+  const date = isoDate(dateRaw)
   return {
     sourceId: String(fixture.id),
     competitionKey,
@@ -1041,14 +1073,14 @@ export function parseApiFootballFixture(raw: unknown, competitionKey: FootballCo
     stage: String(league.round ?? '').trim() || null,
     round: String(league.round ?? '').trim() || null,
     status,
-    homeScore: Number.isFinite(Number(goals.home)) ? Number(goals.home) : null,
-    awayScore: Number.isFinite(Number(goals.away)) ? Number(goals.away) : null,
-    homeHalfTime: Number.isFinite(Number(score.halftime?.home)) ? Number(score.halftime.home) : null,
-    awayHalfTime: Number.isFinite(Number(score.halftime?.away)) ? Number(score.halftime.away) : null,
-    homeExtraTime: Number.isFinite(Number(score.extratime?.home)) ? Number(score.extratime.home) : null,
-    awayExtraTime: Number.isFinite(Number(score.extratime?.away)) ? Number(score.extratime.away) : null,
-    homePenalties: Number.isFinite(Number(score.penalty?.home)) ? Number(score.penalty.home) : null,
-    awayPenalties: Number.isFinite(Number(score.penalty?.away)) ? Number(score.penalty.away) : null,
+    homeScore: nullableScore(goals.home),
+    awayScore: nullableScore(goals.away),
+    homeHalfTime: nullableScore(score.halftime?.home),
+    awayHalfTime: nullableScore(score.halftime?.away),
+    homeExtraTime: nullableScore(score.extratime?.home),
+    awayExtraTime: nullableScore(score.extratime?.away),
+    homePenalties: nullableScore(score.penalty?.home),
+    awayPenalties: nullableScore(score.penalty?.away),
     goals: null,
     source: 'api-football',
     sourceUrl: 'https://v3.football.api-sports.io/fixtures',

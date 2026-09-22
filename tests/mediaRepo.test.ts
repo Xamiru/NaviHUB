@@ -113,6 +113,38 @@ describe('mediaRepo browse projections', () => {
       synopsis: 'Keep this for the spotlight.'
     })
   })
+
+  it('returns only the selected seasonal year and fetches undated cards on demand', () => {
+    addAnime('Winter next year', {
+      releaseDate: '2024-12-28',
+      metadata: { season: 'WINTER', seasonYear: 2025, averageScore: 90 }
+    })
+    addAnime('Spring fallback', { releaseDate: '2025-04-10' })
+    addAnime('Invalid canonical metadata', {
+      releaseDate: '2025-07-10',
+      metadata: { season: 'not-a-season', seasonYear: 2099 }
+    })
+    addAnime('Other year', { releaseDate: '2023-07-01' })
+    addAnime('Unknown')
+
+    const closed = mediaRepo.seasonalAnime(2025)
+    expect(closed.years).toEqual([
+      { year: 2025, count: 3 },
+      { year: 2023, count: 1 }
+    ])
+    expect(closed.items.map((item) => item.title)).toEqual([
+      'Winter next year',
+      'Spring fallback',
+      'Invalid canonical metadata'
+    ])
+    expect(closed.items[0].metadata).toEqual({ season: 'winter', seasonYear: 2025 })
+    expect(closed.items[0].synopsis).toBeNull()
+    expect(closed.unknownCount).toBe(1)
+    expect(closed.unknown).toEqual([])
+
+    const open = mediaRepo.seasonalAnime(2025, true)
+    expect(open.unknown.map((item) => item.title)).toEqual(['Unknown'])
+  })
 })
 
 describe('mediaRepo.list advanced filters', () => {

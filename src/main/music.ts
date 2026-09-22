@@ -9,6 +9,7 @@ import { musicRootDir, absoluteMediaPath } from './files'
 import * as tasks from './tasks'
 import { claimMusicMaintenance, releaseMusicMaintenance } from './musicMaintenance'
 import { resolveAllSpotifyItems } from './repos/musicSpotifyRepo'
+import { recoverLegacyMusicDownloads, finishLegacyMusicRecovery } from './musicLegacyDownloads'
 import type { MusicDeleteResult, MusicScanStatus, MusicScanSummary } from '@shared/types'
 
 // ---------------------------------------------------------------------------
@@ -414,10 +415,14 @@ function writeMusicRows(
       }
     }
     db.prepare(
-      'DELETE FROM music_album WHERE id NOT IN (SELECT DISTINCT album_id FROM music_track)'
+      `DELETE FROM music_album WHERE id NOT IN (SELECT DISTINCT album_id FROM music_track)
+       AND NOT (dir_path LIKE 'navihub-downloads/%' AND EXISTS
+         (SELECT 1 FROM music_spotify_entity_snapshot WHERE album_id=music_album.id))`
     ).run()
     db.prepare(
-      'DELETE FROM music_artist WHERE id NOT IN (SELECT DISTINCT artist_id FROM music_album)'
+      `DELETE FROM music_artist WHERE id NOT IN (SELECT DISTINCT artist_id FROM music_album)
+       AND NOT (dir_path='navihub-downloads' AND EXISTS
+         (SELECT 1 FROM music_spotify_entity_snapshot WHERE artist_id=music_artist.id))`
     ).run()
 
     }
@@ -542,6 +547,7 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
     if (!existsSync(root)) {
       throw new Error(`Music folder not found: ${root} — set it in Settings or pick one`)
     }
+    recoverLegacyMusicDownloads(root)
     const { albums, skippedRootFiles } = await walkMusicRoot(root, handle.cancelRequested)
     const db = getSqlite()
 
@@ -675,6 +681,7 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
       return syncLibrary(albums, parsed, coverByAlbumDir)
     })()
     resolveAllSpotifyItems()
+    finishLegacyMusicRecovery(root)
     return { ...counts, skippedRootFiles, durationMs: Date.now() - startedAt }
   } catch (e) {
     scanState.error = e instanceof Error ? e.message : String(e)

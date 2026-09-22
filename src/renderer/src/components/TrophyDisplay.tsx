@@ -81,7 +81,7 @@ export function TrophyRow({
 
   return (
     <li
-      className={`grid min-w-0 grid-cols-[64px_minmax(0,1fr)_auto] items-center gap-4 border-t px-3 py-4 first:border-t-0 sm:px-5 ${
+      className={`grid min-w-0 grid-cols-[64px_minmax(0,1fr)] items-center gap-4 border-t px-3 py-4 first:border-t-0 sm:grid-cols-[64px_minmax(0,1fr)_auto] sm:px-5 ${
         display.unlocked ? 'border-base-700 bg-base-800/45' : 'border-base-700/70'
       }`}
     >
@@ -118,7 +118,7 @@ export function TrophyRow({
         </p>
       </div>
       <button
-        className="btn-ghost hidden shrink-0 text-xs sm:block"
+        className="btn-ghost col-span-2 shrink-0 justify-self-end text-xs sm:col-span-1"
         disabled={busy}
         onClick={() => onToggle(!display.unlocked)}
       >

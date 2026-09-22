@@ -13,6 +13,7 @@ vi.mock('../src/main/db/connection', () => ({
 
 const fetchWithRetry = vi.fn()
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   fetchWithRetry: (...args: unknown[]) => fetchWithRetry(...args)
 }))
 

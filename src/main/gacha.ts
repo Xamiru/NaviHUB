@@ -7,7 +7,7 @@
 // test-covered tag scan (no XML dep; same approach as src/main/epub.ts).
 // Convention: ALL network first, then one repo transaction (import pattern).
 
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import * as gachaRepo from './repos/gachaRepo'
 import { gachaGame } from '@shared/gacha'
 import type { GachaGameId, GachaNewsFetchResult, GachaNewsUpsert } from '@shared/types'
@@ -96,7 +96,8 @@ export async function fetchNews(game: GachaGameId): Promise<GachaNewsFetchResult
   const res = await fetchWithRetry(url, {
     headers: { 'User-Agent': USER_AGENT, Accept: 'application/atom+xml' },
     timeoutMs: 15_000,
-    rateLimitWaits: 0
+    rateLimitWaits: 0,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (res.status === 429)
     throw new Error(`Reddit is rate-limiting right now — wait a moment and fetch again`)

@@ -7,6 +7,8 @@ const api: NaviApi = {
     list: (filter) => ipcRenderer.invoke('media:list', filter),
     listPage: (request) => ipcRenderer.invoke('media:listPage', request),
     homeOverview: () => ipcRenderer.invoke('media:homeOverview'),
+    seasonalAnime: (year, includeUnknown) =>
+      ipcRenderer.invoke('media:seasonalAnime', year, includeUnknown),
     get: (id) => ipcRenderer.invoke('media:get', id),
     create: (input) => ipcRenderer.invoke('media:create', input),
     update: (id, input) => ipcRenderer.invoke('media:update', id, input),
@@ -416,6 +418,7 @@ const api: NaviApi = {
     album: (id) => ipcRenderer.invoke('music:album', id),
     tracks: (filter) => ipcRenderer.invoke('music:tracks', filter),
     trackPage: (request) => ipcRenderer.invoke('music:trackPage', request),
+    playbackQueue: (shuffle) => ipcRenderer.invoke('music:playbackQueue', shuffle),
     artistTracks: (artistId) => ipcRenderer.invoke('music:artistTracks', artistId),
     search: (query) => ipcRenderer.invoke('music:search', query),
     stats: () => ipcRenderer.invoke('music:stats'),
@@ -546,13 +549,14 @@ const api: NaviApi = {
     events: (filter) => ipcRenderer.invoke('wrestling:events', filter),
     event: (id) => ipcRenderer.invoke('wrestling:event', id),
     chronology: (id) => ipcRenderer.invoke('wrestling:chronology', id),
-    eventIdOfMatch: (matchId) => ipcRenderer.invoke('wrestling:eventIdOfMatch', matchId),
+    matchLocation: (matchId) => ipcRenderer.invoke('wrestling:matchLocation', matchId),
     yearCounts: (promotion) => ipcRenderer.invoke('wrestling:yearCounts', promotion),
     allYears: () => ipcRenderer.invoke('wrestling:allYears'),
     wrestler: (id) => ipcRenderer.invoke('wrestling:wrestler', id),
     wrestlerMatches: (id, opts) => ipcRenderer.invoke('wrestling:wrestlerMatches', id, opts),
     searchWrestlers: (query) => ipcRenderer.invoke('wrestling:searchWrestlers', query),
     topRatedMatches: (limit) => ipcRenderer.invoke('wrestling:topRatedMatches', limit),
+    favorites: (limit) => ipcRenderer.invoke('wrestling:favorites', limit),
     resolveLinks: (titles) => ipcRenderer.invoke('wrestling:resolveLinks', titles),
     rateMatch: (matchId, stars) => ipcRenderer.invoke('wrestling:rateMatch', matchId, stars),
     setFavorite: (kind, id, favorite) =>
@@ -606,8 +610,8 @@ const api: NaviApi = {
     pauseSync: () => ipcRenderer.invoke('football:pauseSync'),
     resumeSync: () => ipcRenderer.invoke('football:resumeSync'),
     cancelSync: () => ipcRenderer.invoke('football:cancelSync'),
-    resolveConflict: (id, status, resolution) =>
-      ipcRenderer.invoke('football:resolveConflict', id, status, resolution)
+    resolveConflict: (id, resolution) =>
+      ipcRenderer.invoke('football:resolveConflict', id, resolution)
   },
   player: {
     publishState: (snapshot) => ipcRenderer.invoke('player:publishState', snapshot),
@@ -667,8 +671,7 @@ const api: NaviApi = {
     check: () => ipcRenderer.invoke('update:check'),
     download: () => ipcRenderer.invoke('update:download'),
     cancel: () => ipcRenderer.invoke('update:cancel'),
-    install: () => ipcRenderer.invoke('update:install'),
-    testToken: () => ipcRenderer.invoke('update:testToken')
+    install: () => ipcRenderer.invoke('update:install')
   },
   settings: {
     all: () => ipcRenderer.invoke('settings:all'),

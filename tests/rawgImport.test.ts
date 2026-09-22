@@ -26,6 +26,7 @@ let fixture: Record<string, unknown>
 let hltbInit: Record<string, unknown>
 let hltbSearch: Record<string, unknown>
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   fetchWithRetry: async (url: string) => ({
     ok: true,
     status: 200,
@@ -160,6 +161,16 @@ describe('importGame', () => {
     const meta = JSON.parse(media.metadata as string)
     expect(meta.metacritic).toBe(93)
     expect(meta.hltb.main).toBe(1500)
+  })
+
+  it('keeps a saved length when RAWG playtime and HLTB both miss on re-import', async () => {
+    const { mediaId } = await importGame(3328)
+    db.prepare('UPDATE media_item SET total_units=75 WHERE id=?').run(mediaId)
+    fixture = gameFixture({ playtime: 0 })
+    await importGame(3328)
+    expect(db.prepare('SELECT total_units FROM media_item WHERE id=?').get(mediaId)).toEqual({
+      total_units: 75
+    })
   })
 
   it('rolls back the whole import if a write fails mid-transaction (atomicity)', async () => {

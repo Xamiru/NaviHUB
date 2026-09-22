@@ -7,6 +7,7 @@ vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
 
 import * as repo from '../src/main/repos/wrestlingRepo'
 import * as listRepo from '../src/main/repos/listRepo'
+import * as tierListRepo from '../src/main/repos/tierListRepo'
 import { buildEvent, eventImageName } from '../src/main/wrestling/importRun'
 import { parseHonours } from '../src/main/wrestling/wikitext'
 import * as importRun from '../src/main/wrestling/importRun'
@@ -314,6 +315,10 @@ describe('the personal layer', () => {
     expect(repo.getEvent(eventId)!.matches[0].favorite).toBe(true)
     expect(repo.getWrestler(wrestler.id)!.favorite).toBe(true)
     expect(repo.listEvents({ favoriteOnly: true })).toHaveLength(1)
+    expect(repo.favorites()).toMatchObject({
+      matches: [{ id: match.id, title: 'Alpha vs. Beta' }],
+      wrestlers: [{ id: wrestler.id, name: 'Alpha' }]
+    })
 
     repo.setFavorite('event', eventId, false)
     expect(repo.listEvents({ favoriteOnly: true })).toHaveLength(0)
@@ -543,9 +548,22 @@ describe('review regressions', () => {
       }))
     })
     const id = repo.saveEvent(card(['A vs. B', 'Gone vs. Away']))
-    repo.rateMatch(repo.getEvent(id)!.matches[1].id, 3)
+    const removedId = repo.getEvent(id)!.matches[1].id
+    repo.rateMatch(removedId, 3)
+    const listId = listRepo.create({ title: 'Gone matches', kind: 'wrestlingMatch' })
+    const tierId = tierListRepo.create({ title: 'Gone tiers', kind: 'wrestlingMatch' })
+    listRepo.addItem(listId, removedId)
+    tierListRepo.addItem(tierId, removedId)
     repo.saveEvent(card(['A vs. B']))
     expect(repo.getEvent(id)!.matches.map((m) => m.title)).toEqual(['A vs. B'])
+    expect(listRepo.get(listId)!.items).toHaveLength(0)
+    expect(tierListRepo.get(tierId)!.pool).toHaveLength(0)
+    expect(
+      db.prepare('SELECT COUNT(*) AS n FROM list_item WHERE entity_id = ?').get(removedId) as { n: number }
+    ).toEqual({ n: 0 })
+    expect(
+      db.prepare('SELECT COUNT(*) AS n FROM tier_item WHERE entity_id = ?').get(removedId) as { n: number }
+    ).toEqual({ n: 0 })
   })
 
   it('recognizes a redirect-titled category member instead of re-fetching forever', () => {
@@ -587,6 +605,98 @@ describe('review regressions', () => {
     // Beta had no article; marking it checked keeps it out of future passes.
     repo.markWrestlersChecked(['Beta'])
     expect(repo.stubWrestlers()).toHaveLength(0)
+  })
+
+  it('commits profile fields, honours, and checked markers as one batch', () => {
+    repo.saveEvent(
+      buildEvent('wwe', 'E', article({ name: 'E', date: '2001|4|1', matches: ['[[Alpha]] defeated [[Beta]]'] }), null)!
+    )
+    const alpha = repo.searchWrestlers('Alpha')[0]
+    repo.saveHonours(alpha.id, [{ org: 'Old', items: ['Old title'] }])
+
+    expect(() =>
+      repo.saveWrestlerDetailBatch(
+        [{
+          wikiTitle: 'Alpha',
+          realName: 'Should roll back',
+          honours: [{ org: 'Broken', items: [null as unknown as string] }]
+        }],
+        ['Alpha', 'Beta']
+      )
+    ).toThrow()
+
+    expect(repo.getWrestler(alpha.id)?.realName).toBeNull()
+    expect(repo.honoursFor(alpha.id)).toEqual([{ org: 'Old', items: ['Old title'] }])
+    expect(repo.stubWrestlers().map((row) => row.wikiTitle).sort()).toEqual(['Alpha', 'Beta'])
+
+    repo.saveWrestlerDetailBatch(
+      [{ wikiTitle: 'Alpha', realName: 'Al Pha', honours: [{ org: 'WWE', items: ['Title'] }] }],
+      ['Alpha', 'Beta']
+    )
+    expect(repo.getWrestler(alpha.id)?.realName).toBe('Al Pha')
+    expect(repo.honoursFor(alpha.id)).toEqual([{ org: 'WWE', items: ['Title'] }])
+    expect(repo.stubWrestlers()).toHaveLength(0)
+  })
+
+  it('keeps favorited and listed wrestlers when their last imported match disappears', () => {
+    const eventId = repo.saveEvent(
+      buildEvent('wwe', 'E', article({ name: 'E', date: '2001|4|1', matches: ['[[Alpha]] defeated [[Beta]]'] }), null)!
+    )
+    const alpha = repo.searchWrestlers('Alpha')[0]
+    const beta = repo.searchWrestlers('Beta')[0]
+    repo.setFavorite('wrestler', alpha.id, true)
+    const listId = listRepo.create({ title: 'People', kind: 'wrestlingWrestler' })
+    listRepo.addItem(listId, beta.id)
+
+    repo.saveEvent({ promotion: 'wwe', name: 'E', wikiTitle: 'E', matches: [] })
+    expect(repo.getEvent(eventId)!.matches).toHaveLength(0)
+    repo.pruneOrphanWrestlers()
+
+    expect(repo.getWrestler(alpha.id)?.favorite).toBe(true)
+    expect(repo.getWrestler(beta.id)?.id).toBe(beta.id)
+    expect(listRepo.get(listId)!.items).toHaveLength(1)
+  })
+
+  it('leaves a failed wrestler-detail fetch open for a later retry', async () => {
+    let calls = 0
+    importRun.start(
+      { promotions: ['wwe'] },
+      {
+        enumerateEvents: async () => ['E'],
+        fetchPages: async (titles) => {
+          calls++
+          if (calls > 1) throw new Error('temporary outage')
+          return {
+            pages: titles.map((title) => ({
+              title,
+              wikitext: article({ name: title, date: '2001|4|1', matches: ['[[Alpha]] defeated [[Beta]]'] })
+            })),
+            aliases: new Map()
+          }
+        },
+        resolveFiles: async () => new Map(),
+        resolveTitles: async () => new Map(),
+        pageImages: async () => new Map(),
+        downloadImages: async () => new Map(),
+        delayMs: 0
+      }
+    )
+    await vi.waitFor(() => expect(importRun.getStatus().state).toBe('error'), { timeout: 5000 })
+    expect(repo.stubWrestlers().map((row) => row.wikiTitle).sort()).toEqual(['Alpha', 'Beta'])
+  })
+
+  it('reopens wrestler profiles only for promotions selected by a refresh', () => {
+    repo.saveEvent(
+      buildEvent('wwe', 'WWE E', article({ name: 'WWE E', date: '2001|4|1', matches: ['[[Alpha]] defeated [[Beta]]'] }), null)!
+    )
+    repo.saveEvent(
+      buildEvent('wcw', 'WCW E', article({ name: 'WCW E', date: '1998|4|1', matches: ['[[Gamma]] defeated [[Delta]]'] }), null)!
+    )
+    repo.markWrestlersChecked(['Alpha', 'Beta', 'Gamma', 'Delta'])
+    expect(repo.stubWrestlers()).toHaveLength(0)
+
+    repo.resetWrestlerDetails(['wwe'])
+    expect(repo.stubWrestlers().map((row) => row.wikiTitle).sort()).toEqual(['Alpha', 'Beta'])
   })
 })
 
@@ -771,14 +881,46 @@ describe('loose matches', () => {
     expect(m.participants.find((p) => p.won)?.name).toBe('Beta')
   })
 
+  it('refuses to edit an imported match or accept invalid participant ids', () => {
+    const { alpha, beta } = seedWrestlers()
+    const imported = repo.getEvent(repo.listEvents()[0].id)!.matches[0]
+
+    expect(() =>
+      repo.updateLooseMatch(imported.id, { title: 'Tampered', wrestlerIds: [alpha] })
+    ).toThrow('Loose match not found')
+    expect(repo.getEvent(imported.eventId!)!.matches[0].participants).toHaveLength(2)
+
+    expect(() =>
+      repo.createLooseMatch(
+        { title: 'Invalid winner', wrestlerIds: [alpha], winnerIds: [beta] },
+        null
+      )
+    ).toThrow('Every winner')
+    expect(() =>
+      repo.createLooseMatch({ title: 'Unknown wrestler', wrestlerIds: [999999] }, null)
+    ).toThrow('do not exist')
+  })
+
   it('removes the match and its video row, and only a LOOSE one', () => {
     const { alpha } = seedWrestlers()
     const videoId = repo.addLooseVideo('a.mkv', 'a')
     const id = repo.createLooseMatch({ title: 'X', wrestlerIds: [alpha] }, videoId)
+    const listId = listRepo.create({ title: 'Loose', kind: 'wrestlingMatch' })
+    const tierId = tierListRepo.create({ title: 'Loose tiers', kind: 'wrestlingMatch' })
+    listRepo.addItem(listId, id)
+    tierListRepo.addItem(tierId, id)
     repo.removeLooseMatch(id)
     expect(repo.looseMatches()).toHaveLength(0)
     expect(
       db.prepare('SELECT COUNT(*) AS n FROM wrestling_video WHERE event_id IS NULL').get() as { n: number }
+    ).toEqual({ n: 0 })
+    expect(listRepo.get(listId)!.items).toHaveLength(0)
+    expect(tierListRepo.get(tierId)!.pool).toHaveLength(0)
+    expect(
+      db.prepare('SELECT COUNT(*) AS n FROM list_item WHERE entity_id = ?').get(id) as { n: number }
+    ).toEqual({ n: 0 })
+    expect(
+      db.prepare('SELECT COUNT(*) AS n FROM tier_item WHERE entity_id = ?').get(id) as { n: number }
     ).toEqual({ n: 0 })
 
     // An imported PPV match must be untouchable through this path.
@@ -792,10 +934,31 @@ describe('loose matches', () => {
     expect(repo.addLooseVideo('same.mkv', 'same')).toBe(a)
   })
 
+  it('does not attach one video row to two loose matches', () => {
+    const { alpha } = seedWrestlers()
+    const videoId = repo.addLooseVideo('same.mkv', 'same')
+    repo.createLooseMatch({ title: 'First', wrestlerIds: [alpha] }, videoId)
+    expect(() =>
+      repo.createLooseMatch({ title: 'Second', wrestlerIds: [alpha] }, videoId)
+    ).toThrow('already attached')
+  })
+
   it('keeps loose matches out of an event card', () => {
     const { alpha } = seedWrestlers()
     repo.createLooseMatch({ title: 'Loose', wrestlerIds: [alpha] }, null)
     const eventId = repo.listEvents()[0].id
     expect(repo.getEvent(eventId)!.matches.map((m) => m.title)).toEqual(['Alpha vs. Beta'])
+  })
+
+  it('resolves both imported and loose match destinations', () => {
+    const { alpha } = seedWrestlers()
+    const eventMatch = repo.getEvent(repo.listEvents()[0].id)!.matches[0]
+    const looseId = repo.createLooseMatch({ title: 'Loose', wrestlerIds: [alpha] }, null)
+    expect(repo.matchLocation(eventMatch.id)).toEqual({
+      kind: 'event',
+      eventId: eventMatch.eventId
+    })
+    expect(repo.matchLocation(looseId)).toEqual({ kind: 'loose' })
+    expect(repo.matchLocation(999999)).toBeNull()
   })
 })

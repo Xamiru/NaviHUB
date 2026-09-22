@@ -20,6 +20,7 @@ const AREA_LABELS: Record<ArchiveArea, string> = {
   learn: 'Learn',
   system: 'System'
 }
+const EXPANDED_SETTING = 'sidebar.expanded'
 
 function railClass(active: boolean): string {
   return `relative flex h-14 w-full items-center justify-center px-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors ${
@@ -47,6 +48,45 @@ function DrawerLink({ item, active }: { item: ArchiveNavItem; active: boolean })
       <span>{item.label}</span>
       {active && <span className="text-[10px] uppercase tracking-widest">Current</span>}
     </Link>
+  )
+}
+
+function ExpandedNavigation({
+  pathname,
+  visibleItems
+}: {
+  pathname: string
+  visibleItems: (area: ArchiveArea) => ArchiveNavItem[]
+}): JSX.Element {
+  return (
+    <nav className="min-h-0 flex-1 overflow-y-auto px-2 py-3" aria-label="Primary navigation">
+      {(['home', 'library', 'play', 'learn', 'system'] as ArchiveArea[]).map((area) => {
+        const items = visibleItems(area)
+        if (items.length === 0) return null
+        const current = drawerRouteForPath(pathname, items.map((item) => item.to))
+        return (
+          <div key={area} className="mb-4">
+            <h2 className="px-3 pb-1 text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted">
+              {AREA_LABELS[area]}
+            </h2>
+            {items.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className={`block rounded px-3 py-2 text-sm transition-colors ${
+                  current === item.to
+                    ? 'bg-signal-live/10 text-signal-live'
+                    : 'text-ink-secondary hover:bg-surface-raised/70 hover:text-ink'
+                }`}
+                aria-current={current === item.to ? 'page' : undefined}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
+        )
+      })}
+    </nav>
   )
 }
 
@@ -117,7 +157,7 @@ export default function Sidebar() {
   const hidden = parseHiddenSections(settings?.[SIDEBAR_HIDDEN_SETTING])
   const currentArea = archiveAreaForPath(location.pathname)
   const [openArea, setOpenArea] = useState<ArchiveArea | null>(null)
-  const rootRef = useRef<HTMLElement>(null)
+  const [expanded, setExpanded] = useState(() => localStorage.getItem(EXPANDED_SETTING) === 'true')
 
   const visibleItems = (area: ArchiveArea) =>
     drawerItemsForArea(area).filter(
@@ -126,15 +166,12 @@ export default function Sidebar() {
 
   useEffect(() => setOpenArea(null), [location.pathname])
 
-  useEffect(() => {
-    function onMouseDown(event: MouseEvent) {
-      if (!rootRef.current?.contains(event.target as Node)) setOpenArea(null)
-    }
-    document.addEventListener('mousedown', onMouseDown)
-    return () => {
-      document.removeEventListener('mousedown', onMouseDown)
-    }
-  }, [])
+  function toggleExpanded() {
+    const next = !expanded
+    localStorage.setItem(EXPANDED_SETTING, String(next))
+    setOpenArea(null)
+    setExpanded(next)
+  }
 
   const drawerItems = openArea ? visibleItems(openArea) : []
   const drawerCurrent = drawerRouteForPath(
@@ -144,8 +181,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      ref={rootRef}
-      className="wired-surface relative z-40 flex w-20 shrink-0 flex-col border-r border-line-subtle bg-surface-canvas"
+      className={`wired-surface relative z-40 flex shrink-0 flex-col border-r border-line-subtle bg-surface-canvas ${expanded ? 'w-52' : 'w-20'}`}
     >
       <NavLink
         to="/"
@@ -162,57 +198,83 @@ export default function Sidebar() {
         </span>
       </NavLink>
 
-      <nav className="flex-1 py-3" aria-label="Primary navigation">
-        <NavLink to="/" end className={railClass(currentArea === 'home')}>
-          Home
-        </NavLink>
-        {(['library', 'play', 'learn'] as ArchiveArea[]).map((area) => {
-          if (visibleItems(area).length === 0) return null
-          const open = openArea === area
-          return (
+      <button
+        type="button"
+        className="h-10 shrink-0 border-b border-line-subtle px-2 text-xs font-semibold uppercase tracking-[0.1em] text-ink-secondary hover:bg-surface-raised/70 hover:text-ink"
+        onClick={toggleExpanded}
+        aria-label={expanded ? 'Compact navigation' : 'Expand navigation'}
+        aria-pressed={expanded}
+      >
+        {expanded ? 'Compact navigation' : 'Expand'}
+      </button>
+
+      {expanded ? (
+        <ExpandedNavigation pathname={location.pathname} visibleItems={visibleItems} />
+      ) : (
+        <>
+          <nav className="flex-1 py-3" aria-label="Primary navigation">
+            <NavLink to="/" end className={railClass(currentArea === 'home')}>
+              Home
+            </NavLink>
+            {(['library', 'play', 'learn'] as ArchiveArea[]).map((area) => {
+              if (visibleItems(area).length === 0) return null
+              const open = openArea === area
+              return (
+                <button
+                  key={area}
+                  type="button"
+                  className={railClass(currentArea === area || open)}
+                  onClick={() => setOpenArea(open ? null : area)}
+                  aria-haspopup="dialog"
+                  aria-expanded={open}
+                  aria-controls="archive-nav-drawer"
+                >
+                  {AREA_LABELS[area]}
+                </button>
+              )
+            })}
+          </nav>
+
+          <div className="border-t border-line-subtle py-2">
             <button
-              key={area}
               type="button"
-              className={railClass(currentArea === area || open)}
-              onClick={() => setOpenArea(open ? null : area)}
+              className={railClass(currentArea === 'system' || openArea === 'system')}
+              onClick={() => setOpenArea(openArea === 'system' ? null : 'system')}
               aria-haspopup="dialog"
-              aria-expanded={open}
+              aria-expanded={openArea === 'system'}
               aria-controls="archive-nav-drawer"
             >
-              {AREA_LABELS[area]}
+              System
             </button>
-          )
-        })}
-      </nav>
-
-      <div className="border-t border-line-subtle py-2">
-        <button
-          type="button"
-          className={railClass(currentArea === 'system' || openArea === 'system')}
-          onClick={() => setOpenArea(openArea === 'system' ? null : 'system')}
-          aria-haspopup="dialog"
-          aria-expanded={openArea === 'system'}
-          aria-controls="archive-nav-drawer"
-        >
-          System
-        </button>
-        <div
-          className="flex items-center justify-center gap-1.5 pb-1 pt-2 text-[8px] uppercase tracking-widest text-ink-decorative"
-          aria-hidden="true"
-        >
-          <span className="wired-dot h-1.5 w-1.5 rounded-full bg-signal-live" />
-          {theme === 'metal-gear' ? 'Ops' : 'Wired'}
-        </div>
-      </div>
+            <div
+              className="flex items-center justify-center gap-1.5 pb-1 pt-2 text-[8px] uppercase tracking-widest text-ink-decorative"
+              aria-hidden="true"
+            >
+              <span className="wired-dot h-1.5 w-1.5 rounded-full bg-signal-live" />
+              {theme === 'metal-gear' ? 'Ops' : 'Wired'}
+            </div>
+          </div>
+        </>
+      )}
 
       {openArea && (
-        <NavigationDrawer
-          area={openArea}
-          items={drawerItems}
-          current={drawerCurrent}
-          theme={theme}
-          onClose={() => setOpenArea(null)}
-        />
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/40"
+            aria-hidden="true"
+            onClick={(event) => {
+              event.stopPropagation()
+              setOpenArea(null)
+            }}
+          />
+          <NavigationDrawer
+            area={openArea}
+            items={drawerItems}
+            current={drawerCurrent}
+            theme={theme}
+            onClose={() => setOpenArea(null)}
+          />
+        </>
       )}
     </aside>
   )

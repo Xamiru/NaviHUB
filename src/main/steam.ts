@@ -2,7 +2,7 @@ import { getSqlite } from './db/connection'
 import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry, sleep } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from './http'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
 
@@ -32,7 +32,8 @@ async function steamGet(path: string, params: Record<string, string>): Promise<a
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const res = await fetchWithRetry(url.toString(), {
     headers: { Accept: 'application/json' },
-    timeoutMs: 20_000
+    timeoutMs: 20_000,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (!res.ok) throw new Error(`Steam request failed (${res.status})`)
   return res.json()
@@ -117,9 +118,8 @@ export async function importGame(
   appId: number,
   opts: { only?: RefreshAspect[] } = {}
 ): Promise<ImportSummary> {
-  // Library Refresh: media_item columns only — companies and genres are skipped
-  // whole (they use INSERT OR IGNORE and never prune, but a partial refresh
-  // still has no business writing them).
+  // Library Refresh: media_item columns only — companies and genres, including
+  // their authoritative replacement below, are skipped whole.
   const partial = !!opts.only?.length
   const wants = (a: RefreshAspect): boolean => !partial || !!opts.only?.includes(a)
   const id = Math.floor(Number(appId))
@@ -208,11 +208,14 @@ export async function importGame(
     // (no ids), so companies match by case-insensitive name — an Atlus row
     // created by any source is reused, never duplicated. ----
     let studios = 0
-    const companyRoles: [unknown[], string][] = [
-      [g.developers ?? [], 'developer'],
-      [g.publishers ?? [], 'publisher']
+    const companyRoles: [unknown, string][] = [
+      [g.developers, 'developer'],
+      [g.publishers, 'publisher']
     ]
     for (const [names, role] of companyRoles) {
+      // An omitted field is not proof that the provider removed the role.
+      if (!Array.isArray(names)) continue
+      db.prepare('DELETE FROM media_company WHERE media_id=? AND role=?').run(mediaId, role)
       for (const name of names) {
         if (typeof name !== 'string' || !name.trim()) continue
         const companyId = upsertCompanyByName(db, name.trim())
@@ -224,7 +227,13 @@ export async function importGame(
     }
 
     // ---- genres -> tags ----
-    for (const genre of g.genres ?? []) {
+    if (Array.isArray(g.genres)) {
+      db.prepare(
+        `DELETE FROM media_tag
+         WHERE media_id=? AND tag_id IN (SELECT id FROM tag WHERE category='genre')`
+      ).run(mediaId)
+    }
+    for (const genre of Array.isArray(g.genres) ? g.genres : []) {
       const name = genre?.description
       if (!name) continue
       const existingTag = db.prepare('SELECT id FROM tag WHERE name=?').get(name) as

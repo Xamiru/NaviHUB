@@ -16,6 +16,7 @@ import type {
   FootballCompetitionDetail,
   FootballCompetitionKey,
   FootballConflict,
+  FootballConflictResolution,
   FootballCoverage,
   FootballCurrentSnapshot,
   FootballEntityFilter,
@@ -371,6 +372,7 @@ export function getCompetition(key: FootballCompetitionKey): FootballCompetition
     seasons: listSeasons(key),
     honours: honoursFor('h.competition_id', competition.id),
     media: derivedMediaForEntity('competition', competition.id),
+    externalLinks: listExternalLinks('competition', competition.id),
     coverage: coverageFor(competition.id),
     article: articleFor('competition', competition.id)
   }
@@ -530,6 +532,7 @@ export function getTeam(id: number): FootballTeamDetail | null {
       note: (standing.note as string) ?? null
     })),
     media: derivedMediaForEntity('team', id),
+    externalLinks: listExternalLinks('team', id),
     article: articleFor('team', id)
   }
 }
@@ -580,6 +583,7 @@ export function getPerson(id: number): FootballPersonDetail | null {
       WHERE fl.person_id=? ORDER BY m.match_date DESC LIMIT 200
     `).all(id) as Row[]).map(asMatch),
     media: derivedMediaForEntity('person', id),
+    externalLinks: listExternalLinks('person', id),
     article: articleFor('person', id)
   }
 }
@@ -895,6 +899,7 @@ export function search(query: string): FootballSearchResults {
 export function setFavorite(kind: FootballEntityKind, entityId: number, favorite: boolean): void {
   const db = getSqlite()
   if (favorite) {
+    if (!footballEntityExists(kind, entityId)) throw new Error('Football entity not found')
     db.prepare(`INSERT OR IGNORE INTO football_favorite (entity_kind,entity_id) VALUES (?,?)`).run(
       kind,
       entityId
@@ -1172,14 +1177,235 @@ export function listConflicts(): FootballConflict[] {
   }))
 }
 
-export function resolveConflict(
-  id: number,
-  status: 'resolved' | 'ignored',
-  resolution?: string | null
+function movePolymorphicFootballRows(
+  entityKind: 'team' | 'person',
+  sourceId: number,
+  targetId: number
 ): void {
-  getSqlite().prepare(`
-    UPDATE football_conflict SET status=?,resolution=?,resolved_at=datetime('now') WHERE id=?
-  `).run(status, resolution?.trim() || null, id)
+  const db = getSqlite()
+  db.prepare(`INSERT OR IGNORE INTO football_favorite (entity_kind,entity_id)
+    SELECT entity_kind,? FROM football_favorite WHERE entity_kind=? AND entity_id=?`
+  ).run(targetId, entityKind, sourceId)
+  db.prepare(`DELETE FROM football_favorite WHERE entity_kind=? AND entity_id=?`).run(
+    entityKind,
+    sourceId
+  )
+  for (const table of ['football_media_link', 'football_external_link', 'football_article']) {
+    db.prepare(`UPDATE OR IGNORE ${table} SET entity_id=? WHERE entity_kind=? AND entity_id=?`).run(
+      targetId,
+      entityKind,
+      sourceId
+    )
+    db.prepare(`DELETE FROM ${table} WHERE entity_kind=? AND entity_id=?`).run(entityKind, sourceId)
+  }
+  const listKind = entityKind === 'team' ? 'footballTeam' : 'footballPerson'
+  db.prepare(`UPDATE OR IGNORE list_item SET entity_id=?
+    WHERE entity_id=? AND list_id IN (SELECT id FROM list WHERE entity_kind=?)`).run(
+    targetId,
+    sourceId,
+    listKind
+  )
+  db.prepare(`DELETE FROM list_item
+    WHERE entity_id=? AND list_id IN (SELECT id FROM list WHERE entity_kind=?)`).run(
+    sourceId,
+    listKind
+  )
+  db.prepare(`UPDATE football_alias SET entity_id=? WHERE entity_kind=? AND entity_id=?`).run(
+    targetId,
+    entityKind,
+    sourceId
+  )
+  db.prepare(`UPDATE football_source_ref SET entity_id=? WHERE entity_kind=? AND entity_id=?`).run(
+    targetId,
+    entityKind,
+    sourceId
+  )
+  db.prepare(`UPDATE OR IGNORE football_assertion SET entity_id=?
+    WHERE entity_kind=? AND entity_id=?`).run(targetId, entityKind, sourceId)
+  db.prepare(`DELETE FROM football_assertion WHERE entity_kind=? AND entity_id=?`).run(
+    entityKind,
+    sourceId
+  )
+  db.prepare(`UPDATE football_conflict SET entity_id=? WHERE entity_kind=? AND entity_id=?`).run(
+    targetId,
+    entityKind,
+    sourceId
+  )
+}
+
+function mergeFootballEntity(
+  entityKind: 'team' | 'person',
+  sourceId: number,
+  targetId: number
+): void {
+  if (!Number.isInteger(targetId) || targetId <= 0 || targetId === sourceId) {
+    throw new Error('Choose a different valid Football entity to merge into')
+  }
+  const db = getSqlite()
+  const table = entityKind === 'team' ? 'football_team' : 'football_person'
+  if (!db.prepare(`SELECT 1 FROM ${table} WHERE id=?`).get(targetId)) {
+    throw new Error(`Football ${entityKind} ${targetId} was not found`)
+  }
+  if (entityKind === 'team') {
+    const selfMatch = db.prepare(`SELECT 1 FROM football_match WHERE
+      (home_team_id=? AND away_team_id=?) OR (home_team_id=? AND away_team_id=?) LIMIT 1`
+    ).get(sourceId, targetId, targetId, sourceId)
+    if (selfMatch) throw new Error('These teams oppose each other in a stored match and cannot be merged')
+    db.prepare(`UPDATE football_team SET
+      short_name=COALESCE(short_name,(SELECT short_name FROM football_team WHERE id=?)),
+      country=COALESCE(country,(SELECT country FROM football_team WHERE id=?)),
+      founded_year=COALESCE(founded_year,(SELECT founded_year FROM football_team WHERE id=?)),
+      bio=COALESCE(bio,(SELECT bio FROM football_team WHERE id=?)),
+      image_path=COALESCE(image_path,(SELECT image_path FROM football_team WHERE id=?)),
+      updated_at=datetime('now') WHERE id=?`
+    ).run(sourceId, sourceId, sourceId, sourceId, sourceId, targetId)
+    db.prepare(`UPDATE football_tenure SET team_id=? WHERE team_id=?`).run(targetId, sourceId)
+    db.prepare(`UPDATE football_match SET home_team_id=? WHERE home_team_id=?`).run(targetId, sourceId)
+    db.prepare(`UPDATE football_match SET away_team_id=? WHERE away_team_id=?`).run(targetId, sourceId)
+    db.prepare(`UPDATE OR IGNORE football_lineup SET team_id=? WHERE team_id=?`).run(targetId, sourceId)
+    db.prepare(`DELETE FROM football_lineup WHERE team_id=?`).run(sourceId)
+    db.prepare(`UPDATE football_event SET team_id=? WHERE team_id=?`).run(targetId, sourceId)
+    db.prepare(`UPDATE OR IGNORE football_standing SET team_id=? WHERE team_id=?`).run(targetId, sourceId)
+    db.prepare(`DELETE FROM football_standing WHERE team_id=?`).run(sourceId)
+    db.prepare(`UPDATE football_honour SET team_id=? WHERE team_id=?`).run(targetId, sourceId)
+  } else {
+    db.prepare(`UPDATE football_person SET
+      role=CASE WHEN role=(SELECT role FROM football_person WHERE id=?) THEN role ELSE 'both' END,
+      birth_date=COALESCE(birth_date,(SELECT birth_date FROM football_person WHERE id=?)),
+      death_date=COALESCE(death_date,(SELECT death_date FROM football_person WHERE id=?)),
+      nationality=COALESCE(nationality,(SELECT nationality FROM football_person WHERE id=?)),
+      bio=COALESCE(bio,(SELECT bio FROM football_person WHERE id=?)),
+      image_path=COALESCE(image_path,(SELECT image_path FROM football_person WHERE id=?)),
+      quiz_pack=MAX(quiz_pack,(SELECT quiz_pack FROM football_person WHERE id=?)),
+      updated_at=datetime('now') WHERE id=?`
+    ).run(sourceId, sourceId, sourceId, sourceId, sourceId, sourceId, sourceId, targetId)
+    db.prepare(`UPDATE football_tenure SET person_id=? WHERE person_id=?`).run(targetId, sourceId)
+    db.prepare(`UPDATE OR IGNORE football_lineup SET person_id=? WHERE person_id=?`).run(targetId, sourceId)
+    db.prepare(`DELETE FROM football_lineup WHERE person_id=?`).run(sourceId)
+    db.prepare(`UPDATE football_event SET person_id=? WHERE person_id=?`).run(targetId, sourceId)
+    db.prepare(`UPDATE football_event SET related_person_id=? WHERE related_person_id=?`).run(
+      targetId,
+      sourceId
+    )
+    db.prepare(`UPDATE football_honour SET person_id=? WHERE person_id=?`).run(targetId, sourceId)
+  }
+  movePolymorphicFootballRows(entityKind, sourceId, targetId)
+  db.prepare(`DELETE FROM ${table} WHERE id=?`).run(sourceId)
+}
+
+function acceptedMatchResult(raw: string | null): Record<string, unknown> {
+  if (!raw) throw new Error('The selected source has no stored result assertion')
+  const parsed = JSON.parse(raw) as Record<string, unknown>
+  if (!parsed || typeof parsed !== 'object') throw new Error('The stored result assertion is invalid')
+  return parsed
+}
+
+export function reconcileMatchResultConflicts(matchId: number, applyConsensus = false): void {
+  const db = getSqlite()
+  const match = db.prepare(`SELECT season_id AS seasonId FROM football_match WHERE id=?`).get(
+    matchId
+  ) as { seasonId: number } | undefined
+  if (!match) return
+  if (applyConsensus) {
+    const assertions = db.prepare(`SELECT DISTINCT value FROM football_assertion
+      WHERE entity_kind='match' AND entity_id=? AND facet='result' AND value IS NOT NULL
+      LIMIT 2`).all(matchId) as Array<{ value: string }>
+    if (assertions.length === 1) {
+      const selected = acceptedMatchResult(assertions[0].value)
+      db.prepare(`UPDATE football_match SET
+        status=?,home_score=?,away_score=?,home_halftime=?,away_halftime=?,
+        home_extra_time=?,away_extra_time=?,home_penalties=?,away_penalties=?,
+        updated_at=datetime('now') WHERE id=?`).run(
+        selected.status,
+        selected.homeScore ?? null,
+        selected.awayScore ?? null,
+        selected.homeHalftime ?? null,
+        selected.awayHalftime ?? null,
+        selected.homeExtraTime ?? null,
+        selected.awayExtraTime ?? null,
+        selected.homePenalties ?? null,
+        selected.awayPenalties ?? null,
+        matchId
+      )
+    }
+  }
+  db.prepare(`UPDATE football_match SET conflicted=CASE WHEN EXISTS(
+    SELECT 1 FROM football_conflict c WHERE c.entity_kind='match'
+      AND c.entity_id=football_match.id AND c.facet='result' AND c.status<>'resolved'
+    ) THEN 1 ELSE 0 END WHERE id=?`).run(matchId)
+  db.prepare(`UPDATE football_coverage SET state='complete',note=NULL
+    WHERE season_id=? AND facet='results' AND state='conflicted'
+      AND NOT EXISTS(
+        SELECT 1 FROM football_conflict c
+        JOIN football_match m ON m.id=c.entity_id
+        WHERE c.entity_kind='match' AND c.facet='result' AND c.status<>'resolved'
+          AND m.season_id=football_coverage.season_id
+          AND (c.source_a=football_coverage.source OR c.source_b=football_coverage.source)
+      )`).run(match.seasonId)
+}
+
+export function resolveConflict(id: number, resolution: FootballConflictResolution): void {
+  const db = getSqlite()
+  db.transaction(() => {
+    const conflict = db.prepare(`SELECT * FROM football_conflict WHERE id=?`).get(id) as Row | undefined
+    if (!conflict) throw new Error('Football conflict not found')
+    if (conflict.status === 'resolved') return
+    if (resolution.action === 'ignore') {
+      db.prepare(`UPDATE football_conflict SET status='ignored',resolution='Ignored; remains quarantined',
+        resolved_at=datetime('now') WHERE id=?`).run(id)
+      return
+    }
+    if (conflict.facet === 'result' &&
+        (resolution.action === 'acceptSourceA' || resolution.action === 'acceptSourceB')) {
+      const selected = acceptedMatchResult(
+        (resolution.action === 'acceptSourceA' ? conflict.value_a : conflict.value_b) as string | null
+      )
+      db.prepare(`UPDATE football_match SET
+        status=?,home_score=?,away_score=?,home_halftime=?,away_halftime=?,
+        home_extra_time=?,away_extra_time=?,home_penalties=?,away_penalties=?,
+        updated_at=datetime('now') WHERE id=?`).run(
+        selected.status,
+        selected.homeScore ?? null,
+        selected.awayScore ?? null,
+        selected.homeHalftime ?? null,
+        selected.awayHalftime ?? null,
+        selected.homeExtraTime ?? null,
+        selected.awayExtraTime ?? null,
+        selected.homePenalties ?? null,
+        selected.awayPenalties ?? null,
+        conflict.entity_id
+      )
+      db.prepare(`UPDATE football_conflict SET status='resolved',resolution=?,
+        resolved_at=datetime('now') WHERE id=?`).run(
+        resolution.action === 'acceptSourceA' ? 'Accepted source A' : 'Accepted source B',
+        id
+      )
+      reconcileMatchResultConflicts(conflict.entity_id as number)
+      return
+    }
+    if (conflict.facet === 'identity' && resolution.action === 'mergeEntity') {
+      if (conflict.entity_kind !== 'team' && conflict.entity_kind !== 'person') {
+        throw new Error('Only Football teams and people can be merged')
+      }
+      mergeFootballEntity(
+        conflict.entity_kind,
+        conflict.entity_id as number,
+        resolution.targetEntityId
+      )
+      db.prepare(`UPDATE football_conflict SET status='resolved',resolution=?,
+        resolved_at=datetime('now') WHERE id=?`).run(
+        `Merged into ${conflict.entity_kind} ${resolution.targetEntityId}`,
+        id
+      )
+      return
+    }
+    if (conflict.facet === 'identity' && resolution.action === 'keepSeparate') {
+      db.prepare(`UPDATE football_conflict SET status='resolved',resolution='Confirmed separate identities',
+        resolved_at=datetime('now') WHERE id=?`).run(id)
+      return
+    }
+    throw new Error('That resolution does not apply to this Football conflict')
+  })()
 }
 
 export function syncOverview(status: FootballSyncOverview['status']): FootballSyncOverview {

@@ -7,7 +7,6 @@ let dictDb: Database.Database
 vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
 vi.mock('../src/main/dict/dictDb', () => ({ getDictDb: () => dictDb, closeDictDb: () => {} }))
 vi.mock('../src/main/tokenizer', () => ({ tokenize: async () => [] }))
-vi.mock('../src/main/jisho', () => ({ lookup: async () => [] }))
 
 import { componentQuizPool, pitchQuizPool, shiritoriNext } from '../src/main/jpDrills'
 import { importKanjiumText } from '../src/main/dict/kanjium'

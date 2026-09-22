@@ -104,10 +104,89 @@ export type AchievementInput = {
   globalPct: number | null
 }
 
+type SqliteDb = ReturnType<typeof getSqlite>
+
+function upsertSchemaInDb(
+  db: SqliteDb,
+  mediaId: number,
+  provider: AchievementProvider,
+  providerGameId: string,
+  rows: readonly AchievementInput[]
+): void {
+  if (!rows.length) throw new Error('Cannot replace an achievement set with an empty schema')
+  const prior = db
+    .prepare('SELECT provider, provider_game_id FROM achievement_game WHERE media_id = ?')
+    .get(mediaId) as { provider: string; provider_game_id: string } | undefined
+
+  // api_name is only stable inside one provider game. Reusing rows across a
+  // provider or game-id switch can otherwise carry an unrelated unlock into
+  // the replacement set when both happen to use the same identifier.
+  if (prior && (prior.provider !== provider || prior.provider_game_id !== providerGameId)) {
+    db.prepare('DELETE FROM achievement WHERE media_id = ?').run(mediaId)
+  }
+
+  db.prepare(
+    `INSERT INTO achievement_game (media_id, provider, provider_game_id, schema_fetched_at)
+     VALUES (?, ?, ?, datetime('now'))
+     ON CONFLICT(media_id) DO UPDATE SET
+       provider = excluded.provider,
+       provider_game_id = excluded.provider_game_id,
+       schema_fetched_at = excluded.schema_fetched_at`
+  ).run(mediaId, provider, providerGameId)
+
+  const upsert = db.prepare(
+    `INSERT INTO achievement
+       (media_id, api_name, name, description, hidden, icon_path, icon_gray_path,
+        points, global_pct, sort_order)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(media_id, api_name) DO UPDATE SET
+       name = excluded.name,
+       -- A source that lacks a description (Steam's public page blanks the
+       -- hidden ones) must not wipe one an earlier source supplied.
+       description = COALESCE(excluded.description, achievement.description),
+       -- hidden stays authoritative from the source even when the text above
+       -- is preserved: that pairing is deliberate, not a leak. The kept text
+       -- is what the UI reveals once the achievement is unlocked, and until
+       -- then hidden is exactly what should be concealing it.
+       hidden = excluded.hidden,
+       -- COALESCE so a refetch that couldn't re-download art keeps the art
+       -- already on disk, the import-preserves-what-it-can rule.
+       icon_path = COALESCE(excluded.icon_path, achievement.icon_path),
+       icon_gray_path = COALESCE(excluded.icon_gray_path, achievement.icon_gray_path),
+       points = excluded.points,
+       global_pct = COALESCE(excluded.global_pct, achievement.global_pct),
+       sort_order = excluded.sort_order`
+  )
+  rows.forEach((r, i) => {
+    upsert.run(
+      mediaId,
+      r.apiName,
+      r.name,
+      r.description,
+      r.hidden ? 1 : 0,
+      r.iconPath,
+      r.iconGrayPath,
+      r.points,
+      r.globalPct,
+      i
+    )
+  })
+
+  // Prune achievements the provider dropped. A set that came back EMPTY is
+  // treated as a failed fetch by the caller, so this never runs with no rows.
+  if (rows.length) {
+    const keep = rows.map(() => '?').join(',')
+    db.prepare(`DELETE FROM achievement WHERE media_id = ? AND api_name NOT IN (${keep})`).run(
+      mediaId,
+      ...rows.map((r) => r.apiName)
+    )
+  }
+}
+
 // The whole set in one transaction (the importer posture): upsert every row,
 // then prune whatever the provider no longer lists. Unlocks ride along on the
-// surviving ids; only a genuinely removed achievement loses its unlock, by
-// CASCADE.
+// surviving ids while the provider identity is unchanged; a provider/game-id
+// replacement clears the old set first.
 export function upsertSchema(
   mediaId: number,
   provider: AchievementProvider,
@@ -115,68 +194,13 @@ export function upsertSchema(
   rows: readonly AchievementInput[]
 ): void {
   const db = getSqlite()
-  db.transaction(() => {
-    db.prepare(
-      `INSERT INTO achievement_game (media_id, provider, provider_game_id, schema_fetched_at)
-       VALUES (?, ?, ?, datetime('now'))
-       ON CONFLICT(media_id) DO UPDATE SET
-         provider = excluded.provider,
-         provider_game_id = excluded.provider_game_id,
-         schema_fetched_at = excluded.schema_fetched_at`
-    ).run(mediaId, provider, providerGameId)
-
-    const upsert = db.prepare(
-      `INSERT INTO achievement
-         (media_id, api_name, name, description, hidden, icon_path, icon_gray_path,
-          points, global_pct, sort_order)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-       ON CONFLICT(media_id, api_name) DO UPDATE SET
-         name = excluded.name,
-         -- A source that lacks a description (Steam's public page blanks the
-         -- hidden ones) must not wipe one an earlier source supplied.
-         description = COALESCE(excluded.description, achievement.description),
-         -- hidden stays authoritative from the source even when the text above
-         -- is preserved: that pairing is deliberate, not a leak. The kept text
-         -- is what the UI reveals once the achievement is unlocked, and until
-         -- then hidden is exactly what should be concealing it.
-         hidden = excluded.hidden,
-         -- COALESCE so a refetch that couldn't re-download art keeps the art
-         -- already on disk, the import-preserves-what-it-can rule.
-         icon_path = COALESCE(excluded.icon_path, achievement.icon_path),
-         icon_gray_path = COALESCE(excluded.icon_gray_path, achievement.icon_gray_path),
-         points = excluded.points,
-         global_pct = COALESCE(excluded.global_pct, achievement.global_pct),
-         sort_order = excluded.sort_order`
-    )
-    rows.forEach((r, i) => {
-      upsert.run(
-        mediaId,
-        r.apiName,
-        r.name,
-        r.description,
-        r.hidden ? 1 : 0,
-        r.iconPath,
-        r.iconGrayPath,
-        r.points,
-        r.globalPct,
-        i
-      )
-    })
-
-    // Prune achievements the provider dropped. A set that came back EMPTY is
-    // treated as a failed fetch by the caller, so this never runs with no rows.
-    if (rows.length) {
-      const keep = rows.map(() => '?').join(',')
-      db.prepare(
-        `DELETE FROM achievement WHERE media_id = ? AND api_name NOT IN (${keep})`
-      ).run(mediaId, ...rows.map((r) => r.apiName))
-    }
-  })()
+  db.transaction(() => upsertSchemaInDb(db, mediaId, provider, providerGameId, rows))()
 }
 
-// Association without a set — the setup dialog stores the appid first so the
-// choice survives a failed or half-finished fetch.
-export function setAssociation(
+// Initial association without a set — setup stores the first choice so it
+// survives a failed fetch. Deliberately cannot replace an existing identity:
+// replacements belong to the atomic schema+unlock transaction above.
+export function setInitialAssociation(
   mediaId: number,
   provider: AchievementProvider,
   providerGameId: string
@@ -185,9 +209,7 @@ export function setAssociation(
     .prepare(
       `INSERT INTO achievement_game (media_id, provider, provider_game_id)
        VALUES (?, ?, ?)
-       ON CONFLICT(media_id) DO UPDATE SET
-         provider = excluded.provider,
-         provider_game_id = excluded.provider_game_id`
+       ON CONFLICT(media_id) DO NOTHING`
     )
     .run(mediaId, provider, providerGameId)
 }
@@ -267,6 +289,57 @@ export type UnlockInput = { apiName: string; unlockedAtMs: number | null }
 // rejects the row (see insertUnlocks).
 const MAX_UNLOCK_MS = Date.UTC(2100, 0, 1)
 
+function insertUnlocksInDb(
+  db: SqliteDb,
+  mediaId: number,
+  unlocks: readonly UnlockInput[],
+  source: AchievementUnlockSource,
+  fallbackMs: number
+): AchievementRow[] {
+  if (!unlocks.length) return []
+  const idOf = db.prepare('SELECT id FROM achievement WHERE media_id = ? AND api_name = ?')
+  const insert = db.prepare(
+    `INSERT INTO achievement_unlock (achievement_id, unlocked_at, source)
+     VALUES (?, datetime(?, 'unixepoch'), ?)
+     ON CONFLICT(achievement_id) DO UPDATE SET
+       unlocked_at = MIN(achievement_unlock.unlocked_at, excluded.unlocked_at),
+       source = CASE WHEN excluded.unlocked_at < achievement_unlock.unlocked_at
+                     THEN excluded.source ELSE achievement_unlock.source END`
+  )
+  const fresh: number[] = []
+  for (const u of unlocks) {
+    // Belt and braces on top of achievementsCore.normalizeTime: SQLite's
+    // datetime(?, 'unixepoch') yields NULL past year 9999, and unlocked_at is
+    // NOT NULL — one out-of-range value would abort this transaction and
+    // throw away every good unlock in the batch.
+    const ms = u.unlockedAtMs
+    const at = ms != null && ms > 0 && ms <= MAX_UNLOCK_MS ? ms : fallbackMs
+    const seconds = Math.floor((at > 0 && at <= MAX_UNLOCK_MS ? at : Date.now()) / 1000)
+    const row = idOf.get(mediaId, u.apiName) as { id: number } | undefined
+    // An api name the set doesn't contain: a stale emulator file, or an
+    // achievement added after our last fetch. Ignore it — a re-fetch picks
+    // the achievement up, and the next sweep then records the unlock.
+    if (!row) continue
+    const existed = db
+      .prepare('SELECT 1 FROM achievement_unlock WHERE achievement_id = ?')
+      .get(row.id)
+    insert.run(row.id, seconds, source)
+    if (!existed) fresh.push(row.id)
+  }
+  if (!fresh.length) return []
+  const placeholders = fresh.map(() => '?').join(',')
+  return db
+    .prepare(
+      `SELECT a.*, u.unlocked_at, u.source AS unlock_source
+         FROM achievement a
+         JOIN achievement_unlock u ON u.achievement_id = a.id
+        WHERE a.id IN (${placeholders})
+        ORDER BY a.sort_order, a.id`
+    )
+    .all(...fresh)
+    .map(mapAchievement)
+}
+
 // Earliest timestamp wins: an emulator file rewritten with today's date must
 // not relabel an unlock from two years ago. Returns the achievements newly
 // unlocked by this call (the watcher turns them into popups).
@@ -278,48 +351,25 @@ export function insertUnlocks(
 ): AchievementRow[] {
   if (!unlocks.length) return []
   const db = getSqlite()
+  return db.transaction(() => insertUnlocksInDb(db, mediaId, unlocks, source, fallbackMs))()
+}
+
+// Initial syncs fetch the provider's canonical set and any unlock history as
+// one logical snapshot. If either half fails, the prior tracked set remains
+// intact instead of leaving a half-replaced game behind.
+export function replaceSchemaWithUnlocks(
+  mediaId: number,
+  provider: AchievementProvider,
+  providerGameId: string,
+  rows: readonly AchievementInput[],
+  unlocks: readonly UnlockInput[],
+  source: AchievementUnlockSource,
+  fallbackMs: number
+): AchievementRow[] {
+  const db = getSqlite()
   return db.transaction(() => {
-    const idOf = db.prepare('SELECT id FROM achievement WHERE media_id = ? AND api_name = ?')
-    const insert = db.prepare(
-      `INSERT INTO achievement_unlock (achievement_id, unlocked_at, source)
-       VALUES (?, datetime(?, 'unixepoch'), ?)
-       ON CONFLICT(achievement_id) DO UPDATE SET
-         unlocked_at = MIN(achievement_unlock.unlocked_at, excluded.unlocked_at),
-         source = CASE WHEN excluded.unlocked_at < achievement_unlock.unlocked_at
-                       THEN excluded.source ELSE achievement_unlock.source END`
-    )
-    const fresh: number[] = []
-    for (const u of unlocks) {
-      // Belt and braces on top of achievementsCore.normalizeTime: SQLite's
-      // datetime(?, 'unixepoch') yields NULL past year 9999, and unlocked_at is
-      // NOT NULL — one out-of-range value would abort this transaction and
-      // throw away every good unlock in the batch.
-      const ms = u.unlockedAtMs
-      const at = ms != null && ms > 0 && ms <= MAX_UNLOCK_MS ? ms : fallbackMs
-      const seconds = Math.floor((at > 0 && at <= MAX_UNLOCK_MS ? at : Date.now()) / 1000)
-      const row = idOf.get(mediaId, u.apiName) as { id: number } | undefined
-      // An api name the set doesn't contain: a stale emulator file, or an
-      // achievement added after our last fetch. Ignore it — a re-fetch picks
-      // the achievement up, and the next sweep then records the unlock.
-      if (!row) continue
-      const existed = db
-        .prepare('SELECT 1 FROM achievement_unlock WHERE achievement_id = ?')
-        .get(row.id)
-      insert.run(row.id, seconds, source)
-      if (!existed) fresh.push(row.id)
-    }
-    if (!fresh.length) return []
-    const placeholders = fresh.map(() => '?').join(',')
-    return db
-      .prepare(
-        `SELECT a.*, u.unlocked_at, u.source AS unlock_source
-           FROM achievement a
-           JOIN achievement_unlock u ON u.achievement_id = a.id
-          WHERE a.id IN (${placeholders})
-          ORDER BY a.sort_order, a.id`
-      )
-      .all(...fresh)
-      .map(mapAchievement)
+    upsertSchemaInDb(db, mediaId, provider, providerGameId, rows)
+    return insertUnlocksInDb(db, mediaId, unlocks, source, fallbackMs)
   })()
 }
 
@@ -431,6 +481,9 @@ export function installedGames(): InstalledGame[] {
       `SELECT m.id, m.title, m.media_type, m.cover_path, m.exe_path,
               COALESCE(SUM(s.duration), 0) AS total_seconds,
               MAX(s.started_at) AS last_played,
+              (SELECT duration FROM game_session latest
+                WHERE latest.media_id = m.id
+                ORDER BY latest.started_at DESC, latest.id DESC LIMIT 1) AS last_session_seconds,
               (SELECT COUNT(*) FROM achievement a WHERE a.media_id = m.id) AS ach_total,
               (SELECT COUNT(*) FROM achievement a
                  JOIN achievement_unlock u ON u.achievement_id = a.id
@@ -451,6 +504,7 @@ export function installedGames(): InstalledGame[] {
         exePath: r.exe_path,
         totalSeconds: r.total_seconds,
         lastPlayedAt: r.last_played ?? null,
+        lastSessionSeconds: r.last_session_seconds ?? null,
         achievements: r.ach_total ? { unlocked: r.ach_unlocked, total: r.ach_total } : null
       })
     )

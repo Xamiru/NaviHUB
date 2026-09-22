@@ -12,15 +12,17 @@ import WrestlingImportPanel from '../components/wrestling/WrestlingImportPanel'
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 
 const TIMELINE_FILTER = { sort: 'date' as const, limit: 8 }
+const FAVORITES_LIMIT = 12
 
 // The wrestling hub: one card per promotion plus the install/refresh flow.
 // Promotions come from shared/wrestling.ts, so adding one needs no page change.
 export default function WrestlingHomePage(): JSX.Element {
   const [showImport, setShowImport] = usePersistedState('wrestling.showImport', false)
-  const { data: overview, isLoading } = useQuery({
+  const overviewQuery = useQuery({
     queryKey: qk.wrestling.overview,
     queryFn: () => api.wrestling.overview()
   })
+  const overview = overviewQuery.data
   const { data: recent } = useQuery({
     queryKey: qk.wrestling.recent,
     queryFn: () => api.wrestling.recentlyAdded()
@@ -33,8 +35,13 @@ export default function WrestlingHomePage(): JSX.Element {
     queryKey: qk.wrestling.events(TIMELINE_FILTER),
     queryFn: () => api.wrestling.events(TIMELINE_FILTER)
   })
+  const { data: favorites } = useQuery({
+    queryKey: qk.wrestling.favorites(FAVORITES_LIMIT),
+    queryFn: () => api.wrestling.favorites(FAVORITES_LIMIT)
+  })
 
-  if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (overviewQuery.isLoading) return <PageStatus>Loading…</PageStatus>
+  if (overviewQuery.isError) return <PageStatus>Could not load the wrestling wiki.</PageStatus>
 
   const installed = (overview?.totals.events ?? 0) > 0
   const byPromo = new Map(overview?.promotions.map((p) => [p.promotion, p]) ?? [])
@@ -152,13 +159,56 @@ export default function WrestlingHomePage(): JSX.Element {
                 {recent!.loose.slice(0, 6).map((m) => (
                   <Link
                     key={`m${m.id}`}
-                    to="/wrestling/collection"
+                    to={`/wrestling/match/${m.id}`}
                     className="chip hover:text-accent"
                     title={m.showLabel ?? 'Loose match'}
                   >
                     {m.title}
                   </Link>
                 ))}
+              </div>
+            </Section>
+          )}
+
+          {(favorites?.matches.length || favorites?.wrestlers.length) && (
+            <Section title="Favorites" subtitle="Saved matches and wrestlers">
+              <div className="grid gap-4 lg:grid-cols-2">
+                {favorites.matches.length > 0 && (
+                  <div className="card p-4">
+                    <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      Matches
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                      {favorites.matches.map((match) => (
+                        <Link
+                          key={match.id}
+                          to={`/wrestling/match/${match.id}`}
+                          className="chip hover:text-accent"
+                        >
+                          {match.title}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {favorites.wrestlers.length > 0 && (
+                  <div className="card p-4">
+                    <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                      Wrestlers
+                    </h2>
+                    <div className="flex flex-wrap gap-2">
+                      {favorites.wrestlers.map((wrestler) => (
+                        <Link
+                          key={wrestler.id}
+                          to={`/wrestling/wrestler/${wrestler.id}`}
+                          className="chip hover:text-accent"
+                        >
+                          {wrestler.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </Section>
           )}

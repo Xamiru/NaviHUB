@@ -23,6 +23,7 @@ const SOURCE = 'tatoeba-audio'
 const CHUNK = 500
 const THROTTLE_MS = 300
 const MAX_CONSECUTIVE_FAILURES = 20
+const MAX_CLIP_BYTES = 16 * 1024 * 1024
 
 const AUDIO_LIST_URL =
   'https://downloads.tatoeba.org/exports/per_language/jpn/jpn_sentences_with_audio.tsv.bz2'
@@ -268,7 +269,11 @@ export function importSentenceAudio(): Promise<SentenceAudioImportSummary> {
             // consecutive-failure counter instead of hanging for an hour.
             const res = await fetchWithRetry(
               clipUrl(audioId),
-              { timeoutMs: 30_000, rateLimitWaits: 0 },
+              {
+                timeoutMs: 30_000,
+                rateLimitWaits: 0,
+                maxResponseBytes: MAX_CLIP_BYTES
+              },
               1
             )
             if (!res.ok) return null

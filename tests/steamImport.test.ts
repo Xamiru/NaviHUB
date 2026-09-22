@@ -34,6 +34,7 @@ let hltbInit: Record<string, unknown>
 let hltbSearch: Record<string, unknown>
 let searchFails = 0 // > 0: the next N storesearch calls throw (transient network)
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   sleep: async () => {},
   fetchWithRetry: async (url: string) => ({
     ok: true,
@@ -222,6 +223,66 @@ describe('importGame', () => {
 
     expect(db.prepare('SELECT COUNT(*) AS n FROM character').get()).toEqual({ n: 1 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM credit').get()).toEqual({ n: 1 })
+  })
+
+  it('re-import replaces provider studios and genres while keeping other tags', async () => {
+    const { mediaId } = await importGame(1687950)
+    const personalTag = Number(
+      db.prepare(`INSERT INTO tag (name, category) VALUES ('Favorite setting', 'custom')`).run()
+        .lastInsertRowid
+    )
+    db.prepare('INSERT INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, personalTag)
+
+    detailsPayload = detailsFixture({
+      developers: ['P-Studio'],
+      publishers: [],
+      genres: [{ id: '4', description: 'Adventure' }]
+    })
+    await importGame(1687950)
+
+    expect(
+      db.prepare(
+        `SELECT c.name, mc.role FROM media_company mc JOIN company c ON c.id=mc.company_id
+         WHERE mc.media_id=? ORDER BY c.name`
+      ).all(mediaId)
+    ).toEqual([{ name: 'P-Studio', role: 'developer' }])
+    expect(
+      db.prepare(
+        `SELECT t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id
+         WHERE mt.media_id=? ORDER BY t.name`
+      ).all(mediaId)
+    ).toEqual([{ name: 'Adventure' }, { name: 'Favorite setting' }])
+  })
+
+  it('keeps child links when Steam omits their fields', async () => {
+    const { mediaId } = await importGame(1687950)
+    detailsPayload = detailsFixture({ developers: undefined, publishers: undefined, genres: undefined })
+    await importGame(1687950)
+    expect(
+      db.prepare('SELECT COUNT(*) AS n FROM media_company WHERE media_id=?').get(mediaId)
+    ).toEqual({ n: 2 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM media_tag WHERE media_id=?').get(mediaId)).toEqual({ n: 1 })
+  })
+
+  it('does not replace child links during a cover-only refresh', async () => {
+    const { mediaId } = await importGame(1687950)
+    detailsPayload = detailsFixture({
+      developers: ['P-Studio'],
+      publishers: [],
+      genres: [{ id: '4', description: 'Adventure' }]
+    })
+    await importGame(1687950, { only: ['cover'] })
+    expect(
+      db.prepare(
+        `SELECT c.name FROM media_company mc JOIN company c ON c.id=mc.company_id
+         WHERE mc.media_id=? ORDER BY c.name`
+      ).all(mediaId)
+    ).toEqual([{ name: 'ATLUS' }, { name: 'SEGA' }])
+    expect(
+      db.prepare(
+        `SELECT t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id WHERE mt.media_id=?`
+      ).all(mediaId)
+    ).toEqual([{ name: 'RPG' }])
   })
 
   it('rolls back the whole import if a write fails mid-transaction (atomicity)', async () => {

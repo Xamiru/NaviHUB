@@ -1,6 +1,6 @@
 import { getSqlite } from '../db/connection'
 import { downloadImage } from '../files'
-import { fetchWithRetry } from '../http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from '../http'
 import { normalizeFootballName } from '@shared/football'
 
 interface PageCandidate {
@@ -37,7 +37,8 @@ async function json(url: string, signal: AbortSignal): Promise<any> {
   const response = await fetchWithRetry(url, {
     headers: { 'User-Agent': 'NaviHUB/FootballArchive (personal local archive)' },
     timeoutMs: 45_000,
-    taskSignal: signal
+    taskSignal: signal,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (!response.ok) throw new Error(`Wikimedia returned HTTP ${response.status}`)
   return response.json()
@@ -258,35 +259,30 @@ export function saveEntityEnrichment(
           revision=excluded.revision,fetched_at=excluded.fetched_at
       `).run(kind, entityId, payload.qid, payload.sourceUrl, payload.revision)
     }
-    if (kind === 'person' && quizPack && payload.career.length >= 4) {
+    if (kind === 'person' && quizPack) {
       db.prepare(`DELETE FROM football_tenure WHERE person_id=? AND role='player'`).run(entityId)
-      const complete = payload.career.every((spell) => spell.startDate != null)
-      const insert = db.prepare(`
-        INSERT INTO football_tenure
-          (person_id,team_id,role,start_date,end_date,loan,verified,complete,sort_order)
-        VALUES (?,?,'player',?,?,0,1,?,?)
-      `)
-      payload.career.forEach((spell, index) => insert.run(
-        entityId,
-        teamForQid(spell.teamQid, spell.teamName),
-        spell.startDate,
-        spell.endDate,
-        complete ? 1 : 0,
-        index
-      ))
+      const complete = payload.career.length >= 4 && payload.career.every((spell) => spell.startDate != null)
+      if (complete) {
+        const insert = db.prepare(`
+          INSERT INTO football_tenure
+            (person_id,team_id,role,start_date,end_date,loan,verified,complete,sort_order)
+          VALUES (?,?,'player',?,?,0,1,1,?)
+        `)
+        payload.career.forEach((spell, index) => insert.run(
+          entityId,
+          teamForQid(spell.teamQid, spell.teamName),
+          spell.startDate,
+          spell.endDate,
+          index
+        ))
+      }
       db.prepare(`UPDATE football_person SET quiz_pack=? WHERE id=?`).run(complete ? 1 : 0, entityId)
     }
     return true
   })()
 }
 
-export function noteEnrichmentConflict(kind: 'team' | 'person', entityId: number, name: string, message: string): void {
-  const db = getSqlite()
-  db.transaction(() => {
-    db.prepare(`INSERT INTO football_conflict
-      (entity_kind,entity_id,facet,source_a,value_a,source_b,value_b)
-      VALUES (? ,?,'identity','archive',?,'wikimedia',?)`).run(kind, entityId, name, message)
-    db.prepare(`UPDATE ${kind === 'person' ? 'football_person' : 'football_team'}
-      SET enrichment_state='error',updated_at=datetime('now') WHERE id=?`).run(entityId)
-  })()
+export function noteEnrichmentError(kind: 'team' | 'person', entityId: number): void {
+  getSqlite().prepare(`UPDATE ${kind === 'person' ? 'football_person' : 'football_team'}
+    SET enrichment_state='error',updated_at=datetime('now') WHERE id=?`).run(entityId)
 }

@@ -45,11 +45,12 @@ export default function TasksIndicator() {
         className="flex shrink-0 items-center gap-2 rounded-full bg-base-700/80 px-3 py-1.5 text-xs text-gray-300 transition-colors hover:text-white"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
+        aria-label={summary}
         title={active.map((t) => t.label).join(' · ')}
         onClick={() => setOpen((v) => !v)}
       >
         <span className="inline-block h-3 w-3 motion-safe:animate-spin rounded-full border-2 border-accent border-t-transparent" />
-        <span className="max-w-[18rem] truncate">{summary}</span>
+        <span className="hidden max-w-[18rem] truncate sm:inline">{summary}</span>
       </button>
 
       {open && (

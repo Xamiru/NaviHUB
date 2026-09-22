@@ -78,6 +78,24 @@ describe('browse', () => {
     expect(second.hasMore).toBe(false)
   })
 
+  it('bounds whole-library playback queues and samples shuffle queues in SQL', () => {
+    for (let i = 0; i < musicRepo.MAX_PLAYBACK_QUEUE_TRACKS + 1; i++) {
+      seedTrack({ title: `Queue ${i}`, path: `queue/${i}` })
+    }
+
+    const catalog = musicRepo.playbackQueue(false)
+    const shuffled = musicRepo.playbackQueue(true)
+    expect(catalog).toMatchObject({
+      total: musicRepo.MAX_PLAYBACK_QUEUE_TRACKS + 1,
+      truncated: true
+    })
+    expect(catalog.items).toHaveLength(musicRepo.MAX_PLAYBACK_QUEUE_TRACKS)
+    expect(shuffled.items).toHaveLength(musicRepo.MAX_PLAYBACK_QUEUE_TRACKS)
+    expect(new Set(shuffled.items.map((track) => track.id)).size).toBe(
+      musicRepo.MAX_PLAYBACK_QUEUE_TRACKS
+    )
+  })
+
   it('lists artists with album/track counts and supports search', () => {
     seedTrack({ artist: 'Radiohead', album: 'OK Computer', title: 'Airbag' })
     seedTrack({ artist: 'Radiohead', album: 'Kid A', title: 'Idioteque' })
@@ -1071,10 +1089,22 @@ describe('approved source provenance', () => {
     const refs = [{ sourceKind: 'playlistItem' as const, sourceId: id, spotifyTrackId: 'abc123', marker: '[navihub-abc123]', manual: true, provider: 'manual' as const, sourceUrl: proof.url }]
     spotifyRepo.linkProvenanceTracks(refs)
     expect(db.prepare('SELECT matched_track_id FROM music_spotify_playlist_item WHERE id=?').get(id)).toEqual({ matched_track_id: null })
-    db.prepare('UPDATE music_track SET file_path=? WHERE id=?').run('Artist/Album/Song [navirun-new] [navihub-abc123].opus', local)
+    const current = seedTrack({ artist: 'Artist', album: 'Album', title: 'Song', path: 'Artist/Album/Song [navirun-new] [navihub-abc123].opus' })
+    db.prepare('UPDATE music_track SET duration=200 WHERE id=?').run(current)
     spotifyRepo.linkProvenanceTracks(refs)
-    expect(db.prepare('SELECT matched_track_id,match_confirmed FROM music_spotify_playlist_item WHERE id=?').get(id)).toEqual({ matched_track_id: local, match_confirmed: 1 })
+    expect(db.prepare('SELECT matched_track_id,match_confirmed FROM music_spotify_playlist_item WHERE id=?').get(id)).toEqual({ matched_track_id: current, match_confirmed: 1 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM music_spotify_download_candidate').get()).toEqual({ n: 0 })
+    expect(spotifyRepo.provenanceFilePaths(['abc123'])).toEqual(['Artist/Album/Song [navirun-new] [navihub-abc123].opus'])
+    expect(spotifyRepo.archivedAudioSource(proof.url).map((row) => row.id)).toEqual([current])
+    expect(spotifyRepo.pendingSpotifyItems(playlist)).toEqual([])
+    spotifyRepo.linkProvenanceTracks(refs)
+    expect(spotifyRepo.archivedAudioSource(proof.url)).toHaveLength(1)
+  })
+
+  it('preserves unresolved duplicate markers for later source recovery', () => {
+    seedTrack({ path: 'Artist/Album/Song [navirun-old] [navihub-abc123].opus' })
+    seedTrack({ path: 'Artist/Album/Song [navirun-new] [navihub-abc123].opus' })
+    expect(spotifyRepo.provenanceFilePaths(['abc123'])).toEqual([])
   })
 })
 

@@ -138,8 +138,39 @@ export function migrateMusicQueue(sqlite: Database.Database): void {
   } finally { sqlite.pragma(`foreign_keys = ${foreignKeys ? 'ON' : 'OFF'}`) }
 }
 
+export function migrateFootballCoverageUniqueness(sqlite: Database.Database): void {
+  const installed = sqlite.prepare(`SELECT 1 FROM sqlite_master
+    WHERE type='index' AND name='uniq_football_coverage_competition'`).get()
+  if (installed) return
+  sqlite.transaction(() => {
+    sqlite.exec(`
+      DELETE FROM football_coverage WHERE id IN (
+        SELECT id FROM (
+          SELECT id,ROW_NUMBER() OVER (
+            PARTITION BY competition_id,source,facet
+            ORDER BY CASE state
+              WHEN 'complete' THEN 0
+              WHEN 'conflicted' THEN 1
+              WHEN 'partial' THEN 2
+              ELSE 3 END,
+              checked_at DESC,id DESC
+          ) AS duplicate_rank
+          FROM football_coverage WHERE season_id IS NULL
+        ) WHERE duplicate_rank>1
+      );
+      CREATE UNIQUE INDEX IF NOT EXISTS uniq_football_coverage_competition
+        ON football_coverage(competition_id,source,facet) WHERE season_id IS NULL;
+    `)
+  })()
+}
+
 export function runMigrations(sqlite: Database.Database): void {
   migrateMusicQueue(sqlite)
+  // A nullable season_id defeats the table's composite UNIQUE constraint.
+  // Deduplicate before creating the partial index or a live pre-fix DB can
+  // fail during startup. This stays in migrations rather than init.sql because
+  // init.sql runs first and old databases may already contain duplicates.
+  migrateFootballCoverageUniqueness(sqlite)
   ensureColumn(sqlite, 'music_track', 'spotify_review_required', 'spotify_review_required INTEGER NOT NULL DEFAULT 0')
   // Spotify entity sources arrived after the music library. The indexes must
   // be created after ALTER TABLE or a pre-feature database cannot start.

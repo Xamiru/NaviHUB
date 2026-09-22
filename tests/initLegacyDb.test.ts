@@ -13,7 +13,7 @@ import Database from 'better-sqlite3'
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp' } }))
 
-import { runMigrations } from '../src/main/db/connection'
+import { migrateFootballCoverageUniqueness, runMigrations } from '../src/main/db/connection'
 
 const read = (rel: string): string =>
   readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8')
@@ -21,6 +21,33 @@ const read = (rel: string): string =>
 const initSql = read('../src/main/db/init.sql')
 
 describe('a live DB that predates newer columns', () => {
+  it('deduplicates competition-level Football coverage before enforcing uniqueness', () => {
+    const db = new Database(':memory:')
+    db.exec(initSql)
+    db.prepare(`INSERT INTO football_competition
+      (id,key,name,scope,format) VALUES (1,'premier-league','Premier League','domestic','league')`
+    ).run()
+    db.prepare(`INSERT INTO football_coverage
+      (competition_id,source,facet,state,item_count,checked_at)
+      VALUES (1,'wikimedia','honours','complete',100,'2026-01-01')`).run()
+    db.prepare(`INSERT INTO football_coverage
+      (competition_id,source,facet,state,item_count,checked_at)
+      VALUES (1,'wikimedia','honours','partial',110,'2026-02-01')`).run()
+
+    migrateFootballCoverageUniqueness(db)
+    migrateFootballCoverageUniqueness(db)
+
+    expect(db.prepare(`SELECT state,item_count FROM football_coverage`).all()).toEqual([
+      { state: 'complete', item_count: 100 }
+    ])
+    expect(() => db.prepare(`INSERT INTO football_coverage
+      (competition_id,source,facet,state) VALUES (1,'wikimedia','honours','partial')`).run()
+    ).toThrow()
+    expect(db.prepare(`SELECT name FROM sqlite_master WHERE type='index'
+      AND name='uniq_football_coverage_competition'`).get()).toBeTruthy()
+    db.close()
+  })
+
   it('upgrades pre-recovery Spotify tables twice without losing saved rows', () => {
     const db = new Database(':memory:')
     const added = ['spotify_review_required', 'match_confirmed', 'download_skipped',

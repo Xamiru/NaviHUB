@@ -1,6 +1,6 @@
 import { execFile } from 'child_process'
 import { get as getSetting } from './repos/settingsRepo'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import * as tasks from './tasks'
 import { indexersForCategories } from '@shared/torrents'
 import type {
@@ -137,7 +137,12 @@ export async function searchTorrents(
     // kill its own results, and the fan-out keeps the UI busy meanwhile.
     res = await fetchWithRetry(
       jackettSearchUrl(base, apiKey, query, categories, indexer),
-      { headers: { Accept: 'application/json' }, timeoutMs: 60_000, rateLimitWaits: 0 },
+      {
+        headers: { Accept: 'application/json' },
+        timeoutMs: 60_000,
+        rateLimitWaits: 0,
+        maxResponseBytes: MAX_API_RESPONSE_BYTES
+      },
       1
     )
   } catch {
@@ -157,7 +162,7 @@ export async function testJackett(): Promise<TorrentServiceTestResult> {
     base = cfg.base
     const res = await fetchWithRetry(
       jackettCapsUrl(base, cfg.apiKey),
-      { timeoutMs: 10_000, rateLimitWaits: 0 },
+      { timeoutMs: 10_000, rateLimitWaits: 0, maxResponseBytes: MAX_API_RESPONSE_BYTES },
       1
     )
     const body = await res.text()
@@ -248,7 +253,7 @@ async function runSearch(id: string, query: string, categories: number[]): Promi
   try {
     const res = await fetchWithRetry(
       jackettIndexersUrl(base, apiKey),
-      { timeoutMs: 10_000, rateLimitWaits: 0 },
+      { timeoutMs: 10_000, rateLimitWaits: 0, maxResponseBytes: MAX_API_RESPONSE_BYTES },
       1
     )
     if (res.ok) indexers = parseIndexerList(await res.text())

@@ -1,6 +1,6 @@
 import { getSqlite } from './db/connection'
 import { downloadImages, downloadAudio } from './files'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { updateActivity } from './progress'
 import type { ThemeImportSummary } from '@shared/types'
 
@@ -16,7 +16,8 @@ const AT_SOURCE = 'animethemes'
 // request timeout (the old hand-rolled 429 loop here could recurse forever).
 async function atGet(pathAndQuery: string): Promise<any> {
   const res = await fetchWithRetry(`${AT_BASE}${pathAndQuery}`, {
-    headers: { Accept: 'application/json', 'User-Agent': AT_UA }
+    headers: { Accept: 'application/json', 'User-Agent': AT_UA },
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (!res.ok) throw new Error(`AnimeThemes request failed (${res.status})`)
   return res.json()
@@ -86,7 +87,8 @@ async function fetchMalId(anilistId: number): Promise<number | null> {
       body: JSON.stringify({
         query: 'query ($id: Int) { Media(id: $id, type: ANIME) { idMal } }',
         variables: { id: anilistId }
-      })
+      }),
+      maxResponseBytes: MAX_API_RESPONSE_BYTES
     })
     if (!res.ok) return null
     const json = await res.json()

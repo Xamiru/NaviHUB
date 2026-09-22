@@ -27,6 +27,7 @@ export const SCREEN_MARGIN = 28
 // The most cards visible at once. Beyond this the page holds a FIFO queue and
 // each card dismisses itself after its own lifetime, so the stack drains.
 export const MAX_STACK = 3
+export const ACH_POPUP_LIFE_MS = 6_000
 
 // Bottom-right of the given work area — where Steam puts its achievement
 // toasts, and where thumbs obscure gameplay least.

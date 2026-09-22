@@ -20,7 +20,7 @@ import ContextPanel, { ContextFact } from '../components/ContextPanel'
 
 // Standalone offline dictionary: search JMdict / KANJIDIC / pitch / grammar dicts
 // at once, see definitions with pitch and a kanji breakdown, and mine any entry
-// straight into the SRS. Falls back to jisho.org when nothing is installed.
+// straight into the SRS. Every search stays on the device.
 export default function JapaneseDictionaryPage() {
   const [query, setQuery] = usePersistedState('jpDictQuery', '')
   const debounced = useDebouncedValue(query.trim(), 250)
@@ -85,12 +85,11 @@ export default function JapaneseDictionaryPage() {
 
       {dicts.length === 0 && (
         <div className="card mb-4 p-4 text-sm text-gray-400">
-          No dictionaries installed yet — searches fall back to jisho.org (online). Add JMdict,
-          KANJIDIC and more in{' '}
+          No dictionaries installed yet. Add JMdict, KANJIDIC and more in{' '}
           <Link to="/settings" className="text-accent hover:underline">
             Settings → Japanese dictionaries
           </Link>
-          .
+          {' '}to enable offline searches.
         </div>
       )}
 
@@ -238,9 +237,6 @@ function EntryCard({
                 {t}
               </span>
             ))}
-            {entry.source === 'jisho' && (
-              <span className="chip bg-base-700 text-gray-500">via jisho.org</span>
-            )}
           </div>
         </div>
         <button

@@ -26,7 +26,6 @@ import {
 import type {
   TorrentServiceTestResult,
   SecretStorageState,
-  UpdateTestResult,
   VideoToolsResult,
   YtDlpDetectResult,
   SpotdlDetectResult,
@@ -277,7 +276,7 @@ export default function SettingsPage() {
                 </>
               )}
               {displayTab === 'system' && (
-                <UpdateSettings data={data} secretStorage={secretStorage} onSave={setKey} />
+                <UpdateSettings secretStorage={secretStorage} onSave={setKey} />
               )}
             </TabPanel>
           )}
@@ -1689,39 +1688,19 @@ function TorrentSettings({
 // Offline Japanese dictionaries: install JMdict/KANJIDIC with one click, import
 // any other Yomitan .zip, watch import progress, and remove installed ones.
 // ---- in-app updates -------------------------------------------------------
-// "Save & test" mirrors the Jackett/qBittorrent cards: the test IPC resolves a
-// { ok, message } result instead of rejecting, so it renders inline in
-// green/red. Progress comes from polling update:status via useUpdateStatus —
-// there is no push channel. `environment` explains any build that can't update
-// itself (dev run, portable exe, missing token) rather than failing on click.
-function UpdateSettings({
-  data,
+// Progress comes from polling update:status via useUpdateStatus — there is no
+// push channel. `environment` explains builds that cannot update themselves.
+export function UpdateSettings({
   secretStorage,
   onSave
 }: {
-  data?: Record<string, string>
   secretStorage?: SecretStorageState
   onSave: SaveFn
 }) {
   const { status, kick } = useUpdateStatus()
-  const [token, setToken] = useState('')
-  const [check, setCheck] = useState<UpdateTestResult | null>(null)
   const [busy, setBusy] = useState(false)
 
-  useEffect(() => setToken(''), [data])
-
-  const field = 'grid grid-cols-[110px_1fr] items-center gap-2'
   const canUpdate = status?.environment === 'ok'
-
-  async function testToken() {
-    setCheck(null)
-    if (token.trim()) {
-      await onSave('github.token', token.trim())
-      setToken('')
-    }
-    setCheck(await api.updates.testToken())
-    await kick()
-  }
 
   // Every mutation ends in kick(): refetchInterval is false while idle, so the
   // poll has to be restarted or a running download would never report progress.
@@ -1740,52 +1719,25 @@ function UpdateSettings({
       title="Updates"
       description="Checks GitHub Releases for a newer build. Always manual — nothing checks on launch."
     >
-      <div className={field}>
-        <label className="label" htmlFor="github-token">GitHub token</label>
-        <div className="flex items-center gap-2">
-          <input
-            id="github-token"
-            className="input"
-            type="password"
-            value={token}
-            onChange={(e) => setToken(e.target.value)}
-            placeholder={secretStorage?.configured['github.token'] ? 'Saved — enter a replacement' : 'github_pat_…'}
-          />
-          {secretStorage?.configured['github.token'] && (
-            <button
-              className="btn-ghost shrink-0"
-              onClick={async () => {
-                if (!(await confirmDialog('Clear the saved GitHub token?', { confirmLabel: 'Clear', danger: true }))) return
-                await onSave('github.token', '')
-                setToken('')
-                await kick()
-              }}
-            >
-              Clear
-            </button>
-          )}
+      {secretStorage?.configured['github.token'] && (
+        <div className="rounded-md border border-base-700 bg-base-800 p-3">
+          <p className="text-sm text-gray-400">
+            A GitHub token from the private repository setup is saved. Public updates no longer use it.
+          </p>
+          <SecretStateLine settingKey="github.token" state={secretStorage} />
+          <button
+            className="btn-ghost mt-3"
+            onClick={async () => {
+              if (!(await confirmDialog('Clear the saved GitHub token?', { confirmLabel: 'Clear', danger: true }))) return
+              await onSave('github.token', '')
+            }}
+          >
+            Clear saved token
+          </button>
         </div>
-      </div>
-      <SecretStateLine settingKey="github.token" state={secretStorage} />
-      <p className="mt-2 text-sm text-gray-500">
-        The repository is private, so updates need a token that can read it:
-        <span className="text-gray-400"> repo</span> scope on a classic token, or
-        <span className="text-gray-400"> Contents: read</span> on a fine-grained one.
-      </p>
-      <button
-        className="btn-ghost mt-3"
-        disabled={!!token.trim() && !secretStorage?.available}
-        onClick={testToken}
-      >
-        Save &amp; test
-      </button>
-      {check && (
-        <p className={`mt-3 text-sm ${check.ok ? 'text-green-400' : 'text-red-400'}`}>
-          {check.message}
-        </p>
       )}
 
-      <div className="mt-5 rounded-md border border-base-700 bg-base-800 p-3">
+      <div className="mt-3 rounded-md border border-base-700 bg-base-800 p-3">
         <p className="text-sm">
           Current version <span className="text-gray-400">{status?.currentVersion ?? '—'}</span>
         </p>

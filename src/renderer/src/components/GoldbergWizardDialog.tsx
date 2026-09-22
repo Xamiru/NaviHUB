@@ -18,9 +18,12 @@ export default function GoldbergWizardDialog({
   mediaId: number
   onClose: () => void
 }) {
-  const panelRef = useDialog(onClose)
   const [busy, setBusy] = useState(false)
   const [result, setResult] = useState<{ dir: string; achievements: number } | null>(null)
+  const close = (): void => {
+    if (!busy) onClose()
+  }
+  const panelRef = useDialog(close)
 
   async function generate(): Promise<void> {
     setBusy(true)
@@ -37,13 +40,14 @@ export default function GoldbergWizardDialog({
   return (
     <div
       className="fixed inset-0 z-50 flex items-start justify-center bg-black/70 p-6 overflow-y-auto"
-      onMouseDown={(e) => e.target === e.currentTarget && onClose()}
+      onMouseDown={(e) => e.target === e.currentTarget && close()}
     >
       <div
         ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="goldberg-setup-title"
+        aria-busy={busy}
         tabIndex={-1}
         className="card w-full max-w-2xl p-6 mt-10"
       >
@@ -57,7 +61,7 @@ export default function GoldbergWizardDialog({
               NaviHUB to read. Swapping in the Goldberg emulator fixes that.
             </p>
           </div>
-          <button className="btn-ghost" onClick={onClose} aria-label="Close" title="Close">
+          <button className="btn-ghost" onClick={close} disabled={busy} aria-label="Close" title="Close">
             ✕
           </button>
         </div>
@@ -91,7 +95,7 @@ export default function GoldbergWizardDialog({
               <button className="btn-primary" disabled={busy} onClick={generate}>
                 {busy ? 'Generating…' : 'Generate config…'}
               </button>
-              <button className="btn-ghost" onClick={onClose}>
+              <button className="btn-ghost" onClick={close} disabled={busy}>
                 Cancel
               </button>
             </div>

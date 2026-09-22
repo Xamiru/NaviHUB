@@ -2,7 +2,7 @@ import { getSqlite } from './db/connection'
 import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry, sleep } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from './http'
 import type {
   BulkListParams,
   BulkPreviewItem,
@@ -31,7 +31,8 @@ async function vndbPost(endpoint: string, body: any): Promise<any> {
       // VNDB asks API clients to identify themselves.
       'User-Agent': 'NaviHUB/1.0 (personal media hub)'
     },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (!res.ok) {
     const detail = await res.text().catch(() => '')

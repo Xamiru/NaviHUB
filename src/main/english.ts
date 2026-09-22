@@ -1,4 +1,4 @@
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { getDictDb } from './dict/dictDb'
 import { hasEnglishDict, morphyCandidates, type EnPos } from './dict/wordnet'
 import type { EnDictDef, EnDictEntry, EnDictMeaning } from '@shared/types'
@@ -199,7 +199,8 @@ async function lookupOnline(term: string): Promise<EnDictEntry[]> {
   // Interactive search box: fail fast instead of stalling the spinner.
   const res = await fetchWithRetry(`${API}/${encodeURIComponent(term)}`, {
     timeoutMs: 15_000,
-    rateLimitWaits: 0
+    rateLimitWaits: 0,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (res.status === 404) return [] // unknown word, not an error
   if (!res.ok) throw new Error(`Dictionary lookup failed (HTTP ${res.status})`)

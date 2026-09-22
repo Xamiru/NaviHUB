@@ -35,6 +35,7 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
   useEffect(() => () => { previewRequest.current++ }, [sourceKind, trackId])
   const [startNow, setStartNow] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [checkingSource, setCheckingSource] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const remote = useQuery({ queryKey: qk.music.spotifyAudioSearch(submitted),
     queryFn: () => api.music.spotifySearchAudio(submitted), enabled: Boolean(submitted) })
@@ -52,20 +53,27 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
       return true
     })
   }, [local.data])
-  async function action(fn: () => Promise<unknown>, close = true) {
+  async function action(fn: () => Promise<unknown>, close = true, invalidate = true) {
     setBusy(true)
     setError(null)
     try {
       await fn()
-      await qc.invalidateQueries({ queryKey: qk.music.all })
+      const refresh = invalidate ? qc.invalidateQueries({ queryKey: qk.music.all }) : Promise.resolve()
+      if (close) void refresh
+      else await refresh
       if (close) onClose()
     } catch (error) { setError(error instanceof Error ? error.message : String(error)) }
     finally { setBusy(false) }
   }
   const previewLocal = (track: MusicTrack) => { previewRequest.current++; player.playQueue([musicTrackToPlayerTrack(track)], 0) }
-  const saveSource = (source: string) => action(() => api.music.spotifySetTrackDownloadOptions({
-    sourceKind, trackId, audioSourceUrl: source, approveSource: true, startNow
-  }))
+  const saveSource = async (source: string) => {
+    setCheckingSource(source)
+    try {
+      await action(() => api.music.spotifySetTrackDownloadOptions({
+        sourceKind, trackId, audioSourceUrl: source, approveSource: true, startNow
+      }))
+    } finally { setCheckingSource(null) }
+  }
   const compare = (track: MusicTrack) => <div className="space-y-2 rounded border border-base-600 p-3">
     <p className="text-sm text-gray-200">{track.title} · {track.tagArtist ?? track.artistName}</p>
     <p className="text-xs text-gray-400">{track.albumTitle} · {formatDuration(track.duration)}
@@ -81,6 +89,7 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
       <button className="btn-ghost" aria-label="Close" onClick={onClose}>✕</button>
     </div>
     {error && <p role="alert" className="mb-3 text-sm text-red-300">{error}</p>}
+    {checkingSource && <p role="status" className="mb-3 text-sm text-gray-300">Checking source…</p>}
     {candidate && <section className="mb-5 space-y-2" aria-label="Downloaded candidate">
       <p className="text-sm text-gray-300">Compare and listen before confirming this downloaded version.</p>
       {compare(candidate.localTrack)}
@@ -105,12 +114,12 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
           if (previewRequest.current !== request) return
           player.playQueue([{ id: `file-preview-${result.url}`, title: result.title, subtitle: result.channel,
             audioUrl, mediaId: null }], 0)
-        }, false)}>Listen</button>
+        }, false, false)}>Listen</button>
         <button className="btn-ghost" onClick={() => api.app.openExternal(result.url)}>Open video</button>
-        <button className="btn-primary" disabled={busy} onClick={() => void saveSource(result.url)}>Use this version</button></div>
+        <button className="btn-primary" disabled={busy} onClick={() => void saveSource(result.url)}>{checkingSource === result.url ? 'Checking source…' : 'Use this version'}</button></div>
       </div>)}
       <Field label="Exact YouTube video URL"><input className="input w-full" value={url} onChange={(e) => setUrl(e.target.value)} /></Field>
-      <button className="btn-ghost" disabled={busy || !url.trim()} onClick={() => void saveSource(url)}>Use this version</button>
+      <button className="btn-ghost" disabled={busy || !url.trim()} onClick={() => void saveSource(url)}>{checkingSource === url ? 'Checking source…' : 'Use this version'}</button>
       <Field label="Start this download now"><input type="checkbox" checked={startNow} onChange={(event) => setStartNow(event.target.checked)} /></Field>
       <p className="text-xs text-gray-400">Use this version approves this exact source and adds it to Downloads. Broader automatic matches still need review.</p>
       <button className="btn-ghost" disabled={busy} onClick={() => void action(() => api.music.spotifySetTrackDownloadOptions({ sourceKind, trackId, allowUnverified: true }))}>Try broader matching on retry</button>

@@ -90,7 +90,13 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
   const [done, setDone] = useState<string | null>(null)
   const panelRef = useDialog(onClose)
 
-  const { data: results = [], isFetching } = useQuery({
+  const {
+    data: results = [],
+    isFetching,
+    isError: searchError,
+    error: searchFailure,
+    refetch: retrySearch
+  } = useQuery({
     queryKey: qk.importSearch(source.key, submitted),
     queryFn: () => client.search(submitted),
     enabled: submitted.trim().length > 0 && !catalogMissing
@@ -212,12 +218,30 @@ export default function ImportDialog({ cfg, onClose, onImported, initialQuery }:
           </div>
         )}
 
-        {error && <p className="text-sm text-red-400 mb-3">⚠ {error}</p>}
+        {error && (
+          <p className="text-sm text-red-400 mb-3" role="alert">
+            {error}
+          </p>
+        )}
         {done && <p className="text-sm text-green-400 mb-3">✓ {done}</p>}
         {(importingId !== null || mcBusy) && <ImportProgress />}
         {isFetching && <p className="text-sm text-gray-500">Searching {source.label}…</p>}
 
-        {!isFetching && submitted && results.length === 0 && (
+        {!isFetching && searchError && submitted && (
+          <div className="mb-3" role="alert">
+            <p className="text-sm text-red-400">
+              Search failed.
+              {searchFailure instanceof Error && searchFailure.message
+                ? ` ${searchFailure.message}`
+                : ''}
+            </p>
+            <button className="btn-ghost mt-2" onClick={() => void retrySearch()}>
+              Retry search
+            </button>
+          </div>
+        )}
+
+        {!isFetching && !searchError && submitted && results.length === 0 && (
           <p className="text-sm text-gray-400">No results.</p>
         )}
 

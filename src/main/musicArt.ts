@@ -1,5 +1,5 @@
 import { getSqlite } from './db/connection'
-import { fetchWithRetry, sleep } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from './http'
 import { downloadImage } from './files'
 import * as tasks from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
@@ -117,7 +117,11 @@ async function getJson(
   missingStatuses: number[] = []
 ): Promise<ProviderResult<unknown>> {
   try {
-    const res = await fetchWithRetry(url, { ...init, timeoutMs: 10_000 }, 1)
+    const res = await fetchWithRetry(
+      url,
+      { ...init, timeoutMs: 10_000, maxResponseBytes: MAX_API_RESPONSE_BYTES },
+      1
+    )
     if (missingStatuses.includes(res.status)) return { kind: 'miss' }
     if (!res.ok) return { kind: 'error' }
     return { kind: 'ok', value: await res.json() }
@@ -233,7 +237,7 @@ async function spotifyImage(
   return typeof url === 'string' && url ? { kind: 'ok', value: url } : { kind: 'miss' }
 }
 
-const MUSICBRAINZ_UA = 'NaviHUB/0.2 (https://github.com/AmirHTaee/NaviHUB)'
+const MUSICBRAINZ_UA = 'NaviHUB/0.2 (https://github.com/Xamiru/NaviHUB)'
 const MUSICBRAINZ_INTERVAL_MS = process.env.NODE_ENV === 'test' ? 0 : 1100
 let musicBrainzQueue: Promise<void> = Promise.resolve()
 let lastMusicBrainzRequest = 0

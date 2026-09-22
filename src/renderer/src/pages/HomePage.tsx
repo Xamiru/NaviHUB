@@ -37,7 +37,7 @@ const VA_TYPES: MediaSummary['mediaType'][] = ['anime', 'visual_novel', 'game']
 // a backlog pick for tonight, the people your taste keeps coming back to, and
 // quick ways deeper in. Everything derives from data already in the DB.
 export default function HomePage() {
-  const { data: overview, isLoading } = useQuery({
+  const { data: overview, isLoading, isError, error, refetch } = useQuery({
     queryKey: qk.media.homeOverview,
     queryFn: () => api.media.homeOverview()
   })
@@ -66,6 +66,23 @@ export default function HomePage() {
   // identity, not a widget, and it stays pinned above whatever you configure.
   const layout = parseHomeLayout(settings?.[HOME_LAYOUT_SETTING])
   const [customising, setCustomising] = useState(false)
+
+  // Missing query data is not an empty library. Keep the failure visible and
+  // retryable instead of replacing the user's archive with zero-count
+  // fallbacks after a sleep/wake or transient IPC failure.
+  if (isError && !overview) {
+    return (
+      <div className="p-6" role="alert">
+        <p className="text-sm text-red-400">
+          Could not read your local library
+          {error instanceof Error ? ` — ${error.message}` : ''}
+        </p>
+        <button className="btn-ghost mt-3" onClick={() => void refetch()}>
+          Try again
+        </button>
+      </div>
+    )
+  }
 
   // Each widget's body. Rendering is by lookup rather than a chain of JSX, so
   // the stored order is the ONLY thing deciding what appears where.

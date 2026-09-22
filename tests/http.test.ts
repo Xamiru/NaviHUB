@@ -104,4 +104,47 @@ describe('fetchWithRetry', () => {
     await expect(pending).rejects.toMatchObject({ name: 'AbortError' })
     expect(state.calls).toBe(1)
   })
+
+  it('bounds declared and observed API response bodies', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          new Response('{"ok":true}', { headers: { 'content-length': '999' } })
+        )
+        .mockResolvedValueOnce(
+          new Response(
+            new ReadableStream<Uint8Array>({
+              start(controller) {
+                controller.enqueue(Buffer.from('{"value":"'))
+                controller.enqueue(Buffer.from('far too large"}'))
+                controller.close()
+              }
+            })
+          )
+        )
+    )
+
+    const declared = await fetchWithRetry('http://x/declared', { maxResponseBytes: 32 })
+    await expect(declared.json()).rejects.toThrow(/response limit/)
+
+    const observed = await fetchWithRetry('http://x/observed', { maxResponseBytes: 16 })
+    await expect(observed.json()).rejects.toThrow(/response limit/)
+  })
+
+  it('preserves native response fields while safely parsing a bounded body', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        new Response('{"value":42}', {
+          status: 201,
+          headers: { 'content-type': 'application/json' }
+        })
+      )
+    )
+    const response = await fetchWithRetry('http://x/data', { maxResponseBytes: 1024 })
+    expect(response.status).toBe(201)
+    await expect(response.json()).resolves.toEqual({ value: 42 })
+  })
 })

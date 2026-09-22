@@ -25,13 +25,18 @@ let gameRows: unknown[]
 let ttbRows: unknown[]
 let hltbInit: Record<string, unknown>
 let hltbSearch: Record<string, unknown>
+let gameQueries: string[]
 vi.mock('../src/main/http', () => ({
-  fetchWithRetry: async (url: string) => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
+  fetchWithRetry: async (url: string, options?: { body?: string }) => ({
     ok: true,
     status: 200,
     json: async () => {
       if (url.includes('id.twitch.tv')) return { access_token: 'tok', expires_in: 5000 }
-      if (url.includes('/v4/games')) return gameRows
+      if (url.includes('/v4/games')) {
+        gameQueries.push(options?.body ?? '')
+        return gameRows
+      }
       if (url.includes('/v4/game_time_to_beats')) return ttbRows
       if (url.includes('/api/bleed/init')) return hltbInit
       if (url.includes('/api/bleed')) return hltbSearch
@@ -71,6 +76,7 @@ beforeEach(() => {
   ttbRows = [{ normally: 356_400 }] // 99 h
   hltbInit = {}
   hltbSearch = { data: [] }
+  gameQueries = []
 })
 
 describe('importGame', () => {
@@ -98,6 +104,10 @@ describe('importGame', () => {
       { name: 'Atlus', role: 'developer' },
       { name: 'SEGA', role: 'publisher' }
     ])
+    expect(gameQueries[0]).toContain('involved_companies.company.id')
+    expect(
+      db.prepare('SELECT external_id FROM company ORDER BY name').all()
+    ).toEqual([{ external_id: '8' }, { external_id: '112' }])
     expect(db.prepare('SELECT name, category FROM tag').all()).toEqual([
       { name: 'Role-playing (RPG)', category: 'genre' }
     ])
@@ -145,6 +155,16 @@ describe('importGame', () => {
       unknown
     >
     expect(media.total_units).toBeNull()
+  })
+
+  it('keeps a saved length when both length sources miss on re-import', async () => {
+    const { mediaId } = await importGame(1121)
+    db.prepare('UPDATE media_item SET total_units=75 WHERE id=?').run(mediaId)
+    ttbRows = []
+    await importGame(1121)
+    expect(db.prepare('SELECT total_units FROM media_item WHERE id=?').get(mediaId)).toEqual({
+      total_units: 75
+    })
   })
 
   it('re-import keeps personal tracking and hand-added cast', async () => {

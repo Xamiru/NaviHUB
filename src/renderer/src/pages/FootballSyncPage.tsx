@@ -13,7 +13,8 @@ export default function FootballSyncPage() {
   const qc = useQueryClient()
   const [deepCompetition, setDeepCompetition] = useState<FootballCompetitionKey>('premier-league')
   const [deepSeason, setDeepSeason] = useState('')
-  const { data, isLoading } = useQuery({
+  const [mergeTargets, setMergeTargets] = useState<Record<number, string>>({})
+  const { data, isLoading, isError } = useQuery({
     queryKey: qk.football.sync,
     queryFn: () => api.football.syncOverview(),
     refetchInterval: (query) => {
@@ -21,18 +22,27 @@ export default function FootballSyncPage() {
       return state && ['running', 'pausing', 'paused'].includes(state) ? 700 : false
     }
   })
-  if (isLoading || !data) return <PageStatus>Reading Football source state...</PageStatus>
+  if (isLoading) return <PageStatus>Reading Football source state...</PageStatus>
+  if (isError) return <PageStatus>Could not load Football source state.</PageStatus>
+  if (!data) return <PageStatus>Football source state is unavailable.</PageStatus>
   const active = ['running', 'pausing', 'paused'].includes(data.status.state)
 
   async function start(request: FootballSyncRequest) {
     await api.football.startSync(request)
-    qc.invalidateQueries({ queryKey: qk.football.sync })
+    qc.invalidateQueries({ queryKey: qk.football.all })
   }
   async function control(action: 'pause' | 'resume' | 'cancel') {
     if (action === 'pause') await api.football.pauseSync()
     else if (action === 'resume') await api.football.resumeSync()
     else await api.football.cancelSync()
-    qc.invalidateQueries({ queryKey: qk.football.sync })
+    qc.invalidateQueries({ queryKey: qk.football.all })
+  }
+  async function resolveConflict(
+    id: number,
+    resolution: Parameters<typeof api.football.resolveConflict>[1]
+  ): Promise<void> {
+    await api.football.resolveConflict(id, resolution)
+    await qc.invalidateQueries({ queryKey: qk.football.all })
   }
 
   return (
@@ -130,7 +140,12 @@ export default function FootballSyncPage() {
                   {FOOTBALL_COMPETITIONS.map((competition) => {
                     const coverage = data.coverage.filter((item) => item.competitionKey === competition.key)
                     const entitlement = data.entitlements.find((item) => item.competitionKey === competition.key)
-                    const state = (facet: string) => coverage.find((item) => item.facet === facet)?.state ?? 'not supplied'
+                    const state = (facet: string) => {
+                      const rows = coverage.filter((item) => item.facet === facet)
+                      return rows.length
+                        ? rows.map((item) => `${item.source}: ${item.state}`).join(', ')
+                        : 'not supplied'
+                    }
                     return <tr key={competition.key}><td className="py-3 font-medium text-ink"><span className="flex items-center gap-3"><FootballFlag competitionKey={competition.key} />{competition.shortName}</span></td><td className="text-ink-muted">{state('results')}</td><td className="text-ink-muted">{state('scorers')}</td><td className="text-ink-muted">{state('lineups')}</td><td className="text-ink-muted">{entitlement?.entitled ? 'available' : entitlement ? 'unavailable' : 'unchecked'}</td></tr>
                   })}
                 </tbody>
@@ -145,7 +160,21 @@ export default function FootballSyncPage() {
               {data.conflicts.filter((item) => item.status === 'open').map((conflict) => (
                 <div key={conflict.id} className="grid gap-3 py-4 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
                   <div><p className="text-sm font-medium text-ink">{conflict.entityLabel ?? `${conflict.entityKind} ${conflict.entityId ?? ''}`}</p><p className="mt-1 text-xs leading-relaxed text-ink-muted">{conflict.facet}: {conflict.sourceA} says {conflict.valueA ?? 'empty'}; {conflict.sourceB} says {conflict.valueB ?? 'empty'}.</p></div>
-                  <div className="flex gap-2"><button className="btn-ghost" onClick={async () => { await api.football.resolveConflict(conflict.id, 'resolved', 'Manually accepted'); qc.invalidateQueries({ queryKey: qk.football.sync }) }}>Resolve</button><button className="btn-ghost" onClick={async () => { await api.football.resolveConflict(conflict.id, 'ignored'); qc.invalidateQueries({ queryKey: qk.football.sync }) }}>Ignore</button></div>
+                  <div className="flex flex-wrap items-end gap-2">
+                    {conflict.facet === 'result' && <>
+                      <button className="btn-ghost" onClick={() => resolveConflict(conflict.id, { action: 'acceptSourceA' })}>Accept {conflict.sourceA}</button>
+                      <button className="btn-ghost" onClick={() => resolveConflict(conflict.id, { action: 'acceptSourceB' })}>Accept {conflict.sourceB}</button>
+                    </>}
+                    {conflict.facet === 'identity' && <>
+                      <label className="block w-36">
+                        <span className="label">Merge target ID</span>
+                        <input className="input" inputMode="numeric" value={mergeTargets[conflict.id] ?? ''} onChange={(event) => setMergeTargets((current) => ({ ...current, [conflict.id]: event.target.value }))} />
+                      </label>
+                      <button className="btn-ghost" disabled={!Number.isInteger(Number(mergeTargets[conflict.id])) || Number(mergeTargets[conflict.id]) < 1} onClick={() => resolveConflict(conflict.id, { action: 'mergeEntity', targetEntityId: Number(mergeTargets[conflict.id]) })}>Merge</button>
+                      <button className="btn-ghost" onClick={() => resolveConflict(conflict.id, { action: 'keepSeparate' })}>Keep separate</button>
+                    </>}
+                    <button className="btn-ghost" onClick={() => resolveConflict(conflict.id, { action: 'ignore' })}>Ignore and quarantine</button>
+                  </div>
                 </div>
               ))}
               {!data.conflicts.some((item) => item.status === 'open') && <p className="py-5 text-sm text-ink-muted">No quarantined identities or source conflicts.</p>}

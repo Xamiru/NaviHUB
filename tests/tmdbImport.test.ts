@@ -27,6 +27,7 @@ vi.mock('../src/main/files', () => ({
 // Endpoint → fixture, keyed by the path portion of the request.
 let routes: Record<string, unknown>
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   sleep: async () => {},
   fetchWithRetry: async (url: string) => {
     const path = new URL(url).pathname.replace('/3', '')
@@ -324,4 +325,3 @@ describe('partial refresh (Library Refresh)', () => {
     await expect(importMovie(550, { only: ['cover'] })).rejects.toThrow(/not in the library/)
   })
 })
-

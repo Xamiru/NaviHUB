@@ -26,15 +26,11 @@ npmRebuild: false
 # Required by the in-app updater (src/main/updater.ts): this block is what makes
 # electron-builder emit latest.yml / latest-linux.yml next to the artifacts AND
 # embed app-update.yml in the asar. Nothing here publishes — CI builds with
-# `--publish never` and uploads via `gh release create`. `private: true` tells
-# electron-updater to resolve releases through the authenticated GitHub API
-# instead of public download URLs (the repo is private; the token comes from the
-# `github.token` setting at runtime).
+# `--publish never` and uploads via `gh release create`.
 publish:
   provider: github
-  owner: AmirHTaee
+  owner: Xamiru
   repo: NaviHUB
-  private: true
 # "Open with NaviHUB" for the PACKAGED builds. On Windows the NSIS installer
 # writes the registry entries (the `portable` target can't register anything —
 # it has no installer); on Linux this becomes MimeType= in the AppImage's

@@ -13,6 +13,7 @@ import type {
   MediaListPage,
   MediaListFacets,
   HomeLibraryOverview,
+  SeasonalAnimeOverview,
   MediaDetail,
   RefreshPreview,
   RefreshRunStatus,
@@ -220,7 +221,6 @@ import type {
   LibraryExportStatus,
   LibraryExportStartResult,
   UpdateStatus,
-  UpdateTestResult,
   GachaBanner,
   GachaBannerInput,
   GachaBuildInput,
@@ -278,6 +278,7 @@ import type {
   MusicSearchResults,
   MusicStatsDetail,
   MusicTrack,
+  MusicPlaybackQueue,
   MusicTrackPage,
   MusicTrackPageRequest,
   MediaProgressLogged,
@@ -288,9 +289,11 @@ import type {
   WrestlingEventDetail,
   WrestlingEventFilter,
   WrestlingFavoriteKind,
+  WrestlingFavorites,
   WrestlingImportStatus,
   WrestlingLinkTarget,
   WrestlingLooseMatchInput,
+  WrestlingMatchLocation,
   WrestlingMatchWithEvent,
   WrestlingOverview,
   WrestlingVideo,
@@ -300,6 +303,7 @@ import type {
   FootballCompetition,
   FootballCompetitionDetail,
   FootballCompetitionKey,
+  FootballConflictResolution,
   FootballCurrentSnapshot,
   FootballEntityFilter,
   FootballEntityKind,
@@ -330,6 +334,7 @@ export interface NaviApi {
     list(filter: MediaListFilter): Promise<MediaItem[]>
     listPage(request: MediaListPageRequest): Promise<MediaListPage>
     homeOverview(): Promise<HomeLibraryOverview>
+    seasonalAnime(year: number, includeUnknown?: boolean): Promise<SeasonalAnimeOverview>
     get(id: number): Promise<MediaDetail | null>
     create(input: MediaItemInput): Promise<number>
     update(id: number, input: Partial<MediaItemInput>): Promise<void>
@@ -602,7 +607,7 @@ export interface NaviApi {
   rawgCatalog: {
     // The OFFLINE games catalog (console coverage): RAWG's final CC0 dump as
     // a local FTS-searchable pack, downloaded once from this repo's
-    // games-catalog prerelease (github.token, the updater's token). Imports
+    // games-catalog prerelease. Imports
     // write external_source 'rawg' so API-era rows match instead of
     // duplicating. search throws a friendly error until installed.
     search(query: string): Promise<ImportSearchResult[]>
@@ -813,8 +818,8 @@ export interface NaviApi {
     // and the page falls back to its seeded-course sampler.
     jlptTestPool(req: { level: JlptLevel }): Promise<JlptTest | null>
   }
-  // Offline Yomitan dictionaries (see src/main/dict/). Lookups run offline first
-  // and fall back to jisho.org; every result is a DictEntry. Nothing throws.
+  // Offline Yomitan dictionaries (see src/main/dict/). Every lookup stays local;
+  // a missing dictionary or unmatched query returns an empty list.
   dict: {
     list(): Promise<DictInfo[]>
     lookup(query: string): Promise<DictEntry[]>
@@ -1019,6 +1024,7 @@ export interface NaviApi {
     album(id: number): Promise<MusicAlbumDetail | null>
     tracks(filter: { search?: string; likedOnly?: boolean }): Promise<MusicTrack[]>
     trackPage(request: MusicTrackPageRequest): Promise<MusicTrackPage>
+    playbackQueue(shuffle: boolean): Promise<MusicPlaybackQueue>
     artistTracks(artistId: number): Promise<MusicTrack[]>
     search(query: string): Promise<MusicSearchResults>
     stats(): Promise<MusicLibraryStats>
@@ -1175,8 +1181,8 @@ export interface NaviApi {
     event(id: number): Promise<WrestlingEventDetail | null>
     // Prev/next in the promotion's calendar AND in the event's own series.
     chronology(id: number): Promise<WrestlingChronology>
-    // A match has no page of its own; list entries resolve through this.
-    eventIdOfMatch(matchId: number): Promise<number | null>
+    // Imported matches live on event pages; loose matches live in Collection.
+    matchLocation(matchId: number): Promise<WrestlingMatchLocation | null>
     // Events per year, for the promotion page's year rail.
     yearCounts(promotion: WrestlingPromotionId): Promise<{ year: number; count: number }[]>
     // Every year the library covers, across all promotions — the year page.
@@ -1190,6 +1196,7 @@ export interface NaviApi {
     ): Promise<WrestlingMatchWithEvent[]>
     searchWrestlers(query: string): Promise<WrestlingWrestler[]>
     topRatedMatches(limit?: number): Promise<WrestlingMatchWithEvent[]>
+    favorites(limit?: number): Promise<WrestlingFavorites>
     // Batched per prose block, never per row: match participants are already
     // structured, so only free text needs resolving.
     resolveLinks(titles: string[]): Promise<WrestlingLinkTarget[]>
@@ -1282,11 +1289,7 @@ export interface NaviApi {
     pauseSync(): Promise<void>
     resumeSync(): Promise<void>
     cancelSync(): Promise<void>
-    resolveConflict(
-      id: number,
-      status: 'resolved' | 'ignored',
-      resolution?: string | null
-    ): Promise<void>
+    resolveConflict(id: number, resolution: FootballConflictResolution): Promise<void>
   }
 
   player: {
@@ -1389,9 +1392,6 @@ export interface NaviApi {
     cancel(): Promise<UpdateStatus>
     // Quits and relaunches into the downloaded update — resolves only on failure.
     install(): Promise<void>
-    // Verifies the saved github.token against the Releases API. Resolves a
-    // result (never rejects) so the Settings card renders it inline.
-    testToken(): Promise<UpdateTestResult>
   }
   settings: {
     all(): Promise<SettingsMap>

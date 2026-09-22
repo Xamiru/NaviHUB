@@ -46,7 +46,10 @@ const files = vi.hoisted(() => ({
 }))
 vi.mock('../src/main/files', () => files)
 
-const http = vi.hoisted(() => ({ fetchWithRetry: vi.fn() }))
+const http = vi.hoisted(() => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
+  fetchWithRetry: vi.fn()
+}))
 vi.mock('../src/main/http', () => http)
 
 const tmdb = vi.hoisted(() => ({ fetchBackdrops: vi.fn() }))

@@ -40,19 +40,23 @@ function load(win2: BrowserWindow): void {
   else void win2.loadFile(join(__dirname, '../renderer/index.html'), { hash: '/achpop' })
 }
 
+function currentAnchor(): { x: number; y: number } {
+  let workArea = screen.getPrimaryDisplay().workArea
+  try {
+    workArea = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
+  } catch {
+    // No cursor position (headless, locked session) — primary is the fallback.
+  }
+  return anchorPos(workArea)
+}
+
 function create(): BrowserWindow | null {
   try {
     // Anchor to the display the USER is on (cursor), not blindly the primary:
     // a game fullscreened on a secondary monitor must not get its popups
     // delivered to a screen they cannot see. Single-monitor setups resolve to
     // the same display either way.
-    let workArea = screen.getPrimaryDisplay().workArea
-    try {
-      workArea = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea
-    } catch {
-      // No cursor position (headless, locked session) — primary is the fallback.
-    }
-    const pos = anchorPos(workArea)
+    const pos = currentAnchor()
     const w = new BrowserWindow({
       ...pos,
       width: POPUP_SIZE.width,
@@ -122,6 +126,8 @@ function raise(): boolean {
     win = w
   }
   try {
+    const pos = currentAnchor()
+    w.setPosition(pos.x, pos.y)
     if (!w.isVisible()) w.showInactive()
     // Fullscreen games on Windows can knock a topmost window down the z-order
     // (and Electron has known races where alwaysOnTop silently lapses after a

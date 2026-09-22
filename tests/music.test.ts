@@ -4,6 +4,7 @@ import os from 'node:os'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
+import { recoverLegacyMusicDownloads, finishLegacyMusicRecovery } from '../src/main/musicLegacyDownloads'
 
 let db: Database.Database
 let root: string
@@ -97,6 +98,58 @@ function fakeReader(tags: Record<string, TagFixture> = {}): TagReader & { calls:
   reader.calls = calls
   return reader
 }
+
+describe('legacy download folder repair', () => {
+  it('retains a saved Spotify catalogue attached to the old artist', async () => {
+    const old = 'navihub-downloads/Artist/Album/Song.opus'
+    makeFiles([old])
+    await indexMusicFiles([old], 'test seed', fakeReader())
+    const { artist_id } = db.prepare('SELECT artist_id FROM music_track').get() as { artist_id: number }
+    db.prepare("INSERT INTO music_spotify_entity_snapshot(artist_id,provider,provider_entity_id,source_name) VALUES(?,'spotdl','saved','Saved choices')").run(artist_id)
+    await startScan(fakeReader())
+    expect(db.prepare('SELECT source_name FROM music_spotify_entity_snapshot').get()).toEqual({ source_name: 'Saved choices' })
+    expect(db.prepare('SELECT file_path FROM music_track').get()).toEqual({ file_path: 'Artist/Album/Song.opus' })
+  })
+
+  it('moves even unmarked files on scan, keeps track IDs and personal state, and removes the bogus artist', async () => {
+    const old = 'navihub-downloads/Artist/Album/Song.opus'
+    makeFiles([old, 'Artist/Album/Song.opus'])
+    await indexMusicFiles([old], 'test seed', fakeReader())
+    const { id } = db.prepare('SELECT id FROM music_track WHERE file_path=?').get(old) as { id: number }
+    db.prepare("UPDATE music_track SET liked_at='2026-01-01', play_count=3 WHERE id=?").run(id)
+    db.prepare("INSERT INTO music_playlist(id,title) VALUES(1,'Keep')").run()
+    db.prepare('INSERT INTO music_playlist_track(playlist_id,track_id,position) VALUES(1,?,0)').run(id)
+    db.prepare('INSERT INTO music_play_log(track_id,duration) VALUES(?,200)').run(id)
+    await startScan(fakeReader())
+    const row = db.prepare('SELECT file_path,liked_at,play_count FROM music_track WHERE id=?').get(id) as { file_path: string; liked_at: string; play_count: number }
+    expect(row.file_path).toMatch(/^Artist\/Album\/.+-Song\.opus$/)
+    expect(row).toMatchObject({ liked_at: '2026-01-01', play_count: 3 })
+    expect(existsSync(join(root, row.file_path))).toBe(true)
+    expect(existsSync(join(root, 'Artist/Album/Song.opus'))).toBe(true)
+    expect(db.prepare('SELECT track_id FROM music_playlist_track').get()).toEqual({ track_id: id })
+    expect(db.prepare('SELECT track_id FROM music_play_log').get()).toEqual({ track_id: id })
+    expect(db.prepare("SELECT id FROM music_artist WHERE name='navihub-downloads'").get()).toBeUndefined()
+    expect(existsSync(join(root, 'navihub-downloads'))).toBe(false)
+  })
+
+  it('resumes a move completed before its database write and reindexes without a second row', async () => {
+    const from = 'navihub-downloads/Artist/Album/Song.opus', to = 'Artist/Album/Song.opus'
+    makeFiles([from])
+    await indexMusicFiles([from], 'test seed', fakeReader())
+    const { id } = db.prepare('SELECT id FROM music_track').get() as { id: number }
+    makeFiles([to])
+    rmSync(join(root, from))
+    mkdirSync(join(root, '.navihub-downloads'))
+    writeFileSync(join(root, '.navihub-downloads/legacy-moves.json'), JSON.stringify([{ from, to }]))
+    expect(recoverLegacyMusicDownloads(root)).toEqual([to])
+    expect(recoverLegacyMusicDownloads(root)).toEqual([to])
+    await indexMusicFiles([to], 'test repair', fakeReader())
+    finishLegacyMusicRecovery(root)
+    expect(db.prepare('SELECT id,file_path FROM music_track').all()).toEqual([{ id, file_path: to }])
+    expect(db.prepare("SELECT id FROM music_artist WHERE name='navihub-downloads'").get()).toBeUndefined()
+    expect(existsSync(join(root, '.navihub-downloads/legacy-moves.json'))).toBe(false)
+  })
+})
 
 describe('parseTrackFileName', () => {
   it.each([

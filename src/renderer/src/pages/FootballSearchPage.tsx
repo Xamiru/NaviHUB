@@ -16,7 +16,7 @@ export default function FootballSearchPage() {
   const [params, setParams] = useSearchParams()
   const value = params.get('q') ?? ''
   const query = useDebouncedValue(value.trim(), 200)
-  const { data, isFetching } = useQuery({
+  const { data, isFetching, isError } = useQuery({
     queryKey: qk.football.search(query),
     queryFn: () => api.football.search(query),
     enabled: query.length > 0
@@ -41,7 +41,8 @@ export default function FootballSearchPage() {
           placeholder="Competition, season, team, person or match"
         /></label>
       {isFetching && <PageStatus>Searching the archive...</PageStatus>}
-      {!isFetching && query && !total && <p className="py-8 text-sm text-ink-muted">No installed Football record matches this search.</p>}
+      {isError && <PageStatus>Could not search the Football archive.</PageStatus>}
+      {!isFetching && !isError && query && !total && <p className="py-8 text-sm text-ink-muted">No installed Football record matches this search.</p>}
       <div className="grid gap-x-10 lg:grid-cols-2">
         {groups.filter((group) => group.rows.length).map((group) => (
           <section key={group.title} className="mb-8">

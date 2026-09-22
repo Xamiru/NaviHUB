@@ -123,7 +123,7 @@ export default function WrestlingMatchRow({
         <div className="flex shrink-0 items-center gap-2 text-xs text-gray-500">
           {duration}
           <StarRating value={match.rating} onChange={rate} />
-          <AddToListMenu kind="wrestlingMatch" entityId={match.id} label="+" />
+          <AddToListMenu kind="wrestlingMatch" entityId={match.id} label="List" />
           <FavoriteButton
             active={match.favorite}
             variant="compact"

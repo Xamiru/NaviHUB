@@ -121,6 +121,12 @@ describe('scanSeriesDir', () => {
     expect(scanned.map((c) => c.number)).toEqual([1, 2, 10])
   })
 
+  it('fails closed when the series directory cannot be read', async () => {
+    await expect(manga.scanSeriesDir(join(root, 'missing-series'), 'Missing')).rejects.toThrow(
+      /Could not read manga content/
+    )
+  })
+
   it('tolerates mixed layouts (loose pages + chapter dirs + nesting)', async () => {
     const dir = makeSeries('Mixed', { '': 2, 'Ch 001': 3 })
     mkdirSync(join(dir, 'Vol 01', 'Ch 002'), { recursive: true })
@@ -187,6 +193,35 @@ describe('attach / rescan / detach', () => {
     expect(after.map((c) => c.dirPath)).toEqual(['Serial/Ch 001', 'Serial/Ch 003'])
     expect(after[0].id).toBe(before[0].id)
     expect(after[0].lastReadPage).toBe(1)
+  })
+
+  it('refuses to prune chapters when a newly discovered archive is unreadable', async () => {
+    const mediaId = makeMedia()
+    const dir = makeSeries('Serial', { 'Ch 001': 3 })
+    await attachViaDialog(mediaId, dir)
+    const chapter = manga.chapters(mediaId).chapters[0]
+    manga.markChapterRead(chapter.id, true)
+
+    writeFileSync(join(dir, 'Broken.cbz'), 'not a zip')
+    const result = await manga.rescan(mediaId)
+
+    expect(result.ok).toBe(false)
+    expect(result.error).toMatch(/archive is unreadable/)
+    expect(manga.chapters(mediaId).chapters).toHaveLength(1)
+    expect(manga.chapters(mediaId).chapters[0].readAt).not.toBeNull()
+  })
+
+  it('does not bootstrap the library root after a failed first attach', async () => {
+    const mediaId = makeMedia('Broken')
+    const dir = join(root, 'Broken')
+    mkdirSync(dir)
+    writeFileSync(join(dir, 'Broken.epub'), 'not a zip')
+
+    const result = await attachViaDialog(mediaId, dir)
+
+    expect(result.ok).toBe(false)
+    expect(db.prepare(`SELECT value FROM settings WHERE key='manga.dir'`).get()).toBeUndefined()
+    expect(manga.chapters(mediaId).chapters).toEqual([])
   })
 
   it('detach removes chapters and clears local_dir', async () => {
@@ -350,6 +385,15 @@ describe('reading progress', () => {
     manga.markChapterRead(chapters[1].id, false)
     expect(mediaProgress(mediaId)).toBe(50)
   })
+
+  it('rejects invalid page positions without changing reading state', async () => {
+    const { mediaId, chapters } = await setup()
+    const chapter = chapters[0]
+    expect(manga.markProgress(chapter.id, -1)).toBeUndefined()
+    expect(manga.markProgress(chapter.id, 2)).toBeUndefined()
+    expect(manga.markProgress(chapter.id, 0.5)).toBeUndefined()
+    expect(manga.chapters(mediaId).chapters[0]).toMatchObject({ lastReadPage: null, readAt: null })
+  })
 })
 
 // Minimal-but-valid EPUB: container → OPF → two spine documents + nav TOC.
@@ -408,11 +452,18 @@ describe('EPUB books in the manga section', () => {
     expect(res).toMatchObject({ ok: true, chapterCount: 1 })
   })
 
-  it('a broken .epub is skipped, not fatal', async () => {
+  it('fails closed on a broken .epub instead of pruning existing chapters', async () => {
     const dir = makeSeries('Broken', { 'Ch 001': 1 })
     writeFileSync(join(dir, 'garbage.epub'), 'not a zip')
-    const scanned = await manga.scanSeriesDir(dir, 'Broken')
-    expect(scanned.map((c) => c.dirPath)).toEqual(['Ch 001'])
+    await expect(manga.scanSeriesDir(dir, 'Broken')).rejects.toThrow(/EPUB archive is unreadable/)
+  })
+
+  it('fails closed on a zip with an empty or malformed EPUB package', async () => {
+    const dir = makeSeries('Malformed', { 'Ch 001': 1 })
+    makeCbz(join(dir, 'empty.epub'), { 'OEBPS/content.opf': '<package><manifest/></package>' })
+    await expect(manga.scanSeriesDir(dir, 'Malformed')).rejects.toThrow(
+      /EPUB package is missing or malformed/
+    )
   })
 
   it('pages() serves spine documents as navimg URLs with the TOC riding along', async () => {
@@ -572,4 +623,3 @@ describe('chapter thumbnails', () => {
     expect(manga.chapters(mediaId).chapters[0].coverPath).toBe(before)
   })
 })
-

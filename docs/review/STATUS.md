@@ -19,6 +19,10 @@ running the command shown, not by reading the review.
 | Learning-step misses invisible to the leech list (`03-educational.md:53-60`) | `tests/japaneseRepo.test.ts` learning-step cases | fixed 2026-08-15 — `listLeeches` ORs `lapses >= 6` with Again-grades-since-reset `>= 8` |
 | Programming: no per-lesson score, CLI misses discarded, quiz summary blind to the lesson (`03-educational.md:508-518`) | `prog_attempt` / `prog_cli_miss`; quiz summary "Missed N from …" | shipped 2026-08-15 |
 | Cheatsheet answers / factual prose errors (`03-educational.md:441-471`) | the cited lines | already fixed before 08-15; the `regexCourse.ts:288/322` claim was WRONG — `(?<name>…)` shipped in Go 1.22 |
+| Remote bodies could exhaust main-process memory (`01-technical.md:203-205`) | `tests/http.test.ts`; `tests/performanceBoundaries.test.ts` | fixed 2026-09-21 — structured responses have enforced byte ceilings and large assets stream with independent caps |
+| Yomitan entries could decompress without a ceiling (`01-technical.md:192`) | `dict/importer.ts`; `tests/performanceBoundaries.test.ts` | fixed 2026-09-21 — archive download and declared/observed entry sizes are bounded |
+| Music Tracks and whole-library playback were unbounded (`_raw/04-renderer-perf.md:88-93`) | `music:trackPage`; `music:playbackQueue`; `tests/musicRepo.test.ts` | fixed 2026-09-21 — SQL pagination plus a fair 2,000-track playback projection |
+| Coverage panel polled prep-deck status forever (`01-technical.md:328-329`) | `CoverageSection.tsx`; `tests/performanceBoundaries.test.ts` | fixed 2026-09-21 — active work is observed through the sibling's shared query cache with no idle interval |
 
 ## The review itself is now wrong
 

@@ -18,6 +18,63 @@ import { currentActivitySignal } from './activityContext'
 
 const MAX_RATE_LIMIT_WAITS = 5 // safety valve against a stuck 429 loop
 const DEFAULT_TIMEOUT_MS = 30_000
+export const MAX_API_RESPONSE_BYTES = 32 * 1024 * 1024
+
+async function readBoundedBody(response: Response, maxBytes: number, label: string): Promise<Buffer> {
+  const declared = Number(response.headers.get('content-length'))
+  if (Number.isSafeInteger(declared) && declared > maxBytes) {
+    throw new Error(`${label} exceeds the ${maxBytes}-byte response limit`)
+  }
+  if (!response.body) return Buffer.alloc(0)
+
+  const reader = response.body.getReader()
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => {})
+        throw new Error(`${label} exceeds the ${maxBytes}-byte response limit`)
+      }
+      chunks.push(value)
+    }
+  } catch (error) {
+    await reader.cancel().catch(() => {})
+    throw error
+  }
+  return Buffer.concat(chunks, total)
+}
+
+// Fetch cannot enforce a body limit until a caller consumes the response. A
+// proxy keeps the native Response surface (including url/status/headers) while
+// replacing the three whole-body readers used by main-process API clients.
+function boundedResponse(response: Response, maxBytes: number, label: string): Response {
+  const read = (): Promise<Buffer> => readBoundedBody(response, maxBytes, label)
+  return new Proxy(response, {
+    get(target, property) {
+      if (property === 'json') {
+        return async (): Promise<unknown> => JSON.parse(new TextDecoder().decode(await read()))
+      }
+      if (property === 'text') {
+        return async (): Promise<string> => new TextDecoder().decode(await read())
+      }
+      if (property === 'arrayBuffer') {
+        return async (): Promise<ArrayBuffer> => {
+          const bytes = await read()
+          return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer
+        }
+      }
+      if (property === 'clone') {
+        return (): Response => boundedResponse(target.clone(), maxBytes, label)
+      }
+      const value = Reflect.get(target, property, target)
+      return typeof value === 'function' ? value.bind(target) : value
+    }
+  })
+}
 
 export async function fetchWithRetry(
   url: string,
@@ -27,6 +84,9 @@ export async function fetchWithRetry(
     // Internal task cancellation, composed with a fresh timeout per attempt.
     // Callers still must not pass a fixed `signal` across retries.
     taskSignal?: AbortSignal
+    // Applies to json(), text() and arrayBuffer() consumption. File downloads
+    // stream through streamResponseToFile and deliberately set their own caps.
+    maxResponseBytes?: number
   },
   retries = 3
 ): Promise<Response> {
@@ -34,6 +94,7 @@ export async function fetchWithRetry(
     timeoutMs = DEFAULT_TIMEOUT_MS,
     rateLimitWaits: maxWaits = MAX_RATE_LIMIT_WAITS,
     taskSignal = currentActivitySignal(),
+    maxResponseBytes,
     ...rest
   } = init ?? {}
   let rateLimitWaits = 0
@@ -82,7 +143,9 @@ export async function fetchWithRetry(
       continue
     }
     if (res.status >= 400) logWarn('http', `HTTP ${res.status}: ${url}`)
-    return res
+    return maxResponseBytes
+      ? boundedResponse(res, maxResponseBytes, `Response from ${new URL(url).hostname}`)
+      : res
   }
 }
 

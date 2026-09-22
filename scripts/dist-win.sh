@@ -34,7 +34,7 @@ docker run --rm \
     }
     trap restore_native EXIT INT TERM
     cp "$windows_native" "$native"
-    npx electron-builder --win
+    npx electron-builder --win --publish never
     restore_native
     trap - EXIT INT TERM
     chown -R '"$(id -u):$(id -g)"' /project/dist /root/.cache/electron /root/.cache/electron-builder

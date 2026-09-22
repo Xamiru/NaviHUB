@@ -16,7 +16,7 @@
 //    [["Stone Cold" Steve Austin]] and [[Stone Cold Steve Austin]]
 //    interchangeably, and all three are redirects to one article.
 
-import { fetchWithRetry, sleep } from '../http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from '../http'
 import type { WrestlingPromotionCfg } from '@shared/wrestling'
 
 const API = 'https://en.wikipedia.org/w/api.php'
@@ -50,7 +50,8 @@ async function apiGet(params: Record<string, string>): Promise<any> {
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const res = await fetchWithRetry(url.toString(), {
     headers: { Accept: 'application/json', 'User-Agent': UA },
-    timeoutMs: 20_000
+    timeoutMs: 20_000,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (!res.ok) throw new Error(`Wikipedia request failed (${res.status})`)
   const json = await res.json()
@@ -286,4 +287,3 @@ export async function resolveTitles(titles: string[]): Promise<Map<string, strin
   }
   return out
 }
-

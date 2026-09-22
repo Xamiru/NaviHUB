@@ -801,6 +801,20 @@ describe('Spotify completeness and batching', () => {
 })
 
 describe('Spotify staged file recovery', () => {
+  it('recovers the dot-preserving spotDL directory', () => {
+    const root = mkdtempSync(join(tmpdir(), 'spotify-staging-'))
+    try {
+      const current = join(root, '.spotdl', 'navihub-downloads', 'Artist', 'Album')
+      mkdirSync(current, { recursive: true })
+      const filename = 'song [navirun-new] [navihub-abc123].opus'
+      writeFileSync(join(current, filename), 'new')
+      const paths = recoverSpotifyOutputs(root)
+      expect(paths).toEqual([`Artist/Album/${filename}`])
+      expect(existsSync(join(current, filename))).toBe(false)
+      expect(recoverSpotifyOutputs(root)).toEqual(paths)
+    } finally { rmSync(root, { recursive: true, force: true }) }
+  })
+
   it('keeps existing audio, ignores partial files, and remembers moved files until indexing succeeds', () => {
     const root = mkdtempSync(join(tmpdir(), 'spotify-staging-'))
     try {

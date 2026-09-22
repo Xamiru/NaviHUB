@@ -3,7 +3,7 @@ import { extname, join } from 'path'
 import { dialog } from 'electron'
 import { getSqlite } from './db/connection'
 import { absoluteMediaPath, downloadImages, importImageFile } from './files'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { updateActivity } from './progress'
 import * as settingsRepo from './repos/settingsRepo'
 import * as achievementRepo from './repos/achievementRepo'
@@ -48,7 +48,8 @@ async function webApiGet(path: string, params: Record<string, string>): Promise<
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const res = await fetchWithRetry(url.toString(), {
     headers: { Accept: 'application/json' },
-    timeoutMs: 20_000
+    timeoutMs: 20_000,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (res.status === 403) {
     throw new Error('Steam rejected the Web API key — check it in Settings > API keys.')
@@ -73,7 +74,16 @@ export async function resolveSteamCandidates(mediaId: number): Promise<SteamAppC
   if (row.external_source === 'steam' && row.external_id) {
     out.push({ appid: row.external_id, name: row.title, coverUrl: null, exact: true })
   }
-  const found = await steamSearch(row.title)
+  let found
+  try {
+    found = await steamSearch(row.title)
+  } catch (error) {
+    // A Steam-imported row already has the authoritative app id. Storefront
+    // search only supplies alternatives, so its outage must not hide the one
+    // exact candidate that setup can safely use.
+    if (out.length) return out
+    throw error
+  }
   for (const r of found) {
     const appid = String(r.id)
     if (out.some((c) => c.appid === appid)) continue
@@ -143,37 +153,47 @@ async function loadSteamSchema(
   // 2. The Web API, if a key exists.
   const key = steamKey()
   if (key) {
-    const schema = await webApiGet('/ISteamUserStats/GetSchemaForGame/v2/', {
-      key,
-      appid,
-      l: 'english'
-    })
-    const list: SteamSchemaAchievement[] = schema?.game?.availableGameStats?.achievements ?? []
-    if (list.length) {
-      return {
-        source: 'webapi',
-        localDir: null,
-        unmatched: 0,
-        rows: list.map((a) => ({
-          apiName: a.name,
-          // Steam occasionally ships an achievement with an empty displayName;
-          // the api name is ugly but beats a blank row.
-          name: a.displayName?.trim() || a.name,
-          description: a.description?.trim() || null,
-          hidden: a.hidden === 1,
-          icon: a.icon ?? null,
-          iconGray: a.icongray ?? null,
-          globalPct: null
-        }))
+    try {
+      const schema = await webApiGet('/ISteamUserStats/GetSchemaForGame/v2/', {
+        key,
+        appid,
+        l: 'english'
+      })
+      const list: SteamSchemaAchievement[] = schema?.game?.availableGameStats?.achievements ?? []
+      if (list.length) {
+        return {
+          source: 'webapi',
+          localDir: null,
+          unmatched: 0,
+          rows: list.map((a) => ({
+            apiName: a.name,
+            // Steam occasionally ships an achievement with an empty displayName;
+            // the api name is ugly but beats a blank row.
+            name: a.displayName?.trim() || a.name,
+            description: a.description?.trim() || null,
+            hidden: a.hidden === 1,
+            icon: a.icon ?? null,
+            iconGray: a.icongray ?? null,
+            globalPct: null
+          }))
+        }
       }
+      tried.push('Steam Web API listed no achievements')
+    } catch (error) {
+      // An invalid optional key or a transient Web API outage must not block
+      // the public-page source, which needs no key.
+      tried.push(`Steam Web API unavailable (${error instanceof Error ? error.message : String(error)})`)
     }
-    tried.push('Steam Web API listed no achievements')
   }
 
   // 3. The public community page.
   const pageRes = await fetchWithRetry(
     `https://steamcommunity.com/stats/${appid}/achievements/?l=english`,
-    { headers: { Accept: 'text/html' }, timeoutMs: 20_000 }
+    {
+      headers: { Accept: 'text/html' },
+      timeoutMs: 20_000,
+      maxResponseBytes: MAX_API_RESPONSE_BYTES
+    }
   )
   const page = pageRes.ok ? parseCommunityAchievementsPage(await pageRes.text()) : []
   if (page.length) {
@@ -222,19 +242,17 @@ async function storeIcons(
 export async function fetchSteamSchema(
   mediaId: number,
   appid: string,
-  deps: { io?: EmuFileIO } = {}
+  deps: { io?: EmuFileIO; env?: EmuEnv } = {}
 ): Promise<AchievementSetupResult> {
   const id = appid.trim()
   if (!/^\d+$/.test(id)) throw new Error(`Not a Steam app id: ${appid}`)
 
-  // Remember the choice before the fetch so a failed network half doesn't cost
-  // the user the lookup — but NOT when it would flip a title already tracked on
-  // another provider: that would leave the RA achievements on screen labelled
-  // as a Steam set, offering emulator imports that make no sense for them.
-  // Switching providers commits only once the new set actually arrives.
+  // Remember only a title's first choice before the fetch. Replacing any
+  // existing provider identity commits with the complete new snapshot, so an
+  // interrupted lookup cannot relabel the old set.
   const existing = achievementRepo.getTracking(mediaId)
-  if (!existing || existing.provider === 'steam') {
-    achievementRepo.setAssociation(mediaId, 'steam', id)
+  if (!existing) {
+    achievementRepo.setInitialAssociation(mediaId, 'steam', id)
   }
 
   const row = getSqlite().prepare('SELECT exe_path FROM media_item WHERE id = ?').get(mediaId) as
@@ -258,8 +276,14 @@ export async function fetchSteamSchema(
 
   const icons = await storeIcons(schema)
 
+  // Scan before writing so the provider set and the initial on-disk unlock
+  // snapshot can commit together. A failed unlock write must leave the prior
+  // tracked game untouched.
+  const scan = scanUnlocks(id, exeDir, deps.io, deps.env)
+  const fallback = scan.newestMtimeMs ?? Date.now()
+
   updateActivity({ phase: 'writing' })
-  achievementRepo.upsertSchema(
+  const fresh = achievementRepo.replaceSchemaWithUnlocks(
     mediaId,
     'steam',
     id,
@@ -272,18 +296,18 @@ export async function fetchSteamSchema(
       iconGrayPath: icons.get(r.apiName)?.gray ?? null,
       points: null, // Steam has no points, and none is invented
       globalPct: r.globalPct ?? percentages.get(r.apiName) ?? null
-    }))
+    })),
+    scan.unlocks,
+    'emu',
+    fallback
   )
 
-  // Anything already earned is on disk right now — sweep it in so a freshly
-  // tracked game does not start at zero.
-  const swept = importEmuUnlocks(mediaId, { io: deps.io })
   const summary = achievementRepo.summaryFor(mediaId)
   return {
     total: summary.total,
     unlocked: summary.unlocked,
-    importedFromFiles: swept.imported,
-    filesFound: swept.found,
+    importedFromFiles: fresh.length,
+    filesFound: scan.files,
     schemaSource: schema.source,
     unmatched: schema.unmatched
   }

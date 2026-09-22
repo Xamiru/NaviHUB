@@ -4,7 +4,7 @@ import { addUrlJob } from './repos/musicUrlRepo'
 import { assessMusicSource } from '@shared/musicSourceMatch'
 import { musicToolOptions, musicYtDlpArgs, spotdlYtDlpOptions, musicFailure, musicAccessKey } from './musicTools'
 import metadataAdapter from './spotifyMetadata.py?raw'
-import { youtubeSourceUrl, denoExecutable, inspectAudio, parseSourceEvidence, canonicalAudioSource } from './musicSpotifyRecovery'
+import { youtubeSourceUrl, denoExecutable, inspectAudio, audioSourceInspection, forgetAudioSource, canonicalAudioSource } from './musicSpotifyRecovery'
 import { execFile, spawn, type ChildProcessWithoutNullStreams } from 'child_process'
 import { existsSync, mkdtempSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync, mkdirSync } from 'fs'
 import { homedir, tmpdir } from 'os'
@@ -12,8 +12,9 @@ import { dirname, extname, isAbsolute, join, relative } from 'path'
 import { app, BrowserWindow, dialog, type OpenDialogOptions } from 'electron'
 import { get as getSetting } from './repos/settingsRepo'
 import { absoluteMediaPath, downloadImages, musicRootDir } from './files'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { indexMusicFiles } from './music'
+import { recoverLegacyMusicDownloads, finishLegacyMusicRecovery } from './musicLegacyDownloads'
 import {
   claimMusicMaintenance,
   musicMaintenanceOwner,
@@ -499,7 +500,8 @@ export function buildSpotdlDownloadArgs(
  * If a clean target already exists, keep the marked file so the scanner can
  * expose it as a candidate instead of silently replacing the user's audio.
  */
-function spotifyStagingRoot(): string { return join(musicRootDir(), '.navihub-downloads') }
+// spotDL strips leading dots from path components except its reserved `.spotdl`.
+function spotifyStagingRoot(): string { return join(musicRootDir(), '.spotdl', 'navihub-downloads') }
 
 export function recoverSpotifyOutputs(root = musicRootDir()): string[] {
   const staging = join(root, '.navihub-downloads')
@@ -509,37 +511,41 @@ export function recoverSpotifyOutputs(root = musicRootDir()): string[] {
     const saved = JSON.parse(readFileSync(manifest, 'utf8'))
     if (Array.isArray(saved)) paths = saved.filter((path): path is string => typeof path === 'string' && !isAbsolute(path) && !path.split(/[\\/]/).includes('..') && existsSync(join(root, path)))
   } catch { /* no pending index */ }
-  const walk = (dir: string): void => {
+  const walk = (dir: string, origin: string): void => {
     if (!existsSync(dir)) return
     for (const entry of readdirSync(dir, { withFileTypes: true })) {
       const abs = join(dir, entry.name)
-      if (entry.isDirectory()) { walk(abs); continue }
+      if (entry.isDirectory()) { walk(abs, origin); continue }
       if (!entry.isFile() || !['.opus', '.m4a', '.mp3', '.flac', '.ogg', '.wav'].includes(extname(abs))) continue
-      const rel = relative(staging, abs)
+      const rel = relative(origin, abs)
       if (rel.split(/[\\/]/).length < 3) continue
       let target = join(root, rel)
       mkdirSync(dirname(target), { recursive: true })
       // A previous file belongs to the library. Keep both until the user reviews them.
       if (existsSync(target)) target = join(dirname(target), `${Date.now()}-${entry.name}`)
       paths.push(relative(root, target).replace(/\\/g, '/'))
+      mkdirSync(staging, { recursive: true })
       writeFileSync(`${manifest}.tmp`, JSON.stringify(paths), { mode: 0o600 })
       renameSync(`${manifest}.tmp`, manifest)
       renameSync(abs, target)
     }
   }
-  walk(staging)
-  return paths
+  walk(staging, staging)
+  const current = join(root, '.spotdl', 'navihub-downloads')
+  walk(current, current)
+  return [...new Set(paths)]
 }
 
 async function indexSpotifyOutputs(owner: string): Promise<void> {
   const started = Date.now()
   recoverProvenanceRenames(musicRootDir())
-  const paths = recoverSpotifyOutputs()
+  const paths = [...new Set([...recoverLegacyMusicDownloads(musicRootDir()), ...recoverSpotifyOutputs()])]
   spotifyRepo.markSourceArtifactsIndexing(paths)
   const jobId = queueRun?.owner === owner ? queueRun.id : null
   const alive = () => !jobId || !abandonedRuns.has(jobId)
   if (paths.length) await indexMusicFiles(paths, owner, undefined, alive)
   if (!alive()) return
+  finishLegacyMusicRecovery(musicRootDir())
   for (const sourceKind of ['playlistItem', 'entityTrack'] as const) {
     const rows = spotifyRepo.pendingProvenanceSources(sourceKind)
     if (rows.length) settleDownloadedProvenance(sourceKind, rows)
@@ -547,7 +553,7 @@ async function indexSpotifyOutputs(owner: string): Promise<void> {
   spotifyRepo.linkArchivedVerifiedSources((path) => existsSync(join(musicRootDir(), path)))
   const ids = paths.flatMap((path) => path.match(/\[navihub-([A-Za-z0-9]+)\]/)?.[1] ?? [])
   if (ids.length) spotifyRepo.updateProvenanceTrackPaths(normalizeProvenanceFiles(musicRootDir(), ids))
-  rmSync(join(spotifyStagingRoot(), 'pending-index.json'), { force: true })
+  rmSync(join(musicRootDir(), '.navihub-downloads', 'pending-index.json'), { force: true })
   logInfo('proc', `Spotify indexing: ${paths.length} new files in ${Date.now() - started}ms`)
 }
 
@@ -784,7 +790,11 @@ async function itunesResults(url: string, deadline?: number, country = catalogue
   if (remaining <= 0) throw new Error('Fast music catalogue exceeded its 25-second budget')
   const response = await fetchWithRetry(
     `${url}&country=${country}`,
-    { timeoutMs: Math.max(250, Math.min(8_000, remaining)), rateLimitWaits: 0 },
+    {
+      timeoutMs: Math.max(250, Math.min(8_000, remaining)),
+      rateLimitWaits: 0,
+      maxResponseBytes: MAX_API_RESPONSE_BYTES
+    },
     1
   )
   if (!response.ok) throw new Error(`Fast music catalogue returned HTTP ${response.status}`)
@@ -3057,6 +3067,7 @@ async function downloadPreparedSpotify(...parameters: Parameters<typeof runSpotd
         if (ref.manual && ref.manual !== raw.download_url) continue
         spotifyRepo.setTrackDownloadErrors(ref.kind, new Map([[ref.id, musicFailure('Transfer / processing', 'spotDL embedded yt-dlp', diagnostic || 'Downloader exited before all outputs completed')]]))
         spotifyRepo.invalidateSourceAccess(ref.kind, ref.id)
+        forgetAudioSource(String(raw.download_url))
       }
     }
     logInfo('proc', `Music transfer / processing: ${group.length} tracks in ${Date.now() - transferStarted}ms`)
@@ -3071,21 +3082,11 @@ export function addUrlDownloadQueue(input: import('@shared/types').MusicDownload
 }
 
 async function inspectAudioSourcesInQueue(urls: string[], owner: string, jobId?: string): Promise<Map<string, import('@shared/types').MusicSourceEvidence> & { errors: Map<string, string> }> {
-  const evidence = Object.assign(new Map<string, import('@shared/types').MusicSourceEvidence>(), { errors: new Map<string, string>() })
-  if (!urls.length) return evidence
-  const allowed = new Set(urls)
-  let diagnostic = ''
+  const inspection = audioSourceInspection(urls)
+  if (!urls.length) return inspection.finish()
   await runMusicCommand([...musicYtDlpArgs(), '--no-playlist', '--skip-download', '--ignore-errors', '--dump-json', '--', ...urls], owner,
-    (line) => {
-      if (/error|failed|unavailable/i.test(line)) diagnostic = line
-      try {
-        const row = JSON.parse(line)
-        const url = canonicalAudioSource(String(row.webpage_url ?? `https://www.youtube.com/watch?v=${row.id}`))
-        if (allowed.has(url)) evidence.set(url, parseSourceEvidence(url, row))
-      } catch { /* Missing or invalid entries become individual source failures. */ }
-    }, jobId, undefined, 45_000, undefined, musicToolOptions().ytdlp)
-  for (const url of urls) if (!evidence.has(url)) evidence.errors.set(url, musicFailure('Extraction', 'standalone yt-dlp', diagnostic || 'No usable audio metadata or native audio format returned'))
-  return evidence
+    inspection.observe, jobId, undefined, 45_000, undefined, musicToolOptions().ytdlp)
+  return inspection.finish()
 }
 
 async function runMusicCommand(...parameters: Parameters<typeof runSpotdl>): Promise<number> {

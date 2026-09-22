@@ -1,15 +1,12 @@
-import { QueryCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { HashRouter } from 'react-router-dom'
 import App from './App'
 import BootSequence from './components/BootSequence'
 import MusicPlayLogger from './components/MusicPlayLogger'
 import { AudioPlayerProvider } from './lib/player'
-import { toastError } from './lib/toast'
+import { createAppQueryClient } from './lib/queryClient'
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { refetchOnWindowFocus: false, staleTime: 5_000 } },
-  queryCache: new QueryCache({ onError: toastError })
-})
+const queryClient = createAppQueryClient()
 
 export default function MainAppRoot(): React.JSX.Element {
   return (

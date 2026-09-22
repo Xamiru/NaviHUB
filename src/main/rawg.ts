@@ -1,7 +1,7 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
 import * as settingsRepo from './repos/settingsRepo'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
@@ -29,7 +29,10 @@ async function rawgGet(path: string, params: Record<string, string> = {}): Promi
   const url = new URL(`${BASE}${path}`)
   url.searchParams.set('key', apiKey())
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
-  const res = await fetchWithRetry(url.toString(), { headers: { Accept: 'application/json' } })
+  const res = await fetchWithRetry(url.toString(), {
+    headers: { Accept: 'application/json' },
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
+  })
   if (res.status === 401) throw new Error('Invalid RAWG API key — check it in Settings.')
   if (!res.ok) throw new Error(`RAWG request failed (${res.status})`)
   return res.json()
@@ -95,7 +98,7 @@ export async function importGame(rawgId: number): Promise<ImportSummary> {
       mediaId = existing.id
       db.prepare(
         `UPDATE media_item SET title=?, title_original=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-         total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
+         total_units=COALESCE(?, total_units), release_date=?, updated_at=datetime('now') WHERE id=?`
       ).run(
         title,
         native,

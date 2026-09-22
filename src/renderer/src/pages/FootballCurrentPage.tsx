@@ -24,7 +24,7 @@ export default function FootballCurrentPage() {
   const [dateTo, setDateTo] = usePersistedState('footballCurrentTo', '')
   const [starting, setStarting] = useState(false)
   const key = useMemo(() => qk.football.current(competition, dateFrom || null, dateTo || null), [competition, dateFrom, dateTo])
-  const { data, isLoading } = useQuery({ queryKey: key, queryFn: () => api.football.current(competition, dateFrom || null, dateTo || null) })
+  const { data, isLoading, isError } = useQuery({ queryKey: key, queryFn: () => api.football.current(competition, dateFrom || null, dateTo || null) })
 
   async function refresh() {
     if (!competition) return
@@ -55,7 +55,7 @@ export default function FootballCurrentPage() {
         {(dateFrom || dateTo) && <button className="btn-ghost" onClick={() => { setDateFrom(''); setDateTo('') }}>Clear dates</button>}
       </div>
 
-      {isLoading || !data ? <PageStatus>Reading the stored matchday...</PageStatus> : (
+      {isError ? <PageStatus>Could not load the stored matchday.</PageStatus> : isLoading || !data ? <PageStatus>Reading the stored matchday...</PageStatus> : (
         <>
           {data.entitlement && !data.entitlement.entitled && (
             <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-y border-signal-anomaly/35 py-4">

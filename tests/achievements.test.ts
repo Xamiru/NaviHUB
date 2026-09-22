@@ -42,15 +42,25 @@ let storeSearchPayload: unknown
 let raGamePayload: unknown
 let raGameList: unknown = []
 let schemaStatus = 200
+let percentStatus = 200
 let communityHtml = ''
 let communityStatus = 200
+let storeSearchFails = false
 const fetched: string[] = []
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   sleep: async () => {},
   fetchWithRetry: async (url: string) => {
     fetched.push(url)
+    if (storeSearchFails && url.includes('/storesearch/')) {
+      throw new Error('store search unavailable')
+    }
     const isCommunity = url.includes('steamcommunity.com/stats/')
-    const status = isCommunity ? communityStatus : schemaStatus
+    const status = isCommunity
+      ? communityStatus
+      : url.includes('GetGlobalAchievementPercentages')
+        ? percentStatus
+        : schemaStatus
     return {
       ok: status === 200,
       status,
@@ -113,9 +123,12 @@ beforeEach(() => {
   db = createTestDb()
   settings = { 'steam.web_api_key': 'KEY', 'ra.username': 'me', 'ra.api_key': 'RAKEY' }
   schemaStatus = 200
+  percentStatus = 200
   communityStatus = 200
   communityHtml = ''
+  storeSearchFails = false
   fetched.length = 0
+  retro.resetGameListCache()
   schemaPayload = schemaFixture([
     {
       name: 'ACH_WIN',
@@ -249,6 +262,20 @@ describe('Steam app id resolution', () => {
     const candidates = await achievements.resolveSteamCandidates(addGame('rawg', '123'))
     expect(candidates.every((c) => !c.exact)).toBe(true)
     expect(candidates[0]).toMatchObject({ appid: '440', name: 'Team Fortress 2' })
+  })
+
+  it('keeps the exact imported app id when optional storefront search is unavailable', async () => {
+    storeSearchFails = true
+    await expect(achievements.resolveSteamCandidates(addGame())).resolves.toEqual([
+      { appid: '440', name: 'Team Fortress 2', coverUrl: null, exact: true }
+    ])
+  })
+
+  it('still reports search failure when there is no exact imported app id', async () => {
+    storeSearchFails = true
+    await expect(achievements.resolveSteamCandidates(addGame('rawg', '123'))).rejects.toThrow(
+      /unavailable/
+    )
   })
 
   it('refuses a media id that does not exist', async () => {
@@ -446,6 +473,22 @@ describe('RetroAchievements search', () => {
     expect(await retro.searchGames('mario', '')).toEqual([])
     expect(await retro.searchGames('', '3')).toEqual([])
   })
+
+  it('loads each console catalogue once and filters later searches locally', async () => {
+    await withRaList(list, () => retro.searchGames('mario', '3'))
+    await withRaList(list, () => retro.searchGames('donkey', '3'))
+    expect(fetched.filter((url) => url.includes('API_GetGameList.php'))).toHaveLength(1)
+  })
+
+  it('does not cache a failed console catalogue request', async () => {
+    schemaStatus = 500
+    await expect(retro.searchGames('mario', '3')).rejects.toThrow(/failed/i)
+    schemaStatus = 200
+
+    const results = await withRaList(list, () => retro.searchGames('mario', '3'))
+    expect(results.map((row) => row.title)).toEqual(['Super Mario Kart'])
+    expect(fetched.filter((url) => url.includes('API_GetGameList.php'))).toHaveLength(2)
+  })
 })
 
 describe('refresh', () => {
@@ -519,6 +562,20 @@ describe('schema source order', () => {
     expect(res.schemaSource).toBe('webapi')
   })
 
+  it('uses the public page when a saved optional Web API key is rejected', async () => {
+    schemaStatus = 403
+    communityHtml = communityPage([['Winner', 'Win a round', 'https://cdn/win.jpg', '42.5']])
+    percentPayload = {
+      achievementpercentages: { achievements: [{ name: 'ACH_WIN', percent: 42.5 }] }
+    }
+    const id = addGame()
+    const res = await achievements.fetchSteamSchema(id, '440')
+    expect(res.schemaSource).toBe('community')
+    expect(repo.listForMedia(id).map((row) => row.apiName)).toEqual(['ACH_WIN'])
+    expect(fetched.some((url) => url.includes('GetSchemaForGame'))).toBe(true)
+    expect(fetched.some((url) => url.includes('steamcommunity.com/stats'))).toBe(true)
+  })
+
   it('falls through to the community page when there is no key and no local file', async () => {
     settings = {}
     communityHtml = communityPage([
@@ -589,14 +646,12 @@ describe('schema source order', () => {
       readFile: (p: string) => files[p] ?? '',
       mtimeMs: (p: string) => (p in files ? 1_600_000_000_000 : null)
     }
-    // windowsEnv() reads process.env, which is empty here — pass an env through
-    // importEmuUnlocks directly to prove the round trip.
     const id = addGame()
-    await achievements.fetchSteamSchema(id, '440', { io: both })
-    const swept = achievements.importEmuUnlocks(id, {
+    const result = await achievements.fetchSteamSchema(id, '440', {
       io: both,
       env: { appData: '/roaming', publicDir: '/public', localAppData: '/local' }
     })
-    expect(swept.imported).toBe(1)
+    expect(result).toMatchObject({ importedFromFiles: 1, filesFound: 1 })
+    expect(repo.summaryFor(id).unlocked).toBe(1)
   })
 })

@@ -64,7 +64,7 @@ function footballChampionCandidates(): FootballChampionCandidate[] {
         WHERE cv.competition_id=c.id AND cv.season_id IS NULL
           AND cv.facet='honours' AND cv.state='complete')
       AND NOT EXISTS(SELECT 1 FROM football_conflict fc
-        WHERE fc.status='open' AND ((fc.entity_kind='season' AND fc.entity_id=s.id)
+        WHERE fc.status<>'resolved' AND ((fc.entity_kind='season' AND fc.entity_id=s.id)
           OR (fc.entity_kind='honour' AND fc.entity_id=h.id)))
     ORDER BY c.id,year,s.id
   `).all() as FootballChampionCandidate[]
@@ -89,7 +89,7 @@ function footballScorelineCandidates(): FootballScorelineCandidate[] {
       AND EXISTS(SELECT 1 FROM football_coverage cv
         WHERE cv.season_id=s.id AND cv.facet='results' AND cv.state='complete')
       AND NOT EXISTS(SELECT 1 FROM football_conflict fc
-        WHERE fc.status='open' AND fc.entity_kind='match' AND fc.entity_id=m.id)
+        WHERE fc.status<>'resolved' AND fc.entity_kind='match' AND fc.entity_id=m.id)
     ORDER BY c.id,m.match_date,m.id
   `).all() as FootballScorelineCandidate[]
 }
@@ -107,7 +107,7 @@ function footballCareerCandidates(): FootballCareerCandidate[] {
       AND NOT EXISTS(SELECT 1 FROM football_tenure bad
         WHERE bad.person_id=p.id AND bad.role='player' AND (bad.verified=0 OR bad.complete=0))
       AND NOT EXISTS(SELECT 1 FROM football_conflict fc
-        WHERE fc.status='open' AND fc.entity_kind='person' AND fc.entity_id=p.id)
+        WHERE fc.status<>'resolved' AND fc.entity_kind='person' AND fc.entity_id=p.id)
     GROUP BY ft.id ORDER BY p.id,ft.sort_order,COALESCE(ft.start_date,''),ft.id
   `).all() as Array<{
     personId: number
@@ -154,7 +154,7 @@ function footballGridPool(): FootballGridPool {
     JOIN football_team t ON t.id=ft.team_id
     WHERE p.quiz_pack=1 AND ft.role='player' AND ft.verified=1 AND ft.complete=1
       AND NOT EXISTS(SELECT 1 FROM football_conflict fc
-        WHERE fc.status='open' AND fc.entity_kind='person' AND fc.entity_id=p.id)
+        WHERE fc.status<>'resolved' AND fc.entity_kind='person' AND fc.entity_id=p.id)
     UNION
     SELECT DISTINCT p.id AS personId,p.name,t.id AS teamId,t.name AS teamName,1 AS national
     FROM football_person p JOIN football_lineup fl ON fl.person_id=p.id AND fl.role='player'
@@ -162,7 +162,7 @@ function footballGridPool(): FootballGridPool {
     JOIN football_match m ON m.id=fl.match_id AND m.lineup_coverage='complete' AND m.conflicted=0
     WHERE p.quiz_pack=1
       AND NOT EXISTS(SELECT 1 FROM football_conflict fc
-        WHERE fc.status='open' AND fc.entity_kind='person' AND fc.entity_id=p.id)
+        WHERE fc.status<>'resolved' AND fc.entity_kind='person' AND fc.entity_id=p.id)
   `).all() as Array<{
     personId: number
     name: string
@@ -188,7 +188,7 @@ function footballGridPool(): FootballGridPool {
     JOIN football_competition c ON c.id=s.competition_id
     WHERE p.quiz_pack=1 AND m.conflicted=0 AND m.lineup_coverage='complete'
       AND NOT EXISTS(SELECT 1 FROM football_conflict fc
-        WHERE fc.status='open' AND fc.entity_kind='person' AND fc.entity_id=p.id)
+        WHERE fc.status<>'resolved' AND fc.entity_kind='person' AND fc.entity_id=p.id)
   `).all() as Array<{ personId: number; name: string; seasonId: number; label: string }>
   for (const row of editionRows) {
     const key = `edition:${row.seasonId}`

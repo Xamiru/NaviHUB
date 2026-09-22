@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createDictTestDb } from './helpers'
-import type { JishoResult } from '../src/shared/types'
 
 let db: Database.Database
 vi.mock('../src/main/dict/dictDb', () => ({
@@ -11,8 +10,6 @@ vi.mock('../src/main/dict/dictDb', () => ({
 // Keep tokenizer out of lookup tests (kuromoji is slow and non-deterministic);
 // the rule-based deinflector + kana normalization carry the candidate set.
 vi.mock('../src/main/tokenizer', () => ({ tokenize: async () => [] }))
-const jishoLookup = vi.fn<[string], Promise<JishoResult[]>>()
-vi.mock('../src/main/jisho', () => ({ lookup: (t: string) => jishoLookup(t) }))
 
 import { lookupWord, lookupKanji } from '../src/main/dict/lookup'
 import { importFromReader } from '../src/main/dict/importer'
@@ -51,8 +48,6 @@ async function seedFreq(title: string, rows: unknown[], priority = 0): Promise<v
 
 beforeEach(async () => {
   db = createDictTestDb()
-  jishoLookup.mockReset()
-  jishoLookup.mockResolvedValue([])
   await seed()
 })
 
@@ -115,28 +110,19 @@ describe('lookupWord (English gloss search)', () => {
   })
 })
 
-describe('lookupWord (jisho fallback)', () => {
-  it('falls back to jisho.org when nothing is found offline', async () => {
-    jishoLookup.mockResolvedValue([
-      { slug: 'x', word: '珍しい語', reading: 'めずらしいご', meanings: 'rare word', pos: 'n', isCommon: false, jlpt: null }
-    ])
-    const r = await lookupWord('珍しい語')
-    expect(jishoLookup).toHaveBeenCalled()
-    expect(r[0].source).toBe('jisho')
-    expect(r[0].expression).toBe('珍しい語')
+describe('lookupWord (offline-only boundary)', () => {
+  it('returns [] when an installed dictionary has no match', async () => {
+    expect(await lookupWord('珍しい語')).toEqual([])
   })
 
-  it('returns [] for a blank query without calling jisho', async () => {
+  it('returns [] when no dictionary is installed', async () => {
+    db = createDictTestDb()
+    expect(await lookupWord('猫')).toEqual([])
+    expect(await lookupWord('cat')).toEqual([])
+  })
+
+  it('returns [] for a blank query', async () => {
     expect(await lookupWord('   ')).toEqual([])
-    expect(jishoLookup).not.toHaveBeenCalled()
-  })
-
-  it('jisho results carry no frequency (ranks are an offline-pack feature)', async () => {
-    jishoLookup.mockResolvedValue([
-      { slug: 'x', word: '珍しい語', reading: null, meanings: 'rare', pos: null, isCommon: false, jlpt: null }
-    ])
-    const r = await lookupWord('珍しい語')
-    expect(r[0].frequency).toBeNull()
   })
 })
 

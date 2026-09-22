@@ -4,7 +4,6 @@ import {
   friendlyUpdateError,
   idleStatus,
   reduceUpdate,
-  tokenTestResult,
   updateEnvironment,
   type UpdaterEvent
 } from '../src/main/updaterCore'
@@ -14,31 +13,23 @@ import type { UpdateStatus } from '../src/shared/types'
 // holds the SDK wiring; everything here is pure — the coachTools.ts split).
 
 describe('updateEnvironment', () => {
-  const base = { packaged: true, portableExe: null, token: 'ghp_x' }
+  const base = { packaged: true, portableExe: null }
 
-  it('allows updates for a packaged, non-portable build with a token', () => {
+  it('allows public updates for a packaged, non-portable build', () => {
     expect(updateEnvironment(base)).toBe('ok')
   })
 
-  it('reports a dev run even when a token is missing', () => {
-    // dev must win: telling the user to paste a token wouldn't help here.
-    expect(updateEnvironment({ ...base, packaged: false, token: '' })).toBe('dev')
+  it('reports a dev run', () => {
+    expect(updateEnvironment({ ...base, packaged: false })).toBe('dev')
   })
 
-  it('reports the portable build even when a token is missing', () => {
-    expect(
-      updateEnvironment({ ...base, portableExe: 'C:\\NaviHUB-portable.exe', token: '' })
-    ).toBe('portable')
-  })
-
-  it('asks for a token only when the build could otherwise update', () => {
-    expect(updateEnvironment({ ...base, token: '' })).toBe('no-token')
-    expect(updateEnvironment({ ...base, token: '   ' })).toBe('ok') // caller trims
+  it('reports the portable build', () => {
+    expect(updateEnvironment({ ...base, portableExe: 'NaviHUB-portable.exe' })).toBe('portable')
   })
 
   it('explains every blocked environment and stays silent when ok', () => {
     expect(environmentMessage('ok')).toBeNull()
-    for (const env of ['dev', 'portable', 'no-token'] as const) {
+    for (const env of ['dev', 'portable'] as const) {
       expect(environmentMessage(env)).toBeTruthy()
     }
   })
@@ -46,7 +37,7 @@ describe('updateEnvironment', () => {
 
 describe('idleStatus', () => {
   it('carries the environment message so the card can explain itself', () => {
-    const s = idleStatus('0.4.0', 'no-token')
+    const s = idleStatus('0.4.0', 'portable')
     expect(s.state).toBe('idle')
     expect(s.currentVersion).toBe('0.4.0')
     expect(s.message).toBeTruthy()
@@ -133,47 +124,17 @@ describe('reduceUpdate', () => {
   })
 })
 
-describe('tokenTestResult', () => {
-  it('names the actual cause for the private-repo 404', () => {
-    const r = tokenTestResult(404, null)
-    expect(r.ok).toBe(false)
-    expect(r.message).toMatch(/scope|Contents/i)
-  })
-
-  it('distinguishes 401 from 403', () => {
-    expect(tokenTestResult(401, null).message).toMatch(/rejected/i)
-    expect(tokenTestResult(403, null).message).toMatch(/refused|rate limit/i)
-  })
-
-  it('surfaces any other non-2xx with its status code', () => {
-    expect(tokenTestResult(500, null)).toEqual({
-      ok: false,
-      message: 'GitHub returned HTTP 500.'
-    })
-  })
-
-  it('confirms success with the release tag', () => {
-    const r = tokenTestResult(200, 'v0.4.0')
-    expect(r.ok).toBe(true)
-    expect(r.message).toContain('v0.4.0')
-  })
-
-  it('still succeeds when the release has no tag', () => {
-    expect(tokenTestResult(200, null).ok).toBe(true)
-  })
-})
-
 describe('friendlyUpdateError', () => {
-  it('explains the private-repo 404, the likeliest failure here', () => {
+  it('explains a missing public release or manifest', () => {
     const msg = friendlyUpdateError('HttpError: 404 Not Found')
-    expect(msg).toMatch(/token/i)
+    expect(msg).toMatch(/release|manifest/i)
     expect(msg).not.toBe('HttpError: 404 Not Found')
   })
 
   it('explains 401 and 403 too', () => {
     expect(friendlyUpdateError('401 Unauthorized')).toMatch(/rejected/i)
     expect(friendlyUpdateError('Bad credentials')).toMatch(/rejected/i)
-    expect(friendlyUpdateError('403 Forbidden')).toMatch(/refused|rate limit/i)
+    expect(friendlyUpdateError('403 Forbidden')).toMatch(/rate limit/i)
   })
 
   it('passes an unrecognized message through unchanged', () => {

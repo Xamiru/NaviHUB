@@ -1,6 +1,6 @@
 ---
 name: local-release
-description: Build and publish a NaviHUB release locally from this machine when GitHub Actions can't run (credit exhausted, runner outage). Stamps the derived version, runs the full verify stage, builds Linux + Windows artifacts, and publishes the GitHub release with both updater manifests.
+description: Build and publish a NaviHUB release locally from this machine when GitHub Actions can't run (runner outage or build failure). Stamps the derived version, runs the full verify stage, builds Linux + Windows artifacts, and publishes the GitHub release with both updater manifests.
 ---
 
 # Codex adapter

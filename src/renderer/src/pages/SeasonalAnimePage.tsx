@@ -4,11 +4,12 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { ANIME, isCompletedStatus } from '../lib/mediaConfig'
+import { useStatuses } from '../lib/hooks'
+import { ANIME } from '../lib/mediaConfig'
 import PageHeader from '../components/PageHeader'
 import EmptyState from '../components/EmptyState'
 import Section from '../components/Section'
-import { MediaCard } from './MediaListPage'
+import MediaCard from '../components/MediaCard'
 import {
   SEASONS,
   currentSeason,
@@ -17,14 +18,14 @@ import {
   seasonMonthsLabel,
   type Season
 } from '@shared/season'
-import type { MediaItem } from '@shared/types'
+import type { MediaSummary } from '@shared/types'
 
-type SeasonBuckets = Record<Season, MediaItem[]>
+type SeasonBuckets = Record<Season, MediaSummary[]>
 
 const emptyBuckets = (): SeasonBuckets => ({ winter: [], spring: [], summer: [], fall: [] })
 
 // Chronological within a season (premiere order); titles without a date last.
-function byReleaseThenTitle(a: MediaItem, b: MediaItem): number {
+function byReleaseThenTitle(a: MediaSummary, b: MediaSummary): number {
   if (a.releaseDate !== b.releaseDate) {
     if (a.releaseDate == null) return 1
     if (b.releaseDate == null) return -1
@@ -39,39 +40,33 @@ export default function SeasonalAnimePage() {
   const now = currentSeason(new Date())
   const [year, setYear] = usePersistedState<number>('seasonalYear', now.year)
   const [showUnknown, setShowUnknown] = usePersistedState('seasonalShowUnknown', false)
+  const completedStatus = useStatuses(ANIME)[1] ?? null
 
-  // Same key + filter as HomePage's per-type list so the two pages share one
-  // cache entry — keep the filter shape identical to HomePage's.
-  const { data: items = [], isLoading } = useQuery({
-    queryKey: qk.media.home('anime'),
-    queryFn: () => api.media.list({ mediaType: 'anime' })
+  const { data, isLoading, isError, error, refetch } = useQuery({
+    queryKey: qk.media.seasonalAnime(year, showUnknown),
+    queryFn: () => api.media.seasonalAnime(year, showUnknown)
   })
+  const items = data?.items ?? []
+  const unknown = data?.unknown ?? []
 
-  const { byYear, years, unknown } = useMemo(() => {
-    const byYear = new Map<number, SeasonBuckets>()
-    const unknown: MediaItem[] = []
+  const buckets = useMemo(() => {
+    const seasons = emptyBuckets()
     for (const m of items) {
       const bucket = seasonForItem(m)
-      if (!bucket) {
-        unknown.push(m)
-        continue
-      }
-      let seasons = byYear.get(bucket.year)
-      if (!seasons) byYear.set(bucket.year, (seasons = emptyBuckets()))
+      if (!bucket || bucket.year !== year) continue
       seasons[bucket.season].push(m)
     }
-    for (const seasons of byYear.values()) {
-      for (const s of SEASONS) seasons[s].sort(byReleaseThenTitle)
-    }
-    unknown.sort((a, b) => a.title.localeCompare(b.title))
-    const years = [...byYear.keys()].sort((a, b) => b - a)
-    return { byYear, years, unknown }
-  }, [items])
+    for (const s of SEASONS) seasons[s].sort(byReleaseThenTitle)
+    return seasons
+  }, [items, year])
 
-  const buckets = byYear.get(year) ?? emptyBuckets()
   // The select lists years that actually have anime; the arrows can step to
   // any other year, so inject the selected one to keep the select valid.
+  const years = data?.years.map((entry) => entry.year) ?? []
   const yearOptions = years.includes(year) ? years : [...years, year].sort((a, b) => b - a)
+  const countForYear = (value: number): number =>
+    data?.years.find((entry) => entry.year === value)?.count ?? 0
+  const isCompleted = (item: MediaSummary): boolean => item.status === completedStatus
 
   return (
     <div className="mx-auto max-w-[1600px] p-4 sm:p-6">
@@ -106,7 +101,7 @@ export default function SeasonalAnimePage() {
             >
               {yearOptions.map((y) => (
                 <option key={y} value={y}>
-                  {y} / {seasonCount(byYear.get(y))}
+                  {y} / {countForYear(y)}
                 </option>
               ))}
             </select>
@@ -121,13 +116,13 @@ export default function SeasonalAnimePage() {
         }
       />
 
-      {!isLoading && items.length > 0 && (
+      {!isLoading && !isError && items.length > 0 && (
         <section className={`mb-7 p-5 sm:p-6 ${year === now.year ? 'card-glow' : 'card'}`}>
           <div className="flex flex-wrap items-start justify-between gap-5">
             <div>
               <h2 className="text-2xl font-semibold text-white">{year} broadcast year</h2>
               <p className="mt-2 text-sm text-gray-400">
-                {seasonCount(buckets)} tracked / {completedCount(buckets)} completed
+                {seasonCount(buckets)} tracked / {completedCount(buckets, isCompleted)} completed
               </p>
             </div>
             {year === now.year && <span className="chip">Current year</span>}
@@ -145,7 +140,7 @@ export default function SeasonalAnimePage() {
                   {buckets[season].length} titles
                 </p>
                 <p className="mt-1 text-xs text-gray-400">
-                  {seasonLabel(season)} / {buckets[season].filter((m) => isCompletedStatus(m.status)).length} complete
+                  {seasonLabel(season)} / {buckets[season].filter(isCompleted).length} complete
                 </p>
               </button>
             ))}
@@ -155,25 +150,36 @@ export default function SeasonalAnimePage() {
 
       {/* Quick-nav to a season's shelf. Imperative scroll on purpose —
           href="#…" anchors don't survive HashRouter. */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        {SEASONS.map((s) => (
-          <button
-            key={s}
-            className={`pill ${year === now.year && s === now.season ? 'pill-active' : ''}`}
-            onClick={() => scrollToSeason(s)}
-          >
-            {seasonLabel(s)}
-            <span className="ml-1.5 text-xs text-gray-500">{buckets[s].length}</span>
-          </button>
-        ))}
-      </div>
+      {!isError && (
+        <div className="mb-6 flex flex-wrap gap-2">
+          {SEASONS.map((s) => (
+            <button
+              key={s}
+              className={`pill ${year === now.year && s === now.season ? 'pill-active' : ''}`}
+              onClick={() => scrollToSeason(s)}
+            >
+              {seasonLabel(s)}
+              <span className="ml-1.5 text-xs text-gray-500">{buckets[s].length}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
+      ) : isError ? (
+        <div className="card p-6" role="alert">
+          <p className="text-sm text-red-300">
+            Could not load the seasonal archive{error instanceof Error ? ` — ${error.message}` : '.'}
+          </p>
+          <button className="btn-ghost mt-3" onClick={() => void refetch()}>
+            Try again
+          </button>
+        </div>
       ) : items.length === 0 ? (
         <EmptyState
-          title="No anime in your library yet"
-          body="Add or import some anime and they'll fall into their airing seasons here."
+          title={`Nothing tracked for ${year}`}
+          body="Choose another year, or add anime to your library."
           action={
             <Link to="/anime" className="btn-primary">
               Go to Anime
@@ -183,7 +189,7 @@ export default function SeasonalAnimePage() {
       ) : (
         SEASONS.map((s) => {
           const list = buckets[s]
-          const completed = list.filter((m) => isCompletedStatus(m.status)).length
+          const completed = list.filter(isCompleted).length
           const airingNow = year === now.year && s === now.season
           return (
             <div
@@ -221,16 +227,21 @@ export default function SeasonalAnimePage() {
       {/* Titles no season can be resolved for (no/unusable release date and no
           canonical season) sit outside every year — a re-import usually fixes
           AniList titles. */}
-      {!isLoading && unknown.length > 0 && (
+      {!isLoading && !isError && (data?.unknownCount ?? 0) > 0 && (
         <div className="mt-2 border-t border-base-700 pt-4">
           <button
             className="text-sm text-gray-400 hover:text-gray-200"
             onClick={() => setShowUnknown((v) => !v)}
+            aria-expanded={showUnknown}
+            aria-controls="seasonal-unknown"
           >
-            {showUnknown ? '▾' : '▸'} {unknown.length} anime without a release date
+            {showUnknown ? '▾' : '▸'} {data?.unknownCount ?? 0} anime without a usable season
           </button>
           {showUnknown && (
-            <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4">
+            <div
+              id="seasonal-unknown"
+              className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-4"
+            >
               {unknown.map((m) => (
                 <MediaCard key={m.id} cfg={ANIME} item={m} />
               ))}
@@ -247,11 +258,8 @@ function seasonCount(buckets: SeasonBuckets | undefined): number {
   return SEASONS.reduce((sum, s) => sum + buckets[s].length, 0)
 }
 
-function completedCount(buckets: SeasonBuckets): number {
-  return SEASONS.reduce(
-    (sum, season) => sum + buckets[season].filter((item) => isCompletedStatus(item.status)).length,
-    0
-  )
+function completedCount(buckets: SeasonBuckets, isCompleted: (item: MediaSummary) => boolean): number {
+  return SEASONS.reduce((sum, season) => sum + buckets[season].filter(isCompleted).length, 0)
 }
 
 function scrollToSeason(s: Season): void {

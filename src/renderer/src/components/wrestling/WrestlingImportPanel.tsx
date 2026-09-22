@@ -49,9 +49,11 @@ export default function WrestlingImportPanel({
       <div className="mt-4 flex flex-wrap gap-2">
         {WRESTLING_PROMOTIONS.map((p) => (
           <button
+            type="button"
             key={p.id}
             onClick={() => toggle(p.id)}
             disabled={running}
+            aria-pressed={picked.includes(p.id)}
             className={picked.includes(p.id) ? 'chip-toggle chip-toggle-active' : 'chip-toggle'}
           >
             {p.short}
@@ -74,13 +76,21 @@ export default function WrestlingImportPanel({
               {status.failed > 0 ? ` · ${status.failed} failed` : ''}
             </span>
           </div>
-          <div className="h-1.5 overflow-hidden rounded-full bg-base-700">
+          <div
+            className="h-1.5 overflow-hidden rounded-full bg-base-700"
+            role="progressbar"
+            aria-label="Wrestling wiki import"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={pct}
+          >
             <div className="h-full bg-accent transition-all" style={{ width: `${pct}%` }} />
           </div>
           {status.message && status.phase !== 'enumerating' && (
             <p className="mt-2 truncate text-xs text-gray-500">{status.message}</p>
           )}
           <button
+            type="button"
             className="btn mt-4"
             onClick={async () => {
               await api.wrestling.cancelImport()
@@ -93,6 +103,7 @@ export default function WrestlingImportPanel({
       ) : (
         <div className="mt-5 flex gap-2">
           <button
+            type="button"
             className="btn-primary"
             disabled={busy || picked.length === 0}
             onClick={() => start(false)}
@@ -100,7 +111,12 @@ export default function WrestlingImportPanel({
             {installed ? 'Fetch missing events' : 'Install wiki'}
           </button>
           {installed && (
-            <button className="btn" disabled={busy || picked.length === 0} onClick={() => start(true)}>
+            <button
+              type="button"
+              className="btn"
+              disabled={busy || picked.length === 0}
+              onClick={() => start(true)}
+            >
               Re-fetch everything
             </button>
           )}

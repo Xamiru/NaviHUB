@@ -14,6 +14,7 @@ vi.mock('../src/main/files', () => ({
   downloadImage: (url: string | null) => downloadImage(url)
 }))
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   fetchWithRetry: async (url: string) => {
     const hit = Object.entries(responses).find(([k]) => url.includes(k))
     if (hit?.[1] instanceof Error) throw hit[1]

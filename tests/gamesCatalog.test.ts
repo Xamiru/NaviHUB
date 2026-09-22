@@ -31,6 +31,7 @@ let hltbInit: Record<string, unknown>
 let hltbSearch: Record<string, unknown>
 let httpCalls: string[] = []
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   fetchWithRetry: async (url: string) => {
     httpCalls.push(url)
     return {
@@ -194,6 +195,51 @@ describe('importGame', () => {
     expect(media.status).toBe('Playing') // personal preserved
     expect(media.progress).toBe(40)
     expect(db.prepare('SELECT COUNT(*) AS n FROM media_item').get()).toEqual({ n: 1 })
+  })
+
+  it('re-import replaces old catalog studios and genres while keeping other tags', async () => {
+    seedCatalog([catalogRow()])
+    const { mediaId } = await importGame(3498)
+    const personalTag = Number(
+      db.prepare(`INSERT INTO tag (name, category) VALUES ('Replay later', 'custom')`).run()
+        .lastInsertRowid
+    )
+    db.prepare('INSERT INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, personalTag)
+    catalog!.prepare(
+      `UPDATE catalog_game SET developers=?, publishers=?, genres=? WHERE id=3498`
+    ).run(
+      JSON.stringify([{ id: 99, name: 'New Studio' }]),
+      '[]',
+      JSON.stringify(['Adventure'])
+    )
+
+    await importGame(3498)
+
+    expect(
+      db.prepare(
+        `SELECT c.name, mc.role FROM media_company mc JOIN company c ON c.id=mc.company_id
+         WHERE mc.media_id=? ORDER BY c.name`
+      ).all(mediaId)
+    ).toEqual([{ name: 'New Studio', role: 'developer' }])
+    expect(
+      db.prepare(
+        `SELECT t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id
+         WHERE mt.media_id=? ORDER BY t.name`
+      ).all(mediaId)
+    ).toEqual([{ name: 'Adventure' }, { name: 'Replay later' }])
+  })
+
+  it('keeps child links when a catalog row lacks those fields', async () => {
+    seedCatalog([catalogRow()])
+    const { mediaId } = await importGame(3498)
+    catalog!.prepare(
+      'UPDATE catalog_game SET developers=NULL, publishers=NULL, genres=NULL WHERE id=3498'
+    ).run()
+    await importGame(3498)
+    expect(
+      db.prepare('SELECT COUNT(*) AS n FROM media_company WHERE media_id=?').get(mediaId)
+    ).toEqual({ n: 2 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM media_tag WHERE media_id=?').get(mediaId)).toEqual({ n: 1 })
   })
 
   it('a hand-entered length survives when both HLTB and playtime miss', async () => {

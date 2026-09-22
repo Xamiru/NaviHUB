@@ -1,6 +1,6 @@
 ---
 name: local-release
-description: Build and publish a NaviHUB release locally from this machine when GitHub Actions can't run (credit exhausted, runner outage). Stamps the derived version, runs the full verify stage, builds Linux + Windows artifacts, and publishes the GitHub release with both updater manifests.
+description: Build and publish a NaviHUB release locally from this machine when GitHub Actions can't run (runner outage or build failure). Stamps the derived version, runs the full verify stage, builds Linux + Windows artifacts, and publishes the GitHub release with both updater manifests.
 ---
 
 # Local release (the GitHub-Actions fallback)
@@ -9,20 +9,20 @@ Replicates `.github/workflows/release.yml` on this machine. Proven path: v0.15.0
 v0.16.0, v0.17.0 all shipped this way. The in-app updater picks these releases up
 identically to CI ones.
 
-**Ask before starting if:** the working tree is dirty, HEAD ≠ origin/main, or any
+**Ask before starting if:** the working tree is dirty, HEAD differs from GitHub's main branch, or any
 test fails. A release must correspond exactly to a pushed commit. Never fix or
 commit anything as part of a release run — the user commits and pushes themselves.
 
 ## 0. Preconditions
 
 ```bash
-git fetch origin
 git status --short          # must be empty
-git rev-parse HEAD origin/main   # must match
+git rev-parse HEAD          # must match the GitHub SHA below
+gh api repos/Xamiru/NaviHUB/commits/main -q .sha
 git rev-list --count HEAD   # → N, used for the version
 ```
 
-Also needs: `gh` authenticated (it is, on this VPS), docker running (for the wine
+Also needs: a working `gh` release command, docker running (for the wine
 image), disk space in `dist/` (~700 MB per release; old versions can be deleted).
 
 ## 1. Version — derived, NEVER committed
@@ -31,7 +31,14 @@ image), disk space in `dist/` (~700 MB per release; old versions can be deleted)
 baselines **BASE_MINOR=2, BASE_COMMITS=7** ("7 commits = 0.2.0"). So 22 commits →
 0.17.0. Patch is always 0; 0.x grows forever (0.9.0 → 0.10.0 is correct).
 
+Keep exact copies of both package files outside the checkout before stamping;
+restore them from those copies in step 6. Do not use `git checkout` or another
+Git reset command for restoration. Keep the `STAMP_BACKUP` path for step 6 if
+the commands run in separate shell sessions.
+
 ```bash
+STAMP_BACKUP=$(mktemp -d /tmp/navihub-release-stamp.XXXXXX)
+cp package.json package-lock.json "$STAMP_BACKUP/"
 npm version X.Y.0 --no-git-tag-version --allow-same-version
 ```
 
@@ -67,16 +74,14 @@ npx electron-builder --linux --publish never
 bash scripts/dist-win.sh
 ```
 
-The script handles both cross-build traps: NSIS needs wine (docker image
-`electronuserland/builder:wine`) and `@electron/rebuild` can't cross-fetch native
-modules (it swaps in the win32-x64 better-sqlite3 prebuild first, then restores
-the Linux build via `npm run rebuild` at the end — if the script is interrupted,
-run `npm run rebuild` by hand or the local app/tests break).
+The script uses the wine Docker image for NSIS and temporarily swaps in the
+win32-x64 better-sqlite3 prebuild inside the container. Its trap restores the
+Linux native binary, including on interruption. The build uses `--publish never`.
 
 **Mandatory check** after it finishes:
 
 ```bash
-file dist/win-unpacked/resources/app.asar.unpacked/node_modules/better-sqlite3/build/Release/better_sqlite3.node
+file dist/win-unpacked/resources/app.asar.unpacked/node_modules/better-sqlite3/prebuilds/win32-x64.node
 # must say PE32+, never ELF
 head -1 dist/latest.yml   # must say version: X.Y.0
 ```
@@ -87,7 +92,8 @@ Exactly these **five assets** — both updater manifests are load-bearing (witho
 them the in-app updater has nothing to read). No blockmap upload (CI parity).
 
 ```bash
-gh release create vX.Y.0 --title "NaviHUB X.Y.0" --notes "<one-line summary of what shipped>" \
+gh release create vX.Y.0 --repo Xamiru/NaviHUB --target "$(git rev-parse HEAD)" \
+  --title "NaviHUB X.Y.0" --notes "<one-line summary of what shipped>" \
   dist/NaviHUB-X.Y.0.AppImage dist/latest-linux.yml \
   dist/NaviHUB-Setup-X.Y.0.exe dist/NaviHUB-X.Y.0-portable.exe dist/latest.yml
 ```
@@ -95,8 +101,8 @@ gh release create vX.Y.0 --title "NaviHUB X.Y.0" --notes "<one-line summary of w
 Post-checks:
 
 ```bash
-gh release view vX.Y.0 --json assets -q '.assets[].name'   # all five present
-gh api repos/AmirHTaee/NaviHUB/releases/latest -q .tag_name  # MUST be vX.Y.0
+gh release view vX.Y.0 --repo Xamiru/NaviHUB --json assets -q '.assets[].name'   # all five present
+gh api repos/Xamiru/NaviHUB/releases/latest -q .tag_name  # MUST be vX.Y.0
 ```
 
 The latest-release check guards the updater: `/releases/latest` must resolve to
@@ -104,17 +110,17 @@ an app release, never to the `games-catalog-1` PRERELEASE (prerelease flag keeps
 it out — if latest resolves wrong, fix the release flags before telling the user).
 
 If `gh release create` fails midway (tag created, some assets missing), don't
-recreate — upload the stragglers: `gh release upload vX.Y.0 <files>`.
+recreate — upload the stragglers: `gh release upload vX.Y.0 <files> --repo Xamiru/NaviHUB`.
 
 ## 6. Restore the stamp
 
 ```bash
-git checkout -- package.json package-lock.json
+cp "$STAMP_BACKUP/package.json" "$STAMP_BACKUP/package-lock.json" .
+rm -rf "$STAMP_BACKUP"
 git status --short   # clean again
 ```
 
 ## 7. Hand off
 
-Tell the user: update in-app on the PC (Settings → System → Updates — needs
-`github.token` set, repo is private), and mention anything in the release that
+Tell the user: update in-app on the PC (Settings → System → Updates), and mention anything in the release that
 needs a manual first step on their machine.

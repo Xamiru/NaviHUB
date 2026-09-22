@@ -49,9 +49,34 @@ function renderDialog(overrides: Partial<ComponentProps<typeof SpotifyTrackRecov
   return onClose
 }
 
-afterEach(() => vi.clearAllMocks())
+afterEach(() => { vi.clearAllMocks(); vi.restoreAllMocks() })
 
 describe('SpotifyTrackRecoveryDialog', () => {
+  it('closes after approval without waiting for background music refetches', async () => {
+    const user = userEvent.setup()
+    const refresh = vi.spyOn(QueryClient.prototype, 'invalidateQueries').mockImplementationOnce(() => new Promise(() => {}))
+    const onClose = renderDialog({ initialUrl: 'https://youtu.be/abcdefghijk' })
+    await user.click(screen.getByRole('button', { name: 'Use this version' }))
+    expect(refresh).toHaveBeenCalledOnce()
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('immediately shows source checking, prevents repeat approval and keeps failures actionable', async () => {
+    const user = userEvent.setup()
+    let reject!: (error: Error) => void
+    vi.mocked(api.music.spotifySetTrackDownloadOptions).mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail }))
+    const onClose = renderDialog({ initialUrl: 'https://youtu.be/abcdefghijk' })
+    await user.click(screen.getByRole('button', { name: 'Use this version' }))
+    expect(screen.getByRole('status')).toHaveTextContent('Checking source')
+    expect(screen.getByRole('button', { name: 'Checking source…' })).toBeDisabled()
+    expect(onClose).not.toHaveBeenCalled()
+    await act(async () => reject(new Error('Selected source is unavailable')))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Selected source is unavailable')
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Use this version' })).toBeEnabled()
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
   it('lets the user listen to a downloaded candidate before explicit confirmation', async () => {
     const user = userEvent.setup()
     const onClose = renderDialog({ candidate: candidate() })
@@ -72,6 +97,7 @@ describe('SpotifyTrackRecoveryDialog', () => {
     vi.mocked(api.music.spotifySearchAudio).mockResolvedValue([result])
     vi.mocked(api.music.spotifyPreviewAudio).mockResolvedValue('navimg://preview.mp3')
     const onClose = renderDialog()
+    const refresh = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
 
     await user.click(screen.getByRole('button', { name: 'Find audio' }))
     expect(await screen.findByText('Song result')).toBeInTheDocument()
@@ -79,6 +105,7 @@ describe('SpotifyTrackRecoveryDialog', () => {
     expect(api.music.spotifyPreviewAudio).toHaveBeenCalledWith(result.url)
     expect(playQueue).toHaveBeenCalledOnce()
     expect(onClose).not.toHaveBeenCalled()
+    expect(refresh).not.toHaveBeenCalled()
 
     await user.click(screen.getAllByRole('button', { name: 'Use this version' })[0])
     await waitFor(() => expect(api.music.spotifySetTrackDownloadOptions).toHaveBeenCalledWith({

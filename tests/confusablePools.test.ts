@@ -7,7 +7,6 @@ let db: Database.Database
 let dictDb: Database.Database
 vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
 vi.mock('../src/main/dict/dictDb', () => ({ getDictDb: () => dictDb, closeDictDb: () => {} }))
-vi.mock('../src/main/jisho', () => ({ lookup: async () => [] }))
 
 // Deterministic fixture tokenizer keyed by exact sentence text.
 const TOKENS: Record<string, JpToken[]> = {}

@@ -44,15 +44,23 @@ export default function OcrOverlay({
       {ocr.blocks.map((b, i) => {
         const [x1, y1, x2, y2] = b.box
         return (
-          <div
+          <button
+            type="button"
             key={i}
             // stopPropagation on mousedown/click so page-turn zones under the
             // overlay never fire when interacting with text.
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onMouseUp={(e) => handleMouseUp(b, e)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                e.stopPropagation()
+                onBlockTap(b)
+              }
+            }}
             className="absolute cursor-pointer select-text overflow-hidden rounded-sm
-              text-transparent hover:bg-base-900/90 hover:text-white hover:ring-1 hover:ring-accent/60
+              border-0 bg-transparent p-0 text-left text-transparent hover:bg-base-900/90 hover:text-white hover:ring-1 hover:ring-accent/60
               transition-colors"
             style={{
               left: `${(x1 / ocr.imgWidth) * 100}%`,
@@ -65,10 +73,11 @@ export default function OcrOverlay({
               lineHeight: 1.1
             }}
             title="Click to look up"
+            aria-label={`Look up ${b.lines.join('')}`}
           >
             {/* mokuro lines are visual wraps of one utterance — join bare. */}
             {b.lines.join('')}
-          </div>
+          </button>
         )
       })}
     </div>

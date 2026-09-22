@@ -50,7 +50,7 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
   const qc = useQueryClient()
   // Same key + filter as HomePage's per-type list — one shared cache entry
   // (keep the filter shape byte-identical, see CLAUDE.md).
-  const { data: games = [] } = useQuery({
+  const { data: games = [], isLoading, isError, error, refetch: refetchGames } = useQuery({
     queryKey: qk.media.home('game'),
     queryFn: () => api.media.list({ mediaType: 'game' })
   })
@@ -178,6 +178,27 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
     { key: 'score', label: '★', title: 'Your score', className: 'w-12 text-right' },
     { key: 'meta', label: 'MC', title: 'Metacritic', className: 'w-12 text-right' }
   ]
+
+  if (isLoading || isError) {
+    return (
+      <div className="relative min-h-full">
+        <FranchiseBackground url={backgroundUrl} />
+        <div className="relative z-10 p-6">
+          <PageHeader back={{ to: '/games/franchises', label: 'Franchises' }} title={cfg.name} />
+          {isLoading ? (
+            <p className="text-sm text-gray-400" role="status">Loading games…</p>
+          ) : (
+            <div className="card p-6" role="alert">
+              <p className="text-sm text-red-300">
+                Could not load games{error instanceof Error ? ` — ${error.message}` : '.'}
+              </p>
+              <button className="btn-ghost mt-3" onClick={() => void refetchGames()}>Try again</button>
+            </div>
+          )}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative min-h-full">

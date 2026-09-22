@@ -1,12 +1,16 @@
-import { writeFileSync, renameSync, rmSync } from 'fs'
-import { gunzipSync } from 'zlib'
+import { createGunzip } from 'zlib'
 import { getSqlite } from './db/connection'
-import { getCatalogDb, closeCatalogDb, catalogPath } from './gamesCatalogDb'
+import {
+  getCatalogDb,
+  closeCatalogDb,
+  catalogPath,
+  inspectCatalogFile
+} from './gamesCatalogDb'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
+import { streamResponseToFile } from './streamDownload'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
-import { get as getSetting } from './repos/settingsRepo'
 import type {
   BulkListParams,
   BulkPreviewItem,
@@ -27,19 +31,13 @@ import type {
 const CATALOG_TAG = 'games-catalog-1'
 const ASSET_NAME = 'rawg-catalog.db.gz'
 // Same owner/repo the updater pins (updater.ts documents why they're constants).
-const GITHUB_OWNER = 'AmirHTaee'
+const GITHUB_OWNER = 'Xamiru'
 const GITHUB_REPO = 'NaviHUB'
 const SOURCE = 'rawg'
+const MAX_CATALOG_ARCHIVE_BYTES = 96 * 1024 * 1024
+const MAX_CATALOG_DATABASE_BYTES = 512 * 1024 * 1024
 
-function ghHeaders(): Record<string, string> {
-  const token = getSetting('github.token')?.trim()
-  if (!token) {
-    throw new Error(
-      'Set github.token in Settings → System first (the same token the updater uses) — the catalog downloads from your GitHub releases.'
-    )
-  }
-  return { authorization: `token ${token}`, 'user-agent': 'NaviHUB' }
-}
+const GH_HEADERS = { 'user-agent': 'NaviHUB' }
 
 export function status(): GamesCatalogStatus {
   const db = getCatalogDb()
@@ -59,10 +57,13 @@ export function status(): GamesCatalogStatus {
 // gunzipped file lands beside the target and is renamed into place, so a
 // failed download can never leave a truncated catalog behind.
 export async function install(): Promise<GamesCatalogStatus> {
-  const headers = ghHeaders()
   const relRes = await fetchWithRetry(
     `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/tags/${CATALOG_TAG}`,
-    { headers: { ...headers, accept: 'application/vnd.github+json' }, timeoutMs: 20_000 }
+    {
+      headers: { ...GH_HEADERS, accept: 'application/vnd.github+json' },
+      timeoutMs: 20_000,
+      maxResponseBytes: MAX_API_RESPONSE_BYTES
+    }
   )
   if (!relRes.ok) {
     throw new Error(`Catalog release not found (${relRes.status}) — has ${CATALOG_TAG} been published?`)
@@ -70,30 +71,45 @@ export async function install(): Promise<GamesCatalogStatus> {
   /* eslint-disable @typescript-eslint/no-explicit-any */
   const rel = (await relRes.json()) as any
   const asset = (rel?.assets ?? []).find((a: any) => a?.name === ASSET_NAME)
-  if (!asset?.url) throw new Error(`The ${CATALOG_TAG} release has no ${ASSET_NAME} asset.`)
+  if (!asset?.browser_download_url) {
+    throw new Error(`The ${CATALOG_TAG} release has no ${ASSET_NAME} download.`)
+  }
 
   updateActivity({ phase: 'fetching' })
-  // The asset API URL + octet-stream Accept is the only way to download a
-  // PRIVATE repo's asset (browser_download_url 404s without a session).
-  const dlRes = await fetchWithRetry(String(asset.url), {
-    headers: { ...headers, accept: 'application/octet-stream' },
+  const dlRes = await fetchWithRetry(String(asset.browser_download_url), {
+    headers: GH_HEADERS,
     timeoutMs: 600_000
   })
   if (!dlRes.ok) throw new Error(`Catalog download failed (${dlRes.status})`)
-  const gz = Buffer.from(await dlRes.arrayBuffer())
-
-  updateActivity({ phase: 'writing' })
   const target = catalogPath()
-  const tmp = `${target}.part`
-  writeFileSync(tmp, gunzipSync(gz))
-  closeCatalogDb() // release any handle on the old file before the swap
-  renameSync(tmp, target)
+  let progressMark = 0
+  await streamResponseToFile(dlRes, target, {
+    label: 'Games catalog archive',
+    maxInputBytes: MAX_CATALOG_ARCHIVE_BYTES,
+    maxOutputBytes: MAX_CATALOG_DATABASE_BYTES,
+    transform: createGunzip(),
+    replace: true,
+    onProgress: (done, total) => {
+      // Keep progress responsive without churning the task row for every small
+      // network chunk. Completion is surfaced by the writing phase below.
+      if (done === 0 || done === total || done - progressMark >= 512 * 1024) {
+        progressMark = done
+        updateActivity({ phase: 'fetching', done, total })
+      }
+    },
+    validateTemp: (tmp) => {
+      inspectCatalogFile(tmp)
+    },
+    beforeCommit: () => {
+      updateActivity({ phase: 'writing' })
+      closeCatalogDb() // release any handle on the old file before the swap
+    }
+  })
 
   const after = status()
   if (!after.installed || after.gameCount === 0) {
-    rmSync(target, { force: true })
     closeCatalogDb()
-    throw new Error('Downloaded catalog looks corrupt — try installing again.')
+    throw new Error('Installed catalog could not be opened — try installing again.')
   }
   return after
 }
@@ -239,18 +255,22 @@ export async function importGame(
     // ---- developers/publishers -> companies, deduped by ('rawg', id) — the
     // same key rawg.ts used, so companies from the API era are reused. ----
     let studios = 0
-    const parse = (json: string | null): { id: number; name: string }[] => {
+    const parse = (json: string | null): { id: number; name: string }[] | null => {
+      if (json == null) return null
       try {
-        return (JSON.parse(json ?? '[]') as any[]).filter((c) => c?.id && c?.name)
+        const rows = JSON.parse(json)
+        return Array.isArray(rows) ? rows.filter((c: any) => c?.id && c?.name) : null
       } catch {
-        return []
+        return null
       }
     }
-    const companyRoles: [{ id: number; name: string }[], string][] = [
+    const companyRoles: [{ id: number; name: string }[] | null, string][] = [
       [parse(g.developers), 'developer'],
       [parse(g.publishers), 'publisher']
     ]
     for (const [nodes, role] of companyRoles) {
+      if (!nodes) continue
+      main.prepare('DELETE FROM media_company WHERE media_id=? AND role=?').run(mediaId, role)
       for (const node of nodes) {
         const row = main
           .prepare('SELECT id FROM company WHERE external_source=? AND external_id=?')
@@ -272,13 +292,20 @@ export async function importGame(
     }
 
     // ---- genres -> tags ----
-    let genres: string[] = []
+    let genres: string[] | null = null
     try {
-      genres = (JSON.parse(g.genres ?? '[]') as string[]).filter(Boolean)
+      const rows = JSON.parse(g.genres ?? 'null')
+      if (Array.isArray(rows)) genres = rows.filter(Boolean)
     } catch {
-      genres = []
+      genres = null
     }
-    for (const name of genres) {
+    if (genres) {
+      main.prepare(
+        `DELETE FROM media_tag
+         WHERE media_id=? AND tag_id IN (SELECT id FROM tag WHERE category='genre')`
+      ).run(mediaId)
+    }
+    for (const name of genres ?? []) {
       const existingTag = main.prepare('SELECT id FROM tag WHERE name=?').get(name) as
         | { id: number }
         | undefined

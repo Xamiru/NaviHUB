@@ -1,10 +1,24 @@
 import { app, dialog, BrowserWindow } from 'electron'
 import { join, extname, basename } from 'path'
-import { existsSync, mkdirSync, copyFileSync, writeFileSync, readFileSync, unlinkSync } from 'fs'
+import {
+  closeSync,
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  readSync,
+  renameSync,
+  statSync,
+  unlinkSync,
+  writeFileSync,
+  writeSync
+} from 'fs'
 import { createHash } from 'crypto'
 import { get as getSetting } from './repos/settingsRepo'
 import { imageProgress } from './progress'
 import { fetchWithRetry } from './http'
+import { streamResponseToFile } from './streamDownload'
 import { mediaUrl } from '@shared/mediaUrl'
 
 // Images live under userData/media. The DB stores only the relative filename
@@ -178,6 +192,10 @@ export function openedFilePath(token: string): string {
 }
 
 let counter = 0
+const MAX_MEDIA_IMAGE_BYTES = 32 * 1024 * 1024
+const MAX_PICTURE_IMAGE_BYTES = 128 * 1024 * 1024
+const MAX_THEME_AUDIO_BYTES = 256 * 1024 * 1024
+
 function uniqueName(srcPath: string): string {
   // Avoid Date.now()/Math.random(): derive from a process-lifetime counter
   // plus the original base name. Good enough for a single-user local app.
@@ -275,7 +293,6 @@ export async function downloadAudio(
     // Generous timeout: theme audio runs to several MB on slow connections.
     const res = await fetchWithRetry(url, { timeoutMs: 120_000 })
     if (!res.ok) return null
-    const buf = Buffer.from(await res.arrayBuffer())
     const urlExt = extname(new URL(url).pathname)
     const ext = /^\.(ogg|mp3|m4a|aac|opus|webm|wav)$/i.test(urlExt) ? urlExt : '.ogg'
     const dir = audioDir()
@@ -287,7 +304,11 @@ export async function downloadAudio(
       counter += 1
       fileName = `aud-${process.pid}-${counter}${ext}`
     }
-    writeFileSync(join(dir, fileName), buf)
+    await streamResponseToFile(res, join(dir, fileName), {
+      label: 'Theme audio',
+      maxInputBytes: MAX_THEME_AUDIO_BYTES,
+      replace: true
+    })
     return `audio/${fileName}`
   } catch {
     return null
@@ -350,8 +371,10 @@ export async function downloadImage(url: string | null | undefined): Promise<str
     if (existsSync(dest)) return relPath
     const res = await fetchWithRetry(url)
     if (!res.ok) return null
-    const buf = Buffer.from(await res.arrayBuffer())
-    writeFileSync(dest, buf)
+    await streamResponseToFile(res, dest, {
+      label: 'Image',
+      maxInputBytes: MAX_MEDIA_IMAGE_BYTES
+    })
     return relPath
   } catch {
     return null
@@ -363,16 +386,68 @@ export async function downloadImage(url: string | null | undefined): Promise<str
 // downloadImage so re-reading the same file is a no-op. Returns the stored
 // relative path, or null if the file is missing/unreadable/not an image.
 export function importImageFile(srcAbs: string): string | null {
+  let srcFd: number | null = null
+  let tmpFd: number | null = null
+  let tmp: string | null = null
   try {
     const urlExt = extname(srcAbs).toLowerCase()
     if (!/^\.(png|jpe?g|webp|gif|bmp)$/.test(urlExt)) return null
-    const buf = readFileSync(srcAbs)
-    const fileName = `lc-${createHash('sha1').update(buf).digest('hex').slice(0, 16)}${urlExt}`
+    if (statSync(srcAbs).size > MAX_MEDIA_IMAGE_BYTES) return null
+    const dir = mediaDir()
+    counter += 1
+    tmp = join(dir, `lc-import-${process.pid}-${counter}.part`)
+    srcFd = openSync(srcAbs, 'r')
+    tmpFd = openSync(tmp, 'wx')
+    const hash = createHash('sha1')
+    const chunk = Buffer.allocUnsafe(256 * 1024)
+    let total = 0
+    while (true) {
+      const read = readSync(srcFd, chunk, 0, chunk.length, null)
+      if (read === 0) break
+      total += read
+      if (total > MAX_MEDIA_IMAGE_BYTES) throw new Error('Local image exceeds the size limit')
+      hash.update(chunk.subarray(0, read))
+      let written = 0
+      while (written < read) {
+        const count = writeSync(tmpFd, chunk, written, read - written)
+        if (count === 0) throw new Error('Could not copy the local image')
+        written += count
+      }
+    }
+    closeSync(srcFd)
+    srcFd = null
+    closeSync(tmpFd)
+    tmpFd = null
+    const fileName = `lc-${hash.digest('hex').slice(0, 16)}${urlExt}`
     const dest = join(mediaDir(), fileName)
-    if (!existsSync(dest)) writeFileSync(dest, buf)
+    if (existsSync(dest)) unlinkSync(tmp)
+    else renameSync(tmp, dest)
+    tmp = null
     return join('media', fileName)
   } catch {
     return null
+  } finally {
+    if (srcFd != null) {
+      try {
+        closeSync(srcFd)
+      } catch {
+        /* already closed */
+      }
+    }
+    if (tmpFd != null) {
+      try {
+        closeSync(tmpFd)
+      } catch {
+        /* already closed */
+      }
+    }
+    if (tmp) {
+      try {
+        unlinkSync(tmp)
+      } catch {
+        /* absent or already published */
+      }
+    }
   }
 }
 
@@ -403,7 +478,6 @@ export async function downloadImageTo(
     // Generous timeout: full-res wallpapers run to 10+ MB on slow connections.
     const res = await fetchWithRetry(url, { timeoutMs: 120_000 })
     if (!res.ok) return null
-    const buf = Buffer.from(await res.arrayBuffer())
     const urlExt = extname(new URL(url).pathname)
     const ext = /^\.(png|jpe?g|webp|gif|bmp)$/i.test(urlExt) ? urlExt : '.jpg'
     const dir = join(picturesDir(), subdir)
@@ -416,7 +490,10 @@ export async function downloadImageTo(
       base = `img-${process.pid}-${counter}`
     }
     const fileName = unclashName(dir, `${base}${ext}`)
-    writeFileSync(join(dir, fileName), buf)
+    await streamResponseToFile(res, join(dir, fileName), {
+      label: 'Picture',
+      maxInputBytes: MAX_PICTURE_IMAGE_BYTES
+    })
     return `pictures/${subdir}/${fileName}`
   } catch {
     return null

@@ -1,5 +1,5 @@
 import { dialog } from 'electron'
-import { join, extname, basename, dirname, relative, isAbsolute } from 'path'
+import { join, extname, basename, dirname, relative, isAbsolute, resolve, sep } from 'path'
 import { existsSync, readdirSync } from 'fs'
 import { readdir } from 'fs/promises'
 import { getSqlite } from './db/connection'
@@ -9,7 +9,7 @@ import { isUnitProgress } from '@shared/mediaProgress'
 import { shuffle } from '@shared/shuffle'
 import { seededRng } from '@shared/quizCore'
 import { absoluteMediaPath, mangaRootDir, booksRootDir } from './files'
-import { isArchiveFile, listArchivePages } from './archive'
+import { isArchiveFile, listArchiveEntries, listArchivePages } from './archive'
 import { isEpubFile, epubSpineCount, listEpubPages, epubToc } from './epub'
 import { GENRE_CSV_EXPR, YEAR_EXPR } from './repos/quizRepo'
 import { mediaUrl } from '@shared/mediaUrl'
@@ -68,6 +68,17 @@ export async function listChapterPages(absPath: string): Promise<string[]> {
     .sort((a, b) => collator.compare(a, b))
 }
 
+export class MangaScanError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'MangaScanError'
+  }
+}
+
+function scanError(path: string, detail: string): MangaScanError {
+  return new MangaScanError(`Could not read manga content at ${path}: ${detail}`)
+}
+
 // Walks a series folder and returns every "chapter" found: any directory that
 // DIRECTLY contains at least one page image, every .cbz/.zip archive, and
 // every .epub book (light novels live in the manga section; a book's "pages"
@@ -83,8 +94,8 @@ export async function scanSeriesDir(absDir: string, seriesTitle: string): Promis
       // Async on purpose: readdirSync bursts here block the main process (and
       // with it keyboard input) on big/slow libraries — see walkMusicRoot.
       entries = await readdir(dir, { withFileTypes: true })
-    } catch {
-      return
+    } catch (err) {
+      throw scanError(dir, err instanceof Error ? err.message : 'directory is unreadable')
     }
     // Sorted the same way listChapterPages sorts, so the "cover" really is the
     // page the reader would open first.
@@ -105,7 +116,15 @@ export async function scanSeriesDir(absDir: string, seriesTitle: string): Promis
     for (const e of entries) {
       if (e.isFile() && isArchiveFile(e.name)) {
         const stem = e.name.slice(0, e.name.length - extname(e.name).length)
-        const archivePages = await listArchivePages(join(dir, e.name))
+        const archivePath = join(dir, e.name)
+        // listArchivePages deliberately collapses unreadable archives and
+        // archives with no images to the same [] result. Check the central
+        // directory first so a broken archive aborts the whole scan instead
+        // of looking like a deleted chapter during pruning.
+        if ((await listArchiveEntries(archivePath)) === null) {
+          throw scanError(archivePath, 'archive is unreadable')
+        }
+        const archivePages = await listArchivePages(archivePath)
         if (archivePages.length > 0) {
           found.push({
             dirPath: rel === '' ? e.name : `${rel}/${e.name}`,
@@ -119,7 +138,15 @@ export async function scanSeriesDir(absDir: string, seriesTitle: string): Promis
       }
       if (e.isFile() && isEpubFile(e.name)) {
         const stem = e.name.slice(0, e.name.length - extname(e.name).length)
-        const spineCount = await epubSpineCount(join(dir, e.name))
+        const epubPath = join(dir, e.name)
+        // A .epub with no readable spine is a scan error: continuing would
+        // make syncChapters prune a previously attached book and its reading
+        // state. A folder with no .epub files remains the genuine empty/no-
+        // content case handled by attachFolder/rescan below.
+        const epubEntries = await listArchiveEntries(epubPath)
+        if (epubEntries === null) throw scanError(epubPath, 'EPUB archive is unreadable')
+        const spineCount = await epubSpineCount(epubPath)
+        if (spineCount === 0) throw scanError(epubPath, 'EPUB package is missing or malformed')
         if (spineCount > 0) {
           found.push({
             dirPath: rel === '' ? e.name : `${rel}/${e.name}`,
@@ -144,6 +171,14 @@ export async function scanSeriesDir(absDir: string, seriesTitle: string): Promis
     return collator.compare(a.dirPath, b.dirPath)
   })
   return found
+}
+
+function pathInsideRoot(root: string, localPath: string): string | null {
+  const rootAbs = resolve(root)
+  const candidate = resolve(rootAbs, localPath)
+  const escaped = relative(rootAbs, candidate)
+  if (escaped === '..' || escaped.startsWith(`..${sep}`) || isAbsolute(escaped)) return null
+  return candidate
 }
 
 // One manga-panel quiz candidate: a linked series plus each image chapter's
@@ -328,7 +363,6 @@ export async function attachFolder(mediaId: number): Promise<MangaAttachResult> 
   let root = getSetting(info.settingKey)?.trim()
   if (!root) {
     root = dirname(picked)
-    setSetting(info.settingKey, root)
   }
   const rel = relative(root, picked)
   if (rel === '' || rel.startsWith('..') || isAbsolute(rel)) {
@@ -339,9 +373,18 @@ export async function attachFolder(mediaId: number): Promise<MangaAttachResult> 
   }
   const localDir = rel.split('\\').join('/')
 
-  const scanned = await scanSeriesDir(picked, media.title)
+  let scanned: ScannedChapter[]
+  try {
+    scanned = await scanSeriesDir(picked, media.title)
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) }
+  }
   if (scanned.length === 0)
     return { ok: false, error: 'No page images or EPUB books found in that folder' }
+  // Bootstrap only after the complete scan succeeds. A failed first attach
+  // must not leave a setting pointing at a folder whose contents were never
+  // successfully indexed.
+  if (!getSetting(info.settingKey)?.trim()) setSetting(info.settingKey, root)
   syncChapters(mediaId, localDir, scanned, info.prefix)
   return { ok: true, chapterCount: scanned.length }
 }
@@ -350,7 +393,10 @@ export async function rescan(mediaId: number): Promise<MangaAttachResult> {
   const localDir = localDirOf(mediaId)
   if (!localDir) return { ok: false, error: 'No folder attached' }
   const info = rootInfoFor(mediaId)
-  const abs = join(info.root, localDir)
+  const abs = pathInsideRoot(info.root, localDir)
+  if (!abs) {
+    return { ok: false, error: 'Attached folder is outside the configured library root' }
+  }
   if (!existsSync(abs)) {
     return { ok: false, error: `Folder not found: ${abs} — is the ${info.label} root set correctly?` }
   }
@@ -367,7 +413,14 @@ export async function rescan(mediaId: number): Promise<MangaAttachResult> {
     },
     async (task) => {
       task.progress({ detail: localDir })
-      const scanned = await scanSeriesDir(abs, media.title)
+      let scanned: ScannedChapter[]
+      try {
+        scanned = await scanSeriesDir(abs, media.title)
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err)
+        task.settle({ state: 'error', error })
+        return { ok: false, error }
+      }
       if (scanned.length === 0) {
         // Not an exception — the caller renders this inline — but the task must
         // still not read as a success.
@@ -404,7 +457,8 @@ export async function pages(chapterId: number): Promise<MangaPages | null> {
   if (!row) return null
   const ch = rowToChapter(row)
   const info = rootInfoFor(ch.mediaId)
-  const abs = join(info.root, ch.dirPath)
+  const abs = pathInsideRoot(info.root, ch.dirPath)
+  if (!abs) return null
   const files = await listChapterPages(abs)
   if (files.length !== ch.pageCount) {
     db.prepare(
@@ -513,7 +567,9 @@ export async function panelPool(
       }[]
     const chapters: PanelCandidate['chapters'] = []
     for (const ch of chRows) {
-      const files = await listChapterPages(join(root, ch.dir_path))
+      const chapterPath = pathInsideRoot(root, ch.dir_path)
+      if (!chapterPath) continue
+      const files = await listChapterPages(chapterPath)
       if (files.length > 0) {
         chapters.push({
           dirPath: ch.dir_path,
@@ -590,6 +646,7 @@ function creditable(mediaType: string | null): boolean {
 }
 
 export function markProgress(chapterId: number, page: number): ChapterRead | undefined {
+  if (!Number.isSafeInteger(chapterId) || !Number.isInteger(page) || page < 0) return
   const db = getSqlite()
   const row = db
     .prepare(
@@ -601,6 +658,7 @@ export function markProgress(chapterId: number, page: number): ChapterRead | und
     | { media_id: number; page_count: number; read_at: string | null; media_type: string | null }
     | undefined
   if (!row) return
+  if (row.page_count <= 0 || page >= row.page_count) return
   const finished = row.page_count > 0 && page >= row.page_count - 1
   db.prepare(
     `UPDATE manga_chapter SET last_read_page = ?,

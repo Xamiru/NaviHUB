@@ -4,6 +4,7 @@ import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import FavoriteButton from '../components/FavoriteButton'
 import AddToListMenu from '../components/AddToListMenu'
+import FootballExternalLinks from '../components/football/FootballExternalLinks'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import type { FootballCompetitionKey } from '@shared/types'
@@ -19,15 +20,19 @@ import {
 export default function FootballCompetitionPage() {
   const { key: param = '' } = useParams()
   const qc = useQueryClient()
-  const { data: competitions = [] } = useQuery({ queryKey: qk.football.competitions, queryFn: () => api.football.competitions() })
+  const competitionsQuery = useQuery({ queryKey: qk.football.competitions, queryFn: () => api.football.competitions() })
+  const competitions = competitionsQuery.data ?? []
   const resolved = competitions.find((item) => item.key === param || String(item.id) === param)
-  const { data, isLoading } = useQuery({
-    queryKey: resolved ? qk.football.competition(resolved.key) : ['football', 'competition', 'pending', param],
+  const detailQuery = useQuery({
+    queryKey: resolved ? qk.football.competition(resolved.key) : qk.football.competitionPending(param),
     queryFn: () => api.football.competition(resolved!.key as FootballCompetitionKey),
     enabled: !!resolved
   })
-  if (!resolved && competitions.length) return <PageStatus>Competition not found.</PageStatus>
-  if (isLoading || !data) return <PageStatus>Opening competition history...</PageStatus>
+  if (competitionsQuery.isLoading || detailQuery.isLoading) return <PageStatus>Opening competition history...</PageStatus>
+  if (competitionsQuery.isError || detailQuery.isError) return <PageStatus>Could not load this competition history.</PageStatus>
+  if (!resolved) return <PageStatus>Competition not found.</PageStatus>
+  if (!detailQuery.data) return <PageStatus>Competition not found.</PageStatus>
+  const data = detailQuery.data
   const competition = data
 
   async function favorite() {
@@ -92,6 +97,12 @@ export default function FootballCompetitionPage() {
       </div>
 
       <details className="mt-10 border-y border-line-subtle py-4"><summary className="cursor-pointer text-sm font-medium text-ink">Sources and coverage</summary><div className="mt-4"><FootballCoverageStrip coverage={data.coverage} /></div></details>
+      <details className="mt-6 border-y border-line-subtle py-4">
+        <summary className="cursor-pointer text-sm font-medium text-ink">External links</summary>
+        <div className="mt-4">
+          <FootballExternalLinks entityKind="competition" entityId={competition.id} links={data.externalLinks} onChanged={() => qc.invalidateQueries({ queryKey: qk.football.all })} />
+        </div>
+      </details>
     </div>
   )
 }

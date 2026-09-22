@@ -224,6 +224,17 @@ export interface HomeLibraryOverview {
   }
 }
 
+// Bounded projection for /anime/seasonal. The selected year's cards cross IPC,
+// plus the small year/count index; undated cards are fetched only when their
+// disclosure is open. Items keep only the two metadata keys seasonForItem uses.
+export interface SeasonalAnimeOverview {
+  year: number
+  years: { year: number; count: number }[]
+  items: MediaSummary[]
+  unknown: MediaSummary[]
+  unknownCount: number
+}
+
 // Grouped results for the global search bar.
 export interface GlobalSearchResults {
   media: MediaItem[]
@@ -1451,6 +1462,7 @@ export interface InstalledGame {
   exePath: string
   totalSeconds: number
   lastPlayedAt: string | null
+  lastSessionSeconds: number | null
   achievements: { unlocked: number; total: number } | null
 }
 
@@ -1946,17 +1958,6 @@ export interface JpFeed {
   fromCache: boolean
 }
 
-// One dictionary hit from jisho.org, mapped for the mining page.
-export interface JishoResult {
-  slug: string
-  word: string // japanese[0].word, falling back to the kana reading
-  reading: string | null
-  meanings: string // first senses' english_definitions, joined
-  pos: string | null
-  isCommon: boolean
-  jlpt: string | null // e.g. 'jlpt-n5'
-}
-
 // The auto-created capture target for mined words (course "Mining inbox" →
 // vocab lesson "Mined words", created learned so cards enter SRS immediately).
 export interface JpMiningInbox {
@@ -1966,10 +1967,9 @@ export interface JpMiningInbox {
 
 // ---- Offline Japanese dictionaries (Yomitan format) ----
 // Imported Yomitan dictionary zips (JMdict, KANJIDIC, pitch accent, DOJG, …)
-// live in a separate userData/dictionaries.db. Lookups run offline first and
-// fall back to jisho.org, but every result — offline or online — is mapped into
-// the DictEntry shape below so the three surfaces (dictionary page, mining
-// autofill, manga-reader panel) consume one type.
+// live in a separate userData/dictionaries.db. Every lookup stays offline, and
+// the three surfaces (dictionary page, mining autofill, manga-reader panel)
+// consume the same DictEntry shape.
 
 // A Yomitan structured-content node tree: a plain string, an array of nodes, or
 // an HTML-ish element object. Kept loose because dictionaries nest arbitrarily.
@@ -2020,12 +2020,12 @@ export interface DictEntry {
   tags: string[] // term-level tags (common markers, JLPT, …)
   isCommon: boolean
   matchedForm: string // the candidate that actually hit (deinflection transparency)
-  source: 'offline' | 'jisho'
+  source: 'offline'
   // True when every def comes from a names dictionary (JMnedict) — the
   // renderer groups these under a collapsed Names section.
   isName?: boolean
   // Corpus frequency rank when a frequency dictionary is installed (lower =
-  // more common). Always null on the jisho.org fallback path.
+  // more common).
   frequency: DictFrequency | null
 }
 
@@ -2841,6 +2841,12 @@ export interface MusicTrackPage {
   hasMore: boolean
 }
 
+export interface MusicPlaybackQueue {
+  items: MusicTrack[]
+  total: number
+  truncated: boolean
+}
+
 export interface MusicArtistDetail {
   id: number
   name: string
@@ -3474,8 +3480,7 @@ export interface LogPage {
 // decision is pure and testable; 'ok' means updating is available here.
 //   dev      — not packaged; electron-updater has no app-update.yml to read
 //   portable — the Windows portable .exe target is unsupported by design
-//   no-token — the repo is private, so a github.token setting is required
-export type UpdateEnvironment = 'ok' | 'dev' | 'portable' | 'no-token'
+export type UpdateEnvironment = 'ok' | 'dev' | 'portable'
 
 // electron-updater is EventEmitter-based, but this app has no push channel, so
 // src/main/updater.ts collapses its events into this ONE object that the
@@ -3491,13 +3496,6 @@ export interface UpdateStatus {
   percent: number | null
   version: string | null // the release being offered / downloaded
   message: string | null // error text, or why this build can't update
-}
-
-// Result of the Settings "Save & test" button — resolves rather than rejecting
-// so the card can render it inline (mirrors TorrentServiceTestResult).
-export interface UpdateTestResult {
-  ok: boolean
-  message: string
 }
 
 // ---- Music stats page ----
@@ -4389,6 +4387,10 @@ export interface WrestlingMatchWithEvent extends WrestlingMatch {
   eventDate: string | null
 }
 
+export type WrestlingMatchLocation =
+  | { kind: 'event'; eventId: number }
+  | { kind: 'loose' }
+
 export type WrestlingFavoriteKind = 'event' | 'match' | 'wrestler' | 'stable'
 
 // Wikipedia's two chronologies, derived from the library rather than from the
@@ -4427,6 +4429,11 @@ export interface WrestlingOverview {
     ownedCount: number // events with at least one attached local file
   }[]
   totals: { events: number; matches: number; wrestlers: number; rated: number }
+}
+
+export interface WrestlingFavorites {
+  matches: WrestlingMatchWithEvent[]
+  wrestlers: WrestlingWrestler[]
 }
 
 // Creating/editing a loose match: the file is picked in main, the rest is
@@ -4814,6 +4821,7 @@ export interface FootballCompetitionDetail extends FootballCompetition {
   seasons: FootballSeason[]
   honours: FootballHonour[]
   media: FootballMedia[]
+  externalLinks: FootballExternalLink[]
   coverage: FootballCoverage[]
   article: FootballArticle | null
 }
@@ -4827,6 +4835,7 @@ export interface FootballTeamDetail extends FootballTeamSummary {
   matches: FootballMatchSummary[]
   seasonRecords: FootballStanding[]
   media: FootballMedia[]
+  externalLinks: FootballExternalLink[]
   article: FootballArticle | null
 }
 
@@ -4838,6 +4847,7 @@ export interface FootballPersonDetail extends FootballPersonSummary {
   honours: FootballHonour[]
   appearances: FootballMatchSummary[]
   media: FootballMedia[]
+  externalLinks: FootballExternalLink[]
   article: FootballArticle | null
 }
 
@@ -4950,6 +4960,13 @@ export interface FootballConflict {
   resolution: string | null
   createdAt: string
 }
+
+export type FootballConflictResolution =
+  | { action: 'acceptSourceA' }
+  | { action: 'acceptSourceB' }
+  | { action: 'keepSeparate' }
+  | { action: 'mergeEntity'; targetEntityId: number }
+  | { action: 'ignore' }
 
 export interface FootballSyncOverview {
   installed: boolean

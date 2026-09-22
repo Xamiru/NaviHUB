@@ -14,6 +14,23 @@ export function catalogPath(): string {
   return join(app.getPath('userData'), 'rawg-catalog.db')
 }
 
+export function inspectCatalogFile(path: string): { gameCount: number; snapshot: string | null } {
+  const db = new Database(path, { fileMustExist: true, readonly: true })
+  try {
+    if (db.pragma('quick_check', { simple: true }) !== 'ok') {
+      throw new Error('Catalog database failed its integrity check')
+    }
+    const gameCount = (db.prepare('SELECT COUNT(*) AS n FROM catalog_game').get() as { n: number }).n
+    const snap = db.prepare(`SELECT value FROM catalog_meta WHERE key = 'snapshot'`).get() as
+      | { value: string }
+      | undefined
+    if (gameCount <= 0) throw new Error('Catalog database contains no games')
+    return { gameCount, snapshot: snap?.value ?? null }
+  } finally {
+    db.close()
+  }
+}
+
 let _db: Database.Database | null = null
 
 // Null when the pack isn't installed — callers surface a friendly message.

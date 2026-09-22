@@ -2,7 +2,7 @@ import { getSqlite } from './db/connection'
 import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import type {
   AniListSearchResult,
   AniListImportSummary,
@@ -25,7 +25,8 @@ async function gql(query: string, variables: Record<string, unknown>): Promise<a
   const res = await fetchWithRetry(ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ query, variables })
+    body: JSON.stringify({ query, variables }),
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (!res.ok) {
     throw new Error(`AniList request failed (${res.status})`)
@@ -99,10 +100,16 @@ function upsertCompany(db: any, node: any): number {
   const row = db
     .prepare('SELECT id FROM company WHERE external_source=? AND external_id=?')
     .get(SOURCE, ext) as { id: number } | undefined
-  if (row) return row.id
+  const name = node.name ?? 'Unknown'
+  if (row) {
+    // AniList owns the canonical identity for imported companies.  Keep the
+    // row id (and any links from other media), but refresh a renamed studio.
+    db.prepare('UPDATE company SET name=? WHERE id=?').run(name, row.id)
+    return row.id
+  }
   const info = db
     .prepare('INSERT INTO company (name, type, external_source, external_id) VALUES (?, ?, ?, ?)')
-    .run(node.name, 'studio', SOURCE, ext)
+    .run(name, 'studio', SOURCE, ext)
   return Number(info.lastInsertRowid)
 }
 
@@ -114,9 +121,13 @@ function upsertPerson(db: any, node: any, photo: string | null): number {
   const name = node.name?.full ?? 'Unknown'
   const nativeName = node.name?.native ?? null
   if (row) {
-    if (!row.photo_path && photo) {
-      db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(photo, row.id)
-    }
+    // Keep the stable row id so credits and user lists survive, while
+    // refreshing all source-owned canonical fields.  A downloaded photo only
+    // fills a missing path; this preserves a manually selected image and
+    // matches the importer convention used by the other providers.
+    db.prepare(
+      'UPDATE person SET name=?, name_native=?, photo_path=COALESCE(photo_path, ?) WHERE id=?'
+    ).run(name, nativeName, photo, row.id)
     return row.id
   }
   const info = db
@@ -139,8 +150,10 @@ function upsertCharacter(db: any, node: any, charSource: string, img: string | n
   const gender = normalizeCharacterGender(node.gender)
   if (row) {
     db.prepare(
-      `UPDATE character SET gender=?, image_path=COALESCE(image_path, ?) WHERE id=?`
-    ).run(gender, img, row.id)
+      `UPDATE character
+       SET name=?, name_native=?, gender=?, image_path=COALESCE(image_path, ?)
+       WHERE id=?`
+    ).run(name, nativeName, gender, img, row.id)
     return row.id
   }
   const info = db
@@ -204,6 +217,56 @@ function linkGenre(db: any, mediaId: number, name: string): void {
     ? existingTag.id
     : Number(db.prepare('INSERT INTO tag (name, category) VALUES (?, ?)').run(name, 'genre').lastInsertRowid)
   db.prepare('INSERT OR IGNORE INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, tagId)
+}
+
+// AniList is the source of truth for these links on a full import.  The link
+// tables do not carry a source column, so the source-owned role/category is the
+// scope: manually added non-genre tags and non-studio company roles are left
+// alone.  These helpers are deliberately called only after the partial-refresh
+// early return below; a partial refresh must never delete child data.
+function replaceAniListGenres(db: any, mediaId: number, genres: unknown): void {
+  db.prepare(
+    `DELETE FROM media_tag
+     WHERE media_id=? AND tag_id IN (SELECT id FROM tag WHERE category='genre')`
+  ).run(mediaId)
+  for (const genre of Array.isArray(genres) ? genres : []) {
+    if (typeof genre === 'string' && genre) linkGenre(db, mediaId, genre)
+  }
+}
+
+function replaceAniListStudios(db: any, mediaId: number, edges: unknown): number {
+  db.prepare(`DELETE FROM media_company WHERE media_id=? AND role='animation_studio'`).run(mediaId)
+  let count = 0
+  for (const raw of Array.isArray(edges) ? edges : []) {
+    const edge = raw as any
+    if (!edge?.isMain || !edge.node?.id) continue
+    const companyId = upsertCompany(db, edge.node)
+    db.prepare(
+      'INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)'
+    ).run(mediaId, companyId, 'animation_studio')
+    count++
+  }
+  return count
+}
+
+const ANIME_STAFF_ROLES = ['director', 'writer', 'composer', 'staff']
+const MANGA_STAFF_ROLES = ['mangaka', 'staff']
+
+function clearAniListStaff(db: any, mediaId: number, roles: readonly string[]): void {
+  const placeholders = roles.map(() => '?').join(',')
+  db.prepare(
+    `DELETE FROM credit
+     WHERE media_id=? AND character_id IS NULL AND role IN (${placeholders})`
+  ).run(mediaId, ...roles)
+}
+
+function clearAniListVoiceActors(db: any, mediaId: number): void {
+  // Character-linked voice-actor rows are wholly source-owned.  Do not touch
+  // character-less voice_actor rows, which may have been added manually.
+  db.prepare(
+    `DELETE FROM credit
+     WHERE media_id=? AND role='voice_actor' AND character_id IS NOT NULL`
+  ).run(mediaId)
 }
 
 // Merge canonical extras (community average score 0-100, per-episode duration
@@ -652,20 +715,14 @@ export async function importAnime(
     // here — see the note on mediaUpdate above.
     if (partial) return { mediaId, title, studios: 0, cast: 0, staff: 0, created }
 
-    // ---- studios: only the main animation studio(s), not producers/licensors ----
-    let studios = 0
-    for (const edge of m.studios?.edges ?? []) {
-      if (!edge.isMain) continue
-      const companyId = upsertCompany(db, edge.node)
-      db.prepare(
-        'INSERT OR IGNORE INTO media_company (media_id, company_id, role) VALUES (?, ?, ?)'
-      ).run(mediaId, companyId, 'animation_studio')
-      studios++
-    }
+    // ---- studios + genres (authoritative source-owned links) ----
+    const studios = replaceAniListStudios(db, mediaId, m.studios?.edges)
+    replaceAniListGenres(db, mediaId, m.genres)
 
-    // ---- genres -> tags ----
-    for (const g of m.genres ?? []) linkGenre(db, mediaId, g)
-
+    // Voice-actor rows are source-owned per media/character.  Clear them
+    // before rebuilding so a recast or a changed language edge cannot leave a
+    // stale person attached to the character.
+    clearAniListVoiceActors(db, mediaId)
     let cast = 0
     let order = 0
     const keptCharacterIds = new Set<number>()
@@ -699,7 +756,8 @@ export async function importAnime(
 
     pruneCharacters(db, mediaId, SOURCE, keptCharacterIds)
 
-    // ---- staff ----
+    // ---- staff (authoritative role set) ----
+    clearAniListStaff(db, mediaId, ANIME_STAFF_ROLES)
     let staff = 0
     for (const edge of m.staff?.edges ?? []) {
       const personId = upsertPerson(db, edge.node, img(edge.node?.image?.large))
@@ -761,7 +819,7 @@ query ($id: Int, $page: Int) {
   Media(id: $id, type: MANGA) {
     characters(sort: [ROLE, FAVOURITES_DESC], page: $page, perPage: 25) {
       pageInfo { hasNextPage }
-      edges { role node { id name { full native } image { large } } }
+      edges { role node { id name { full native } gender image { large } } }
     }
   }
 }`
@@ -859,7 +917,9 @@ export async function importManga(
     // Child rows + prunes stop here on a partial refresh.
     if (partial) return { mediaId, title, studios: 0, cast: 0, staff: 0, created }
 
-    for (const g of m.genres ?? []) linkGenre(db, mediaId, g)
+    // Genres are source-owned for a full import; partial refresh returned above
+    // before this replacement and therefore remains strictly no-delete.
+    replaceAniListGenres(db, mediaId, m.genres)
 
     let order = 0
     const keptCharacterIds = new Set<number>()
@@ -879,7 +939,8 @@ export async function importManga(
     }
     pruneCharacters(db, mediaId, MANGA_CHAR_SOURCE, keptCharacterIds)
 
-    // ---- mangaka / staff ----
+    // ---- mangaka / staff (authoritative role set) ----
+    clearAniListStaff(db, mediaId, MANGA_STAFF_ROLES)
     let staff = 0
     for (const edge of m.staff?.edges ?? []) {
       const personId = upsertPerson(db, edge.node, img(edge.node?.image?.large))

@@ -4,19 +4,23 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageStatus from '../components/PageStatus'
 
-// A match has no page of its own — it belongs on its event's card. A list entry
-// still needs somewhere to point, so this resolves the match to its event and
-// hands off, highlighting the row on arrival.
+// Matches have one stable route even though their visible home differs: event
+// card for imported matches, Collection for loose matches.
 export default function WrestlingMatchRedirect(): JSX.Element {
   const { id = '' } = useParams()
   const matchId = Number(id)
-  const { data: eventId, isLoading } = useQuery({
-    queryKey: qk.wrestling.match(matchId),
-    queryFn: () => api.wrestling.eventIdOfMatch(matchId),
+  const query = useQuery({
+    queryKey: qk.wrestling.matchLocation(matchId),
+    queryFn: () => api.wrestling.matchLocation(matchId),
     enabled: Number.isFinite(matchId)
   })
 
-  if (isLoading) return <PageStatus>Loading…</PageStatus>
-  if (!eventId) return <PageStatus>That match is no longer in the wiki.</PageStatus>
-  return <Navigate to={`/wrestling/event/${eventId}?match=${matchId}`} replace />
+  if (query.isLoading) return <PageStatus>Loading…</PageStatus>
+  if (query.isError) return <PageStatus>Could not locate that match.</PageStatus>
+  if (!query.data) return <PageStatus>That match is no longer in the wiki.</PageStatus>
+  return query.data.kind === 'loose' ? (
+    <Navigate to={`/wrestling/collection?match=${matchId}`} replace />
+  ) : (
+    <Navigate to={`/wrestling/event/${query.data.eventId}?match=${matchId}`} replace />
+  )
 }

@@ -3,7 +3,7 @@ import type { DictEntry } from '@shared/types'
 import PitchAccent from './PitchAccent'
 
 // One clickable search result in the mining flows (mine page + reader panel).
-// Shows the headword, reading, first pitch contour, common/source badges and a
+// Shows the headword, reading, first pitch contour, common/name badges and a
 // one-line definition. Clicking fills the mining draft.
 export default function DictResultRow({
   entry,
@@ -39,9 +39,6 @@ export default function DictResultRow({
       {mined && <span className="chip ml-2 bg-signal-affirmative/20 text-signal-affirmative">✓ mined</span>}
       {entry.isName && <span className="chip ml-1 bg-base-700 text-gray-400">name</span>}
       {entry.isCommon && <span className="chip ml-1 bg-signal-affirmative/20 text-signal-affirmative">common</span>}
-      {entry.source === 'jisho' && (
-        <span className="chip ml-1 bg-base-700 text-gray-400">jisho</span>
-      )}
       {meaning && <span className="mt-0.5 block text-sm text-gray-400">{meaning}</span>}
     </button>
   )

@@ -6,8 +6,10 @@ import PageStatus from '../components/PageStatus'
 import CoverImage from '../components/CoverImage'
 import FavoriteButton from '../components/FavoriteButton'
 import AddToListMenu from '../components/AddToListMenu'
+import FootballExternalLinks from '../components/football/FootballExternalLinks'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
+import { useIncrementalList } from '../lib/hooks'
 import {
   FootballMatchRow,
   FootballMediaShelf,
@@ -19,8 +21,7 @@ export default function FootballTeamPage() {
   const id = Number(useParams().id)
   const qc = useQueryClient()
   const wasSyncing = useRef(false)
-  const autoQueued = useRef(false)
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: qk.football.team(id),
     queryFn: () => api.football.team(id),
     enabled: Number.isInteger(id) && id > 0
@@ -34,6 +35,7 @@ export default function FootballTeamPage() {
     }
   })
   const syncActive = !!sync && ['running', 'pausing', 'paused'].includes(sync.status.state)
+  const tenureList = useIncrementalList(data?.tenures ?? [], 40, id)
   useEffect(() => {
     if (syncActive) {
       wasSyncing.current = true
@@ -43,17 +45,8 @@ export default function FootballTeamPage() {
     wasSyncing.current = false
     qc.invalidateQueries({ queryKey: qk.football.team(id) })
   }, [id, qc, syncActive])
-  useEffect(() => {
-    autoQueued.current = false
-  }, [id])
-  useEffect(() => {
-    if (!data || !sync || autoQueued.current || syncActive || data.enrichmentState !== 'not_requested') return
-    autoQueued.current = true
-    void api.football
-      .startSync({ kind: 'enrich', entityKind: 'team', entityId: id })
-      .then(() => qc.invalidateQueries({ queryKey: qk.football.sync }))
-  }, [data, id, qc, sync, syncActive])
   if (isLoading) return <PageStatus>Opening team volume...</PageStatus>
+  if (isError) return <PageStatus>Could not load this team volume.</PageStatus>
   if (!data) return <PageStatus>Team not found.</PageStatus>
   async function favorite() {
     await api.football.setFavorite('team', id, !data!.favorite)
@@ -99,13 +92,14 @@ export default function FootballTeamPage() {
           <section>
             <FootballSectionTitle title="Players and managers" />
             <div className="divide-y divide-line-subtle">
-              {data.tenures.slice(0, 80).map((tenure) => (
+              {tenureList.visible.map((tenure) => (
                 <Link key={tenure.id} to={`/football/person/${tenure.personId}`} className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3 py-2.5 text-sm">
                   <CoverImage path={tenure.person?.imagePath} alt={tenure.person?.name ?? `Person ${tenure.personId}`} className="h-9 w-9" rounded="rounded-full" thumbWidth={72} />
                   <span className="truncate font-medium text-ink hover:text-signal-link">{tenure.person?.name ?? `Person ${tenure.personId}`}</span>
                   <span className="shrink-0 text-xs text-ink-muted">{tenure.role}{tenure.loan ? ' / loan' : ''}</span>
                 </Link>
               ))}
+              <div ref={tenureList.sentinelRef} />
             </div>
           </section>
           <section>
@@ -121,6 +115,12 @@ export default function FootballTeamPage() {
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
           <p className="max-w-3xl text-sm text-ink-muted">Licensed Wikimedia biography and imagery are fetched lazily. Canonical match and career facts remain available without them.</p>
           <button className="btn-ghost" disabled={syncActive} onClick={enrich}>{syncActive ? 'Football sync active' : data.enrichmentState === 'ready' ? 'Refresh reference' : 'Fetch reference'}</button>
+        </div>
+      </details>
+      <details className="mt-6 border-y border-line-subtle py-4">
+        <summary className="cursor-pointer text-sm font-medium text-ink">External links</summary>
+        <div className="mt-4">
+          <FootballExternalLinks entityKind="team" entityId={id} links={data.externalLinks} onChanged={() => qc.invalidateQueries({ queryKey: qk.football.all })} />
         </div>
       </details>
     </div>

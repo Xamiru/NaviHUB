@@ -155,6 +155,15 @@ no approval record and remain unconfirmed. Changed or unavailable sources retain
 choice and report the failure; they never silently substitute audio. Playback stream
 URLs are re-resolved and never used as persistent identity. Preview request generations
 prevent stale responses replacing the current choice.
+Preview extraction returns the stream and independently observed metadata in one
+yt-dlp invocation. A bounded in-memory cache reuses that exact source's metadata
+for approval for up to five minutes, keyed by the current tool/cookie configuration;
+it never retains playback URLs. Batch inspection also warms this cache. Failed
+acquisition, missing extraction evidence, expired entries and configuration changes
+force a new inspection. A cache hit does not grant approval: **Use this version**
+still writes explicit consent. The recovery dialog immediately announces checking,
+prevents repeated submission, and closes after saving while broad music queries
+refresh in the background. Listening alone does not invalidate library queries.
 
 Each acquisition writes `[navirun-<token>] [navihub-<spotify-id>]` markers. Linking requires
 the exact acquisition token and a validated file duration consistent with independent
@@ -180,6 +189,10 @@ spotDL version and capability probes allow 30 seconds for Python startup. Every 
 metadata-only saves: spotDL checks ffmpeg before dispatching those operations too.
 A failed preload preserves its tool diagnostic on affected tracks rather than reporting
 that no recording was found.
+Batch inspection associates warnings/errors with each canonical source, preserves
+per-source metadata validation failures, and uses a neutral missing-result message
+when it cannot attribute a diagnostic. A warning about one video must never be
+copied onto another song, and a token warning cannot replace a concrete parse failure.
 Probe timeouts are reported as timeouts, not missing installations or unsupported options.
 Direct downloads use yt-dlp's `before_dl` and `post_process` markers to distinguish a
 transfer refusal before the first byte from extraction and processing failures.
@@ -199,8 +212,21 @@ unavailable-source, format and validation errors require correction.
 queue used by Downloads. Incomplete album metadata stays incomplete; no canonical-album audio
 fallback may bypass source verification. Metadata checkpoints, complete snapshots, source
 order, lazy album expansion and small-release batching remain. Completed Spotify outputs move
-from `.navihub-downloads` without overwriting existing audio; a private pending-index manifest
-survives interruption. URL jobs use per-item staging and yt-dlp's structured after-move marker.
+from `.spotdl/navihub-downloads` without overwriting existing audio; spotDL preserves its reserved
+`.spotdl` component but strips the leading dot from arbitrary directory names. The private
+pending-index manifest remains in `.navihub-downloads` and survives interruption. Explicit queue
+recovery also reads old `.navihub-downloads` outputs. Both an explicit library scan and queue
+recovery move audio from the legacy `navihub-downloads/Artist/Album` layout into real artist
+folders, including files whose markers were already removed. A replayable `legacy-moves.json`
+journal survives filesystem/DB/indexing interruptions; path updates preserve track IDs,
+likes, history, playlist links and URL checkpoints. Existing destination files are never
+overwritten, and duplicate tracks retain separate IDs. Successful indexing removes only empty
+legacy album/artist rows (targeted cleanup preserves Spotify catalogue snapshots), then deletes
+the journal and empty directories; non-audio leftovers stay. Approved linking selects the
+exact acquisition token before considering duplicate files; unrelated old copies cannot block
+it. Filename markers are removed only after an archived source or durable review candidate
+exists, so unresolved files keep their recovery identity. Existing duplicates are not deleted.
+URL jobs use per-item staging and yt-dlp's structured after-move marker.
 Each URL item checkpoints its final path before movement and persists indexing/ready/failure
 state. Partial enumeration is saved but never called complete. A retry can finish indexing
 without downloading again, and successful outputs survive a partially failed batch.
@@ -353,8 +379,11 @@ catalog after the album shelf. Artists, albums, and tracks have history-entry
 persisted sort/filter controls for large collections; search renders every result
 returned by the bounded backend query rather than silently hiding results after
 the sixth card. The all-tracks tab uses `music:trackPage`: filtering and ordering
-happen in SQL and the renderer pulls 192 rows at a time, while explicit Play All
-continues to request the complete queue. Recent-track query keys include their requested limit because
+happen in SQL and the renderer pulls 192 rows at a time. The lead fallback reads
+only its first 48-row page. Explicit Play All and Shuffle use `music:playbackQueue`,
+which returns at most 2,000 tracks; Shuffle samples that bounded queue in SQLite
+with `RANDOM()` so a very large library is not biased toward its first artists.
+The UI reports when the full library was truncated. Recent-track query keys include their requested limit because
 Home, Sonic Archive, and Listening Stats intentionally request different windows.
 
 Playback remains the header hierarchy: Play is the single primary action and
@@ -417,7 +446,7 @@ The album page needed nothing: `MusicEntityHeader` + `MusicTrackRow` were alread
 
 **Songs / theme library (2026-07-25)** — `/anime/songs` (`ThemeSongsPage`, an `ANIME.children` sidebar link + CommandPalette item; route sits above `/anime/:id`) replaces the sidebar's old "Shuffle Themes" button (gone, with `player.tsx:quizSongToTrack` — the page maps its own tracks). Every imported OP/ED as a playable list, where **the anime half of the filter IS `MediaListFilter`**: `repos/themeRepo.ts:list({media, search, songType, favoriteOnly, playableOnly})` calls mediaRepo's now-exported `buildWhere`/`buildOrder` (alias the media table `m`), so statuses/tags/ranges/favorite/season mean exactly what they mean on the anime list page — the page literally reuses `MediaFilterPanel`, the sort menu and `qk.mediaCounts.facets('anime')`. `mediaType` is forced to `'anime'` in the repo. Song-level extras: OP/ED, hearts, and a search that also matches song title/slug/artist (wider than the media filter's title-only search). Ordering groups songs under their anime (`COALESCE(sort_order,1000), ts.id`) EXCEPT `random`, where `buildOrder`'s new `randomIdExpr` arg hashes `ts.id` so a shuffle deals songs, not whole shows; every play button queues the WHOLE filtered set (`theme-<id>` id namespace, unchanged). **New personal column `theme_song.favorite`** (init.sql + schema.ts + `ensureColumn`, wiped in sanitizeSql.cjs, also on the detail page's `ThemeRow` heart): the AnimeThemes import is a clean replace, so `themes.ts` snapshots hearted `external_id`s before the DELETE and restores them on insert — mirrored in bulk-import.cjs. Tests: themeRepo.test.ts (shared-filter reuse, song filters, seeded song shuffle), themeImport.test.ts (favorites survive a refresh).
 
-**Bulk theme backfill and repair (2026-09-06)** — Bulk Import exposes a dedicated local preview for AniList anime with zero `theme_song` rows; starting it reuses the Library Refresh task/status/cancel loop and fetches OP/ED metadata plus local audio. The Refresh tab's **Update anime theme songs** preset checks every AniList anime against AnimeThemes, compares external song IDs (not count alone), and counts unchanged titles as skipped. A mismatch atomically mirrors the source, preserving favorites for retained IDs and retaining healthy local audio; only new or audio-missing songs are downloaded. The comparison passes the fetched payload into the importer so each anime is requested once.
+**Bulk theme backfill and repair (2026-09-06)** — Bulk Import exposes a dedicated local preview for AniList anime with zero `theme_song` rows; starting it reuses the Library Refresh task/status/cancel loop and fetches OP/ED metadata plus local audio. The Refresh tab's **Update anime theme songs** preset checks every AniList anime against AnimeThemes, compares external song IDs (not count alone), and counts unchanged titles as skipped. A mismatch atomically mirrors the source, preserving favorites for retained IDs and retaining healthy local audio; only new or audio-missing songs are downloaded. Theme audio streams through a bounded sibling partial in `files.ts`, so a timeout, cancellation or oversized response cannot expose a truncated playable file. The comparison passes the fetched payload into the importer so each anime is requested once.
 
 ## Tournament quiz mode
 

@@ -7,6 +7,7 @@ import type {
   MusicLibraryStats,
   MusicPlaylistDetail,
   MusicPlaylistSummary,
+  MusicPlaybackQueue,
   MusicSearchResults,
   MusicStatsDetail,
   MusicTrack,
@@ -35,6 +36,7 @@ const TRACK_JOINS = `
   JOIN music_album al ON al.id = t.album_id
   JOIN music_artist ar ON ar.id = t.artist_id`
 const TRACK_SELECT = `SELECT ${TRACK_COLS} ${TRACK_JOINS}`
+export const MAX_PLAYBACK_QUEUE_TRACKS = 2_000
 
 function mapTrack(r: Record<string, unknown>): MusicTrack {
   return {
@@ -230,6 +232,20 @@ export function listTrackPage(request: MusicTrackPageRequest): MusicTrackPage {
       .all(limit, offset) as Record<string, unknown>[]
   ).map(mapTrack)
   return { items, total, offset, hasMore: offset + items.length < total }
+}
+
+export function playbackQueue(shuffle: boolean): MusicPlaybackQueue {
+  const db = getSqlite()
+  const total = (db.prepare('SELECT COUNT(*) AS n FROM music_track').get() as { n: number }).n
+  const catalogOrder = `ar.name COLLATE NOCASE ASC, al.year ASC, al.title COLLATE NOCASE ASC,
+    COALESCE(t.disc_no, 1) ASC, COALESCE(t.track_no, 9999) ASC, t.title COLLATE NOCASE ASC`
+  const order = shuffle ? 'RANDOM()' : catalogOrder
+  const items = (
+    db
+      .prepare(`${TRACK_SELECT} ORDER BY ${order} LIMIT ?`)
+      .all(MAX_PLAYBACK_QUEUE_TRACKS) as Record<string, unknown>[]
+  ).map(mapTrack)
+  return { items, total, truncated: items.length < total }
 }
 
 // Play-all for an artist page: album order, then track order.

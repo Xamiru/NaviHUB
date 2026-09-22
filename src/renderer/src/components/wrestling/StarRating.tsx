@@ -1,10 +1,8 @@
-// Meltzer-style 0-5 star rating in half steps. ★/☆ are allowed glyphs — the
-// app's no-decoration rule exempts score/rarity data badges.
-//
-// Each star is two half-width buttons, so the left half sets x.5 and the right
-// half sets x.0; clicking the value it already holds clears it, which is the
-// only way to un-rate without a separate control.
-const STARS = [1, 2, 3, 4, 5]
+import { useRef } from 'react'
+
+// Meltzer-style 0-5 star rating in half steps. One full-size slider target
+// replaces the old ten tiny half-star buttons. Pointer position chooses the
+// half step; arrows adjust it; Home/Delete clear and End sets five.
 
 export default function StarRating({
   value,
@@ -15,7 +13,7 @@ export default function StarRating({
   onChange?: (stars: number | null) => void
   readOnly?: boolean
 }): JSX.Element {
-  const set = (v: number): void => onChange?.(value === v ? null : v)
+  const starRailRef = useRef<HTMLSpanElement>(null)
 
   if (readOnly) {
     return (
@@ -26,40 +24,53 @@ export default function StarRating({
   }
 
   return (
-    <span className="inline-flex items-center gap-0.5" role="group" aria-label="Rating">
-      {STARS.map((n) => {
-        const filled = (value ?? 0) >= n
-        const half = !filled && (value ?? 0) >= n - 0.5
-        return (
-          <span key={n} className="relative inline-block leading-none">
-            <span className={filled || half ? 'text-accent' : 'text-gray-600'}>
-              {filled ? '★' : half ? '⯪' : '☆'}
-            </span>
-            <button
-              className="absolute inset-y-0 left-0 w-1/2"
-              aria-label={`Rate ${n - 0.5} of 5`}
-              title={`${n - 0.5}`}
-              onClick={() => set(n - 0.5)}
-            />
-            <button
-              className="absolute inset-y-0 right-0 w-1/2"
-              aria-label={`Rate ${n} of 5`}
-              title={`${n}`}
-              onClick={() => set(n)}
-            />
-          </span>
+    <div
+      role="slider"
+      tabIndex={0}
+      aria-label="Match rating"
+      aria-valuemin={0}
+      aria-valuemax={5}
+      aria-valuenow={value ?? 0}
+      aria-valuetext={value == null ? 'Not rated' : `${value} of 5 stars`}
+      title="Click to rate; use arrow keys for half stars; Delete clears"
+      className="inline-flex min-h-8 w-28 cursor-pointer items-center gap-1.5 rounded px-1.5 hover:bg-base-700"
+      onClick={(event) => {
+        const rect = starRailRef.current?.getBoundingClientRect()
+        if (!rect || rect.width <= 0) return
+        const next = Math.max(
+          0.5,
+          Math.min(5, Math.ceil(((event.clientX - rect.left) / rect.width) * 10) / 2)
         )
-      })}
-      {value != null && (
-        <button
-          className="ml-1 text-xs text-gray-500 hover:text-gray-300"
-          onClick={() => onChange?.(null)}
-          aria-label="Clear rating"
-          title="Clear rating"
+        onChange?.(value === next ? null : next)
+      }}
+      onKeyDown={(event) => {
+        let next: number | null | undefined
+        if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
+          next = Math.min(5, (value ?? 0) + 0.5)
+        } else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
+          next = value == null || value <= 0.5 ? null : value - 0.5
+        } else if (event.key === 'Home' || event.key === 'Delete' || event.key === 'Backspace') {
+          next = null
+        } else if (event.key === 'End') {
+          next = 5
+        }
+        if (next === undefined) return
+        event.preventDefault()
+        onChange?.(next)
+      }}
+    >
+      <span ref={starRailRef} className="relative inline-block leading-none" aria-hidden="true">
+        <span className="text-gray-600">★★★★★</span>
+        <span
+          className="absolute inset-y-0 left-0 overflow-hidden whitespace-nowrap text-accent"
+          style={{ width: `${((value ?? 0) / 5) * 100}%` }}
         >
-          ✕
-        </button>
-      )}
-    </span>
+          ★★★★★
+        </span>
+      </span>
+      <span className="w-5 text-right text-[10px] tabular-nums text-gray-400">
+        {value ?? '—'}
+      </span>
+    </div>
   )
 }

@@ -107,59 +107,49 @@ export default function MediaImagesSection({
       {images.length > 0 && (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3 mb-3">
           {images.map((img, i) => (
-            // The tile was a bare <div onClick>, so opening an image had no
-            // keyboard path at all. role+tabIndex rather than a real <button>
-            // because the Remove control lives inside it, and a button may not
-            // contain another button.
+            // Keep the image opener and Remove as sibling controls. A real
+            // button gives the tile keyboard semantics without nesting the
+            // Remove button inside another interactive element.
             <div
               key={img.id}
-              role="button"
-              tabIndex={0}
-              aria-label={`View ${label.toLowerCase()} ${i + 1}`}
               className="group relative aspect-video overflow-hidden rounded-lg cursor-zoom-in"
-              onClick={() => setLightboxAt(i)}
               onContextMenu={(e) => {
                 e.preventDefault()
                 setMenu({ x: e.clientX, y: e.clientY, imageId: img.id })
               }}
-              onKeyDown={(e) => {
-                // Only when the tile ITSELF has focus. Without this the handler
-                // also caught Enter on the Remove button nested inside it,
-                // preventDefault cancelled that button's activation, and the
-                // lightbox opened instead of the image being deleted — leaving
-                // Remove less reachable than before it was made focusable.
-                if (e.target !== e.currentTarget) return
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  setLightboxAt(i)
-                }
-              }}
             >
-              <CoverImage
-                path={img.filePath}
-                alt={`${m.title} ${label.toLowerCase()}`}
-                className="h-full w-full transition-transform group-hover:scale-105"
-                rounded="rounded-lg"
-              />
-              {img.width && img.height && (
-                <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
-                  {img.width}×{img.height}
-                </span>
-              )}
-              {(img.isBackground || img.inSlideshow) && (
-                <span className="absolute bottom-1.5 right-1.5 flex gap-1">
-                  {img.isBackground && (
-                    <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-accent">
-                      Background
-                    </span>
-                  )}
-                  {img.inSlideshow && (
-                    <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
-                      Slideshow
-                    </span>
-                  )}
-                </span>
-              )}
+              <button
+                type="button"
+                className="absolute inset-0 h-full w-full text-left"
+                aria-label={`View ${label.toLowerCase()} ${i + 1}`}
+                onClick={() => setLightboxAt(i)}
+              >
+                <CoverImage
+                  path={img.filePath}
+                  alt={`${m.title} ${label.toLowerCase()}`}
+                  className="h-full w-full transition-transform group-hover:scale-105"
+                  rounded="rounded-lg"
+                />
+                {img.width && img.height && (
+                  <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
+                    {img.width}×{img.height}
+                  </span>
+                )}
+                {(img.isBackground || img.inSlideshow) && (
+                  <span className="absolute bottom-1.5 right-1.5 flex gap-1">
+                    {img.isBackground && (
+                      <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-accent">
+                        Background
+                      </span>
+                    )}
+                    {img.inSlideshow && (
+                      <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
+                        Slideshow
+                      </span>
+                    )}
+                  </span>
+                )}
+              </button>
               <button
                 className="absolute top-1.5 right-1.5 hidden group-hover:block group-focus-within:block rounded bg-black/70 px-1.5 py-0.5 text-sm text-gray-300 hover:text-red-400"
                 onClick={(e) => {
@@ -169,7 +159,7 @@ export default function MediaImagesSection({
                 aria-label="Remove image"
                 title="Remove image"
               >
-                ×
+                ✕
               </button>
             </div>
           ))}
@@ -186,7 +176,7 @@ export default function MediaImagesSection({
 
       <div className="flex flex-wrap items-center gap-2">
         <button className="btn-ghost" onClick={() => setBrowsing(true)} disabled={busy}>
-          ⊞ Browse…
+          Browse…
         </button>
         <button className="btn-ghost" onClick={addFiles} disabled={busy}>
           + Add files

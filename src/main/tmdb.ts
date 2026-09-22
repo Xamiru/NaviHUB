@@ -1,7 +1,7 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry, sleep } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from './http'
 import { logWarn } from './logBus'
 import * as settingsRepo from './repos/settingsRepo'
 import * as tvRepo from './repos/tvRepo'
@@ -37,7 +37,10 @@ async function tmdbGet(path: string, params: Record<string, string> = {}): Promi
   const url = new URL(`${BASE}${path}`)
   url.searchParams.set('api_key', apiKey())
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
-  const res = await fetchWithRetry(url.toString(), { headers: { Accept: 'application/json' } })
+  const res = await fetchWithRetry(url.toString(), {
+    headers: { Accept: 'application/json' },
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
+  })
   if (res.status === 401) throw new Error('Invalid TMDB API key — check it in Settings.')
   if (!res.ok) throw new Error(`TMDB request failed (${res.status})`)
   return res.json()
@@ -88,7 +91,9 @@ async function fetchOmdb(imdbId: string | null | undefined): Promise<Record<stri
     const url = new URL('https://www.omdbapi.com/')
     url.searchParams.set('apikey', key)
     url.searchParams.set('i', imdbId)
-    const res = await fetchWithRetry(url.toString())
+    const res = await fetchWithRetry(url.toString(), {
+      maxResponseBytes: MAX_API_RESPONSE_BYTES
+    })
     if (!res.ok) return null
     const d = await res.json()
     if (d.Response === 'False') return null

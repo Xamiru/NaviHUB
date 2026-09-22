@@ -87,7 +87,10 @@ function resolveExisting(base: string, href: string, entries: Set<string>): stri
   // decoded form then misses; retry without per-segment decoding.
   const raw = resolveEpubHref(base, href.replace(/%/g, '%25'))
   if (raw && entries.has(raw)) return raw
-  return resolved
+  // Never return a path which is not in the archive. A phantom manifest or
+  // spine target would otherwise be persisted as a page and fail later in the
+  // reader, where it is much harder to explain or recover from.
+  return null
 }
 
 async function parseEpubUncached(absPath: string): Promise<EpubInfo | null> {

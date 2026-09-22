@@ -35,6 +35,9 @@ const NOT_IN_REPO = new Set([
   // A file inside the USER'S game folders (a Goldberg crack's schema), read by
   // achievements.ts — not part of this repo.
   'achievements.json',
+  // Recovery journal generated under the user's music library only while a
+  // legacy-folder move is incomplete.
+  'legacy-moves.json',
   'latest-linux.yml',
   'app-update.yml',
   // Remote API endpoints that happen to end in .json.

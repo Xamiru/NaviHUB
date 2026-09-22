@@ -30,7 +30,10 @@ vi.mock('../src/main/files', () => ({
   downloadImages: vi.fn(),
   musicRootDir: () => '/tmp/music'
 }))
-vi.mock('../src/main/http', () => ({ fetchWithRetry: vi.fn() }))
+vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
+  fetchWithRetry: vi.fn()
+}))
 vi.mock('../src/main/music', () => ({ startScan: vi.fn(async () => undefined), indexMusicFiles: vi.fn(async () => undefined) }))
 vi.mock('node:child_process', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:child_process')>()

@@ -14,8 +14,9 @@ const GROUPS: Array<{ scope: FootballCompetition['scope']; title: string; descri
 ]
 
 export default function FootballCompetitionsPage() {
-  const { data = [], isLoading } = useQuery({ queryKey: qk.football.competitions, queryFn: () => api.football.competitions() })
+  const { data = [], isLoading, isError } = useQuery({ queryKey: qk.football.competitions, queryFn: () => api.football.competitions() })
   if (isLoading) return <PageStatus>Reading competition histories...</PageStatus>
+  if (isError) return <PageStatus>Could not load competition histories.</PageStatus>
   return (
     <div className="mx-auto max-w-[1500px] p-6">
       <PageHeader

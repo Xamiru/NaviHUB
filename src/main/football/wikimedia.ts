@@ -1,6 +1,6 @@
 import { createHash } from 'crypto'
 import { getSqlite } from '../db/connection'
-import { fetchWithRetry } from '../http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from '../http'
 import { FOOTBALL_WIKIMEDIA_MANIFEST, normalizeFootballName } from '@shared/football'
 import type { FootballCompetitionKey } from '@shared/types'
 
@@ -169,7 +169,8 @@ export async function fetchWikimediaSnapshot(
   const response = await fetchWithRetry(`https://en.wikipedia.org/w/api.php?${params}`, {
     headers: { 'User-Agent': 'NaviHUB/FootballArchive (personal local archive)' },
     timeoutMs: 45_000,
-    taskSignal: signal
+    taskSignal: signal,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (!response.ok) throw new Error(`Wikimedia returned HTTP ${response.status}`)
   const payload = await response.json() as any

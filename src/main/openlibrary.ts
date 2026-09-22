@@ -2,7 +2,7 @@ import { getSqlite } from './db/connection'
 import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
 
 // Open Library (openlibrary.org) — the free open book catalog. No API key;
@@ -24,7 +24,8 @@ async function olGet(path: string, params: Record<string, string> = {}): Promise
   const url = new URL(`${BASE}${path}`)
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const res = await fetchWithRetry(url.toString(), {
-    headers: { Accept: 'application/json', 'User-Agent': OL_UA }
+    headers: { Accept: 'application/json', 'User-Agent': OL_UA },
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (!res.ok) throw new Error(`Open Library request failed (${res.status})`)
   return res.json()

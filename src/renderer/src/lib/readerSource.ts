@@ -23,6 +23,10 @@ export interface ReaderSource {
   adhoc: boolean
   /** True once the content query has settled, whichever way it went. */
   missing: boolean
+  /** A failed content or sibling-library query, if any. */
+  error: unknown
+  loading: boolean
+  retry: () => Promise<void>
 }
 
 export function useReaderSource(): ReaderSource {
@@ -31,25 +35,33 @@ export function useReaderSource(): ReaderSource {
   const mediaId = adhoc ? 0 : Number(id)
   const chapterId = adhoc ? 0 : Number(chapterIdParam)
 
-  const { data: doc, isFetched } = useQuery({
+  const docQuery = useQuery({
     queryKey: adhoc ? qk.manga.adhocPages(token) : qk.manga.pages(chapterId),
     queryFn: () => (adhoc ? api.manga.adhocPages(token) : api.manga.pages(chapterId))
   })
 
-  const { data: library } = useQuery({
+  const libraryQuery = useQuery({
     queryKey: qk.manga.chapters(mediaId),
     queryFn: () => api.manga.chapters(mediaId),
     enabled: !adhoc
   })
 
+  async function retry(): Promise<void> {
+    await docQuery.refetch()
+    if (!adhoc) await libraryQuery.refetch()
+  }
+
   return {
-    doc,
+    doc: docQuery.data,
     // Ad-hoc has no siblings to page between; a synthetic empty library keeps
     // the readers' `if (!doc || !library)` gate and prev/next logic untouched.
-    library: adhoc ? EMPTY_LIBRARY : library,
+    library: adhoc ? EMPTY_LIBRARY : libraryQuery.data,
     chapterId,
     mediaId,
     adhoc,
-    missing: isFetched && !doc
+    missing: docQuery.isFetched && !docQuery.isError && !docQuery.data,
+    error: docQuery.error ?? libraryQuery.error,
+    loading: docQuery.isLoading || (!adhoc && libraryQuery.isLoading),
+    retry
   }
 }

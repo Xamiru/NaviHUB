@@ -32,13 +32,13 @@ export default function CoverageSection({ m }: { m: MediaDetail }) {
     refetchInterval: scanning ? 400 : false
   })
   // Both scans walk the same disk and the same synchronous tokenizer — don't
-  // start one under another. Polled, because a prep-deck build kicked off from
-  // MangaChaptersSection right above starts AFTER this query would otherwise
-  // have settled, leaving a stale `running: false`.
+  // start one under another. MangaChaptersSection owns the active poll and
+  // shares this exact query key, so this observer can stay idle until that
+  // sibling publishes a running status into the shared cache.
   const { data: deckStatus } = useQuery({
     queryKey: qk.japanese.prepDeckStatus,
     queryFn: () => api.japanese.prepDeckStatus(),
-    refetchInterval: (query) => (query.state.data?.running ? 400 : 5000)
+    refetchInterval: false
   })
 
   // Files the word as a review-status card so every knowledge-derived number

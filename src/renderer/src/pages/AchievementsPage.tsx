@@ -33,6 +33,24 @@ async function testPopup(): Promise<void> {
   }
 }
 
+function PopupTestAction() {
+  return (
+    <div className="max-w-sm text-left sm:text-right">
+      <button
+        className="btn-ghost"
+        onClick={() => void testPopup()}
+        title="Raise the in-game overlay with a test unlock"
+      >
+        Test popup and sound
+      </button>
+      <p className="mt-2 text-xs leading-5 text-gray-400">
+        Works over windowed and borderless games. True exclusive fullscreen bypasses desktop
+        overlays, so use borderless mode when you want popups visible in-game.
+      </p>
+    </div>
+  )
+}
+
 function CompletionRing({ value }: { value: number }) {
   const radius = 50
   const circumference = 2 * Math.PI * radius
@@ -90,7 +108,7 @@ export default function AchievementsPage() {
       <div className="p-4 sm:p-6">
         <PageHeader
           title="Achievement archive"
-          actions={<button className="btn-ghost" onClick={() => void testPopup()}>Test popup and sound</button>}
+          actions={<PopupTestAction />}
         />
         <EmptyState
           title="Nothing tracked yet"
@@ -104,19 +122,16 @@ export default function AchievementsPage() {
   const completionPct = data.totals.total
     ? Math.round((data.totals.unlocked / data.totals.total) * 100)
     : 0
+  const earlierRecent = data.recent.slice(1, 9)
 
   return (
     <div className="relative mx-auto max-w-[1600px] p-4 sm:p-6">
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-gradient-to-r from-emerald-950/45 via-base-800/20 to-transparent" />
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-gradient-to-r from-signal-affirmative/15 via-base-800/20 to-transparent" />
       <div className="relative">
         <PageHeader
           title="Achievement archive"
           subtitle="A local trophy cabinet built from your real Steam and RetroAchievements sets."
-          actions={
-            <button className="btn-ghost" onClick={() => void testPopup()} title="Raise the in-game overlay with a test unlock">
-              Test popup and sound
-            </button>
-          }
+          actions={<PopupTestAction />}
         />
 
         <section className="mb-10 grid items-center gap-8 border-b border-base-700 pb-8 lg:grid-cols-[180px_minmax(0,1fr)_320px]">
@@ -136,10 +151,13 @@ export default function AchievementsPage() {
           {data.recent[0] && <LatestUnlock event={data.recent[0]} />}
         </section>
 
-        {data.recent.length > 0 && (
-          <Section title="Recent unlocks" subtitle={`${data.recent.length} latest`}>
+        {earlierRecent.length > 0 && (
+          <Section
+            title="Recent unlocks"
+            subtitle={`${earlierRecent.length} before the latest`}
+          >
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {data.recent.slice(0, 8).map((event) => (
+              {earlierRecent.map((event) => (
                 <UnlockCard key={`${event.achievementId}-${event.unlockedAt}`} event={event} />
               ))}
             </div>

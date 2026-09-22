@@ -4,6 +4,7 @@ import {
   attachInternationalScorers,
   buildFootballLedger,
   footballPointsForWin,
+  isoDate,
   parseApiFootballEvents,
   parseApiFootballFixture,
   parseApiFootballLineups,
@@ -56,6 +57,61 @@ describe('Football source adapters', () => {
       competitionKey: 'champions-league', seasonKey: '2023/24', sourceUrl: 'x', fingerprint: 'r1'
     })
     expect(rows[0]).toMatchObject({ homeScore: 2, awayScore: 1, homePenalties: 5, awayPenalties: 4, goals: null })
+  })
+
+  it('keeps missing score values null while preserving an explicit nil-nil result', () => {
+    const base = {
+      match_id: 7,
+      match_date: '2004-05-15',
+      home_team: { home_team_id: 1, home_team_name: 'A' },
+      away_team: { away_team_id: 2, away_team_name: 'B' }
+    }
+    const missing = parseStatsBombMatches({
+      raw: [{ ...base, home_score: null, away_score: null }],
+      competitionKey: 'premier-league', seasonKey: '2003/04', sourceUrl: 'x', fingerprint: 'x'
+    })[0]
+    const nilNil = parseStatsBombMatches({
+      raw: [{ ...base, home_score: 0, away_score: 0 }],
+      competitionKey: 'premier-league', seasonKey: '2003/04', sourceUrl: 'x', fingerprint: 'x'
+    })[0]
+    expect(missing).toMatchObject({ status: 'scheduled', homeScore: null, awayScore: null })
+    expect(nilNil).toMatchObject({ status: 'finished', homeScore: 0, awayScore: 0 })
+
+    const api = parseApiFootballFixture({
+      fixture: { id: 8, date: '2026-05-30T19:00:00Z', status: { short: 'NS' } },
+      league: { season: 2025, round: 'Final' },
+      teams: { home: { id: 1, name: 'A' }, away: { id: 2, name: 'B' } },
+      goals: { home: false, away: -1 },
+      score: { halftime: { home: null, away: null } }
+    }, 'champions-league')
+    expect(api).toMatchObject({ homeScore: null, awayScore: null, homeHalfTime: null })
+  })
+
+  it('rejects impossible calendar dates and incomplete scorer sides', () => {
+    expect(() => isoDate('2026-99-99')).toThrow(/invalid football match date/i)
+    expect(() => isoDate('31/02/2026')).toThrow(/invalid football match date/i)
+    expect(() => parseStatsBombMatches({
+      raw: [{
+        match_id: 9,
+        match_date: '2026-02-30',
+        home_team: { home_team_id: 1, home_team_name: 'A' },
+        away_team: { away_team_id: 2, away_team_name: 'B' }
+      }],
+      competitionKey: 'premier-league', seasonKey: '2025/26', sourceUrl: 'x', fingerprint: 'x'
+    })).toThrow(/invalid football match date/i)
+    expect(() => parseApiFootballFixture({
+      fixture: { id: 9, date: '2026-02-30T19:00:00Z', status: { short: 'NS' } },
+      league: { season: 2025 },
+      teams: { home: { id: 1, name: 'A' }, away: { id: 2, name: 'B' } }
+    }, 'premier-league')).toThrow(/invalid football match date/i)
+    const rows = parseOpenFootballJson({
+      text: JSON.stringify({ matches: [{
+        date: '2026-01-01', team1: 'A', team2: 'B', score: { ft: [1, 0] },
+        goals1: [{ name: 'Scorer', minute: 1 }]
+      }] }),
+      competitionKey: 'premier-league', seasonKey: '2025/26', sourceUrl: 'x', fingerprint: 'x'
+    })
+    expect(rows[0].goals).toBeNull()
   })
 
   it('keeps engsoccer half-time, extra-time and shootout phases distinct', () => {

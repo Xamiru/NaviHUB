@@ -49,18 +49,20 @@ export default function WrestlingYearPage(): JSX.Element {
   const y = Number(year)
 
   const filter = { yearFrom: y, yearTo: y, sort: 'dateAsc' as const }
-  const { data: events, isLoading } = useQuery({
+  const eventsQuery = useQuery({
     queryKey: qk.wrestling.events(filter),
     queryFn: () => api.wrestling.events(filter),
     enabled: Number.isFinite(y)
   })
+  const events = eventsQuery.data
   const { data: years } = useQuery({
     queryKey: qk.wrestling.allYears,
     queryFn: () => api.wrestling.allYears()
   })
 
   if (!Number.isFinite(y)) return <PageStatus>Not a year.</PageStatus>
-  if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (eventsQuery.isLoading) return <PageStatus>Loading…</PageStatus>
+  if (eventsQuery.isError) return <PageStatus>Could not load this year.</PageStatus>
 
   // Steps walk the years we actually HOLD, so a gap in the library skips rather
   // than landing on an empty page.

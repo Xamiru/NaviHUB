@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
-import { importAnime } from '../src/main/anilist'
+import { importAnime, importManga } from '../src/main/anilist'
 
 // End-to-end import against the real schema with the network mocked out: the
 // GraphQL layer returns fixtures and image downloads resolve to null paths.
@@ -28,6 +28,7 @@ vi.mock('../src/main/files', () => ({
 // The current fixture served by the mocked fetch; tests swap it per scenario.
 let fixture: Record<string, unknown>
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   fetchWithRetry: async (_url: string, init?: RequestInit) => {
     const body = JSON.parse(String(init?.body ?? '{}'))
     // Page 2+ character requests would carry variables.page — the fixtures used
@@ -109,6 +110,46 @@ function animeFixture(overrides: Record<string, unknown> = {}) {
   }
 }
 
+function mangaFixture(overrides: Record<string, unknown> = {}) {
+  return {
+    Media: {
+      id: 201,
+      title: { romaji: 'Test Manga', english: null, native: 'テスト漫画' },
+      description: 'Manga description',
+      chapters: 10,
+      averageScore: 80,
+      startDate: { year: 2021, month: 1, day: 2 },
+      coverImage: { large: 'https://img/manga-cover.png', extraLarge: 'https://img/manga-cover-xl.png' },
+      bannerImage: null,
+      genres: ['Action', 'Drama'],
+      relations: { edges: [] },
+      characters: {
+        pageInfo: { hasNextPage: false },
+        edges: [
+          {
+            role: 'MAIN',
+            node: {
+              id: 501,
+              name: { full: 'Manga Hero', native: '漫画主人公' },
+              gender: 'Male',
+              image: { large: 'https://img/mc501.png' }
+            }
+          }
+        ]
+      },
+      staff: {
+        edges: [
+          {
+            role: 'Story & Art',
+            node: { id: 601, name: { full: 'Manga Author', native: '漫画作者' }, image: {} }
+          }
+        ]
+      },
+      ...overrides
+    }
+  }
+}
+
 beforeEach(() => {
   db = createTestDb()
   fixture = animeFixture()
@@ -173,6 +214,83 @@ describe('importAnime', () => {
     expect(db.prepare(`SELECT gender FROM character WHERE name='Alice'`).get()).toEqual({
       gender: 'nonbinary'
     })
+  })
+
+  it('authoritatively reconciles anime studios, genres, recasts, staff roles and canonical entities', async () => {
+    await importAnime(101)
+    const alice = db.prepare(`SELECT id FROM character WHERE external_id='201'`).get() as { id: number }
+    const oldVa = db.prepare(`SELECT id FROM person WHERE external_id='301'`).get() as { id: number }
+
+    // AniList changed the studio name, genres, character/person metadata, VA,
+    // and staff role. Bob, the old VA and the old director must not survive.
+    images.resolve = (url) => {
+      if (url.includes('c201')) return 'media/new-character.png'
+      if (url.includes('p304')) return 'media/new-va.png'
+      return null
+    }
+    fixture = animeFixture({
+      studios: { edges: [{ isMain: true, node: { id: 11, name: 'Studio Main Renamed' } }] },
+      genres: ['Comedy'],
+      characters: {
+        pageInfo: { hasNextPage: false },
+        edges: [
+          {
+            ...charEdge('MAIN', 201, 'Alice Renamed', 304, 'Seiyuu Recast', 'Male'),
+            node: {
+              id: 201,
+              name: { full: 'Alice Renamed', native: 'アリス改' },
+              gender: 'Male',
+              image: { large: 'https://img/c201.png' }
+            },
+            voiceActors: [
+              {
+                id: 304,
+                name: { full: 'Seiyuu Recast', native: '新声優' },
+                image: { large: 'https://img/p304.png' }
+              }
+            ]
+          }
+        ]
+      },
+      staff: {
+        edges: [
+          {
+            role: 'Screenplay',
+            node: {
+              id: 401,
+              name: { full: 'Writer D', native: '脚本家D' },
+              image: {}
+            }
+          }
+        ]
+      }
+    })
+    await importAnime(101)
+
+    expect(db.prepare(`SELECT name FROM company WHERE external_source='anilist' AND external_id='11'`).get()).toEqual({
+      name: 'Studio Main Renamed'
+    })
+    expect(db.prepare(`SELECT t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id`).all()).toEqual([
+      { name: 'Comedy' }
+    ])
+    expect(db.prepare(`SELECT name, name_native, gender, image_path FROM character WHERE id=?`).get(alice.id)).toEqual({
+      name: 'Alice Renamed',
+      name_native: 'アリス改',
+      gender: 'male',
+      image_path: 'media/new-character.png'
+    })
+    expect(db.prepare(`SELECT name, name_native, photo_path FROM person WHERE external_id='304'`).get()).toEqual({
+      name: 'Seiyuu Recast',
+      name_native: '新声優',
+      photo_path: 'media/new-va.png'
+    })
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM credit WHERE person_id=?`).get(oldVa.id)).toEqual({ n: 0 })
+    expect(db.prepare(`SELECT role FROM credit WHERE character_id IS NULL`).all()).toEqual([
+      { role: 'writer' }
+    ])
+    expect(db.prepare(`SELECT name FROM character ORDER BY name`).all()).toEqual([
+      { name: 'Alice Renamed' }
+    ])
   })
 
   it('liteCharacters (the bulk path) never paginates even when more pages exist', async () => {
@@ -295,6 +413,63 @@ describe('importAnime', () => {
     expect(db.prepare('SELECT COUNT(*) AS n FROM media_item').get()).toEqual({ n: 0 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM character').get()).toEqual({ n: 0 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM company').get()).toEqual({ n: 0 })
+  })
+})
+
+describe('importManga', () => {
+  it('authoritatively reconciles genres, characters and mangaka roles', async () => {
+    fixture = mangaFixture()
+    const first = await importManga(201)
+    const character = db.prepare(`SELECT id FROM character WHERE external_id='501'`).get() as { id: number }
+    expect(first).toMatchObject({ created: true, cast: 1, staff: 1 })
+    expect(db.prepare(`SELECT role FROM credit WHERE media_id=?`).all(first.mediaId)).toEqual([
+      { role: 'mangaka' }
+    ])
+
+    images.resolve = (url) => (url.includes('mc501') ? 'media/manga-character-new.png' : null)
+    fixture = mangaFixture({
+      genres: ['Comedy'],
+      characters: {
+        pageInfo: { hasNextPage: false },
+        edges: [
+          {
+            role: 'MAIN',
+            node: {
+              id: 501,
+              name: { full: 'Manga Hero Renamed', native: '漫画主人公改' },
+              gender: 'Female',
+              image: { large: 'https://img/mc501.png' }
+            }
+          }
+        ]
+      },
+      staff: {
+        edges: [
+          {
+            role: 'Editor',
+            node: { id: 601, name: { full: 'Manga Editor', native: '漫画編集者' }, image: {} }
+          }
+        ]
+      }
+    })
+    await importManga(201)
+
+    expect(db.prepare(`SELECT t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id WHERE mt.media_id=?`).all(first.mediaId)).toEqual([
+      { name: 'Comedy' }
+    ])
+    expect(db.prepare(`SELECT name, name_native, gender, image_path FROM character WHERE id=?`).get(character.id)).toEqual({
+      name: 'Manga Hero Renamed',
+      name_native: '漫画主人公改',
+      gender: 'female',
+      image_path: 'media/manga-character-new.png'
+    })
+    expect(db.prepare(`SELECT name, name_native FROM person WHERE external_id='601'`).get()).toEqual({
+      name: 'Manga Editor',
+      name_native: '漫画編集者'
+    })
+    expect(db.prepare(`SELECT role FROM credit WHERE media_id=?`).all(first.mediaId)).toEqual([
+      { role: 'staff' }
+    ])
   })
 })
 

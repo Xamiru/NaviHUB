@@ -21,6 +21,7 @@ vi.mock('../src/main/files', () => ({
 // URL-keyed fixtures: the importer fans out to work/authors/editions/ratings.
 let fixtures: Record<string, unknown>
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   fetchWithRetry: async (url: string) => {
     const path = new URL(url).pathname
     const fixture = fixtures[path]

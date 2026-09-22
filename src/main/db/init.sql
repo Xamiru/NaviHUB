@@ -1728,6 +1728,8 @@ CREATE TABLE IF NOT EXISTS football_coverage (
   UNIQUE(competition_id, season_id, source, facet)
 );
 CREATE INDEX IF NOT EXISTS idx_football_coverage_season ON football_coverage(season_id, facet);
+-- Competition-level uniqueness is installed by runMigrations() after it
+-- deduplicates legacy NULL-season rows; creating it here could prevent startup.
 
 CREATE TABLE IF NOT EXISTS football_conflict (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,

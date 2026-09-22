@@ -52,21 +52,27 @@ function PersonTile({ person }: { person: FootballPersonSummary }) {
 }
 
 export default function FootballHomePage() {
-  const { data, isLoading } = useQuery({
+  const overviewQuery = useQuery({
     queryKey: qk.football.overview,
     queryFn: () => api.football.overview()
   })
-  const { data: favorites = [] } = useQuery({
+  const favoritesQuery = useQuery({
     queryKey: qk.football.people({ favoriteOnly: true, limit: 6 }),
     queryFn: () => api.football.people({ favoriteOnly: true, limit: 6 })
   })
-  const { data: people = [] } = useQuery({
+  const peopleQuery = useQuery({
     queryKey: qk.football.people({ limit: 12 }),
     queryFn: () => api.football.people({ limit: 12 })
   })
 
-  if (isLoading) return <PageStatus>Opening the Football archive...</PageStatus>
-  if (!data) return <PageStatus>The Football archive could not be opened.</PageStatus>
+  if (overviewQuery.isLoading) return <PageStatus>Opening the Football archive...</PageStatus>
+  if (overviewQuery.isError || favoritesQuery.isError || peopleQuery.isError) {
+    return <PageStatus>The Football archive could not be opened.</PageStatus>
+  }
+  if (!overviewQuery.data) return <PageStatus>The Football archive could not be opened.</PageStatus>
+  const data = overviewQuery.data
+  const favorites = favoritesQuery.data ?? []
+  const people = peopleQuery.data ?? []
 
   const seenPeople = new Set<number>()
   const portraitPeople = [...favorites, ...people]

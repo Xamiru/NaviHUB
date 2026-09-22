@@ -154,10 +154,14 @@ export function fmtMinutesAsHours(minutes: number): string {
   return halves % 2 ? `${h}½ h` : `${h} h`
 }
 
-// Statuses that mean "finished the whole thing" across the per-type presets
-// ("Completed" / "Watched"). Statuses are user-editable, so match by name.
-export function isCompletedStatus(status: string | null | undefined): boolean {
-  return !!status && /^(completed|watched)$/i.test(status.trim())
+// Completion is the second configured status slot. Requiring the configured
+// list makes it impossible for a caller to silently fall back to English
+// labels after the user renames a status.
+export function isCompletedStatus(
+  status: string | null | undefined,
+  statuses: readonly string[]
+): boolean {
+  return !!status && status === statuses[1]
 }
 
 // Status meaning is positional throughout the app: the last configured value

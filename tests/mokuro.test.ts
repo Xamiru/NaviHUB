@@ -190,4 +190,15 @@ describe('findSidecar / getChapterOcr', () => {
     utimesSync(sidecar, later, later)
     expect(getChapterOcr(dir, ['001.jpg', '002.jpg'])!.matchedPages).toBe(2)
   })
+
+  it('re-reads the sidecar mapping when the chapter page list changes', () => {
+    const dir = makeChapter('Vol 7')
+    const sidecar = join(root, 'Vol 7.mokuro')
+    writeFileSync(sidecar, volumeJson([page('001.jpg')]))
+    expect(getChapterOcr(dir, ['001.jpg', '002.jpg'])!.matchedPages).toBe(1)
+
+    // Same sidecar mtime, different page list: returning the old cached
+    // mapping would incorrectly show OCR on the new page.
+    expect(getChapterOcr(dir, ['002.jpg', '003.jpg'])).toBeNull()
+  })
 })

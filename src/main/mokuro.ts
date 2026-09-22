@@ -9,7 +9,7 @@ import type { ChapterOcrStatus, MokuroBlock, MokuroPageOcr } from '@shared/types
 // Mokuro (github.com/kha-white/mokuro) OCR sidecar support. The user runs
 // mokuro on a raw manga folder themselves; this module finds its output next
 // to a chapter, parses it, and maps its pages onto the chapter's page images.
-// Defensive throughout (like jisho.ts): anything malformed → null, never throw.
+// Defensive throughout: anything malformed → null, never throw.
 
 // ---------------------------------------------------------------------------
 // Pure parsing (exported for tests — no fs access).
@@ -133,7 +133,16 @@ export interface ChapterOcr {
 // Parsed chapters are cached by directory and invalidated on sidecar mtime, so
 // running mokuro while the app is open just needs the chapter re-opened.
 const CACHE_MAX = 4
-const cache = new Map<string, { sourcePath: string; mtimeMs: number; ocr: ChapterOcr }>()
+const cache = new Map<
+  string,
+  { sourcePath: string; mtimeMs: number; pageFingerprint: string; ocr: ChapterOcr }
+>()
+
+function pageFingerprint(pageFiles: string[]): string {
+  // Page order and membership both affect the OCR-to-page mapping. Keep this
+  // as a value rather than retaining the caller's mutable array reference.
+  return pageFiles.join('\0')
+}
 
 export function getChapterOcr(chapterDir: string, pageFiles: string[]): ChapterOcr | null {
   const sidecar = findSidecar(chapterDir)
@@ -145,7 +154,14 @@ export function getChapterOcr(chapterDir: string, pageFiles: string[]): ChapterO
     return null
   }
   const hit = cache.get(chapterDir)
-  if (hit && hit.sourcePath === sidecar.path && hit.mtimeMs === mtimeMs) return hit.ocr
+  const fingerprint = pageFingerprint(pageFiles)
+  if (
+    hit &&
+    hit.sourcePath === sidecar.path &&
+    hit.mtimeMs === mtimeMs &&
+    hit.pageFingerprint === fingerprint
+  )
+    return hit.ocr
 
   let pages: (MokuroPageOcr | null)[]
   if (sidecar.kind === 'volume') {
@@ -174,7 +190,7 @@ export function getChapterOcr(chapterDir: string, pageFiles: string[]): ChapterO
   }
   if (ocr.matchedPages === 0) return null
 
-  cache.set(chapterDir, { sourcePath: sidecar.path, mtimeMs, ocr })
+  cache.set(chapterDir, { sourcePath: sidecar.path, mtimeMs, pageFingerprint: fingerprint, ocr })
   if (cache.size > CACHE_MAX) {
     const oldest = cache.keys().next().value
     if (oldest !== undefined) cache.delete(oldest)

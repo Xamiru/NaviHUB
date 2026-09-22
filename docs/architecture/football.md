@@ -15,7 +15,7 @@ Football is a standalone section, not a `MediaType`. Historical seasons and matc
 
 The frozen competition keys are `premier-league`, `la-liga`, `serie-a`, `bundesliga`, `champions-league`, `europa-league`, `conference-league`, `world-cup`, and `euros`. The archive preserves the First Division, European Cup, and UEFA Cup lineages. It excludes the Fairs Cup and international qualification.
 
-`football_source_ref` owns provider identities. A source id is always scoped by source; a normalized label alone never merges people. Exact team aliases may resolve when there is one canonical candidate. Ambiguous person identities create `football_conflict` rows and stay out of quizzes until resolved.
+`football_source_ref` owns provider identities. A source id is always scoped by source; a normalized label alone never merges people. Exact team aliases may resolve when there is one canonical candidate. Ambiguous person identities create `football_conflict` rows and stay out of quizzes until resolved. Cross-source result disagreements also create a conflict instead of overwriting the canonical score. The resolution queue can accept either stored assertion, merge a team/person into an explicit target, confirm that identities are separate, or ignore a row. Ignored conflicts remain quarantined and continue to exclude their facts from quizzes.
 
 The 25-table vertical is split into:
 
@@ -23,7 +23,7 @@ The 25-table vertical is split into:
 - source integrity: alias, source ref, assertion, coverage, conflict, import run, and article;
 - personal layer: favorite, match journal, media, media link, and external link.
 
-Every coverage facet says `complete`, `partial`, `conflicted`, or `not_supplied`. Missing scorer or lineup children never mean an empty factual set. Domestic history gets a calculated W-D-L/goals/points ledger using the season's points-for-a-win rule, but its ordinal rank remains null unless an official provider supplies a tested rank that includes deductions and tie-breaks.
+Every coverage facet says `complete`, `partial`, `conflicted`, or `not_supplied`. Missing scorer or lineup children never mean an empty factual set. Coverage is source-scoped in the UI; different providers for one facet are not collapsed into one optimistic label. Competition-level coverage has a partial unique index for `(competition, source, facet)` because SQLite's ordinary composite uniqueness does not constrain repeated `NULL` season ids; startup deduplicates legacy rows before installing that index. Domestic history gets a calculated W-D-L/goals/points ledger using the season's points-for-a-win rule, but its ordinal rank remains null unless an official provider supplies a tested rank that includes deductions and tie-breaks.
 
 ## Source stack and sync
 
@@ -37,13 +37,13 @@ The first install avoids Wrestling's page-by-page crawl:
 
 StatsBomb and Wyscout are reduced optional overlay sources on the Sync page. Both require one explicitly selected competition, share the `footballSync` singleton, and are never part of initial installation. StatsBomb reads its official open-data season manifest and then fetches that season's match, event, and lineup JSON. A blank season selects the newest supported men's edition; an explicit season must match the manifest. Wyscout uses the fixed CC BY 4.0 Figshare release: the four domestic leagues are 2017/18, World Cup is 2018, and Euros is 2016. Its event archive is about 74 MB, is bounded at 96 MiB, and the UI warns before the user starts it. Unsupported competition-season requests fail before any canonical writes.
 
-Each completed overlay match writes verified goal and lineup detail. StatsBomb and Wyscout people retain source-scoped ids; a matching normalized name creates a resolution conflict rather than an automatic person merge. Coverage becomes complete only after every match in the selected pack has committed. Cancellation or a failed detail request therefore leaves the last honest coverage state and every previously completed match usable.
+Each completed overlay match writes verified goal and lineup detail. A detail refresh replaces goals and lineups independently: an omitted or incomplete facet preserves the last complete children instead of treating absence as an empty list. StatsBomb and Wyscout people retain source-scoped ids; a matching normalized name creates a resolution conflict rather than an automatic person merge. Coverage becomes complete only after every match in the selected pack has committed that facet, with supplied counts recorded for partial packs. Cancellation or a failed detail request therefore leaves the last honest coverage state and every previously completed match usable.
 
 `src/main/football/sync.ts` is the one `footballSync` singleton. History, current refresh, optional packs, and lazy entity enrichment cannot overlap. It exposes a polled status and a task-registry projection with cooperative pause/resume/cancel; there is no timer, push channel, or automatic refresh. Cancellation occurs between authoritative slices and on active fetches, so committed slices remain usable.
 
 API-Football's daily budget is persisted in `football.api_quota`. Entitlements are checked per competition-season. The refresh spends requests on the league check and fixtures first, then supported standings and top scorers, then unfinished goal/lineup details. Work that cannot fit stays visible as backlog; the next manual refresh sees incomplete fixture coverage and resumes it.
 
-Wikimedia/Wikidata enrichment is lazy. Opening an entity does not require it, while Save and the explicit reference button can queue it. The article record stores plain text, source URL, revision, license, attribution, and state. Images are accepted only after Commons reports a CC or public-domain license. The optional Player Quiz Pack deterministically selects up to 250 connected players, resolves a unique Wikimedia identity, and stores structured Wikidata senior-club memberships. A career only enters the quiz pool when it has at least four dated, verified, complete spells and no open identity conflict.
+Wikimedia/Wikidata enrichment is lazy. Opening an entity never starts a network request; Save and the explicit reference button can queue it. Operational fetch failures set a retryable enrichment error and do not manufacture identity conflicts. The article record stores plain text, source URL, revision, license, attribution, and state. Images are accepted only after Commons reports a CC or public-domain license. The optional Player Quiz Pack deterministically selects up to 250 connected players, resolves a unique Wikimedia identity, and stores structured Wikidata senior-club memberships. Refreshing the pack clears stale career rows first, and a career enters the quiz pool only when it has at least four dated, verified, complete spells and no unresolved or ignored identity conflict.
 
 ## Current desk and media
 
@@ -58,6 +58,8 @@ Football media is manual only:
 - removing an attachment deletes only its DB row, never the underlying file.
 
 FotMob is deliberately a validated external link provider, not a data source. Only pasted `fotmob.com` match, team, player, or league paths are stored and opened in the browser. No FotMob page or unsupported endpoint is scraped, cached, or embedded.
+
+Competition, team, person, and match detail pages expose the same external-link editor, including ordinary website references. The directory and media shelves page through fixed-size IPC reads rather than imposing a hidden top-300 ceiling, and Football routes render explicit query failures instead of presenting them as valid empty archives.
 
 Ordinary and ranked Lists accept `footballCompetition`, `footballTeam`, `footballPerson`, and `footballMatch`. Football kinds are absent from the Tier List form and filters in v1.
 

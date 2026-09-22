@@ -45,6 +45,8 @@ export const qk = {
     detail: (mediaId: number) => ['media', 'detail', mediaId] as const,
     home: (mediaType: MediaType) => ['media', { mediaType, home: true }] as const,
     homeOverview: ['media', 'homeOverview'] as const,
+    seasonalAnime: (year: number, includeUnknown: boolean) =>
+      ['media', 'seasonalAnime', year, includeUnknown] as const,
     // Under the ['media'] prefix on purpose: every media mutation invalidates it.
     timeStats: ['media', 'timeStats'] as const,
     // Same rationale — logging an episode should refresh the roadmap milestones.
@@ -296,6 +298,7 @@ export const qk = {
       ['music', 'tracks', filter] as const,
     trackPage: (sort: MusicTrackBrowseSort, filter: MusicTrackBrowseFilter) =>
       ['music', 'trackPage', sort, filter] as const,
+    trackLead: ['music', 'trackLead'] as const,
     search: (q: string) => ['music', 'search', q] as const,
     playlists: ['music', 'playlists'] as const,
     playlist: (id: number) => ['music', 'playlist', id] as const,
@@ -343,7 +346,7 @@ export const qk = {
     overview: ['wrestling', 'overview'] as const,
     events: (filter: WrestlingEventFilter) => ['wrestling', 'events', filter] as const,
     event: (id: number) => ['wrestling', 'event', id] as const,
-    match: (id: number) => ['wrestling', 'match', id] as const,
+    matchLocation: (id: number) => ['wrestling', 'matchLocation', id] as const,
     chronology: (id: number) => ['wrestling', 'chronology', id] as const,
     yearCounts: (promotion: string) => ['wrestling', 'yearCounts', promotion] as const,
     allYears: ['wrestling', 'allYears'] as const,
@@ -351,6 +354,7 @@ export const qk = {
     wrestlerMatches: (id: number) => ['wrestling', 'wrestlerMatches', id] as const,
     searchWrestlers: (q: string) => ['wrestling', 'searchWrestlers', q] as const,
     topRated: (limit: number) => ['wrestling', 'topRated', limit] as const,
+    favorites: (limit: number) => ['wrestling', 'favorites', limit] as const,
     // Callers pass a SORTED title list or every ordering caches separately.
     links: (titles: string[]) => ['wrestling', 'links', titles] as const,
     files: (eventId: number) => ['wrestling', 'files', eventId] as const,
@@ -364,6 +368,8 @@ export const qk = {
     competitions: ['football', 'competitions'] as const,
     competition: (key: import('@shared/types').FootballCompetitionKey) =>
       ['football', 'competition', key] as const,
+    competitionPending: (routeParam: string) =>
+      ['football', 'competitionPending', routeParam] as const,
     seasons: (key?: import('@shared/types').FootballCompetitionKey | null) =>
       ['football', 'seasons', key ?? null] as const,
     season: (id: number) => ['football', 'season', id] as const,

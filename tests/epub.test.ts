@@ -168,6 +168,20 @@ describe('parseEpub', () => {
 
     expect(await epubSpineCount(join(dir, 'missing.epub'))).toBe(0)
   })
+
+  it('never emits a phantom spine target missing from the archive', async () => {
+    const abs = makeBook({
+      opf: `<?xml version="1.0"?>
+      <package><metadata><dc:title>Phantom</dc:title></metadata>
+        <manifest>
+          <item id="missing" href="text/missing.xhtml" media-type="application/xhtml+xml"/>
+          <item id="real" href="text/ch2.xhtml" media-type="application/xhtml+xml"/>
+        </manifest>
+        <spine><itemref idref="missing"/><itemref idref="real"/></spine>
+      </package>`
+    })
+    expect((await parseEpub(abs))!.spine).toEqual(['OEBPS/text/ch2.xhtml'])
+  })
 })
 
 describe('resolveEpubHref', () => {

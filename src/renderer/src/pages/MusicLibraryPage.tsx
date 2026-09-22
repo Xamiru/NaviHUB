@@ -76,12 +76,18 @@ export default function MusicLibraryPage() {
 
   async function playAll(shuffle: boolean): Promise<void> {
     try {
-      const tracks = await api.music.tracks({})
-      if (tracks.length === 0) {
+      const queue = await api.music.playbackQueue(shuffle)
+      if (queue.items.length === 0) {
         toast('No tracks in the library yet')
         return
       }
-      playTracks(player, tracks, { shuffle })
+      playTracks(player, queue.items, { shuffle })
+      if (queue.truncated) {
+        const scope = shuffle ? 'random tracks' : 'tracks'
+        toast(
+          `Queued ${queue.items.length.toLocaleString()} ${scope} from ${queue.total.toLocaleString()} to keep playback responsive`
+        )
+      }
     } catch (e) {
       toastError(e)
     }
@@ -257,9 +263,10 @@ function SonicArchiveLead() {
     queryKey: qk.music.recent(8),
     queryFn: () => api.music.recent(8)
   })
-  const { data: libraryTracks = [] } = useQuery({
-    queryKey: qk.music.tracks({}),
-    queryFn: () => api.music.tracks({})
+  const { data: libraryPage } = useQuery({
+    queryKey: qk.music.trackLead,
+    queryFn: () =>
+      api.music.trackPage({ sort: 'catalog', filter: 'all', offset: 0, limit: 48 })
   })
   const artist = data?.topArtists[0]
   if (!data) return null
@@ -268,7 +275,7 @@ function SonicArchiveLead() {
       ? recent.slice(0, 4)
       : data.topTracks.length > 0
         ? data.topTracks.slice(0, 4).map((row) => row.track)
-        : libraryTracks.slice(0, 4)
+        : (libraryPage?.items ?? []).slice(0, 4)
   if (returnTracks.length === 0) return null
 
   return (

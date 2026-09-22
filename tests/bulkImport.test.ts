@@ -22,6 +22,7 @@ let httpHandler: (url: string, init?: RequestInit) => Promise<unknown> = async (
   throw new Error(`Unexpected network call in test: ${url}`)
 }
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   sleep: async () => {},
   fetchWithRetry: (url: string, init?: RequestInit) => httpHandler(url, init)
 }))

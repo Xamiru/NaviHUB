@@ -2,6 +2,8 @@ import { useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
+import { Field } from '../components/Field'
 import ChronologyOrder from '../components/quiz/ChronologyOrder'
 import { Group, Pill } from '../components/PillGroup'
 import { api } from '../lib/api'
@@ -53,10 +55,11 @@ export default function FootballQuizGamePage({ kind }: { kind: FootballQuizGameK
   const [gridInvalid, setGridInvalid] = useState(0)
   const [gridMessage, setGridMessage] = useState<string | null>(null)
   const loggedRef = useRef(false)
-  const { data: availability } = useQuery({
+  const availabilityQuery = useQuery({
     queryKey: qk.quiz.availability({ scope: 'all' }),
     queryFn: () => api.quiz.availability({ scope: 'all' })
   })
+  const availability = availabilityQuery.data
   const question = questions[index]
   const grid = question?.kind === 'footballPlayerGrid' ? question : null
   const playerByKey = useMemo(
@@ -197,6 +200,8 @@ export default function FootballQuizGamePage({ kind }: { kind: FootballQuizGameK
   }
 
   if (phase === 'setup') {
+    if (availabilityQuery.isLoading) return <PageStatus>Checking Football quiz eligibility...</PageStatus>
+    if (availabilityQuery.isError) return <PageStatus>Could not load Football quiz eligibility.</PageStatus>
     const count = kind === 'footballChampion' ? availability?.football.champion : kind === 'footballScoreline' ? availability?.football.scoreline : kind === 'footballCareerPath' ? availability?.football.careerPath : kind === 'footballChronology' ? availability?.football.chronology : availability?.football.playerGrid
     const lengths = kind === 'footballCareerPath' ? [5, 10] : kind === 'footballPlayerGrid' ? [1] : kind === 'footballChronology' ? [5] : [5, 10, 20]
     const minimumFacts = kind === 'footballChronology' ? 4 : kind === 'footballPlayerGrid' ? 1 : length
@@ -230,21 +235,23 @@ export default function FootballQuizGamePage({ kind }: { kind: FootballQuizGameK
     return (
       <div className="mx-auto max-w-5xl p-6">
         <PageHeader title="Player Grid" subtitle={`${Object.keys(gridFilled).length} of 9 cells / ${gridScore} points`} back={{ to: '/football/quiz', label: 'Football quiz room' }} />
-        <div className="grid grid-cols-[150px_repeat(3,minmax(0,1fr))] border-l border-t border-line-subtle text-sm">
+        <div className="overflow-x-auto" aria-label="Player Grid board">
+          <div className="grid min-w-[640px] grid-cols-[150px_repeat(3,minmax(0,1fr))] border-l border-t border-line-subtle text-sm">
           <div className="border-b border-r border-line-subtle bg-surface-raised p-3" />
           {grid.columns.map((clue) => <div key={clue.key} className="border-b border-r border-line-subtle bg-surface-raised p-3 font-medium text-ink">{clue.label}</div>)}
           {grid.rows.flatMap((row, rowIndex) => [
             <div key={`row-${row.key}`} className="border-b border-r border-line-subtle bg-surface-raised p-3 font-medium text-ink">{row.label}</div>,
-            ...grid.columns.map((_, columnIndex) => {
+            ...grid.columns.map((column, columnIndex) => {
               const key = `${rowIndex}-${columnIndex}`
               const filled = gridFilled[key]
-              return <button key={key} className={`min-h-24 border-b border-r border-line-subtle p-3 text-left ${gridCell === key ? 'bg-accent/10' : 'hover:bg-surface-raised/45'}`} disabled={!!filled} onClick={() => { setGridCell(key); setGridMessage(null) }}>{filled ? <><span className="block font-medium text-ink">{playerByKey.get(filled.playerKey)?.label}</span><span className="mt-1 block text-xs text-ink-muted">{filled.hinted ? '40 points / hinted' : '100 points / unaided'}</span></> : <span className="text-ink-muted">Select cell</span>}</button>
+              return <button key={key} aria-label={`Select ${row.label} / ${column.label}`} className={`min-h-24 border-b border-r border-line-subtle p-3 text-left ${gridCell === key ? 'bg-accent/10' : 'hover:bg-surface-raised/45'}`} disabled={!!filled} onClick={() => { setGridCell(key); setGridMessage(null) }}>{filled ? <><span className="block font-medium text-ink">{playerByKey.get(filled.playerKey)?.label}</span><span className="mt-1 block text-xs text-ink-muted">{filled.hinted ? '40 points / hinted' : '100 points / unaided'}</span></> : <span className="text-ink-muted">Select cell</span>}</button>
             })
           ])}
+          </div>
         </div>
         <div className="mt-6 border-y border-line-subtle py-5">
           <p className="text-sm font-medium text-ink">{grid.rows[active.row].label} / {grid.columns[active.column].label}</p>
-          <div className="mt-3 flex gap-2"><input className="input" value={gridText} onChange={(event) => setGridText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') gridSubmit() }} placeholder="Type a verified player..." list="football-grid-players" /><datalist id="football-grid-players">{grid.players.map((player) => <option key={player.key} value={player.label} />)}</datalist><button className="btn-primary" disabled={!gridText.trim() || saving} onClick={() => gridSubmit()}>Submit</button></div>
+          <div className="mt-3 flex items-end gap-2"><Field label="Verified player" className="min-w-0 flex-1"><input className="input" value={gridText} onChange={(event) => setGridText(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') gridSubmit() }} placeholder="Type a player" list="football-grid-players" /></Field><datalist id="football-grid-players">{grid.players.map((player) => <option key={player.key} value={player.label} />)}</datalist><button className="btn-primary" disabled={!gridText.trim() || saving} onClick={() => gridSubmit()}>Submit</button></div>
           <button className="btn-ghost mt-3" disabled={gridHints.includes(active.key)} onClick={() => setGridHints((items) => [...items, active.key])}>Show hint choices</button>
           {gridHints.includes(active.key) && <div className="mt-2 flex flex-wrap gap-2">{hintPlayers.map((player) => player && <button key={player.key} className="pill" onClick={() => gridSubmit(player.key)}>{player.label}</button>)}</div>}
           {gridMessage && <p className="mt-3 text-sm text-signal-anomaly">{gridMessage}</p>}

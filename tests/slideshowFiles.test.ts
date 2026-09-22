@@ -20,7 +20,10 @@ vi.mock('../src/main/repos/settingsRepo', () => ({
   set: () => undefined
 }))
 vi.mock('../src/main/progress', () => ({ imageProgress: () => undefined }))
-vi.mock('../src/main/http', () => ({ fetchWithRetry: async () => new Response('') }))
+vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
+  fetchWithRetry: async () => new Response('')
+}))
 
 import {
   copyIntoSlideshow,

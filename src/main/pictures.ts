@@ -10,7 +10,7 @@ import {
   removeSlideshowCopy,
   sanitizeFileBase
 } from './files'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { fetchBackdrops } from './tmdb'
 import type {
   ImageKind,
@@ -81,7 +81,8 @@ export function tmdbBackdropResults(
 
 export async function searchWallhaven(query: string, page = 1): Promise<WallpaperSearchPage> {
   const res = await fetchWithRetry(wallhavenSearchUrl(query, page), {
-    headers: { Accept: 'application/json' }
+    headers: { Accept: 'application/json' },
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (!res.ok) throw new Error(`Wallhaven search failed (${res.status})`)
   return parseWallhaven(await res.json())

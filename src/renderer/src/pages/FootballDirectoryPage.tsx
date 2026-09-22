@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import CoverImage from '../components/CoverImage'
@@ -12,19 +12,24 @@ import { FootballTeamMark } from '../components/football/FootballCommon'
 export default function FootballDirectoryPage({ kind }: { kind: 'teams' | 'people' }) {
   const [search, setSearch] = usePersistedState(`football${kind}Search`, '')
   const query = useDebouncedValue(search, 200)
-  const filter = { search: query || null, limit: 300 }
-  const teams = useQuery({
+  const filter = { search: query || null }
+  const teams = useInfiniteQuery({
     queryKey: qk.football.teams(filter),
-    queryFn: () => api.football.teams(filter),
+    queryFn: ({ pageParam }) => api.football.teams({ ...filter, limit: 100, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => lastPage.length === 100 ? pages.length * 100 : undefined,
     enabled: kind === 'teams'
   })
-  const people = useQuery({
+  const people = useInfiniteQuery({
     queryKey: qk.football.people(filter),
-    queryFn: () => api.football.people(filter),
+    queryFn: ({ pageParam }) => api.football.people({ ...filter, limit: 100, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => lastPage.length === 100 ? pages.length * 100 : undefined,
     enabled: kind === 'people'
   })
-  const data = kind === 'teams' ? teams.data ?? [] : people.data ?? []
-  const isLoading = kind === 'teams' ? teams.isLoading : people.isLoading
+  const active = kind === 'teams' ? teams : people
+  const data = active.data?.pages.flat() ?? []
+  const isLoading = active.isLoading
   return (
     <div className="mx-auto max-w-[1450px] p-6">
       <PageHeader
@@ -36,10 +41,10 @@ export default function FootballDirectoryPage({ kind }: { kind: 'teams' | 'peopl
         <label className="label mb-2 block" htmlFor={`football-${kind}-search`}>Search the directory</label>
         <input id={`football-${kind}-search`} className="input" value={search} onChange={(event) => setSearch(event.target.value)} placeholder={kind === 'teams' ? 'Club or national team' : 'Player or manager'} />
       </div>
-      {isLoading ? <PageStatus>Reading the directory...</PageStatus> : (
+      {active.isError ? <PageStatus>Could not load this Football directory.</PageStatus> : isLoading ? <PageStatus>Reading the directory...</PageStatus> : (
         kind === 'teams' ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-px bg-line-subtle border-y border-line-subtle">
-            {(teams.data ?? []).map((team) => (
+            {(teams.data?.pages.flat() ?? []).map((team) => (
               <Link key={team.id} to={`/football/team/${team.id}`} className="flex min-h-28 items-center gap-4 bg-surface-canvas p-4 hover:bg-surface-raised/70">
                 <FootballTeamMark team={team} size="md" />
                 <span className="min-w-0"><span className="block truncate font-semibold text-ink">{team.name}</span><span className="mt-1 block truncate text-xs text-ink-muted">{team.country ?? (team.isNational ? 'National team' : 'Country not supplied')}</span></span>
@@ -48,7 +53,7 @@ export default function FootballDirectoryPage({ kind }: { kind: 'teams' | 'peopl
           </div>
         ) : (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(170px,1fr))] gap-x-5 gap-y-8">
-            {(people.data ?? []).map((person) => (
+            {(people.data?.pages.flat() ?? []).map((person) => (
               <Link key={person.id} to={`/football/person/${person.id}`} className="group min-w-0">
                 <CoverImage path={person.imagePath} alt={person.name} className="aspect-[3/4] w-full bg-surface-raised object-cover" rounded="rounded-sm" thumbWidth={320} />
                 <span className="mt-3 block truncate font-semibold text-ink group-hover:text-signal-link">{person.name}</span>
@@ -58,7 +63,12 @@ export default function FootballDirectoryPage({ kind }: { kind: 'teams' | 'peopl
           </div>
         )
       )}
-      {!isLoading && !data.length && <p className="py-8 text-sm text-ink-muted">No entries match this search.</p>}
+      {!active.isError && !isLoading && !data.length && <p className="py-8 text-sm text-ink-muted">No entries match this search.</p>}
+      {active.hasNextPage && (
+        <button className="btn-ghost mt-6" disabled={active.isFetchingNextPage} onClick={() => active.fetchNextPage()}>
+          {active.isFetchingNextPage ? 'Loading more...' : 'Load more entries'}
+        </button>
+      )}
     </div>
   )
 }

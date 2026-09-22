@@ -8,6 +8,7 @@ import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
 import CoverImage from '../components/CoverImage'
+import { Field } from '../components/Field'
 import { Group, Pill } from '../components/PillGroup'
 import { promotionCfg } from '@shared/wrestling'
 import type { WrestlingEvent, WrestlingEventFilter } from '@shared/types'
@@ -26,6 +27,7 @@ function EventCard({ event }: { event: WrestlingEvent }): JSX.Element {
       <CoverImage
         path={event.posterPath}
         alt={event.name}
+        thumbWidth={360}
         className="aspect-[2/3] w-full object-cover"
         rounded=""
       />
@@ -55,6 +57,7 @@ export default function WrestlingPromotionPage(): JSX.Element {
   const [decade, setDecade] = usePersistedState<number | null>('wrestling.decade', null)
   const [year, setYear] = usePersistedState<number | null>('wrestling.year', null)
   const [ownedOnly, setOwnedOnly] = usePersistedState('wrestling.owned', false)
+  const [favoriteOnly, setFavoriteOnly] = usePersistedState('wrestling.favorites', false)
   const debounced = useDebouncedValue(search)
 
   const filter: WrestlingEventFilter = {
@@ -62,15 +65,17 @@ export default function WrestlingPromotionPage(): JSX.Element {
     search: debounced || null,
     sort,
     ownedOnly: ownedOnly || undefined,
+    favoriteOnly: favoriteOnly || undefined,
     // A picked year wins over its decade — the rail narrows, it doesn't stack.
     yearFrom: year ?? decade ?? undefined,
     yearTo: year ?? (decade != null ? decade + 9 : undefined)
   }
-  const { data: events, isLoading } = useQuery({
+  const eventsQuery = useQuery({
     queryKey: qk.wrestling.events(filter),
     queryFn: () => api.wrestling.events(filter),
     enabled: !!cfg
   })
+  const events = eventsQuery.data
   // Years come from their own count query, not from the filtered results —
   // otherwise picking 1997 would leave 1997 as the only year on the rail.
   const { data: years } = useQuery({
@@ -102,12 +107,14 @@ export default function WrestlingPromotionPage(): JSX.Element {
       />
 
       <div className="mb-5 space-y-4">
-        <input
-          className="input max-w-md"
-          placeholder="Search events…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <Field label="Search events" hiddenLabel className="max-w-md">
+          <input
+            className="input"
+            placeholder="Search events…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </Field>
         <div className="flex flex-wrap gap-6">
           <Group label="Sort">
             {SORTS.map((s) => (
@@ -151,20 +158,49 @@ export default function WrestlingPromotionPage(): JSX.Element {
               ))}
             </Group>
           )}
-          <Group label="Collection">
-            <Pill active={!ownedOnly} onClick={() => setOwnedOnly(false)} label="All" />
-            <Pill active={ownedOnly} onClick={() => setOwnedOnly(true)} label="Owned" />
+          <Group label="View">
+            <Pill
+              active={!ownedOnly && !favoriteOnly}
+              onClick={() => {
+                setOwnedOnly(false)
+                setFavoriteOnly(false)
+              }}
+              label="All"
+            />
+            <Pill
+              active={ownedOnly}
+              onClick={() => {
+                setOwnedOnly(true)
+                setFavoriteOnly(false)
+              }}
+              label="Owned"
+            />
+            <Pill
+              active={favoriteOnly}
+              onClick={() => {
+                setOwnedOnly(false)
+                setFavoriteOnly(true)
+              }}
+              label="Favorites"
+            />
           </Group>
         </div>
       </div>
 
-      {isLoading ? (
+      {eventsQuery.isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
+      ) : eventsQuery.isError ? (
+        <div className="card max-w-lg p-4">
+          <p className="text-sm text-gray-400">Could not load this promotion.</p>
+          <button className="btn-ghost mt-3" onClick={() => void eventsQuery.refetch()}>
+            Try again
+          </button>
+        </div>
       ) : !events?.length ? (
         <EmptyState
           title="No events"
           body={
-            debounced || decade != null || year != null || ownedOnly
+            debounced || decade != null || year != null || ownedOnly || favoriteOnly
               ? 'Nothing matches those filters.'
               : `${cfg.short} has not been imported yet.`
           }

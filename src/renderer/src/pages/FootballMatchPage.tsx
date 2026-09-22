@@ -6,6 +6,7 @@ import PageStatus from '../components/PageStatus'
 import CoverImage from '../components/CoverImage'
 import FavoriteButton from '../components/FavoriteButton'
 import AddToListMenu from '../components/AddToListMenu'
+import FootballExternalLinks from '../components/football/FootballExternalLinks'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { formatFootballScore } from '@shared/football'
@@ -20,7 +21,7 @@ import {
 export default function FootballMatchPage() {
   const id = Number(useParams().id)
   const qc = useQueryClient()
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: qk.football.match(id),
     queryFn: () => api.football.match(id),
     enabled: Number.isInteger(id) && id > 0
@@ -28,7 +29,6 @@ export default function FootballMatchPage() {
   const [watchedAt, setWatchedAt] = useState<string | null>(null)
   const [rating, setRating] = useState<number | null>(null)
   const [note, setNote] = useState('')
-  const [fotmob, setFotmob] = useState('')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -39,11 +39,11 @@ export default function FootballMatchPage() {
   }, [data])
 
   if (isLoading) return <PageStatus>Opening match record...</PageStatus>
+  if (isError) return <PageStatus>Could not load this match record.</PageStatus>
   if (!data) return <PageStatus>Match not found.</PageStatus>
 
   async function refresh() {
-    await qc.invalidateQueries({ queryKey: qk.football.match(id) })
-    await qc.invalidateQueries({ queryKey: qk.football.overview })
+    await qc.invalidateQueries({ queryKey: qk.football.all })
   }
   async function favorite() {
     await api.football.setFavorite('match', id, !data!.favorite)
@@ -58,19 +58,6 @@ export default function FootballMatchPage() {
       setSaving(false)
     }
   }
-  async function saveFotmob() {
-    if (!fotmob.trim()) return
-    await api.football.saveExternalLink({
-      entityKind: 'match',
-      entityId: id,
-      provider: 'fotmob',
-      label: 'FotMob match page',
-      url: fotmob.trim()
-    })
-    setFotmob('')
-    await refresh()
-  }
-
   return (
     <div className="mx-auto max-w-[1450px] p-6">
       <div className="grid items-center gap-5 md:grid-cols-[76px_minmax(0,1fr)]">
@@ -160,10 +147,7 @@ export default function FootballMatchPage() {
           <details className="border-y border-line-subtle py-4">
             <summary className="cursor-pointer text-sm font-medium text-ink">Links and sources</summary>
             <div className="mt-4">
-              <div className="divide-y divide-line-subtle">{data.externalLinks.map((link) => <button key={link.id} className="block w-full py-2.5 text-left text-sm text-signal-link hover:underline" onClick={() => api.football.openExternalLink(link.provider, link.url)}>{link.label ?? link.provider}</button>)}</div>
-              <label className="mt-3 block"><span className="label mb-1 block">FotMob deep link</span><input className="input" value={fotmob} onChange={(event) => setFotmob(event.target.value)} placeholder="https://www.fotmob.com/matches/..." /></label>
-              <button className="btn-ghost mt-2" disabled={!fotmob.trim()} onClick={saveFotmob}>Save FotMob link</button>
-              <p className="mt-2 text-xs leading-relaxed text-ink-muted">Stored as a user-pasted link only. NaviHUB does not scrape, cache or embed FotMob.</p>
+              <FootballExternalLinks entityKind="match" entityId={id} links={data.externalLinks} onChanged={refresh} />
               <div className="mt-5 divide-y divide-line-subtle border-t border-line-subtle">{data.sources.map((source) => <button key={source.id} className="block w-full py-2 text-left text-xs text-ink-muted hover:text-signal-link" disabled={!source.sourceUrl} onClick={() => source.sourceUrl && api.football.openExternalLink('website', source.sourceUrl)}>{source.source} / {source.revision ?? 'unversioned'}</button>)}</div>
             </div>
           </details>

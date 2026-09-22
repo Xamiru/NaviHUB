@@ -28,6 +28,7 @@ vi.mock('../src/main/progress', () => ({ updateActivity: () => {} }))
 // returns the themes.
 let themes: Record<string, unknown>[] = []
 vi.mock('../src/main/http', () => ({
+  MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   fetchWithRetry: async (url: string) => ({
     ok: true,
     status: 200,

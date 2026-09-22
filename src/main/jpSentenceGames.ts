@@ -23,8 +23,8 @@ import type {
 // (kept out of jpDrills.ts, which is long enough). Each samples ~4× the asked
 // number of short sentences, tokenizes them, keeps the ones that yield a
 // question and stops at `limit`. [] on any failure — no bank, tokenizer down —
-// and the page shows its EmptyState. Never calls lookupWord (jisho fallback):
-// the JMdict check below is direct SQL.
+// and the page shows its EmptyState. The JMdict check below is direct SQL so
+// this pool accepts only exact dictionary forms.
 
 const DEFAULT_MAX = 30
 const MIN_CHARS = 6

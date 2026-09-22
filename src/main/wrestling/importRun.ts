@@ -378,6 +378,7 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
       // wrong for events: wrestler portraits are free Commons images, event
       // posters are not and come back empty.
       if (opts.withWrestlers !== false) {
+        if (opts.refresh) repo.resetWrestlerDetails(cfgs.map((cfg) => cfg.id))
         status = { ...status, phase: 'wrestlers', promotion: null, message: null }
         for (;;) {
           // Guarded await — see bulkImport for why it is not unconditional.
@@ -409,19 +410,21 @@ export function start(opts: StartOptions = {}, deps: ImportDeps = {}): Wrestling
                 honours: parseHonours(page.wikitext)
               }
             })
-            repo.saveWrestlerDetails(detailRows)
-            // Honours need the row to exist, so they land after the details.
-            for (const row of detailRows) {
-              const w = repo.wrestlerIdByTitle(row.wikiTitle)
-              if (w != null) repo.saveHonours(w, row.honours)
-            }
+            // Missing pages are confirmed misses because fetchPages itself
+            // succeeded. Profiles, honours, and that checked watermark commit
+            // together so a write failure remains retriable.
+            repo.saveWrestlerDetailBatch(detailRows, titles)
             status = { ...status, wrestlers: status.wrestlers + result.pages.length }
           } catch {
-            status = { ...status, failed: status.failed + titles.length }
+            status = {
+              ...status,
+              state: 'error',
+              failed: status.failed + titles.length,
+              message:
+                'Wrestler details could not be saved. Everything imported so far is kept — run the import again later to retry this batch.'
+            }
+            return
           }
-          // Stamp every stub in the batch either way — a red-linked or
-          // article-less wrestler must not be retried on every future run.
-          repo.markWrestlersChecked(titles)
           status = { ...status, done: status.done + titles.length }
           if (delay > 0) await sleep(delay)
         }

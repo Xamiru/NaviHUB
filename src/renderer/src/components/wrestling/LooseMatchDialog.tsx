@@ -4,7 +4,7 @@ import { api } from '../../lib/api'
 import { qk } from '../../lib/queryKeys'
 import { useDialog } from '../../lib/hooks'
 import { useDebouncedValue } from '../../lib/hooks'
-import type { WrestlingMatchWithEvent, WrestlingWrestler } from '@shared/types'
+import type { WrestlingMatchWithEvent } from '@shared/types'
 import { Field, Fieldset } from '../Field'
 
 // Editing a loose match: what it was, when, and who was in it. Wrestlers are
@@ -24,19 +24,18 @@ export default function LooseMatchDialog({
   const [showLabel, setShowLabel] = useState(match.showLabel ?? '')
   const [matchDate, setMatchDate] = useState(match.matchDate ?? '')
   const [stipulation, setStipulation] = useState(match.stipulation ?? '')
-  const [picked, setPicked] = useState<WrestlingWrestler[]>([])
+  const [participants, setParticipants] = useState(
+    match.participants.map((participant) => ({
+      id: participant.wrestlerId,
+      name: participant.name
+    }))
+  )
   const [winners, setWinners] = useState<Set<number>>(
     new Set(match.participants.filter((p) => p.won).map((p) => p.wrestlerId))
   )
   const [search, setSearch] = useState('')
   const [busy, setBusy] = useState(false)
   const debounced = useDebouncedValue(search)
-
-  // Existing participants render from the match; newly picked ones stack on.
-  const current = [
-    ...match.participants.map((p) => ({ id: p.wrestlerId, name: p.name })),
-    ...picked.filter((w) => !match.participants.some((p) => p.wrestlerId === w.id))
-  ]
 
   const { data: results } = useQuery({
     queryKey: qk.wrestling.searchWrestlers(debounced),
@@ -52,7 +51,7 @@ export default function LooseMatchDialog({
         showLabel: showLabel.trim() || null,
         matchDate: matchDate.trim() || null,
         stipulation: stipulation.trim() || null,
-        wrestlerIds: current.map((w) => w.id),
+        wrestlerIds: participants.map((w) => w.id),
         winnerIds: [...winners]
       })
       onSaved()
@@ -78,7 +77,12 @@ export default function LooseMatchDialog({
           <h2 id="loose-match-title" className="font-semibold">
             Edit match
           </h2>
-          <button onClick={onClose} aria-label="Close" className="text-gray-500 hover:text-white">
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="text-gray-500 hover:text-white"
+          >
             ✕
           </button>
         </div>
@@ -98,6 +102,7 @@ export default function LooseMatchDialog({
           </Field>
           <Field label="Date">
             <input
+              type="date"
               className="input"
               placeholder="1997-03-17"
               value={matchDate}
@@ -116,79 +121,78 @@ export default function LooseMatchDialog({
         </Field>
 
         <Fieldset legend="Wrestlers">
-        {current.length > 0 && (
-          <div className="mb-2 space-y-1">
-            {current.map((w) => (
-              <div key={w.id} className="flex items-center justify-between text-sm">
-                <span>{w.name}</span>
-                <span className="flex items-center gap-3 text-xs">
-                  <label className="flex items-center gap-1 text-gray-400">
-                    <input
-                      type="checkbox"
-                      checked={winners.has(w.id)}
-                      onChange={(e) =>
+          {participants.length > 0 && (
+            <div className="mb-2 space-y-1">
+              {participants.map((w) => (
+                <div key={w.id} className="flex items-center justify-between text-sm">
+                  <span>{w.name}</span>
+                  <span className="flex items-center gap-3 text-xs">
+                    <label className="flex items-center gap-1 text-gray-400">
+                      <input
+                        type="checkbox"
+                        checked={winners.has(w.id)}
+                        onChange={(e) =>
+                          setWinners((prev) => {
+                            const next = new Set(prev)
+                            if (e.target.checked) next.add(w.id)
+                            else next.delete(w.id)
+                            return next
+                          })
+                        }
+                      />
+                      won
+                    </label>
+                    <button
+                      type="button"
+                      className="text-gray-500 hover:text-red-400"
+                      onClick={() => {
+                        setParticipants((prev) => prev.filter((p) => p.id !== w.id))
                         setWinners((prev) => {
                           const next = new Set(prev)
-                          if (e.target.checked) next.add(w.id)
-                          else next.delete(w.id)
+                          next.delete(w.id)
                           return next
                         })
-                      }
-                    />
-                    won
-                  </label>
-                  <button
-                    className="text-gray-500 hover:text-red-400"
-                    onClick={() => {
-                      setPicked((prev) => prev.filter((p) => p.id !== w.id))
-                      setWinners((prev) => {
-                        const next = new Set(prev)
-                        next.delete(w.id)
-                        return next
-                      })
-                      // An existing participant is dropped by saving without it;
-                      // reflect that immediately by removing it from the match.
-                      match.participants = match.participants.filter(
-                        (p) => p.wrestlerId !== w.id
-                      )
-                    }}
-                    aria-label={`Remove ${w.name}`}
-                  >
-                    ✕
-                  </button>
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-        <Field label="Search imported wrestlers" hiddenLabel>
-          <input
-            className="input"
-            placeholder="Search imported wrestlers…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </Field>
-        {!!results?.length && search.trim().length > 1 && (
-          <div className="mt-1 max-h-40 overflow-y-auto rounded border border-base-700">
-            {results.slice(0, 20).map((w) => (
-              <button
-                key={w.id}
-                className="block w-full px-3 py-1.5 text-left text-sm hover:bg-base-800"
-                onClick={() => {
-                  if (!current.some((c) => c.id === w.id)) setPicked((prev) => [...prev, w])
-                  setSearch('')
-                }}
-              >
-                {w.name}
-                <span className="ml-2 text-xs text-gray-500">{w.matchCount} matches</span>
-              </button>
-            ))}
-          </div>
-        )}
+                      }}
+                      aria-label={`Remove ${w.name}`}
+                    >
+                      ✕
+                    </button>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          <Field label="Search imported wrestlers" hiddenLabel>
+            <input
+              className="input"
+              placeholder="Search imported wrestlers…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </Field>
+          {!!results?.length && search.trim().length > 1 && (
+            <div className="mt-1 max-h-40 overflow-y-auto rounded border border-base-700">
+              {results.slice(0, 20).map((w) => (
+                <button
+                  type="button"
+                  key={w.id}
+                  className="block w-full px-3 py-1.5 text-left text-sm hover:bg-base-800"
+                  onClick={() => {
+                    if (!participants.some((participant) => participant.id === w.id)) {
+                      setParticipants((prev) => [...prev, { id: w.id, name: w.name }])
+                    }
+                    setSearch('')
+                  }}
+                >
+                  {w.name}
+                  <span className="ml-2 text-xs text-gray-500">{w.matchCount} matches</span>
+                </button>
+              ))}
+            </div>
+          )}
         </Fieldset>
 
-        <button className="btn-primary mt-5 w-full" disabled={busy} onClick={save}>
+        <button type="button" className="btn-primary mt-5 w-full" disabled={busy} onClick={save}>
           Save
         </button>
       </div>

@@ -2274,6 +2274,9 @@ export const footballCoverage = sqliteTable(
   },
   (t) => ({
     bySeason: index('idx_football_coverage_season').on(t.seasonId, t.facet),
+    competitionUniq: uniqueIndex('uniq_football_coverage_competition')
+      .on(t.competitionId, t.source, t.facet)
+      .where(sql`${t.seasonId} IS NULL`),
     uniq: unique('uniq_football_coverage').on(
       t.competitionId,
       t.seasonId,

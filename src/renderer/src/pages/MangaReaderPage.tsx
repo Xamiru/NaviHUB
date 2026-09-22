@@ -19,7 +19,7 @@ import type { MangaChapter, MokuroBlock } from '@shared/types'
 // Modes: single page, double spread (with cover offset + landscape pages shown
 // alone), vertical/webtoon scroll. Right-to-left by default, as manga reads.
 // Mokuro OCR sidecars (if present) overlay tappable text; tapping opens the
-// mining panel (tokenize → Jisho → save to SRS with this manga as source).
+// mining panel (tokenize → offline dictionary → save to SRS with this manga as source).
 
 type Mode = 'single' | 'double' | 'vertical'
 type Fit = 'height' | 'width' | 'original'
@@ -75,7 +75,17 @@ const SHORTCUTS = [
 ]
 
 export default function MangaReaderPage() {
-  const { doc, library, chapterId, mediaId, adhoc } = useReaderSource()
+  const {
+    doc,
+    library,
+    chapterId,
+    mediaId,
+    adhoc,
+    missing,
+    error: sourceError,
+    loading,
+    retry
+  } = useReaderSource()
   const navigate = useNavigate()
   const location = useLocation()
   const qc = useQueryClient()
@@ -559,7 +569,36 @@ export default function MangaReaderPage() {
     }
   }
 
-  if (!doc || !library) {
+  if (sourceError) {
+    return (
+      <div
+        className="h-screen bg-black text-gray-400 flex flex-col items-center justify-center gap-3"
+        role="alert"
+      >
+        <p>Reader content could not be loaded.</p>
+        <button className="btn-ghost" onClick={() => void retry()}>
+          Retry
+        </button>
+        <button className="btn-ghost" onClick={exitToDetail}>
+          ← Back
+        </button>
+      </div>
+    )
+  }
+  if (missing) {
+    return (
+      <div
+        className="h-screen bg-black text-gray-400 flex flex-col items-center justify-center gap-3"
+        role="alert"
+      >
+        <p>Reader content could not be found for this chapter.</p>
+        <button className="btn-ghost" onClick={exitToDetail}>
+          ← Back
+        </button>
+      </div>
+    )
+  }
+  if (loading || !doc || !library) {
     return <div className="h-screen bg-black text-gray-500 flex items-center justify-center">Loading…</div>
   }
   if (pageCount === 0) {

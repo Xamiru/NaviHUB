@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
 import { Group, Pill } from '../components/PillGroup'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -24,7 +25,13 @@ export default function FootballMediaPage() {
   const [filterKind, setFilterKind] = usePersistedState<FootballMediaKind | null>('footballMediaKind', null)
   const [filterSearch, setFilterSearch] = usePersistedState('footballMediaSearch', '')
   const filter = useMemo(() => ({ kind: filterKind, search: filterSearch || null }), [filterKind, filterSearch])
-  const { data = [] } = useQuery({ queryKey: qk.football.media(filter), queryFn: () => api.football.media(filter) })
+  const mediaQuery = useInfiniteQuery({
+    queryKey: qk.football.media(filter),
+    queryFn: ({ pageParam }) => api.football.media({ ...filter, limit: 100, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => lastPage.length === 100 ? pages.length * 100 : undefined
+  })
+  const data = mediaQuery.data?.pages.flat() ?? []
   const [title, setTitle] = useState('')
   const [kind, setKind] = useState<FootballMediaKind>('highlight')
   const [localPath, setLocalPath] = useState<string | null>(null)
@@ -33,29 +40,32 @@ export default function FootballMediaPage() {
   const [links, setLinks] = useState<LinkDraft[]>([])
   const [linkSearch, setLinkSearch] = useState('')
   const [saving, setSaving] = useState(false)
+  const consumedMatch = useRef<string | null>(null)
   const query = useDebouncedValue(linkSearch, 200)
-  const { data: results } = useQuery({
+  const searchQuery = useQuery({
     queryKey: qk.football.search(query),
     queryFn: () => api.football.search(query),
     enabled: query.trim().length >= 2
   })
 
   useEffect(() => {
-    const matchId = Number(params.get('match'))
-    if (!Number.isInteger(matchId) || matchId < 1 || links.length) return
+    const rawMatch = params.get('match')
+    const matchId = Number(rawMatch)
+    if (!rawMatch || !Number.isInteger(matchId) || matchId < 1 || consumedMatch.current === rawMatch) return
+    consumedMatch.current = rawMatch
     setShowAttach(true)
     api.football.match(matchId).then((match) => {
       if (!match) return
       setLinks([{ entityKind: 'match', entityId: match.id, label: `${match.home.name} vs ${match.away.name}` }])
-      if (!title) setTitle(`${match.home.name} vs ${match.away.name}`)
+      setTitle((current) => current || `${match.home.name} vs ${match.away.name}`)
     })
-  }, [params, links.length, title])
+  }, [params])
 
-  const suggestions: LinkDraft[] = results ? [
-    ...results.competitions.map((item) => ({ entityKind: 'competition' as const, entityId: item.id, label: item.name })),
-    ...results.teams.map((item) => ({ entityKind: 'team' as const, entityId: item.id, label: item.name })),
-    ...results.people.map((item) => ({ entityKind: 'person' as const, entityId: item.id, label: item.name })),
-    ...results.matches.map((item) => ({ entityKind: 'match' as const, entityId: item.id, label: `${item.home.name} vs ${item.away.name} / ${item.matchDate}` }))
+  const suggestions: LinkDraft[] = searchQuery.data ? [
+    ...searchQuery.data.competitions.map((item) => ({ entityKind: 'competition' as const, entityId: item.id, label: item.name })),
+    ...searchQuery.data.teams.map((item) => ({ entityKind: 'team' as const, entityId: item.id, label: item.name })),
+    ...searchQuery.data.people.map((item) => ({ entityKind: 'person' as const, entityId: item.id, label: item.name })),
+    ...searchQuery.data.matches.map((item) => ({ entityKind: 'match' as const, entityId: item.id, label: `${item.home.name} vs ${item.away.name} / ${item.matchDate}` }))
   ].filter((item) => !links.some((link) => link.entityKind === item.entityKind && link.entityId === item.entityId)).slice(0, 10) : []
 
   function reset() {
@@ -109,6 +119,8 @@ export default function FootballMediaPage() {
         actions={<button className={showAttach ? 'btn-ghost' : 'btn-primary'} onClick={() => setShowAttach((value) => !value)}>{showAttach ? 'Close form' : 'Add media'}</button>}
       />
 
+      {mediaQuery.isError && <PageStatus>Could not load saved Football media.</PageStatus>}
+
       {showAttach && <section className="mb-10 border-y border-line-subtle py-6">
         <h2 className="text-xl font-semibold text-ink">Attach media</h2>
         <div className="mt-5 grid gap-5 lg:grid-cols-2">
@@ -125,6 +137,7 @@ export default function FootballMediaPage() {
             <span className="label mb-1 block">Linked archive entries</span>
             <input className="input" value={linkSearch} onChange={(event) => setLinkSearch(event.target.value)} placeholder="Search competitions, teams, people or matches..." aria-label="Search Football entries to link" />
             {suggestions.length > 0 && <div className="mt-1 max-h-48 overflow-y-auto border border-line-subtle bg-surface-raised">{suggestions.map((item) => <button key={`${item.entityKind}-${item.entityId}`} className="block w-full border-b border-line-subtle px-3 py-2 text-left text-sm hover:bg-surface-overlay" onClick={() => { setLinks((current) => [...current, item]); setLinkSearch('') }}><span className="text-ink">{item.label}</span><span className="ml-2 text-xs text-ink-muted">{item.entityKind}</span></button>)}</div>}
+            {searchQuery.isError && <p className="mt-2 text-sm text-signal-anomaly">Could not search Football entries.</p>}
             <div className="mt-4 flex flex-wrap gap-2">{links.map((link) => <button key={`${link.entityKind}-${link.entityId}`} className="chip" title="Remove link" onClick={() => setLinks((current) => current.filter((item) => item !== link))}>{link.label} / remove</button>)}</div>
             {!links.length && <p className="mt-3 text-sm text-ink-muted">One attachment can link to several archive entries. Match footage rolls up to both teams and the competition automatically.</p>}
           </div>
@@ -144,8 +157,13 @@ export default function FootballMediaPage() {
             <div className="flex gap-2"><button className="btn-ghost" onClick={() => item.localPath ? api.football.openMedia(item.localPath) : item.url && api.football.openExternalLink('website', item.url)}>Open</button><button className="btn-ghost text-signal-anomaly" onClick={() => remove(item.id, item.title)}>Remove</button></div>
           </div>
         ))}
-        {!data.length && <p className="py-8 text-sm text-ink-muted">No media attachments match this shelf.</p>}
+        {!mediaQuery.isError && !data.length && <p className="py-8 text-sm text-ink-muted">No media attachments match this shelf.</p>}
       </div>
+      {mediaQuery.hasNextPage && (
+        <button className="btn-ghost mt-5" disabled={mediaQuery.isFetchingNextPage} onClick={() => mediaQuery.fetchNextPage()}>
+          {mediaQuery.isFetchingNextPage ? 'Loading more...' : 'Load more media'}
+        </button>
+      )}
     </div>
   )
 }

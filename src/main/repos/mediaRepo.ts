@@ -11,6 +11,7 @@ import type {
   MediaListPageRequest,
   MediaListPage,
   HomeLibraryOverview,
+  SeasonalAnimeOverview,
   MediaListFacets,
   MediaDetail,
   CastEntry,
@@ -89,6 +90,31 @@ const SEASON_SQL = `CASE
   ELSE NULL
 END`
 
+const RELEASE_YEAR_SQL = `CASE
+  WHEN substr(m.release_date, 1, 10) GLOB
+    '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+    THEN CAST(substr(m.release_date, 1, 4) AS INTEGER)
+  ELSE NULL
+END`
+
+// Seasonal browse follows seasonForItem(): a positive integer seasonYear is
+// canonical only alongside a valid canonical season. Otherwise the release
+// year wins, including when free-form metadata contains an unusable value.
+const SEASON_YEAR_SQL = `CASE
+  WHEN lower(json_extract(m.metadata, '$.season')) IN ('winter','spring','summer','fall')
+    THEN COALESCE(
+      CASE WHEN json_type(m.metadata, '$.seasonYear') IN ('integer','real')
+        AND json_extract(m.metadata, '$.seasonYear') > 0
+        AND json_extract(m.metadata, '$.seasonYear') =
+          CAST(json_extract(m.metadata, '$.seasonYear') AS INTEGER)
+        THEN CAST(json_extract(m.metadata, '$.seasonYear') AS INTEGER)
+        ELSE NULL
+      END,
+      ${RELEASE_YEAR_SQL}
+    )
+  ELSE ${RELEASE_YEAR_SQL}
+END`
+
 const SEASON_KEYS = new Set(['winter', 'spring', 'summer', 'fall'])
 
 // Card queries never ship detail prose or the full provider metadata object.
@@ -101,6 +127,12 @@ const MEDIA_SUMMARY_SQL = `m.id, m.media_type, m.title, m.title_original,
       THEN json_object('metacritic', json_extract(m.metadata, '$.metacritic'))
       ELSE NULL END
     ELSE NULL END AS metadata,
+  m.created_at, m.updated_at`
+
+const SEASONAL_SUMMARY_SQL = `m.id, m.media_type, m.title, m.title_original,
+  NULL AS synopsis, m.cover_path, m.release_date, m.total_units, m.status,
+  m.score, m.progress, m.rewatch_count, m.favorite,
+  json_object('season', ${SEASON_SQL}, 'seasonYear', ${SEASON_YEAR_SQL}) AS metadata,
   m.created_at, m.updated_at`
 
 // Sort key -> column/expression. A whitelist on purpose: the value reaches SQL
@@ -327,6 +359,46 @@ export function homeOverview(): HomeLibraryOverview {
         : null
     }
   }
+}
+
+export function seasonalAnime(year: number, includeUnknown = false): SeasonalAnimeOverview {
+  const db = getSqlite()
+  const selectedYear = Math.max(1, Math.trunc(year))
+  const known = `${SEASON_YEAR_SQL} IS NOT NULL AND ${SEASON_SQL} IS NOT NULL`
+  const unknown = `${SEASON_YEAR_SQL} IS NULL OR ${SEASON_SQL} IS NULL`
+  const years = db
+    .prepare(
+      `SELECT ${SEASON_YEAR_SQL} AS year, COUNT(*) AS count
+       FROM media_item m
+       WHERE m.media_type = 'anime' AND ${known}
+       GROUP BY ${SEASON_YEAR_SQL}
+       ORDER BY year DESC`
+    )
+    .all() as { year: number; count: number }[]
+  const items = db
+    .prepare(
+      `SELECT ${SEASONAL_SUMMARY_SQL} FROM media_item m
+       WHERE m.media_type = 'anime' AND ${known} AND ${SEASON_YEAR_SQL} = ?
+       ORDER BY m.release_date ASC, m.title ASC`
+    )
+    .all(selectedYear)
+    .map(mapMediaSummary)
+  const unknownCount = (
+    db
+      .prepare(`SELECT COUNT(*) AS count FROM media_item m WHERE m.media_type = 'anime' AND (${unknown})`)
+      .get() as { count: number }
+  ).count
+  const unknownItems = includeUnknown
+    ? db
+        .prepare(
+          `SELECT ${SEASONAL_SUMMARY_SQL} FROM media_item m
+           WHERE m.media_type = 'anime' AND (${unknown})
+           ORDER BY m.title ASC`
+        )
+        .all()
+        .map(mapMediaSummary)
+    : []
+  return { year: selectedYear, years, items, unknown: unknownItems, unknownCount }
 }
 
 const byCreatedDesc = (a: MediaSummary, b: MediaSummary): number =>

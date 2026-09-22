@@ -48,8 +48,8 @@ const NON_WORD_POS = new Set(['助詞', '助動詞', '記号'])
 const JP_CHAR = /[぀-ヿ㐀-䶿一-鿿豈-﫿]/
 
 // Returns [] for blank input or tokenizer failure — the renderer treats [] as
-// "no tokenization available" and falls back to manual selection (Jisho itself
-// deconjugates, so those lookups still work).
+// "no tokenization available" and falls back to manual selection. Dictionary
+// lookup still applies the local rule-based deinflector.
 export async function tokenize(text: string): Promise<JpToken[]> {
   const trimmed = text.trim()
   if (!trimmed) return []

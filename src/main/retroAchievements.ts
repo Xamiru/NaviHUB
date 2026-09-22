@@ -1,5 +1,5 @@
 import { downloadImages } from './files'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { updateActivity } from './progress'
 import * as settingsRepo from './repos/settingsRepo'
 import * as achievementRepo from './repos/achievementRepo'
@@ -19,6 +19,9 @@ import type { AchievementSetupResult, RaGameCandidate } from '@shared/types'
 
 const API = 'https://retroachievements.org/API'
 const BADGE = 'https://media.retroachievements.org/Badge'
+
+type RaCatalogRow = RaGameCandidate & { norm: string }
+const gameListCache = new Map<string, Promise<RaCatalogRow[]>>()
 
 export function raCredentials(): { username: string; key: string } {
   const username = settingsRepo.get('ra.username')?.trim()
@@ -44,7 +47,8 @@ async function raGet(endpoint: string, params: Record<string, string>): Promise<
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v)
   const res = await fetchWithRetry(url.toString(), {
     headers: { Accept: 'application/json' },
-    timeoutMs: 20_000
+    timeoutMs: 20_000,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
   })
   if (res.status === 401 || res.status === 403) {
     throw new Error('RetroAchievements rejected the credentials — check them in Settings.')
@@ -69,6 +73,36 @@ export async function consoles(): Promise<{ id: string; name: string }[]> {
     .sort((a, b) => a.name.localeCompare(b.name))
 }
 
+function gameList(consoleId: string): Promise<RaCatalogRow[]> {
+  const cached = gameListCache.get(consoleId)
+  if (cached) return cached
+
+  const pending = raGet('API_GetGameList.php', { i: consoleId, f: '1' })
+    .then((rows: any[]) =>
+      (rows ?? [])
+        .filter((g) => g?.ID && g?.Title)
+        .map((g) => ({
+          gameId: String(g.ID),
+          title: String(g.Title),
+          consoleName: g.ConsoleName ? String(g.ConsoleName) : null,
+          iconUrl: g.ImageIcon ? `https://media.retroachievements.org${g.ImageIcon}` : null,
+          norm: normTitle(String(g.Title))
+        }))
+    )
+    .catch((error) => {
+      // A transient failure is retryable; never cache the rejection for the
+      // rest of the app session.
+      gameListCache.delete(consoleId)
+      throw error
+    })
+  gameListCache.set(consoleId, pending)
+  return pending
+}
+
+export function resetGameListCache(): void {
+  gameListCache.clear()
+}
+
 // RA has no free-text search endpoint, so this pulls the console's game list
 // (achievement-bearing titles only) and filters locally. The dialog also takes
 // a game id directly, which is the escape hatch when a title's RA name differs
@@ -76,16 +110,7 @@ export async function consoles(): Promise<{ id: string; name: string }[]> {
 export async function searchGames(query: string, consoleId: string): Promise<RaGameCandidate[]> {
   const q = normTitle(query)
   if (!q || !consoleId) return []
-  const rows: any[] = await raGet('API_GetGameList.php', { i: consoleId, f: '1' })
-  return (rows ?? [])
-    .filter((g) => g?.ID && g?.Title)
-    .map((g) => ({
-      gameId: String(g.ID),
-      title: String(g.Title),
-      consoleName: g.ConsoleName ? String(g.ConsoleName) : null,
-      iconUrl: g.ImageIcon ? `https://media.retroachievements.org${g.ImageIcon}` : null,
-      norm: normTitle(String(g.Title))
-    }))
+  return (await gameList(consoleId))
     // The reverse direction (a SHORTER RA title contained in the query) is what
     // finds "Mario Kart 64" from "Mario Kart 64 (USA)", but it needs a length
     // floor or a game literally called "3" matches every query containing a 3.
@@ -105,11 +130,11 @@ export async function fetchRaGame(
   const id = raGameId.trim()
   if (!/^\d+$/.test(id)) throw new Error(`Not a RetroAchievements game id: ${raGameId}`)
 
-  // Same rule as the Steam side: remember a retry-friendly choice, but never
-  // relabel a set that belongs to the other provider until the fetch lands.
+  // Same rule as the Steam side: remember a first choice for retry, but commit
+  // any replacement identity only with the complete new snapshot.
   const existing = achievementRepo.getTracking(mediaId)
-  if (!existing || existing.provider === 'ra') {
-    achievementRepo.setAssociation(mediaId, 'ra', id)
+  if (!existing) {
+    achievementRepo.setInitialAssociation(mediaId, 'ra', id)
   }
 
   updateActivity({ phase: 'fetching' })
@@ -137,28 +162,23 @@ export async function fetchRaGame(
   )
 
   updateActivity({ phase: 'writing' })
-  achievementRepo.upsertSchema(
-    mediaId,
-    'ra',
-    id,
-    entries
-      .filter((a) => a?.ID)
-      .sort((a, b) => Number(a.DisplayOrder ?? 0) - Number(b.DisplayOrder ?? 0))
-      .map((a) => {
-        const icon = badgeUrl(a.BadgeName, false)
-        const gray = badgeUrl(a.BadgeName, true)
-        return {
-          apiName: String(a.ID),
-          name: String(a.Title ?? a.ID),
-          description: a.Description ? String(a.Description) : null,
-          hidden: false, // RA has no hidden flag
-          iconPath: (icon && images.get(icon)) || null,
-          iconGrayPath: (gray && images.get(gray)) || null,
-          points: Number.isFinite(Number(a.Points)) ? Number(a.Points) : null,
-          globalPct: pctOf(a.NumAwarded)
-        }
-      })
-  )
+  const schema = entries
+    .filter((a) => a?.ID)
+    .sort((a, b) => Number(a.DisplayOrder ?? 0) - Number(b.DisplayOrder ?? 0))
+    .map((a) => {
+      const icon = badgeUrl(a.BadgeName, false)
+      const gray = badgeUrl(a.BadgeName, true)
+      return {
+        apiName: String(a.ID),
+        name: String(a.Title ?? a.ID),
+        description: a.Description ? String(a.Description) : null,
+        hidden: false, // RA has no hidden flag
+        iconPath: (icon && images.get(icon)) || null,
+        iconGrayPath: (gray && images.get(gray)) || null,
+        points: Number.isFinite(Number(a.Points)) ? Number(a.Points) : null,
+        globalPct: pctOf(a.NumAwarded)
+      }
+    })
 
   // Hardcore first: it is the stricter, more meaningful earn, and RA sets both
   // fields when a hardcore unlock happened.
@@ -172,7 +192,15 @@ export async function fetchRaGame(
       unlockedAtMs: parseRaDate(a.DateEarnedHardcore || a.DateEarned)
     }))
     .filter((u) => u.unlockedAtMs != null)
-  const fresh = achievementRepo.insertUnlocks(mediaId, unlocks, 'ra', Date.now())
+  const fresh = achievementRepo.replaceSchemaWithUnlocks(
+    mediaId,
+    'ra',
+    id,
+    schema,
+    unlocks,
+    'ra',
+    Date.now()
+  )
 
   const summary = achievementRepo.summaryFor(mediaId)
   return {

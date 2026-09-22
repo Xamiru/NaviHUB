@@ -11,24 +11,18 @@
  */
 import { app } from 'electron'
 import { autoUpdater, CancellationToken } from 'electron-updater'
-import { get as getSetting } from './repos/settingsRepo'
-import { fetchWithRetry } from './http'
 import * as tasks from './tasks'
 import {
   friendlyUpdateError,
   idleStatus,
   reduceUpdate,
-  tokenTestResult,
   updateEnvironment,
   type UpdaterEvent
 } from './updaterCore'
-import type { UpdateEnvironment, UpdateStatus, UpdateTestResult } from '@shared/types'
+import type { UpdateEnvironment, UpdateStatus } from '@shared/types'
 
-// Must stay in sync with the `publish` block in electron-builder.yml. The
-// packaged app also ships app-update.yml with these values, but the token can
-// only be supplied at runtime (it lives in the settings table), and setFeedURL
-// takes the whole config or nothing.
-const GITHUB_OWNER = 'AmirHTaee'
+// Must stay in sync with the `publish` block in electron-builder.yml.
+const GITHUB_OWNER = 'Xamiru'
 const GITHUB_REPO = 'NaviHUB'
 
 let status: UpdateStatus | null = null
@@ -41,21 +35,15 @@ function msg(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
 
-function token(): string {
-  return getSetting('github.token')?.trim() ?? ''
-}
-
 function environment(): UpdateEnvironment {
   return updateEnvironment({
     packaged: app.isPackaged,
-    portableExe: process.env.PORTABLE_EXECUTABLE_FILE ?? null,
-    token: token()
+    portableExe: process.env.PORTABLE_EXECUTABLE_FILE ?? null
   })
 }
 
 // Shallow copy, like musicDownload.getStatus — the renderer must never hold a
-// live reference to mutable main state. `environment` is recomputed on every
-// read because it changes mid-session the moment a token is pasted.
+// live reference to mutable main state.
 export function getStatus(): UpdateStatus {
   const env = environment()
   if (!status || status.state === 'idle') return idleStatus(app.getVersion(), env)
@@ -104,9 +92,7 @@ function configure(): void {
   autoUpdater.setFeedURL({
     provider: 'github',
     owner: GITHUB_OWNER,
-    repo: GITHUB_REPO,
-    private: true,
-    token: token()
+    repo: GITHUB_REPO
   })
 }
 
@@ -151,8 +137,8 @@ export function downloadUpdate(): UpdateStatus {
 
   // A task for the DOWNLOAD only — a check resolves in a second and would just
   // be noise in the list. Projected from the module-level `status`, NOT
-  // getStatus(): that one recomputes environment() (an app.isPackaged check
-  // plus a settings read) on every call, and tasks:list polls ~1/s.
+  // getStatus(): that one recomputes environment() on every call, and
+  // tasks:list polls ~1/s.
   //
   // No install special-case is needed: reaching 'ready' settles this task
   // 'done', so it is already terminal by the time quitAndInstall runs and
@@ -212,37 +198,5 @@ export function killActiveUpdate(): void {
     cancelToken?.cancel()
   } catch {
     /* quitting anyway */
-  }
-}
-
-// Verifies the saved token against the Releases API directly, so a bad token is
-// diagnosed HERE with a real message rather than as a bare 404 inside
-// electron-updater. Resolves (never rejects) so the Settings card renders it.
-export async function testGithubToken(): Promise<UpdateTestResult> {
-  const t = token()
-  if (!t) return { ok: false, message: 'No token saved yet.' }
-  try {
-    // Deliberately the SAME endpoint and the SAME auth scheme as
-    // PrivateGitHubProvider (`/releases/latest`, `authorization: token <pat>`).
-    // GitHub also accepts `Bearer`, but a diagnostic that exercises a different
-    // auth path than the real updater can pass while updating still fails.
-    const res = await fetchWithRetry(
-      `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/releases/latest`,
-      {
-        headers: {
-          authorization: `token ${t}`,
-          accept: 'application/vnd.github.v3+json',
-          'User-Agent': 'NaviHUB'
-        },
-        // Interactive button: fail fast instead of sitting on a rate-limit wait.
-        timeoutMs: 15_000,
-        rateLimitWaits: 0
-      },
-      1
-    )
-    const tag = res.ok ? (((await res.json()) as { tag_name?: string }).tag_name ?? null) : null
-    return tokenTestResult(res.status, tag)
-  } catch (e) {
-    return { ok: false, message: msg(e) }
   }
 }

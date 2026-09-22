@@ -17,6 +17,7 @@ import { saveEntityEnrichment } from '../src/main/football/enrichment'
 import {
   footballSeasonStatus,
   saveApiFixtureDetails,
+  saveOverlayFixtureDetails,
   saveApiStandings,
   saveApiTopScorers,
   writeOverlayResultSlice,
@@ -163,6 +164,219 @@ describe('Football repository', () => {
     expect(db.prepare(`SELECT COUNT(*) AS n FROM football_source_ref WHERE entity_kind='match' AND entity_id=?`).get(ownedId)).toEqual({ n: 0 })
   })
 
+  it('quarantines cross-source result disagreements until one assertion is accepted', () => {
+    const match = (source: SourceMatch['source'], sourceId: string, homeScore: number): SourceMatch => ({
+      sourceId,
+      competitionKey: 'premier-league',
+      seasonKey: '2025/26',
+      seasonLabel: '2025/26',
+      date: '2026-01-01',
+      home: { sourceId: 'home', name: 'Home', country: 'England', national: false },
+      away: { sourceId: 'away', name: 'Away', country: 'England', national: false },
+      stage: null,
+      round: null,
+      status: 'finished',
+      homeScore,
+      awayScore: 0,
+      homeHalfTime: null,
+      awayHalfTime: null,
+      homeExtraTime: null,
+      awayExtraTime: null,
+      homePenalties: null,
+      awayPenalties: null,
+      goals: null,
+      source,
+      sourceUrl: 'fixture',
+      rawFingerprint: sourceId
+    })
+    const slice = (source: SourceMatch['source'], item: SourceMatch): SourceSlice => ({
+      source,
+      competitionKey: 'premier-league',
+      seasonKey: '2025/26',
+      revision: source,
+      coverage: { results: 'complete' },
+      matches: [item]
+    })
+    writeSlice(slice('engsoccerdata', match('engsoccerdata', 'a', 1)))
+    writeSlice(slice('openfootball', match('openfootball', 'b', 2)))
+    const stored = db.prepare(`SELECT id,home_score AS score,conflicted FROM football_match
+      WHERE match_date='2026-01-01'`).get() as { id: number; score: number; conflicted: number }
+    expect(stored).toMatchObject({ score: 1, conflicted: 1 })
+    const conflict = db.prepare(`SELECT id,status FROM football_conflict
+      WHERE entity_kind='match' AND entity_id=?`).get(stored.id) as { id: number; status: string }
+    expect(conflict.status).toBe('open')
+    expect(db.prepare(`SELECT state FROM football_coverage
+      WHERE source='openfootball' AND facet='results'`).get()).toEqual({ state: 'conflicted' })
+    const coverageScope = db.prepare(`SELECT c.id AS competitionId,s.id AS seasonId
+      FROM football_season s JOIN football_competition c ON c.id=s.competition_id
+      WHERE c.key='premier-league' AND s.key='2025/26'`).get() as {
+      competitionId: number
+      seasonId: number
+    }
+    db.prepare(`INSERT INTO football_coverage
+      (competition_id,season_id,source,facet,state,item_count)
+      VALUES (?,?,'api-football','results','partial',0)`
+    ).run(coverageScope.competitionId, coverageScope.seasonId)
+
+    football.resolveConflict(conflict.id, { action: 'ignore' })
+    expect(db.prepare(`SELECT status FROM football_conflict WHERE id=?`).get(conflict.id)).toEqual({
+      status: 'ignored'
+    })
+    expect(db.prepare(`SELECT conflicted FROM football_match WHERE id=?`).get(stored.id)).toEqual({
+      conflicted: 1
+    })
+
+    football.resolveConflict(conflict.id, { action: 'acceptSourceB' })
+    expect(db.prepare(`SELECT home_score AS score,conflicted FROM football_match WHERE id=?`
+    ).get(stored.id)).toEqual({ score: 2, conflicted: 0 })
+    expect(db.prepare(`SELECT status,resolution FROM football_conflict WHERE id=?`
+    ).get(conflict.id)).toEqual({ status: 'resolved', resolution: 'Accepted source B' })
+    expect(db.prepare(`SELECT state FROM football_coverage
+      WHERE source='openfootball' AND facet='results'`).get()).toEqual({ state: 'complete' })
+    expect(db.prepare(`SELECT state FROM football_coverage
+      WHERE source='api-football' AND facet='results'`).get()).toEqual({ state: 'partial' })
+
+    writeSlice(slice('statsbomb', match('statsbomb', 'sb-c', 1)))
+    const laterConflict = db.prepare(`SELECT id,source_a AS sourceA,value_a AS valueA,
+      source_b AS sourceB,value_b AS valueB FROM football_conflict
+      WHERE entity_kind='match' AND entity_id=? AND status='open' ORDER BY id DESC LIMIT 1`
+    ).get(stored.id) as {
+      id: number
+      sourceA: string
+      valueA: string
+      sourceB: string
+      valueB: string
+    }
+    expect(laterConflict.sourceA).toBe('openfootball')
+    expect(JSON.parse(laterConflict.valueA)).toMatchObject({ homeScore: 2 })
+    expect(laterConflict.sourceB).toBe('statsbomb')
+    expect(JSON.parse(laterConflict.valueB)).toMatchObject({ homeScore: 1 })
+    football.resolveConflict(laterConflict.id, { action: 'acceptSourceA' })
+
+    const scheduled = {
+      ...match('international-results', 'c', 0),
+      status: 'scheduled' as const,
+      homeScore: null,
+      awayScore: null
+    }
+    writeSlice(slice('international-results', scheduled))
+    expect(db.prepare(`SELECT status,home_score AS score FROM football_match WHERE id=?`
+    ).get(stored.id)).toEqual({ status: 'finished', score: 2 })
+  })
+
+  it('keeps rejected scorer children quarantined with their conflicting result', () => {
+    const match = (
+      source: SourceMatch['source'],
+      sourceId: string,
+      homeScore: number,
+      playerName: string
+    ): SourceMatch => ({
+      sourceId,
+      competitionKey: 'premier-league',
+      seasonKey: '2025/26',
+      seasonLabel: '2025/26',
+      date: '2026-02-01',
+      home: { sourceId: 'home', name: 'Home', country: 'England', national: false },
+      away: { sourceId: 'away', name: 'Away', country: 'England', national: false },
+      stage: null,
+      round: null,
+      status: 'finished',
+      homeScore,
+      awayScore: 0,
+      homeHalfTime: null,
+      awayHalfTime: null,
+      homeExtraTime: null,
+      awayExtraTime: null,
+      homePenalties: null,
+      awayPenalties: null,
+      goals: [{
+        team: 'home',
+        playerName,
+        playerSourceId: `${sourceId}-scorer`,
+        minute: 12,
+        extraMinute: null,
+        ownGoal: false,
+        penalty: false
+      }],
+      source,
+      sourceUrl: 'fixture',
+      rawFingerprint: sourceId
+    })
+    const slice = (source: SourceMatch['source'], item: SourceMatch): SourceSlice => ({
+      source,
+      competitionKey: 'premier-league',
+      seasonKey: '2025/26',
+      revision: source,
+      coverage: { results: 'complete', scorers: 'complete' },
+      matches: [item]
+    })
+
+    writeSlice(slice('engsoccerdata', match('engsoccerdata', 'scorer-a', 1, 'First Scorer')))
+    writeSlice(slice('openfootball', match('openfootball', 'scorer-b', 2, 'Rejected Scorer')))
+
+    expect(db.prepare(`SELECT p.name FROM football_event e
+      JOIN football_person p ON p.id=e.person_id WHERE e.type='goal'`).all()).toEqual([
+      { name: 'First Scorer' }
+    ])
+    expect(db.prepare(`SELECT state FROM football_coverage
+      WHERE source='openfootball' AND facet='scorers'`).get()).toEqual({ state: 'conflicted' })
+  })
+
+  it('reconciles retained matches when a complete refresh prunes one source assertion', () => {
+    const match = (
+      source: SourceMatch['source'],
+      sourceId: string,
+      homeScore: number
+    ): SourceMatch => ({
+      sourceId,
+      competitionKey: 'premier-league',
+      seasonKey: '2025/26',
+      seasonLabel: '2025/26',
+      date: '2026-03-01',
+      home: { sourceId: 'home', name: 'Home', country: 'England', national: false },
+      away: { sourceId: 'away', name: 'Away', country: 'England', national: false },
+      stage: null,
+      round: null,
+      status: 'finished',
+      homeScore,
+      awayScore: 0,
+      homeHalfTime: null,
+      awayHalfTime: null,
+      homeExtraTime: null,
+      awayExtraTime: null,
+      homePenalties: null,
+      awayPenalties: null,
+      goals: null,
+      source,
+      sourceUrl: 'fixture',
+      rawFingerprint: sourceId
+    })
+    const slice = (source: SourceMatch['source'], matches: SourceMatch[]): SourceSlice => ({
+      source,
+      competitionKey: 'premier-league',
+      seasonKey: '2025/26',
+      revision: source,
+      coverage: { results: 'complete' },
+      matches
+    })
+
+    writeSlice(slice('engsoccerdata', [match('engsoccerdata', 'prune-a', 1)]))
+    writeSlice(slice('openfootball', [match('openfootball', 'prune-b', 2)]))
+    const stored = db.prepare(`SELECT id FROM football_match WHERE match_date='2026-03-01'`
+    ).get() as { id: number }
+    writeSlice(slice('engsoccerdata', []))
+
+    expect(db.prepare(`SELECT home_score AS score,conflicted FROM football_match WHERE id=?`
+    ).get(stored.id)).toEqual({ score: 2, conflicted: 0 })
+    expect(db.prepare(`SELECT status,resolution FROM football_conflict
+      WHERE entity_kind='match' AND entity_id=?`).get(stored.id)).toEqual({
+      status: 'resolved',
+      resolution: 'Source assertion removed by complete refresh'
+    })
+    expect(db.prepare(`SELECT state FROM football_coverage
+      WHERE source='openfootball' AND facet='results'`).get()).toEqual({ state: 'complete' })
+  })
+
   it('escapes SQL LIKE wildcards in every section-local entity search', () => {
     db.prepare(`INSERT INTO football_team (name) VALUES ('100 Percent Club')`).run()
     db.prepare(`INSERT INTO football_team (name) VALUES ('100% Club')`).run()
@@ -200,6 +414,70 @@ describe('Football repository', () => {
       SELECT COUNT(*) AS n FROM football_article
       WHERE entity_kind='person' AND entity_id=11
     `).get()).toEqual({ n: 0 })
+  })
+
+  it('merges a quarantined person only into the explicitly selected target', () => {
+    db.exec(`
+      INSERT INTO football_person (id,name,role) VALUES
+        (70,'Source Player','player'),(71,'Canonical Player','manager');
+      INSERT INTO football_tenure (person_id,team_id,role,verified,complete)
+        VALUES (70,1,'player',1,1);
+      INSERT INTO football_favorite (entity_kind,entity_id) VALUES ('person',70);
+      INSERT INTO football_external_link (entity_kind,entity_id,provider,url)
+        VALUES ('person',70,'website','https://example.com/player');
+      INSERT INTO list (id,title,entity_kind) VALUES (70,'Football people','footballPerson');
+      INSERT INTO list_item (list_id,entity_id,sort_order) VALUES (70,70,0);
+      INSERT INTO football_conflict
+        (entity_kind,entity_id,facet,source_a,value_a,source_b,value_b)
+        VALUES ('person',70,'identity','statsbomb','Source Player','archive','Possible match: 71');
+    `)
+    const conflict = db.prepare(`SELECT id FROM football_conflict WHERE entity_id=70`).get() as {
+      id: number
+    }
+
+    football.resolveConflict(conflict.id, { action: 'mergeEntity', targetEntityId: 71 })
+
+    expect(db.prepare(`SELECT id FROM football_person WHERE id=70`).get()).toBeUndefined()
+    expect(db.prepare(`SELECT role FROM football_person WHERE id=71`).get()).toEqual({ role: 'both' })
+    expect(db.prepare(`SELECT person_id FROM football_tenure WHERE team_id=1`).get()).toEqual({
+      person_id: 71
+    })
+    expect(db.prepare(`SELECT entity_id FROM football_favorite WHERE entity_kind='person'`).get()
+    ).toEqual({ entity_id: 71 })
+    expect(db.prepare(`SELECT entity_id FROM football_external_link WHERE entity_kind='person'`).get()
+    ).toEqual({ entity_id: 71 })
+    expect(db.prepare(`SELECT entity_id FROM list_item WHERE list_id=70`).get()).toEqual({
+      entity_id: 71
+    })
+    expect(db.prepare(`SELECT entity_id,status,resolution FROM football_conflict WHERE id=?`
+    ).get(conflict.id)).toEqual({
+      entity_id: 71,
+      status: 'resolved',
+      resolution: 'Merged into person 71'
+    })
+  })
+
+  it('clears stale Player Quiz Pack facts when refreshed career evidence is insufficient', () => {
+    db.exec(`
+      INSERT INTO football_person (id,name,role,quiz_pack) VALUES (12,'Quiz Player','player',1);
+      INSERT INTO football_tenure
+        (person_id,team_id,role,start_date,verified,complete,sort_order)
+      VALUES (12,1,'player','2020-01-01',1,1,0);
+    `)
+    expect(saveEntityEnrichment('person', 12, {
+      qid: 'Q-short',
+      title: 'Quiz Player',
+      body: 'Reference.',
+      sourceUrl: 'https://example.com/player',
+      revision: '1',
+      imagePath: null,
+      imageLicense: null,
+      birthDate: null,
+      foundedYear: null,
+      career: [{ teamQid: null, teamName: 'Arsenal', startDate: '2020-01-01', endDate: null }]
+    }, true)).toBe(true)
+    expect(db.prepare(`SELECT quiz_pack FROM football_person WHERE id=12`).get()).toEqual({ quiz_pack: 0 })
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM football_tenure WHERE person_id=12`).get()).toEqual({ n: 0 })
   })
 
   it('derives current, upcoming and completed season states from current fixtures', () => {
@@ -306,6 +584,13 @@ describe('Football repository', () => {
       VALUES ('person',40,'top-scorer:1','{"goals":12,"teamId":1}','api-football','accepted');
     `)
     expect(saveApiStandings('premier-league', '2023/24', [])).toBe(false)
+    expect(saveApiStandings('premier-league', '2023/24', [{ league: { standings: [[{
+      rank: 1,
+      team: { id: 501, name: 'Incomplete Team' },
+      all: { played: 10, win: null, draw: 1, lose: 1, goals: { for: 20, against: 5 } },
+      goalsDiff: 15,
+      points: 25
+    }]] } }])).toBe(false)
     expect(saveApiTopScorers('premier-league', '2023/24', [])).toBe(false)
     expect(db.prepare(`SELECT COUNT(*) AS n FROM football_standing WHERE season_id=1`).get()).toEqual({ n: 1 })
     expect(db.prepare(`SELECT COUNT(*) AS n FROM football_assertion WHERE facet='top-scorer:1'`).get()).toEqual({ n: 1 })
@@ -381,6 +666,39 @@ describe('Football repository', () => {
     ])
   })
 
+  it('preserves stored overlay children when a newer pack omits a facet', () => {
+    db.exec(`
+      INSERT INTO football_person (id,name,role) VALUES (60,'Stored Player','player');
+      INSERT INTO football_source_ref (entity_kind,entity_id,source,external_id)
+        VALUES ('match',1,'statsbomb','sb-match'),
+               ('team',1,'statsbomb','sb-home'),
+               ('team',2,'statsbomb','sb-away');
+      INSERT INTO football_event (match_id,team_id,person_id,type,minute)
+        VALUES (1,1,60,'goal',10);
+      INSERT INTO football_lineup (match_id,team_id,person_id,role,starter)
+        VALUES (1,1,60,'player',1);
+      UPDATE football_match SET event_coverage='complete',lineup_coverage='complete' WHERE id=1;
+    `)
+    const match: SourceMatch = {
+      sourceId: 'sb-match', competitionKey: 'premier-league', seasonKey: '2023/24',
+      seasonLabel: '2023/24', date: '2024-03-01',
+      home: { sourceId: 'sb-home', name: 'Arsenal', country: 'England', national: false },
+      away: { sourceId: 'sb-away', name: 'Chelsea', country: 'England', national: false },
+      stage: null, round: null, status: 'finished', homeScore: 2, awayScore: 1,
+      homeHalfTime: null, awayHalfTime: null, homeExtraTime: null, awayExtraTime: null,
+      homePenalties: null, awayPenalties: null, goals: null, source: 'statsbomb',
+      sourceUrl: 'fixture', rawFingerprint: 'sb-match'
+    }
+    expect(saveOverlayFixtureDetails('statsbomb', match, null, null)).toEqual({
+      eventsComplete: false,
+      lineupsComplete: false
+    })
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM football_event WHERE match_id=1`).get()).toEqual({ n: 1 })
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM football_lineup WHERE match_id=1`).get()).toEqual({ n: 1 })
+    expect(db.prepare(`SELECT event_coverage,lineup_coverage FROM football_match WHERE id=1`).get()
+    ).toEqual({ event_coverage: 'complete', lineup_coverage: 'complete' })
+  })
+
   it('reports the last current refresh for the selected competition', () => {
     db.exec(`
       INSERT INTO football_import_run
@@ -417,6 +735,11 @@ describe('Football repository', () => {
     expect(match).toMatchObject({ homeScore: 2, awayScore: 1, favorite: true })
     football.setFavorite('match', 1, false)
     expect(football.listMatches()[0]).toMatchObject({ homeScore: 2, awayScore: 1, favorite: false })
+  })
+
+  it('rejects favorites for nonexistent polymorphic Football entities', () => {
+    expect(() => football.setFavorite('person', 9999, true)).toThrow(/not found/i)
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM football_favorite`).get()).toEqual({ n: 0 })
   })
 
   it('labels team season records with their season and competition', () => {

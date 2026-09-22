@@ -13,13 +13,15 @@ const LIMIT = 200
 
 // Cross-event view of the personal layer: the matches you rated, best first.
 export default function WrestlingRatedPage(): JSX.Element {
-  const { data: matches, isLoading } = useQuery({
+  const query = useQuery({
     queryKey: qk.wrestling.topRated(LIMIT),
     queryFn: () => api.wrestling.topRatedMatches(LIMIT)
   })
+  const matches = query.data
   const { visible, sentinelRef } = useIncrementalList(matches ?? [])
 
-  if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (query.isLoading) return <PageStatus>Loading…</PageStatus>
+  if (query.isError) return <PageStatus>Could not load your rated matches.</PageStatus>
 
   return (
     <EditorialDetailFrame width="reading">
@@ -38,7 +40,7 @@ export default function WrestlingRatedPage(): JSX.Element {
           {visible.map((m) => (
             <div key={m.id}>
               <Link
-                to={`/wrestling/event/${m.eventId}`}
+                to={`/wrestling/match/${m.id}`}
                 className="mt-3 block text-xs uppercase tracking-wider text-gray-500 hover:text-accent"
               >
                 {m.eventName}

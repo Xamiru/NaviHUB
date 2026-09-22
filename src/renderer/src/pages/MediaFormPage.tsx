@@ -9,6 +9,7 @@ import { isCompletedStatus, type MediaConfig } from '../lib/mediaConfig'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
+import { Field } from '../components/Field'
 import type { MediaItemInput } from '@shared/types'
 
 // The full editor for one library entry. Status, score and favorite are also
@@ -67,6 +68,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
   const [tagIds, setTagIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(!editing)
+  const [loadAttempt, setLoadAttempt] = useState(0)
   // A missing row and a FAILED read are different: the second must not drop
   // the loading gate, or the user edits a blank form over a live title and
   // Save writes those blanks back over the importer's data.
@@ -128,7 +130,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
     return () => {
       cancelled = true
     }
-  }, [editing, id])
+  }, [editing, id, loadAttempt])
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
@@ -151,7 +153,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
     setForm((f) => {
       const next = { ...f, status }
       // Completing a unit-based item fills progress to the total.
-      if (cfg.unitProgress && isCompletedStatus(status) && f.totalUnits.trim() !== '') {
+      if (cfg.unitProgress && isCompletedStatus(status, statuses) && f.totalUnits.trim() !== '') {
         next.progress = f.totalUnits
       }
       return next
@@ -211,13 +213,10 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
       }
       await qc.invalidateQueries({ queryKey: qk.media.all })
       await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
-      // The form must drop out of history so Back from the detail page never
-      // returns into it. Editing is only entered from the item's own detail
-      // page, so go back to that existing entry — replacing the form with the
-      // detail URL instead would stack two identical detail entries and make
-      // the first Back click a no-op. Creating has no detail entry beneath.
-      if (editing) navigate(-1)
-      else navigate(`${cfg.basePath}/${targetId}`, { replace: true })
+      // Saving replaces the editor entry, so Back from the detail page never
+      // returns to a form. This also behaves predictably when the editor was
+      // opened from a deep link rather than the detail page.
+      navigate(`${cfg.basePath}/${targetId}`, { replace: true })
     } catch (e) {
       // Without this the button stayed on "Saving…" until you navigated away.
       toastError(e)
@@ -232,7 +231,23 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
   useEffect(() => setCoverFailed(false), [coverUrl])
 
   if (missing) return <PageStatus>Not found.</PageStatus>
-  if (loadError) return <PageStatus>Could not load this entry — {loadError}</PageStatus>
+  if (loadError)
+    return (
+      <PageStatus>
+        <span role="alert">Could not load this entry — {loadError}</span>
+        <button
+          className="btn-ghost ml-3"
+          onClick={() => {
+            setLoadError(null)
+            setMissing(false)
+            setLoaded(false)
+            setLoadAttempt((attempt) => attempt + 1)
+          }}
+        >
+          Retry
+        </button>
+      </PageStatus>
+    )
   if (!loaded) return <PageStatus>Loading…</PageStatus>
 
   return (
@@ -280,8 +295,8 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
           <Section title="Identity" className="mb-6">
             <div className="space-y-4">
               <div>
-                <label className="label">Title</label>
-                <input
+                <Field label="Title">
+                  <input
                   className="input"
                   value={form.title}
                   onChange={(e) => set('title', e.target.value)}
@@ -289,23 +304,26 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
                     cfg.key === 'movie' ? 'e.g. Inception' : "e.g. Frieren: Beyond Journey's End"
                   }
                   autoFocus
-                />
+                  />
+                </Field>
               </div>
               <div>
-                <label className="label">Original / Native title</label>
-                <input
+                <Field label="Original / Native title">
+                  <input
                   className="input"
                   value={form.titleOriginal}
                   onChange={(e) => set('titleOriginal', e.target.value)}
-                />
+                  />
+                </Field>
               </div>
               <div>
-                <label className="label">Synopsis</label>
-                <textarea
+                <Field label="Synopsis">
+                  <textarea
                   className="input min-h-[80px]"
                   value={form.synopsis}
                   onChange={(e) => set('synopsis', e.target.value)}
-                />
+                  />
+                </Field>
               </div>
             </div>
           </Section>
@@ -314,8 +332,8 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Status</label>
-                  <select
+                  <Field label="Status">
+                    <select
                     className="input"
                     value={form.status}
                     onChange={(e) => setStatus(e.target.value)}
@@ -326,11 +344,12 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
                         {s}
                       </option>
                     ))}
-                  </select>
+                    </select>
+                  </Field>
                 </div>
                 <div>
-                  <label className="label">Score (0–{scoreMax})</label>
-                  <input
+                  <Field label={`Score (0–${scoreMax})`}>
+                    <input
                     className="input"
                     type="number"
                     min={0}
@@ -339,47 +358,51 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
                     value={form.score}
                     onChange={(e) => set('score', e.target.value)}
                     placeholder="—"
-                  />
+                    />
+                  </Field>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 {!cfg.noProgress && (
                   <div>
-                    <label className="label">{cfg.progressFieldLabel}</label>
-                    <input
+                    <Field label={cfg.progressFieldLabel}>
+                      <input
                       className="input"
                       type="number"
                       min={0}
                       max={progressCap ?? undefined}
                       value={form.progress}
                       onChange={(e) => setProgress(e.target.value)}
-                    />
+                      />
+                    </Field>
                   </div>
                 )}
                 <div>
-                  <label className="label">{cfg.totalFieldLabel}</label>
-                  <input
+                  <Field label={cfg.totalFieldLabel}>
+                    <input
                     className="input"
                     type="number"
                     min={0}
                     value={form.totalUnits}
                     onChange={(e) => set('totalUnits', e.target.value)}
                     placeholder="—"
-                  />
+                    />
+                  </Field>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">{cfg.timesConsumedLabel}</label>
-                  <input
+                  <Field label={cfg.timesConsumedLabel}>
+                    <input
                     className="input"
                     type="number"
                     min={0}
                     value={form.timesConsumed}
                     onChange={(e) => set('timesConsumed', e.target.value)}
-                  />
+                    />
+                  </Field>
                 </div>
                 <label className="flex items-end gap-2 pb-2 text-sm">
                   <input
@@ -398,28 +421,27 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="label">Released</label>
-                  <input
+                  <Field label="Released">
+                    <input
                     className="input"
                     type="date"
                     value={form.releaseDate}
                     onChange={(e) => set('releaseDate', e.target.value)}
-                  />
+                    />
+                  </Field>
                 </div>
                 {showEpDuration && (
                   <div>
-                    <label className="label">Episode length (min)</label>
-                    <input
+                    <Field label="Episode length (min)" description="Used by Stats. Leave empty for the default.">
+                      <input
                       className="input"
                       type="number"
                       min={0}
                       value={form.epDuration}
                       onChange={(e) => set('epDuration', e.target.value)}
                       placeholder={cfg.key === 'tv' ? '40' : '24'}
-                    />
-                    <p className="mt-1 text-xs text-gray-500">
-                      Used by Stats. Leave empty for the default.
-                    </p>
+                      />
+                    </Field>
                   </div>
                 )}
               </div>
@@ -427,12 +449,13 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
               <TagEditor selected={tagIds} onChange={setTagIds} />
 
               <div>
-                <label className="label">Personal notes</label>
-                <textarea
+                <Field label="Personal notes">
+                  <textarea
                   className="input min-h-[60px]"
                   value={form.notes}
                   onChange={(e) => set('notes', e.target.value)}
-                />
+                  />
+                </Field>
               </div>
             </div>
           </Section>
@@ -481,7 +504,6 @@ function TagEditor({
 
   return (
     <div>
-      <label className="label">Tags / Genres</label>
       <div className="flex flex-wrap gap-2 mb-2">
         {selectedTags.map((t) => (
           <span key={t.id} className="chip">
@@ -492,26 +514,28 @@ function TagEditor({
               aria-label={`Remove ${t.name}`}
               onClick={() => onChange(selected.filter((id) => id !== t.id))}
             >
-              ×
+              ✕
             </button>
           </span>
         ))}
         {selectedTags.length === 0 && <span className="text-xs text-gray-400">No tags yet</span>}
       </div>
       <div className="flex gap-2">
-        <input
-          className="input max-w-xs"
-          list="all-tags"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault()
-              void add()
-            }
-          }}
-          placeholder="Add a tag and press Enter"
-        />
+        <Field label="Tags / Genres" hiddenLabel className="contents">
+          <input
+            className="input max-w-xs"
+            list="all-tags"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                void add()
+              }
+            }}
+            placeholder="Add a tag and press Enter"
+          />
+        </Field>
         <datalist id="all-tags">
           {all.map((t) => (
             <option key={t.id} value={t.name} />

@@ -25,9 +25,10 @@ export default function GameSessionIndicator() {
       to={`${cfg.basePath}/${status.mediaId}?tab=media`}
       className="flex shrink-0 items-center gap-2 rounded-full bg-base-700/80 px-3 py-1.5 text-xs text-gray-300 hover:text-accent"
       title={`${status.title} — playing for ${fmtDurationSec(status.elapsedSec)}`}
+      aria-label={`${status.title} — playing for ${fmtDurationSec(status.elapsedSec)}`}
     >
       <span className="inline-block h-2 w-2 rounded-full bg-accent motion-safe:animate-pulse" />
-      <span className="max-w-[14rem] truncate">
+      <span className="hidden max-w-[14rem] truncate sm:inline">
         {status.title} · {fmtDurationSec(status.elapsedSec)}
       </span>
     </Link>

@@ -54,11 +54,12 @@ export default function WrestlingEventPage(): JSX.Element {
   // Set when arriving from a list entry for one match (/wrestling/match/:id).
   const [params] = useSearchParams()
   const highlightId = Number(params.get('match')) || null
-  const { data: event, isLoading } = useQuery({
+  const eventQuery = useQuery({
     queryKey: qk.wrestling.event(eventId),
     queryFn: () => api.wrestling.event(eventId),
     enabled: Number.isFinite(eventId)
   })
+  const event = eventQuery.data
   const linkResolver = useWikiLinks(event?.lead)
   const { data: chrono } = useQuery({
     queryKey: qk.wrestling.chronology(eventId),
@@ -66,7 +67,8 @@ export default function WrestlingEventPage(): JSX.Element {
     enabled: Number.isFinite(eventId)
   })
 
-  if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (eventQuery.isLoading) return <PageStatus>Loading…</PageStatus>
+  if (eventQuery.isError) return <PageStatus>Could not load this event.</PageStatus>
   if (!event) return <PageStatus>Event not found.</PageStatus>
 
   const facts = [

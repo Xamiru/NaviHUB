@@ -1,7 +1,7 @@
 import { getSqlite } from './db/connection'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
-import { fetchWithRetry } from './http'
+import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
 import * as settingsRepo from './repos/settingsRepo'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
@@ -37,7 +37,11 @@ async function bearer(force = false): Promise<string> {
     'https://id.twitch.tv/oauth2/token' +
     `?client_id=${encodeURIComponent(id)}&client_secret=${encodeURIComponent(secret)}` +
     '&grant_type=client_credentials'
-  const res = await fetchWithRetry(url, { method: 'POST', timeoutMs: 15_000 })
+  const res = await fetchWithRetry(url, {
+    method: 'POST',
+    timeoutMs: 15_000,
+    maxResponseBytes: MAX_API_RESPONSE_BYTES
+  })
   if (!res.ok) {
     throw new Error(`Twitch auth failed (${res.status}) — check the IGDB Client ID/Secret in Settings.`)
   }
@@ -59,7 +63,8 @@ async function igdbQuery(endpoint: string, body: string): Promise<any[]> {
         Authorization: `Bearer ${await bearer(attempt > 0)}`,
         Accept: 'application/json'
       },
-      body
+      body,
+      maxResponseBytes: MAX_API_RESPONSE_BYTES
     })
     if (res.status === 401 && attempt === 0) continue // stale token → re-auth once
     if (!res.ok) throw new Error(`IGDB request failed (${res.status})`)
@@ -125,7 +130,8 @@ export async function importGame(igdbId: number): Promise<ImportSummary> {
   const rows = await igdbQuery(
     'games',
     `fields name, summary, first_release_date, cover.image_id, genres.name,
-     involved_companies.developer, involved_companies.publisher, involved_companies.company.name,
+     involved_companies.developer, involved_companies.publisher,
+     involved_companies.company.id, involved_companies.company.name,
      total_rating, total_rating_count;
      where id = ${id}; limit 1;`
   )
@@ -172,7 +178,7 @@ export async function importGame(igdbId: number): Promise<ImportSummary> {
       mediaId = existing.id
       db.prepare(
         `UPDATE media_item SET title=?, synopsis=?, cover_path=COALESCE(?, cover_path),
-         total_units=?, release_date=?, updated_at=datetime('now') WHERE id=?`
+         total_units=COALESCE(?, total_units), release_date=?, updated_at=datetime('now') WHERE id=?`
       ).run(title, g.summary || null, coverPath, lengthHours, released, mediaId)
     } else {
       const info = db
@@ -210,7 +216,7 @@ export async function importGame(igdbId: number): Promise<ImportSummary> {
     // legitimately be both) ----
     let studios = 0
     for (const node of g.involved_companies ?? []) {
-      if (!node?.company?.name) continue
+      if (!node?.company?.id || !node.company.name) continue
       const companyId = upsertCompany(db, node.company)
       for (const role of [node.developer && 'developer', node.publisher && 'publisher']) {
         if (!role) continue
