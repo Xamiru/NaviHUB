@@ -137,7 +137,7 @@ export function registerIpc(): void {
   // ---- media ----
   ipcMain.handle('media:list', (_e, filter) => mediaRepo.list(filter))
   ipcMain.handle('media:listPage', (_e, request) => mediaRepo.listPage(request))
-  ipcMain.handle('media:homeOverview', () => mediaRepo.homeOverview())
+  ipcMain.handle('media:homeOverview', () => mediaRepo.homeOverview(todayLocal()))
   ipcMain.handle('media:seasonalAnime', (_e, year, includeUnknown) =>
     mediaRepo.seasonalAnime(year, includeUnknown)
   )
@@ -196,8 +196,8 @@ export function registerIpc(): void {
   )
 
   // ---- people ----
-  ipcMain.handle('people:list', (_e, search, role, mediaType) =>
-    peopleRepo.list(search, role, mediaType)
+  ipcMain.handle('people:list', (_e, search, role, mediaType, limit) =>
+    peopleRepo.list(search, role, mediaType, limit)
   )
   ipcMain.handle('people:get', (_e, id) => peopleRepo.get(id))
   ipcMain.handle('people:credits', (_e, id) => peopleRepo.credits(id))
@@ -205,7 +205,9 @@ export function registerIpc(): void {
   ipcMain.handle('people:remove', (_e, id) => peopleRepo.remove(id))
 
   // ---- companies ----
-  ipcMain.handle('companies:list', (_e, search, mediaType) => companyRepo.list(search, mediaType))
+  ipcMain.handle('companies:list', (_e, search, mediaType, limit) =>
+    companyRepo.list(search, mediaType, limit)
+  )
   ipcMain.handle('companies:get', (_e, id) => companyRepo.get(id))
   ipcMain.handle('companies:media', (_e, id) => companyRepo.media(id))
   ipcMain.handle('companies:upsert', (_e, input) => companyRepo.upsert(input))

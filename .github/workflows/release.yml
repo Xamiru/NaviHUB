@@ -15,10 +15,10 @@ concurrency:
 env:
   # Version scheme: +0.1 per commit, staying in 0.x forever (0.9.0 -> 0.10.0).
   #   minor = BASE_MINOR + (commit count - BASE_COMMITS)
-  # The baseline below pins "7 commits == 0.2.0". Change both together, and only
-  # to deliberately re-baseline the numbering.
-  BASE_COMMITS: 7
-  BASE_MINOR: 2
+  # Re-baselined after the local releases advanced ahead of the old formula:
+  # 54 commits == 0.50.0. Change both together only deliberately.
+  BASE_COMMITS: 54
+  BASE_MINOR: 50
   NODE_VERSION: '24'
 
 jobs:
@@ -162,6 +162,12 @@ jobs:
           ls -lh artifacts
           # Re-running a failed release must not error on an existing tag.
           if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            # A stale baseline must never replace another commit's assets.
+            tag_sha=$(gh api "repos/$REPO/git/ref/tags/$TAG" --jq '.object.sha')
+            if [ "$tag_sha" != "${{ github.sha }}" ]; then
+              echo "::error::$TAG belongs to $tag_sha, not ${{ github.sha }}; re-baseline the version before publishing"
+              exit 1
+            fi
             gh release upload "$TAG" artifacts/* --repo "$REPO" --clobber
           else
             gh release create "$TAG" artifacts/* \

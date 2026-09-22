@@ -7,7 +7,7 @@ import type { Company, MediaItem, MediaType } from '@shared/types'
 // Sorted by how many distinct works they're linked to (most prolific first).
 // `mediaType` scopes the list to companies linked to works of that type (e.g.
 // the Studios browse is anime-only) by INNER JOINing media_item; omit for all.
-export function list(search?: string, mediaType?: MediaType | MediaType[]): Company[] {
+export function list(search?: string, mediaType?: MediaType | MediaType[], limit?: number): Company[] {
   const db = getSqlite()
   const types = mediaType ? (Array.isArray(mediaType) ? mediaType : [mediaType]) : []
   const join = types.length
@@ -27,9 +27,10 @@ export function list(search?: string, mediaType?: MediaType | MediaType[]): Comp
        ${join}
        ${where}
        GROUP BY c.id
-       ORDER BY COUNT(DISTINCT mc.media_id) DESC, c.name ASC`
+       ORDER BY COUNT(DISTINCT mc.media_id) DESC, c.name ASC
+       ${limit == null ? '' : 'LIMIT ?'}`
     )
-    .all(...params)
+    .all(...params, ...(limit == null ? [] : [Math.max(0, Math.trunc(limit))]))
     .map(mapCompany)
 }
 

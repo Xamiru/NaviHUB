@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import Tabs, { TabPanel } from '../components/Tabs'
 import PageHeader from '../components/PageHeader'
+import PageStatus from '../components/PageStatus'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -144,8 +145,10 @@ const SETTINGS_SEARCH: readonly SettingsSearchSection<TabId>[] = [
 ]
 
 export default function SettingsPage() {
-  const { data } = useSettings()
-  const { data: secretStorage } = useSecretStorage()
+  const settingsQueryResult = useSettings()
+  const secretStorageQueryResult = useSecretStorage()
+  const { data } = settingsQueryResult
+  const { data: secretStorage } = secretStorageQueryResult
   const qc = useQueryClient()
   // ?tab= deep-links a section (the Japanese hub's Set up list uses
   // ?tab=japanese); one-shot seed of history-scoped state, the MediaDetailPage
@@ -168,7 +171,36 @@ export default function SettingsPage() {
   const setKey: SaveFn = async (key, value) => {
     await api.settings.set(key, value)
     await qc.invalidateQueries({ queryKey: qk.settings.all })
+    if (key.endsWith('.statuses')) {
+      await qc.invalidateQueries({ queryKey: qk.media.homeOverview })
+    }
     toast('Saved', 'success')
+  }
+
+  if (settingsQueryResult.isPending || secretStorageQueryResult.isPending) {
+    return <PageStatus>Loading settings…</PageStatus>
+  }
+  if (settingsQueryResult.isError || secretStorageQueryResult.isError) {
+    return (
+      <div className="mx-auto max-w-6xl p-4 sm:p-6">
+        <PageHeader title="Settings" className="mb-6" />
+        <EmptyState
+          title="Settings could not be loaded"
+          body="The saved settings or protected storage state is unavailable. Retry before changing a setting."
+          action={
+            <button
+              className="btn-primary"
+              onClick={() => {
+                void settingsQueryResult.refetch()
+                void secretStorageQueryResult.refetch()
+              }}
+            >
+              Retry
+            </button>
+          }
+        />
+      </div>
+    )
   }
 
   return (
@@ -306,7 +338,7 @@ function SettingCard({
 
 // A single "text field + Save" setting seeded from the settings row `settingKey`.
 // Covers the API keys and folder paths, which are all this shape.
-function TextSetting({
+export function TextSetting({
   settingKey,
   data,
   onSave,
@@ -334,7 +366,8 @@ function TextSetting({
   const secret = type === 'password' && isSecretSettingKey(settingKey)
   const secretKey = secret ? (settingKey as SecretSettingKey) : null
   const configured = secretKey ? !!secretStorage?.configured[secretKey] : false
-  useEffect(() => setValue(secret ? '' : (data?.[settingKey] ?? '')), [data, settingKey, secret])
+  const savedValue = data?.[settingKey]
+  useEffect(() => setValue(secret ? '' : (savedValue ?? '')), [savedValue, settingKey, secret])
 
   async function save(): Promise<void> {
     if (secret && !value.trim()) return
@@ -532,7 +565,8 @@ function KnownBaselineSettings({
 
 function UiScaleSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
   const [scale, setScale] = useState(UI_SCALE_DEFAULT)
-  useEffect(() => setScale(parseUiScale(data?.['ui.scale'])), [data])
+  const savedScale = data?.['ui.scale']
+  useEffect(() => setScale(parseUiScale(savedScale)), [savedScale])
 
   async function pick(next: number) {
     setScale(next)
@@ -652,7 +686,8 @@ function SidebarSettings({ data, onSave }: { data?: Record<string, string>; onSa
 
 function ScoreSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
   const [scoreMax, setScoreMax] = useState('10')
-  useEffect(() => setScoreMax(data?.['score.max'] ?? '10'), [data])
+  const savedScoreMax = data?.['score.max']
+  useEffect(() => setScoreMax(savedScoreMax ?? '10'), [savedScoreMax])
   return (
     <SettingCard title="Score scale" description="Maximum score value (e.g. 10 or 100).">
       <div className="flex items-center gap-2">
@@ -681,13 +716,14 @@ function TimeStatsSettings({ data, onSave }: { data?: Record<string, string>; on
   const [tvEpMin, setTvEpMin] = useState('40')
   const [mangaChMin, setMangaChMin] = useState('5')
   const [bookPageMin, setBookPageMin] = useState('1.5')
-  useEffect(() => {
-    if (!data) return
-    setAnimeEpMin(data['stats.animeEpMinutes'] ?? '24')
-    setTvEpMin(data['stats.tvEpMinutes'] ?? '40')
-    setMangaChMin(data['stats.mangaChapterMinutes'] ?? '5')
-    setBookPageMin(data['stats.bookPageMinutes'] ?? '1.5')
-  }, [data])
+  const savedAnimeEpMin = data?.['stats.animeEpMinutes']
+  const savedTvEpMin = data?.['stats.tvEpMinutes']
+  const savedMangaChMin = data?.['stats.mangaChapterMinutes']
+  const savedBookPageMin = data?.['stats.bookPageMinutes']
+  useEffect(() => setAnimeEpMin(savedAnimeEpMin ?? '24'), [savedAnimeEpMin])
+  useEffect(() => setTvEpMin(savedTvEpMin ?? '40'), [savedTvEpMin])
+  useEffect(() => setMangaChMin(savedMangaChMin ?? '5'), [savedMangaChMin])
+  useEffect(() => setBookPageMin(savedBookPageMin ?? '1.5'), [savedBookPageMin])
 
   return (
     <SettingCard
@@ -985,16 +1021,16 @@ function CoachSettings({
   const [vertexRegion, setVertexRegion] = useState('')
   const [vertexCreds, setVertexCreds] = useState('')
 
-  useEffect(() => {
-    if (!data) return
-    setCoachProvider(data['coach.provider'] ?? 'gemini')
-    setCoachModel(data['coach.model'] ?? 'gemini-2.5-flash')
-    setGeminiKey('')
-    setAnthropicKey('')
-    setVertexProject(data['vertex.project_id'] ?? '')
-    setVertexRegion(data['vertex.region'] ?? '')
-    setVertexCreds(data['vertex.credentials_path'] ?? '')
-  }, [data])
+  const savedCoachProvider = data?.['coach.provider']
+  const savedCoachModel = data?.['coach.model']
+  const savedVertexProject = data?.['vertex.project_id']
+  const savedVertexRegion = data?.['vertex.region']
+  const savedVertexCreds = data?.['vertex.credentials_path']
+  useEffect(() => setCoachProvider(savedCoachProvider ?? 'gemini'), [savedCoachProvider])
+  useEffect(() => setCoachModel(savedCoachModel ?? 'gemini-2.5-flash'), [savedCoachModel])
+  useEffect(() => setVertexProject(savedVertexProject ?? ''), [savedVertexProject])
+  useEffect(() => setVertexRegion(savedVertexRegion ?? ''), [savedVertexRegion])
+  useEffect(() => setVertexCreds(savedVertexCreds ?? ''), [savedVertexCreds])
 
   return (
     <SettingCard
@@ -1203,7 +1239,7 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
             : (ytdlpCheck.error ?? 'yt-dlp not found')}
           {ytdlpCheck.ok && ytdlpCheck.versionOld && (
             <span className="block text-yellow-400">
-              ⚠ This yt-dlp is over 3 months old — update it (yt-dlp -U or your package manager) if
+              This yt-dlp is over 3 months old — update it (yt-dlp -U or your package manager) if
               downloads fail.
             </span>
           )}
@@ -1213,7 +1249,7 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
   )
 }
 
-function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
+export function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
   const [path, setPath] = useState('')
   const [cookieFile, setCookieFile] = useState('')
   const [pythonPath, setPythonPath] = useState('')
@@ -1263,6 +1299,10 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
   async function testYouTube(): Promise<void> {
     setTestingYouTube(true)
     try {
+      const nextCookieFile = cookieFile.trim()
+      if (nextCookieFile !== (data?.['spotdl.cookieFile'] ?? '')) {
+        await onSave('spotdl.cookieFile', nextCookieFile)
+      }
       const result = await api.music.spotifyTestYouTubeAccess(true)
       setCheck(await api.music.spotifyDetect())
       if (!result.ok) throw new Error(result.message)
@@ -1357,7 +1397,7 @@ function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSav
                 : check.youtubeAccess?.state === 'untested' ? 'not tested' : (check.youtubeAccess?.message ?? 'not available')}
           </p>
           <button className="btn-ghost mt-3" disabled={testingYouTube} onClick={() => void testYouTube()}>
-            {testingYouTube ? 'Testing YouTube…' : 'Test YouTube access'}
+            {testingYouTube ? 'Testing YouTube…' : 'Save cookies & test YouTube access'}
           </button>
           {!check.deno && check.version && (
             <button className="btn-ghost mt-3" disabled={installingDeno} onClick={() => void installDeno()}>
@@ -1430,10 +1470,10 @@ function VideoSubtitleToolsSettings({
   const [ffmpegPath, setFfmpegPath] = useState('')
   const [ffprobePath, setFfprobePath] = useState('')
   const [check, setCheck] = useState<VideoToolsResult | null>(null)
-  useEffect(() => {
-    setFfmpegPath(data?.['ffmpeg.path'] ?? '')
-    setFfprobePath(data?.['ffprobe.path'] ?? '')
-  }, [data])
+  const savedFfmpegPath = data?.['ffmpeg.path']
+  const savedFfprobePath = data?.['ffprobe.path']
+  useEffect(() => setFfmpegPath(savedFfmpegPath ?? ''), [savedFfmpegPath])
+  useEffect(() => setFfprobePath(savedFfprobePath ?? ''), [savedFfprobePath])
 
   async function test() {
     setCheck(null)
@@ -1508,14 +1548,14 @@ function TorrentSettings({
   const [qbPass, setQbPass] = useState('')
   const [qbCheck, setQbCheck] = useState<TorrentServiceTestResult | null>(null)
 
-  useEffect(() => {
-    setJackettUrl(data?.['jackett.url'] ?? '')
-    setJackettKey('')
-    setJackettStart(data?.['jackett.start_cmd'] ?? '')
-    setQbUrl(data?.['qbittorrent.url'] ?? '')
-    setQbUser(data?.['qbittorrent.username'] ?? '')
-    setQbPass('')
-  }, [data])
+  const savedJackettUrl = data?.['jackett.url']
+  const savedJackettStart = data?.['jackett.start_cmd']
+  const savedQbUrl = data?.['qbittorrent.url']
+  const savedQbUser = data?.['qbittorrent.username']
+  useEffect(() => setJackettUrl(savedJackettUrl ?? ''), [savedJackettUrl])
+  useEffect(() => setJackettStart(savedJackettStart ?? ''), [savedJackettStart])
+  useEffect(() => setQbUrl(savedQbUrl ?? ''), [savedQbUrl])
+  useEffect(() => setQbUser(savedQbUser ?? ''), [savedQbUser])
 
   async function testJackett() {
     setJackettCheck(null)
@@ -1809,11 +1849,11 @@ function DictionarySettings() {
   const hasDict = (prefix: string): boolean =>
     dicts.some((d) => d.title.toLowerCase().startsWith(prefix.toLowerCase()))
 
-  const { data: dicts = [] } = useQuery({
+  const { data: dicts = [], isPending: dictsPending, isError: dictsError } = useQuery({
     queryKey: qk.dict.list,
     queryFn: () => api.dict.list()
   })
-  const { data: status } = useQuery({
+  const { data: status, isPending: statusPending, isError: statusError } = useQuery({
     queryKey: qk.dict.importStatus,
     queryFn: () => api.dict.importStatus(),
     // Self-gating off the polled data as well as local busy: the sentence-audio
@@ -1821,27 +1861,27 @@ function DictionarySettings() {
     // progress display (updater.ts idiom).
     refetchInterval: (q) => (busy || q.state.data?.running ? 400 : false)
   })
-  const { data: sentenceBank } = useQuery({
+  const { data: sentenceBank, isPending: sentencesPending, isError: sentencesError } = useQuery({
     queryKey: qk.dict.sentenceBank,
     queryFn: () => api.dict.sentenceBank()
   })
-  const { data: strokeSet } = useQuery({
+  const { data: strokeSet, isPending: strokesPending, isError: strokesError } = useQuery({
     queryKey: qk.dict.strokeSet,
     queryFn: () => api.dict.strokeSet()
   })
-  const { data: kradSet } = useQuery({
+  const { data: kradSet, isPending: kradPending, isError: kradError } = useQuery({
     queryKey: qk.dict.kradSet,
     queryFn: () => api.dict.kradSet()
   })
-  const { data: grammarBank } = useQuery({
+  const { data: grammarBank, isPending: grammarPending, isError: grammarError } = useQuery({
     queryKey: qk.dict.grammarBank,
     queryFn: () => api.dict.grammarBank()
   })
-  const { data: pairSet } = useQuery({
+  const { data: pairSet, isPending: pairsPending, isError: pairsError } = useQuery({
     queryKey: qk.dict.pairSet,
     queryFn: () => api.dict.pairSet()
   })
-  const { data: sentenceAudio } = useQuery({
+  const { data: sentenceAudio, isPending: audioPending, isError: audioError } = useQuery({
     queryKey: qk.dict.sentenceAudioBank,
     queryFn: () => api.dict.sentenceAudioBank()
   })
@@ -1861,6 +1901,25 @@ function DictionarySettings() {
 
   const running = !!status?.running
   const blocked = busy || running
+  const readError = dictsError || statusError || sentencesError || strokesError || kradError ||
+    grammarError || pairsError || audioError
+  const readPending = dictsPending || statusPending || sentencesPending || strokesPending ||
+    kradPending || grammarPending || pairsPending || audioPending
+
+  if (readError || readPending) {
+    return (
+      <SettingCard title="Japanese dictionaries">
+        {readError ? (
+          <div role="alert" className="text-sm text-red-400">
+            Dictionary state could not be loaded.
+            <button className="btn-ghost ml-3" onClick={() => void qc.invalidateQueries({ queryKey: qk.dict.all })}>
+              Retry
+            </button>
+          </div>
+        ) : <p className="text-sm text-gray-500">Loading dictionaries…</p>}
+      </SettingCard>
+    )
+  }
 
   return (
     <SettingCard
@@ -2119,7 +2178,7 @@ function DictionarySettings() {
         </div>
       )}
 
-      <button className="btn-ghost" disabled={busy} onClick={() => void run(() => api.dict.importZip())}>
+      <button className="btn-ghost" disabled={blocked} onClick={() => void run(() => api.dict.importZip())}>
         Import Yomitan .zip…
       </button>
 
@@ -2145,15 +2204,15 @@ function EnglishDictionarySettings() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { data: info } = useQuery({
+  const { data: info, isPending: infoPending, isError: infoError } = useQuery({
     queryKey: qk.english.dictInfo,
     queryFn: () => api.english.dictInfo()
   })
-  const { data: freqInfo } = useQuery({
+  const { data: freqInfo, isPending: freqPending, isError: freqError } = useQuery({
     queryKey: qk.english.freqInfo,
     queryFn: () => api.english.freqInfo()
   })
-  const { data: status } = useQuery({
+  const { data: status, isPending: statusPending, isError: statusError } = useQuery({
     queryKey: qk.dict.importStatus,
     queryFn: () => api.dict.importStatus(),
     refetchInterval: busy ? 400 : false
@@ -2175,6 +2234,24 @@ function EnglishDictionarySettings() {
 
   const running = !!status?.running
   const blocked = busy || running
+
+  if (infoError || freqError || statusError || infoPending || freqPending || statusPending) {
+    return (
+      <SettingCard title="English dictionary">
+        {infoError || freqError || statusError ? (
+          <div role="alert" className="text-sm text-red-400">
+            English dictionary state could not be loaded.
+            <button className="btn-ghost ml-3" onClick={() => {
+              void qc.invalidateQueries({ queryKey: qk.english.all })
+              void qc.invalidateQueries({ queryKey: qk.dict.all })
+            }}>
+              Retry
+            </button>
+          </div>
+        ) : <p className="text-sm text-gray-500">Loading English dictionary…</p>}
+      </SettingCard>
+    )
+  }
 
   return (
     <SettingCard
@@ -2340,72 +2417,151 @@ function PackRow({
 }
 
 // Reorderable, customizable status list for one media type.
-function StatusEditor({
+export function StatusEditor({
   cfg,
   data,
   onSave
 }: {
   cfg: MediaConfig
   data: Record<string, string> | undefined
-  onSave: (key: string, value: string) => void
+  onSave: SaveFn
 }) {
   const [statuses, setStatuses] = useState<string[]>([])
   const [newStatus, setNewStatus] = useState('')
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editValue, setEditValue] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const savedStatuses = data?.[cfg.statusesKey]
 
   useEffect(() => {
     if (!data) return
     try {
-      const parsed = JSON.parse(data[cfg.statusesKey] ?? '[]')
-      setStatuses(Array.isArray(parsed) && parsed.length ? parsed : cfg.defaultStatuses)
+      const parsed = JSON.parse(savedStatuses ?? '[]')
+      setStatuses(Array.isArray(parsed) && parsed.length >= 3 ? parsed : cfg.defaultStatuses)
     } catch {
       setStatuses(cfg.defaultStatuses)
     }
-  }, [data, cfg])
+  }, [savedStatuses, cfg])
 
-  function persist(next: string[]) {
-    setStatuses(next)
-    onSave(cfg.statusesKey, JSON.stringify(next))
+  async function persist(next: string[], replacing?: string): Promise<boolean> {
+    if (saving) return false
+    setSaving(true)
+    setError(null)
+    try {
+      if (replacing) {
+        const page = await api.media.listPage({
+          filter: { mediaType: cfg.key, status: replacing },
+          offset: 0,
+          limit: 24
+        })
+        if (page.total > 0) {
+          setError(`“${replacing}” is used by ${page.total} titles. Change those titles to another status first.`)
+          return false
+        }
+      }
+      await onSave(cfg.statusesKey, JSON.stringify(next))
+      setStatuses(next)
+      return true
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
+      return false
+    } finally {
+      setSaving(false)
+    }
   }
 
   function move(i: number, dir: -1 | 1) {
     const j = i + dir
-    if (j < 0 || j >= statuses.length) return
+    if (i < 2 || j < 2 || j >= statuses.length - 1) return
     const next = [...statuses]
     ;[next[i], next[j]] = [next[j], next[i]]
-    persist(next)
+    void persist(next)
   }
 
-  function addStatus() {
+  async function addStatus() {
     const s = newStatus.trim()
-    if (!s || statuses.includes(s)) return
-    setNewStatus('')
-    persist([...statuses, s])
+    if (!s) return
+    if (statuses.some((status) => status.toLocaleLowerCase() === s.toLocaleLowerCase())) {
+      setError('That status already exists.')
+      return
+    }
+    const next = [...statuses.slice(0, -1), s, statuses[statuses.length - 1]]
+    if (await persist(next)) setNewStatus('')
+  }
+
+  async function renameStatus(i: number) {
+    const nextName = editValue.trim()
+    const previous = statuses[i]
+    if (!nextName || nextName === previous) {
+      setEditingIndex(null)
+      return
+    }
+    if (statuses.some((status, index) => index !== i && status.toLocaleLowerCase() === nextName.toLocaleLowerCase())) {
+      setError('That status already exists.')
+      return
+    }
+    const next = [...statuses]
+    next[i] = nextName
+    if (await persist(next, previous)) setEditingIndex(null)
+  }
+
+  function roleAt(i: number): string | null {
+    if (i === 0) return 'In progress'
+    if (i === 1) return 'Completed'
+    if (i === statuses.length - 1) return 'Planned'
+    return null
   }
 
   return (
     <SettingCard
       title={`${cfg.singular} statuses`}
-      description={`Customize the status options used when logging ${cfg.plural.toLowerCase()}. Order here is the order shown in filters and forms.`}
+      description={`The first status means in progress, the second means completed, and the last means planned throughout NaviHUB. You can reorder the other statuses. To rename or remove a status in use, change those titles first.`}
     >
       <div className="space-y-2 mb-4">
         {statuses.map((s, i) => (
-          <div key={s} className="flex items-center gap-2 bg-base-700 rounded-md px-3 py-2">
-            <span className="flex-1 text-sm">{s}</span>
-            <button className="text-gray-500 hover:text-white px-1" onClick={() => move(i, -1)}>
-              ↑
-            </button>
-            <button className="text-gray-500 hover:text-white px-1" onClick={() => move(i, 1)}>
-              ↓
-            </button>
-            <button
-              className="text-gray-500 hover:text-red-400 px-1"
-              onClick={() => persist(statuses.filter((_, idx) => idx !== i))}
-            >
-              ×
-            </button>
+          <div key={s} className="flex flex-wrap items-center gap-2 bg-base-700 rounded-md px-3 py-2">
+            {editingIndex === i ? (
+              <>
+                <Field label={`Rename ${s}`} hiddenLabel className="contents">
+                  <input
+                    className="input min-w-0 flex-1"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') void renameStatus(i) }}
+                  />
+                </Field>
+                <button className="btn-ghost shrink-0" disabled={saving} onClick={() => void renameStatus(i)}>Save</button>
+                <button className="btn-ghost shrink-0" disabled={saving} onClick={() => setEditingIndex(null)}>Cancel</button>
+              </>
+            ) : (
+              <>
+                <span className="min-w-0 flex-1 text-sm">
+                  {s}
+                  {roleAt(i) && <span className="ml-2 text-xs text-gray-400">{roleAt(i)}</span>}
+                </span>
+                <button
+                  className="btn-ghost shrink-0 px-2 py-1 text-xs"
+                  aria-label={`Rename ${s}`}
+                  disabled={saving}
+                  onClick={() => { setEditingIndex(i); setEditValue(s); setError(null) }}
+                >
+                  Rename
+                </button>
+                {i >= 2 && i < statuses.length - 1 && (
+                  <>
+                    <button className="btn-ghost shrink-0 px-2 py-1 text-xs" aria-label={`Move ${s} up`} disabled={saving || i === 2} onClick={() => move(i, -1)}>↑</button>
+                    <button className="btn-ghost shrink-0 px-2 py-1 text-xs" aria-label={`Move ${s} down`} disabled={saving || i === statuses.length - 2} onClick={() => move(i, 1)}>↓</button>
+                    <button className="btn-ghost shrink-0 px-2 py-1 text-xs" aria-label={`Remove ${s}`} disabled={saving} onClick={() => void persist(statuses.filter((_, index) => index !== i), s)}>✕</button>
+                  </>
+                )}
+              </>
+            )}
           </div>
         ))}
       </div>
+
+      {error && <p role="alert" className="mb-3 text-sm text-red-400">{error}</p>}
 
       <div className="flex gap-2">
         <Field label={`New ${cfg.singular.toLowerCase()} status name`} hiddenLabel className="contents">
@@ -2413,11 +2569,11 @@ function StatusEditor({
             className="input max-w-xs"
             value={newStatus}
             onChange={(e) => setNewStatus(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && addStatus()}
+            onKeyDown={(e) => { if (e.key === 'Enter') void addStatus() }}
             placeholder="New status name"
           />
         </Field>
-        <button className="btn-ghost" onClick={addStatus}>
+        <button className="btn-ghost" disabled={saving} onClick={() => void addStatus()}>
           Add status
         </button>
       </div>

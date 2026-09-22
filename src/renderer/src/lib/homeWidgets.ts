@@ -5,10 +5,9 @@
 //
 // Everything below it is a widget: shown/hidden and reordered from Home's
 // Customise dialog, persisted as ONE settings row (`home.widgets`). Keeping the
-// pure part here rather than in HomePage.tsx is what makes it testable — the
-// renderer has no .tsx tests, and the resolution rules below are exactly the
-// kind of thing that silently rots (a renamed widget vanishing, a new one never
-// appearing) if nothing pins them.
+// pure part here rather than in HomePage.tsx keeps the layout rules easy to
+// test; they are exactly the kind of thing that silently rots (a renamed widget
+// vanishing, a new one never appearing) if nothing pins them.
 
 export type HomeWidgetKey =
   | 'today'

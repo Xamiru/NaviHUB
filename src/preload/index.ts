@@ -30,14 +30,16 @@ const api: NaviApi = {
       ipcRenderer.invoke('tv:setSeasonWatched', mediaId, season, watched)
   },
   people: {
-    list: (search, role, mediaType) => ipcRenderer.invoke('people:list', search, role, mediaType),
+    list: (search, role, mediaType, limit) =>
+      ipcRenderer.invoke('people:list', search, role, mediaType, limit),
     get: (id) => ipcRenderer.invoke('people:get', id),
     credits: (id) => ipcRenderer.invoke('people:credits', id),
     upsert: (input) => ipcRenderer.invoke('people:upsert', input),
     remove: (id) => ipcRenderer.invoke('people:remove', id)
   },
   companies: {
-    list: (search, mediaType) => ipcRenderer.invoke('companies:list', search, mediaType),
+    list: (search, mediaType, limit) =>
+      ipcRenderer.invoke('companies:list', search, mediaType, limit),
     get: (id) => ipcRenderer.invoke('companies:get', id),
     media: (id) => ipcRenderer.invoke('companies:media', id),
     upsert: (input) => ipcRenderer.invoke('companies:upsert', input),

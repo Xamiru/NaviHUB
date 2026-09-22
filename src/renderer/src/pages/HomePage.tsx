@@ -16,6 +16,7 @@ import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import EmptyState from '../components/EmptyState'
+import PageStatus from '../components/PageStatus'
 import { useSettings } from '../lib/hooks'
 import { usePlayerControls } from '../lib/player'
 import { playTracks } from '../lib/musicTracks'
@@ -41,9 +42,14 @@ export default function HomePage() {
     queryKey: qk.media.homeOverview,
     queryFn: () => api.media.homeOverview()
   })
-  const { data: settings } = useSettings()
+  const { data: settings, isPending: settingsPending, refetch: refetchSettings } = useSettings()
   const theme = resolveAppTheme(settings?.[APP_THEME_SETTING])
-  const { data: resumePoints = [] } = useQuery({
+  const {
+    data: resumePoints = [],
+    isPending: resumePending,
+    isError: resumeError,
+    refetch: refetchResume
+  } = useQuery({
     queryKey: qk.media.resumePoints,
     queryFn: () => api.media.resumePoints()
   })
@@ -64,7 +70,7 @@ export default function HomePage() {
   // The stored layout, or every widget in catalogue order when there is none.
   // The Hero is deliberately not in it: the wall of your own covers is Home's
   // identity, not a widget, and it stays pinned above whatever you configure.
-  const layout = parseHomeLayout(settings?.[HOME_LAYOUT_SETTING])
+  const layout = settings ? parseHomeLayout(settings[HOME_LAYOUT_SETTING]) : []
   const [customising, setCustomising] = useState(false)
 
   // Missing query data is not an empty library. Keep the failure visible and
@@ -83,6 +89,7 @@ export default function HomePage() {
       </div>
     )
   }
+  if (!overview && isLoading) return <PageStatus>Loading your local library…</PageStatus>
 
   // Each widget's body. Rendering is by lookup rather than a chain of JSX, so
   // the stored order is the ONLY thing deciding what appears where.
@@ -138,6 +145,9 @@ export default function HomePage() {
         items={wall}
         stats={stats}
         resume={resumePoints[0]}
+        resumePending={resumePending}
+        resumeError={resumeError}
+        retryResume={() => void refetchResume()}
         continuing={continuing[0]}
         theme={theme}
       />
@@ -151,40 +161,83 @@ export default function HomePage() {
             {theme === 'metal-gear' ? 'Your archive, mission-ready' : 'Your archive, in motion'}
           </h2>
         </div>
-        <button className="btn-ghost text-xs" onClick={() => setCustomising(true)}>
-          Customise Home
-        </button>
+        <div className="flex flex-col items-end gap-1">
+          <button
+            className="btn-ghost text-xs"
+            onClick={() => setCustomising(true)}
+            disabled={!settings}
+          >
+            Customise Home
+          </button>
+        </div>
       </div>
 
       {/* Two columns: 'full' widgets span both, 'half' widgets pair with the
           next half beside them. Below lg everything is one column anyway. */}
-      <div className="mt-5 grid items-start gap-7 lg:grid-cols-2">
-        {layout
-          .filter((e) => e.visible)
-          .map((e) => {
-            const def = widgetDef(e.key)
-            const body = widgets[e.key]
-            if (!def || !body) return null
-            return (
-              // empty:hidden collapses the cell when the widget renders
-              // nothing. `body` is a React element, so it is truthy even for
-              // ResumeStrip / RecentUnlocks / TopPeople / MusicCard, each of
-              // which returns null with no data — an emptier library was
-              // showing their wrappers as blank gap-6 bands.
-              <div
-                key={e.key}
-                className={`empty:hidden ${
-                  def.span === 'full' ? 'lg:col-span-2' : 'lg:col-span-1'
-                }`}
-              >
-                {body}
-              </div>
-            )
-          })}
-      </div>
+      {!settings && (
+        <div className="mt-5">
+          <HomeReadState
+            title="Home preferences"
+            pending={settingsPending}
+            retry={() => void refetchSettings()}
+          />
+        </div>
+      )}
+      {settings && (
+        <div className="mt-5 grid items-start gap-7 lg:grid-cols-2">
+          {layout
+            .filter((e) => e.visible)
+            .map((e) => {
+              const def = widgetDef(e.key)
+              const body = widgets[e.key]
+              if (!def || !body) return null
+              return (
+                // empty:hidden collapses the cell when the widget renders
+                // nothing. `body` is a React element, so it is truthy even for
+                // ResumeStrip / RecentUnlocks / TopPeople / MusicCard, each of
+                // which returns null with no data — an emptier library was
+                // showing their wrappers as blank gap-6 bands.
+                <div
+                  key={e.key}
+                  className={`empty:hidden ${
+                    def.span === 'full' ? 'lg:col-span-2' : 'lg:col-span-1'
+                  }`}
+                >
+                  {body}
+                </div>
+              )
+            })}
+        </div>
+      )}
 
       {customising && (
         <HomeCustomiseDialog layout={layout} onClose={() => setCustomising(false)} />
+      )}
+    </div>
+  )
+}
+
+function HomeReadState({
+  title,
+  pending,
+  retry
+}: {
+  title: string
+  pending: boolean
+  retry: () => void
+}) {
+  return (
+    <div
+      className="card flex min-h-32 flex-col justify-center p-5"
+      role={pending ? undefined : 'alert'}
+    >
+      <p className="text-sm text-gray-300">
+        {pending ? `Loading ${title}…` : `Could not load ${title}.`}
+      </p>
+      {!pending && (
+        <button className="btn-ghost mt-3" onClick={retry} aria-label={`Retry ${title}`}>
+          Try again
+        </button>
       )}
     </div>
   )
@@ -206,6 +259,9 @@ function Hero({
   items,
   stats,
   resume,
+  resumePending,
+  resumeError,
+  retryResume,
   continuing,
   theme
 }: {
@@ -218,6 +274,9 @@ function Hero({
     avgScore: string | null
   }
   resume?: ResumePoint
+  resumePending: boolean
+  resumeError: boolean
+  retryResume: () => void
   continuing?: MediaSummary
   theme: AppTheme
 }) {
@@ -313,7 +372,11 @@ function Hero({
           )}
         </div>
 
-        <HeroContinuation resume={resume} continuing={continuing} theme={theme} />
+        {resumePending || resumeError ? (
+          <HomeReadState title="saved positions" pending={resumePending} retry={retryResume} />
+        ) : (
+          <HeroContinuation resume={resume} continuing={continuing} theme={theme} />
+        )}
       </div>
     </section>
   )
@@ -466,13 +529,17 @@ function Spotlight({ pool, fromBacklog }: { pool: MediaSummary[]; fromBacklog: b
           <Link to={pathForMedia(pick)} className="btn-ghost">
             Open
           </Link>
-          <button
-            className="btn-ghost"
-            onClick={() => setSeed((s) => s + 1 + Math.floor(Math.random() * 97))}
-            title="Pick something else"
-          >
-            Reroll
-          </button>
+          {pool.length > 1 && (
+            <button
+              className="btn-ghost"
+              onClick={() =>
+                setSeed((current) => current + 1 + Math.floor(Math.random() * (pool.length - 1)))
+              }
+              title="Pick something else"
+            >
+              Reroll
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -483,11 +550,14 @@ function Spotlight({ pool, fromBacklog }: { pool: MediaSummary[]; fromBacklog: b
 // Today's routine at a glance. staleTime 0 keeps it honest after logging an
 // episode or finishing a review session elsewhere in the app.
 function ChecklistCard() {
-  const { data } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: qk.checklist.status,
     queryFn: () => api.checklist.status(),
     staleTime: 0
   })
+  if (isPending || isError) {
+    return <HomeReadState title="your checklist" pending={isPending} retry={() => void refetch()} />
+  }
   const daily = data?.daily ?? []
   const done = daily.filter((t) => t.done).length
   const streak = data?.streak.current ?? 0
@@ -526,11 +596,14 @@ function ChecklistCard() {
 
 // Japanese SRS at a glance: cards due now, today's pulse in the meta line.
 function JapaneseCard() {
-  const { data } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: qk.japanese.stats,
     queryFn: () => api.japanese.stats(),
     staleTime: 0
   })
+  if (isPending || isError) {
+    return <HomeReadState title="Japanese reviews" pending={isPending} retry={() => void refetch()} />
+  }
   const started = (data?.totalCards ?? 0) > 0
   const due = data?.dueCount ?? 0
   return (
@@ -554,11 +627,14 @@ function JapaneseCard() {
 
 // English deck (en_word IS the deck — dictionary/mining saves feed it).
 function EnglishCard() {
-  const { data } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: qk.english.srsStats,
     queryFn: () => api.english.srsStats(),
     staleTime: 0
   })
+  if (isPending || isError) {
+    return <HomeReadState title="English reviews" pending={isPending} retry={() => void refetch()} />
+  }
   const started = (data?.totalCount ?? 0) > 0
   const due = data?.dueCount ?? 0
   return (
@@ -578,17 +654,24 @@ function EnglishCard() {
 
 // Play surface: gacha dailies waiting when there are any, else the song quiz.
 function PlayCard() {
-  const { data: due } = useQuery({
+  const { data: due, isPending: duePending, isError: dueError, refetch: refetchDue } = useQuery({
     queryKey: qk.gacha.dueCounts,
     queryFn: () => api.gacha.dueCounts(),
     staleTime: 0
   })
-  const { data: pool = [] } = useQuery({
-    queryKey: qk.quiz.songPool({}),
-    queryFn: () => api.quiz.songPool({})
-  })
   const entries = Object.entries(due ?? {}).filter(([, n]) => (n ?? 0) > 0)
   const total = entries.reduce((a, [, n]) => a + (n ?? 0), 0)
+  const { data: pool, isPending: poolPending, isError: poolError, refetch: refetchPool } = useQuery({
+    queryKey: qk.quiz.songPool({}),
+    queryFn: () => api.quiz.songPool({}),
+    enabled: due !== undefined && total === 0
+  })
+  if (duePending || dueError) {
+    return <HomeReadState title="game tasks" pending={duePending} retry={() => void refetchDue()} />
+  }
+  if (total === 0 && (poolPending || poolError)) {
+    return <HomeReadState title="song availability" pending={poolPending} retry={() => void refetchPool()} />
+  }
   const gameNames = entries
     .map(([id]) => GACHA_GAMES.find((g) => g.id === id)?.name ?? id)
     .join(' · ')
@@ -606,16 +689,19 @@ function PlayCard() {
       eyebrow="Play"
       title="Quiz corner"
       body="Song quiz and tournaments over your library."
-      meta={pool.length > 0 ? `${pool.length} songs ready` : undefined}
+      meta={pool && pool.length > 0 ? `${pool.length} songs ready` : undefined}
     />
   )
 }
 
 function TimeStatsCard() {
-  const { data: stats } = useQuery({
+  const { data: stats, isPending, isError, refetch } = useQuery({
     queryKey: qk.media.timeStats,
     queryFn: () => api.media.timeStats()
   })
+  if (isPending || isError) {
+    return <HomeReadState title="time spent" pending={isPending} retry={() => void refetch()} />
+  }
   const days = stats ? stats.totalMinutes / 1440 : 0
   const hasData = !!stats && stats.consumedCount > 0
   const split = hasData ? stats!.byType.filter((t) => t.minutes > 0) : []
@@ -633,17 +719,25 @@ function TimeStatsCard() {
       }
       value={
         split.length > 0 ? (
-          <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-base-900/60">
-            {split.map((t) => (
-              <div
-                key={t.mediaType}
-                style={{
-                  width: `${(t.minutes / stats!.totalMinutes) * 100}%`,
-                  background: MEDIA_TYPE_COLORS[t.mediaType]
-                }}
-                title={configFor(t.mediaType).plural}
-              />
-            ))}
+          <div>
+            <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-base-900/60" aria-hidden="true">
+              {split.map((t) => (
+                <div
+                  key={t.mediaType}
+                  style={{
+                    width: `${(t.minutes / stats!.totalMinutes) * 100}%`,
+                    background: MEDIA_TYPE_COLORS[t.mediaType]
+                  }}
+                />
+              ))}
+            </div>
+            <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-400">
+              {split.map((t) => (
+                <li key={t.mediaType}>
+                  {configFor(t.mediaType).plural}: {t.minutes.toLocaleString()} min
+                </li>
+              ))}
+            </ul>
           </div>
         ) : undefined
       }
@@ -656,10 +750,13 @@ function TimeStatsCard() {
 // DoorCard — it holds real controls, and the glow stays on the Today band.
 function MusicCard() {
   const player = usePlayerControls()
-  const { data: tracks = [] } = useQuery({
+  const { data: tracks = [], isPending, isError, refetch } = useQuery({
     queryKey: qk.music.recent(5),
     queryFn: () => api.music.recent(5)
   })
+  if (isPending || isError) {
+    return <HomeReadState title="recent listening" pending={isPending} retry={() => void refetch()} />
+  }
   if (tracks.length === 0) return null
   return (
     <div className="card flex-1 p-4">
@@ -694,10 +791,17 @@ function MusicCard() {
 // The last few achievements earned. Hidden entirely until something is
 // tracked, so a library with no games never sees an empty shelf.
 function RecentUnlocks() {
-  const { data = [] } = useQuery({
+  const { data = [], isPending, isError, refetch } = useQuery({
     queryKey: qk.achievements.recent(10),
     queryFn: () => api.achievements.recent(10)
   })
+  if (isPending || isError) {
+    return (
+      <Section title="Recent unlocks">
+        <HomeReadState title="recent unlocks" pending={isPending} retry={() => void refetch()} />
+      </Section>
+    )
+  }
   if (!data.length) return null
   return (
     <Section title="Recent unlocks">
@@ -733,50 +837,72 @@ function RecentUnlocks() {
 // across the library — each a door to their own page. Ranking comes from the
 // same queries the browse pages use, so the order always agrees with them.
 function TopPeople() {
-  const { data: vas = [] } = useQuery({
-    queryKey: qk.entity('people').list('', 'voice_actor', VA_TYPES),
-    queryFn: () => api.people.list(undefined, 'voice_actor', VA_TYPES)
+  const {
+    data: vas = [], isPending: vasPending, isError: vasError, refetch: refetchVas
+  } = useQuery({
+    queryKey: qk.people.homeTop,
+    queryFn: () => api.people.list(undefined, 'voice_actor', VA_TYPES, 8)
   })
-  const { data: studios = [] } = useQuery({
-    queryKey: qk.entity('companies').list('', null, 'anime'),
-    queryFn: () => api.companies.list(undefined, 'anime')
+  const {
+    data: studios = [], isPending: studiosPending, isError: studiosError, refetch: refetchStudios
+  } = useQuery({
+    queryKey: qk.companies.homeTop,
+    queryFn: () => api.companies.list(undefined, 'anime', 6)
   })
-  const topVas = vas.slice(0, 8)
-  const topStudios = studios.slice(0, 6)
-  if (topVas.length < 3) return null
+  if (vasPending || studiosPending || vasError || studiosError) {
+    return (
+      <Section title="Your people">
+        <HomeReadState
+          title="voice actors and studios"
+          pending={vasPending || studiosPending}
+          retry={() => {
+            void refetchVas()
+            void refetchStudios()
+          }}
+        />
+      </Section>
+    )
+  }
+  if (vas.length === 0 && studios.length === 0) return null
 
   return (
     <Section title="Your people">
       <div className="card p-5">
-        <p className="text-xs text-gray-500 mb-3">
-          The voice actors your library keeps coming back to
-        </p>
-        <div className="flex gap-5 overflow-x-auto pb-1">
-          {topVas.map((p, i) => (
-            <Link key={p.id} to={`/people/${p.id}`} className="group w-20 shrink-0 text-center">
-              <div className="relative">
-                <CoverImage
-                  path={p.photoPath}
-                  alt={p.name}
-                  rounded="rounded-full"
-                  className="h-20 w-20 group-hover:ring-2 ring-accent transition-shadow"
-                />
-                {i < 3 && (
-                  <span className="absolute -top-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white shadow">
-                    {i + 1}
-                  </span>
-                )}
-              </div>
-              <p className="mt-2 text-xs leading-tight line-clamp-2 group-hover:text-accent">
-                {p.name}
-              </p>
-            </Link>
-          ))}
-        </div>
-        {topStudios.length > 0 && (
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-base-700 pt-4">
+        {vas.length > 0 && (
+          <p className="mb-3 text-xs text-gray-500">
+            The voice actors your library keeps coming back to
+          </p>
+        )}
+        {vas.length > 0 && (
+          <div className="flex gap-5 overflow-x-auto pb-1">
+            {vas.map((p, i) => (
+              <Link key={p.id} to={`/people/${p.id}`} className="group w-20 shrink-0 text-center">
+                <div className="relative">
+                  <CoverImage
+                    path={p.photoPath}
+                    alt={p.name}
+                    rounded="rounded-full"
+                    className="h-20 w-20 group-hover:ring-2 ring-accent transition-shadow"
+                  />
+                  {i < 3 && (
+                    <span className="absolute -top-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-white shadow">
+                      {i + 1}
+                    </span>
+                  )}
+                </div>
+                <p className="mt-2 text-xs leading-tight line-clamp-2 group-hover:text-accent">
+                  {p.name}
+                </p>
+              </Link>
+            ))}
+          </div>
+        )}
+        {studios.length > 0 && (
+          <div
+            className={`${vas.length > 0 ? 'mt-4 border-t border-base-700 pt-4' : ''} flex flex-wrap items-center gap-2`}
+          >
             <span className="text-xs text-gray-500 mr-1">Top studios:</span>
-            {topStudios.map((c, i) => (
+            {studios.map((c, i) => (
               <Link key={c.id} to={`/studios/${c.id}`} className="chip hover:bg-base-600">
                 <span className="text-accent font-semibold mr-1">{i + 1}</span>
                 {c.name}

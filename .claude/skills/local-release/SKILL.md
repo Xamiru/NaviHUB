@@ -28,8 +28,9 @@ image), disk space in `dist/` (~700 MB per release; old versions can be deleted)
 ## 1. Version — derived, NEVER committed
 
 `minor = BASE_MINOR + (commit count − BASE_COMMITS)` with the workflow's pinned
-baselines **BASE_MINOR=2, BASE_COMMITS=7** ("7 commits = 0.2.0"). So 22 commits →
-0.17.0. Patch is always 0; 0.x grows forever (0.9.0 → 0.10.0 is correct).
+baselines **BASE_MINOR=50, BASE_COMMITS=54** ("54 commits = 0.50.0"). These were
+re-baselined after local releases advanced ahead of the old formula. Patch is
+always 0; 0.x grows forever (0.9.0 → 0.10.0 is correct).
 
 Keep exact copies of both package files outside the checkout before stamping;
 restore them from those copies in step 6. Do not use `git checkout` or another

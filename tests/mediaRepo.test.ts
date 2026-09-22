@@ -98,7 +98,7 @@ describe('mediaRepo browse projections', () => {
     addAnime('Finished', { status: 'Done', score: 10 })
     addAnime('Tonight', { status: 'Later', synopsis: 'Keep this for the spotlight.' })
 
-    const overview = mediaRepo.homeOverview()
+    const overview = mediaRepo.homeOverview('2026-09-22')
     expect(overview.stats).toEqual({
       titles: 3,
       inProgress: 1,
@@ -112,6 +112,22 @@ describe('mediaRepo browse projections', () => {
       title: 'Tonight',
       synopsis: 'Keep this for the spotlight.'
     })
+  })
+
+  it('rotates a bounded spotlight window across the full backlog', () => {
+    settingsRepo.set('anime.statuses', JSON.stringify(['Active', 'Done', 'Later']))
+    const ids = Array.from({ length: 50 }, (_, index) =>
+      addAnime(`Planned ${index}`, { status: 'Later' })
+    )
+    const windows = ['2026-09-22', '2026-09-23', '2026-09-24'].map((day) =>
+      mediaRepo.homeOverview(day).spotlight
+    )
+
+    expect(windows.every((items) => items.length === 24)).toBe(true)
+    expect(new Set(windows.flatMap((items) => items.map((item) => item.id)))).toEqual(new Set(ids))
+    expect(mediaRepo.homeOverview('2026-09-22').spotlight.map((item) => item.id)).toEqual(
+      windows[0].map((item) => item.id)
+    )
   })
 
   it('returns only the selected seasonal year and fetches undated cards on demand', () => {

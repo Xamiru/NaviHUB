@@ -1301,10 +1301,6 @@ export interface GameLaunchOverview {
   totalSeconds: number
   sessionCount: number
   sessions: GameSessionRow[]
-  // Tracked seconds per Monday-based week, oldest first, empty weeks included —
-  // the Playtime tab's chart. Rides the same invoke rather than a second
-  // channel; it is one GROUP BY over a table that is already being read.
-  weeks: { weekStart: string; seconds: number }[]
 }
 
 // The tracked-session poll (gameLaunch.ts). Terminal states persist until the

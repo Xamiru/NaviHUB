@@ -304,7 +304,7 @@ export function listPage(request: MediaListPageRequest): MediaListPage {
   return { items, total, offset, hasMore: offset + items.length < total }
 }
 
-export function homeOverview(): HomeLibraryOverview {
+export function homeOverview(today: string): HomeLibraryOverview {
   const db = getSqlite()
   const rows = db
     .prepare(`SELECT ${MEDIA_SUMMARY_SQL} FROM media_item m`)
@@ -326,8 +326,18 @@ export function homeOverview(): HomeLibraryOverview {
     const statuses = statusesFor(item.mediaType)
     return item.status === statuses.at(-1)
   })
-  const spotlightBase = planned.length ? planned : rows
-  const spotlightIds = spotlightBase.slice(0, 24).map((item) => item.id)
+  const spotlightBase = (planned.length ? planned : rows).sort((a, b) => a.id - b.id)
+  // A bounded daily window walks the whole backlog in 24-title steps. Every
+  // title becomes eligible without sending an unbounded shelf across IPC.
+  const day = Math.floor(Date.parse(`${today}T00:00:00Z`) / 86_400_000)
+  const start = spotlightBase.length
+    ? ((day * 24) % spotlightBase.length + spotlightBase.length) % spotlightBase.length
+    : 0
+  const spotlightWindow = Array.from(
+    { length: Math.min(24, spotlightBase.length) },
+    (_, index) => spotlightBase[(start + index) % spotlightBase.length]
+  )
+  const spotlightIds = spotlightWindow.map((item) => item.id)
   const synopsisById = new Map<number, string | null>()
   if (spotlightIds.length) {
     for (const row of db
@@ -344,7 +354,7 @@ export function homeOverview(): HomeLibraryOverview {
     recent: [...rows].sort(byCreatedDesc).slice(0, 10),
     continuing: continuing.slice(0, 12),
     favorites: rows.filter((item) => item.favorite).sort(byUpdatedDesc).slice(0, 12),
-    spotlight: spotlightBase.slice(0, 24).map((item) => ({
+    spotlight: spotlightWindow.map((item) => ({
       ...item,
       synopsis: synopsisById.get(item.id) ?? null
     })),

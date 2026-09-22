@@ -79,13 +79,13 @@ export default function HomeCustomiseDialog({
                 }`}
               >
                 <button
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] ${
+                  className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm ${
                     entry.visible
                       ? 'bg-accent/20 text-accent'
                       : 'bg-base-700 text-gray-600 hover:text-gray-300'
                   }`}
-                  title={entry.visible ? 'Hide this widget' : 'Show this widget'}
-                  aria-label={entry.visible ? 'Hide this widget' : 'Show this widget'}
+                  title={`${entry.visible ? 'Hide' : 'Show'} ${def.label}`}
+                  aria-label={`${entry.visible ? 'Hide' : 'Show'} ${def.label}`}
                   aria-pressed={entry.visible}
                   onClick={() => setDraft(toggleHomeWidget(draft, entry.key))}
                 >
@@ -96,7 +96,7 @@ export default function HomeCustomiseDialog({
                   <p className="truncate text-xs text-gray-500">{def.hint}</p>
                 </div>
                 <button
-                  className="px-1 text-gray-500 hover:text-accent disabled:opacity-30 disabled:hover:text-gray-500"
+                  className="flex h-10 w-10 items-center justify-center text-gray-500 hover:text-accent disabled:opacity-30 disabled:hover:text-gray-500"
                   title="Move up"
                   aria-label={`Move ${def.label} up`}
                   disabled={i === 0}
@@ -105,7 +105,7 @@ export default function HomeCustomiseDialog({
                   ▲
                 </button>
                 <button
-                  className="px-1 text-gray-500 hover:text-accent disabled:opacity-30 disabled:hover:text-gray-500"
+                  className="flex h-10 w-10 items-center justify-center text-gray-500 hover:text-accent disabled:opacity-30 disabled:hover:text-gray-500"
                   title="Move down"
                   aria-label={`Move ${def.label} down`}
                   disabled={i === draft.length - 1}

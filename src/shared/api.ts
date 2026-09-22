@@ -373,14 +373,19 @@ export interface NaviApi {
     // sorts by how many they have); mediaType further scopes it to one media
     // type (so movie Directors don't include anime directors). Omit both for
     // the pickers (any person).
-    list(search?: string, role?: CreditRole, mediaType?: MediaType | MediaType[]): Promise<Person[]>
+    list(
+      search?: string,
+      role?: CreditRole,
+      mediaType?: MediaType | MediaType[],
+      limit?: number
+    ): Promise<Person[]>
     get(id: number): Promise<Person | null>
     credits(id: number): Promise<PersonCredit[]>
     upsert(input: Partial<Person> & { name: string }): Promise<number>
     remove(id: number): Promise<void>
   }
   companies: {
-    list(search?: string, mediaType?: MediaType | MediaType[]): Promise<Company[]>
+    list(search?: string, mediaType?: MediaType | MediaType[], limit?: number): Promise<Company[]>
     get(id: number): Promise<Company | null>
     media(id: number): Promise<MediaItem[]>
     upsert(input: Partial<Company> & { name: string }): Promise<number>

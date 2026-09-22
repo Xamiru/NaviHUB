@@ -13,7 +13,8 @@ import type { Person, PersonCredit, CreditRole, MediaType } from '@shared/types'
 export function list(
   search?: string,
   role?: CreditRole,
-  mediaType?: MediaType | MediaType[]
+  mediaType?: MediaType | MediaType[],
+  limit?: number
 ): Person[] {
   const db = getSqlite()
   // Actors are shared across Movies + TV, so mediaType may be a list.
@@ -55,9 +56,10 @@ export function list(
        ${join}
        ${where}
        GROUP BY p.id
-       ORDER BY COUNT(cr.id) DESC, COUNT(DISTINCT cr.media_id) DESC, p.name ASC`
+       ORDER BY COUNT(cr.id) DESC, COUNT(DISTINCT cr.media_id) DESC, p.name ASC
+       ${limit == null ? '' : 'LIMIT ?'}`
     )
-    .all(...joinParams, ...params)
+    .all(...joinParams, ...params, ...(limit == null ? [] : [Math.max(0, Math.trunc(limit))]))
     .map(mapPerson)
 }
 

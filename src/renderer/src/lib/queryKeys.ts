@@ -80,10 +80,12 @@ export const qk = {
   entity,
   people: {
     ...entity('people'),
+    homeTop: ['people', 'homeTop'] as const,
     credits: (personId: number) => ['people', 'credits', personId] as const
   },
   companies: {
     ...entity('companies'),
+    homeTop: ['companies', 'homeTop'] as const,
     media: (companyId: number) => ['companies', 'media', companyId] as const
   },
   characters: {
