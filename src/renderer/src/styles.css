@@ -3,38 +3,36 @@
 @tailwind utilities;
 
 @layer base {
-  /* Theme variables — Lain is the default "Wired terminal" palette.
-     Tailwind's base/accent/gray/white tokens and the radius scale resolve
-     through these (tailwind.config.js), so every utility class keys off this
-     block. Color vars are "R G B" triplets so /alpha modifiers work. The
-     gray/base ladders keep stock Tailwind luminance ordering (contrast-checked:
-     gray-200 on base-900 is 15.1:1, accent on base-900 is 10.9:1). */
+  /* Approved themes: Lain, Metal Gear, Miku and Twin Peaks. Legacy gray/white
+     utilities follow reading contrast, not physical color. Fixed dark media
+     surfaces opt into .theme-dark / .media-contrast below. All RGB values
+     support Tailwind opacity modifiers. */
   :root {
-    --base-900: 10 15 11;
-    --base-800: 16 24 18;
-    --base-700: 22 34 26;
-    --base-600: 31 49 37;
-    --base-500: 44 69 52;
-    --accent: 0 224 90;
-    --accent-hover: 51 255 133; /* hover glows brighter — terminal idiom */
-    --signal-warm: 222 72 76;
-    --signal-cool: 36 190 168;
-    --signal-affirmative: 134 239 172;
-    --signal-caution: 252 211 77;
-    --white: 240 255 244;
-    --gray-50: 234 255 240;
-    --gray-100: 221 247 228;
-    --gray-200: 201 236 212;
-    --gray-300: 169 211 183;
-    --gray-400: 127 174 144;
-    /* AA-safe on base-700 (4.73:1); readable secondary copy may use this.
-       gray-600 and below remain decorative telemetry only. */
-    --gray-500: 100 148 118;
-    --gray-600: 63 99 80;
-    --gray-700: 47 75 60;
-    --gray-800: 32 52 42;
-    --gray-900: 21 35 28;
-    --gray-950: 11 19 14;
+    color-scheme: dark;
+    --font-chrome: var(--font-mono);
+    --base-900: 15 13 21;
+    --base-800: 24 21 31;
+    --base-700: 43 36 49;
+    --base-600: 65 49 65;
+    --base-500: 84 64 83;
+    --accent: 229 171 182;
+    --accent-hover: 244 199 208;
+    --signal-warm: 247 142 153;
+    --signal-cool: 164 188 215;
+    --signal-affirmative: 158 208 169;
+    --signal-caution: 229 200 142;
+    --white: 245 235 242;
+    --gray-50: 245 235 242;
+    --gray-100: 235 226 234;
+    --gray-200: 221 209 223;
+    --gray-300: 204 185 203;
+    --gray-400: 188 166 187;
+    --gray-500: 175 153 178;
+    --gray-600: 112 88 115;
+    --gray-700: 82 65 85;
+    --gray-800: 54 43 60;
+    --gray-900: 33 26 39;
+    --gray-950: 20 16 26;
     /* Semantic roles. Shared chrome should consume these so later themes can
        change meaning without remapping every palette-number utility. */
     --surface-canvas: var(--base-900);
@@ -45,9 +43,9 @@
     --ink-secondary: var(--gray-300);
     --ink-muted: var(--gray-500);
     --ink-decorative: var(--gray-600);
-    --ink-inverse: var(--base-900);
-    --line-subtle: var(--base-700);
-    --line-strong: var(--base-600);
+    --ink-inverse: 43 18 32;
+    --line-subtle: 68 51 69;
+    --line-strong: 110 78 101;
     --signal-live: var(--accent);
     --signal-link: var(--signal-cool);
     --signal-anomaly: var(--signal-warm);
@@ -55,11 +53,11 @@
     --scanline-strength: 0.055;
     --chrome-scanline-strength: 0.025;
     --vignette-strength: 0.2;
-    --heading-glow: 0.16;
-    --panel-glow: 0.025;
-    --control-glow: 0.2;
-    --primary-glow: 0.28;
-    --chromatic-split: 0.32;
+    --heading-glow: 0.06;
+    --panel-glow: 0;
+    --control-glow: 0.1;
+    --primary-glow: 0.06;
+    --chromatic-split: 0.2;
     --radius-sm: 1px;
     --radius: 2px;
     --radius-md: 2px;
@@ -72,7 +70,7 @@
     --font-body:
       'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   }
-  html:not([data-theme='metal-gear'])[data-signal='clean'] {
+  html[data-theme='lain'][data-signal='clean'] {
     --scanline-strength: 0;
     --chrome-scanline-strength: 0;
     --vignette-strength: 0.08;
@@ -82,7 +80,7 @@
     --primary-glow: 0;
     --chromatic-split: 0;
   }
-  html:not([data-theme='metal-gear'])[data-signal='deep'] {
+  html[data-theme='lain'][data-signal='deep'] {
     --scanline-strength: 0.09;
     --chrome-scanline-strength: 0.045;
     --vignette-strength: 0.3;
@@ -92,48 +90,124 @@
     --primary-glow: 0.42;
     --chromatic-split: 0.48;
   }
-  /* Metal Gear-inspired tactical archive. Amber is the current action, green
-     is linked intelligence, and red is reserved for warnings/destruction.
-     These are original NaviHUB tokens rather than colors sampled from a game. */
+  /* Solid / Ink: paper, dark field ink and red actions, after classic MGS2 art. */
   html[data-theme='metal-gear'] {
-    --base-900: 12 14 10;
-    --base-800: 21 24 16;
-    --base-700: 32 38 25;
-    --base-600: 48 57 37;
-    --base-500: 68 78 51;
-    --accent: 226 173 73;
-    --accent-hover: 244 197 98;
-    --signal-warm: 215 76 61;
-    --signal-cool: 147 184 102;
-    --signal-affirmative: 174 206 120;
-    --signal-caution: 244 197 98;
-    --white: 239 237 213;
-    --gray-50: 244 242 221;
-    --gray-100: 230 230 206;
-    --gray-200: 207 211 184;
-    --gray-300: 177 186 155;
-    --gray-400: 145 157 126;
-    /* AA-safe on base-700 (4.65:1). */
-    --gray-500: 130 146 112;
-    --gray-600: 90 103 77;
-    --gray-700: 65 76 53;
-    --gray-800: 43 51 34;
-    --gray-900: 27 32 21;
-    --gray-950: 15 18 11;
+    color-scheme: light;
+    --base-900: 228 230 224;
+    --base-800: 244 245 238;
+    --base-700: 211 215 207;
+    --base-600: 209 216 204;
+    --base-500: 175 184 169;
+    --accent: 169 47 34;
+    --accent-hover: 139 35 26;
+    --signal-warm: 159 37 48;
+    --signal-cool: 49 92 75;
+    --signal-affirmative: 36 99 59;
+    --signal-caution: 115 76 14;
+    --white: 26 36 32;
+    --gray-50: 20 30 25;
+    --gray-100: 26 36 32;
+    --gray-200: 39 53 44;
+    --gray-300: 57 75 62;
+    --gray-400: 57 75 62;
+    --gray-500: 66 83 72;
+    --gray-600: 111 126 112;
+    --gray-700: 149 160 146;
+    --gray-800: 186 194 178;
+    --gray-900: 213 217 204;
+    --gray-950: 237 240 227;
+    --ink-inverse: 255 249 233;
+    --line-subtle: 171 183 165;
+    --line-strong: 137 157 130;
+    --font-chrome: 'Barlow Condensed', 'Noto Sans CJK JP', sans-serif;
     --scanline-strength: 0;
     --chrome-scanline-strength: 0;
-    --vignette-strength: 0.16;
+    --vignette-strength: 0;
     --heading-glow: 0;
-    --panel-glow: 0.018;
-    --control-glow: 0.16;
-    --primary-glow: 0.18;
+    --panel-glow: 0;
+    --control-glow: 0;
+    --primary-glow: 0;
     --chromatic-split: 0;
     --radius-sm: 0px;
     --radius: 1px;
     --radius-md: 1px;
-    --radius-lg: 2px;
-    --radius-xl: 2px;
-    --radius-2xl: 2px;
+    --radius-lg: 1px;
+    --radius-xl: 1px;
+    --radius-2xl: 1px;
+  }
+  /* Miku: the approved cyan fills panels, with a lighter blue canvas. */
+  html[data-theme='miku'] {
+    color-scheme: light;
+    --base-900: 111 212 226;
+    --base-800: 34 185 206;
+    --base-700: 80 199 217;
+    --base-600: 64 190 209;
+    --base-500: 41 155 176;
+    --accent: 8 59 72;
+    --accent-hover: 5 46 58;
+    --signal-warm: 111 23 41;
+    --signal-cool: 96 26 58;
+    --signal-affirmative: 11 65 37;
+    --signal-caution: 85 47 6;
+    --white: 6 46 58;
+    --gray-50: 6 46 58;
+    --gray-100: 6 46 58;
+    --gray-200: 8 50 62;
+    --gray-300: 9 54 65;
+    --gray-400: 10 57 68;
+    --gray-500: 11 62 75;
+    --gray-600: 25 102 119;
+    --gray-700: 34 130 148;
+    --gray-800: 48 157 176;
+    --gray-900: 79 190 207;
+    --gray-950: 123 217 229;
+    --ink-inverse: 156 234 241;
+    --line-subtle: 28 117 136;
+    --line-strong: 22 100 118;
+    --font-chrome: 'Quicksand', 'Noto Sans CJK JP', sans-serif;
+    --radius-sm: 4px;
+    --radius: 8px;
+    --radius-md: 8px;
+    --radius-lg: 10px;
+    --radius-xl: 12px;
+    --radius-2xl: 16px;
+  }
+  /* Classic Twin Peaks / FWWM: red curtains, ivory, warm black. */
+  html[data-theme='twin-peaks'] {
+    color-scheme: dark;
+    --base-900: 23 14 12;
+    --base-800: 43 23 19;
+    --base-700: 67 32 26;
+    --base-600: 82 41 33;
+    --base-500: 106 55 44;
+    --accent: 234 214 179;
+    --accent-hover: 250 236 207;
+    --signal-warm: 255 177 163;
+    --signal-cool: 244 169 143;
+    --signal-affirmative: 183 212 154;
+    --signal-caution: 237 202 136;
+    --white: 244 236 224;
+    --gray-50: 250 242 230;
+    --gray-100: 244 236 224;
+    --gray-200: 238 224 208;
+    --gray-300: 224 207 188;
+    --gray-400: 216 198 181;
+    --gray-500: 210 191 178;
+    --gray-600: 153 115 96;
+    --gray-700: 119 78 62;
+    --gray-800: 84 48 38;
+    --gray-900: 53 28 22;
+    --gray-950: 30 17 14;
+    --ink-inverse: 56 21 16;
+    --line-subtle: 120 69 59;
+    --line-strong: 161 94 70;
+    --font-chrome: 'Bodoni Moda', 'Noto Serif CJK JP', Georgia, serif;
+    --radius-sm: 0px;
+    --radius: 0px;
+    --radius-md: 0px;
+    --radius-lg: 0px;
+    --radius-xl: 0px;
+    --radius-2xl: 0px;
   }
   html[data-mood='quiet'] {
     --scanline-strength: 0;
@@ -277,7 +351,7 @@
     radial-gradient(
       ellipse at center,
       transparent 54%,
-      rgb(2 10 4 / var(--vignette-strength)) 100%
+      rgb(10 6 16 / var(--vignette-strength)) 100%
     ),
     radial-gradient(circle at 18% -8%, rgb(var(--accent) / 0.07), transparent 34rem),
     linear-gradient(180deg, rgb(var(--base-900) / 0.28), rgb(var(--base-900)) 34rem);
@@ -298,7 +372,7 @@
     radial-gradient(
       ellipse at center,
       transparent 52%,
-      rgb(2 10 4 / var(--vignette-strength)) 100%
+      rgb(10 6 16 / var(--vignette-strength)) 100%
     ),
     radial-gradient(circle at 14% -5%, rgb(var(--accent) / 0.11), transparent 35rem),
     radial-gradient(circle at 88% 18%, rgb(var(--signal-cool) / 0.045), transparent 28rem),
@@ -310,7 +384,7 @@
     radial-gradient(
       ellipse at center,
       transparent 62%,
-      rgb(2 10 4 / var(--vignette-strength)) 100%
+      rgb(10 6 16 / var(--vignette-strength)) 100%
     ),
     radial-gradient(circle at 50% -12%, rgb(var(--accent) / 0.025), transparent 30rem),
     linear-gradient(180deg, rgb(var(--base-900) / 0.25), rgb(var(--base-900)) 28rem);
@@ -328,51 +402,12 @@
   );
 }
 
-/* Tactical theme: information-map geometry below the content. The grid and
-   contour rings stop on quiet routes so editors and study surfaces stay calm. */
+/* The paper theme has no terminal grid. Quiet pages use the same still paper. */
 html[data-theme='metal-gear'] .archive-main {
-  background:
-    repeating-radial-gradient(
-      ellipse at 92% 8%,
-      transparent 0,
-      transparent 35px,
-      rgb(var(--signal-link) / 0.032) 36px,
-      transparent 37px
-    ),
-    linear-gradient(rgb(var(--signal-link) / 0.026) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--signal-link) / 0.026) 1px, transparent 1px),
-    radial-gradient(circle at 10% -6%, rgb(var(--accent) / 0.075), transparent 34rem),
-    linear-gradient(180deg, rgb(var(--base-800) / 0.3), rgb(var(--base-900)) 38rem);
-  background-size: auto, 48px 48px, 48px 48px, auto, auto;
+  background: rgb(var(--surface-canvas));
 }
-
-html[data-theme='metal-gear'] .archive-main[data-mood='cinematic'] {
-  background:
-    repeating-radial-gradient(
-      ellipse at 88% 12%,
-      transparent 0,
-      transparent 31px,
-      rgb(var(--signal-link) / 0.052) 32px,
-      transparent 33px
-    ),
-    linear-gradient(rgb(var(--signal-link) / 0.034) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--signal-link) / 0.034) 1px, transparent 1px),
-    radial-gradient(circle at 12% -4%, rgb(var(--accent) / 0.11), transparent 36rem),
-    linear-gradient(180deg, rgb(var(--base-800) / 0.34), rgb(var(--base-900)) 42rem);
-  background-size: auto, 48px 48px, 48px 48px, auto, auto;
-}
-
-html[data-theme='metal-gear'] .archive-main[data-mood='quiet'] {
-  background:
-    radial-gradient(circle at 50% -12%, rgb(var(--accent) / 0.03), transparent 30rem),
-    linear-gradient(180deg, rgb(var(--base-800) / 0.18), rgb(var(--base-900)) 30rem);
-}
-
 html[data-theme='metal-gear'] .wired-surface {
-  background-image:
-    linear-gradient(rgb(var(--signal-link) / 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--signal-link) / 0.025) 1px, transparent 1px);
-  background-size: 24px 24px;
+  background-image: none;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -386,25 +421,21 @@ html[data-theme='metal-gear'] .wired-surface {
   background: rgb(var(--base-900));
 }
 .theme-swatch-lain {
-  --swatch-live: 0 224 90;
-  --swatch-link: 36 190 168;
-  --swatch-bg: 10 15 11;
+  --swatch-live: 229 171 182;
+  --swatch-link: 164 188 215;
+  --swatch-bg: 15 13 21;
   background: rgb(var(--swatch-bg));
 }
 .theme-swatch-metal-gear {
-  --swatch-live: 226 173 73;
-  --swatch-link: 147 184 102;
-  --swatch-bg: 12 14 10;
+  --swatch-live: 169 47 34;
+  --swatch-link: 38 59 47;
+  --swatch-bg: 228 230 224;
   background: rgb(var(--swatch-bg));
 }
 .theme-swatch-field {
   position: absolute;
   inset: 0;
-  background:
-    linear-gradient(rgb(var(--swatch-link) / 0.11) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(var(--swatch-link) / 0.11) 1px, transparent 1px),
-    radial-gradient(circle at 75% 20%, rgb(var(--swatch-live) / 0.2), transparent 46%);
-  background-size: 18px 18px, 18px 18px, auto;
+  background: linear-gradient(90deg, rgb(var(--swatch-link)) 0 18%, transparent 18%);
 }
 .theme-swatch-lain .theme-swatch-field {
   background:
@@ -635,9 +666,9 @@ html[data-theme='metal-gear'] .wired-surface {
    feel like code; code editors opt back in with .code-input. */
 :is(h1, h2, h3, h4, h5, h6, button, input, select, kbd, th,
     .btn, .btn-primary, .btn-ghost, .btn-danger, .label, .chip, .uppercase),
-aside,
+.archive-sidebar,
 header {
-  font-family: var(--font-mono);
+  font-family: var(--font-chrome);
 }
 /* Log rows. A component class rather than Tailwind's `font-mono`, because
    tailwind.config.js extends colors and radii only — its font-mono resolves to
@@ -667,7 +698,7 @@ header {
     -0.5px 0 rgb(var(--signal-link) / var(--chromatic-split));
 }
 @media (prefers-reduced-motion: no-preference) {
-  html:not([data-theme='metal-gear']):not([data-signal='clean']):not([data-mood='quiet'])
+  html[data-theme='lain']:not([data-signal='clean']):not([data-mood='quiet'])
     .brand-glitch {
     animation: lain-glitch 6s infinite;
   }
@@ -695,26 +726,15 @@ header {
 
 .tactical-brand,
 .tactical-boot {
-  font-family: var(--font-mono);
+  font-family: var(--font-chrome);
   font-weight: 700;
   text-transform: uppercase;
 }
 .tactical-brand {
   letter-spacing: 0.06em;
 }
-.tactical-mark {
-  fill: none;
-  stroke: rgb(var(--signal-link));
-  stroke-width: 1.5;
-  vector-effect: non-scaling-stroke;
-  filter: drop-shadow(2px 3px 5px rgb(0 0 0 / 0.45));
-}
-.tactical-mark-lock {
-  fill: rgb(var(--signal-live));
-  stroke: none;
-}
 .boot-copy {
-  text-shadow: 2px 3px 8px rgb(0 0 0 / 0.6);
+  text-shadow: none;
 }
 
 /* Selection-driven relationship panels resolve like a short database scan.
@@ -725,11 +745,11 @@ header {
   isolation: isolate;
 }
 @media (prefers-reduced-motion: no-preference) {
-  html:not([data-theme='metal-gear']):not([data-signal='clean']):not([data-mood='quiet'])
+  html[data-theme='lain']:not([data-signal='clean']):not([data-mood='quiet'])
     .signal-resolve {
     animation: signal-lock 0.18s ease-out both;
   }
-  html:not([data-theme='metal-gear']):not([data-signal='clean']):not([data-mood='quiet'])
+  html[data-theme='lain']:not([data-signal='clean']):not([data-mood='quiet'])
     .signal-resolve::after {
     content: '';
     position: absolute;
@@ -788,9 +808,7 @@ header {
   box-shadow: inset 0 0 22px rgb(var(--signal-live) / var(--panel-glow));
 }
 html[data-theme='metal-gear'] .card {
-  box-shadow:
-    inset 0 1px 0 rgb(var(--signal-live) / 0.13),
-    3px 5px 14px rgb(0 0 0 / 0.16);
+  box-shadow: 0 2px 0 rgb(38 59 47 / 0.06);
 }
 .context-panel {
   border-color: rgb(var(--signal-link) / 0.28);
@@ -803,16 +821,17 @@ html[data-theme='metal-gear'] .card {
   border-color: rgb(var(--line-strong));
 }
 .input:focus {
-  box-shadow: 0 0 10px rgb(var(--signal-live) / var(--control-glow));
+  box-shadow:
+    var(--tw-ring-offset-shadow, 0 0 #0000),
+    var(--tw-ring-shadow, 0 0 #0000),
+    0 0 10px rgb(var(--signal-live) / var(--control-glow));
 }
 .chip,
 .btn-ghost {
   box-shadow: inset 0 0 0 1px rgb(var(--line-strong) / 0.4);
 }
-/* Inverse video: white text on phosphor green is unreadable (1.7:1). Covers
-   .btn-primary (@apply — no runtime .bg-accent class) AND every markup spot
-   composing bg-accent + text-white (10.9:1 dark-on-green). Keep writing
-   `bg-accent text-white` in markup; this flips it globally. */
+/* Accent controls always use the inverse role: dark on Lain pink, cream on
+   Metal Gear red. Legacy composed buttons share the same contract. */
 .btn-primary,
 .bg-accent.text-white {
   color: rgb(var(--ink-inverse));
@@ -821,9 +840,7 @@ html[data-theme='metal-gear'] .card {
   box-shadow: 0 0 12px rgb(var(--signal-live) / var(--primary-glow));
 }
 html[data-theme='metal-gear'] .btn-primary {
-  box-shadow:
-    inset 0 1px 0 rgb(var(--white) / 0.18),
-    2px 3px 8px rgb(0 0 0 / 0.38);
+  box-shadow: none;
 }
 
 /* --- dual-thumb range (RangeSlider.tsx): the two inputs stack transparently
@@ -865,7 +882,7 @@ html[data-theme='metal-gear'] .btn-primary {
 
 /* --- sidebar "connected" status dot (Sidebar.tsx footer) --- */
 @media (prefers-reduced-motion: no-preference) {
-  html:not([data-theme='metal-gear']):not([data-signal='clean']):not([data-mood='quiet'])
+  html[data-theme='lain']:not([data-signal='clean']):not([data-mood='quiet'])
     .wired-dot {
     animation: lain-pulse 2.4s ease-in-out infinite;
   }
@@ -906,4 +923,520 @@ html[data-theme='metal-gear'] .btn-primary {
 }
 @keyframes stroke-draw {
   to { stroke-dashoffset: 0; }
+}
+
+/* Local fonts: usable offline, including the first launch. */
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('./assets/themes/fonts/barlow-condensed-500.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('./assets/themes/fonts/barlow-condensed-600.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Barlow Condensed';
+  src: url('./assets/themes/fonts/barlow-condensed-700.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  src: url('./assets/themes/fonts/chakra-petch-500.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  src: url('./assets/themes/fonts/chakra-petch-600.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+}
+
+/* Selected direction contract: Lain's nocturnal archive and MGS2's ink on
+   paper. Art stays in the Home background; reading and operating surfaces
+   keep real content and their existing navigation model. */
+.archive-sidebar {
+  background-color: #0b0a10;
+}
+.archive-topbar {
+  background-color: #17121c;
+}
+.archive-player {
+  background-color: #211721;
+}
+.section-heading {
+  min-height: 2.25rem;
+  padding: 0.5rem 0.75rem;
+  background: #2c2231;
+  border-top: 1px solid #745064;
+  border-bottom: 1px solid #3e2e3d;
+}
+.section-heading h2 { color: rgb(var(--ink-primary)); }
+.section-heading > [aria-hidden] { background: transparent; }
+.section-heading > span:last-child:not([aria-hidden]) { color: rgb(var(--ink-secondary)); }
+.study-session h1, .study-session h2 {
+  font-family: 'Chakra Petch', var(--font-chrome);
+}
+/* RouteFocus targets headings, not controls. The keyboard ring remains on
+   every interactive element; a programmatically focused page title is quiet. */
+h1[tabindex='-1']:focus, h2[tabindex='-1']:focus {
+  outline: none;
+  box-shadow: none;
+}
+.home-hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: #14111c;
+  border-bottom: 1px solid #795363;
+}
+.home-cover-wall { opacity: 0.32; filter: saturate(0.45); }
+.home-hero-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #100d16eb, #100d169e 59%, #100d1610);
+}
+.home-signature {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 100%;
+  width: 36%;
+  object-fit: cover;
+  object-position: 50% 40%;
+  mix-blend-mode: screen;
+  opacity: 0.82;
+  mask-image: linear-gradient(90deg, transparent, #000 27%);
+  pointer-events: none;
+}
+.home-hero-copy {
+  position: relative;
+  display: flex;
+  min-height: 300px;
+  flex-direction: column;
+  justify-content: center;
+  padding: 2rem;
+  max-width: 76%;
+}
+.home-brand {
+  font-family: 'VT323', var(--font-mono);
+  font-size: clamp(4.5rem, 7vw, 6rem);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: 0.025em;
+  color: #e8cbd7;
+}
+.home-brand span { color: #e8cbd7; }
+.home-greeting { color: #eb9ea8; font-family: var(--font-chrome); }
+.home-hero-description { max-width: 38rem; }
+.home-resume {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  border-top: 1px solid rgb(var(--line-strong));
+  border-bottom: 1px solid rgb(var(--line-subtle));
+  border-radius: 0;
+  box-shadow: none;
+}
+.home-resume-content { min-height: 168px; }
+.home-resume-cover { width: 106px; max-height: 168px; }
+.home-resume-copy { padding: 0; }
+.home-resume-copy .btn-primary { margin-top: 1rem; }
+
+/* Dark islands explicitly rebind aliases: inherited custom-property aliases
+   otherwise retain the paper values computed on <html>. Readers and the
+   dark navigation drawer must not depend on the outer canvas color. */
+.theme-dark,
+html[data-theme='metal-gear'] .archive-sidebar {
+  color-scheme: dark;
+  --base-900: 25 38 32;
+  --base-800: 31 46 38;
+  --base-700: 43 60 47;
+  --base-600: 58 77 61;
+  --base-500: 75 93 76;
+  --surface-canvas: var(--base-900);
+  --surface-panel: var(--base-800);
+  --surface-raised: var(--base-700);
+  --surface-active: var(--base-600);
+  --line-subtle: 65 82 67;
+  --line-strong: 106 125 106;
+}
+html[data-theme='metal-gear'] .archive-sidebar { background-color: rgb(var(--surface-canvas)); }
+/* On-art badges inherit bright ink independently of the page theme. */
+.media-contrast, .theme-dark,
+html[data-theme='metal-gear'] .archive-sidebar {
+  --white: 245 241 225;
+  --gray-50: 245 241 225;
+  --gray-100: 239 237 220;
+  --gray-200: 225 229 213;
+  --gray-300: 204 216 197;
+  --gray-400: 187 203 180;
+  --gray-500: 180 199 171;
+  --gray-600: 112 137 108;
+  --ink-primary: var(--gray-100);
+  --ink-secondary: var(--gray-300);
+  --ink-muted: var(--gray-500);
+  --ink-decorative: var(--gray-600);
+  --accent: 250 178 158;
+  --accent-hover: 255 194 172;
+  --signal-live: var(--accent);
+  --signal-cool: 180 207 171;
+  --signal-link: var(--signal-cool);
+  --signal-warm: 253 165 165;
+  --signal-anomaly: var(--signal-warm);
+  --signal-affirmative: 178 221 173;
+  --signal-caution: 238 211 155;
+  --ink-inverse: 31 34 26;
+  color: rgb(var(--ink-primary));
+}
+/* Reader artwork retains a black surround; chrome uses the dark island. */
+.reader-canvas { background-color: #000; }
+html[data-theme='metal-gear'] .archive-topbar { background-color: #d7ddd2; }
+html[data-theme='metal-gear'] .archive-player { background-color: #ced5c6; }
+html[data-theme='metal-gear'] .archive-sidebar nav [aria-current='page'] {
+  background-color: #ad3429;
+  color: #fff9e9;
+  box-shadow: none;
+}
+html[data-theme='metal-gear'] .archive-sidebar nav [aria-current='page'] * {
+  color: inherit;
+}
+html[data-theme='metal-gear'] .archive-sidebar .sidebar-brand {
+  color: #efeede;
+  letter-spacing: 0.025em;
+}
+html[data-theme='metal-gear'] :is(h1, h2, h3, .btn, .label) {
+  font-family: var(--font-chrome);
+}
+html[data-theme='metal-gear'] :is(h1, .section-heading h2, .btn, .label, .tactical-brand) {
+  text-transform: uppercase;
+}
+html[data-theme='metal-gear'] :is(.btn, .pill, .chip, .input, .label, .archive-sidebar, .archive-topbar) {
+  font-size: max(0.875rem, 1em);
+  letter-spacing: 0.025em;
+}
+html[data-theme='metal-gear'] .section-heading {
+  background: #263b2f;
+  border-color: #263b2f;
+}
+html[data-theme='metal-gear'] .section-heading :is(h2, span) { color: #edeedc; }
+html[data-theme='metal-gear'] .section-heading h2 {
+  font-size: 1.125rem;
+  line-height: 1.15;
+  letter-spacing: 0.075em;
+}
+html[data-theme='metal-gear'] .home-hero { background: #f1f0e8; border-color: #8a9b84; }
+html[data-theme='metal-gear'] .home-cover-wall { opacity: 0.19; filter: grayscale(1); }
+html[data-theme='metal-gear'] .home-hero-shade {
+  background: linear-gradient(90deg, #f1f0e8f5, #f1f0e8b8 60%, #f1f0e800);
+}
+html[data-theme='metal-gear'] .home-signature {
+  mix-blend-mode: multiply;
+  opacity: 0.95;
+  object-position: 50% 37%;
+  mask-image: linear-gradient(90deg, transparent 2%, #000 25%);
+}
+html[data-theme='metal-gear'] .home-brand {
+  font-family: var(--font-chrome);
+  font-weight: 700;
+  font-size: clamp(4rem, 6.5vw, 6rem);
+  letter-spacing: -0.035em;
+  color: #25382d;
+}
+html[data-theme='metal-gear'] .home-brand span { color: #b92f23; }
+html[data-theme='metal-gear'] .home-greeting {
+  color: #344b3d;
+  font-size: 1.125rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+html[data-theme='metal-gear'] .home-resume { background: #f0f1e8; }
+html[data-theme='metal-gear'] .home-resume-copy h2 { font-size: 1.75rem; }
+@media (max-width: 700px) {
+  .home-hero-copy { max-width: 100%; padding: 1.5rem; }
+  .home-signature { width: 55%; opacity: 0.28; }
+  html[data-theme='metal-gear'] .home-signature { opacity: 0.18; }
+  .home-hero-description { max-width: 28rem; }
+  .home-resume-cover { width: 66px; }
+}
+
+/* Legacy light status foregrounds retain their hues on paper. New status
+   components should consume semantic signal roles directly. */
+html[data-theme='metal-gear'] { --status-red: 153 35 44; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-red-100, .text-red-200, .text-red-300, .text-red-400, .text-red-500, .hover\:text-red-100:hover, .hover\:text-red-200:hover, .hover\:text-red-300:hover, .hover\:text-red-400:hover, .hover\:text-red-500:hover) { color: rgb(var(--status-red)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-red: 253 165 165; }
+html[data-theme='metal-gear'] { --status-rose: 152 39 70; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-rose-100, .text-rose-200, .text-rose-300, .text-rose-400, .text-rose-500, .hover\:text-rose-100:hover, .hover\:text-rose-200:hover, .hover\:text-rose-300:hover, .hover\:text-rose-400:hover, .hover\:text-rose-500:hover) { color: rgb(var(--status-rose)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-rose: 253 164 175; }
+html[data-theme='metal-gear'] { --status-pink: 145 43 99; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-pink-100, .text-pink-200, .text-pink-300, .text-pink-400, .text-pink-500, .hover\:text-pink-100:hover, .hover\:text-pink-200:hover, .hover\:text-pink-300:hover, .hover\:text-pink-400:hover, .hover\:text-pink-500:hover) { color: rgb(var(--status-pink)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-pink: 249 168 212; }
+html[data-theme='metal-gear'] { --status-orange: 139 60 12; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-orange-100, .text-orange-200, .text-orange-300, .text-orange-400, .text-orange-500, .hover\:text-orange-100:hover, .hover\:text-orange-200:hover, .hover\:text-orange-300:hover, .hover\:text-orange-400:hover, .hover\:text-orange-500:hover) { color: rgb(var(--status-orange)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-orange: 253 186 116; }
+html[data-theme='metal-gear'] { --status-amber: 115 76 14; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-amber-100, .text-amber-200, .text-amber-300, .text-amber-400, .text-amber-500, .hover\:text-amber-100:hover, .hover\:text-amber-200:hover, .hover\:text-amber-300:hover, .hover\:text-amber-400:hover, .hover\:text-amber-500:hover) { color: rgb(var(--status-amber)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-amber: 252 211 77; }
+html[data-theme='metal-gear'] { --status-yellow: 111 80 9; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-yellow-100, .text-yellow-200, .text-yellow-300, .text-yellow-400, .text-yellow-500, .hover\:text-yellow-100:hover, .hover\:text-yellow-200:hover, .hover\:text-yellow-300:hover, .hover\:text-yellow-400:hover, .hover\:text-yellow-500:hover) { color: rgb(var(--status-yellow)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-yellow: 253 224 71; }
+html[data-theme='metal-gear'] { --status-lime: 65 96 20; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-lime-100, .text-lime-200, .text-lime-300, .text-lime-400, .text-lime-500, .hover\:text-lime-100:hover, .hover\:text-lime-200:hover, .hover\:text-lime-300:hover, .hover\:text-lime-400:hover, .hover\:text-lime-500:hover) { color: rgb(var(--status-lime)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-lime: 190 242 100; }
+html[data-theme='metal-gear'] { --status-green: 36 99 59; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-green-100, .text-green-200, .text-green-300, .text-green-400, .text-green-500, .hover\:text-green-100:hover, .hover\:text-green-200:hover, .hover\:text-green-300:hover, .hover\:text-green-400:hover, .hover\:text-green-500:hover) { color: rgb(var(--status-green)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-green: 134 239 172; }
+html[data-theme='metal-gear'] { --status-emerald: 23 100 72; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-emerald-100, .text-emerald-200, .text-emerald-300, .text-emerald-400, .text-emerald-500, .hover\:text-emerald-100:hover, .hover\:text-emerald-200:hover, .hover\:text-emerald-300:hover, .hover\:text-emerald-400:hover, .hover\:text-emerald-500:hover) { color: rgb(var(--status-emerald)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-emerald: 110 231 183; }
+html[data-theme='metal-gear'] { --status-teal: 26 100 96; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-teal-100, .text-teal-200, .text-teal-300, .text-teal-400, .text-teal-500, .hover\:text-teal-100:hover, .hover\:text-teal-200:hover, .hover\:text-teal-300:hover, .hover\:text-teal-400:hover, .hover\:text-teal-500:hover) { color: rgb(var(--status-teal)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-teal: 94 234 212; }
+html[data-theme='metal-gear'] { --status-cyan: 22 91 111; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-cyan-100, .text-cyan-200, .text-cyan-300, .text-cyan-400, .text-cyan-500, .hover\:text-cyan-100:hover, .hover\:text-cyan-200:hover, .hover\:text-cyan-300:hover, .hover\:text-cyan-400:hover, .hover\:text-cyan-500:hover) { color: rgb(var(--status-cyan)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-cyan: 103 232 249; }
+html[data-theme='metal-gear'] { --status-sky: 29 83 126; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-sky-100, .text-sky-200, .text-sky-300, .text-sky-400, .text-sky-500, .hover\:text-sky-100:hover, .hover\:text-sky-200:hover, .hover\:text-sky-300:hover, .hover\:text-sky-400:hover, .hover\:text-sky-500:hover) { color: rgb(var(--status-sky)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-sky: 125 211 252; }
+html[data-theme='metal-gear'] { --status-blue: 42 73 148; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-blue-100, .text-blue-200, .text-blue-300, .text-blue-400, .text-blue-500, .hover\:text-blue-100:hover, .hover\:text-blue-200:hover, .hover\:text-blue-300:hover, .hover\:text-blue-400:hover, .hover\:text-blue-500:hover) { color: rgb(var(--status-blue)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-blue: 147 197 253; }
+html[data-theme='metal-gear'] { --status-indigo: 68 58 141; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-indigo-100, .text-indigo-200, .text-indigo-300, .text-indigo-400, .text-indigo-500, .hover\:text-indigo-100:hover, .hover\:text-indigo-200:hover, .hover\:text-indigo-300:hover, .hover\:text-indigo-400:hover, .hover\:text-indigo-500:hover) { color: rgb(var(--status-indigo)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-indigo: 165 180 252; }
+html[data-theme='metal-gear'] { --status-violet: 95 53 146; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-violet-100, .text-violet-200, .text-violet-300, .text-violet-400, .text-violet-500, .hover\:text-violet-100:hover, .hover\:text-violet-200:hover, .hover\:text-violet-300:hover, .hover\:text-violet-400:hover, .hover\:text-violet-500:hover) { color: rgb(var(--status-violet)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-violet: 196 181 253; }
+html[data-theme='metal-gear'] { --status-purple: 113 51 139; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-purple-100, .text-purple-200, .text-purple-300, .text-purple-400, .text-purple-500, .hover\:text-purple-100:hover, .hover\:text-purple-200:hover, .hover\:text-purple-300:hover, .hover\:text-purple-400:hover, .hover\:text-purple-500:hover) { color: rgb(var(--status-purple)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-purple: 216 180 254; }
+html[data-theme='metal-gear'] { --status-fuchsia: 134 41 124; }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.text-fuchsia-100, .text-fuchsia-200, .text-fuchsia-300, .text-fuchsia-400, .text-fuchsia-500, .hover\:text-fuchsia-100:hover, .hover\:text-fuchsia-200:hover, .hover\:text-fuchsia-300:hover, .hover\:text-fuchsia-400:hover, .hover\:text-fuchsia-500:hover) { color: rgb(var(--status-fuchsia)); }
+html:is([data-theme='metal-gear'], [data-theme='miku']) :is(.media-contrast, .theme-dark) { --status-fuchsia: 240 171 252; }
+
+/* The approved composition pairs a continuation with compact library rows. */
+.home-session-main, .home-next-up { background: rgb(var(--surface-panel)); }
+.home-session-main > .section-heading, .home-next-up > .section-heading { margin-bottom: 0; }
+.home-resume { border-top: 0; }
+.home-resume-copy h2 { font-size: 1.5rem; }
+.home-resume-copy .btn-primary { margin-top: auto; }
+.home-next-up { align-self: start; border-bottom: 1px solid rgb(var(--line-subtle)); }
+html[data-theme='metal-gear'] .home-greeting { font-size: 1.625rem; font-weight: 500; }
+html[data-theme='metal-gear'] .home-hero-stats { font-family: var(--font-body); }
+.archive-sidebar[data-expanded='true'] .archive-brand-link {
+  flex-direction: row;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  justify-content: flex-start;
+}
+.archive-sidebar[data-expanded='true'] .archive-brand-link img { width: 36px; height: 42px; }
+.archive-sidebar[data-expanded='true'] .sidebar-brand { font-size: 30px !important; }
+html[data-theme='metal-gear'] .archive-sidebar nav a { font-family: var(--font-body); font-size: 13px; }
+html[data-theme='metal-gear'] .archive-sidebar nav h2 { font-size: 16px; }
+html[data-theme='metal-gear'] .archive-topbar nav a { font-size: 14px; }
+
+/* Approved option 2 additions. These still surfaces never inherit Wired effects. */
+@font-face {
+  font-family: 'Quicksand';
+  src: url('./assets/themes/fonts/quicksand-variable.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Bodoni Moda';
+  src: url('./assets/themes/fonts/bodoni-moda-variable.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+}
+html:is([data-theme='miku'], [data-theme='twin-peaks']) {
+  --scanline-strength: 0;
+  --chrome-scanline-strength: 0;
+  --vignette-strength: 0;
+  --heading-glow: 0;
+  --panel-glow: 0;
+  --control-glow: 0;
+  --primary-glow: 0;
+  --chromatic-split: 0;
+}
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .archive-main {
+  background: rgb(var(--surface-canvas));
+}
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .wired-surface {
+  background-image: none;
+  backdrop-filter: none;
+}
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .study-session :is(h1, h2) {
+  font-family: var(--font-chrome);
+}
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .section-heading h2 {
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 1rem;
+}
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .home-hero-copy { min-height: 330px; max-width: 65%; }
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .home-resume-copy h2 { overflow-wrap: anywhere; }
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .home-session-main,
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .home-next-up {
+  border: 1px solid rgb(var(--line-subtle));
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .archive-sidebar nav [aria-current='page'] {
+  background: rgb(var(--signal-live));
+  color: rgb(var(--ink-inverse));
+  box-shadow: none;
+}
+html:is([data-theme='miku'], [data-theme='twin-peaks']) .archive-sidebar nav [aria-current='page'] * { color: inherit; }
+.theme-brand { font-family: var(--font-chrome); letter-spacing: -0.025em; }
+.theme-boot .boot-copy { font-family: var(--font-chrome); max-width: 90vw; }
+.app-mark { display: block; flex-shrink: 0; background-repeat: no-repeat; }
+.app-mark-miku { border-radius: 50%; background-color: #50c7d9; background-size: 330% auto; background-position: 48% 3%; }
+.app-mark-twin-peaks { background-size: auto 125%; background-position: 59% 25%; border: 1px solid #ead6b3; }
+.archive-sidebar[data-expanded='true'] .archive-brand-link .app-mark { width: 36px; height: 42px; }
+.home-art-credit {
+  position: absolute;
+  z-index: 1;
+  right: 0;
+  bottom: 0;
+  max-width: 40%;
+  padding: 0.4rem 0.75rem;
+  font: 12px var(--font-body);
+}
+.theme-swatch-miku {
+  --swatch-live: 8 59 72;
+  --swatch-link: 34 185 206;
+  --swatch-bg: 111 212 226;
+  background: rgb(var(--swatch-bg));
+}
+.theme-swatch-twin-peaks {
+  --swatch-live: 234 214 179;
+  --swatch-link: 155 32 24;
+  --swatch-bg: 23 14 12;
+  background: rgb(var(--swatch-bg));
+}
+/* Miku: blue fills, soft geometry and dark blue lettering. */
+html[data-theme='miku'] .archive-sidebar,
+html[data-theme='miku'] .archive-player { background: #22b9ce; }
+html[data-theme='miku'] .archive-topbar { background: #50c7d9; }
+html[data-theme='miku'] .sidebar-brand { font-weight: 700; }
+html[data-theme='miku'] :is(.btn, .pill) { border-radius: 18px; }
+html[data-theme='miku'] .card { box-shadow: 0 5px 14px #06384917; }
+html[data-theme='miku'] .section-heading { background: #50c7d9; border-color: #1c7588; }
+html[data-theme='miku'] .home-hero { background: #50c7d9; border: 0; border-radius: 16px; }
+html[data-theme='miku'] .home-cover-wall { opacity: 0.16; filter: saturate(0.6); }
+html[data-theme='miku'] .home-hero-shade { background: linear-gradient(90deg, #50c7d9e8, #50c7d9b3 65%, #22b9ce66); }
+html[data-theme='miku'] .home-signature {
+  width: 40%;
+  right: 10px;
+  object-fit: contain;
+  object-position: center;
+  mix-blend-mode: normal;
+  mask-image: none;
+  opacity: 1;
+}
+html[data-theme='miku'] .home-brand {
+  font-family: var(--font-chrome);
+  font-weight: 700;
+  font-size: clamp(3.25rem, 5.5vw, 4.75rem);
+  letter-spacing: -0.035em;
+  color: #062e3a;
+}
+html[data-theme='miku'] .home-brand span { color: #053643; }
+html[data-theme='miku'] .home-greeting { color: #0b3e4b; font-size: 1.25rem; font-weight: 600; }
+html[data-theme='miku'] .home-art-credit { background: #22b9ceeb; color: #062e3a; border-radius: 15px 0 0 0; }
+html[data-theme='miku'] .home-hero-stats { font-family: var(--font-body); }
+/* Twin Peaks: warm curtain-red chrome around plain, dark reading surfaces. */
+html[data-theme='twin-peaks'] .archive-sidebar {
+  --base-900: 155 32 24;
+  --base-800: 125 27 20;
+  --base-700: 111 26 20;
+  --base-600: 102 21 16;
+  --base-500: 176 63 44;
+  --surface-canvas: var(--base-900);
+  --surface-panel: var(--base-800);
+  --surface-raised: var(--base-700);
+  --surface-active: var(--base-600);
+  --gray-100: 255 239 220;
+  --gray-300: 250 230 208;
+  --gray-500: 246 202 188;
+  --ink-primary: var(--gray-100);
+  --ink-secondary: var(--gray-300);
+  --ink-muted: var(--gray-500);
+  --accent: 240 230 209;
+  --signal-live: var(--accent);
+  --ink-inverse: 115 27 20;
+  --line-subtle: 195 95 77;
+  --line-strong: 212 125 102;
+  background: #9b2018;
+}
+html[data-theme='twin-peaks'] .archive-topbar { background: #681b16; }
+html[data-theme='twin-peaks'] .archive-player { background: #711c16; }
+html[data-theme='twin-peaks'] .section-heading { background: #861e17; border-color: #bb4a37; }
+html[data-theme='twin-peaks'] .section-heading :is(h2, span) { color: #f4e8d2; }
+html[data-theme='twin-peaks'] .section-heading h2 { font-size: 1.125rem; }
+html[data-theme='twin-peaks'] .archive-sidebar nav a { font-family: var(--font-body); font-size: 13px; }
+html[data-theme='twin-peaks'] .archive-topbar :is(nav, input, kbd),
+html[data-theme='twin-peaks'] :is(.input, .label, .chip, .pill, th) { font-family: var(--font-body); }
+html[data-theme='twin-peaks'] .home-hero { background: #611810; border: 1px solid #a34232; padding-bottom: 12px; }
+html[data-theme='twin-peaks'] .home-hero::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 12px;
+  background-color: #211713;
+  background-image: linear-gradient(135deg, #eee6d7 25%, transparent 25%), linear-gradient(225deg, #eee6d7 25%, transparent 25%), linear-gradient(315deg, #eee6d7 25%, transparent 25%), linear-gradient(45deg, #eee6d7 25%, transparent 25%);
+  background-size: 24px 24px;
+}
+html[data-theme='twin-peaks'] .home-cover-wall { opacity: 0.18; filter: sepia(0.3); }
+html[data-theme='twin-peaks'] .home-hero-shade { background: linear-gradient(90deg, #2f100ced, #3a110cc0 55%, #48120c60); }
+html[data-theme='twin-peaks'] .home-signature { width: 42%; object-position: center; mix-blend-mode: normal; opacity: 1; mask-image: linear-gradient(90deg, transparent, #000 15%); }
+html[data-theme='twin-peaks'] .home-brand {
+  font-family: var(--font-chrome);
+  font-size: clamp(3.25rem, 5.5vw, 5.125rem);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  color: #f3ebdd;
+}
+html[data-theme='twin-peaks'] .home-brand span { color: #ead6b3; }
+html[data-theme='twin-peaks'] .home-greeting { color: #f0c7b6; font-size: 1.5rem; font-style: italic; }
+html[data-theme='twin-peaks'] .home-art-credit { background: #35130de3; bottom: 12px; color: #f4ece0; }
+@media (max-width: 700px) {
+  html:is([data-theme='miku'], [data-theme='twin-peaks']) .home-hero-copy { max-width: 100%; min-height: 300px; }
+  html:is([data-theme='miku'], [data-theme='twin-peaks']) .home-signature { width: 55%; opacity: 0.18; }
+  .home-art-credit { display: none; }
+}
+
+/* Legacy status text keeps its hue with enough depth against Miku cyan. */
+html[data-theme='miku'] {
+  --status-red: 104 24 30;
+  --status-rose: 103 27 48;
+  --status-pink: 99 29 67;
+  --status-orange: 95 41 8;
+  --status-amber: 78 52 10;
+  --status-yellow: 75 54 6;
+  --status-lime: 44 65 14;
+  --status-green: 24 67 40;
+  --status-emerald: 16 68 49;
+  --status-teal: 18 68 65;
+  --status-cyan: 15 62 75;
+  --status-sky: 20 56 86;
+  --status-blue: 29 50 101;
+  --status-indigo: 46 39 96;
+  --status-violet: 65 36 99;
+  --status-purple: 77 35 95;
+  --status-fuchsia: 91 28 84;
 }

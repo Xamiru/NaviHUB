@@ -27,7 +27,9 @@ vi.mock('../../src/renderer/src/lib/useGameSession', async (importOriginal) => {
 })
 
 vi.mock('../../src/renderer/src/components/CoverImage', () => ({
-  default: ({ alt }: { alt: string }) => <div role="img" aria-label={alt} />
+  default: ({ alt, thumbWidth }: { alt: string; thumbWidth?: number }) => (
+    <div role="img" aria-label={alt} data-thumb-width={thumbWidth ?? 'original'} />
+  )
 }))
 
 const games: InstalledGame[] = [
@@ -82,7 +84,32 @@ describe('Installed games launcher', () => {
     expect(screen.getByRole('progressbar', { name: 'Elden Ring achievements' })).toHaveAttribute('aria-valuenow', '2')
     expect(detail).toHaveBeenCalledWith(1)
     expect(screen.getAllByRole('img', { name: 'Elden Ring' }).length).toBeGreaterThan(0)
-    expect(screen.getByRole('heading', { name: 'Recently played' })).toBeInTheDocument()
+    const recent = screen.getByRole('heading', { name: 'Recently played' }).closest('section')!
+    for (const image of within(recent).getAllByRole('img')) {
+      expect(image).toHaveAttribute('data-thumb-width', '480')
+    }
+    const featured = screen.getByRole('heading', { name: 'Continue playing' }).closest('section')!
+    expect(within(featured).getByRole('img', { name: 'Elden Ring' })).toHaveAttribute(
+      'data-thumb-width',
+      'original'
+    )
+  })
+
+  it('uses cached thumbnails for a 50-game grid', async () => {
+    installed.mockResolvedValue(
+      Array.from({ length: 50 }, (_, i) => ({
+        ...games[i % games.length],
+        mediaId: i + 1,
+        title: `Game ${i + 1}`,
+        lastPlayedAt: null
+      }))
+    )
+    renderPage()
+    await screen.findByRole('heading', { name: 'All linked games' })
+    await waitFor(() => expect(within(librarySection()).getAllByRole('img')).toHaveLength(50))
+    for (const image of within(librarySection()).getAllByRole('img')) {
+      expect(image).toHaveAttribute('data-thumb-width', '320')
+    }
   })
 
   it('searches the complete collection and sorts by playtime', async () => {

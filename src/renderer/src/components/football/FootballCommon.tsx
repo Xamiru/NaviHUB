@@ -25,7 +25,7 @@ const COMPETITION_CODES: Record<FootballCompetitionKey, string> = {
 export function FootballFlag({ competitionKey }: { competitionKey: FootballCompetitionKey }) {
   if (competitionKey === 'premier-league') {
     return (
-      <span className="relative inline-block h-4 w-6 shrink-0 overflow-hidden rounded-sm border border-black/10 bg-white" aria-label="England">
+      <span className="relative inline-block h-4 w-6 shrink-0 overflow-hidden rounded-sm border border-black/10 bg-paper-white" aria-label="England">
         <span className="absolute inset-y-0 left-1/2 w-1 -translate-x-1/2 bg-red-600" />
         <span className="absolute inset-x-0 top-1/2 h-1 -translate-y-1/2 bg-red-600" />
       </span>
@@ -35,7 +35,7 @@ export function FootballFlag({ competitionKey }: { competitionKey: FootballCompe
     return <span className="inline-grid h-4 w-6 shrink-0 grid-rows-3 overflow-hidden rounded-sm border border-black/10" aria-label="Spain"><span className="bg-red-600" /><span className="bg-yellow-400" /><span className="bg-red-600" /></span>
   }
   if (competitionKey === 'serie-a') {
-    return <span className="inline-grid h-4 w-6 shrink-0 grid-cols-3 overflow-hidden rounded-sm border border-black/10" aria-label="Italy"><span className="bg-green-600" /><span className="bg-white" /><span className="bg-red-600" /></span>
+    return <span className="inline-grid h-4 w-6 shrink-0 grid-cols-3 overflow-hidden rounded-sm border border-black/10" aria-label="Italy"><span className="bg-green-600" /><span className="bg-paper-white" /><span className="bg-red-600" /></span>
   }
   if (competitionKey === 'bundesliga') {
     return <span className="inline-grid h-4 w-6 shrink-0 grid-rows-3 overflow-hidden rounded-sm border border-white/10" aria-label="Germany"><span className="bg-black" /><span className="bg-red-600" /><span className="bg-yellow-400" /></span>

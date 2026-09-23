@@ -59,9 +59,11 @@ progress evidence remain connected instead of being split among unrelated study 
 ## Brand Commitments
 
 - Product name: NaviHUB.
-- The established Serial Experiments Lain-inspired Wired terminal identity remains the only visual
-  world. New learning surfaces inherit its quiet editorial hierarchy and phosphor-accent shell.
-- Home's mixed-media cover-wall hero remains unchanged.
+- The user selected the third theme-study options: Lain **Wired, after dark** (black violet,
+  rose signals, existing Lain icon) and Metal Gear **Solid / Ink** (light paper, dark green ink,
+  red actions, FOXHOUND icon and classic MGS2 artwork). Themes are selectable; Lain is the default.
+- Home keeps its mixed-media cover wall, with the selected theme artwork and typography.
+  Learning surfaces inherit the theme while keeping reading and feedback clear and still.
 - No emoji or decorative Unicode glyphs. Functional state and navigation glyphs follow the existing
   repository rules.
 - The voice is mature, direct, specific, and honest about measurement limits.

@@ -73,14 +73,14 @@ function ArtworkCard({ game, recent = false, ...playProps }: PlayProps & { recen
           alt={game.title}
           className="absolute inset-0 h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-105 motion-safe:group-focus-within:scale-105"
           rounded="rounded-none"
-          thumbWidth={recent ? 600 : 360}
+          thumbWidth={recent ? 480 : 320}
         />
         <div className={recent
           ? 'pointer-events-none absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent'
           : 'pointer-events-none absolute inset-0 bg-black/0 transition-colors group-hover:bg-black/35 group-focus-within:bg-black/35'} />
         <Link to={detailPath(game)} className="absolute inset-0" aria-label={`View ${game.title} details`} />
         {recent && (
-          <span className="pointer-events-none absolute bottom-3 left-3 right-3 truncate text-xs font-semibold text-white">
+          <span className="media-contrast pointer-events-none absolute bottom-3 left-3 right-3 truncate text-xs font-semibold text-white">
             {game.title}
           </span>
         )}
@@ -119,7 +119,7 @@ function FeaturedGame({ game, heroPath, ...playProps }: PlayProps & { heroPath: 
           alt={game.title}
           className={`absolute inset-0 h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-105 motion-safe:group-focus-within:scale-105 ${heroPath ? '' : 'scale-110 blur-md opacity-60'}`}
           rounded="rounded-none"
-          thumbWidth={1200}
+          thumbWidth={heroPath ? undefined : 480}
         />
         {!heroPath && game.coverPath && (
           <CoverImage
@@ -127,15 +127,15 @@ function FeaturedGame({ game, heroPath, ...playProps }: PlayProps & { heroPath: 
             alt=""
             className="absolute right-[8%] top-1/2 h-[78%] w-auto -translate-y-1/2 shadow-2xl"
             rounded="rounded-md"
-            thumbWidth={600}
+            thumbWidth={480}
           />
         )}
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-        <span className="pointer-events-none absolute left-5 top-5 rounded border border-white/20 bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-200">
+        <span className="media-contrast pointer-events-none absolute left-5 top-5 rounded border border-white/20 bg-black/60 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-200">
           {playProps.runningHere ? 'Playing now' : lastPlayed ? 'Continue playing' : 'Ready to play'}
         </span>
         <Link to={detailPath(game)} className="absolute inset-0" aria-label={`View ${game.title} details`} />
-        <div className="pointer-events-none absolute inset-x-5 bottom-5">
+        <div className="media-contrast pointer-events-none absolute inset-x-5 bottom-5">
           <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-gray-300">
             {game.lastSessionSeconds != null
               ? `Last session / ${fmtDurationSec(game.lastSessionSeconds)}`

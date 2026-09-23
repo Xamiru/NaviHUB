@@ -83,6 +83,8 @@ const SETTINGS_SEARCH: readonly SettingsSearchSection<TabId>[] = [
       'theme',
       'lain',
       'metal gear',
+      'hatsune miku',
+      'twin peaks',
       'tactical',
       'signal clarity',
       'effects',
@@ -416,7 +418,7 @@ export function TextSetting({
 
 // ---- Appearance -------------------------------------------------------------
 
-function ThemeSettings({
+export function ThemeSettings({
   data,
   onSave
 }: {
@@ -473,9 +475,6 @@ function ThemeSettings({
           )
         })}
       </div>
-      <p className="mt-3 text-xs leading-relaxed text-ink-muted">
-        The Metal Gear theme is an original tactical interface inspired by the series. It does not copy logos, character art or game screens.
-      </p>
     </SettingCard>
   )
 }

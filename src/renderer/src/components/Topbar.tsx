@@ -70,7 +70,7 @@ export default function Topbar() {
   }
 
   return (
-    <header className="wired-surface relative z-30 h-[76px] shrink-0 border-b border-line-subtle bg-surface-panel/80 backdrop-blur-xl">
+    <header className="archive-topbar wired-surface relative z-30 h-[76px] shrink-0 border-b border-line-subtle bg-surface-panel/80 backdrop-blur-xl">
       <div className="flex h-11 min-w-0 items-center gap-4 px-5">
         <div className="hidden min-w-0 shrink sm:block">
           <p className="text-[9px] font-semibold uppercase tracking-[0.24em] text-signal-link/80">

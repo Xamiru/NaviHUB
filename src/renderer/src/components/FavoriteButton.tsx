@@ -35,8 +35,8 @@ export default function FavoriteButton({
         : 'pill text-gray-400'
       : variant === 'overlay'
       ? active
-        ? 'bg-black/75 text-accent'
-        : 'bg-black/75 text-gray-300 hover:text-accent'
+        ? 'media-contrast bg-black/75 text-accent'
+        : 'media-contrast bg-black/75 text-gray-300 hover:text-accent'
       : active
         ? 'bg-accent/15 text-accent'
         : 'text-gray-400 hover:bg-base-700 hover:text-white'

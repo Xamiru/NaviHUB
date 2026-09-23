@@ -1,4 +1,7 @@
 import lainAvatar from '../assets/lain.png'
+import foxhound from '../assets/themes/foxhound.png'
+import miku from '../assets/themes/miku-classic.png'
+import laura from '../assets/themes/peaks-laura.jpg'
 import type { AppTheme } from '@shared/appTheme'
 
 export default function AppMark({
@@ -8,23 +11,18 @@ export default function AppMark({
   theme: AppTheme
   className?: string
 }) {
+  if (theme === 'miku' || theme === 'twin-peaks') {
+    return (
+      <span
+        className={`app-mark app-mark-${theme} ${className}`}
+        style={{ backgroundImage: `url(${theme === 'miku' ? miku : laura})` }}
+        aria-hidden="true"
+      />
+    )
+  }
   if (theme === 'lain') {
     return <img src={lainAvatar} alt="" className={className} aria-hidden="true" />
   }
 
-  // An original radar/registration mark, deliberately not a Metal Gear logo.
-  // It supplies a neutral NaviHUB identity when the Lain portrait is out of place.
-  return (
-    <svg
-      viewBox="0 0 48 48"
-      className={`tactical-mark ${className}`}
-      aria-hidden="true"
-      focusable="false"
-    >
-      <path d="M4 16V4h12M32 4h12v12M44 32v12H32M16 44H4V32" />
-      <circle cx="24" cy="24" r="13" />
-      <path d="M24 8v32M8 24h32M15 33l18-18" />
-      <circle className="tactical-mark-lock" cx="30" cy="18" r="2.5" />
-    </svg>
-  )
+  return <img src={foxhound} alt="" className={`object-contain ${className}`} aria-hidden="true" />
 }

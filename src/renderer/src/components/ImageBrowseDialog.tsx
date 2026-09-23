@@ -184,12 +184,12 @@ export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JS
                   }`}
                 />
                 {r.width && r.height && (
-                  <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
+                  <span className="media-contrast absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
                     {r.width}×{r.height}
                   </span>
                 )}
                 {status && (
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-medium">
+                  <span className="media-contrast absolute inset-0 flex items-center justify-center bg-black/50 text-sm font-medium">
                     {status === 'busy' ? 'Saving…' : '✓ Added'}
                   </span>
                 )}

@@ -1,6 +1,6 @@
 ---
 name: wrap
-description: End-of-session chores for NaviHUB — run the CI gate, fold what changed into CLAUDE.md or docs/architecture, list what the user needs to commit, and emit a paste-ready handoff prompt for the next session. Use when work wraps up or the user says "end of session" / "update anything needed".
+description: End-of-session chores for NaviHUB — confirm the CI gate, fold durable changes into CLAUDE.md or docs/architecture, and report uncommitted work. Use when work wraps up or the user says "end of session" / "update anything needed".
 ---
 
 # Codex adapter

@@ -763,7 +763,7 @@ function ActorCard({
       </Link>
       {onRemove && (
         <button
-          className="absolute top-1 right-1 hidden group-hover:flex group-focus-within:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
+          className="media-contrast absolute top-1 right-1 hidden group-hover:flex group-focus-within:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
           onClick={onRemove}
           title="Remove cast member"
           aria-label="Remove cast member"
@@ -834,7 +834,7 @@ function CharacterCard({
       </div>
       {onRemove && (
         <button
-          className="absolute top-1 left-1/2 -translate-x-1/2 hidden group-hover:flex group-focus-within:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
+          className="media-contrast absolute top-1 left-1/2 -translate-x-1/2 hidden group-hover:flex group-focus-within:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
           onClick={onRemove}
           title="Remove character"
           aria-label="Remove character"
@@ -871,7 +871,7 @@ function CharacterOnlyCard({
       </Link>
       {onRemove && (
         <button
-          className="absolute top-1 right-1 hidden group-hover:flex group-focus-within:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
+          className="media-contrast absolute top-1 right-1 hidden group-hover:flex group-focus-within:flex items-center justify-center w-5 h-5 rounded-full bg-black/70 text-gray-300 hover:text-red-400 text-sm leading-none"
           onClick={onRemove}
           title="Remove character"
           aria-label="Remove character"

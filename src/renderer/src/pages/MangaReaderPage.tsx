@@ -572,7 +572,7 @@ export default function MangaReaderPage() {
   if (sourceError) {
     return (
       <div
-        className="h-screen bg-black text-gray-400 flex flex-col items-center justify-center gap-3"
+        className="theme-dark reader-canvas h-screen bg-black text-gray-400 flex flex-col items-center justify-center gap-3"
         role="alert"
       >
         <p>Reader content could not be loaded.</p>
@@ -588,7 +588,7 @@ export default function MangaReaderPage() {
   if (missing) {
     return (
       <div
-        className="h-screen bg-black text-gray-400 flex flex-col items-center justify-center gap-3"
+        className="theme-dark reader-canvas h-screen bg-black text-gray-400 flex flex-col items-center justify-center gap-3"
         role="alert"
       >
         <p>Reader content could not be found for this chapter.</p>
@@ -599,11 +599,11 @@ export default function MangaReaderPage() {
     )
   }
   if (loading || !doc || !library) {
-    return <div className="h-screen bg-black text-gray-500 flex items-center justify-center">Loading…</div>
+    return <div className="theme-dark reader-canvas h-screen bg-black text-gray-500 flex items-center justify-center">Loading…</div>
   }
   if (pageCount === 0) {
     return (
-      <div className="h-screen bg-black text-gray-500 flex flex-col items-center justify-center gap-3">
+      <div className="theme-dark reader-canvas h-screen bg-black text-gray-500 flex flex-col items-center justify-center gap-3">
         <p>No pages found in this chapter's folder.</p>
         <button className="btn-ghost" onClick={exitToDetail}>← Back</button>
       </div>
@@ -630,7 +630,7 @@ export default function MangaReaderPage() {
   }`
 
   return (
-    <div className="h-screen bg-black flex" onMouseMove={pokeBar}>
+    <div className="theme-dark reader-canvas h-screen bg-black flex" onMouseMove={pokeBar}>
       {/* main reading column. Brightness dims here rather than on each page so
           the bars dim with the page — a bright bar over a dimmed page is
           exactly what you do not want at 2am. */}

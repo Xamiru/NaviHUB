@@ -125,7 +125,7 @@ export interface MediaConfig {
   // shelves at `${basePath}/seasonal`, linked from the sidebar + list header.
   hasSeasonal?: boolean
   // Launch-from-app + playtime tracking (games + VNs) — shows the launcher
-  // section (link an executable, Play, session history) on the Playtime tab.
+  // section (link an executable and show tracked totals) on the Playtime tab.
   hasGameLaunch?: boolean
   // Art-led detail header (2026-08). 'banner' hangs the cover off a shallow
   // strip of wide art (anime, VNs — the cover is the recognisable thing);

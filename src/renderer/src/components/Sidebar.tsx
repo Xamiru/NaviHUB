@@ -181,17 +181,18 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`wired-surface relative z-40 flex shrink-0 flex-col border-r border-line-subtle bg-surface-canvas ${expanded ? 'w-52' : 'w-20'}`}
+      data-expanded={expanded}
+      className={`archive-sidebar wired-surface relative z-40 flex shrink-0 flex-col border-r border-line-subtle bg-surface-canvas ${expanded ? 'w-52' : 'w-20'}`}
     >
       <NavLink
         to="/"
-        className="flex h-[76px] shrink-0 flex-col items-center justify-center gap-1 overflow-hidden border-b border-line-subtle"
+        className="archive-brand-link flex h-[76px] shrink-0 flex-col items-center justify-center gap-1 overflow-hidden border-b border-line-subtle"
         aria-label="NaviHUB Home"
       >
         <AppMark theme={theme} className="h-7 w-7" />
         <span
           className={`sidebar-brand max-w-full overflow-hidden whitespace-nowrap px-1 text-center !text-[20px] leading-none tracking-[0.08em] ${
-            theme === 'lain' ? 'lain-crt brand-glitch' : 'tactical-brand'
+            theme === 'lain' ? 'lain-crt brand-glitch' : theme === 'metal-gear' ? 'tactical-brand' : 'theme-brand'
           }`}
         >
           NAVI<span className="text-signal-live">HUB</span>
@@ -251,7 +252,7 @@ export default function Sidebar() {
               aria-hidden="true"
             >
               <span className="wired-dot h-1.5 w-1.5 rounded-full bg-signal-live" />
-              {theme === 'metal-gear' ? 'Ops' : 'Wired'}
+              {theme === 'metal-gear' ? 'Ops' : theme === 'lain' ? 'Wired' : 'Local'}
             </div>
           </div>
         </>

@@ -312,7 +312,7 @@ function ChapterTile({
         )}
         {hasOcr && (
           <span
-            className="absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-accent"
+            className="media-contrast absolute left-1.5 top-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-accent"
             title="Mokuro OCR available"
           >
             OCR

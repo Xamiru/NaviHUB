@@ -74,12 +74,12 @@ const MediaCard = memo(function MediaCard({
           className="h-full w-full transition-transform group-hover:scale-105"
         />
         {showTypeBadge && (
-          <span className="absolute top-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">
+          <span className="media-contrast absolute top-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">
             {config.singular}
           </span>
         )}
         {item.score != null && (
-          <span className="absolute top-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-semibold text-yellow-300">
+          <span className="media-contrast absolute top-1.5 right-1.5 rounded bg-black/70 px-1.5 py-0.5 text-xs font-semibold text-yellow-300">
             ★ {item.score}
           </span>
         )}
@@ -96,7 +96,7 @@ const MediaCard = memo(function MediaCard({
           </span>
         )}
         {!showTypeBadge && item.status && (
-          <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">
+          <span className="media-contrast absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-200">
             {item.status}
           </span>
         )}

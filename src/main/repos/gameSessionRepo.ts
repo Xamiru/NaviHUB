@@ -1,24 +1,11 @@
 import { getSqlite } from '../db/connection'
 import { foldedProgress, unitSecondsFor } from '../gameLaunchCore'
-import type { GameSessionRow } from '@shared/types'
 
 // Play sessions of games/VNs launched from the app (gameLaunch.ts) plus the
 // per-title executable link. game_session is the source of truth for TRACKED
 // time; media_item.progress (hours for games, minutes for VNs) moves by the
 // delta of the rounded cumulative on each insert, so hand-entered progress
 // from before tracking — or edited mid-tracking — is never clobbered.
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
-function mapSession(r: any): GameSessionRow {
-  return {
-    id: r.id,
-    mediaId: r.media_id,
-    startedAt: r.started_at,
-    endedAt: r.ended_at,
-    durationSec: r.duration
-  }
-}
 
 // Written only here (and read by gameLaunch.ts) — deliberately absent from
 // mediaRepo's column map, the local_dir posture.
@@ -78,14 +65,12 @@ export function recordSession(
   })()
 }
 
-// The Playtime tab's launcher panel in one read: linked exe, tracked totals,
-// recent sessions (newest first, capped — the panel is a summary, not a log
-// browser).
+// The detail page needs only the executable and aggregate tracked time.
+// Installed games reads its own bounded collection projection.
 export function overview(mediaId: number): {
   exePath: string | null
   totalSeconds: number
   sessionCount: number
-  sessions: GameSessionRow[]
 } {
   const db = getSqlite()
   const media = db.prepare('SELECT exe_path FROM media_item WHERE id = ?').get(mediaId) as
@@ -96,16 +81,9 @@ export function overview(mediaId: number): {
       'SELECT COUNT(*) AS n, COALESCE(SUM(duration), 0) AS s FROM game_session WHERE media_id = ?'
     )
     .get(mediaId) as { n: number; s: number }
-  const sessions = db
-    .prepare(
-      'SELECT * FROM game_session WHERE media_id = ? ORDER BY started_at DESC, id DESC LIMIT 20'
-    )
-    .all(mediaId)
-    .map(mapSession)
   return {
     exePath: media?.exe_path ?? null,
     totalSeconds: agg.s,
-    sessionCount: agg.n,
-    sessions
+    sessionCount: agg.n
   }
 }

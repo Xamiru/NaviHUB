@@ -120,7 +120,7 @@ export default function AchPopupPage(): React.JSX.Element {
 
 function CardShell({ children }: { children: React.ReactNode }): React.JSX.Element {
   return (
-    <div className="ach-card relative w-full shrink-0 overflow-hidden rounded-lg border border-white/15 bg-black/85 shadow-xl shadow-black/60">
+    <div className="theme-dark ach-card relative w-full shrink-0 overflow-hidden rounded-lg border border-white/15 bg-black/85 shadow-xl shadow-black/60">
       {children}
       {/* Lifetime strip — empties left-to-right over ACH_POPUP_LIFE_MS. */}
       <div

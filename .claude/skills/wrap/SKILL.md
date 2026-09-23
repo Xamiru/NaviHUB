@@ -1,13 +1,12 @@
 ---
 name: wrap
-description: End-of-session chores for NaviHUB — run the CI gate, fold what changed into CLAUDE.md or docs/architecture, list what the user needs to commit, and emit a paste-ready handoff prompt for the next session. Use when work wraps up or the user says "end of session" / "update anything needed".
+description: End-of-session chores for NaviHUB — confirm the CI gate, fold durable changes into CLAUDE.md or docs/architecture, and report uncommitted work. Use when work wraps up or the user says "end of session" / "update anything needed".
 ---
 
 # Wrapping up a session
 
-The user asked for this once ("update anything needed at the end of a session") and it then
-happened in only 19 of 48 sessions. They compensate by asking for a handoff prompt by hand — four
-separate times. This automates both.
+The user asked for end-of-session maintenance. Keep durable rules in the mirrored root contracts
+and subsystem details in `docs/architecture/`.
 
 ## 1. Green the CI gate
 
@@ -16,11 +15,11 @@ npm run typecheck
 npm run test
 ```
 
-These are exactly what `.github/workflows/release.yml`'s `verify` job runs, so a green pair here
-means their push will actually produce a release. **Never** `npx vitest` / `npx tsc` (Electron ABI).
+These are exactly what `.github/workflows/release.yml`'s `verify` job runs. Run them only if they
+have not already passed for the final code state. **Never** `npx vitest` / `npx tsc` (Electron ABI).
 Do not run `npm run dist:win` — that is the user's job, on their machine.
 
-If anything fails, stop and report. Do not paper over it in the handoff.
+If anything fails, stop and report it.
 
 ## 2. Fold what changed into the docs
 
@@ -41,7 +40,7 @@ This is the part that decays if skipped, and the rule is now about **which** fil
 Memory is for cross-project facts about the user and how they work — not for project
 architecture, which belongs in the repo where it is versioned and reaches both machines.
 
-## 3. Hand off
+## 3. Report the result
 
 Show the user what is uncommitted (they commit, never you):
 
@@ -49,13 +48,5 @@ Show the user what is uncommitted (they commit, never you):
 git status --short
 ```
 
-Then write a short handoff block they can paste into a fresh session:
-
-- What shipped this session, in two or three lines.
-- Anything **left half-done**, and the next concrete step.
-- Anything that needs **eyeballing on the laptop** — every renderer change, since there are no
-  renderer tests and the VPS has no display.
-- Anything that needs a **re-import** to take effect.
-
-Keep it short enough to paste. It replaces the "explore the codebase again" warm-up, which still
-costs a median 10-11 tool calls at the start of every session.
+Briefly report what changed, any unfinished work, what needs visual checking on the laptop for
+renderer changes, and any re-import needed for importer changes.

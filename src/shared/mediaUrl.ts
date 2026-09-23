@@ -17,13 +17,16 @@ export function mediaUrl(relPath: string | null | undefined): string | null {
   return `navimg://${encoded}`
 }
 
-// A downscaled variant of a stored image, served from the main process's disk
-// cache (generated on first request — see src/main/thumbs.ts). Small cover
-// slots should use this: full-resolution sources (Steam's 1200x1800 library
-// art, VNDB originals) decoded at thumbnail size are what makes long cover
-// grids jank on scroll. Falls back to the original via <img> onError when the
-// thumb can't be produced.
+// Shared with the navimg thumbnail parser so renderer requests always use a
+// width the main process can serve. Keep these sorted from smallest to largest.
+export const THUMB_WIDTHS: readonly number[] = [160, 320, 480]
+
+// Use the smallest cached size at least as wide as the caller needs. Larger
+// artwork and paths outside media/ use their original URL via CoverImage.
 export function thumbUrl(relPath: string | null | undefined, width: number): string | null {
-  if (!relPath) return null
-  return mediaUrl(`thumb/${width}/${relPath}`)
+  if (!relPath || !Number.isFinite(width) || width <= 0) return null
+  const sourceRel = relPath.split('\\').join('/')
+  if (!sourceRel.startsWith('media/')) return null
+  const cachedWidth = THUMB_WIDTHS.find((candidate) => candidate >= width)
+  return cachedWidth ? mediaUrl(`thumb/${cachedWidth}/${sourceRel}`) : null
 }

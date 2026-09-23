@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { parseAppTheme } from '@shared/appTheme'
+import { parseAppTheme, type AppTheme } from '@shared/appTheme'
 
 const BOOT_KEY = 'ui.booted'
 
@@ -29,8 +29,10 @@ const SCRIPTS = {
     'LOCAL DATABASE LINK',
     'MISSION INDEX ONLINE',
     'operations ready.'
-  ].join('\n')
-} as const
+  ].join('\n'),
+  miku: ['NaviHUB', 'Your library. Your own world.', 'Leave a little room for possibility.'].join('\n'),
+  'twin-peaks': ['NaviHUB', 'Your personal archive.', 'Some stories stay with you.'].join('\n')
+} satisfies Record<AppTheme, string>
 const CHAR_MS = 14
 const HOLD_MS = 400
 const FADE_MS = 200
@@ -87,7 +89,7 @@ export default function BootSequence() {
   return (
     <div
       aria-hidden="true"
-      className={`${theme === 'lain' ? 'lain-crt' : 'tactical-boot'} fixed inset-0 z-[70] flex items-center justify-center bg-base-900 transition-opacity duration-200 ${
+      className={`${theme === 'lain' ? 'lain-crt' : theme === 'metal-gear' ? 'tactical-boot' : 'theme-boot'} fixed inset-0 z-[70] flex items-center justify-center bg-base-900 transition-opacity duration-200 ${
         phase === 'fading' ? 'opacity-0' : ''
       }`}
     >

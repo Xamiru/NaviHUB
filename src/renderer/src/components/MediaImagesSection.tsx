@@ -131,19 +131,19 @@ export default function MediaImagesSection({
                   rounded="rounded-lg"
                 />
                 {img.width && img.height && (
-                  <span className="absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
+                  <span className="media-contrast absolute bottom-1.5 left-1.5 rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
                     {img.width}×{img.height}
                   </span>
                 )}
                 {(img.isBackground || img.inSlideshow) && (
                   <span className="absolute bottom-1.5 right-1.5 flex gap-1">
                     {img.isBackground && (
-                      <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-accent">
+                      <span className="media-contrast rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-accent">
                         Background
                       </span>
                     )}
                     {img.inSlideshow && (
-                      <span className="rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
+                      <span className="media-contrast rounded bg-black/70 px-1.5 py-0.5 text-[10px] text-gray-300">
                         Slideshow
                       </span>
                     )}
@@ -151,7 +151,7 @@ export default function MediaImagesSection({
                 )}
               </button>
               <button
-                className="absolute top-1.5 right-1.5 hidden group-hover:block group-focus-within:block rounded bg-black/70 px-1.5 py-0.5 text-sm text-gray-300 hover:text-red-400"
+                className="media-contrast absolute top-1.5 right-1.5 hidden group-hover:block group-focus-within:block rounded bg-black/70 px-1.5 py-0.5 text-sm text-gray-300 hover:text-red-400"
                 onClick={(e) => {
                   e.stopPropagation()
                   void remove(img.id)

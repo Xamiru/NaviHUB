@@ -38,7 +38,7 @@ export default function Lightbox({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
+      className="theme-dark fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose()
       }}
@@ -90,7 +90,7 @@ export default function Lightbox({
             >
               ›
             </button>
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs text-gray-300">
+            <div className="media-contrast absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs text-gray-300">
               {index + 1} / {count}
             </div>
           </>

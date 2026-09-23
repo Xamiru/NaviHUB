@@ -52,6 +52,7 @@ vi.mock('../src/main/files', () => ({
 }))
 
 import * as thumbs from '../src/main/thumbs'
+import { thumbUrl } from '../src/shared/mediaUrl'
 
 beforeEach(() => {
   userDataDir = mkdtempSync(join(os.tmpdir(), 'navihub-thumbs-user-'))
@@ -108,6 +109,25 @@ describe('parseThumbRequest', () => {
 
   it('rejects traversal before absoluteMediaPath ever sees it', () => {
     expect(thumbs.parseThumbRequest('thumb/320/media/../audio/theme.ogg')).toBeNull()
+  })
+})
+
+describe('thumbUrl', () => {
+  it('uses only widths accepted by the thumbnail protocol', () => {
+    for (const requested of [72, 160, 240, 320, 360, 480]) {
+      const url = thumbUrl('media/cover.jpg', requested)
+      expect(url).not.toBeNull()
+      const parsed = thumbs.parseThumbRequest(url!.replace('navimg://', ''))
+      expect(parsed?.sourceRel).toBe('media/cover.jpg')
+      expect(parsed?.width).toBeGreaterThanOrEqual(requested)
+    }
+    expect(thumbUrl('media/cover.jpg', 360)).toBe('navimg://thumb/480/media/cover.jpg')
+  })
+
+  it('uses originals for oversized art and paths outside the thumbnail store', () => {
+    expect(thumbUrl('media/hero.jpg', 1200)).toBeNull()
+    expect(thumbUrl('pictures/art.jpg', 320)).toBeNull()
+    expect(thumbUrl('media/cover.jpg', 0)).toBeNull()
   })
 })
 

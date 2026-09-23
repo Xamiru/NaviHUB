@@ -210,7 +210,7 @@ function Coach({ cfg }: { cfg: GachaGameCfg }) {
                   <div key={a} className="relative">
                     <CoverImage path={a} alt="attachment" className="h-16 w-16" />
                     <button
-                      className="absolute -right-1 -top-1 rounded-full bg-black/70 px-1 text-xs text-white"
+                      className="media-contrast absolute -right-1 -top-1 rounded-full bg-black/70 px-1 text-xs text-white"
                       aria-label="Remove attachment"
                       onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
                     >

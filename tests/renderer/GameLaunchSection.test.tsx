@@ -22,15 +22,11 @@ describe('Game detail launcher panel', () => {
       supported: true,
       exePath: 'C:\\Games\\example.exe',
       totalSeconds: 5400,
-      sessionCount: 2,
-      sessions: [
-        { id: 1, mediaId: 7, startedAt: '2026-09-20 20:00:00', endedAt: '2026-09-20 21:00:00', durationSec: 3600 },
-        { id: 2, mediaId: 7, startedAt: '2026-09-19 20:00:00', endedAt: '2026-09-19 20:30:00', durationSec: 1800 }
-      ]
+      sessionCount: 2
     })
   })
 
-  it('keeps playtime and session history without a weekly chart', async () => {
+  it('shows aggregate playtime without a dated session history', async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
     render(
       <QueryClientProvider client={client}>
@@ -41,7 +37,9 @@ describe('Game detail launcher panel', () => {
     expect(await screen.findByText('Tracked')).toBeInTheDocument()
     expect(screen.getByText('1 h 30 m')).toBeInTheDocument()
     expect(screen.getByText('2 sessions')).toBeInTheDocument()
-    expect(screen.getByText('1 h 0 m')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Relink executable' })).toBeInTheDocument()
+    expect(screen.queryByText('1 h 0 m')).not.toBeInTheDocument()
+    expect(screen.queryByRole('list')).not.toBeInTheDocument()
     expect(screen.queryByText('Last 12 weeks')).not.toBeInTheDocument()
     expect(screen.queryByRole('graphics-document')).not.toBeInTheDocument()
     expect(overview).toHaveBeenCalledWith(7)

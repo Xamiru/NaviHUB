@@ -4,7 +4,7 @@ import { createTestDb } from './helpers'
 
 // Play-session recording against the real schema: the atomic insert+fold
 // transaction, the rounded-cumulative delta across consecutive sessions, the
-// overview read, exe-path persistence and the CASCADE lifetime.
+// aggregate overview read, exe-path persistence and the CASCADE lifetime.
 
 let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({
@@ -72,7 +72,7 @@ describe('recordSession', () => {
 })
 
 describe('overview', () => {
-  it('totals, orders newest-first and caps the session list', () => {
+  it('aggregates tracked time and count without returning session rows', () => {
     const id = addMedia('game')
     for (let i = 0; i < 25; i++) {
       repo.recordSession(id, T0 + i * 10_000, T0 + i * 10_000 + 100 + i, 100 + i)
@@ -82,9 +82,7 @@ describe('overview', () => {
     expect(ov.totalSeconds).toBe(
       Array.from({ length: 25 }, (_, i) => 100 + i).reduce((a, b) => a + b, 0)
     )
-    expect(ov.sessions).toHaveLength(20)
-    // Newest first: the last-recorded session (longest here) leads.
-    expect(ov.sessions[0].durationSec).toBe(124)
+    expect(ov).not.toHaveProperty('sessions')
   })
 
   it('reports the linked exe and empty totals for an untracked title', () => {
@@ -94,8 +92,7 @@ describe('overview', () => {
     expect(ov).toMatchObject({
       exePath: 'C:\\Games\\x.exe',
       totalSeconds: 0,
-      sessionCount: 0,
-      sessions: []
+      sessionCount: 0
     })
   })
 })

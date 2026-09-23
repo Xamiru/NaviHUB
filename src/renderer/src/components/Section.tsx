@@ -15,7 +15,7 @@ export default function Section({
 }) {
   return (
     <section className={className}>
-      <div className="mb-3 flex items-center gap-3">
+      <div className="section-heading mb-3 flex items-center gap-3">
         <h2 className="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-ink-secondary">
           {title}
         </h2>

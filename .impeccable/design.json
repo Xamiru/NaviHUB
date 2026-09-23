@@ -1,0 +1,231 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-22T22:12:42.585Z",
+  "title": "Design System: NaviHUB",
+  "extensions": {
+    "colorMeta": {
+      "lain-canvas": {
+        "role": "neutral",
+        "displayName": "Wired Canvas",
+        "purpose": "Black violet application background."
+      },
+      "lain-panel": {
+        "role": "neutral",
+        "displayName": "Wired Panel",
+        "purpose": "Raised terminal and navigation panels."
+      },
+      "lain-raised": {
+        "role": "neutral",
+        "displayName": "Wired Raised Surface",
+        "purpose": "Hover and active surface layer."
+      },
+      "lain-accent": {
+        "role": "primary",
+        "displayName": "Rose Signal",
+        "purpose": "Primary actions and active state."
+      },
+      "lain-link": {
+        "role": "secondary",
+        "displayName": "Cool Signal",
+        "purpose": "Links and informational signal."
+      },
+      "lain-anomaly": {
+        "role": "tertiary",
+        "displayName": "Warm Signal",
+        "purpose": "Anomaly and warning signal."
+      },
+      "metal-canvas": {
+        "role": "neutral",
+        "displayName": "Field Paper",
+        "purpose": "Light application canvas."
+      },
+      "metal-panel": {
+        "role": "neutral",
+        "displayName": "Paper Panel",
+        "purpose": "Raised light panels."
+      },
+      "metal-raised": {
+        "role": "neutral",
+        "displayName": "Field Surface",
+        "purpose": "Hover and secondary surface."
+      },
+      "metal-accent": {
+        "role": "primary",
+        "displayName": "Action Red",
+        "purpose": "Primary actions and red-filled current navigation state."
+      },
+      "metal-link": {
+        "role": "secondary",
+        "displayName": "Field Green",
+        "purpose": "Links and informational signal."
+      },
+      "metal-anomaly": {
+        "role": "tertiary",
+        "displayName": "Status Red",
+        "purpose": "Anomaly and warning signal."
+      },
+      "metal-ink": {
+        "role": "neutral",
+        "displayName": "Field Ink",
+        "purpose": "Primary text on light surfaces."
+      },
+      "metal-paper": {
+        "role": "neutral",
+        "displayName": "Warm Paper",
+        "purpose": "Inverse text on red actions and dark islands."
+      },
+      "lain-ink-inverse": {
+        "role": "neutral",
+        "displayName": "Wired Inverse Ink",
+        "purpose": "Text on rose primary actions.",
+        "canonical": "rgb(43 18 32)"
+      },
+      "miku-canvas": {
+        "role": "neutral",
+        "displayName": "Miku Canvas",
+        "purpose": "Lighter blue page canvas.",
+        "canonical": "rgb(111 212 226)"
+      },
+      "miku-panel": {
+        "role": "neutral",
+        "displayName": "Miku Panel",
+        "purpose": "Approved cyan-filled reading panels.",
+        "canonical": "rgb(34 185 206)"
+      },
+      "miku-accent": {
+        "role": "primary",
+        "displayName": "Miku Accent",
+        "purpose": "Deep blue actions and selections.",
+        "canonical": "rgb(8 59 72)"
+      },
+      "peaks-canvas": {
+        "role": "neutral",
+        "displayName": "Peaks Canvas",
+        "purpose": "Warm black reading canvas.",
+        "canonical": "rgb(23 14 12)"
+      },
+      "peaks-curtain": {
+        "role": "neutral",
+        "displayName": "Peaks Curtain",
+        "purpose": "Warm red sidebar and shell identity.",
+        "canonical": "rgb(155 32 24)"
+      },
+      "peaks-accent": {
+        "role": "primary",
+        "displayName": "Peaks Accent",
+        "purpose": "Ivory actions.",
+        "canonical": "rgb(234 214 179)"
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "Readable interface and learning copy; Inter is preferred when available, followed by system sans-serif faces."
+      },
+      "lain-chrome": {
+        "displayName": "Wired Chrome",
+        "purpose": "Lain labels and terminal interface text."
+      },
+      "lain-brand": {
+        "displayName": "Wired Wordmark",
+        "purpose": "Large Home identity only."
+      },
+      "metal-chrome": {
+        "displayName": "Field Chrome",
+        "purpose": "Metal Gear headings, navigation and controls."
+      },
+      "study-headings": {
+        "displayName": "Study Headings",
+        "purpose": "Chakra Petch on Lain study routes; overridden by Barlow Condensed on Solid / Ink."
+      },
+      "miku-chrome": {
+        "displayName": "Miku Chrome",
+        "purpose": "Quicksand display and controls."
+      },
+      "peaks-chrome": {
+        "displayName": "Red Room Titles",
+        "purpose": "Bodoni Moda headings and brand; body font for small data controls."
+      }
+    },
+    "shadows": [
+      {
+        "name": "lain-inset-signal",
+        "value": "inset signal-colored edge and low-alpha panel glow",
+        "purpose": "Subtle depth and active panel definition in Lain."
+      },
+      {
+        "name": "metal-card",
+        "value": "0 2px 0 rgb(38 59 47 / 0.06)",
+        "purpose": "Minimal card separation in Solid / Ink."
+      },
+      {
+        "name": "keyboard-focus",
+        "value": "2px signal-live ring at 70% opacity",
+        "purpose": "Global visible keyboard focus indicator; color follows the active theme."
+      }
+    ],
+    "motion": [
+      {
+        "name": "quiet-atmosphere",
+        "value": "disable scanlines, heading glow, panel glow and chromatic split",
+        "purpose": "Keep study and quiet routes still and readable."
+      },
+      {
+        "name": "signal-clarity-clean",
+        "value": "zero scanline, glow and chromatic-split strength",
+        "purpose": "User-selectable reduced Lain atmosphere."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "xl-home-session",
+        "value": "1280px",
+        "purpose": "Pair the next-session panel with a 300px in-progress list."
+      },
+      {
+        "name": "md-home-coverwall",
+        "value": "768px",
+        "purpose": "Expand the decorative cover wall from six to eight columns."
+      }
+    ]
+  },
+  "components": [],
+  "narrative": {
+    "northStar": "A private archive with four distinct visual worlds",
+    "overview": "NaviHUB presents a local media library and learning workspace through shared semantic surfaces. Lain's Wired, after dark palette uses black violet and rose terminal signals; Solid / Ink pairs paper and dark green ink with red actions. Lain remains the default. Home keeps the user's own mixed-media cover wall, a theme-specific text scrim and selected local theme art, and a real resume destination ahead of configurable widgets. Solid / Ink uses red-filled active navigation; Lain uses a signal-tinted surface with a leading edge. Hatsune Miku adds the approved cyan-filled option two with Quicksand and RITAO artwork; Twin Peaks adds warm curtain red, ivory, Bodoni Moda and classic/FWWM imagery. Neither inherits Lain atmosphere.",
+    "keyCharacteristics": [
+      "Shared semantic surface, ink, line and signal roles across all four palettes",
+      "Compact desktop navigation with geometry specific to each selected theme",
+      "Theme-specific typography and locally bundled identity artwork",
+      "Quiet study surfaces and explicit high-contrast media islands",
+      "Theme-specific section bars and navigation active states"
+    ],
+    "rules": [
+      {
+        "name": "The Semantic Surface Rule",
+        "body": "Use shared semantic surface, ink, line, and signal roles for application chrome; reserve explicit contrast islands for readers and overlays on art.",
+        "section": "colors"
+      },
+      {
+        "name": "The Signal Meaning Rule",
+        "body": "Keep action/live, link, anomaly, affirmative, and caution signals semantically distinct in all themes.",
+        "section": "colors"
+      },
+      {
+        "name": "The Resume First Rule",
+        "body": "Home keeps its pinned cover wall and selected art, then presents a real resume or in-progress destination before configurable widgets.",
+        "section": "layout"
+      }
+    ],
+    "dos": [
+      "Use semantic theme roles for shared application chrome.",
+      "Keep study routes readable, quiet, and keyboard focused.",
+      "Preserve the user's selected theme assets and local font stacks."
+    ],
+    "donts": [
+      "Do not turn the pinned Home cover wall into a configurable widget.",
+      "Do not carry Lain glow or scanlines into Solid / Ink or quiet study routes.",
+      "Do not weaken contrast over artwork or add decorative glyphs."
+    ]
+  }
+}

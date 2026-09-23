@@ -1281,16 +1281,6 @@ export interface HltbTimes {
   allStylesCount?: number
 }
 
-// One finished play session of a game/VN launched from the app (game_session
-// row). Timestamps are UTC; duration is wall-clock process lifetime.
-export interface GameSessionRow {
-  id: number
-  mediaId: number
-  startedAt: string
-  endedAt: string
-  durationSec: number
-}
-
 // The Playtime tab's launcher panel in one invoke. `supported` is false off
 // Windows (linking still works there; launching throws). exe_path deliberately
 // rides here instead of MediaItem — the local_dir posture: machine-local state
@@ -1300,7 +1290,6 @@ export interface GameLaunchOverview {
   exePath: string | null
   totalSeconds: number
   sessionCount: number
-  sessions: GameSessionRow[]
 }
 
 // The tracked-session poll (gameLaunch.ts). Terminal states persist until the

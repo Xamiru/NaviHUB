@@ -9,8 +9,8 @@
 -->
 <div class="flex h-screen min-h-[600px]">
   <!-- Sidebar.tsx: slim global rail. Drawers open to the right on demand. -->
-  <aside class="relative z-40 flex w-20 shrink-0 flex-col border-r border-base-700 bg-base-900">
-    <a href="#" class="flex h-[76px] shrink-0 flex-col items-center justify-center gap-1 overflow-hidden border-b border-base-700" aria-label="NaviHUB Home">
+  <aside data-expanded="false" class="archive-sidebar wired-surface relative z-40 flex w-20 shrink-0 flex-col border-r border-base-700 bg-base-900">
+    <a href="#" class="archive-brand-link flex h-[76px] shrink-0 flex-col items-center justify-center gap-1 overflow-hidden border-b border-base-700" aria-label="NaviHUB Home">
       <img src="__LAIN_PNG__" alt="" class="h-7 w-7" />
       <span class="sidebar-brand lain-crt brand-glitch max-w-full overflow-hidden whitespace-nowrap px-1 text-center !text-[20px] leading-none tracking-[0.08em]">NAVI<span class="text-accent">HUB</span></span>
     </a>
@@ -31,7 +31,7 @@
 
   <div class="flex min-w-0 flex-1 flex-col">
     <!-- Topbar.tsx: title/search row plus section-aware horizontal navigation. -->
-    <header class="relative z-30 h-[76px] shrink-0 border-b border-base-700 bg-base-800/70 backdrop-blur-xl">
+    <header class="archive-topbar wired-surface relative z-30 h-[76px] shrink-0 border-b border-base-700 bg-base-800/70 backdrop-blur-xl">
       <div class="flex h-11 min-w-0 items-center gap-4 px-5">
         <div class="min-w-0 shrink-0">
           <p class="text-[9px] font-semibold uppercase tracking-[0.24em] text-accent/70">Archive broadcast</p>
@@ -82,7 +82,7 @@
         <div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
           <div>
             <section class="mb-8">
-              <div class="mb-3 flex items-center gap-3">
+              <div class="section-heading mb-3 flex items-center gap-3">
                 <h2 class="shrink-0 text-xs font-semibold uppercase tracking-[0.18em] text-gray-300">Current shelf</h2>
                 <span class="h-px flex-1 bg-base-700" aria-hidden="true"></span>
                 <span class="text-xs text-gray-500">Last activity first</span>

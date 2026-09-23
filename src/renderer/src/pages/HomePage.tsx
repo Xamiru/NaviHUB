@@ -1,3 +1,7 @@
+import lainWiredArt from '../assets/themes/lain-wired.jpg'
+import solidInkArt from '../assets/themes/solid-ink.jpg'
+import mikuSkyArt from '../assets/themes/miku-sky.png'
+import redRoomArt from '../assets/themes/peaks-red.jpg'
 import { useMemo, useState, type ReactNode } from 'react'
 import DoorCard from '../components/DoorCard'
 import HomeCustomiseDialog from '../components/HomeCustomiseDialog'
@@ -23,7 +27,6 @@ import { playTracks } from '../lib/musicTracks'
 import { MEDIA_TYPE_COLORS } from '../lib/mediaColors'
 import { GACHA_GAMES } from '@shared/gacha'
 import { APP_THEME_SETTING, type AppTheme } from '@shared/appTheme'
-import AppMark from '../components/AppMark'
 import { resolveAppTheme } from '../lib/theme'
 import { readerPath } from '../lib/readerPath'
 import { mediaUrl } from '@shared/mediaUrl'
@@ -148,19 +151,12 @@ export default function HomePage() {
         resumePending={resumePending}
         resumeError={resumeError}
         retryResume={() => void refetchResume()}
-        continuing={continuing[0]}
+        continuing={continuing}
         theme={theme}
       />
 
-      <div className="mt-6 flex items-end justify-between border-b border-base-700 pb-3">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-accent">
-            {theme === 'metal-gear' ? 'Operations overview' : 'Personal transmission'}
-          </p>
-          <h2 className="mt-1 text-xl font-semibold text-white">
-            {theme === 'metal-gear' ? 'Your archive, mission-ready' : 'Your archive, in motion'}
-          </h2>
-        </div>
+      <div className="mt-6 flex items-center justify-between gap-3">
+        <h2 className="text-xl font-semibold text-ink">From your library</h2>
         <div className="flex flex-col items-end gap-1">
           <button
             className="btn-ghost text-xs"
@@ -245,11 +241,11 @@ function HomeReadState({
 
 const cardKey = (m: MediaSummary) => `${m.mediaType}-${m.id}`
 
-function greetingFor(hour: number): string {
-  if (hour < 5) return 'Up late?'
-  if (hour < 12) return 'Good morning'
-  if (hour < 18) return 'Good afternoon'
-  return 'Good evening'
+const HOME_THEME_ART: Record<AppTheme, { image: string; greeting: string; credit?: string }> = {
+  lain: { image: lainWiredArt, greeting: 'Everything here is connected.' },
+  'metal-gear': { image: solidInkArt, greeting: 'An archive with a point of view.' },
+  miku: { image: mikuSkyArt, greeting: 'Leave a little room for possibility.', credit: 'Hatsune Miku / art by RITAO' },
+  'twin-peaks': { image: redRoomArt, greeting: 'Some stories stay with you.', credit: 'Fire Walk with Me / publicity photograph' }
 }
 
 // The library as wallpaper: a dimmed, slightly tilted wall of the user's own
@@ -277,108 +273,92 @@ function Hero({
   resumePending: boolean
   resumeError: boolean
   retryResume: () => void
-  continuing?: MediaSummary
+  continuing: MediaSummary[]
   theme: AppTheme
 }) {
-  // Re-shuffles only when the library itself changes, so the wall doesn't
-  // twitch on every render.
+  // Re-shuffle only when the library changes, never when a poll settles.
   const tiles = useMemo(
     () => shuffle(items.filter((m) => m.coverPath)).slice(0, 24),
     [items]
   )
-  const greeting = greetingFor(new Date().getHours())
-  // Same key ChecklistCard polls — one fetch, shared cache entry.
-  const { data: checklist } = useQuery({
-    queryKey: qk.checklist.status,
-    queryFn: () => api.checklist.status(),
-    staleTime: 0
-  })
-  const streak = checklist?.streak.current ?? 0
+  const primaryId = resume?.media.id ?? continuing[0]?.id
+  const nextUp = continuing.filter((item) => item.id !== primaryId).slice(0, 3)
 
   return (
-    <section className="relative min-h-[330px] overflow-hidden rounded-2xl border border-base-700 bg-base-900">
-      {tiles.length >= 12 && (
-        <div
-          className="absolute -inset-8 grid grid-cols-6 auto-rows-fr gap-2 -rotate-2 scale-105 md:grid-cols-8"
-          aria-hidden
-        >
-          {tiles.map((m) => (
-            <CoverImage
-              key={cardKey(m)}
-              path={m.coverPath}
-              alt=""
-              thumbWidth={320}
-              rounded="rounded"
-              className="h-full w-full"
-            />
-          ))}
-        </div>
-      )}
-      <div className="absolute inset-0 bg-gradient-to-r from-base-900 via-base-900/85 to-base-900/60" />
-      <div className="absolute inset-0 bg-gradient-to-t from-base-900 via-transparent to-base-900/35" />
-
-      <div className="relative grid min-h-[330px] items-center gap-8 p-7 lg:grid-cols-[minmax(0,1fr)_minmax(340px,0.78fr)] lg:p-10">
-        <div className="max-w-2xl">
-          <div className="flex items-center gap-4">
-            <AppMark theme={theme} className="h-14 w-14 drop-shadow-lg" />
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-accent">
-                {theme === 'metal-gear' ? 'Tactical archive' : 'Archive broadcast'}
-              </p>
-              <h1 className="mt-1 text-4xl font-bold tracking-tight sm:text-5xl">
-                Navi<span className="text-accent">HUB</span>
-              </h1>
-            </div>
+    <>
+      <section className="home-hero" aria-label="Your archive">
+        {tiles.length >= 12 && (
+          <div
+            className="home-cover-wall absolute -inset-8 grid grid-cols-6 auto-rows-fr gap-2 -rotate-2 scale-105 md:grid-cols-8"
+            aria-hidden="true"
+          >
+            {tiles.map((m) => (
+              <CoverImage
+                key={cardKey(m)}
+                path={m.coverPath}
+                alt=""
+                thumbWidth={320}
+                rounded="rounded"
+                className="h-full w-full"
+              />
+            ))}
           </div>
-          <p className="mt-6 text-base text-gray-300">
-            {greeting}.{' '}
-            {theme === 'metal-gear'
-              ? stats.inProgress > 0
-                ? 'Your next operation is ready.'
-                : 'The mission index is standing by.'
-              : stats.inProgress > 0
-                ? 'Your next signal is ready.'
-                : 'The archive is listening.'}
+        )}
+        <div className="home-hero-shade" aria-hidden="true" />
+        <img
+          src={HOME_THEME_ART[theme].image}
+          className="home-signature"
+          alt=""
+          aria-hidden="true"
+        />
+        {HOME_THEME_ART[theme].credit && (
+          <p className="home-art-credit">{HOME_THEME_ART[theme].credit}</p>
+        )}
+        <div className="home-hero-copy">
+          <h1 className="home-brand">Navi<span>HUB</span></h1>
+          <p className="home-greeting mt-4 text-sm">
+            {HOME_THEME_ART[theme].greeting}
           </p>
-          <p className="mt-1 max-w-lg text-sm leading-relaxed text-gray-500">
-            {theme === 'metal-gear'
-              ? 'Resume an active file first, then trace the people, worlds and evidence connected across your local library.'
-              : 'Continue a saved session first, then drift through the people, worlds and patterns already connected in your library.'}
-          </p>
-
-          {stats.titles > 0 && (
-            <div className="mt-5 flex flex-wrap gap-2 text-xs tabular-nums">
-              <span className="chip border-base-600 bg-base-800/80">{stats.titles} titles</span>
-              {stats.inProgress > 0 && (
-                <span className="chip border-base-600 bg-base-800/80">
-                  {stats.inProgress} in progress
-                </span>
-              )}
-              {stats.completed > 0 && (
-                <span className="chip border-base-600 bg-base-800/80">{stats.completed} finished</span>
-              )}
-              {stats.favorites > 0 && (
-                <span className="chip border-base-600 bg-base-800/80">{stats.favorites} favorites</span>
-              )}
-              {stats.avgScore && (
-                <span className="chip border-base-600 bg-base-800/80">Average {stats.avgScore}</span>
-              )}
-              {streak > 1 && (
-                <span className="chip border-accent/30 bg-base-800/80 text-accent">
-                  {streak}-day streak
-                </span>
-              )}
-            </div>
-          )}
+          <div className="home-hero-stats mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm tabular-nums">
+            <span><strong>{stats.titles}</strong> titles</span>
+            <span><strong>{stats.inProgress}</strong> in progress</span>
+            <span><strong>{stats.favorites}</strong> favorites</span>
+          </div>
+          <div className="mt-6 flex flex-wrap items-center gap-5">
+            <p className="text-xs text-ink-muted">Your library. Your own world.</p>
+            <Link to="/anime" className="btn-ghost text-xs">Browse library</Link>
+          </div>
         </div>
-
-        {resumePending || resumeError ? (
-          <HomeReadState title="saved positions" pending={resumePending} retry={retryResume} />
-        ) : (
-          <HeroContinuation resume={resume} continuing={continuing} theme={theme} />
+      </section>
+      <div className={`home-session-grid mt-6 grid gap-6 ${nextUp.length ? 'xl:grid-cols-[minmax(0,1fr)_300px]' : ''}`}>
+        <Section title="Your next session" className="home-session-main min-w-0">
+          {resumePending || resumeError ? (
+            <HomeReadState title="saved positions" pending={resumePending} retry={retryResume} />
+          ) : (
+            <HeroContinuation resume={resume} continuing={continuing[0]} theme={theme} />
+          )}
+        </Section>
+        {nextUp.length > 0 && (
+          <Section title="Also in progress" className="home-next-up min-w-0">
+            <div className="divide-y divide-line-subtle">
+              {nextUp.map((item) => (
+                <Link
+                  key={cardKey(item)}
+                  to={pathForMedia(item)}
+                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-raised"
+                >
+                  <CoverImage path={item.coverPath} alt="" thumbWidth={160} className="h-12 w-9 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm text-ink">{item.title}</p>
+                    <p className="mt-1 text-xs text-ink-muted">{configFor(item.mediaType).formatProgressStat(item)}</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </Section>
         )}
       </div>
-    </section>
+    </>
   )
 }
 
@@ -395,36 +375,27 @@ function HeroContinuation({
     return (
       <ResumeAction
         point={resume}
-        className="group relative min-h-52 overflow-hidden rounded-xl border border-accent/30 bg-base-800/90 p-5 shadow-2xl transition-colors hover:border-accent"
+        className="home-resume group relative overflow-hidden rounded-xl border border-accent/30 bg-base-800/90 p-5 shadow-2xl transition-colors hover:border-accent"
       >
-        {resume.media.coverPath && (
-          <div className="absolute inset-0 opacity-20 blur-xl" aria-hidden="true">
-            <CoverImage
-              path={resume.media.coverPath}
-              alt=""
-              thumbWidth={320}
-              rounded=""
-              className="h-full w-full scale-125"
-            />
-          </div>
-        )}
-        <div className="relative flex h-full min-h-[168px] gap-4">
+        <div className="home-resume-content relative flex h-full gap-4">
           <CoverImage
             path={resume.media.coverPath}
             alt={resume.media.title}
             thumbWidth={160}
             rounded="rounded-lg"
-            className="w-28 shrink-0 shadow-lg"
+            className="home-resume-cover shrink-0 shadow-lg"
           />
-          <div className="flex min-w-0 flex-1 flex-col py-1">
+          <div className="home-resume-copy flex min-w-0 flex-1 flex-col py-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
-              {theme === 'metal-gear' ? 'Resume operation' : 'Resume transmission'}
+              {theme === 'metal-gear' ? 'Resume operation' : theme === 'lain' ? 'Resume transmission' : 'Continue where you left off'}
             </p>
             <h2 className="mt-2 line-clamp-2 text-xl font-semibold leading-tight text-white group-hover:text-accent">
               {resume.media.title}
             </h2>
             <p className="mt-2 truncate text-sm text-gray-300">{resume.partTitle}</p>
-            <p className="mt-1 text-xs text-gray-500">{resumeLabel(resume)}</p>
+            <p className="mt-2 text-xs text-gray-500">
+              {configFor(resume.media.mediaType).formatProgressStat(resume.media)} / {resumeLabel(resume)}
+            </p>
             <span className="btn-primary mt-auto self-start">Continue</span>
           </div>
         </div>
@@ -437,17 +408,17 @@ function HeroContinuation({
     return (
       <Link
         to={pathForMedia(continuing)}
-        className="group relative min-h-52 overflow-hidden rounded-xl border border-base-600 bg-base-800/90 p-5 shadow-2xl transition-colors hover:border-accent"
+        className="home-resume group relative overflow-hidden rounded-xl border border-base-600 bg-base-800/90 p-5 shadow-2xl transition-colors hover:border-accent"
       >
-        <div className="relative flex h-full min-h-[168px] gap-4">
+        <div className="home-resume-content relative flex h-full gap-4">
           <CoverImage
             path={continuing.coverPath}
             alt={continuing.title}
             thumbWidth={160}
             rounded="rounded-lg"
-            className="w-28 shrink-0 shadow-lg"
+            className="home-resume-cover shrink-0 shadow-lg"
           />
-          <div className="flex min-w-0 flex-1 flex-col py-1">
+          <div className="home-resume-copy flex min-w-0 flex-1 flex-col py-1">
             <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
               Continue {cfg.singular.toLowerCase()}
             </p>
@@ -465,7 +436,7 @@ function HeroContinuation({
   return (
     <div className="flex min-h-52 flex-col justify-end rounded-xl border border-base-600 bg-base-800/80 p-6">
       <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">
-        {theme === 'metal-gear' ? 'First operation' : 'First transmission'}
+        {theme === 'metal-gear' ? 'First operation' : theme === 'lain' ? 'First transmission' : 'Your first title'}
       </p>
       <h2 className="mt-2 text-xl font-semibold text-white">Build your personal archive</h2>
       <p className="mt-2 text-sm leading-relaxed text-gray-400">

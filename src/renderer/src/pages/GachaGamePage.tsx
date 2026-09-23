@@ -82,7 +82,7 @@ function GameDashboard({ cfg }: { cfg: GachaGameCfg }) {
           <h1 className="text-2xl font-bold drop-shadow">{cfg.name}</h1>
         </div>
         <button
-          className="absolute right-3 top-3 rounded-md bg-black/40 px-2.5 py-1 text-xs text-gray-300 hover:text-white"
+          className="media-contrast absolute right-3 top-3 rounded-md bg-black/40 px-2.5 py-1 text-xs text-gray-300 hover:text-white"
           title="Set this game's artwork"
           onClick={() => setEditingImage(true)}
         >
@@ -174,7 +174,7 @@ function CoachTab({ cfg }: { cfg: GachaGameCfg }) {
     <Link to={`/gacha/${cfg.id}/coach`} className="pill">
       <span style={{ color: cfg.color }}>Coach</span>
       {n > 0 && (
-        <span className="rounded-full bg-red-600/90 px-1.5 text-[11px] font-semibold text-white">
+        <span className="rounded-full media-contrast bg-red-600/90 px-1.5 text-[11px] font-semibold text-white">
           {n}
         </span>
       )}
@@ -497,7 +497,7 @@ function UnitCard({
         />
         {unit.favorite && (
           <span
-            className="absolute right-1.5 top-1.5 rounded-full bg-black/75 p-1 text-accent"
+            className="media-contrast absolute right-1.5 top-1.5 rounded-full bg-black/75 p-1 text-accent"
             title="Favorite"
           >
             <HeartIcon className="h-3.5 w-3.5" />

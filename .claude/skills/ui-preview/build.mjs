@@ -12,7 +12,7 @@
 //   1. runs the project's Tailwind (tailwind.config.js + src/renderer/src/styles.css)
 //      with the mockup as the only content file, so the output holds exactly the
 //      utilities the mockup uses plus the component classes and the Wired chrome;
-//   2. inlines the bundled fonts (IBM Plex Mono 400-700, VT323) as data: URIs so
+//   2. inlines the bundled fonts (IBM Plex Mono, VT323 and local theme fonts) as data: URIs so
 //      the file is a single self-contained page — no server, no network;
 //   3. replaces __LAIN_PNG__ with the sidebar avatar as a data: URI;
 //   4. reports every class token in the mockup that produced no CSS — a typo, or a
@@ -65,7 +65,7 @@ try {
   console.error('tailwind failed:', err?.stderr?.toString() || err?.message || err)
   process.exit(1)
 }
-const compiled = readFileSync(cssOut, 'utf8')
+let compiled = readFileSync(cssOut, 'utf8')
 rmSync(tmp, { recursive: true, force: true })
 
 // ---- 2. Fonts as data: URIs -----------------------------------------------
@@ -77,6 +77,16 @@ function dataUri(relPath, mime) {
   }
   return `data:${mime};base64,${readFileSync(abs).toString('base64')}`
 }
+// Theme @font-face declarations live in the production stylesheet. Replace
+// their local URLs too, so a downloaded preview never needs the checkout.
+compiled = compiled.replace(
+  /url\((['"]?)(?:\.\/)?assets\/themes\/fonts\/([a-z0-9-]+\.ttf)\1\)/g,
+  (_, _quote, filename) => {
+    const uri = dataUri(`src/renderer/src/assets/themes/fonts/${filename}`, 'font/ttf')
+    if (!uri) throw new Error(`Cannot build an offline preview without ${filename}`)
+    return `url(${uri})`
+  }
+)
 const faces = []
 for (const w of [400, 500, 600, 700]) {
   const uri = dataUri(`node_modules/@fontsource/ibm-plex-mono/files/ibm-plex-mono-latin-${w}-normal.woff2`, 'font/woff2')

@@ -140,7 +140,7 @@ function GameCard({
         <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/20 to-transparent" />
         {cfg.coach && due > 0 && (
           <span
-            className="absolute right-2 top-2 rounded-full bg-red-600/90 px-2 py-0.5 text-[11px] font-semibold text-white"
+            className="absolute right-2 top-2 rounded-full media-contrast bg-red-600/90 px-2 py-0.5 text-[11px] font-semibold text-white"
             title={`${due} reminder${due === 1 ? '' : 's'} due`}
           >
             {due} due

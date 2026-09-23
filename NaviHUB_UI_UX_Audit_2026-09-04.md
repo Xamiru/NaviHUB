@@ -16,7 +16,7 @@ The following material was reviewed:
 - The renderer shell, adaptive navigation, global search, command palette, readers, media flows, learning flows, music, quiz, gacha, football, wrestling, collections, and operational pages.
 - Theme tokens and shared component conventions in `src/renderer/src/styles.css` and `docs/architecture/ui-conventions.md`.
 - Main-process window creation, custom protocols, external-navigation handling, preload/API boundaries, database structure, release workflow, package metadata, and test layout.
-- `PRODUCT.md`, `AGENTS.md`, `HANDOFF.md`, architecture notes, and the older `docs/review/` material.
+- `PRODUCT.md`, `AGENTS.md`, architecture notes, and the older `docs/review/` material.
 - The older review was not copied blindly. Findings that current source has already fixed were removed or explicitly marked as historical.
 
 ### Verification limits
@@ -648,7 +648,6 @@ Keep Play and Shuffle as the primary cluster. Put scan, source, artwork repair, 
 - `LearningContextBand`, Tutor session state, the global Topbar, and the exercise frame can consume substantial vertical space at `940 x 600`.
 - The Toolbox can still feel like a catalogue when the user needs a recommended next action.
 - Some exercise/help text is tiny or low-contrast.
-- The pending adaptive Japanese Home preview in `HANDOFF.md` must be reviewed before replacing that design direction.
 
 ### Design direction
 

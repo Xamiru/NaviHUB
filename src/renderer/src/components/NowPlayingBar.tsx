@@ -88,7 +88,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
   // right. The old flat row put the seek bar between the transport and the
   // volume, so the control you drag most sat wherever the layout left room.
   return (
-    <div className="relative shrink-0 border-t border-base-700 bg-base-800 px-4 py-2 flex items-center gap-4">
+    <div className="archive-player relative shrink-0 border-t border-base-700 bg-base-800 px-4 py-2 flex items-center gap-4">
       <div className="flex min-w-0 flex-1 items-center gap-3">
         {(track.coverPath || isMusic) &&
           (animeLink || isMusic ? (

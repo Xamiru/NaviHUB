@@ -21,7 +21,7 @@ function memoryStorage(initial?: string) {
 }
 
 describe('application theme', () => {
-  it.each(['lain', 'metal-gear'] as const)('accepts %s', (value) => {
+  it.each(APP_THEME_OPTIONS.map((option) => option.value))('accepts %s', (value) => {
     expect(parseAppTheme(value)).toBe(value)
   })
 
@@ -33,24 +33,26 @@ describe('application theme', () => {
   it('keeps every stored choice and launch fill unique', () => {
     const values = APP_THEME_OPTIONS.map((option) => option.value)
     expect(new Set(values).size).toBe(values.length)
-    expect(appThemeBackground('lain')).not.toBe(appThemeBackground('metal-gear'))
+    expect(new Set(values.map(appThemeBackground)).size).toBe(values.length)
   })
 
-  it('round-trips the pre-render storage mirror', () => {
+  it.each(APP_THEME_OPTIONS.map((option) => option.value))('round-trips the %s pre-render storage mirror', (theme) => {
     const storage = memoryStorage()
     expect(readStoredAppTheme(storage)).toBe('lain')
-    persistAppTheme('metal-gear', storage)
-    expect(readStoredAppTheme(storage)).toBe('metal-gear')
+    persistAppTheme(theme, storage)
+    expect(readStoredAppTheme(storage)).toBe(theme)
   })
 
-  it('stamps the renderer root without touching other attributes', () => {
+  it.each(APP_THEME_OPTIONS.map((option) => option.value))('stamps %s without touching other attributes', (theme) => {
     const root = { dataset: { mood: 'quiet' } } as unknown as Pick<HTMLElement, 'dataset'>
-    stampAppTheme('metal-gear', root)
-    expect(root.dataset).toEqual({ mood: 'quiet', theme: 'metal-gear' })
+    stampAppTheme(theme, root)
+    expect(root.dataset).toEqual({ mood: 'quiet', theme })
   })
 
   it('changes shell language only for the tactical theme', () => {
-    expect(themedDescriptor('lain', 'Archive directory')).toBe('Archive directory')
+    for (const theme of ['lain', 'miku', 'twin-peaks'] as const) {
+      expect(themedDescriptor(theme, 'Archive directory')).toBe('Archive directory')
+    }
     expect(themedDescriptor('metal-gear', 'Archive directory')).toBe('Mission database')
     expect(themedDescriptor('metal-gear', 'Knowledge map')).toBe('Knowledge map')
   })

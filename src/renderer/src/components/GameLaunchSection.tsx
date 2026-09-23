@@ -11,17 +11,9 @@ import type { MediaDetail, HltbTimes } from '@shared/types'
 
 // Launch-from-app + tracked playtime for games/VNs (cfg.hasGameLaunch), on the
 // Playtime tab beside the HLTB estimates: link a per-title executable, see the
-// tracked totals and the session history. Launching itself is NOT here —
+// tracked total. Launching itself is NOT here —
 // GameLaunchButton in the detail page's action column owns it, so Play is
 // reachable from every tab and exists exactly once.
-
-// UTC "YYYY-MM-DD HH:MM:SS" → local "Aug 6, 21:40" style line.
-function fmtSessionStart(utc: string): string {
-  const d = new Date(utc.replace(' ', 'T') + 'Z')
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
-    ' · ' +
-    d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
-}
 
 export default function GameLaunchSection({ m }: { m: MediaDetail }) {
   const qc = useQueryClient()
@@ -125,21 +117,6 @@ export default function GameLaunchSection({ m }: { m: MediaDetail }) {
           <StatTile label="HLTB Main" value={fmtMinutesAsHours(hltbMain)} sub="estimate" />
         )}
       </div>
-
-      {/* Recent sessions */}
-      {ov.sessions.length > 0 && (
-        <ul className="mt-4 space-y-1">
-          {ov.sessions.map((s) => (
-            <li
-              key={s.id}
-              className="flex items-center justify-between text-sm text-gray-400 border-b border-base-700/40 pb-1"
-            >
-              <span>{fmtSessionStart(s.startedAt)}</span>
-              <span className="font-mono text-xs">{fmtDurationSec(s.durationSec)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
     </Section>
   )
 }

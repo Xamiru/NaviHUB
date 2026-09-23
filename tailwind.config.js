@@ -58,7 +58,8 @@ export default {
           900: v('gray-900'),
           950: v('gray-950')
         },
-        white: v('white')
+        white: v('white'),
+        'paper-white': '#fff'
       },
       // Lain sharpens corners app-wide; normal values = Tailwind defaults.
       // 'full' deliberately NOT remapped (pills/avatars/spinner/progress knobs).

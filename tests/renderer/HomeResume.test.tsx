@@ -7,12 +7,14 @@ import HomePage from '../../src/renderer/src/pages/HomePage'
 import HomeCustomiseDialog from '../../src/renderer/src/components/HomeCustomiseDialog'
 import { defaultHomeLayout } from '../../src/renderer/src/lib/homeWidgets'
 
-const { homeOverview, resumePoints, japaneseStats, companiesList, timeStats } = vi.hoisted(() => ({
+const { homeOverview, resumePoints, japaneseStats, companiesList, timeStats, settingsAll, openExternal } = vi.hoisted(() => ({
   homeOverview: vi.fn(),
   resumePoints: vi.fn(),
   japaneseStats: vi.fn(),
   companiesList: vi.fn(),
-  timeStats: vi.fn()
+  timeStats: vi.fn(),
+  settingsAll: vi.fn(),
+  openExternal: vi.fn()
 }))
 
 vi.mock('../../src/renderer/src/lib/player', () => ({
@@ -35,9 +37,21 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
     music: { recent: async () => [] },
     people: { list: async () => [] },
     quiz: { songPool: async () => [] },
-    settings: { all: async () => ({}) }
+    settings: { all: () => settingsAll() },
+    video: { openExternal: (...args: unknown[]) => openExternal(...args) }
   }
 }))
+
+// Keep each fixture focused on its own Home surface. Mounting every widget
+// introduces unrelated async reads and makes cold-start timing dominate the test.
+function widgetSettings(...visible: string[]) {
+  return {
+    'home.widgets': JSON.stringify(defaultHomeLayout().map((entry) => ({
+      ...entry,
+      visible: visible.includes(entry.key)
+    })))
+  }
+}
 
 function renderPage() {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -52,6 +66,8 @@ function renderPage() {
 
 describe('Home resume failure', () => {
   beforeEach(() => {
+    settingsAll.mockReset().mockResolvedValue(widgetSettings())
+    openExternal.mockReset().mockResolvedValue(undefined)
     homeOverview.mockReset()
     resumePoints.mockReset().mockResolvedValue([])
     japaneseStats.mockReset().mockResolvedValue({ totalCards: 0, dueCount: 0 })
@@ -59,7 +75,41 @@ describe('Home resume failure', () => {
     timeStats.mockReset().mockResolvedValue({ totalMinutes: 0, consumedCount: 0, byType: [] })
   })
 
+  it.each([
+    ['lain', 'lain-wired.jpg'],
+    ['metal-gear', 'solid-ink.jpg'],
+    ['miku', 'miku-sky.png'],
+    ['twin-peaks', 'peaks-red.jpg']
+  ])('keeps the saved video action below the %s cover wall', async (theme, artwork) => {
+    settingsAll.mockResolvedValue({ ...widgetSettings(), 'ui.theme': theme })
+    const media = { id: 9, mediaType: 'anime', title: 'Serial Experiments Lain', coverPath: 'media/lain.jpg', progress: 7, totalUnits: 13 }
+    homeOverview.mockResolvedValue({
+      wall: Array.from({ length: 12 }, (_, i) => ({ ...media, id: i + 1 })),
+      recent: [], continuing: [], favorites: [], spotlight: [], spotlightFromBacklog: false,
+      stats: { titles: 12, inProgress: 1, completed: 0, favorites: 0, avgScore: null }
+    })
+    resumePoints.mockResolvedValue([{
+      kind: 'video', refId: 42, media, dirPath: 'video/lain',
+      partTitle: 'Layer 03: Psyche', position: 321, total: 1400, updatedAt: '2026-09-22'
+    }])
+    const user = userEvent.setup()
+    const { container } = renderPage()
+    const hero = await screen.findByRole('region', { name: 'Your archive' })
+    const resume = await screen.findByRole('button', { name: /Layer 03: Psyche.*Continue/ })
+    expect(hero.querySelectorAll('.home-cover-wall img')).toHaveLength(12)
+    expect(hero.querySelector('.home-signature')).toHaveAttribute('aria-hidden', 'true')
+    expect(hero.querySelector('.home-signature')).toHaveAttribute('src', expect.stringContaining(
+      artwork
+    ))
+    expect(hero).not.toContainElement(resume)
+    expect(hero.compareDocumentPosition(resume) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(container.querySelectorAll('h1')).toHaveLength(1)
+    await user.click(resume)
+    expect(openExternal).toHaveBeenCalledWith({ kind: 'file', fileId: 42 })
+  })
+
   it('shows a durable retry instead of presenting a failed read as an empty library', async () => {
+    settingsAll.mockResolvedValue(widgetSettings('recent'))
     homeOverview
       .mockRejectedValueOnce(new Error('database temporarily unavailable'))
       .mockResolvedValue({
@@ -98,6 +148,7 @@ describe('Home resume failure', () => {
   })
 
   it('shows a retry when Japanese stats fail instead of claiming there is no deck', async () => {
+    settingsAll.mockResolvedValue(widgetSettings('today'))
     homeOverview.mockResolvedValue({
       wall: [], recent: [], continuing: [], favorites: [], spotlight: [],
       spotlightFromBacklog: false,
@@ -115,6 +166,7 @@ describe('Home resume failure', () => {
   })
 
   it('keeps studios visible when there are no voice actors', async () => {
+    settingsAll.mockResolvedValue(widgetSettings('people'))
     homeOverview.mockResolvedValue({
       wall: [], recent: [], continuing: [], favorites: [], spotlight: [],
       spotlightFromBacklog: false,
@@ -127,6 +179,7 @@ describe('Home resume failure', () => {
   })
 
   it('always changes the spotlight title when rerolling a pool with two titles', async () => {
+    settingsAll.mockResolvedValue(widgetSettings('spotlight'))
     homeOverview.mockResolvedValue({
       wall: [], recent: [], continuing: [], favorites: [],
       spotlight: [
@@ -146,6 +199,7 @@ describe('Home resume failure', () => {
   })
 
   it('shows labelled amounts for each time-spent segment', async () => {
+    settingsAll.mockResolvedValue(widgetSettings('timeStats'))
     homeOverview.mockResolvedValue({
       wall: [], recent: [], continuing: [], favorites: [], spotlight: [],
       spotlightFromBacklog: false,

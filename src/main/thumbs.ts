@@ -4,6 +4,9 @@ import { mkdir, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { app, nativeImage } from 'electron'
 import { absoluteMediaPath } from './files'
+import { THUMB_WIDTHS } from '@shared/mediaUrl'
+
+export { THUMB_WIDTHS } from '@shared/mediaUrl'
 
 // Disk-cached, generated-on-first-request thumbnails for stored images,
 // served through the navimg handler's "thumb/<w>/<rel>" branch.
@@ -22,8 +25,6 @@ import { absoluteMediaPath } from './files'
 
 // Fixed set — bounds the cache and keeps URLs canonical. Callers ask for one
 // of these; nothing resizes on the fly per arbitrary width.
-export const THUMB_WIDTHS = [160, 320, 480]
-
 export interface ThumbRequest {
   width: number
   sourceRel: string

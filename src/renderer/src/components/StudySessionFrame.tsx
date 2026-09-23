@@ -31,7 +31,7 @@ export default function StudySessionFrame({
   const percent = safeTotal > 0 ? Math.round((safeCurrent / safeTotal) * 100) : 0
 
   return (
-    <div className={`mx-auto w-full max-w-[1320px] p-4 sm:p-6 ${className}`}>
+    <div className={`study-session mx-auto w-full max-w-[1320px] p-4 sm:p-6 ${className}`}>
       <header className="mb-6 border-b border-base-700 pb-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
