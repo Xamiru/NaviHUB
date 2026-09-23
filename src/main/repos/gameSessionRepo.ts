@@ -31,7 +31,8 @@ export function recordSession(
   mediaId: number,
   startedAtEpochSec: number,
   endedAtEpochSec: number,
-  durationSec: number
+  durationSec: number,
+  runId: number | null = null
 ): { progressDelta: number; progressAfter: number } {
   const db = getSqlite()
   return db.transaction(() => {
@@ -46,10 +47,17 @@ export function recordSession(
         .get(mediaId) as { s: number }
     ).s
 
-    db.prepare(
+    const inserted = db.prepare(
       `INSERT INTO game_session (media_id, started_at, ended_at, duration)
        VALUES (?, datetime(?, 'unixepoch'), datetime(?, 'unixepoch'), ?)`
     ).run(mediaId, startedAtEpochSec, endedAtEpochSec, durationSec)
+
+    // A run may have been removed while the game was running. Keep the session
+    // and time even then; never attach it to whichever run became active later.
+    if (runId != null && db.prepare('SELECT 1 FROM game_playthrough WHERE id=? AND media_id=?').get(runId, mediaId)) {
+      db.prepare('INSERT INTO game_playthrough_session(session_id,run_id) VALUES(?,?)')
+        .run(inserted.lastInsertRowid, runId)
+    }
 
     const after = foldedProgress(
       media.progress,

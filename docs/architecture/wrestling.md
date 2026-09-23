@@ -11,6 +11,33 @@
 
 ---
 
+## Personal journeys
+
+`/wrestling/journeys` and its `/:id` detail route add ordered event, match and manual
+segment paths. `wrestlingJourneyRepo` owns the personal tables `wrestling_journey`,
+`wrestling_journey_step` and `wrestling_journey_viewing`; the renderer uses the shared
+keyboard/pointer reorder control. Each step retains its title, date, context and
+source URL independently of any imported match/event. Canonical deletion sets the
+link to null and preserves the personal step and every dated viewing. Journey
+progress counts steps with at least one viewing; a rewatch adds a history row.
+
+`src/shared/wrestlingJourneys.ts` contains bounded Undertaker/Triple H and Bret/Shawn
+starter paths with frozen keys and WWE references. Starting one makes an editable
+copy. Matches are linked explicitly through local search, never guessed from partial
+names. The Ottawa date follows WWE's collection listing (June 3, 1992), which may
+differ from a database's event/taping date.
+
+`wrestling/journeyFiles.ts` owns file-picker and filesystem work. Step attachments
+live under the existing `wrestling.dir`; missing files show unavailable and opening
+uses the system player. Imported event/match file links reuse `api.video` with the
+wrestling scope. File watched controls are now visible in `WrestlingFilesSection`.
+A file's watched mark, a journey step's viewings and media-item progress remain
+separate. All journey rows and file references are wiped from shared exports.
+
+Wrestler pages also expose explicit local entrance-theme associations; see
+[music-quiz.md](music-quiz.md#soundtracks-and-entrance-themes).
+
+
 ## Wrestling section
 
 **Wrestling section (2026-08-12)** — `/wrestling`, a Wikipedia-sourced wiki (events / matches / wrestlers) plus a local collection of PPV rips. **Standalone (flavor B), deliberately NOT a MediaType**: ~2,500 events are reference data, and as `media_item` rows they'd flood Home strips, global search, stats, facets and "Plan to Watch".

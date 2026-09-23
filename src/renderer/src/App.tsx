@@ -33,6 +33,11 @@ const MediaFormPage = lazy(() => import('./pages/MediaFormPage'))
 const SeasonalAnimePage = lazy(() => import('./pages/SeasonalAnimePage'))
 const InstalledGamesPage = lazy(() => import('./pages/InstalledGamesPage'))
 const FranchisesPage = lazy(() => import('./pages/FranchisesPage'))
+const MediaGuidesPage = lazy(() => import('./pages/MediaGuidesPage'))
+const VnDiscoverPage = lazy(() => import('./pages/VnDiscoverPage'))
+const VnEditionPage = lazy(() => import('./pages/VnEditionPage'))
+const VnStudyPage = lazy(() => import('./pages/VnStudyPage'))
+const VnReadingPage = lazy(() => import('./pages/VnReadingPage'))
 const FranchisePage = lazy(() => import('./pages/FranchisePage'))
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage'))
 const ThemeSongsPage = lazy(() => import('./pages/ThemeSongsPage'))
@@ -96,6 +101,8 @@ const PartyQuizPage = lazy(() => import('./pages/PartyQuizPage'))
 const TournamentPage = lazy(() => import('./pages/TournamentPage'))
 const MangaReaderPage = lazy(() => import('./pages/MangaReaderPage'))
 const BookReaderPage = lazy(() => import('./pages/BookReaderPage'))
+const MusicJournalPage = lazy(() => import('./pages/MusicJournalPage'))
+const MusicSmartPage = lazy(() => import('./pages/MusicSmartPage'))
 const MusicLibraryPage = lazy(() => import('./pages/MusicLibraryPage'))
 const MusicArtistPage = lazy(() => import('./pages/MusicArtistPage'))
 const MusicAlbumPage = lazy(() => import('./pages/MusicAlbumPage'))
@@ -108,6 +115,7 @@ const GachaHomePage = lazy(() => import('./pages/GachaHomePage'))
 const GachaGamePage = lazy(() => import('./pages/GachaGamePage'))
 const GachaUnitPage = lazy(() => import('./pages/GachaUnitPage'))
 const GachaCoachPage = lazy(() => import('./pages/GachaCoachPage'))
+const WrestlingJourneysPage = lazy(() => import('./pages/WrestlingJourneysPage'))
 const WrestlingHomePage = lazy(() => import('./pages/WrestlingHomePage'))
 const WrestlingPromotionPage = lazy(() => import('./pages/WrestlingPromotionPage'))
 const WrestlingEventPage = lazy(() => import('./pages/WrestlingEventPage'))
@@ -283,6 +291,12 @@ export default function App() {
             {/* Visual Novels (VNDB) */}
             <Route path="/visual-novels" element={<MediaListPage cfg={VISUAL_NOVEL} />} />
             <Route path="/visual-novels/new" element={<MediaFormPage cfg={VISUAL_NOVEL} />} />
+            <Route path="/guides" element={<MediaGuidesPage />} />
+            <Route path="/guides/:id" element={<MediaGuidesPage />} />
+            <Route path="/visual-novels/discover" element={<VnDiscoverPage />} />
+            <Route path="/visual-novels/:id/editions" element={<VnEditionPage />} />
+            <Route path="/visual-novels/:id/study" element={<VnStudyPage />} />
+            <Route path="/visual-novels/:id/reading" element={<VnReadingPage />} />
             <Route path="/visual-novels/:id" element={<MediaDetailPage cfg={VISUAL_NOVEL} />} />
             <Route path="/visual-novels/:id/edit" element={<MediaFormPage cfg={VISUAL_NOVEL} />} />
 
@@ -449,6 +463,9 @@ export default function App() {
 
             {/* Music — standalone local-music library (own tables, reuses the player) */}
             <Route path="/music" element={<MusicLibraryPage />} />
+            <Route path="/music/journal" element={<MusicJournalPage />} />
+            <Route path="/music/smart" element={<MusicSmartPage />} />
+            <Route path="/music/smart/:id" element={<MusicSmartPage />} />
             <Route path="/music/artists/:id" element={<MusicArtistPage />} />
             <Route path="/music/albums/:id" element={<MusicAlbumPage />} />
             <Route path="/music/playlists/:id" element={<MusicPlaylistPage />} />
@@ -540,6 +557,8 @@ export default function App() {
                 local collection. Promotions configured in shared/wrestling.ts.
                 Sub-paths are namespaced (/p/, /event/, /wrestler/) so a static
                 segment can never be mistaken for an :id. */}
+            <Route path="/wrestling/journeys" element={<WrestlingJourneysPage />} />
+            <Route path="/wrestling/journeys/:id" element={<WrestlingJourneysPage />} />
             <Route path="/wrestling" element={<WrestlingHomePage />} />
             <Route path="/wrestling/rated" element={<WrestlingRatedPage />} />
             <Route path="/wrestling/collection" element={<WrestlingCollectionPage />} />

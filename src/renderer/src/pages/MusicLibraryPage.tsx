@@ -639,6 +639,7 @@ function PlaylistsTab() {
   if (isLoading) return <p className="text-sm text-gray-500">Loading…</p>
   return (
     <>
+      <p className="mb-4 text-sm"><Link className="text-accent underline" to="/music/smart">Smart playlists</Link> update automatically from your tags, ratings, and listening history.</p>
       <div className="mb-4 flex max-w-2xl flex-col gap-2 sm:flex-row">
         <Field label="New playlist title" hiddenLabel className="contents">
           <input

@@ -3,6 +3,79 @@ import type { NaviApi } from '@shared/api'
 
 // Implements the NaviApi surface by forwarding to main over IPC.
 const api: NaviApi = {
+  playthroughs: {
+    list: (mediaId) => ipcRenderer.invoke('playthroughs:list', mediaId),
+    save: (mediaId, id, input) => ipcRenderer.invoke('playthroughs:save', mediaId, id, input),
+    remove: (mediaId, id) => ipcRenderer.invoke('playthroughs:remove', mediaId, id),
+    history: (mediaId, runId, page) => ipcRenderer.invoke('playthroughs:history', mediaId, runId, page),
+    assignSession: (mediaId, sessionId, runId) => ipcRenderer.invoke('playthroughs:assignSession', mediaId, sessionId, runId),
+    saveNote: (mediaId, runId, id, input) => ipcRenderer.invoke('playthroughs:saveNote', mediaId, runId, id, input),
+    removeNote: (mediaId, runId, id) => ipcRenderer.invoke('playthroughs:removeNote', mediaId, runId, id)
+  },
+  musicJournal: {
+    album: (id) => ipcRenderer.invoke('musicJournal:album', id),
+    saveAlbum: (id, input) => ipcRenderer.invoke('musicJournal:saveAlbum', id, input),
+    track: (id) => ipcRenderer.invoke('musicJournal:track', id),
+    saveTrack: (input) => ipcRenderer.invoke('musicJournal:saveTrack', input),
+    listens: (albumId, page) => ipcRenderer.invoke('musicJournal:listens', albumId, page),
+    saveListen: (albumId, id, input) => ipcRenderer.invoke('musicJournal:saveListen', albumId, id, input),
+    removeListen: (albumId, id) => ipcRenderer.invoke('musicJournal:removeListen', albumId, id),
+    tags: () => ipcRenderer.invoke('musicJournal:tags'),
+    list: (input) => ipcRenderer.invoke('musicJournal:list', input)
+  },
+  musicSmart: {
+    list: () => ipcRenderer.invoke('musicSmart:list'),
+    save: (id, input) => ipcRenderer.invoke('musicSmart:save', id, input),
+    remove: (id) => ipcRenderer.invoke('musicSmart:remove', id),
+    preview: (rules, page) => ipcRenderer.invoke('musicSmart:preview', rules, page),
+    queue: (id) => ipcRenderer.invoke('musicSmart:queue', id)
+  },
+  soundtracks: {
+    list: (owner) => ipcRenderer.invoke('soundtracks:list', owner),
+    search: (kind, query) => ipcRenderer.invoke('soundtracks:search', kind, query),
+    save: (id, input) => ipcRenderer.invoke('soundtracks:save', id, input),
+    remove: (id) => ipcRenderer.invoke('soundtracks:remove', id),
+    tracks: (id) => ipcRenderer.invoke('soundtracks:tracks', id)
+  },
+  vnExplore: {
+    discover: (input) => ipcRenderer.invoke('vnExplore:discover', input),
+    tags: (query) => ipcRenderer.invoke('vnExplore:tags', query),
+    edition: (mediaId) => ipcRenderer.invoke('vnExplore:edition', mediaId),
+    refreshReleases: (mediaId) => ipcRenderer.invoke('vnExplore:refreshReleases', mediaId),
+    saveEdition: (mediaId, releaseId, notes) => ipcRenderer.invoke('vnExplore:saveEdition', mediaId, releaseId, notes)
+  },
+  vnCapture: {
+    list: (mediaId) => ipcRenderer.invoke('vnCapture:list', mediaId),
+    get: (mediaId, id) => ipcRenderer.invoke('vnCapture:get', mediaId, id),
+    save: (mediaId, id, input) => ipcRenderer.invoke('vnCapture:save', mediaId, id, input),
+    remove: (mediaId, id) => ipcRenderer.invoke('vnCapture:remove', mediaId, id)
+  },
+  journeys: {
+    list: () => ipcRenderer.invoke('journeys:list'),
+    detail: (id) => ipcRenderer.invoke('journeys:detail', id),
+    save: (id, input) => ipcRenderer.invoke('journeys:save', id, input),
+    remove: (id) => ipcRenderer.invoke('journeys:remove', id),
+    saveStep: (journeyId, id, input) => ipcRenderer.invoke('journeys:saveStep', journeyId, id, input),
+    removeStep: (journeyId, id) => ipcRenderer.invoke('journeys:removeStep', journeyId, id),
+    reorder: (journeyId, ids) => ipcRenderer.invoke('journeys:reorder', journeyId, ids),
+    logViewing: (journeyId, stepId, watchedOn, notes) => ipcRenderer.invoke('journeys:logViewing', journeyId, stepId, watchedOn, notes),
+    removeViewing: (journeyId, viewingId) => ipcRenderer.invoke('journeys:removeViewing', journeyId, viewingId),
+    instantiate: (key) => ipcRenderer.invoke('journeys:instantiate', key),
+    targets: (kind, search) => ipcRenderer.invoke('journeys:targets', kind, search),
+    pickFile: (journeyId, stepId) => ipcRenderer.invoke('journeys:pickFile', journeyId, stepId),
+    detachFile: (journeyId, stepId) => ipcRenderer.invoke('journeys:detachFile', journeyId, stepId),
+    openFile: (journeyId, stepId) => ipcRenderer.invoke('journeys:openFile', journeyId, stepId)
+  },
+  vnReading: {
+    overview: (mediaId) => ipcRenderer.invoke('vnReading:overview', mediaId),
+    saveNode: (mediaId, id, input) => ipcRenderer.invoke('vnReading:saveNode', mediaId, id, input),
+    removeNode: (mediaId, id) => ipcRenderer.invoke('vnReading:removeNode', mediaId, id),
+    reorder: (mediaId, ids) => ipcRenderer.invoke('vnReading:reorder', mediaId, ids),
+    saveResume: (mediaId, input) => ipcRenderer.invoke('vnReading:saveResume', mediaId, input),
+    notes: (mediaId, page) => ipcRenderer.invoke('vnReading:notes', mediaId, page),
+    saveNote: (mediaId, id, input) => ipcRenderer.invoke('vnReading:saveNote', mediaId, id, input),
+    removeNote: (mediaId, id) => ipcRenderer.invoke('vnReading:removeNote', mediaId, id)
+  },
   media: {
     list: (filter) => ipcRenderer.invoke('media:list', filter),
     listPage: (request) => ipcRenderer.invoke('media:listPage', request),

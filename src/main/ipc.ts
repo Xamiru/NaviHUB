@@ -1,3 +1,12 @@
+import * as playthroughs from './repos/playthroughRepo'
+import * as musicJournal from './repos/musicJournalRepo'
+import * as musicSmart from './repos/musicSmartRepo'
+import * as soundtracks from './repos/soundtrackRepo'
+import * as vnExplore from './vndbExplore'
+import * as vnCapture from './repos/vnCaptureRepo'
+import * as journeys from './repos/wrestlingJourneyRepo'
+import * as journeyFiles from './wrestling/journeyFiles'
+import * as vnReading from './repos/vnReadingRepo'
 import * as spotifyRecovery from './musicSpotifyRecovery'
 import { ipcMain, shell, BrowserWindow } from 'electron'
 import { clampUiScale, parseUiScale } from '@shared/uiScale'
@@ -120,6 +129,75 @@ const loadProgrammingRepo = (): Promise<typeof import('./repos/programmingRepo')
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
 export function registerIpc(): void {
+  // ---- playthroughs ----
+  ipcMain.handle('playthroughs:list', (_e, mediaId) => playthroughs.list(mediaId))
+  ipcMain.handle('playthroughs:save', (_e, mediaId, id, input) => playthroughs.save(mediaId, id, input))
+  ipcMain.handle('playthroughs:remove', (_e, mediaId, id) => playthroughs.remove(mediaId, id))
+  ipcMain.handle('playthroughs:history', (_e, mediaId, runId, page) => playthroughs.history(mediaId, runId, page))
+  ipcMain.handle('playthroughs:assignSession', (_e, mediaId, sessionId, runId) => playthroughs.assignSession(mediaId, sessionId, runId))
+  ipcMain.handle('playthroughs:saveNote', (_e, mediaId, runId, id, input) => playthroughs.saveNote(mediaId, runId, id, input))
+  ipcMain.handle('playthroughs:removeNote', (_e, mediaId, runId, id) => playthroughs.removeNote(mediaId, runId, id))
+  // ---- musicJournal ----
+  ipcMain.handle('musicJournal:album', (_e, id) => musicJournal.album(id))
+  ipcMain.handle('musicJournal:saveAlbum', (_e, id, input) => musicJournal.saveAlbum(id, input))
+  ipcMain.handle('musicJournal:track', (_e, id) => musicJournal.track(id))
+  ipcMain.handle('musicJournal:saveTrack', (_e, input) => musicJournal.saveTrack(input))
+  ipcMain.handle('musicJournal:listens', (_e, albumId, page) => musicJournal.listens(albumId, page))
+  ipcMain.handle('musicJournal:saveListen', (_e, albumId, id, input) => musicJournal.saveListen(albumId, id, input))
+  ipcMain.handle('musicJournal:removeListen', (_e, albumId, id) => musicJournal.removeListen(albumId, id))
+  ipcMain.handle('musicJournal:tags', (_e) => musicJournal.tags())
+  ipcMain.handle('musicJournal:list', (_e, input) => musicJournal.list(input))
+  // ---- musicSmart ----
+  ipcMain.handle('musicSmart:list', (_e) => musicSmart.list())
+  ipcMain.handle('musicSmart:save', (_e, id, input) => musicSmart.save(id, input))
+  ipcMain.handle('musicSmart:remove', (_e, id) => musicSmart.remove(id))
+  ipcMain.handle('musicSmart:preview', (_e, rules, page) => musicSmart.preview(rules, page))
+  ipcMain.handle('musicSmart:queue', (_e, id) => musicSmart.queue(id))
+
+  // ---- VN captured text ----
+  // ---- Soundtrack associations ----
+  ipcMain.handle('soundtracks:list', (_e, owner) => soundtracks.list(owner))
+  ipcMain.handle('soundtracks:search', (_e, kind, query) => soundtracks.search(kind, query))
+  ipcMain.handle('soundtracks:save', (_e, id, input) => soundtracks.save(id, input))
+  ipcMain.handle('soundtracks:remove', (_e, id) => soundtracks.remove(id))
+  ipcMain.handle('soundtracks:tracks', (_e, id) => soundtracks.tracks(id))
+  // ---- VN discovery and editions ----
+  ipcMain.handle('vnExplore:discover', (_e, input) => vnExplore.discover(input))
+  ipcMain.handle('vnExplore:tags', (_e, query) => vnExplore.tags(query))
+  ipcMain.handle('vnExplore:edition', (_e, mediaId) => vnExplore.edition(mediaId))
+  ipcMain.handle('vnExplore:refreshReleases', (_e, mediaId) => withActivity('Fetching VN releases', () => vnExplore.refreshReleases(mediaId)))
+  ipcMain.handle('vnExplore:saveEdition', (_e, mediaId, releaseId, notes) => vnExplore.saveEdition(mediaId, releaseId, notes))
+  ipcMain.handle('vnCapture:list', (_e, mediaId) => vnCapture.list(mediaId))
+  ipcMain.handle('vnCapture:get', (_e, mediaId, id) => vnCapture.get(mediaId, id))
+  ipcMain.handle('vnCapture:save', (_e, mediaId, id, input) => vnCapture.save(mediaId, id, input))
+  ipcMain.handle('vnCapture:remove', (_e, mediaId, id) => vnCapture.remove(mediaId, id))
+
+  // ---- Wrestling journeys ----
+  ipcMain.handle('journeys:list', (_e) => journeys.list())
+  ipcMain.handle('journeys:detail', (_e, id) => journeyFiles.detail(id))
+  ipcMain.handle('journeys:save', (_e, id, input) => journeys.save(id, input))
+  ipcMain.handle('journeys:remove', (_e, id) => journeys.remove(id))
+  ipcMain.handle('journeys:saveStep', (_e, journeyId, id, input) => journeys.saveStep(journeyId, id, input))
+  ipcMain.handle('journeys:removeStep', (_e, journeyId, id) => journeys.removeStep(journeyId, id))
+  ipcMain.handle('journeys:reorder', (_e, journeyId, ids) => journeys.reorder(journeyId, ids))
+  ipcMain.handle('journeys:logViewing', (_e, journeyId, stepId, watchedOn, notes) => journeys.logViewing(journeyId, stepId, watchedOn, notes))
+  ipcMain.handle('journeys:removeViewing', (_e, journeyId, viewingId) => journeys.removeViewing(journeyId, viewingId))
+  ipcMain.handle('journeys:instantiate', (_e, key) => journeys.instantiate(key))
+  ipcMain.handle('journeys:targets', (_e, kind, search) => journeys.targets(kind, search))
+  ipcMain.handle('journeys:pickFile', (_e, journeyId, stepId) => journeyFiles.pick(journeyId, stepId))
+  ipcMain.handle('journeys:detachFile', (_e, journeyId, stepId) => journeyFiles.detach(journeyId, stepId))
+  ipcMain.handle('journeys:openFile', (_e, journeyId, stepId) => journeyFiles.open(journeyId, stepId))
+
+  // ---- VN reading ----
+  ipcMain.handle('vnReading:overview', (_e, id) => vnReading.overview(id))
+  ipcMain.handle('vnReading:saveNode', (_e, mediaId, id, input) => vnReading.saveNode(mediaId, id, input))
+  ipcMain.handle('vnReading:removeNode', (_e, mediaId, id) => vnReading.removeNode(mediaId, id))
+  ipcMain.handle('vnReading:reorder', (_e, mediaId, ids) => vnReading.reorder(mediaId, ids))
+  ipcMain.handle('vnReading:saveResume', (_e, mediaId, input) => vnReading.saveResume(mediaId, input))
+  ipcMain.handle('vnReading:notes', (_e, mediaId, page) => vnReading.notes(mediaId, page))
+  ipcMain.handle('vnReading:saveNote', (_e, mediaId, id, input) => vnReading.saveNote(mediaId, id, input))
+  ipcMain.handle('vnReading:removeNote', (_e, mediaId, id) => vnReading.removeNote(mediaId, id))
+
   // Hands the video scanner its real ffprobe implementation. scan.ts keeps the
   // injectable seam (the music.ts:TagReader pattern) so its tests never spawn
   // a binary; this is the one place the two halves meet.

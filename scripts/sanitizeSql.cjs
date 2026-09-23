@@ -34,6 +34,22 @@ function normalizeExportOptions(input = {}) {
 }
 
 const FIXED_WIPES = [
+  'DELETE FROM game_playthrough_session',
+  'DELETE FROM game_playthrough_note',
+  'DELETE FROM game_playthrough',
+  'DELETE FROM music_album_personal',
+  'DELETE FROM music_track_personal',
+  'DELETE FROM music_listen',
+  'DELETE FROM music_smart_playlist',
+  'DELETE FROM soundtrack_link',
+  'DELETE FROM vn_edition',
+  'DELETE FROM vn_text_capture',
+  'DELETE FROM wrestling_journey_viewing',
+  'DELETE FROM wrestling_journey_step',
+  'DELETE FROM wrestling_journey',
+  'DELETE FROM vn_notebook',
+  'DELETE FROM vn_reading_resume',
+  'DELETE FROM vn_reading_node',
   // Derived from canonical titles/names and rebuilt on startup. Wipe first so
   // an export that excludes a section cannot retain its searchable names.
   'DELETE FROM global_search_fts',

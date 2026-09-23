@@ -63,13 +63,16 @@ export async function* chapterTexts(dirPath: string): AsyncGenerator<string> {
 // comprehension scan and the prep deck light up for anime with NO change to
 // coverage.ts or prepDeck.ts.
 export interface CorpusUnit {
-  kind: 'chapter' | 'video'
+  kind: 'chapter' | 'video' | 'vn'
   path: string
   label: string
 }
 
 export function seriesCorpus(mediaId: number): CorpusUnit[] {
   const db = getSqlite()
+  const vn = db.prepare("SELECT id FROM media_item WHERE id=? AND media_type='visual_novel'").get(mediaId)
+  if (vn) return (db.prepare('SELECT id,title FROM vn_text_capture WHERE media_id=? ORDER BY id').all(mediaId) as { id: number; title: string }[])
+    .map((c) => ({ kind: 'vn', path: String(c.id), label: c.title }))
   const chapters = db
     .prepare('SELECT dir_path, title FROM manga_chapter WHERE media_id = ? ORDER BY sort_order, id')
     .all(mediaId) as { dir_path: string; title: string }[]
@@ -133,6 +136,15 @@ export function pickCorpusTrack(tracks: VideoSubtitleTrack[]): VideoSubtitleTrac
   return best
 }
 
+export async function* capturedTexts(id: string): AsyncGenerator<string> {
+  const row = getSqlite().prepare('SELECT body FROM vn_text_capture WHERE id=?').get(Number(id)) as { body: string } | undefined
+  if (!row) throw new Error('Captured text changed. Run the scan again.')
+  // Bound each synchronous tokenizer call, including logs without newlines.
+  for (const paragraph of row.body.split(/\n+/)) for (let i = 0; i < paragraph.length; i += 4000) yield paragraph.slice(i, i + 4000)
+}
+export function captureStamp(mediaId: number): string {
+  return JSON.stringify(getSqlite().prepare('SELECT id,fingerprint FROM vn_text_capture WHERE media_id=? ORDER BY id').all(mediaId))
+}
 export interface SeriesWordCounts {
   counts: Map<string, number> // dictionary (base) form -> occurrences
   tokenCount: number // total word-like token occurrences (coverage denominator)
@@ -147,8 +159,9 @@ export async function countSeriesWords(
   onProgress?: (done: number, total: number) => void
 ): Promise<SeriesWordCounts> {
   const units = seriesCorpus(mediaId)
+  const stamp = captureStamp(mediaId)
   if (units.length === 0) {
-    throw new Error('No chapters or episodes attached — link the folder first')
+    throw new Error('No readable text yet. Attach chapters/episodes or save a VN text capture first.')
   }
 
   const counts = new Map<string, number>()
@@ -157,7 +170,7 @@ export async function countSeriesWords(
   let done = 0
   onProgress?.(0, units.length)
   for (const unit of units) {
-    const stream = unit.kind === 'chapter' ? chapterTexts(unit.path) : videoTexts(unit.path)
+    const stream = unit.kind === 'vn' ? capturedTexts(unit.path) : unit.kind === 'chapter' ? chapterTexts(unit.path) : videoTexts(unit.path)
     for await (const text of stream) {
       if (!text.trim()) continue
       sawText = true
@@ -172,6 +185,7 @@ export async function countSeriesWords(
     onProgress?.(done, units.length)
     await yieldToLoop()
   }
+  if (stamp !== captureStamp(mediaId)) throw new Error('Captured text changed during the scan. Run it again.')
   if (!sawText) {
     throw new Error(
       'No readable text found — manga chapters need mokuro OCR, attach an EPUB book, or put subtitle files next to the episodes'

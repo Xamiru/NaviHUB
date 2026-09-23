@@ -18,23 +18,23 @@ function fmtDuration(seconds: number | null): string {
 }
 
 function Row({ file }: { file: WrestlingVideo }): JSX.Element {
-  return (
-    <button
-      onClick={() =>
-        void api.video.openExternal({ kind: 'wrestling', fileId: file.id }).catch(toastError)
-      }
-      className="flex w-full items-baseline justify-between gap-4 border-b border-base-700 py-2 text-left last:border-0 hover:text-accent"
-    >
-      <span className="min-w-0 truncate text-sm">{file.title}</span>
-      <span className="shrink-0 text-xs text-gray-500">{fmtDuration(file.duration)}</span>
-    </button>
-  )
+  const qc = useQueryClient()
+  const [busy, setBusy] = useState(false)
+  return <div className="flex items-center gap-3 border-b border-line-subtle py-2">
+    <button className="min-w-0 flex-1 text-left text-sm hover:text-accent" onClick={() => void api.video.openExternal({ kind: 'wrestling', fileId: file.id }).catch(toastError)}>{file.title}</button>
+    <span className="text-xs text-ink-muted">{fmtDuration(file.duration)}</span>
+    <button className="btn-ghost text-xs" aria-label={`${file.watchedAt ? 'Mark unwatched' : 'Mark watched'}: ${file.title}`} disabled={busy} onClick={async () => {
+      setBusy(true)
+      try { await api.video.markWatched({ kind: 'wrestling', fileId: file.id }, !file.watchedAt); await qc.invalidateQueries({ queryKey: qk.wrestling.all }) }
+      catch (e) { toastError(e) } finally { setBusy(false) }
+    }}>{file.watchedAt ? 'Watched' : 'Mark watched'}</button>
+  </div>
 }
 
 export default function WrestlingFilesSection({ eventId }: { eventId: number }): JSX.Element {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
-  const { data } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: qk.wrestling.files(eventId),
     queryFn: () => api.wrestling.files(eventId)
   })
@@ -52,6 +52,8 @@ export default function WrestlingFilesSection({ eventId }: { eventId: number }):
     }
   }
 
+  if (isLoading) return <Section title="My copy"><p className="text-sm text-ink-muted">Loading files…</p></Section>
+  if (isError) return <Section title="My copy"><p role="alert">Could not load files. <button className="btn" onClick={() => void refetch()}>Retry files</button></p></Section>
   const files = data?.files ?? []
 
   return (

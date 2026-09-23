@@ -22,7 +22,7 @@ const SOURCE = 'vndb'
 const VN_CHAR_SOURCE = 'vndb'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-async function vndbPost(endpoint: string, body: any): Promise<any> {
+export async function vndbPost(endpoint: string, body: any): Promise<any> {
   const res = await fetchWithRetry(`${ENDPOINT}${endpoint}`, {
     method: 'POST',
     headers: {
@@ -358,6 +358,7 @@ export async function importVisualNovel(
     filters: ['id', '=', vid],
     fields:
       'id, title, alttitle, description, released, rating, votecount, length_minutes, length_votes, image.url, ' +
+      'languages, platforms, tags{id,name,rating,spoiler,lie}, relations{id,title,relation}, ' +
       'developers{id, name, original}, staff{id, name, original, role}, ' +
       'va{note, character.id, staff.id, staff.name, staff.original, staff.lang}'
   })
@@ -448,6 +449,20 @@ export async function importVisualNovel(
 
     // Child rows + pruneCharacters stop here on a partial refresh.
     if (partial) return { mediaId, title, studios: 0, cast: 0, staff: 0, created }
+
+    mergeMetadata(db, mediaId, { vndbLanguages: m.languages ?? [], vndbPlatforms: m.platforms ?? [] })
+    db.prepare('DELETE FROM media_tag WHERE media_id=?').run(mediaId)
+    for (const tag of m.tags ?? []) {
+      if (tag.lie || !tag.name) continue
+      db.prepare("INSERT OR IGNORE INTO tag(name,category) VALUES(?,'VNDB')").run(tag.name)
+      db.prepare('INSERT OR IGNORE INTO media_tag(media_id,tag_id) SELECT ?,id FROM tag WHERE name=?').run(mediaId, tag.name)
+    }
+    db.prepare('DELETE FROM media_relation WHERE media_id=?').run(mediaId)
+    const relations: Record<string, string> = { seq: 'SEQUEL', preq: 'PREQUEL', set: 'SAME_SETTING', alt: 'ALTERNATIVE', char: 'SHARES_CHARACTERS', side: 'SIDE_STORY', par: 'PARENT', fan: 'FANDISC', ser: 'SAME_SERIES', orig: 'ORIGINAL_GAME' }
+    for (const [index, relation] of (m.relations ?? []).entries()) {
+      db.prepare(`INSERT OR IGNORE INTO media_relation(media_id,relation_type,related_source,related_external_id,related_type,related_title,sort_order)
+        VALUES(?,?,?,?,?,?,?)`).run(mediaId, relations[relation.relation] ?? 'OTHER', SOURCE, String(vidToNum(relation.id)), 'visual_novel', relation.title, index)
+    }
 
     // ---- developers -> companies ----
     let studios = 0

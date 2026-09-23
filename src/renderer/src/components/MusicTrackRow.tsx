@@ -1,3 +1,4 @@
+import MusicTrackPersonalDialog from './MusicTrackPersonalDialog'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -120,6 +121,7 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
   const qc = useQueryClient()
   const player = usePlayerControls()
   const [open, setOpen] = useState(false)
+  const [tagsOpen, setTagsOpen] = useState(false)
   const [newTitle, setNewTitle] = useState('')
   const triggerId = useId()
   const panelId = useId()
@@ -172,6 +174,7 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
 
   return (
     <div className="relative">
+      {tagsOpen && <MusicTrackPersonalDialog track={track} onClose={() => setTagsOpen(false)} />}
       <button
         id={triggerId}
         ref={triggerRef}
@@ -224,6 +227,9 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
           >
             Go to album
           </Link>
+          <button className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700" onClick={() => { setOpen(false); setTagsOpen(true) }}>
+            Tags and standout track
+          </button>
           {onRemove && (
             <button
               className="block w-full rounded px-1 py-1.5 text-left text-sm text-red-400 hover:bg-base-700"

@@ -397,3 +397,24 @@ describe('custom export policy', () => {
     expect(() => sanitizeDb(db, { sections: [] })).toThrow('Select at least one')
   })
 })
+
+// New listening/run annotations are always private, even when progress is exported.
+describe('listening and playthrough export privacy', () => {
+  it('removes personal album ratings, notes, tags, rules and game journals', () => {
+    const copy = createTestDb()
+    copy.exec(`INSERT INTO media_item(id,media_type,title) VALUES(1,'game','Game');
+      INSERT INTO game_playthrough(id,media_id,title,kind,state) VALUES(1,1,'Private run','first','active');
+      INSERT INTO game_playthrough_note(run_id,entry_date,body) VALUES(1,'2026-09-23','Private objective');
+      INSERT INTO music_artist(id,name,dir_path) VALUES(1,'Artist','Artist');
+      INSERT INTO music_album(id,artist_id,title,dir_path) VALUES(1,1,'Album','Artist/Album');
+      INSERT INTO music_album_personal(album_id,rating,review) VALUES(1,9,'Private review');
+      INSERT INTO music_listen(album_id,listened_on,notes) VALUES(1,'2026-09-23','Private listen');
+      INSERT INTO music_smart_playlist(title,rules_json) VALUES('Private rules','{}');`)
+    sanitizeDb(copy, { includeProgress: true, includeRatings: true })
+    for (const table of ['game_playthrough', 'game_playthrough_note', 'music_album_personal', 'music_listen', 'music_smart_playlist']) {
+      expect(copy.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get()).toEqual({ n: 0 })
+    }
+    expect(copy.pragma('foreign_key_check')).toEqual([])
+    copy.close()
+  })
+})

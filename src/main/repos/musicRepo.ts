@@ -28,17 +28,17 @@ import {
 // Every track is returned with its album/artist names + album cover joined in,
 // so the renderer can build a player Track with zero extra queries. Split so
 // stats queries can reuse the column list with their own FROM clause.
-const TRACK_COLS = `t.id, t.album_id, t.artist_id, t.file_path, t.title, t.track_no, t.disc_no,
+export const TRACK_COLS = `t.id, t.album_id, t.artist_id, t.file_path, t.title, t.track_no, t.disc_no,
          t.duration, t.tag_artist, t.liked_at, t.play_count, t.last_played_at,
          al.title AS album_title, al.cover_path AS cover_path, ar.name AS artist_name`
-const TRACK_JOINS = `
+export const TRACK_JOINS = `
   FROM music_track t
   JOIN music_album al ON al.id = t.album_id
   JOIN music_artist ar ON ar.id = t.artist_id`
 const TRACK_SELECT = `SELECT ${TRACK_COLS} ${TRACK_JOINS}`
 export const MAX_PLAYBACK_QUEUE_TRACKS = 2_000
 
-function mapTrack(r: Record<string, unknown>): MusicTrack {
+export function mapTrack(r: Record<string, unknown>): MusicTrack {
   return {
     id: r.id as number,
     albumId: r.album_id as number,
@@ -929,4 +929,10 @@ export function statsDetail(days: number | null): MusicStatsDetail {
       deepestArtists
     }
   }
+}
+
+// Explicit associated-work playback still returns ordinary music tracks.
+export function soundtrackTracks(kind: 'album' | 'track', id: number): MusicTrack[] {
+  return (getSqlite().prepare(`${TRACK_SELECT} WHERE ${kind === 'album' ? 't.album_id' : 't.id'}=?
+    ORDER BY COALESCE(t.disc_no,1),COALESCE(t.track_no,9999),t.id LIMIT ?`).all(id, MAX_PLAYBACK_QUEUE_TRACKS) as Record<string, unknown>[]).map(mapTrack)
 }

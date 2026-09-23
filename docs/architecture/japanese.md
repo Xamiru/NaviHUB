@@ -11,6 +11,29 @@
 
 ---
 
+## Saved VN text captures
+
+`/visual-novels/:id/study` saves paste input or UTF-8 text logs in `vn_text_capture`
+(maximum 200,000 characters; file input also caps at 800 KB). Captures retain their
+VN, date and optional reading entry. Normalized text fingerprints reject duplicate
+captures per VN. Raw text stays readable without study resources. Analysis reuses
+the offline tokenizer, shared `AnalysisView`, dictionary/mining panel and source-aware
+review-card creation. Word selection retains its paragraph and VN; analysis is an
+explicit snapshot and can be rerun after card changes.
+
+`seriesText.seriesCorpus` selects saved captures for VNs. Coverage and preparation
+decks therefore use the existing study pipeline. Synchronous tokenizer chunks are
+bounded at 4,000 characters. Captured character counts and comprehension describe
+only the saved sample, not the entire game or demonstrated mastery. Coverage uses
+review cards plus the configured frequency baseline, which the UI identifies.
+
+Editing or deleting a capture invalidates `jp_coverage` and `jp_coverage_word` in the
+same transaction. Fingerprints are checked after tokenization and again before a
+preparation deck writes, preventing a concurrent edit from restoring stale coverage.
+Existing mined cards survive deletion. Captures are personal and wiped on export.
+No live game hook, remote study service or OCR is needed for this workflow.
+
+
 ## Dictionary import resource boundaries
 
 Remote Yomitan archives stream to unique temporary files and are deleted after success or failure.

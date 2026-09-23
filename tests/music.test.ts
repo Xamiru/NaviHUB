@@ -275,6 +275,20 @@ describe('startScan', () => {
     expect(db.prepare('SELECT spotify_id FROM music_album').get()).toEqual({ spotify_id: 'album-source' })
   })
 
+  it('preserves album journals and personal tags across a same-path rescan', async () => {
+    makeFiles(['Artist/Album/song.mp3'])
+    await startScan(fakeReader())
+    const track = db.prepare('SELECT id,album_id FROM music_track').get() as { id: number; album_id: number }
+    db.prepare("INSERT INTO music_album_personal(album_id,rating,shelf,review,tags_json) VALUES(?,9,'revisit','Private',?)").run(track.album_id, JSON.stringify(['study']))
+    db.prepare("INSERT INTO music_track_personal(track_id,standout,tags_json) VALUES(?,1,?)").run(track.id, JSON.stringify(['calm']))
+    db.prepare("INSERT INTO music_listen(album_id,listened_on,notes) VALUES(?,'2026-09-23','My impression')").run(track.album_id)
+    await startScan(fakeReader())
+    expect(db.prepare('SELECT rating,shelf,review FROM music_album_personal').get()).toEqual({ rating: 9, shelf: 'revisit', review: 'Private' })
+    expect(db.prepare('SELECT standout FROM music_track_personal').get()).toEqual({ standout: 1 })
+    expect(db.prepare('SELECT notes FROM music_listen').get()).toEqual({ notes: 'My impression' })
+    expect(db.pragma('foreign_key_check')).toEqual([])
+  })
+
   it('prunes vanished tracks, empty albums/artists, and cascades playlist rows', async () => {
     makeFiles(['A/One/01 a.mp3', 'B/Two/01 b.mp3'])
     await startScan(fakeReader())

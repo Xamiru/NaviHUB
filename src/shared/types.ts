@@ -5035,3 +5035,148 @@ export type MusicQueueInput =
   | { kind: 'playlist'; input: SpotifyDownloadInput }
   | { kind: 'url'; input: MusicDownloadInput }
 export type MusicSourceReference = { sourceKind: 'playlistItem' | 'entityTrack'; trackId: number }
+
+// Personal reading progress never substitutes for a VN's tracked minutes.
+export interface VnReadingNodeInput {
+  parentId: number | null
+  kind: 'route' | 'chapter' | 'ending'
+  title: string
+  status: 'planned' | 'reading' | 'completed' | 'skipped'
+  rating: number | null
+  notes: string
+  completedOn: string | null
+}
+export interface VnReadingNode extends VnReadingNodeInput { id: number; sortOrder: number }
+export interface VnReadingResume { nodeId: number | null; saveSlot: string; recap: string }
+export interface VnNoteInput {
+  nodeId: number | null
+  entryDate: string
+  category: 'reaction' | 'theory' | 'question' | 'quote' | 'recap'
+  body: string
+  imageData: string | null
+}
+export interface VnNote extends VnNoteInput { id: number }
+export interface VnReadingOverview {
+  title: string
+  generalNotes: string | null
+  nodes: VnReadingNode[]
+  resume: VnReadingResume
+}
+export interface VnNotePage { notes: VnNote[]; total: number }
+
+export interface WrestlingJourneyInput { title: string; description: string }
+export interface WrestlingJourneySummary extends WrestlingJourneyInput { id: number; steps: number; watched: number }
+export interface WrestlingJourneyStepInput {
+  kind: 'event' | 'match' | 'segment'
+  linkedId: number | null
+  title: string
+  stepDate: string | null
+  notes: string
+  sourceUrl: string
+}
+export interface WrestlingJourneyViewing { id: number; watchedOn: string; notes: string }
+export interface WrestlingJourneyStep extends WrestlingJourneyStepInput {
+  id: number
+  hasLocalFile: boolean
+  filePath: string | null
+  videos: { id: number; title: string }[]
+  viewings: WrestlingJourneyViewing[]
+}
+export interface WrestlingJourneyDetail extends WrestlingJourneySummary { entries: WrestlingJourneyStep[] }
+export interface WrestlingJourneyTemplate { key: string; title: string; description: string; entries: WrestlingJourneyStepInput[] }
+export interface WrestlingJourneyTarget { id: number; title: string; date: string | null }
+
+export interface VnCaptureInput { title: string; body: string; nodeId: number | null; capturedOn: string }
+export interface VnCaptureSummary { id: number; title: string; nodeId: number | null; capturedOn: string; characters: number }
+export interface VnCapture extends VnCaptureInput { id: number }
+
+export interface VnDiscoverFilter { query: string; language: string; platform: string; length: number | null; minRating: number | null; tags: string[]; page: number }
+export interface VnDiscoverResult { id: number; title: string; released: string | null; rating: number | null; minutes: number | null; coverUrl: string | null; mediaId: number | null }
+export interface VnDiscoverPage { results: VnDiscoverResult[]; more: boolean }
+export interface VnTagResult { id: string; name: string }
+export interface VnRelease { id: string; title: string; released: string | null; languages: { lang: string; mtl: boolean }[]; platforms: string[]; publishers: string[]; official: boolean; patch: boolean; completeness: string | null }
+export interface VnEditionDetail { title: string; sourceId: number | null; languages: string[]; platforms: string[]; fetchedAt: string | null; releases: VnRelease[]; selected: VnRelease | null; notes: string }
+
+export type SoundtrackOwner = { kind: 'media' | 'wrestler' | 'album' | 'track'; id: number }
+export interface SoundtrackTarget extends SoundtrackOwner { title: string; detail: string; mediaType: MediaType | null; albumId: number | null }
+export interface SoundtrackInput { music: { kind: 'album' | 'track'; id: number }; target: { kind: 'media' | 'wrestler'; id: number }; label: string; notes: string }
+export interface SoundtrackLink extends SoundtrackInput { id: number; musicTitle: string; albumId: number; targetTitle: string; mediaType: MediaType | null }
+
+// ---- Personal game runs and listening collections ----
+export type GameRunKind = 'first' | 'replay' | 'newGamePlus'
+export type GameRunState = 'active' | 'paused' | 'completed'
+export interface GameRunInput {
+  title: string
+  kind: GameRunKind
+  state: GameRunState
+  difficulty: string
+  build: string
+  objective: string
+  stoppedAt: string
+  notes: string
+}
+export interface GameRun extends GameRunInput {
+  id: number
+  mediaId: number
+  createdAt: string
+  updatedAt: string
+  sessionCount: number
+  totalSeconds: number
+}
+export interface GameRunNoteInput { entryDate: string; body: string }
+export interface GameRunNote extends GameRunNoteInput { id: number; runId: number }
+export interface GameRunSession {
+  id: number
+  startedAt: string
+  endedAt: string
+  duration: number
+  runId: number | null
+  runTitle: string | null
+}
+export interface GameRunHistory {
+  sessions: GameRunSession[]
+  notes: GameRunNote[]
+  sessionTotal: number
+  noteTotal: number
+}
+export type MusicAlbumShelf = 'want' | 'exploring' | 'revisit'
+export interface MusicAlbumPersonalInput {
+  rating: number | null
+  shelf: MusicAlbumShelf | null
+  review: string
+  tags: string[]
+}
+export interface MusicTrackPersonal { trackId: number; standout: boolean; tags: string[] }
+export interface MusicAlbumPersonal extends MusicAlbumPersonalInput {
+  albumId: number
+  tracks: MusicTrackPersonal[]
+}
+export interface MusicListenInput { listenedOn: string; rating: number | null; notes: string }
+export interface MusicListen extends MusicListenInput { id: number; albumId: number }
+export interface MusicJournalAlbum extends MusicAlbumSummary, MusicAlbumPersonalInput {
+  listenCount: number
+  lastListenedOn: string | null
+}
+export interface MusicJournalFilter {
+  search: string
+  shelf: MusicAlbumShelf | 'all' | 'rated'
+  page: number
+}
+export interface MusicSmartRules {
+  liked: 'any' | 'liked' | 'unliked'
+  playState: 'any' | 'unplayed' | 'played'
+  minPlays: number | null
+  maxPlays: number | null
+  notPlayedDays: number | null
+  tags: string[]
+  tagMode: 'all' | 'any'
+  artist: string
+  soundtrack: 'any' | 'linked' | 'unlinked'
+  minAlbumRating: number | null
+  shelf: MusicAlbumShelf | null
+  order: 'title' | 'leastPlayed' | 'recent' | 'oldestPlayed'
+  maxTracks: number
+}
+export interface MusicSmartInput { title: string; description: string; rules: MusicSmartRules }
+export interface MusicSmartPlaylist extends MusicSmartInput { id: number }
+export interface MusicSmartPreview { items: MusicTrack[]; total: number; matching: number }

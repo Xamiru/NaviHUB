@@ -1,3 +1,5 @@
+import GamePlaythroughSection, { GameResumeCard } from '../components/GamePlaythroughSection'
+import SoundtrackSection from '../components/SoundtrackSection'
 import { useEffect, useState } from 'react'
 import Pager from '../components/Pager'
 import StatTile, { StatInline } from '../components/StatTile'
@@ -286,6 +288,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       <TabPanel tabsId="media-detail" value={tab}>
         {tab === 'overview' && (
           <>
+          {m.mediaType === 'game' && <GameResumeCard key={m.id} mediaId={m.id} onOpen={() => setTab('media')} />}
           {m.synopsis && (
             <Section className="mb-6" title="Synopsis">
               <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -293,6 +296,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               </p>
             </Section>
           )}
+          {m.mediaType === 'visual_novel' && <Link className="btn mb-6 inline-flex" to={`/visual-novels/${m.id}/reading`}>Reading plan and notebook</Link>}
+          {m.mediaType === 'visual_novel' && <Link className="btn mb-6 ml-2 inline-flex" to={`/visual-novels/${m.id}/editions`}>Editions</Link>}
           {m.notes && (
             <Section className="mb-6" title="My notes">
               <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{m.notes}</p>
@@ -300,6 +305,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           )}
           <CompaniesSection cfg={cfg} m={m} onChange={refresh} />
           <RelatedSection cfg={cfg} m={m} />
+          <SoundtrackSection key={m.id} owner={{ kind: 'media', id: m.id }} />
           </>
         )}
 
@@ -323,7 +329,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
         {tab === 'media' && (
           <>
           {cfg.key === 'tv' && <TvSeasonsSection m={m} />}
+          {m.mediaType === 'visual_novel' && <Link className="btn mb-4 inline-flex" to={`/visual-novels/${m.id}/reading`}>Open reading workspace</Link>}
           {cfg.hasGameLaunch && <GameLaunchSection m={m} />}
+          {m.mediaType === 'game' && <GamePlaythroughSection key={m.id} mediaId={m.id} />}
           {cfg.hasPlaytimes && <PlaytimeSection m={m} onChange={refresh} />}
           {cfg.hasLocalReader && <MangaChaptersSection m={m} />}
           {/* Comprehension coverage is a Japanese-learning feature — manga only,

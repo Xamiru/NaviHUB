@@ -1,4 +1,6 @@
-import { Fragment, useEffect, useState } from 'react'
+import MusicAlbumJournal from '../components/MusicAlbumJournal'
+import SoundtrackSection from '../components/SoundtrackSection'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
@@ -35,10 +37,14 @@ export default function MusicAlbumPage() {
     setSearchParams(next, { replace: true })
   }
 
-  const { data: album, isLoading } = useQuery({
+  const { data: album, isLoading, isError, refetch } = useQuery({
     queryKey: qk.music.album(albumId),
     queryFn: () => api.music.album(albumId)
   })
+
+  const personal = useQuery({ queryKey: qk.music.personalAlbum(albumId), queryFn: () => api.musicJournal.album(albumId) })
+
+  const standoutIds = useMemo(() => new Set(personal.data?.tracks.filter((t) => t.standout).map((t) => t.trackId)), [personal.data])
 
   // A folder dumped as one "album" can hold thousands of tracks; mounting a
   // row per track froze the page, so reveal in batches as the user scrolls
@@ -49,6 +55,7 @@ export default function MusicAlbumPage() {
   const { visible, sentinelRef, hasMore } = useIncrementalList(tracks)
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (isError) return <PageStatus>Could not load album. <button className="btn" onClick={() => void refetch()}>Retry album</button></PageStatus>
   if (!album) return <PageStatus>Album not found.</PageStatus>
   const totalSeconds = tracks.reduce((sum, t) => sum + (t.duration ?? 0), 0)
   const multiDisc = new Set(tracks.map((t) => t.discNo ?? 1)).size > 1
@@ -129,6 +136,8 @@ export default function MusicAlbumPage() {
         ]}
       />
 
+      <MusicAlbumJournal key={albumId} albumId={albumId} />
+      <SoundtrackSection key={albumId} owner={{ kind: 'album', id: albumId }} tracks={tracks} />
       <div className="max-w-5xl">
         {visible.map((t, i) => {
           const disc = t.discNo ?? 1
@@ -145,6 +154,7 @@ export default function MusicAlbumPage() {
                 track={t}
                 index={t.trackNo ?? i + 1}
                 showCover={false}
+                trailing={standoutIds.has(t.id) ? <span className="chip text-xs">Standout</span> : undefined}
                 onPlay={() => playFrom(i)}
               />
             </Fragment>

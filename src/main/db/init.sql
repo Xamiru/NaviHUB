@@ -1932,3 +1932,145 @@ CREATE TABLE IF NOT EXISTS music_audio_source (
   local_track_id INTEGER NOT NULL REFERENCES music_track(id) ON DELETE CASCADE,
   PRIMARY KEY(source_url,local_track_id)
 );
+
+-- Personal VN reading state is independent of canonical VNDB metadata/playtime.
+CREATE TABLE IF NOT EXISTS vn_reading_node (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  parent_id INTEGER REFERENCES vn_reading_node(id) ON DELETE SET NULL,
+  kind TEXT NOT NULL CHECK(kind IN ('route','chapter','ending')),
+  title TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'planned' CHECK(status IN ('planned','reading','completed','skipped')),
+  rating REAL CHECK(rating BETWEEN 0 AND 10),
+  notes TEXT NOT NULL DEFAULT '',
+  completed_on TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_vn_reading_media ON vn_reading_node(media_id, sort_order);
+CREATE TABLE IF NOT EXISTS vn_reading_resume (
+  media_id INTEGER PRIMARY KEY REFERENCES media_item(id) ON DELETE CASCADE,
+  node_id INTEGER REFERENCES vn_reading_node(id) ON DELETE SET NULL,
+  save_slot TEXT NOT NULL DEFAULT '',
+  recap TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS vn_notebook (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  node_id INTEGER REFERENCES vn_reading_node(id) ON DELETE SET NULL,
+  entry_date TEXT NOT NULL,
+  category TEXT NOT NULL CHECK(category IN ('reaction','theory','question','quote','recap')),
+  body TEXT NOT NULL,
+  image_data TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_vn_notebook_media ON vn_notebook(media_id, entry_date);
+
+-- Personal wrestling journeys retain their labels when canonical sources disappear.
+CREATE TABLE IF NOT EXISTS wrestling_journey (
+ id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', template_key TEXT
+);
+CREATE TABLE IF NOT EXISTS wrestling_journey_step (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ journey_id INTEGER NOT NULL REFERENCES wrestling_journey(id) ON DELETE CASCADE,
+ kind TEXT NOT NULL CHECK(kind IN ('event','match','segment')),
+ event_id INTEGER REFERENCES wrestling_event(id) ON DELETE SET NULL,
+ match_id INTEGER REFERENCES wrestling_match(id) ON DELETE SET NULL,
+ title TEXT NOT NULL, step_date TEXT, notes TEXT NOT NULL DEFAULT '', source_url TEXT NOT NULL DEFAULT '',
+ file_path TEXT, sort_order INTEGER NOT NULL DEFAULT 0,
+ CHECK(NOT(event_id IS NOT NULL AND match_id IS NOT NULL))
+);
+CREATE INDEX IF NOT EXISTS idx_journey_step ON wrestling_journey_step(journey_id,sort_order);
+CREATE TABLE IF NOT EXISTS wrestling_journey_viewing (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ step_id INTEGER NOT NULL REFERENCES wrestling_journey_step(id) ON DELETE CASCADE,
+ watched_on TEXT NOT NULL, notes TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_journey_viewing ON wrestling_journey_viewing(step_id);
+
+CREATE TABLE IF NOT EXISTS vn_text_capture (
+ id INTEGER PRIMARY KEY AUTOINCREMENT,
+ media_id INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+ node_id INTEGER REFERENCES vn_reading_node(id) ON DELETE SET NULL,
+ title TEXT NOT NULL, body TEXT NOT NULL CHECK(length(body) <= 200000), fingerprint TEXT NOT NULL,
+ captured_on TEXT NOT NULL, UNIQUE(media_id,fingerprint)
+);
+CREATE INDEX IF NOT EXISTS idx_vn_capture_media ON vn_text_capture(media_id,id);
+
+-- Canonical release cache and an independent personal edition snapshot.
+CREATE TABLE IF NOT EXISTS vn_release_cache (
+  media_id INTEGER PRIMARY KEY REFERENCES media_item(id) ON DELETE CASCADE,
+  fetched_at TEXT NOT NULL,
+  releases_json TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS vn_edition (
+  media_id INTEGER PRIMARY KEY REFERENCES media_item(id) ON DELETE CASCADE,
+  release_id TEXT,
+  snapshot_json TEXT,
+  notes TEXT NOT NULL DEFAULT ''
+);
+
+-- Personal links; exactly one music source and one associated work/wrestler.
+CREATE TABLE IF NOT EXISTS soundtrack_link (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  album_id INTEGER REFERENCES music_album(id) ON DELETE CASCADE,
+  track_id INTEGER REFERENCES music_track(id) ON DELETE CASCADE,
+  media_id INTEGER REFERENCES media_item(id) ON DELETE CASCADE,
+  wrestler_id INTEGER REFERENCES wrestling_wrestler(id) ON DELETE CASCADE,
+  label TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  CHECK ((album_id IS NOT NULL) + (track_id IS NOT NULL) = 1),
+  CHECK ((media_id IS NOT NULL) + (wrestler_id IS NOT NULL) = 1)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_soundtrack_identity ON soundtrack_link(COALESCE(album_id,0),COALESCE(track_id,0),COALESCE(media_id,0),COALESCE(wrestler_id,0));
+CREATE INDEX IF NOT EXISTS idx_soundtrack_media ON soundtrack_link(media_id);
+CREATE INDEX IF NOT EXISTS idx_soundtrack_wrestler ON soundtrack_link(wrestler_id);
+CREATE INDEX IF NOT EXISTS idx_soundtrack_album ON soundtrack_link(album_id);
+CREATE INDEX IF NOT EXISTS idx_soundtrack_track ON soundtrack_link(track_id);
+
+-- Personal playthroughs and listening collections. Existing sessions remain untouched.
+CREATE TABLE IF NOT EXISTS game_playthrough (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  media_id INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK(kind IN ('first','replay','newGamePlus')),
+  state TEXT NOT NULL CHECK(state IN ('active','paused','completed')),
+  difficulty TEXT NOT NULL DEFAULT '', build TEXT NOT NULL DEFAULT '',
+  objective TEXT NOT NULL DEFAULT '', stopped_at TEXT NOT NULL DEFAULT '',
+  notes TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_game_playthrough_media ON game_playthrough(media_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_game_playthrough_active ON game_playthrough(media_id) WHERE state='active';
+CREATE TABLE IF NOT EXISTS game_playthrough_session (
+  session_id INTEGER PRIMARY KEY REFERENCES game_session(id) ON DELETE CASCADE,
+  run_id INTEGER NOT NULL REFERENCES game_playthrough(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_game_playthrough_session_run ON game_playthrough_session(run_id);
+CREATE TABLE IF NOT EXISTS game_playthrough_note (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  run_id INTEGER NOT NULL REFERENCES game_playthrough(id) ON DELETE CASCADE,
+  entry_date TEXT NOT NULL, body TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_game_playthrough_note_run ON game_playthrough_note(run_id,entry_date);
+CREATE TABLE IF NOT EXISTS music_album_personal (
+  album_id INTEGER PRIMARY KEY REFERENCES music_album(id) ON DELETE CASCADE,
+  rating REAL CHECK(rating BETWEEN 0 AND 10),
+  shelf TEXT CHECK(shelf IN ('want','exploring','revisit')),
+  review TEXT NOT NULL DEFAULT '', tags_json TEXT NOT NULL DEFAULT '[]'
+);
+CREATE TABLE IF NOT EXISTS music_track_personal (
+  track_id INTEGER PRIMARY KEY REFERENCES music_track(id) ON DELETE CASCADE,
+  standout INTEGER NOT NULL DEFAULT 0 CHECK(standout IN (0,1)),
+  tags_json TEXT NOT NULL DEFAULT '[]'
+);
+CREATE TABLE IF NOT EXISTS music_listen (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  album_id INTEGER NOT NULL REFERENCES music_album(id) ON DELETE CASCADE,
+  listened_on TEXT NOT NULL, rating REAL CHECK(rating BETWEEN 0 AND 10),
+  notes TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_music_listen_album ON music_listen(album_id,listened_on);
+CREATE TABLE IF NOT EXISTS music_smart_playlist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', rules_json TEXT NOT NULL
+);

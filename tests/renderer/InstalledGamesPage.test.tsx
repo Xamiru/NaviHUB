@@ -89,10 +89,12 @@ describe('Installed games launcher', () => {
       expect(image).toHaveAttribute('data-thumb-width', '480')
     }
     const featured = screen.getByRole('heading', { name: 'Continue playing' }).closest('section')!
-    expect(within(featured).getByRole('img', { name: 'Elden Ring' })).toHaveAttribute(
-      'data-thumb-width',
-      'original'
-    )
+    await waitFor(() => {
+      expect(within(featured).getByRole('img', { name: 'Elden Ring' })).toHaveAttribute(
+        'data-thumb-width',
+        'original'
+      )
+    })
   })
 
   it('uses cached thumbnails for a 50-game grid', async () => {

@@ -28,6 +28,7 @@ const MEDIA_DRAWER_ITEMS: ArchiveNavItem[] = [
     label: cfg.sidebarLabel ?? cfg.plural,
     visibilityKey: cfg.key
   })),
+  { to: '/guides', label: 'Cross-media guides' },
   { to: '/music', label: 'Music', visibilityKey: 'music' },
   { to: '/wrestling', label: 'Wrestling', visibilityKey: 'wrestling' },
   { to: '/football', label: 'Football', visibilityKey: 'football' },
@@ -183,7 +184,7 @@ function mediaContext(pathname: string): ArchiveContext | null {
     return {
       title: 'Visual novels',
       descriptor: 'Archive directory',
-      items: [{ to: '/visual-novels', label: 'Visual Novels' }]
+      items: [{ to: '/visual-novels', label: 'Visual Novels' }, { to: '/visual-novels/discover', label: 'Discover' }, { to: '/guides', label: 'Guides' }]
     }
   }
   if (pathname.startsWith('/games')) {
@@ -315,6 +316,7 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
       items: [
         { to: '/wrestling', label: 'Chronology' },
         { to: '/wrestling/rated', label: 'Rated' },
+        { to: '/wrestling/journeys', label: 'Journeys' },
         { to: '/wrestling/collection', label: 'Collection' },
         ...WRESTLING_PROMOTIONS.slice(0, 4).map((promotion) => ({
           to: `/wrestling/p/${promotion.id}`,
@@ -329,6 +331,8 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
       descriptor: 'Sonic archive',
       items: [
         { to: '/music', label: 'Library' },
+        { to: '/music/journal', label: 'Journal' },
+        { to: '/music/smart', label: 'Smart Playlists' },
         { to: '/music/downloads', label: 'Downloads' },
         { to: '/music/liked', label: 'Liked' },
         { to: '/music/stats', label: 'Listening Stats' },
@@ -353,6 +357,18 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
     pathname.startsWith('/settings')
   ) {
     return { title: 'System', descriptor: 'Tasks and settings', items: SYSTEM_DRAWER_ITEMS }
+  }
+
+  if (pathname === '/guides' || pathname.startsWith('/guides/')) {
+    return {
+      title: 'Cross-media guides',
+      descriptor: 'Reading and viewing orders',
+      items: [
+        { to: '/guides', label: 'All guides' },
+        { to: '/visual-novels', label: 'Visual Novels' },
+        { to: '/games/franchises', label: 'Game franchises' }
+      ]
+    }
   }
 
   const media = mediaContext(pathname)

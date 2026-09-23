@@ -2,7 +2,7 @@ import { setImmediate as yieldToLoop } from 'timers/promises'
 import type Database from 'better-sqlite3'
 import { getSqlite } from './db/connection'
 import { getDictDb } from './dict/dictDb'
-import { countSeriesWords, isLearnableWord } from './seriesText'
+import { countSeriesWords, isLearnableWord, captureStamp } from './seriesText'
 import * as tasks from './tasks'
 import { flattenGlossary } from '@shared/dictContent'
 import * as japaneseRepo from './repos/japaneseRepo'
@@ -187,7 +187,7 @@ export function writePrepCourse(
     title: `Reading prep: ${seriesTitle}`,
     description:
       `The ${words.length} most frequent words in "${seriesTitle}" that aren't in your decks yet — ` +
-      'auto-built from its pages. Mark a lesson learned to start reviewing, then go read.',
+      'auto-built from its available text. Mark a lesson learned to start reviewing, then go read.',
     words: words.map((w) => ({
       word: w.word,
       reading: w.reading,
@@ -241,6 +241,7 @@ async function buildPrepDeckInner(
     }
 
     // Phase 1: read + tokenize everything, counting dictionary-form frequencies.
+    const capturesBefore = captureStamp(mediaId)
     const scan = await countSeriesWords(mediaId, (done, total) => {
       status.done = done
       status.total = total
@@ -294,6 +295,8 @@ async function buildPrepDeckInner(
 
     // Phase 3: write the course. The scan we just paid for is also exactly what
     // the comprehension score needs, so snapshot it on the way out.
+    if (capturesBefore !== captureStamp(mediaId)) throw new Error('Captured text changed during deck preparation. Build it again.')
+    if (!db.prepare('SELECT id FROM media_item WHERE id=?').get(mediaId)) throw new Error('The source title was removed during deck preparation')
     status.phase = 'writing'
     const courseId = writePrepCourse(mediaId, media.title, words)
     try {

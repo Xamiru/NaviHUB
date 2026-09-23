@@ -24,6 +24,7 @@ const tables = [
 // library graph is the point of the bundle. Each entry is a deliberate decision.
 const CANONICAL_SURVIVORS = new Set([
   // The cross-linking graph — the app's defining feature.
+  'vn_release_cache', // Public VNDB release metadata; personal edition lives separately.
   'person',
   'character',
   'company',

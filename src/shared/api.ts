@@ -1,3 +1,9 @@
+import type { GameRun, GameRunInput, GameRunHistory, GameRunNoteInput, MusicAlbumPersonal, MusicAlbumPersonalInput, MusicTrackPersonal, MusicListenInput, MusicListen, MusicJournalFilter, MusicJournalAlbum, MusicSmartInput, MusicSmartPlaylist, MusicSmartRules, MusicSmartPreview } from './types'
+import type { SoundtrackOwner, SoundtrackTarget, SoundtrackInput, SoundtrackLink } from './types'
+import type { VnDiscoverFilter, VnDiscoverPage, VnTagResult, VnEditionDetail } from './types'
+import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
+import type { WrestlingJourneySummary, WrestlingJourneyInput, WrestlingJourneyDetail, WrestlingJourneyStepInput, WrestlingJourneyTarget } from './types'
+import type { VnReadingOverview, VnReadingNodeInput, VnReadingResume, VnNoteInput, VnNotePage } from './types'
 // The typed surface exposed on window.api. Both preload (which implements the
 // bridge) and the renderer (which consumes it) import this so they never drift.
 
@@ -330,6 +336,79 @@ import type {
 } from './types'
 
 export interface NaviApi {
+  playthroughs: {
+    list(mediaId: number): Promise<GameRun[]>
+    save(mediaId: number, id: number | null, input: GameRunInput): Promise<number>
+    remove(mediaId: number, id: number): Promise<void>
+    history(mediaId: number, runId: number | null, page: number): Promise<GameRunHistory>
+    assignSession(mediaId: number, sessionId: number, runId: number | null): Promise<void>
+    saveNote(mediaId: number, runId: number, id: number | null, input: GameRunNoteInput): Promise<number>
+    removeNote(mediaId: number, runId: number, id: number): Promise<void>
+  }
+  musicJournal: {
+    album(id: number): Promise<MusicAlbumPersonal>
+    saveAlbum(id: number, input: MusicAlbumPersonalInput): Promise<void>
+    track(id: number): Promise<MusicTrackPersonal>
+    saveTrack(input: MusicTrackPersonal): Promise<void>
+    listens(albumId: number, page: number): Promise<{ items: MusicListen[]; total: number }>
+    saveListen(albumId: number, id: number | null, input: MusicListenInput): Promise<number>
+    removeListen(albumId: number, id: number): Promise<void>
+    tags(): Promise<string[]>
+    list(input: MusicJournalFilter): Promise<{ items: MusicJournalAlbum[]; total: number }>
+  }
+  musicSmart: {
+    list(): Promise<MusicSmartPlaylist[]>
+    save(id: number | null, input: MusicSmartInput): Promise<number>
+    remove(id: number): Promise<void>
+    preview(rules: MusicSmartRules, page: number): Promise<MusicSmartPreview>
+    queue(id: number): Promise<MusicTrack[]>
+  }
+  soundtracks: {
+    list(owner: SoundtrackOwner): Promise<SoundtrackLink[]>
+    search(kind: SoundtrackOwner['kind'], query: string): Promise<SoundtrackTarget[]>
+    save(id: number | null, input: SoundtrackInput): Promise<number>
+    remove(id: number): Promise<void>
+    tracks(id: number): Promise<MusicTrack[]>
+  }
+  vnExplore: {
+    discover(input: VnDiscoverFilter): Promise<VnDiscoverPage>
+    tags(query: string): Promise<VnTagResult[]>
+    edition(mediaId: number): Promise<VnEditionDetail>
+    refreshReleases(mediaId: number): Promise<void>
+    saveEdition(mediaId: number, releaseId: string | null, notes: string): Promise<void>
+  }
+  vnCapture: {
+    list(mediaId: number): Promise<VnCaptureSummary[]>
+    get(mediaId: number, id: number): Promise<VnCapture>
+    save(mediaId: number, id: number | null, input: VnCaptureInput): Promise<number>
+    remove(mediaId: number, id: number): Promise<void>
+  }
+  journeys: {
+    list(): Promise<WrestlingJourneySummary[]>
+    detail(id: number): Promise<WrestlingJourneyDetail>
+    save(id: number | null, input: WrestlingJourneyInput): Promise<number>
+    remove(id: number): Promise<void>
+    saveStep(journeyId: number, id: number | null, input: WrestlingJourneyStepInput): Promise<number>
+    removeStep(journeyId: number, id: number): Promise<void>
+    reorder(journeyId: number, ids: number[]): Promise<void>
+    logViewing(journeyId: number, stepId: number, watchedOn: string, notes: string): Promise<void>
+    removeViewing(journeyId: number, viewingId: number): Promise<void>
+    instantiate(key: string): Promise<number>
+    targets(kind: 'event' | 'match', search: string): Promise<WrestlingJourneyTarget[]>
+    pickFile(journeyId: number, stepId: number): Promise<void>
+    detachFile(journeyId: number, stepId: number): Promise<void>
+    openFile(journeyId: number, stepId: number): Promise<void>
+  }
+  vnReading: {
+    overview(mediaId: number): Promise<VnReadingOverview>
+    saveNode(mediaId: number, id: number | null, input: VnReadingNodeInput): Promise<number>
+    removeNode(mediaId: number, id: number): Promise<void>
+    reorder(mediaId: number, ids: number[]): Promise<void>
+    saveResume(mediaId: number, input: VnReadingResume): Promise<void>
+    notes(mediaId: number, page: number): Promise<VnNotePage>
+    saveNote(mediaId: number, id: number | null, input: VnNoteInput): Promise<number>
+    removeNote(mediaId: number, id: number): Promise<void>
+  }
   media: {
     list(filter: MediaListFilter): Promise<MediaItem[]>
     listPage(request: MediaListPageRequest): Promise<MediaListPage>

@@ -11,6 +11,49 @@
 
 ---
 
+## VN reading, discovery and editions
+
+`/visual-novels/:id/reading` owns the personal reading workspace. `vnReadingRepo`
+validates VN ownership, route parents and cycles, completion dates, ratings and full
+reorders. `vn_reading_node`, `vn_reading_resume` and `vn_notebook` are separate from
+canonical imports and overall media progress: completing an ending never invents
+minutes or completes the whole title. Removing a node clears its references while
+retaining child entries, notes and the resume recap. Dated notebook entries paginate
+in batches of 20; optional raster attachments are bounded inline data and disappear
+with personal rows during export.
+
+`/visual-novels/discover` issues explicit, paginated Kana searches through
+`vndbExplore`. Filters include title, language, platform, length category, minimum
+rating and up to ten selected tags. Tag filters include spoiler level 2. Nothing
+hides source descriptions or results. VNDB imports now authoritatively write tags,
+related VNs and language/platform metadata; partial refreshes return before these
+child writes. The standalone bulk-import script has no VNDB import implementation
+to mirror. Existing library titles need a full VNDB re-import for these fields.
+
+`/visual-novels/:id/editions` reads `vn_release_cache` offline. Refresh explicitly
+fetches every release page before replacing the cache; failures or the 3,000-release
+cap retain the last complete cache. Partial dates stay partial. `vn_edition` stores
+one personal release snapshot plus installation/translation/patch notes. A release
+missing from a later cache remains identifiable and editable. It is never silently
+replaced by a different release. Personal edition rows are wiped from exports;
+public release metadata may remain.
+
+## Cross-media guides
+
+`/guides` and `/guides/:id` render the small authored catalog in
+`src/shared/guides/`. The Science Adventure and When They Cry introductions have
+explicit scope limits and source references. Suggested order is editorial; release
+order sorts original-work years. Optional adaptations do not count toward core
+completion or block the next core entry.
+
+Guide and entry IDs are frozen. Matching reuses exact normalized franchise matching
+**within each media type**, so identically named anime and VNs cannot collide. No
+substring matching, chapter-to-omnibus inference or automatic progress writes occur.
+Library status uses each type's configured completed-status position. Existing game
+franchise routes, content and keys are unaffected. Guides use local covers when a
+library entry matches and require no network to read.
+
+
 ## The detail-page hero
 
 **Art-led headers (2026-08-15).** `MediaConfig.detailHero` picks the shape of the detail header, rendered by `components/MediaHero.tsx`:
@@ -54,7 +97,33 @@ The renderer never re-implements that order; `tests/mediaRepo.test.ts` pins it, 
 
 ## Game launcher, playtime tracking, HLTB lengths
 
-**Game launcher + playtime tracking + HLTB lengths (2026-08-06)** — games/VNs get launch-from-app (`cfg.hasGameLaunch`, GAME + VISUAL_NOVEL): a per-title executable in **`media_item.exe_path`** (init.sql + schema.ts + ensureColumn; absolute machine path — wiped in sanitizeSql.cjs next to local_dir, deliberately absent from mediaRepo's COL map AND from `MediaItem` — it rides `games:overview`, the local_dir posture) and sessions in **`game_session`** (media_id CASCADE, UTC started/ended, duration seconds; wiped on export). `src/main/gameLaunch.ts` is the mokuroRun singleton with THE one deliberate deviation: the child is spawned `detached:true` + `unref()` and is **never killed** — no cancel channel, and before-quit calls `finalizeActiveGameSession()` (records the in-flight session, must run BEFORE `closeDatabase()`) while the game keeps running. Sessions under `MIN_SESSION_SEC` (60) are discarded with a launcher-stub hint (a stub that spawns the real game and exits is the known v1 limitation — link the real exe); an app crash loses the in-flight session (accepted; documented in-module). **The fold** (`gameLaunchCore.ts:foldedProgress`, pure + exhaustively tested): `game_session` is the source of truth for tracked seconds, and `media_item.progress` moves by the **delta of the rounded cumulative** (`unitSecondsFor`: game=3600, vn=60), so short sessions never round away, hand-entered baselines survive, and a manual progress edit just becomes the new baseline — progress stays hours(game)/minutes(vn), which is why `rowMinutes`/Stats needed ZERO changes. Windows-only launch (`process.platform` guard throws a friendly error; overview carries `supported`); picker is main-side `games:pickExe` (manga.attachFolder posture). Renderer: `GameLaunchSection` (Playtime tab, executable controls and aggregate tracked time only; dated session history is absent) + `lib/useGameSession.ts` (useOcrRun port, 1 s poll so the elapsed chip ticks; settled toast invalidates games+media+checklist). Checklist gained detected source `gameSession` (`game-session` def, daily, NOT seeded; sessions counted by `date(started_at,'localtime')`). **HLTB is now the authoritative game length**: `hltb.ts:hltbLengthHours` = `max(1, round((main ?? allStyles)/60))` hours, written to `total_units` at BOTH sites — rawg.ts import (RAWG's crowd-average `playtime` is only the fallback) and `fetchForMedia` (game rows only, a miss never writes), so the existing detail-page Fetch/Refresh button fixes wack lengths on already-imported games; VN lengths stay VNDB minutes untouched; re-import-to-apply otherwise. `GAME.totalFieldLabel` is now 'Length (hours)'. Tests: gameLaunch (fold matrix), gameSessionRepo (atomic insert+fold, aggregate overview, CASCADE), hltb (both write sites, VN untouched, miss keeps value), rawgImport (+HLTB-beats-RAWG, URL-routed http mock), checklist + exportSanitize extended. Windows spawn/exit end-to-end is UNVERIFIED on this Linux box — needs a manual pass on the user's gaming PC after the next release.
+**Game launcher + playtime tracking + HLTB lengths (2026-08-06)** — games/VNs get launch-from-app (`cfg.hasGameLaunch`, GAME + VISUAL_NOVEL): a per-title executable in **`media_item.exe_path`** (init.sql + schema.ts + ensureColumn; absolute machine path — wiped in sanitizeSql.cjs next to local_dir, deliberately absent from mediaRepo's COL map AND from `MediaItem` — it rides `games:overview`, the local_dir posture) and sessions in **`game_session`** (media_id CASCADE, UTC started/ended, duration seconds; wiped on export). `src/main/gameLaunch.ts` is the mokuroRun singleton with THE one deliberate deviation: the child is spawned `detached:true` + `unref()` and is **never killed** — no cancel channel, and before-quit calls `finalizeActiveGameSession()` (records the in-flight session, must run BEFORE `closeDatabase()`) while the game keeps running. Sessions under `MIN_SESSION_SEC` (60) are discarded with a launcher-stub hint (a stub that spawns the real game and exits is the known v1 limitation — link the real exe); an app crash loses the in-flight session (accepted; documented in-module). **The fold** (`gameLaunchCore.ts:foldedProgress`, pure + exhaustively tested): `game_session` is the source of truth for tracked seconds, and `media_item.progress` moves by the **delta of the rounded cumulative** (`unitSecondsFor`: game=3600, vn=60), so short sessions never round away, hand-entered baselines survive, and a manual progress edit just becomes the new baseline — progress stays hours(game)/minutes(vn), which is why `rowMinutes`/Stats needed ZERO changes. Windows-only launch (`process.platform` guard throws a friendly error; overview carries `supported`); picker is main-side `games:pickExe` (manga.attachFolder posture). Renderer: `GameLaunchSection` (Playtime tab, executable controls and aggregate tracked time; Games adds dated history in the adjacent `GamePlaythroughSection`) + `lib/useGameSession.ts` (useOcrRun port, 1 s poll so the elapsed chip ticks; settled toast invalidates games+media+checklist). Checklist gained detected source `gameSession` (`game-session` def, daily, NOT seeded; sessions counted by `date(started_at,'localtime')`). **HLTB is now the authoritative game length**: `hltb.ts:hltbLengthHours` = `max(1, round((main ?? allStyles)/60))` hours, written to `total_units` at BOTH sites — rawg.ts import (RAWG's crowd-average `playtime` is only the fallback) and `fetchForMedia` (game rows only, a miss never writes), so the existing detail-page Fetch/Refresh button fixes wack lengths on already-imported games; VN lengths stay VNDB minutes untouched; re-import-to-apply otherwise. `GAME.totalFieldLabel` is now 'Length (hours)'. Tests: gameLaunch (fold matrix), gameSessionRepo (atomic insert+fold, aggregate overview, CASCADE), hltb (both write sites, VN untouched, miss keeps value), rawgImport (+HLTB-beats-RAWG, URL-routed http mock), checklist + exportSanitize extended. Windows spawn/exit end-to-end is UNVERIFIED on this Linux box — needs a manual pass on the user's gaming PC after the next release.
+
+## Game playthrough journal
+
+Games have a resume card on Overview and a playthrough workspace on Playtime.
+`playthroughRepo` owns first/replay/New Game Plus runs, one active run per game
+(partial unique index), difficulty/build notes, last stop, next objective and dated
+journal entries. Activating a run atomically pauses the previous active run;
+completing a run does not rewrite the title's library status or playtime.
+
+All tables are additive: `game_playthrough`, `game_playthrough_note` and
+`game_playthrough_session`. The last is a one-session-to-one-run association over
+existing `game_session` rows. The launcher captures the active run **before spawn**
+and passes that identity through exit/quit recording. Changing the active run while
+playing cannot redirect the session. A deleted run leaves the session unassigned;
+its absence never prevents playtime from being saved. The existing rounded
+cumulative progress fold, minimum session duration and detached process lifetime
+are unchanged. Older sessions remain unassigned until explicitly attached.
+
+Deleting a run cascades its notes and associations, never the underlying sessions.
+Journal entries are personal notes, not manufactured playtime. History pages return
+50 dated sessions and 50 notes with independent totals; the pager spans the larger
+collection. `playthroughs:*` crosses the usual IPC chain and its query keys live
+under `qk.games.all`, so the existing settled-session invalidation refreshes them.
+All three tables are wiped from shared exports. Regression coverage includes a
+legacy schema replay, real repository ownership/aggregation and launch/quit tests.
+GUI and real Windows launch verification still require the gaming PC.
 
 ## Achievements
 

@@ -2,6 +2,7 @@ import { spawn } from 'child_process'
 import { dirname } from 'path'
 import { existsSync } from 'fs'
 import { dialog } from 'electron'
+import * as playthroughRepo from './repos/playthroughRepo'
 import * as gameSessionRepo from './repos/gameSessionRepo'
 import * as achievementWatcher from './achievementWatcher'
 import { logWarn } from './logBus'
@@ -20,7 +21,7 @@ import type { GameLaunchStatus } from '@shared/types'
 // orphan-sweep alternative isn't worth its complexity here.
 
 let counter = 0
-let active: { id: string; mediaId: number; startedAtMs: number } | null = null
+let active: { id: string; mediaId: number; startedAtMs: number; runId: number | null } | null = null
 let status: GameLaunchStatus | null = null
 
 export function getLaunchStatus(): GameLaunchStatus | null {
@@ -63,7 +64,8 @@ function endSession(id: string, endedAtMs: number, errMsg: string | null): void 
       session.mediaId,
       Math.round(session.startedAtMs / 1000),
       Math.round(endedAtMs / 1000),
-      elapsedSec
+      elapsedSec,
+      session.runId
     )
     status.state = 'ended'
     status.durationSec = elapsedSec
@@ -92,6 +94,7 @@ export function startSession(mediaId: number): { id: string } {
 
   counter += 1
   const id = `game-${process.pid}-${counter}`
+  const runId = playthroughRepo.activeId(mediaId)
   const startedAtMs = Date.now()
   status = {
     id,
@@ -112,7 +115,7 @@ export function startSession(mediaId: number): { id: string } {
   // while the app lives, which is all the tracking needs.
   const proc = spawn(exe, [], { cwd: dirname(exe), detached: true, stdio: 'ignore' })
   proc.unref()
-  active = { id, mediaId, startedAtMs }
+  active = { id, mediaId, startedAtMs, runId }
 
   let settled = false
   proc.on('error', (err) => {

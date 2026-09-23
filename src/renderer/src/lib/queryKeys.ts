@@ -38,6 +38,31 @@ const entity = (ns: EntityNamespace) => ({
 })
 
 export const qk = {
+  soundtracks: {
+    all: ['soundtracks'] as const,
+    list: (kind: string, id: number) => ['soundtracks', 'list', kind, id] as const,
+    search: (kind: string, query: string) => ['soundtracks', 'search', kind, query] as const
+  },
+  vnExplore: {
+    all: ['vnExplore'] as const,
+    edition: (id: number) => ['vnExplore', 'edition', id] as const
+  },
+  vnCapture: {
+    all: ['vnCapture'] as const,
+    list: (id: number) => ['vnCapture', 'list', id] as const,
+    get: (mediaId: number, id: number) => ['vnCapture', 'get', mediaId, id] as const
+  },
+  journeys: {
+    all: ['journeys'] as const,
+    list: ['journeys', 'list'] as const,
+    detail: (id: number) => ['journeys', 'detail', id] as const,
+    targets: (kind: string, search: string) => ['journeys', 'targets', kind, search] as const
+  },
+  vnReading: {
+    all: ['vnReading'] as const,
+    overview: (id: number) => ['vnReading', 'overview', id] as const,
+    notes: (id: number, page: number) => ['vnReading', 'notes', id, page] as const
+  },
   media: {
     all: ['media'] as const,
     lists: ['media', 'list'] as const,
@@ -287,6 +312,13 @@ export const qk = {
     imeCandidates: (kana: string) => ['dict', 'imeCandidates', kana] as const
   },
   music: {
+    personalAlbum: (id: number) => ['music', 'personalAlbum', id] as const,
+    personalTrack: (id: number) => ['music', 'personalTrack', id] as const,
+    listens: (id: number, page: number) => ['music', 'listens', id, page] as const,
+    journal: (filter: import('@shared/types').MusicJournalFilter) => ['music', 'journal', filter] as const,
+    personalTags: ['music', 'personalTags'] as const,
+    smart: ['music', 'smart'] as const,
+    smartPreview: (rules: import('@shared/types').MusicSmartRules, page: number) => ['music', 'smartPreview', rules, page] as const,
     // Local music library. Mutations (scan, like, playlist edits) invalidate
     // the `all` prefix; the polled statuses sit under it too but refetch on
     // their own intervals while something runs.
@@ -403,6 +435,8 @@ export const qk = {
     status: ['update', 'status'] as const
   },
   games: {
+    runs: (id: number) => ['games', 'runs', id] as const,
+    runHistory: (id: number, runId: number | null, page: number) => ['games', 'runHistory', id, runId, page] as const,
     // Game/VN launcher + playtime tracking. sessionStatus polls while a
     // tracked session runs (useGameSession).
     all: ['games'] as const,

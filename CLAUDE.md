@@ -25,6 +25,7 @@ For substantial tasks, proactively delegate only when there are at least two ind
 Rules the user has stated and had to re-state. Treat these as settled — do not relitigate them, and do not need to be told twice.
 
 - **No emoji and no decorative glyphs, anywhere.** (2026-07-12, re-stated 08-01 and 08-06 — three rounds.) The user counts decorative unicode as emoji. Functional glyphs are fine: reader HUDs, `✕` close, ✓/○ state marks, ★ score/rarity, `←` back, ▸/▾/› disclosure. Like/favorite controls use the shared SVG `FavoriteButton`; player transport uses SVG from `components/PlayerIcons.tsx` — unicode hearts and ⏮/⏭ render inconsistently across platforms.
+- **VN reading, discovery, guides and wrestling journeys show story information directly.** (2026-09-23.) Do not add spoiler reveal controls to these features. Quiz answer masking remains unchanged.
 - **Git belongs to the user.** (2026-07-01: *"leave git to me from now on"*.) Never commit, push, branch, stage or revert. Read-only `status`/`log`/`diff` is fine.
 - **Music keeps one recording across original and remastered releases.** Remaster labels and their years are interchangeable for local matching and download reuse; live, acoustic, remix and other recording variants remain separate. Preserve explicit manual source choices.
 - **Music source approval is exact and durable.** Use this version approves one permanent source with independent observed metadata; validated audio links once without asking again. Never reinterpret an old saved URL as approval or substitute a different source. Spotify and direct URL jobs share the persistent queue; launch never starts downloads automatically. Spotify output tags are not proof of recording identity.
@@ -311,13 +312,25 @@ Every spawn uses an argv array. yt-dlp keeps `--` before the user URL. **ffmpeg 
 - **Deleting a media item goes through `media:remove`, which calls `pictures.forgetSlideshowForMedia(id)` BEFORE `mediaRepo.remove(id)`** — `slideshow_item` rows cascade with the images, but their copies in `slideshow.dir` do not, and Windows would keep cycling wallpapers for a title the user deleted.
 - **Anything feeding a POSITIONAL file reads the provider's order** — `achievementRepo.listInProviderOrder`, not `listForMedia` (which sorts unlocked-first for the UI). The Goldberg config is a positional JSON array; UI order remaps every index and reshuffles on each new unlock.
 
+### Personal hobby state
+
+VN reading plans, notebook entries, text captures and edition snapshots are personal state,
+independent of metadata imports and overall minutes/status. A partial VNDB refresh must never
+prune their rows or canonical tags/relations. Capture edits invalidate derived coverage;
+async scans/deck builds check capture fingerprints before writing. Wrestling journey steps
+retain personal context/viewings when imported references disappear. Soundtrack associations
+keep ordinary music player identities (`music-`, `mediaId: null`). Wipe all of these personal
+tables from shared exports; only the public VN release cache may survive.
+
+- **Playthrough membership is captured at launch.** `gameLaunch` passes the launch-time run ID into `gameSessionRepo.recordSession`; never look up the currently active run at exit. Removing a run removes its journal/associations, never `game_session` rows or tracked totals. A run removed mid-session leaves that new session unassigned rather than losing the time.
+
 ### Learning evidence
 
 `learning.evidence.v1.*` settings contain personal practice attempts, exposed exercise ids, writing/project notes and English missed-item queues; keep this whole prefix in the export sanitizer. Reserve delayed exercise exposure before revealing a prompt, and retain exposed ids independently of bounded attempt history. Guided, repeated and self-assessed work must never be labelled as automatically demonstrated mastery. Programming completion rows mean marked read; preserve their frozen keys and historical timestamps. Author lesson-specific misconceptions and explanations; never pad answers or generate generic distractors to pass answer-length tests.
 
 ### Frozen key strings
 
-Stored in the DB, so renaming one orphans data: checklist `task_key`, gacha unit-kind and currency `key`s, programming course/lesson/sheet keys (+ SQL exercise / regex golf puzzle / snippet keys, `prog_solve.kind` `sql`/`regex`, `prog_cli_miss.cmd_key` = `<sheetKey>/<answers[0]>`), every `src/shared/english/` content key (passage, mechanics, cloze/wf/tr, punct, spot, match, idiom — they ride `quiz_session.settings`), bulk-import sort keys, Home widget keys (`HOME_WIDGETS` in `lib/homeWidgets.ts` — they ride the `home.widgets` settings row), `GachaGameCfg.catalog.source`, `tournament.saved` (the autosaved unfinished bracket), wrestling promotion ids, the nine `FootballCompetitionKey` values and four Football `ListKind` values, `achievement_game.provider` (`steam`/`ra`) and `achievement_unlock.source` (`emu`/`ra`/`manual`), and every `external_source` value.
+Stored in the DB, so renaming one orphans data: checklist `task_key`, gacha unit-kind and currency `key`s, programming course/lesson/sheet keys (+ SQL exercise / regex golf puzzle / snippet keys, `prog_solve.kind` `sql`/`regex`, `prog_cli_miss.cmd_key` = `<sheetKey>/<answers[0]>`), every `src/shared/english/` content key (passage, mechanics, cloze/wf/tr, punct, spot, match, idiom — they ride `quiz_session.settings`), bulk-import sort keys, Home widget keys (`HOME_WIDGETS` in `lib/homeWidgets.ts` — they ride the `home.widgets` settings row), `GachaGameCfg.catalog.source`, `tournament.saved` (the autosaved unfinished bracket), wrestling promotion ids, wrestling journey template keys and cross-media guide/entry ids, the nine `FootballCompetitionKey` values and four Football `ListKind` values, `achievement_game.provider` (`steam`/`ra`) and `achievement_unlock.source` (`emu`/`ra`/`manual`), and every `external_source` value.
 
 ## Known open issues
 

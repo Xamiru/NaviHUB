@@ -1,5 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
+  check,
+  type AnySQLiteColumn,
   sqliteTable,
   text,
   integer,
@@ -2447,3 +2449,133 @@ export const musicUrlItem = sqliteTable('music_url_item', {
 export const musicAudioSource = sqliteTable('music_audio_source', {
   sourceUrl: text('source_url').notNull(), localTrackId: integer('local_track_id').notNull().references(() => musicTrack.id, { onDelete: 'cascade' })
 }, (t) => ({ pk: primaryKey({ columns: [t.sourceUrl, t.localTrackId] }) }))
+
+// VN personal reading workspace. Self-parent ownership/cycle checks live in vnReadingRepo.
+export const vnReadingNode = sqliteTable('vn_reading_node', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  mediaId: integer('media_id').notNull().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  parentId: integer('parent_id').references((): AnySQLiteColumn => vnReadingNode.id, { onDelete: 'set null' }),
+  kind: text('kind').notNull(), title: text('title').notNull(),
+  status: text('status').notNull().default('planned'), rating: real('rating'),
+  notes: text('notes').notNull().default(''), completedOn: text('completed_on'),
+  sortOrder: integer('sort_order').notNull().default(0)
+}, (t) => ({ byMedia: index('idx_vn_reading_media').on(t.mediaId, t.sortOrder) }))
+export const vnReadingResume = sqliteTable('vn_reading_resume', {
+  mediaId: integer('media_id').primaryKey().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  nodeId: integer('node_id').references(() => vnReadingNode.id, { onDelete: 'set null' }),
+  saveSlot: text('save_slot').notNull().default(''), recap: text('recap').notNull().default('')
+})
+export const vnNotebook = sqliteTable('vn_notebook', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  mediaId: integer('media_id').notNull().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  nodeId: integer('node_id').references(() => vnReadingNode.id, { onDelete: 'set null' }),
+  entryDate: text('entry_date').notNull(), category: text('category').notNull(),
+  body: text('body').notNull(), imageData: text('image_data')
+}, (t) => ({ byMedia: index('idx_vn_notebook_media').on(t.mediaId, t.entryDate) }))
+
+export const wrestlingJourney = sqliteTable('wrestling_journey', {
+  id: integer('id').primaryKey({ autoIncrement: true }), title: text('title').notNull(),
+  description: text('description').notNull().default(''), templateKey: text('template_key')
+})
+export const wrestlingJourneyStep = sqliteTable('wrestling_journey_step', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  journeyId: integer('journey_id').notNull().references(() => wrestlingJourney.id, { onDelete: 'cascade' }),
+  kind: text('kind').notNull(),
+  eventId: integer('event_id').references(() => wrestlingEvent.id, { onDelete: 'set null' }),
+  matchId: integer('match_id').references(() => wrestlingMatch.id, { onDelete: 'set null' }),
+  title: text('title').notNull(), stepDate: text('step_date'), notes: text('notes').notNull().default(''),
+  sourceUrl: text('source_url').notNull().default(''), filePath: text('file_path'),
+  sortOrder: integer('sort_order').notNull().default(0)
+}, (t) => ({ byJourney: index('idx_journey_step').on(t.journeyId, t.sortOrder) }))
+export const wrestlingJourneyViewing = sqliteTable('wrestling_journey_viewing', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  stepId: integer('step_id').notNull().references(() => wrestlingJourneyStep.id, { onDelete: 'cascade' }),
+  watchedOn: text('watched_on').notNull(), notes: text('notes').notNull().default('')
+}, (t) => ({ byStep: index('idx_journey_viewing').on(t.stepId) }))
+
+export const vnTextCapture = sqliteTable('vn_text_capture', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  mediaId: integer('media_id').notNull().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  nodeId: integer('node_id').references(() => vnReadingNode.id, { onDelete: 'set null' }),
+  title: text('title').notNull(), body: text('body').notNull(), fingerprint: text('fingerprint').notNull(), capturedOn: text('captured_on').notNull()
+}, (t) => ({ byMedia: index('idx_vn_capture_media').on(t.mediaId, t.id), uniqueText: unique().on(t.mediaId, t.fingerprint) }))
+
+export const vnReleaseCache = sqliteTable('vn_release_cache', {
+  mediaId: integer('media_id').primaryKey().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  fetchedAt: text('fetched_at').notNull(),
+  releasesJson: text('releases_json').notNull()
+})
+export const vnEdition = sqliteTable('vn_edition', {
+  mediaId: integer('media_id').primaryKey().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  releaseId: text('release_id'),
+  snapshotJson: text('snapshot_json'),
+  notes: text('notes').notNull().default('')
+})
+
+export const soundtrackLink = sqliteTable('soundtrack_link', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  albumId: integer('album_id').references(() => musicAlbum.id, { onDelete: 'cascade' }),
+  trackId: integer('track_id').references(() => musicTrack.id, { onDelete: 'cascade' }),
+  mediaId: integer('media_id').references(() => mediaItem.id, { onDelete: 'cascade' }),
+  wrestlerId: integer('wrestler_id').references(() => wrestlingWrestler.id, { onDelete: 'cascade' }),
+  label: text('label').notNull().default(''),
+  notes: text('notes').notNull().default('')
+}, (t) => ({
+  identity: uniqueIndex('idx_soundtrack_identity').on(sql`COALESCE(${t.albumId},0)`, sql`COALESCE(${t.trackId},0)`, sql`COALESCE(${t.mediaId},0)`, sql`COALESCE(${t.wrestlerId},0)`),
+  media: index('idx_soundtrack_media').on(t.mediaId),
+  wrestler: index('idx_soundtrack_wrestler').on(t.wrestlerId),
+  album: index('idx_soundtrack_album').on(t.albumId),
+  track: index('idx_soundtrack_track').on(t.trackId),
+  musicSource: check('soundtrack_music_source', sql`(${t.albumId} IS NOT NULL) + (${t.trackId} IS NOT NULL) = 1`),
+  target: check('soundtrack_target', sql`(${t.mediaId} IS NOT NULL) + (${t.wrestlerId} IS NOT NULL) = 1`)
+}))
+
+export const gamePlaythrough = sqliteTable('game_playthrough', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  mediaId: integer('media_id').notNull().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(), kind: text('kind').notNull(), state: text('state').notNull(),
+  difficulty: text('difficulty').notNull().default(''), build: text('build').notNull().default(''),
+  objective: text('objective').notNull().default(''), stoppedAt: text('stopped_at').notNull().default(''),
+  notes: text('notes').notNull().default(''),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  byMedia: index('idx_game_playthrough_media').on(t.mediaId),
+  active: uniqueIndex('idx_game_playthrough_active').on(t.mediaId).where(sql`${t.state}='active'`),
+  kind: check('game_playthrough_kind', sql`${t.kind} IN ('first','replay','newGamePlus')`),
+  state: check('game_playthrough_state', sql`${t.state} IN ('active','paused','completed')`)
+}))
+export const gamePlaythroughSession = sqliteTable('game_playthrough_session', {
+  sessionId: integer('session_id').primaryKey().references(() => gameSession.id, { onDelete: 'cascade' }),
+  runId: integer('run_id').notNull().references(() => gamePlaythrough.id, { onDelete: 'cascade' })
+}, (t) => ({ byRun: index('idx_game_playthrough_session_run').on(t.runId) }))
+export const gamePlaythroughNote = sqliteTable('game_playthrough_note', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  runId: integer('run_id').notNull().references(() => gamePlaythrough.id, { onDelete: 'cascade' }),
+  entryDate: text('entry_date').notNull(), body: text('body').notNull()
+}, (t) => ({ byRun: index('idx_game_playthrough_note_run').on(t.runId, t.entryDate) }))
+export const musicAlbumPersonal = sqliteTable('music_album_personal', {
+  albumId: integer('album_id').primaryKey().references(() => musicAlbum.id, { onDelete: 'cascade' }),
+  rating: real('rating'), shelf: text('shelf'), review: text('review').notNull().default(''),
+  tagsJson: text('tags_json').notNull().default('[]')
+}, (t) => ({
+  rating: check('music_album_personal_rating', sql`${t.rating} BETWEEN 0 AND 10`),
+  shelf: check('music_album_personal_shelf', sql`${t.shelf} IN ('want','exploring','revisit')`)
+}))
+export const musicTrackPersonal = sqliteTable('music_track_personal', {
+  trackId: integer('track_id').primaryKey().references(() => musicTrack.id, { onDelete: 'cascade' }),
+  standout: integer('standout').notNull().default(0), tagsJson: text('tags_json').notNull().default('[]')
+}, (t) => ({ standout: check('music_track_personal_standout', sql`${t.standout} IN (0,1)`) }))
+export const musicListen = sqliteTable('music_listen', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  albumId: integer('album_id').notNull().references(() => musicAlbum.id, { onDelete: 'cascade' }),
+  listenedOn: text('listened_on').notNull(), rating: real('rating'), notes: text('notes').notNull().default('')
+}, (t) => ({
+  byAlbum: index('idx_music_listen_album').on(t.albumId, t.listenedOn),
+  rating: check('music_listen_rating', sql`${t.rating} BETWEEN 0 AND 10`)
+}))
+export const musicSmartPlaylist = sqliteTable('music_smart_playlist', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  title: text('title').notNull(), description: text('description').notNull().default(''),
+  rulesJson: text('rules_json').notNull()
+})

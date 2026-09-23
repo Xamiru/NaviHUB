@@ -21,6 +21,50 @@ const read = (rel: string): string =>
 const initSql = read('../src/main/db/init.sql')
 
 describe('a live DB that predates newer columns', () => {
+  it('adds game runs and music journals without replacing legacy sessions, albums or playlists', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(initSql.slice(0, initSql.indexOf('-- Personal playthroughs and listening collections.')))
+    db.exec(`INSERT INTO media_item(id,media_type,title,progress) VALUES(1,'game','Existing game',40);
+      INSERT INTO game_session(id,media_id,started_at,ended_at,duration) VALUES(9,1,'2026-09-01','2026-09-02',3600);
+      INSERT INTO music_artist(id,name,dir_path) VALUES(1,'Artist','Artist');
+      INSERT INTO music_album(id,artist_id,title,dir_path) VALUES(1,1,'Album','Artist/Album');
+      INSERT INTO music_track(id,album_id,artist_id,file_path,title,play_count) VALUES(1,1,1,'song.mp3','Song',12);
+      INSERT INTO music_playlist(id,title) VALUES(1,'Saved mix');
+      INSERT INTO music_playlist_track(playlist_id,track_id) VALUES(1,1);`)
+    db.exec(initSql)
+    runMigrations(db)
+    db.exec(initSql)
+    runMigrations(db)
+    db.exec(`INSERT INTO game_playthrough(id,media_id,title,kind,state) VALUES(1,1,'Replay','replay','active');
+      INSERT INTO game_playthrough_session(session_id,run_id) VALUES(9,1);
+      INSERT INTO music_album_personal(album_id,rating) VALUES(1,8.5);`)
+    expect(db.prepare('SELECT progress FROM media_item WHERE id=1').get()).toEqual({ progress: 40 })
+    expect(db.prepare('SELECT duration FROM game_session WHERE id=9').get()).toEqual({ duration: 3600 })
+    expect(db.prepare('SELECT play_count FROM music_track WHERE id=1').get()).toEqual({ play_count: 12 })
+    expect(db.prepare('SELECT track_id FROM music_playlist_track').all()).toEqual([{ track_id: 1 }])
+    expect(db.pragma('foreign_key_check')).toEqual([])
+    expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
+  })
+
+  it('adds all hobby-depth tables to a pre-existing library idempotently', () => {
+    const db = new Database(':memory:')
+    db.exec(initSql.slice(0, initSql.indexOf('-- Personal VN reading state')))
+    db.exec("INSERT INTO media_item(id,media_type,title,progress) VALUES(1,'visual_novel','Existing VN',123)")
+    db.exec(initSql)
+    runMigrations(db)
+    db.exec(initSql)
+    runMigrations(db)
+    db.exec("INSERT INTO vn_reading_node(media_id,kind,title) VALUES(1,'chapter','Chapter one')")
+    for (const table of ['vn_reading_resume', 'vn_notebook', 'vn_text_capture', 'vn_release_cache', 'vn_edition', 'wrestling_journey', 'wrestling_journey_step', 'wrestling_journey_viewing', 'soundtrack_link']) {
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table)).toEqual({ name: table })
+    }
+    expect(db.pragma('foreign_key_check')).toEqual([])
+    expect(db.prepare('SELECT progress FROM media_item WHERE id=1').get()).toEqual({ progress: 123 })
+    expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
+  })
   it('deduplicates competition-level Football coverage before enforcing uniqueness', () => {
     const db = new Database(':memory:')
     db.exec(initSql)

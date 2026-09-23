@@ -7,6 +7,60 @@
 
 **Key files** — `src/main/repos/themeRepo.ts`, `src/main/themes.ts`, `@shared/bracket.ts`, `src/main/repos/tournamentRepo.ts`, `src/renderer/src/lib/player.tsx`
 
+## Soundtracks and entrance themes
+
+`SoundtrackSection` appears on media detail, wrestler and music album pages.
+`soundtrack_link` is a personal many-to-many association with exactly one local
+album/track and one media item/wrestler, enforced in SQL and main-process validation.
+The user searches the local library and selects an explicit source; album pages can
+link a single track instead of the whole album. Optional labels and notes describe
+the relationship. Album pages include both their own links and their tracks' links.
+
+Links are visible in both directions. Play fetches up to the existing 2,000-track
+queue limit and uses `musicTrackToPlayerTrack`: IDs remain `music-<id>` and `mediaId`
+remains null. Work navigation belongs to the association, never the player's
+anime-specific media field. Linking and unlinking neither downloads nor retags,
+moves or deletes audio. Foreign keys clean associations when an endpoint is deleted;
+rescans that preserve IDs retain them. `soundtracks:*` methods have their own query
+prefix, and mutations also invalidate the normal broad music prefix. All association
+rows are wiped from shared exports.
+
+
+## Personal album journal and smart playlists
+
+Album pages include a personal 0–10 rating, Want to hear / Exploring / Revisit
+shelf, review and tags. Dated listening entries preserve each listen's own optional
+rating and impression; they do **not** write play counts or the album's current
+rating. Track actions open a labelled tags/standout dialog; standout marks appear
+on album track rows and remain independent of Liked Songs. `/music/journal` browses
+annotated/listened albums with search, shelf filtering and bounded 50-row pages.
+
+`musicJournalRepo` owns additive `music_album_personal`, `music_track_personal` and
+`music_listen` tables, attached to stable album/track IDs. Same-path rescans preserve
+these rows. Deleting or pruning the underlying local album/track cascades its
+personal metadata; file/folder moves retain the scanner's existing identity rules.
+Tags are explicitly authored, Unicode-normalized, trimmed, lowercase and deduplicated.
+Album tags apply to each track for smart matching without copying them into track rows.
+
+`/music/smart` owns saved `music_smart_playlist` rule definitions, separate from manual
+playlists and Spotify snapshots. Rules combine likes, played/unplayed, min/max plays,
+days since last played (including never played), artist text, inherited/track tags
+(all or any), explicit soundtrack links, album rating and shelf. Different filter
+families always combine with AND. Soundtrack association matches either a track or
+its album, including links to works and wrestlers. Order is deterministic, and the
+user-selected 1–2,000-track limit bounds playback; preview pages hold 50 rows and show
+both capped playlist size and uncapped match count. Empty filters select the local
+library up to the limit. All predicates are validated and SQL values are parameterized.
+
+`musicSmartRepo` evaluates rules on each read against the current library. Playback
+fetches a fresh bounded queue of matching tracks, then uses the normal `music-` IDs
+and null `mediaId`; an already playing queue stays a snapshot. Unsaved rules cannot
+start playback. Refreshed definitions update pristine forms; conflicting unsaved
+forms offer Reload saved rules before saving or playback. `musicJournal:*` and
+`musicSmart:*` IPC methods use keys under `qk.music.all`, and every mutation keeps
+the broad music invalidation. All seven new music/game personal tables are cleared
+from shared exports, including when other progress/ratings export options are enabled.
+
 ## Music artwork lookup
 
 Scans abort before database writes if any directory read or audio-file stat fails;
