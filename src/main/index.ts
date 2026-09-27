@@ -10,14 +10,19 @@ import { absoluteMediaPath } from './files'
 import { parseThumbRequest, ensureThumb } from './thumbs'
 import { splitArchivePath, openArchiveEntryStream, mimeFor } from './archive'
 import { parseByteRange } from './httpRange'
-import { killActive as killActiveMusicDownload } from './musicDownload'
+import { killActive as killActiveMusicDownload } from './musicSpotify'
 import { get as getSetting } from './repos/settingsRepo'
 import { parseUiScale } from '@shared/uiScale'
-import { APP_THEME_SETTING, appThemeBackground, parseAppTheme } from '@shared/appTheme'
-import { abortActiveCoachTurn } from './gachaCoach'
+import {
+  APP_THEME_SETTING,
+  appThemeBackground,
+  appThemeVariantSetting,
+  parseAppTheme
+} from '@shared/appTheme'
 import { killActiveUpdate } from './updater'
 import { killActiveOcr } from './mokuroRun'
 import { cancelActiveLibraryExport } from './libraryExport'
+import { cancelActiveStorageMove, pinPicturesDir } from './storageMove'
 import { killSqlSandbox } from './sqlSandbox'
 import { finalizeActiveGameSession } from './gameLaunch'
 import { stopAchievementWatcher } from './achievementWatcher'
@@ -89,7 +94,8 @@ app.on('open-file', (event, filePath) => {
 function createWindow(): void {
   let backgroundColor = appThemeBackground('lain')
   try {
-    backgroundColor = appThemeBackground(parseAppTheme(getSetting(APP_THEME_SETTING)))
+    const theme = parseAppTheme(getSetting(APP_THEME_SETTING))
+    backgroundColor = appThemeBackground(theme, getSetting(appThemeVariantSetting(theme)))
   } catch {
     /* the default fill must never depend on a readable setting */
   }
@@ -99,7 +105,7 @@ function createWindow(): void {
     minWidth: 940,
     minHeight: 600,
     show: false,
-    // Pre-paint window fill = the selected theme's base-900 (styles.css).
+    // Pre-paint window fill = the selected style's base-900 (styles.css).
     backgroundColor,
     title: 'NaviHUB',
     icon: app.isPackaged
@@ -201,6 +207,7 @@ app.whenReady().then(async () => {
   })
 
   initDatabase()
+  pinPicturesDir()
   await initializeSecretStorage()
   registerIpc()
 
@@ -332,7 +339,6 @@ app.on('before-quit', () => {
   // Don't let a half-finished yt-dlp outlive the app; its .part files survive
   // and resume on the next try.
   killActiveMusicDownload()
-  abortActiveCoachTurn()
   // A half-downloaded update is resumable; don't let it outlive the app.
   killActiveUpdate()
   // A killed mokuro run loses nothing durable — finished volumes keep their
@@ -341,6 +347,9 @@ app.on('before-quit', () => {
   // Export output is staged under a .partial name; abort and remove it before
   // the process exits so it can never be mistaken for a complete bundle.
   cancelActiveLibraryExport()
+  // A folder move only switches its setting after a complete copy, so stopping
+  // it here leaves the library on its old folder (storageMove.ts).
+  cancelActiveStorageMove()
   // The SQL sandbox's utility process holds nothing durable — an in-memory
   // copy of a dataset that is code — so it is simply dropped.
   killSqlSandbox()

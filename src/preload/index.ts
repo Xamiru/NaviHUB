@@ -13,15 +13,10 @@ const api: NaviApi = {
     removeNote: (mediaId, runId, id) => ipcRenderer.invoke('playthroughs:removeNote', mediaId, runId, id)
   },
   musicJournal: {
-    album: (id) => ipcRenderer.invoke('musicJournal:album', id),
-    saveAlbum: (id, input) => ipcRenderer.invoke('musicJournal:saveAlbum', id, input),
     track: (id) => ipcRenderer.invoke('musicJournal:track', id),
     saveTrack: (input) => ipcRenderer.invoke('musicJournal:saveTrack', input),
-    listens: (albumId, page) => ipcRenderer.invoke('musicJournal:listens', albumId, page),
-    saveListen: (albumId, id, input) => ipcRenderer.invoke('musicJournal:saveListen', albumId, id, input),
-    removeListen: (albumId, id) => ipcRenderer.invoke('musicJournal:removeListen', albumId, id),
-    tags: () => ipcRenderer.invoke('musicJournal:tags'),
-    list: (input) => ipcRenderer.invoke('musicJournal:list', input)
+    standouts: (albumId) => ipcRenderer.invoke('musicJournal:standouts', albumId),
+    tags: () => ipcRenderer.invoke('musicJournal:tags')
   },
   musicSmart: {
     list: () => ipcRenderer.invoke('musicSmart:list'),
@@ -124,6 +119,13 @@ const api: NaviApi = {
     roles: (id) => ipcRenderer.invoke('characters:roles', id),
     upsert: (input) => ipcRenderer.invoke('characters:upsert', input),
     remove: (id) => ipcRenderer.invoke('characters:remove', id)
+  },
+  images: {
+    overrideState: (kind, id) => ipcRenderer.invoke('images:overrideState', kind, id),
+    setManual: (kind, id, path) => ipcRenderer.invoke('images:setManual', kind, id, path),
+    revert: (kind, id) => ipcRenderer.invoke('images:revert', kind, id),
+    fromUrl: (url) => ipcRenderer.invoke('images:fromUrl', url),
+    fromArt: (imageId) => ipcRenderer.invoke('images:fromArt', imageId)
   },
   credits: {
     remove: (creditId) => ipcRenderer.invoke('credits:remove', creditId)
@@ -269,7 +271,9 @@ const api: NaviApi = {
     preview: (params) => ipcRenderer.invoke('bulk:preview', params),
     start: (payload) => ipcRenderer.invoke('bulk:start', payload),
     status: () => ipcRenderer.invoke('bulk:status'),
-    cancel: () => ipcRenderer.invoke('bulk:cancel')
+    cancel: () => ipcRenderer.invoke('bulk:cancel'),
+    retryFailed: () => ipcRenderer.invoke('bulk:retryFailed'),
+    undoLast: () => ipcRenderer.invoke('bulk:undoLast')
   },
   openlibrary: {
     search: (query) => ipcRenderer.invoke('openlibrary:search', query),
@@ -285,8 +289,9 @@ const api: NaviApi = {
   },
   pictures: {
     list: (mediaId, kind) => ipcRenderer.invoke('pictures:list', mediaId, kind),
-    searchWallhaven: (query, page) => ipcRenderer.invoke('pictures:searchWallhaven', query, page),
-    searchTmdb: (mediaId) => ipcRenderer.invoke('pictures:searchTmdb', mediaId),
+    sources: (mediaId, kind) => ipcRenderer.invoke('pictures:sources', mediaId, kind),
+    search: (mediaId, source, query, page) =>
+      ipcRenderer.invoke('pictures:search', mediaId, source, query, page),
     addFromSearch: (mediaId, kind, result) =>
       ipcRenderer.invoke('pictures:addFromSearch', mediaId, kind, result),
     addFromUrl: (mediaId, kind, url) =>
@@ -488,12 +493,16 @@ const api: NaviApi = {
     scan: () => ipcRenderer.invoke('music:scan'),
     scanStatus: () => ipcRenderer.invoke('music:scanStatus'),
     artists: (search) => ipcRenderer.invoke('music:artists', search),
-    albums: (search) => ipcRenderer.invoke('music:albums', search),
+    albums: (search, scope) => ipcRenderer.invoke('music:albums', search, scope),
+    genres: () => ipcRenderer.invoke('music:genres'),
+    decades: () => ipcRenderer.invoke('music:decades'),
+    lyrics: (trackId) => ipcRenderer.invoke('music:lyrics', trackId),
+    fetchLyrics: (trackId) => ipcRenderer.invoke('music:fetchLyrics', trackId),
     artist: (id) => ipcRenderer.invoke('music:artist', id),
     album: (id) => ipcRenderer.invoke('music:album', id),
     tracks: (filter) => ipcRenderer.invoke('music:tracks', filter),
     trackPage: (request) => ipcRenderer.invoke('music:trackPage', request),
-    playbackQueue: (shuffle) => ipcRenderer.invoke('music:playbackQueue', shuffle),
+    playbackQueue: (shuffle, scope) => ipcRenderer.invoke('music:playbackQueue', shuffle, scope),
     artistTracks: (artistId) => ipcRenderer.invoke('music:artistTracks', artistId),
     search: (query) => ipcRenderer.invoke('music:search', query),
     stats: () => ipcRenderer.invoke('music:stats'),
@@ -513,7 +522,6 @@ const api: NaviApi = {
     reorderPlaylist: (playlistId, orderedItemIds) =>
       ipcRenderer.invoke('music:reorderPlaylist', playlistId, orderedItemIds),
     queueAdd: (input) => ipcRenderer.invoke('music:queueAdd', input),
-    queueAddUrl: (input) => ipcRenderer.invoke('music:queueAddUrl', input),
     spotifySearchAudio: (query) => ipcRenderer.invoke('music:spotifySearchAudio', query),
     spotifyPreviewAudio: (url) => ipcRenderer.invoke('music:spotifyPreviewAudio', url),
     spotifyPickLocalAudio: () => ipcRenderer.invoke('music:spotifyPickLocalAudio'),
@@ -530,7 +538,6 @@ const api: NaviApi = {
       ipcRenderer.invoke('music:spotifyStartEntityInspection', input),
     spotifyInspectionStatus: () => ipcRenderer.invoke('music:spotifyInspectionStatus'),
     spotifyCancelInspection: (jobId) => ipcRenderer.invoke('music:spotifyCancelInspection', jobId),
-    spotifyDownloadEntity: (input) => ipcRenderer.invoke('music:spotifyDownloadEntity', input),
     spotifyDownloadQueue: () => ipcRenderer.invoke('music:spotifyDownloadQueue'),
     spotifyQueueAddEntity: (input) => ipcRenderer.invoke('music:spotifyQueueAddEntity', input),
     spotifyQueueAddPlaylist: (input) => ipcRenderer.invoke('music:spotifyQueueAddPlaylist', input),
@@ -564,7 +571,6 @@ const api: NaviApi = {
     logPlay: (trackId) => ipcRenderer.invoke('music:logPlay', trackId),
     recent: (limit) => ipcRenderer.invoke('music:recent', limit),
     statsDetail: (days) => ipcRenderer.invoke('music:statsDetail', days),
-    downloadStart: (input) => ipcRenderer.invoke('music:downloadStart', input),
     downloadCancel: (id) => ipcRenderer.invoke('music:downloadCancel', id),
     downloadStatus: () => ipcRenderer.invoke('music:downloadStatus'),
     downloadDetect: () => ipcRenderer.invoke('music:downloadDetect'),
@@ -575,49 +581,6 @@ const api: NaviApi = {
     artFetchMissing: () => ipcRenderer.invoke('music:artFetchMissing'),
     artCancel: () => ipcRenderer.invoke('music:artCancel'),
     artStatus: () => ipcRenderer.invoke('music:artStatus')
-  },
-  gacha: {
-    overview: () => ipcRenderer.invoke('gacha:overview'),
-    units: (game, filter) => ipcRenderer.invoke('gacha:units', game, filter),
-    unit: (id) => ipcRenderer.invoke('gacha:unit', id),
-    createUnit: (input) => ipcRenderer.invoke('gacha:createUnit', input),
-    updateUnit: (id, patch) => ipcRenderer.invoke('gacha:updateUnit', id, patch),
-    removeUnit: (id) => ipcRenderer.invoke('gacha:removeUnit', id),
-    createBuild: (unitId, input) => ipcRenderer.invoke('gacha:createBuild', unitId, input),
-    updateBuild: (id, patch) => ipcRenderer.invoke('gacha:updateBuild', id, patch),
-    removeBuild: (id) => ipcRenderer.invoke('gacha:removeBuild', id),
-    currencies: (game) => ipcRenderer.invoke('gacha:currencies', game),
-    setCurrency: (game, key, amount) => ipcRenderer.invoke('gacha:setCurrency', game, key, amount),
-    banners: (game) => ipcRenderer.invoke('gacha:banners', game),
-    createBanner: (input) => ipcRenderer.invoke('gacha:createBanner', input),
-    updateBanner: (id, patch) => ipcRenderer.invoke('gacha:updateBanner', id, patch),
-    removeBanner: (id) => ipcRenderer.invoke('gacha:removeBanner', id),
-    news: (game) => ipcRenderer.invoke('gacha:news', game),
-    fetchNews: (game) => ipcRenderer.invoke('gacha:fetchNews', game),
-    downloadImage: (url) => ipcRenderer.invoke('gacha:downloadImage', url),
-    setGameImage: (game, relPath) => ipcRenderer.invoke('gacha:setGameImage', game, relPath),
-    importCatalog: (game) => ipcRenderer.invoke('gacha:importCatalog', game),
-    importChaldea: (game) => ipcRenderer.invoke('gacha:importChaldea', game),
-    coachStatus: () => ipcRenderer.invoke('gacha:coachStatus'),
-    coachSend: (game, text, attachments) =>
-      ipcRenderer.invoke('gacha:coachSend', game, text, attachments),
-    coachCancel: () => ipcRenderer.invoke('gacha:coachCancel'),
-    coachThread: (game) => ipcRenderer.invoke('gacha:coachThread', game),
-    coachThreads: (game) => ipcRenderer.invoke('gacha:coachThreads', game),
-    coachNewThread: (game) => ipcRenderer.invoke('gacha:coachNewThread', game),
-    coachMessages: (threadId) => ipcRenderer.invoke('gacha:coachMessages', threadId),
-    saveAttachment: (bytes, ext) => ipcRenderer.invoke('gacha:saveAttachment', bytes, ext),
-    goals: (game) => ipcRenderer.invoke('gacha:goals', game),
-    createGoal: (game, input) => ipcRenderer.invoke('gacha:createGoal', game, input),
-    updateGoal: (id, patch) => ipcRenderer.invoke('gacha:updateGoal', id, patch),
-    completeGoal: (id) => ipcRenderer.invoke('gacha:completeGoal', id),
-    dropGoal: (id) => ipcRenderer.invoke('gacha:dropGoal', id),
-    dueCounts: () => ipcRenderer.invoke('gacha:dueCounts'),
-    coachNotes: (game) => ipcRenderer.invoke('gacha:coachNotes', game),
-    removeCoachNote: (id) => ipcRenderer.invoke('gacha:removeCoachNote', id),
-    coachDocs: (game) => ipcRenderer.invoke('gacha:coachDocs', game),
-    importCoachDoc: (game, input) => ipcRenderer.invoke('gacha:importCoachDoc', game, input),
-    removeCoachDoc: (id) => ipcRenderer.invoke('gacha:removeCoachDoc', id)
   },
   wrestling: {
     overview: () => ipcRenderer.invoke('wrestling:overview'),
@@ -712,7 +675,6 @@ const api: NaviApi = {
   },
   app: {
     openExternal: (url) => ipcRenderer.invoke('app:openExternal', url),
-    pickTextFile: () => ipcRenderer.invoke('app:pickTextFile'),
     setUiScale: (scale) => ipcRenderer.invoke('app:setUiScale', scale),
     bumpUiScale: (direction) => ipcRenderer.invoke('app:bumpUiScale', direction),
     setMenuBarVisible: (visible) => ipcRenderer.invoke('app:setMenuBarVisible', visible),
@@ -733,6 +695,13 @@ const api: NaviApi = {
   logs: {
     tail: (req) => ipcRenderer.invoke('logs:tail', req),
     reveal: () => ipcRenderer.invoke('logs:reveal')
+  },
+  storage: {
+    paths: () => ipcRenderer.invoke('storage:paths'),
+    status: () => ipcRenderer.invoke('storage:status'),
+    chooseFolder: (root) => ipcRenderer.invoke('storage:chooseFolder', root),
+    move: (root, to) => ipcRenderer.invoke('storage:move', root, to),
+    open: (root) => ipcRenderer.invoke('storage:open', root)
   },
   libraryExport: {
     preview: (options) => ipcRenderer.invoke('libraryExport:preview', options),
@@ -758,6 +727,7 @@ const api: NaviApi = {
     start: (req) => ipcRenderer.invoke('refresh:start', req),
     status: () => ipcRenderer.invoke('refresh:status'),
     cancel: () => ipcRenderer.invoke('refresh:cancel'),
+    retryFailed: () => ipcRenderer.invoke('refresh:retryFailed'),
     one: (mediaId, aspects) => ipcRenderer.invoke('refresh:one', mediaId, aspects)
   },
   files: {

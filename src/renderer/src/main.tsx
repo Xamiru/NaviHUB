@@ -1,7 +1,7 @@
 import React, { lazy, Suspense } from 'react'
 import ReactDOM from 'react-dom/client'
 import { toastError } from './lib/toast'
-import { readStoredAppTheme, stampAppTheme } from './lib/theme'
+import { readStoredAppTheme, readStoredAppThemeVariant, stampAppTheme } from './lib/theme'
 import './styles.css'
 // Wired-chrome fonts, bundled as self-origin assets (CSP has no remote
 // font-src). Referenced by the --font-mono stack + .lain-crt in styles.css.
@@ -14,7 +14,8 @@ import '@fontsource/vt323'
 // The database setting is mirrored to localStorage whenever it is read or
 // changed. Stamp that mirror before React mounts so startup uses one palette
 // from the first renderer paint; App reconciles it with the database below.
-stampAppTheme(readStoredAppTheme())
+const storedTheme = readStoredAppTheme()
+stampAppTheme(storedTheme, readStoredAppThemeVariant(storedTheme))
 
 // Mutations are plain `await api.…` calls in event handlers, not useMutation —
 // any rejection nobody catches would vanish. This is the app-wide net for them;

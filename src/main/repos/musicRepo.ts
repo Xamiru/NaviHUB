@@ -2,6 +2,9 @@ import { getSqlite } from '../db/connection'
 import type {
   MusicAlbumDetail,
   MusicAlbumSummary,
+  MusicBrowseScope,
+  MusicDecade,
+  MusicGenre,
   MusicArtist,
   MusicArtistDetail,
   MusicLibraryStats,
@@ -36,6 +39,30 @@ export const TRACK_JOINS = `
   JOIN music_album al ON al.id = t.album_id
   JOIN music_artist ar ON ar.id = t.artist_id`
 const TRACK_SELECT = `SELECT ${TRACK_COLS} ${TRACK_JOINS}`
+
+// Years outside this range are tag junk (0, a full date) and count as unknown.
+const KNOWN_YEAR = 'al.year BETWEEN 1000 AND 2999'
+
+// WHERE clauses for a browse scope. `al` is the album; genres match on the
+// track `t`, or on any track of the album when `perAlbum` is set.
+function scopeClauses(scope: MusicBrowseScope | null | undefined, perAlbum = false): { wheres: string[]; params: unknown[] } {
+  const wheres: string[] = []
+  const params: unknown[] = []
+  if (scope?.genre) {
+    wheres.push(perAlbum
+      ? `EXISTS (SELECT 1 FROM music_track gt JOIN music_track_genre g ON g.track_id = gt.id
+          WHERE gt.album_id = al.id AND g.genre = ?)`
+      : 'EXISTS (SELECT 1 FROM music_track_genre g WHERE g.track_id = t.id AND g.genre = ?)')
+    params.push(scope.genre)
+  }
+  if (scope?.decade === 'unknown') {
+    wheres.push(`(al.year IS NULL OR NOT ${KNOWN_YEAR})`)
+  } else if (typeof scope?.decade === 'number') {
+    wheres.push('al.year BETWEEN ? AND ?')
+    params.push(scope.decade, scope.decade + 9)
+  }
+  return { wheres, params }
+}
 export const MAX_PLAYBACK_QUEUE_TRACKS = 2_000
 
 export function mapTrack(r: Record<string, unknown>): MusicTrack {
@@ -96,10 +123,14 @@ export function listArtists(search?: string | null): MusicArtist[] {
   }))
 }
 
-export function listAlbums(search?: string | null): MusicAlbumSummary[] {
-  const where = search?.trim() ? 'WHERE al.title LIKE ? OR ar.name LIKE ?' : ''
-  const q = `%${search?.trim()}%`
-  const params = search?.trim() ? [q, q] : []
+export function listAlbums(search?: string | null, scope?: MusicBrowseScope | null): MusicAlbumSummary[] {
+  const { wheres, params } = scopeClauses(scope, true)
+  if (search?.trim()) {
+    const q = `%${search.trim()}%`
+    wheres.push('(al.title LIKE ? OR ar.name LIKE ?)')
+    params.push(q, q)
+  }
+  const where = wheres.length ? `WHERE ${wheres.join(' AND ')}` : ''
   const rows = getSqlite()
     .prepare(
       `SELECT al.id, al.artist_id, al.title, al.year, al.cover_path,
@@ -208,12 +239,10 @@ export function listTrackPage(request: MusicTrackPageRequest): MusicTrackPage {
   const db = getSqlite()
   const limit = Math.max(48, Math.min(240, Math.trunc(request.limit) || 96))
   const offset = Math.max(0, Math.trunc(request.offset) || 0)
-  const where =
-    request.filter === 'unplayed'
-      ? 'WHERE t.play_count = 0'
-      : request.filter === 'missingArt'
-        ? 'WHERE al.cover_path IS NULL'
-        : ''
+  const { wheres, params } = scopeClauses(request)
+  if (request.filter === 'unplayed') wheres.push('t.play_count = 0')
+  if (request.filter === 'missingArt') wheres.push('al.cover_path IS NULL')
+  const where = wheres.length ? `WHERE ${wheres.join(' AND ')}` : ''
   const orders = {
     catalog: `ar.name COLLATE NOCASE ASC, al.year ASC, al.title COLLATE NOCASE ASC,
       COALESCE(t.disc_no, 1) ASC, COALESCE(t.track_no, 9999) ASC, t.title COLLATE NOCASE ASC`,
@@ -224,26 +253,59 @@ export function listTrackPage(request: MusicTrackPageRequest): MusicTrackPage {
   } as const
   const order = orders[request.sort] ?? orders.catalog
   const total = (
-    db.prepare(`SELECT COUNT(*) AS n ${TRACK_JOINS} ${where}`).get() as { n: number }
+    db.prepare(`SELECT COUNT(*) AS n ${TRACK_JOINS} ${where}`).get(...params) as { n: number }
   ).n
   const items = (
     db
       .prepare(`${TRACK_SELECT} ${where} ORDER BY ${order} LIMIT ? OFFSET ?`)
-      .all(limit, offset) as Record<string, unknown>[]
+      .all(...params, limit, offset) as Record<string, unknown>[]
   ).map(mapTrack)
   return { items, total, offset, hasMore: offset + items.length < total }
 }
 
-export function playbackQueue(shuffle: boolean): MusicPlaybackQueue {
+// Newest decade first; albums without a usable year last.
+export function listDecades(): MusicDecade[] {
+  return (
+    getSqlite()
+      .prepare(
+        `SELECT CASE WHEN ${KNOWN_YEAR} THEN (al.year / 10) * 10 END AS decade,
+                COUNT(DISTINCT al.id) AS album_count, COUNT(t.id) AS track_count
+         FROM music_album al JOIN music_track t ON t.album_id = al.id
+         GROUP BY decade
+         ORDER BY decade IS NULL, decade DESC`
+      )
+      .all() as { decade: number | null; album_count: number; track_count: number }[]
+  ).map((row) => ({ decade: row.decade, albumCount: row.album_count, trackCount: row.track_count }))
+}
+
+// Genre names group case-insensitively (the column is COLLATE NOCASE).
+export function listGenres(): MusicGenre[] {
+  return (
+    getSqlite()
+      .prepare(
+        `SELECT MIN(g.genre) AS name, COUNT(*) AS track_count, COUNT(DISTINCT t.album_id) AS album_count
+         FROM music_track_genre g JOIN music_track t ON t.id = g.track_id
+         GROUP BY g.genre
+         ORDER BY track_count DESC, name COLLATE NOCASE ASC`
+      )
+      .all() as { name: string; track_count: number; album_count: number }[]
+  ).map((row) => ({ name: row.name, trackCount: row.track_count, albumCount: row.album_count }))
+}
+
+export function playbackQueue(shuffle: boolean, scope?: MusicBrowseScope | null): MusicPlaybackQueue {
   const db = getSqlite()
-  const total = (db.prepare('SELECT COUNT(*) AS n FROM music_track').get() as { n: number }).n
+  const { wheres, params } = scopeClauses(scope)
+  const where = wheres.length ? `WHERE ${wheres.join(' AND ')}` : ''
+  const total = (
+    db.prepare(`SELECT COUNT(*) AS n ${TRACK_JOINS} ${where}`).get(...params) as { n: number }
+  ).n
   const catalogOrder = `ar.name COLLATE NOCASE ASC, al.year ASC, al.title COLLATE NOCASE ASC,
     COALESCE(t.disc_no, 1) ASC, COALESCE(t.track_no, 9999) ASC, t.title COLLATE NOCASE ASC`
   const order = shuffle ? 'RANDOM()' : catalogOrder
   const items = (
     db
-      .prepare(`${TRACK_SELECT} ORDER BY ${order} LIMIT ?`)
-      .all(MAX_PLAYBACK_QUEUE_TRACKS) as Record<string, unknown>[]
+      .prepare(`${TRACK_SELECT} ${where} ORDER BY ${order} LIMIT ?`)
+      .all(...params, MAX_PLAYBACK_QUEUE_TRACKS) as Record<string, unknown>[]
   ).map(mapTrack)
   return { items, total, truncated: items.length < total }
 }

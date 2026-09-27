@@ -24,7 +24,6 @@ import { toast, toastError } from '../lib/toast'
 import { mediaUrl } from '@shared/mediaUrl'
 import CoverImage from '../components/CoverImage'
 import FavoriteButton from '../components/FavoriteButton'
-import MediaHero from '../components/MediaHero'
 import RefreshMediaDialog from '../components/RefreshMediaDialog'
 import FranchiseBackground from '../components/FranchiseBackground'
 import BackButton from '../components/BackButton'
@@ -38,6 +37,7 @@ import { HeartIcon, PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import VideoEpisodesSection from '../components/VideoEpisodesSection'
 import CoverageSection from '../components/japanese/CoverageSection'
 import MediaImagesSection from '../components/MediaImagesSection'
+import ImagePickerDialog from '../components/ImagePickerDialog'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
 import ImportDialog from '../components/ImportDialog'
 import { torznabCategoriesFor } from '@shared/torrents'
@@ -52,6 +52,7 @@ import type {
   HltbTimes
 } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
+import { celebrateProgress } from '../lib/themeFx'
 
 type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'art'
 
@@ -63,6 +64,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const scoreMax = useScoreMax()
   const [torrentsOpen, setTorrentsOpen] = useState(false)
   const [refreshOpen, setRefreshOpen] = useState(false)
+  const [coverOpen, setCoverOpen] = useState(false)
   // Drives which action is the filled one (see the action column below).
   const hasLaunch = useHasLaunchTarget(mediaId, !!cfg.hasGameLaunch)
 
@@ -150,33 +152,33 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   // One filled action per screen. For a game/VN with a linked executable that is
   // Play — you launch far more often than you log an hour — and the log button
   // steps down to ghost. Delete lives behind More, away from Edit's elbow.
-  // `inline` is the hero row; otherwise it's the full-width cover column.
-  const actionStack = (inline: boolean) => (
+  const actionStack = (
     <>
       {cfg.hasGameLaunch && (
-        <GameLaunchButton mediaId={m.id} className={inline ? 'btn-primary' : 'btn-primary w-full'} />
+        <GameLaunchButton mediaId={m.id} className="btn-primary w-full" />
       )}
-      <LogProgressButton cfg={cfg} m={m} demoted={hasLaunch} inline={inline} />
+      <LogProgressButton cfg={cfg} m={m} demoted={hasLaunch} />
       <Link
         replace
         to={`${cfg.basePath}/${m.id}/edit`}
-        className={inline ? 'btn-ghost' : 'btn-ghost w-full'}
+        className="btn-ghost w-full"
       >
         Edit
       </Link>
-      <AddToListMenu kind="media" entityId={mediaId} fullWidth={!inline} />
+      <AddToListMenu kind="media" entityId={mediaId} fullWidth />
       <button
-        className={inline ? 'btn-ghost' : 'btn-ghost w-full'}
+        className="btn-ghost w-full"
         onClick={() => setTorrentsOpen(true)}
       >
         Find torrents
       </button>
       <ActionMenu
-        buttonClassName={inline ? 'btn-ghost' : 'btn-ghost w-full'}
+        buttonClassName="btn-ghost w-full"
         items={[
           // Re-pulls only the aspects you tick — never the cast or your own
           // tracking. The whole-library version lives on /bulk's Refresh tab.
           ...(m.externalSource ? [{ label: 'Refresh…', onSelect: () => setRefreshOpen(true) }] : []),
+          { label: 'Change cover…', onSelect: () => setCoverOpen(true) },
           { label: 'Delete…', danger: true, onSelect: del }
         ]}
       />
@@ -207,8 +209,6 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
     </div>
   )
 
-  const hero = cfg.detailHero
-
   return (
     // The optional full-page backdrop (an Art-tab image the user flagged) is an
     // absolute child of the page root, exactly as on the franchise page: pinned
@@ -218,12 +218,8 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       <FranchiseBackground url={mediaUrl(m.backgroundPath)} />
 
       <div className="relative z-10">
-        {hero && (
-          <MediaHero cfg={cfg} m={m} variant={hero} actions={actionStack(true)} stats={statsNode} />
-        )}
-
-        <div className={hero ? 'mx-auto max-w-[1400px] px-4 pb-6 pt-5 sm:px-6' : 'mx-auto max-w-[1400px] p-4 sm:p-6'}>
-        {!hero && <BackButton />}
+        <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
+        <BackButton />
 
         <RelationshipTrail>
           <Link to={cfg.basePath} className="hover:text-accent">{cfg.plural}</Link>
@@ -239,13 +235,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           <span className="ml-auto capitalize text-gray-500">{m.status ?? 'Untracked'}</span>
         </RelationshipTrail>
 
-        {hero ? (
-          <>
-            <QuickEdit cfg={cfg} m={m} />
-            <div className="mt-5">{tagRow}</div>
-          </>
-        ) : (
-          <div className="grid gap-7 sm:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="grid gap-7 sm:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
             <div className="mx-auto w-full max-w-[240px] sm:mx-0">
               <CoverImage
                 path={m.coverPath}
@@ -253,7 +243,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
                 rounded="rounded-xl"
                 className="w-full aspect-[2/3]"
               />
-              <div className="mt-3 space-y-2">{actionStack(false)}</div>
+              <div className="mt-3 space-y-2">{actionStack}</div>
             </div>
 
             <div className="min-w-0">
@@ -274,7 +264,6 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               {tagRow}
             </div>
           </div>
-        )}
 
       <Tabs
         id="media-detail"
@@ -352,6 +341,23 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       </TabPanel>
 
       {refreshOpen && <RefreshMediaDialog m={m} onClose={() => setRefreshOpen(false)} />}
+
+      {coverOpen && (
+        <ImagePickerDialog
+          title="Change cover"
+          subject={m.title}
+          currentPath={m.coverPath}
+          override={{ kind: 'media', id: m.id }}
+          artMediaId={m.id}
+          allowRemove
+          onPick={async (path) => {
+            await api.images.setManual('media', m.id, path)
+            await qc.invalidateQueries({ queryKey: qk.media.all })
+          }}
+          onReverted={() => qc.invalidateQueries({ queryKey: qk.media.all })}
+          onClose={() => setCoverOpen(false)}
+        />
+      )}
 
       {torrentsOpen && (
         <TorrentSearchDialog
@@ -475,15 +481,11 @@ function QuickEdit({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
 function LogProgressButton({
   cfg,
   m,
-  demoted = false,
-  inline = false
+  demoted = false
 }: {
   cfg: MediaConfig
   m: MediaDetail
   demoted?: boolean
-  // Hero headers lay the actions out as a row; the plain header stacks them
-  // full-width down the cover column.
-  inline?: boolean
 }) {
   const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
@@ -497,9 +499,11 @@ function LogProgressButton({
       : `Mark ${(cfg.defaultStatuses[1] ?? 'completed').toLowerCase()}`
 
   async function log(): Promise<void> {
+    const anchor = document.activeElement
     setBusy(true)
     try {
       const res = await api.media.logProgress(m.id)
+      celebrateProgress(anchor)
       await qc.invalidateQueries({ queryKey: qk.media.all })
       await qc.invalidateQueries({ queryKey: qk.checklist.all })
       if (res.startedRewatch) toast(`${res.title} — pass #${res.rewatchCount} started`, 'success')
@@ -512,7 +516,7 @@ function LogProgressButton({
 
   return (
     <button
-      className={`${demoted ? 'btn-ghost' : 'btn-primary'} ${inline ? '' : 'w-full mt-2'}`}
+      className={`${demoted ? 'btn-ghost' : 'btn-primary'} w-full mt-2`}
       onClick={log}
       disabled={busy}
       title={

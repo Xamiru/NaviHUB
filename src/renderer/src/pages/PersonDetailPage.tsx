@@ -11,7 +11,7 @@ import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
 import EditorialDetailFrame, { RelationshipTrail } from '../components/EditorialDetailFrame'
 import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
-import { chronologicalYear } from '../lib/archiveDisplay'
+import { chronologicalYear, formatBirthday } from '../lib/archiveDisplay'
 import { buildCareerTimeline } from '../lib/personCareer'
 import type { PersonCredit, MediaType } from '@shared/types'
 
@@ -90,6 +90,7 @@ export default function PersonDetailPage() {
     : staffRoles
 
   const chronology = buildCareerTimeline(credits)
+  const birthday = formatBirthday(person.birthday)
 
   const actingSection =
     totalActing > 0 &&
@@ -107,7 +108,7 @@ export default function PersonDetailPage() {
     })
 
   const crewSection = staffRoles.length > 0 && (
-    <Section title={`Crew roles · ${staffRoles.length}`}>
+    <Section title={`Crew roles · ${staffRoles.length}`} className="mb-0">
       <div className="space-y-1.5">
         {orderedStaff.map((c) => (
           <Link
@@ -151,6 +152,11 @@ export default function PersonDetailPage() {
           })
           qc.invalidateQueries({ queryKey: qk.people.all })
         }}
+        imageOverride={{
+          kind: 'person',
+          id: personId,
+          onReverted: () => qc.invalidateQueries({ queryKey: qk.people.all })
+        }}
         onDelete={async () => {
           await api.people.remove(personId)
           qc.invalidateQueries({ queryKey: qk.people.all })
@@ -159,6 +165,13 @@ export default function PersonDetailPage() {
           // route is specifically Voice Actors, wrong for a movie actor etc.
           navigate(-1)
         }}
+        extra={
+          birthday && (
+            <p className="text-sm text-gray-400">
+              Born <span className="text-gray-200">{birthday}</span>
+            </p>
+          )
+        }
         actions={<AddToListMenu kind="person" entityId={personId} />}
       />
 
@@ -171,13 +184,12 @@ export default function PersonDetailPage() {
       )}
 
       {actingSection}
-      {crewSection}
 
       {chronology.length > 0 && (
         <Section
           title={`Career chronology · ${chronology.length}`}
           subtitle="Oldest to newest across every medium"
-          className="mb-0"
+          className={crewSection ? undefined : 'mb-0'}
         >
           <div className="card overflow-hidden p-0">
             {chronology.map(({ media, roleLabels }) => (
@@ -214,6 +226,8 @@ export default function PersonDetailPage() {
           </div>
         </Section>
       )}
+
+      {crewSection}
     </EditorialDetailFrame>
   )
 }

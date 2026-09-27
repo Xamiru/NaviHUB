@@ -32,9 +32,6 @@ export interface MediaItem {
   titleOriginal: string | null
   synopsis: string | null
   coverPath: string | null
-  // Wide hero art for the detail page (AniList bannerImage / TMDB backdrop).
-  // NULL on every row imported before 2026-08 until it is re-imported.
-  bannerPath: string | null
   releaseDate: string | null
   totalUnits: number | null
   // personal tracking
@@ -54,7 +51,7 @@ export interface MediaItem {
 }
 
 // Lightweight projection for cover cards and Home shelves. Detail-only fields
-// (banner, notes, provider ids and the full metadata blob) deliberately stay
+// (notes, provider ids and the full metadata blob) deliberately stay
 // out of browse IPC payloads. `metadata` contains only card-visible values.
 export interface MediaSummary {
   id: number
@@ -521,14 +518,7 @@ export interface TvSeason {
 }
 
 export interface MediaDetail extends MediaItem {
-  // Wide art the detail-page hero actually paints, resolved server-side:
-  // banner_path (imported), else the first fan art / wallpaper on the Art tab,
-  // else null — at which point the hero blurs the cover instead. Kept separate
-  // from bannerPath so the renderer never re-implements the fallback order.
-  heroPath: string | null
   // The Art-tab image flagged as this item's full-page backdrop, or null.
-  // Independent of heroPath: the same image may be both, and setting a backdrop
-  // never changes the hero strip.
   backgroundPath: string | null
   tags: Tag[]
   companies: MediaCompanyLink[]
@@ -553,6 +543,18 @@ export interface ThemeImportSummary {
 // place in the grid and is not duplicated on disk.
 export type ImageKind = 'wallpaper' | 'fanart'
 
+// Entities whose imported image the user can replace by hand (image_override.kind):
+// a media cover, a person photo, a character image, a music album cover or
+// artist photo.
+export type ImageOverrideKind = 'media' | 'person' | 'character' | 'music_album' | 'music_artist'
+
+// manual = a hand-picked image is held against re-imports. providerPath is what
+// "Restore imported image" would put back (null = the source had none).
+export interface ImageOverrideState {
+  manual: boolean
+  providerPath: string | null
+}
+
 // A wallpaper or fan-art image attached to a media item. The file lives under
 // pictures.dir (virtual "pictures/" prefix) — filePath feeds straight to mediaUrl().
 export interface MediaImage {
@@ -574,9 +576,30 @@ export interface MediaImage {
 
 // One result in the wallpaper Browse dialog. thumbUrl is shown in the grid
 // (remote, allowed by CSP img-src); fullUrl is what gets downloaded on pick.
+// Art-tab Browse sources. Every one is SFW-only by construction (see
+// src/main/artSources.ts); the availability rules live in pictures.listSources.
+export type WallpaperSource =
+  | 'wallhaven'
+  | 'tmdb'
+  | 'fanarttv'
+  | 'anilist'
+  | 'danbooru'
+  | 'vndb'
+  | 'steam'
+  | 'steamgriddb'
+
+export interface WallpaperSourceInfo {
+  source: WallpaperSource
+  label: string
+  // Prefilled search text; null = the source is fixed to this title's own id.
+  query: string | null
+  // Settings key label to add before the source can run; null when ready.
+  needsKey: string | null
+}
+
 export interface WallpaperSearchResult {
-  source: 'wallhaven' | 'tmdb'
-  id: string // wallhaven id / tmdb file_path (seeds the saved file's base name)
+  source: WallpaperSource
+  id: string // provider id / tmdb file_path (seeds the saved file's base name)
   thumbUrl: string
   fullUrl: string
   width: number | null
@@ -587,6 +610,9 @@ export interface WallpaperSearchPage {
   results: WallpaperSearchResult[]
   page: number
   lastPage: number
+  // What the search actually ran, when it differs from the typed text
+  // (Danbooru resolves "Steins;Gate" to the tag steins;gate).
+  resolved?: string
 }
 
 // ---- franchises ----
@@ -721,7 +747,7 @@ export type QuizKind =
   | 'va' // anime character -> different-title character sharing a Japanese VA
   | 'synopsis' // description excerpt -> which title
   | 'mangaPanel' // a page from a locally-linked manga -> which series
-  | 'imageReveal' // progressively reveal a cover/banner/art image (best = points)
+  | 'imageReveal' // progressively reveal a cover/art image (best = points)
   | 'silhouette' // character silhouette -> character/title
   | 'connections' // shared person/studio between two titles
   | 'chronology' // order four related titles by release date
@@ -1525,6 +1551,11 @@ export interface BulkListParams {
   // Anime only: AniList season filter (winter|spring|summer|fall + year).
   season?: string | null
   seasonYear?: number | null
+  // AniList only: a format key and country code from @shared/bulkImport.
+  format?: string | null
+  country?: string | null
+  // AniList sort 'list': whose list to read.
+  username?: string | null
 }
 
 // Preview returns only titles NOT already in the library — the crawl skips
@@ -1538,11 +1569,22 @@ export interface BulkPreviewItem {
   // Source-native community score on its own scale (AniList 0-100, VNDB 10-100,
   // TMDB 0-10, catalog Metacritic 0-100 or RAWG 0-5 depending on sort).
   score: number | null
+  // AniList user-list previews only: the entry's own tracking (AniList status
+  // enum, 0-10 score, progress), mapped to local statuses by the renderer.
+  list?: { status: string; score: number | null; progress: number }
+}
+
+// Personal tracking carried by a user-list import, already mapped to this
+// app's status names by the renderer (which owns the per-type status lists).
+export interface BulkTracking {
+  status: string | null
+  score: number | null
+  progress: number
 }
 
 export interface BulkStartPayload {
   source: import('./bulkImport').BulkSourceKey
-  items: { sourceId: number; title: string }[]
+  items: { sourceId: number; title: string; tracking?: BulkTracking }[]
 }
 
 export interface BulkRunStatus {
@@ -1556,15 +1598,21 @@ export interface BulkRunStatus {
   failed: number
   // Current title while running; the failure/resume hint on 'error'.
   message: string | null
+  // Named so the failed titles can be retried as one run.
+  failures: { sourceId: number; title: string; error: string }[]
+  // Titles this run created that an undo could still remove.
+  undoable: number
 }
 
 // ---- Library Refresh (selectable-aspect bulk re-import) ----
 
 export interface RefreshPreview {
   total: number // titles the run would touch
-  // Rows of the chosen types whose external_source no importer serves any more
-  // (legacy 'rawg'/'igdb' games), reported rather than silently dropped.
+  // Rows of the chosen types no importer can serve (legacy IGDB games, catalog
+  // games while the catalog is not installed), reported rather than dropped.
   unsupported: number
+  // Rough run time from per-source request costs; a guide, not a promise.
+  estimateSeconds: number
 }
 
 export interface RefreshRunStatus {
@@ -1578,7 +1626,7 @@ export interface RefreshRunStatus {
   failed: number
   // Current title while running; the bail-out hint on 'error'.
   message: string | null
-  // Named so a failed title can be retried by hand rather than re-running 400.
+  // Named so the failed titles can be retried as one run rather than re-running 400.
   failures: { id: number; title: string; error: string }[]
 }
 
@@ -2812,11 +2860,42 @@ export interface MusicTrack {
 export type MusicTrackBrowseSort = 'catalog' | 'recent' | 'most' | 'least' | 'title'
 export type MusicTrackBrowseFilter = 'all' | 'unplayed' | 'missingArt'
 
-export interface MusicTrackPageRequest {
+// A decade start year (1990 = 1990–1999), or albums with no usable year.
+export type MusicDecadeFilter = number | 'unknown'
+
+// The Albums/Tracks narrowing that Play and Shuffle also follow.
+export interface MusicBrowseScope {
+  genre?: string | null
+  decade?: MusicDecadeFilter | null
+}
+
+export interface MusicTrackPageRequest extends MusicBrowseScope {
   sort: MusicTrackBrowseSort
   filter: MusicTrackBrowseFilter
   offset: number
   limit: number
+}
+
+export interface MusicGenre {
+  name: string
+  trackCount: number
+  albumCount: number
+}
+
+// Lyrics for one library track. `synced` is LRC text, `plain` unsynced text.
+// 'unchecked' means no local file lyrics and nothing looked up yet.
+export interface MusicLyrics {
+  trackId: number
+  state: 'found' | 'instrumental' | 'missing' | 'unchecked'
+  synced: string | null
+  plain: string | null
+  source: 'file' | 'embedded' | 'lrclib' | null
+}
+
+export interface MusicDecade {
+  decade: number | null // null = no usable year
+  albumCount: number
+  trackCount: number
 }
 
 export interface MusicTrackPage {
@@ -3119,6 +3198,8 @@ export interface SpotifyDownloadQueueAddResult {
   jobId: number | null
   addedSelections: number
   missingCount: number
+  /** Releases whose track list could not be read; the rest were still added. */
+  unreadable?: string[]
 }
 
 export interface SpotifyDownloadQueueStartInput {
@@ -3132,21 +3213,18 @@ export interface SpotifyEntityRef {
   entityId: number
 }
 
-export interface SpotdlDetectResult {
-  standaloneYtdlpVersion?: string | null
-  embeddedYtdlpVersion?: string | null
-  capabilitiesReady?: boolean
-  embeddedAccessTested?: boolean
+/** Readiness of the local tools that download music audio (Spotify metadata needs none). */
+export interface MusicToolsCheck {
   ok: boolean
-  version: string | null
+  ytdlpVersion: string | null
   ffmpeg: boolean
-  deno: boolean
-  supportedVersion: boolean
-  premiumCookieConfigured: boolean
-  premiumCookieValid: boolean
+  /** JavaScript runtime yt-dlp uses for current YouTube extraction ('Deno' or 'Node.js'). */
+  jsRuntime: string | null
+  /** yt-dlp can embed cover art into Opus files (its optional mutagen library). */
+  coverArt: boolean
+  cookieConfigured: boolean
+  cookieValid: boolean
   error: string | null
-  metadataReady?: boolean
-  downloadReady?: boolean
   youtubeAccess?: SpotifyYouTubeAccess
 }
 
@@ -3318,6 +3396,7 @@ export type TaskKind =
   | 'torrentSearch'
   | 'franchiseArt'
   | 'libraryExport'
+  | 'storageMove'
 // Achievement fetches deliberately have NO kind of their own: they run through
 // withActivity in ipc.ts, so they are 'import' rows with a clear label
 // ("Fetching achievements"). Adding a kind nothing creates would be a lie the
@@ -3393,6 +3472,33 @@ export type LibraryExportPhase =
   | 'done'
   | 'cancelled'
   | 'error'
+
+// Settings → Folders: relocating the app's own image roots (storageMove.ts).
+export type StorageRootKey = 'pictures' | 'media'
+
+export interface StoragePaths {
+  pictures: string
+  media: string
+  // slideshow.dir is unset, so the Slideshow folder lives inside (and moves
+  // with) the pictures folder.
+  slideshowInsidePictures: boolean
+}
+
+export type StorageMovePhase = 'idle' | 'copying' | 'cleaning' | 'done' | 'cancelled' | 'error'
+
+export interface StorageMoveStatus {
+  running: boolean
+  root: StorageRootKey | null
+  from: string | null
+  to: string | null
+  phase: StorageMovePhase
+  done: number
+  total: number
+  // Old files that could not be removed after their copy (in use, or failed
+  // verification) — the new folder is complete either way.
+  leftovers: number
+  error: string | null
+}
 
 export interface LibraryExportStatus {
   id: string | null
@@ -3585,269 +3691,6 @@ export interface JpMilestones {
   mangaCompleted: number
   novelsCompleted: number
 }
-
-// ---- Gacha tracker ----
-// Standalone section for live-service gacha games. The game list and each
-// game's unit kinds / currencies / display labels live in src/shared/gacha.ts;
-// these are the DB row shapes (tables are game-agnostic).
-
-export type GachaGameId = 'hsr' | 'fgo' | 'e7' | 'wuwa'
-
-export interface GachaUnit {
-  id: number
-  game: GachaGameId
-  kind: string // keys into the game's unitKinds config (frozen vocabulary)
-  name: string
-  rarity: number | null
-  element: string | null // facet 1; labeled (or hidden) per kind config
-  role: string | null // facet 2 (Path / Class / weapon type)
-  imagePath: string | null
-  owned: boolean
-  favorite: boolean
-  level: number | null
-  // Extra copies consumed, 0-based (HSR eidolon, FGO NP-1, E7 imprint, WuWa
-  // sequence). Display formatting comes from the kind config, never the DB.
-  dupes: number
-  obtainedAt: string | null
-  notes: string | null
-  data: Record<string, unknown> | null // per-game detail-phase payload
-  externalSource: string | null // future catalog importers
-  externalId: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-export interface GachaBuild {
-  id: number
-  unitId: number
-  name: string
-  sortOrder: number
-  data: Record<string, unknown> | null // freeform now; detail phases structure it
-  notes: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-export interface GachaUnitDetail extends GachaUnit {
-  builds: GachaBuild[]
-}
-
-export interface GachaUnitInput {
-  game: GachaGameId
-  kind: string
-  name: string
-  rarity?: number | null
-  element?: string | null
-  role?: string | null
-  imagePath?: string | null
-  owned?: boolean
-  favorite?: boolean
-  level?: number | null
-  dupes?: number
-  obtainedAt?: string | null
-  notes?: string | null
-  data?: Record<string, unknown> | null
-}
-
-export interface GachaUnitFilter {
-  kind?: string
-  search?: string
-  ownedOnly?: boolean
-}
-
-export interface GachaBuildInput {
-  name: string
-  data?: Record<string, unknown> | null
-  notes?: string | null
-}
-
-export interface GachaCurrency {
-  game: GachaGameId
-  key: string // keys into the game's currencies config
-  amount: number
-  updatedAt: string
-}
-
-export interface GachaBanner {
-  id: number
-  game: GachaGameId
-  name: string
-  kind: string | null
-  featured: string | null // display string; a link table may replace it later
-  startAt: string | null // 'YYYY-MM-DD'; null while unannounced
-  endAt: string | null // null = open-ended
-  imagePath: string | null
-  notes: string | null
-  externalSource: string | null // future banner fetchers
-  externalId: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-export interface GachaBannerInput {
-  game: GachaGameId
-  name: string
-  kind?: string | null
-  featured?: string | null
-  startAt?: string | null
-  endAt?: string | null
-  imagePath?: string | null
-  notes?: string | null
-}
-
-export interface GachaNewsItem {
-  id: number
-  game: GachaGameId
-  title: string
-  url: string | null
-  summary: string | null
-  // Remote https thumbnail rendered directly (CSP img-src allows https:);
-  // never downloaded — news is ephemeral.
-  imageUrl: string | null
-  publishedAt: string | null
-  author: string | null // reddit username (no u/ prefix)
-  externalId: string // fetchers always supply one (post id) for the upsert
-  fetchedAt: string
-}
-
-export type GachaNewsUpsert = Omit<GachaNewsItem, 'id' | 'game' | 'fetchedAt'>
-
-export interface GachaNewsPage {
-  fetchedAt: string | null // last successful fetch; null before the first
-  items: GachaNewsItem[]
-}
-
-export interface GachaNewsFetchResult {
-  added: number
-  total: number
-}
-
-// Result of a catalog import (toast copy). imagesFailed counts faces that
-// failed to download — those rows keep any prior image_path.
-export interface GachaCatalogImportResult {
-  total: number
-  created: number
-  updated: number
-  imagesFailed: number
-}
-
-// Result of an app-backup ownership import (Chaldea). unmatched = backup
-// entries with no catalog row (e.g. JP-only units against the NA catalog).
-export interface GachaBackupImportResult {
-  servants: number
-  craftEssences: number
-  unmatched: number
-}
-
-// One ownership change from an app backup, keyed to a catalog row by
-// (kind, externalId). dataMerge is shallow-merged over the row's existing data.
-export interface GachaOwnershipPatch {
-  kind: string
-  externalId: string
-  dupes: number
-  level?: number | null
-  dataMerge?: Record<string, unknown>
-}
-
-// Hub page card data, one per configured game.
-export interface GachaGameOverview {
-  game: GachaGameId
-  unitCount: number // owned roster entries across all kinds
-  currencies: GachaCurrency[]
-  activeBanners: number
-  imagePath: string | null // user-set hero art (gacha_meta 'image')
-}
-
-// ---- Gacha coach (FGO LLM coaching chat) ----
-// The coach can act in the app via tools; every LLM call is user-triggered
-// (send / import). Reminders (goals/tasks) render from the DB with no API call.
-
-export interface GachaChatAction {
-  tool: string // e.g. 'add_unit'
-  label: string // e.g. 'Added Mash — 4★ Shielder'
-}
-
-export interface GachaChatMessage {
-  id: number
-  threadId: number
-  role: 'user' | 'assistant'
-  text: string
-  // The tool-action chips shown under this message (assistant turns only).
-  actions: GachaChatAction[]
-  // media/ relative paths of screenshots the user attached (display only).
-  attachments: string[]
-  usageIn: number | null
-  usageOut: number | null
-  createdAt: string
-}
-
-export interface GachaChatThread {
-  id: number
-  game: GachaGameId
-  title: string | null
-  archivedAt: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-// The current (or just-finished) coach turn, polled by the renderer — no push
-// IPC. phase is 'thinking' | 'writing' | 'tool:<name>'.
-export interface GachaCoachStatus {
-  turnId: number
-  threadId: number
-  game: GachaGameId
-  running: boolean
-  phase: string
-  partialText: string
-  actions: GachaChatAction[]
-  error: string | null
-  startedAt: string
-}
-
-export interface GachaGoal {
-  id: number
-  game: GachaGameId
-  kind: 'goal' | 'task'
-  title: string
-  notes: string | null
-  status: 'active' | 'done' | 'dropped'
-  dueAt: string | null // 'YYYY-MM-DD'
-  recur: 'daily' | 'weekly' | null
-  createdBy: 'user' | 'coach'
-  doneAt: string | null
-  sortOrder: number
-  createdAt: string
-  updatedAt: string
-}
-
-export interface GachaGoalInput {
-  kind?: 'goal' | 'task'
-  title: string
-  notes?: string | null
-  dueAt?: string | null
-  recur?: 'daily' | 'weekly' | null
-  createdBy?: 'user' | 'coach'
-}
-
-export interface GachaCoachNote {
-  id: number
-  game: GachaGameId
-  content: string
-  createdBy: 'user' | 'coach'
-  createdAt: string
-  updatedAt: string
-}
-
-export interface GachaCoachDoc {
-  id: number
-  game: GachaGameId
-  title: string
-  content: string
-  summary: string | null
-  createdAt: string
-}
-
-export type GachaCoachDueCounts = Partial<Record<GachaGameId, number>>
 
 // ---- Torrents (Jackett search + qBittorrent hand-off) ----
 
@@ -5005,6 +4848,9 @@ export interface SpotifyAudioCandidate {
   title: string
   channel: string
   duration: number | null
+  /** Credited artists of an official YouTube Music audio track; null for ordinary videos. */
+  artist?: string | null
+  album?: string | null
 }
 
 export interface MusicSourceEvidence {
@@ -5139,29 +4985,7 @@ export interface GameRunHistory {
   sessionTotal: number
   noteTotal: number
 }
-export type MusicAlbumShelf = 'want' | 'exploring' | 'revisit'
-export interface MusicAlbumPersonalInput {
-  rating: number | null
-  shelf: MusicAlbumShelf | null
-  review: string
-  tags: string[]
-}
 export interface MusicTrackPersonal { trackId: number; standout: boolean; tags: string[] }
-export interface MusicAlbumPersonal extends MusicAlbumPersonalInput {
-  albumId: number
-  tracks: MusicTrackPersonal[]
-}
-export interface MusicListenInput { listenedOn: string; rating: number | null; notes: string }
-export interface MusicListen extends MusicListenInput { id: number; albumId: number }
-export interface MusicJournalAlbum extends MusicAlbumSummary, MusicAlbumPersonalInput {
-  listenCount: number
-  lastListenedOn: string | null
-}
-export interface MusicJournalFilter {
-  search: string
-  shelf: MusicAlbumShelf | 'all' | 'rated'
-  page: number
-}
 export interface MusicSmartRules {
   liked: 'any' | 'liked' | 'unliked'
   playState: 'any' | 'unplayed' | 'played'
@@ -5172,8 +4996,6 @@ export interface MusicSmartRules {
   tagMode: 'all' | 'any'
   artist: string
   soundtrack: 'any' | 'linked' | 'unlinked'
-  minAlbumRating: number | null
-  shelf: MusicAlbumShelf | null
   order: 'title' | 'leastPlayed' | 'recent' | 'oldestPlayed'
   maxTracks: number
 }

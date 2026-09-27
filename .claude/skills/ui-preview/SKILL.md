@@ -20,7 +20,8 @@ that already exists in code is checked with the `verify` skill (real app, real d
 preview is the closest thing to a visual check that exists — still say "unverified in the UI" in
 the completion message when the real code lands.
 
-Why it works this way: the app has ONE theme (Lain, `styles.css :root`) and a fixed vocabulary of
+Why it works this way: the app's themes (Lain by default in `styles.css :root`; Metal Gear, Miku
+and Twin Peaks under `html[data-theme=…]`) share semantic color roles and a fixed vocabulary of
 primitives (`docs/architecture/ui-conventions.md`), so a hand-drawn mockup in a different palette
 or font would only mislead. Compiling the mockup with the real config means what the user sees is
 what the JSX will render, and the port is copy-paste, not translation.
@@ -43,7 +44,7 @@ likes). Never ask what CLAUDE.md or the code already answers.
   idioms creates a second design system.
 - CLAUDE.md "Renderer conventions" — one `btn-primary` per screen, `gray-600` decorative-only,
   no Cancel button on forms, Delete lives in `ActionMenu`, `text-gray-400`+ for readable
-  secondary copy, and **no emoji or decorative glyphs** (functional `✕ ✓ ○ ★ ♥ ← ▸ ›` only).
+  secondary copy, and **no emoji or decorative glyphs** (functional `✕ ✓ ○ ★ ← ▸ ›` only; like/favorite is the SVG `FavoriteButton`, never `♥`).
 
 ## 2. Write the mockup
 
@@ -79,7 +80,10 @@ Rules for the markup:
   it (`<p class="text-xs uppercase tracking-widest text-gray-500">Variant A · dense list</p>`),
   or a `.pill` switcher at the top that swaps frames. Name what each variant *changes*, not
   "A/B/C".
-- **The CRT overlay renders** (scanlines + vignette, `body::before/::after`) — that's the app.
+- **The CRT overlay renders** (scanlines + vignette, `body::before/::after`) — that's Lain, the
+  default theme. To preview another theme, stamp it the way the app does:
+  `<script>document.documentElement.setAttribute('data-theme','metal-gear')</script>`
+  (`miku`, `twin-peaks`).
   Mocking a reader route? add `<script>document.documentElement.setAttribute('data-reader','')</script>`,
   which is exactly what App.tsx stamps.
 - Keep the `<!-- @title Some Name -->` comment at the top: it becomes the browser-tab title. A
@@ -94,7 +98,7 @@ node .claude/skills/ui-preview/build.mjs previews/src/<slug>.html     # → prev
 Output: `built … (NNN KB, N class tokens, N without CSS)`. **Read the "without CSS" list** — each
 entry is a class that produced no rule: a typo (`bg-base-750`), or a utility this config doesn't
 know. Fix them; a class that silently does nothing here will silently do nothing in the app.
-Fonts (IBM Plex Mono, VT323) and the sidebar avatar are inlined automatically (~350 KB baseline);
+Fonts (IBM Plex Mono, VT323 and the bundled theme fonts) and the sidebar avatar are inlined automatically (~350 KB baseline);
 the result is one file with no external references.
 
 ## 4. Hand over the file — do not publish it

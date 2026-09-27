@@ -14,7 +14,7 @@ import type { EnWritingEntry } from '@shared/types'
 import EditorialDetailFrame from '../components/EditorialDetailFrame'
 import ContextPanel, { ContextFact } from '../components/ContextPanel'
 
-// Writing practice: pick a task, write, submit for LLM grading (the coach
+// Writing practice: pick a task, write, submit for LLM grading (the shared
 // provider settings — one plain-await call, the button disables for the
 // ~10-20s). Feedback = rubric scores + line corrections + a model rewrite;
 // every submission lands in en_writing so progress is visible over time.

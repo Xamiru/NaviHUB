@@ -264,8 +264,8 @@ export function importSentenceAudio(): Promise<SentenceAudioImportSummary> {
       return await importAudioData(clips, skippedUnlicensed, skippedUnmatched, {
         fetchClip: async (audioId) => {
           try {
-            // Fail fast per clip: one worker, bounded timeout, no 429 waits
-            // (the gachaNews lesson) — a down host aborts via the
+            // Fail fast per clip: one worker, bounded timeout, no 429 waits —
+            // a down host aborts via the
             // consecutive-failure counter instead of hanging for an hour.
             const res = await fetchWithRetry(
               clipUrl(audioId),

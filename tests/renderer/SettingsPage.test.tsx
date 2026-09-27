@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ANIME } from '@/lib/mediaConfig'
-import { SpotdlSettings, StatusEditor, TextSetting } from '@/pages/SettingsPage'
+import { MusicDownloadSettings, StatusEditor, TextSetting } from '@/pages/SettingsPage'
 import { expectNoAxeViolations } from './accessibility'
 
 const mocks = vi.hoisted(() => ({
@@ -24,7 +24,7 @@ vi.mock('@/lib/api', () => ({
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.listPage.mockResolvedValue({ items: [], total: 0, offset: 0, hasMore: false })
-  mocks.spotifyDetect.mockResolvedValue({ ok: true, metadataReady: true, version: '4.5.2' })
+  mocks.spotifyDetect.mockResolvedValue({ ok: true, ytdlpVersion: '2026.08.19', ffmpeg: true, jsRuntime: 'Deno', coverArt: true, cookieConfigured: false, cookieValid: true, error: null })
   mocks.spotifyTestYouTubeAccess.mockResolvedValue({ ok: true, state: 'ready' })
 })
 
@@ -84,7 +84,7 @@ describe('Settings editing', () => {
   it('saves the visible cookies path before testing YouTube access', async () => {
     const user = userEvent.setup()
     const onSave = vi.fn(async () => undefined)
-    render(<SpotdlSettings data={{}} onSave={onSave} />)
+    render(<MusicDownloadSettings data={{}} onSave={onSave} />)
 
     await user.click(screen.getByRole('button', { name: 'Save & test' }))
     await screen.findByRole('button', { name: 'Save cookies & test YouTube access' })

@@ -21,7 +21,7 @@ describe('Refresh keeps local music maintenance separate from source re-imports'
 
   it('offers safe presets, remembers a custom setup, and requires a review before refresh', () => {
     expect(refreshTab).toContain('Fill missing covers')
-    expect(refreshTab).toContain('Fill missing hero art')
+    expect(refreshTab).not.toContain('hero art')
     expect(refreshTab).toContain('Update TV episodes')
     expect(refreshTab).toContain('Update anime theme songs')
     expect(refreshTab).toContain('My custom refresh')

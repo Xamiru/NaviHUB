@@ -1,4 +1,3 @@
-import { GACHA_GAMES } from '@shared/gacha'
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 import { MEDIA_CONFIGS } from './mediaConfig'
 
@@ -37,8 +36,7 @@ const MEDIA_DRAWER_ITEMS: ArchiveNavItem[] = [
 ]
 
 const PLAY_DRAWER_ITEMS: ArchiveNavItem[] = [
-  { to: '/quiz', label: 'Quiz', visibilityKey: 'quiz' },
-  { to: '/gacha', label: 'Gacha', visibilityKey: 'gacha' }
+  { to: '/quiz', label: 'Quiz', visibilityKey: 'quiz' }
 ]
 
 const LEARN_DRAWER_ITEMS: ArchiveNavItem[] = [
@@ -106,7 +104,7 @@ export function archiveAreaForPath(pathname: string): ArchiveArea {
   ) {
     return 'learn'
   }
-  if (pathname.startsWith('/quiz') || pathname.startsWith('/gacha')) return 'play'
+  if (pathname.startsWith('/quiz')) return 'play'
   if (
     MEDIA_CONFIGS.some(
       (cfg) => pathname === cfg.basePath || pathname.startsWith(`${cfg.basePath}/`)
@@ -299,16 +297,6 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
       ]
     }
   }
-  if (pathname.startsWith('/gacha')) {
-    return {
-      title: 'Gacha',
-      descriptor: 'Operations board',
-      items: [
-        { to: '/gacha', label: 'Operations' },
-        ...GACHA_GAMES.map((game) => ({ to: `/gacha/${game.id}`, label: game.short }))
-      ]
-    }
-  }
   if (pathname.startsWith('/wrestling')) {
     return {
       title: 'Wrestling',
@@ -331,7 +319,6 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
       descriptor: 'Sonic archive',
       items: [
         { to: '/music', label: 'Library' },
-        { to: '/music/journal', label: 'Journal' },
         { to: '/music/smart', label: 'Smart Playlists' },
         { to: '/music/downloads', label: 'Downloads' },
         { to: '/music/liked', label: 'Liked' },

@@ -40,7 +40,8 @@ export default function MusicTrackRow({
   leading,
   trailing,
   onPlay,
-  onRemove
+  onRemove,
+  menuItems
 }: {
   track: MusicTrack
   index?: number // visible number (album pages pass the track #)
@@ -50,6 +51,8 @@ export default function MusicTrackRow({
   trailing?: ReactNode // e.g. a play-count chip on the stats page
   onPlay: () => void
   onRemove?: () => void
+  /** Context actions shown first in the row's menu (e.g. a playlist's source choices). */
+  menuItems?: { label: string; onSelect: () => void }[]
 }) {
   const qc = useQueryClient()
   const player = usePlayerControls()
@@ -112,12 +115,12 @@ export default function MusicTrackRow({
       <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-500">
         {formatDuration(track.duration)}
       </span>
-      <TrackMenu track={track} onRemove={onRemove} />
+      <TrackMenu track={track} onRemove={onRemove} menuItems={menuItems} />
     </div>
   )
 }
 
-function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => void }) {
+function TrackMenu({ track, onRemove, menuItems = [] }: { track: MusicTrack; onRemove?: () => void; menuItems?: { label: string; onSelect: () => void }[] }) {
   const qc = useQueryClient()
   const player = usePlayerControls()
   const [open, setOpen] = useState(false)
@@ -195,6 +198,19 @@ function TrackMenu({ track, onRemove }: { track: MusicTrack; onRemove?: () => vo
           role="region"
           aria-labelledby={triggerId}
         >
+          {menuItems.map((item) => (
+            <button
+              key={item.label}
+              className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"
+              onClick={() => {
+                setOpen(false)
+                item.onSelect()
+              }}
+            >
+              {item.label}
+            </button>
+          ))}
+          {menuItems.length > 0 && <div className="my-1 border-t border-base-600" />}
           <button
             className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"
             onClick={() => {

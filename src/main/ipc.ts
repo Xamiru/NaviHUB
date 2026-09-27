@@ -15,6 +15,7 @@ import * as tvRepo from './repos/tvRepo'
 import * as libraryRefresh from './libraryRefresh'
 import * as peopleRepo from './repos/peopleRepo'
 import * as companyRepo from './repos/companyRepo'
+import * as imageOverrideRepo from './repos/imageOverrideRepo'
 import * as characterRepo from './repos/characterRepo'
 import * as linkRepo from './repos/linkRepo'
 import * as tagRepo from './repos/tagRepo'
@@ -62,6 +63,7 @@ import * as bulkImport from './bulkImport'
 import * as openlibrary from './openlibrary'
 import * as themes from './themes'
 import * as pictures from './pictures'
+import * as storageMove from './storageMove'
 import * as franchiseArt from './franchiseArt'
 import * as jackett from './jackett'
 import * as qbittorrent from './qbittorrent'
@@ -84,18 +86,15 @@ import * as appMenu from './appMenu'
 import * as updater from './updater'
 import * as music from './music'
 import * as musicRepo from './repos/musicRepo'
-import * as musicDownload from './musicDownload'
+import { detectBinary as detectYtDlp } from './musicTools'
+import { findEntityCandidates } from './musicCatalogue'
+import * as musicToolSetup from './musicToolSetup'
+import { fetchLyrics, getLyrics } from './musicLyrics'
 import * as musicSpotify from './musicSpotify'
 import * as musicSpotifyRepo from './repos/musicSpotifyRepo'
 import * as musicArt from './musicArt'
 import * as mokuro from './mokuro'
 import * as mokuroRun from './mokuroRun'
-import * as gacha from './gacha'
-import * as gachaRepo from './repos/gachaRepo'
-import * as atlas from './atlas'
-import * as chaldea from './chaldea'
-import * as gachaCoach from './gachaCoach'
-import * as coachRepo from './repos/coachRepo'
 import * as wrestlingRepo from './repos/wrestlingRepo'
 import * as wrestlingImport from './wrestling/importRun'
 import * as playerBridge from './playerBridge'
@@ -138,15 +137,10 @@ export function registerIpc(): void {
   ipcMain.handle('playthroughs:saveNote', (_e, mediaId, runId, id, input) => playthroughs.saveNote(mediaId, runId, id, input))
   ipcMain.handle('playthroughs:removeNote', (_e, mediaId, runId, id) => playthroughs.removeNote(mediaId, runId, id))
   // ---- musicJournal ----
-  ipcMain.handle('musicJournal:album', (_e, id) => musicJournal.album(id))
-  ipcMain.handle('musicJournal:saveAlbum', (_e, id, input) => musicJournal.saveAlbum(id, input))
   ipcMain.handle('musicJournal:track', (_e, id) => musicJournal.track(id))
   ipcMain.handle('musicJournal:saveTrack', (_e, input) => musicJournal.saveTrack(input))
-  ipcMain.handle('musicJournal:listens', (_e, albumId, page) => musicJournal.listens(albumId, page))
-  ipcMain.handle('musicJournal:saveListen', (_e, albumId, id, input) => musicJournal.saveListen(albumId, id, input))
-  ipcMain.handle('musicJournal:removeListen', (_e, albumId, id) => musicJournal.removeListen(albumId, id))
+  ipcMain.handle('musicJournal:standouts', (_e, albumId) => musicJournal.standouts(albumId))
   ipcMain.handle('musicJournal:tags', (_e) => musicJournal.tags())
-  ipcMain.handle('musicJournal:list', (_e, input) => musicJournal.list(input))
   // ---- musicSmart ----
   ipcMain.handle('musicSmart:list', (_e) => musicSmart.list())
   ipcMain.handle('musicSmart:save', (_e, id, input) => musicSmart.save(id, input))
@@ -204,8 +198,8 @@ export function registerIpc(): void {
   video.installProber()
   musicSpotify.initializeDownloadQueue()
 
-  // The app's one "today": the LOCAL calendar day. Recurring features (gacha
-  // goals, checklist periods) take it as a parameter so the renderer never
+  // The app's one "today": the LOCAL calendar day. Recurring features
+  // (checklist periods, the TV air-date cutoff) take it as a parameter so the renderer never
   // derives a date and tests can pin one.
   const todayLocal = (): string => {
     const d = new Date()
@@ -269,6 +263,7 @@ export function registerIpc(): void {
   ipcMain.handle('refresh:start', (_e, req) => libraryRefresh.start(req))
   ipcMain.handle('refresh:status', () => libraryRefresh.getStatus())
   ipcMain.handle('refresh:cancel', () => libraryRefresh.cancel())
+  ipcMain.handle('refresh:retryFailed', () => libraryRefresh.retryFailed())
   ipcMain.handle('refresh:one', (_e, mediaId: number, aspects) =>
     withActivity('Refreshing title', () => libraryRefresh.refreshMedia(mediaId, aspects))
   )
@@ -297,6 +292,15 @@ export function registerIpc(): void {
   ipcMain.handle('characters:roles', (_e, id) => characterRepo.roles(id))
   ipcMain.handle('characters:upsert', (_e, input) => characterRepo.upsert(input))
   ipcMain.handle('characters:remove', (_e, id) => characterRepo.remove(id))
+
+  // ---- images (hand-picked covers, photos, character images) ----
+  ipcMain.handle('images:overrideState', (_e, kind, id) => imageOverrideRepo.getState(kind, id))
+  ipcMain.handle('images:setManual', (_e, kind, id, path) =>
+    imageOverrideRepo.setManual(kind, id, path)
+  )
+  ipcMain.handle('images:revert', (_e, kind, id) => imageOverrideRepo.revert(kind, id))
+  ipcMain.handle('images:fromUrl', (_e, url) => pictures.importImageFromUrl(url))
+  ipcMain.handle('images:fromArt', (_e, imageId) => pictures.importImageFromArt(imageId))
 
   // ---- credits & media-company links ----
   ipcMain.handle('credits:remove', (_e, id) => linkRepo.removeCredit(id))
@@ -739,6 +743,17 @@ export function registerIpc(): void {
   ipcMain.handle('bulk:start', (_e, payload) => bulkImport.start(payload))
   ipcMain.handle('bulk:status', () => bulkImport.getStatus())
   ipcMain.handle('bulk:cancel', () => bulkImport.cancel())
+  ipcMain.handle('bulk:retryFailed', () => bulkImport.retryFailed())
+  ipcMain.handle('bulk:undoLast', () => {
+    // Same removal as media:remove, per title the last run created and nobody
+    // has tracked since.
+    const { removable, kept } = bulkImport.takeUndoable()
+    for (const id of removable) {
+      pictures.forgetSlideshowForMedia(id)
+      mediaRepo.remove(id)
+    }
+    return { removed: removable.length, kept }
+  })
 
   // ---- AnimeThemes import (anime OP/ED songs) + the Songs library ----
   ipcMain.handle('themes:import', (_e, mediaId) =>
@@ -753,10 +768,10 @@ export function registerIpc(): void {
 
   // ---- pictures (wallpapers + fan art) ----
   ipcMain.handle('pictures:list', (_e, mediaId, kind) => pictures.listImages(mediaId, kind))
-  ipcMain.handle('pictures:searchWallhaven', (_e, query, page) =>
-    pictures.searchWallhaven(query, page)
+  ipcMain.handle('pictures:sources', (_e, mediaId, kind) => pictures.listSources(mediaId, kind))
+  ipcMain.handle('pictures:search', (_e, mediaId, source, query, page) =>
+    pictures.searchSource(mediaId, source, query, page)
   )
-  ipcMain.handle('pictures:searchTmdb', (_e, mediaId) => pictures.searchTmdbBackdrops(mediaId))
   ipcMain.handle('pictures:addFromSearch', (_e, mediaId, kind, result) =>
     pictures.addFromSearch(mediaId, kind, result)
   )
@@ -826,6 +841,17 @@ export function registerIpc(): void {
   ipcMain.handle('libraryExport:cancel', () => libraryExport.cancel())
   ipcMain.handle('libraryExport:reveal', () => libraryExport.reveal())
 
+  // ---- storage (moving the pictures/media roots) ----
+  ipcMain.handle('storage:paths', () => storageMove.paths())
+  ipcMain.handle('storage:status', () => storageMove.getStatus())
+  ipcMain.handle('storage:chooseFolder', (event, root) =>
+    storageMove.chooseFolder(root, BrowserWindow.fromWebContents(event.sender))
+  )
+  ipcMain.handle('storage:move', (_e, root, to) => storageMove.start(root, to))
+  ipcMain.handle('storage:open', async (_e, root) => {
+    await shell.openPath(await storageMove.ensureRoot(root))
+  })
+
   // ---- in-app updates ----
   // Deliberately NOT withActivity: the shared slot has no terminal states and
   // clears on completion, but the updater must keep 'ready'/'error' readable
@@ -841,12 +867,16 @@ export function registerIpc(): void {
   ipcMain.handle('music:scan', () => music.startScan())
   ipcMain.handle('music:scanStatus', () => music.getScanStatus())
   ipcMain.handle('music:artists', (_e, search) => musicRepo.listArtists(search))
-  ipcMain.handle('music:albums', (_e, search) => musicRepo.listAlbums(search))
+  ipcMain.handle('music:albums', (_e, search, scope) => musicRepo.listAlbums(search, scope))
+  ipcMain.handle('music:genres', () => musicRepo.listGenres())
+  ipcMain.handle('music:decades', () => musicRepo.listDecades())
+  ipcMain.handle('music:lyrics', (_e, trackId) => getLyrics(trackId))
+  ipcMain.handle('music:fetchLyrics', (_e, trackId) => fetchLyrics(trackId))
   ipcMain.handle('music:artist', (_e, id) => musicRepo.getArtist(id))
   ipcMain.handle('music:album', (_e, id) => musicRepo.getAlbum(id))
   ipcMain.handle('music:tracks', (_e, filter) => musicRepo.listTracks(filter))
   ipcMain.handle('music:trackPage', (_e, request) => musicRepo.listTrackPage(request))
-  ipcMain.handle('music:playbackQueue', (_e, shuffle) => musicRepo.playbackQueue(shuffle))
+  ipcMain.handle('music:playbackQueue', (_e, shuffle, scope) => musicRepo.playbackQueue(shuffle, scope))
   ipcMain.handle('music:artistTracks', (_e, artistId) => musicRepo.artistTracks(artistId))
   ipcMain.handle('music:search', (_e, query) => musicRepo.searchAll(query))
   ipcMain.handle('music:stats', () => musicRepo.stats())
@@ -885,16 +915,13 @@ export function registerIpc(): void {
   )
   ipcMain.handle('music:spotifyEntityState', (_e, input) => musicSpotify.entityState(input))
   ipcMain.handle('music:spotifyFindEntityCandidates', (_e, input) =>
-    musicSpotify.findEntityCandidates(input)
+    findEntityCandidates(input)
   )
   ipcMain.handle('music:spotifyStartEntityInspection', (_e, input) =>
     musicSpotify.inspectEntity(input)
   )
   ipcMain.handle('music:spotifyInspectionStatus', () => musicSpotify.getInspectionStatus())
   ipcMain.handle('music:spotifyCancelInspection', (_e, jobId) => musicSpotify.cancelInspection(jobId))
-  ipcMain.handle('music:spotifyDownloadEntity', (_e, input) =>
-    musicSpotify.startEntityDownload(input)
-  )
   ipcMain.handle('music:spotifyDownloadQueue', () => musicSpotify.getDownloadQueue())
   ipcMain.handle('music:spotifyQueueAddEntity', (_e, input) =>
     musicSpotify.addEntityDownloadQueue(input)
@@ -935,27 +962,19 @@ export function registerIpc(): void {
   ipcMain.handle('music:spotifyRemoveItem', (_e, itemId) =>
     musicSpotifyRepo.removeSpotifyItem(itemId)
   )
-  ipcMain.handle('music:spotifyDetect', () => musicSpotify.detectBinary())
-  ipcMain.handle('music:spotifyPickCookieFile', () => musicSpotify.pickCookieFile())
-  ipcMain.handle('music:spotifyTestYouTubeAccess', (_e, force) => musicSpotify.testYoutubeAccess(Boolean(force)))
-  ipcMain.handle('music:spotifyInstallDeno', () => musicSpotify.installDeno())
+  ipcMain.handle('music:spotifyDetect', () => musicToolSetup.detectMusicTools())
+  ipcMain.handle('music:spotifyPickCookieFile', () => musicToolSetup.pickCookieFile())
+  ipcMain.handle('music:spotifyTestYouTubeAccess', (_e, force) => musicToolSetup.testYoutubeAccess(Boolean(force)))
+  ipcMain.handle('music:spotifyInstallDeno', () => musicToolSetup.installDeno())
   ipcMain.handle('music:playlistsForTrack', (_e, trackId) => musicRepo.playlistsForTrack(trackId))
   ipcMain.handle('music:setLiked', (_e, trackId, liked) => musicRepo.setLiked(trackId, liked))
   ipcMain.handle('music:logPlay', (_e, trackId) => musicRepo.logPlay(trackId))
   ipcMain.handle('music:recent', (_e, limit) => musicRepo.recentlyPlayed(limit))
   ipcMain.handle('music:statsDetail', (_e, days) => musicRepo.statsDetail(days))
   ipcMain.handle('music:queueAdd', (_e, input) => musicSpotify.addMusicQueue(input))
-  ipcMain.handle('music:queueAddUrl', (_e, input) => musicSpotify.addUrlDownloadQueue(input))
-  ipcMain.handle('music:downloadStart', (_e, input) => {
-    const result = musicSpotify.addUrlDownloadQueue(input)
-    return musicSpotify.startDownloadQueue({ jobId: result.jobId! })
-  })
-  ipcMain.handle('music:downloadCancel', (_e, id) => {
-    musicDownload.cancelDownload(id)
-    musicSpotify.cancelDownload(id)
-  })
-  ipcMain.handle('music:downloadStatus', () => musicSpotify.getStatus() ?? musicDownload.getStatus())
-  ipcMain.handle('music:downloadDetect', () => musicDownload.detectBinary())
+  ipcMain.handle('music:downloadCancel', (_e, id) => musicSpotify.cancelDownload(id))
+  ipcMain.handle('music:downloadStatus', () => musicSpotify.getStatus())
+  ipcMain.handle('music:downloadDetect', () => detectYtDlp())
   ipcMain.handle('music:artFetchAlbum', (_e, albumId) => musicArt.fetchAlbumArt(albumId))
   ipcMain.handle('music:artFetchArtist', (_e, artistId) => musicArt.fetchArtistImage(artistId))
   ipcMain.handle('music:artClearAlbum', (_e, albumId) => musicArt.clearAlbumArt(albumId))
@@ -963,64 +982,6 @@ export function registerIpc(): void {
   ipcMain.handle('music:artFetchMissing', () => musicArt.fetchMissingArt())
   ipcMain.handle('music:artCancel', () => musicArt.cancelArtFetch())
   ipcMain.handle('music:artStatus', () => musicArt.getArtStatus())
-
-  // ---- gacha tracker ----
-  ipcMain.handle('gacha:overview', () => gachaRepo.overview())
-  ipcMain.handle('gacha:units', (_e, game, filter) => gachaRepo.listUnits(game, filter))
-  ipcMain.handle('gacha:unit', (_e, id) => gachaRepo.getUnit(id))
-  ipcMain.handle('gacha:createUnit', (_e, input) => gachaRepo.createUnit(input))
-  ipcMain.handle('gacha:updateUnit', (_e, id, patch) => gachaRepo.updateUnit(id, patch))
-  ipcMain.handle('gacha:removeUnit', (_e, id) => gachaRepo.removeUnit(id))
-  ipcMain.handle('gacha:createBuild', (_e, unitId, input) => gachaRepo.createBuild(unitId, input))
-  ipcMain.handle('gacha:updateBuild', (_e, id, patch) => gachaRepo.updateBuild(id, patch))
-  ipcMain.handle('gacha:removeBuild', (_e, id) => gachaRepo.removeBuild(id))
-  ipcMain.handle('gacha:currencies', (_e, game) => gachaRepo.listCurrencies(game))
-  ipcMain.handle('gacha:setCurrency', (_e, game, key, amount) =>
-    gachaRepo.setCurrency(game, key, amount)
-  )
-  ipcMain.handle('gacha:banners', (_e, game) => gachaRepo.listBanners(game))
-  ipcMain.handle('gacha:createBanner', (_e, input) => gachaRepo.createBanner(input))
-  ipcMain.handle('gacha:updateBanner', (_e, id, patch) => gachaRepo.updateBanner(id, patch))
-  ipcMain.handle('gacha:removeBanner', (_e, id) => gachaRepo.removeBanner(id))
-  ipcMain.handle('gacha:news', (_e, game) => gachaRepo.listNews(game))
-  // Button-triggered, single quick request — deliberately NOT withActivity.
-  ipcMain.handle('gacha:fetchNews', (_e, game) => gacha.fetchNews(game))
-  ipcMain.handle('gacha:downloadImage', (_e, url) => files.downloadImage(url))
-  ipcMain.handle('gacha:setGameImage', (_e, game, relPath) =>
-    gachaRepo.setGameImage(game, relPath)
-  )
-  // Catalog import downloads ~2.5k faces — wrap in withActivity so the pill
-  // shows image progress. Chaldea import is a quick local file read, no pill.
-  ipcMain.handle('gacha:importCatalog', (_e, game) =>
-    withActivity('Importing FGO catalog', () => atlas.importCatalog(game))
-  )
-  ipcMain.handle('gacha:importChaldea', (_e, game) => chaldea.importBackup(game))
-
-  // ---- gacha coach (FGO LLM chat) ----
-  // LLM calls only in coachSend / importCoachDoc; the rest are local DB ops.
-  ipcMain.handle('gacha:coachStatus', () => gachaCoach.getCoachStatus())
-  ipcMain.handle('gacha:coachSend', (_e, game, text, attachments) =>
-    gachaCoach.coachSend(game, text, attachments ?? [])
-  )
-  ipcMain.handle('gacha:coachCancel', () => gachaCoach.coachCancel())
-  ipcMain.handle('gacha:coachThread', (_e, game) => coachRepo.activeThread(game))
-  ipcMain.handle('gacha:coachThreads', (_e, game) => coachRepo.listThreads(game))
-  ipcMain.handle('gacha:coachNewThread', (_e, game) => coachRepo.newThread(game))
-  ipcMain.handle('gacha:coachMessages', (_e, threadId) => coachRepo.listMessages(threadId))
-  ipcMain.handle('gacha:saveAttachment', (_e, bytes, ext) => files.saveMediaBytes(bytes, ext))
-  ipcMain.handle('gacha:goals', (_e, game) => coachRepo.listGoals(game))
-  ipcMain.handle('gacha:createGoal', (_e, game, input) => coachRepo.createGoal(game, input))
-  ipcMain.handle('gacha:updateGoal', (_e, id, patch) => coachRepo.updateGoal(id, patch))
-  ipcMain.handle('gacha:completeGoal', (_e, id) => coachRepo.completeGoal(id, todayLocal()))
-  ipcMain.handle('gacha:dropGoal', (_e, id) => coachRepo.dropGoal(id))
-  ipcMain.handle('gacha:dueCounts', () => coachRepo.dueCounts(todayLocal()))
-  ipcMain.handle('gacha:coachNotes', (_e, game) => coachRepo.listNotes(game))
-  ipcMain.handle('gacha:removeCoachNote', (_e, id) => coachRepo.removeNote(id))
-  ipcMain.handle('gacha:coachDocs', (_e, game) => coachRepo.listDocs(game))
-  ipcMain.handle('gacha:importCoachDoc', (_e, game, input) =>
-    gachaCoach.importDoc(game, input.title, input.content)
-  )
-  ipcMain.handle('gacha:removeCoachDoc', (_e, id) => coachRepo.removeDoc(id))
 
   // ---- wrestling (Wikipedia-sourced wiki + per-event local video) ----
   // Standalone section: NOT media_item rows. startImport is fire-and-forget and
@@ -1142,7 +1103,6 @@ export function registerIpc(): void {
     if (!/^https?:\/\//i.test(String(url))) throw new Error('Only http(s) links can be opened')
     return shell.openExternal(String(url))
   })
-  ipcMain.handle('app:pickTextFile', () => files.pickTextFile())
   // Applies the UI scale live to every window. Persisting it is the caller's
   // job (settings:set 'ui.scale'); index.ts re-applies the stored value on load.
   ipcMain.handle('app:pendingOpen', () => openFile.takePending())

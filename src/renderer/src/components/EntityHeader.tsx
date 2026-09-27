@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { api } from '../lib/api'
 import CoverImage from './CoverImage'
 import ActionMenu from './ActionMenu'
+import ImagePickerDialog from './ImagePickerDialog'
 import { confirmDialog } from '../lib/confirm'
+import type { ImageOverrideKind } from '@shared/types'
 
 interface Fields {
   name: string
@@ -19,6 +21,9 @@ interface Props {
   onDelete: () => Promise<void>
   extra?: React.ReactNode // e.g. company type selector
   actions?: React.ReactNode // extra buttons beside Save/Delete (e.g. Add to list)
+  // Imported people/characters: a changed image is saved as a manual pick that
+  // re-imports keep. onReverted refetches the page after "Restore imported image".
+  imageOverride?: { kind: ImageOverrideKind; id: number; onReverted: () => void }
 }
 
 // Editable header (image + name + native + bio/description) shared by the
@@ -30,36 +35,44 @@ export default function EntityHeader({
   onSave,
   onDelete,
   extra,
-  actions
+  actions,
+  imageOverride
 }: Props) {
   const [f, setF] = useState<Fields>(initial)
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
-    setF(initial)
+    setF((p) => ({ ...p, name: initial.name, native: initial.native, longText: initial.longText }))
     setDirty(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initial.name, initial.native, initial.longText, initial.imgPath])
+  }, [initial.name, initial.native, initial.longText])
+
+  // Separate from the text fields: restoring the imported image refetches the
+  // entity, and that must not throw away unsaved name or bio edits.
+  useEffect(() => {
+    setF((p) => ({ ...p, imgPath: initial.imgPath }))
+  }, [initial.imgPath])
 
   const set = <K extends keyof Fields>(k: K, v: Fields[K]) => {
     setF((p) => ({ ...p, [k]: v }))
     setDirty(true)
   }
 
-  async function changeImage() {
-    const rel = await api.files.pickImage()
-    if (rel) {
-      setF((p) => ({ ...p, imgPath: rel }))
-      setDirty(true)
-    }
-  }
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   async function save() {
     setSaving(true)
-    await onSave(f)
-    setSaving(false)
-    setDirty(false)
+    try {
+      // Before onSave, so the override row exists when the page's upsert writes
+      // the same path and the restore trigger has nothing to undo.
+      if (imageOverride && f.imgPath !== initial.imgPath) {
+        await api.images.setManual(imageOverride.kind, imageOverride.id, f.imgPath)
+      }
+      await onSave(f)
+      setDirty(false)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -70,9 +83,25 @@ export default function EntityHeader({
       <div className="grid gap-6 sm:grid-cols-[180px_minmax(0,1fr)] sm:gap-8">
         <div className="mx-auto w-44 sm:mx-0">
           <CoverImage path={f.imgPath} alt={f.name || '?'} rounded={rounded} className="h-44 w-44" />
-          <button className="btn-ghost w-full mt-2 text-xs" onClick={changeImage}>
+          <button className="btn-ghost w-full mt-2 text-xs" onClick={() => setPickerOpen(true)}>
             Change image…
           </button>
+          {pickerOpen && (
+            <ImagePickerDialog
+              title="Change image"
+              subject={f.name || '?'}
+              currentPath={f.imgPath}
+              override={imageOverride}
+              rounded={rounded}
+              previewClassName="h-24 w-24"
+              onPick={(path) => set('imgPath', path)}
+              onReverted={(path) => {
+                setF((p) => ({ ...p, imgPath: path }))
+                imageOverride?.onReverted()
+              }}
+              onClose={() => setPickerOpen(false)}
+            />
+          )}
         </div>
         <div className="min-w-0 space-y-4">
           <div className="grid gap-4 lg:grid-cols-2">

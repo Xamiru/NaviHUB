@@ -17,7 +17,7 @@ The frozen competition keys are `premier-league`, `la-liga`, `serie-a`, `bundesl
 
 `football_source_ref` owns provider identities. A source id is always scoped by source; a normalized label alone never merges people. Exact team aliases may resolve when there is one canonical candidate. Ambiguous person identities create `football_conflict` rows and stay out of quizzes until resolved. Cross-source result disagreements also create a conflict instead of overwriting the canonical score. The resolution queue can accept either stored assertion, merge a team/person into an explicit target, confirm that identities are separate, or ignore a row. Ignored conflicts remain quarantined and continue to exclude their facts from quizzes.
 
-The 25-table vertical is split into:
+The 24-table vertical is split into:
 
 - archive graph: competition, era, season, stage, team, person, tenure, match, lineup, event, standing, and honour;
 - source integrity: alias, source ref, assertion, coverage, conflict, import run, and article;

@@ -37,9 +37,7 @@ const FIXED_WIPES = [
   'DELETE FROM game_playthrough_session',
   'DELETE FROM game_playthrough_note',
   'DELETE FROM game_playthrough',
-  'DELETE FROM music_album_personal',
   'DELETE FROM music_track_personal',
-  'DELETE FROM music_listen',
   'DELETE FROM music_smart_playlist',
   'DELETE FROM soundtrack_link',
   'DELETE FROM vn_edition',
@@ -101,6 +99,8 @@ const FIXED_WIPES = [
   'DELETE FROM music_spotify_entity_snapshot',
   'DELETE FROM music_playlist_track',
   'DELETE FROM music_spotify_track_choice',
+  'DELETE FROM music_track_genre',
+  'DELETE FROM music_track_lyrics',
   'DELETE FROM music_track',
   'DELETE FROM music_album',
   'DELETE FROM music_artist',
@@ -110,20 +110,12 @@ const FIXED_WIPES = [
   'DELETE FROM wrestling_video',
   'DELETE FROM slideshow_item',
   'DELETE FROM media_image',
+  // Before the asset pass nulls cover/photo/image paths: a surviving row
+  // would make the restore triggers put the hand-picked image back.
+  'DELETE FROM image_override',
   'DELETE FROM quiz_session',
   'DELETE FROM game_session',
   'DELETE FROM achievement_unlock',
-  'DELETE FROM gacha_build',
-  'DELETE FROM gacha_unit',
-  'DELETE FROM gacha_currency',
-  'DELETE FROM gacha_banner',
-  'DELETE FROM gacha_news',
-  'DELETE FROM gacha_meta',
-  'DELETE FROM gacha_chat_message',
-  'DELETE FROM gacha_chat_thread',
-  'DELETE FROM gacha_goal',
-  'DELETE FROM gacha_coach_note',
-  'DELETE FROM gacha_coach_doc',
   'DELETE FROM checklist_log',
   'DELETE FROM checklist_task',
   'DELETE FROM en_review_log',
@@ -137,7 +129,7 @@ const FIXED_WIPES = [
   'DELETE FROM sync_batch',
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path','spotdl.cookieFile','spotdl.pythonPath','music.ffmpegPath',
-      'music.dir','manga.dir','books.dir','audio.dir','pictures.dir','slideshow.dir','video.dir','wrestling.dir','football.dir',
+      'music.dir','manga.dir','books.dir','audio.dir','media.dir','pictures.dir','slideshow.dir','video.dir','wrestling.dir','football.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
       'steam.web_api_key','ra.username','ra.api_key','football.api_key','football.api_quota',
@@ -145,7 +137,7 @@ const FIXED_WIPES = [
       'sync.token','sync.device','sync.port',
       'jackett.url','jackett.api_key','jackett.start_cmd',
       'qbittorrent.url','qbittorrent.username','qbittorrent.password',
-      'github.token','checklist.seeded','jp.knownBaseline')
+      'github.token','fanarttv.api_key','steamgriddb.api_key','checklist.seeded','jp.knownBaseline')
      OR key LIKE 'japanese.seeded%' OR key LIKE 'franchise.%'
      OR key LIKE 'football.entitlement.%'
      OR key LIKE 'learning.evidence.v1.%'`
@@ -262,7 +254,7 @@ function sanitizeDb(db, input) {
 
     if (!options.includeAssets) {
       for (const sql of [
-        'UPDATE media_item SET cover_path=NULL, banner_path=NULL',
+        'UPDATE media_item SET cover_path=NULL',
         'UPDATE person SET photo_path=NULL',
         'UPDATE company SET logo_path=NULL',
         'UPDATE character SET image_path=NULL',

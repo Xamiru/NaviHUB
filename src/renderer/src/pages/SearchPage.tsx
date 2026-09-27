@@ -228,7 +228,7 @@ function MediaLens({ item }: { item: MediaItem }) {
       subtitle={<span className="capitalize">{item.mediaType.replace('_', ' ')}</span>}
       image={
         <div className="relative h-48 overflow-hidden bg-base-700">
-          <CoverImage path={data?.heroPath ?? item.coverPath} alt="" className="h-full w-full opacity-70" />
+          <CoverImage path={data?.backgroundPath ?? item.coverPath} alt="" className="h-full w-full opacity-70" />
           <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-transparent to-transparent" />
         </div>
       }

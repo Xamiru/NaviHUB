@@ -12,6 +12,7 @@ import CoverImage from './CoverImage'
 import type { MangaChapter, MediaDetail } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
 import Tabs, { TabPanel } from './Tabs'
+import { celebrateProgress } from '../lib/themeFx'
 
 // Local manga reader entry point on the manga detail page: attach a series
 // folder from the manga library, list its scanned chapters (image folders,
@@ -289,7 +290,9 @@ function ChapterTile({
   async function toggleRead(e: React.MouseEvent): Promise<void> {
     e.stopPropagation()
     try {
+      const anchor = document.activeElement
       await api.manga.markChapterRead(ch.id, !ch.readAt)
+      if (!ch.readAt) celebrateProgress(anchor)
       onChange()
     } catch (err) {
       toastError(err)
@@ -370,7 +373,9 @@ function ChapterRow({
 
   async function toggleRead() {
     try {
+      const anchor = document.activeElement
       await api.manga.markChapterRead(ch.id, !ch.readAt)
+      if (!ch.readAt) celebrateProgress(anchor)
       onChange()
     } catch (e) {
       toastError(e)

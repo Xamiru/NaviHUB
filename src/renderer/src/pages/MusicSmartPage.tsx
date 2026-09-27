@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { MusicSmartInput, MusicSmartPlaylist, MusicSmartRules } from '@shared/types'
-import { DEFAULT_SMART_RULES, MUSIC_SHELVES, parseMusicTags } from '@shared/musicPersonal'
+import { DEFAULT_SMART_RULES, parseMusicTags } from '@shared/musicPersonal'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useDebouncedValue } from '../lib/hooks'
@@ -296,7 +296,7 @@ function SmartEditor({ value }: { value: MusicSmartPlaylist | null }) {
         </div>
         <details className="border-y border-line-subtle py-3">
           <summary className="cursor-pointer text-sm font-medium">
-            More filters: artist, album rating, shelf, and play dates
+            More filters: artist and play history
           </summary>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Field label="Artist contains">
@@ -307,25 +307,8 @@ function SmartEditor({ value }: { value: MusicSmartPlaylist | null }) {
                 onChange={(e) => rule('artist', e.target.value)}
               />
             </Field>
-            <Field label="Album shelf">
-              <select
-                className="input"
-                value={form.rules.shelf ?? ''}
-                onChange={(e) =>
-                  rule('shelf', (e.target.value || null) as MusicSmartRules['shelf'])
-                }
-              >
-                <option value="">Any shelf</option>
-                {Object.entries(MUSIC_SHELVES).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </Field>
             {(
               [
-                ['minAlbumRating', 'Minimum album rating', 10, 0.1],
                 ['notPlayedDays', 'Not played in the last N days', 36500, 1],
                 ['minPlays', 'Minimum play count', 1000000, 1],
                 ['maxPlays', 'Maximum play count', 1000000, 1]

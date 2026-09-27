@@ -41,7 +41,7 @@ export function useRefreshRun(): RefreshRunHook {
     } else if (status.state === 'error' && status.message) {
       toast(status.message, 'error')
     }
-    // A refresh rewrites covers, banners and episode catalogues, all of which
+    // A refresh rewrites covers, text and episode catalogues, all of which
     // are denormalized into list cards and detail pages.
     void qc.invalidateQueries({ queryKey: qk.media.all })
     void qc.invalidateQueries({ queryKey: qk.themes.all })

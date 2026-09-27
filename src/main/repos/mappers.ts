@@ -23,7 +23,6 @@ export function mapMedia(r: any): MediaItem {
     titleOriginal: r.title_original ?? null,
     synopsis: r.synopsis ?? null,
     coverPath: r.cover_path ?? null,
-    bannerPath: r.banner_path ?? null,
     releaseDate: r.release_date ?? null,
     totalUnits: r.total_units ?? null,
     status: r.status ?? null,

@@ -22,8 +22,8 @@ export default function RefreshMediaDialog({
   const ref = useDialog(onClose)
   const supported = REFRESH_ASPECTS.filter((a) => a.types.includes(m.mediaType))
   const [aspects, setAspects] = useState<RefreshAspect[]>(
-    // Default to the art, which is what an existing library is usually missing.
-    supported.filter((a) => a.key === 'cover' || a.key === 'banner').map((a) => a.key)
+    // Default to the cover, which is what an existing library is usually missing.
+    supported.filter((a) => a.key === 'cover').map((a) => a.key)
   )
   const [busy, setBusy] = useState(false)
 

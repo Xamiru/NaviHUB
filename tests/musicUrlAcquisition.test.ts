@@ -34,6 +34,11 @@ describe('URL acquisition recovery', () => {
       return 1
     })
     await processUrlJob(id, 'test', runner, () => true, () => {})
+    // '--' before every URL: a pasted value starting with '-' must never become a yt-dlp option.
+    expect(runner.mock.calls.map(([args]) => args.slice(-2))).toEqual([
+      ['--', input.url],
+      ['--', expect.stringContaining('abcdefghijk')]
+    ])
     expect(urlItems(id)[0]).toMatchObject({ phase: 'failed', outputPath: null, localTrackId: null })
     expect(urlItems(id)[0].error).toContain('transfer (standalone yt-dlp)')
     expect(urlItems(id)[0].error).toContain('403: Forbidden')

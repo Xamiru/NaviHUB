@@ -11,4 +11,4 @@ album journal + global shelf view, track tags/standouts, dynamic smart-playlist 
 Focused persistence, lifecycle, scanner, navigation, migration/export and renderer/axe
 checks passed. Final verification: typecheck and production build passed. The complete test gate passed the native SQLite smoke, 3,095 main tests and 133 renderer tests. Static UI review findings are resolved. Real GUI and Windows launch verification remain pending on the gaming PC.
 
-Status: implementation and automated verification complete; all changes remain uncommitted.
+Status: implementation and automated verification complete; committed 2026-09-23 (`f40d020`).

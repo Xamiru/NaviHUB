@@ -71,7 +71,7 @@ Retention: live forever; finished for 30 minutes capped at the newest 40; `ephem
 | Shape | Modules | How |
 |---|---|---|
 | `withActivity` | all 17 importers + achievements + catalog install | free, via the `progress.ts` adapter — **no call-site edits at all** |
-| `let status` + own id | musicDownload, mokuroRun, updater, bulkImport, wrestlingImport, jackett | a `project()` beside the existing status object |
+| `let status` + own id | mokuroRun, updater, bulkImport, wrestlingImport, jackett | a `project()` beside the existing status object |
 | `const state = { running }` | music scan, musicArt, dictImport, prepDeck, coreDeck, coverage, video scan | wrapped in `tasks.runTask()` |
 | nothing at all | manga rescan | registry-sourced via `handle.progress()` — this scan used to be completely dark |
 
@@ -98,7 +98,7 @@ running forever.
   sends **SIGCONT before SIGTERM**, then SIGKILL after 5s. Without that, cancelling a paused
   job appears to hang for five seconds. The three pre-existing `cancelDownload`/`cancelOcr`/
   cancellation functions route through this, so the ordering exists in one place.
-- On Windows, Stop uses `taskkill /T /F` with an argv array so a spotDL/yt-dlp child and its
+- On Windows, Stop uses `taskkill /T /F` with an argv array so a yt-dlp child and its
   ffmpeg descendants are terminated together. The job's cancellation flag is set before looking
   up the current child, so a click between chunk/process phases still prevents the next phase.
 
@@ -110,9 +110,9 @@ Pause is **best-effort by design**: `kill()` signals the direct child only, so p
 yt-dlp's `[ExtractAudio]` stops yt-dlp but not the ffmpeg it spawned. Process groups would change
 the quit semantics of three existing killers — a separate, riskier change.
 
-The persistent Spotify download queue is the deliberate restartable exception. spotDL is spawned
-in its own POSIX process group (and stopped with `taskkill /T /F` on Windows), so Pause terminates
-spotDL plus yt-dlp/ffmpeg descendants instead of freezing them. The mixed entity/playlist runner
+The persistent Spotify download queue is the deliberate restartable exception. Each yt-dlp child is
+spawned in its own POSIX process group (and stopped with `taskkill /T /F` on Windows), so Pause
+terminates yt-dlp plus its ffmpeg descendants instead of freezing them. The mixed entity/playlist runner
 performs its final local scan, persists the active queue card as `paused`, and keeps the single
 music-maintenance owner reserved while the app remains open. Resume starts only still-unmatched
 work. Cancel settles the task, returns unfinished work to `queued`, and releases that owner.

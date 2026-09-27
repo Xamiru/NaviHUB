@@ -127,13 +127,6 @@ export interface MediaConfig {
   // Launch-from-app + playtime tracking (games + VNs) — shows the launcher
   // section (link an executable and show tracked totals) on the Playtime tab.
   hasGameLaunch?: boolean
-  // Art-led detail header (2026-08). 'banner' hangs the cover off a shallow
-  // strip of wide art (anime, VNs — the cover is the recognisable thing);
-  // 'backdrop' puts the title and actions on top of a tall still. Absent = the
-  // plain two-column header, which is what types whose detail page is carried
-  // by a data tab keep (manga/books read, games play, movies/TV watch). See
-  // components/MediaHero.tsx.
-  detailHero?: 'banner' | 'backdrop'
   // Achievements tab on the detail page + the completion chip on list cards
   // (games + VNs — the same types that can link an executable, since tracking
   // is only offered where one is or once was linked).
@@ -214,8 +207,7 @@ export const ANIME: MediaConfig = {
   hasVideoLibrary: true,
   videoTabLabel: 'Episodes',
   hasFanArt: true,
-  hasSeasonal: true,
-  detailHero: 'banner'
+  hasSeasonal: true
 }
 
 // Manga shares anime's AniList source and character-centric layout, but has no
@@ -303,8 +295,7 @@ export const VISUAL_NOVEL: MediaConfig = {
   mediaTabLabel: 'Playtime',
   hasFanArt: true,
   hasGameLaunch: true,
-  hasAchievements: true,
-  detailHero: 'banner'
+  hasAchievements: true
 }
 
 // Games come from RAWG (metadata, cover, developers/publishers, genres — it has

@@ -13,6 +13,18 @@ describe('independent source evidence', () => {
     expect(assessMusicSource({ ...expected, albumTitle: 'Live at the Arena' }, source).strong).toBe(false)
     expect(assessMusicSource(expected, { ...source, albumTitle: 'Live at the Arena' }).strong).toBe(false)
   })
+  it('accepts the primary artist as one member of a joined collaboration credit', () => {
+    expect(assessMusicSource(expected, { ...source, artist: 'The Beatles, Billy Preston' }).strong).toBe(true)
+    expect(assessMusicSource(expected, { ...source, artist: 'The Beatles Tribute Band' }).strong).toBe(false)
+  })
+  it('recognises official uploads from an artist channel without trusting fan re-uploads', () => {
+    const song = { title: 'Mon fol amour', artist: 'Indila', duration: 247 }
+    expect(assessMusicSource(song, { title: 'Indila - Mon Fol Amour (Clip Officiel)', artist: null, channel: 'IndilaMusic', duration: 253 }).strong).toBe(true)
+    expect(assessMusicSource(song, { title: 'Indila - Mon fol amour', artist: null, channel: 'IndilaVEVO', duration: 247 }).strong).toBe(true)
+    expect(assessMusicSource(song, { title: 'Indila- Mon fol amour', artist: null, channel: 'Kristina Rožman', duration: 253 }).reasons)
+      .toEqual(['Artist identity needs checking'])
+    expect(assessMusicSource(song, { title: 'Indila - Mon fol amour (Lyrics)', artist: null, channel: 'IndilaMusic', duration: 247 }).strong).toBe(false)
+  })
   it('requires independent artist and duration evidence', () => {
     expect(assessMusicSource(expected, { ...source, artist: null, channel: 'Someone else' }).strong).toBe(false)
     expect(assessMusicSource(expected, { ...source, duration: null }).strong).toBe(false)

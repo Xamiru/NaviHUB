@@ -40,3 +40,40 @@ export function playTracks(
     { shuffle: !!opts.shuffle }
   )
 }
+
+// Scrobbler rule (Last.fm, ListenBrainz): a play counts once half the track, or
+// four minutes, has actually been heard. Tracks under 30 seconds never count.
+// Unknown length falls back to the four-minute cap.
+export function playCountThreshold(duration: number | null | undefined): number | null {
+  if (duration == null || !Number.isFinite(duration) || duration <= 0) return 240
+  if (duration < 30) return null
+  return Math.min(duration / 2, 240)
+}
+
+export interface ListenProgress {
+  listened: number // seconds actually heard
+  last: number // previous playback position
+  logged: boolean
+}
+
+// Folds one position update into the progress. Only normal forward playback
+// adds time (timeupdate fires a few times a second, so a jump over two seconds
+// is a seek); a return to the start after a counted play begins a new play,
+// which is how repeat-one counts every loop.
+export function advanceListen(
+  progress: ListenProgress,
+  time: number,
+  playing: boolean,
+  duration: number | null | undefined
+): { progress: ListenProgress; count: boolean } {
+  let { listened, logged } = progress
+  const delta = time - progress.last
+  if (logged && time < 1 && progress.last > 1) {
+    listened = 0
+    logged = false
+  }
+  if (playing && delta > 0 && delta <= 2) listened += delta
+  const threshold = playCountThreshold(duration)
+  const count = !logged && threshold != null && listened >= threshold
+  return { progress: { listened, last: time, logged: logged || count }, count }
+}

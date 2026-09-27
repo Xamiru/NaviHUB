@@ -5,13 +5,13 @@ description: "LAPTOP ONLY. Launch and drive the built NaviHUB Electron app for e
 
 # Verifying NaviHUB in the running app
 
-**Machine check first.** This only works on the laptop/PC. If `/home/xamir/Desktop/NaviHUB`
-does not exist you are on the headless VPS: stop, and instead tell the user in the completion
-message that the change is unverified in the UI and what to click. The paths below are the
-laptop's and are correct there.
+**Machine check first.** This only works on the laptop/PC (checkout at `/media/xamir/Anglo/NaviHUB`).
+If there is no display (`$DISPLAY`/`$WAYLAND_DISPLAY` unset) or no `~/.config/navihub/navihub.db`,
+you are on the headless VPS: stop, and instead tell the user in the completion message that the
+change is unverified in the UI and what to click.
 
-**When to reach for this:** any change under `src/renderer/`. There are no renderer tests, so a
-green suite says nothing about whether the screen works. Thirteen of forty-eight sessions opened
+**When to reach for this:** any change under `src/renderer/`. The jsdom renderer tests cover shared
+interaction and accessibility contracts, not whether a real screen renders and works. Thirteen of forty-eight sessions opened
 with a UI defect the user found after being told the work was done.
 
 Build first (`npm run build` — the app runs from `out/`), then drive the GUI
@@ -21,11 +21,13 @@ with playwright-core's Electron driver. No project code changes needed.
 npm install --no-save --no-audit playwright-core   # node_modules only; uninstall --no-save after
 ```
 
-Driver script essentials (run with plain `node script.mjs`):
+Driver script essentials (run with plain `node script.mjs` from the repo root, so `process.cwd()`
+is the app dir):
 
 ```js
 import { createRequire } from 'node:module'
-const projectRequire = createRequire('/home/xamir/Desktop/NaviHUB/package.json')
+const root = process.cwd()
+const projectRequire = createRequire(`${root}/package.json`)
 const { _electron } = projectRequire('playwright-core')
 const electronPath = projectRequire('electron')
 
@@ -34,8 +36,8 @@ delete env.ELECTRON_RUN_AS_NODE   // VS Code sets it → Electron runs as plain 
 
 const app = await _electron.launch({
   executablePath: electronPath,
-  args: ['/home/xamir/Desktop/NaviHUB'],  // the APP DIR — see gotcha below
-  cwd: '/home/xamir/Desktop/NaviHUB',
+  args: [root, '--ozone-platform=x11'],  // the APP DIR — see gotchas below
+  cwd: root,
   env
 })
 const page = await app.firstWindow()
@@ -49,6 +51,9 @@ const page = await app.firstWindow()
   app looks like a fresh install (and leaves a stray `navihub.db` there —
   delete it if this happens). The app dir form reads `package.json` name
   `navihub` → real library at `~/.config/navihub`.
+- **Pass `'--ozone-platform=x11'` in `args`** after the app dir. Under Wayland, Electron 44
+  segfaults at launch on the laptop, and `firstWindow()` then fails with "Target page, context or
+  browser has been closed".
 - **Delete `ELECTRON_RUN_AS_NODE` from env** (the CLAUDE.md terminal gotcha
   applies to programmatic launches too).
 - Navigate with `page.evaluate(() => { window.location.hash = '#/route' })`

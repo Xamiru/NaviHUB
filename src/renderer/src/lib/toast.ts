@@ -102,8 +102,11 @@ export function toastUnlock(message: string, sub: string | null, iconUrl: string
 // Electron wraps errors thrown by ipcMain.handle as
 // "Error invoking remote method 'media:create': Error: <the real message>" —
 // strip that prefix so toasts show the message the main process actually threw.
-export function toastError(err: unknown): void {
+export function errorMessage(err: unknown): string {
   const raw = err instanceof Error ? err.message : String(err)
-  const message = raw.replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '').trim()
-  toast(message || 'Something went wrong', 'error')
+  return raw.replace(/^Error invoking remote method '[^']+':\s*(Error:\s*)?/, '').trim() || 'Something went wrong'
+}
+
+export function toastError(err: unknown): void {
+  toast(errorMessage(err), 'error')
 }

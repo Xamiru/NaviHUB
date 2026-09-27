@@ -167,7 +167,12 @@ describe('library export core', () => {
   it('leaves no partial output when cancelled', async () => {
     for (let n = 0; n < 200; n += 1) {
       writeFileSync(join(env.userData, 'media', `asset-${n}.jpg`), Buffer.alloc(4096, n))
-      env.db!.prepare('UPDATE media_item SET banner_path=? WHERE id=1').run(`media/asset-${n}.jpg`)
+      env.db!
+        .prepare(
+          `INSERT INTO media_item (media_type, title, cover_path)
+           SELECT media_type, ?, ? FROM media_item WHERE id=1`
+        )
+        .run(`Asset ${n}`, `media/asset-${n}.jpg`)
     }
     await exporter.start({ ...OPTIONS, format: 'zip' }, null)
     exporter.cancel()

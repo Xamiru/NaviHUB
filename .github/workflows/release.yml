@@ -81,6 +81,7 @@ jobs:
             manifest: latest.yml
             files: |
               dist/*.exe
+              dist/*.exe.blockmap
               dist/latest.yml
     runs-on: ${{ matrix.os }}
     defaults:
@@ -132,6 +133,13 @@ jobs:
       # latest version", far from the cause. Fail here instead.
       - name: Assert the update manifest was generated
         run: test -f "dist/${{ matrix.manifest }}"
+
+      # NSIS differential updates fetch the old AND new installer's .blockmap
+      # from their releases; without it every update is a full download.
+      # (The AppImage embeds its blockmap, so Linux needs no separate file.)
+      - name: Assert the installer blockmap was generated
+        if: matrix.platform == 'win'
+        run: ls dist/*-Setup-*.exe.blockmap
 
       - uses: actions/upload-artifact@v4
         with:

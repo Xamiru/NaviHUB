@@ -56,7 +56,7 @@ export default function MusicPlaylistPage() {
     'all'
   )
 
-  const { data: playlist, isLoading } = useQuery({
+  const { data: playlist, isLoading, isLoadingError, refetch } = useQuery({
     queryKey: qk.music.playlist(playlistId),
     queryFn: () => api.music.playlist(playlistId)
   })
@@ -85,11 +85,11 @@ export default function MusicPlaylistPage() {
   )
 
   const [recoveryItem, setRecoveryItem] = useState<MusicSpotifyPlaylistEntry | null>(null)
-  const [selected, setSelected] = useState<Set<number>>(new Set())
   const [refreshing, setRefreshing] = useState(false)
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState('')
   const [localMatchItem, setLocalMatchItem] = useState<MusicSpotifyPlaylistEntry | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
 
   const isSpotify = playlist?.source != null
   const allItems = isSpotify ? (playlist?.items ?? []) : sortableItems
@@ -104,27 +104,44 @@ export default function MusicPlaylistPage() {
   const downloadableMissing = missingSpotify.filter((item) =>
     !item.downloadCandidate && !item.downloadSkipped && item.localAlternatives.length === 0
   )
+  const counts = {
+    all: allItems.length,
+    playable: playable.length,
+    missing: missingSpotify.filter((item) => !item.downloadSkipped).length,
+    attention: missingSpotify.filter(needsAttention).length,
+    skipped: missingSpotify.filter((item) => item.downloadSkipped).length
+  }
+  // A remembered filter whose pill is hidden (nothing left in it) falls back to All.
+  const filter = (availability === 'attention' || availability === 'skipped') && counts[availability] === 0
+    ? 'all'
+    : availability
   const normalizedSearch = search.trim().toLocaleLowerCase()
   // Incremental loading resets on a new array; keep it stable between renders.
   const filteredItems = useMemo(() => allItems.filter((item) => {
-    if (availability === 'attention' && (item.kind !== 'spotify' || (!item.downloadError && !item.downloadCandidate))) return false
-    if (availability === 'skipped' && (item.kind !== 'spotify' || !item.downloadSkipped)) return false
-    if (availability === 'playable' && item.kind === 'spotify' && !item.matchedTrack) return false
-    if (availability === 'missing' && (item.kind === 'local' || item.matchedTrack)) return false
+    const missing = item.kind === 'spotify' && !item.matchedTrack
+    if (filter === 'attention' && !(missing && needsAttention(item))) return false
+    if (filter === 'skipped' && !(missing && item.downloadSkipped)) return false
+    if (filter === 'playable' && missing) return false
+    if (filter === 'missing' && (!missing || item.downloadSkipped)) return false
     if (!normalizedSearch) return true
     const text =
       item.kind === 'local'
         ? `${item.track.title} ${item.track.artistName} ${item.track.albumTitle}`
         : `${item.title} ${item.artists.join(' ')} ${item.albumTitle}`
     return text.toLocaleLowerCase().includes(normalizedSearch)
-  }), [allItems, availability, normalizedSearch])
+  }), [allItems, filter, normalizedSearch])
   const incremental = useIncrementalList(filteredItems, 96, playlistId)
-  const busy =
-    (downloadStatus?.source === 'spotify' || downloadStatus?.source === 'spotifyQueue') &&
-    downloadStatus.playlistId === playlistId &&
-    ACTIVE_DOWNLOAD.has(downloadStatus.status)
+  const playlistCardId = [...(downloadQueue?.pending ?? []), ...(downloadQueue?.completed ?? [])]
+    .find((card) => card.sourceKind === 'playlist' && card.playlistId === playlistId)?.id
+  // Queue runs report their card rather than a playlist id.
+  const busy = downloadStatus != null && ACTIVE_DOWNLOAD.has(downloadStatus.status) && (
+    (downloadStatus.source === 'spotify' && downloadStatus.playlistId === playlistId) ||
+    (downloadStatus.source === 'spotifyQueue' && downloadStatus.queueCardId != null && downloadStatus.queueCardId === playlistCardId)
+  )
+  const queueRunning = downloadStatus?.source === 'spotifyQueue' && ACTIVE_DOWNLOAD.has(downloadStatus.status)
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (isLoadingError) return <PageStatus>Could not load playlist. <button className="btn" onClick={() => void refetch()}>Retry playlist</button></PageStatus>
   if (!playlist) return <PageStatus>Playlist not found.</PageStatus>
 
   function playItem(item: MusicPlaylistItem, shuffle = false): void {
@@ -151,7 +168,7 @@ export default function MusicPlaylistPage() {
     setLocalMatchItem(null)
     invalidate()
     qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
-    toast('Playlist song linked to the local recording', 'success')
+    toast('Now playing your library copy', 'success')
   }
 
   async function rejectDownloaded(itemId: number): Promise<void> {
@@ -165,7 +182,7 @@ export default function MusicPlaylistPage() {
     itemsToDownload: MusicSpotifyPlaylistEntry[],
     startNow = false
   ): Promise<void> {
-    if (itemsToDownload.length === 0 || busy) return
+    if (itemsToDownload.length === 0) return
     try {
       const result = await api.music.spotifyQueueAddPlaylist({
         playlistId,
@@ -192,7 +209,7 @@ export default function MusicPlaylistPage() {
             { confirmLabel: 'Download' }
           )
           if (!ok) {
-            toast('Saved to Music Downloads without starting', 'success', {
+            toast('Saved to Downloads without starting', 'success', {
               label: 'View downloads',
               route: '/music/downloads'
             })
@@ -214,8 +231,8 @@ export default function MusicPlaylistPage() {
       } else {
         toast(
           result.addedSelections > 0
-            ? `Added ${result.addedSelections} song${result.addedSelections === 1 ? '' : 's'} to Music Downloads`
-            : 'Those songs are already in Music Downloads',
+            ? `Added ${result.addedSelections} song${result.addedSelections === 1 ? '' : 's'} to Downloads`
+            : 'Those songs are already in Downloads',
           'success',
           { label: 'View downloads', route: '/music/downloads' }
         )
@@ -255,17 +272,24 @@ export default function MusicPlaylistPage() {
     navigate('/music', { replace: true })
   }
 
+  const pills: { key: typeof filter; label: string; count: number }[] = [
+    { key: 'all', label: 'All', count: counts.all },
+    { key: 'playable', label: 'In library', count: counts.playable },
+    { key: 'missing', label: 'Missing', count: counts.missing },
+    ...(counts.attention ? [{ key: 'attention' as const, label: 'Needs attention', count: counts.attention }] : []),
+    ...(counts.skipped ? [{ key: 'skipped' as const, label: 'Skipped', count: counts.skipped }] : [])
+  ]
+
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
       <BackButton />
       <RelationshipTrail>
-        <Link to="/music" className="hover:text-accent">Sonic archive</Link>
+        <Link to="/music" className="hover:text-accent">Music</Link>
         <span className="text-gray-600" aria-hidden="true">›</span>
         <span>Playlists</span>
-        <span className="ml-auto tabular-nums text-gray-500">{allItems.length} tracks</span>
       </RelationshipTrail>
 
-      <div className="mb-5 flex items-start justify-between gap-4">
+      <div className="mb-5 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           {editing ? (
             <input
@@ -294,8 +318,10 @@ export default function MusicPlaylistPage() {
               </button>
             </div>
           )}
-          <p className="mt-1 text-xs text-gray-500">
-            Playlist · {allItems.length} {allItems.length === 1 ? 'track' : 'tracks'}
+          <p className="mt-1 text-sm text-gray-400">
+            {isSpotify
+              ? `From Spotify · ${counts.all} ${counts.all === 1 ? 'song' : 'songs'} · ${counts.playable} in your library${counts.missing ? ` · ${counts.missing} missing` : ''}`
+              : `Playlist · ${counts.all} ${counts.all === 1 ? 'track' : 'tracks'}`}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
@@ -306,18 +332,6 @@ export default function MusicPlaylistPage() {
           >
             Play
           </button>
-          {downloadableMissing.length > 0 && (
-            <button
-              className="btn-ghost"
-              disabled={busy && !allMissingQueued}
-              onClick={() => {
-                if (allMissingQueued) navigate('/music/downloads')
-                else void queueDownload(downloadableMissing)
-              }}
-            >
-              {allMissingQueued ? 'View downloads' : `Add missing (${downloadableMissing.length})`}
-            </button>
-          )}
           <button
             className="btn-ghost"
             disabled={!playable.length}
@@ -331,35 +345,36 @@ export default function MusicPlaylistPage() {
           >
             Shuffle
           </button>
+          {busy ? (
+            <Link className="btn-ghost" to="/music/downloads">View downloads</Link>
+          ) : downloadableMissing.length > 0 && (
+            <button className="btn-ghost" onClick={() => void queueDownload(downloadableMissing, true)}>
+              Download missing ({downloadableMissing.length})
+            </button>
+          )}
           <ActionMenu
             items={[
-              ...(downloadableMissing.length > 0
-                ? [{
-                    label: downloadStatus?.source === 'spotifyQueue' && ACTIVE_DOWNLOAD.has(downloadStatus.status)
-                      ? downloadStatus.status === 'paused' ? 'Run missing after paused' : 'Run missing next'
-                      : 'Download missing now',
-                    disabled: busy,
-                    onSelect: () => queueDownload(downloadableMissing, true)
-                  }]
+              ...(downloadableMissing.length > 0 && !allMissingQueued
+                ? [{ label: 'Add missing to Downloads without starting', onSelect: () => queueDownload(downloadableMissing) }]
                 : []),
               ...(playlist.source
                 ? [
                     {
-                      label: 'Refresh from Spotify',
+                      label: refreshing ? 'Refreshing from Spotify…' : 'Refresh from Spotify',
                       disabled: refreshing || Boolean(busy),
                       onSelect: async () => {
                         setRefreshing(true)
                         try {
                           await api.music.spotifyRefreshPlaylist(playlistId)
                           await qc.invalidateQueries({ queryKey: qk.music.all })
-                          toast('Playlist refreshed; local files and your choices were kept', 'success')
+                          toast('Playlist refreshed; your files and choices were kept', 'success')
+                        } catch (error) {
+                          toastError(error)
                         } finally { setRefreshing(false) }
                       }
                     },
-                    {
-                      label: 'Open source in Spotify',
-                      onSelect: () => api.app.openExternal(playlist.source!.sourceUrl)
-                    }
+                    { label: 'Add songs from your library', onSelect: () => setPickerOpen(true) },
+                    { label: 'Open in Spotify', onSelect: () => api.app.openExternal(playlist.source!.sourceUrl) }
                   ]
                 : []),
               { label: 'Delete playlist…', danger: true, onSelect: del }
@@ -368,39 +383,17 @@ export default function MusicPlaylistPage() {
         </div>
       </div>
 
-      <p className="mb-4 text-sm text-gray-400">
-        {allItems.length} total · {playlist.playableCount} playable
-        {isSpotify && ` · ${playlist.missingCount} missing${playlist.verificationCount ? ` · ${playlist.verificationCount} to verify` : ''}`}
-      </p>
-
       {busy && downloadStatus && (
         <div className="mb-5 rounded-md bg-base-700/60 p-3" role="status">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <div className="min-w-0">
-              <p className="line-clamp-1 text-gray-300">
-                {downloadStatus.status === 'processing'
-                  ? (downloadStatus.message ?? 'Updating library')
-                  : (downloadStatus.title ?? 'Starting spotDL')}
-              </p>
-              <p className="mt-0.5 text-xs text-gray-500">
-                {downloadStatus.itemIndex ?? 0}/{downloadStatus.itemCount ?? 0} completed
-                {downloadStatus.resolvedCount != null &&
-                  ` · ${downloadStatus.resolvedCount} resolved · ${downloadStatus.failedCount ?? 0} remaining`}
-              </p>
-            </div>
-            {downloadStatus.source === 'spotifyQueue' ? (
-              <Link className="btn-ghost shrink-0" to="/music/downloads">View downloads</Link>
-            ) : (
-              <button
-                className="btn-ghost shrink-0"
-                onClick={async () => {
-                  await api.music.downloadCancel(downloadStatus.id)
-                  qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
-                }}
-              >
-                Cancel download
-              </button>
-            )}
+            <p className="line-clamp-1 min-w-0 text-gray-300">
+              {downloadStatus.status === 'processing'
+                ? (downloadStatus.message ?? 'Adding songs to your library')
+                : downloadStatus.title ? `Downloading ${downloadStatus.title}` : (downloadStatus.message ?? 'Starting downloads…')}
+            </p>
+            <p className="shrink-0 text-xs tabular-nums text-gray-400">
+              {downloadStatus.itemIndex ?? 0} of {downloadStatus.itemCount ?? 0}
+            </p>
           </div>
           <div
             className="mt-2 h-1.5 overflow-hidden rounded bg-base-600"
@@ -429,52 +422,33 @@ export default function MusicPlaylistPage() {
             placeholder="Search this playlist"
           />
           <div className="flex flex-wrap gap-2" role="group" aria-label="Track availability">
-            {(['all', 'playable', 'missing', 'attention', 'skipped'] as const).map((value) => (
+            {pills.map((pill) => (
               <button
-                key={value}
-                className={availability === value ? 'pill-active' : 'pill'}
-                aria-pressed={availability === value}
-                onClick={() => setAvailability(value)}
+                key={pill.key}
+                className={filter === pill.key ? 'pill-active' : 'pill'}
+                aria-pressed={filter === pill.key}
+                onClick={() => setAvailability(pill.key)}
               >
-                {value === 'all' ? 'All' : value === 'playable' ? 'Playable' : value === 'attention' ? 'Needs attention' : value === 'skipped' ? 'Skipped' : 'Missing'}
+                {pill.label} <span className="tabular-nums opacity-70">{pill.count}</span>
               </button>
             ))}
           </div>
         </div>
       )}
 
-      {isSpotify && <div className="mb-4 flex flex-wrap items-center gap-2">
-        <button className="btn-ghost" onClick={() => setSelected(new Set(downloadableMissing
-          .filter((item) => filteredItems.includes(item)).map((item) => item.itemId)))}>
-          Select matching missing songs
-        </button>
-        <button className="btn-ghost" onClick={() => setSelected(new Set())}>Clear selection</button>
-        <button className="btn-primary" disabled={Boolean(busy) || !downloadableMissing.some((item) => selected.has(item.itemId))}
-          onClick={async () => {
-            const itemIds = downloadableMissing.filter((item) => selected.has(item.itemId)).map((item) => item.itemId)
-            const seconds = downloadableMissing.filter((item) => selected.has(item.itemId))
-              .reduce((sum, item) => sum + (item.duration ?? 240), 0)
-            const estimatedBytes = Math.ceil(seconds * 160000 / 8)
-            if ((itemIds.length > 100 || estimatedBytes > TWO_GB) && !await confirmDialog(
-              `Download ${itemIds.length} selected songs? Estimated size: ${formatBytes(estimatedBytes)}. Finished files are kept if cancelled.`,
-              { confirmLabel: 'Download' }
-            )) return
-            await api.music.spotifyDownloadPlaylist({ playlistId, itemIds })
-            await qc.invalidateQueries({ queryKey: qk.music.all })
-          }}>Download selected ({downloadableMissing.filter((item) => selected.has(item.itemId)).length})</button>
-        {refreshing && <p role="status" className="text-sm text-gray-400">Refreshing playlist metadata…</p>}
-      </div>}
-
-      <AddTracksPicker
-        playlistId={playlistId}
-        excludeIds={playable.map((i) => i.track.id)}
-        onAdded={invalidate}
-      />
+      {(!isSpotify || pickerOpen) && (
+        <AddTracksPicker
+          playlistId={playlistId}
+          excludeIds={playable.map((i) => i.track.id)}
+          onAdded={invalidate}
+        />
+      )}
 
       {allItems.length === 0 ? (
         <p className="text-sm text-gray-400">No tracks yet — search above to add some.</p>
       ) : isSpotify ? (
         <>
+          {filteredItems.length === 0 && <p className="text-sm text-gray-400">No songs match this view.</p>}
           <div className="space-y-0.5">
             {incremental.visible.map((item) =>
               item.kind === 'local' ? (
@@ -492,38 +466,24 @@ export default function MusicPlaylistPage() {
                   showAlbum
                   onPlay={() => playItem(item)}
                   onRemove={() => removeSpotifyItem(item.itemId)}
-                  trailing={item.localAlternatives.length > 0 ? (
-                    <button
-                      className="btn-ghost px-2 py-1 text-xs"
-                      onClick={() => setLocalMatchItem(item)}
-                    >
-                      Change local version
-                    </button>
-                  ) : undefined}
+                  menuItems={item.localAlternatives.length > 0
+                    ? [{ label: 'Change library copy…', onSelect: () => setLocalMatchItem(item) }]
+                    : undefined}
                 />
               ) : (
                 <SpotifyMissingRow
                   key={`spotify-${item.itemId}`}
                   item={item}
-                  busy={busy}
-                  queued={queuedItemIds.has(item.itemId)}
-                  onQueue={() => {
-                    if (queuedItemIds.has(item.itemId)) navigate('/music/downloads')
-                    else void queueDownload([item])
-                  }}
+                  queued={queuedItemIds.has(item.itemId) && queueRunning}
+                  onDownload={() => void queueDownload([item], true)}
+                  onFix={() => setRecoveryItem(item)}
                   onUseLocal={() => setLocalMatchItem(item)}
-                  onConfirmDownloaded={() => setRecoveryItem(item)}
-                  onRejectDownloaded={() => void rejectDownloaded(item.itemId)}
-                  selected={selected.has(item.itemId)}
-                  onSelect={() => setSelected((old) => { const next = new Set(old); if (next.has(item.itemId)) next.delete(item.itemId); else next.add(item.itemId); return next })}
-                  onResolve={() => setRecoveryItem(item)}
-                  onRetry={async () => {
-                    await api.music.spotifyDownloadPlaylist({ playlistId, itemIds: [item.itemId] })
-                    await qc.invalidateQueries({ queryKey: qk.music.all })
-                  }}
+                  onReject={() => void rejectDownloaded(item.itemId)}
                   onSkip={async () => {
-                    await api.music.spotifySkipItem(item.itemId, !item.downloadSkipped)
-                    await qc.invalidateQueries({ queryKey: qk.music.all })
+                    try {
+                      await api.music.spotifySkipItem(item.itemId, !item.downloadSkipped)
+                      await qc.invalidateQueries({ queryKey: qk.music.all })
+                    } catch (error) { toastError(error) }
                   }}
                   onRemove={() => removeSpotifyItem(item.itemId)}
                 />
@@ -551,7 +511,7 @@ export default function MusicPlaylistPage() {
       )}
       {recoveryItem && <SpotifyTrackRecoveryDialog sourceKind="playlistItem" trackId={recoveryItem.itemId}
         title={recoveryItem.title} artist={recoveryItem.artists.join(', ')} duration={recoveryItem.duration}
-        candidate={recoveryItem.downloadCandidate} initialUrl={recoveryItem.audioSourceUrl ?? ''}
+        candidate={recoveryItem.downloadCandidate} problem={recoveryItem.downloadError}
         onClose={() => setRecoveryItem(null)} />}
       {localMatchItem && (
         <UseLocalVersionDialog
@@ -564,82 +524,90 @@ export default function MusicPlaylistPage() {
   )
 }
 
+/** A song that still needs a decision: a failed or unconfirmed download, or a library copy to link. */
+function needsAttention(item: MusicSpotifyPlaylistEntry): boolean {
+  return Boolean(item.downloadError || item.downloadCandidate || item.localAlternatives.length)
+}
+
+function missingStatus(item: MusicSpotifyPlaylistEntry, queued: boolean): { text: string; tone: string } {
+  if (item.downloadCandidate) return { text: 'Downloaded but not confirmed — listen and check it', tone: 'text-amber-300' }
+  if (item.localAlternatives.length) return { text: 'A matching recording is already in your library', tone: 'text-amber-300' }
+  if (item.downloadSkipped) return { text: 'Skipped', tone: 'text-gray-500' }
+  if (item.downloadError) {
+    const review = /^Needs review:\s*/i.test(item.downloadError)
+    return {
+      text: review ? `Needs a source: ${item.downloadError.replace(/^Needs review:\s*/i, '')}` : item.downloadError,
+      tone: review ? 'text-amber-300' : 'text-red-300'
+    }
+  }
+  if (queued) return { text: 'Downloading soon', tone: 'text-gray-400' }
+  return { text: item.audioSourceUrl ? 'Not downloaded yet · your chosen source' : 'Not in your library', tone: 'text-gray-500' }
+}
+
 function SpotifyMissingRow({
   item,
-  busy,
   queued,
-  onQueue,
+  onDownload,
+  onFix,
   onUseLocal,
-  onConfirmDownloaded,
-  onRejectDownloaded,
-  selected, onSelect, onResolve, onRetry, onSkip,
+  onReject,
+  onSkip,
   onRemove
 }: {
   item: MusicSpotifyPlaylistEntry
-  busy: boolean
   queued: boolean
-  onQueue: () => void
+  onDownload: () => void
+  onFix: () => void
   onUseLocal: () => void
-  onConfirmDownloaded: () => void
-  onRejectDownloaded: () => void
-  selected: boolean
-  onSelect: () => void
-  onResolve: () => void
-  onRetry: () => void
+  onReject: () => void
   onSkip: () => void
   onRemove: () => void
 }) {
+  const status = missingStatus(item, queued)
+  // One obvious next step per state; everything else lives in the menu.
+  const primary = item.downloadCandidate
+    ? { label: 'Check', onClick: onFix }
+    : item.localAlternatives.length
+      ? { label: 'Use library copy', onClick: onUseLocal }
+      : item.downloadSkipped
+        ? { label: 'Include', onClick: onSkip }
+        : item.downloadError
+          ? { label: 'Choose audio', onClick: onFix }
+          : queued ? null : { label: 'Download', onClick: onDownload }
   return (
-    <div className="flex flex-wrap items-center gap-3 rounded-md px-2 py-1.5 text-gray-400 hover:bg-base-700 sm:flex-nowrap">
-      <label className="shrink-0"><span className="sr-only">Select {item.title}</span>
-        <input type="checkbox" checked={selected} disabled={Boolean(item.downloadSkipped || item.downloadCandidate || item.localAlternatives.length)} onChange={onSelect} />
-      </label>
+    <div className="group flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-base-700">
       <CoverImage
         path={item.coverPath}
-        alt={item.title}
-        className="h-10 w-10 shrink-0 opacity-85"
+        alt=""
+        className="h-10 w-10 shrink-0 opacity-60"
         fallback="music"
         thumbWidth={80}
       />
-      <div className="min-w-0 flex-1">
-        <p className="line-clamp-1 text-sm font-medium text-gray-300">{item.title}</p>
-        <p className="line-clamp-1 text-xs text-gray-500">
-          {item.artists.join(', ')} · {item.albumTitle} · {item.downloadCandidate ? 'Downloaded locally; needs verification' : 'Missing locally'}
-        </p>
-        {item.downloadSkipped && <p className="text-xs text-gray-400">Skipped for now</p>}
-        {item.downloadError && <p className="line-clamp-2 text-xs text-red-300">{item.downloadError}</p>}
-        {item.downloadCandidate && <p className="line-clamp-2 text-xs text-amber-300">Downloaded; verify the local version before playing.</p>}
-        {item.audioSourceUrl && <p className="text-xs text-green-400">Manual YouTube source saved</p>}
-        {item.allowUnverified && !item.audioSourceUrl && <p className="text-xs text-amber-300">Broader matching enabled</p>}
-      </div>
+      <button className="min-w-0 flex-1 text-left" onClick={onFix} title="Choose audio">
+        <p className="line-clamp-1 text-sm font-medium text-gray-400 group-hover:text-white">{item.title}</p>
+        <p className="line-clamp-1 text-xs text-gray-500">{item.artists.join(', ')} · {item.albumTitle}</p>
+        <p className={`line-clamp-2 text-xs ${status.tone}`}>{status.text}</p>
+      </button>
+      {primary && (
+        <button className="btn-ghost shrink-0 px-2 py-1 text-xs" onClick={primary.onClick}>{primary.label}</button>
+      )}
       <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-500">
         {formatDuration(item.duration)}
       </span>
-      {item.localAlternatives.length > 0 && (
-        <>
-          <span className="text-xs text-amber-300">Local recording found</span>
-          <button className="btn-ghost px-2 py-1 text-xs" onClick={onUseLocal}>
-            Use local version
-          </button>
-        </>
-      )}
-      {item.downloadCandidate && (
-        <>
-          <button className="btn-ghost px-2 py-1 text-xs" onClick={onConfirmDownloaded}>Review downloaded</button>
-          <button className="btn-ghost px-2 py-1 text-xs" onClick={onRejectDownloaded}>Reject and retry</button>
-        </>
-      )}
-      <ActionMenu items={[
-        { label: 'Find audio or choose local recording', onSelect: onResolve },
-        { label: 'Retry this song', disabled: busy || Boolean(item.downloadSkipped || item.downloadCandidate || item.localAlternatives.length), onSelect: onRetry },
-        { label: item.downloadSkipped ? 'Include in downloads again' : 'Skip for now', disabled: busy, onSelect: onSkip }
-      ]} />
-      <button className="btn-ghost px-2 py-1 text-xs" disabled={Boolean(item.downloadSkipped) || Boolean(item.downloadCandidate) || Boolean(item.localAlternatives.length) || (busy && !queued)} onClick={onQueue}>
-        {queued ? 'View queue' : item.downloadCandidate ? 'Verify first' : item.localAlternatives.length ? 'Use local first' : 'Add to queue'}
-      </button>
-      <button className="btn-ghost px-2 py-1 text-xs" aria-label={`Remove ${item.title} from playlist`} onClick={onRemove}>
-        Remove
-      </button>
+      <ActionMenu
+        label="⋯"
+        ariaLabel={`More actions for ${item.title}`}
+        buttonClassName="px-1 text-gray-500 hover:text-white"
+        items={[
+          ...(primary?.onClick !== onFix ? [{ label: 'Choose audio or a library file…', onSelect: onFix }] : []),
+          ...(item.downloadError && !item.localAlternatives.length && !item.downloadCandidate && !item.downloadSkipped
+            ? [{ label: 'Try automatic download again', onSelect: onDownload }]
+            : []),
+          ...(item.downloadCandidate ? [{ label: 'Reject downloaded version', onSelect: onReject }] : []),
+          ...(!item.downloadSkipped ? [{ label: 'Skip this song', onSelect: onSkip }] : []),
+          { label: 'Remove from playlist', danger: true, onSelect: onRemove }
+        ]}
+      />
     </div>
   )
 }
@@ -670,10 +638,10 @@ function UseLocalVersionDialog({
       >
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <h2 id="local-version-title" className="text-lg font-semibold">Use a local version</h2>
+            <h2 id="local-version-title" className="text-lg font-semibold">Use a copy from your library</h2>
             <p className="mt-1 text-sm text-gray-400">
-              Choose the same recording from another album. Live, remix, acoustic and other
-              distinct versions are excluded.
+              The same recording from another release. Live, remix, acoustic and other
+              distinct versions are not offered.
             </p>
           </div>
           <button className="btn-ghost px-2" aria-label="Close" onClick={onClose}>✕</button>

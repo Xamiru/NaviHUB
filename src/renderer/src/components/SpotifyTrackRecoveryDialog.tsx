@@ -1,5 +1,5 @@
 import { rankMusicSources } from '@shared/musicSourceMatch'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { MusicSpotifyDownloadCandidate, MusicTrack } from '@shared/types'
 import Dialog from './Dialog'
@@ -9,10 +9,22 @@ import { qk } from '../lib/queryKeys'
 import { useDebouncedValue } from '../lib/hooks'
 import { usePlayerControls } from '../lib/player'
 import { musicTrackToPlayerTrack } from '../lib/musicTracks'
+import { errorMessage, toast } from '../lib/toast'
 import { formatDuration } from './MusicTrackRow'
 
+function durationDelta(actual: number | null, expected: number | null): string {
+  if (actual == null || expected == null) return ''
+  const delta = Math.round(actual - expected)
+  return delta === 0 ? '' : ` (${delta > 0 ? '+' : ''}${delta}s)`
+}
+
+/**
+ * One place to settle a song that automatic matching could not: search YouTube
+ * Music and download an exact source now, paste a link, or link a copy that is
+ * already in the library.
+ */
 export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title, artist,
-  duration, candidate, initialUrl = '', onClose
+  duration, candidate, problem, onClose
 }: {
   sourceKind: 'playlistItem' | 'entityTrack'
   trackId: number
@@ -20,116 +32,163 @@ export default function SpotifyTrackRecoveryDialog({ sourceKind, trackId, title,
   artist: string
   duration: number | null
   candidate?: MusicSpotifyDownloadCandidate | null
-  initialUrl?: string
+  problem?: string | null
   onClose: () => void
 }) {
   const qc = useQueryClient()
   const player = usePlayerControls()
   const [query, setQuery] = useState(`${artist} ${title}`)
-  const [submitted, setSubmitted] = useState('')
-  const [url, setUrl] = useState(initialUrl)
-  const [localQuery, setLocalQuery] = useState('')
+  const [submitted, setSubmitted] = useState(`${artist} ${title}`.trim())
+  const [url, setUrl] = useState('')
+  const [localQuery, setLocalQuery] = useState(title)
   const localSearch = useDebouncedValue(localQuery)
-  const [picked, setPicked] = useState<MusicTrack | null>(null)
   const previewRequest = useRef(0)
   useEffect(() => () => { previewRequest.current++ }, [sourceKind, trackId])
-  const [startNow, setStartNow] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [checkingSource, setCheckingSource] = useState<string | null>(null)
+  const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const remote = useQuery({ queryKey: qk.music.spotifyAudioSearch(submitted),
     queryFn: () => api.music.spotifySearchAudio(submitted), enabled: Boolean(submitted) })
   const local = useQuery({ queryKey: qk.music.search(localSearch),
     queryFn: () => api.music.search(localSearch), enabled: Boolean(localSearch.trim()) })
-  const uniqueLocalTracks = useMemo(() => {
+  const ranked = useMemo(() => rankMusicSources({ title, artist, duration }, remote.data ?? []), [remote.data, title, artist, duration])
+  const localTracks = useMemo(() => {
     const seen = new Set<string>()
     return (local.data?.tracks ?? []).filter((track) => {
-      const normalized = (value: string) => value.normalize('NFKC').toLocaleLowerCase()
-        .replace(/[\p{P}\p{S}]+/gu, ' ').replace(/\s+/g, ' ').trim()
-      const key = [normalized(track.title), normalized(track.tagArtist ?? track.artistName),
-        normalized(track.albumTitle), track.duration == null ? '?' : Math.round(track.duration)].join('\n')
+      const key = [track.title, track.tagArtist ?? track.artistName, track.albumTitle, Math.round(track.duration ?? 0)]
+        .join('\n').toLocaleLowerCase()
       if (seen.has(key)) return false
       seen.add(key)
       return true
-    })
+    }).slice(0, 8)
   }, [local.data])
-  async function action(fn: () => Promise<unknown>, close = true, invalidate = true) {
-    setBusy(true)
+
+  async function run(key: string, fn: () => Promise<unknown>, done?: string): Promise<void> {
+    setBusy(key)
     setError(null)
     try {
       await fn()
-      const refresh = invalidate ? qc.invalidateQueries({ queryKey: qk.music.all }) : Promise.resolve()
-      if (close) void refresh
-      else await refresh
-      if (close) onClose()
-    } catch (error) { setError(error instanceof Error ? error.message : String(error)) }
-    finally { setBusy(false) }
+      void qc.invalidateQueries({ queryKey: qk.music.all })
+      if (done) toast(done, 'success')
+      onClose()
+    } catch (cause) {
+      setError(errorMessage(cause))
+    } finally {
+      setBusy(null)
+    }
   }
-  const previewLocal = (track: MusicTrack) => { previewRequest.current++; player.playQueue([musicTrackToPlayerTrack(track)], 0) }
-  const saveSource = async (source: string) => {
-    setCheckingSource(source)
+  const downloadFrom = (source: string) => run(`source:${source}`, () => api.music.spotifySetTrackDownloadOptions({
+    sourceKind, trackId, audioSourceUrl: source, approveSource: true, startNow: true
+  }), `Downloading “${title}” from the source you chose`)
+  const useLocal = (track: MusicTrack) => run(`local:${track.id}`, () => api.music.spotifyMatchPlaylistItem({
+    sourceKind, itemId: trackId, trackId: track.id, confirm: true
+  }), `“${title}” now plays your library copy`)
+  const importFile = async () => {
+    setError(null)
     try {
-      await action(() => api.music.spotifySetTrackDownloadOptions({
-        sourceKind, trackId, audioSourceUrl: source, approveSource: true, startNow
-      }))
-    } finally { setCheckingSource(null) }
+      const picked = await api.music.spotifyPickLocalAudio()
+      if (picked) await useLocal(picked)
+    } catch (cause) { setError(errorMessage(cause)) }
   }
-  const compare = (track: MusicTrack) => <div className="space-y-2 rounded border border-base-600 p-3">
-    <p className="text-sm text-gray-200">{track.title} · {track.tagArtist ?? track.artistName}</p>
-    <p className="text-xs text-gray-400">{track.albumTitle} · {formatDuration(track.duration)}
-      {duration != null && track.duration != null && ` · ${Math.round(track.duration - duration)}s difference`}</p>
-    <p className="break-all text-xs text-gray-400">{track.filePath}</p>
-    <button className="btn-ghost" onClick={() => previewLocal(track)}>Listen to local file</button>
-  </div>
+  const listenRemote = async (source: string, label: string, subtitle: string) => {
+    setError(null)
+    const request = ++previewRequest.current
+    try {
+      const audioUrl = await api.music.spotifyPreviewAudio(source)
+      if (previewRequest.current !== request) return
+      player.playQueue([{ id: `file-preview-${source}`, title: label, subtitle, audioUrl, mediaId: null }], 0)
+    } catch (cause) { setError(errorMessage(cause)) }
+  }
+  const listenLocal = (track: MusicTrack) => { previewRequest.current++; player.playQueue([musicTrackToPlayerTrack(track)], 0) }
+  const search = (event: FormEvent) => {
+    event.preventDefault()
+    if (submitted === query.trim()) void remote.refetch()
+    else setSubmitted(query.trim())
+  }
+
   return <Dialog labelledBy="spotify-recovery-title" onClose={onClose}
     panelClassName="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-lg bg-base-800 p-5 shadow-xl">
-    <div className="mb-4 flex justify-between gap-3">
-      <div><h2 id="spotify-recovery-title" className="text-lg font-semibold">Resolve this song</h2>
-        <p className="text-sm text-gray-300">{title} · {artist} · expected {formatDuration(duration)}</p></div>
-      <button className="btn-ghost" aria-label="Close" onClick={onClose}>✕</button>
+    <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <h2 id="spotify-recovery-title" className="text-lg font-semibold">Choose audio for “{title}”</h2>
+        <p className="text-sm text-gray-400">{artist} · {formatDuration(duration)}</p>
+      </div>
+      <button className="btn-ghost px-2" aria-label="Close" onClick={onClose}>✕</button>
     </div>
-    {error && <p role="alert" className="mb-3 text-sm text-red-300">{error}</p>}
-    {checkingSource && <p role="status" className="mb-3 text-sm text-gray-300">Checking source…</p>}
-    {candidate && <section className="mb-5 space-y-2" aria-label="Downloaded candidate">
-      <p className="text-sm text-gray-300">Compare and listen before confirming this downloaded version.</p>
-      {compare(candidate.localTrack)}
-      {candidate.sourceUrl && <button className="btn-ghost" onClick={() => api.app.openExternal(candidate.sourceUrl!)}>Open audio source</button>}
-      <button className="btn-primary" disabled={busy} onClick={() => void action(() => api.music.spotifyConfirmDownloadCandidate({ sourceKind, trackId }))}>Confirm this recording</button>
-      <button className="btn-ghost" disabled={busy} onClick={() => void action(() => api.music.spotifyRejectDownloadCandidate({ sourceKind, trackId }))}>Reject downloaded version</button>
+    {problem && !candidate && <p className="mb-4 rounded border border-amber-800/60 bg-amber-950/30 px-3 py-2 text-sm text-amber-100">{problem}</p>}
+    {error && <p role="alert" className="mb-4 text-sm text-red-300">{error}</p>}
+
+    {candidate && <section className="mb-6 rounded border border-base-600 p-3" aria-label="Downloaded version">
+      <p className="text-sm font-medium text-gray-200">A version was downloaded but could not be confirmed</p>
+      <p className="mt-1 text-xs text-gray-400">
+        {candidate.localTrack.title} · {candidate.localTrack.albumTitle} · {formatDuration(candidate.localTrack.duration)}
+        {durationDelta(candidate.localTrack.duration, duration)}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button className="btn-ghost" onClick={() => listenLocal(candidate.localTrack)}>Listen</button>
+        <button className="btn-primary" disabled={busy != null} onClick={() => void run('confirm',
+          () => api.music.spotifyConfirmDownloadCandidate({ sourceKind, trackId }), 'Downloaded version confirmed')}>It’s the right song</button>
+        <button className="btn-ghost" disabled={busy != null} onClick={() => void run('reject',
+          () => api.music.spotifyRejectDownloadCandidate({ sourceKind, trackId }), 'Rejected; choose another source below or retry')}>Wrong song</button>
+      </div>
     </section>}
-    <section className="mb-5 space-y-2" aria-label="Find audio">
-      <Field label="Search YouTube"><input className="input w-full" value={query} onChange={(e) => setQuery(e.target.value)} /></Field>
-      <button className="btn-ghost" disabled={remote.isFetching || !query.trim()} onClick={() => {
-        if (submitted === query.trim()) void remote.refetch()
-        else setSubmitted(query.trim())
-      }}>{remote.isFetching ? 'Searching…' : 'Find audio'}</button>
-      {remote.error && <p role="alert" className="text-sm text-red-300">Search failed. Retry or paste a source below.</p>}
-      {remote.data?.length === 0 && <p className="text-sm text-gray-400">No results. Try another search.</p>}
-      {rankMusicSources({ title, artist, duration }, remote.data ?? []).map((result) => <div key={result.url} className="rounded border border-base-600 p-3">
-        <p className="text-sm">{result.title}</p><p className="text-xs text-gray-400">{result.channel} · {formatDuration(result.duration)}</p>
-        <p className="mt-1 text-xs text-gray-400">{result.assessment.strong ? 'Title, artist and duration agree' : result.assessment.reasons.join('; ')}</p>
-        <div className="mt-2 flex flex-wrap gap-2"><button className="btn-ghost" disabled={busy} onClick={() => void action(async () => {
-          const request = ++previewRequest.current
-          const audioUrl = await api.music.spotifyPreviewAudio(result.url)
-          if (previewRequest.current !== request) return
-          player.playQueue([{ id: `file-preview-${result.url}`, title: result.title, subtitle: result.channel,
-            audioUrl, mediaId: null }], 0)
-        }, false, false)}>Listen</button>
-        <button className="btn-ghost" onClick={() => api.app.openExternal(result.url)}>Open video</button>
-        <button className="btn-primary" disabled={busy} onClick={() => void saveSource(result.url)}>{checkingSource === result.url ? 'Checking source…' : 'Use this version'}</button></div>
-      </div>)}
-      <Field label="Exact YouTube video URL"><input className="input w-full" value={url} onChange={(e) => setUrl(e.target.value)} /></Field>
-      <button className="btn-ghost" disabled={busy || !url.trim()} onClick={() => void saveSource(url)}>{checkingSource === url ? 'Checking source…' : 'Use this version'}</button>
-      <Field label="Start this download now"><input type="checkbox" checked={startNow} onChange={(event) => setStartNow(event.target.checked)} /></Field>
-      <p className="text-xs text-gray-400">Use this version approves this exact source and adds it to Downloads. Broader automatic matches still need review.</p>
-      <button className="btn-ghost" disabled={busy} onClick={() => void action(() => api.music.spotifySetTrackDownloadOptions({ sourceKind, trackId, allowUnverified: true }))}>Try broader matching on retry</button>
+
+    <section className="mb-6" aria-labelledby="recovery-remote-title">
+      <h3 id="recovery-remote-title" className="mb-2 text-sm font-semibold text-gray-200">Download from YouTube Music</h3>
+      <form className="flex gap-2" onSubmit={search}>
+        <Field label="Search YouTube Music" hiddenLabel className="contents">
+          <input className="input min-w-0 flex-1" value={query} onChange={(event) => setQuery(event.target.value)} />
+        </Field>
+        <button className="btn-ghost shrink-0" disabled={remote.isFetching || !query.trim()}>{remote.isFetching ? 'Searching…' : 'Search'}</button>
+      </form>
+      {remote.error && <p role="alert" className="mt-2 text-sm text-red-300">Search failed. Try again or paste a link below.</p>}
+      {remote.data?.length === 0 && <p className="mt-2 text-sm text-gray-400">No results. Try different words.</p>}
+      <ul className="mt-2 divide-y divide-base-700" aria-busy={remote.isFetching}>
+        {ranked.map((result) => {
+          const key = `source:${result.url}`
+          return <li key={result.url} className="flex flex-wrap items-center gap-3 py-2.5 sm:flex-nowrap">
+            <div className="min-w-0 flex-1">
+              <p className="line-clamp-1 text-sm text-gray-100">
+                {result.title}
+                {result.assessment.strong && <span className="ml-2 rounded bg-green-900/60 px-1.5 py-0.5 text-xs text-green-300">Match</span>}
+              </p>
+              <p className="line-clamp-1 text-xs text-gray-400">
+                {[result.artist ?? result.channel, result.album].filter(Boolean).join(' · ')} · {formatDuration(result.duration)}{durationDelta(result.duration, duration)}
+              </p>
+              {!result.assessment.strong && <p className="line-clamp-1 text-xs text-gray-500">{result.assessment.reasons.join('; ')}</p>}
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button className="btn-ghost px-2 py-1 text-xs" onClick={() => void listenRemote(result.url, result.title, result.channel)}>Listen</button>
+              <button className={`${result.assessment.strong ? 'btn-primary' : 'btn-ghost'} px-2 py-1 text-xs`} disabled={busy != null}
+                onClick={() => void downloadFrom(result.url)}>{busy === key ? 'Checking…' : 'Download this'}</button>
+            </div>
+          </li>
+        })}
+      </ul>
+      <form className="mt-3 flex gap-2" onSubmit={(event) => { event.preventDefault(); if (url.trim()) void downloadFrom(url.trim()) }}>
+        <Field label="Or paste a YouTube link" hiddenLabel className="contents">
+          <input className="input min-w-0 flex-1" value={url} placeholder="Or paste a YouTube link" onChange={(event) => setUrl(event.target.value)} />
+        </Field>
+        <button className="btn-ghost shrink-0" disabled={busy != null || !url.trim()}>{busy === `source:${url.trim()}` ? 'Checking…' : 'Download link'}</button>
+      </form>
     </section>
-    {<section className="space-y-2" aria-label="Choose local recording">
-      <Field label="Search the whole local library"><input className="input w-full" value={localQuery} onChange={(e) => setLocalQuery(e.target.value)} /></Field>
-      {uniqueLocalTracks.slice(0, 12).map((track) => <button key={track.id} className="btn-ghost block w-full text-left" onClick={() => setPicked(track)}>{track.title} · {track.artistName} · {formatDuration(track.duration)}</button>)}
-      <button className="btn-ghost" disabled={busy} onClick={() => void action(async () => setPicked(await api.music.spotifyPickLocalAudio()), false)}>Choose a file to copy into the library</button>
-      {picked && <>{compare(picked)}<p className="text-xs text-gray-400">This explicitly overrides automatic matching and is remembered across scans.</p>
-        <button className="btn-primary" disabled={busy} onClick={() => void action(() => api.music.spotifyMatchPlaylistItem({ sourceKind, itemId: trackId, trackId: picked.id, confirm: true }))}>Confirm this local recording</button></>}
-    </section>}
+
+    <section aria-labelledby="recovery-local-title">
+      <h3 id="recovery-local-title" className="mb-2 text-sm font-semibold text-gray-200">Already in your library?</h3>
+      <Field label="Search your library" hiddenLabel className="contents">
+        <input className="input w-full" value={localQuery} placeholder="Search your library" onChange={(event) => setLocalQuery(event.target.value)} />
+      </Field>
+      {localSearch.trim() && !local.isFetching && localTracks.length === 0 && <p className="mt-2 text-sm text-gray-400">Nothing in your library matches.</p>}
+      <ul className="mt-2 divide-y divide-base-700">
+        {localTracks.map((track) => <li key={track.id} className="flex items-center gap-3 py-2.5">
+          <div className="min-w-0 flex-1">
+            <p className="line-clamp-1 text-sm text-gray-100">{track.title}</p>
+            <p className="line-clamp-1 text-xs text-gray-400">{track.tagArtist ?? track.artistName} · {track.albumTitle} · {formatDuration(track.duration)}{durationDelta(track.duration, duration)}</p>
+          </div>
+          <button className="btn-ghost px-2 py-1 text-xs" onClick={() => listenLocal(track)}>Listen</button>
+          <button className="btn-ghost px-2 py-1 text-xs" disabled={busy != null} onClick={() => void useLocal(track)}>Use this</button>
+        </li>)}
+      </ul>
+      <button className="btn-ghost mt-3" disabled={busy != null} onClick={() => void importFile()}>Import an audio file…</button>
+    </section>
   </Dialog>
 }

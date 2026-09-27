@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import TaskRow from './TaskRow'
 import { useTasks } from '../lib/useTasks'
 import { usePopover } from '../lib/hooks'
+import { FX_ART } from '../lib/themeFxArt'
+import { useAppTheme } from '../lib/useAppTheme'
 
 // Topbar pill for everything the main process is currently doing, and the
 // dropdown that lets you pause or stop any of it.
@@ -19,6 +21,7 @@ import { usePopover } from '../lib/hooks'
 // restore focus, which is wrong for something anchored in the header.
 export default function TasksIndicator() {
   const { active, running, kick } = useTasks()
+  const { theme } = useAppTheme()
   const [open, setOpen] = useState(false)
   const panelId = useId()
   const triggerId = useId()
@@ -49,7 +52,13 @@ export default function TasksIndicator() {
         title={active.map((t) => t.label).join(' · ')}
         onClick={() => setOpen((v) => !v)}
       >
-        <span className="inline-block h-3 w-3 motion-safe:animate-spin rounded-full border-2 border-accent border-t-transparent" />
+        {theme === 'metal-gear' ? (
+          <span className="task-sprite task-sprite-snake" style={{ backgroundImage: `url(${FX_ART.mgsSnakeWalk})` }} aria-hidden="true" />
+        ) : theme === 'miku' ? (
+          <span className="task-sprite task-sprite-hachune" style={{ backgroundImage: `url(${FX_ART.mikuHachuneWork})` }} aria-hidden="true" />
+        ) : (
+          <span className="inline-block h-3 w-3 motion-safe:animate-spin rounded-full border-2 border-accent border-t-transparent" />
+        )}
         <span className="hidden max-w-[18rem] truncate sm:inline">{summary}</span>
       </button>
 

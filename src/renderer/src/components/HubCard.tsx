@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
-// The quiet section-hub card (Japanese/Quiz/Gacha/Programming hub grids): plain
+// The quiet section-hub card (Japanese/Quiz/Programming hub grids): plain
 // card, accent border on hover. DoorCard's glow is reserved for Home's right
 // rail — hub grids stay quiet so the gradient keeps meaning "a door out of Home".
 // Pass `to` for navigation or `onClick` when the card opens a dialog.

@@ -42,7 +42,7 @@ Wrestler pages also expose explicit local entrance-theme associations; see
 
 **Wrestling section (2026-08-12)** — `/wrestling`, a Wikipedia-sourced wiki (events / matches / wrestlers) plus a local collection of PPV rips. **Standalone (flavor B), deliberately NOT a MediaType**: ~2,500 events are reference data, and as `media_item` rows they'd flood Home strips, global search, stats, facets and "Plan to Watch".
 
-Promotion vocabulary is code (`src/shared/wrestling.ts`, the `GACHA_GAMES` idiom; ids FROZEN — stored in `wrestling_event.promotion`), so adding a promotion is one entry.
+Promotion vocabulary is code (`src/shared/wrestling.ts`, content as code; ids FROZEN — stored in `wrestling_event.promotion`), so adding a promotion is one entry.
 
 Tables: `wrestling_event` / `_match` / `_match_participant` / `_wrestler` / `_alias` / `_honour` / `_stable` / `_stable_member` / `_video`.
 

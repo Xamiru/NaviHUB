@@ -11,19 +11,19 @@ export const APP_THEME_OPTIONS = [
     value: 'metal-gear',
     label: 'Metal Gear',
     subtitle: 'Solid / Ink',
-    description: 'Paper, dark green ink, red actions and classic Metal Gear Solid artwork.'
+    description: 'Codec green, field dossiers and Shadow Moses at night, with Yoji Shinkawa artwork.'
   },
   {
     value: 'miku',
     label: 'Hatsune Miku',
     subtitle: 'Beyond the blue',
-    description: 'Cyan-blue surfaces, soft lettering and Miku in the open sky.'
+    description: 'Crypton teal, open sky or the concert stage, with soft lettering and official art.'
   },
   {
     value: 'twin-peaks',
     label: 'Twin Peaks',
     subtitle: 'The waiting room',
-    description: 'Curtain red, warm black and ivory, from the classic series and Fire Walk with Me.'
+    description: 'The Red Room, the Douglas firs and the Black Lodge, from the series and Fire Walk with Me.'
   }
 ] as const
 
@@ -35,14 +35,56 @@ export function parseAppTheme(value: string | null | undefined): AppTheme {
     : 'lain'
 }
 
+// Each theme offers three styles. The values are stored per theme in the
+// settings table, so they are frozen keys: renaming one orphans a choice.
+export const APP_THEME_VARIANT_OPTIONS = {
+  lain: [
+    { value: 'present-day', label: 'Present day', description: 'Status readout, rolling scanline and ABe cover art.' },
+    { value: 'copland', label: 'Copland OS', description: 'Panels as Copland OS windows with the 1998 boot screen.' },
+    { value: 'red-shadows', label: 'Red shadows', description: 'Crimson accents, dotted red shadows and Lain among the wires.' }
+  ],
+  'metal-gear': [
+    { value: 'codec', label: 'Codec', description: 'Paper and ink, with your next session as a codec call.' },
+    { value: 'dossier', label: 'Dossier', description: 'Kraft paper, folder tabs, typewriter notes and a file stamp.' },
+    { value: 'shadow-moses', label: 'Shadow Moses', description: 'Night green, falling snow and a Soliton radar.' }
+  ],
+  miku: [
+    { value: 'crypton-teal', label: 'Crypton teal', description: "Crypton's official blue-green with RITAO's MIKU EXPO art." },
+    { value: 'open-sky', label: 'Open sky', description: 'Sky gradient, frosted white panels and KEI art.' },
+    { value: 'concert-night', label: 'Concert night', description: 'Navy stage, teal glow and the Magical Mirai key visual.' }
+  ],
+  'twin-peaks': [
+    { value: 'waiting-room', label: 'Waiting room', description: 'Curtain red, the chevron floor and the Red Room photograph.' },
+    { value: 'douglas-firs', label: 'Douglas firs', description: 'Fir green and sawmill brown with the forest key art.' },
+    { value: 'black-lodge', label: 'Black Lodge', description: 'Black and ivory press photography with red only for actions.' }
+  ]
+} as const satisfies Record<AppTheme, readonly { value: string; label: string; description: string }[]>
+
+export type AppThemeVariant<T extends AppTheme = AppTheme> =
+  (typeof APP_THEME_VARIANT_OPTIONS)[T][number]['value']
+
+export function appThemeVariantSetting(theme: AppTheme): string {
+  return `ui.themeVariant.${theme}`
+}
+
+export function parseAppThemeVariant<T extends AppTheme>(
+  theme: T,
+  value: string | null | undefined
+): AppThemeVariant<T> {
+  const options: readonly { value: string }[] = APP_THEME_VARIANT_OPTIONS[theme]
+  return (options.some((option) => option.value === value) ? value : options[0].value) as AppThemeVariant<T>
+}
+
 // BrowserWindow paints this before the renderer exists. Keep these values in
-// sync with styles.css so a launch never flashes the other theme's canvas.
-export function appThemeBackground(theme: AppTheme): string {
-  const backgrounds: Record<AppTheme, string> = {
-    lain: '#0f0d15',
-    'metal-gear': '#e4e6e0',
-    miku: '#6fd4e2',
-    'twin-peaks': '#170e0c'
-  }
-  return backgrounds[theme]
+// sync with styles.css so a launch never flashes another style's canvas.
+const BACKGROUNDS: { [T in AppTheme]: Record<AppThemeVariant<T>, string> } = {
+  lain: { 'present-day': '#0f0d15', copland: '#0f0d15', 'red-shadows': '#0c090c' },
+  'metal-gear': { codec: '#e4e6e0', dossier: '#e2d6b8', 'shadow-moses': '#0d1512' },
+  miku: { 'crypton-teal': '#7ed9d3', 'open-sky': '#d6f0f8', 'concert-night': '#091228' },
+  'twin-peaks': { 'waiting-room': '#170e0c', 'douglas-firs': '#10140f', 'black-lodge': '#0c0c0c' }
+}
+
+export function appThemeBackground(theme: AppTheme, variant?: string | null): string {
+  const fills: Record<string, string> = BACKGROUNDS[theme]
+  return fills[parseAppThemeVariant(theme, variant)]
 }

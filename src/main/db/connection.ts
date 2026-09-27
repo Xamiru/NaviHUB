@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { rmSync } from 'fs'
 import { join } from 'path'
 import Database from 'better-sqlite3'
 import initSql from './init.sql?raw'
@@ -164,7 +165,9 @@ export function migrateFootballCoverageUniqueness(sqlite: Database.Database): vo
   })()
 }
 
-export function runMigrations(sqlite: Database.Database): void {
+// Returns media/ files the migrations orphaned, for initDatabase to delete once
+// the schema is settled. Deleting here would tie the tests to the filesystem.
+export function runMigrations(sqlite: Database.Database): string[] {
   migrateMusicQueue(sqlite)
   // A nullable season_id defeats the table's composite UNIQUE constraint.
   // Deduplicate before creating the partial index or a live pre-fix DB can
@@ -172,6 +175,11 @@ export function runMigrations(sqlite: Database.Database): void {
   // init.sql runs first and old databases may already contain duplicates.
   migrateFootballCoverageUniqueness(sqlite)
   ensureColumn(sqlite, 'music_track', 'spotify_review_required', 'spotify_review_required INTEGER NOT NULL DEFAULT 0')
+  // Existing rows start at 0, so the next scan re-reads their tags once for genres.
+  ensureColumn(sqlite, 'music_track', 'genres_scanned', 'genres_scanned INTEGER NOT NULL DEFAULT 0')
+  // Junk tag years (0, a whole date) were stored before the scanner checked
+  // them; a scan keeps an existing year, so clear them for the re-read to refill.
+  sqlite.exec('UPDATE music_album SET year = NULL WHERE year IS NOT NULL AND year NOT BETWEEN 1000 AND 2999')
   // Spotify entity sources arrived after the music library. The indexes must
   // be created after ALTER TABLE or a pre-feature database cannot start.
   ensureColumn(sqlite, 'music_spotify_entity_snapshot', 'catalogue_country', "catalogue_country TEXT NOT NULL DEFAULT 'US'")
@@ -248,18 +256,9 @@ export function runMigrations(sqlite: Database.Database): void {
   // Game/VN launcher: per-title executable (written only by src/main/gameLaunch.ts,
   // same deliberate absence from mediaRepo's column map as local_dir).
   ensureColumn(sqlite, 'media_item', 'exe_path', 'exe_path TEXT')
-  // 2026-08: wide hero art for the detail page (AniList bannerImage / TMDB
-  // backdrop). Every pre-existing row has it NULL until re-imported, which is
-  // why the hero resolves through media_image and the cover before giving up.
-  ensureColumn(sqlite, 'media_item', 'banner_path', 'banner_path TEXT')
   // 2026-08: chapter/volume thumbnails for the Volumes grid. Fills in on the
   // next rescan of an already-attached series.
   ensureColumn(sqlite, 'manga_chapter', 'cover_path', 'cover_path TEXT')
-  // Gacha news moved to subreddit feeds right after first shipping: post
-  // author + the feed's hot-rank ordering (DBs from the day-one build lack
-  // these columns).
-  ensureColumn(sqlite, 'gacha_news', 'author', 'author TEXT')
-  ensureColumn(sqlite, 'gacha_news', 'sort_order', 'sort_order INTEGER NOT NULL DEFAULT 0')
   // Theme songs got a personal "favorite" flag with the /anime/songs page;
   // every DB that already imported themes predates it.
   ensureColumn(sqlite, 'theme_song', 'favorite', 'favorite INTEGER NOT NULL DEFAULT 0')
@@ -393,6 +392,137 @@ export function runMigrations(sqlite: Database.Database): void {
   // export sanitizer, which no longer references them).
   dropColumn(sqlite, 'media_item', 'started_at')
   dropColumn(sqlite, 'media_item', 'finished_at')
+
+  // Retired features whose downloaded images go with them. Each collects its
+  // media/ paths before dropping its schema; a file anything else still
+  // references is kept.
+  retireAlbumJournal(sqlite)
+  const retired = [...retireBannerColumn(sqlite), ...retireGacha(sqlite)]
+  if (!retired.length) return []
+  const inUse = referencedMediaPaths(sqlite)
+  return [...new Set(retired)].filter((p) => !p.includes('..') && !inUse.has(p))
+}
+
+// 2026-09: the detail-page hero and its imported wide art (AniList bannerImage /
+// TMDB backdrop). The Art-tab background replaced it.
+function retireBannerColumn(sqlite: Database.Database): string[] {
+  const cols = sqlite.prepare('PRAGMA table_info(media_item)').all() as { name: string }[]
+  if (!cols.some((c) => c.name === 'banner_path')) return []
+  const rows = sqlite
+    .prepare(`SELECT DISTINCT banner_path AS p FROM media_item WHERE banner_path LIKE 'media/%'`)
+    .all() as { p: string }[]
+  dropColumn(sqlite, 'media_item', 'banner_path')
+  return rows.map((r) => r.p)
+}
+
+// 2026-09-26: the album listening journal (album ratings, shelves, reviews and
+// dated listens) was removed. Per-track tags and standouts stay in
+// music_track_personal.
+function retireAlbumJournal(sqlite: Database.Database): void {
+  const present = sqlite.prepare(
+    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name IN ('music_listen', 'music_album_personal')"
+  ).get()
+  if (!present) return
+  sqlite.exec('DROP TABLE IF EXISTS music_listen; DROP TABLE IF EXISTS music_album_personal;')
+  logInfo('db', 'migration: removed the album listening journal tables')
+}
+
+// 2026-09: the gacha tracker and FGO Coach. The user quit gacha games; every
+// table, the gacha-daily checklist rows and the downloaded unit/banner/game art
+// and chat screenshots go. Children before parents for the FK cascade.
+const GACHA_TABLES = [
+  'gacha_build',
+  'gacha_unit',
+  'gacha_currency',
+  'gacha_banner',
+  'gacha_news',
+  'gacha_meta',
+  'gacha_chat_message',
+  'gacha_chat_thread',
+  'gacha_goal',
+  'gacha_coach_note',
+  'gacha_coach_doc'
+]
+
+function retireGacha(sqlite: Database.Database): string[] {
+  const present = new Set(
+    (
+      sqlite
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name GLOB 'gacha_*'")
+        .all() as { name: string }[]
+    ).map((r) => r.name)
+  )
+  if (!present.size) return []
+  const paths: string[] = []
+  const collect = (table: string, sql: string): void => {
+    if (!present.has(table)) return
+    for (const r of sqlite.prepare(sql).all() as { p: string | null }[]) if (r.p) paths.push(r.p)
+  }
+  collect('gacha_unit', 'SELECT image_path AS p FROM gacha_unit')
+  collect('gacha_banner', 'SELECT image_path AS p FROM gacha_banner')
+  collect('gacha_meta', "SELECT value AS p FROM gacha_meta WHERE value LIKE 'media/%'")
+  collect('gacha_chat_message', 'SELECT attachments AS p FROM gacha_chat_message')
+  const files = paths.flatMap((p) => {
+    if (!p.startsWith('[')) return [p]
+    try {
+      const list = JSON.parse(p) as unknown
+      return Array.isArray(list) ? list.filter((x): x is string => typeof x === 'string') : []
+    } catch {
+      return []
+    }
+  })
+  sqlite.transaction(() => {
+    sqlite.exec(
+      `DELETE FROM checklist_log WHERE task_key LIKE 'gacha-daily-%';
+       DELETE FROM checklist_task WHERE task_key LIKE 'gacha-daily-%';`
+    )
+    for (const table of GACHA_TABLES) sqlite.exec(`DROP TABLE IF EXISTS ${table}`)
+  })()
+  logInfo('db', 'migration: removed the gacha tracker tables')
+  return files.filter((p) => p.startsWith('media/'))
+}
+
+// Every media/ path any remaining TEXT column still holds, so a retired
+// feature's cleanup never deletes a file another feature points at.
+function referencedMediaPaths(sqlite: Database.Database): Set<string> {
+  const used = new Set<string>()
+  const tables = sqlite
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'")
+    .all() as { name: string }[]
+  for (const { name } of tables) {
+    const cols = sqlite.prepare(`PRAGMA table_info("${name}")`).all() as {
+      name: string
+      type: string
+    }[]
+    for (const col of cols) {
+      if (col.type && !/TEXT/i.test(col.type)) continue
+      const rows = sqlite
+        .prepare(`SELECT DISTINCT "${col.name}" AS p FROM "${name}" WHERE "${col.name}" LIKE 'media/%'`)
+        .all() as { p: string }[]
+      for (const r of rows) used.add(r.p)
+    }
+  }
+  return used
+}
+
+// files.mediaRoot() reads settings through settingsRepo, which imports this
+// module, so the one lookup is repeated here on the handle in hand.
+function removeRetiredMediaFiles(sqlite: Database.Database, paths: string[]): void {
+  if (!paths.length) return
+  const custom = (
+    sqlite.prepare("SELECT value FROM settings WHERE key = 'media.dir'").get() as
+      | { value: string | null }
+      | undefined
+  )?.value?.trim()
+  const root = custom || join(app.getPath('userData'), 'media')
+  for (const rel of paths) {
+    try {
+      rmSync(join(root, rel.replace(/^media\//, '')), { force: true })
+    } catch {
+      // Best-effort: a leftover file costs disk space, never correctness.
+    }
+  }
+  logInfo('db', `migration: removed ${paths.length} retired image(s)`)
 }
 
 export function initDatabase(): Database.Database {
@@ -402,7 +532,7 @@ export function initDatabase(): Database.Database {
   sqlite.pragma('journal_mode = WAL')
   sqlite.pragma('foreign_keys = ON')
   sqlite.exec(initSql)
-  runMigrations(sqlite)
+  const retiredFiles = runMigrations(sqlite)
 
   const seed = sqlite.prepare(
     'INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)'
@@ -413,6 +543,7 @@ export function initDatabase(): Database.Database {
   seedMany(Object.entries(DEFAULT_SETTINGS))
   seedJapanese(sqlite)
   seedChecklist(sqlite)
+  removeRetiredMediaFiles(sqlite, retiredFiles)
 
   _sqlite = sqlite
   return sqlite

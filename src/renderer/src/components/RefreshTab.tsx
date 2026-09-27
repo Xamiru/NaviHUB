@@ -14,8 +14,15 @@ import type { RefreshAspect } from '@shared/refresh'
 import type { MediaType, RefreshPreview, RefreshRunStatus } from '@shared/types'
 import QuietWorkspace from './QuietWorkspace'
 import OperationFlow from './OperationFlow'
+import { formatRunTime } from '../lib/archiveDisplay'
 
-type RefreshSetup = 'missing-covers' | 'missing-hero' | 'tv-episodes' | 'anime-themes' | 'custom'
+type RefreshSetup =
+  | 'missing-covers'
+  | 'tv-episodes'
+  | 'anime-themes'
+  | 'missing-scores'
+  | 'full-reimport'
+  | 'custom'
 
 const ALL_MEDIA_TYPES = MEDIA_CONFIGS.map((cfg) => cfg.key)
 
@@ -36,14 +43,6 @@ const REFRESH_SETUPS: Array<{
     onlyMissing: true
   },
   {
-    key: 'missing-hero',
-    label: 'Fill missing hero art',
-    description: 'Find missing AniList banners and TMDB backdrops.',
-    types: ['anime', 'manga', 'movie', 'tv'],
-    aspects: ['banner'],
-    onlyMissing: true
-  },
-  {
     key: 'tv-episodes',
     label: 'Update TV episodes',
     description: 'Build missing season and episode catalogues for TV shows.',
@@ -57,6 +56,24 @@ const REFRESH_SETUPS: Array<{
     description: 'Compare every AniList anime with AnimeThemes and repair missing or changed songs/audio.',
     types: ['anime'],
     aspects: ['themes'],
+    onlyMissing: false
+  },
+  {
+    key: 'missing-scores',
+    label: 'Fill missing scores',
+    description:
+      'IMDb and Rotten Tomatoes for movies and TV, AniList scores for anime and manga. A free OMDb key allows 1,000 titles a day.',
+    types: ['movie', 'tv', 'anime', 'manga'],
+    aspects: ['text'],
+    onlyMissing: true
+  },
+  {
+    key: 'full-reimport',
+    label: 'Apply importer updates',
+    description:
+      'Re-import every title in full: cast, tags, relations and people. AniList takes hours; stop any time and run it again to continue.',
+    types: ALL_MEDIA_TYPES,
+    aspects: ['full'],
     onlyMissing: false
   }
 ]
@@ -73,7 +90,7 @@ export default function RefreshTab(): React.JSX.Element {
     'missing-covers'
   )
   const [types, setTypes] = usePersistedState<MediaType[]>('refresh.types', ['tv'])
-  const [aspects, setAspects] = usePersistedState<RefreshAspect[]>('refresh.aspects', ['banner'])
+  const [aspects, setAspects] = usePersistedState<RefreshAspect[]>('refresh.aspects', ['cover'])
   const [onlyMissing, setOnlyMissing] = usePersistedState('refresh.onlyMissing', true)
   const [preview, setPreview] = usePersistedState<RefreshPreview | null>('refresh.preview', null)
   const [previewKey, setPreviewKey] = usePersistedState('refresh.previewKey', '')
@@ -145,6 +162,15 @@ export default function RefreshTab(): React.JSX.Element {
 
   async function stop(): Promise<void> {
     await api.refresh.cancel()
+    await run.kick()
+  }
+
+  async function retryFailed(): Promise<void> {
+    try {
+      await api.refresh.retryFailed()
+    } catch (e) {
+      toastError(e)
+    }
     await run.kick()
   }
 
@@ -318,7 +344,7 @@ export default function RefreshTab(): React.JSX.Element {
                   <>
                     {reviewedPreview.total === 0
                       ? 'Nothing needs this refresh.'
-                      : `${reviewedPreview.total} title${reviewedPreview.total === 1 ? '' : 's'} ready to refresh.`}
+                      : `${reviewedPreview.total} title${reviewedPreview.total === 1 ? '' : 's'} ready to refresh, ${formatRunTime(reviewedPreview.estimateSeconds)}.`}
                     {reviewedPreview.unsupported > 0 && (
                       <span className="text-gray-500">
                         {' '}
@@ -342,7 +368,7 @@ export default function RefreshTab(): React.JSX.Element {
       </QuietWorkspace>
 
       {run.status && run.status.state !== 'idle' && (
-        <RefreshRunCard status={run.status} onStop={stop} />
+        <RefreshRunCard status={run.status} onStop={stop} onRetry={retryFailed} />
       )}
 
       <LocalLibraryMaintenance />
@@ -435,7 +461,7 @@ function LocalLibraryMaintenance(): React.JSX.Element {
       description="Maintain the music NaviHUB reads from this computer. These actions never contact a title importer."
       actions={
         <Link className="btn-ghost" to="/music">
-          Open Sonic archive
+          Open Music
         </Link>
       }
     >
@@ -483,10 +509,12 @@ function LocalLibraryMaintenance(): React.JSX.Element {
 
 function RefreshRunCard({
   status,
-  onStop
+  onStop,
+  onRetry
 }: {
   status: RefreshRunStatus
   onStop: () => Promise<void>
+  onRetry: () => Promise<void>
 }): React.JSX.Element {
   const pct = status.total ? Math.round((status.done / status.total) * 100) : 0
   const tally = `${status.refreshed} refreshed${status.skipped ? ` · ${status.skipped} skipped` : ''}${
@@ -533,9 +561,14 @@ function RefreshRunCard({
 
       {status.failures.length > 0 && status.state !== 'running' && (
         <div className="mt-4">
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-            Didn&apos;t refresh — retry these from their own pages
-          </p>
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+              Didn&apos;t refresh
+            </p>
+            <button className="btn-ghost text-xs" onClick={() => void onRetry()}>
+              Retry {status.failures.length} failed
+            </button>
+          </div>
           <div className="max-h-48 space-y-1 overflow-y-auto pr-1">
             {status.failures.map((f) => (
               <div key={f.id} className="flex items-baseline gap-2 text-xs">

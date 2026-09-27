@@ -69,6 +69,12 @@ export async function fetchBackdrops(
       height: Number.isFinite(b.height) ? b.height : null
     }))
 }
+// fanart.tv keys TV shows by TheTVDB id, which only TMDB's external_ids knows.
+export async function fetchTvdbId(tmdbId: string): Promise<string | null> {
+  const data = await tmdbGet(`/tv/${tmdbId}/external_ids`)
+  return data?.tvdb_id ? String(data.tvdb_id) : null
+}
+
 function yearOf(date: string | null | undefined): number | null {
   if (!date) return null
   const y = Number(date.slice(0, 4))
@@ -325,7 +331,6 @@ interface NormalizedTitle {
   native: string | null
   synopsis: string | null
   posterPath: string | null // raw TMDB poster path
-  backdropPath: string | null // raw TMDB backdrop path (wide hero art)
   totalUnits: number | null
   releaseDate: string | null
   companies: any[] // TMDB company/network nodes
@@ -341,6 +346,58 @@ interface NormalizedTitle {
   // TV only: the episode catalogue, already fetched (network phase) so the
   // write below stays inside the one transaction.
   episodes?: tvRepo.EpisodeCatalogue
+  // Movies only: the other films of its TMDB collection in release order, or
+  // null when the collection fetch failed and the stored ones must stand.
+  collection?: CollectionPart[] | null
+}
+
+interface CollectionPart {
+  id: number
+  title: string
+  releaseDate: string | null
+}
+
+// A movie's franchise siblings ("The Lord of the Rings Collection"): one extra
+// request in the network phase, best-effort — a failed fetch never fails the
+// import. Undated parts (announced sequels) go last; the movie itself stays in
+// the list so the caller can split the rest into prequels and sequels.
+async function fetchCollection(ref: any): Promise<CollectionPart[] | null> {
+  if (!ref?.id) return []
+  try {
+    const c = await tmdbGet(`/collection/${ref.id}`)
+    return (Array.isArray(c?.parts) ? c.parts : [])
+      .filter((p: any) => p?.id)
+      .map((p: any) => ({
+        id: Number(p.id),
+        title: String(p.title || p.original_title || 'Untitled'),
+        releaseDate: p.release_date || null
+      }))
+      .sort(
+        (a: CollectionPart, b: CollectionPart) =>
+          (a.releaseDate ? 0 : 1) - (b.releaseDate ? 0 : 1) ||
+          (a.releaseDate ?? '').localeCompare(b.releaseDate ?? '')
+      )
+  } catch (err) {
+    logWarn('http', `tmdb: collection ${ref.id} fetch failed: ${(err as Error).message}`)
+    return null
+  }
+}
+
+// TMDB owns a movie's relations, and only collections produce them. Written as
+// PREQUEL/SEQUEL around the movie's own position so the detail page's Related
+// section orders them like an AniList season chain.
+function replaceCollection(db: any, mediaId: number, selfId: string, parts: CollectionPart[]): void {
+  db.prepare(`DELETE FROM media_relation WHERE media_id=? AND related_source='tmdb'`).run(mediaId)
+  const self = parts.findIndex((p) => String(p.id) === selfId)
+  const ins = db.prepare(
+    `INSERT OR IGNORE INTO media_relation
+       (media_id, relation_type, related_source, related_external_id, related_type, related_title, sort_order)
+     VALUES (?, ?, 'tmdb', ?, 'movie', ?, ?)`
+  )
+  parts.forEach((p, i) => {
+    if (String(p.id) === selfId) return
+    ins.run(mediaId, self >= 0 && i < self ? 'PREQUEL' : 'SEQUEL', String(p.id), p.title, i)
+  })
 }
 
 // The authoritative import shared by movies + TV: refreshes canonical fields but
@@ -355,15 +412,11 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
   const partial = !!n.only?.length
   const wants = (a: RefreshAspect): boolean => !partial || !!n.only?.includes(a)
   const coverUrl = posterUrl(n.posterPath, 'w500')
-  // w1280 rather than original: the hero is a background behind a scrim, and the
-  // originals run to several MB each.
-  const bannerUrl = posterUrl(n.backdropPath, 'w1280')
   const images = await downloadImages(
     partial
-      ? [wants('cover') ? coverUrl : null, wants('banner') ? bannerUrl : null]
+      ? [wants('cover') ? coverUrl : null]
       : [
           coverUrl,
-          bannerUrl,
           ...castEdges.map((e) => profileUrl(e.profile_path)),
           ...n.crew.filter((e) => mapCrewJob(e.job)).map((e) => profileUrl(e.profile_path))
         ]
@@ -374,7 +427,6 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
   updateActivity({ phase: 'writing' })
   return db.transaction((): ImportSummary => {
     const coverPath = img(coverUrl)
-    const bannerPath = img(bannerUrl)
 
     // ---- media (preserve personal tracking on re-import) ----
     const existing = db
@@ -395,10 +447,6 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
         sets.push('cover_path=COALESCE(?, cover_path)')
         args.push(coverPath)
       }
-      if (wants('banner')) {
-        sets.push('banner_path=COALESCE(?, banner_path)')
-        args.push(bannerPath)
-      }
       sets.push("updated_at=datetime('now')")
       db.prepare(`UPDATE media_item SET ${sets.join(', ')} WHERE id=?`).run(...args, mediaId)
     } else {
@@ -408,9 +456,9 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
       const info = db
         .prepare(
           `INSERT INTO media_item
-           (media_type, title, title_original, synopsis, cover_path, banner_path, total_units,
+           (media_type, title, title_original, synopsis, cover_path, total_units,
             release_date, external_source, external_id)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           n.mediaType,
@@ -418,7 +466,6 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
           n.native,
           n.synopsis,
           coverPath,
-          bannerPath,
           n.totalUnits,
           n.releaseDate,
           SOURCE,
@@ -458,6 +505,8 @@ async function persistTitle(n: NormalizedTitle): Promise<ImportSummary> {
     // Everything below writes CHILD rows and prunes them. A partial refresh
     // stops here — see NormalizedTitle.only.
     if (partial) return { mediaId, title: n.title, studios: 0, cast: 0, staff: 0, created }
+
+    if (n.collection) replaceCollection(db, mediaId, n.externalId, n.collection)
 
     // ---- production companies / networks (cap a few) ----
     let studios = 0
@@ -584,7 +633,6 @@ export async function importMovie(
     native: m.original_title && m.original_title !== title ? m.original_title : null,
     synopsis: m.overview || null,
     posterPath: m.poster_path ?? null,
-    backdropPath: m.backdrop_path ?? null,
     totalUnits: m.runtime ?? null,
     releaseDate: m.release_date || null,
     companies: m.production_companies ?? [],
@@ -592,7 +640,9 @@ export async function importMovie(
     cast: m.credits?.cast ?? [],
     crew: m.credits?.crew ?? [],
     only: opts.only,
-    extraMeta: skipOmdb ? null : await fetchOmdb(m.imdb_id) // TMDB movies carry imdb_id directly
+    extraMeta: skipOmdb ? null : await fetchOmdb(m.imdb_id), // TMDB movies carry imdb_id directly
+    // Child rows are skipped whole on a partial refresh, so it skips the request too.
+    collection: opts.only?.length ? undefined : await fetchCollection(m.belongs_to_collection)
   })
 }
 
@@ -681,7 +731,6 @@ export async function importTv(
     native: m.original_name && m.original_name !== title ? m.original_name : null,
     synopsis: m.overview || null,
     posterPath: m.poster_path ?? null,
-    backdropPath: m.backdrop_path ?? null,
     totalUnits: m.number_of_episodes ?? null,
     releaseDate: m.first_air_date || null,
     companies,

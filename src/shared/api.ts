@@ -1,4 +1,4 @@
-import type { GameRun, GameRunInput, GameRunHistory, GameRunNoteInput, MusicAlbumPersonal, MusicAlbumPersonalInput, MusicTrackPersonal, MusicListenInput, MusicListen, MusicJournalFilter, MusicJournalAlbum, MusicSmartInput, MusicSmartPlaylist, MusicSmartRules, MusicSmartPreview } from './types'
+import type { GameRun, GameRunInput, GameRunHistory, GameRunNoteInput, MusicTrackPersonal, MusicSmartInput, MusicSmartPlaylist, MusicSmartRules, MusicSmartPreview } from './types'
 import type { SoundtrackOwner, SoundtrackTarget, SoundtrackInput, SoundtrackLink } from './types'
 import type { VnDiscoverFilter, VnDiscoverPage, VnTagResult, VnEditionDetail } from './types'
 import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
@@ -50,12 +50,19 @@ import type {
   ThemeSongFilter,
   FranchiseArtStatus,
   ImageKind,
+  ImageOverrideKind,
+  ImageOverrideState,
+  StorageMoveStatus,
+  StoragePaths,
+  StorageRootKey,
   MediaImage,
   JackettEnsureResult,
   TorrentAddInput,
   TorrentSearchStatus,
   TorrentServiceTestResult,
   WallpaperSearchPage,
+  WallpaperSource,
+  WallpaperSourceInfo,
   WallpaperSearchResult,
   QuizCastItem,
   QuizAvailability,
@@ -227,37 +234,18 @@ import type {
   LibraryExportStatus,
   LibraryExportStartResult,
   UpdateStatus,
-  GachaBanner,
-  GachaBannerInput,
-  GachaBuildInput,
-  GachaCurrency,
-  GachaGameId,
-  GachaGameOverview,
-  GachaNewsFetchResult,
-  GachaNewsPage,
-  GachaCatalogImportResult,
-  GachaBackupImportResult,
-  GachaUnit,
-  GachaUnitDetail,
-  GachaUnitFilter,
-  GachaUnitInput,
-  GachaChatThread,
-  GachaChatMessage,
-  GachaCoachStatus,
-  GachaCoachDueCounts,
-  GachaGoal,
-  GachaGoalInput,
-  GachaCoachNote,
-  GachaCoachDoc,
   MusicAlbumDetail,
   MusicAlbumSummary,
+  MusicBrowseScope,
+  MusicDecade,
+  MusicGenre,
+  MusicLyrics,
   MusicArtist,
   MusicArtistDetail,
   MusicArtResult,
   MusicArtStatus,
   MusicDeleteResult,
   MusicDownloadEvent,
-  MusicDownloadInput,
   MusicQueueInput,
   MusicLibraryStats,
   MusicPlaylistDetail,
@@ -278,7 +266,7 @@ import type {
   SpotifyEntityRef,
   SpotifyEntityState,
   SpotifyImportResult,
-  SpotdlDetectResult,
+  MusicToolsCheck,
   MusicScanStatus,
   MusicScanSummary,
   MusicSearchResults,
@@ -346,15 +334,10 @@ export interface NaviApi {
     removeNote(mediaId: number, runId: number, id: number): Promise<void>
   }
   musicJournal: {
-    album(id: number): Promise<MusicAlbumPersonal>
-    saveAlbum(id: number, input: MusicAlbumPersonalInput): Promise<void>
     track(id: number): Promise<MusicTrackPersonal>
     saveTrack(input: MusicTrackPersonal): Promise<void>
-    listens(albumId: number, page: number): Promise<{ items: MusicListen[]; total: number }>
-    saveListen(albumId: number, id: number | null, input: MusicListenInput): Promise<number>
-    removeListen(albumId: number, id: number): Promise<void>
+    standouts(albumId: number): Promise<number[]>
     tags(): Promise<string[]>
-    list(input: MusicJournalFilter): Promise<{ items: MusicJournalAlbum[]; total: number }>
   }
   musicSmart: {
     list(): Promise<MusicSmartPlaylist[]>
@@ -476,6 +459,18 @@ export interface NaviApi {
     roles(id: number): Promise<CharacterAppearance[]>
     upsert(input: Partial<Character> & { name: string }): Promise<number>
     remove(id: number): Promise<void>
+  }
+  images: {
+    // Hand-picked media covers, person photos and character images. A pick on
+    // an imported entity is held through re-imports until revert().
+    overrideState(kind: ImageOverrideKind, id: number): Promise<ImageOverrideState>
+    // null removes the image on purpose.
+    setManual(kind: ImageOverrideKind, id: number, path: string | null): Promise<void>
+    // Puts the imported image back; returns the restored path.
+    revert(kind: ImageOverrideKind, id: number): Promise<string | null>
+    // Picker sources; both return a stored relative path under media/.
+    fromUrl(url: string): Promise<string>
+    fromArt(imageId: number): Promise<string>
   }
   credits: {
     remove(creditId: number): Promise<void>
@@ -713,6 +708,11 @@ export interface NaviApi {
     start(payload: BulkStartPayload): Promise<BulkRunStatus>
     status(): Promise<BulkRunStatus>
     cancel(): Promise<void>
+    // Starts a new run over the last run's failed titles.
+    retryFailed(): Promise<BulkRunStatus>
+    // Deletes the titles the last run created, except any tracked, scored,
+    // favorited or annotated since. Last run only, and only until the app quits.
+    undoLast(): Promise<{ removed: number; kept: number }>
   }
   openlibrary: {
     search(query: string): Promise<ImportSearchResult[]>
@@ -735,8 +735,15 @@ export interface NaviApi {
     // Wallpapers + fan art per media item; files live under pictures.dir.
     list(mediaId: number, kind: ImageKind): Promise<MediaImage[]>
     // Browse-dialog searches (main-process — renderer CSP blocks remote fetch).
-    searchWallhaven(query: string, page: number): Promise<WallpaperSearchPage>
-    searchTmdb(mediaId: number): Promise<WallpaperSearchPage>
+    // Sources this title can browse, in tab order (pictures.listSources).
+    sources(mediaId: number, kind: ImageKind): Promise<WallpaperSourceInfo[]>
+    // query is ignored by id-bound sources (TMDB, VNDB, AniList banner).
+    search(
+      mediaId: number,
+      source: WallpaperSource,
+      query: string,
+      page: number
+    ): Promise<WallpaperSearchPage>
     // Download a picked search result / pasted URL into pictures.dir + record it.
     addFromSearch(mediaId: number, kind: ImageKind, result: WallpaperSearchResult): Promise<MediaImage>
     addFromUrl(mediaId: number, kind: ImageKind, url: string): Promise<MediaImage>
@@ -1014,7 +1021,7 @@ export interface NaviApi {
     importFreq(): Promise<EnFreqInfo>
     removeFreq(): Promise<void>
     // ---- writing practice (/english/writing) ----
-    // One-shot LLM grading (coach provider settings); resolves with the saved
+    // One-shot LLM grading (the shared AI provider settings); resolves with the saved
     // entry. Slow (~10-20s) — plain await, the button disables meanwhile.
     writingFeedback(req: { promptKey: string; text: string }): Promise<EnWritingEntry>
     listWritings(): Promise<EnWritingEntry[]>
@@ -1103,12 +1110,17 @@ export interface NaviApi {
     scanStatus(): Promise<MusicScanStatus>
     // browse
     artists(search?: string): Promise<MusicArtist[]>
-    albums(search?: string): Promise<MusicAlbumSummary[]>
+    albums(search?: string, scope?: MusicBrowseScope | null): Promise<MusicAlbumSummary[]>
+    genres(): Promise<MusicGenre[]>
+    decades(): Promise<MusicDecade[]>
+    // lyrics: a sidecar .lrc wins; fetchLyrics looks up embedded tags, then LRCLIB, and stores the result
+    lyrics(trackId: number): Promise<MusicLyrics>
+    fetchLyrics(trackId: number): Promise<MusicLyrics>
     artist(id: number): Promise<MusicArtistDetail | null>
     album(id: number): Promise<MusicAlbumDetail | null>
     tracks(filter: { search?: string; likedOnly?: boolean }): Promise<MusicTrack[]>
     trackPage(request: MusicTrackPageRequest): Promise<MusicTrackPage>
-    playbackQueue(shuffle: boolean): Promise<MusicPlaybackQueue>
+    playbackQueue(shuffle: boolean, scope?: MusicBrowseScope | null): Promise<MusicPlaybackQueue>
     artistTracks(artistId: number): Promise<MusicTrack[]>
     search(query: string): Promise<MusicSearchResults>
     stats(): Promise<MusicLibraryStats>
@@ -1131,7 +1143,6 @@ export interface NaviApi {
     removePlaylistTrackByTrack(playlistId: number, trackId: number): Promise<void>
     reorderPlaylist(playlistId: number, orderedItemIds: number[]): Promise<void>
     queueAdd(input: MusicQueueInput): Promise<SpotifyDownloadQueueAddResult>
-    queueAddUrl(input: MusicDownloadInput): Promise<SpotifyDownloadQueueAddResult>
     spotifySearchAudio(query: string): Promise<import('./types').SpotifyAudioCandidate[]>
     spotifyPreviewAudio(url: string): Promise<string>
     spotifyPickLocalAudio(): Promise<MusicTrack | null>
@@ -1145,7 +1156,6 @@ export interface NaviApi {
     spotifyStartEntityInspection(input: SpotifyEntityInspectInput): Promise<SpotifyEntityInspection>
     spotifyInspectionStatus(): Promise<SpotifyEntityInspectionStatus>
     spotifyCancelInspection(jobId?: string): Promise<void>
-    spotifyDownloadEntity(input: SpotifyEntityDownloadInput): Promise<{ id: string | null }>
     spotifyDownloadQueue(): Promise<SpotifyDownloadQueueSnapshot>
     spotifyQueueAddEntity(input: SpotifyEntityDownloadInput): Promise<SpotifyDownloadQueueAddResult>
     spotifyQueueAddPlaylist(input: SpotifyDownloadInput): Promise<SpotifyDownloadQueueAddResult>
@@ -1160,10 +1170,10 @@ export interface NaviApi {
     spotifyRejectDownloadCandidate(input: SpotifyDownloadCandidateInput): Promise<void>
     spotifyForgetEntitySource(input: SpotifyEntityRef): Promise<void>
     spotifyRemoveItem(itemId: number): Promise<void>
-    spotifyDetect(): Promise<SpotdlDetectResult>
+    spotifyDetect(): Promise<MusicToolsCheck>
     spotifyPickCookieFile(): Promise<string | null>
     spotifyTestYouTubeAccess(force?: boolean): Promise<SpotifyYouTubeAccessTestResult>
-    spotifyInstallDeno(): Promise<SpotdlDetectResult>
+    spotifyInstallDeno(): Promise<MusicToolsCheck>
     playlistsForTrack(
       trackId: number
     ): Promise<{ id: number; title: string; contains: boolean }[]>
@@ -1175,7 +1185,6 @@ export interface NaviApi {
     // days, or all time (null). One invoke per period selection.
     statsDetail(days: number | null): Promise<MusicStatsDetail>
     // yt-dlp downloads (one at a time; poll downloadStatus for progress)
-    downloadStart(input: MusicDownloadInput): Promise<{ id: string }>
     downloadCancel(id: string): Promise<void>
     downloadStatus(): Promise<MusicDownloadEvent | null>
     downloadDetect(): Promise<YtDlpDetectResult>
@@ -1188,77 +1197,11 @@ export interface NaviApi {
     artCancel(): Promise<void>
     artStatus(): Promise<MusicArtStatus>
   }
-  gacha: {
-    // Standalone gacha tracker; the game list and per-game kinds/currencies
-    // live in src/shared/gacha.ts. Online work happens ONLY via the fetch*
-    // methods (button-triggered) — everything else is local CRUD.
-    overview(): Promise<GachaGameOverview[]>
-    units(game: GachaGameId, filter?: GachaUnitFilter): Promise<GachaUnit[]>
-    unit(id: number): Promise<GachaUnitDetail | null>
-    createUnit(input: GachaUnitInput): Promise<number>
-    updateUnit(id: number, patch: Partial<GachaUnitInput>): Promise<void>
-    removeUnit(id: number): Promise<void>
-    createBuild(unitId: number, input: GachaBuildInput): Promise<number>
-    updateBuild(id: number, patch: Partial<GachaBuildInput>): Promise<void>
-    removeBuild(id: number): Promise<void>
-    currencies(game: GachaGameId): Promise<GachaCurrency[]>
-    setCurrency(game: GachaGameId, key: string, amount: number): Promise<void>
-    banners(game: GachaGameId): Promise<GachaBanner[]>
-    createBanner(input: GachaBannerInput): Promise<number>
-    updateBanner(id: number, patch: Partial<GachaBannerInput>): Promise<void>
-    removeBanner(id: number): Promise<void>
-    // news() reads the local cache; fetchNews() pulls the game's subreddit
-    // hot feed (the button — never automatic) and replaces the cached feed.
-    news(game: GachaGameId): Promise<GachaNewsPage>
-    fetchNews(game: GachaGameId): Promise<GachaNewsFetchResult>
-    // Downloads a pasted portrait/banner URL into userData/media (the renderer
-    // CSP blocks remote fetch; content-addressed like media covers).
-    downloadImage(url: string): Promise<string | null>
-    // Hero art for a game's hub card + dashboard header; null clears it.
-    setGameImage(game: GachaGameId, relPath: string | null): Promise<void>
-    // ---- catalog import (config-gated by GachaGameCfg.catalog) ----
-    // importCatalog seeds every servant/CE as an owned=0 row with art (runs in
-    // withActivity — the image batch drives the activity pill). importChaldea
-    // opens a native picker for the app's userdata.json and marks ownership;
-    // returns null when the picker is canceled.
-    importCatalog(game: GachaGameId): Promise<GachaCatalogImportResult>
-    importChaldea(game: GachaGameId): Promise<GachaBackupImportResult | null>
-    // ---- FGO coach (config-gated by GachaGameCfg.coach) ----
-    // The coach chats + acts via tools. LLM calls happen ONLY on coachSend /
-    // importCoachDoc (both user actions); everything else is local reads/writes.
-    coachStatus(): Promise<GachaCoachStatus | null>
-    coachSend(
-      game: GachaGameId,
-      text: string,
-      attachments: string[]
-    ): Promise<{ turnId: number; threadId: number }>
-    coachCancel(): Promise<void>
-    coachThread(game: GachaGameId): Promise<GachaChatThread>
-    coachThreads(game: GachaGameId): Promise<GachaChatThread[]>
-    coachNewThread(game: GachaGameId): Promise<GachaChatThread>
-    coachMessages(threadId: number): Promise<GachaChatMessage[]>
-    // Screenshot paste → saved into userData/media, returns the rel path.
-    saveAttachment(bytes: Uint8Array, ext: string): Promise<string>
-    // goals & recurring tasks (reminders — no LLM call)
-    goals(game: GachaGameId): Promise<GachaGoal[]>
-    createGoal(game: GachaGameId, input: GachaGoalInput): Promise<number>
-    updateGoal(id: number, patch: Partial<GachaGoalInput>): Promise<void>
-    completeGoal(id: number): Promise<void>
-    dropGoal(id: number): Promise<void>
-    dueCounts(): Promise<GachaCoachDueCounts>
-    // coach memory notes
-    coachNotes(game: GachaGameId): Promise<GachaCoachNote[]>
-    removeCoachNote(id: number): Promise<void>
-    // imported prior chats
-    coachDocs(game: GachaGameId): Promise<GachaCoachDoc[]>
-    importCoachDoc(game: GachaGameId, input: { title: string; content: string }): Promise<number>
-    removeCoachDoc(id: number): Promise<void>
-  }
   wrestling: {
     // Standalone section (/wrestling): a Wikipedia-imported wiki over events,
     // matches, wrestlers and stables. Deliberately NOT a media_item type —
     // ~2,500 events are reference data, not a personal library, so they live in
-    // their own wrestling_* tables (the music_*/gacha_* posture). Promotion
+    // their own wrestling_* tables (the music_* posture). Promotion
     // vocabulary is code: src/shared/wrestling.ts.
     overview(): Promise<WrestlingOverview>
     events(filter: WrestlingEventFilter): Promise<WrestlingEvent[]>
@@ -1405,11 +1348,9 @@ export interface NaviApi {
   }
 
   app: {
-    // Opens an http(s) URL in the system browser (gacha news links). Never
+    // Opens an http(s) URL in the system browser (wrestling, music, guide links). Never
     // navigates the app window; non-http(s) URLs are rejected in main.
     openExternal(url: string): Promise<void>
-    // Native picker for a .txt/.md file (importing a prior LLM chat).
-    pickTextFile(): Promise<{ name: string; content: string } | null>
     // Applies the UI scale (Electron zoom factor) to every window immediately
     // and returns the clamped value. Persist it separately as 'ui.scale' —
     // that's what gets re-applied on the next launch.
@@ -1458,6 +1399,16 @@ export interface NaviApi {
     // Opens the rolling log file's folder in the OS file manager.
     reveal(): Promise<void>
   }
+  storage: {
+    // Settings → Folders: the app's own image roots and moving them.
+    paths(): Promise<StoragePaths>
+    status(): Promise<StorageMoveStatus>
+    // Native folder picker; null when cancelled.
+    chooseFolder(root: StorageRootKey): Promise<string | null>
+    // Starts the move (poll status); throws with a readable reason when refused.
+    move(root: StorageRootKey, to: string): Promise<void>
+    open(root: StorageRootKey): Promise<void>
+  }
   libraryExport: {
     preview(options: LibraryExportOptions): Promise<LibraryExportPreview>
     start(options: LibraryExportOptions): Promise<LibraryExportStartResult>
@@ -1490,6 +1441,8 @@ export interface NaviApi {
     start(req: RefreshRequest): Promise<RefreshRunStatus>
     status(): Promise<RefreshRunStatus>
     cancel(): Promise<void>
+    // Starts a new run over the last run's failed titles, same aspects.
+    retryFailed(): Promise<RefreshRunStatus>
     // One title, from its detail page. Plain await — no run, no poll.
     one(mediaId: number, aspects: RefreshAspect[]): Promise<void>
   }

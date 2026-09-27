@@ -1,6 +1,6 @@
 import { getSqlite } from '../db/connection'
 import { choice, textValue } from './hobbyValidation'
-import { validPage, validRating, validTags } from './musicJournalRepo'
+import { validPage, validTags } from './musicJournalRepo'
 import { TRACK_COLS, TRACK_JOINS, mapTrack, MAX_PLAYBACK_QUEUE_TRACKS } from './musicRepo'
 import type {
   MusicSmartInput,
@@ -25,11 +25,6 @@ export function validateRules(input: MusicSmartRules): MusicSmartRules {
     tagMode: choice(input.tagMode, ['all', 'any'], 'tag match'),
     artist: textValue(input.artist, 'artist filter', 200),
     soundtrack: choice(input.soundtrack, ['any', 'linked', 'unlinked'], 'soundtrack filter'),
-    minAlbumRating: validRating(input.minAlbumRating),
-    shelf:
-      input.shelf === null
-        ? null
-        : choice(input.shelf, ['want', 'exploring', 'revisit'] as const, 'album shelf'),
     order: choice(
       input.order,
       ['title', 'leastPlayed', 'recent', 'oldestPlayed'],
@@ -105,22 +100,13 @@ function selection(input: MusicSmartRules): {
     )
     params.push(rules.artist, rules.artist)
   }
-  if (rules.minAlbumRating !== null) {
-    filters.push('ap.rating>=?')
-    params.push(rules.minAlbumRating)
-  }
-  if (rules.shelf !== null) {
-    filters.push('ap.shelf=?')
-    params.push(rules.shelf)
-  }
   if (rules.soundtrack !== 'any')
     filters.push(`${rules.soundtrack === 'unlinked' ? 'NOT ' : ''}EXISTS(
     SELECT 1 FROM soundtrack_link sl WHERE sl.track_id=t.id OR sl.album_id=t.album_id)`)
   if (rules.tags.length) {
     const tags = rules.tags.map((tag) => {
-      params.push(tag, tag)
-      return `(EXISTS(SELECT 1 FROM json_each(COALESCE(tp.tags_json,'[]')) WHERE value=?)
-        OR EXISTS(SELECT 1 FROM json_each(COALESCE(ap.tags_json,'[]')) WHERE value=?))`
+      params.push(tag)
+      return `EXISTS(SELECT 1 FROM json_each(COALESCE(tp.tags_json,'[]')) WHERE value=?)`
     })
     filters.push(`(${tags.join(rules.tagMode === 'all' ? ' AND ' : ' OR ')})`)
   }
@@ -135,7 +121,6 @@ function selection(input: MusicSmartRules): {
     params,
     order,
     from: `${TRACK_JOINS}
-    LEFT JOIN music_album_personal ap ON ap.album_id=t.album_id
     LEFT JOIN music_track_personal tp ON tp.track_id=t.id
     ${filters.length ? `WHERE ${filters.join(' AND ')}` : ''}`
   }

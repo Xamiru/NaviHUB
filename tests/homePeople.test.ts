@@ -40,3 +40,11 @@ describe('bounded Home people lists', () => {
     expect(companyRepo.list(undefined, 'anime')).toHaveLength(2)
   })
 })
+
+describe('person edits', () => {
+  it('keeps an imported birthday when the person page saves without one', () => {
+    const id = peopleRepo.upsert({ name: 'Seiyuu', birthday: '1965-05-23' })
+    peopleRepo.upsert({ id, name: 'Seiyuu', bio: 'Edited on the person page' })
+    expect(peopleRepo.get(id)?.birthday).toBe('1965-05-23')
+  })
+})

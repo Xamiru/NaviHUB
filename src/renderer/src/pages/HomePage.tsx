@@ -1,8 +1,17 @@
 import lainWiredArt from '../assets/themes/lain-wired.jpg'
-import solidInkArt from '../assets/themes/solid-ink.jpg'
+import coplandArt from '../assets/themes/lain-copland.png'
+import lainWiresArt from '../assets/themes/lain-wires.jpg'
+import snakeSketchArt from '../assets/themes/mgs-snake-sketch.jpg'
+import codecSnakeArt from '../assets/themes/mgs-codec-snake.jpg'
+import mechArt from '../assets/themes/mgs-mech.jpg'
+import laserSightArt from '../assets/themes/mgs-laser-sight.jpg'
 import mikuSkyArt from '../assets/themes/miku-sky.png'
+import mikuReachArt from '../assets/themes/miku-kei-reach.jpg'
+import mikuMiraiArt from '../assets/themes/miku-mirai.png'
 import redRoomArt from '../assets/themes/peaks-red.jpg'
-import { useMemo, useState, type ReactNode } from 'react'
+import peaksForestArt from '../assets/themes/peaks-forest.jpg'
+import peaksLodgeArt from '../assets/themes/peaks-lodge.jpg'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import DoorCard from '../components/DoorCard'
 import HomeCustomiseDialog from '../components/HomeCustomiseDialog'
 import {
@@ -20,14 +29,14 @@ import { qk } from '../lib/queryKeys'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
 import EmptyState from '../components/EmptyState'
+import ThemedFailure from '../components/theme/ThemedFailure'
 import PageStatus from '../components/PageStatus'
 import { useSettings } from '../lib/hooks'
 import { usePlayerControls } from '../lib/player'
 import { playTracks } from '../lib/musicTracks'
 import { MEDIA_TYPE_COLORS } from '../lib/mediaColors'
-import { GACHA_GAMES } from '@shared/gacha'
-import { APP_THEME_SETTING, type AppTheme } from '@shared/appTheme'
-import { resolveAppTheme } from '../lib/theme'
+import { APP_THEME_SETTING, type AppTheme, type AppThemeVariant } from '@shared/appTheme'
+import { resolveAppTheme, resolveAppThemeVariant } from '../lib/theme'
 import { readerPath } from '../lib/readerPath'
 import { mediaUrl } from '@shared/mediaUrl'
 import type { MediaSummary, ResumePoint } from '@shared/types'
@@ -47,6 +56,7 @@ export default function HomePage() {
   })
   const { data: settings, isPending: settingsPending, refetch: refetchSettings } = useSettings()
   const theme = resolveAppTheme(settings?.[APP_THEME_SETTING])
+  const variant = resolveAppThemeVariant(theme, settings)
   const {
     data: resumePoints = [],
     isPending: resumePending,
@@ -81,14 +91,11 @@ export default function HomePage() {
   // fallbacks after a sleep/wake or transient IPC failure.
   if (isError && !overview) {
     return (
-      <div className="p-6" role="alert">
-        <p className="text-sm text-red-400">
-          Could not read your local library
-          {error instanceof Error ? ` — ${error.message}` : ''}
-        </p>
-        <button className="btn-ghost mt-3" onClick={() => void refetch()}>
-          Try again
-        </button>
+      <div className="p-6">
+        <ThemedFailure
+          message={`Could not read your local library${error instanceof Error ? ` — ${error.message}` : ''}`}
+          onRetry={() => void refetch()}
+        />
       </div>
     )
   }
@@ -153,6 +160,7 @@ export default function HomePage() {
         retryResume={() => void refetchResume()}
         continuing={continuing}
         theme={theme}
+        variant={variant}
       />
 
       <div className="mt-6 flex items-center justify-between gap-3">
@@ -223,29 +231,83 @@ function HomeReadState({
   retry: () => void
 }) {
   return (
-    <div
-      className="card flex min-h-32 flex-col justify-center p-5"
-      role={pending ? undefined : 'alert'}
-    >
-      <p className="text-sm text-gray-300">
-        {pending ? `Loading ${title}…` : `Could not load ${title}.`}
-      </p>
-      {!pending && (
-        <button className="btn-ghost mt-3" onClick={retry} aria-label={`Retry ${title}`}>
-          Try again
-        </button>
-      )}
-    </div>
+    pending ? (
+      <div className="card flex min-h-32 flex-col justify-center p-5">
+        <p className="text-sm text-gray-300">{`Loading ${title}…`}</p>
+      </div>
+    ) : (
+      <ThemedFailure message={`Could not load ${title}.`} onRetry={retry} retryLabel={`Retry ${title}`} />
+    )
   )
 }
 
 const cardKey = (m: MediaSummary) => `${m.mediaType}-${m.id}`
 
-const HOME_THEME_ART: Record<AppTheme, { image: string; greeting: string; credit?: string }> = {
-  lain: { image: lainWiredArt, greeting: 'Everything here is connected.' },
-  'metal-gear': { image: solidInkArt, greeting: 'An archive with a point of view.' },
-  miku: { image: mikuSkyArt, greeting: 'Leave a little room for possibility.', credit: 'Hatsune Miku / art by RITAO' },
-  'twin-peaks': { image: redRoomArt, greeting: 'Some stories stay with you.', credit: 'Fire Walk with Me / publicity photograph' }
+const HOME_THEME_ART: Record<AppThemeVariant, { image: string; greeting: string; credit?: string }> = {
+  'present-day': { image: lainWiredArt, greeting: 'Everything here is connected.' },
+  copland: { image: coplandArt, greeting: 'Close the world, open the nExt.' },
+  'red-shadows': { image: lainWiresArt, greeting: "No matter where you go, everyone's connected." },
+  codec: { image: snakeSketchArt, greeting: 'Snake, do you read me?' },
+  dossier: { image: mechArt, greeting: 'File recovered. Eyes only.' },
+  'shadow-moses': { image: laserSightArt, greeting: 'Infiltrate. Recover. Log it.' },
+  'crypton-teal': { image: mikuSkyArt, greeting: 'Leave a little room for possibility.', credit: 'Hatsune Miku / art by RITAO' },
+  'open-sky': { image: mikuReachArt, greeting: 'Leave a little room for possibility.', credit: 'Hatsune Miku / art by KEI' },
+  'concert-night': { image: mikuMiraiArt, greeting: 'The stage lights are on.', credit: 'Magical Mirai 2024 key visual / art by tama' },
+  'waiting-room': { image: redRoomArt, greeting: 'Some stories stay with you.', credit: 'Fire Walk with Me / publicity photograph' },
+  'douglas-firs': { image: peaksForestArt, greeting: 'The owls are not what they seem.', credit: 'Twin Peaks: The Return / Showtime key art' },
+  'black-lodge': { image: peaksLodgeArt, greeting: 'Fire walk with me.', credit: 'Fire Walk with Me / 1992 UK press still' }
+}
+
+// Decorative layers owned by one style. Behind the art: atmosphere; above it:
+// window chrome or a stamp that never overlaps the hero copy.
+function HeroAtmosphere({ variant }: { variant: AppThemeVariant }) {
+  if (variant === 'present-day') return <div className="lain-rollbar" aria-hidden="true" />
+  if (variant === 'red-shadows') return <div className="lain-shadow-dots" aria-hidden="true" />
+  if (variant === 'concert-night') return <div className="miku-lights" aria-hidden="true" />
+  if (variant === 'shadow-moses') {
+    return (
+      <div className="soliton" aria-hidden="true">
+        <span />
+      </div>
+    )
+  }
+  return null
+}
+
+function HeroFrame({ variant }: { variant: AppThemeVariant }) {
+  if (variant === 'copland') {
+    return (
+      <div className="copland-titlebar" aria-hidden="true">
+        <span>NAVI / Copland OS Enterprise</span>
+        <i />
+        <i />
+        <i />
+      </div>
+    )
+  }
+  if (variant === 'dossier') {
+    return (
+      <div className="mgs-stamp" aria-hidden="true">
+        FOXHOUND
+        <br />
+        EYES ONLY
+      </div>
+    )
+  }
+  return null
+}
+
+function PresentDayReadout() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = window.setInterval(() => setNow(new Date()), 1000)
+    return () => window.clearInterval(id)
+  }, [])
+  return (
+    <p className="lain-readout" aria-hidden="true">
+      PRESENT DAY <b>/</b> PRESENT TIME <b>/</b> {now.toTimeString().slice(0, 8)} <b>/</b> PROTOCOL 7
+    </p>
+  )
 }
 
 // The library as wallpaper: a dimmed, slightly tilted wall of the user's own
@@ -259,7 +321,8 @@ function Hero({
   resumeError,
   retryResume,
   continuing,
-  theme
+  theme,
+  variant
 }: {
   items: MediaSummary[]
   stats: {
@@ -275,6 +338,7 @@ function Hero({
   retryResume: () => void
   continuing: MediaSummary[]
   theme: AppTheme
+  variant: AppThemeVariant
 }) {
   // Re-shuffle only when the library changes, never when a poll settles.
   const tiles = useMemo(
@@ -305,19 +369,22 @@ function Hero({
           </div>
         )}
         <div className="home-hero-shade" aria-hidden="true" />
+        <HeroAtmosphere variant={variant} />
         <img
-          src={HOME_THEME_ART[theme].image}
+          src={HOME_THEME_ART[variant].image}
           className="home-signature"
           alt=""
           aria-hidden="true"
         />
-        {HOME_THEME_ART[theme].credit && (
-          <p className="home-art-credit">{HOME_THEME_ART[theme].credit}</p>
+        <HeroFrame variant={variant} />
+        {HOME_THEME_ART[variant].credit && (
+          <p className="home-art-credit">{HOME_THEME_ART[variant].credit}</p>
         )}
         <div className="home-hero-copy">
+          {variant === 'present-day' && <PresentDayReadout />}
           <h1 className="home-brand">Navi<span>HUB</span></h1>
           <p className="home-greeting mt-4 text-sm">
-            {HOME_THEME_ART[theme].greeting}
+            {HOME_THEME_ART[variant].greeting}
           </p>
           <div className="home-hero-stats mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm tabular-nums">
             <span><strong>{stats.titles}</strong> titles</span>
@@ -335,7 +402,7 @@ function Hero({
           {resumePending || resumeError ? (
             <HomeReadState title="saved positions" pending={resumePending} retry={retryResume} />
           ) : (
-            <HeroContinuation resume={resume} continuing={continuing[0]} theme={theme} />
+            <HeroContinuation resume={resume} continuing={continuing[0]} theme={theme} variant={variant} />
           )}
         </Section>
         {nextUp.length > 0 && (
@@ -362,15 +429,83 @@ function Hero({
   )
 }
 
+const CODEC_CARD = 'home-resume group relative overflow-hidden rounded-xl border border-accent/30 shadow-2xl transition-colors hover:border-accent'
+
+// Codec style: the same continuation as a codec call. Your title fills the
+// left portrait; the contact on the right is decorative.
+function CodecCall({
+  label,
+  media,
+  lines,
+  action
+}: {
+  label: string
+  media: MediaSummary
+  lines: string[]
+  action: string
+}) {
+  return (
+    <div className="codec">
+      <div className="codec-portrait">
+        <CoverImage path={media.coverPath} alt={media.title} thumbWidth={320} rounded="rounded-none" className="h-full w-full" />
+      </div>
+      <div className="min-w-0">
+        <p className="codec-label">{label}</p>
+        <p className="codec-freq" aria-hidden="true">140.85</p>
+        <div className="codec-bars" aria-hidden="true">
+          {Array.from({ length: 10 }, (_, i) => <span key={i} />)}
+        </div>
+        <h2 className="codec-title">{media.title}</h2>
+        {lines.map((line) => (
+          <p key={line} className="codec-meta truncate">{line}</p>
+        ))}
+        <span className="btn-primary">{action}</span>
+      </div>
+      <div className="codec-portrait codec-portrait-contact" aria-hidden="true">
+        <img src={codecSnakeArt} alt="" />
+      </div>
+    </div>
+  )
+}
+
 function HeroContinuation({
   resume,
   continuing,
-  theme
+  theme,
+  variant
 }: {
   resume?: ResumePoint
   continuing?: MediaSummary
   theme: AppTheme
+  variant: AppThemeVariant
 }) {
+  if (variant === 'codec' && resume) {
+    return (
+      <ResumeAction point={resume} className={CODEC_CARD}>
+        <CodecCall
+          label="Resume operation"
+          media={resume.media}
+          lines={[resume.partTitle, `${configFor(resume.media.mediaType).formatProgressStat(resume.media)} / ${resumeLabel(resume)}`]}
+          action="Continue"
+        />
+      </ResumeAction>
+    )
+  }
+
+  if (variant === 'codec' && continuing) {
+    const cfg = configFor(continuing.mediaType)
+    return (
+      <Link to={pathForMedia(continuing)} className={CODEC_CARD}>
+        <CodecCall
+          label={`Continue ${cfg.singular.toLowerCase()}`}
+          media={continuing}
+          lines={[cfg.formatProgressStat(continuing)]}
+          action="Open title"
+        />
+      </Link>
+    )
+  }
+
   if (resume) {
     return (
       <ResumeAction
@@ -623,38 +758,16 @@ function EnglishCard() {
   )
 }
 
-// Play surface: gacha dailies waiting when there are any, else the song quiz.
+// Play surface: the song quiz.
 function PlayCard() {
-  const { data: due, isPending: duePending, isError: dueError, refetch: refetchDue } = useQuery({
-    queryKey: qk.gacha.dueCounts,
-    queryFn: () => api.gacha.dueCounts(),
-    staleTime: 0
-  })
-  const entries = Object.entries(due ?? {}).filter(([, n]) => (n ?? 0) > 0)
-  const total = entries.reduce((a, [, n]) => a + (n ?? 0), 0)
-  const { data: pool, isPending: poolPending, isError: poolError, refetch: refetchPool } = useQuery({
+  const { data: pool, isPending, isError, refetch } = useQuery({
     queryKey: qk.quiz.songPool({}),
-    queryFn: () => api.quiz.songPool({}),
-    enabled: due !== undefined && total === 0
+    queryFn: () => api.quiz.songPool({})
   })
-  if (duePending || dueError) {
-    return <HomeReadState title="game tasks" pending={duePending} retry={() => void refetchDue()} />
+  if (isPending || isError) {
+    return <HomeReadState title="song availability" pending={isPending} retry={() => void refetch()} />
   }
-  if (total === 0 && (poolPending || poolError)) {
-    return <HomeReadState title="song availability" pending={poolPending} retry={() => void refetchPool()} />
-  }
-  const gameNames = entries
-    .map(([id]) => GACHA_GAMES.find((g) => g.id === id)?.name ?? id)
-    .join(' · ')
-  return total > 0 ? (
-    <DoorCard
-      to="/gacha"
-      eyebrow="Play"
-      title={`${total} game task${total === 1 ? '' : 's'} waiting`}
-      body="Dailies and goals your coach is tracking."
-      meta={gameNames}
-    />
-  ) : (
+  return (
     <DoorCard
       to="/quiz"
       eyebrow="Play"

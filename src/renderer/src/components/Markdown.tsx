@@ -3,8 +3,8 @@ import { Link } from 'react-router-dom'
 import { parseMarkdown, type MdBlock, type MdInline } from '@shared/markdown'
 import { api } from '../lib/api'
 
-// Renders the pure parseMarkdown() block tree into React elements (LLM coach
-// replies, English feedback, wiki prose). House rule: NEVER
+// Renders the pure parseMarkdown() block tree into React elements (English
+// feedback, wiki prose, lessons). House rule: NEVER
 // dangerouslySetInnerHTML. http(s) links open in the system browser via
 // app:openExternal (raw <a href> would be hijacked by HashRouter).
 //
@@ -84,8 +84,8 @@ export default function Markdown({
   text,
   linkResolver,
   // Tooltip for a non-http link the resolver couldn't place. Supplied by the
-  // caller, because "Not in the wiki" is meaningless in the coach chat or in
-  // English writing feedback, which share this renderer.
+  // caller, because "Not in the wiki" is meaningless in English writing
+  // feedback, which shares this renderer.
   unresolvedTitle
 }: {
   text: string

@@ -18,9 +18,12 @@ export default function ActionMenu({
   label = 'More',
   items,
   align = 'right',
-  buttonClassName = 'btn-ghost'
+  buttonClassName = 'btn-ghost',
+  ariaLabel
 }: {
   label?: string
+  /** Accessible name when the visible label is only a glyph. */
+  ariaLabel?: string
   items: ActionItem[]
   align?: 'left' | 'right'
   buttonClassName?: string
@@ -62,6 +65,8 @@ export default function ActionMenu({
         ref={triggerRef}
         className={buttonClassName}
         aria-haspopup="menu"
+        aria-label={ariaLabel}
+        title={ariaLabel}
         aria-expanded={open}
         aria-controls={open ? menuId : undefined}
         onClick={() => setOpen((v) => !v)}

@@ -10,8 +10,15 @@ import * as tasks from './tasks'
 import type { TaskHandle } from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
 import { runWithActivitySignal } from './activityContext'
+import { claimLibraryJob } from './libraryJobLock'
 import { bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
-import type { BulkListParams, BulkPreviewItem, BulkRunStatus, BulkStartPayload } from '@shared/types'
+import type {
+  BulkListParams,
+  BulkPreviewItem,
+  BulkRunStatus,
+  BulkStartPayload,
+  BulkTracking
+} from '@shared/types'
 
 // The /bulk page's engine: preview a top-N list from a source, then import the
 // user's selection through the normal per-title importers. The run is the
@@ -41,12 +48,13 @@ const SOURCE_IDENT: Record<BulkSourceKey, { externalSource: string; mediaType: s
   tv: { externalSource: 'tmdb', mediaType: 'tv' }
 }
 
-// Inter-title delay per source. AniList is the tight one: its degraded budget
-// is ~30 req/min and a lite import is one GraphQL request, so 2.1s ≈ 28/min.
-// Images ride CDNs and don't count. The catalog is local — no delay.
+// Inter-title delay per source. AniList has none here: anilist.gql spaces every
+// request through one process-wide throttle, which also covers a refresh or a
+// dialog import running at the same time. Images ride CDNs and don't count.
+// The catalog is local — no delay.
 const SOURCE_DELAY_MS: Record<BulkSourceKey, number> = {
-  anime: 2100,
-  manga: 2100,
+  anime: 0,
+  manga: 0,
   game: 0,
   visual_novel: 600,
   movie: 300,
@@ -124,7 +132,9 @@ export async function preview(params: BulkListParams): Promise<BulkPreviewItem[]
   switch (clamped.source) {
     case 'anime':
     case 'manga':
-      return anilist.topList(clamped, undefined, keep)
+      return clamped.sort === 'list'
+        ? anilist.userList(clamped, keep)
+        : anilist.topList(clamped, keep)
     case 'game':
       return gamesCatalog.listTop(clamped, keep)
     case 'visual_novel':
@@ -145,8 +155,13 @@ let status: BulkRunStatus = {
   imported: 0,
   skipped: 0,
   failed: 0,
-  message: null
+  message: null,
+  failures: [],
+  undoable: 0
 }
+let lastSource: BulkSourceKey | null = null
+// The failed items whole, so a retry keeps a user-list title's tracking.
+let failedItems: BulkStartPayload['items'] = []
 // Cooperative pause/cancel. Pause means "stop starting new titles" — the one
 // in flight finishes first, which can be a whole fetchWithRetry timeout away,
 // so the registry shows 'pausing' until wait() actually blocks.
@@ -160,27 +175,71 @@ export function cancel(): void {
   if (status.state === 'running') gate?.controls.cancel?.()
 }
 
-async function importOne(source: BulkSourceKey, sourceId: number): Promise<void> {
+// Runs the last run's failed titles again as a new run.
+export function retryFailed(deps: Parameters<typeof start>[1] = {}): BulkRunStatus {
+  if (status.state === 'running') throw new Error('A bulk import is already running.')
+  if (!lastSource || !status.failures.length) throw new Error('No failed titles to retry.')
+  return start({ source: lastSource, items: failedItems }, deps)
+}
+
+// What a title import reports back: enough to apply list tracking and to undo
+// the run. Test doubles may resolve void (nothing created to track or undo).
+type ImportedTitle = { mediaId: number; created: boolean } | void
+
+async function importOne(source: BulkSourceKey, sourceId: number): Promise<ImportedTitle> {
   switch (source) {
     case 'anime':
-      await anilist.importAnime(sourceId, { liteCharacters: true })
-      return
+      return anilist.importAnime(sourceId, { liteCharacters: true })
     case 'manga':
-      await anilist.importManga(sourceId, { liteCharacters: true })
-      return
+      return anilist.importManga(sourceId, { liteCharacters: true })
     case 'game':
-      await gamesCatalog.importGame(sourceId, { skipHltb: true })
-      return
+      return gamesCatalog.importGame(sourceId, { skipHltb: true })
     case 'visual_novel':
-      await vndb.importVisualNovel(sourceId)
-      return
+      return vndb.importVisualNovel(sourceId)
     case 'movie':
-      await tmdb.importMovie(sourceId, { skipOmdb: true })
-      return
+      return tmdb.importMovie(sourceId, { skipOmdb: true })
     case 'tv':
-      await tmdb.importTv(sourceId, { skipOmdb: true })
-      return
+      return tmdb.importTv(sourceId, { skipOmdb: true })
   }
+}
+
+// The personal fields a later undo compares against: a title the user has
+// tracked, scored, favorited or annotated since the run is theirs now.
+const PERSONAL_SQL =
+  'SELECT status, score, progress, rewatch_count, favorite, notes FROM media_item WHERE id = ?'
+
+function personalSnapshot(mediaId: number): string {
+  return JSON.stringify(getSqlite().prepare(PERSONAL_SQL).get(mediaId) ?? null)
+}
+
+// Titles the LAST run created, with their personal fields as the run left
+// them. Process memory only: undo is for "that run was a mistake", not history.
+let created: { mediaId: number; snapshot: string }[] = []
+
+// Hands back the last run's created titles that are still untouched, and
+// forgets the run. Deletion itself stays with the caller (ipc.ts), which owns
+// the one media-removal path (slideshow cleanup before the row delete).
+export function takeUndoable(): { removable: number[]; kept: number } {
+  if (status.state === 'running') throw new Error('Wait for the bulk import to finish first.')
+  const removable: number[] = []
+  let kept = 0
+  for (const c of created) {
+    const now = personalSnapshot(c.mediaId)
+    if (now === 'null') continue // already deleted by hand
+    if (now === c.snapshot) removable.push(c.mediaId)
+    else kept++
+  }
+  created = []
+  status = { ...status, undoable: 0 }
+  return { removable, kept }
+}
+
+// A user-list title arrives with its AniList tracking, already mapped to this
+// app's status names. Only ever applied to a title this run created.
+function applyTracking(mediaId: number, t: BulkTracking): void {
+  getSqlite()
+    .prepare('UPDATE media_item SET status = ?, score = ?, progress = ? WHERE id = ?')
+    .run(t.status, t.score, Math.max(0, Math.floor(t.progress || 0)), mediaId)
 }
 
 // Starts the run and returns immediately (fire-and-forget, the download()
@@ -189,7 +248,7 @@ async function importOne(source: BulkSourceKey, sourceId: number): Promise<void>
 export function start(
   payload: BulkStartPayload,
   deps: {
-    importOne?: (source: BulkSourceKey, sourceId: number) => Promise<void>
+    importOne?: (source: BulkSourceKey, sourceId: number) => Promise<ImportedTitle>
     delayMs?: number
   } = {}
 ): BulkRunStatus {
@@ -197,6 +256,7 @@ export function start(
   const cfg = bulkSourceCfg(payload.source)
   const items = payload.items ?? []
   if (!items.length) throw new Error('Nothing selected to import.')
+  const releaseJob = claimLibraryJob('bulk')
 
   const id = status.id + 1
   // The gate is created below and replaces the old cancelRequested flag; a
@@ -210,8 +270,13 @@ export function start(
     imported: 0,
     skipped: 0,
     failed: 0,
-    message: null
+    message: null,
+    failures: [],
+    undoable: 0
   }
+  lastSource = payload.source
+  created = []
+  failedItems = []
 
   const run = deps.importOne ?? importOne
   const delay = deps.delayMs ?? SOURCE_DELAY_MS[payload.source]
@@ -271,9 +336,17 @@ export function start(
           continue
         }
         try {
-          await run(payload.source, item.sourceId)
+          const result = await run(payload.source, item.sourceId)
           if (status.id !== id) return
-          status = { ...status, imported: status.imported + 1 }
+          if (result?.created) {
+            if (item.tracking) applyTracking(result.mediaId, item.tracking)
+            created.push({ mediaId: result.mediaId, snapshot: personalSnapshot(result.mediaId) })
+          }
+          status = {
+            ...status,
+            imported: status.imported + 1,
+            undoable: status.undoable + (result?.created ? 1 : 0)
+          }
           consecutiveFailures = 0
         } catch (err) {
           if (status.id !== id) return
@@ -285,7 +358,19 @@ export function start(
             status = { ...status, state: 'cancelled', message: null }
             return
           }
-          status = { ...status, failed: status.failed + 1 }
+          failedItems.push(item)
+          status = {
+            ...status,
+            failed: status.failed + 1,
+            failures: [
+              ...status.failures,
+              {
+                sourceId: item.sourceId,
+                title: item.title,
+                error: err instanceof Error ? err.message : String(err)
+              }
+            ]
+          }
           consecutiveFailures++
           if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
             status = {
@@ -300,6 +385,7 @@ export function start(
       }
       if (status.id === id) status = { ...status, state: 'done', message: null }
     } finally {
+      releaseJob()
       // Never clear a NEWER run's slot — neither a newer bulk run (status.id)
       // nor a dialog import that took the slot mid-run (the handle argument).
       if (status.id === id) endActivity(undefined, slot)

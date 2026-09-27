@@ -2,13 +2,22 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import postcss from 'postcss'
 import { describe, expect, it } from 'vitest'
-import { APP_THEME_OPTIONS, appThemeBackground, type AppTheme } from '../src/shared/appTheme'
+import {
+  APP_THEME_OPTIONS,
+  APP_THEME_VARIANT_OPTIONS,
+  appThemeBackground,
+  type AppTheme
+} from '../src/shared/appTheme'
 
 const css = postcss.parse(readFileSync(resolve('src/renderer/src/styles.css'), 'utf8'))
 
 // Evaluate the actual palette declarations, including locally rebound aliases.
 // Numeric contrast catches regressions a screenshot or class-name check misses.
-function palette(theme: AppTheme, island?: 'theme-dark' | 'media-contrast' | 'archive-sidebar') {
+function palette(
+  theme: AppTheme,
+  island?: 'theme-dark' | 'media-contrast' | 'archive-sidebar',
+  variant?: string
+) {
   const values = new Map<string, string>()
   const collect = (selector: string) => {
     css.walkRules((rule) => {
@@ -23,11 +32,14 @@ function palette(theme: AppTheme, island?: 'theme-dark' | 'media-contrast' | 'ar
       })
     })
   }
+  const styled = `html[data-theme='${theme}'][data-theme-variant='${variant}']`
   collect(':root')
   collect(`html[data-theme='${theme}']`)
+  if (variant) collect(styled)
   if (island) {
     collect(`.${island}`)
     collect(`html[data-theme='${theme}'] .${island}`)
+    if (variant) collect(`${styled} .${island}`)
   }
   const get = (name: string): number[] => {
     const value = values.get(`--${name}`)
@@ -46,11 +58,15 @@ function contrast(a: number[], b: number[]) {
   return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05)
 }
 
-describe.each(APP_THEME_OPTIONS.map((option) => option.value))('%s theme contrast', (theme) => {
-  const get = palette(theme)
+const STYLES = APP_THEME_OPTIONS.flatMap((option) =>
+  APP_THEME_VARIANT_OPTIONS[option.value].map((variant) => [option.value, variant.value] as const)
+)
+
+describe.each(STYLES)('%s / %s contrast', (theme, variant) => {
+  const get = palette(theme, undefined, variant)
   it('matches the native launch fill to the renderer canvas', () => {
     const hex = '#' + get('surface-canvas').map((n) => n.toString(16).padStart(2, '0')).join('')
-    expect(appThemeBackground(theme)).toBe(hex)
+    expect(appThemeBackground(theme, variant)).toBe(hex)
   })
   it.each(['surface-canvas', 'surface-panel', 'surface-raised', 'surface-active'])(
     'keeps reading, placeholder and signal ink readable on %s', (surface) => {
@@ -66,7 +82,7 @@ describe.each(APP_THEME_OPTIONS.map((option) => option.value))('%s theme contras
   })
   it('preserves light ink over fixed dark media surfaces', () => {
     for (const island of ['theme-dark', 'media-contrast'] as const) {
-      const dark = palette(theme, island)
+      const dark = palette(theme, island, variant)
       // Black at 70% opacity over a fully white cover is the brightest badge backing.
       for (const ink of ['ink-primary', 'ink-muted', 'signal-live']) {
         expect(contrast(dark(ink), [77, 77, 77]), `${island}: ${ink}`).toBeGreaterThanOrEqual(4.5)
@@ -86,8 +102,8 @@ it('keeps the shared keyboard ring when inputs add their theme glow', () => {
   expect(shadow).toContain('var(--tw-ring-shadow')
 })
 
-it('keeps Twin Peaks drawer text and its selected destination readable', () => {
-  const get = palette('twin-peaks', 'archive-sidebar')
+it.each(APP_THEME_VARIANT_OPTIONS['twin-peaks'].map((variant) => variant.value))('keeps Twin Peaks %s drawer text and its selected destination readable', (variant) => {
+  const get = palette('twin-peaks', 'archive-sidebar', variant)
   for (const surface of ['surface-canvas', 'surface-panel', 'surface-raised', 'surface-active']) {
     for (const ink of ['ink-primary', 'ink-secondary', 'ink-muted', 'signal-live']) {
       expect(contrast(get(ink), get(surface)), `${ink} on ${surface}`).toBeGreaterThanOrEqual(4.5)
@@ -96,8 +112,15 @@ it('keeps Twin Peaks drawer text and its selected destination readable', () => {
   expect(contrast(get('ink-inverse'), get('signal-live'))).toBeGreaterThanOrEqual(4.5)
 })
 
-it('keeps legacy status labels readable on the saturated Miku panel', () => {
-  const get = palette('miku')
+it.each([
+  ['miku', 'crypton-teal'],
+  ['miku', 'open-sky'],
+  ['miku', 'concert-night'],
+  ['metal-gear', 'codec'],
+  ['metal-gear', 'dossier'],
+  ['metal-gear', 'shadow-moses']
+] as const)('keeps legacy status labels readable on %s / %s panels', (theme, variant) => {
+  const get = palette(theme, undefined, variant)
   for (const hue of ['red', 'rose', 'pink', 'orange', 'amber', 'yellow', 'lime', 'green', 'emerald', 'teal', 'cyan', 'sky', 'blue', 'indigo', 'violet', 'purple', 'fuchsia']) {
     expect(contrast(get(`status-${hue}`), get('surface-panel')), hue).toBeGreaterThanOrEqual(4.5)
   }

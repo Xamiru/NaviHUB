@@ -1,6 +1,6 @@
 // Pure parsing of `ffprobe -print_format json -show_format -show_streams`.
 // No electron / child_process / fs, so the playability tests run against real
-// captured probe output with no binary anywhere (the coachTools.ts split).
+// captured probe output with no binary anywhere (the updaterCore.ts split).
 
 export interface ProbeStream {
   index: number // absolute stream index — what `-map 0:<i>` takes

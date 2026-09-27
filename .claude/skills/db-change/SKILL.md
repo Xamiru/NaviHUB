@@ -16,7 +16,7 @@ years older than your `init.sql`.** Nothing about a green suite tells you a live
 required for it to exist; `CREATE TABLE IF NOT EXISTS` runs on every startup.
 
 **Column on an existing table** — add it to both files **and** add an idempotent
-`ensureColumn(...)` call in `runMigrations()` (`src/main/db/connection.ts`, ~28 call sites to copy).
+`ensureColumn(...)` call in `runMigrations()` (`src/main/db/connection.ts`, ~50 call sites to copy).
 Without it, the live DB simply does not have the column and every read throws.
 
 ## 2. Indexes — the rule that caused the outage
@@ -36,7 +36,9 @@ export. `tests/sanitizeCoverage.test.ts` now fails on any table that is neither 
 canonical — so make the call deliberately rather than by omission. Order matters in that file: FK
 children before parents.
 
-Settings keys holding paths, tokens or API keys go in the same file's key list.
+Settings keys holding paths, tokens or API keys go in the same file's key list. A provider
+credential also goes in `SECRET_SETTING_KEYS` (`src/shared/secretSettings.ts`) so it is stored
+encrypted and never reaches the renderer; `tests/secretStorage.test.ts` guards it.
 
 ## 4. Mirror anything that duplicates the schema
 

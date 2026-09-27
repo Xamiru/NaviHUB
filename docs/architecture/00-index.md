@@ -17,7 +17,6 @@ things that were tried and rejected, and the gotchas that were paid for once alr
 | The Japanese section — packs, drills, SRS, ghosts, the i+1 feed, the kana keyboard | [japanese.md](japanese.md) |
 | The English section — dictionaries, SRS, drills, writing feedback | [english.md](english.md) |
 | The programming section — courses, cheatsheets, the CLI drill | [programming.md](programming.md) |
-| The gacha section or the FGO Coach (the app's LLM feature) | [gacha-fgo.md](gacha-fgo.md) |
 | The wrestling section — the Wikipedia importer, matches, the local collection | [wrestling.md](wrestling.md) |
 | The Football Archive — history sources, current snapshots, journal, media, quizzes | [football.md](football.md) |
 | Torrent search (Jackett/qBittorrent) or the bulk importer | [torrents-bulk.md](torrents-bulk.md) |

@@ -1,21 +1,25 @@
-// Shared one-shot LLM plumbing, extracted from gachaCoach.ts: provider
-// selection + client construction (the `coach.*` settings keys are THE
-// app-wide LLM settings — no feature gets its own copies) and a
-// non-streaming completeOnce() for features that need a single completion
-// (gacha chat-import digest, English writing feedback). The coach's
-// streaming agentic loops stay in gachaCoach.ts and import the client
-// builders from here.
+// Shared one-shot LLM plumbing: provider selection + client construction and a
+// non-streaming completeOnce() for English writing feedback. The `coach.*`
+// settings keys are THE app-wide LLM settings, named after the FGO Coach that
+// introduced them (removed 2026-09-26); they are stored keys, so they keep
+// that name.
 
 import type { GoogleGenAI } from '@google/genai'
 import type Anthropic from '@anthropic-ai/sdk'
 import type { AnthropicVertex } from '@anthropic-ai/vertex-sdk'
 import { get as getSetting } from './repos/settingsRepo'
-import { buildModelParams } from './coachTools'
 
 const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash'
 const DEFAULT_CLAUDE_MODEL = 'claude-opus-4-8'
 
 export type Provider = 'gemini' | 'anthropic' | 'vertex'
+
+// Claude request params. Opus/Sonnet get adaptive thinking; Haiku doesn't
+// support it. Never temperature/top_p — adaptive thinking requires the default.
+export function buildModelParams(model: string): Record<string, unknown> {
+  if (model.startsWith('claude-haiku')) return {}
+  return { thinking: { type: 'adaptive' } }
+}
 
 export function resolveProvider(): Provider {
   const p = (getSetting('coach.provider') || 'gemini').trim()

@@ -66,7 +66,7 @@ export interface FranchiseCfg {
   id: string
   name: string
   short: string // breadcrumb / card label
-  color: string // per-franchise accent (hex), the GACHA_GAMES / wrestling idiom
+  color: string // per-franchise accent (hex), the wrestling idiom
   // Curated wide hero art (https, curl-verified): the index card image and the
   // page's default background. The user overrides the page background with a
   // settings row `franchise.<id>.background` (a media/ path from pickImage).

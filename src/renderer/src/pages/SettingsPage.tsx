@@ -29,7 +29,7 @@ import type {
   SecretStorageState,
   VideoToolsResult,
   YtDlpDetectResult,
-  SpotdlDetectResult,
+  MusicToolsCheck,
   MokuroDetectResult
 } from '@shared/types'
 import { isSecretSettingKey, type SecretSettingKey } from '@shared/secretSettings'
@@ -39,6 +39,7 @@ import { confirmDialog } from '../lib/confirm'
 import EmptyState from '../components/EmptyState'
 import QuietWorkspace from '../components/QuietWorkspace'
 import LibraryExportSettings from '../components/LibraryExportSettings'
+import StorageFolderSetting from '../components/StorageFolderSetting'
 import {
   filterSettingsSections,
   type SettingsSearchSection
@@ -48,8 +49,20 @@ import {
   SIGNAL_CLARITY_OPTIONS,
   SIGNAL_CLARITY_SETTING
 } from '../lib/signalClarity'
-import { APP_THEME_OPTIONS, APP_THEME_SETTING, type AppTheme } from '@shared/appTheme'
-import { persistAppTheme, resolveAppTheme, stampAppTheme } from '../lib/theme'
+import {
+  APP_THEME_OPTIONS,
+  APP_THEME_SETTING,
+  APP_THEME_VARIANT_OPTIONS,
+  appThemeVariantSetting,
+  type AppTheme
+} from '@shared/appTheme'
+import {
+  persistAppTheme,
+  persistAppThemeVariant,
+  resolveAppTheme,
+  resolveAppThemeVariant,
+  stampAppTheme
+} from '../lib/theme'
 import { Field } from '../components/Field'
 import { SecretInput, SecretStateLine } from '../components/SecretField'
 
@@ -68,7 +81,7 @@ const TABS = [
   // Key stays 'japanese' (persisted in nav state); the tab now holds every
   // offline dictionary, English included.
   { key: 'japanese', label: 'Dictionaries' },
-  { key: 'ai', label: 'AI Coach' },
+  { key: 'ai', label: 'AI' },
   { key: 'integrations', label: 'Integrations' },
   { key: 'system', label: 'System' }
 ] as const
@@ -108,11 +121,6 @@ const SETTINGS_SEARCH: readonly SettingsSearchSection<TabId>[] = [
       'api keys',
       'library paths',
       'music folder',
-      'spotify',
-      'spotdl',
-      'deno',
-      'youtube music',
-      'premium cookies',
       'video folder',
       'pictures',
       'tokens',
@@ -131,13 +139,16 @@ const SETTINGS_SEARCH: readonly SettingsSearchSection<TabId>[] = [
   },
   {
     key: 'ai',
-    title: 'AI Coach',
-    terms: ['gemini', 'anthropic', 'vertex', 'model', 'fgo']
+    title: 'AI',
+    terms: ['gemini', 'anthropic', 'vertex', 'model', 'writing feedback']
   },
   {
     key: 'integrations',
     title: 'Integrations',
-    terms: ['ffmpeg', 'video', 'yt-dlp', 'music download', 'mokuro', 'ocr', 'jackett', 'qbittorrent', 'torrent']
+    terms: [
+      'ffmpeg', 'video', 'yt-dlp', 'music download', 'spotify', 'deno', 'youtube music', 'cookies',
+      'mokuro', 'ocr', 'jackett', 'qbittorrent', 'torrent'
+    ]
   },
   {
     key: 'system',
@@ -298,12 +309,12 @@ export default function SettingsPage() {
                 </>
               )}
               {displayTab === 'ai' && (
-                <CoachSettings data={data} secretStorage={secretStorage} onSave={setKey} />
+                <AiSettings data={data} secretStorage={secretStorage} onSave={setKey} />
               )}
               {displayTab === 'integrations' && (
                 <>
                   <YtdlpSettings data={data} onSave={setKey} />
-                  <SpotdlSettings data={data} onSave={setKey} />
+                  <MusicDownloadSettings data={data} onSave={setKey} />
                   <VideoSubtitleToolsSettings data={data} onSave={setKey} />
                   <MokuroSettings data={data} onSave={setKey} />
                   <TorrentSettings data={data} secretStorage={secretStorage} onSave={setKey} />
@@ -426,6 +437,8 @@ export function ThemeSettings({
   onSave: SaveFn
 }) {
   const current = resolveAppTheme(data?.[APP_THEME_SETTING])
+  const currentVariant = resolveAppThemeVariant(current, data)
+  const currentLabel = APP_THEME_OPTIONS.find((option) => option.value === current)?.label ?? ''
   const [saving, setSaving] = useState(false)
 
   async function selectTheme(theme: AppTheme): Promise<void> {
@@ -434,8 +447,19 @@ export function ThemeSettings({
     setSaving(true)
     try {
       await onSave(APP_THEME_SETTING, theme)
-      stampAppTheme(theme)
+      stampAppTheme(theme, resolveAppThemeVariant(theme, data))
       persistAppTheme(theme)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function selectVariant(variant: string): Promise<void> {
+    setSaving(true)
+    try {
+      await onSave(appThemeVariantSetting(current), variant)
+      stampAppTheme(current, variant)
+      persistAppThemeVariant(current, variant)
     } finally {
       setSaving(false)
     }
@@ -469,6 +493,27 @@ export function ThemeSettings({
                 </span>
               </span>
               <span className="mt-1.5 block text-xs leading-relaxed text-ink-muted">
+                {option.description}
+              </span>
+            </button>
+          )
+        })}
+      </div>
+      <p className="label mt-5">{currentLabel} style</p>
+      <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label={`${currentLabel} style`}>
+        {APP_THEME_VARIANT_OPTIONS[current].map((option) => {
+          const active = currentVariant === option.value
+          return (
+            <button
+              key={option.value}
+              type="button"
+              className={`theme-choice text-left ${active ? 'theme-choice-active' : ''}`}
+              aria-pressed={active}
+              disabled={saving}
+              onClick={() => void selectVariant(option.value)}
+            >
+              <span className="block text-sm font-semibold text-ink">{option.label}</span>
+              <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
                 {option.description}
               </span>
             </button>
@@ -842,6 +887,22 @@ function ApiKeysSettings({
         }
       />
       <TextSetting
+        settingKey="fanarttv.api_key"
+        data={data}
+        onSave={onSave}
+        title="fanart.tv API key"
+        type="password"
+        secretStorage={secretStorage}
+        placeholder="Paste your fanart.tv API key…"
+        description={
+          <>
+            Optional. Adds fanart.tv backgrounds to the Art tab of movies and TV shows. Get a free
+            key at <span className="text-gray-400">fanart.tv → Profile → API Keys</span>. Stored
+            locally on this machine only.
+          </>
+        }
+      />
+      <TextSetting
         settingKey="football.api_key"
         data={data}
         onSave={onSave}
@@ -869,6 +930,22 @@ function ApiKeysSettings({
             Optional, and most people can skip it: achievement lists come from the game’s own
             steam_settings folder or Steam’s public stats page without one. Steam only issues keys
             to accounts that have spent money. Stored locally on this machine only.
+          </>
+        }
+      />
+      <TextSetting
+        settingKey="steamgriddb.api_key"
+        data={data}
+        onSave={onSave}
+        title="SteamGridDB API key"
+        type="password"
+        secretStorage={secretStorage}
+        placeholder="Paste your SteamGridDB API key…"
+        description={
+          <>
+            Optional. Adds SteamGridDB hero banners to the Art tab of games. Sign in at{' '}
+            <span className="text-gray-400">steamgriddb.com → Preferences → API</span> for a free
+            key. Stored locally on this machine only.
           </>
         }
       />
@@ -957,18 +1034,25 @@ function FoldersSettings({ data, onSave }: { data?: Record<string, string>; onSa
         placeholder="/home/you/Music"
         description="The root folder your music lives in (artists as folders, albums inside them). Set automatically when you pick a folder on the Music page; tracks are stored relative to this root, so if you move the library, just update this and rescan."
       />
-      <TextSetting
-        settingKey="pictures.dir"
-        data={data}
-        onSave={onSave}
+      <StorageFolderSetting
+        root="pictures"
         title="Pictures folder"
-        placeholder="/home/you/Pictures/NaviHUB"
         description={
           <>
-            Where wallpapers and fan art are saved, organized per title (e.g.{' '}
-            <span className="text-gray-400">Berserk (manga)/wallpapers/…</span>). Leave blank to use
-            the app&apos;s data folder. Changing this only affects newly added images — existing
-            files stay where they were saved.
+            Wallpapers and fan art from the Art tab, one folder per title (e.g.{' '}
+            <span className="text-gray-400">Berserk (manga)/wallpapers</span>). Move… copies
+            everything to the new folder, then removes the old copies.
+          </>
+        }
+      />
+      <StorageFolderSetting
+        root="media"
+        title="Media folder"
+        description={
+          <>
+            Imported covers, photos and character images, plus images you picked by hand (in its{' '}
+            <span className="text-gray-400">picked</span> folder). It grows with your library, so
+            it can live on another drive.
           </>
         }
       />
@@ -1001,9 +1085,9 @@ function FoldersSettings({ data, onSave }: { data?: Record<string, string>; onSa
   )
 }
 
-// ---- AI Coach ---------------------------------------------------------------
+// ---- AI ---------------------------------------------------------------------
 
-function CoachSettings({
+function AiSettings({
   data,
   secretStorage,
   onSave
@@ -1012,64 +1096,64 @@ function CoachSettings({
   secretStorage?: SecretStorageState
   onSave: SaveFn
 }) {
-  const [coachProvider, setCoachProvider] = useState('gemini')
-  const [coachModel, setCoachModel] = useState('gemini-2.5-flash')
+  const [aiProvider, setAiProvider] = useState('gemini')
+  const [aiModel, setAiModel] = useState('gemini-2.5-flash')
   const [geminiKey, setGeminiKey] = useState('')
   const [anthropicKey, setAnthropicKey] = useState('')
   const [vertexProject, setVertexProject] = useState('')
   const [vertexRegion, setVertexRegion] = useState('')
   const [vertexCreds, setVertexCreds] = useState('')
 
-  const savedCoachProvider = data?.['coach.provider']
-  const savedCoachModel = data?.['coach.model']
+  const savedAiProvider = data?.['coach.provider']
+  const savedAiModel = data?.['coach.model']
   const savedVertexProject = data?.['vertex.project_id']
   const savedVertexRegion = data?.['vertex.region']
   const savedVertexCreds = data?.['vertex.credentials_path']
-  useEffect(() => setCoachProvider(savedCoachProvider ?? 'gemini'), [savedCoachProvider])
-  useEffect(() => setCoachModel(savedCoachModel ?? 'gemini-2.5-flash'), [savedCoachModel])
+  useEffect(() => setAiProvider(savedAiProvider ?? 'gemini'), [savedAiProvider])
+  useEffect(() => setAiModel(savedAiModel ?? 'gemini-2.5-flash'), [savedAiModel])
   useEffect(() => setVertexProject(savedVertexProject ?? ''), [savedVertexProject])
   useEffect(() => setVertexRegion(savedVertexRegion ?? ''), [savedVertexRegion])
   useEffect(() => setVertexCreds(savedVertexCreds ?? ''), [savedVertexCreds])
 
   return (
     <SettingCard
-      title="Coach (AI)"
+      title="AI model"
       description={
         <>
-          Powers the FGO coach (Gacha → FGO → Coach). The default is Google Gemini — a free API key
+          Powers English writing feedback. The default is Google Gemini — a free API key
           from <span className="text-gray-400">aistudio.google.com</span>, no credit card. Claude
           (via a paid Anthropic key or Google Cloud Vertex AI) is available too. Keys are stored
           locally on this machine only.
         </>
       }
     >
-      <label className="label" htmlFor="coach-provider">Provider</label>
+      <label className="label" htmlFor="ai-provider">Provider</label>
       <div className="mb-4 flex items-center gap-2">
         <select
-          id="coach-provider"
+          id="ai-provider"
           className="input"
-          value={coachProvider}
+          value={aiProvider}
           onChange={(e) => {
             const p = e.target.value
-            setCoachProvider(p)
+            setAiProvider(p)
             // Keep the model list coherent with the chosen provider.
-            if (p === 'gemini' && coachModel.startsWith('claude')) setCoachModel('gemini-2.5-flash')
-            if (p !== 'gemini' && coachModel.startsWith('gemini')) setCoachModel('claude-opus-4-8')
+            if (p === 'gemini' && aiModel.startsWith('claude')) setAiModel('gemini-2.5-flash')
+            if (p !== 'gemini' && aiModel.startsWith('gemini')) setAiModel('claude-opus-4-8')
           }}
         >
           <option value="gemini">Google Gemini (free — AI Studio)</option>
           <option value="anthropic">Anthropic API (Claude)</option>
           <option value="vertex">Google Cloud Vertex AI (Claude)</option>
         </select>
-        <button className="btn-ghost shrink-0" onClick={() => onSave('coach.provider', coachProvider)}>
+        <button className="btn-ghost shrink-0" onClick={() => onSave('coach.provider', aiProvider)}>
           Save
         </button>
       </div>
 
-      <label className="label" htmlFor="coach-model">Model</label>
+      <label className="label" htmlFor="ai-model">Model</label>
       <div className="mb-4 flex items-center gap-2">
-        <select id="coach-model" className="input" value={coachModel} onChange={(e) => setCoachModel(e.target.value)}>
-          {coachProvider === 'gemini' ? (
+        <select id="ai-model" className="input" value={aiModel} onChange={(e) => setAiModel(e.target.value)}>
+          {aiProvider === 'gemini' ? (
             <>
               <option value="gemini-2.5-flash">Gemini 2.5 Flash (free, recommended)</option>
               <option value="gemini-2.5-pro">Gemini 2.5 Pro (smarter, tighter free limit)</option>
@@ -1083,12 +1167,12 @@ function CoachSettings({
             </>
           )}
         </select>
-        <button className="btn-ghost shrink-0" onClick={() => onSave('coach.model', coachModel)}>
+        <button className="btn-ghost shrink-0" onClick={() => onSave('coach.model', aiModel)}>
           Save
         </button>
       </div>
 
-      {coachProvider === 'gemini' ? (
+      {aiProvider === 'gemini' ? (
         <SecretInput
           id="gemini-api-key"
           label="Gemini API key"
@@ -1105,7 +1189,7 @@ function CoachSettings({
             </p>
           }
         />
-      ) : coachProvider === 'vertex' ? (
+      ) : aiProvider === 'vertex' ? (
         <div className="space-y-3">
           <div>
             <label className="label" htmlFor="vertex-project">Google Cloud project id</label>
@@ -1248,29 +1332,20 @@ function YtdlpSettings({ data, onSave }: { data?: Record<string, string>; onSave
   )
 }
 
-export function SpotdlSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
-  const [path, setPath] = useState('')
+export function MusicDownloadSettings({ data, onSave }: { data?: Record<string, string>; onSave: SaveFn }) {
   const [cookieFile, setCookieFile] = useState('')
-  const [pythonPath, setPythonPath] = useState('')
   const [workers, setWorkers] = useState('4')
   const [ffmpegPath, setFfmpegPath] = useState('')
-  const [audioProviders, setAudioProviders] = useState('youtube-music')
-  const [check, setCheck] = useState<SpotdlDetectResult | null>(null)
+  const [check, setCheck] = useState<MusicToolsCheck | null>(null)
   const [testingYouTube, setTestingYouTube] = useState(false)
   const [installingDeno, setInstallingDeno] = useState(false)
-  useEffect(() => setPath(data?.['spotdl.path'] ?? ''), [data])
   useEffect(() => setCookieFile(data?.['spotdl.cookieFile'] ?? ''), [data])
-  useEffect(() => setPythonPath(data?.['spotdl.pythonPath'] ?? ''), [data])
   useEffect(() => setWorkers(data?.['music.downloadWorkers'] ?? '4'), [data])
   useEffect(() => setFfmpegPath(data?.['music.ffmpegPath'] ?? ''), [data])
-  useEffect(() => setAudioProviders(data?.['spotdl.audioProviders'] ?? 'youtube-music'), [data])
 
   async function test(): Promise<void> {
     setCheck(null)
-    await onSave('spotdl.path', path.trim())
-    await onSave('spotdl.pythonPath', pythonPath.trim())
     await onSave('spotdl.cookieFile', cookieFile.trim())
-    await onSave('spotdl.audioProviders', audioProviders)
     await onSave('music.downloadWorkers', workers)
     await onSave('music.ffmpegPath', ffmpegPath.trim())
     setCheck(await api.music.spotifyDetect())
@@ -1279,8 +1354,6 @@ export function SpotdlSettings({ data, onSave }: { data?: Record<string, string>
   async function installDeno(): Promise<void> {
     setInstallingDeno(true)
     try {
-      await onSave('spotdl.path', path.trim())
-    await onSave('spotdl.pythonPath', pythonPath.trim())
       setCheck(await api.music.spotifyInstallDeno())
     } finally {
       setInstallingDeno(false)
@@ -1312,82 +1385,47 @@ export function SpotdlSettings({ data, onSave }: { data?: Record<string, string>
 
   return (
     <SettingCard
-      title="spotDL (Spotify music downloads)"
+      title="Playlist and catalogue downloads"
       description={
         <>
-          Imports public Spotify playlist metadata and downloads missing songs from YouTube Music
-          as native Opus or AAC audio when available. Cookies can change which formats the source offers. Install spotDL 4.5.2 or
-          newer and ffmpeg with{' '}
-          <span className="text-gray-400">pipx install spotdl</span>. Leave blank to use{' '}
-          <span className="text-gray-400">spotdl</span> from PATH, or enter its full executable
-          path. Spotify login is not used. NaviHUB disables lyrics and tries verified music
-          matches first.
+          Spotify playlists, albums and artists are read directly with no account or extra tool.
+          Missing songs are found on YouTube Music and saved in their original Opus or AAC
+          quality with Spotify&apos;s tags and cover, using the yt-dlp and ffmpeg set above.
         </>
       }
     >
-      <div className="flex items-center gap-2">
-        <Field label="spotDL executable path" hiddenLabel className="contents">
-          <input
-            className="input"
-            type="text"
-            value={path}
-            onChange={(event) => setPath(event.target.value)}
-            placeholder="spotdl"
-          />
-        </Field>
-        <button className="btn-ghost shrink-0" onClick={test}>
-          Save &amp; test
-        </button>
-      </div>
       <Field label="Concurrent music downloads" description="One shared limit for the queue; lower it if your connection is throttled.">
         <select className="input" value={workers} onChange={(event) => setWorkers(event.target.value)}>{[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}</select>
       </Field>
       <Field label="ffmpeg executable path (optional)"><input className="input w-full" value={ffmpegPath} onChange={(event) => setFfmpegPath(event.target.value)} placeholder="ffmpeg" /></Field>
-      <Field label="Python executable for resumable metadata (optional)" description="Use the Python environment containing spotDL 4.5.2. Blank tries automatic discovery; unsupported versions use the normal CLI.">
-        <input className="input w-full" value={pythonPath} onChange={(event) => setPythonPath(event.target.value)} placeholder="python" />
-      </Field>
-      <label className="label mt-4" htmlFor="spotdl-cookie-file">YouTube cookies.txt (optional)</label>
+      <label className="label mt-4" htmlFor="music-cookie-file">YouTube cookies.txt (optional)</label>
       <div className="flex gap-2">
         <input
-          id="spotdl-cookie-file"
+          id="music-cookie-file"
           className="input min-w-0 flex-1"
           type="text"
           value={cookieFile}
           onChange={(event) => setCookieFile(event.target.value)}
-          placeholder="C:\\Users\\you\\Documents\\youtube-cookies.txt"
+          placeholder={'C:\\Users\\you\\Documents\\youtube-cookies.txt'}
         />
         <button className="btn-ghost shrink-0" onClick={() => void chooseCookieFile()}>Choose…</button>
       </div>
       <p className="mt-2 text-xs text-gray-400">
-        Export from a fresh private YouTube session and keep the same VPN connection. Treat this
-        file like a password; NaviHUB never copies it into a library export.
+        A YouTube Music Premium session can unlock the 256 kbps AAC stream. Export from a
+        fresh private session and keep the same VPN connection. Treat this file like a password;
+        NaviHUB never copies it into a library export.
       </p>
-      <label className="label mt-4" htmlFor="spotdl-audio-providers">Audio source fallback</label>
-      <select
-        id="spotdl-audio-providers"
-        className="input"
-        value={audioProviders}
-        onChange={(event) => setAudioProviders(event.target.value)}
-      >
-        <option value="youtube-music">YouTube Music only (recommended)</option>
-        <option value="piped">YouTube Music, then Piped</option>
-        <option value="catalogues">YouTube Music, Piped, Bandcamp, then SoundCloud</option>
-      </select>
-      <p className="mt-2 text-xs text-gray-400">
-        Extra providers can rescue unavailable songs, but may return a less exact recording.
-        They are never enabled automatically.
-      </p>
+      <button className="btn-ghost mt-3" onClick={() => void test()}>
+        Save &amp; test
+      </button>
       {check && (
         <div className="mt-3 text-sm">
-          <p className="text-xs text-gray-400">Preview yt-dlp: {check.standaloneYtdlpVersion ?? 'Not detected'}; spotDL embedded yt-dlp: {check.embeddedYtdlpVersion ?? 'Version unavailable'}. Preview access does not test the embedded downloader.</p>
-          <p className={check.metadataReady ?? check.ok ? 'text-green-400' : 'text-red-400'}>
-            {check.metadataReady
-              ? `spotDL ${check.version ?? ''} is ready for metadata`
-              : (check.error ?? 'spotDL is not ready')}
+          <p className={check.ok ? 'text-green-400' : 'text-red-400'}>
+            {check.ok ? `Ready: yt-dlp ${check.ytdlpVersion ?? ''} and ffmpeg` : (check.error ?? 'Download tools are not ready')}
           </p>
           <p className="mt-1 text-gray-400">
-            ffmpeg: {check.ffmpeg ? 'ready' : 'missing'} · Deno: {check.deno ? 'ready' : 'missing'}
-            {check.premiumCookieConfigured && ` · cookies file: ${check.premiumCookieValid ? 'readable' : 'invalid'}`}
+            JavaScript runtime: {check.jsRuntime ?? 'missing'} · Opus cover art: {check.coverArt ? 'embedded' : 'saved as the album folder cover'}
+            {check.cookieConfigured && ` · cookies file: ${check.cookieValid ? 'readable' : 'invalid'}`}
           </p>
           <p className="mt-1 text-gray-400">
             YouTube: {check.youtubeAccess?.state === 'ready'
@@ -1398,9 +1436,9 @@ export function SpotdlSettings({ data, onSave }: { data?: Record<string, string>
           <button className="btn-ghost mt-3" disabled={testingYouTube} onClick={() => void testYouTube()}>
             {testingYouTube ? 'Testing YouTube…' : 'Save cookies & test YouTube access'}
           </button>
-          {!check.deno && check.version && (
-            <button className="btn-ghost mt-3" disabled={installingDeno} onClick={() => void installDeno()}>
-              {installingDeno ? 'Installing Deno…' : 'Install Deno for spotDL'}
+          {!check.jsRuntime && (
+            <button className="btn-ghost mt-3 ml-2" disabled={installingDeno} onClick={() => void installDeno()}>
+              {installingDeno ? 'Installing Deno…' : 'Install Deno'}
             </button>
           )}
         </div>

@@ -7,7 +7,6 @@
 // `key` strings are FROZEN vocabulary — they're stored in checklist_task.task_key
 // and checklist_log.task_key. Rename labels freely, never keys.
 
-import { GACHA_GAMES } from './gacha'
 import type { ChecklistCadence, ChecklistKind, MediaType } from './types'
 
 // Where a `detected` item reads its completion from. Each maps to one timestamp
@@ -141,17 +140,7 @@ export const CHECKLIST_DEFS: ChecklistDef[] = [
     target: 1,
     route: '/programming',
     source: 'progLesson'
-  },
-  ...GACHA_GAMES.map(
-    (g): ChecklistDef => ({
-      key: `gacha-daily-${g.id}`,
-      label: `${g.short} dailies`,
-      hint: 'Tick it yourself when the dailies are cleared.',
-      kind: 'manual',
-      defaultCadence: 'daily',
-      target: 1
-    })
-  )
+  }
 ]
 
 export function checklistDef(key: string): ChecklistDef | undefined {
@@ -220,7 +209,6 @@ export const CHECKLIST_SEED: { key: string; cadence: ChecklistCadence }[] = [
   { key: 'anime-episode', cadence: 'daily' },
   { key: 'jp-reviews', cadence: 'daily' },
   { key: 'manga-chapter', cadence: 'daily' },
-  ...GACHA_GAMES.map((g) => ({ key: `gacha-daily-${g.id}`, cadence: 'daily' as const })),
   { key: 'movie-watch', cadence: 'weekly' },
   { key: 'jp-lesson', cadence: 'weekly' },
   { key: 'quiz-round', cadence: 'weekly' }

@@ -13,7 +13,6 @@ describe('wired surface moods', () => {
     ['/settings', 'quiet'],
     ['/tasks/logs', 'quiet'],
     ['/quiz/song', 'standard'],
-    ['/gacha/fgo', 'standard'],
     ['/search', 'standard'],
     ['/manga/8/read/13', 'immersive'],
     ['/read/book/token', 'immersive']

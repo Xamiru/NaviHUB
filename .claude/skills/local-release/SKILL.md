@@ -89,20 +89,22 @@ head -1 dist/latest.yml   # must say version: X.Y.0
 
 ## 5. Publish
 
-Exactly these **five assets** — both updater manifests are load-bearing (without
-them the in-app updater has nothing to read). No blockmap upload (CI parity).
+Exactly these **six assets** — both updater manifests are load-bearing (without
+them the in-app updater has nothing to read), and the Setup `.exe.blockmap` lets
+Windows updates download only changed blocks (the AppImage embeds its own).
 
 ```bash
 gh release create vX.Y.0 --repo Xamiru/NaviHUB --target "$(git rev-parse HEAD)" \
   --title "NaviHUB X.Y.0" --notes "<one-line summary of what shipped>" \
   dist/NaviHUB-X.Y.0.AppImage dist/latest-linux.yml \
-  dist/NaviHUB-Setup-X.Y.0.exe dist/NaviHUB-X.Y.0-portable.exe dist/latest.yml
+  dist/NaviHUB-Setup-X.Y.0.exe dist/NaviHUB-Setup-X.Y.0.exe.blockmap \
+  dist/NaviHUB-X.Y.0-portable.exe dist/latest.yml
 ```
 
 Post-checks:
 
 ```bash
-gh release view vX.Y.0 --repo Xamiru/NaviHUB --json assets -q '.assets[].name'   # all five present
+gh release view vX.Y.0 --repo Xamiru/NaviHUB --json assets -q '.assets[].name'   # all six present
 gh api repos/Xamiru/NaviHUB/releases/latest -q .tag_name  # MUST be vX.Y.0
 ```
 

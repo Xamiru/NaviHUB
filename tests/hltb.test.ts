@@ -12,7 +12,7 @@ vi.mock('../src/main/db/connection', () => ({
 }))
 
 // URL-routed HLTB fixtures (the rawgImport mocked-http recipe): init hands out
-// creds, the bleed search returns whatever the test staged.
+// a token, the site search returns whatever the test staged.
 let hltbInit: Record<string, unknown>
 let hltbSearch: Record<string, unknown>
 vi.mock('../src/main/http', () => ({
@@ -20,7 +20,7 @@ vi.mock('../src/main/http', () => ({
   fetchWithRetry: async (url: string) => ({
     ok: true,
     status: 200,
-    json: async () => (url.includes('/api/bleed/init') ? hltbInit : hltbSearch)
+    json: async () => (url.includes('/api/search/site/init') ? hltbInit : hltbSearch)
   })
 }))
 
@@ -62,7 +62,7 @@ const mediaRow = (id: number) =>
 
 beforeEach(() => {
   db = createTestDb()
-  hltbInit = { token: 't', hpKey: 'k', hpVal: 'v' }
+  hltbInit = { token: 't' }
   hltbSearch = { data: [hltbEntry()] }
 })
 
@@ -146,5 +146,16 @@ describe('fetchPlaytimes matching', () => {
     const t = await fetchPlaytimes('Persona 5', 2016)
     expect(t?.id).toBe(1)
     expect(t?.main).toBe(1500)
+  })
+
+  it('never matches DLC or a mod that shares the base game title', async () => {
+    hltbSearch = {
+      data: [
+        hltbEntry({ game_id: 7, game_name: 'Hollow Knight', game_type: 'dlc', comp_main: 3_600 }),
+        hltbEntry({ game_id: 3, game_name: 'Hollow Knight', game_type: 'game', comp_main: 97_200 })
+      ]
+    }
+    const t = await fetchPlaytimes('Hollow Knight', 2017)
+    expect(t?.id).toBe(3)
   })
 })

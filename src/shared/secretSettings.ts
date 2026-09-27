@@ -9,6 +9,8 @@ export const SECRET_SETTING_KEYS = [
   'jackett.api_key',
   'qbittorrent.password',
   'github.token',
+  'fanarttv.api_key',
+  'steamgriddb.api_key',
   // Legacy integrations remain protected even when their UI is unavailable.
   'rawg.api_key',
   'igdb.client_id',

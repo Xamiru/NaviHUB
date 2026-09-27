@@ -12,7 +12,7 @@ export interface WrestlingPromotionCfg {
   id: WrestlingPromotionId
   name: string
   short: string // sidebar / breadcrumb label
-  color: string // per-promotion accent (hex), the GACHA_GAMES idiom
+  color: string // per-promotion accent (hex), the franchises idiom
   // Wikipedia enumeration roots. `enumerateEvents` walks these recursively
   // (subcategories first, then page members) — which is why a "by year" parent
   // and a flat category can sit side by side here without special-casing.

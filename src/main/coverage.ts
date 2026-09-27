@@ -7,7 +7,7 @@ import type { JpCoverageDetail, JpCoverageScanStatus } from '@shared/types'
 // Comprehension scan orchestration: walk a series' text once, snapshot the word
 // frequencies, and let coverageRepo do the knowing part. Module-level status
 // polled via japanese:coverageScanStatus (the app has no push channel — see
-// prepDeck.ts / musicDownload.ts).
+// prepDeck.ts / updater.ts).
 //
 // Unlike the prep deck this needs no dictionary: counting what you know takes
 // only your own cards.

@@ -4,12 +4,12 @@ import { qk } from '../lib/queryKeys'
 import { usePlayerControls } from '../lib/player'
 import { playTracks } from '../lib/musicTracks'
 import PageHeader from '../components/PageHeader'
-import { TrackList } from './MusicLibraryPage'
+import { TrackList } from '../components/music/MusicBrowse'
 
 // The automatic "Liked Songs" collection — every hearted track, newest first.
 export default function MusicLikedPage() {
   const player = usePlayerControls()
-  const { data: tracks = [], isLoading } = useQuery({
+  const { data: tracks = [], isLoading, isLoadingError, refetch } = useQuery({
     queryKey: qk.music.tracks({ likedOnly: true }),
     queryFn: () => api.music.tracks({ likedOnly: true })
   })
@@ -41,6 +41,13 @@ export default function MusicLikedPage() {
       />
       {isLoading ? (
         <p className="text-sm text-gray-500">Loading…</p>
+      ) : isLoadingError ? (
+        <p role="alert" className="text-sm">
+          Could not load liked songs.{' '}
+          <button className="btn" onClick={() => void refetch()}>
+            Retry liked songs
+          </button>
+        </p>
       ) : tracks.length === 0 ? (
         <p className="text-sm text-gray-400">
           Nothing liked yet — use the heart on any track.

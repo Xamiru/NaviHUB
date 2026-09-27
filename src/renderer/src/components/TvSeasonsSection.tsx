@@ -5,6 +5,7 @@ import { qk } from '../lib/queryKeys'
 import Section from './Section'
 import EmptyState from './EmptyState'
 import type { MediaDetail, TvEpisode, TvSeason } from '@shared/types'
+import { celebrateProgress } from '../lib/themeFx'
 
 // The Seasons tab: one collapsible block per season, each a grid of episode
 // tiles you click to tick. Progress is clicked, not typed — the number field on
@@ -52,7 +53,9 @@ function SeasonBlock({
   const complete = aired > 0 && season.watched >= aired
 
   async function toggle(ep: TvEpisode): Promise<void> {
+    const anchor = document.activeElement
     await api.tv.setWatched(ep.id, !ep.watchedAt)
+    if (!ep.watchedAt) celebrateProgress(anchor)
     await onChanged()
   }
 

@@ -1,20 +1,21 @@
 import type {
   WrestlingEventFilter,
   CreditRole,
-  GachaGameId,
-  GachaUnitFilter,
   ImageKind,
+  ImageOverrideKind,
   JpFeedRequest,
   JpQuizScope,
   ListKind,
   MediaListFilter,
   MediaType,
+  MusicBrowseScope,
   MusicTrackBrowseFilter,
   MusicTrackBrowseSort,
   QuizKind,
   QuizAvailabilityRequest,
   QuizSongFilter,
-  ThemeSongFilter
+  ThemeSongFilter,
+  WallpaperSource
 } from '@shared/types'
 
 // Central registry of every React Query key in the app.
@@ -128,6 +129,12 @@ export const qk = {
     values: ['settings', 'values'] as const,
     secretStorage: ['settings', 'secretStorage'] as const
   },
+  storage: {
+    // Settings → Folders: the pictures/media roots and a running move.
+    all: ['storage'] as const,
+    paths: ['storage', 'paths'] as const,
+    status: ['storage', 'status'] as const
+  },
   libraryExport: {
     all: ['libraryExport'] as const,
     preview: (options: import('@shared/types').LibraryExportOptions) =>
@@ -186,8 +193,14 @@ export const qk = {
     // background/slideshow toggles need (flagging a wallpaper clears a marker
     // that may be sitting on a fan-art tile).
     lists: (mediaId: number) => ['pictures', 'list', mediaId] as const,
-    wallhaven: (q: string, page: number) => ['pictures', 'wallhaven', q, page] as const,
-    tmdb: (mediaId: number) => ['pictures', 'tmdb', mediaId] as const
+    sources: (mediaId: number, kind: ImageKind) => ['pictures', 'sources', mediaId, kind] as const,
+    search: (mediaId: number, source: WallpaperSource, q: string, page: number) =>
+      ['pictures', 'search', mediaId, source, q, page] as const
+  },
+  images: {
+    // Hand-picked cover/photo lock state per entity (ImagePickerDialog).
+    all: ['images'] as const,
+    override: (kind: ImageOverrideKind, id: number) => ['images', 'override', kind, id] as const
   },
   manga: {
     // Local manga reader: attached chapters + page lists + mokuro OCR.
@@ -314,8 +327,6 @@ export const qk = {
   music: {
     personalAlbum: (id: number) => ['music', 'personalAlbum', id] as const,
     personalTrack: (id: number) => ['music', 'personalTrack', id] as const,
-    listens: (id: number, page: number) => ['music', 'listens', id, page] as const,
-    journal: (filter: import('@shared/types').MusicJournalFilter) => ['music', 'journal', filter] as const,
     personalTags: ['music', 'personalTags'] as const,
     smart: ['music', 'smart'] as const,
     smartPreview: (rules: import('@shared/types').MusicSmartRules, page: number) => ['music', 'smartPreview', rules, page] as const,
@@ -324,14 +335,18 @@ export const qk = {
     // their own intervals while something runs.
     all: ['music'] as const,
     artists: (search: string) => ['music', 'artists', search] as const,
-    albums: (search: string) => ['music', 'albums', search] as const,
+    albums: (search: string, scope: MusicBrowseScope = {}) =>
+      ['music', 'albums', search, scope.genre ?? null, scope.decade ?? null] as const,
+    genres: ['music', 'genres'] as const,
+    decades: ['music', 'decades'] as const,
+    lyrics: (trackId: number) => ['music', 'lyrics', trackId] as const,
     artist: (id: number) => ['music', 'artist', id] as const,
     artistTracks: (id: number) => ['music', 'artistTracks', id] as const,
     album: (id: number) => ['music', 'album', id] as const,
     tracks: (filter: { search?: string; likedOnly?: boolean }) =>
       ['music', 'tracks', filter] as const,
-    trackPage: (sort: MusicTrackBrowseSort, filter: MusicTrackBrowseFilter) =>
-      ['music', 'trackPage', sort, filter] as const,
+    trackPage: (sort: MusicTrackBrowseSort, filter: MusicTrackBrowseFilter, scope: MusicBrowseScope = {}) =>
+      ['music', 'trackPage', sort, filter, scope.genre ?? null, scope.decade ?? null] as const,
     trackLead: ['music', 'trackLead'] as const,
     search: (q: string) => ['music', 'search', q] as const,
     playlists: ['music', 'playlists'] as const,
@@ -351,31 +366,10 @@ export const qk = {
       ['music', 'spotifyEntityState', kind, id] as const,
     artStatus: ['music', 'artStatus'] as const
   },
-  gacha: {
-    // Gacha tracker. Mutations invalidate the `all` prefix (broad on purpose,
-    // music precedent — roster/currency/banner state is cheap to refetch).
-    all: ['gacha'] as const,
-    overview: ['gacha', 'overview'] as const,
-    units: (game: GachaGameId, filter: GachaUnitFilter) =>
-      ['gacha', 'units', game, filter] as const,
-    unit: (id: number) => ['gacha', 'unit', id] as const,
-    currencies: (game: GachaGameId) => ['gacha', 'currencies', game] as const,
-    banners: (game: GachaGameId) => ['gacha', 'banners', game] as const,
-    news: (game: GachaGameId) => ['gacha', 'news', game] as const,
-    // FGO coach — chat, reminders, memory. coachStatus polls on its own interval.
-    coachStatus: ['gacha', 'coachStatus'] as const,
-    coachThread: (game: GachaGameId) => ['gacha', 'coachThread', game] as const,
-    coachThreads: (game: GachaGameId) => ['gacha', 'coachThreads', game] as const,
-    coachMessages: (threadId: number) => ['gacha', 'coachMessages', threadId] as const,
-    goals: (game: GachaGameId) => ['gacha', 'goals', game] as const,
-    coachNotes: (game: GachaGameId) => ['gacha', 'coachNotes', game] as const,
-    coachDocs: (game: GachaGameId) => ['gacha', 'coachDocs', game] as const,
-    dueCounts: ['gacha', 'dueCounts'] as const
-  },
   wrestling: {
     // Wiki + personal layer. Ratings/favorites are denormalized into every
     // row-returning query, so mutations invalidate the `all` prefix — the
-    // music/gacha posture.
+    // music posture.
     all: ['wrestling'] as const,
     overview: ['wrestling', 'overview'] as const,
     events: (filter: WrestlingEventFilter) => ['wrestling', 'events', filter] as const,

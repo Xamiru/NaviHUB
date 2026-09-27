@@ -48,8 +48,8 @@ vi.mock('../src/main/http', () => ({
         return searchPayload
       }
       if (url.includes('/appdetails')) return detailsPayload
-      if (url.includes('/api/bleed/init')) return hltbInit
-      if (url.includes('/api/bleed')) return hltbSearch
+      if (url.includes('/api/search/site/init')) return hltbInit
+      if (url.includes('/api/search/site')) return hltbSearch
       throw new Error(`Unrouted URL in test: ${url}`)
     }
   })
@@ -144,6 +144,21 @@ describe('importGame', () => {
     ])
   })
 
+  it('imports a game whose appdetails answer is keyed by an edition id', async () => {
+    // Live shape: appids=1245620 (Elden Ring) comes back under "2855530".
+    detailsPayload = { '2855530': detailsFixture()['1687950'] }
+    await importGame(1687950)
+    expect(
+      db.prepare(`SELECT title FROM media_item WHERE external_source='steam' AND external_id='1687950'`).get()
+    ).toEqual({ title: 'Persona 5 Royal' })
+    expect(await lookupMetacritic('Persona 5 Royal')).toBe(94)
+  })
+
+  it('does not take an unrelated entry when the requested app is missing', async () => {
+    detailsPayload = { '2855530': { success: true, data: { type: 'game', name: 'Other', steam_appid: 42 } } }
+    await expect(importGame(1687950)).rejects.toThrow(/not found on Steam/)
+  })
+
   it('falls back to header_image when the portrait capsule is missing', async () => {
     capsuleExists = false
     await importGame(1687950)
@@ -161,7 +176,7 @@ describe('importGame', () => {
   })
 
   it('HLTB fills the length when it matches', async () => {
-    hltbInit = { token: 't', hpKey: 'k', hpVal: 'v' }
+    hltbInit = { token: 't' }
     hltbSearch = {
       data: [
         {
@@ -252,6 +267,38 @@ describe('importGame', () => {
          WHERE mt.media_id=? ORDER BY t.name`
       ).all(mediaId)
     ).toEqual([{ name: 'Adventure' }, { name: 'Favorite setting' }])
+  })
+
+  it('tags player-facing store categories and replaces them on re-import', async () => {
+    detailsPayload = detailsFixture({
+      categories: [
+        { id: 2, description: 'Single-player' },
+        { id: 23, description: 'Steam Cloud' },
+        { id: 28, description: 'Full controller support' }
+      ]
+    })
+    const { mediaId } = await importGame(1687950)
+    const personalTag = Number(
+      db.prepare(`INSERT INTO tag (name, category) VALUES ('Favorite setting', 'custom')`).run()
+        .lastInsertRowid
+    )
+    db.prepare('INSERT INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, personalTag)
+    const names = () =>
+      db
+        .prepare(
+          `SELECT t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id
+           WHERE mt.media_id=? AND t.category IS NOT 'genre' ORDER BY t.name`
+        )
+        .all(mediaId)
+    expect(names()).toEqual([
+      { name: 'Favorite setting' },
+      { name: 'Full controller support' },
+      { name: 'Single-player' }
+    ])
+
+    detailsPayload = detailsFixture({ categories: [{ id: 38, description: 'Online Co-op' }] })
+    await importGame(1687950)
+    expect(names()).toEqual([{ name: 'Favorite setting' }, { name: 'Online Co-op' }])
   })
 
   it('keeps child links when Steam omits their fields', async () => {

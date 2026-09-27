@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { EventEmitter } from 'node:events'
@@ -19,43 +19,35 @@ vi.mock('../src/main/repos/settingsRepo', () => ({ get: vi.fn() }))
 
 import {
   recoverSpotifyOutputs,
+  discardStagedOutputs,
   assertPlaylistSnapshotComplete,
-  itunesRelease,
   groupResolvedReleases,
+  groupEntityReleases,
+  payloadWithAudioSource,
+  mismatchFor,
+  killActive,
+  runMusicProcess,
+  settleSpotifyBatch
+} from '../src/main/musicSpotify'
+import {
   adaptRecoveredReleaseSongs,
-  buildSpotdlDownloadArgs,
-  buildSpotdlSaveArgs,
   buildSpotifyDiscoveryQuery,
   chunkSpotifyItems,
-  completeSpotdlPlaylistSnapshot,
   completeResolvedReleaseSongs,
   estimateSpotifyDownloadBytes,
-  friendlySpotifyDownloadError,
-  groupEntityReleases,
   parseSpotifyPlaylistUrl,
   parseSpotifyUrl,
-  parseSpotdlRateLimitWait,
-  parseSpotdlLine,
-  parseSpotdlVersion,
-  payloadWithAudioSource,
-  parseSpotdlInspectionLine,
-  SPOTDL_PLAYLIST_METADATA_STALL_MS,
-  SPOTDL_PLAYLIST_METADATA_MAX_STALL_MS,
-  spotifyPlaylistMetadataStallMs,
   pickDiscoveredEntity,
   pickConsensusDiscoveredEntity,
   rankSpotifyReleaseDiscoveryTracks,
   releaseTrackNumberingIsIncomplete,
-  mismatchFor,
-  killActive,
-  runSpotdl,
-  settleSpotifyBatch,
   spotifyAlbumIdFromTrackLookup,
   spotifyReleaseTitlesMatch,
   stripCatalogReleaseTypeSuffix,
-  youtubeAccessBlocksDownload,
   validateSpotdlPayload
-} from '../src/main/musicSpotify'
+} from '../src/main/musicSpotifyCore'
+import { itunesRelease } from '../src/main/musicCatalogue'
+import { youtubeAccessBlocksDownload } from '../src/main/musicToolSetup'
 import {
   compatibleSpotifyDurationTolerance,
   matchSpotifyPlaylistSong,
@@ -63,49 +55,11 @@ import {
   normalizeSpotifyMatch,
   normalizeSpotifyRecordingTitle,
   singleRecordingDownloads,
-  spotifyPlaylistMatchAlternatives,
-  type LocalMatchCandidate,
-  type SpotdlSong
-} from '../src/main/repos/musicSpotifyRepo'
+  spotifyPlaylistMatchAlternatives
+} from '../src/main/musicSpotifyMatch'
+import type { LocalMatchCandidate, SpotdlSong } from '../src/main/repos/musicSpotifyRepo'
 
 describe('Spotify playlist import core', () => {
-  it('passes a configured ffmpeg executable to preload and metadata save operations', async () => {
-    vi.mocked(getSetting).mockImplementation((key) => key === 'music.ffmpegPath' ? '/tools/custom ffmpeg' : null)
-    try {
-      for (const args of [['save', 'playlist'], ['save', 'songs.spotdl', '--preload']]) {
-        const proc = Object.assign(new EventEmitter(), { stdout: new PassThrough(), stderr: new PassThrough(), kill: vi.fn() })
-        const spawn = vi.fn(() => proc as never)
-        const pending = runSpotdl(args, 'ffmpeg-options-fixture', undefined, undefined, spawn)
-        expect(spawn.mock.calls[0][1]).toEqual([...args, '--ffmpeg', '/tools/custom ffmpeg'])
-        proc.emit('close', 0)
-        await pending
-      }
-    } finally { vi.mocked(getSetting).mockReset() }
-  })
-
-  it('allows long silent playlist metadata resolution without the five-minute false timeout', () => {
-    expect(SPOTDL_PLAYLIST_METADATA_STALL_MS).toBe(30 * 60_000)
-    expect(SPOTDL_PLAYLIST_METADATA_STALL_MS).toBeGreaterThan(5 * 60_000)
-    expect(spotifyPlaylistMetadataStallMs(100)).toBe(30 * 60_000)
-    expect(spotifyPlaylistMetadataStallMs(800)).toBe(4 * 60 * 60_000)
-    expect(spotifyPlaylistMetadataStallMs(10_000)).toBe(SPOTDL_PLAYLIST_METADATA_MAX_STALL_MS)
-    expect(parseSpotdlInspectionLine('Found 100 songs in RYM Top 100 Songs (Playlist)')).toEqual({
-      foundCount: 100,
-      message: 'Found 100 tracks; resolving Spotify metadata with 8 workers. spotDL may be quiet for up to 30 minutes.'
-    })
-    expect(parseSpotdlInspectionLine('Found 800 songs in Big Playlist (Playlist)')).toEqual({
-      foundCount: 800,
-      message: 'Found 800 tracks; resolving Spotify metadata with 8 workers. spotDL may be quiet for up to 4 hours.'
-    })
-  })
-
-  it('recovers only a complete spotDL playlist snapshot after an abnormal exit', () => {
-    expect(completeSpotdlPlaylistSnapshot(Array.from({ length: 800 }), 800)).toBe(true)
-    expect(completeSpotdlPlaylistSnapshot(Array.from({ length: 799 }), 800)).toBe(false)
-    expect(completeSpotdlPlaylistSnapshot(Array.from({ length: 800 }), null)).toBe(false)
-    expect(completeSpotdlPlaylistSnapshot({}, 800)).toBe(false)
-  })
-
   it('accepts canonical playlist URLs and rejects other Spotify content', () => {
     expect(
       parseSpotifyPlaylistUrl('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M?si=test')
@@ -177,26 +131,26 @@ describe('Spotify playlist import core', () => {
     expect(releases).toHaveLength(1)
   })
 
-  it('settles a missing spotDL process and releases its maintenance owner', async () => {
+  it('settles a missing tool process and releases its maintenance owner', async () => {
     const proc = Object.assign(new EventEmitter(), {
       stdout: new PassThrough(),
       stderr: new PassThrough(),
       kill: vi.fn()
     })
-    const pending = runSpotdl([], 'missing-spotdl-fixture', undefined, undefined, () => proc as never)
+    const pending = runMusicProcess([], 'missing-spotdl-fixture', undefined, undefined, () => proc as never)
     queueMicrotask(() => proc.emit('error', new Error('ENOENT')))
-    await expect(pending).rejects.toThrow(/install spotDL or set its path/)
+    await expect(pending).rejects.toThrow(/install yt-dlp or set its path/)
     expect(musicMaintenanceOwner()).toBeNull()
   })
 
-  it('kills an injected active spotDL child and releases maintenance on shutdown', async () => {
+  it('kills an injected active tool child and releases maintenance on shutdown', async () => {
     const proc = Object.assign(new EventEmitter(), {
       stdout: new PassThrough(),
       stderr: new PassThrough(),
       exitCode: null,
       kill: vi.fn(() => true)
     })
-    const pending = runSpotdl([], 'cancelled-spotdl-fixture', undefined, 'fixture-job', () => proc as never)
+    const pending = runMusicProcess([], 'cancelled-spotdl-fixture', undefined, 'fixture-job', () => proc as never)
     killActive()
     expect(proc.kill).toHaveBeenNthCalledWith(1, 'SIGCONT')
     expect(proc.kill).toHaveBeenNthCalledWith(2, 'SIGTERM')
@@ -211,7 +165,7 @@ describe('Spotify playlist import core', () => {
     const children = Array.from({ length: 4 }, () => Object.assign(new EventEmitter(), {
       stdout: new PassThrough(), stderr: new PassThrough(), exitCode: null as number | null, kill: vi.fn(() => true)
     }))
-    const pending = children.map((proc) => runSpotdl([], 'parallel-url-fixture', undefined, 'parallel-url-job', () => proc as never))
+    const pending = children.map((proc) => runMusicProcess([], 'parallel-url-fixture', undefined, 'parallel-url-job', () => proc as never))
     killActive()
     for (const proc of children) {
       expect(proc.kill).toHaveBeenNthCalledWith(1, 'SIGCONT')
@@ -223,7 +177,7 @@ describe('Spotify playlist import core', () => {
     expect(musicMaintenanceOwner()).toBeNull()
   })
 
-  it('stops an active spotDL inspection when its task context is cancelled', async () => {
+  it('stops an active tool process when its task context is cancelled', async () => {
     const proc = Object.assign(new EventEmitter(), {
       stdout: new PassThrough(),
       stderr: new PassThrough(),
@@ -232,7 +186,7 @@ describe('Spotify playlist import core', () => {
     })
     const controller = new AbortController()
     const pending = runWithActivitySignal(controller.signal, () =>
-      runSpotdl([], 'activity-spotdl-fixture', undefined, 'activity-job', () => proc as never)
+      runMusicProcess([], 'activity-spotdl-fixture', undefined, 'activity-job', () => proc as never)
     )
     controller.abort()
     expect(proc.kill).toHaveBeenNthCalledWith(1, 'SIGCONT')
@@ -336,7 +290,7 @@ describe('Spotify playlist import core', () => {
     ).toBeNull()
   })
 
-  it('uses album only to break a tie and leaves ambiguity unmatched', () => {
+  it('reuses one local copy of the same recording, preferring the named album', () => {
     const candidates: LocalMatchCandidate[] = [1, 2].map((id) => ({
       id,
       title: 'Song',
@@ -351,12 +305,13 @@ describe('Spotify playlist import core', () => {
         candidates
       )
     ).toBe(1)
+    // Two releases within three seconds are one recording: the oldest copy is reused.
     expect(
       matchSpotifySong(
         { title: 'Song', primaryArtist: 'Artist', albumTitle: 'Missing', duration: 200 },
         candidates
       )
-    ).toBeNull()
+    ).toBe(1)
   })
 
   it('reuses the original-album recording for a greatest-hits playlist row without merging live', () => {
@@ -408,84 +363,13 @@ describe('Spotify playlist import core', () => {
     expect(spotifyPlaylistMatchAlternatives(source, candidates).map((track) => track.id)).toEqual([1, 2])
   })
 
-  it('builds fixed safe spotDL arguments and a nested album layout', () => {
+  it('compares catalogue release titles without Apple presentation suffixes', () => {
     expect(stripCatalogReleaseTypeSuffix('Release Name — EP')).toBe('Release Name')
     expect(spotifyReleaseTitlesMatch('Sue Me (A Cappella) - Single', 'Sue Me (A Cappella)')).toBe(true)
     expect(spotifyReleaseTitlesMatch('Album (Deluxe)', 'Album')).toBe(false)
-    expect(buildSpotdlSaveArgs('https://open.spotify.com/playlist/abc', '/tmp/list.spotdl')).toEqual([
-      'save',
-      'https://open.spotify.com/playlist/abc',
-      '--audio',
-      'youtube',
-      '--threads',
-      '8',
-      '--save-file',
-      '/tmp/list.spotdl'
-    ])
-    const args = buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl')
-    expect(args.slice(args.indexOf('--format'), args.indexOf('--format') + 2)).toEqual([
-      '--format',
-      'opus'
-    ])
-    expect(args.slice(args.indexOf('--bitrate'), args.indexOf('--bitrate') + 2)).toEqual([
-      '--bitrate',
-      'disable'
-    ])
-    expect(args).toContain('4')
-    expect(args).not.toContain('--only-verified-results')
-    expect(args).not.toContain('--dont-filter-results')
-    expect(args).toContain('--print-errors')
-    expect(args[args.indexOf('--save-file') + 1]).toBe('/tmp/errors.spotdl.result.spotdl')
-    const windows = buildSpotdlDownloadArgs('C:/Temp/input.spotdl', 'D:/Music', 'C:/Temp/save errors.txt')
-    expect(windows[windows.indexOf('--save-file') + 1]).toBe('C:/Temp/save errors.txt.result.spotdl')
-    expect(args.slice(args.indexOf('--audio'), args.indexOf('--audio') + 3)).toEqual([
-      '--audio', 'youtube-music', 'youtube'
-    ])
-    expect(args[args.indexOf('--lyrics') + 1]).toBe('--format')
-    expect(args.slice(args.indexOf('--overwrite'), args.indexOf('--overwrite') + 2)).toEqual([
-      '--overwrite',
-      'skip'
-    ])
-    expect(args.at(-1)).toContain('{album-artist}/{album}/{disc-number}-{track-number} - {title}')
-    const provenance = buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl', 'skip', {
-      provenance: true
-    })
-    expect(provenance.at(-1)).toContain('[navihub-{track-id}]')
-    const direct = buildSpotdlDownloadArgs(
-      'https://open.spotify.com/album/3WzBIQmn2hrulLeTY9smkk',
-      '/music',
-      '/tmp/direct-errors.spotdl'
-    )
-    expect(direct.slice(0, 2)).toEqual([
-      'download',
-      'https://open.spotify.com/album/3WzBIQmn2hrulLeTY9smkk'
-    ])
-    expect(
-      buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl', 'force')
-    ).toContain('force')
-    const broader = buildSpotdlDownloadArgs('/tmp/in.spotdl', '/music', '/tmp/errors.spotdl', 'skip', {
-      allowUnverified: true,
-      cookieFile: '/tmp/cookies.txt'
-    })
-    expect(broader).not.toContain('--only-verified-results')
-    expect(broader).toContain('--dont-filter-results')
-    expect(broader.slice(broader.indexOf('--format'), broader.indexOf('--format') + 2)).toEqual([
-      '--format', 'm4a'
-    ])
-    expect(broader.slice(broader.indexOf('--cookie-file'), broader.indexOf('--cookie-file') + 2))
-      .toEqual(['--cookie-file', '/tmp/cookies.txt'])
   })
 
-  it('parses spotDL readiness and exact per-track errors safely', () => {
-    expect(parseSpotdlVersion('spotdl 4.5.2')).toEqual({ version: '4.5.2', supported: true })
-    expect(parseSpotdlVersion('4.5.1')).toEqual({ version: '4.5.1', supported: false })
-    expect(parseSpotdlLine(
-      'https://open.spotify.com/track/abc123 - AudioProviderError: YT-DLP download error'
-    )).toEqual({
-      kind: 'error',
-      spotifyTrackId: 'abc123',
-      message: 'AudioProviderError: YT-DLP download error'
-    })
+  it('pins an explicit audio source onto the stored song payload', () => {
     expect(payloadWithAudioSource('{"name":"Song","download_url":null}', 'https://youtu.be/abc'))
       .toEqual({ name: 'Song', download_url: 'https://youtu.be/abc' })
   })
@@ -499,13 +383,6 @@ describe('Spotify playlist import core', () => {
       ok: false, state: 'botCheck', authenticated: false,
       message: 'Sign in to confirm you are not a bot', testedAt: Date.now(), codec: null, bitrate: null
     })).toBe(true)
-  })
-
-  it('turns provider failures into actionable per-track messages', () => {
-    expect(friendlySpotifyDownloadError('AudioProviderError: YT-DLP download error'))
-      .toContain('No usable YouTube audio result')
-    expect(friendlySpotifyDownloadError('Sign in to confirm you are not a bot'))
-      .toContain('fresh cookies')
   })
 
   it('discovers a deluxe album from a release-unique track instead of a shared lead track', () => {
@@ -607,7 +484,7 @@ describe('Spotify playlist import core', () => {
     })
   })
 
-  it('terminates and rejects a spotDL process that stops producing output', async () => {
+  it('terminates and rejects a tool process that stops producing output', async () => {
     vi.useFakeTimers()
     const proc = Object.assign(new EventEmitter(), {
       stdout: new PassThrough(),
@@ -616,7 +493,7 @@ describe('Spotify playlist import core', () => {
       kill: vi.fn(() => true)
     })
     try {
-      const pending = runSpotdl(
+      const pending = runMusicProcess(
         [],
         'stalled-spotdl-fixture',
         undefined,
@@ -632,69 +509,6 @@ describe('Spotify playlist import core', () => {
     } finally {
       vi.useRealTimers()
     }
-  })
-
-  it('rearms a playlist watchdog from its reported track count', async () => {
-    vi.useFakeTimers()
-    const proc = Object.assign(new EventEmitter(), {
-      stdout: new PassThrough(),
-      stderr: new PassThrough(),
-      exitCode: null as number | null,
-      kill: vi.fn(() => true)
-    })
-    try {
-      const pending = runSpotdl(
-        [],
-        'large-playlist-spotdl-fixture',
-        undefined,
-        'large-playlist-job',
-        () => proc as never,
-        SPOTDL_PLAYLIST_METADATA_STALL_MS,
-        (line) => {
-          const event = parseSpotdlInspectionLine(line)
-          return event ? spotifyPlaylistMetadataStallMs(event.foundCount) : null
-        }
-      )
-      proc.stdout.write('Found 800 songs in Big Playlist (Playlist)\n')
-      await vi.advanceTimersByTimeAsync(SPOTDL_PLAYLIST_METADATA_STALL_MS)
-      expect(proc.kill).not.toHaveBeenCalled()
-      await vi.advanceTimersByTimeAsync(
-        spotifyPlaylistMetadataStallMs(800) - SPOTDL_PLAYLIST_METADATA_STALL_MS
-      )
-      expect(proc.kill).toHaveBeenCalledWith('SIGTERM')
-      proc.exitCode = 1
-      proc.emit('close', 1)
-      await expect(pending).rejects.toThrow(/stopped responding/i)
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
-  it('parses provider waits and stops day-long spotDL rate limits immediately', async () => {
-    expect(parseSpotdlRateLimitWait(
-      'Your application has reached a rate/request limit. Retry will occur after: 86400 s'
-    )).toBe(86400)
-    expect(parseSpotdlRateLimitWait('Downloading track')).toBeNull()
-
-    const proc = Object.assign(new EventEmitter(), {
-      stdout: new PassThrough(),
-      stderr: new PassThrough(),
-      exitCode: null as number | null,
-      kill: vi.fn(() => true)
-    })
-    const pending = runSpotdl(
-      [],
-      'rate-limited-spotdl-fixture',
-      undefined,
-      'rate-limited-job',
-      () => proc as never
-    )
-    proc.stderr.write('Your application has reached a rate/request limit. Retry will occur after: 86400 s\n')
-    await vi.waitFor(() => expect(proc.kill).toHaveBeenCalledWith('SIGTERM'))
-    proc.exitCode = 1
-    proc.emit('close', 1)
-    await expect(pending).rejects.toThrow(/rate-limited for about 24 hours/i)
-    expect(musicMaintenanceOwner()).toBeNull()
   })
 
   it('discovers artist and album ids from an exact representative local track', () => {
@@ -766,20 +580,6 @@ describe('Spotify playlist import core', () => {
     )
   })
 
-  it('parses simple-TUI progress, titles and failures', () => {
-    expect(parseSpotdlLine('Artist - Song: Downloading')).toEqual({
-      kind: 'item',
-      title: 'Artist - Song'
-    })
-    expect(parseSpotdlLine('12/100 complete')).toEqual({ kind: 'progress', done: 12, total: 100 })
-    expect(parseSpotdlLine('Failed: no match')).toEqual({
-      kind: 'error', message: 'no match', spotifyTrackId: null
-    })
-    expect(parseSpotdlInspectionLine('Found 109 songs in Gracie Abrams (Artist)')).toEqual({
-      foundCount: 109,
-      message: 'Found 109 tracks; resolving Spotify metadata with 8 workers. spotDL may be quiet for up to 1 hour.'
-    })
-  })
 })
 
 describe('Spotify completeness and batching', () => {
@@ -824,12 +624,28 @@ describe('Spotify staged file recovery', () => {
       writeFileSync(join(root, 'Artist', 'Album', 'song.opus'), 'original')
       writeFileSync(join(stage, 'song.opus'), 'downloaded')
       writeFileSync(join(stage, 'unfinished.opus.part'), 'partial')
+      writeFileSync(join(stage, 'tagging.temp.opus'), 'partial')
       const paths = recoverSpotifyOutputs(root)
       expect(paths).toHaveLength(1)
       expect(readFileSync(join(root, paths[0]), 'utf8')).toBe('downloaded')
       expect(readFileSync(join(root, 'Artist', 'Album', 'song.opus'), 'utf8')).toBe('original')
       expect(existsSync(join(stage, 'unfinished.opus.part'))).toBe(true)
+      expect(existsSync(join(stage, 'tagging.temp.opus'))).toBe(true)
       expect(recoverSpotifyOutputs(root)).toEqual(paths)
+    } finally { rmSync(root, { recursive: true, force: true }) }
+  })
+
+  it('discards every file an unfinished run staged for one track', () => {
+    const root = mkdtempSync(join(tmpdir(), 'spotify-staging-'))
+    try {
+      const stage = join(root, '.spotdl', 'navihub-downloads', 'Artist', 'Album')
+      mkdirSync(stage, { recursive: true })
+      const base = join(stage, '1-01 - Song [navirun-r1] [navihub-abc]')
+      for (const suffix of ['.opus', '.webm', '.temp.opus', '.webp']) writeFileSync(base + suffix, 'partial')
+      writeFileSync(join(stage, '1-02 - Other [navirun-r1] [navihub-def].opus'), 'complete')
+      discardStagedOutputs(base)
+      expect(readdirSync(stage)).toEqual(['1-02 - Other [navirun-r1] [navihub-def].opus'])
+      discardStagedOutputs(join(root, 'missing', 'x'))
     } finally { rmSync(root, { recursive: true, force: true }) }
   })
 })
@@ -855,6 +671,43 @@ describe('one recording across remastered releases', () => {
     ]
     expect(matchSpotifyPlaylistSong(original, copies)).toBe(2)
     expect(matchSpotifySong({ ...original, title: 'Hey Jude Remaster 2005' }, copies)).toBe(2)
+  })
+
+  it('matches the library copies real Spotify catalogue titles failed to find', () => {
+    const track = (title: string, albumTitle: string, duration: number, folderArtist = 'Artist', tagArtist: string | null = null): LocalMatchCandidate =>
+      ({ id: 1, title, folderArtist, tagArtist, albumTitle, duration })
+    const song = (title: string, albumTitle: string, duration: number, primaryArtist = 'Artist') =>
+      ({ title, albumTitle, duration, primaryArtist })
+    // Featuring credits, "2017 Master" wording and a joined folder artist.
+    expect(matchSpotifyPlaylistSong(song('Under Pressure (feat. David Bowie)', 'Hot Space', 248, 'Queen'),
+      [track('Under Pressure (Remastered 2011)', 'Singles', 245, 'Queen', 'Queen & David Bowie')])).toBe(1)
+    expect(matchSpotifyPlaylistSong(song('Rubber Ring - 2017 Master', 'The Queen Is Dead', 234),
+      [track('Rubber Ring - 2011 Remaster', 'Louder Than Bombs', 228)])).toBe(1)
+    expect(matchSpotifyPlaylistSong(song('Easy Lover', 'Chinese Wall', 306, 'Philip Bailey'),
+      [track('Easy Lover', 'Essentials', 306, 'Philip Bailey, Phil Collins')])).toBe(1)
+    // "Live" inside the main title is not a live recording, so remaster reuse still applies.
+    expect(matchSpotifyPlaylistSong(song('Who Wants To Live Forever', 'Greatest Hits II', 297),
+      [{ ...track('Who Wants To Live Forever (Remastered 2011)', 'Singles', 295), id: 4 },
+        { ...track('Who Wants To Live Forever', 'A Kind Of Magic', 295), id: 7 }])).toBe(4)
+    // Duplicate rips on one album, and a local subtitle on the same album and duration.
+    expect(matchSpotifyPlaylistSong(song('Shine On You Crazy Diamond (Pts. 1-5)', 'Wish You Were Here', 813),
+      [{ ...track('Shine On You Crazy Diamond (Pts. 1-5)', 'Wish You Were Here', 811), id: 3 },
+        { ...track('Shine On You Crazy Diamond (Pts. 1-5)', 'Wish You Were Here', 813), id: 9 }])).toBe(9)
+    expect(matchSpotifyPlaylistSong(song('2 + 2 = 5', 'Hail To the Thief', 199),
+      [track('2 + 2 = 5 (The Lukewarm.)', '(2003) Hail to the Thief', 199)])).toBe(1)
+    expect(matchSpotifyPlaylistSong(song('I Want It All - Single Version', 'The Miracle', 242),
+      [track('I Want It All (Remastered 2011)', 'Singles', 241)])).toBe(1)
+    expect(matchSpotifyPlaylistSong(song('I Want It All - Single Version', 'The Miracle', 242),
+      [track('I Want It All', 'The Miracle', 280)])).toBeNull()
+    // Look-alikes that are different recordings stay unmatched.
+    expect(matchSpotifyPlaylistSong(song('Mine (Taylor\'s Version)', 'Speak Now (Taylor\'s Version)', 232),
+      [track('Mine', 'Speak Now', 232)])).toBeNull()
+    expect(matchSpotifyPlaylistSong(song('Radio Ga Ga - Live Aid', 'Bohemian Rhapsody', 246),
+      [track('Radio Ga Ga', 'The Works', 246)])).toBeNull()
+    expect(matchSpotifyPlaylistSong(song('2 + 2 = 5', 'Com Lag', 199),
+      [track('2 + 2 = 5 (Live at Earls Court)', 'Com Lag', 199)])).toBeNull()
+    expect(matchSpotifyPlaylistSong(song('Son of Man', 'Tarzan', 164),
+      [track('Son Of Man (Tarzan)', 'Son Of Man Single', 166)])).toBeNull()
   })
 
   it('preserves unrelated years and rejects different recordings or unsafe durations', () => {

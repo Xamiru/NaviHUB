@@ -1,4 +1,3 @@
-import MusicAlbumJournal from '../components/MusicAlbumJournal'
 import SoundtrackSection from '../components/SoundtrackSection'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
@@ -42,9 +41,9 @@ export default function MusicAlbumPage() {
     queryFn: () => api.music.album(albumId)
   })
 
-  const personal = useQuery({ queryKey: qk.music.personalAlbum(albumId), queryFn: () => api.musicJournal.album(albumId) })
+  const standouts = useQuery({ queryKey: qk.music.personalAlbum(albumId), queryFn: () => api.musicJournal.standouts(albumId) })
 
-  const standoutIds = useMemo(() => new Set(personal.data?.tracks.filter((t) => t.standout).map((t) => t.trackId)), [personal.data])
+  const standoutIds = useMemo(() => new Set(standouts.data ?? []), [standouts.data])
 
   // A folder dumped as one "album" can hold thousands of tracks; mounting a
   // row per track froze the page, so reveal in batches as the user scrolls
@@ -124,6 +123,7 @@ export default function MusicAlbumPage() {
         onPlay={() => playFrom(0)}
         onShuffle={() => playTracks(player, tracks, { shuffle: true })}
         artNoun="cover"
+        art={{ kind: 'music_album', id: albumId }}
         onFindArt={findCover}
         onClearArt={clearCover}
         onDelete={deleteAlbum}
@@ -136,7 +136,6 @@ export default function MusicAlbumPage() {
         ]}
       />
 
-      <MusicAlbumJournal key={albumId} albumId={albumId} />
       <SoundtrackSection key={albumId} owner={{ kind: 'album', id: albumId }} tracks={tracks} />
       <div className="max-w-5xl">
         {visible.map((t, i) => {

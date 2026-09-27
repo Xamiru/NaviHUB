@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
-import { importAnime, importManga } from '../src/main/anilist'
+import { anilistThrottle, importAnime, importManga } from '../src/main/anilist'
+
+// The shared request spacing is real time; importer tests only need the writes.
+anilistThrottle.intervalMs = 0
 
 // End-to-end import against the real schema with the network mocked out: the
 // GraphQL layer returns fixtures and image downloads resolve to null paths.
@@ -15,7 +18,7 @@ vi.mock('../src/main/db/connection', () => ({
 
 // Downloads resolve to null paths by default (the schema does not care what a
 // cover path holds). `imageFor` lets one test say "this URL landed on disk" so
-// the banner column can be checked without pretending every image downloaded.
+// a path column can be checked without pretending every image downloaded.
 const images = vi.hoisted(() => ({ resolve: null as ((url: string) => string | null) | null }))
 vi.mock('../src/main/files', () => ({
   downloadImages: async (urls: (string | null | undefined)[]) =>
@@ -120,7 +123,6 @@ function mangaFixture(overrides: Record<string, unknown> = {}) {
       averageScore: 80,
       startDate: { year: 2021, month: 1, day: 2 },
       coverImage: { large: 'https://img/manga-cover.png', extraLarge: 'https://img/manga-cover-xl.png' },
-      bannerImage: null,
       genres: ['Action', 'Drama'],
       relations: { edges: [] },
       characters: {
@@ -291,6 +293,82 @@ describe('importAnime', () => {
     expect(db.prepare(`SELECT name FROM character ORDER BY name`).all()).toEqual([
       { name: 'Alice Renamed' }
     ])
+  })
+
+  it('imports ranked descriptive tags and reconciles them without touching manual tags', async () => {
+    const tag = (name: string, rank: number, flags: Record<string, boolean> = {}) => ({
+      name,
+      rank,
+      isMediaSpoiler: false,
+      isGeneralSpoiler: false,
+      isAdult: false,
+      ...flags
+    })
+    fixture = animeFixture({
+      tags: [
+        tag('Time Travel', 90),
+        tag('Weak Vote', 40),
+        tag('Twist Ending', 85, { isMediaSpoiler: true }),
+        tag('Tragedy', 80, { isGeneralSpoiler: true }),
+        tag('Explicit', 95, { isAdult: true })
+      ]
+    })
+    await importAnime(101)
+    const mediaId = (db.prepare('SELECT id FROM media_item').get() as { id: number }).id
+    const names = () =>
+      (
+        db
+          .prepare(
+            `SELECT t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id
+             WHERE mt.media_id=? ORDER BY t.name`
+          )
+          .all(mediaId) as { name: string }[]
+      ).map((r) => r.name)
+    expect(names()).toEqual(['Action', 'Drama', 'Time Travel'])
+    expect(db.prepare(`SELECT category FROM tag WHERE name='Time Travel'`).get()).toEqual({
+      category: 'anilist'
+    })
+
+    // A hand-added tag has no category; AniList dropping Time Travel must not take it.
+    const manual = Number(db.prepare(`INSERT INTO tag (name) VALUES ('Rewatch')`).run().lastInsertRowid)
+    db.prepare('INSERT INTO media_tag (media_id, tag_id) VALUES (?, ?)').run(mediaId, manual)
+    fixture = animeFixture({ tags: [tag('Isekai', 70)] })
+    await importAnime(101)
+    expect(names()).toEqual(['Action', 'Drama', 'Isekai', 'Rewatch'])
+  })
+
+  it('fills person bios and birthdays without overwriting a hand-written bio', async () => {
+    const staffNode = (description: string) => ({
+      edges: [
+        {
+          role: 'Director',
+          node: {
+            id: 401,
+            name: { full: 'Director D', native: null },
+            image: {},
+            description,
+            dateOfBirth: { year: 1965, month: 5, day: 23 }
+          }
+        }
+      ]
+    })
+    fixture = animeFixture({
+      staff: staffNode(
+        '[Twitter](https://twitter.com/x) | [Blog](https://blog)\n\nBest known for __L__ in [Death Note](https://anilist.co/anime/1535). ~!Secret!~'
+      )
+    })
+    await importAnime(101)
+    expect(db.prepare(`SELECT bio, birthday FROM person WHERE external_id='401'`).get()).toEqual({
+      bio: 'Best known for L in Death Note. Secret',
+      birthday: '1965-05-23'
+    })
+
+    db.prepare(`UPDATE person SET bio='My own notes' WHERE external_id='401'`).run()
+    fixture = animeFixture({ staff: staffNode('A newer AniList bio.') })
+    await importAnime(101)
+    expect(db.prepare(`SELECT bio FROM person WHERE external_id='401'`).get()).toEqual({
+      bio: 'My own notes'
+    })
   })
 
   it('liteCharacters (the bulk path) never paginates even when more pages exist', async () => {
@@ -473,32 +551,6 @@ describe('importManga', () => {
   })
 })
 
-describe('hero banner art', () => {
-  it('stores the downloaded bannerImage and keeps it when a re-import has none', async () => {
-    images.resolve = (url) => (url.includes('banner') ? 'media/dl-banner' : null)
-    fixture = animeFixture({ bannerImage: 'https://img/banner.png' })
-    await importAnime(101)
-    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({
-      banner_path: 'media/dl-banner'
-    })
-
-    // AniList drops bannerImage on plenty of titles; a re-import that comes back
-    // without one must not blank the hero (COALESCE, like cover_path).
-    images.resolve = null
-    fixture = animeFixture({ bannerImage: null })
-    await importAnime(101)
-    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({
-      banner_path: 'media/dl-banner'
-    })
-  })
-
-  it('leaves banner_path null when the title has no banner at all', async () => {
-    fixture = animeFixture({ bannerImage: null })
-    await importAnime(101)
-    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({ banner_path: null })
-  })
-})
-
 describe('partial refresh (Library Refresh)', () => {
   // The invariant the whole feature turns on: `only` writes media_item columns
   // and NOTHING else. pruneCharacters' last two statements sweep orphans for the
@@ -534,19 +586,17 @@ describe('partial refresh (Library Refresh)', () => {
 
   it('writes only the chosen columns, leaving the others alone', async () => {
     await importAnime(101)
-    db.prepare("UPDATE media_item SET title='Hand edited', banner_path='media/old-banner'").run()
+    db.prepare("UPDATE media_item SET title='Hand edited'").run()
 
     images.resolve = (url) => (url.includes('cover') ? 'media/dl-c2' : null)
     await importAnime(101, { only: ['cover'] })
 
-    const row = db.prepare('SELECT title, cover_path, banner_path FROM media_item').get() as {
+    const row = db.prepare('SELECT title, cover_path FROM media_item').get() as {
       title: string
       cover_path: string
-      banner_path: string
     }
     expect(row.cover_path).toBe('media/dl-c2') // asked for
     expect(row.title).toBe('Hand edited') // not asked for
-    expect(row.banner_path).toBe('media/old-banner')
   })
 
   it('a text refresh restores canonical fields and merges scores', async () => {

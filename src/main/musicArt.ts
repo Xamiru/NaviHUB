@@ -1,9 +1,10 @@
 import { getSqlite } from './db/connection'
+import * as imageOverrideRepo from './repos/imageOverrideRepo'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from './http'
 import { downloadImage } from './files'
 import * as tasks from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
-import { stripAlbumYearPrefix } from './repos/musicSpotifyRepo'
+import { stripAlbumYearPrefix } from './musicSpotifyMatch'
 import { runWithActivitySignal } from './activityContext'
 import type { MusicArtResult, MusicArtStatus } from '@shared/types'
 
@@ -457,6 +458,7 @@ export async function fetchArtistImage(
 }
 
 export function clearAlbumArt(albumId: number): void {
+  imageOverrideRepo.forget('music_album', albumId)
   getSqlite()
     .prepare(
       `UPDATE music_album SET cover_path = NULL, art_source_url = NULL, art_checked_at = NULL,
@@ -466,6 +468,7 @@ export function clearAlbumArt(albumId: number): void {
 }
 
 export function clearArtistArt(artistId: number): void {
+  imageOverrideRepo.forget('music_artist', artistId)
   getSqlite()
     .prepare(
       `UPDATE music_artist SET cover_path = NULL, art_source_url = NULL, art_checked_at = NULL,

@@ -21,7 +21,7 @@ const read = (rel: string): string =>
 const initSql = read('../src/main/db/init.sql')
 
 describe('a live DB that predates newer columns', () => {
-  it('adds game runs and music journals without replacing legacy sessions, albums or playlists', () => {
+  it('adds game runs and track tags without replacing legacy sessions, albums or playlists', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')
     db.exec(initSql.slice(0, initSql.indexOf('-- Personal playthroughs and listening collections.')))
@@ -38,13 +38,42 @@ describe('a live DB that predates newer columns', () => {
     runMigrations(db)
     db.exec(`INSERT INTO game_playthrough(id,media_id,title,kind,state) VALUES(1,1,'Replay','replay','active');
       INSERT INTO game_playthrough_session(session_id,run_id) VALUES(9,1);
-      INSERT INTO music_album_personal(album_id,rating) VALUES(1,8.5);`)
+      INSERT INTO music_track_personal(track_id,standout) VALUES(1,1);`)
     expect(db.prepare('SELECT progress FROM media_item WHERE id=1').get()).toEqual({ progress: 40 })
     expect(db.prepare('SELECT duration FROM game_session WHERE id=9').get()).toEqual({ duration: 3600 })
     expect(db.prepare('SELECT play_count FROM music_track WHERE id=1').get()).toEqual({ play_count: 12 })
     expect(db.prepare('SELECT track_id FROM music_playlist_track').all()).toEqual([{ track_id: 1 }])
     expect(db.pragma('foreign_key_check')).toEqual([])
     expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
+  })
+
+  it('drops the retired album journal tables while keeping track tags', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(initSql)
+    db.exec(`CREATE TABLE music_album_personal (
+        album_id INTEGER PRIMARY KEY REFERENCES music_album(id) ON DELETE CASCADE,
+        rating REAL, shelf TEXT, review TEXT NOT NULL DEFAULT '', tags_json TEXT NOT NULL DEFAULT '[]');
+      CREATE TABLE music_listen (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        album_id INTEGER NOT NULL REFERENCES music_album(id) ON DELETE CASCADE,
+        listened_on TEXT NOT NULL, rating REAL, notes TEXT NOT NULL DEFAULT '');
+      CREATE INDEX idx_music_listen_album ON music_listen(album_id,listened_on);
+      INSERT INTO music_artist(id,name,dir_path) VALUES(1,'Artist','Artist');
+      INSERT INTO music_album(id,artist_id,title,dir_path) VALUES(1,1,'Album','Artist/Album');
+      INSERT INTO music_track(id,album_id,artist_id,file_path,title) VALUES(1,1,1,'song.mp3','Song');
+      INSERT INTO music_album_personal(album_id,rating) VALUES(1,8.5);
+      INSERT INTO music_listen(album_id,listened_on) VALUES(1,'2026-09-23');
+      INSERT INTO music_track_personal(track_id,standout,tags_json) VALUES(1,1,'["calm"]');`)
+    runMigrations(db)
+    db.exec(initSql)
+    runMigrations(db)
+    for (const table of ['music_album_personal', 'music_listen']) {
+      expect(db.prepare("SELECT name FROM sqlite_master WHERE name=?").get(table)).toBeUndefined()
+    }
+    expect(db.prepare('SELECT standout,tags_json FROM music_track_personal').get()).toEqual({ standout: 1, tags_json: '["calm"]' })
+    expect(db.pragma('foreign_key_check')).toEqual([])
     db.close()
   })
 
@@ -187,6 +216,37 @@ describe('a live DB that predates newer columns', () => {
     expect(db.prepare('SELECT title, spotify_id FROM music_album WHERE id=1').get()).toEqual({ title: 'Legacy Album', spotify_id: null })
     expect(db.prepare(`SELECT COUNT(*) AS n FROM sqlite_master WHERE type='index' AND name IN ('idx_music_artist_spotify','idx_music_album_spotify')`).get()).toEqual({ n: 2 })
   })
+  it('adds the genre scan flag to legacy music tracks so the next scan reads their genres', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(`CREATE TABLE music_artist (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL, dir_path TEXT NOT NULL UNIQUE);
+    CREATE TABLE music_album (id INTEGER PRIMARY KEY AUTOINCREMENT, artist_id INTEGER NOT NULL REFERENCES music_artist(id) ON DELETE CASCADE,
+      title TEXT NOT NULL, dir_path TEXT NOT NULL UNIQUE, year INTEGER);
+    CREATE TABLE music_track (id INTEGER PRIMARY KEY AUTOINCREMENT,
+      album_id INTEGER NOT NULL REFERENCES music_album(id) ON DELETE CASCADE,
+      artist_id INTEGER NOT NULL REFERENCES music_artist(id) ON DELETE CASCADE,
+      file_path TEXT NOT NULL UNIQUE, file_mtime INTEGER, title TEXT NOT NULL, track_no INTEGER, disc_no INTEGER,
+      duration REAL, tag_artist TEXT, liked_at TEXT, play_count INTEGER NOT NULL DEFAULT 0, last_played_at TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')), updated_at TEXT NOT NULL DEFAULT (datetime('now')));
+    INSERT INTO music_artist (id, name, dir_path) VALUES (1, 'Artist', 'Artist');
+    INSERT INTO music_album (id, artist_id, title, dir_path) VALUES (1, 1, 'Album', 'Artist/Album');
+    INSERT INTO music_track (id, album_id, artist_id, file_path, file_mtime, title, play_count)
+      VALUES (1, 1, 1, 'Artist/Album/song.mp3', 1000, 'Song', 7);`)
+    expect(() => db.exec(initSql)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+    expect(db.prepare('SELECT play_count, genres_scanned FROM music_track WHERE id=1').get())
+      .toEqual({ play_count: 7, genres_scanned: 0 })
+    db.exec(`INSERT INTO music_album (id, artist_id, title, dir_path, year) VALUES
+      (2, 1, 'Zero', 'Artist/Zero', 0), (3, 1, 'Dated', 'Artist/Dated', 20140530), (4, 1, 'Fine', 'Artist/Fine', 1997)`)
+    runMigrations(db)
+    expect(db.prepare('SELECT id, year FROM music_album WHERE id > 1 ORDER BY id').all())
+      .toEqual([{ id: 2, year: null }, { id: 3, year: null }, { id: 4, year: 1997 }])
+    db.prepare("INSERT INTO music_track_genre (track_id, genre) VALUES (1, 'Rock')").run()
+    db.prepare('DELETE FROM music_track WHERE id=1').run()
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_track_genre').get()).toEqual({ n: 0 })
+    db.close()
+  })
+
   it('adds nullable character gender without losing imported cast', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')
@@ -216,6 +276,33 @@ describe('a live DB that predates newer columns', () => {
       name: 'Legacy Hero',
       image_path: 'media/hero.jpg',
       gender: null
+    })
+  })
+
+  it('installs the image-override triggers on a library that predates them', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(`CREATE TABLE character (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      name        TEXT NOT NULL,
+      name_native TEXT,
+      image_path  TEXT,
+      description TEXT
+    );
+    INSERT INTO character (id, name, image_path) VALUES (1, 'Legacy Hero', 'media/hero.jpg');`)
+
+    expect(() => db.exec(initSql)).not.toThrow()
+    expect(() => runMigrations(db)).not.toThrow()
+
+    db.exec(`INSERT INTO image_override (kind, entity_id, manual_path, provider_path)
+               VALUES ('character', 1, 'media/mine.jpg', 'media/hero.jpg');
+             UPDATE character SET image_path = 'media/mine.jpg' WHERE id = 1;
+             UPDATE character SET image_path = 'media/reimported.jpg' WHERE id = 1;`)
+    expect(db.prepare('SELECT image_path FROM character').get()).toEqual({
+      image_path: 'media/mine.jpg'
+    })
+    expect(db.prepare('SELECT provider_path FROM image_override').get()).toEqual({
+      provider_path: 'media/reimported.jpg'
     })
   })
 
@@ -367,26 +454,71 @@ describe('a live DB that predates newer columns', () => {
         .get()
     ).not.toThrow()
     expect(db.prepare('SELECT title FROM media_item').get()).toEqual({ title: 'Old Save' })
+  })
 
-    // 2026-08: the same legacy shape predates banner_path (detail-page hero
-    // art). The column must arrive by migration, and the hero's own fallback
-    // query — banner_path, else the first Art-tab image — must run on it.
+  it('drops the retired gacha tracker, its checklist rows and its orphaned images', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    // A pre-2026-09-26 library: the gacha tables (trimmed to the columns the
+    // retirement reads) with a unit, a build, art, a chat screenshot and dailies.
+    db.exec(initSql)
+    db.exec(`CREATE TABLE gacha_unit (id INTEGER PRIMARY KEY, game TEXT, name TEXT, image_path TEXT);
+      CREATE TABLE gacha_build (id INTEGER PRIMARY KEY,
+        unit_id INTEGER NOT NULL REFERENCES gacha_unit(id) ON DELETE CASCADE);
+      CREATE TABLE gacha_banner (id INTEGER PRIMARY KEY, image_path TEXT);
+      CREATE TABLE gacha_meta (game TEXT, key TEXT, value TEXT);
+      CREATE TABLE gacha_chat_thread (id INTEGER PRIMARY KEY);
+      CREATE TABLE gacha_chat_message (id INTEGER PRIMARY KEY,
+        thread_id INTEGER REFERENCES gacha_chat_thread(id) ON DELETE CASCADE, attachments TEXT);
+      CREATE TABLE gacha_coach_note (id INTEGER PRIMARY KEY);
+      INSERT INTO gacha_unit VALUES (1, 'fgo', 'Mash', 'media/dl-mash'), (2, 'fgo', 'No art', NULL);
+      INSERT INTO gacha_build VALUES (1, 1);
+      INSERT INTO gacha_banner VALUES (1, 'media/dl-shared');
+      INSERT INTO gacha_meta VALUES ('fgo', 'image', 'media/dl-game'), ('fgo', 'news.fetchedAt', '2026-07-09');
+      INSERT INTO gacha_chat_thread VALUES (1);
+      INSERT INTO gacha_chat_message VALUES (1, 1, '["media/paste-1.png"]'), (2, 1, NULL);
+      INSERT INTO media_item (id, media_type, title, cover_path) VALUES (1, 'anime', 'Keeps', 'media/dl-shared');
+      INSERT INTO checklist_task (task_key, cadence) VALUES ('gacha-daily-fgo', 'daily'), ('jp-reviews', 'daily');
+      INSERT INTO checklist_log (task_key, cadence, period_key)
+        VALUES ('gacha-daily-fgo', 'daily', '2026-09-20'), ('jp-reviews', 'daily', '2026-09-20');`)
+
+    // media/dl-shared is also a cover, so it survives.
+    expect(runMigrations(db).sort()).toEqual(['media/dl-game', 'media/dl-mash', 'media/paste-1.png'])
+    const left = db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name GLOB 'gacha_*'").all()
+    expect(left).toEqual([])
+    expect(db.prepare('SELECT task_key FROM checklist_task').all()).toEqual([{ task_key: 'jp-reviews' }])
+    expect(db.prepare('SELECT task_key FROM checklist_log').all()).toEqual([{ task_key: 'jp-reviews' }])
+
+    db.exec(initSql)
+    expect(runMigrations(db)).toEqual([])
+    expect(db.pragma('foreign_key_check')).toEqual([])
+    expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
+  })
+
+  it('drops the retired banner_path and hands back only its orphaned files', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    // A 2026-08/09 library: the hero's banner column, some rows filled.
+    db.exec(initSql)
+    db.exec('ALTER TABLE media_item ADD COLUMN banner_path TEXT')
+    db.exec(`INSERT INTO media_item(id,media_type,title,cover_path,banner_path) VALUES
+      (1,'anime','Has banner','media/dl-cover-1','media/dl-banner-1'),
+      (2,'movie','Banner is a cover','media/dl-cover-2','media/dl-cover-1'),
+      (3,'anime','No banner',NULL,NULL),
+      (4,'anime','Escapes media','media/dl-cover-4','media/../navihub.db')`)
+
+    expect(runMigrations(db)).toEqual(['media/dl-banner-1'])
     const cols = (db.prepare('PRAGMA table_info(media_item)').all() as { name: string }[]).map(
       (c) => c.name
     )
-    expect(cols).toContain('banner_path')
-    expect(() =>
-      db
-        .prepare(
-          `SELECT m.banner_path,
-                  (SELECT file_path FROM media_image
-                    WHERE media_id = m.id AND kind IN ('fanart', 'wallpaper')
-                    ORDER BY CASE kind WHEN 'fanart' THEN 0 ELSE 1 END,
-                             COALESCE(sort_order, 1000000), id LIMIT 1) AS fallback
-             FROM media_item m WHERE m.id = 1`
-        )
-        .get()
-    ).not.toThrow()
+    expect(cols).not.toContain('banner_path')
+    expect(db.prepare('SELECT COUNT(*) AS n FROM media_item').get()).toEqual({ n: 4 })
+
+    db.exec(initSql)
+    expect(runMigrations(db)).toEqual([])
+    expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
   })
 
   it('gains is_background + slideshow_item on a media_image that predates them', () => {

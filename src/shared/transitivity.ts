@@ -1,5 +1,5 @@
 // Transitive/intransitive verb pairs — the single most-repeated confusion on
-// r/LearnJapanese. Content-as-code (the GACHA_GAMES/checklist idiom): the
+// r/LearnJapanese. Content-as-code (the checklist idiom): the
 // pairs, their pattern labels, and one authored example per side. The drill
 // prefers a real Tatoeba sentence; the authored example is the always-present
 // fallback, so the drill needs no pack gating.

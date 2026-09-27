@@ -10,7 +10,7 @@ import {
 import type { UpdateStatus } from '../src/shared/types'
 
 // The in-app updater's decisions, isolated from electron-updater (updater.ts
-// holds the SDK wiring; everything here is pure — the coachTools.ts split).
+// holds the SDK wiring; everything here is pure).
 
 describe('updateEnvironment', () => {
   const base = { packaged: true, portableExe: null }

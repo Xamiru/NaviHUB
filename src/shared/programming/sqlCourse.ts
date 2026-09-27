@@ -678,12 +678,11 @@ INSERT INTO settings (key, value) VALUES ('theme', 'lain')
 ON CONFLICT (key) DO UPDATE SET value = excluded.value
 
 -- keep personal fields, refresh canonical ones
-INSERT INTO gacha_unit (game, kind, external_id, name, rarity)
+INSERT INTO theme_song (media_id, external_source, external_id, title, audio_path)
 VALUES (?, ?, ?, ?, ?)
-ON CONFLICT (game, kind, external_id) DO UPDATE SET
-  name = excluded.name,
-  rarity = excluded.rarity,
-  image_path = COALESCE(excluded.image_path, image_path)
+ON CONFLICT (external_source, external_id) DO UPDATE SET
+  title = excluded.title,
+  audio_path = COALESCE(excluded.audio_path, audio_path)
 \`\`\`
 
 An unqualified column in DO UPDATE means the existing row; \`excluded.col\` means the incoming one — the COALESCE pattern keeps old data when the new value is NULL. \`DO NOTHING\` skips silently. The conflict target is required for DO UPDATE, and only UNIQUE/PK constraints qualify.

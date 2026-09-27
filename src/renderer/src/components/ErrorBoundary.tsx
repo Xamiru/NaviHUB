@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import ThemedFailure from './theme/ThemedFailure'
 
 interface Props {
   children: ReactNode
@@ -25,24 +26,14 @@ export default class ErrorBoundary extends Component<Props, State> {
     const { error } = this.state
     if (!error) return this.props.children
     return (
-      <div className="p-8 max-w-lg mx-auto">
-        <div className="card p-6">
-          <p className="text-lg font-semibold">Something went wrong on this page</p>
-          <p className="mt-1 text-sm text-gray-400">
-            The rest of the app is fine — go back or reload to continue.
-          </p>
-          <pre className="mt-3 max-h-40 overflow-auto whitespace-pre-wrap rounded bg-base-900 p-3 text-xs text-red-300">
-            {error.message}
-          </pre>
-          <div className="mt-4 flex gap-2">
-            <button className="btn-ghost" onClick={() => this.setState({ error: null })}>
-              Try again
-            </button>
-            <button className="btn-primary" onClick={() => window.location.reload()}>
-              Reload app
-            </button>
-          </div>
-        </div>
+      <div className="mx-auto max-w-2xl p-8">
+        <ThemedFailure
+          message={`This page crashed: ${error.message}. The rest of the app is fine.`}
+          onRetry={() => this.setState({ error: null })}
+        />
+        <button className="btn-ghost mt-3" onClick={() => window.location.reload()}>
+          Reload app
+        </button>
       </div>
     )
   }

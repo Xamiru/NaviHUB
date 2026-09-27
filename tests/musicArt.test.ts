@@ -1,3 +1,4 @@
+import { setManual } from '../src/main/repos/imageOverrideRepo'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
@@ -38,7 +39,7 @@ import {
   clearAlbumArt,
   fetchMissingArt
 } from '../src/main/musicArt'
-import { stripAlbumYearPrefix } from '../src/main/repos/musicSpotifyRepo'
+import { stripAlbumYearPrefix } from '../src/main/musicSpotifyMatch'
 
 beforeEach(() => {
   db = createTestDb()
@@ -340,6 +341,18 @@ describe('clear + bulk fetch', () => {
     clearAlbumArt(id)
     const row = db.prepare('SELECT cover_path, art_source_url, art_checked_at FROM music_album WHERE id = ?').get(id)
     expect(row).toEqual({ cover_path: null, art_source_url: null, art_checked_at: null })
+  })
+
+  it('clearAlbumArt also releases a hand-picked cover, which otherwise survives a fetch', async () => {
+    const id = seedAlbum()
+    setManual('music_album', id, 'media/mine.jpg')
+    db.prepare(`UPDATE music_album SET cover_path = 'media/dl-found.jpg' WHERE id = ?`).run(id)
+    expect(db.prepare('SELECT cover_path FROM music_album WHERE id = ?').get(id)).toEqual({
+      cover_path: 'media/mine.jpg'
+    })
+    clearAlbumArt(id)
+    expect(db.prepare('SELECT cover_path FROM music_album WHERE id = ?').get(id)).toEqual({ cover_path: null })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM image_override').get()).toEqual({ n: 0 })
   })
 
   it('fetchMissingArt revisits old misses with upgraded providers and counts updates', async () => {

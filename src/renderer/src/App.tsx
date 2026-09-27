@@ -9,6 +9,8 @@ import NowPlayingBar from './components/NowPlayingBar'
 import CommandPalette from './components/CommandPalette'
 import PlayerShortcuts from './components/PlayerShortcuts'
 import Toaster from './components/Toaster'
+import ThemeFx from './components/theme/ThemeFx'
+import ThemedLoading from './components/theme/ThemedLoading'
 import ConfirmHost from './components/ConfirmHost'
 import LearningContextBand from './components/LearningContextBand'
 import TutorSessionStrip from './components/TutorSessionStrip'
@@ -19,8 +21,14 @@ import { ANIME, MANGA, VISUAL_NOVEL, GAME, BOOK, MOVIE, TV } from './lib/mediaCo
 import { surfaceMoodForPath } from './lib/surfaceMood'
 import { useSettings } from './lib/hooks'
 import { parseSignalClarity, SIGNAL_CLARITY_SETTING } from './lib/signalClarity'
-import { APP_THEME_SETTING } from '@shared/appTheme'
-import { persistAppTheme, resolveAppTheme, stampAppTheme } from './lib/theme'
+import { APP_THEME_SETTING, appThemeVariantSetting } from '@shared/appTheme'
+import {
+  persistAppTheme,
+  persistAppThemeVariant,
+  resolveAppTheme,
+  resolveAppThemeVariant,
+  stampAppTheme
+} from './lib/theme'
 
 // Home and shell chrome are the launch surface. Every secondary destination is
 // loaded on first visit so opening NaviHUB does not parse the entire library,
@@ -101,7 +109,6 @@ const PartyQuizPage = lazy(() => import('./pages/PartyQuizPage'))
 const TournamentPage = lazy(() => import('./pages/TournamentPage'))
 const MangaReaderPage = lazy(() => import('./pages/MangaReaderPage'))
 const BookReaderPage = lazy(() => import('./pages/BookReaderPage'))
-const MusicJournalPage = lazy(() => import('./pages/MusicJournalPage'))
 const MusicSmartPage = lazy(() => import('./pages/MusicSmartPage'))
 const MusicLibraryPage = lazy(() => import('./pages/MusicLibraryPage'))
 const MusicArtistPage = lazy(() => import('./pages/MusicArtistPage'))
@@ -111,10 +118,6 @@ const MusicLikedPage = lazy(() => import('./pages/MusicLikedPage'))
 const MusicStatsPage = lazy(() => import('./pages/MusicStatsPage'))
 const MusicDownloadsPage = lazy(() => import('./pages/MusicDownloadsPage'))
 const NowPlayingPage = lazy(() => import('./pages/NowPlayingPage'))
-const GachaHomePage = lazy(() => import('./pages/GachaHomePage'))
-const GachaGamePage = lazy(() => import('./pages/GachaGamePage'))
-const GachaUnitPage = lazy(() => import('./pages/GachaUnitPage'))
-const GachaCoachPage = lazy(() => import('./pages/GachaCoachPage'))
 const WrestlingJourneysPage = lazy(() => import('./pages/WrestlingJourneysPage'))
 const WrestlingHomePage = lazy(() => import('./pages/WrestlingHomePage'))
 const WrestlingPromotionPage = lazy(() => import('./pages/WrestlingPromotionPage'))
@@ -185,6 +188,7 @@ export default function App() {
   const surfaceMood = surfaceMoodForPath(location.pathname)
   const { data: settings } = useSettings()
   const appTheme = resolveAppTheme(settings?.[APP_THEME_SETTING])
+  const themeVariant = resolveAppThemeVariant(appTheme, settings)
   const signalClarity = parseSignalClarity(settings?.[SIGNAL_CLARITY_SETTING])
   useScrollRestoration(mainRef)
 
@@ -201,11 +205,12 @@ export default function App() {
   // into shell backgrounds, never over content; readers render no shell at all.
   // Layout effect prevents an old route mood or palette lingering for one frame.
   useLayoutEffect(() => {
-    stampAppTheme(appTheme)
+    stampAppTheme(appTheme, themeVariant)
     document.documentElement.dataset.mood = surfaceMood
     document.documentElement.dataset.signal = signalClarity
     if (settings?.[APP_THEME_SETTING] != null) persistAppTheme(appTheme)
-  }, [appTheme, settings, signalClarity, surfaceMood])
+    if (settings?.[appThemeVariantSetting(appTheme)] != null) persistAppThemeVariant(appTheme, themeVariant)
+  }, [appTheme, themeVariant, settings, signalClarity, surfaceMood])
 
   // Ctrl+wheel = UI zoom (Electron has no built-in handler for it). Steps the
   // same persisted ui.scale the Settings pills write, via app:bumpUiScale.
@@ -463,7 +468,6 @@ export default function App() {
 
             {/* Music — standalone local-music library (own tables, reuses the player) */}
             <Route path="/music" element={<MusicLibraryPage />} />
-            <Route path="/music/journal" element={<MusicJournalPage />} />
             <Route path="/music/smart" element={<MusicSmartPage />} />
             <Route path="/music/smart/:id" element={<MusicSmartPage />} />
             <Route path="/music/artists/:id" element={<MusicArtistPage />} />
@@ -546,13 +550,6 @@ export default function App() {
             <Route path="/programming/course/:courseKey" element={<ProgCoursePage />} />
             <Route path="/programming/course/:courseKey/:lessonKey" element={<ProgLessonPage />} />
 
-            {/* Gacha — standalone tracker; games/kinds/currencies configured
-                in shared/gacha.ts, one dashboard page per game */}
-            <Route path="/gacha" element={<GachaHomePage />} />
-            <Route path="/gacha/:game" element={<GachaGamePage />} />
-            <Route path="/gacha/:game/unit/:id" element={<GachaUnitPage />} />
-            <Route path="/gacha/:game/coach" element={<GachaCoachPage />} />
-
             {/* Wrestling — standalone section: a Wikipedia-sourced wiki plus a
                 local collection. Promotions configured in shared/wrestling.ts.
                 Sub-paths are namespaced (/p/, /event/, /wrestler/) so a static
@@ -600,6 +597,7 @@ export default function App() {
         <Toaster />
         <ConfirmHost />
       </div>
+      <ThemeFx />
       <CommandPalette />
       <PlayerShortcuts />
       <OpenFileHandler />
@@ -608,9 +606,5 @@ export default function App() {
 }
 
 function RouteLoading({ label }: { label: string }): React.JSX.Element {
-  return (
-    <div className="mx-auto max-w-3xl p-6 text-sm text-gray-400" role="status">
-      {label}
-    </div>
-  )
+  return <ThemedLoading label={label} />
 }

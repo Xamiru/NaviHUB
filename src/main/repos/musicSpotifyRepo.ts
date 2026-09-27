@@ -1,6 +1,14 @@
-import { recordingText, recordingVariantSignature } from '@shared/musicSourceMatch'
+import { baseRecordingTitle } from '@shared/musicSourceMatch'
 import { urlCard } from './musicUrlRepo'
 import { getSqlite } from '../db/connection'
+import {
+  normalizeSpotifyMatch,
+  normalizeSpotifyRecordingTitle,
+  samePlaylistRecordingIdentity,
+  compatibleSpotifyDurationTolerance,
+  matchSpotifyPlaylistSong,
+  spotifyPlaylistMatchAlternatives
+} from '../musicSpotifyMatch'
 import type {
   MusicTrack,
   MusicSpotifyDownloadCandidate,
@@ -448,9 +456,8 @@ function prepareQueueCard(
   const db = getSqlite()
   const existing = queueCardForSource(source, sourceId)
   if (existing) {
-    if (existing.state === 'running') {
-      throw new Error('That source is downloading now. Add more after it finishes or pause it first.')
-    }
+    // A running card accepts more songs; the runner gives it another pass when the current one ends.
+    if (existing.state === 'running') return { id: existing.id, state: 'running' }
     const nextState = existing.state === 'paused' ? 'paused' : 'queued'
     db.prepare(
       `UPDATE music_spotify_download_queue
@@ -807,209 +814,6 @@ export function clearCompletedDownloadQueue(): number {
   ).run().changes
 }
 
-export function normalizeSpotifyMatch(value: string): string {
-  return value
-    .normalize('NFKC')
-    .toLocaleLowerCase()
-    .replace(/[\p{P}\p{S}]+/gu, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-export function normalizeSpotifyRecordingTitle(value: string): string {
-  return recordingText(value)
-}
-
-function isRemastered(value: string): boolean {
-  return /\bre ?master(?:ed)?\b/.test(normalizeSpotifyMatch(value))
-}
-
-function preferredRemasterMatch(
-  song: Pick<SpotdlSong, 'title' | 'albumTitle'>,
-  matches: LocalMatchCandidate[]
-): number | null {
-  if (!matches.length) return null
-  // Different live/acoustic/etc. releases still need the album tie-break.
-  if (recordingVariantSignature(song.title, song.albumTitle)) return null
-  if (!isRemastered(`${song.title} ${song.albumTitle}`) &&
-      !matches.some((track) => isRemastered(`${track.title} ${track.albumTitle}`))) return null
-  // Identity and duration have already been checked by the caller. Reuse the
-  // oldest local copy regardless of which release a playlist happens to name.
-  return Math.min(...matches.map((track) => track.id))
-}
-
-export function singleRecordingDownloads<T>(
-  rows: T[],
-  read: (row: T) => Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle' | 'duration'> & { manual: boolean }
-): T[] {
-  const groups = new Map<string, { duration: number; remaster: boolean }[]>()
-  return rows.filter((row) => {
-    const song = read(row)
-    if (song.manual || song.duration == null) return true
-    const variant = recordingVariantSignature(song.title, song.albumTitle)
-    const key = [normalizeSpotifyRecordingTitle(song.title), normalizeSpotifyMatch(song.primaryArtist),
-      variant, variant ? normalizeSpotifyRecordingTitle(song.albumTitle) : ''].join('\n')
-    const remaster = isRemastered(`${song.title} ${song.albumTitle}`)
-    const group = groups.get(key) ?? []
-    const existing = group.find((candidate) =>
-      (remaster || candidate.remaster) && Math.abs(candidate.duration - song.duration!) <= 3)
-    if (existing) {
-      existing.remaster ||= remaster
-      return false
-    }
-    group.push({ duration: song.duration, remaster })
-    groups.set(key, group)
-    return true
-  })
-}
-
-export function stripAlbumYearPrefix(value: string): string {
-  return value
-    .replace(/^\s*[([](?:19|20)\d{2}[)\]]\s*(?:[-–—:]\s*)?/, '')
-    .replace(/^\s*(?:19|20)\d{2}\s*[-–—:]\s*/, '')
-    .trim() || value.trim()
-}
-
-export function artistComponents(value: string): string[] {
-  return value
-    .split(/\s*(?:,|&|\/|;|\bfeat\.?\b|\bft\.?\b|\bwith\b|\bx\b)\s*/i)
-    .map(normalizeSpotifyMatch)
-    .filter(Boolean)
-}
-
-export function matchSpotifySong(
-  song: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle' | 'duration'>,
-  candidates: LocalMatchCandidate[]
-): number | null {
-  if (song.duration == null) return null
-  const title = normalizeSpotifyRecordingTitle(song.title)
-  const artist = normalizeSpotifyMatch(song.primaryArtist)
-  let matches = candidates.filter((candidate) => {
-    if (candidate.duration == null || Math.abs(candidate.duration - song.duration!) > 3) return false
-    if (normalizeSpotifyRecordingTitle(candidate.title) !== title) return false
-    if (recordingVariantSignature(candidate.title, candidate.albumTitle) !==
-        recordingVariantSignature(song.title, song.albumTitle)) return false
-    const localArtists = new Set([
-      normalizeSpotifyMatch(candidate.folderArtist),
-      ...artistComponents(candidate.tagArtist ?? '')
-    ])
-    return localArtists.has(artist)
-  })
-  const preferred = preferredRemasterMatch(song, matches)
-  if (preferred != null) return preferred
-  matches = collapseEquivalentLocalTracks(matches)
-  if (matches.length === 1) return matches[0].id
-  if (matches.length > 1) {
-    const album = normalizeSpotifyRecordingTitle(song.albumTitle)
-    matches = matches.filter((candidate) => normalizeSpotifyRecordingTitle(candidate.albumTitle) === album)
-    matches = collapseEquivalentLocalTracks(matches)
-    if (matches.length === 1) return matches[0].id
-  }
-  return null
-}
-
-
-function spotifyArtistMatches(primaryArtist: string, candidate: LocalMatchCandidate): boolean {
-  const artist = normalizeSpotifyMatch(primaryArtist)
-  return new Set([
-    normalizeSpotifyMatch(candidate.folderArtist),
-    ...artistComponents(candidate.tagArtist ?? '')
-  ]).has(artist)
-}
-
-function samePlaylistRecordingIdentity(
-  song: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle'>,
-  candidate: LocalMatchCandidate
-): boolean {
-  return normalizeSpotifyRecordingTitle(candidate.title) === normalizeSpotifyRecordingTitle(song.title) &&
-    spotifyArtistMatches(song.primaryArtist, candidate) &&
-    recordingVariantSignature(candidate.title, candidate.albumTitle) ===
-      recordingVariantSignature(song.title, song.albumTitle)
-}
-
-export function compatibleSpotifyDurationTolerance(duration: number): number {
-  return Math.max(3, Math.min(8, duration * 0.03))
-}
-
-/** Keep one stable representative when the scanner contains byte-distinct files
- * with the same recording metadata. The oldest row wins, which normally keeps
- * the user's original file ahead of later downloader-created copies. */
-export function collapseEquivalentLocalTracks(
-  candidates: LocalMatchCandidate[]
-): LocalMatchCandidate[] {
-  const seen = new Set<string>()
-  return [...candidates].sort((a, b) => a.id - b.id).filter((candidate) => {
-    const artists = [
-      normalizeSpotifyMatch(candidate.folderArtist),
-      ...artistComponents(candidate.tagArtist ?? '')
-    ].sort().join('|')
-    const duration = candidate.duration == null ? '?' : String(Math.round(candidate.duration))
-    const key = [
-      normalizeSpotifyRecordingTitle(candidate.title),
-      artists,
-      normalizeSpotifyRecordingTitle(candidate.albumTitle),
-      recordingVariantSignature(candidate.title, candidate.albumTitle),
-      duration
-    ].join('\n')
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
-}
-
-/** Shared conservative second tier for the same recording on another release. */
-export function matchSpotifyPlaylistSong(
-  song: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle' | 'duration'>,
-  candidates: LocalMatchCandidate[]
-): number | null {
-  const identityCandidates = candidates.filter((candidate) =>
-    samePlaylistRecordingIdentity(song, candidate)
-  )
-  const strict = matchSpotifySong(song, identityCandidates)
-  if (strict != null || song.duration == null) return strict
-  const tolerance = compatibleSpotifyDurationTolerance(song.duration)
-  let matches = collapseEquivalentLocalTracks(identityCandidates.filter((candidate) =>
-    candidate.duration != null &&
-    Math.abs(candidate.duration - song.duration!) <= tolerance
-  ))
-  const preferred = preferredRemasterMatch(song, matches)
-  if (preferred != null) return preferred
-  if (matches.length === 1) return matches[0].id
-  if (matches.length > 1) {
-    const album = normalizeSpotifyRecordingTitle(song.albumTitle)
-    matches = collapseEquivalentLocalTracks(matches.filter(
-      (candidate) => normalizeSpotifyRecordingTitle(candidate.albumTitle) === album
-    ))
-    if (matches.length === 1) return matches[0].id
-  }
-  return null
-}
-
-/** Conservative choices for the user's explicit "Use local version" action. */
-export function spotifyPlaylistMatchAlternatives(
-  song: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle' | 'duration'>,
-  candidates: LocalMatchCandidate[]
-): LocalMatchCandidate[] {
-  const album = normalizeSpotifyRecordingTitle(song.albumTitle)
-  return collapseEquivalentLocalTracks(candidates
-    .filter((candidate) => {
-      if (!samePlaylistRecordingIdentity(song, candidate)) return false
-      if (song.duration == null || candidate.duration == null) return true
-      return Math.abs(candidate.duration - song.duration) <= 15
-    }))
-    .sort((a, b) => {
-      const aAlbum = normalizeSpotifyRecordingTitle(a.albumTitle) === album ? 0 : 1
-      const bAlbum = normalizeSpotifyRecordingTitle(b.albumTitle) === album ? 0 : 1
-      if (aAlbum !== bAlbum) return aAlbum - bAlbum
-      const aDelta = song.duration == null || a.duration == null
-        ? Number.POSITIVE_INFINITY
-        : Math.abs(a.duration - song.duration)
-      const bDelta = song.duration == null || b.duration == null
-        ? Number.POSITIVE_INFINITY
-        : Math.abs(b.duration - song.duration)
-      return aDelta - bDelta || a.id - b.id
-    })
-}
 
 // SQLite's change counters invalidate conservatively for every write, including
 // writes outside music and rollbacks. External connections have their own version.
@@ -1036,7 +840,7 @@ function localCandidateIndex(): Map<string, LocalMatchCandidate[]> {
   ).all() as Record<string, unknown>[]).map(rowCandidate)
   const byTitle = new Map<string, LocalMatchCandidate[]>()
   for (const row of rows) {
-    const title = normalizeSpotifyRecordingTitle(row.title)
+    const title = baseRecordingTitle(row.title)
     const group = byTitle.get(title) ?? []
     group.push(row)
     byTitle.set(title, group)
@@ -1057,7 +861,7 @@ export function playlistLocalAlternativeIds(
   const review = reviewRequiredTrackIds()
   return songs.map((song) => spotifyPlaylistMatchAlternatives(
     song,
-    (byTitle.get(normalizeSpotifyRecordingTitle(song.title)) ?? []).filter((track) => !review.has(track.id))
+    (byTitle.get(baseRecordingTitle(song.title)) ?? []).filter((track) => !review.has(track.id))
   ).map((track) => track.id))
 }
 
@@ -1066,7 +870,7 @@ function indexCandidates(candidates: LocalMatchCandidate[]): Map<string, LocalMa
   const review = reviewRequiredTrackIds()
   for (const candidate of candidates) {
     if (review.has(candidate.id)) continue
-    const key = normalizeSpotifyRecordingTitle(candidate.title)
+    const key = baseRecordingTitle(candidate.title)
     const rows = index.get(key) ?? []
     rows.push(candidate)
     index.set(key, rows)
@@ -1097,7 +901,7 @@ export function matchDetails(songs: SpotdlSong[]): Map<string, LocalMatchCandida
   const byId = new Map(candidates.map((candidate) => [candidate.id, candidate]))
   const result = new Map<string, LocalMatchCandidate>()
   for (const song of songs) {
-    const id = matchSpotifyPlaylistSong(song, byTitle.get(normalizeSpotifyRecordingTitle(song.title)) ?? [])
+    const id = matchSpotifyPlaylistSong(song, byTitle.get(baseRecordingTitle(song.title)) ?? [])
     const candidate = id == null ? null : byId.get(id)
     if (candidate) result.set(song.spotifyTrackId, candidate)
   }
@@ -1279,7 +1083,7 @@ export function saveEntitySnapshot(input: {
             albumTitle: track.albumTitle,
             duration: track.duration
           },
-          byTitle.get(normalizeSpotifyRecordingTitle(track.title)) ?? []
+          byTitle.get(baseRecordingTitle(track.title)) ?? []
         )
         insertTrack.run(
           releaseId,
@@ -1429,7 +1233,7 @@ export function restoreIndexedEntityRelease(releaseId: number, release: IndexedE
           .run(track.providerTrackId, index, track.title, JSON.stringify(track.artists), track.primaryArtist,
             track.albumTitle, track.duration, track.discNo, track.trackNo, retained.id)
       } else {
-        const matched = matchSpotifyPlaylistSong(track, byTitle.get(normalizeSpotifyRecordingTitle(track.title)) ?? [])
+        const matched = matchSpotifyPlaylistSong(track, byTitle.get(baseRecordingTitle(track.title)) ?? [])
         db.prepare(`INSERT INTO music_spotify_entity_track
           (release_id, provider_track_id, position, title, artists_json, primary_artist,
            album_title, duration, disc_no, track_no, matched_track_id)
@@ -1487,7 +1291,7 @@ export function linkUnambiguousSources(
 export function resolveAllSpotifyItems(changedTitles?: string[]): number {
   const review = reviewRequiredTrackIds()
   const choices = savedSpotifyTrackChoices()
-  const changed = changedTitles ? new Set(changedTitles.map(normalizeSpotifyRecordingTitle)) : null
+  const changed = changedTitles ? new Set(changedTitles.map(baseRecordingTitle)) : null
   const db = getSqlite()
   const candidates = (db
     .prepare(
@@ -1523,14 +1327,14 @@ export function resolveAllSpotifyItems(changedTitles?: string[]): number {
     const flag = db.prepare('UPDATE music_track SET spotify_review_required=1 WHERE id=? AND spotify_review_required=0')
     for (const id of review) flag.run(id)
     for (const row of items) {
-      if (changed && !changed.has(normalizeSpotifyRecordingTitle(row.title as string))) continue
+      if (changed && !changed.has(baseRecordingTitle(row.title as string))) continue
       const song = {
         title: row.title as string,
         primaryArtist: row.primary_artist as string,
         albumTitle: row.album_title as string,
         duration: (row.duration as number) ?? null
       }
-      const titleCandidates = byTitle.get(normalizeSpotifyRecordingTitle(song.title)) ?? []
+      const titleCandidates = byTitle.get(baseRecordingTitle(song.title)) ?? []
       const existing = row.matched_track_id == null
         ? null
         : byId.get(row.matched_track_id as number) ?? null
@@ -1550,7 +1354,7 @@ export function resolveAllSpotifyItems(changedTitles?: string[]): number {
       if (match != null) resolved += 1
     }
     for (const row of entityItems) {
-      if (changed && !changed.has(normalizeSpotifyRecordingTitle(row.title as string))) continue
+      if (changed && !changed.has(baseRecordingTitle(row.title as string))) continue
       const existing = byId.get(row.matched_track_id as number)
       const chosen = row.audio_source_url ? undefined : choices.get(String(row.spotify_track_id))
       const match = chosen != null ? chosen
@@ -1562,7 +1366,7 @@ export function resolveAllSpotifyItems(changedTitles?: string[]): number {
           albumTitle: row.album_title as string,
           duration: (row.duration as number) ?? null
         },
-        byTitle.get(normalizeSpotifyRecordingTitle(row.title as string)) ?? []
+        byTitle.get(baseRecordingTitle(row.title as string)) ?? []
       )
       updateEntity.run(match, match, row.id)
       if (match != null) db.prepare(
@@ -1645,7 +1449,7 @@ export function createSpotifyPlaylist(input: {
     )
     input.songs.forEach((song, position) => {
       const match = choices.get(song.spotifyTrackId) ??
-        findMatch(song, byTitle.get(normalizeSpotifyRecordingTitle(song.title)) ?? [])
+        findMatch(song, byTitle.get(baseRecordingTitle(song.title)) ?? [])
       if (match != null) matched += 1
       insert.run(
         playlistId,
@@ -1710,7 +1514,7 @@ export function pendingSpotifyItems(playlistId: number, itemIds?: number[]): Rec
     primaryArtist: String(row.primary_artist),
     albumTitle: String(row.album_title),
     duration: (row.duration as number) ?? null
-  }, byTitle.get(normalizeSpotifyRecordingTitle(String(row.title))) ?? []).length === 0)
+  }, byTitle.get(baseRecordingTitle(String(row.title))) ?? []).length === 0)
 }
 
 export function setTrackDownloadOptions(input: {
@@ -2000,6 +1804,12 @@ export function sourcesForSpotifyId(id: string): { kind: 'playlistItem' | 'entit
       .map((row) => ({ kind, id: Number(row.id), manual: row.audio_source_url as string | null, broader: Boolean(row.allow_unverified) }))
   })
 }
+export function spotifyTrackIdForSource(kind: 'playlistItem' | 'entityTrack', id: number): string | null {
+  const table = kind === 'playlistItem' ? 'music_spotify_playlist_item' : 'music_spotify_entity_track'
+  const row = getSqlite().prepare(`SELECT spotify_track_id FROM ${table} WHERE id=?`).get(id) as { spotify_track_id: string | null } | undefined
+  return row?.spotify_track_id ?? null
+}
+
 export function sourceQueue(kind: 'playlistItem' | 'entityTrack', id: number): SpotifyDownloadQueueAddResult {
   if (kind === 'playlistItem') {
     const row = getSqlite().prepare('SELECT playlist_id FROM music_spotify_playlist_item WHERE id=?').get(id) as { playlist_id: number }
@@ -2040,9 +1850,9 @@ export function markSourceArtifactsIndexing(paths: string[]): void {
 /** Snapshot metadata once; the acquisition owner checks these paths on disk. */
 export function acquisitionCandidates(song: Pick<SpotdlSong, 'title' | 'primaryArtist' | 'albumTitle' | 'duration'>): (LocalMatchCandidate & { filePath: string })[] {
   const review = reviewRequiredTrackIds()
-  const rows = localCandidateIndex().get(normalizeSpotifyRecordingTitle(song.title)) ?? []
+  const rows = localCandidateIndex().get(baseRecordingTitle(song.title)) ?? []
   const path = getSqlite().prepare('SELECT file_path FROM music_track WHERE id=?')
-  return rows.filter((row) => !review.has(row.id) && samePlaylistRecordingIdentity(song, row))
+  return rows.filter((row) => !review.has(row.id) && samePlaylistRecordingIdentity(song, row, true))
     .map((row) => ({ ...row, filePath: (path.get(row.id) as { file_path: string }).file_path }))
 }
 

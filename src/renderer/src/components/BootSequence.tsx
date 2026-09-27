@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { parseAppTheme, type AppTheme } from '@shared/appTheme'
+import { FX_ART } from '../lib/themeFxArt'
 
 const BOOT_KEY = 'ui.booted'
 
@@ -22,7 +23,8 @@ const SCRIPTS = {
     'TACHIBANA GENERAL LABORATORIES',
     'COPLAND OS ENTERPRISE',
     'connecting to the Wired...',
-    'Present day. Present time.'
+    'Present day. Present time.',
+    'Close the world, open the nExt.'
   ].join('\n'),
   'metal-gear': [
     'NAVI TACTICAL ARCHIVE',
@@ -93,6 +95,12 @@ export default function BootSequence() {
         phase === 'fading' ? 'opacity-0' : ''
       }`}
     >
+      {theme === 'lain' && (
+        <>
+          <img className="boot-lain-site" src={FX_ART.lainSite} alt="" />
+          <img className="boot-lain-logo" src={FX_ART.lainLogo} alt="" />
+        </>
+      )}
       <div className="boot-copy text-signal-live text-2xl leading-relaxed">
         {lines.map((l, i) => (
           <p key={i}>

@@ -61,6 +61,11 @@ export default function CharacterDetailPage() {
           })
           qc.invalidateQueries({ queryKey: qk.characters.all })
         }}
+        imageOverride={{
+          kind: 'character',
+          id: characterId,
+          onReverted: () => qc.invalidateQueries({ queryKey: qk.characters.all })
+        }}
         onDelete={async () => {
           await api.characters.remove(characterId)
           qc.invalidateQueries({ queryKey: qk.characters.all })

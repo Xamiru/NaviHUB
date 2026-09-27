@@ -1,10 +1,5 @@
-import type { MusicAlbumShelf, MusicSmartRules } from './types'
+import type { MusicSmartRules } from './types'
 
-export const MUSIC_SHELVES: Record<MusicAlbumShelf, string> = {
-  want: 'Want to hear',
-  exploring: 'Exploring',
-  revisit: 'Revisit'
-}
 export const DEFAULT_SMART_RULES: MusicSmartRules = {
   liked: 'any',
   playState: 'any',
@@ -15,8 +10,6 @@ export const DEFAULT_SMART_RULES: MusicSmartRules = {
   tagMode: 'all',
   artist: '',
   soundtrack: 'any',
-  minAlbumRating: null,
-  shelf: null,
   order: 'title',
   maxTracks: 200
 }

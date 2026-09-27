@@ -17,12 +17,6 @@ describe('keyboard interaction accessibility contracts', () => {
   })
 
   it('does not make hover-only actions invisible on focus', () => {
-    expect(source('src/renderer/src/pages/GachaCoachPage.tsx')).toContain(
-      'group-focus-within:opacity-100'
-    )
-    expect(source('src/renderer/src/components/gacha/CoachRail.tsx').match(
-      /group-focus-within:opacity-100/g
-    )).toHaveLength(3)
     expect(source('src/renderer/src/components/TierBoard.tsx')).toContain(
       'group-focus-within/tile:opacity-100'
     )

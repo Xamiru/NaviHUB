@@ -27,7 +27,6 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
     checklist: { status: async () => ({ daily: [], weekly: [], streak: { current: 0 } }) },
     companies: { list: () => companiesList() },
     english: { srsStats: async () => ({ totalCount: 0, dueCount: 0, reviewedToday: 0 }) },
-    gacha: { dueCounts: async () => ({}) },
     japanese: { stats: () => japaneseStats() },
     media: {
       homeOverview: () => homeOverview(),
@@ -77,7 +76,7 @@ describe('Home resume failure', () => {
 
   it.each([
     ['lain', 'lain-wired.jpg'],
-    ['metal-gear', 'solid-ink.jpg'],
+    ['metal-gear', 'mgs-snake-sketch.jpg'],
     ['miku', 'miku-sky.png'],
     ['twin-peaks', 'peaks-red.jpg']
   ])('keeps the saved video action below the %s cover wall', async (theme, artwork) => {

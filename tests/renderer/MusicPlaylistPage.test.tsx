@@ -69,3 +69,18 @@ it('reaches every batch of a large Spotify playlist and retains it across unrela
   expect(screen.getByText('Song 205')).toBeInTheDocument()
 // This mounts hundreds of real rows alongside the other jsdom test workers.
 }, 30000)
+
+it('offers a retry instead of "not found" when the playlist read fails', async () => {
+  vi.mocked(api.music.playlist).mockRejectedValueOnce(new Error('SQLITE_BUSY')).mockResolvedValueOnce({
+    id: 1, title: 'Recovered playlist', description: null, createdAt: '', updatedAt: '',
+    source: null, playableCount: 0, missingCount: 0, verificationCount: 0, items: []
+  })
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const user = userEvent.setup()
+  render(<QueryClientProvider client={client}><MemoryRouter initialEntries={['/music/playlists/1']}>
+    <Routes><Route path="/music/playlists/:id" element={<MusicPlaylistPage />} /></Routes>
+  </MemoryRouter></QueryClientProvider>)
+  await user.click(await screen.findByRole('button', { name: 'Retry playlist' }))
+  expect(screen.queryByText('Playlist not found.')).not.toBeInTheDocument()
+  expect(await screen.findByText('Recovered playlist')).toBeInTheDocument()
+})

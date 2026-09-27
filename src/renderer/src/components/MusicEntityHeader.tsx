@@ -1,6 +1,10 @@
-import type { ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
 import CoverImage from './CoverImage'
 import ActionMenu, { type ActionItem } from './ActionMenu'
+import ImagePickerDialog from './ImagePickerDialog'
 
 // Hero header shared by the album and artist pages: art + title + meta line +
 // Play/Shuffle + find/clear-art actions. `round` switches to the artist look
@@ -13,6 +17,7 @@ export default function MusicEntityHeader({
   onPlay,
   onShuffle,
   artNoun,
+  art,
   onFindArt,
   onClearArt,
   onDelete,
@@ -26,13 +31,18 @@ export default function MusicEntityHeader({
   onPlay: () => void
   onShuffle: () => void
   artNoun: 'cover' | 'photo'
+  // A picked image is held through rescans and "Find" until Clear or Restore.
+  art: { kind: 'music_album' | 'music_artist'; id: number }
   onFindArt: () => void
   onClearArt: () => void
   onDelete?: () => void // permanently deletes from disk (gated by a confirm)
   deleteLabel?: string
   addMusicItems?: ActionItem[]
 }) {
+  const qc = useQueryClient()
+  const [pickerOpen, setPickerOpen] = useState(false)
   const maintenanceItems: ActionItem[] = [
+    { label: `Change ${artNoun}…`, onSelect: () => setPickerOpen(true) },
     coverPath
       ? {
           label: `Clear ${artNoun}`,
@@ -77,6 +87,22 @@ export default function MusicEntityHeader({
           <ActionMenu label="Library maintenance" items={maintenanceItems} />
         </div>
       </div>
+      {pickerOpen && (
+        <ImagePickerDialog
+          title={`Change ${artNoun}`}
+          subject={title}
+          currentPath={coverPath}
+          override={art}
+          rounded={round ? 'rounded-full' : 'rounded-lg'}
+          previewClassName="h-24 w-24"
+          onPick={async (path) => {
+            await api.images.setManual(art.kind, art.id, path)
+            await qc.invalidateQueries({ queryKey: qk.music.all })
+          }}
+          onReverted={() => qc.invalidateQueries({ queryKey: qk.music.all })}
+          onClose={() => setPickerOpen(false)}
+        />
+      )}
     </div>
   )
 }

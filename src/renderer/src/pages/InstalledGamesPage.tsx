@@ -104,7 +104,7 @@ function ArtworkCard({ game, recent = false, ...playProps }: PlayProps & { recen
   )
 }
 
-function FeaturedGame({ game, heroPath, ...playProps }: PlayProps & { heroPath: string | null }) {
+function FeaturedGame({ game, backgroundPath, ...playProps }: PlayProps & { backgroundPath: string | null }) {
   const lastPlayed = game.lastPlayedAt !== null
   const achievements = game.achievements
   const pct = achievements?.total
@@ -115,13 +115,13 @@ function FeaturedGame({ game, heroPath, ...playProps }: PlayProps & { heroPath: 
     <div className="grid overflow-hidden rounded-lg border border-base-600 bg-base-800 lg:grid-cols-[minmax(0,1.55fr)_minmax(290px,0.65fr)]">
       <div className="group relative min-h-[300px] overflow-hidden bg-base-700 sm:min-h-[350px]">
         <CoverImage
-          path={heroPath ?? game.coverPath}
+          path={backgroundPath ?? game.coverPath}
           alt={game.title}
-          className={`absolute inset-0 h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-105 motion-safe:group-focus-within:scale-105 ${heroPath ? '' : 'scale-110 blur-md opacity-60'}`}
+          className={`absolute inset-0 h-full w-full motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:scale-105 motion-safe:group-focus-within:scale-105 ${backgroundPath ? '' : 'scale-110 blur-md opacity-60'}`}
           rounded="rounded-none"
-          thumbWidth={heroPath ? undefined : 480}
+          thumbWidth={backgroundPath ? undefined : 480}
         />
-        {!heroPath && game.coverPath && (
+        {!backgroundPath && game.coverPath && (
           <CoverImage
             path={game.coverPath}
             alt=""
@@ -291,7 +291,7 @@ export default function InstalledGamesPage() {
       >
         <FeaturedGame
           game={featured}
-          heroPath={featuredDetail?.heroPath ?? null}
+          backgroundPath={featuredDetail?.backgroundPath ?? null}
           runningHere={session.running && session.status?.mediaId === featured.mediaId}
           {...playProps}
         />

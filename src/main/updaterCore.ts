@@ -1,7 +1,6 @@
 /*
  * Pure update logic — no electron, no electron-updater, no DB. Split out of
- * updater.ts for the same reason coachTools.ts is split out of gachaCoach.ts:
- * tests/updater.test.ts can exercise every decision without loading an SDK.
+ * updater.ts so tests/updater.test.ts can exercise every decision without loading an SDK.
  */
 import type { UpdateEnvironment, UpdateStatus } from '@shared/types'
 

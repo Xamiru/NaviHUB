@@ -2,6 +2,7 @@ import { getSqlite } from './db/connection'
 import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
+import { IMPORTED_TAG_SCOPES_SQL } from './repos/tagRepo'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from './http'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
 import type { ImportSearchResult, ImportSummary } from '@shared/types'
@@ -23,7 +24,7 @@ const STORE = 'https://store.steampowered.com/api'
 const SOURCE = 'steam'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-async function steamGet(path: string, params: Record<string, string>): Promise<any> {
+export async function steamGet(path: string, params: Record<string, string>): Promise<any> {
   const url = new URL(`${STORE}${path}`)
   // English + a fixed storefront country: release_date.date is a LOCALIZED
   // string ("Oct 21, 2022"), so parsing depends on asking consistently.
@@ -37,6 +38,16 @@ async function steamGet(path: string, params: Record<string, string>): Promise<a
   })
   if (!res.ok) throw new Error(`Steam request failed (${res.status})`)
   return res.json()
+}
+
+// appdetails can key its answer by an edition's package id instead of the
+// requested app id (appids=1245620 comes back under "2855530", with
+// data.steam_appid still 1245620), so look the entry up by either.
+export function appDetails(payload: any, appId: number): any | null {
+  const entries: any[] = payload && typeof payload === 'object' ? Object.values(payload) : []
+  const entry =
+    payload?.[String(appId)] ?? entries.find((e) => Number(e?.data?.steam_appid) === appId)
+  return entry?.success ? (entry.data ?? null) : null
 }
 
 // "Oct 21, 2022" / "21 Oct, 2022" / "2023" → ISO date; null for TBA/invalid.
@@ -110,6 +121,14 @@ export async function search(query: string): Promise<ImportSearchResult[]> {
     )
 }
 
+// Store categories worth filtering a library by: how it plays, controller
+// support, achievements, mods. Steam ids are stable while descriptions are
+// localized, so the list is by id (Single-player, Multi-player, Co-op, Online
+// Co-op, LAN Co-op, Shared/Split Screen Co-op, Shared/Split Screen, PvP, Online
+// PvP, Shared/Split Screen PvP, Full controller support, Steam Achievements,
+// Steam Workshop, Remote Play Together).
+const STEAM_TAG_CATEGORIES = new Set([2, 1, 9, 38, 48, 39, 24, 49, 36, 37, 28, 22, 30, 44])
+
 // ---------------- Import ----------------
 // Two-phase like every importer: appdetails + cover download + HLTB lookup
 // first, then all DB writes in one transaction. Dedup key ('steam', appid);
@@ -124,9 +143,7 @@ export async function importGame(
   const wants = (a: RefreshAspect): boolean => !partial || !!opts.only?.includes(a)
   const id = Math.floor(Number(appId))
   if (!Number.isFinite(id) || id <= 0) throw new Error('Bad Steam app id')
-  const payload = await steamGet('/appdetails', { appids: String(id) })
-  const entry = payload?.[String(id)]
-  const g = entry?.success ? entry.data : null
+  const g = appDetails(await steamGet('/appdetails', { appids: String(id) }), id)
   if (!g?.name) throw new Error('Game not found on Steam')
   // DLC/soundtracks/demos share the search surface; only full games import.
   if (g.type && g.type !== 'game') {
@@ -251,6 +268,22 @@ export async function importGame(
       )
     }
 
+    // ---- player-facing store categories -> tags ----
+    if (Array.isArray(g.categories)) {
+      db.prepare(
+        `DELETE FROM media_tag WHERE media_id=? AND tag_id IN
+           (SELECT id FROM tag WHERE category IN ${IMPORTED_TAG_SCOPES_SQL})`
+      ).run(mediaId)
+      for (const c of g.categories) {
+        const name = typeof c?.description === 'string' ? c.description.trim() : ''
+        if (!name || !STEAM_TAG_CATEGORIES.has(Number(c.id))) continue
+        db.prepare("INSERT OR IGNORE INTO tag (name, category) VALUES (?, 'steam')").run(name)
+        db.prepare(
+          'INSERT OR IGNORE INTO media_tag (media_id, tag_id) SELECT ?, id FROM tag WHERE name=?'
+        ).run(mediaId, name)
+      }
+    }
+
     // Steam has no cast/staff data — those stay hand-curated.
     return { mediaId, title, studios, cast: 0, staff: 0, created }
   })()
@@ -286,9 +319,8 @@ export async function lookupMetacritic(title: string): Promise<number | null> {
     (it: any) => it?.type === 'app' && it?.id && normTitle(String(it.name ?? '')) === target
   )
   if (!match) return null
-  const payload = await steamGet('/appdetails', { appids: String(match.id) })
-  const entry = payload?.[String(match.id)]
-  const score = entry?.success ? entry.data?.metacritic?.score : null
+  const g = appDetails(await steamGet('/appdetails', { appids: String(match.id) }), Number(match.id))
+  const score = g?.metacritic?.score
   return typeof score === 'number' && score > 0 ? score : null
 }
 

@@ -2,6 +2,7 @@ import { act, fireEvent, render } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { AudioPlayerProvider, usePlayerControls, type Track } from '@/lib/player'
 import { api } from '@/lib/api'
+import { advanceListen, playCountThreshold, type ListenProgress } from '@/lib/musicTracks'
 
 vi.mock('@/lib/api', () => ({ api: {
   files: { resolveUrl: vi.fn() },
@@ -77,4 +78,35 @@ it('unshuffles to the same occurrence when a song appears twice', async () => {
   expect(player.queue[player.index]).toBe(second)
   await act(async () => fireEvent.ended(audio))
   expect(player.track).toBe(last)
+})
+
+it('counts a play only after half the track (at most four minutes) is actually heard', () => {
+  expect(playCountThreshold(200)).toBe(100)
+  expect(playCountThreshold(600)).toBe(240)
+  expect(playCountThreshold(20)).toBeNull()
+  expect(playCountThreshold(null)).toBe(240)
+
+  const play = (steps: [time: number, playing: boolean][], duration = 60) => {
+    let progress: ListenProgress = { listened: 0, last: 0, logged: false }
+    let counts = 0
+    for (const [time, playing] of steps) {
+      const next = advanceListen(progress, time, playing, duration)
+      progress = next.progress
+      if (next.count) counts += 1
+    }
+    return { counts, listened: progress.listened }
+  }
+  const ticks = (from: number, to: number, playing = true): [number, boolean][] =>
+    Array.from({ length: Math.round((to - from) / 0.25) }, (_, i) => [from + (i + 1) * 0.25, playing])
+
+  expect(play(ticks(0, 29.75)).counts).toBe(0)
+  expect(play(ticks(0, 30)).counts).toBe(1)
+  // Seeking straight to the end is not listening.
+  expect(play([[0.25, true], [55, true], ...ticks(55, 60)]).counts).toBe(0)
+  // Position updates while paused (a scrub) add nothing.
+  expect(play(ticks(0, 40, false)).listened).toBe(0)
+  // Repeat-one: each loop back to the start after a counted play is a new play.
+  expect(play([...ticks(0, 60), ...ticks(0, 60)]).counts).toBe(2)
+  // One counted play per listen, however long it keeps playing.
+  expect(play(ticks(0, 59.75)).counts).toBe(1)
 })

@@ -2,6 +2,9 @@ import { getSqlite } from './db/connection'
 import type { RefreshAspect } from '@shared/refresh'
 import { downloadImages } from './files'
 import { updateActivity } from './progress'
+import { IMPORTED_TAG_SCOPES_SQL } from './repos/tagRepo'
+import { createThrottle } from './requestThrottle'
+import { ANILIST_COUNTRIES } from '@shared/bulkImport'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import type {
   AniListSearchResult,
@@ -20,8 +23,14 @@ const SOURCE = 'anilist'
 // keeps each importer's authoritative prune scoped to its own media type).
 const MANGA_CHAR_SOURCE = 'anilist-manga'
 
+// AniList's degraded budget is ~30 requests/min per IP. Every request goes
+// through this one throttle, so bulk runs, refreshes and dialog imports share
+// it instead of each pacing only itself.
+export const anilistThrottle = createThrottle(2100)
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
-async function gql(query: string, variables: Record<string, unknown>): Promise<any> {
+export async function gql(query: string, variables: Record<string, unknown>): Promise<any> {
+  await anilistThrottle.take()
   const res = await fetchWithRetry(ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -120,22 +129,56 @@ function upsertPerson(db: any, node: any, photo: string | null): number {
     .get(SOURCE, ext) as { id: number; photo_path: string | null } | undefined
   const name = node.name?.full ?? 'Unknown'
   const nativeName = node.name?.native ?? null
+  const bio = cleanBio(node.description)
+  const birthday = fmtBirthday(node.dateOfBirth)
   if (row) {
     // Keep the stable row id so credits and user lists survive, while
     // refreshing all source-owned canonical fields.  A downloaded photo only
     // fills a missing path; this preserves a manually selected image and
-    // matches the importer convention used by the other providers.
+    // matches the importer convention used by the other providers.  The bio
+    // is editable on the person page with nothing marking a hand-written one,
+    // so an imported bio likewise only fills an empty field.
     db.prepare(
-      'UPDATE person SET name=?, name_native=?, photo_path=COALESCE(photo_path, ?) WHERE id=?'
-    ).run(name, nativeName, photo, row.id)
+      `UPDATE person SET name=?, name_native=?, photo_path=COALESCE(photo_path, ?),
+         bio=COALESCE(bio, ?), birthday=COALESCE(?, birthday)
+       WHERE id=?`
+    ).run(name, nativeName, photo, bio, birthday, row.id)
     return row.id
   }
   const info = db
     .prepare(
-      'INSERT INTO person (name, name_native, photo_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)'
+      `INSERT INTO person (name, name_native, photo_path, bio, birthday, external_source, external_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .run(name, nativeName, photo, SOURCE, ext)
+    .run(name, nativeName, photo, bio, birthday, SOURCE, ext)
   return Number(info.lastInsertRowid)
+}
+
+// AniList staff descriptions are its own markdown dialect: social-link lines,
+// [label](url) links, __bold__, and ~!spoiler!~ markers.  The bio field is
+// plain text, so keep the words and drop the markup.
+export function cleanBio(s: unknown): string | null {
+  if (typeof s !== 'string') return null
+  const text = stripHtml(
+    s
+      .split('\n')
+      .filter((line) => !/^\s*(\[[^\]]*\]\([^)]*\)[\s|,·-]*)+$/.test(line))
+      .join('\n')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/~!|!~/g, '')
+      .replace(/(\*\*|__)(.+?)\1/g, '$2')
+  )
+  return text || null
+}
+
+// ISO 8601 with whatever AniList knows: 1965-05-23, 1965, or --05-23 when
+// only the day of the year is public.
+export function fmtBirthday(d: any): string | null {
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  if (d?.year && d.month && d.day) return `${d.year}-${pad(d.month)}-${pad(d.day)}`
+  if (d?.year) return String(d.year)
+  if (d?.month && d.day) return `--${pad(d.month)}-${pad(d.day)}`
+  return null
 }
 
 // `charSource` namespaces the character so anime and manga characters that share
@@ -231,6 +274,28 @@ function replaceAniListGenres(db: any, mediaId: number, genres: unknown): void {
   ).run(mediaId)
   for (const genre of Array.isArray(genres) ? genres : []) {
     if (typeof genre === 'string' && genre) linkGenre(db, mediaId, genre)
+  }
+}
+
+// Community tags below this rank are weak votes, and spoiler or adult tags
+// would print a twist or explicit content straight onto the detail page.
+const MIN_TAG_RANK = 60
+
+function replaceAniListTags(db: any, mediaId: number, tags: unknown): void {
+  if (!Array.isArray(tags)) return
+  db.prepare(
+    `DELETE FROM media_tag
+     WHERE media_id=? AND tag_id IN (SELECT id FROM tag WHERE category IN ${IMPORTED_TAG_SCOPES_SQL})`
+  ).run(mediaId)
+  for (const raw of tags) {
+    const t = raw as any
+    const name = typeof t?.name === 'string' ? t.name.trim() : ''
+    if (!name || !(t.rank >= MIN_TAG_RANK)) continue
+    if (t.isMediaSpoiler || t.isGeneralSpoiler || t.isAdult) continue
+    db.prepare("INSERT OR IGNORE INTO tag (name, category) VALUES (?, 'anilist')").run(name)
+    db.prepare(
+      'INSERT OR IGNORE INTO media_tag (media_id, tag_id) SELECT ?, id FROM tag WHERE name=?'
+    ).run(mediaId, name)
   }
 }
 
@@ -370,12 +435,13 @@ export async function searchManga(query: string): Promise<AniListSearchResult[]>
 const TOP_QUERY = `
 query ($type: MediaType, $sort: [MediaSort], $page: Int, $perPage: Int,
        $season: MediaSeason, $seasonYear: Int, $genres: [String],
-       $startFrom: FuzzyDateInt, $startTo: FuzzyDateInt) {
+       $startFrom: FuzzyDateInt, $startTo: FuzzyDateInt,
+       $formats: [MediaFormat], $country: CountryCode) {
   Page(page: $page, perPage: $perPage) {
     pageInfo { hasNextPage }
     media(type: $type, sort: $sort, season: $season, seasonYear: $seasonYear,
           genre_in: $genres, startDate_greater: $startFrom, startDate_lesser: $startTo,
-          isAdult: false) {
+          format_in: $formats, countryOfOrigin: $country, isAdult: false) {
       id
       title { romaji english native }
       startDate { year }
@@ -389,6 +455,17 @@ const TOP_SORTS: Record<string, string> = {
   popular: 'POPULARITY_DESC',
   rated: 'SCORE_DESC',
   trending: 'TRENDING_DESC'
+}
+
+// Bulk format keys (@shared/bulkImport) → AniList MediaFormat values.
+const TOP_FORMATS: Record<string, string[]> = {
+  tv: ['TV', 'TV_SHORT'],
+  movie: ['MOVIE'],
+  ova: ['OVA', 'ONA'],
+  special: ['SPECIAL'],
+  manga: ['MANGA'],
+  novel: ['NOVEL'],
+  one_shot: ['ONE_SHOT']
 }
 
 // Pure + exported for tests. FuzzyDateInt is yyyymmdd as a number, so a year
@@ -412,6 +489,17 @@ export function buildTopVariables(
     vars.seasonYear = params.seasonYear
   }
   if (params.genre) vars.genres = [params.genre]
+  if (params.format) {
+    const formats = TOP_FORMATS[params.format]
+    if (!formats) throw new Error(`Unknown AniList format: ${params.format}`)
+    vars.formats = formats
+  }
+  if (params.country) {
+    if (!ANILIST_COUNTRIES.some((c) => c.key === params.country)) {
+      throw new Error(`Unknown AniList country: ${params.country}`)
+    }
+    vars.country = params.country
+  }
   if (params.yearFrom) vars.startFrom = params.yearFrom * 10_000
   if (params.yearTo) vars.startTo = (params.yearTo + 1) * 10_000
   return vars
@@ -428,10 +516,9 @@ export function buildTopVariables(
 // don't count, so the crawl keeps paging and "top 100" always means 100 NEW
 // titles. The page cap bounds the pathological case (user owns nearly the
 // whole list): give up after ~5x the minimal pages rather than crawling the
-// entire catalog at 2.1s/page.
+// entire catalog at 2.1s/page (the request throttle's spacing).
 export async function topList(
   params: BulkListParams,
-  pageDelayMs = 2100,
   keep: (item: BulkPreviewItem) => boolean = () => true
 ): Promise<BulkPreviewItem[]> {
   const perPage = 50 // AniList's Page maximum
@@ -459,7 +546,72 @@ export async function topList(
       if (out.length >= params.count) return out
     }
     if (!data?.Page?.pageInfo?.hasNextPage || media.length === 0) return out
-    if (pageDelayMs > 0) await new Promise((r) => setTimeout(r, pageDelayMs))
+  }
+  return out
+}
+
+// A user's own list (the bulk 'list' sort). One collection request returns the
+// whole list in chunks of up to 500; custom lists repeat entries from the
+// status lists, so only the status lists are read.
+const USER_LIST_QUERY = `
+query ($userName: String, $type: MediaType, $chunk: Int) {
+  MediaListCollection(userName: $userName, type: $type, chunk: $chunk, perChunk: 500) {
+    hasNextChunk
+    lists {
+      isCustomList
+      entries {
+        status
+        score(format: POINT_10_DECIMAL)
+        progress
+        media {
+          id
+          title { romaji english native }
+          startDate { year }
+          averageScore
+          coverImage { medium large }
+        }
+      }
+    }
+  }
+}`
+
+export async function userList(
+  params: BulkListParams,
+  keep: (item: BulkPreviewItem) => boolean = () => true
+): Promise<BulkPreviewItem[]> {
+  const userName = params.username?.trim()
+  if (!userName) throw new Error('Enter an AniList username.')
+  const out: BulkPreviewItem[] = []
+  for (let chunk = 1; chunk <= 20; chunk++) {
+    const data = await gql(USER_LIST_QUERY, {
+      userName,
+      type: params.source === 'manga' ? 'MANGA' : 'ANIME',
+      chunk
+    })
+    const coll = data?.MediaListCollection
+    for (const list of coll?.lists ?? []) {
+      if (list?.isCustomList) continue
+      for (const e of list.entries ?? []) {
+        const m = e?.media
+        if (!m?.id) continue
+        const item: BulkPreviewItem = {
+          sourceId: m.id,
+          title: pickTitle(m.title).title,
+          year: m.startDate?.year ?? null,
+          coverUrl: m.coverImage?.large || m.coverImage?.medium || null,
+          score: m.averageScore ?? null,
+          list: {
+            status: String(e.status ?? ''),
+            score: typeof e.score === 'number' && e.score > 0 ? e.score : null,
+            progress: typeof e.progress === 'number' && e.progress > 0 ? e.progress : 0
+          }
+        }
+        if (!keep(item)) continue
+        out.push(item)
+        if (out.length >= params.count) return out
+      }
+    }
+    if (!coll?.hasNextChunk) break
   }
   return out
 }
@@ -516,8 +668,8 @@ query ($id: Int) {
     seasonYear
     startDate { year month day }
     coverImage { large extraLarge }
-    bannerImage
     genres
+    tags { name rank isMediaSpoiler isGeneralSpoiler isAdult }
     studios { edges { isMain node { id name } } }
     relations {
       edges {
@@ -530,11 +682,16 @@ query ($id: Int) {
       edges {
         role
         node { id name { full native } gender image { large } }
-        voiceActors(language: JAPANESE) { id name { full native } image { large } }
+        voiceActors(language: JAPANESE) {
+          id name { full native } image { large } description(asHtml: false) dateOfBirth { year month day }
+        }
       }
     }
     staff(perPage: 8, sort: RELEVANCE) {
-      edges { role node { id name { full native } image { large } } }
+      edges {
+        role
+        node { id name { full native } image { large } description(asHtml: false) dateOfBirth { year month day } }
+      }
     }
   }
 }`
@@ -548,7 +705,9 @@ query ($id: Int, $page: Int) {
       edges {
         role
         node { id name { full native } gender image { large } }
-        voiceActors(language: JAPANESE) { id name { full native } image { large } }
+        voiceActors(language: JAPANESE) {
+          id name { full native } image { large } description(asHtml: false) dateOfBirth { year month day }
+        }
       }
     }
   }
@@ -584,7 +743,7 @@ function wants(only: RefreshAspect[] | undefined, aspect: RefreshAspect): boolea
 // the same statement (and the same values) the importer has always run.
 function mediaUpdate(
   only: RefreshAspect[] | undefined,
-  vals: { title: string; native: string | null; synopsis: string | null; totalUnits: number | null; releaseDate: string | null; coverPath: string | null; bannerPath: string | null }
+  vals: { title: string; native: string | null; synopsis: string | null; totalUnits: number | null; releaseDate: string | null; coverPath: string | null }
 ): { sql: string; args: unknown[] } {
   const sets: string[] = []
   const args: unknown[] = []
@@ -595,10 +754,6 @@ function mediaUpdate(
   if (wants(only, 'cover')) {
     sets.push('cover_path=COALESCE(?, cover_path)')
     args.push(vals.coverPath)
-  }
-  if (wants(only, 'banner')) {
-    sets.push('banner_path=COALESCE(?, banner_path)')
-    args.push(vals.bannerPath)
   }
   sets.push("updated_at=datetime('now')")
   return { sql: `UPDATE media_item SET ${sets.join(', ')} WHERE id=?`, args }
@@ -632,15 +787,11 @@ export async function importAnime(
   const limited = charEdges.slice(0, MAX_CHARACTERS)
 
   const coverUrl = m.coverImage?.extraLarge || m.coverImage?.large
-  // Wide hero art for the detail page. AniList leaves bannerImage null on plenty
-  // of titles, in which case the hero falls back to Art-tab images or the cover.
-  const bannerUrl = m.bannerImage || null
   const images = await downloadImages(
     partial
-      ? [wants(opts.only, 'cover') ? coverUrl : null, wants(opts.only, 'banner') ? bannerUrl : null]
+      ? [wants(opts.only, 'cover') ? coverUrl : null]
       : [
           coverUrl,
-          bannerUrl,
           ...limited.flatMap((edge: any) => [
             edge.node?.image?.large,
             ...(edge.voiceActors ?? []).map((va: any) => va.image?.large)
@@ -656,7 +807,6 @@ export async function importAnime(
   return db.transaction((): AniListImportSummary => {
     const { title, native } = pickTitle(m.title)
     const coverPath = img(coverUrl)
-    const bannerPath = img(bannerUrl)
 
     // ---- media (preserve personal tracking on re-import) ----
     const existing = db
@@ -673,8 +823,7 @@ export async function importAnime(
         synopsis: stripHtml(m.description),
         totalUnits: m.episodes ?? null,
         releaseDate: fmtDate(m.startDate),
-        coverPath,
-        bannerPath
+        coverPath
       })
       db.prepare(up.sql).run(...up.args, mediaId)
     } else {
@@ -684,16 +833,15 @@ export async function importAnime(
       const info = db
         .prepare(
           `INSERT INTO media_item
-           (media_type, title, title_original, synopsis, cover_path, banner_path, total_units,
+           (media_type, title, title_original, synopsis, cover_path, total_units,
             release_date, external_source, external_id)
-           VALUES ('anime', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           VALUES ('anime', ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           title,
           native,
           stripHtml(m.description),
           coverPath,
-          bannerPath,
           m.episodes ?? null,
           fmtDate(m.startDate),
           SOURCE,
@@ -718,6 +866,7 @@ export async function importAnime(
     // ---- studios + genres (authoritative source-owned links) ----
     const studios = replaceAniListStudios(db, mediaId, m.studios?.edges)
     replaceAniListGenres(db, mediaId, m.genres)
+    replaceAniListTags(db, mediaId, m.tags)
 
     // Voice-actor rows are source-owned per media/character.  Clear them
     // before rebuilding so a recast or a changed language edge cannot leave a
@@ -796,8 +945,8 @@ query ($id: Int) {
     averageScore
     startDate { year month day }
     coverImage { large extraLarge }
-    bannerImage
     genres
+    tags { name rank isMediaSpoiler isGeneralSpoiler isAdult }
     relations {
       edges {
         relationType
@@ -809,7 +958,10 @@ query ($id: Int) {
       edges { role node { id name { full native } gender image { large } } }
     }
     staff(perPage: 8, sort: RELEVANCE) {
-      edges { role node { id name { full native } gender image { large } } }
+      edges {
+        role
+        node { id name { full native } image { large } description(asHtml: false) dateOfBirth { year month day } }
+      }
     }
   }
 }`
@@ -850,13 +1002,11 @@ export async function importManga(
   const limited = charEdges.slice(0, MAX_CHARACTERS)
 
   const coverUrl = m.coverImage?.extraLarge || m.coverImage?.large
-  const bannerUrl = m.bannerImage || null
   const images = await downloadImages(
     partial
-      ? [wants(opts.only, 'cover') ? coverUrl : null, wants(opts.only, 'banner') ? bannerUrl : null]
+      ? [wants(opts.only, 'cover') ? coverUrl : null]
       : [
           coverUrl,
-          bannerUrl,
           ...limited.map((edge: any) => edge.node?.image?.large),
           ...(m.staff?.edges ?? []).map((edge: any) => edge.node?.image?.large)
         ]
@@ -869,7 +1019,6 @@ export async function importManga(
   return db.transaction((): AniListImportSummary => {
     const { title, native } = pickTitle(m.title)
     const coverPath = img(coverUrl)
-    const bannerPath = img(bannerUrl)
 
     const existing = db
       .prepare('SELECT id FROM media_item WHERE external_source = ? AND external_id = ?')
@@ -885,8 +1034,7 @@ export async function importManga(
         synopsis: stripHtml(m.description),
         totalUnits: m.chapters ?? null,
         releaseDate: fmtDate(m.startDate),
-        coverPath,
-        bannerPath
+        coverPath
       })
       db.prepare(up.sql).run(...up.args, mediaId)
     } else {
@@ -894,16 +1042,15 @@ export async function importManga(
       const info = db
         .prepare(
           `INSERT INTO media_item
-           (media_type, title, title_original, synopsis, cover_path, banner_path, total_units,
+           (media_type, title, title_original, synopsis, cover_path, total_units,
             release_date, external_source, external_id)
-           VALUES ('manga', ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+           VALUES ('manga', ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           title,
           native,
           stripHtml(m.description),
           coverPath,
-          bannerPath,
           m.chapters ?? null,
           fmtDate(m.startDate),
           SOURCE,
@@ -920,6 +1067,7 @@ export async function importManga(
     // Genres are source-owned for a full import; partial refresh returned above
     // before this replacement and therefore remains strictly no-delete.
     replaceAniListGenres(db, mediaId, m.genres)
+    replaceAniListTags(db, mediaId, m.tags)
 
     let order = 0
     const keptCharacterIds = new Set<number>()

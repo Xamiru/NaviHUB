@@ -7,7 +7,9 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const read = (path: string): string => readFileSync(join(root, path), 'utf8')
 
 describe('Sonic Archive product surface', () => {
-  const library = read('src/renderer/src/pages/MusicLibraryPage.tsx')
+  const library = ['src/renderer/src/pages/MusicLibraryPage.tsx', 'src/renderer/src/components/music/MusicLibraryTabs.tsx',
+    'src/renderer/src/components/music/MusicBrowse.tsx', 'src/renderer/src/components/music/SpotifyImportDialog.tsx']
+    .map(read).join('\n')
   const artist = read('src/renderer/src/pages/MusicArtistPage.tsx')
   const entityHeader = read('src/renderer/src/components/MusicEntityHeader.tsx')
   const playlist = read('src/renderer/src/pages/MusicPlaylistPage.tsx')
@@ -44,29 +46,34 @@ describe('Sonic Archive product surface', () => {
     expect(playlist).toContain('Searching tracks…')
     expect(playlist).toContain('No available tracks match')
     expect(spotify).toContain('Choose the matching catalogue entry')
-    expect(spotify).toContain('Select albums and singles')
-    expect(spotify).toContain('reopening is instant')
-    expect(spotify).toContain('Missing releases only')
-    expect(spotify).toContain('Add to queue')
+    expect(spotify).toContain('Select all')
+    expect(spotify).toContain('Hide complete releases')
+    expect(spotify).toContain('Save for later')
+    // Starting is the primary action; saving for later is secondary.
+    expect(spotify).toMatch(/btn-primary"[\s\S]{0,200}addToQueue\(true\)/)
     expect(playlist).toContain('className="btn-primary"')
-    expect(playlist).toContain('Add missing (')
-    expect(playlist).toContain('Download missing now')
-    expect(playlist).toContain('Use local version')
-    expect(playlist).toContain('Change local version')
+    expect(playlist).toContain('Download missing (')
+    expect(playlist).toContain('Add missing to Downloads without starting')
+    expect(playlist).toContain('Use library copy')
+    expect(playlist).toContain('Change library copy')
     expect(playlist).toContain('spotifyMatchPlaylistItem')
     expect(playlist).toContain('Live, remix, acoustic and other')
-    expect(library).toContain('playlists can be quiet for several hours')
-    expect(library).toContain('shows how long NaviHUB will wait')
+    expect(library).toContain('saves a snapshot that you can refresh later')
+    expect(library).not.toContain('spotDL')
   })
 
   it('keeps deferred Spotify downloads in a dedicated persistent workspace', () => {
-    expect(downloads).toContain('title="Spotify download queue"')
+    expect(downloads).toContain('title="Downloads"')
     expect(downloads).toContain('Start all')
-    expect(downloads).toContain('Start this')
+    expect(downloads).toContain("'Start'")
+    expect(downloads).toContain('already in your library')
     expect(downloads).toContain('Clear completed')
     expect(downloads).toContain('spotifyQueueReorder')
     expect(downloads).toContain('Resume')
-    expect(downloads).toContain('Try broader matching for all failed')
+    // Manual source choice replaced the separate broader-matching toggles; drag handles cover reordering.
+    expect(downloads).toContain('Choose audio')
+    expect(downloads).not.toContain('Try broader match')
+    expect(downloads).not.toContain("'Move up'")
   })
 
   it('uses semantic progress and an SVG download indicator', () => {

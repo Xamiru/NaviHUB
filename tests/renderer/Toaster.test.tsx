@@ -7,6 +7,7 @@ import { dismissToast, getToasts, toast } from '@/lib/toast'
 afterEach(() => {
   for (const item of getToasts()) dismissToast(item.id)
   vi.useRealTimers()
+  delete document.documentElement.dataset.theme
 })
 
 describe('Toaster', () => {
@@ -38,5 +39,23 @@ describe('Toaster', () => {
     fireEvent.blur(close, { relatedTarget: null })
     act(() => vi.advanceTimersByTime(6_000))
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['lain', 'NAVI / MESSAGE'],
+    ['metal-gear', 'COMPLETE'],
+    ['miku', 'Library'],
+    ['twin-peaks', '']
+  ])('frames the %s toast without hiding the message or its controls', (theme, frame) => {
+    document.documentElement.dataset.theme = theme
+    vi.useFakeTimers()
+    toast('Settings saved', 'success')
+    render(<Toaster />)
+    act(() => vi.advanceTimersByTime(1_000))
+    const notice = screen.getByRole('status')
+    expect(notice).toHaveClass(`theme-toast-${theme}`)
+    expect(notice).toHaveTextContent('Settings saved')
+    if (frame) expect(notice).toHaveTextContent(frame)
+    expect(screen.getByRole('button', { name: 'Close notification: Settings saved' })).toBeInTheDocument()
   })
 })

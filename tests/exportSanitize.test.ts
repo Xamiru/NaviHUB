@@ -108,23 +108,6 @@ function seed(): void {
     INSERT INTO game_session (media_id, started_at, ended_at, duration)
       VALUES (1, '2026-08-01 20:00:00', '2026-08-01 21:00:00', 3600);
 
-    INSERT INTO gacha_unit (id, game, kind, name, rarity, element, role, level, dupes, notes, data)
-      VALUES (1, 'hsr', 'character', 'Kafka', 5, 'Lightning', 'Nihility', 80, 2,
-        'my private build notes', '{"relics":"SSS"}');
-    INSERT INTO gacha_build (unit_id, name, notes) VALUES (1, 'DoT team', 'ATK boots');
-    INSERT INTO gacha_currency (game, key, amount) VALUES ('hsr', 'jade', 12345);
-    INSERT INTO gacha_banner (game, name, kind, featured, start_at, end_at)
-      VALUES ('hsr', 'Kafka Rerun', 'Character', 'Kafka', '2026-07-01', '2026-07-22');
-    INSERT INTO gacha_news (game, title, url, external_id)
-      VALUES ('hsr', 'Version 4.4 Update', 'https://www.hoyolab.com/article/1', '1');
-    INSERT INTO gacha_meta (game, key, value) VALUES ('hsr', 'news.fetchedAt', '2026-07-09T12:00:00Z');
-
-    INSERT INTO gacha_chat_thread (id, game, title) VALUES (1, 'fgo', 'My roster help');
-    INSERT INTO gacha_chat_message (thread_id, role, text) VALUES (1, 'user', 'add Mash');
-    INSERT INTO gacha_goal (game, kind, title, recur) VALUES ('fgo', 'task', 'Do dailies', 'daily');
-    INSERT INTO gacha_coach_note (game, content) VALUES ('fgo', 'Plays on NA server');
-    INSERT INTO gacha_coach_doc (game, title, content) VALUES ('fgo', 'ChatGPT log', 'raw text');
-
     INSERT INTO checklist_task (task_key, cadence) VALUES ('anime-episode', 'daily');
     INSERT INTO checklist_log (task_key, cadence, period_key, media_id, payload)
       VALUES ('anime-episode', 'daily', '2026-07-25', 1, '{"title":"Cowboy Bebop"}');
@@ -250,7 +233,7 @@ describe('export sanitize', () => {
     expect(theme.favorite).toBe(0)
   })
 
-  it('wipes lists, japanese content+progress, music library, manga chapters, images, quiz history, gacha, checklist', () => {
+  it('wipes lists, japanese content+progress, music library, manga chapters, images, quiz history, checklist', () => {
     for (const t of [
       'list', 'list_item', 'jp_course', 'jp_lesson', 'jp_card', 'jp_review_log', 'jp_ghost',
       'music_artist', 'music_album', 'music_track', 'music_playlist',
@@ -261,8 +244,6 @@ describe('export sanitize', () => {
       'music_play_log', 'manga_chapter', 'media_image', 'slideshow_item',
       'quiz_session',
       'game_session',
-      'gacha_unit', 'gacha_build', 'gacha_currency', 'gacha_banner', 'gacha_news', 'gacha_meta',
-      'gacha_chat_thread', 'gacha_chat_message', 'gacha_goal', 'gacha_coach_note', 'gacha_coach_doc',
       'checklist_task', 'checklist_log', 'en_word', 'en_review_log', 'en_writing', 'prog_progress',
       'prog_attempt', 'prog_cli_miss', 'prog_solve',
       // Scan cache + remux index: rows point at the exporter's own userData,
@@ -400,18 +381,18 @@ describe('custom export policy', () => {
 
 // New listening/run annotations are always private, even when progress is exported.
 describe('listening and playthrough export privacy', () => {
-  it('removes personal album ratings, notes, tags, rules and game journals', () => {
+  it('removes personal track tags, smart playlist rules and game journals', () => {
     const copy = createTestDb()
     copy.exec(`INSERT INTO media_item(id,media_type,title) VALUES(1,'game','Game');
       INSERT INTO game_playthrough(id,media_id,title,kind,state) VALUES(1,1,'Private run','first','active');
       INSERT INTO game_playthrough_note(run_id,entry_date,body) VALUES(1,'2026-09-23','Private objective');
       INSERT INTO music_artist(id,name,dir_path) VALUES(1,'Artist','Artist');
       INSERT INTO music_album(id,artist_id,title,dir_path) VALUES(1,1,'Album','Artist/Album');
-      INSERT INTO music_album_personal(album_id,rating,review) VALUES(1,9,'Private review');
-      INSERT INTO music_listen(album_id,listened_on,notes) VALUES(1,'2026-09-23','Private listen');
+      INSERT INTO music_track(id,album_id,artist_id,file_path,title) VALUES(1,1,1,'song.mp3','Song');
+      INSERT INTO music_track_personal(track_id,standout,tags_json) VALUES(1,1,'["private"]');
       INSERT INTO music_smart_playlist(title,rules_json) VALUES('Private rules','{}');`)
     sanitizeDb(copy, { includeProgress: true, includeRatings: true })
-    for (const table of ['game_playthrough', 'game_playthrough_note', 'music_album_personal', 'music_listen', 'music_smart_playlist']) {
+    for (const table of ['game_playthrough', 'game_playthrough_note', 'music_track_personal', 'music_smart_playlist']) {
       expect(copy.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get()).toEqual({ n: 0 })
     }
     expect(copy.pragma('foreign_key_check')).toEqual([])

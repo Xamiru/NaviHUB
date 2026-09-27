@@ -37,11 +37,14 @@ vi.mock('../src/main/repos/settingsRepo', () => ({
   get: (key: string) => (key === 'tmdb.api_key' ? 'test-key' : null)
 }))
 
-import { buildTopVariables, topList } from '../src/main/anilist'
+import { anilistThrottle, buildTopVariables, topList } from '../src/main/anilist'
 import { buildDiscoverParams, discoverTop } from '../src/main/tmdb'
 import { buildVndbTopBody } from '../src/main/vndb'
 import { CATALOG_DDL } from '../src/main/gamesCatalogSchema'
 import * as bulk from '../src/main/bulkImport'
+import { __resetLibraryJobLock } from '../src/main/libraryJobLock'
+
+anilistThrottle.intervalMs = 0
 import { TaskCancelledError } from '../src/main/tasks'
 import type { BulkSourceKey } from '../src/shared/bulkImport'
 
@@ -81,6 +84,16 @@ describe('buildTopVariables (AniList)', () => {
       buildTopVariables(params({ source: 'manga', season: 'winter', seasonYear: 2024 }), 1, 50)
         .season
     ).toBeUndefined()
+  })
+
+  it('format keys widen to AniList formats and countries pass through checked', () => {
+    expect(buildTopVariables(params({ format: 'tv' }), 1, 50).formats).toEqual(['TV', 'TV_SHORT'])
+    expect(buildTopVariables(params({ source: 'manga', format: 'novel' }), 1, 50).formats).toEqual([
+      'NOVEL'
+    ])
+    expect(buildTopVariables(params({ country: 'KR' }), 1, 50).country).toBe('KR')
+    expect(() => buildTopVariables(params({ format: 'music' }), 1, 50)).toThrow(/Unknown AniList format/)
+    expect(() => buildTopVariables(params({ country: 'US' }), 1, 50)).toThrow(/Unknown AniList country/)
   })
 
   it('genre becomes genre_in', () => {
@@ -172,13 +185,13 @@ describe('topList partial tolerance (AniList)', () => {
         })
       }
     }
-    const items = await topList(params({ count: 100 }), 0)
+    const items = await topList(params({ count: 100 }))
     expect(items).toHaveLength(50) // page 1 kept, page 2's failure tolerated
     // …but a FIRST-page failure still throws (an empty preview must error).
     httpHandler = async () => {
       throw new Error('down')
     }
-    await expect(topList(params({ count: 100 }), 0)).rejects.toThrow('down')
+    await expect(topList(params({ count: 100 }))).rejects.toThrow('down')
   })
 })
 
@@ -339,6 +352,56 @@ describe('preview', () => {
   })
 })
 
+describe('userList (your AniList list)', () => {
+  const entry = (id: number, status: string, score = 0, progress = 0) => ({
+    status,
+    score,
+    progress,
+    media: {
+      id,
+      title: { romaji: `Show ${id}` },
+      startDate: { year: 2020 },
+      averageScore: 70,
+      coverImage: { large: null }
+    }
+  })
+
+  it('reads the status lists across chunks, skipping custom lists and owned titles', async () => {
+    db.prepare(
+      `INSERT INTO media_item (media_type, title, external_source, external_id)
+       VALUES ('anime', 'Owned', 'anilist', '2')`
+    ).run()
+    const chunks = [
+      {
+        hasNextChunk: true,
+        lists: [
+          { isCustomList: false, entries: [entry(1, 'CURRENT', 8, 5), entry(2, 'COMPLETED')] },
+          { isCustomList: true, entries: [entry(9, 'CURRENT')] }
+        ]
+      },
+      { hasNextChunk: false, lists: [{ isCustomList: false, entries: [entry(3, 'PLANNING')] }] }
+    ]
+    httpHandler = async (_url, init) => {
+      const { variables } = JSON.parse(String(init?.body))
+      expect(variables.userName).toBe('lain')
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { MediaListCollection: chunks[variables.chunk - 1] } })
+      }
+    }
+    const items = await bulk.preview(params({ sort: 'list', username: ' lain ', count: 2000 }))
+    expect(items.map((it) => [it.sourceId, it.list])).toEqual([
+      [1, { status: 'CURRENT', score: 8, progress: 5 }],
+      [3, { status: 'PLANNING', score: null, progress: 0 }]
+    ])
+  })
+
+  it('asks for a username instead of calling AniList without one', async () => {
+    await expect(bulk.preview(params({ sort: 'list', username: '' }))).rejects.toThrow(/username/)
+  })
+})
+
 describe('start (the run loop)', () => {
   const payload = (n: number, source: BulkSourceKey = 'anime'): BulkStartPayload => ({
     source,
@@ -370,6 +433,60 @@ describe('start (the run loop)', () => {
     const s = await settled()
     expect(s).toMatchObject({ state: 'done', done: 4, total: 4, imported: 2, skipped: 1, failed: 1 })
     expect(imported).toEqual([1, 4])
+  })
+
+  it('names failed titles and retries exactly those as a new run', async () => {
+    bulk.start(payload(3), {
+      delayMs: 0,
+      importOne: async (_s, id) => {
+        if (id === 2) throw new Error('cover download failed')
+      }
+    })
+    const first = await settled()
+    expect(first.failures).toEqual([
+      { sourceId: 2, title: 'Title 2', error: 'cover download failed' }
+    ])
+
+    const retried: number[] = []
+    bulk.retryFailed({ delayMs: 0, importOne: async (_s, id) => void retried.push(id) })
+    const second = await settled()
+    expect(retried).toEqual([2])
+    expect(second).toMatchObject({ state: 'done', imported: 1, failed: 0, failures: [] })
+  })
+
+  it('applies list tracking to created titles, and undo spares what the user changed', async () => {
+    const insert = (id: number) =>
+      Number(
+        db
+          .prepare(
+            `INSERT INTO media_item (media_type, title, external_source, external_id)
+             VALUES ('anime', ?, 'anilist', ?)`
+          )
+          .run(`Title ${id}`, String(id)).lastInsertRowid
+      )
+    bulk.start(
+      {
+        source: 'anime',
+        items: [
+          { sourceId: 1, title: 'Title 1', tracking: { status: 'Watching', score: 8, progress: 5 } },
+          { sourceId: 2, title: 'Title 2' }
+        ]
+      },
+      { delayMs: 0, importOne: async (_s, id) => ({ mediaId: insert(id), created: true }) }
+    )
+    const s = await settled()
+    expect(s.undoable).toBe(2)
+    expect(
+      db.prepare(`SELECT status, score, progress FROM media_item WHERE external_id='1'`).get()
+    ).toEqual({ status: 'Watching', score: 8, progress: 5 })
+
+    // The user starts tracking title 2 after the run: undo must keep it.
+    db.prepare(`UPDATE media_item SET status='Watching' WHERE external_id='2'`).run()
+    const undo = bulk.takeUndoable()
+    expect(undo.kept).toBe(1)
+    expect(undo.removable).toHaveLength(1)
+    expect(bulk.getStatus().undoable).toBe(0)
+    expect(bulk.takeUndoable()).toEqual({ removable: [], kept: 0 })
   })
 
   it('skips a Steam-owned game by title in the run loop, not just in preview', async () => {
@@ -456,6 +573,7 @@ describe('start (the run loop)', () => {
 beforeEach(() => {
   db = createTestDb()
   catalog = null
+  __resetLibraryJobLock()
   httpHandler = async (url) => {
     throw new Error(`Unexpected network call in test: ${url}`)
   }

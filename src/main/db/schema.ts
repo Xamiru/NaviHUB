@@ -25,8 +25,6 @@ export const mediaItem = sqliteTable(
     titleOriginal: text('title_original'),
     synopsis: text('synopsis'),
     coverPath: text('cover_path'),
-    // Wide hero art for the detail page (AniList bannerImage / TMDB backdrop).
-    bannerPath: text('banner_path'),
     releaseDate: text('release_date'),
     totalUnits: integer('total_units'),
     // personal tracking
@@ -389,6 +387,22 @@ export const slideshowItem = sqliteTable('slideshow_item', {
   fileName: text('file_name').notNull(),
   addedAt: text('added_at').notNull()
 })
+
+// image_override — a hand-picked image for an imported media item, person or
+// character. Restore triggers in init.sql keep it through re-imports; FK-less,
+// cleaned by delete triggers. Personal; wiped on export.
+export const imageOverride = sqliteTable(
+  'image_override',
+  {
+    kind: text('kind').notNull(), // 'media' | 'person' | 'character' | 'music_album' | 'music_artist'
+    entityId: integer('entity_id').notNull(),
+    manualPath: text('manual_path'),
+    providerPath: text('provider_path')
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.kind, t.entityId] })
+  })
+)
 
 // The TMDB episode catalogue for a TV show — see init.sql for why it is separate
 // from video_file and why specials are excluded.
@@ -900,6 +914,7 @@ export const musicTrack = sqliteTable(
     discNo: integer('disc_no'),
     duration: real('duration'),
     tagArtist: text('tag_artist'),
+    genresScanned: integer('genres_scanned', { mode: 'boolean' }).notNull().default(false),
     // user state: preserved across rescans (the scanner never writes these)
     likedAt: text('liked_at'),
     playCount: integer('play_count').notNull().default(0),
@@ -1220,261 +1235,6 @@ export const quizSession = sqliteTable(
   },
   (t) => ({
     byKind: index('idx_quiz_session_kind').on(t.kind, t.playedAt)
-  })
-)
-
-// ---------------------------------------------------------------------------
-// Gacha tracker — standalone section (game list/config in src/shared/gacha.ts).
-// ---------------------------------------------------------------------------
-export const gachaUnit = sqliteTable(
-  'gacha_unit',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    game: text('game').notNull(),
-    kind: text('kind').notNull(),
-    name: text('name').notNull(),
-    rarity: integer('rarity'),
-    element: text('element'),
-    role: text('role'),
-    imagePath: text('image_path'),
-    owned: integer('owned', { mode: 'boolean' }).notNull().default(true),
-    favorite: integer('favorite', { mode: 'boolean' }).notNull().default(false),
-    level: integer('level'),
-    // Extra copies consumed, 0-based (eidolon / NP-1 / imprint / sequence).
-    dupes: integer('dupes').notNull().default(0),
-    obtainedAt: text('obtained_at'),
-    notes: text('notes'),
-    data: text('data', { mode: 'json' }),
-    externalSource: text('external_source'),
-    externalId: text('external_id'),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    byGame: index('idx_gacha_unit_game').on(t.game, t.kind),
-    uniqExternal: uniqueIndex('idx_gacha_unit_external').on(
-      t.game,
-      t.kind,
-      t.externalSource,
-      t.externalId
-    )
-  })
-)
-
-export const gachaBuild = sqliteTable(
-  'gacha_build',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    unitId: integer('unit_id')
-      .notNull()
-      .references(() => gachaUnit.id, { onDelete: 'cascade' }),
-    name: text('name').notNull(),
-    sortOrder: integer('sort_order').notNull().default(0),
-    data: text('data', { mode: 'json' }),
-    notes: text('notes'),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    byUnit: index('idx_gacha_build_unit').on(t.unitId)
-  })
-)
-
-export const gachaCurrency = sqliteTable(
-  'gacha_currency',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    game: text('game').notNull(),
-    key: text('key').notNull(),
-    amount: integer('amount').notNull().default(0),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    uniq: unique('uniq_gacha_currency').on(t.game, t.key)
-  })
-)
-
-export const gachaBanner = sqliteTable(
-  'gacha_banner',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    game: text('game').notNull(),
-    name: text('name').notNull(),
-    kind: text('kind'),
-    featured: text('featured'),
-    startAt: text('start_at'),
-    endAt: text('end_at'),
-    imagePath: text('image_path'),
-    notes: text('notes'),
-    externalSource: text('external_source'),
-    externalId: text('external_id'),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    byGame: index('idx_gacha_banner_game').on(t.game, t.startAt)
-  })
-)
-
-export const gachaNews = sqliteTable(
-  'gacha_news',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    game: text('game').notNull(),
-    title: text('title').notNull(),
-    url: text('url'),
-    summary: text('summary'),
-    imageUrl: text('image_url'),
-    publishedAt: text('published_at'),
-    author: text('author'),
-    sortOrder: integer('sort_order').notNull().default(0),
-    externalId: text('external_id').notNull(),
-    fetchedAt: text('fetched_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    byGame: index('idx_gacha_news_game').on(t.game, t.publishedAt),
-    uniq: unique('uniq_gacha_news').on(t.game, t.externalId)
-  })
-)
-
-export const gachaMeta = sqliteTable(
-  'gacha_meta',
-  {
-    game: text('game').notNull(),
-    key: text('key').notNull(),
-    value: text('value').notNull(),
-    updatedAt: text('updated_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    pk: primaryKey({ columns: [t.game, t.key] })
-  })
-)
-
-// ---------------------------------------------------------------------------
-// Gacha coach — FGO LLM coaching chat (threads/messages/goals/notes/docs).
-// ---------------------------------------------------------------------------
-export const gachaChatThread = sqliteTable(
-  'gacha_chat_thread',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    game: text('game').notNull(),
-    title: text('title'),
-    archivedAt: text('archived_at'),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    byGame: index('idx_gacha_chat_thread_game').on(t.game, t.archivedAt)
-  })
-)
-
-export const gachaChatMessage = sqliteTable(
-  'gacha_chat_message',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    threadId: integer('thread_id')
-      .notNull()
-      .references(() => gachaChatThread.id, { onDelete: 'cascade' }),
-    role: text('role').notNull(),
-    text: text('text'),
-    apiBlocks: text('api_blocks', { mode: 'json' }),
-    actions: text('actions', { mode: 'json' }),
-    attachments: text('attachments', { mode: 'json' }),
-    usageIn: integer('usage_in'),
-    usageOut: integer('usage_out'),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    byThread: index('idx_gacha_chat_message_thread').on(t.threadId, t.id)
-  })
-)
-
-export const gachaGoal = sqliteTable(
-  'gacha_goal',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    game: text('game').notNull(),
-    kind: text('kind').notNull().default('goal'),
-    title: text('title').notNull(),
-    notes: text('notes'),
-    status: text('status').notNull().default('active'),
-    dueAt: text('due_at'),
-    recur: text('recur'),
-    createdBy: text('created_by').notNull().default('user'),
-    doneAt: text('done_at'),
-    sortOrder: integer('sort_order').notNull().default(0),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    byGame: index('idx_gacha_goal_game').on(t.game, t.status, t.dueAt)
-  })
-)
-
-export const gachaCoachNote = sqliteTable(
-  'gacha_coach_note',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    game: text('game').notNull(),
-    content: text('content').notNull(),
-    createdBy: text('created_by').notNull().default('coach'),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`),
-    updatedAt: text('updated_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    byGame: index('idx_gacha_coach_note_game').on(t.game)
-  })
-)
-
-export const gachaCoachDoc = sqliteTable(
-  'gacha_coach_doc',
-  {
-    id: integer('id').primaryKey({ autoIncrement: true }),
-    game: text('game').notNull(),
-    title: text('title').notNull(),
-    content: text('content').notNull(),
-    summary: text('summary'),
-    createdAt: text('created_at')
-      .notNull()
-      .default(sql`(datetime('now'))`)
-  },
-  (t) => ({
-    byGame: index('idx_gacha_coach_doc_game').on(t.game)
   })
 )
 
@@ -2554,25 +2314,27 @@ export const gamePlaythroughNote = sqliteTable('game_playthrough_note', {
   runId: integer('run_id').notNull().references(() => gamePlaythrough.id, { onDelete: 'cascade' }),
   entryDate: text('entry_date').notNull(), body: text('body').notNull()
 }, (t) => ({ byRun: index('idx_game_playthrough_note_run').on(t.runId, t.entryDate) }))
-export const musicAlbumPersonal = sqliteTable('music_album_personal', {
-  albumId: integer('album_id').primaryKey().references(() => musicAlbum.id, { onDelete: 'cascade' }),
-  rating: real('rating'), shelf: text('shelf'), review: text('review').notNull().default(''),
-  tagsJson: text('tags_json').notNull().default('[]')
-}, (t) => ({
-  rating: check('music_album_personal_rating', sql`${t.rating} BETWEEN 0 AND 10`),
-  shelf: check('music_album_personal_shelf', sql`${t.shelf} IN ('want','exploring','revisit')`)
-}))
 export const musicTrackPersonal = sqliteTable('music_track_personal', {
   trackId: integer('track_id').primaryKey().references(() => musicTrack.id, { onDelete: 'cascade' }),
   standout: integer('standout').notNull().default(0), tagsJson: text('tags_json').notNull().default('[]')
 }, (t) => ({ standout: check('music_track_personal_standout', sql`${t.standout} IN (0,1)`) }))
-export const musicListen = sqliteTable('music_listen', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  albumId: integer('album_id').notNull().references(() => musicAlbum.id, { onDelete: 'cascade' }),
-  listenedOn: text('listened_on').notNull(), rating: real('rating'), notes: text('notes').notNull().default('')
+export const musicTrackGenre = sqliteTable('music_track_genre', {
+  trackId: integer('track_id').notNull().references(() => musicTrack.id, { onDelete: 'cascade' }),
+  genre: text('genre').notNull()
 }, (t) => ({
-  byAlbum: index('idx_music_listen_album').on(t.albumId, t.listenedOn),
-  rating: check('music_listen_rating', sql`${t.rating} BETWEEN 0 AND 10`)
+  pk: primaryKey({ columns: [t.trackId, t.genre] }),
+  byGenre: index('idx_music_track_genre').on(t.genre)
+}))
+export const musicTrackLyrics = sqliteTable('music_track_lyrics', {
+  trackId: integer('track_id').primaryKey().references(() => musicTrack.id, { onDelete: 'cascade' }),
+  state: text('state').notNull(),
+  synced: text('synced'),
+  plain: text('plain'),
+  source: text('source'),
+  fetchedAt: text('fetched_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  state: check('music_track_lyrics_state', sql`${t.state} IN ('found','instrumental','missing')`),
+  source: check('music_track_lyrics_source', sql`${t.source} IN ('embedded','lrclib')`)
 }))
 export const musicSmartPlaylist = sqliteTable('music_smart_playlist', {
   id: integer('id').primaryKey({ autoIncrement: true }),

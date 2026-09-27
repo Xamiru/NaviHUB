@@ -5,11 +5,10 @@ import { readdir, stat, unlink, rm, rmdir } from 'fs/promises'
 import { createHash } from 'crypto'
 import { getSqlite } from './db/connection'
 import { get as getSetting, set as setSetting } from './repos/settingsRepo'
-import { musicRootDir, absoluteMediaPath } from './files'
+import { musicRootDir, absoluteMediaPath, mediaRoot } from './files'
 import * as tasks from './tasks'
 import { claimMusicMaintenance, releaseMusicMaintenance } from './musicMaintenance'
 import { resolveAllSpotifyItems } from './repos/musicSpotifyRepo'
-import { recoverLegacyMusicDownloads, finishLegacyMusicRecovery } from './musicLegacyDownloads'
 import type { MusicDeleteResult, MusicScanStatus, MusicScanSummary } from '@shared/types'
 
 // ---------------------------------------------------------------------------
@@ -213,8 +212,32 @@ export interface ParsedTrack extends ScannedFile {
   discNo: number | null
   duration: number | null
   tagArtist: string | null
+  // null = not re-read this scan (mtime fast path): keep the stored genres.
+  genres: string[] | null
   year: number | null
   picture: { data: Uint8Array; format: string } | null
+}
+
+// A plausible release year, or null. Some taggers write the whole date
+// ("20140530") into the year field; out-of-range values are junk.
+export function tagYear(value: number | undefined): number | null {
+  if (value == null || !Number.isFinite(value)) return null
+  const year = value >= 10_000_000 && value <= 29_991_231 ? Math.floor(value / 10_000) : Math.trunc(value)
+  return year >= 1000 && year <= 2999 ? year : null
+}
+
+// Tag genres as separate names: "Rock; Alternative" and "Hip-Hop/Rap" are two
+// each. Commas stay, because Discogs-style names ("Folk, World, & Country")
+// use them inside one genre. Duplicates collapse case-insensitively.
+export function splitGenres(values: readonly string[] | undefined): string[] {
+  const seen = new Map<string, string>()
+  for (const value of values ?? []) {
+    for (const part of value.split(/[;/|\0]/)) {
+      const name = part.replace(/\s+/g, ' ').trim().slice(0, 80)
+      if (name && !seen.has(name.toLowerCase())) seen.set(name.toLowerCase(), name)
+    }
+  }
+  return [...seen.values()].slice(0, 12)
 }
 
 export type TagReader = (
@@ -236,7 +259,8 @@ const realTagReader: TagReader = async (file, needPicture) => {
       discNo: meta.common.disk?.no ?? undefined,
       duration: meta.format.duration ?? undefined,
       tagArtist: meta.common.artist?.trim() || undefined,
-      year: meta.common.year ?? undefined,
+      genres: splitGenres(meta.common.genre),
+      year: tagYear(meta.common.year) ?? undefined,
       picture: pic ? { data: pic.data, format: pic.format } : undefined
     }
   } catch {
@@ -268,6 +292,7 @@ export async function parseFiles(
         discNo: tags.discNo ?? null,
         duration: tags.duration ?? null,
         tagArtist: tags.tagArtist ?? null,
+        genres: tags.genres ?? [],
         year: tags.year ?? null,
         picture: tags.picture ?? null
       }
@@ -360,8 +385,8 @@ function writeMusicRows(
 
     const upsertTrack = db.prepare(
       `INSERT INTO music_track
-         (album_id, artist_id, file_path, file_mtime, title, track_no, disc_no, duration, tag_artist)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         (album_id, artist_id, file_path, file_mtime, title, track_no, disc_no, duration, tag_artist, genres_scanned)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(file_path) DO UPDATE SET
          album_id = excluded.album_id,
          artist_id = excluded.artist_id,
@@ -371,8 +396,12 @@ function writeMusicRows(
          disc_no = excluded.disc_no,
          duration = excluded.duration,
          tag_artist = excluded.tag_artist,
+         genres_scanned = MAX(genres_scanned, excluded.genres_scanned),
          updated_at = datetime('now')`
     )
+    const trackIdByPath = db.prepare('SELECT id FROM music_track WHERE file_path = ?')
+    const clearGenres = db.prepare('DELETE FROM music_track_genre WHERE track_id = ?')
+    const addGenre = db.prepare('INSERT OR IGNORE INTO music_track_genre (track_id, genre) VALUES (?, ?)')
     const seen: string[] = []
     for (const a of albums) {
       const albumId = albumIdByDir.get(a.albumDir)
@@ -391,8 +420,14 @@ function writeMusicRows(
           t.trackNo,
           t.discNo,
           t.duration,
-          tagArtist
+          tagArtist,
+          t.genres === null ? 0 : 1
         )
+        if (t.genres !== null) {
+          const { id } = trackIdByPath.get(t.relPath) as { id: number }
+          clearGenres.run(id)
+          for (const genre of t.genres) addGenre.run(id, genre)
+        }
         seen.push(t.relPath)
         if (!existingPaths.has(t.relPath)) counts.added += 1
       }
@@ -503,7 +538,7 @@ export function getScanStatus(): MusicScanStatus {
 }
 
 function musicCoversDir(): string {
-  const dir = join(app.getPath('userData'), 'media', 'music-covers')
+  const dir = join(mediaRoot(), 'music-covers')
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
   return dir
 }
@@ -547,7 +582,6 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
     if (!existsSync(root)) {
       throw new Error(`Music folder not found: ${root} — set it in Settings or pick one`)
     }
-    recoverLegacyMusicDownloads(root)
     const { albums, skippedRootFiles } = await walkMusicRoot(root, handle.cancelRequested)
     const db = getSqlite()
 
@@ -575,11 +609,12 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
       (
         db
           .prepare(
-            'SELECT file_path, file_mtime, title, track_no, disc_no, duration, tag_artist FROM music_track'
+            'SELECT file_path, file_mtime, title, track_no, disc_no, duration, tag_artist, genres_scanned FROM music_track'
           )
           .all() as {
           file_path: string
           file_mtime: number | null
+          genres_scanned: number
           title: string
           track_no: number | null
           disc_no: number | null
@@ -626,7 +661,7 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
       const row = existing.get(f.relPath)
       const needsPicture = missingCovers.has(f.albumDir) && needsEmbed.has(f.albumDir) &&
         firstFileOfAlbum.get(f.albumDir) === f.relPath
-      if (row && row.file_mtime != null && Math.round(f.mtimeMs) === row.file_mtime && !needsPicture) {
+      if (row && row.file_mtime != null && Math.round(f.mtimeMs) === row.file_mtime && row.genres_scanned && !needsPicture) {
         unchanged.push({
           ...f,
           title: row.title,
@@ -634,6 +669,7 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
           discNo: row.disc_no,
           duration: row.duration,
           tagArtist: row.tag_artist,
+          genres: null,
           year: null,
           picture: null
         })
@@ -681,7 +717,6 @@ async function scanLibrary(reader: TagReader, handle: tasks.TaskHandle): Promise
       return syncLibrary(albums, parsed, coverByAlbumDir)
     })()
     resolveAllSpotifyItems()
-    finishLegacyMusicRecovery(root)
     return { ...counts, skippedRootFiles, durationMs: Date.now() - startedAt }
   } catch (e) {
     scanState.error = e instanceof Error ? e.message : String(e)

@@ -44,7 +44,9 @@ function workFixtures(overrides: Record<string, unknown> = {}): Record<string, u
     },
     '/authors/OL23919A.json': {
       name: 'J.R.R. Tolkien',
-      photos: [6788]
+      photos: [6788],
+      bio: { type: '/type/text', value: 'English writer and philologist.' },
+      birth_date: '3 January 1892'
     },
     '/works/OL45883W/editions.json': {
       entries: [
@@ -117,13 +119,16 @@ describe('importBook', () => {
 
     const credits = db
       .prepare(
-        `SELECT p.name, p.photo_path, c.role FROM credit c JOIN person p ON p.id = c.person_id`
+        `SELECT p.name, p.photo_path, p.bio, p.birthday, c.role
+         FROM credit c JOIN person p ON p.id = c.person_id`
       )
       .all() as Record<string, unknown>[]
     expect(credits).toHaveLength(1)
     expect(credits[0].name).toBe('J.R.R. Tolkien')
     expect(credits[0].role).toBe('writer')
     expect(credits[0].photo_path).toBeTruthy()
+    expect(credits[0].bio).toBe('English writer and philologist.')
+    expect(credits[0].birthday).toBe('1892-01-03')
 
     // 12 subjects in the fixture, capped at 10.
     expect(db.prepare('SELECT COUNT(*) AS n FROM tag').get()).toEqual({ n: 10 })

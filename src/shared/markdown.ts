@@ -1,7 +1,7 @@
-// A tiny, dependency-free Markdown parser for rendering LLM coach replies.
+// A tiny, dependency-free Markdown parser for LLM feedback, wiki prose and lessons.
 // Pure: it produces a data structure (never HTML) that components/Markdown.tsx
 // maps to React elements — the app's house rule is NEVER dangerouslySetInnerHTML.
-// Scope is deliberately small (what a coach actually emits): paragraphs,
+// Scope is deliberately small (what LLM feedback and authored prose use): paragraphs,
 // headings, bullet/ordered lists, fenced code, and inline bold/italic/code/links.
 
 export type MdInline =

@@ -5,18 +5,24 @@ import {
   absoluteMediaPath,
   copyImageInto,
   copyIntoSlideshow,
+  downloadImage,
   downloadImageTo,
+  importImageFile,
   pickImageFiles,
   removeSlideshowCopy,
   sanitizeFileBase
 } from './files'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { fetchBackdrops } from './tmdb'
+import * as settingsRepo from './repos/settingsRepo'
+import * as art from './artSources'
 import type {
   ImageKind,
   MediaImage,
   WallpaperSearchPage,
-  WallpaperSearchResult
+  WallpaperSearchResult,
+  WallpaperSource,
+  WallpaperSourceInfo
 } from '@shared/types'
 
 // Wallpapers + fan art for a media item. Files live in a browsable on-disk
@@ -96,6 +102,77 @@ export async function searchTmdbBackdrops(mediaId: number): Promise<WallpaperSea
     throw new Error('This title has no TMDB id — import it from TMDB first')
   const backdrops = await fetchBackdrops(media.media_type, media.external_id)
   return { results: tmdbBackdropResults(backdrops), page: 1, lastPage: 1 }
+}
+
+// Which Browse sources a title gets, in tab order. Title-searchable sources
+// carry the title as their prefilled query; id-bound ones (TMDB, VNDB, the
+// AniList banner, Steam/SteamGridDB for a Steam import) carry null. Fan art
+// for anime-style media opens on Danbooru, everything else on Wallhaven.
+const BOORU_TYPES = new Set(['anime', 'manga', 'visual_novel', 'game'])
+
+export function listSources(mediaId: number, kind: ImageKind): WallpaperSourceInfo[] {
+  const m = getMedia(mediaId)
+  const type = m.media_type
+  const id = m.external_id
+  const hasKey = (key: string): boolean => !!settingsRepo.get(key)?.trim()
+  const out: WallpaperSourceInfo[] = []
+  const add = (source: WallpaperSource, label: string, query: string | null, needsKey: string | null = null) =>
+    out.push({ source, label, query, needsKey })
+
+  const booru = BOORU_TYPES.has(type)
+  if (booru && kind === 'fanart') add('danbooru', 'Danbooru', m.title)
+  add('wallhaven', 'Wallhaven', m.title)
+  if (booru && kind === 'wallpaper') add('danbooru', 'Danbooru', m.title)
+  if ((type === 'movie' || type === 'tv') && m.external_source === 'tmdb' && id) {
+    add('tmdb', 'TMDB backdrops', null)
+    add('fanarttv', 'fanart.tv', null, hasKey('fanarttv.api_key') ? null : 'fanart.tv')
+  }
+  if ((type === 'anime' || type === 'manga') && m.external_source === 'anilist' && id) {
+    add('anilist', 'AniList banner', null)
+  }
+  if (type === 'visual_novel' && m.external_source === 'vndb' && id) add('vndb', 'VNDB screenshots', null)
+  if (type === 'game') {
+    const steamQuery = m.external_source === 'steam' && id ? null : m.title
+    add('steam', 'Steam', steamQuery)
+    add('steamgriddb', 'SteamGridDB', steamQuery, hasKey('steamgriddb.api_key') ? null : 'SteamGridDB')
+  }
+  return out
+}
+
+export async function searchSource(
+  mediaId: number,
+  source: WallpaperSource,
+  query: string,
+  page = 1
+): Promise<WallpaperSearchPage> {
+  const m = getMedia(mediaId)
+  const steamId = m.external_source === 'steam' ? m.external_id : null
+  switch (source) {
+    case 'wallhaven':
+      return searchWallhaven(query, page)
+    case 'tmdb':
+      return searchTmdbBackdrops(mediaId)
+    case 'danbooru':
+      return art.searchDanbooru(query, page)
+    case 'anilist':
+      return art.anilistBanner(requireId(m, 'anilist'))
+    case 'vndb':
+      return art.vndbScreenshots(requireId(m, 'vndb'))
+    case 'fanarttv':
+      if (m.media_type !== 'movie' && m.media_type !== 'tv')
+        throw new Error('fanart.tv art is only available for movies and TV shows')
+      return art.fanartTv(m.media_type, requireId(m, 'tmdb'))
+    case 'steam':
+      return art.steamArt(steamId, query || m.title)
+    case 'steamgriddb':
+      return art.steamGridDbHeroes(steamId, query || m.title)
+  }
+}
+
+function requireId(m: MediaRow, source: string): string {
+  if (m.external_source !== source || !m.external_id)
+    throw new Error(`This title was not imported from ${source}`)
+  return m.external_id
 }
 
 // ---------------- library ops ----------------
@@ -217,14 +294,12 @@ export async function addFromSearch(
   kind: ImageKind,
   result: WallpaperSearchResult
 ): Promise<MediaImage> {
-  const baseName =
-    result.source === 'wallhaven'
-      ? `wallhaven-${result.id}`
-      : `tmdb-${result.id.replace(/^\//, '').replace(/\.\w+$/, '')}`
+  const stem = result.id.replace(/^\//, '').replace(/\.\w+$/, '').replace(/[^\w-]+/g, '-')
+  const baseName = `${result.source}-${stem}`
   return addDownloaded(mediaId, kind, result.fullUrl, baseName, result.source, result.width, result.height)
 }
 
-export async function addFromUrl(mediaId: number, kind: ImageKind, url: string): Promise<MediaImage> {
+function parseImageUrl(url: string): URL {
   let parsed: URL
   try {
     parsed = new URL(url.trim())
@@ -233,6 +308,11 @@ export async function addFromUrl(mediaId: number, kind: ImageKind, url: string):
   }
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:')
     throw new Error('Only http(s) image URLs are supported')
+  return parsed
+}
+
+export async function addFromUrl(mediaId: number, kind: ImageKind, url: string): Promise<MediaImage> {
+  const parsed = parseImageUrl(url)
   const base = parsed.pathname.split('/').filter(Boolean).pop() ?? ''
   const baseName = base ? base.replace(/\.\w+$/, '') : null
   return addDownloaded(mediaId, kind, parsed.toString(), baseName, 'url', null, null)
@@ -250,6 +330,21 @@ export async function addFromFiles(mediaId: number, kind: ImageKind): Promise<Me
     added.push(insertImage(mediaId, kind, filePath, null, 'file', null, null))
   }
   return added
+}
+
+// Sources for a hand-picked cover/photo (imageOverrideRepo.setManual). Both
+// land content-addressed in media/picked/, apart from the re-downloadable cache. An Art-tab
+// image is COPIED, not referenced: removing its tile deletes the pictures/ file.
+export async function importImageFromUrl(url: string): Promise<string> {
+  const rel = await downloadImage(parseImageUrl(url).toString(), 'picked')
+  if (!rel) throw new Error('Image download failed — check the URL and your connection.')
+  return rel
+}
+
+export function importImageFromArt(imageId: number): string {
+  const rel = importImageFile(absoluteMediaPath(getImage(imageId).filePath), 'picked')
+  if (!rel) throw new Error('That image file is missing or unreadable.')
+  return rel
 }
 
 // Deletes the row AND its file: unlike shared content-addressed covers, a

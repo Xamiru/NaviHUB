@@ -21,11 +21,27 @@ import { fetchWithRetry } from './http'
 import { streamResponseToFile } from './streamDownload'
 import { mediaUrl } from '@shared/mediaUrl'
 
-// Images live under userData/media. The DB stores only the relative filename
-// (e.g. "media/cover-169...png") so the library stays portable.
-function mediaDir(): string {
-  const dir = join(app.getPath('userData'), 'media')
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+// Images live under the media root: userData/media, or the `media.dir`
+// setting once Settings → Folders has moved it (storageMove.ts is its only
+// writer). The DB stores only "media/…" relative paths, so the root can move
+// without touching a row. Every "media/" path resolves through here.
+export function mediaRoot(): string {
+  const custom = getSetting('media.dir')?.trim()
+  return custom && custom.length ? custom : join(app.getPath('userData'), 'media')
+}
+
+// Never throws: a media.dir on an unmounted drive must not take down every
+// image request and import with it. `into` = 'picked' is media/picked/, where
+// images the user chose by hand live apart from the re-downloadable cache.
+export type MediaSubdir = 'picked'
+
+function mediaDir(into?: MediaSubdir): string {
+  const dir = into ? join(mediaRoot(), into) : mediaRoot()
+  try {
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  } catch {
+    // reads fail per file instead
+  }
   return dir
 }
 
@@ -33,9 +49,15 @@ function mediaDir(): string {
 // the `audio.dir` setting (e.g. a roomier external drive). DB paths use a virtual
 // "audio/" prefix; only this module maps that prefix to the real folder, so the
 // location can be changed later without touching stored rows.
+// The explicit theme-audio folder, or null when audio shares the media root.
+export function audioDirSetting(): string | null {
+  return getSetting('audio.dir')?.trim() || null
+}
+
 function audioDir(): string {
   const custom = getSetting('audio.dir')?.trim()
-  return custom && custom.length ? custom : join(app.getPath('userData'), 'media')
+  // Unset, theme audio shares the media folder, so it moves with it.
+  return custom && custom.length ? custom : mediaRoot()
 }
 
 // Manga pages live in a user-chosen library root (settings key `manga.dir`,
@@ -217,9 +239,9 @@ export async function pickImage(): Promise<string | null> {
 
   const src = res.filePaths[0]
   const fileName = uniqueName(src)
-  const dest = join(mediaDir(), fileName)
+  const dest = join(mediaDir('picked'), fileName)
   copyFileSync(src, dest)
-  return join('media', fileName)
+  return join('media', 'picked', fileName)
 }
 
 // Strips characters that are illegal/awkward in filenames, so theme audio and
@@ -255,6 +277,7 @@ export function absoluteMediaPath(relPath: string): string {
   // The protocol handler serves whatever path this returns; with user-chosen
   // roots in play, never let a stored/requested path escape its root.
   if (norm.split('/').includes('..')) throw new Error(`Path escapes media root: ${relPath}`)
+  if (norm.startsWith('media/')) return join(mediaRoot(), norm.slice('media/'.length))
   if (norm.startsWith('audio/')) return join(audioDir(), norm.slice('audio/'.length))
   if (norm.startsWith('manga/')) return join(mangaRootDir(), norm.slice('manga/'.length))
   if (norm.startsWith('books/')) return join(booksRootDir(), norm.slice('books/'.length))
@@ -362,14 +385,22 @@ export function cachedDownload(url: string): string | null {
 // returns the stored relative path, or null on failure. The filename is derived
 // deterministically from the URL, so re-importing a title whose art is already
 // on disk is a cache hit (no network, no rewrite) instead of a fresh download.
-export async function downloadImage(url: string | null | undefined): Promise<string | null> {
+export async function downloadImage(
+  url: string | null | undefined,
+  into?: MediaSubdir
+): Promise<string | null> {
   if (!url) return null
   try {
     const fileName = dlFileName(url)
-    const dest = join(mediaDir(), fileName)
-    const relPath = join('media', fileName)
+    const dest = join(mediaDir(into), fileName)
+    const relPath = into ? join('media', into, fileName) : join('media', fileName)
     if (existsSync(dest)) return relPath
-    const res = await fetchWithRetry(url)
+    // A pasted URL can be any host; some (Danbooru's CDN) refuse Node's default
+    // User-Agent. Importer calls keep their existing request shape.
+    const res = await fetchWithRetry(
+      url,
+      into ? { headers: { 'User-Agent': 'NaviHUB/1.0 (personal media hub)' } } : undefined
+    )
     if (!res.ok) return null
     await streamResponseToFile(res, dest, {
       label: 'Image',
@@ -385,7 +416,7 @@ export async function downloadImage(url: string | null | undefined): Promise<str
 // steam_settings folder) into userData/media, content-addressed like
 // downloadImage so re-reading the same file is a no-op. Returns the stored
 // relative path, or null if the file is missing/unreadable/not an image.
-export function importImageFile(srcAbs: string): string | null {
+export function importImageFile(srcAbs: string, into?: MediaSubdir): string | null {
   let srcFd: number | null = null
   let tmpFd: number | null = null
   let tmp: string | null = null
@@ -419,11 +450,11 @@ export function importImageFile(srcAbs: string): string | null {
     closeSync(tmpFd)
     tmpFd = null
     const fileName = `lc-${hash.digest('hex').slice(0, 16)}${urlExt}`
-    const dest = join(mediaDir(), fileName)
+    const dest = join(mediaDir(into), fileName)
     if (existsSync(dest)) unlinkSync(tmp)
     else renameSync(tmp, dest)
     tmp = null
-    return join('media', fileName)
+    return into ? join('media', into, fileName) : join('media', fileName)
   } catch {
     return null
   } finally {
@@ -476,7 +507,11 @@ export async function downloadImageTo(
 ): Promise<string | null> {
   try {
     // Generous timeout: full-res wallpapers run to 10+ MB on slow connections.
-    const res = await fetchWithRetry(url, { timeoutMs: 120_000 })
+    // A named User-Agent: Danbooru's CDN refuses Node's default "node".
+    const res = await fetchWithRetry(url, {
+      timeoutMs: 120_000,
+      headers: { 'User-Agent': 'NaviHUB/1.0 (personal media hub)' }
+    })
     if (!res.ok) return null
     const urlExt = extname(new URL(url).pathname)
     const ext = /^\.(png|jpe?g|webp|gif|bmp)$/i.test(urlExt) ? urlExt : '.jpg'
@@ -568,30 +603,4 @@ export function saveMediaBytes(bytes: Uint8Array, ext: string, subdir?: string):
   if (safeDir && !existsSync(dir)) mkdirSync(dir, { recursive: true })
   writeFileSync(join(dir, fileName), Buffer.from(bytes))
   return safeDir ? join('media', safeDir, fileName) : join('media', fileName)
-}
-
-// Native picker for a text file. Defaults match the original chat-log use
-// (txt/md, ~2MB); callers reading larger structured files (e.g. a Chaldea
-// userdata.json backup) pass their own extensions + maxBytes. Returns
-// { name, content } or null on cancel.
-export async function pickTextFile(options?: {
-  title?: string
-  filterName?: string
-  extensions?: string[]
-  maxBytes?: number
-}): Promise<{ name: string; content: string } | null> {
-  const res = await dialog.showOpenDialog({
-    title: options?.title ?? 'Choose a chat log',
-    properties: ['openFile'],
-    filters: [
-      {
-        name: options?.filterName ?? 'Text',
-        extensions: options?.extensions ?? ['txt', 'md', 'markdown', 'text']
-      }
-    ]
-  })
-  if (res.canceled || res.filePaths.length === 0) return null
-  const src = res.filePaths[0]
-  const content = readFileSync(src, 'utf8').slice(0, options?.maxBytes ?? 2_000_000)
-  return { name: basename(src), content }
 }

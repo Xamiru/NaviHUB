@@ -3,7 +3,7 @@
 // are enabled (checklist_task) and what happened (checklist_log).
 //
 // Every function that needs "today" takes it as an explicit LOCAL 'YYYY-MM-DD'
-// parameter (coachRepo precedent): ipc.ts supplies it from the system clock,
+// parameter: ipc.ts supplies it from the system clock,
 // tests supply a fixed date. Nothing here — and nothing in the renderer — ever
 // derives today on its own.
 

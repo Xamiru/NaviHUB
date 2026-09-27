@@ -37,7 +37,7 @@ vi.mock('../src/main/http', () => ({
     return {
       ok: true,
       status: 200,
-      json: async () => (url.includes('/api/bleed/init') ? hltbInit : hltbSearch)
+      json: async () => (url.includes('/api/search/site/init') ? hltbInit : hltbSearch)
     }
   }
 }))
@@ -162,7 +162,7 @@ describe('importGame', () => {
 
   it('HLTB beats the dump playtime when it matches', async () => {
     seedCatalog([catalogRow()])
-    hltbInit = { token: 't', hpKey: 'k', hpVal: 'v' }
+    hltbInit = { token: 't' }
     hltbSearch = {
       data: [
         { game_id: 1, game_name: 'Grand Theft Auto V', release_world: 2013, comp_main: 113_400 }
@@ -227,6 +227,23 @@ describe('importGame', () => {
          WHERE mt.media_id=? ORDER BY t.name`
       ).all(mediaId)
     ).toEqual([{ name: 'Adventure' }, { name: 'Replay later' }])
+  })
+
+  it('a partial refresh writes only the chosen columns and no child rows', async () => {
+    seedCatalog([catalogRow()])
+    const { mediaId } = await importGame(3498)
+    const count = (table: string) =>
+      (db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE media_id=?`).get(mediaId) as { n: number }).n
+    const before = { companies: count('media_company'), tags: count('media_tag') }
+    db.prepare(`UPDATE media_item SET title='Hand edited' WHERE id=?`).run(mediaId)
+    catalog!.prepare(`UPDATE catalog_game SET developers='[]', genres='[]' WHERE id=3498`).run()
+
+    await importGame(3498, { only: ['cover'] })
+    expect({ companies: count('media_company'), tags: count('media_tag') }).toEqual(before)
+    expect(db.prepare('SELECT title FROM media_item WHERE id=?').get(mediaId)).toEqual({
+      title: 'Hand edited'
+    })
+    await expect(importGame(9999, { only: ['text'] })).rejects.toThrow()
   })
 
   it('keeps child links when a catalog row lacks those fields', async () => {

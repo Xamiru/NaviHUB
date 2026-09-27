@@ -10,6 +10,7 @@ import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import Section from '../components/Section'
 import { Field } from '../components/Field'
+import ImagePickerDialog from '../components/ImagePickerDialog'
 import type { MediaItemInput } from '@shared/types'
 
 // The full editor for one library entry. Status, score and favorite are also
@@ -135,9 +136,13 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }))
 
-  async function pickCover() {
-    const rel = await api.files.pickImage()
-    if (rel) set('coverPath', rel)
+  // The cover is saved through images.setManual, and only when it changed
+  // here: an unchanged form must not write back a cover a re-import replaced.
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [coverChanged, setCoverChanged] = useState(false)
+  function changeCover(path: string | null): void {
+    set('coverPath', path)
+    setCoverChanged(true)
   }
 
   function toNum(s: string): number | null {
@@ -191,7 +196,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
         mediaType: cfg.key,
         title: form.title.trim(),
         titleOriginal: form.titleOriginal.trim() || null,
-        coverPath: form.coverPath,
+        ...(editing ? {} : { coverPath: form.coverPath }),
         status: form.status || null,
         score: toNum(form.score),
         progress,
@@ -206,6 +211,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
       }
       let targetId: number
       if (editing) {
+        if (coverChanged) await api.images.setManual('media', Number(id), form.coverPath)
         await api.media.update(Number(id), payload)
         targetId = Number(id)
       } else {
@@ -276,16 +282,32 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
               </div>
             )}
           </div>
-          <button className="btn-ghost w-full mt-2" onClick={pickCover}>
+          <button className="btn-ghost w-full mt-2" onClick={() => setPickerOpen(true)}>
             Choose image…
           </button>
           {form.coverPath && (
             <button
               className="w-full mt-1 text-xs text-gray-500 hover:text-red-400"
-              onClick={() => set('coverPath', null)}
+              onClick={() => changeCover(null)}
             >
               Remove cover
             </button>
+          )}
+          {pickerOpen && (
+            <ImagePickerDialog
+              title="Change cover"
+              subject={form.title || cfg.singular}
+              currentPath={form.coverPath}
+              override={editing ? { kind: 'media', id: Number(id) } : undefined}
+              artMediaId={editing ? Number(id) : undefined}
+              onPick={changeCover}
+              onReverted={(path) => {
+                set('coverPath', path)
+                setCoverChanged(false)
+                qc.invalidateQueries({ queryKey: qk.media.all })
+              }}
+              onClose={() => setPickerOpen(false)}
+            />
           )}
         </div>
 

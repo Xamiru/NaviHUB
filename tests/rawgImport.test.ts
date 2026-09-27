@@ -31,7 +31,7 @@ vi.mock('../src/main/http', () => ({
     ok: true,
     status: 200,
     json: async () =>
-      url.includes('/api/bleed/init') ? hltbInit : url.includes('/api/bleed') ? hltbSearch : fixture
+      url.includes('/api/search/site/init') ? hltbInit : url.includes('/api/search/site') ? hltbSearch : fixture
   })
 }))
 
@@ -140,7 +140,7 @@ describe('importGame', () => {
   })
 
   it('HLTB Main Story beats RAWG playtime as the length (hours)', async () => {
-    hltbInit = { token: 't', hpKey: 'k', hpVal: 'v' }
+    hltbInit = { token: 't' }
     hltbSearch = {
       data: [
         {

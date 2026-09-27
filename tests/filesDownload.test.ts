@@ -91,6 +91,8 @@ describe('streamed media downloads', () => {
     expect(readFileSync(join(env.root, 'pictures', 'Title', 'wallpapers', 'Key art.webp'), 'utf8')).toBe(
       'picture'
     )
+    // Danbooru's CDN answers 403 to Node's default "node" User-Agent.
+    expect(env.fetch.mock.calls[0][1].headers['User-Agent']).toMatch(/^NaviHUB/)
   })
 
   it('hashes and copies a local image in bounded chunks without partial debris', () => {

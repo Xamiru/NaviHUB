@@ -92,17 +92,22 @@ const Database = require('better-sqlite3')
 // Override with NAVIHUB_DIR if your data lives elsewhere.
 const USER_DIR = process.env.NAVIHUB_DIR || path.join(os.homedir(), '.config', 'navihub')
 const DB_PATH = path.join(USER_DIR, 'navihub.db')
-const MEDIA_DIR = path.join(USER_DIR, 'media')
 
 if (!fs.existsSync(DB_PATH)) {
   console.error(`✗ DB not found at ${DB_PATH}. Run the app once first (or set NAVIHUB_DIR).`)
   process.exit(1)
 }
-if (!fs.existsSync(MEDIA_DIR)) fs.mkdirSync(MEDIA_DIR, { recursive: true })
 
 const db = new Database(DB_PATH)
 db.pragma('journal_mode = WAL')
 db.pragma('foreign_keys = ON')
+
+// Mirrors src/main/files.ts mediaRoot(): the `media.dir` setting (Settings →
+// Folders → Move) wins over <userData>/media.
+const MEDIA_DIR =
+  db.prepare("SELECT value FROM settings WHERE key = 'media.dir'").get()?.value?.trim() ||
+  path.join(USER_DIR, 'media')
+if (!fs.existsSync(MEDIA_DIR)) fs.mkdirSync(MEDIA_DIR, { recursive: true })
 
 // The theme tables are newer than some DBs; create them if the app hasn't yet
 // (CREATE TABLE IF NOT EXISTS mirrors src/main/db/init.sql — keep in sync).
@@ -426,6 +431,7 @@ query ($id: Int) {
     startDate { year month day }
     coverImage { large extraLarge }
     genres
+    tags { name rank isMediaSpoiler isGeneralSpoiler isAdult }
     studios { edges { isMain node { id name } } }
     relations {
       edges {
@@ -438,11 +444,13 @@ query ($id: Int) {
       edges {
         role
         node { id name { full native } gender image { large } }
-        voiceActors(language: JAPANESE) { id name { full native } image { large } }
+        voiceActors(language: JAPANESE) {
+          id name { full native } image { large } description(asHtml: false) dateOfBirth { year month day }
+        }
       }
     }
     staff(perPage: 8, sort: RELEVANCE) {
-      edges { role node { id name { full native } image { large } } }
+      edges { role node { id name { full native } image { large } description(asHtml: false) dateOfBirth { year month day } } }
     }
   }
 }`
@@ -455,7 +463,9 @@ query ($id: Int, $page: Int) {
       edges {
         role
         node { id name { full native } gender image { large } }
-        voiceActors(language: JAPANESE) { id name { full native } image { large } }
+        voiceActors(language: JAPANESE) {
+          id name { full native } image { large } description(asHtml: false) dateOfBirth { year month day }
+        }
       }
     }
   }
@@ -529,18 +539,53 @@ async function alUpsertPerson(node) {
   const row = db.prepare('SELECT id, photo_path FROM person WHERE external_source=? AND external_id=?').get(AL_SOURCE, ext)
   const name = node.name?.full ?? 'Unknown'
   const nativeName = node.name?.native ?? null
+  const bio = alCleanBio(node.description)
+  const birthday = alFmtBirthday(node.dateOfBirth)
   if (row) {
     if (!row.photo_path && node.image?.large) {
       const p = await downloadImage(node.image.large)
       if (p) db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(p, row.id)
     }
+    // Ports anilist.ts: an imported bio only fills an empty (hand-editable) field.
+    db.prepare('UPDATE person SET bio=COALESCE(bio, ?), birthday=COALESCE(?, birthday) WHERE id=?')
+      .run(bio, birthday, row.id)
     return row.id
   }
   const photo = await downloadImage(node.image?.large)
   return Number(
-    db.prepare('INSERT INTO person (name, name_native, photo_path, external_source, external_id) VALUES (?, ?, ?, ?, ?)')
-      .run(name, nativeName, photo, AL_SOURCE, ext).lastInsertRowid
+    db.prepare('INSERT INTO person (name, name_native, photo_path, bio, birthday, external_source, external_id) VALUES (?, ?, ?, ?, ?, ?, ?)')
+      .run(name, nativeName, photo, bio, birthday, AL_SOURCE, ext).lastInsertRowid
   )
+}
+// Ports cleanBio / fmtBirthday from src/main/anilist.ts.
+function alCleanBio(s) {
+  if (typeof s !== 'string') return null
+  const text = alStripHtml(
+    s
+      .split('\n')
+      .filter((line) => !/^\s*(\[[^\]]*\]\([^)]*\)[\s|,·-]*)+$/.test(line))
+      .join('\n')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/~!|!~/g, '')
+      .replace(/(\*\*|__)(.+?)\1/g, '$2')
+  )
+  return text || null
+}
+function alFmtBirthday(d) {
+  const pad = (n) => String(n).padStart(2, '0')
+  if (d?.year && d.month && d.day) return `${d.year}-${pad(d.month)}-${pad(d.day)}`
+  if (d?.year) return String(d.year)
+  if (d?.month && d.day) return `--${pad(d.month)}-${pad(d.day)}`
+  return null
+}
+// Ports replaceAniListTags' filter (anilist.ts); additive like the genres here.
+function alLinkTags(mediaId, tags) {
+  for (const t of Array.isArray(tags) ? tags : []) {
+    const name = typeof t?.name === 'string' ? t.name.trim() : ''
+    if (!name || !(t.rank >= 60) || t.isMediaSpoiler || t.isGeneralSpoiler || t.isAdult) continue
+    db.prepare("INSERT OR IGNORE INTO tag (name, category) VALUES (?, 'anilist')").run(name)
+    db.prepare('INSERT OR IGNORE INTO media_tag (media_id, tag_id) SELECT ?, id FROM tag WHERE name=?').run(mediaId, name)
+  }
 }
 async function alUpsertCharacter(node, charSource = AL_SOURCE) {
   const ext = String(node.id)
@@ -614,6 +659,7 @@ async function alImportAnime(anilistId, { full }) {
     studios++
   }
   for (const g of m.genres ?? []) upsertTagAndLink(mediaId, g)
+  alLinkTags(mediaId, m.tags)
 
   let cast = 0
   let staff = 0
@@ -680,6 +726,7 @@ query ($id: Int) {
     startDate { year month day }
     coverImage { large extraLarge }
     genres
+    tags { name rank isMediaSpoiler isGeneralSpoiler isAdult }
     relations {
       edges {
         relationType
@@ -691,7 +738,7 @@ query ($id: Int) {
       edges { role node { id name { full native } gender image { large } } }
     }
     staff(perPage: 8, sort: RELEVANCE) {
-      edges { role node { id name { full native } gender image { large } } }
+      edges { role node { id name { full native } image { large } description(asHtml: false) dateOfBirth { year month day } } }
     }
   }
 }`
@@ -742,6 +789,7 @@ async function alImportManga(anilistId, { full }) {
   db.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(meta, mediaId)
 
   for (const g of m.genres ?? []) upsertTagAndLink(mediaId, g)
+  alLinkTags(mediaId, m.tags)
 
   let staff = 0
   const keptCharacterIds = new Set()
@@ -1402,28 +1450,26 @@ async function rawgGet(p, params = {}, attempt = 0) {
 }
 
 /* ---- HowLongToBeat (ports src/main/hltb.ts) — best-effort play times.
- * No official API; mirrors the site's own JS (as of mid-2026): GET
- * /api/bleed/init for a token + honeypot pair, POST /api/bleed with them as
- * headers AND the hp pair echoed in the body; 403 = expired token, re-init
- * once. Token is bound to IP + User-Agent so the same UA goes on every
+ * No official API; mirrors the site's own JS (as of September 2026): GET
+ * /api/search/site/init for a token, POST /api/search/site with it as the
+ * x-auth-token header; 403 = expired token, re-init once. Token is bound to IP + User-Agent so the same UA goes on every
  * request. Every failure path returns null/[] — HLTB must never break an
  * import. ---- */
 const HLTB_BASE = 'https://howlongtobeat.com'
 const HLTB_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36'
 let hltbCreds = null
+const HLTB_ANY = { mode: 'include', values: [] }
 
 async function hltbInit() {
   try {
-    const res = await fetch(`${HLTB_BASE}/api/bleed/init?t=${Date.now()}`, {
+    const res = await fetch(`${HLTB_BASE}/api/search/site/init?t=${Date.now()}`, {
       headers: { 'User-Agent': HLTB_UA, Referer: `${HLTB_BASE}/` },
       signal: AbortSignal.timeout(15000)
     })
     if (!res.ok) return null
     const j = await res.json()
-    hltbCreds = j?.token && j?.hpKey && j?.hpVal
-      ? { token: j.token, hpKey: j.hpKey, hpVal: j.hpVal }
-      : null
+    hltbCreds = j?.token ? { token: j.token } : null
     return hltbCreds
   } catch {
     return null
@@ -1449,8 +1495,8 @@ async function hltbSearch(query) {
           sortCategory: 'popular',
           rangeCategory: 'main',
           rangeTime: { min: null, max: null },
-          gameplay: { perspective: '', flow: '', genre: '', difficulty: '' },
-          rangeYear: { min: '', max: '' },
+          gameplay: { perspective: HLTB_ANY, flow: HLTB_ANY, genre: HLTB_ANY },
+          year: HLTB_ANY,
           modifier: ''
         },
         users: { sortCategory: 'postcount' },
@@ -1459,19 +1505,16 @@ async function hltbSearch(query) {
         sort: 0,
         randomizer: 0
       },
-      useCache: true,
-      [c.hpKey]: c.hpVal
+      useCache: true
     }
     try {
-      const res = await fetch(`${HLTB_BASE}/api/bleed`, {
+      const res = await fetch(`${HLTB_BASE}/api/search/site`, {
         method: 'POST',
         headers: {
           'User-Agent': HLTB_UA,
           Referer: `${HLTB_BASE}/`,
           'Content-Type': 'application/json',
-          'x-auth-token': c.token,
-          'x-hp-key': c.hpKey,
-          'x-hp-val': c.hpVal
+          'x-auth-token': c.token
         },
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(15000)
@@ -1509,6 +1552,7 @@ function hltbPickBest(results, title, year) {
   let best = null
   let bestScore = -1
   for (const g of results) {
+    if (typeof g.game_type === 'string' && g.game_type !== 'game') continue
     let score = 0
     if (hltbNorm(String(g.game_name ?? '')) === target) score += 4
     else if (

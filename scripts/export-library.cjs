@@ -41,7 +41,6 @@ const { sanitizeDb } = require('./sanitizeSql.cjs')
 // Override with NAVIHUB_DIR if your data lives elsewhere.
 const USER_DIR = process.env.NAVIHUB_DIR || path.join(os.homedir(), '.config', 'navihub')
 const DB_PATH = path.join(USER_DIR, 'navihub.db')
-const MEDIA_DIR = path.join(USER_DIR, 'media')
 
 function parseArgs(argv) {
   const flags = { out: path.join(os.homedir(), 'navihub-export', 'navihub-bundle'), zip: false }
@@ -85,6 +84,10 @@ async function main() {
   /* ---- 1. consistent snapshot of the live DB (WAL-safe) ---- */
   console.log(`Snapshotting ${DB_PATH} ...`)
   const src = new Database(DB_PATH, { readonly: true, fileMustExist: true })
+  // Mirrors src/main/files.ts mediaRoot().
+  const MEDIA_DIR =
+    src.prepare(`SELECT value FROM settings WHERE key='media.dir'`).get()?.value?.trim() ||
+    path.join(USER_DIR, 'media')
   const audioDirRow = src.prepare(`SELECT value FROM settings WHERE key='audio.dir'`).get()
   const audioDir = audioDirRow ? audioDirRow.value : MEDIA_DIR
   const audioPaths = src

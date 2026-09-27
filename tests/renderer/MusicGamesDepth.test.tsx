@@ -10,8 +10,6 @@ import { DEFAULT_SMART_RULES } from '../../src/shared/musicPersonal'
 import GamePlaythroughSection, {
   GameResumeCard
 } from '../../src/renderer/src/components/GamePlaythroughSection'
-import MusicAlbumJournal from '../../src/renderer/src/components/MusicAlbumJournal'
-import MusicJournalPage from '../../src/renderer/src/pages/MusicJournalPage'
 import MusicSmartPage from '../../src/renderer/src/pages/MusicSmartPage'
 import MusicTrackRow from '../../src/renderer/src/components/MusicTrackRow'
 import { expectNoAxeViolations } from './accessibility'
@@ -24,14 +22,8 @@ const m = vi.hoisted(() => ({
   assign: vi.fn(),
   saveNote: vi.fn(),
   removeNote: vi.fn(),
-  album: vi.fn(),
-  saveAlbum: vi.fn(),
   track: vi.fn(),
   saveTrack: vi.fn(),
-  listens: vi.fn(),
-  saveListen: vi.fn(),
-  removeListen: vi.fn(),
-  journal: vi.fn(),
   tags: vi.fn(),
   smartList: vi.fn(),
   saveSmart: vi.fn(),
@@ -55,14 +47,8 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
       removeNote: m.removeNote
     },
     musicJournal: {
-      album: m.album,
-      saveAlbum: m.saveAlbum,
       track: m.track,
       saveTrack: m.saveTrack,
-      listens: m.listens,
-      saveListen: m.saveListen,
-      removeListen: m.removeListen,
-      list: m.journal,
       tags: m.tags
     },
     musicSmart: {
@@ -165,17 +151,7 @@ beforeEach(() => {
     sessionTotal: 1,
     noteTotal: 0
   })
-  m.album.mockResolvedValue({
-    albumId: 1,
-    rating: 8.5,
-    shelf: 'exploring',
-    review: 'A keeper',
-    tags: ['study'],
-    tracks: []
-  })
   m.track.mockResolvedValue({ trackId: 10, standout: false, tags: [] })
-  m.listens.mockResolvedValue({ items: [], total: 0 })
-  m.journal.mockResolvedValue({ items: [], total: 0 })
   m.tags.mockResolvedValue(['study', 'instrumental'])
   m.smartList.mockResolvedValue([saved])
   m.preview.mockResolvedValue({ items: [track], total: 1, matching: 1 })
@@ -249,48 +225,7 @@ describe('playthrough workflow', () => {
     expect(await screen.findByRole('heading', { name: 'Mage run' })).toBeInTheDocument()
   })
 })
-describe('music album journal', () => {
-  it('saves rating, shelf, review and normalized album tags', async () => {
-    const user = userEvent.setup()
-    const view = mount(<MusicAlbumJournal albumId={1} />, '/music/albums/1')
-    await user.click(await screen.findByRole('button', { name: 'Edit album notes' }))
-    await user.clear(screen.getByLabelText('Album rating (0–10)'))
-    await user.type(screen.getByLabelText('Album rating (0–10)'), '9.2')
-    await user.selectOptions(screen.getByLabelText('Listening shelf'), 'revisit')
-    await user.clear(screen.getByLabelText('Album tags'))
-    await user.type(screen.getByLabelText('Album tags'), 'Calm, STUDY, calm')
-    await act(async () => {
-      await expectNoAxeViolations(view.container)
-    })
-    await user.click(screen.getByRole('button', { name: 'Save album notes' }))
-    await waitFor(() =>
-      expect(m.saveAlbum).toHaveBeenCalledWith(
-        1,
-        expect.objectContaining({
-          rating: 9.2,
-          shelf: 'revisit',
-          tags: ['calm', 'study'],
-          review: 'A keeper'
-        })
-      )
-    )
-  })
-  it('logs a listening impression separately from the album rating', async () => {
-    const user = userEvent.setup()
-    mount(<MusicAlbumJournal albumId={1} />, '/music/albums/1')
-    await user.click(await screen.findByRole('button', { name: 'Log a listen' }))
-    await user.type(screen.getByLabelText('Listening notes'), 'Heard something new')
-    await user.type(screen.getByLabelText('Rating for this listen (0–10)'), '7')
-    await user.click(screen.getByRole('button', { name: 'Save listening entry' }))
-    await waitFor(() =>
-      expect(m.saveListen).toHaveBeenCalledWith(
-        1,
-        null,
-        expect.objectContaining({ rating: 7, notes: 'Heard something new' })
-      )
-    )
-    expect(m.saveAlbum).not.toHaveBeenCalled()
-  })
+describe('music track tags', () => {
   it('opens the shared track menu and saves tags and a standout mark', async () => {
     const user = userEvent.setup()
     mount(<MusicTrackRow track={track} onPlay={vi.fn()} />)
@@ -308,19 +243,6 @@ describe('music album journal', () => {
       })
     )
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
-  })
-  it('filters the journal by shelf and presents read failures with retry', async () => {
-    const user = userEvent.setup()
-    m.journal
-      .mockRejectedValueOnce(new Error('read failed'))
-      .mockResolvedValue({ items: [], total: 0 })
-    mount(<MusicJournalPage />, '/music/journal')
-    await user.click(await screen.findByRole('button', { name: 'Retry journal' }))
-    await screen.findByText('Start with an album you know')
-    await user.selectOptions(screen.getByLabelText('Album shelf'), 'want')
-    await waitFor(() =>
-      expect(m.journal).toHaveBeenLastCalledWith({ search: '', shelf: 'want', page: 0 })
-    )
   })
 })
 describe('smart playlist builder', () => {

@@ -2,6 +2,13 @@ import { getSqlite } from '../db/connection'
 import { mapMedia, mapTag } from './mappers'
 import type { MediaItem, MediaType, Tag, TagWithCounts } from '@shared/types'
 
+// Descriptive tags an importer owns, by tag.category. tag.name is UNIQUE, so a
+// tag one source created ("Time Travel" from VNDB) is linked as-is by another;
+// a media row has exactly one importer, so a re-import replaces its links to
+// any of these scopes. Genres ('genre') are replaced by their own blocks, and
+// hand-made tags carry no category and are never pruned.
+export const IMPORTED_TAG_SCOPES_SQL = `('anilist', 'steam', 'VNDB')`
+
 export function list(): Tag[] {
   return getSqlite().prepare('SELECT * FROM tag ORDER BY name').all().map(mapTag)
 }

@@ -74,7 +74,7 @@ export default function MusicDownloadsPage() {
         jobId: card?.id,
         resume
       })
-      if (!result.id) toast('There is no pending Spotify work', 'success')
+      if (!result.id) toast('Nothing is waiting to download', 'success')
       await qc.invalidateQueries({ queryKey: qk.music.downloadStatus })
       await qc.invalidateQueries({ queryKey: qk.music.all })
     } catch (error) {
@@ -111,7 +111,7 @@ export default function MusicDownloadsPage() {
 
   async function removeCard(card: SpotifyDownloadQueueCard): Promise<void> {
     const ok = await confirmDialog(
-      `Remove “${card.title}” from Music Downloads? Local audio and the saved Spotify catalogue will be kept.`,
+      `Remove “${card.title}” from Downloads? Songs already downloaded are kept.`,
       { confirmLabel: 'Remove' }
     )
     if (!ok) return
@@ -122,23 +122,6 @@ export default function MusicDownloadsPage() {
   async function removeSelection(id: number): Promise<void> {
     await api.music.spotifyQueueRemoveSelection(id)
     await qc.invalidateQueries({ queryKey: qk.music.all })
-  }
-
-  async function moveCard(cardId: number, direction: -1 | 1): Promise<void> {
-    const index = items.findIndex((card) => card.id === cardId)
-    const target = index + direction
-    if (index < 0 || target < 0 || target >= items.length) return
-    const next = [...items]
-    const [card] = next.splice(index, 1)
-    next.splice(target, 0, card)
-    setItems(next)
-    try {
-      await api.music.spotifyQueueReorder(next.map((item) => item.id))
-      await qc.invalidateQueries({ queryKey: qk.music.all })
-    } catch (error) {
-      setItems(items)
-      toastError(error)
-    }
   }
 
   async function clearCompleted(): Promise<void> {
@@ -158,18 +141,18 @@ export default function MusicDownloadsPage() {
     ? downloadStatus
     : null
 
-  if (isLoading) return <PageStatus>Loading saved Spotify downloads…</PageStatus>
+  if (isLoading) return <PageStatus>Loading downloads…</PageStatus>
   if (isError) {
-    return <PageStatus>Could not load Music Downloads: {error instanceof Error ? error.message : String(error)}</PageStatus>
+    return <PageStatus>Could not load Downloads: {error instanceof Error ? error.message : String(error)}</PageStatus>
   }
 
   return (
     <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
       <PageHeader
-        title="Spotify download queue"
+        title="Downloads"
         subtitle={queue && queue.pendingSources > 0
-          ? `${queue.pendingSources} source${queue.pendingSources === 1 ? '' : 's'} · ${queue.pendingTracks} missing track${queue.pendingTracks === 1 ? '' : 's'} · about ${formatBytes(queue.pendingEstimatedBytes)}`
-          : 'Save Spotify releases and imported-playlist tracks here, then download when you are ready.'}
+          ? `${queue.pendingTracks} ${queue.pendingTracks === 1 ? 'song' : 'songs'} waiting · about ${formatBytes(queue.pendingEstimatedBytes)}`
+          : 'Missing songs from playlists, artists and albums wait here until you start them.'}
         actions={active ? (
           <>
             {active.status === 'paused' ? (
@@ -210,11 +193,11 @@ export default function MusicDownloadsPage() {
                 {runningCard.title}
               </Link>
               <p className="mt-1 truncate text-sm text-gray-300" role="status" aria-live="polite">
-                {active.releaseTitle ?? active.title ?? active.message ?? 'Preparing download'}
+                {[active.releaseTitle, active.title ?? active.message].filter(Boolean).join(' · ') || 'Preparing download'}
               </p>
             </div>
             <p className="text-sm tabular-nums text-gray-400">
-              {active.itemCount != null && `${active.itemIndex ?? 0}/${active.itemCount} tracks`}
+              {active.itemCount != null && `${active.itemIndex ?? 0} of ${active.itemCount} songs`}
               {(active.failedCount ?? 0) > 0 && ` · ${active.failedCount} failed`}
             </p>
           </div>
@@ -224,7 +207,7 @@ export default function MusicDownloadsPage() {
             </div>
           )}
           <p className="mt-3 text-xs text-gray-400">
-            Finished files are kept. Pausing or cancelling scans them before this run settles.
+            Finished songs are kept if you pause or cancel.
           </p>
         </div>
       )}
@@ -255,10 +238,10 @@ export default function MusicDownloadsPage() {
       <Section title="Queued" subtitle={items.length ? `${items.length}` : undefined}>
         {!items.length ? (
           <EmptyState
-            title={active ? 'No later downloads queued' : 'No Spotify downloads saved'}
+            title={active ? 'Nothing else is waiting' : 'Nothing waiting to download'}
             body={active
-              ? 'This run will stop after the active card unless more music is added.'
-              : 'Open a local artist, album, or imported Spotify playlist and add the missing music you want to download later.'}
+              ? 'This run stops after the current download unless more music is added.'
+              : 'Use Download missing on an imported playlist, artist or album.'}
             action={<Link className="btn-primary" to="/music">Open music library</Link>}
           />
         ) : (
@@ -268,7 +251,7 @@ export default function MusicDownloadsPage() {
             onDragEnd={onDragEnd}
             className="card overflow-hidden p-0"
           >
-            {items.map((card, index) => (
+            {items.map((card) => (
               <SortableRow key={card.id} id={card.id} className="border-b border-base-700 last:border-0">
                 {(handle) => (
                   <QueueCardRow
@@ -276,10 +259,6 @@ export default function MusicDownloadsPage() {
                     handle={handle}
                     active={false}
                     queueRunning={Boolean(active)}
-                    canMoveUp={index > 0}
-                    canMoveDown={index < items.length - 1}
-                    onMoveUp={() => void moveCard(card.id, -1)}
-                    onMoveDown={() => void moveCard(card.id, 1)}
                     onStart={() => active
                       ? void prioritize(card)
                       : void start(card, card.state === 'paused')}
@@ -328,10 +307,6 @@ function QueueCardRow({
   handle,
   active,
   queueRunning,
-  canMoveUp = false,
-  canMoveDown = false,
-  onMoveUp,
-  onMoveDown,
   onStart,
   onRemove,
   onRemoveSelection
@@ -340,10 +315,6 @@ function QueueCardRow({
   handle?: ReactNode
   active: boolean
   queueRunning: boolean
-  canMoveUp?: boolean
-  canMoveDown?: boolean
-  onMoveUp?: () => void
-  onMoveDown?: () => void
   onStart: () => void
   onRemove: () => void
   onRemoveSelection: (id: number) => void
@@ -368,29 +339,6 @@ function QueueCardRow({
       toastError(error)
     }
   }
-  const broaderCandidates = card.selections.flatMap((selection) =>
-    selection.tracks.filter((track) =>
-      track.missing && !track.allowUnverified && !track.audioSourceUrl
-    )
-  )
-  async function configureAllBroader(): Promise<void> {
-    try {
-      await Promise.all(broaderCandidates.map((track) =>
-        api.music.spotifySetTrackDownloadOptions({
-          sourceKind: track.sourceKind,
-          trackId: track.id,
-          allowUnverified: true
-        })
-      ))
-      await qc.invalidateQueries({ queryKey: qk.music.all })
-      toast(
-        `Broader matching enabled for ${broaderCandidates.length} track${broaderCandidates.length === 1 ? '' : 's'}`,
-        'success'
-      )
-    } catch (error) {
-      toastError(error)
-    }
-  }
   async function rejectCandidate(track: SpotifyDownloadQueueTrack): Promise<void> {
     if (!track.candidate) return
     try {
@@ -404,6 +352,9 @@ function QueueCardRow({
       toastError(error)
     }
   }
+  const pendingSelections = card.selections.filter((selection) => selection.missingCount > 0 || selection.error ||
+    selection.tracks.some(needsWork))
+  const finishedSelections = card.selections.length - pendingSelections.length
   const stateLabel = card.state === 'failed'
     ? 'Needs retry'
     : card.state === 'paused' ? 'Paused' : card.state === 'completed' ? 'Completed' : 'Queued'
@@ -424,10 +375,10 @@ function QueueCardRow({
             </span>
           </div>
           <p className="mt-1 text-sm text-gray-400">
-            {[card.subtitle, `${card.missingCount} missing`, `about ${formatBytes(card.missingEstimatedBytes)}`].filter(Boolean).join(' · ')}
+            {[card.subtitle, `${card.missingCount} ${card.missingCount === 1 ? 'song' : 'songs'} to download`, `about ${formatBytes(card.missingEstimatedBytes)}`].filter(Boolean).join(' · ')}
           </p>
           {card.error && <p className="mt-2 text-sm text-red-300">{card.error}</p>}
-          {card.error && /spotdl|ffmpeg/i.test(card.error) && (
+          {card.error && /yt-dlp|ffmpeg|tools are not ready|cookies/i.test(card.error) && (
             <Link className="mt-2 inline-block text-xs text-accent hover:underline" to="/settings">
               Check downloader settings
             </Link>
@@ -438,7 +389,7 @@ function QueueCardRow({
             <button className="btn-ghost px-2 py-1 text-xs" onClick={onStart}>
               {queueRunning
                 ? 'Run next'
-                : card.state === 'failed' ? 'Retry' : card.state === 'paused' ? 'Resume' : 'Start this'}
+                : card.state === 'failed' ? 'Retry' : card.state === 'paused' ? 'Resume' : 'Start'}
             </button>
           )}
           <button
@@ -447,114 +398,69 @@ function QueueCardRow({
             aria-controls={`download-card-${card.id}-selections`}
             onClick={() => setOpen((value) => !value)}
           >
-            {open ? 'Hide details' : card.sourceKind !== 'entity' ? 'Show tracks' : 'Show releases'}
+            {open ? 'Hide' : card.sourceKind === 'entity' ? 'Show releases' : 'Show songs'}
           </button>
           <ActionMenu
+            buttonClassName="btn-ghost px-2 py-1 text-xs"
             items={[
               ...(card.sourceKind === 'entity'
                 ? [{ label: 'Add releases', onSelect: () => { window.location.hash = `#${addRoute}` } }]
                 : []),
               ...(card.sourceUrl ? [{ label: card.sourceKind === 'url' ? 'Open source' : 'Open in Spotify', onSelect: () => api.app.openExternal(card.sourceUrl!) }] : []),
-              { label: 'Remove from downloads', onSelect: onRemove, danger: true },
-              ...(onMoveUp ? [{ label: 'Move up', onSelect: onMoveUp, disabled: !canMoveUp }] : []),
-              ...(onMoveDown ? [{ label: 'Move down', onSelect: onMoveDown, disabled: !canMoveDown }] : [])
+              { label: 'Remove from downloads', onSelect: onRemove, danger: true }
             ]}
           />
         </div>
       </div>
       {open && (
-        <div id={`download-card-${card.id}-selections`} className="ml-8 mt-4 divide-y divide-base-700 border-t border-base-700">
-          {card.state === 'failed' && broaderCandidates.length > 0 && (
-            <div className="flex flex-wrap items-center justify-between gap-3 py-3">
-              <p className="text-xs text-gray-400">
-                Normal filtered YouTube matching failed for these tracks.
-              </p>
-              <button
-                className="btn-ghost px-2 py-1 text-xs"
-                disabled={active}
-                onClick={() => void configureAllBroader()}
-              >
-                Try broader matching for all failed ({broaderCandidates.length})
-              </button>
-            </div>
-          )}
+        <div id={`download-card-${card.id}-selections`} className="ml-8 mt-3 divide-y divide-base-700 border-t border-base-700">
           {card.sourceKind === 'url' && <div className="space-y-3 py-3">
             {!card.enumerationComplete && <p className="text-sm text-gray-400">Playlist discovery is incomplete. Start or retry to finish reading its items.</p>}
             <UrlQueueItems items={card.urlItems ?? []} />
           </div>}
-          {card.selections.map((selection) => (
-            <div key={selection.id} className="flex items-center gap-3 py-3 text-sm">
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-gray-200">{selection.title}</p>
-                <p className="mt-0.5 text-xs text-gray-500">
-                  {selection.subtitle}
-                  {selection.trackCount > 1 && ` · ${selection.trackCount} tracks`}
-                  {` · ${selection.missingCount} missing`}
-                </p>
-                {selection.error && <p className="mt-1 text-xs text-red-300">{selection.error}</p>}
-                {selection.tracks.filter((track) => track.missing || track.candidate).map((track) => (
-                  <div key={`${track.sourceKind}-${track.id}`} className="mt-3 rounded border border-base-700 bg-base-900/40 p-3">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-xs text-gray-200">{track.title}</p>
-                        <p className="mt-0.5 truncate text-xs text-gray-500">{track.artist}</p>
-                        {track.candidate && <p className="mt-1 text-xs text-amber-300">Downloaded locally; needs verification</p>}
-                        {track.phase === 'indexing' && <p className="mt-1 text-xs text-gray-400">Downloaded; indexing pending</p>}
-                        {track.error && <p className="mt-1 text-xs text-red-300">{track.error}</p>}
-                        {track.audioSourceUrl && <p className="mt-1 text-xs text-green-400">{track.sourceApproved ? 'Exact source approved' : 'Source available for review'}</p>}
-                        {track.allowUnverified && !track.audioSourceUrl && <p className="mt-1 text-xs text-amber-300">Broader matching enabled</p>}
-                      </div>
-                      <div className="flex flex-wrap gap-1">
-                        {track.candidate ? (
-                          <>
-                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setReviewTrack(track)}>
-                              Review downloaded
-                            </button>
-                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => void rejectCandidate(track)}>
-                              Reject and retry
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              className="btn-ghost px-2 py-1 text-xs"
-                              onClick={() => void configureTrack(track, { allowUnverified: !track.allowUnverified })}
-                            >
-                              {track.allowUnverified ? 'Use normal matching' : 'Try broader match'}
-                            </button>
-                            <button className="btn-ghost px-2 py-1 text-xs" onClick={() => setReviewTrack(track)}>
-                              Find or replace source
-                            </button>
-                            {track.audioSourceUrl && (
-                              <button
-                                className="btn-ghost px-2 py-1 text-xs"
-                                onClick={() => void configureTrack(track, { audioSourceUrl: null })}
-                              >
-                                Clear source
-                              </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+          {pendingSelections.map((selection) => selection.kind === 'playlistItem' ? (
+            selection.tracks.filter(needsWork).map((track) => (
+              <TrackLine key={`${track.sourceKind}-${track.id}`} track={track}
+                onChoose={() => setReviewTrack(track)} onReject={() => void rejectCandidate(track)}
+                onAutomatic={() => void configureTrack(track, { audioSourceUrl: null })}
+                onRemove={active ? undefined : () => onRemoveSelection(selection.id)} />
+            ))
+          ) : (
+            <div key={selection.id} className="py-3 text-sm">
+              <div className="flex items-center gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-gray-200">{selection.title}</p>
+                  <p className="text-xs text-gray-500">
+                    {selection.missingCount} of {selection.trackCount} {selection.trackCount === 1 ? 'song' : 'songs'} to download
+                  </p>
+                  {selection.error && <p className="text-xs text-red-300">{selection.error}</p>}
+                </div>
+                {!active && (
+                  <button className="btn-ghost px-2 py-1 text-xs" aria-label={`Remove ${selection.title} from downloads`}
+                    onClick={() => onRemoveSelection(selection.id)}>Remove</button>
+                )}
+              </div>
+              <div className="ml-4 divide-y divide-base-700/60">
+                {selection.tracks.filter(needsWork).map((track) => (
+                  <TrackLine key={`${track.sourceKind}-${track.id}`} track={track}
+                    onChoose={() => setReviewTrack(track)} onReject={() => void rejectCandidate(track)}
+                    onAutomatic={() => void configureTrack(track, { audioSourceUrl: null })} />
                 ))}
               </div>
-              <button
-                className="btn-ghost px-2 py-1 text-xs"
-                aria-label={`Remove ${selection.title} from downloads`}
-                disabled={active}
-                onClick={() => onRemoveSelection(selection.id)}
-              >
-                Remove
-              </button>
             </div>
           ))}
+          {finishedSelections > 0 && (
+            <p className="py-3 text-xs text-gray-500">
+              {finishedSelections} {card.sourceKind === 'entity'
+                ? finishedSelections === 1 ? 'release is' : 'releases are'
+                : finishedSelections === 1 ? 'song is' : 'songs are'} already in your library
+            </p>
+          )}
         </div>
       )}
       {reviewTrack && <SpotifyTrackRecoveryDialog sourceKind={reviewTrack.sourceKind} trackId={reviewTrack.id}
         title={reviewTrack.title} artist={reviewTrack.artist} duration={reviewTrack.duration ?? null}
-        candidate={reviewTrack.candidate} initialUrl={reviewTrack.audioSourceUrl ?? ''} onClose={() => setReviewTrack(null)} />}
+        candidate={reviewTrack.candidate} problem={reviewTrack.error} onClose={() => setReviewTrack(null)} />}
     </article>
   )
 }
@@ -572,4 +478,52 @@ function UrlQueueItems({ items }: { items: MusicUrlQueueItem[] }) {
       {item.error && <p className="break-words text-xs text-red-300">{item.error}</p>}
     </div>
   })}{list.hasMore && <div ref={list.sentinelRef} className="h-8" />}</>
+}
+
+function needsWork(track: SpotifyDownloadQueueTrack): boolean {
+  return track.missing || track.candidate != null
+}
+
+function TrackLine({ track, onChoose, onReject, onAutomatic, onRemove }: {
+  track: SpotifyDownloadQueueTrack
+  onChoose: () => void
+  onReject: () => void
+  onAutomatic: () => void
+  onRemove?: () => void
+}) {
+  const review = track.error ? /^Needs review:\s*/i.test(track.error) : false
+  const status = track.candidate
+    ? { text: 'Downloaded but not confirmed — listen and check it', tone: 'text-amber-300' }
+    : track.phase === 'indexing'
+      ? { text: 'Downloaded; adding to your library', tone: 'text-gray-400' }
+      : track.error
+        ? { text: review ? `Needs a source: ${track.error.replace(/^Needs review:\s*/i, '')}` : track.error, tone: review ? 'text-amber-300' : 'text-red-300' }
+        : track.audioSourceUrl
+          ? { text: track.sourceApproved ? 'Waiting to download · your chosen source' : 'Source waiting for your review', tone: 'text-green-400' }
+          : { text: 'Waiting to download', tone: 'text-gray-500' }
+  return (
+    <div className="flex flex-wrap items-center gap-3 py-2.5 text-sm sm:flex-nowrap">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-gray-200">{track.title}</p>
+        <p className="truncate text-xs text-gray-500">{track.artist}</p>
+        <p className={`line-clamp-2 text-xs ${status.tone}`}>{status.text}</p>
+      </div>
+      <div className="flex shrink-0 flex-wrap gap-1">
+        {track.candidate ? (
+          <>
+            <button className="btn-ghost px-2 py-1 text-xs" onClick={onChoose}>Check</button>
+            <button className="btn-ghost px-2 py-1 text-xs" onClick={onReject}>Wrong song</button>
+          </>
+        ) : (
+          <>
+            <button className="btn-ghost px-2 py-1 text-xs" onClick={onChoose}>Choose audio</button>
+            {track.audioSourceUrl && <button className="btn-ghost px-2 py-1 text-xs" onClick={onAutomatic}>Use automatic source</button>}
+          </>
+        )}
+        {onRemove && (
+          <button className="btn-ghost px-2 py-1 text-xs" aria-label={`Remove ${track.title} from downloads`} onClick={onRemove}>Remove</button>
+        )}
+      </div>
+    </div>
+  )
 }

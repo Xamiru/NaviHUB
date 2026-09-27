@@ -12,7 +12,7 @@ import StatTile from '../components/StatTile'
 import EmptyState from '../components/EmptyState'
 import CoverImage from '../components/CoverImage'
 import { formatDuration, formatLongDuration } from '../components/MusicTrackRow'
-import { TrackList } from './MusicLibraryPage'
+import { TrackList } from '../components/music/MusicBrowse'
 import type { MusicStatsDetail, MusicTrack } from '@shared/types'
 
 // Listening stats over the play log (period-scoped) with all-time fallbacks
@@ -43,7 +43,7 @@ const utcToLocalDay = (ts: string): string => localDayString(new Date(ts.replace
 export default function MusicStatsPage() {
   const [days, setDays] = usePersistedState<number | null>('musicStatsDays', 7)
 
-  const { data: stats } = useQuery({
+  const { data: stats, isLoadingError, refetch } = useQuery({
     queryKey: qk.music.statsDetail(days),
     queryFn: () => api.music.statsDetail(days),
     staleTime: 0
@@ -61,6 +61,7 @@ export default function MusicStatsPage() {
     [stats?.topTracks]
   )
 
+  if (isLoadingError) return <PageStatus>Could not load listening stats. <button className="btn" onClick={() => void refetch()}>Retry stats</button></PageStatus>
   if (!stats) return <PageStatus>Loading…</PageStatus>
 
   // Empty tiers: (1) nothing ever played, (2) counters exist but the log is
@@ -155,7 +156,7 @@ export default function MusicStatsPage() {
           <RecentSection tracks={recent} />
 
           <p className="mt-6 text-xs text-gray-400">
-            Plays count after 10 uninterrupted seconds
+            A play counts after half the track, or four minutes, has been heard
             {stats.logStartedAt && ` · day charts recording since ${shortDay(utcToLocalDay(stats.logStartedAt))}`}
             .
           </p>

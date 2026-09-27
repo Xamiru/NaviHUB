@@ -9,7 +9,7 @@ Every backend capability crosses the same five files in the same order. Sessions
 re-derive this by reading `types.ts` (23 sessions), `api.ts` (20), `preload/index.ts` (17) and
 `ipc.ts` (16) before the first edit. Follow the chain instead.
 
-There are currently **514 channels** across **41 namespaces**. You are adding to a working system,
+There are roughly **590 channels** across **60 namespaces**. You are adding to a working system,
 so copy the shape of the neighbours rather than inventing one.
 
 ## 1. Payload types — `src/shared/types.ts`
@@ -30,13 +30,17 @@ A thin one-liner in the `// ---- domain ----` block:
 ipcMain.handle('domain:action', (_e, arg: ArgType) => repo.fn(arg))
 ```
 
-Keep logic in a repo or feature module — `ipc.ts` is 375 delegations in 761 lines and stays that way.
+Keep logic in a repo or feature module — `ipc.ts` is ~1,200 lines of one-line delegations and stays that way.
+
+- A handler backed by a large offline content module (the programming catalog, `englishWriting`,
+  `retroAchievements`) loads it with a cached `import()` on first use instead of a static import,
+  so it stays out of launch. `tests/performanceBoundaries.test.ts` guards these seams.
 
 - Long-running work does **not** get a push channel. The only push channels are the player
   bridge's `player:cmd`/`player:state` (frozen by `tests/pushBridge.test.ts` — adding one means
   editing its ALLOWED list, and the bar is "polling genuinely can't work", not "polling is
   awkward"). Expose a module-level status
-  object plus a `domain:xStatus` invoke channel and let the renderer poll. Copy `musicDownload.ts`.
+  object plus a `domain:xStatus` invoke channel and let the renderer poll. Copy `updater.ts` (decisions in `updaterCore.ts`).
 - An importer wraps in `withActivity` so the Topbar pill moves.
 - Anything that needs today's date takes it as a parameter — `todayLocal()` at the top of
   `registerIpc` computes it once, in main, as a **local** day.

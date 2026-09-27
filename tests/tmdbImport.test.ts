@@ -2,25 +2,31 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
 import { importMovie, importTv } from '../src/main/tmdb'
+import { getState, setManual } from '../src/main/repos/imageOverrideRepo'
 
 // End-to-end TMDB import against the real schema, network mocked. Movies and TV
 // share one persistTitle(), so this covers both shapes of the same invariants:
 // dedup by external id, personal tracking surviving a re-import, and the wide
-// backdrop landing in banner_path for the detail-page hero.
+// backdrop never being downloaded.
 
 let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
 vi.mock('../src/main/repos/settingsRepo', () => ({ get: () => 'test-key' }))
 
 // Only URLs the test says landed on disk get a path; everything else is null.
-const images = vi.hoisted(() => ({ resolve: null as ((url: string) => string | null) | null }))
+const images = vi.hoisted(() => ({
+  resolve: null as ((url: string) => string | null) | null,
+  requested: [] as string[]
+}))
 vi.mock('../src/main/files', () => ({
-  downloadImages: async (urls: (string | null | undefined)[]) =>
-    new Map(
+  downloadImages: async (urls: (string | null | undefined)[]) => {
+    images.requested.push(...(urls.filter(Boolean) as string[]))
+    return new Map(
       urls
         .filter(Boolean)
         .map((u) => [u as string, images.resolve ? images.resolve(u as string) : null])
-    ),
+    )
+  },
   downloadImage: async () => null
 }))
 
@@ -133,25 +139,14 @@ describe('tmdb movie import', () => {
     expect(row.rewatch_count).toBe(3)
   })
 
-  it('stores the backdrop as hero art, and a later import without one keeps it', async () => {
-    images.resolve = (url) => (url.includes('backdrop') ? 'media/dl-backdrop' : null)
+  // The detail-page hero was retired for the Art-tab background; its wide art
+  // was an extra multi-hundred-KB download per title.
+  it('never downloads the backdrop', async () => {
+    images.requested = []
     await importMovie(550, { skipOmdb: true })
-    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({
-      banner_path: 'media/dl-backdrop'
-    })
-
-    images.resolve = null
-    routes['/movie/550'] = movieFixture({ backdrop_path: null })
-    await importMovie(550, { skipOmdb: true })
-    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({
-      banner_path: 'media/dl-backdrop'
-    })
-  })
-
-  it('leaves banner_path null when TMDB has no backdrop', async () => {
-    routes['/movie/550'] = movieFixture({ backdrop_path: null })
-    await importMovie(550, { skipOmdb: true })
-    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({ banner_path: null })
+    await importTv(1920, { skipOmdb: true })
+    expect(images.requested.some((u) => u.includes('backdrop'))).toBe(false)
+    expect(images.requested.some((u) => u.includes('poster') || u.includes('tp.jpg'))).toBe(true)
   })
 })
 
@@ -163,14 +158,6 @@ describe('tmdb tv import', () => {
     expect(row.total_units).toBe(30)
     expect(JSON.parse(String(row.metadata)).epDuration).toBe(47)
     expect(db.prepare('SELECT name FROM company').get()).toEqual({ name: 'ABC' })
-  })
-
-  it('stores the backdrop as hero art', async () => {
-    images.resolve = (url) => (url.includes('backdrop') ? 'media/dl-tp' : null)
-    await importTv(1920, { skipOmdb: true })
-    expect(db.prepare('SELECT banner_path FROM media_item').get()).toEqual({
-      banner_path: 'media/dl-tp'
-    })
   })
 })
 
@@ -237,6 +224,48 @@ describe('tv episode catalogue', () => {
   })
 })
 
+describe('tmdb collections', () => {
+  const relations = () =>
+    db
+      .prepare(
+        `SELECT relation_type, related_external_id, related_title FROM media_relation
+         ORDER BY sort_order`
+      )
+      .all()
+
+  it('links the other films of its collection as prequels and sequels in release order', async () => {
+    routes['/movie/550'] = movieFixture({ belongs_to_collection: { id: 10 } })
+    routes['/collection/10'] = {
+      parts: [
+        { id: 553, title: 'Announced', release_date: '' },
+        { id: 551, title: 'Later', release_date: '2005-01-01' },
+        { id: 550, title: 'Perfect Blue', release_date: '1998-02-28' },
+        { id: 549, title: 'Earlier', release_date: '1990-01-01' }
+      ]
+    }
+    await importMovie(550, { skipOmdb: true })
+    expect(relations()).toEqual([
+      { relation_type: 'PREQUEL', related_external_id: '549', related_title: 'Earlier' },
+      { relation_type: 'SEQUEL', related_external_id: '551', related_title: 'Later' },
+      { relation_type: 'SEQUEL', related_external_id: '553', related_title: 'Announced' }
+    ])
+  })
+
+  it('keeps the stored collection when the collection request fails', async () => {
+    routes['/movie/550'] = movieFixture({ belongs_to_collection: { id: 10 } })
+    routes['/collection/10'] = { parts: [{ id: 551, title: 'Later', release_date: '2005-01-01' }] }
+    await importMovie(550, { skipOmdb: true })
+    delete routes['/collection/10']
+    await importMovie(550, { skipOmdb: true })
+    expect(relations()).toHaveLength(1)
+
+    // Leaving the collection at the source is a real removal.
+    routes['/movie/550'] = movieFixture({ belongs_to_collection: null })
+    await importMovie(550, { skipOmdb: true })
+    expect(relations()).toHaveLength(0)
+  })
+})
+
 describe('partial refresh (Library Refresh)', () => {
   // Same invariant as the AniList side: `only` writes media_item columns (and
   // tv_episode when asked) and prunes nothing. TMDB's character prune is inlined
@@ -245,7 +274,8 @@ describe('partial refresh (Library Refresh)', () => {
     characters: (db.prepare('SELECT COUNT(*) AS n FROM character').get() as { n: number }).n,
     credits: (db.prepare('SELECT COUNT(*) AS n FROM credit').get() as { n: number }).n,
     companies: (db.prepare('SELECT COUNT(*) AS n FROM media_company').get() as { n: number }).n,
-    tags: (db.prepare('SELECT COUNT(*) AS n FROM media_tag').get() as { n: number }).n
+    tags: (db.prepare('SELECT COUNT(*) AS n FROM media_tag').get() as { n: number }).n,
+    relations: (db.prepare('SELECT COUNT(*) AS n FROM media_relation').get() as { n: number }).n
   })
 
   const withCast = () =>
@@ -260,9 +290,16 @@ describe('partial refresh (Library Refresh)', () => {
     })
 
   it('leaves cast, crew, companies and genres intact on a cover refresh', async () => {
-    routes['/movie/550'] = withCast()
+    routes['/movie/550'] = { ...withCast(), belongs_to_collection: { id: 10 } }
+    routes['/collection/10'] = {
+      parts: [
+        { id: 550, title: 'Perfect Blue', release_date: '1998-02-28' },
+        { id: 551, title: 'Sequel', release_date: '2001-01-01' }
+      ]
+    }
     await importMovie(550, { skipOmdb: true })
     const before = counts()
+    expect(before.relations).toBeGreaterThan(0)
     expect(before.characters).toBeGreaterThan(0)
     expect(before.credits).toBeGreaterThan(0)
     expect(before.companies).toBeGreaterThan(0)
@@ -277,16 +314,29 @@ describe('partial refresh (Library Refresh)', () => {
     })
   })
 
-  it('a banner refresh touches neither the title nor the cover', async () => {
+  it('keeps hand-picked covers and photos through a re-import', async () => {
+    routes['/movie/550'] = withCast()
+    images.resolve = (url) => `media/dl-old-${url.split('/').pop()}`
     await importMovie(550, { skipOmdb: true })
-    db.prepare("UPDATE media_item SET title='Hand edited', cover_path='media/mine'").run()
+    const mediaId = (db.prepare('SELECT id FROM media_item').get() as { id: number }).id
+    const personId = (
+      db.prepare("SELECT id FROM person WHERE name = 'Junko Iwao'").get() as { id: number }
+    ).id
+    setManual('media', mediaId, 'media/my-cover.jpg')
+    setManual('person', personId, 'media/my-photo.jpg')
 
-    images.resolve = (url) => (url.includes('backdrop') ? 'media/dl-b2' : null)
-    await importMovie(550, { only: ['banner'] })
+    images.resolve = (url) => `media/dl-new-${url.split('/').pop()}`
+    await importMovie(550, { skipOmdb: true })
+    await importMovie(550, { only: ['cover'] })
 
-    expect(
-      db.prepare('SELECT title, cover_path, banner_path FROM media_item').get()
-    ).toEqual({ title: 'Hand edited', cover_path: 'media/mine', banner_path: 'media/dl-b2' })
+    expect(db.prepare('SELECT cover_path FROM media_item').get()).toEqual({
+      cover_path: 'media/my-cover.jpg'
+    })
+    expect(db.prepare('SELECT photo_path FROM person WHERE id = ?').get(personId)).toEqual({
+      photo_path: 'media/my-photo.jpg'
+    })
+    expect(getState('media', mediaId).providerPath).toBe('media/dl-new-poster.jpg')
+    expect(getState('person', personId).providerPath).toBe('media/dl-old-a.jpg')
   })
 
   it('an episodes refresh fills the catalogue and leaves everything else', async () => {

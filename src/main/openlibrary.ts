@@ -61,6 +61,26 @@ function textOf(v: any): string | null {
   return null
 }
 
+const MONTHS = [
+  'january', 'february', 'march', 'april', 'may', 'june',
+  'july', 'august', 'september', 'october', 'november', 'december'
+]
+
+// Author birth_date is free text ("1 January 1950", "January 1, 1950", "1950",
+// "c. 1340"). Keep the ISO date the person page understands, or the year alone;
+// anything vaguer stays unset rather than guessed.
+export function olBirthday(v: unknown): string | null {
+  if (typeof v !== 'string') return null
+  const s = v.trim().toLowerCase().replace(/,/g, '')
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  let m = /^(\d{1,2}) ([a-z]+) (\d{4})$/.exec(s)
+  if (m && MONTHS.includes(m[2])) return `${m[3]}-${pad(MONTHS.indexOf(m[2]) + 1)}-${pad(+m[1])}`
+  m = /^([a-z]+) (\d{1,2}) (\d{4})$/.exec(s)
+  if (m && MONTHS.includes(m[1])) return `${m[3]}-${pad(MONTHS.indexOf(m[1]) + 1)}-${pad(+m[2])}`
+  m = /^(\d{4})$/.exec(s)
+  return m ? m[1] : null
+}
+
 // Works carry no page count — editions do, inconsistently. Median of the
 // editions that state one is the most honest single number.
 function medianPages(editions: any[]): number | null {
@@ -98,7 +118,13 @@ export async function importBook(
     .map((a: any) => a?.author?.key ?? a?.key)
     .filter((k: any): k is string => typeof k === 'string' && k.startsWith('/authors/'))
     .slice(0, MAX_AUTHORS)
-  const authors: { key: string; name: string; photoUrl: string | null }[] = []
+  const authors: {
+    key: string
+    name: string
+    photoUrl: string | null
+    bio: string | null
+    birthday: string | null
+  }[] = []
   for (const key of authorKeys) {
     try {
       const a = await olGet(`${key}.json`)
@@ -107,7 +133,9 @@ export async function importBook(
         key: key.slice('/authors/'.length),
         name: String(a.name),
         photoUrl:
-          Array.isArray(a.photos) && a.photos[0] > 0 ? `${COVERS}/a/id/${a.photos[0]}-M.jpg` : null
+          Array.isArray(a.photos) && a.photos[0] > 0 ? `${COVERS}/a/id/${a.photos[0]}-M.jpg` : null,
+        bio: textOf(a.bio),
+        birthday: olBirthday(a.birth_date)
       })
     } catch {
       /* best-effort */
@@ -228,13 +256,18 @@ export async function importBook(
         if (!row.photo_path && photo) {
           db.prepare('UPDATE person SET photo_path=? WHERE id=?').run(photo, personId)
         }
+        // The bio is hand-editable on the person page, so an import only fills it.
+        db.prepare(
+          'UPDATE person SET bio=COALESCE(bio, ?), birthday=COALESCE(?, birthday) WHERE id=?'
+        ).run(a.bio, a.birthday, personId)
       } else {
         personId = Number(
           db
             .prepare(
-              'INSERT INTO person (name, photo_path, external_source, external_id) VALUES (?, ?, ?, ?)'
+              `INSERT INTO person (name, photo_path, bio, birthday, external_source, external_id)
+               VALUES (?, ?, ?, ?, ?, ?)`
             )
-            .run(a.name, photo, SOURCE, a.key).lastInsertRowid
+            .run(a.name, photo, a.bio, a.birthday, SOURCE, a.key).lastInsertRowid
         )
       }
       const dup = db

@@ -17,7 +17,7 @@ npm run test
 
 These are exactly what `.github/workflows/release.yml`'s `verify` job runs. Run them only if they
 have not already passed for the final code state. **Never** `npx vitest` / `npx tsc` (Electron ABI).
-Do not run `npm run dist:win` — that is the user's job, on their machine.
+Do not start a release build as part of wrapping up.
 
 If anything fails, stop and report it.
 
@@ -25,8 +25,8 @@ If anything fails, stop and report it.
 
 This is the part that decays if skipped, and the rule is now about **which** file:
 
-- A new **rule or invariant** — something an agent must or must not do → `CLAUDE.md`, in
-  *Hard invariants*. Stated once, not repeated per feature.
+- A new **rule or invariant** — something an agent must or must not do → the contract
+  (`CLAUDE.md` and its byte-identical mirror `AGENTS.md`), in *Hard invariants*. Stated once, not repeated per feature.
 - A new **standing user preference** ("always…", "never…", "I don't want…") → `CLAUDE.md`, in
   *Standing user directives*, with the date.
 - **How a subsystem works** — the narrative, the decisions, the gotchas → the matching file in

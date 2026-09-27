@@ -104,7 +104,6 @@ function FranchiseCard({
       to={`/games/franchises/${cfg.id}`}
       className="card group block overflow-hidden transition-colors hover:border-accent/60"
     >
-      {/* Hero art — the GachaHomePage GameCard treatment. */}
       <div className="relative h-40">
         <img
           src={heroSrc}

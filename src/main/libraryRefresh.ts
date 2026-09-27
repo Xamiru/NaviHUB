@@ -5,13 +5,17 @@ import * as tasks from './tasks'
 import { TaskCancelledError } from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
 import { runWithActivitySignal } from './activityContext'
+import { claimLibraryJob } from './libraryJobLock'
 import * as anilist from './anilist'
 import * as tmdb from './tmdb'
 import * as vndb from './vndb'
 import * as steam from './steam'
 import * as openlibrary from './openlibrary'
 import * as themes from './themes'
-import { aspectsForType, isRefreshableSource, missingClause } from '@shared/refresh'
+import * as hltb from './hltb'
+import * as gamesCatalog from './gamesCatalog'
+import { getCatalogDb } from './gamesCatalogDb'
+import { REFRESHABLE_SOURCES, aspectsForType, missingClause } from '@shared/refresh'
 import type { RefreshAspect, RefreshRequest } from '@shared/refresh'
 import type { MediaType, RefreshPreview, RefreshRunStatus } from '@shared/types'
 
@@ -28,16 +32,33 @@ import type { MediaType, RefreshPreview, RefreshRunStatus } from '@shared/types'
 // AniList's budget. Numbers taken from bulkImport.SOURCE_DELAY_MS and
 // steam.backfillMetacritic.
 const SOURCE_DELAY_MS: Record<string, number> = {
-  anilist: 2100, // ~28 req/min against a degraded ~30 budget
+  anilist: 0, // anilist.gql's shared throttle spaces every request, full cast pages included
   tmdb: 300,
   vndb: 600,
   steam: 1600, // Steam documents ~200 requests / 5 min / IP
-  openlibrary: 300
+  openlibrary: 300,
+  rawg: 800 // local catalog, but a 'length' or full pass asks HowLongToBeat
 }
 
-// Ten in a row means the source or the network is down, not ten unlucky titles
-// (the bulkImport / steam-backfill posture). Individual failures never stop the
-// run — they are collected and listed at the end.
+// Quick sources first: an AniList pass takes hours, and a mixed run should not
+// hold minutes of TMDB or Steam work behind it.
+const SOURCE_ORDER_SQL = `CASE m.external_source
+    WHEN 'rawg' THEN 0 WHEN 'openlibrary' THEN 1 WHEN 'steam' THEN 2 WHEN 'tmdb' THEN 3
+    WHEN 'vndb' THEN 4 WHEN 'anilist' THEN 6 ELSE 5 END`
+
+const SOURCE_NAMES: Record<string, string> = {
+  anilist: 'AniList',
+  tmdb: 'TMDB',
+  vndb: 'VNDB',
+  steam: 'Steam',
+  openlibrary: 'Open Library',
+  rawg: 'The games catalog'
+}
+
+// Ten in a row from one source means that source (or the network) is down, not
+// ten unlucky titles (the bulkImport / steam-backfill posture). Counted per
+// source: the rest of that source's titles are skipped while the others carry
+// on. Individual failures never stop the run — they are listed at the end.
 const MAX_CONSECUTIVE_FAILURES = 10
 
 interface RefreshRow {
@@ -54,28 +75,88 @@ export function selectRows(req: RefreshRequest): RefreshRow[] {
   const db = getSqlite()
   if (!req.types.length || !req.aspects.length) return []
   const typePlaceholders = req.types.map(() => '?').join(', ')
-  const sourceFilter = `m.external_source IN ('anilist','tmdb','vndb','steam','openlibrary')`
+  const sourceFilter = servedSourceSql(req.aspects)
   const themesOnly = req.aspects.includes('themes') && req.aspects.every((aspect) => aspect === 'themes')
   const themeSourceFilter = themesOnly ? ` AND m.external_source = 'anilist'` : ''
-  const missing = req.onlyMissing ? ` AND ${missingClause(req.aspects)}` : ''
+  const ids = (req.mediaIds ?? []).filter((n) => Number.isInteger(n))
+  const idFilter = req.mediaIds ? ` AND m.id IN (${ids.map(() => '?').join(', ') || 'NULL'})` : ''
+  const missing = req.onlyMissing && !req.mediaIds ? ` AND ${missingClause(req.aspects)}` : ''
+  const order = `${SOURCE_ORDER_SQL}, m.external_source${req.aspects.includes('full') ? ', m.updated_at' : ''}, m.id`
   return db
     .prepare(
       `SELECT m.id, m.title, m.media_type, m.external_source, m.external_id
          FROM media_item m
         WHERE m.media_type IN (${typePlaceholders})
           AND m.external_id IS NOT NULL
-          AND ${sourceFilter}${themeSourceFilter}${missing}
-        ORDER BY m.external_source, m.id`
+          AND ${sourceFilter}${themeSourceFilter}${missing}${idFilter}
+        ORDER BY ${order}`
     )
-    .all(...req.types) as RefreshRow[]
+    .all(...req.types, ...ids) as RefreshRow[]
+}
+
+// 'rawg' rows refresh from the local games catalog, so only while it is
+// installed. HowLongToBeat lengths need no importer, so a 'length' request also
+// takes games from any source (legacy IGDB rows included).
+function servedSources(): string[] {
+  return REFRESHABLE_SOURCES.filter((src) => src !== 'rawg' || getCatalogDb() != null)
+}
+
+function servedSourceSql(aspects: RefreshAspect[]): string {
+  const list = servedSources()
+    .map((src) => `'${src}'`)
+    .join(',')
+  const anyGame = aspects.includes('length') ? ` OR m.media_type = 'game'` : ''
+  return `(m.external_source IN (${list})${anyGame})`
+}
+
+function canServe(row: Pick<RefreshRow, 'external_source' | 'media_type'>, aspects: RefreshAspect[]): boolean {
+  const only = aspectsForType(aspects, row.media_type)
+  if (!only.length) return false
+  if (only.includes('length') && row.media_type === 'game') return true
+  return servedSources().includes(row.external_source)
+}
+
+// Rough seconds one title costs, from the pacing above and typical request
+// counts: AniList at one request per 2.1 s (a full anime pages its cast, about
+// four requests), a HowLongToBeat lookup about two seconds, the rest one
+// round trip plus the source's delay.
+export function estimateTitleSeconds(
+  row: Pick<RefreshRow, 'external_source' | 'media_type'>,
+  aspects: RefreshAspect[]
+): number {
+  const only = aspectsForType(aspects, row.media_type)
+  const full = only.includes('full')
+  let s = 0
+  if (only.includes('themes')) s += 1.5
+  if (only.includes('length') && !full) s += 2
+  const rest = only.filter((a) => a !== 'themes' && a !== 'length')
+  if (!rest.length) return s
+  switch (row.external_source) {
+    case 'anilist':
+      return s + (full ? (row.media_type === 'anime' ? 8.4 : 6.3) : 2.1)
+    case 'tmdb':
+      return s + (row.media_type === 'tv' && (full || rest.includes('episodes')) ? 5 : 1) +
+        (rest.includes('text') ? 0.5 : 0)
+    case 'vndb':
+      return s + 1.6
+    case 'steam':
+      return s + (full ? 4.5 : 2.6)
+    case 'openlibrary':
+      return s + 2
+    case 'rawg':
+      return s + (full ? 2.8 : 0.8)
+    default:
+      return s
+  }
 }
 
 export function preview(req: RefreshRequest): RefreshPreview {
   const db = getSqlite()
-  if (!req.types.length || !req.aspects.length) return { total: 0, unsupported: 0 }
+  if (!req.types.length || !req.aspects.length) return { total: 0, unsupported: 0, estimateSeconds: 0 }
   const typePlaceholders = req.types.map(() => '?').join(', ')
-  // Legacy RAWG/IGDB games: no importer serves them any more, so they can never
-  // be refreshed. Counted so the UI can say so instead of quietly excluding them.
+  // Rows no importer can serve (legacy IGDB games, catalog games while the
+  // catalog is not installed). Counted so the UI can say so instead of quietly
+  // excluding them.
   const unsupported = (
     db
       .prepare(
@@ -83,26 +164,39 @@ export function preview(req: RefreshRequest): RefreshPreview {
           WHERE m.media_type IN (${typePlaceholders})
             AND m.external_id IS NOT NULL
             AND m.external_source IS NOT NULL
-            AND m.external_source NOT IN ('anilist','tmdb','vndb','steam','openlibrary')`
+            AND NOT ${servedSourceSql(req.aspects)}`
       )
       .get(...req.types) as { n: number }
   ).n
-  return { total: selectRows(req).length, unsupported }
+  const rows = selectRows(req)
+  const estimateSeconds = Math.round(
+    rows.reduce((sum, row) => sum + estimateTitleSeconds(row, req.aspects), 0)
+  )
+  return { total: rows.length, unsupported, estimateSeconds }
 }
 
 // One title. Dispatches on the ROW's source, not its media type: a game may be
 // a live 'steam' row or a legacy 'rawg' one, and only the row knows.
 export async function refreshOne(row: RefreshRow, aspects: RefreshAspect[]): Promise<boolean> {
   // Hand each importer only the aspects its source can actually serve, so a
-  // "banner" tick on a VN is a no-op rather than an empty UPDATE.
+  // "episodes" tick on a movie is a no-op rather than an empty UPDATE.
   const only = aspectsForType(aspects, row.media_type)
   if (!only.length) return false
   let changed = false
   if (only.includes('themes')) {
     changed = await themes.refreshThemes(row.id)
   }
-  const metadataOnly = only.filter((aspect) => aspect !== 'themes')
-  if (!metadataOnly.length) return changed
+  // Source-free, and subsumed by a full re-import (the game importers look the
+  // length up themselves).
+  if (only.includes('length') && !only.includes('full')) {
+    changed = (await hltb.fetchForMedia(row.id)) != null || changed
+  }
+  const metadataOnly = only.filter((aspect) => aspect !== 'themes' && aspect !== 'length')
+  if (!metadataOnly.length || !servedSources().includes(row.external_source)) return changed
+  if (metadataOnly.includes('full')) {
+    await fullImport(row, metadataOnly.includes('text'))
+    return true
+  }
   switch (row.external_source) {
     case 'anilist':
       if (row.media_type === 'manga') await anilist.importManga(Number(row.external_id), { only: metadataOnly })
@@ -121,6 +215,41 @@ export async function refreshOne(row: RefreshRow, aspects: RefreshAspect[]): Pro
     case 'openlibrary':
       await openlibrary.importBook(row.external_id, { only: metadataOnly })
       return true
+    case 'rawg':
+      await gamesCatalog.importGame(Number(row.external_id), { only: metadataOnly })
+      return true
+    default:
+      throw new Error(`No importer for source "${row.external_source}"`)
+  }
+}
+
+// The import-dialog import, run for an existing row. AniList always pages the
+// whole cast: the bulk path's liteCharacters keeps only the first 25, and its
+// authoritative prune would then delete the rest. OMDb is skipped unless asked
+// for, because a free key's 1,000 requests a day would not last one movie run.
+async function fullImport(row: RefreshRow, withOmdb: boolean): Promise<void> {
+  const id = Number(row.external_id)
+  switch (row.external_source) {
+    case 'anilist':
+      if (row.media_type === 'manga') await anilist.importManga(id)
+      else await anilist.importAnime(id)
+      return
+    case 'tmdb':
+      if (row.media_type === 'tv') await tmdb.importTv(id, { skipOmdb: !withOmdb })
+      else await tmdb.importMovie(id, { skipOmdb: !withOmdb })
+      return
+    case 'vndb':
+      await vndb.importVisualNovel(id)
+      return
+    case 'steam':
+      await steam.importGame(id)
+      return
+    case 'openlibrary':
+      await openlibrary.importBook(row.external_id)
+      return
+    case 'rawg':
+      await gamesCatalog.importGame(id)
+      return
     default:
       throw new Error(`No importer for source "${row.external_source}"`)
   }
@@ -148,6 +277,15 @@ export function cancel(): void {
   if (status.state === 'running') gate?.controls.cancel?.()
 }
 
+let lastRequest: RefreshRequest | null = null
+
+// Runs the last run's failed titles again, with the same aspects.
+export function retryFailed(deps: Parameters<typeof start>[1] = {}): RefreshRunStatus {
+  if (status.state === 'running') throw new Error('A refresh is already running.')
+  if (!lastRequest || !status.failures.length) throw new Error('No failed titles to retry.')
+  return start({ ...lastRequest, mediaIds: status.failures.map((f) => f.id) }, deps)
+}
+
 function labelFor(req: RefreshRequest): string {
   return `${req.aspects.join(', ')} · ${req.types.length} type${req.types.length === 1 ? '' : 's'}`
 }
@@ -165,6 +303,8 @@ export function start(
   if (status.state === 'running') throw new Error('A refresh is already running.')
   const rows = deps.rows ?? selectRows(req)
   if (!rows.length) throw new Error('Nothing to refresh — every matching title already has it.')
+  const releaseJob = claimLibraryJob('refresh')
+  lastRequest = req
 
   const id = status.id + 1
   status = {
@@ -203,7 +343,8 @@ export function start(
   void runWithActivitySignal(runGate.signal, async () => {
     const slot = beginActivity(`Refresh library: ${status.label}`, { attachTo: task })
     try {
-      let consecutiveFailures = 0
+      const consecutive = new Map<string, number>()
+      const abandoned = new Set<string>()
       for (let i = 0; i < rows.length; i++) {
         // Guarded, not unconditional: awaiting an already-resolved promise still
         // defers a microtask, shifting when a cancel is observed relative to the
@@ -216,8 +357,9 @@ export function start(
         }
         const row = rows[i]
         status = { ...status, done: i + 1, message: row.title }
-        // Nothing this source can serve — counted as skipped, not failed.
-        if (!isRefreshableSource(row.external_source) || !aspectsForType(req.aspects, row.media_type).length) {
+        // Nothing this source can serve, or the source was given up on — counted
+        // as skipped, not failed.
+        if (abandoned.has(row.external_source) || !canServe(row, req.aspects)) {
           status = { ...status, skipped: status.skipped + 1 }
           continue
         }
@@ -227,7 +369,7 @@ export function start(
           status = changed
             ? { ...status, refreshed: status.refreshed + 1 }
             : { ...status, skipped: status.skipped + 1 }
-          consecutiveFailures = 0
+          consecutive.set(row.external_source, 0)
         } catch (err) {
           if (status.id !== id) return
           // Stopping from the Tasks page trips progress.ts's checkpoint inside
@@ -243,21 +385,23 @@ export function start(
             failed: status.failed + 1,
             failures: [...status.failures, { id: row.id, title: row.title, error: message }]
           }
-          consecutiveFailures++
-          if (consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
-            status = {
-              ...status,
-              state: 'error',
-              message: `${MAX_CONSECUTIVE_FAILURES} titles failed in a row — the source looks unreachable. Everything refreshed so far is kept; run it again later to pick up the rest.`
-            }
-            return
-          }
+          const streak = (consecutive.get(row.external_source) ?? 0) + 1
+          consecutive.set(row.external_source, streak)
+          if (streak >= MAX_CONSECUTIVE_FAILURES) abandoned.add(row.external_source)
         }
         const delay = deps.delayMs ?? SOURCE_DELAY_MS[row.external_source] ?? 300
         if (delay > 0 && i < rows.length - 1) await sleep(delay)
       }
-      if (status.id === id) status = { ...status, state: 'done', message: null }
+      if (status.id !== id) return
+      status = abandoned.size
+        ? {
+            ...status,
+            state: 'error',
+            message: `${[...abandoned].map((src) => SOURCE_NAMES[src] ?? src).join(' and ')} failed ${MAX_CONSECUTIVE_FAILURES} titles in a row and looked unreachable, so ${abandoned.size === 1 ? 'its' : 'their'} remaining titles were skipped. Everything else finished; run it again later to pick up the rest.`
+          }
+        : { ...status, state: 'done', message: null }
     } finally {
+      releaseJob()
       // Never clear a newer run's slot — neither a newer refresh (status.id) nor
       // a dialog import that took the shared slot mid-run (the handle argument).
       if (status.id === id) endActivity(undefined, slot)
@@ -285,7 +429,7 @@ export async function refreshMedia(mediaId: number, aspects: RefreshAspect[]): P
     )
     .get(mediaId) as RefreshRow | undefined
   if (!row) throw new Error('Title not found.')
-  if (!row.external_id || !isRefreshableSource(row.external_source)) {
+  if (!row.external_id || !canServe(row, aspects)) {
     throw new Error('That title has no importable source — nothing to refresh from.')
   }
   await refreshOne(row, aspects)

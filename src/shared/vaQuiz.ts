@@ -20,6 +20,19 @@ function normalizedTitle(title: string): string {
   return title.trim().toLocaleLowerCase()
 }
 
+// Distractor scans compare every candidate's title against the pair's, so
+// normalise each pool item once instead of on every comparison.
+const itemTitles = new WeakMap<QuizVaItem, string>()
+
+function titleOf(item: QuizVaItem): string {
+  let title = itemTitles.get(item)
+  if (title === undefined) {
+    title = normalizedTitle(item.mediaTitle)
+    itemTitles.set(item, title)
+  }
+  return title
+}
+
 function normalizedGender(gender: string | null): string | null {
   const value = gender?.trim().toLocaleLowerCase().replace(/[^a-z]+/g, '') ?? ''
   return value || null
@@ -63,7 +76,7 @@ function sharedVoiceIds(a: QuizVaItem, b: QuizVaItem): number[] {
 }
 
 function isDifferentTitle(a: QuizVaItem, b: QuizVaItem): boolean {
-  return a.mediaId !== b.mediaId && normalizedTitle(a.mediaTitle) !== normalizedTitle(b.mediaTitle)
+  return a.mediaId !== b.mediaId && titleOf(a) !== titleOf(b)
 }
 
 function distractorScore(answer: QuizVaItem, candidate: QuizVaItem): number {
@@ -90,9 +103,9 @@ function isEligibleDistractor(
   if (candidate.characterId === source.characterId || candidate.characterId === answer.characterId)
     return false
   if (candidate.mediaId === answer.mediaId) return false
-  if (normalizedTitle(candidate.mediaTitle) === normalizedTitle(answer.mediaTitle)) return false
+  if (titleOf(candidate) === titleOf(answer)) return false
   if (candidate.personIds.some((id) => sourceVoices.has(id))) return false
-  return answerGender == null || normalizedGender(candidate.gender) === answerGender
+  return answerGender == null || candidate.gender === answerGender
 }
 
 function hasEnoughDistractors(
@@ -103,14 +116,11 @@ function hasEnoughDistractors(
   const sourceVoices = new Set(source.personIds)
   const answerGender = normalizedGender(answer.gender)
   const seenCharacters = new Set<number>([source.characterId, answer.characterId])
-  const seenTitles = new Set<string>([
-    normalizedTitle(source.mediaTitle),
-    normalizedTitle(answer.mediaTitle)
-  ])
+  const seenTitles = new Set<string>([titleOf(source), titleOf(answer)])
   let found = 0
   for (const candidate of pool) {
     if (!isEligibleDistractor(candidate, source, answer, sourceVoices, answerGender)) continue
-    const title = normalizedTitle(candidate.mediaTitle)
+    const title = titleOf(candidate)
     if (seenCharacters.has(candidate.characterId) || seenTitles.has(title)) continue
     seenCharacters.add(candidate.characterId)
     seenTitles.add(title)
@@ -136,13 +146,10 @@ function pickDistractors(
   ).sort((a, b) => distractorScore(answer, b) - distractorScore(answer, a))
 
   const seenCharacters = new Set<number>([source.characterId, answer.characterId])
-  const seenTitles = new Set<string>([
-    normalizedTitle(source.mediaTitle),
-    normalizedTitle(answer.mediaTitle)
-  ])
+  const seenTitles = new Set<string>([titleOf(source), titleOf(answer)])
   const out: QuizVaItem[] = []
   for (const candidate of candidates) {
-    const title = normalizedTitle(candidate.mediaTitle)
+    const title = titleOf(candidate)
     if (seenCharacters.has(candidate.characterId) || seenTitles.has(title)) continue
     seenCharacters.add(candidate.characterId)
     seenTitles.add(title)
@@ -158,7 +165,7 @@ interface Pair {
   sharedIds: number[]
 }
 
-function viablePairs(pool: readonly QuizVaItem[], rng: () => number): Pair[] {
+function viablePairs(pool: readonly QuizVaItem[], rng: () => number, perSource = 8): Pair[] {
   const byPerson = new Map<number, QuizVaItem[]>()
   for (const item of pool) {
     for (const personId of item.personIds) {
@@ -183,7 +190,7 @@ function viablePairs(pool: readonly QuizVaItem[], rng: () => number): Pair[] {
       addedForSource++
       // A handful of alternatives is enough for the balancing pass and keeps
       // prolific VAs from turning the builder into a source×role×pool scan.
-      if (addedForSource === 8) break
+      if (addedForSource === perSource) break
     }
   }
   return out
@@ -191,7 +198,8 @@ function viablePairs(pool: readonly QuizVaItem[], rng: () => number): Pair[] {
 
 export function countBuildableVaSources(rawPool: readonly QuizVaItem[]): number {
   const pool = normalizePool(rawPool)
-  const pairs = viablePairs(pool, () => 0.5)
+  // A source counts once it has any viable pair, so one per source suffices.
+  const pairs = viablePairs(pool, () => 0.5, 1)
   return new Set(pairs.map((pair) => vaAppearanceKey(pair.source))).size
 }
 

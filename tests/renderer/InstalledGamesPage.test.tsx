@@ -72,7 +72,7 @@ describe('Installed games launcher', () => {
     session.running = false
     session.status = null
     installed.mockResolvedValue(games)
-    detail.mockResolvedValue({ heroPath: 'media/elden-wide.jpg' })
+    detail.mockResolvedValue({ backgroundPath: 'media/elden-wide.jpg' })
     launch.mockResolvedValue(undefined)
     kick.mockResolvedValue(undefined)
   })

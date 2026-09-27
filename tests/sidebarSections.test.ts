@@ -34,7 +34,6 @@ describe('sidebarSectionDefs', () => {
       'lists',
       'tags',
       'quiz',
-      'gacha',
       'japanese',
       'english',
       'programming'
@@ -49,7 +48,7 @@ describe('sidebarSectionDefs', () => {
   })
 
   it('resolves labels from sectionDef', () => {
-    expect(sectionDef('gacha')).toMatchObject({ label: 'Gacha', group: 'play' })
+    expect(sectionDef('quiz')).toMatchObject({ label: 'Quiz', group: 'play' })
     expect(sectionDef('nope')).toBeUndefined()
   })
 })
@@ -62,30 +61,31 @@ describe('parseHiddenSections', () => {
   })
 
   it('keeps only known keys', () => {
-    const raw = JSON.stringify(['gacha', 'a_section_that_never_existed', 7, null])
+    // 'gacha' is a real stale value: the section was removed on 2026-09-26.
+    const raw = JSON.stringify(['quiz', 'gacha', 'a_section_that_never_existed', 7, null])
     const hidden = parseHiddenSections(raw)
     expect(hidden.size).toBe(1)
-    expect(hidden.has('gacha')).toBe(true)
+    expect(hidden.has('quiz')).toBe(true)
   })
 
   it('round-trips through serializeHiddenSections', () => {
-    const hidden = new Set(['gacha', 'wrestling', 'book'])
+    const hidden = new Set(['quiz', 'wrestling', 'book'])
     const parsed = parseHiddenSections(serializeHiddenSections(hidden))
     expect(parsed).toEqual(hidden)
   })
 
   it('drops unknown keys on write too', () => {
-    const out = serializeHiddenSections(['gacha', 'stale_key'])
-    expect(JSON.parse(out)).toEqual(['gacha'])
+    const out = serializeHiddenSections(['quiz', 'stale_key'])
+    expect(JSON.parse(out)).toEqual(['quiz'])
   })
 })
 
 describe('toggleSectionHidden', () => {
   it('adds and removes without mutating the input set', () => {
-    const start = new Set(['gacha'])
-    const shown = toggleSectionHidden(start, 'gacha')
-    expect(shown.has('gacha')).toBe(false)
-    expect(start.has('gacha')).toBe(true)
+    const start = new Set(['quiz'])
+    const shown = toggleSectionHidden(start, 'quiz')
+    expect(shown.has('quiz')).toBe(false)
+    expect(start.has('quiz')).toBe(true)
     const hid = toggleSectionHidden(start, 'music')
     expect(hid.has('music')).toBe(true)
     expect(hid.size).toBe(2)

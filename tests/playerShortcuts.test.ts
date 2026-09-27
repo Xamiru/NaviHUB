@@ -15,7 +15,6 @@ describe('playerShortcutsEnabled', () => {
       '/checklist',
       '/stats',
       '/settings',
-      '/gacha/fgo',
       '/torrents'
     ])
       expect(playerShortcutsEnabled(p)).toBe(true)

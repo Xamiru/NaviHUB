@@ -5,7 +5,7 @@
 
 **Covers** — attached episode and wrestling-video folders, external playback, manual watched tracking, metadata probing, and subtitle text used by Japanese study tools.
 
-**Key files** — `src/main/video/scan.ts`, `scope.ts`, `index.ts`, `ffmpeg.ts`, `playability.ts`, `probeParse.ts`, `subtitles.ts`, `seriesText.ts`, `components/VideoEpisodesSection.tsx`, `components/wrestling/WrestlingFilesSection.tsx`
+**Key files** — `src/main/video/scan.ts`, `scope.ts`, `index.ts`, `ffmpeg.ts`, `playability.ts`, `probeParse.ts`, `subtitles.ts`, `src/main/seriesText.ts`, `components/VideoEpisodesSection.tsx`, `components/wrestling/WrestlingFilesSection.tsx`
 
 **Tests** — `video`, `wrestlingVideo`, `videoNames`, `videoPlayability`, `videoCoverage`, `subtitles`
 

@@ -103,7 +103,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
             <div className="shrink-0">{cover}</div>
           ))}
 
-        <div className="min-w-0 flex-1">
+        <div className="player-title min-w-0 flex-1">
           {albumLink ? (
             <Link
               to={albumLink}
@@ -160,7 +160,7 @@ export default function NowPlayingBar(): React.JSX.Element | null {
         </div>
 
         <div className="flex w-full items-center gap-2">
-          <span className="text-xs text-gray-500 tabular-nums shrink-0 w-9 text-right">
+          <span className="player-time text-xs text-gray-500 tabular-nums shrink-0 w-9 text-right">
             {fmt(currentTime)}
           </span>
           <input
@@ -170,10 +170,11 @@ export default function NowPlayingBar(): React.JSX.Element | null {
             step="any"
             value={Math.min(currentTime, dur)}
             onChange={(e) => seek(Number(e.target.value))}
-            className="flex-1 accent-accent cursor-pointer"
+            className="player-seek flex-1 accent-accent cursor-pointer"
+            style={{ '--seek-pct': `${dur ? (Math.min(currentTime, dur) / dur) * 100 : 0}%` } as React.CSSProperties}
             aria-label="Seek"
           />
-          <span className="text-xs text-gray-500 tabular-nums shrink-0 w-9">{fmt(dur)}</span>
+          <span className="player-time text-xs text-gray-500 tabular-nums shrink-0 w-9">{fmt(dur)}</span>
         </div>
       </div>
 

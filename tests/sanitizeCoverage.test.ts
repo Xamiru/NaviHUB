@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest'
 
 // tests/exportSanitize.test.ts proves the wipe statements RUN. This proves the
 // list is COMPLETE: every table in init.sql is either wiped or consciously
-// listed below as canonical. Without it, a new personal table (the gacha_*,
-// en_*, wrestling_* pattern — five sections added tables in six weeks) silently
+// listed below as canonical. Without it, a new personal table (the en_*,
+// wrestling_*, music_* pattern — five sections added tables in six weeks) silently
 // ships the user's data inside a "sanitized" export, and nothing complains.
 //
 // Adding a table? Put it in sanitizeSql.cjs, or add it here with a reason.

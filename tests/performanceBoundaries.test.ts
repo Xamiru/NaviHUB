@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs'
+import { readdirSync, readFileSync } from 'fs'
 import { fileURLToPath } from 'url'
 import { describe, expect, it } from 'vitest'
 
@@ -36,13 +36,22 @@ describe('renderer loading boundaries', () => {
   })
 
   it('keeps music browsing and whole-library playback bounded', () => {
-    const page = read('src/renderer/src/pages/MusicLibraryPage.tsx')
+    const page = ['src/renderer/src/pages/MusicLibraryPage.tsx', 'src/renderer/src/components/music/MusicLibraryTabs.tsx',
+      'src/renderer/src/components/music/MusicBrowse.tsx', 'src/renderer/src/components/music/SpotifyImportDialog.tsx']
+      .map(read).join('\n')
     const repo = read('src/main/repos/musicRepo.ts')
     expect(page).not.toContain('api.music.tracks({})')
     expect(page).toContain('api.music.trackPage(')
-    expect(page).toContain('api.music.playbackQueue(shuffle)')
+    expect(page).toContain('api.music.playbackQueue(shuffle, ')
     expect(repo).toContain('MAX_PLAYBACK_QUEUE_TRACKS = 2_000')
     expect(repo).toContain("shuffle ? 'RANDOM()' : catalogOrder")
+  })
+
+  it('keeps music pages from importing each other (it collapses their lazy routes)', () => {
+    const dir = fileURLToPath(new URL('../src/renderer/src/pages', import.meta.url))
+    for (const file of readdirSync(dir).filter((name) => /^(Music|NowPlaying)/.test(name))) {
+      expect(read(`src/renderer/src/pages/${file}`), file).not.toMatch(/from '\.\/[A-Z]\w*Page'/)
+    }
   })
 
   it('does not poll prep-deck status while the coverage panel is idle', () => {
@@ -83,12 +92,12 @@ describe('main-process loading boundaries', () => {
 
   it('caps structured API bodies and dictionary archives before buffering them', () => {
     const http = read('src/main/http.ts')
-    const atlas = read('src/main/atlas.ts')
     const jackett = read('src/main/jackett.ts')
+    const vndb = read('src/main/vndb.ts')
     const dictionaries = read('src/main/dict/importer.ts')
     expect(http).toContain('MAX_API_RESPONSE_BYTES = 32 * 1024 * 1024')
     expect(http).toContain('readBoundedBody')
-    for (const source of [atlas, jackett]) {
+    for (const source of [vndb, jackett]) {
       expect(source).toContain('maxResponseBytes: MAX_API_RESPONSE_BYTES')
     }
     expect(dictionaries).toContain('MAX_DICTIONARY_ARCHIVE_BYTES = 2 * 1024 * 1024 * 1024')

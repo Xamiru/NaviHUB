@@ -2,15 +2,19 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { useIncrementalList } from '../lib/hooks'
+import { statusesFrom, useIncrementalList, useScoreMax, useSettings } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { useBulkRun } from '../lib/useBulkRun'
 import { useRefreshRun } from '../lib/useRefreshRun'
-import { toastError } from '../lib/toast'
+import { toast, toastError } from '../lib/toast'
+import { confirmDialog } from '../lib/confirm'
+import { configFor } from '../lib/mediaConfig'
+import { trackingFor } from '../lib/bulkTracking'
 import PageHeader from '../components/PageHeader'
 import Tabs, { TabPanel } from '../components/Tabs'
 import RefreshTab from '../components/RefreshTab'
 import { Group, Pill } from '../components/PillGroup'
+import { Field } from '../components/Field'
 import { BULK_SOURCES, bulkSourceCfg, type BulkSourceKey } from '@shared/bulkImport'
 import type { BulkListParams, BulkPreviewItem } from '@shared/types'
 import type { RefreshRequest } from '@shared/refresh'
@@ -45,6 +49,19 @@ export default function BulkImportPage(): React.JSX.Element {
   const [tab, setTab] = usePersistedState<'import' | 'refresh'>('bulk.tab', 'import')
   const [season, setSeason] = usePersistedState('bulk.season', '')
   const [seasonYear, setSeasonYear] = usePersistedState('bulk.seasonYear', '')
+  const [formatByType, setFormatByType] = usePersistedState<Record<string, string>>('bulk.format', {})
+  const [countryByType, setCountryByType] = usePersistedState<Record<string, string>>(
+    'bulk.country',
+    {}
+  )
+  // The AniList username outlives the visit (a localStorage pref, not nav state).
+  const [username, setUsernameState] = useState(() => readUsernamePref())
+  const setUsername = (v: string): void => {
+    setUsernameState(v)
+    writeUsernamePref(v)
+  }
+  const { data: settings } = useSettings()
+  const scoreMax = useScoreMax()
 
   const cfg = bulkSourceCfg(sourceKey)
   const sort = cfg.sorts.some((s) => s.key === sortByType[sourceKey])
@@ -53,6 +70,11 @@ export default function BulkImportPage(): React.JSX.Element {
   const genreOptions = cfg.genres ?? (cfg.genreIds ? Object.keys(cfg.genreIds) : [])
   const genre = genreByType[sourceKey] ?? ''
   const activeGenre = cfg.hasGenre && genreOptions.includes(genre) ? genre : null
+  const userList = sort === 'list'
+  const format = formatByType[sourceKey] ?? ''
+  const activeFormat = cfg.formats?.some((f) => f.key === format) ? format : null
+  const country = countryByType[sourceKey] ?? ''
+  const activeCountry = cfg.countries?.some((c) => c.key === country) ? country : null
 
   // The offline games catalog must be installed before its lists exist.
   const { data: catalogStatus } = useQuery({
@@ -82,11 +104,15 @@ export default function BulkImportPage(): React.JSX.Element {
   }
 
   function buildParams(): BulkListParams {
+    // A user list is read whole; the ranking filters do not apply to it.
+    if (userList) return { source: sourceKey, sort, count: cfg.maxCount, username: username.trim() }
     const params: BulkListParams = {
       source: sourceKey,
       sort,
       count: Math.max(1, Math.min(cfg.maxCount, Math.floor(Number(count) || 0) || 100))
     }
+    if (activeFormat) params.format = activeFormat
+    if (activeCountry) params.country = activeCountry
     if (Number(yearFrom)) params.yearFrom = Number(yearFrom)
     if (Number(yearTo)) params.yearTo = Number(yearTo)
     if (activeGenre) params.genre = activeGenre
@@ -106,6 +132,8 @@ export default function BulkImportPage(): React.JSX.Element {
       // The preview contains only NEW titles (main excludes the library and
       // tops the list up) — everything starts selected.
       setDeselected(new Set())
+    } catch (e) {
+      toastError(e)
     } finally {
       setPreviewing(false)
     }
@@ -113,9 +141,10 @@ export default function BulkImportPage(): React.JSX.Element {
 
   async function startImport(): Promise<void> {
     if (!preview) return
+    const statuses = statusesFrom(settings, configFor(preview.params.source))
     const items = preview.items
       .filter((it) => !deselected.has(it.sourceId))
-      .map((it) => ({ sourceId: it.sourceId, title: it.title }))
+      .map((it) => ({ sourceId: it.sourceId, title: it.title, tracking: trackingFor(it, statuses, scoreMax) }))
     await api.bulk.start({ source: preview.params.source, items })
     setPreview(null)
     await run.kick()
@@ -123,6 +152,33 @@ export default function BulkImportPage(): React.JSX.Element {
 
   async function stopRun(): Promise<void> {
     await api.bulk.cancel()
+    await run.kick()
+  }
+
+  async function retryFailed(): Promise<void> {
+    try {
+      await api.bulk.retryFailed()
+    } catch (e) {
+      toastError(e)
+    }
+    await run.kick()
+  }
+
+  async function undoRun(): Promise<void> {
+    const n = runStatus?.undoable ?? 0
+    const ok = await confirmDialog(
+      `Remove the ${n} title${n === 1 ? '' : 's'} this run added? Titles you have tracked, scored, favorited or noted since are kept.`,
+      { confirmLabel: 'Remove', danger: true }
+    )
+    if (!ok) return
+    try {
+      const { removed, kept } = await api.bulk.undoLast()
+      toast(`Removed ${removed} title${removed === 1 ? '' : 's'}${kept ? `, kept ${kept} you changed` : ''}.`, 'success')
+      await qc.invalidateQueries({ queryKey: qk.media.all })
+      await qc.invalidateQueries({ queryKey: qk.mediaCounts.all })
+    } catch (e) {
+      toastError(e)
+    }
     await run.kick()
   }
 
@@ -206,6 +262,20 @@ export default function BulkImportPage(): React.JSX.Element {
           </div>
         ) : (
           <>
+            {userList ? (
+              <Field
+                label="AniList username"
+                description="New titles from your status lists import with their AniList status, score and progress. Titles you already have are left as they are."
+              >
+                <input
+                  className="input w-64"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="off"
+                />
+              </Field>
+            ) : (
+            <>
             <div className="flex flex-wrap items-end gap-4">
               <label className="block">
                 <span className="label">Top</span>
@@ -255,6 +325,38 @@ export default function BulkImportPage(): React.JSX.Element {
                   </select>
                 </label>
               )}
+              {cfg.formats && (
+                <Field label="Format">
+                  <select
+                    className="input w-auto"
+                    value={activeFormat ?? ''}
+                    onChange={(e) => setFormatByType({ ...formatByType, [sourceKey]: e.target.value })}
+                  >
+                    <option value="">Any</option>
+                    {cfg.formats.map((f) => (
+                      <option key={f.key} value={f.key}>
+                        {f.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
+              {cfg.countries && (
+                <Field label="Country">
+                  <select
+                    className="input w-auto"
+                    value={activeCountry ?? ''}
+                    onChange={(e) => setCountryByType({ ...countryByType, [sourceKey]: e.target.value })}
+                  >
+                    <option value="">Any</option>
+                    {cfg.countries.map((c) => (
+                      <option key={c.key} value={c.key}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              )}
             </div>
 
             {(sourceKey === 'movie' || sourceKey === 'tv') && (
@@ -293,9 +395,16 @@ export default function BulkImportPage(): React.JSX.Element {
               </div>
             )}
 
+            </>
+            )}
+
             <div className="flex items-center gap-3">
               {!preview && (
-                <button className="btn-primary" onClick={runPreview} disabled={previewing || run.running}>
+                <button
+                  className="btn-primary"
+                  onClick={runPreview}
+                  disabled={previewing || run.running || (userList && !username.trim())}
+                >
                   {previewing ? 'Fetching list…' : 'Preview'}
                 </button>
               )}
@@ -324,7 +433,7 @@ export default function BulkImportPage(): React.JSX.Element {
             </div>
           </QuietWorkspace>
 
-      {runStatus && runStatus.state !== 'idle' && <RunCard status={runStatus} onStop={stopRun} />}
+      {runStatus && runStatus.state !== 'idle' && <RunCard status={runStatus} onStop={stopRun} onRetry={retryFailed} onUndo={undoRun} />}
 
       {preview && (
         <PreviewList
@@ -441,10 +550,14 @@ function ImportFlow({
 
 function RunCard({
   status,
-  onStop
+  onStop,
+  onRetry,
+  onUndo
 }: {
   status: NonNullable<ReturnType<typeof useBulkRun>['status']>
   onStop: () => Promise<void>
+  onRetry: () => Promise<void>
+  onUndo: () => Promise<void>
 }) {
   const pct = status.total > 0 ? Math.round((status.done / status.total) * 100) : 0
   const running = status.state === 'running'
@@ -475,6 +588,11 @@ function RunCard({
             Stop
           </button>
         )}
+        {!running && status.undoable > 0 && (
+          <button className="btn-ghost shrink-0" onClick={() => void onUndo()}>
+            Remove {status.undoable} added
+          </button>
+        )}
       </div>
       {running && (
         <div className="h-1.5 overflow-hidden rounded bg-base-600">
@@ -483,6 +601,26 @@ function RunCard({
       )}
       {status.state === 'error' && status.message && (
         <p className="mt-2 text-xs text-red-400">{status.message}</p>
+      )}
+      {!running && status.failures.length > 0 && (
+        <div className="mt-4">
+          <div className="mb-1 flex items-center justify-between gap-3">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+              Didn&apos;t import
+            </p>
+            <button className="btn-ghost text-xs" onClick={() => void onRetry()}>
+              Retry {status.failures.length} failed
+            </button>
+          </div>
+          <div className="max-h-48 space-y-1 overflow-y-auto pr-1">
+            {status.failures.map((f) => (
+              <div key={f.sourceId} className="flex items-baseline gap-2 text-xs">
+                <span className="min-w-0 flex-1 truncate text-gray-300">{f.title}</span>
+                <span className="shrink-0 text-gray-500">{f.error}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )
@@ -554,4 +692,22 @@ function PreviewList({
       {hasMore && <div ref={sentinelRef} className="h-8" />}
     </QuietWorkspace>
   )
+}
+
+const USERNAME_PREF = 'bulk.anilistUsername'
+
+function readUsernamePref(): string {
+  try {
+    return localStorage.getItem(USERNAME_PREF) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+function writeUsernamePref(v: string): void {
+  try {
+    localStorage.setItem(USERNAME_PREF, v.trim())
+  } catch {
+    /* a lost pref only means retyping the name */
+  }
 }

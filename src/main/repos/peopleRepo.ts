@@ -112,14 +112,17 @@ export function credits(id: number): PersonCredit[] {
 export function upsert(input: Partial<Person> & { name: string }): number {
   const db = getSqlite()
   if (input.id) {
+    // The person page has no birthday field; an omitted one keeps the imported date.
     db.prepare(
-      `UPDATE person SET name = ?, name_native = ?, photo_path = ?, bio = ?, birthday = ?
+      `UPDATE person SET name = ?, name_native = ?, photo_path = ?, bio = ?,
+         birthday = CASE WHEN ? THEN ? ELSE birthday END
        WHERE id = ?`
     ).run(
       input.name,
       input.nameNative ?? null,
       input.photoPath ?? null,
       input.bio ?? null,
+      input.birthday === undefined ? 0 : 1,
       input.birthday ?? null,
       input.id
     )

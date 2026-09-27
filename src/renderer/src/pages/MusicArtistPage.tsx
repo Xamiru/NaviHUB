@@ -13,7 +13,7 @@ import Section from '../components/Section'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
 import SpotifyEntityDownloadDialog from '../components/SpotifyEntityDownloadDialog'
 import { AUDIO_CATEGORIES, discographyQuery } from '@shared/torrents'
-import { AlbumCard, TrackList } from './MusicLibraryPage'
+import { AlbumCard, TrackList } from '../components/music/MusicBrowse'
 import { confirmDialog } from '../lib/confirm'
 
 export default function MusicArtistPage() {
@@ -38,11 +38,16 @@ export default function MusicArtistPage() {
     setSearchParams(next, { replace: true })
   }
 
-  const { data: artist, isLoading } = useQuery({
+  const { data: artist, isLoading, isLoadingError, refetch } = useQuery({
     queryKey: qk.music.artist(artistId),
     queryFn: () => api.music.artist(artistId)
   })
-  const { data: tracks = [], isLoading: tracksLoading } = useQuery({
+  const {
+    data: tracks = [],
+    isLoading: tracksLoading,
+    isLoadingError: tracksFailed,
+    refetch: refetchTracks
+  } = useQuery({
     queryKey: qk.music.artistTracks(artistId),
     queryFn: () => api.music.artistTracks(artistId)
   })
@@ -92,6 +97,7 @@ export default function MusicArtistPage() {
   }
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
+  if (isLoadingError) return <PageStatus>Could not load artist. <button className="btn" onClick={() => void refetch()}>Retry artist</button></PageStatus>
   if (!artist) return <PageStatus>Artist not found.</PageStatus>
 
   return (
@@ -111,6 +117,7 @@ export default function MusicArtistPage() {
         onPlay={() => playAll(false)}
         onShuffle={() => playAll(true)}
         artNoun="photo"
+        art={{ kind: 'music_artist', id: artistId }}
         onFindArt={findPhoto}
         onClearArt={clearPhoto}
         onDelete={deleteArtist}
@@ -146,12 +153,19 @@ export default function MusicArtistPage() {
 
       <Section
         title="All tracks"
-        subtitle={tracksLoading ? 'Loading the complete catalog…' : `${tracks.length} tracks in release order`}
+        subtitle={tracksLoading ? 'Loading the complete catalog…' : tracksFailed ? undefined : `${tracks.length} tracks in release order`}
         className="mb-6"
       >
         <div className="max-w-5xl">
           {tracksLoading ? (
             <p className="text-sm text-gray-400">Loading tracks…</p>
+          ) : tracksFailed ? (
+            <p role="alert" className="text-sm">
+              Could not load tracks.{' '}
+              <button className="btn" onClick={() => void refetchTracks()}>
+                Retry tracks
+              </button>
+            </p>
           ) : (
             <TrackList tracks={tracks} />
           )}

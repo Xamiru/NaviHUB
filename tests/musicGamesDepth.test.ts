@@ -22,12 +22,6 @@ const input: GameRunInput = {
   stoppedAt: 'Library',
   notes: ''
 }
-const personal = {
-  rating: 8.5,
-  shelf: 'exploring' as const,
-  review: 'Growing on me',
-  tags: [' Study ', 'INSTRUMENTAL', 'study']
-}
 beforeEach(() => {
   db = createTestDb()
   db.exec(`INSERT INTO media_item(id,media_type,title,progress) VALUES(1,'game','Game',20),(2,'game','Other',0),(3,'anime','Anime',0);
@@ -97,60 +91,22 @@ describe('game playthroughs', () => {
     expect(runs.history(1, null, 1).sessionTotal).toBe(55)
   })
 })
-describe('album journal and personal tags', () => {
-  it('persists normalized tags, fractional ratings, shelves, reviews and standout tracks', () => {
-    journal.saveAlbum(1, personal)
-    journal.saveTrack({ trackId: 1, standout: true, tags: [' Calm '] })
-    expect(journal.album(1)).toMatchObject({
-      rating: 8.5,
-      shelf: 'exploring',
-      tags: ['study', 'instrumental'],
-      tracks: [{ trackId: 1, standout: true, tags: ['calm'] }]
-    })
+describe('personal track tags', () => {
+  it('persists normalized tags and standout tracks per album', () => {
+    journal.saveTrack({ trackId: 1, standout: true, tags: [' Calm ', 'STUDY', 'calm'] })
+    journal.saveTrack({ trackId: 2, standout: false, tags: ['instrumental'] })
+    expect(journal.track(1)).toEqual({ trackId: 1, standout: true, tags: ['calm', 'study'] })
     expect(journal.tags()).toEqual(['calm', 'instrumental', 'study'])
-    journal.saveAlbum(1, { rating: null, shelf: null, review: '', tags: [] })
-    expect(journal.album(1)).toMatchObject({ rating: null, shelf: null })
-    expect(journal.track(1).standout).toBe(true)
-  })
-  it('tracks dated opinions independently of playback counts and current album rating', () => {
-    journal.saveAlbum(1, personal)
-    const id = journal.saveListen(1, null, {
-      listenedOn: '2026-09-23',
-      rating: 6,
-      notes: 'First impression'
-    })
-    journal.saveListen(1, id, { listenedOn: '2026-09-22', rating: 7, notes: 'Updated' })
-    expect(journal.listens(1).items[0]).toMatchObject({ rating: 7, notes: 'Updated' })
-    expect(journal.album(1).rating).toBe(8.5)
-    expect(db.prepare('SELECT SUM(play_count) AS n FROM music_track').get()).toEqual({ n: 6 })
-    expect(() =>
-      journal.saveListen(2, id, { listenedOn: '2026-09-22', rating: 1, notes: 'x' })
-    ).toThrow()
-    journal.removeListen(1, id)
-    expect(journal.listens(1).total).toBe(0)
-  })
-  it('browses shelves and recorded listens, searches literal titles, and excludes untouched albums', () => {
-    expect(journal.list({ search: '', shelf: 'all', page: 0 }).total).toBe(0)
-    journal.saveAlbum(1, personal)
-    journal.saveListen(2, null, { listenedOn: '2026-09-23', rating: null, notes: '' })
-    expect(journal.list({ search: '', shelf: 'all', page: 0 }).total).toBe(2)
-    expect(journal.list({ search: 'artist', shelf: 'exploring', page: 0 }).items[0].id).toBe(1)
-    expect(journal.list({ search: '%', shelf: 'all', page: 0 }).total).toBe(0)
-    expect(journal.list({ search: '', shelf: 'rated', page: 0 }).total).toBe(1)
-  })
-  it('rejects invalid values without replacing saved personal data', () => {
-    journal.saveAlbum(1, personal)
-    for (const rating of [11, -1, NaN, Infinity])
-      expect(() => journal.saveAlbum(1, { ...personal, rating })).toThrow()
-    expect(() => journal.saveAlbum(1, { ...personal, tags: ['a,b'] })).toThrow()
+    expect(journal.standouts(1)).toEqual([1])
+    expect(() => journal.saveTrack({ trackId: 1, standout: true, tags: ['a,b'] })).toThrow()
     expect(() => journal.saveTrack({ trackId: 99, tags: [], standout: false })).toThrow()
-    expect(journal.album(1).rating).toBe(8.5)
+    expect(journal.track(1).tags).toEqual(['calm', 'study'])
   })
 })
 describe('live smart playlists', () => {
-  it('combines inherited album and track tags with all/any semantics', () => {
-    journal.saveAlbum(1, personal)
-    journal.saveTrack({ trackId: 1, standout: true, tags: ['calm'] })
+  it('combines track tags with all/any semantics', () => {
+    journal.saveTrack({ trackId: 1, standout: true, tags: ['calm', 'study'] })
+    journal.saveTrack({ trackId: 2, standout: false, tags: ['study'] })
     expect(
       smart.preview({ ...DEFAULT_SMART_RULES, tags: ['study', 'calm'] }).items.map((t) => t.id)
     ).toEqual([1])
@@ -182,8 +138,7 @@ describe('live smart playlists', () => {
       smart.preview({ ...DEFAULT_SMART_RULES, minPlays: 1, maxPlays: 3 }).items.map((t) => t.id)
     ).toEqual([3])
   })
-  it('uses explicit album/track soundtrack links, album ratings and shelves', () => {
-    journal.saveAlbum(1, personal)
+  it('uses explicit album/track soundtrack links', () => {
     db.exec(
       'INSERT INTO soundtrack_link(album_id,media_id) VALUES(1,1); INSERT INTO soundtrack_link(track_id,media_id) VALUES(3,2)'
     )
@@ -193,8 +148,6 @@ describe('live smart playlists', () => {
         .preview({
           ...DEFAULT_SMART_RULES,
           soundtrack: 'linked',
-          minAlbumRating: 8,
-          shelf: 'exploring',
           playState: 'unplayed'
         })
         .items.map((t) => t.id)
@@ -229,22 +182,18 @@ describe('live smart playlists', () => {
   })
 })
 describe('personal data lifecycle', () => {
-  it('cascades album/game deletion and sanitizes every new personal table', () => {
+  it('sanitizes every personal game and music table', () => {
     const id = runs.save(1, null, input)
     sessions.recordSession(1, 1000, 4600, 3600, id)
     runs.saveNote(1, id, null, { entryDate: '2026-09-23', body: 'Private' })
-    journal.saveAlbum(1, personal)
     journal.saveTrack({ trackId: 1, standout: true, tags: ['private'] })
-    journal.saveListen(1, null, { listenedOn: '2026-09-23', rating: 5, notes: 'Private' })
     smart.save(null, { title: 'Private mix', description: '', rules: DEFAULT_SMART_RULES })
     sanitizeDb(db)
     for (const table of [
       'game_playthrough',
       'game_playthrough_session',
       'game_playthrough_note',
-      'music_album_personal',
       'music_track_personal',
-      'music_listen',
       'music_smart_playlist'
     ])
       expect(db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get()).toEqual({ n: 0 })

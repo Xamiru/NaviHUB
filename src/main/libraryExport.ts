@@ -21,6 +21,7 @@ import type {
 } from '@shared/types'
 import { getDbPath, getSqlite } from './db/connection'
 import { get as getSetting } from './repos/settingsRepo'
+import { mediaRoot } from './files'
 import { logInfo, logWarn } from './logBus'
 import * as tasks from './tasks'
 // The CJS module is also consumed directly by the command-line exporter.
@@ -401,7 +402,7 @@ function collectLiveAssets(
     }
   }
   if (options.includeAssets && mediaSections.length) {
-    addRows(`SELECT cover_path, banner_path FROM media_item WHERE media_type IN (${holes})`, mediaSections)
+    addRows(`SELECT cover_path FROM media_item WHERE media_type IN (${holes})`, mediaSections)
     addRows(
       `SELECT DISTINCT p.photo_path FROM person p JOIN credit c ON c.person_id=p.id
        JOIN media_item m ON m.id=c.media_id WHERE m.media_type IN (${holes})`,
@@ -438,7 +439,7 @@ function collectLiveAssets(
 function collectSanitizedAssets(db: Database.Database): { refs: AssetRef[]; missing: number } {
   const refs: string[] = []
   const tables: Array<[string, string]> = [
-    ['media_item', 'cover_path, banner_path'],
+    ['media_item', 'cover_path'],
     ['person', 'photo_path'],
     ['company', 'logo_path'],
     ['character', 'image_path'],
@@ -459,8 +460,8 @@ function collectSanitizedAssets(db: Database.Database): { refs: AssetRef[]; miss
 }
 
 function resolveAssets(paths: string[]): { refs: AssetRef[]; missing: number } {
-  const userData = app.getPath('userData')
-  const audioRoot = getSetting('audio.dir')?.trim() || join(userData, 'media')
+  const mediaRootDir = mediaRoot()
+  const audioRoot = getSetting('audio.dir')?.trim() || mediaRootDir
   const byDestination = new Map<string, AssetRef>()
   let missing = 0
   for (const relPath of new Set(paths)) {
@@ -469,12 +470,12 @@ function resolveAssets(paths: string[]): { refs: AssetRef[]; missing: number } {
     let destination: string
     if (normalized.startsWith('media/') && !normalized.includes('../')) {
       const rest = normalized.slice('media/'.length)
-      source = join(userData, 'media', rest)
+      source = join(mediaRootDir, rest)
       destination = join('media', rest)
     } else if (normalized.startsWith('audio/') && !normalized.includes('../')) {
       const rest = normalized.slice('audio/'.length)
       source = join(audioRoot, rest)
-      if (!existsSync(source)) source = join(userData, 'media', rest)
+      if (!existsSync(source)) source = join(mediaRootDir, rest)
       destination = join('media', rest)
     } else continue
     const bytes = safeSize(source)

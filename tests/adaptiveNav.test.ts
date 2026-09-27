@@ -26,7 +26,6 @@ describe('adaptive archive navigation', () => {
     ['/tv/42/edit', 'library'],
     ['/football/match/42', 'library'],
     ['/quiz/song', 'play'],
-    ['/gacha/fgo', 'play'],
     ['/japanese/review', 'learn'],
     ['/programming/sql', 'learn'],
     ['/tasks/logs', 'system'],
@@ -66,7 +65,7 @@ describe('adaptive archive navigation', () => {
       title: 'Music',
       descriptor: 'Sonic archive'
     })
-    expect(archiveContextForPath('/music/journal').items).toContainEqual({ to: '/music/journal', label: 'Journal' })
+    expect(archiveContextForPath('/music/liked').items).not.toContainEqual({ to: '/music/journal', label: 'Journal' })
     expect(archiveContextForPath('/music/smart/7').items).toContainEqual({ to: '/music/smart', label: 'Smart Playlists' })
     expect(archiveContextForPath('/music/downloads').items).toContainEqual({
       to: '/music/downloads',

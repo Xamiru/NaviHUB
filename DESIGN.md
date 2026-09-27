@@ -119,7 +119,7 @@ Primary actions use the theme accent with inverse text. In Lain, a restrained si
 
 ### Cards and sections
 
-Cards use the panel/raised surface roles and sharp corners. Lain section headers are plum bars with fine rose rules. Solid / Ink uses filled dark-green bars with cream labels; its headings are larger, condensed, and uppercase. Keep data and study content readable above atmosphere.
+Cards use the panel/raised surface roles and the theme's corner radius (near-square except Miku). Lain section headers are plum bars with fine rose rules. Solid / Ink uses filled dark-green bars with cream labels; its headings are larger, condensed, and uppercase. Keep data and study content readable above atmosphere.
 
 ### Navigation
 

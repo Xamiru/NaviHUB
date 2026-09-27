@@ -336,7 +336,34 @@ function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaC
   return [...media.values()]
 }
 
+// Availability runs every pool builder synchronously on the main process, so
+// repeat reads reuse the last result until any write lands. SQLite's change
+// counters invalidate conservatively: total_changes() for this connection,
+// data_version for external writers such as the bulk-import script.
+const availabilityCache = new WeakMap<ReturnType<typeof getSqlite>, {
+  changes: number
+  version: number
+  results: Map<string, QuizAvailability>
+}>()
+
 export function availability(request: QuizAvailabilityRequest = {}): QuizAvailability {
+  const db = getSqlite()
+  const { changes } = db.prepare('SELECT total_changes() AS changes').get() as { changes: number }
+  const version = db.pragma('data_version', { simple: true }) as number
+  let cached = availabilityCache.get(db)
+  if (cached?.changes !== changes || cached.version !== version) {
+    cached = { changes, version, results: new Map() }
+    availabilityCache.set(db, cached)
+  }
+  const key = JSON.stringify([request.scope ?? 'consumed', request.statuses ?? []])
+  const hit = cached.results.get(key)
+  if (hit) return structuredClone(hit)
+  const result = computeAvailability(request)
+  cached.results.set(key, result)
+  return structuredClone(result)
+}
+
+function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability {
   const db = getSqlite()
   const statuses = request.statuses?.filter(Boolean) ?? []
   const statusSql = statuses.length > 0 ? `AND mi.status IN (${statuses.map(() => '?').join(',')})` : ''
@@ -675,7 +702,7 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
       : [])
   ]
   const mediaRows = db.prepare(
-    `SELECT mi.id, mi.title, mi.title_original, mi.media_type, mi.cover_path, mi.banner_path,
+    `SELECT mi.id, mi.title, mi.title_original, mi.media_type, mi.cover_path,
             mi.release_date, mi.total_units, mi.score
      FROM media_item mi ${whereSql} ORDER BY mi.id`
   ).all(...mediaParams) as Array<Record<string, unknown>>
@@ -689,7 +716,7 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
         : [],
       mediaType: row.media_type as string,
       coverPath: (row.cover_path as string | null) ?? null,
-      artPaths: row.banner_path ? [row.banner_path as string] : [],
+      artPaths: [],
       releaseDate: (row.release_date as string | null) ?? null,
       totalUnits: (row.total_units as number | null) ?? null,
       score: (row.score as number | null) ?? null,

@@ -14,6 +14,7 @@ vi.mock('../src/main/db/connection', () => ({
 
 import * as musicRepo from '../src/main/repos/musicRepo'
 import * as spotifyRepo from '../src/main/repos/musicSpotifyRepo'
+import * as spotifyMatch from '../src/main/musicSpotifyMatch'
 
 beforeEach(() => {
   db = createTestDb()
@@ -1050,7 +1051,7 @@ describe('music audit regressions', () => {
   it('rejects different recordings in strict entity matching', () => {
     const song = { title: 'Song', primaryArtist: 'Artist', albumTitle: 'Studio Album', duration: 200 }
     for (const albumTitle of ['Live at the Arena', 'Album Acoustic', 'Album Remix']) {
-      expect(spotifyRepo.matchSpotifySong(song, [{ id: 1, title: 'Song', folderArtist: 'Artist', tagArtist: null, albumTitle, duration: 200 }])).toBeNull()
+      expect(spotifyMatch.matchSpotifySong(song, [{ id: 1, title: 'Song', folderArtist: 'Artist', tagArtist: null, albumTitle, duration: 200 }])).toBeNull()
     }
   })
 })

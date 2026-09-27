@@ -4,7 +4,6 @@ import os from 'node:os'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
-import { recoverLegacyMusicDownloads, finishLegacyMusicRecovery } from '../src/main/musicLegacyDownloads'
 
 let db: Database.Database
 let root: string
@@ -42,6 +41,7 @@ vi.mock('electron', () => ({
 }))
 vi.mock('../src/main/files', () => ({
   musicRootDir: () => root,
+  mediaRoot: () => join(userData, 'media'),
   // Mirror the real prefix mapping so the delete helpers resolve temp files.
   absoluteMediaPath: (rel: string) => {
     const norm = rel.split('\\').join('/')
@@ -60,11 +60,14 @@ import {
   deleteTracks,
   deleteAlbum,
   deleteArtist,
+  splitGenres,
+  tagYear,
   type ParsedTrack,
   type TagReader,
   type ScannedFile
 } from '../src/main/music'
 
+import { listAlbums, listDecades, listGenres, listTrackPage, playbackQueue } from '../src/main/repos/musicRepo'
 type TagFixture = Partial<Omit<ParsedTrack, keyof ScannedFile>>
 
 beforeEach(() => {
@@ -98,58 +101,6 @@ function fakeReader(tags: Record<string, TagFixture> = {}): TagReader & { calls:
   reader.calls = calls
   return reader
 }
-
-describe('legacy download folder repair', () => {
-  it('retains a saved Spotify catalogue attached to the old artist', async () => {
-    const old = 'navihub-downloads/Artist/Album/Song.opus'
-    makeFiles([old])
-    await indexMusicFiles([old], 'test seed', fakeReader())
-    const { artist_id } = db.prepare('SELECT artist_id FROM music_track').get() as { artist_id: number }
-    db.prepare("INSERT INTO music_spotify_entity_snapshot(artist_id,provider,provider_entity_id,source_name) VALUES(?,'spotdl','saved','Saved choices')").run(artist_id)
-    await startScan(fakeReader())
-    expect(db.prepare('SELECT source_name FROM music_spotify_entity_snapshot').get()).toEqual({ source_name: 'Saved choices' })
-    expect(db.prepare('SELECT file_path FROM music_track').get()).toEqual({ file_path: 'Artist/Album/Song.opus' })
-  })
-
-  it('moves even unmarked files on scan, keeps track IDs and personal state, and removes the bogus artist', async () => {
-    const old = 'navihub-downloads/Artist/Album/Song.opus'
-    makeFiles([old, 'Artist/Album/Song.opus'])
-    await indexMusicFiles([old], 'test seed', fakeReader())
-    const { id } = db.prepare('SELECT id FROM music_track WHERE file_path=?').get(old) as { id: number }
-    db.prepare("UPDATE music_track SET liked_at='2026-01-01', play_count=3 WHERE id=?").run(id)
-    db.prepare("INSERT INTO music_playlist(id,title) VALUES(1,'Keep')").run()
-    db.prepare('INSERT INTO music_playlist_track(playlist_id,track_id,position) VALUES(1,?,0)').run(id)
-    db.prepare('INSERT INTO music_play_log(track_id,duration) VALUES(?,200)').run(id)
-    await startScan(fakeReader())
-    const row = db.prepare('SELECT file_path,liked_at,play_count FROM music_track WHERE id=?').get(id) as { file_path: string; liked_at: string; play_count: number }
-    expect(row.file_path).toMatch(/^Artist\/Album\/.+-Song\.opus$/)
-    expect(row).toMatchObject({ liked_at: '2026-01-01', play_count: 3 })
-    expect(existsSync(join(root, row.file_path))).toBe(true)
-    expect(existsSync(join(root, 'Artist/Album/Song.opus'))).toBe(true)
-    expect(db.prepare('SELECT track_id FROM music_playlist_track').get()).toEqual({ track_id: id })
-    expect(db.prepare('SELECT track_id FROM music_play_log').get()).toEqual({ track_id: id })
-    expect(db.prepare("SELECT id FROM music_artist WHERE name='navihub-downloads'").get()).toBeUndefined()
-    expect(existsSync(join(root, 'navihub-downloads'))).toBe(false)
-  })
-
-  it('resumes a move completed before its database write and reindexes without a second row', async () => {
-    const from = 'navihub-downloads/Artist/Album/Song.opus', to = 'Artist/Album/Song.opus'
-    makeFiles([from])
-    await indexMusicFiles([from], 'test seed', fakeReader())
-    const { id } = db.prepare('SELECT id FROM music_track').get() as { id: number }
-    makeFiles([to])
-    rmSync(join(root, from))
-    mkdirSync(join(root, '.navihub-downloads'))
-    writeFileSync(join(root, '.navihub-downloads/legacy-moves.json'), JSON.stringify([{ from, to }]))
-    expect(recoverLegacyMusicDownloads(root)).toEqual([to])
-    expect(recoverLegacyMusicDownloads(root)).toEqual([to])
-    await indexMusicFiles([to], 'test repair', fakeReader())
-    finishLegacyMusicRecovery(root)
-    expect(db.prepare('SELECT id,file_path FROM music_track').all()).toEqual([{ id, file_path: to }])
-    expect(db.prepare("SELECT id FROM music_artist WHERE name='navihub-downloads'").get()).toBeUndefined()
-    expect(existsSync(join(root, '.navihub-downloads/legacy-moves.json'))).toBe(false)
-  })
-})
 
 describe('parseTrackFileName', () => {
   it.each([
@@ -275,17 +226,79 @@ describe('startScan', () => {
     expect(db.prepare('SELECT spotify_id FROM music_album').get()).toEqual({ spotify_id: 'album-source' })
   })
 
-  it('preserves album journals and personal tags across a same-path rescan', async () => {
+  it('stores every genre per track, keeps them on unchanged rescans, and re-reads pre-genre rows once', async () => {
+    makeFiles(['Artist/Album/01 Song.mp3', 'Artist/Other/01 Tune.mp3'])
+    await startScan(fakeReader({
+      'Artist/Album/01 Song.mp3': { genres: ['Rock', 'Alternative'] },
+      'Artist/Other/01 Tune.mp3': { genres: ['rock'] }
+    }))
+    const genres = () => db.prepare('SELECT genre FROM music_track_genre ORDER BY track_id, genre').all()
+    expect(genres()).toEqual([{ genre: 'Alternative' }, { genre: 'Rock' }, { genre: 'rock' }])
+    expect(listGenres()).toEqual([
+      { name: 'Rock', trackCount: 2, albumCount: 2 },
+      { name: 'Alternative', trackCount: 1, albumCount: 1 }
+    ])
+    expect(listAlbums('', { genre: 'Alternative' }).map((album) => album.title)).toEqual(['Album'])
+    expect(listTrackPage({ sort: 'title', filter: 'all', genre: 'ROCK', offset: 0, limit: 48 }))
+      .toMatchObject({ total: 2 })
+    expect(playbackQueue(true, { genre: 'Alternative' })).toMatchObject({ total: 1, truncated: false })
+    expect(playbackQueue(false, { genre: 'Alternative' }).items.map((track) => track.title)).toEqual(['Song'])
+    expect(playbackQueue(false).total).toBe(2)
+
+    const unchanged = fakeReader()
+    await startScan(unchanged)
+    expect(unchanged.calls).toHaveLength(0)
+    expect(genres()).toHaveLength(3)
+
+    // Rows indexed before genres existed carry genres_scanned = 0 from the migration.
+    db.prepare("UPDATE music_track SET genres_scanned = 0 WHERE file_path = 'Artist/Album/01 Song.mp3'").run()
+    const backfill = fakeReader({ 'Artist/Album/01 Song.mp3': { genres: ['Jazz'] } })
+    await startScan(backfill)
+    expect(backfill.calls.map((file) => file.relPath)).toEqual(['Artist/Album/01 Song.mp3'])
+    expect(genres()).toEqual([{ genre: 'Jazz' }, { genre: 'rock' }])
+    expect(db.prepare('SELECT MIN(genres_scanned) AS n FROM music_track').get()).toEqual({ n: 1 })
+  })
+
+  it('browses and plays by decade, with yearless albums as their own group', async () => {
+    makeFiles(['A/Nineties/01 One.mp3', 'A/Nineties/02 Two.mp3', 'A/Noughties/01 Three.mp3', 'A/Undated/01 Four.mp3'])
+    await startScan(fakeReader({
+      'A/Nineties/01 One.mp3': { year: 1997, genres: ['Rock'] },
+      'A/Noughties/01 Three.mp3': { year: 2004, genres: ['Rock'] }
+    }))
+    expect(listDecades()).toEqual([
+      { decade: 2000, albumCount: 1, trackCount: 1 },
+      { decade: 1990, albumCount: 1, trackCount: 2 },
+      { decade: null, albumCount: 1, trackCount: 1 }
+    ])
+    expect(listAlbums('', { decade: 1990 }).map((album) => album.title)).toEqual(['Nineties'])
+    expect(listAlbums('', { decade: 'unknown' }).map((album) => album.title)).toEqual(['Undated'])
+    expect(listTrackPage({ sort: 'title', filter: 'all', decade: 1990, genre: 'Rock', offset: 0, limit: 48 })
+      .items.map((track) => track.title)).toEqual(['One'])
+    expect(playbackQueue(false, { decade: 2000 }).items.map((track) => track.title)).toEqual(['Three'])
+    expect(playbackQueue(false, { decade: 1990 })).toMatchObject({ total: 2, truncated: false })
+  })
+
+  it('keeps only plausible tag years and reads a whole date as its year', () => {
+    expect(tagYear(1997)).toBe(1997)
+    expect(tagYear(20140530)).toBe(2014)
+    expect(tagYear(0)).toBeNull()
+    expect(tagYear(undefined)).toBeNull()
+    expect(tagYear(123456)).toBeNull()
+  })
+
+  it('splits multi-genre tags on separators but keeps commas inside a name', () => {
+    expect(splitGenres(['Rock; Alternative', 'Hip-Hop/Rap', 'rock', '  ', 'Folk, World, & Country']))
+      .toEqual(['Rock', 'Alternative', 'Hip-Hop', 'Rap', 'Folk, World, & Country'])
+    expect(splitGenres(undefined)).toEqual([])
+  })
+
+  it('preserves personal track tags across a same-path rescan', async () => {
     makeFiles(['Artist/Album/song.mp3'])
     await startScan(fakeReader())
     const track = db.prepare('SELECT id,album_id FROM music_track').get() as { id: number; album_id: number }
-    db.prepare("INSERT INTO music_album_personal(album_id,rating,shelf,review,tags_json) VALUES(?,9,'revisit','Private',?)").run(track.album_id, JSON.stringify(['study']))
     db.prepare("INSERT INTO music_track_personal(track_id,standout,tags_json) VALUES(?,1,?)").run(track.id, JSON.stringify(['calm']))
-    db.prepare("INSERT INTO music_listen(album_id,listened_on,notes) VALUES(?,'2026-09-23','My impression')").run(track.album_id)
     await startScan(fakeReader())
-    expect(db.prepare('SELECT rating,shelf,review FROM music_album_personal').get()).toEqual({ rating: 9, shelf: 'revisit', review: 'Private' })
     expect(db.prepare('SELECT standout FROM music_track_personal').get()).toEqual({ standout: 1 })
-    expect(db.prepare('SELECT notes FROM music_listen').get()).toEqual({ notes: 'My impression' })
     expect(db.pragma('foreign_key_check')).toEqual([])
   })
 

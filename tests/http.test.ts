@@ -73,7 +73,7 @@ describe('fetchWithRetry', () => {
 
   it('returns 429 immediately when rateLimitWaits is 0 (interactive fetches)', async () => {
     // No retry-after header — the default path would sleep 60s; the opt-out
-    // must hand the 429 straight back (gacha subreddit fetch relies on this).
+    // must hand the 429 straight back (interactive fetches rely on this).
     const state = stubFetch([429])
     const res = await fetchWithRetry('http://x', { rateLimitWaits: 0 })
     expect(res.status).toBe(429)

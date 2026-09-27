@@ -10,11 +10,6 @@ CREATE TABLE IF NOT EXISTS media_item (
   title_original  TEXT,
   synopsis        TEXT,
   cover_path      TEXT,
-  -- Wide hero art for the detail page (AniList bannerImage / TMDB backdrop),
-  -- content-addressed under media/ like cover_path. Canonical, not personal —
-  -- it survives export. NULL until the title is (re-)imported; the detail page
-  -- falls back to a media_image row, then to a blurred cover.
-  banner_path     TEXT,
   release_date    TEXT,
   total_units     INTEGER,
   status          TEXT,
@@ -283,6 +278,65 @@ CREATE TABLE IF NOT EXISTS slideshow_item (
   file_name  TEXT NOT NULL,
   added_at   TEXT NOT NULL DEFAULT (datetime('now'))
 );
+
+-- image_override — an image the user picked by hand for an IMPORTED entity
+-- (kind 'media' → media_item.cover_path, 'person' → person.photo_path,
+-- 'character' → character.image_path, 'music_album'/'music_artist' →
+-- cover_path; the music triggers sit after the music tables). Written only by
+-- imageOverrideRepo; musicArt.clear*Art deletes a music row's pick.
+-- manual_path NULL means the user removed the image on purpose.
+-- provider_path is the newest image an import tried to write, so "Restore
+-- imported image" needs no network. FK-less (three parent tables); the delete
+-- triggers below clean up. Personal; wiped on export BEFORE images are nulled.
+CREATE TABLE IF NOT EXISTS image_override (
+  kind          TEXT NOT NULL,
+  entity_id     INTEGER NOT NULL,
+  manual_path   TEXT,
+  provider_path TEXT,
+  PRIMARY KEY (kind, entity_id)
+);
+
+-- The restore triggers are the ONLY thing keeping a manual pick through a
+-- re-import: every importer (and scripts/bulk-import.cjs) writes the image
+-- column unconditionally, and these put the pick back and remember what the
+-- import offered. A write equal to manual_path is a no-op, which is how
+-- imageOverrideRepo.setManual gets through. Guarded by tests/imageOverride.test.ts.
+CREATE TRIGGER IF NOT EXISTS image_override_keep_media AFTER UPDATE OF cover_path ON media_item
+WHEN EXISTS (SELECT 1 FROM image_override
+             WHERE kind = 'media' AND entity_id = NEW.id AND manual_path IS NOT NEW.cover_path)
+BEGIN
+  UPDATE image_override SET provider_path = NEW.cover_path WHERE kind = 'media' AND entity_id = NEW.id;
+  UPDATE media_item SET cover_path =
+    (SELECT manual_path FROM image_override WHERE kind = 'media' AND entity_id = NEW.id)
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER IF NOT EXISTS image_override_keep_person AFTER UPDATE OF photo_path ON person
+WHEN EXISTS (SELECT 1 FROM image_override
+             WHERE kind = 'person' AND entity_id = NEW.id AND manual_path IS NOT NEW.photo_path)
+BEGIN
+  UPDATE image_override SET provider_path = NEW.photo_path WHERE kind = 'person' AND entity_id = NEW.id;
+  UPDATE person SET photo_path =
+    (SELECT manual_path FROM image_override WHERE kind = 'person' AND entity_id = NEW.id)
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER IF NOT EXISTS image_override_keep_character AFTER UPDATE OF image_path ON character
+WHEN EXISTS (SELECT 1 FROM image_override
+             WHERE kind = 'character' AND entity_id = NEW.id AND manual_path IS NOT NEW.image_path)
+BEGIN
+  UPDATE image_override SET provider_path = NEW.image_path WHERE kind = 'character' AND entity_id = NEW.id;
+  UPDATE character SET image_path =
+    (SELECT manual_path FROM image_override WHERE kind = 'character' AND entity_id = NEW.id)
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER IF NOT EXISTS image_override_drop_media AFTER DELETE ON media_item BEGIN
+  DELETE FROM image_override WHERE kind = 'media' AND entity_id = OLD.id;
+END;
+CREATE TRIGGER IF NOT EXISTS image_override_drop_person AFTER DELETE ON person BEGIN
+  DELETE FROM image_override WHERE kind = 'person' AND entity_id = OLD.id;
+END;
+CREATE TRIGGER IF NOT EXISTS image_override_drop_character AFTER DELETE ON character BEGIN
+  DELETE FROM image_override WHERE kind = 'character' AND entity_id = OLD.id;
+END;
 
 -- tv_episode — the EPISODE CATALOGUE for a TV show, from TMDB. Distinct from
 -- video_file, which indexes episodes you have on disk: a row here exists whether
@@ -647,6 +701,35 @@ CREATE TABLE IF NOT EXISTS music_album (
 CREATE INDEX IF NOT EXISTS idx_music_album_artist ON music_album(artist_id);
 CREATE INDEX IF NOT EXISTS idx_music_album_title ON music_album(title);
 
+-- Hand-picked music art: the image_override restore triggers (see that table)
+-- for album covers and artist photos. They must follow both music tables here.
+-- The scanner's folder/embedded art, "Find cover" and the missing-file sweep all
+-- write cover_path; only musicArt.clear*Art drops the pick, explicitly.
+CREATE TRIGGER IF NOT EXISTS image_override_keep_music_album AFTER UPDATE OF cover_path ON music_album
+WHEN EXISTS (SELECT 1 FROM image_override
+             WHERE kind = 'music_album' AND entity_id = NEW.id AND manual_path IS NOT NEW.cover_path)
+BEGIN
+  UPDATE image_override SET provider_path = NEW.cover_path WHERE kind = 'music_album' AND entity_id = NEW.id;
+  UPDATE music_album SET cover_path =
+    (SELECT manual_path FROM image_override WHERE kind = 'music_album' AND entity_id = NEW.id)
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER IF NOT EXISTS image_override_drop_music_album AFTER DELETE ON music_album BEGIN
+  DELETE FROM image_override WHERE kind = 'music_album' AND entity_id = OLD.id;
+END;
+CREATE TRIGGER IF NOT EXISTS image_override_keep_music_artist AFTER UPDATE OF cover_path ON music_artist
+WHEN EXISTS (SELECT 1 FROM image_override
+             WHERE kind = 'music_artist' AND entity_id = NEW.id AND manual_path IS NOT NEW.cover_path)
+BEGIN
+  UPDATE image_override SET provider_path = NEW.cover_path WHERE kind = 'music_artist' AND entity_id = NEW.id;
+  UPDATE music_artist SET cover_path =
+    (SELECT manual_path FROM image_override WHERE kind = 'music_artist' AND entity_id = NEW.id)
+  WHERE id = NEW.id;
+END;
+CREATE TRIGGER IF NOT EXISTS image_override_drop_music_artist AFTER DELETE ON music_artist BEGIN
+  DELETE FROM image_override WHERE kind = 'music_artist' AND entity_id = OLD.id;
+END;
+
 CREATE TABLE IF NOT EXISTS music_track (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
   album_id        INTEGER NOT NULL REFERENCES music_album(id) ON DELETE CASCADE,
@@ -661,6 +744,7 @@ CREATE TABLE IF NOT EXISTS music_track (
   duration        REAL,                     -- seconds (nullable: parse failures still play)
   tag_artist      TEXT,                     -- raw artist tag when it differs from the
                                             -- folder artist (feat./compilations, display-only)
+  genres_scanned  INTEGER NOT NULL DEFAULT 0, -- 1 once music_track_genre reflects the file's tags
   -- user state: preserved across rescans (the scanner never writes these)
   liked_at        TEXT,                     -- NULL = not liked; doubles as liked-recency sort
   play_count      INTEGER NOT NULL DEFAULT 0,
@@ -895,214 +979,9 @@ CREATE TABLE IF NOT EXISTS quiz_session (
 );
 CREATE INDEX IF NOT EXISTS idx_quiz_session_kind ON quiz_session(kind, played_at);
 
--- ---- Gacha tracker ----
--- Standalone section for live-service gacha games (HSR, FGO, E7, WuWa — the
--- list and per-game kinds/currencies live in src/shared/gacha.ts, so the
--- tables are game-agnostic). Everything here is personal and stripped on
--- library export (sanitizeSql.cjs).
-
--- One roster entry: a character OR the game's equipment kind (light cone /
--- craft essence / artifact / weapon) — `kind` keys into config unitKinds.
--- element/role are generic facet slots labeled per kind by config. `dupes` is
--- extra copies consumed, 0-based (HSR eidolon/superimpose, FGO NP-1, E7
--- imprint, WuWa sequence/rank) — importers must never write 1-based values.
--- `data` is a JSON escape hatch for per-game detail phases; owned defaults 1
--- for manual entry — future catalog importers MUST bind owned explicitly (0).
-CREATE TABLE IF NOT EXISTS gacha_unit (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  game            TEXT NOT NULL,
-  kind            TEXT NOT NULL,
-  name            TEXT NOT NULL,
-  rarity          INTEGER,
-  element         TEXT,
-  role            TEXT,
-  image_path      TEXT,
-  owned           INTEGER NOT NULL DEFAULT 1,
-  favorite        INTEGER NOT NULL DEFAULT 0,
-  level           INTEGER,
-  dupes           INTEGER NOT NULL DEFAULT 0,
-  obtained_at     TEXT,
-  notes           TEXT,
-  data            TEXT,
-  external_source TEXT,
-  external_id     TEXT,
-  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_gacha_unit_game ON gacha_unit(game, kind);
--- Unique now so future catalog importers can ON CONFLICT-upsert. Manual rows
--- (NULL externals) stay unconstrained — SQLite treats NULLs as distinct
--- (theme_song precedent). kind is part of the key: FGO servant and craft
--- essence ids share one numeric range.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_gacha_unit_external
-  ON gacha_unit(game, kind, external_source, external_id);
-
--- Saved builds per unit. FGO (buildMode 'levelOnly') never shows these.
--- `data` is freeform JSON this phase; detail phases give it structure (e.g.
--- E7 gear-piece id arrays — FK-less JSON refs per app convention).
-CREATE TABLE IF NOT EXISTS gacha_build (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  unit_id     INTEGER NOT NULL REFERENCES gacha_unit(id) ON DELETE CASCADE,
-  name        TEXT NOT NULL,
-  sort_order  INTEGER NOT NULL DEFAULT 0,
-  data        TEXT,
-  notes       TEXT,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_gacha_build_unit ON gacha_build(unit_id);
-
--- Current premium-currency amounts, edited inline on the game page. Keys come
--- from config; currencies without a row display as 0. The UNIQUE's auto-index
--- also serves the per-game list query (leading `game` column).
-CREATE TABLE IF NOT EXISTS gacha_currency (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  game        TEXT NOT NULL,
-  key         TEXT NOT NULL,
-  amount      INTEGER NOT NULL DEFAULT 0,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(game, key)
-);
-
--- Banner schedule, manually entered this phase (per-game fetchers arrive with
--- detail phases; external_source/external_id are their future dedupe key).
--- Dates are 'YYYY-MM-DD' TEXT; start NULL while unannounced, end NULL when
--- open-ended.
-CREATE TABLE IF NOT EXISTS gacha_banner (
-  id              INTEGER PRIMARY KEY AUTOINCREMENT,
-  game            TEXT NOT NULL,
-  name            TEXT NOT NULL,
-  kind            TEXT,
-  featured        TEXT,
-  start_at        TEXT,
-  end_at          TEXT,
-  image_path      TEXT,
-  notes           TEXT,
-  external_source TEXT,
-  external_id     TEXT,
-  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_gacha_banner_game ON gacha_banner(game, start_at);
-
--- Fetched-on-demand news: the game's subreddit hot feed (Atom RSS — Reddit's
--- JSON API 403s unauthenticated clients), only via the Fetch button — never
--- automatic. A fetch REPLACES the game's rows (hot feeds churn; the tab always
--- mirrors the latest fetch); sort_order preserves the feed's hot ranking.
--- image_url stays REMOTE (renderer CSP img-src allows https:) — news is
--- ephemeral, not worth media/ disk. external_id = reddit post id (t3_…).
--- author/sort_order arrived after first ship → ensureColumn in connection.ts.
-CREATE TABLE IF NOT EXISTS gacha_news (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  game          TEXT NOT NULL,
-  title         TEXT NOT NULL,
-  url           TEXT,
-  summary       TEXT,
-  image_url     TEXT,
-  published_at  TEXT,
-  author        TEXT,
-  sort_order    INTEGER NOT NULL DEFAULT 0,
-  external_id   TEXT NOT NULL,
-  fetched_at    TEXT NOT NULL DEFAULT (datetime('now')),
-  UNIQUE(game, external_id)
-);
-CREATE INDEX IF NOT EXISTS idx_gacha_news_game ON gacha_news(game, published_at);
-
--- Per-game key/value scratch (news.fetchedAt stamp now; pity counters later).
-CREATE TABLE IF NOT EXISTS gacha_meta (
-  game        TEXT NOT NULL,
-  key         TEXT NOT NULL,
-  value       TEXT NOT NULL,
-  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  PRIMARY KEY (game, key)
-);
-
--- ---- Gacha coach (FGO LLM coaching chat) ----
--- The AI coach for a gacha game (config-gated by GachaGameCfg.coach; FGO only
--- for now). All rows are personal and stripped on library export
--- (sanitizeSql.cjs). LLM calls happen ONLY on explicit user actions (send /
--- import) — everything below renders reminders/history with zero API calls.
-
--- One chat thread per game (archived_at NULL = the active thread). "New
--- conversation" archives the current one and starts fresh.
-CREATE TABLE IF NOT EXISTS gacha_chat_thread (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  game        TEXT NOT NULL,
-  title       TEXT,
-  archived_at TEXT,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_gacha_chat_thread_game ON gacha_chat_thread(game, archived_at);
-
--- Two rows per turn (one user, one assistant). `text` is the display string;
--- `api_blocks` is the VERBATIM Anthropic content-block array used to replay the
--- conversation (assistant thinking/text blocks passed back unchanged; user rows
--- store text + [screenshot attached] markers — images are never replayed).
--- `actions` = UI chips for tool calls; `attachments` = media/ rel paths.
-CREATE TABLE IF NOT EXISTS gacha_chat_message (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  thread_id   INTEGER NOT NULL REFERENCES gacha_chat_thread(id) ON DELETE CASCADE,
-  role        TEXT NOT NULL,
-  text        TEXT,
-  api_blocks  TEXT,
-  actions     TEXT,
-  attachments TEXT,
-  usage_in    INTEGER,
-  usage_out   INTEGER,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_gacha_chat_message_thread ON gacha_chat_message(thread_id, id);
-
--- Goals + recurring tasks. Reminders render from here (due_at lexical compare,
--- like gacha_banner). Completing a recurring task rolls due_at forward from
--- TODAY instead of closing it.
-CREATE TABLE IF NOT EXISTS gacha_goal (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  game        TEXT NOT NULL,
-  kind        TEXT NOT NULL DEFAULT 'goal',   -- 'goal' | 'task'
-  title       TEXT NOT NULL,
-  notes       TEXT,
-  status      TEXT NOT NULL DEFAULT 'active',  -- 'active' | 'done' | 'dropped'
-  due_at      TEXT,                            -- 'YYYY-MM-DD'
-  recur       TEXT,                            -- NULL | 'daily' | 'weekly'
-  created_by  TEXT NOT NULL DEFAULT 'user',    -- 'user' | 'coach'
-  done_at     TEXT,
-  sort_order  INTEGER NOT NULL DEFAULT 0,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_gacha_goal_game ON gacha_goal(game, status, due_at);
-
--- Coach long-term memory (server NA/JP, playstyle, spending rules). The coach
--- saves/deletes these via tools; shown in the UI rail.
-CREATE TABLE IF NOT EXISTS gacha_coach_note (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  game        TEXT NOT NULL,
-  content     TEXT NOT NULL,
-  created_by  TEXT NOT NULL DEFAULT 'coach',
-  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_gacha_coach_note_game ON gacha_coach_note(game);
-
--- Imported prior chats with another LLM. `content` is the raw paste; `summary`
--- is a one-shot LLM digest made at import time (the context block uses the
--- summary, falling back to truncated raw if the digest failed).
-CREATE TABLE IF NOT EXISTS gacha_coach_doc (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  game        TEXT NOT NULL,
-  title       TEXT NOT NULL,
-  content     TEXT NOT NULL,
-  summary     TEXT,
-  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
-);
-CREATE INDEX IF NOT EXISTS idx_gacha_coach_doc_game ON gacha_coach_doc(game);
-
 -- ---- Daily / weekly checklist ----
 -- The CATALOG of possible items lives in src/shared/checklist.ts
--- (GACHA_GAMES-style config); these tables only store which items are enabled
+-- (content-as-code config); these tables only store which items are enabled
 -- and what happened. Weeks run Saturday→Friday; period_key and every "today"
 -- decision are computed in MAIN with local dates (the renderer never derives
 -- today). Both tables are personal → wiped on export (sanitizeSql.cjs).
@@ -2052,24 +1931,29 @@ CREATE TABLE IF NOT EXISTS game_playthrough_note (
   entry_date TEXT NOT NULL, body TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_game_playthrough_note_run ON game_playthrough_note(run_id,entry_date);
-CREATE TABLE IF NOT EXISTS music_album_personal (
-  album_id INTEGER PRIMARY KEY REFERENCES music_album(id) ON DELETE CASCADE,
-  rating REAL CHECK(rating BETWEEN 0 AND 10),
-  shelf TEXT CHECK(shelf IN ('want','exploring','revisit')),
-  review TEXT NOT NULL DEFAULT '', tags_json TEXT NOT NULL DEFAULT '[]'
-);
 CREATE TABLE IF NOT EXISTS music_track_personal (
   track_id INTEGER PRIMARY KEY REFERENCES music_track(id) ON DELETE CASCADE,
   standout INTEGER NOT NULL DEFAULT 0 CHECK(standout IN (0,1)),
   tags_json TEXT NOT NULL DEFAULT '[]'
 );
-CREATE TABLE IF NOT EXISTS music_listen (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  album_id INTEGER NOT NULL REFERENCES music_album(id) ON DELETE CASCADE,
-  listened_on TEXT NOT NULL, rating REAL CHECK(rating BETWEEN 0 AND 10),
-  notes TEXT NOT NULL DEFAULT ''
+-- Every genre tag of a track ("Rock; Alternative" is two rows), rewritten
+-- whenever the scanner re-reads the file's tags.
+CREATE TABLE IF NOT EXISTS music_track_genre (
+  track_id INTEGER NOT NULL REFERENCES music_track(id) ON DELETE CASCADE,
+  genre    TEXT NOT NULL COLLATE NOCASE,
+  PRIMARY KEY (track_id, genre)
 );
-CREATE INDEX IF NOT EXISTS idx_music_listen_album ON music_listen(album_id,listened_on);
+CREATE INDEX IF NOT EXISTS idx_music_track_genre ON music_track_genre(genre);
+-- Lyrics looked up for a track (embedded tags or LRCLIB), kept for offline use.
+-- 'missing' rows stop automatic re-lookups; a sidecar .lrc file always wins.
+CREATE TABLE IF NOT EXISTS music_track_lyrics (
+  track_id   INTEGER PRIMARY KEY REFERENCES music_track(id) ON DELETE CASCADE,
+  state      TEXT NOT NULL CHECK(state IN ('found','instrumental','missing')),
+  synced     TEXT,
+  plain      TEXT,
+  source     TEXT CHECK(source IN ('embedded','lrclib')),
+  fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
 CREATE TABLE IF NOT EXISTS music_smart_playlist (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', rules_json TEXT NOT NULL

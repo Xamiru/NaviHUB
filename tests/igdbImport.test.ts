@@ -38,8 +38,8 @@ vi.mock('../src/main/http', () => ({
         return gameRows
       }
       if (url.includes('/v4/game_time_to_beats')) return ttbRows
-      if (url.includes('/api/bleed/init')) return hltbInit
-      if (url.includes('/api/bleed')) return hltbSearch
+      if (url.includes('/api/search/site/init')) return hltbInit
+      if (url.includes('/api/search/site')) return hltbSearch
       throw new Error(`Unrouted URL in test: ${url}`)
     }
   })
@@ -130,7 +130,7 @@ describe('importGame', () => {
   })
 
   it('HLTB Main Story beats the IGDB time-to-beat fallback', async () => {
-    hltbInit = { token: 't', hpKey: 'k', hpVal: 'v' }
+    hltbInit = { token: 't' }
     hltbSearch = {
       data: [
         { game_id: 1, game_name: 'Persona 5', release_world: 2016, comp_main: 90_000, comp_main_count: 800 }

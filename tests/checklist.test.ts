@@ -14,7 +14,6 @@ vi.mock('../src/main/db/connection', () => ({
 import * as checklistRepo from '../src/main/repos/checklistRepo'
 import {
   addDays,
-  CHECKLIST_DEFS,
   CHECKLIST_SEED,
   checklistDef,
   periodKeyFor,
@@ -146,12 +145,12 @@ describe('board', () => {
   })
 
   it('keeps log history when an item is removed and re-added', () => {
-    const id = checklistRepo.addTask('gacha-daily-fgo', 'daily')
-    checklistRepo.tick('gacha-daily-fgo', 'daily', SAT)
+    const id = checklistRepo.addTask('game-session', 'daily')
+    checklistRepo.tick('game-session', 'daily', SAT)
     checklistRepo.removeTask(id)
     expect(checklistRepo.status(SAT).daily).toHaveLength(0)
-    checklistRepo.addTask('gacha-daily-fgo', 'daily')
-    expect(taskByKey(SAT, 'gacha-daily-fgo').done).toBe(true)
+    checklistRepo.addTask('game-session', 'daily')
+    expect(taskByKey(SAT, 'game-session').done).toBe(true)
   })
 
   it('reports the week the day belongs to', () => {
@@ -389,14 +388,14 @@ describe('logging a movie', () => {
   })
 })
 
-describe('manual items', () => {
+describe('ticking by hand', () => {
   it('ticks once per period and unticks back', () => {
-    checklistRepo.addTask('gacha-daily-hsr', 'daily')
-    const first = checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
-    expect(checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)).toBe(first) // clamped at target
-    expect(taskByKey(SAT, 'gacha-daily-hsr').progress).toBe(1)
-    checklistRepo.untick('gacha-daily-hsr', 'daily', SAT)
-    expect(taskByKey(SAT, 'gacha-daily-hsr').done).toBe(false)
+    checklistRepo.addTask('prog-lesson', 'daily')
+    const first = checklistRepo.tick('prog-lesson', 'daily', SAT)
+    expect(checklistRepo.tick('prog-lesson', 'daily', SAT)).toBe(first) // clamped at target
+    expect(taskByKey(SAT, 'prog-lesson').progress).toBe(1)
+    checklistRepo.untick('prog-lesson', 'daily', SAT)
+    expect(taskByKey(SAT, 'prog-lesson').done).toBe(false)
   })
 
   it('refuses to credit a mediaLog item by hand', () => {
@@ -407,53 +406,43 @@ describe('manual items', () => {
     expect(() => checklistRepo.tick('anime-episode', 'daily', SAT)).toThrow(/picking a title/i)
     expect(taskByKey(SAT, 'anime-episode').progress).toBe(0)
   })
-
-  it('has one item per gacha game', () => {
-    const manual = CHECKLIST_DEFS.filter((d) => d.kind === 'manual')
-    expect(manual.map((d) => d.key)).toEqual([
-      'gacha-daily-hsr',
-      'gacha-daily-fgo',
-      'gacha-daily-e7',
-      'gacha-daily-wuwa'
-    ])
-  })
 })
 
 describe('streak & history', () => {
   it('counts consecutive days where every daily item was done', () => {
-    checklistRepo.addTask('gacha-daily-hsr', 'daily')
+    checklistRepo.addTask('prog-lesson', 'daily')
     backdateTasks('2026-07-01')
     for (const day of [addDays(SAT, -2), FRI, SAT]) {
-      checklistRepo.tick('gacha-daily-hsr', 'daily', day)
+      checklistRepo.tick('prog-lesson', 'daily', day)
     }
     expect(checklistRepo.status(SAT).streak.current).toBe(3)
   })
 
   it('breaks on a missed day', () => {
-    checklistRepo.addTask('gacha-daily-hsr', 'daily')
+    checklistRepo.addTask('prog-lesson', 'daily')
     backdateTasks('2026-07-01')
-    checklistRepo.tick('gacha-daily-hsr', 'daily', addDays(SAT, -2))
-    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT) // yesterday skipped
+    checklistRepo.tick('prog-lesson', 'daily', addDays(SAT, -2))
+    checklistRepo.tick('prog-lesson', 'daily', SAT) // yesterday skipped
     const s = checklistRepo.status(SAT)
     expect(s.streak.current).toBe(1)
     expect(s.streak.longest).toBe(1)
   })
 
   it('only judges a day by the items that existed then', () => {
-    checklistRepo.addTask('gacha-daily-hsr', 'daily')
+    checklistRepo.addTask('prog-lesson', 'daily')
     backdateTasks('2026-07-01')
-    checklistRepo.tick('gacha-daily-hsr', 'daily', FRI)
-    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
+    checklistRepo.tick('prog-lesson', 'daily', FRI)
+    checklistRepo.tick('prog-lesson', 'daily', SAT)
     // A second item joins the board today; yesterday stays complete.
-    checklistRepo.addTask('gacha-daily-fgo', 'daily')
+    checklistRepo.addTask('game-session', 'daily')
     db.prepare('UPDATE checklist_task SET created_at = ? WHERE task_key = ?').run(
       `${SAT} 12:00:00`,
-      'gacha-daily-fgo'
+      'game-session'
     )
     const s = checklistRepo.status(SAT)
-    expect(s.streak.current).toBe(1) // today isn't complete — FGO is untouched
+    expect(s.streak.current).toBe(1) // today isn't complete — the game session is untouched
     expect(s.history.find((h) => h.day === FRI)?.count).toBe(1)
-    checklistRepo.tick('gacha-daily-fgo', 'daily', SAT)
+    checklistRepo.tick('game-session', 'daily', SAT)
     expect(checklistRepo.status(SAT).streak.current).toBe(2)
   })
 
@@ -466,9 +455,9 @@ describe('streak & history', () => {
 
   it('mixes detected and logged items in one day verdict', () => {
     checklistRepo.addTask('jp-reviews', 'daily')
-    checklistRepo.addTask('gacha-daily-hsr', 'daily')
+    checklistRepo.addTask('prog-lesson', 'daily')
     backdateTasks('2026-07-01')
-    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
+    checklistRepo.tick('prog-lesson', 'daily', SAT)
     expect(checklistRepo.status(SAT).streak.current).toBe(0) // reviews target not met
     const cards = Array.from({ length: 20 }, () => addCard())
     for (const c of cards) addReview(c, SAT)
@@ -595,23 +584,23 @@ describe('targets', () => {
     expect(taskByKey(SAT, 'movie-watch').target).toBe(2)
   })
 
-  it('clamps a manual tick at the overridden target', () => {
-    const id = checklistRepo.addTask('gacha-daily-hsr', 'daily')
+  it('clamps a hand tick at the overridden target', () => {
+    const id = checklistRepo.addTask('prog-lesson', 'daily')
     checklistRepo.setTarget(id, 3)
-    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
-    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
-    const third = checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
-    expect(checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)).toBe(third)
-    expect(taskByKey(SAT, 'gacha-daily-hsr')).toMatchObject({ progress: 3, done: true })
+    checklistRepo.tick('prog-lesson', 'daily', SAT)
+    checklistRepo.tick('prog-lesson', 'daily', SAT)
+    const third = checklistRepo.tick('prog-lesson', 'daily', SAT)
+    expect(checklistRepo.tick('prog-lesson', 'daily', SAT)).toBe(third)
+    expect(taskByKey(SAT, 'prog-lesson')).toMatchObject({ progress: 3, done: true })
   })
 
   it('is honoured by the streak', () => {
-    const id = checklistRepo.addTask('gacha-daily-hsr', 'daily')
+    const id = checklistRepo.addTask('prog-lesson', 'daily')
     checklistRepo.setTarget(id, 2)
     backdateTasks('2026-07-01')
-    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
+    checklistRepo.tick('prog-lesson', 'daily', SAT)
     expect(checklistRepo.status(SAT).streak.current).toBe(0) // 1 of 2
-    checklistRepo.tick('gacha-daily-hsr', 'daily', SAT)
+    checklistRepo.tick('prog-lesson', 'daily', SAT)
     expect(checklistRepo.status(SAT).streak.current).toBe(1)
   })
 })
@@ -620,7 +609,7 @@ describe('reorder', () => {
   it('rewrites the board order and leaves the other cadence alone', () => {
     const a = checklistRepo.addTask('anime-episode', 'daily')
     const b = checklistRepo.addTask('jp-reviews', 'daily')
-    const c = checklistRepo.addTask('gacha-daily-hsr', 'daily')
+    const c = checklistRepo.addTask('prog-lesson', 'daily')
     checklistRepo.addTask('movie-watch', 'weekly')
     expect(checklistRepo.status(SAT).daily.map((t) => t.id)).toEqual([a, b, c])
 

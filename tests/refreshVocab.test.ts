@@ -8,11 +8,12 @@ import {
   isRefreshableSource,
   missingClause
 } from '../src/shared/refresh'
+import type { RefreshAspect } from '../src/shared/refresh'
 import type { MediaType } from '../src/shared/types'
 
 // The Library Refresh vocabulary. Aspect keys are FROZEN — they ride IPC
 // payloads and the remembered selection — and the type matrix is what stops the
-// UI offering a tick the run could never honour (a banner on a VNDB row).
+// UI offering a tick the run could never honour (episodes on a VNDB row).
 
 describe('the aspect catalogue', () => {
   it('has unique keys, a label and at least one type each', () => {
@@ -25,21 +26,14 @@ describe('the aspect catalogue', () => {
     }
   })
 
-  it('keeps banner to the sources that have one, and episodes to TV', () => {
-    const banner = REFRESH_ASPECTS.find((a) => a.key === 'banner')!
-    // VNDB, Steam and Open Library write no banner_path at all.
-    expect(banner.types).toEqual(['anime', 'manga', 'movie', 'tv'])
-    expect(banner.types).not.toContain('visual_novel')
-    expect(banner.types).not.toContain('game')
-    expect(banner.types).not.toContain('book')
-
+  it('keeps episodes to TV and theme songs to anime', () => {
     expect(REFRESH_ASPECTS.find((a) => a.key === 'episodes')!.types).toEqual(['tv'])
     expect(REFRESH_ASPECTS.find((a) => a.key === 'themes')!.types).toEqual(['anime'])
   })
 
-  it('offers cover and text everywhere', () => {
+  it('offers cover, text and full re-import everywhere', () => {
     const all: MediaType[] = ['anime', 'manga', 'visual_novel', 'game', 'movie', 'tv', 'book']
-    for (const key of ['cover', 'text'] as const) {
+    for (const key of ['cover', 'text', 'full'] as const) {
       expect(REFRESH_ASPECTS.find((a) => a.key === key)!.types.sort()).toEqual([...all].sort())
     }
   })
@@ -53,8 +47,7 @@ describe('aspectsForTypes', () => {
 
   it('drops aspects no selected type can serve', () => {
     expect(aspectsForTypes(['game'])).not.toContain('episodes')
-    expect(aspectsForTypes(['game'])).not.toContain('banner')
-    expect(aspectsForTypes(['book'])).toEqual(['cover', 'text'])
+    expect(aspectsForTypes(['book'])).toEqual(['cover', 'text', 'full'])
   })
 
   it('offers nothing for an empty selection', () => {
@@ -63,19 +56,15 @@ describe('aspectsForTypes', () => {
 })
 
 describe('aspectsForType', () => {
-  // The runner narrows the request per title, so asking for a banner on a VN is
+  // The runner narrows the request per title, so asking for episodes on a VN is
   // a no-op rather than an UPDATE with no columns.
   it('narrows a request to what one type can serve', () => {
-    expect(aspectsForType(['cover', 'banner', 'episodes', 'text'], 'visual_novel')).toEqual([
+    expect(aspectsForType(['cover', 'themes', 'episodes', 'text'], 'visual_novel')).toEqual([
       'cover',
       'text'
     ])
-    expect(aspectsForType(['cover', 'banner', 'episodes'], 'tv')).toEqual([
-      'cover',
-      'banner',
-      'episodes'
-    ])
-    expect(aspectsForType(['banner'], 'book')).toEqual([])
+    expect(aspectsForType(['cover', 'themes', 'episodes'], 'tv')).toEqual(['cover', 'episodes'])
+    expect(aspectsForType(['episodes'], 'book')).toEqual([])
   })
 
   it('preserves the caller order', () => {
@@ -84,14 +73,16 @@ describe('aspectsForType', () => {
 })
 
 describe('isRefreshableSource', () => {
-  it('accepts the five live importers', () => {
+  it('accepts the five live importers and the offline catalog', () => {
     for (const s of REFRESHABLE_SOURCES) expect(isRefreshableSource(s)).toBe(true)
+    // RAWG's API is gone, but 'rawg' rows refresh from the local catalog.
+    expect(isRefreshableSource('rawg')).toBe(true)
   })
 
   it('rejects dead and absent sources', () => {
-    // RAWG's API is gone; those rows can never be refreshed, and the preview
-    // counts them as unsupported rather than pretending.
-    for (const s of ['rawg', 'igdb', '', null, undefined]) {
+    // IGDB is unusable for this user; the preview counts those rows as
+    // unsupported rather than pretending.
+    for (const s of ['igdb', '', null, undefined]) {
       expect(isRefreshableSource(s)).toBe(false)
     }
   })
@@ -99,8 +90,12 @@ describe('isRefreshableSource', () => {
 
 describe('missingClause', () => {
   it('ORs the chosen aspects — one gap is worth the request', () => {
-    const sql = missingClause(['cover', 'banner'])
-    expect(sql).toBe(`(${MISSING_SQL.cover} OR ${MISSING_SQL.banner})`)
+    const sql = missingClause(['cover', 'text'])
+    expect(sql).toBe(`(${MISSING_SQL.cover} OR ${MISSING_SQL.text})`)
+  })
+
+  it('ignores the retired banner key a stale renderer can still send', () => {
+    expect(missingClause(['cover', 'banner' as RefreshAspect])).toBe(`(${MISSING_SQL.cover})`)
   })
 
   it('is a no-op filter when nothing is chosen', () => {

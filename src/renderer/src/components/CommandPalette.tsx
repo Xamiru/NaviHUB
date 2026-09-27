@@ -5,15 +5,31 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useDebouncedValue, useDialog } from '../lib/hooks'
 import { MEDIA_CONFIGS, configFor, pathForMedia } from '../lib/mediaConfig'
-import { GACHA_GAMES } from '@shared/gacha'
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 import { Field } from './Field'
+import { FX_ART } from '../lib/themeFxArt'
+import { useAppTheme } from '../lib/useAppTheme'
 
 interface PaletteItem {
   key: string
   label: string
   hint: string // right-aligned kind/section hint
   to: string
+  icon?: string // Metal Gear item box art
+}
+
+// Metal Gear opens on the MGS2 item window: real destinations as item boxes.
+const MGS_ITEMS: PaletteItem[] = [
+  { key: 'item-home', label: 'Continue', hint: 'Home', to: '/', icon: FX_ART.mgsItems.ration },
+  { key: 'item-search', label: 'Search', hint: 'Search', to: '/search', icon: FX_ART.mgsItems.scope },
+  { key: 'item-seasonal', label: 'Seasonal', hint: 'Discover', to: '/anime/seasonal', icon: FX_ART.mgsItems.thermal },
+  { key: 'item-settings', label: 'Settings', hint: 'System', to: '/settings', icon: FX_ART.mgsItems.card },
+  { key: 'item-logs', label: 'Logs', hint: 'Repair', to: '/tasks/logs', icon: FX_ART.mgsItems.bandage },
+  { key: 'item-tasks', label: 'Tasks', hint: 'Quiet work', to: '/tasks', icon: FX_ART.mgsItems.suppressor }
+]
+
+function dianeStamp(): string {
+  return new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toUpperCase()
 }
 
 // Static jump-to-section commands, substring-filtered by the query.
@@ -39,13 +55,6 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-tasks', label: 'Tasks', hint: 'Go to', to: '/tasks' },
   { key: 'nav-logs', label: 'Logs', hint: 'Go to', to: '/tasks/logs' },
   { key: 'nav-quiz', label: 'Quiz', hint: 'Go to', to: '/quiz' },
-  { key: 'nav-gacha', label: 'Gacha', hint: 'Go to', to: '/gacha' },
-  ...GACHA_GAMES.map((g) => ({
-    key: `nav-gacha-${g.id}`,
-    label: g.name,
-    hint: 'Gacha',
-    to: `/gacha/${g.id}`
-  })),
   { key: 'nav-wrestling', label: 'Wrestling', hint: 'Go to', to: '/wrestling' },
   { key: 'nav-wrestling-rated', label: 'Highest-rated matches', hint: 'Wrestling', to: '/wrestling/rated' },
   { key: 'nav-wrestling-collection', label: 'Wrestling collection', hint: 'Wrestling', to: '/wrestling/collection' },
@@ -156,6 +165,8 @@ export default function CommandPalette() {
 function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: string) => void }) {
   const [query, setQuery] = useState('')
   const [sel, setSel] = useState(0)
+  const { theme } = useAppTheme()
+  const [stamp] = useState(dianeStamp)
   const listRef = useRef<HTMLDivElement>(null)
   const panelRef = useDialog(onClose) // Escape + focus handling
 
@@ -170,7 +181,7 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
   const items = useMemo<PaletteItem[]>(() => {
     const q = query.trim().toLowerCase()
     const nav = q ? NAV_ITEMS.filter((i) => i.label.toLowerCase().includes(q)) : NAV_ITEMS
-    if (!q) return nav
+    if (!q) return theme === 'metal-gear' ? [...MGS_ITEMS, ...nav] : nav
 
     const found: PaletteItem[] = []
     if (results) {
@@ -199,7 +210,7 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
       to: `/search?q=${encodeURIComponent(query.trim())}`
     })
     return [...found, ...nav]
-  }, [query, results])
+  }, [query, results, theme])
 
   // Clamp + scroll the selection as the list changes.
   const selIdx = Math.min(sel, Math.max(0, items.length - 1))
@@ -222,6 +233,15 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setSel((s) => (s - 1 + Math.max(1, items.length)) % Math.max(1, items.length))
+    } else if (
+      (e.key === 'ArrowRight' || e.key === 'ArrowLeft') &&
+      theme === 'metal-gear' &&
+      !query.trim() &&
+      selIdx < MGS_ITEMS.length
+    ) {
+      e.preventDefault()
+      const step = e.key === 'ArrowRight' ? 1 : MGS_ITEMS.length - 1
+      setSel((selIdx + step) % MGS_ITEMS.length)
     } else if (e.key === 'Enter') {
       e.preventDefault()
       go(items[selIdx])
@@ -241,12 +261,23 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
         aria-modal="true"
         aria-label="Command palette"
         tabIndex={-1}
-        className="card mt-24 w-full max-w-xl overflow-hidden p-0"
+        className={`palette palette-${theme} ${theme !== 'miku' ? 'theme-dark' : ''} card mt-24 w-full max-w-xl overflow-hidden p-0`}
+        style={theme === 'miku' ? { backgroundImage: `url(${FX_ART.mikuSongSelect})` } : undefined}
       >
+        {theme === 'twin-peaks' && (
+          <div className="palette-diane" style={{ backgroundImage: `url(${FX_ART.peaksDiane})` }} aria-hidden="true">
+            <span>{stamp}, TAPE FOR DIANE</span>
+          </div>
+        )}
+        {theme === 'lain' && (
+          <div className="palette-navi" style={{ backgroundImage: `url(${FX_ART.lainNavi})` }} aria-hidden="true" />
+        )}
+        <div className="palette-input-row flex items-center border-b border-base-700">
+        {theme === 'lain' && <span className="palette-prefix pl-4" aria-hidden="true">navi://</span>}
         <Field label="Search commands and library" hiddenLabel className="contents">
           <input
-            className="input rounded-none border-0 border-b border-base-700 px-4 py-3"
-            placeholder="Search your library, or jump to a section…"
+            className="input rounded-none border-0 px-4 py-3"
+            placeholder={theme === 'twin-peaks' ? 'Diane, I\'m looking for…' : 'Search your library, or jump to a section…'}
             value={query}
             autoFocus
             onChange={(e) => {
@@ -256,18 +287,36 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
             onKeyDown={onKeyDown}
           />
         </Field>
+        </div>
         <div ref={listRef} className="max-h-80 overflow-y-auto py-1">
           {items.length === 0 ? (
             <p className="px-4 py-3 text-sm text-gray-500">
               {isFetching ? 'Searching…' : 'Nothing matches.'}
             </p>
           ) : (
-            items.map((item, i) => (
+            <>
+            {theme === 'metal-gear' && !query.trim() && (
+              <div className="palette-items" role="group" aria-label="Item window">
+                {MGS_ITEMS.map((item, i) => (
+                  <button
+                    key={item.key}
+                    data-idx={i}
+                    className={`palette-item ${i === selIdx ? 'palette-item-on' : ''}`}
+                    onMouseMove={() => setSel(i)}
+                    onClick={() => go(item)}
+                  >
+                    <img src={item.icon} alt="" />
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            {items.map((item, i) => item.icon ? null : (
               <button
                 key={item.key}
                 data-idx={i}
-                className={`flex w-full items-center gap-3 px-4 py-2 text-left text-sm ${
-                  i === selIdx ? 'bg-accent/20 text-white' : 'text-gray-300'
+                className={`palette-row flex w-full items-center gap-3 px-4 py-2 text-left text-sm ${
+                  i === selIdx ? 'palette-row-on bg-accent/20 text-white' : 'text-gray-300'
                 }`}
                 onMouseMove={() => setSel(i)}
                 onClick={() => go(item)}
@@ -275,7 +324,8 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
                 <span className="shrink-0 text-xs text-gray-500">{item.hint}</span>
               </button>
-            ))
+            ))}
+            </>
           )}
         </div>
         <div className="border-t border-base-700 px-4 py-1.5 text-[10px] text-gray-500">

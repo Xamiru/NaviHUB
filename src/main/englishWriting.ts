@@ -7,9 +7,9 @@ import type { EnWritingPrompt } from '@shared/english/types'
 import type { EnWritingEntry, EnWritingFeedback } from '@shared/types'
 
 // English writing feedback: ONE non-streaming LLM call per submission
-// (llm.ts completeOnce — the coach provider settings), strict-JSON reply
-// parsed here, persisted to en_writing. Plain await over IPC on purpose (the
-// importDoc precedent): a submit doesn't need to survive navigation, so no
+// (llm.ts completeOnce — the shared AI provider settings), strict-JSON reply
+// parsed here, persisted to en_writing. Plain await over IPC on purpose: a
+// submit doesn't need to survive navigation, so no
 // status object — the page just disables its button for the ~10-20s.
 
 // ---- prompt building (pure, exported for tests) ----

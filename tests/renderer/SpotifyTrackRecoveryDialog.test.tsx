@@ -1,8 +1,8 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { act, render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ComponentProps } from 'react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { MusicSpotifyDownloadCandidate, MusicTrack, SpotifyAudioCandidate } from '@shared/types'
 import SpotifyTrackRecoveryDialog from '@/components/SpotifyTrackRecoveryDialog'
 import { api } from '@/lib/api'
@@ -49,111 +49,108 @@ function renderDialog(overrides: Partial<ComponentProps<typeof SpotifyTrackRecov
   return onClose
 }
 
+const remoteResult: SpotifyAudioCandidate = { url: 'https://youtube.com/watch?v=one', title: 'Song result', channel: 'Channel', duration: 181 }
+
+beforeEach(() => {
+  vi.mocked(api.music.spotifySearchAudio).mockResolvedValue([])
+  vi.mocked(api.music.search).mockResolvedValue({ tracks: [], artists: [], albums: [] })
+})
 afterEach(() => { vi.clearAllMocks(); vi.restoreAllMocks() })
 
 describe('SpotifyTrackRecoveryDialog', () => {
-  it('closes after approval without waiting for background music refetches', async () => {
+  it('searches YouTube Music on open and starts the chosen source immediately', async () => {
+    const user = userEvent.setup()
+    vi.mocked(api.music.spotifySearchAudio).mockResolvedValue([remoteResult])
+    vi.mocked(api.music.spotifyPreviewAudio).mockResolvedValue('navimg://preview.mp3')
+    const onClose = renderDialog({ problem: 'Needs review: Title or recording version differs' })
+    expect(screen.getByText('Needs review: Title or recording version differs')).toBeInTheDocument()
+    expect(await screen.findByText('Song result')).toBeInTheDocument()
+    expect(api.music.spotifySearchAudio).toHaveBeenCalledWith('Artist Song')
+
+    await user.click(screen.getByRole('button', { name: 'Listen' }))
+    expect(api.music.spotifyPreviewAudio).toHaveBeenCalledWith(remoteResult.url)
+    expect(playQueue).toHaveBeenCalledOnce()
+    expect(onClose).not.toHaveBeenCalled()
+
+    await user.click(screen.getByRole('button', { name: 'Download this' }))
+    await waitFor(() => expect(api.music.spotifySetTrackDownloadOptions).toHaveBeenCalledWith({
+      sourceKind: 'playlistItem', trackId: 42, audioSourceUrl: remoteResult.url, approveSource: true, startNow: true
+    }))
+    expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('closes after a pasted link is approved without waiting for background music refetches', async () => {
     const user = userEvent.setup()
     const refresh = vi.spyOn(QueryClient.prototype, 'invalidateQueries').mockImplementationOnce(() => new Promise(() => {}))
-    const onClose = renderDialog({ initialUrl: 'https://youtu.be/abcdefghijk' })
-    await user.click(screen.getByRole('button', { name: 'Use this version' }))
+    const onClose = renderDialog()
+    await user.type(screen.getByRole('textbox', { name: 'Or paste a YouTube link' }), 'https://youtu.be/abcdefghijk')
+    await user.click(screen.getByRole('button', { name: 'Download link' }))
     expect(refresh).toHaveBeenCalledOnce()
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('immediately shows source checking, prevents repeat approval and keeps failures actionable', async () => {
+  it('shows source checking, prevents repeat approval and keeps failures actionable', async () => {
     const user = userEvent.setup()
     let reject!: (error: Error) => void
     vi.mocked(api.music.spotifySetTrackDownloadOptions).mockImplementationOnce(() => new Promise((_resolve, fail) => { reject = fail }))
-    const onClose = renderDialog({ initialUrl: 'https://youtu.be/abcdefghijk' })
-    await user.click(screen.getByRole('button', { name: 'Use this version' }))
-    expect(screen.getByRole('status')).toHaveTextContent('Checking source')
-    expect(screen.getByRole('button', { name: 'Checking source…' })).toBeDisabled()
+    const onClose = renderDialog()
+    await user.type(screen.getByRole('textbox', { name: 'Or paste a YouTube link' }), 'https://youtu.be/abcdefghijk')
+    await user.click(screen.getByRole('button', { name: 'Download link' }))
+    expect(screen.getByRole('button', { name: 'Checking…' })).toBeDisabled()
     expect(onClose).not.toHaveBeenCalled()
     await act(async () => reject(new Error('Selected source is unavailable')))
     expect(await screen.findByRole('alert')).toHaveTextContent('Selected source is unavailable')
-    expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Use this version' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Download link' })).toBeEnabled()
     expect(onClose).not.toHaveBeenCalled()
   })
 
   it('lets the user listen to a downloaded candidate before explicit confirmation', async () => {
     const user = userEvent.setup()
     const onClose = renderDialog({ candidate: candidate() })
+    const section = within(screen.getByRole('region', { name: 'Downloaded version' }))
 
-    await user.click(screen.getByRole('button', { name: 'Listen to local file' }))
+    await user.click(section.getByRole('button', { name: 'Listen' }))
     expect(playQueue).toHaveBeenCalledOnce()
     expect(api.music.spotifyConfirmDownloadCandidate).not.toHaveBeenCalled()
     expect(onClose).not.toHaveBeenCalled()
 
-    await user.click(screen.getByRole('button', { name: 'Confirm this recording' }))
+    await user.click(section.getByRole('button', { name: 'It’s the right song' }))
     await waitFor(() => expect(api.music.spotifyConfirmDownloadCandidate).toHaveBeenCalledWith({ sourceKind: 'playlistItem', trackId: 42 }))
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('shows search results, previews one, and saves the selected source', async () => {
-    const user = userEvent.setup()
-    const result: SpotifyAudioCandidate = { url: 'https://youtube.com/watch?v=one', title: 'Song result', channel: 'Channel', duration: 181 }
-    vi.mocked(api.music.spotifySearchAudio).mockResolvedValue([result])
-    vi.mocked(api.music.spotifyPreviewAudio).mockResolvedValue('navimg://preview.mp3')
-    const onClose = renderDialog()
-    const refresh = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
-
-    await user.click(screen.getByRole('button', { name: 'Find audio' }))
-    expect(await screen.findByText('Song result')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: 'Listen' }))
-    expect(api.music.spotifyPreviewAudio).toHaveBeenCalledWith(result.url)
-    expect(playQueue).toHaveBeenCalledOnce()
-    expect(onClose).not.toHaveBeenCalled()
-    expect(refresh).not.toHaveBeenCalled()
-
-    await user.click(screen.getAllByRole('button', { name: 'Use this version' })[0])
-    await waitFor(() => expect(api.music.spotifySetTrackDownloadOptions).toHaveBeenCalledWith({
-      sourceKind: 'playlistItem', trackId: 42, audioSourceUrl: result.url, approveSource: true, startNow: false
-    }))
-    expect(onClose).toHaveBeenCalledOnce()
-  })
-
-  it.each(['playlistItem', 'entityTrack'] as const)('supports local recording approval for %s', async (sourceKind) => {
+  it.each(['playlistItem', 'entityTrack'] as const)('links an imported audio file for %s', async (sourceKind) => {
     const user = userEvent.setup()
     vi.mocked(api.music.spotifyPickLocalAudio).mockResolvedValue(track)
     const onClose = renderDialog({ sourceKind })
 
-    await user.click(screen.getByRole('button', { name: 'Choose a file to copy into the library' }))
-    expect(await screen.findByText('This explicitly overrides automatic matching and is remembered across scans.')).toBeInTheDocument()
-    expect(api.music.spotifyMatchPlaylistItem).not.toHaveBeenCalled()
-    expect(onClose).not.toHaveBeenCalled()
-
-    await user.click(screen.getByRole('button', { name: 'Confirm this local recording' }))
+    await user.click(screen.getByRole('button', { name: 'Import an audio file…' }))
     await waitFor(() => expect(api.music.spotifyMatchPlaylistItem).toHaveBeenCalledWith({ sourceKind, itemId: 42, trackId: 7, confirm: true }))
     expect(onClose).toHaveBeenCalledOnce()
   })
 
-  it('collapses duplicate library files in manual search results', async () => {
-    const user = userEvent.setup()
+  it('searches the library for the song and collapses duplicate files', async () => {
     vi.mocked(api.music.search).mockResolvedValue({
       tracks: [track, { ...track, id: 8, filePath: 'Artist/Album/copy.mp3' }],
       artists: [], albums: []
     })
     renderDialog()
-
-    await user.type(screen.getByRole('textbox', { name: 'Search the whole local library' }), 'Song')
-    await waitFor(() => expect(api.music.search).toHaveBeenCalled())
-    expect(screen.getAllByRole('button', { name: 'Song · Artist · 180s' })).toHaveLength(1)
+    const library = within(screen.getByRole('region', { name: 'Already in your library?' }))
+    await waitFor(() => expect(api.music.search).toHaveBeenCalledWith('Song'))
+    expect(await library.findAllByRole('button', { name: 'Use this' })).toHaveLength(1)
   })
+
   it('does not let a delayed remote preview replace a newer local preview', async () => {
     const user = userEvent.setup()
     vi.mocked(api.music.spotifySearchAudio).mockResolvedValue([{ url: 'https://youtu.be/abcdefghijk', title: 'Remote result', channel: 'Artist', duration: 180 }])
     let resolvePreview!: (value: string) => void
     vi.mocked(api.music.spotifyPreviewAudio).mockReturnValue(new Promise((resolve) => { resolvePreview = resolve }))
     renderDialog({ candidate: candidate() })
-    await user.click(screen.getByRole('button', { name: 'Find audio' }))
     await screen.findByText('Remote result')
-    await user.click(screen.getByRole('button', { name: 'Listen' }))
-    await user.click(screen.getByRole('button', { name: 'Listen to local file' }))
+    await user.click(within(screen.getByRole('region', { name: 'Download from YouTube Music' })).getByRole('button', { name: 'Listen' }))
+    await user.click(within(screen.getByRole('region', { name: 'Downloaded version' })).getByRole('button', { name: 'Listen' }))
     await act(async () => resolvePreview('https://example.com/temporary-audio'))
     expect(playQueue).toHaveBeenCalledTimes(1)
     expect(playQueue.mock.calls[0][0][0].id).toBe('music-7')
   })
-
 })

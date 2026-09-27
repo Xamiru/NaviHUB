@@ -2,6 +2,10 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { usePlayer } from '../lib/player'
 import { useIncrementalList } from '../lib/hooks'
+import { usePersistedState } from '../lib/navState'
+import { musicIdOf } from '../lib/playerTrackIds'
+import Tabs, { TabPanel } from '../components/Tabs'
+import LyricsPanel from '../components/music/LyricsPanel'
 import CoverImage from '../components/CoverImage'
 import BackButton from '../components/BackButton'
 import Section from '../components/Section'
@@ -21,8 +25,8 @@ import {
 } from '../components/PlayerIcons'
 
 // Art-led full-page view of the current track: big artwork, transport
-// controls and the live queue side by side. Pure view over usePlayer() — no
-// queries, no own state — so it stays in sync with the bar for free.
+// controls and the live queue (or, for library tracks, its lyrics) side by side.
+// A view over usePlayer(), so it stays in sync with the bar for free.
 export default function NowPlayingPage() {
   const {
     track,
@@ -53,6 +57,7 @@ export default function NowPlayingPage() {
   const upNext = useMemo(() => queue.slice(index + 1), [queue, index])
   const likedIds = useLikedTrackIds()
   const { visible, sentinelRef, hasMore } = useIncrementalList(upNext)
+  const [panel, setPanel] = usePersistedState<'queue' | 'lyrics'>('nowPlayingPanel', 'queue')
 
   if (!track) {
     return (
@@ -77,6 +82,64 @@ export default function NowPlayingPage() {
   const artistLink = track.artistId != null ? `/music/artists/${track.artistId}` : null
   const dur = (Number.isFinite(duration) && duration > 0 ? duration : track.duration) || 0
   const titleLink = albumLink ?? animeLink
+  // Lyrics only for library tracks: quiz audio must never reveal its song.
+  const libraryTrackId = musicIdOf(track.id)
+  const showLyrics = libraryTrackId != null && panel === 'lyrics'
+
+  const queueSection = (
+    <Section
+      title="Queue"
+      subtitle={upNext.length === 0 ? 'Nothing up next' : `${upNext.length} up next`}
+      className=""
+    >
+      <QueueRow track={track} active playing={isPlaying} onClick={toggle} likedIds={likedIds} />
+      {upNext.length > 0 && (
+        <>
+          <p className="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
+            Next up
+          </p>
+          {visible.map((t, i) => {
+            const abs = index + 1 + i // absolute queue position, always > index
+            return (
+              <QueueRow
+              likedIds={likedIds}
+                key={`${abs}-${t.id}`}
+                track={t}
+                onClick={() => playAt(abs)}
+                actions={
+                  <>
+                    <EditButton
+                      label="Move up in queue"
+                      disabled={i === 0}
+                      onClick={() => moveInQueue(abs, abs - 1)}
+                    >
+                      ▲
+                    </EditButton>
+                    <EditButton
+                      label="Move down in queue"
+                      disabled={i === upNext.length - 1}
+                      onClick={() => moveInQueue(abs, abs + 1)}
+                    >
+                      ▼
+                    </EditButton>
+                    <EditButton label="Remove from queue" onClick={() => removeFromQueue(abs)}>
+                      ×
+                    </EditButton>
+                  </>
+                }
+              />
+            )
+          })}
+          <div ref={sentinelRef} />
+          {hasMore && (
+            <p className="py-1 text-center text-[10px] text-gray-500">
+              {visible.length} of {upNext.length} — scroll for more
+            </p>
+          )}
+        </>
+      )}
+    </Section>
+  )
 
   return (
     // The art-led now-playing screen. The ambient wash is the app's OWN accent,
@@ -243,60 +306,32 @@ export default function NowPlayingPage() {
           </div>
         </div>
 
-        {/* Right: the live queue (same rows/rules as the bar's popover) */}
+        {/* Right: the live queue (same rows/rules as the bar's popover), or lyrics */}
         <div className="min-w-0">
-          <Section
-            title="Queue"
-            subtitle={upNext.length === 0 ? 'Nothing up next' : `${upNext.length} up next`}
-            className=""
-          >
-            <QueueRow track={track} active playing={isPlaying} onClick={toggle} likedIds={likedIds} />
-            {upNext.length > 0 && (
-              <>
-                <p className="px-2 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-500">
-                  Next up
-                </p>
-                {visible.map((t, i) => {
-                  const abs = index + 1 + i // absolute queue position, always > index
-                  return (
-                    <QueueRow
-                    likedIds={likedIds}
-                      key={`${abs}-${t.id}`}
-                      track={t}
-                      onClick={() => playAt(abs)}
-                      actions={
-                        <>
-                          <EditButton
-                            label="Move up in queue"
-                            disabled={i === 0}
-                            onClick={() => moveInQueue(abs, abs - 1)}
-                          >
-                            ▲
-                          </EditButton>
-                          <EditButton
-                            label="Move down in queue"
-                            disabled={i === upNext.length - 1}
-                            onClick={() => moveInQueue(abs, abs + 1)}
-                          >
-                            ▼
-                          </EditButton>
-                          <EditButton label="Remove from queue" onClick={() => removeFromQueue(abs)}>
-                            ×
-                          </EditButton>
-                        </>
-                      }
-                    />
-                  )
-                })}
-                <div ref={sentinelRef} />
-                {hasMore && (
-                  <p className="py-1 text-center text-[10px] text-gray-500">
-                    {visible.length} of {upNext.length} — scroll for more
-                  </p>
-                )}
-              </>
-            )}
-          </Section>
+          {libraryTrackId != null && (
+            <Tabs
+              id="now-playing-panel"
+              label="Now playing side panel"
+              className="mb-3"
+              value={showLyrics ? 'lyrics' : 'queue'}
+              onChange={setPanel}
+              tabs={[
+                { key: 'queue', label: 'Queue' },
+                { key: 'lyrics', label: 'Lyrics' }
+              ]}
+            />
+          )}
+          {libraryTrackId == null ? (
+            queueSection
+          ) : (
+            <TabPanel tabsId="now-playing-panel" value={showLyrics ? 'lyrics' : 'queue'}>
+              {showLyrics ? (
+                <LyricsPanel trackId={libraryTrackId} currentTime={currentTime} onSeek={seek} />
+              ) : (
+                queueSection
+              )}
+            </TabPanel>
+          )}
         </div>
       </div>
     </div>

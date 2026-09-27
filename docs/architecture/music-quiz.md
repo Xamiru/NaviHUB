@@ -7,6 +7,16 @@
 
 **Key files** — `src/main/repos/themeRepo.ts`, `src/main/themes.ts`, `@shared/bracket.ts`, `src/main/repos/tournamentRepo.ts`, `src/renderer/src/lib/player.tsx`
 
+**Music module map (2026-09-26).** Main process: `music.ts` (scan, tags, genres), `musicArt.ts`,
+`musicSpotify.ts` (process ownership, inspection, the persistent queue runner and acquisition),
+`musicSpotifyCore.ts` (pure URL/payload/release decisions), `musicSpotifyMatch.ts` (pure
+recording matching), `musicCatalogue.ts` (iTunes catalogue), `musicToolSetup.ts` (tool readiness,
+YouTube access check, cookie picker, Deno install), `musicTools.ts` (shared yt-dlp options),
+`musicLyrics.ts`, `musicUrlQueue.ts`, `musicSpotifyRecovery.ts`, `musicAcquisition.ts`, `spotifyWeb*.ts`,
+`youtubeMusic.ts`. Renderer: `pages/Music*.tsx`, with the library tabs, shared cards/`TrackList`
+and the Spotify import dialog in `components/music/`. Music pages never import another page
+(guarded by `tests/performanceBoundaries.test.ts`).
+
 ## Soundtracks and entrance themes
 
 `SoundtrackSection` appears on media detail, wrestler and music album pages.
@@ -26,26 +36,20 @@ prefix, and mutations also invalidate the normal broad music prefix. All associa
 rows are wiped from shared exports.
 
 
-## Personal album journal and smart playlists
+## Personal track tags and smart playlists
 
-Album pages include a personal 0–10 rating, Want to hear / Exploring / Revisit
-shelf, review and tags. Dated listening entries preserve each listen's own optional
-rating and impression; they do **not** write play counts or the album's current
-rating. Track actions open a labelled tags/standout dialog; standout marks appear
-on album track rows and remain independent of Liked Songs. `/music/journal` browses
-annotated/listened albums with search, shelf filtering and bounded 50-row pages.
-
-`musicJournalRepo` owns additive `music_album_personal`, `music_track_personal` and
-`music_listen` tables, attached to stable album/track IDs. Same-path rescans preserve
-these rows. Deleting or pruning the underlying local album/track cascades its
-personal metadata; file/folder moves retain the scanner's existing identity rules.
-Tags are explicitly authored, Unicode-normalized, trimmed, lowercase and deduplicated.
-Album tags apply to each track for smart matching without copying them into track rows.
+Track actions open a labelled tags/standout dialog; standout marks appear on album
+track rows (`musicJournal.standouts`) and remain independent of Liked Songs.
+`musicJournalRepo` owns `music_track_personal`, attached to stable track IDs. Same-path
+rescans preserve these rows; deleting or pruning the local track cascades them. Tags are
+explicitly authored, Unicode-normalized, trimmed, lowercase and deduplicated. The album
+listening journal (ratings, shelves, reviews, dated listens and `/music/journal`) was
+removed on 2026-09-26; see [removed.md](removed.md).
 
 `/music/smart` owns saved `music_smart_playlist` rule definitions, separate from manual
 playlists and Spotify snapshots. Rules combine likes, played/unplayed, min/max plays,
-days since last played (including never played), artist text, inherited/track tags
-(all or any), explicit soundtrack links, album rating and shelf. Different filter
+days since last played (including never played), artist text, track tags
+(all or any) and explicit soundtrack links. Different filter
 families always combine with AND. Soundtrack association matches either a track or
 its album, including links to works and wrestlers. Order is deterministic, and the
 user-selected 1–2,000-track limit bounds playback; preview pages hold 50 rows and show
@@ -62,6 +66,8 @@ the broad music invalidation. All seven new music/game personal tables are clear
 from shared exports, including when other progress/ratings export options are enabled.
 
 ## Music artwork lookup
+
+A hand-picked album cover or artist photo (Library maintenance → Change cover…/Change photo…) is held by the `image_override` restore triggers against the scanner, Find and the missing-file sweep; only Clear or Restore releases it. See media-types.md "Hand-picked images".
 
 Scans abort before database writes if any directory read or audio-file stat fails;
 a partial walk never prunes library records. Artist deletion removes its directory
@@ -116,38 +122,28 @@ list on every render can reset the first 96 rows or repeatedly resync reorder st
 them through unrelated renders, and resetting them when search changes.
 
 **Public snapshots with manual refresh (2026-09-12).** Sonic Archive can import a public Spotify
-playlist link through the user-installed `spotDL` executable (`spotdl.path`, with
-`spotdl` on PATH as the default). NaviHUB does not log into Spotify and does not
-automatically sync after import. Refresh source updates metadata atomically, retains local audio and
-manual decisions for surviving source IDs, and removes source rows only after a complete
-provider count is validated. The normalized Spotify playlist id is unique, so importing the
-same source again opens its existing local snapshot. spotDL supplies the playlist
-compatibility layer and resolves downloaded audio through YouTube Music with ordinary
-YouTube as the built-in fallback; Spotify does not supply audio files.
-Parallel spotDL metadata workers can finish out of order, so import restores the
-authoritative `list_position` before covers, deduplication and database insertion.
-When the matching Python environment contains spotDL exactly 4.5.2, the bundled
-version-guarded metadata adapter pages track IDs first, reports real progress, and
-checkpoints completed track metadata under `userData/spotify-metadata`. Four workers
-resume interrupted metadata without refetching completed tracks; checkpoints are removed
-only after a successful database write. `spotdl.pythonPath` can select that environment.
-Other versions or missing Python use the supported CLI path. Neither path accepts an
-unknown count or a short successful payload as a complete snapshot.
+playlist link. NaviHUB does not log into Spotify and does not automatically sync after import.
+Refresh source updates metadata atomically, retains local audio and manual decisions for
+surviving source IDs, and removes source rows only after a complete provider count is validated.
+The normalized Spotify playlist id is unique, so importing the same source again opens its
+existing local snapshot. Spotify supplies metadata only; audio comes from YouTube Music.
 
-In the CLI fallback, after spotDL reports the playlist track count it can remain silent while eight workers
-resolve and serialize every track, and spotDL writes `playlist.spotdl` only after that
-whole worker pool settles. Playlist imports therefore begin with a 30-minute
-output-silence watchdog, then scale it by the reported size in 100-track/30-minute
-blocks up to eight hours (provider rate-limit messages still fail immediately). An
-800-track source gets four quiet hours rather than being killed after 30 minutes. The
-shared activity/task surfaces report the discovered count, eight-worker phase and exact
-silence allowance without presenting a fake percentage. If spotDL exits abnormally just
-after writing a JSON array containing every reported row, NaviHUB validates and imports
-that complete snapshot; a missing, malformed or short snapshot is never treated as a
-resumable playlist. This phase does not download audio.
-
+**Native reader, no spotDL (2026-09-26).** Spotify's February/March 2026 Web API changes removed
+other users' playlist contents from development-mode apps, which broke spotDL's shared-client
+metadata path (it hung silently or demanded day-long rate-limit waits, and fetched one track per
+API call). `spotifyWeb.ts` (IO) and `spotifyWebCore.ts` (pure) now read Spotify keylessly: the
+public embed page issues an anonymous web-player token, and that token answers the web player's
+own persisted GraphQL queries (`fetchPlaylist`, `getAlbum`, `searchSuggestions`,
+`queryArtistDiscographyAll`) at 100 tracks per request. Known query hashes are built in; a
+rotated hash (HTTP 412) triggers one rediscovery from the live web-player bundle (and its artist
+route chunk), and an expired token (HTTP 401) is refreshed once. Payloads are mapped onto the
+unchanged spotDL song-object shape that `raw_json` has always stored, so existing rows,
+validation and matching need no migration. `saveSongs()` is the in-process replacement for
+`spotdl save <targets>`: album/artist/playlist links expand, any other target is a track search
+returning its single best hit. A playlist read reports real page progress, local files and
+episodes keep their positions as unimportable rows, and a count that changes mid-read aborts.
 `music_spotify_playlist` owns source identity and `music_spotify_playlist_item`
-keeps the ordered Spotify metadata, downloaded cover, and original spotDL payload.
+keeps the ordered Spotify metadata, downloaded cover, and original song payload.
 Its `matched_track_id` is nullable with `ON DELETE SET NULL`: deleting or losing a
 local file makes the source row unavailable without deleting its title, order, or
 retry state. Ordinary `music_playlist_track` rows remain the manual-add layer and
@@ -165,16 +161,25 @@ not run a full-library metadata rematch; Scan library applies revised matching t
 older unresolved rows without a source re-import.
 
 **Recording-aware matching.** Import and every music scan normalize Unicode, case,
-punctuation, and whitespace. Recording-title keys ignore remaster labels and their attached years (before or after the label), so the original and remastered releases reuse one local recording. Unrelated years and other version words such as `live` remain meaningful.
-The first tier requires exact normalized title, exact primary artist against the folder
-artist or one component of `tag_artist`, and both durations within three seconds.
-Album title can break one unique tie. Playlist rows alone get a second tier for a
+punctuation, and whitespace. Recording-title keys ignore remaster labels and their attached years (before or after the label, including the newer "2017 Master" wording), featuring credits ("(feat. X)", "(with X)"), and "Single Version"/"Album Version" labels, so the original and remastered releases reuse one local recording; duration still separates different edits. Unrelated years and other version words such as `live` remain meaningful.
+Recording-variant markers are read only from version text (brackets, a " - " suffix, and the
+album), never from the main title, so "Who Wants to Live Forever" is not a live recording.
+Local candidates are indexed by base title (subtitles and version suffixes removed).
+The first tier requires the same normalized title, primary artist against the folder
+artist or one component of the folder or `tag_artist` credit ("Philip Bailey, Phil Collins"),
+and both durations within three seconds. A subtitle present on only one side ("2 + 2 = 5
+(The Lukewarm.)") is accepted in this tier only when the album matches too (year prefix
+ignored). Several first-tier copies are one recording on several releases or duplicate rips:
+the album match wins, then the closest duration, then the oldest row. Playlist rows alone get a second tier for a
 unique same recording on another release: album differences such as standard,
 Deluxe and greatest-hits compilations are ignored, and duration tolerance is 3% with
 a three-second floor and eight-second ceiling. Meaningful Live, Acoustic, Remix,
 Instrumental, Demo, Radio Edit, sped/slowed and re-recorded markers must
-agree. Ambiguous rows remain missing but expose conservative local candidates through
-`Use local version`; an explicit choice survives later scans while its file exists.
+agree. Ambiguous second-tier rows remain missing but expose conservative local candidates through
+**Use library copy**; an explicit choice survives later scans while its file exists.
+A 2026-09-26 run against the live library and eight "This Is …" playlists raised matches from
+224 to 238 of 418; every remaining same-title near miss is a different take, live, edit or
+"Taylor's Version" recording.
 Artist/album source association uses the same strict-first, conservative unique cross-release policy as playlists. When several compatible local remasters exist, matching prefers the oldest local row. Normal download batches coalesce original/remaster duplicates within three seconds of duration, retaining all source rows; explicit manual sources and broader retries stay separate. A scan also rechecks remaster source titles when targeted indexing reports only the original title. Unmatched source rows
 never enter the player queue.
 
@@ -197,13 +202,23 @@ normalization and recording-variant markers for local matching and independent r
 source assessment. Automatic acquisition requires explicit title, artist, variant and
 duration evidence. Unknown or contradictory evidence is Needs review; Spotify tags
 written onto the output are never independent evidence. Broader matching remains opt-in
-and requires review. Automatic sources are resolved with supported `spotdl save --preload`
-in bounded batches, inspected with standalone yt-dlp, then pinned using `download_url`.
+and requires review. Automatic sources are found with keyless YouTube Music song search
+(`youtubeMusic.ts`, the innertube endpoint ytmusicapi uses), ranked by
+`musicAcquisition.rankYtmSources`, then inspected with standalone yt-dlp and pinned. A
+retry query drops a bracketed or "- Remastered" suffix. In normal mode a candidate whose title
+differs is discarded ("YouTube Music has no matching recording") rather than inspected; only
+same-title near misses are kept for review. Broader retries also search YouTube videos and
+always need review. The primary artist may be one member of a joined credit ("A, B"), and
+official uploads from an artist channel ("IndilaMusic", "(Clip Officiel)") are recognised
+without trusting fan re-uploads.
 
-The recovery dialog is shared by playlist and artist/album tracks: search the library,
-choose a local recording, import a file, search YouTube and listen. **Use this version**
-approves that exact permanent source and adds it to the shared queue, optionally starting
-it. `music_source_evidence` persists observed metadata, explicit approval, validation,
+The recovery dialog (**Choose audio**) is shared by playlist and artist/album tracks. It shows
+the song's current problem, searches YouTube Music on open (official audio first, then its
+videos; plain YouTube search only when that fails) and marks strong results **Match**; the
+library section is prefilled with the title. **Download this** / **Download link** approves that
+exact permanent source and starts it at once, even while the queue runs; **Use this** or
+**Import an audio file…** links a library copy. The separate broader-matching toggles and the
+start-now checkbox were removed: choosing a source is the explicit broader step. `music_source_evidence` persists observed metadata, explicit approval, validation,
 phase and an acquisition token independently of Spotify metadata. Old saved URLs have
 no approval record and remain unconfirmed. Changed or unavailable sources retain the
 choice and report the failure; they never silently substitute audio. Playback stream
@@ -230,53 +245,46 @@ A final local-file check precedes acquisition. This does not clean up or delete 
 from the existing library.
 
 **Tools and diagnostics.** `musicTools.ts` builds cookies, runtime, ffmpeg, retry and worker
-options, with explicit adaptations for standalone and embedded yt-dlp. Direct jobs ignore
-ambient yt-dlp configuration. NaviHUB does not edit external tool configuration or update
-tools automatically. Detection reports standalone and embedded versions separately, checks
-required spotDL CLI capabilities, and never claims a successful preview tested the embedded
-downloader. The internal metadata adapter remains restricted to tested spotDL 4.5.2;
-other supported versions use the CLI. Exact-source failures identify lookup, extraction,
-transfer/processing, indexing or linking, retaining useful diagnostics with authentication
-and format errors classified first. Signed stream URLs and cookie values are redacted.
-spotDL version and capability probes allow 30 seconds for Python startup. Every spotDL
-`save`/`download` process receives the configured ffmpeg path, including preload and
-metadata-only saves: spotDL checks ffmpeg before dispatching those operations too.
-A failed preload preserves its tool diagnostic on affected tracks rather than reporting
-that no recording was found.
-Batch inspection associates warnings/errors with each canonical source, preserves
-per-source metadata validation failures, and uses a neutral missing-result message
-when it cannot attribute a diagnostic. A warning about one video must never be
-copied onto another song, and a token warning cannot replace a concrete parse failure.
-Probe timeouts are reported as timeouts, not missing installations or unsupported options.
-Direct downloads use yt-dlp's `before_dl` and `post_process` markers to distinguish a
-transfer refusal before the first byte from extraction and processing failures.
+options for every yt-dlp call. Direct jobs ignore ambient yt-dlp configuration. NaviHUB does not
+edit external tool configuration or update tools automatically. Readiness (`detectMusicTools`)
+needs only yt-dlp and ffmpeg (plus readable cookies when configured); Spotify metadata needs no
+tool. It also reports the JavaScript runtime yt-dlp will use (Deno, else Node.js 22+; Node 20 is
+rejected by yt-dlp) and whether Opus cover art can be embedded (yt-dlp's optional mutagen
+library, detected from `-v` output). **Install Deno** downloads the official release into
+`~/.deno/bin`, which `musicToolOptions` searches first. Exact-source failures identify lookup,
+extraction, transfer/processing, indexing or linking, retaining useful diagnostics with
+authentication and format errors classified first. Signed stream URLs and cookie values are
+redacted. Batch inspection associates warnings/errors with each canonical source and splits the
+URL list across the worker budget. A warning about one video must never be copied onto another
+song, and a token warning cannot replace a concrete parse failure.
+
+**Native acquisition.** Each validated song is downloaded by one yt-dlp process: inspection keeps
+the full info JSON, `taggedInfoJson` overwrites title/artists/album/album artist/track/disc/date
+and the thumbnail with Spotify's metadata and cover (clearing YouTube's description, category
+and timestamps), and `--load-info-json` downloads without a second extraction. `--format`
+selects the observed codec exactly (`bestaudio[acodec=opus]`, `^=mp4a` or `=mp3`) and
+`--extract-audio` without `--audio-format` copies the stream, so audio is never transcoded;
+cookies from a YouTube Music Premium session can expose 256 kbps AAC. Opus covers are embedded
+when mutagen is present, otherwise the Spotify cover is written as the album folder's
+`cover.jpg`. Output keeps the staged `Artist/Album/D-TT - Title [navirun-…] [navihub-…]` layout,
+so indexing, provenance linking and marker cleanup are unchanged. Per-track downloads run in the
+one-to-four worker pool; each song keeps its own error.
 
 Source access evidence is cached for five minutes, keyed by tool/runtime/ffmpeg and cookie
 file identity/mtime, and invalidated after failed acquisition. Permanent source URLs survive
-retries. Output codec is selected from observed native Opus, AAC/M4A or MP3 availability;
-cookies do not imply a codec or quality. Bitrate conversion is disabled. A filtered exact
-codec selection prevents silent transcoding. The configured spotDL worker budget is one to
-four (default four). URL jobs use the same bounded budget, with an in-flight promise per
-source identity. The queue owns every child process tree, including a separate Windows
-taskkill per PID; spotDL and URL pools never run at the same time. Transient audio-command failures have at most
-three orchestration attempts with bounded backoff and zero inner yt-dlp retries. Authentication,
-unavailable-source, format and validation errors require correction.
+retries. The queue owns every child process tree, including a separate Windows taskkill per PID.
+Transient audio-command failures have at most three orchestration attempts with bounded backoff
+and zero inner yt-dlp retries. Authentication, unavailable-source, format and validation errors
+require correction.
 
 **Completion and recovery.** Immediate Spotify actions enqueue and start the same persistent
 queue used by Downloads. Incomplete album metadata stays incomplete; no canonical-album audio
 fallback may bypass source verification. Metadata checkpoints, complete snapshots, source
 order, lazy album expansion and small-release batching remain. Completed Spotify outputs move
-from `.spotdl/navihub-downloads` without overwriting existing audio; spotDL preserves its reserved
-`.spotdl` component but strips the leading dot from arbitrary directory names. The private
+from `.spotdl/navihub-downloads` (the historical staging path, kept so older interrupted runs
+recover) without overwriting existing audio. The private
 pending-index manifest remains in `.navihub-downloads` and survives interruption. Explicit queue
-recovery also reads old `.navihub-downloads` outputs. Both an explicit library scan and queue
-recovery move audio from the legacy `navihub-downloads/Artist/Album` layout into real artist
-folders, including files whose markers were already removed. A replayable `legacy-moves.json`
-journal survives filesystem/DB/indexing interruptions; path updates preserve track IDs,
-likes, history, playlist links and URL checkpoints. Existing destination files are never
-overwritten, and duplicate tracks retain separate IDs. Successful indexing removes only empty
-legacy album/artist rows (targeted cleanup preserves Spotify catalogue snapshots), then deletes
-the journal and empty directories; non-audio leftovers stay. Approved linking selects the
+recovery also reads old `.navihub-downloads` outputs. Approved linking selects the
 exact acquisition token before considering duplicate files; unrelated old copies cannot block
 it. Filename markers are removed only after an archived source or durable review candidate
 exists, so unresolved files keep their recovery identity. Existing duplicates are not deleted.
@@ -305,12 +313,18 @@ the full Spotify discography every time. The first open searches Apple's public
 iTunes metadata catalogue, presents candidate cards only when an exact result is
 ambiguous, and loads release headers first. Tracklists load only when opened or
 selected for downloads; each loaded album must match its advertised track count before
-it replaces saved metadata. The regional catalogue is explicitly partial (up to 200
+it replaces saved metadata. Apple omits tracks it does not sell in the chosen country (a
+single can advertise one track and list none, a Deluxe edition 16 and list 15), so an empty,
+short or failed Apple track list falls back to the same release on Spotify: an album search
+filtered by release title (Apple's " - Single"/" - EP" suffix ignored) and album artist,
+preferring the edition whose track count matches Apple's. That release is hydrated from
+Spotify and remembers its Spotify album id. When several releases are added at once, one
+unreadable release is reported (`unreadable`) and the others are still queued. The regional catalogue is explicitly partial (up to 200
 releases), never described as the complete Spotify discography. The country defaults to
 US and can be changed under source replacement; it is saved with each snapshot. It needs no Apple or Spotify credentials. Only albums and singles
 whose album artist matches the selected artist are indexed; appearances,
 compilations and features are excluded. A public Spotify URL remains available only
-under Advanced source replacement. In parallel, one bounded six-second spotDL query
+under Advanced source replacement. In parallel, one bounded six-second Spotify search
 checks up to three representative local tracks for a non-tied Spotify identity; it
 never expands the artist and cannot delay the otherwise-ready preview beyond that bound.
 An empty local artist or album is a supported first-download case: automatic discovery
@@ -321,13 +335,13 @@ catalogue.
 The indexed catalogue is stored in `music_spotify_entity_snapshot`,
 `music_spotify_entity_release` and `music_spotify_entity_track`. Reopening reads that
 snapshot immediately with no network process. Refresh atomically replaces provider
-metadata but retains source-row identities, manual choices and authoritative spotDL
+metadata but retains source-row identities, manual choices and authoritative Spotify
 payloads for surviving recordings; Forget deletes the snapshot and remembered Spotify IDs but never local
 audio. Snapshot track matches are nullable and revalidated by every music scan, so a
 deleted file turns grey and a restored or downloaded file resolves again. Sanitized
 and in-app library exports always wipe all three tables.
 
-spotDL album expansion is not trusted merely because the process exits successfully.
+Spotify album expansion is not trusted merely because the read succeeds.
 The expanded payload must cover every indexed catalogue track before it can replace
 that release. Missing rows are recovered together through strict artist/title/duration
 queries; a shared standard-edition recording may supply audio only after that identity
@@ -337,13 +351,10 @@ remains retryable. Older truncated iTunes-backed snapshots are detected from bro
 disc/track numbering and automatically restored from the fast catalogue on Retry.
 
 When the fast provider fails, the same visible metadata task automatically falls back
-to spotDL with eight metadata workers. NaviHUB deliberately omits `--use-cache-file`:
-current spotDL uses that flag to select its official Spotify Web API path, and an
-application-level limit there can demand a 24-hour wait. The fallback has no
-fake percentage or hard completion promise because spotDL enumerates every release,
-but it reports elapsed time and found tracks and remains cancellable. Duplicate opens
+to the keyless Spotify reader, which pages the complete discography and reads each release
+(four at a time), reporting releases read and remaining cancellable between requests. Duplicate opens
 for the same artist or album attach to that job; a conflicting maintenance task is
-named and linked through Tasks. Normal app shutdown terminates the complete spotDL
+named and linked through Tasks. Normal app shutdown terminates every music tool
 process tree and clears the in-process owner, so relaunch cannot inherit a stale
 inspection.
 
@@ -351,25 +362,22 @@ Downloads resolve only the selected releases. An indexed release is queried by i
 known Spotify album URL when available. For an unresolved iTunes release, NaviHUB ranks
 release-unique tracks before shared tracks and later tracks before earlier ones, then tries
 at most three strict artist/title/duration/edition track lookups to discover one Spotify
-album id. It expands only that canonical album URL because spotDL 4.5.2's default provider
-failed real `album:` text lookups despite the documented syntax, and shared lead tracks can
-identify the standard edition of a Deluxe release. Apple-only terminal `- Single` / `- EP`
+album id. It expands only that canonical album because shared lead tracks can identify the standard
+edition of a Deluxe release. Apple-only terminal `- Single` / `- EP`
 presentation suffixes are ignored without weakening Deluxe, Live or Remaster markers. The
 album's artist, title and track overlap are validated before its authoritative payload is
 persisted. Strict matching
 runs again and only unmatched tracks enter the source-preserved native-audio pipeline,
 in chunks of at most 100 tracks with the configured one-to-four worker budget. Releases continue independently after one failure and remain selectable for
-Retry. Pause is restartable on every platform: the current spotDL tree is stopped,
+Retry. Pause is restartable on every platform: the current yt-dlp trees are stopped,
 completed files are scanned and kept, and Resume starts only unresolved work. Cancel
 uses the same recovery path and releases the maintenance gate after cleanup. A
 user-confirmed mismatch is one-shot and never overwrites the page source; source IDs
 auto-link only after all relevant source tracks resolve to one unambiguous local entity.
-Metadata and audio child processes also have output-silence watchdogs: a stalled spotDL
+Audio child processes also have a ten-minute output-silence watchdog: a stalled yt-dlp
 tree is terminated with an actionable Retry/Settings error instead of occupying the
-maintenance gate indefinitely.
-Provider rate-limit messages that request a multi-minute wait are also treated as a
-terminal failure and tree-killed immediately, rather than leaving a task apparently
-running until the provider's timer expires.
+maintenance gate indefinitely. Spotify reads go through `fetchWithRetry`, so a provider 429
+waits a bounded number of times instead of holding a task open for a day.
 
 The batch owns the music-maintenance gate from start through targeted indexing and linking.
 Child processes and indexers re-enter that same unique owner; competing Spotify,
@@ -387,16 +395,22 @@ release and item deletion cascades naturally; Refresh keeps selections whose sta
 provider release identity survives. Both tables are personal local-music state and are
 wiped from every sanitized or in-app library export.
 
-Adding is inert: the user explicitly starts all cards or one card. The mixed runner
+Adding is inert: the user explicitly starts all cards or one card. A playlist page's visible
+**Download missing** action is such an explicit start (it saves the selection, then runs it
+next); **Add missing to Downloads without starting** remains in its More menu. A card that is
+downloading accepts more songs: the runner gives it another pass when the current pass ends, and
+a "start now" request joins a running single-card run instead of being refused. While the queue
+runs, only the songs inside the active acquisition batch are locked against source changes or
+skipping. The mixed runner
 holds one re-entrant music-maintenance owner, fetches the next card from the current DB
 order after each completion, and rechecks strict-first, unique cross-release local matches immediately before work.
-Already-local tracks are skipped without spotDL. Entity cards retain release-by-release
+Already-local tracks are skipped without a download. Entity cards retain release-by-release
 resolution and targeted indexing; playlist cards retain 100-track chunks and index
 only completed outputs after each chunk. One failed card stays visible for Retry while later cards continue. Completed
 cards stay until Clear completed.
 
-Every failed source row retains its last exact spotDL error. The expanded card offers
-normal-filtered/broader retry and an exact YouTube source replacement without rerunning artist
+Every failed source row retains its last exact acquisition error. The expanded card offers
+**Choose audio** (an exact source) and **Use automatic source** for a saved one, without rerunning artist
 inspection. Changing either option returns its card to Queued; a later scan clears the error
 as soon as a strict local match appears. Entity source rows and all queue rows are wiped from
 sanitized exports; imported-playlist snapshots may remain, but their local match, error,
@@ -410,7 +424,7 @@ merged card after new selections are saved, so the 100-track/2 GB warning cannot
 understate previously queued work. Partial runs finish with a warning and keep failed
 cards visible rather than presenting a generic success.
 
-Pause terminates every active spotDL/yt-dlp/ffmpeg process tree, indexes recoverable outputs,
+Pause terminates every active yt-dlp/ffmpeg process tree, indexes recoverable outputs,
 and persists the current card as paused while preserving whether Resume should continue
 the whole queue or only that card. Once workers and finalization settle, Pause releases
 the maintenance gate for manual recovery; Resume reacquires it before doing work. Cancel settles the runtime task and returns unfinished
@@ -443,11 +457,58 @@ Home, Sonic Archive, and Listening Stats intentionally request different windows
 Playback remains the header hierarchy: Play is the single primary action and
 Shuffle is the visible secondary. Acquisition and administration are disclosed as
 separate **Add music** and **Library maintenance** menus. User-facing acquisition
-language describes intent rather than the executable: **Import a playlist**,
-**Complete from Spotify**, and **Save audio from a link**. spotDL, yt-dlp, matching,
+language describes intent rather than the executable: **Add music** offers **Import Spotify
+playlist…** and **Save audio from a link…** (the Playlists tab keeps **Import from Spotify…**),
+and artist/album pages offer **Complete from Spotify**. YouTube Music, yt-dlp, matching,
 and destination-folder details remain visible inside their dialogs and readiness
-help. Spotify artist catalogues provide albums-and-singles/clear selection and a
-missing-release filter for large discographies.
+help. The artist/album dialog (**Download missing albums**) shows one catalogue line, release
+rows that are whole clickable labels with a plain library status ("3 of 10 in your library",
+"All in your library", "Not checked against your library yet") and a small **Check**, plus
+**Select all** / **Select none** / **Hide complete releases**. Its primary action is
+**Download** (starts now, or **Download next** while the queue runs); **Save for later** only
+queues. The Downloads page lists, inside an opened card, only songs that still need something as
+flat rows (status line plus **Choose audio** / **Check** / **Remove**), collapses the rest into
+"N songs are already in your library", and its running panel shows the release and the current
+step (finding recordings, checking them, downloading).
+
+**Genres (2026-09-26).** The folder stays the artist; genre comes only from tags. The scanner
+splits every genre tag on `;`, `/`, `|` and NUL (never commas, which Discogs-style names use
+inside one genre) and stores one `music_track_genre` row per track and genre, so a track shows
+under each of its genres. The column is `COLLATE NOCASE`, so "Rock" and "rock" filter and count
+as one. Rows are replaced only when the file's tags are actually re-read; the mtime fast path
+keeps them. `music_track.genres_scanned` (0 on rows that predate genres) forces one re-read of
+each older file on the next scan, then the fast path resumes. The Albums and Tracks tabs filter
+by one page-level `MusicBrowseScope` (genre plus decade) in SQL: `music:albums` takes it, the
+track page request extends it, and the header's Play/Shuffle pass it to `music:playbackQueue`
+whenever the Albums or Tracks tab is showing, so the queue matches what is listed. Counts come
+from `music:genres` and `music:decades`; the genre select stays hidden until a scan has found
+any genre. Genre rows are library data and are wiped with `music_track` from shared exports.
+
+Decades group albums by `music_album.year`. `tagYear` keeps years 1000–2999 and reads a whole
+date written into the year tag (`20140530`) as its year; anything else is unknown. Because the
+album upsert keeps an existing year when a rescan finds none, `runMigrations` clears junk years
+already stored so the genre re-read can refill them. Yearless albums form an "Unknown year"
+group rather than disappearing from the filter.
+
+**Lyrics (2026-09-27).** Now Playing shows Queue / Lyrics tabs for library tracks only
+(`musicIdOf`); quiz, tournament, theme and arbitrary-file audio never mount the panel, so lyrics
+can never reveal a quiz answer. Local wins, as with artwork: a sidecar `.lrc` beside the audio is
+read on every request and never stored. Otherwise the panel's first open of a track calls
+`music:fetchLyrics` once: embedded tags (SYLT milliseconds become LRC; LRC-shaped USLT stays
+synced), then LRCLIB `/api/get` with the album year prefix stripped, then `/api/search` limited to
+results within five seconds of the file's length. Found, instrumental and "missing" results are
+stored in `music_track_lyrics` so they work offline and a miss is not re-queried automatically;
+**Search again** repeats the lookup. HTTP and network failures are never stored, so the next open
+retries. `@shared/lyrics.ts` parses LRC (several time tags per line, `[offset:]`) and finds the
+active line; lines highlight 0.25 s early, scroll with playback (instant under reduced motion)
+and seek on click. Stored lyrics cascade with the track and are wiped from shared exports.
+
+**Play counts (2026-09-27).** `MusicPlayLogger` follows the scrobbler rule: a `music-` track
+counts once half its length, capped at four minutes, has actually been heard; tracks under 30
+seconds never count. `advanceListen` in `lib/musicTracks.ts` adds only normal forward playback
+(position steps of at most two seconds while playing), so seeks, scrubbing and paused time add
+nothing, and a return to the start after a counted play begins a new one (repeat-one counts every
+loop). This replaced the old "10 seconds after the track starts" timer; existing counts are kept.
 
 ## Player bar layout and the now-playing wash
 
@@ -471,6 +532,10 @@ The album page needed nothing: `MusicEntityHeader` + `MusicTrackRow` were alread
 **Tests** — `themeRepo`, `themeImport`, `bracket`, `tournamentRepo`, `quizRepo`, `music`, `musicRepo`, `playerMeta`, `playerGlyphs`, `widgetCore`, `pushBridge`
 
 ---
+
+## Queue editing, repeat and player preferences
+
+Queue edits (`removeFromQueue`/`moveInQueue`) are exposed only on "Next up" rows, so the playing index never shifts. `originalOrderRef` (non-null while shuffled) is pruned by object identity, because ids can repeat in a queue. Repeat modes are `off`/`all`/`one`; the wrap logic keeps its `queue.length > 1` guards so the quiz's single-track queue cannot be skipped by OS media keys. Volume, repeat and shuffle persist in localStorage `player.prefs`; `stop()` deliberately does not persist its shuffle reset. The pop-out widget renders `PlayerWidgetPage` alone through a `main.tsx` hash branch — no router, no query client, no second `AudioPlayerProvider` — with its fixed 480×60 geometry from `widgetCore.ts`.
 
 ## Quiz broadcast overhaul
 
@@ -498,7 +563,7 @@ The album page needed nothing: `MusicEntityHeader` + `MusicTrackRow` were alread
 
 ## Songs / theme library
 
-**Songs / theme library (2026-07-25)** — `/anime/songs` (`ThemeSongsPage`, an `ANIME.children` sidebar link + CommandPalette item; route sits above `/anime/:id`) replaces the sidebar's old "Shuffle Themes" button (gone, with `player.tsx:quizSongToTrack` — the page maps its own tracks). Every imported OP/ED as a playable list, where **the anime half of the filter IS `MediaListFilter`**: `repos/themeRepo.ts:list({media, search, songType, favoriteOnly, playableOnly})` calls mediaRepo's now-exported `buildWhere`/`buildOrder` (alias the media table `m`), so statuses/tags/ranges/favorite/season mean exactly what they mean on the anime list page — the page literally reuses `MediaFilterPanel`, the sort menu and `qk.mediaCounts.facets('anime')`. `mediaType` is forced to `'anime'` in the repo. Song-level extras: OP/ED, hearts, and a search that also matches song title/slug/artist (wider than the media filter's title-only search). Ordering groups songs under their anime (`COALESCE(sort_order,1000), ts.id`) EXCEPT `random`, where `buildOrder`'s new `randomIdExpr` arg hashes `ts.id` so a shuffle deals songs, not whole shows; every play button queues the WHOLE filtered set (`theme-<id>` id namespace, unchanged). **New personal column `theme_song.favorite`** (init.sql + schema.ts + `ensureColumn`, wiped in sanitizeSql.cjs, also on the detail page's `ThemeRow` heart): the AnimeThemes import is a clean replace, so `themes.ts` snapshots hearted `external_id`s before the DELETE and restores them on insert — mirrored in bulk-import.cjs. Tests: themeRepo.test.ts (shared-filter reuse, song filters, seeded song shuffle), themeImport.test.ts (favorites survive a refresh).
+**Songs / theme library (2026-07-25)** — `/anime/songs` (`ThemeSongsPage`, an `ANIME.children` sidebar link + CommandPalette item; route sits above `/anime/:id`) replaces the sidebar's old "Shuffle Themes" button (gone — the page builds its own `theme-<id>` tracks inline). Every imported OP/ED as a playable list, where **the anime half of the filter IS `MediaListFilter`**: `repos/themeRepo.ts:list({media, search, songType, favoriteOnly, playableOnly})` calls mediaRepo's now-exported `buildWhere`/`buildOrder` (alias the media table `m`), so statuses/tags/ranges/favorite/season mean exactly what they mean on the anime list page — the page literally reuses `MediaFilterPanel`, the sort menu and `qk.mediaCounts.facets('anime')`. `mediaType` is forced to `'anime'` in the repo. Song-level extras: OP/ED, hearts, and a search that also matches song title/slug/artist (wider than the media filter's title-only search). Ordering groups songs under their anime (`COALESCE(sort_order,1000), ts.id`) EXCEPT `random`, where `buildOrder`'s new `randomIdExpr` arg hashes `ts.id` so a shuffle deals songs, not whole shows; every play button queues the WHOLE filtered set (`theme-<id>` id namespace, unchanged). **New personal column `theme_song.favorite`** (init.sql + schema.ts + `ensureColumn`, wiped in sanitizeSql.cjs, also on the detail page's `ThemeRow` heart): the AnimeThemes import is a clean replace, so `themes.ts` snapshots hearted `external_id`s before the DELETE and restores them on insert — mirrored in bulk-import.cjs. Tests: themeRepo.test.ts (shared-filter reuse, song filters, seeded song shuffle), themeImport.test.ts (favorites survive a refresh).
 
 **Bulk theme backfill and repair (2026-09-06)** — Bulk Import exposes a dedicated local preview for AniList anime with zero `theme_song` rows; starting it reuses the Library Refresh task/status/cancel loop and fetches OP/ED metadata plus local audio. The Refresh tab's **Update anime theme songs** preset checks every AniList anime against AnimeThemes, compares external song IDs (not count alone), and counts unchanged titles as skipped. A mismatch atomically mirrors the source, preserving favorites for retained IDs and retaining healthy local audio; only new or audio-missing songs are downloaded. Theme audio streams through a bounded sibling partial in `files.ts`, so a timeout, cancellation or oversized response cannot expose a truncated playable file. The comparison passes the fetched payload into the importer so each anime is requested once.
 

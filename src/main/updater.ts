@@ -3,8 +3,7 @@
  *
  * electron-updater is EventEmitter-based, but this app deliberately has no push
  * channel (see CLAUDE.md), so every event is collapsed into ONE module-level
- * status object that the renderer polls via `update:status` — the musicDownload.ts
- * idiom. All the decisions live in updaterCore.ts so they stay testable without
+ * status object that the renderer polls via `update:status`. All the decisions live in updaterCore.ts so they stay testable without
  * the SDK; this file is only wiring and IO.
  *
  * Online work is button-only: nothing here runs on launch.
@@ -42,7 +41,7 @@ function environment(): UpdateEnvironment {
   })
 }
 
-// Shallow copy, like musicDownload.getStatus — the renderer must never hold a
+// Shallow copy — the renderer must never hold a
 // live reference to mutable main state.
 export function getStatus(): UpdateStatus {
   const env = environment()
@@ -158,7 +157,7 @@ export function downloadUpdate(): UpdateStatus {
       return { percent: status.percent, detail: status.version }
     }
   })
-  // Fire and forget, like startDownload in musicDownload.ts: the renderer polls
+  // Fire and forget: the renderer polls
   // update:status for progress. Awaiting here would hold the IPC reply open for
   // the whole ~140MB transfer, so the progress bar could never move — and the
   // renderer's post-start invalidate would arrive too late to begin polling.

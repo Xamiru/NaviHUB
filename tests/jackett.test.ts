@@ -3,8 +3,7 @@ import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
 
 // Jackett search client: pure URL builders + JSON mapping, and the IO paths
-// (settings guard, friendly network/auth errors) with mocked http — the
-// gachaNews.test.ts recipe, no network.
+// (settings guard, friendly network/auth errors) with mocked http, no network.
 
 let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({

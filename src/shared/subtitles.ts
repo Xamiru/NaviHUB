@@ -1,7 +1,7 @@
 // Subtitle parsing for the video player — SRT, WebVTT and ASS/SSA.
 //
 // Hand-rolled and fixture-tested, like every other parser in the app (epub.ts,
-// mokuro.ts, the Atom scan in gachaNews, the WordNet importer): no dependency,
+// mokuro.ts, the WordNet importer): no dependency,
 // nothing throws, a malformed block is skipped rather than fatal.
 //
 // It lives in src/shared because BOTH halves need it — the renderer parses cues

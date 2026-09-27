@@ -7,6 +7,7 @@ import { qk } from '../lib/queryKeys'
 import { toast, toastError } from '../lib/toast'
 import Section from './Section'
 import { confirmDialog } from '../lib/confirm'
+import { celebrateProgress } from '../lib/themeFx'
 
 // Linked-video entry point on an anime/movie/tv detail page. Mirrors
 // MangaChaptersSection: attach a folder from the video library, list what was
@@ -125,7 +126,9 @@ function EpisodeRow({
 }): JSX.Element {
   async function toggleWatched(): Promise<void> {
     try {
+      const anchor = document.activeElement
       await api.video.markWatched({ kind: 'file', fileId: f.id }, !f.watchedAt)
+      if (!f.watchedAt) celebrateProgress(anchor)
       onChange()
     } catch (e) {
       toastError(e)

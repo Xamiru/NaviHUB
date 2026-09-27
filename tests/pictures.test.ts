@@ -7,6 +7,7 @@ import {
   addFromUrl,
   forgetSlideshowForMedia,
   listImages,
+  listSources,
   parseWallhaven,
   removeImage,
   searchTmdbBackdrops,
@@ -442,5 +443,46 @@ describe('setBackground', () => {
     setBackground(2, b.id)
     expect(listImages(1, 'wallpaper')[0].isBackground).toBe(true)
     expect(listImages(2, 'wallpaper')[0].isBackground).toBe(true)
+  })
+})
+
+describe('browse sources', () => {
+  const sources = (id: number, kind: 'wallpaper' | 'fanart') =>
+    listSources(id, kind).map((s) => `${s.source}${s.query === null ? '' : `:${s.query}`}${s.needsKey ? '!' : ''}`)
+
+  it('opens anime fan art on Danbooru and offers the AniList banner', () => {
+    expect(sources(1, 'fanart')).toEqual(['danbooru:Berserk', 'wallhaven:Berserk', 'anilist'])
+    expect(sources(1, 'wallpaper')).toEqual(['wallhaven:Berserk', 'danbooru:Berserk', 'anilist'])
+  })
+
+  it('offers TMDB and fanart.tv only for TMDB imports, flagging the missing key', () => {
+    expect(sources(2, 'wallpaper')).toEqual(['wallhaven:Blade Runner', 'tmdb', 'fanarttv!'])
+    expect(sources(3, 'wallpaper')).toEqual(['wallhaven:Hand-added Film'])
+  })
+
+  it('binds game sources to the Steam id when there is one', () => {
+    db.exec(`INSERT INTO media_item (id, media_type, title, external_source, external_id)
+               VALUES (4, 'game', 'Elden Ring', 'steam', '1245620'),
+                      (5, 'game', 'Old Game', 'rawg', '99'),
+                      (6, 'visual_novel', 'Ever17', 'vndb', '17')`)
+    expect(sources(4, 'wallpaper')).toEqual(['wallhaven:Elden Ring', 'danbooru:Elden Ring', 'steam', 'steamgriddb!'])
+    expect(sources(5, 'wallpaper')).toContain('steam:Old Game')
+    expect(sources(6, 'wallpaper')).toContain('vndb')
+  })
+
+  it('names the saved file after its source', async () => {
+    await addFromSearch(1, 'fanart', {
+      source: 'danbooru',
+      id: '12253500',
+      thumbUrl: 'https://cdn.donmai.us/360x360/a.jpg',
+      fullUrl: 'https://cdn.donmai.us/original/a.jpg',
+      width: 1479,
+      height: 1892
+    })
+    expect(files.downloadImageTo).toHaveBeenCalledWith(
+      'https://cdn.donmai.us/original/a.jpg',
+      'Berserk (anime)/fanart',
+      'danbooru-12253500'
+    )
   })
 })

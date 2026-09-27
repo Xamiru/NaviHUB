@@ -11,6 +11,7 @@ import { updateActivity } from './progress'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { streamResponseToFile } from './streamDownload'
 import { fetchPlaytimes, hltbLengthHours } from './hltb'
+import type { RefreshAspect } from '@shared/refresh'
 import type {
   BulkListParams,
   BulkPreviewItem,
@@ -186,8 +187,13 @@ function platformLabel(platformsJson: string | null): string {
 // leave HLTB to the detail page's per-title Fetch button.
 export async function importGame(
   catalogId: number,
-  opts: { skipHltb?: boolean } = {}
+  opts: { skipHltb?: boolean; only?: RefreshAspect[] } = {}
 ): Promise<ImportSummary> {
+  // Library Refresh: media_item columns only — companies and genres, including
+  // their replacement below, are skipped whole, and so is the HLTB lookup
+  // (the refresh 'length' aspect owns that).
+  const partial = !!opts.only?.length
+  const wants = (a: RefreshAspect): boolean => !partial || !!opts.only?.includes(a)
   const db = getCatalogDb()
   if (!db) throw new Error('The offline games catalog is not installed yet.')
   const g = db.prepare('SELECT * FROM catalog_game WHERE id = ?').get(catalogId) as
@@ -195,11 +201,11 @@ export async function importGame(
     | undefined
   if (!g) throw new Error('Game not found in the catalog')
 
-  const images = await downloadImages([g.image_url])
+  const images = await downloadImages([wants('cover') ? g.image_url : null])
   const coverPath = g.image_url ? (images.get(g.image_url) ?? null) : null
 
   const year = g.released ? Number(g.released.slice(0, 4)) || null : null
-  const hltbTimes = opts.skipHltb ? null : await fetchPlaytimes(g.name, year)
+  const hltbTimes = opts.skipHltb || partial ? null : await fetchPlaytimes(g.name, year)
   const lengthHours =
     (hltbTimes ? hltbLengthHours(hltbTimes) : null) ??
     (g.playtime && g.playtime > 0 ? g.playtime : null)
@@ -214,7 +220,21 @@ export async function importGame(
 
     let mediaId: number
     const created = !existing
-    if (existing) {
+    if (existing && partial) {
+      mediaId = existing.id
+      const sets: string[] = []
+      const args: unknown[] = []
+      if (wants('text')) {
+        sets.push('title=?', 'title_original=?', 'synopsis=?', 'release_date=?')
+        args.push(g.name, native, g.description || null, g.released)
+      }
+      if (wants('cover')) {
+        sets.push('cover_path=COALESCE(?, cover_path)')
+        args.push(coverPath)
+      }
+      sets.push("updated_at=datetime('now')")
+      main.prepare(`UPDATE media_item SET ${sets.join(', ')} WHERE id=?`).run(...args, mediaId)
+    } else if (existing) {
       mediaId = existing.id
       main
         .prepare(
@@ -223,6 +243,7 @@ export async function importGame(
         )
         .run(g.name, native, g.description || null, coverPath, lengthHours, g.released, mediaId)
     } else {
+      if (partial) throw new Error('That title is not in the library — import it first.')
       const info = main
         .prepare(
           `INSERT INTO media_item
@@ -235,7 +256,7 @@ export async function importGame(
     }
 
     // ---- Metacritic + HLTB -> metadata, merged ----
-    if ((g.metacritic ?? 0) > 0 || hltbTimes) {
+    if (((g.metacritic ?? 0) > 0 || hltbTimes) && wants('text')) {
       const metaRow = main.prepare('SELECT metadata FROM media_item WHERE id=?').get(mediaId) as
         | { metadata: string | null }
         | undefined
@@ -251,6 +272,9 @@ export async function importGame(
       if (hltbTimes) metaObj.hltb = hltbTimes
       main.prepare('UPDATE media_item SET metadata=? WHERE id=?').run(JSON.stringify(metaObj), mediaId)
     }
+
+    // Child rows stop here on a partial refresh.
+    if (partial) return { mediaId, title: g.name, studios: 0, cast: 0, staff: 0, created }
 
     // ---- developers/publishers -> companies, deduped by ('rawg', id) — the
     // same key rawg.ts used, so companies from the API era are reused. ----

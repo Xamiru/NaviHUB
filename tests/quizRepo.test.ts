@@ -165,6 +165,15 @@ describe('quizRepo.songPool', () => {
 })
 
 describe('quizRepo availability', () => {
+  it('reuses the cached result until the library changes', () => {
+    addTheme(addAnime('First', 'Completed'), { audioPath: 'audio/a.ogg' })
+    const first = quizRepo.availability({ statuses: ['Completed'] })
+    expect(quizRepo.availability({ statuses: ['Completed'] })).toEqual(first)
+    addTheme(addAnime('Second', 'Completed'), { audioPath: 'audio/b.ogg' })
+    expect(first.song).toBe(1)
+    expect(quizRepo.availability({ statuses: ['Completed'] }).song).toBe(2)
+  })
+
   it('honors completed-status scope and reports format readiness counts', () => {
     const completed = addAnime('Completed', 'Completed')
     const watching = addAnime('Watching', 'Watching')

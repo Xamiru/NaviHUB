@@ -5,12 +5,11 @@ import type { HltbTimes } from '@shared/types'
 // HowLongToBeat main/extra/completionist play times for games and VNs.
 //
 // HLTB has no official API; this mirrors what their own site JS does (as of
-// mid-2026 — the endpoint name changes every so often, so expect to re-derive
-// it from their app bundle if lookups start failing):
-//   1. GET  /api/bleed/init?t=<now>  ->  { token, hpKey, hpVal }
-//   2. POST /api/bleed  with x-auth-token/x-hp-key/x-hp-val headers, the hp
-//      pair echoed into the body, and a search payload; 403 means the token
-//      expired -> re-init once and retry.
+// September 2026 — the endpoint name changes every so often, so expect to
+// re-derive it from their app bundle if lookups start failing):
+//   1. GET  /api/search/site/init?t=<now>  ->  { token }
+//   2. POST /api/search/site  with an x-auth-token header and a search payload;
+//      403 means the token expired -> re-init once and retry.
 // The token is bound server-side to IP + User-Agent, so the same UA constant
 // must go out on every request. Every failure path returns null/[] — a missing
 // time estimate must never break an import.
@@ -20,8 +19,6 @@ const UA =
 
 interface Creds {
   token: string
-  hpKey: string
-  hpVal: string
 }
 
 let creds: Creds | null = null
@@ -32,21 +29,22 @@ function baseHeaders(): Record<string, string> {
 
 async function initCreds(): Promise<Creds | null> {
   try {
-    const res = await fetchWithRetry(`${BASE}/api/bleed/init?t=${Date.now()}`, {
+    const res = await fetchWithRetry(`${BASE}/api/search/site/init?t=${Date.now()}`, {
       headers: baseHeaders(),
       timeoutMs: 15_000,
       maxResponseBytes: MAX_API_RESPONSE_BYTES
     })
     if (!res.ok) return null
     const j = (await res.json()) as Partial<Creds>
-    creds = j?.token && j?.hpKey && j?.hpVal
-      ? { token: j.token, hpKey: j.hpKey, hpVal: j.hpVal }
-      : null
+    creds = j?.token ? { token: j.token } : null
     return creds
   } catch {
     return null
   }
 }
+
+// The site's "no filter" value for its include/exclude facet pickers.
+const ANY = { mode: 'include', values: [] }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 async function search(query: string): Promise<any[]> {
@@ -56,8 +54,7 @@ async function search(query: string): Promise<any[]> {
   if (!c) return []
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    // Payload mirrors the site's search component; the hp key/val pair is a
-    // honeypot check that must appear both as headers and as a body field.
+    // Payload mirrors the site's search component.
     const body: Record<string, unknown> = {
       searchType: 'games',
       searchTerms: terms,
@@ -70,8 +67,8 @@ async function search(query: string): Promise<any[]> {
           sortCategory: 'popular',
           rangeCategory: 'main',
           rangeTime: { min: null, max: null },
-          gameplay: { perspective: '', flow: '', genre: '', difficulty: '' },
-          rangeYear: { min: '', max: '' },
+          gameplay: { perspective: ANY, flow: ANY, genre: ANY },
+          year: ANY,
           modifier: ''
         },
         users: { sortCategory: 'postcount' },
@@ -80,18 +77,15 @@ async function search(query: string): Promise<any[]> {
         sort: 0,
         randomizer: 0
       },
-      useCache: true,
-      [c.hpKey]: c.hpVal
+      useCache: true
     }
     try {
-      const res = await fetchWithRetry(`${BASE}/api/bleed`, {
+      const res = await fetchWithRetry(`${BASE}/api/search/site`, {
         method: 'POST',
         headers: {
           ...baseHeaders(),
           'Content-Type': 'application/json',
-          'x-auth-token': c.token,
-          'x-hp-key': c.hpKey,
-          'x-hp-val': c.hpVal
+          'x-auth-token': c.token
         },
         body: JSON.stringify(body),
         timeoutMs: 15_000,
@@ -125,11 +119,14 @@ function norm(s: string): string {
 
 // Results come back popularity-sorted, so the first is already a decent guess;
 // an exact title/alias match (and a release year within ±1) beats popularity.
+// DLC and mods share the search surface ("Hollow Knight - Godmaster"); a result
+// is skipped only when HLTB labels it as something other than a game.
 function pickBest(results: any[], title: string, year: number | null): any | null {
   const target = norm(title)
   let best: any = null
   let bestScore = -1
   for (const g of results) {
+    if (typeof g.game_type === 'string' && g.game_type !== 'game') continue
     let score = 0
     if (norm(String(g.game_name ?? '')) === target) score += 4
     else if (

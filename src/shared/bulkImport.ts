@@ -1,5 +1,5 @@
 // Bulk-import vocabulary — the catalog of "top N" lists the /bulk page offers,
-// as code (the GACHA_GAMES / CHECKLIST_DEFS idiom). Sort `key` strings are
+// as code (the CHECKLIST_DEFS idiom). Sort `key` strings are
 // FROZEN: the main process switches on them and the renderer persists them.
 // Books are deliberately absent: Open Library has no usable "top" lists, and
 // its work ids are strings (every source here crosses IPC as a number).
@@ -22,6 +22,10 @@ export interface BulkSourceCfg {
   genreIds?: Record<string, number>
   // Season filter (Winter/Spring/Summer/Fall + year) — anime only.
   hasSeason: boolean
+  // AniList format and country-of-origin filters. Keys are FROZEN (persisted by
+  // the renderer); anilist.ts maps each to AniList's enum values.
+  formats?: BulkSortCfg[]
+  countries?: BulkSortCfg[]
   maxCount: number
   // Needs the offline games catalog installed before preview works.
   offline?: boolean
@@ -111,10 +115,33 @@ const TMDB_TV_GENRES: Record<string, number> = {
   Western: 37
 }
 
+// 'list' is the user's own AniList list (a username instead of a ranking):
+// new titles import with their AniList status, score and progress.
 const ANILIST_SORTS: BulkSortCfg[] = [
   { key: 'popular', label: 'Most popular' },
   { key: 'rated', label: 'Top rated' },
-  { key: 'trending', label: 'Trending' }
+  { key: 'trending', label: 'Trending' },
+  { key: 'list', label: 'Your AniList list' }
+]
+
+export const ANIME_FORMATS: BulkSortCfg[] = [
+  { key: 'tv', label: 'TV series' },
+  { key: 'movie', label: 'Movies' },
+  { key: 'ova', label: 'OVA and ONA' },
+  { key: 'special', label: 'Specials' }
+]
+
+export const MANGA_FORMATS: BulkSortCfg[] = [
+  { key: 'manga', label: 'Manga' },
+  { key: 'novel', label: 'Light novels' },
+  { key: 'one_shot', label: 'One-shots' }
+]
+
+export const ANILIST_COUNTRIES: BulkSortCfg[] = [
+  { key: 'JP', label: 'Japan' },
+  { key: 'KR', label: 'Korea' },
+  { key: 'CN', label: 'China' },
+  { key: 'TW', label: 'Taiwan' }
 ]
 
 export const BULK_SOURCES: BulkSourceCfg[] = [
@@ -125,6 +152,8 @@ export const BULK_SOURCES: BulkSourceCfg[] = [
     hasGenre: true,
     genres: ANILIST_GENRES,
     hasSeason: true,
+    formats: ANIME_FORMATS,
+    countries: ANILIST_COUNTRIES,
     maxCount: 2000
   },
   {
@@ -134,6 +163,8 @@ export const BULK_SOURCES: BulkSourceCfg[] = [
     hasGenre: true,
     genres: ANILIST_GENRES,
     hasSeason: false,
+    formats: MANGA_FORMATS,
+    countries: ANILIST_COUNTRIES,
     maxCount: 2000
   },
   {

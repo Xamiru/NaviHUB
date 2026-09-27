@@ -1,4 +1,5 @@
 import { musicToolOptions, musicYtDlpArgs, musicFailure, musicAccessKey } from './musicTools'
+import { searchYouTubeMusic } from './youtubeMusic'
 import { execFile } from 'child_process'
 import { BrowserWindow, dialog } from 'electron'
 import { copyFileSync, constants, mkdirSync, existsSync, statSync } from 'fs'
@@ -45,9 +46,25 @@ function ytdlp(args: string[]): Promise<string> {
   ))
 }
 
+/** Official YouTube Music audio first, then its videos; plain YouTube search only if that fails. */
 export async function searchAudio(query: string): Promise<SpotifyAudioCandidate[]> {
   const trimmed = query.trim().slice(0, 300)
   if (!trimmed) return []
+  try {
+    const [songs, videos] = await Promise.all([searchYouTubeMusic(trimmed, 'songs'), searchYouTubeMusic(trimmed, 'videos')])
+    const seen = new Set<string>()
+    const results = [
+      ...songs.slice(0, 6).map((song) => ({ song, official: true })),
+      ...videos.slice(0, 6).map((song) => ({ song, official: false }))
+    ].flatMap(({ song, official }): SpotifyAudioCandidate[] => {
+      if (seen.has(song.videoId)) return []
+      seen.add(song.videoId)
+      const credit = song.artists.join(', ')
+      return [{ url: song.url, title: song.title, channel: credit, duration: song.duration,
+        artist: official ? credit : null, album: official ? song.album : null }]
+    })
+    if (results.length) return results
+  } catch { /* fall back to ordinary YouTube search below */ }
   return parseAudioCandidates(await ytdlp(['--flat-playlist', '--dump-json', '--', `ytsearch8:${trimmed}`]))
 }
 
@@ -116,7 +133,7 @@ export async function inspectAudio(url: string): Promise<import('@shared/types')
 }
 
 /** Batch stderr is shared: associate diagnostics by source identity, never by last line. */
-export function audioSourceInspection(urls: string[]) {
+export function audioSourceInspection(urls: string[], onRow?: (url: string, row: Record<string, any>) => void) {
   const evidence = Object.assign(new Map<string, import('@shared/types').MusicSourceEvidence>(), { errors: new Map<string, string>() })
   const allowed = new Set(urls)
   const accessKey = musicAccessKey()
@@ -144,6 +161,7 @@ export function audioSourceInspection(urls: string[]) {
         const parsed = { ...parseSourceEvidence(url, row), accessKey }
         evidence.set(url, parsed)
         rememberAudioSource(parsed)
+        onRow?.(url, row)
       } catch (error) { note(url, error instanceof Error ? error.message : String(error), 3) }
     },
     finish() {

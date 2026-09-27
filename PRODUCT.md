@@ -59,9 +59,10 @@ progress evidence remain connected instead of being split among unrelated study 
 ## Brand Commitments
 
 - Product name: NaviHUB.
-- The user selected the third theme-study options: Lain **Wired, after dark** (black violet,
-  rose signals, existing Lain icon) and Metal Gear **Solid / Ink** (light paper, dark green ink,
-  red actions, FOXHOUND icon and classic MGS2 artwork). Themes are selectable; Lain is the default.
+- Four selectable themes, Lain the default: Lain **Wired, after dark** (black violet, rose signals,
+  existing Lain icon), Metal Gear **Solid / Ink** (light paper, dark green ink, red actions,
+  FOXHOUND icon and classic MGS2 artwork), Miku **Beyond the blue** (cyan panels, Quicksand) and
+  Twin Peaks **The waiting room** (curtain red, ivory, Bodoni Moda).
 - Home keeps its mixed-media cover wall, with the selected theme artwork and typography.
   Learning surfaces inherit the theme while keeping reading and feedback clear and still.
 - No emoji or decorative Unicode glyphs. Functional state and navigation glyphs follow the existing

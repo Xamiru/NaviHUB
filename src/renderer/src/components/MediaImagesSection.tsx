@@ -87,6 +87,14 @@ export default function MediaImagesSection({
       toast(img.isBackground ? 'Background cleared' : 'Background set', 'success')
     })
 
+  const setAsCover = (img: MediaImage): Promise<void> =>
+    run(async () => {
+      await api.images.setManual('media', m.id, await api.images.fromArt(img.id))
+      await qc.invalidateQueries({ queryKey: qk.media.all })
+      qc.invalidateQueries({ queryKey: qk.images.all })
+      toast('Cover set', 'success')
+    })
+
   const remove = async (imageId: number): Promise<void> => {
     const ok = await confirmDialog('Remove this image? The file is deleted from disk too.', {
       confirmLabel: 'Remove',
@@ -253,7 +261,8 @@ export default function MediaImagesSection({
               label: menuImg.isBackground ? 'Clear background' : 'Set background',
               disabled: busy,
               onSelect: () => toggleBackground(menuImg)
-            }
+            },
+            { label: 'Use as cover', disabled: busy, onSelect: () => setAsCover(menuImg) }
           ]}
         />
       )}
