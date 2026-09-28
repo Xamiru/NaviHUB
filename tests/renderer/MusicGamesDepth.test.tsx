@@ -250,10 +250,10 @@ describe('smart playlist builder', () => {
     const user = userEvent.setup()
     m.saveSmart.mockResolvedValue(8)
     const view = smartPage()
-    await user.click(await screen.findByRole('button', { name: 'Unheard soundtracks' }))
+    await user.click(await screen.findByRole('button', { name: 'Study mix' }))
     await waitFor(() =>
       expect(m.preview).toHaveBeenCalledWith(
-        expect.objectContaining({ soundtrack: 'linked', playState: 'unplayed' }),
+        expect.objectContaining({ tags: ['study', 'instrumental'] }),
         0
       )
     )
@@ -265,8 +265,8 @@ describe('smart playlist builder', () => {
       expect(m.saveSmart).toHaveBeenCalledWith(
         null,
         expect.objectContaining({
-          title: 'Unheard soundtracks',
-          rules: expect.objectContaining({ soundtrack: 'linked', playState: 'unplayed' })
+          title: 'Study mix',
+          rules: expect.objectContaining({ tags: ['study', 'instrumental'] })
         })
       )
     )

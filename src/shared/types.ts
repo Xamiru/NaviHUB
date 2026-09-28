@@ -428,6 +428,8 @@ export interface ThemeSongFilter {
   favoriteOnly?: boolean | null // hearted songs only
   // Songs with no audio at all can't be queued; the page hides them by default.
   playableOnly?: boolean | null
+  // Songs this person performed (the artist page's career chronology).
+  artistId?: number | null
 }
 
 // Unfiltered library totals for the Songs page header ("N of M").
@@ -2892,6 +2894,18 @@ export interface MusicLyrics {
   source: 'file' | 'embedded' | 'lrclib' | null
 }
 
+// Bulk lyrics lookup for tracks with nothing stored (manual, and after every download run).
+export interface MusicLyricsStatus {
+  running: boolean
+  cancelled: boolean
+  done: number
+  total: number
+  found: number
+  missing: number
+  failed: number
+  error: string | null
+}
+
 export interface MusicDecade {
   decade: number | null // null = no usable year
   albumCount: number
@@ -3389,6 +3403,7 @@ export type TaskKind =
   | 'mangaRescan'
   | 'videoScan'
   | 'musicArt'
+  | 'musicLyrics'
   | 'dictImport'
   | 'prepDeck'
   | 'coreDeck'
@@ -4335,6 +4350,7 @@ export type FootballSource =
   | 'api-football'
   | 'statsbomb'
   | 'wyscout'
+  | 'transfermarkt'
 export type FootballExternalProvider = 'fotmob' | 'website'
 
 export interface FootballCompetition {
@@ -4353,6 +4369,12 @@ export interface FootballCompetition {
   matchCount: number
   favorite: boolean
   latestSeason: string | null
+  goalCount: number
+  imagePath: string | null
+  /** Winner of the most recent season with a verified champion. */
+  holder: FootballTeamSummary | null
+  /** Every club tied on the most verified titles. */
+  titleLeaders: { teams: FootballTeamSummary[]; titles: number } | null
 }
 
 export interface FootballEra {
@@ -4397,6 +4419,8 @@ export interface FootballTeamSummary {
   country: string | null
   isNational: boolean
   imagePath: string | null
+  /** Official colours from reference data; the renderer falls back to its curated map. */
+  colors: { primary: string; secondary: string | null } | null
   favorite: boolean
 }
 
@@ -4510,11 +4534,65 @@ export interface FootballStanding {
   points: number
   deduction: number
   note: string | null
+  /** Order in the stored table: official rank when supplied, otherwise points, goal difference, goals. */
+  position?: number
+  teamCount?: number
+  /** Derived from the archive: what the team played the following season. */
+  fate?: FootballSeasonFate | null
+}
+
+export type FootballSeasonFate =
+  | 'champions-league'
+  | 'europa-league'
+  | 'conference-league'
+  | 'relegated'
+
+export interface FootballTransfer {
+  id: number
+  date: string | null
+  season: string | null
+  from: FootballTeamSummary | null
+  to: FootballTeamSummary | null
+  fromName: string
+  toName: string
+  /** Euros; null for free, loan or undisclosed moves. */
+  fee: number | null
+  marketValue: number | null
+}
+
+export interface FootballHeadToHead {
+  opponent: FootballTeamSummary
+  played: number
+  won: number
+  drawn: number
+  lost: number
+  goalsFor: number
+  goalsAgainst: number
+}
+
+export interface FootballSeasonGoals {
+  seasonId: number
+  seasonLabel: string
+  competitionKey: FootballCompetitionKey
+  goals: number
+}
+
+export interface FootballOnThisDay {
+  match: FootballMatchSummary
+  events: FootballMatchEvent[]
+}
+
+export interface FootballJournalStats {
+  logged: number
+  thisYear: number
+  averageRating: number | null
+  mostWatched: FootballTeamSummary | null
 }
 
 export interface FootballHonour {
   id: number
   competitionId: number
+  competitionName: string
   seasonId: number | null
   seasonLabel: string | null
   team: FootballTeamSummary | null
@@ -4616,6 +4694,10 @@ export interface FootballMatchDetail extends FootballMatchSummary {
   city: string | null
   attendance: number | null
   referee: string | null
+  homeFormation: string | null
+  awayFormation: string | null
+  homeManager: string | null
+  awayManager: string | null
   lineupCoverage: FootballCoverageState
   lineups: FootballLineupEntry[]
   events: FootballMatchEvent[]
@@ -4656,12 +4738,16 @@ export interface FootballCompetitionDetail extends FootballCompetition {
 
 export interface FootballTeamDetail extends FootballTeamSummary {
   foundedYear: number | null
+  venue: string | null
+  venueCapacity: number | null
   bio: string | null
   enrichmentState: 'not_requested' | 'queued' | 'ready' | 'error'
   tenures: FootballTenure[]
   honours: FootballHonour[]
   matches: FootballMatchSummary[]
   seasonRecords: FootballStanding[]
+  scorers: FootballTopScorer[]
+  rivals: FootballHeadToHead[]
   media: FootballMedia[]
   externalLinks: FootballExternalLink[]
   article: FootballArticle | null
@@ -4669,22 +4755,44 @@ export interface FootballTeamDetail extends FootballTeamSummary {
 
 export interface FootballPersonDetail extends FootballPersonSummary {
   birthDate: string | null
+  position: string | null
+  heightCm: number | null
+  birthPlace: string | null
+  foot: string | null
+  transfers: FootballTransfer[]
   deathDate: string | null
   bio: string | null
   tenures: FootballTenure[]
   honours: FootballHonour[]
   appearances: FootballMatchSummary[]
+  goalsBySeason: FootballSeasonGoals[]
+  goalTotal: number
+  matchTotal: number
+  scoredIn: Array<{ match: FootballMatchSummary; goals: number }>
   media: FootballMedia[]
   externalLinks: FootballExternalLink[]
   article: FootballArticle | null
 }
 
+/** When each setup step last finished (ISO), or null when it never has. */
+export type FootballSetupState = Record<FootballSetupStep, string | null>
+
+/** Freshness of the keyless current-season fixtures and results. */
+export interface FootballFixturesState {
+  updatedAt: string | null
+  latestResult: string | null
+}
+
 export interface FootballOverview {
   installed: boolean
+  setup: FootballSetupState
+  fixtures: FootballFixturesState
   competitions: FootballCompetition[]
   currentMatches: FootballMatchSummary[]
   recentJournal: FootballMatchSummary[]
   recentMedia: FootballMedia[]
+  onThisDay: FootballOnThisDay | null
+  journal: FootballJournalStats
   totals: { seasons: number; matches: number; teams: number; people: number }
   coverage: FootballCoverage[]
   lastSyncAt: string | null
@@ -4748,7 +4856,19 @@ export interface FootballQuota {
   backlog: number
 }
 
-export type FootballSyncKind = 'history' | 'current' | 'deepPack' | 'playerQuizPack' | 'enrich'
+/** The three steps of Football setup, in the order they run. */
+export type FootballSetupStep = 'history' | 'detail' | 'pictures'
+
+export type FootballSyncKind =
+  | 'setup'
+  | 'fixtures'
+  | 'history'
+  | 'current'
+  | 'deepPack'
+  | 'playerQuizPack'
+  | 'enrich'
+  | 'artwork'
+  | 'transfermarkt'
 
 export interface FootballSyncRequest {
   kind: FootballSyncKind
@@ -4757,6 +4877,8 @@ export interface FootballSyncRequest {
   seasonKey?: string
   entityKind?: 'team' | 'person'
   entityId?: number
+  /** For `setup`: the steps to run; omitted means every step not yet completed. */
+  setupSteps?: FootballSetupStep[]
 }
 
 export interface FootballSyncStatus {
@@ -4772,6 +4894,8 @@ export interface FootballSyncStatus {
   imported: number
   conflicts: number
   message: string | null
+  /** Set while a `setup` run is going: which of its steps is running. */
+  setupStep: { step: FootballSetupStep; index: number; count: number } | null
 }
 
 export interface FootballConflict {
@@ -4787,6 +4911,23 @@ export interface FootballConflict {
   status: 'open' | 'resolved' | 'ignored'
   resolution: string | null
   createdAt: string
+  /** For an open person identity conflict: the quarantined person and everyone sharing a name. */
+  subject: FootballConflictCandidate | null
+  candidates: FootballConflictCandidate[]
+}
+
+export interface FootballConflictCandidate {
+  id: number
+  name: string
+  teams: string[]
+  firstYear: number | null
+  lastYear: number | null
+}
+
+export interface FootballIdentityRepair {
+  merged: number
+  removed: number
+  resolved: number
 }
 
 export type FootballConflictResolution =
@@ -4805,6 +4946,14 @@ export interface FootballSyncOverview {
   conflicts: FootballConflict[]
   playerQuizEligible: number
   playerQuizTarget: number
+  setup: FootballSetupState
+  artwork: {
+    competitionsWithLogo: number
+    teams: number
+    teamsWithCrest: number
+    teamsWithColors: number
+    peopleWithPortrait: number
+  }
   lastRuns: Array<{
     id: number
     kind: FootballSyncKind
@@ -4943,10 +5092,6 @@ export interface VnTagResult { id: string; name: string }
 export interface VnRelease { id: string; title: string; released: string | null; languages: { lang: string; mtl: boolean }[]; platforms: string[]; publishers: string[]; official: boolean; patch: boolean; completeness: string | null }
 export interface VnEditionDetail { title: string; sourceId: number | null; languages: string[]; platforms: string[]; fetchedAt: string | null; releases: VnRelease[]; selected: VnRelease | null; notes: string }
 
-export type SoundtrackOwner = { kind: 'media' | 'wrestler' | 'album' | 'track'; id: number }
-export interface SoundtrackTarget extends SoundtrackOwner { title: string; detail: string; mediaType: MediaType | null; albumId: number | null }
-export interface SoundtrackInput { music: { kind: 'album' | 'track'; id: number }; target: { kind: 'media' | 'wrestler'; id: number }; label: string; notes: string }
-export interface SoundtrackLink extends SoundtrackInput { id: number; musicTitle: string; albumId: number; targetTitle: string; mediaType: MediaType | null }
 
 // ---- Personal game runs and listening collections ----
 export type GameRunKind = 'first' | 'replay' | 'newGamePlus'
@@ -4995,7 +5140,6 @@ export interface MusicSmartRules {
   tags: string[]
   tagMode: 'all' | 'any'
   artist: string
-  soundtrack: 'any' | 'linked' | 'unlinked'
   order: 'title' | 'leastPlayed' | 'recent' | 'oldestPlayed'
   maxTracks: number
 }

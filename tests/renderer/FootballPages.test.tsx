@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import FootballExternalLinks from '@/components/football/FootballExternalLinks'
 import { FootballCoverageStrip } from '@/components/football/FootballCommon'
 import FootballTeamPage from '@/pages/FootballTeamPage'
+import FootballSyncPage from '@/pages/FootballSyncPage'
 
 const apiMock = vi.hoisted(() => ({
   football: {
@@ -40,14 +41,19 @@ describe('Football pages', () => {
       country: 'England',
       isNational: false,
       imagePath: null,
+      colors: null,
       favorite: false,
       foundedYear: 1900,
+      venue: null,
+      venueCapacity: null,
       bio: null,
       enrichmentState: 'not_requested',
       tenures: [],
       honours: [],
       matches: [],
       seasonRecords: [],
+      scorers: [],
+      rivals: [],
       media: [],
       externalLinks: [],
       article: null
@@ -65,6 +71,32 @@ describe('Football pages', () => {
     expect(await screen.findByRole('heading', { name: 'Archive FC' })).toBeInTheDocument()
     await waitFor(() => expect(apiMock.football.startSync).not.toHaveBeenCalled())
     expect(screen.getByRole('button', { name: 'Fetch reference' })).toBeInTheDocument()
+  })
+
+  it('shows setup as three ordered steps and continues with the unfinished ones in one run', async () => {
+    const user = userEvent.setup()
+    apiMock.football.syncOverview.mockResolvedValue({
+      installed: true,
+      setup: { history: '2026-09-28T10:00:00.000Z', detail: null, pictures: null },
+      status: { state: 'idle', kind: null, done: 0, total: 0, message: null, setupStep: null },
+      quota: { remaining: 100, limit: 100, backlog: 0 },
+      entitlements: [],
+      coverage: [],
+      conflicts: [],
+      playerQuizEligible: 0,
+      playerQuizTarget: 250,
+      artwork: { competitionsWithLogo: 0, teams: 10, teamsWithCrest: 2, teamsWithColors: 2, peopleWithPortrait: 0 },
+      lastRuns: []
+    })
+    apiMock.football.startSync.mockResolvedValue({})
+    renderWithQuery(<MemoryRouter><FootballSyncPage /></MemoryRouter>)
+
+    expect(await screen.findByText('Match history')).toBeInTheDocument()
+    expect(screen.getByText('Done 2026-09-28')).toBeInTheDocument()
+    expect(screen.getByText('2 of 3 steps left.', { exact: false })).toBeInTheDocument()
+    expect(screen.queryByText(/Resolution queue/)).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Continue setup' }))
+    expect(apiMock.football.startSync).toHaveBeenCalledWith({ kind: 'setup' })
   })
 
   it('provides labelled external-link creation and preserves source-scoped coverage labels', async () => {

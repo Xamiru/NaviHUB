@@ -5,7 +5,7 @@ import PageStatus from '../components/PageStatus'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import type { FootballCompetition } from '@shared/types'
-import { FootballCompetitionMark, FootballFlag } from '../components/football/FootballCommon'
+import { FootballCompetitionMark, FootballTeamMark, footballCompetitionStyle } from '../components/football/FootballCommon'
 
 const GROUPS: Array<{ scope: FootballCompetition['scope']; title: string; description: string }> = [
   { scope: 'domestic', title: 'Domestic leagues', description: 'Four continuous top-flight histories' },
@@ -31,13 +31,15 @@ export default function FootballCompetitionsPage() {
         return (
           <section key={group.scope} className="mb-11">
             <div className="mb-4 flex items-end justify-between gap-4 border-b border-line-subtle pb-3"><h2 className="text-2xl font-semibold tracking-tight text-ink">{group.title}</h2><p className="text-xs text-ink-muted">{group.description}</p></div>
-            <div className="grid gap-px overflow-hidden border border-line-subtle bg-line-subtle md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
               {competitions.map((competition) => (
-                <Link key={competition.key} to={`/football/competition/${competition.key}`} className="group min-h-52 bg-surface-canvas p-5 transition-colors hover:bg-surface-raised">
-                  <span className="flex items-start justify-between gap-4"><span className="flex items-center gap-3"><FootballFlag competitionKey={competition.key} /><FootballCompetitionMark competitionKey={competition.key} /></span><span className="text-right text-xs tabular-nums text-ink-muted">{competition.seasonCount} editions<br />{competition.matchCount.toLocaleString()} matches</span></span>
-                  <span className="mt-8 block text-xl font-semibold text-ink group-hover:text-signal-link">{competition.name}</span>
-                  <span className="mt-2 block text-sm leading-relaxed text-ink-muted">{competition.lineageNote ?? `${competition.country ?? 'International'} history from ${competition.startYear ?? 'the first sourced edition'}.`}</span>
-                  {competition.latestSeason && <span className="mt-4 block text-xs text-ink-secondary">Latest chapter / {competition.latestSeason}</span>}
+                <Link key={competition.key} to={`/football/competition/${competition.key}`} className="group relative block min-h-48 overflow-hidden rounded-lg border border-line-subtle bg-surface-panel/70 p-5 transition-colors hover:border-line-strong" style={footballCompetitionStyle(competition.key)}>
+                  <span className="absolute inset-x-0 top-0 h-1 bg-[rgb(var(--football-c))]" aria-hidden="true" />
+                  <span className="absolute -right-8 -top-8 h-32 w-32 rounded-full bg-[rgb(var(--football-c)/0.10)]" aria-hidden="true" />
+                  <span className="relative flex items-start justify-between gap-4"><FootballCompetitionMark competitionKey={competition.key} imagePath={competition.imagePath} /><span className="text-xs tabular-nums text-ink-muted">{competition.seasonCount} {competition.format === 'league' ? 'seasons' : 'editions'} / {competition.matchCount.toLocaleString()} matches</span></span>
+                  <span className="relative mt-6 block text-xl font-semibold text-ink group-hover:text-signal-link">{competition.name}</span>
+                  <span className="relative mt-2 block text-sm leading-relaxed text-ink-muted">{competition.lineageNote ?? `${competition.country ?? 'International'} history from ${competition.startYear ?? 'the first sourced edition'}.`}</span>
+                  {competition.holder && <span className="relative mt-4 flex items-center gap-2 text-sm text-ink"><FootballTeamMark team={competition.holder} size="xs" />{competition.holder.name}<span className="text-xs text-ink-muted">holder{competition.latestSeason ? ` / ${competition.latestSeason}` : ''}</span></span>}
                 </Link>
               ))}
             </div>

@@ -2,17 +2,24 @@ import { existsSync, readFileSync } from 'fs'
 import { getSqlite } from './db/connection'
 import { absoluteMediaPath } from './files'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
+import { logWarn } from './logBus'
 import { stripAlbumYearPrefix } from './musicSpotifyMatch'
+import * as tasks from './tasks'
+import { cooperativeGate, type PauseGate } from './taskControls'
+import { runWithActivitySignal } from './activityContext'
 import { formatLrc, parseLrc } from '@shared/lyrics'
-import type { MusicLyrics } from '@shared/types'
+import type { MusicLyrics, MusicLyricsStatus } from '@shared/types'
 
 // Lyrics for library tracks. Local always wins: a sidecar .lrc file beside the
 // audio is read on every request; embedded tags and LRCLIB are looked up once,
-// on demand, and stored so the lyrics stay available offline.
+// on demand, and stored so the lyrics stay available offline. A bulk sweep
+// fills every track with nothing stored; it also runs after each download run.
 
 const LRCLIB = 'https://lrclib.net/api'
 const LRCLIB_UA = 'NaviHUB/0.2 (https://github.com/Xamiru/NaviHUB)'
 const DURATION_TOLERANCE_S = 5
+// Consecutive lookup failures after which a sweep treats the service as unreachable.
+const MAX_CONSECUTIVE_FAILURES = 3
 
 interface TrackInfo {
   id: number
@@ -192,4 +199,138 @@ export async function fetchLyrics(
     )
     .run(trackId, result.state, result.synced, result.plain, result.source)
   return getLyrics(trackId)
+}
+
+// ---------------------------------------------------------------------------
+// Bulk sweep
+// ---------------------------------------------------------------------------
+
+const sweepState: MusicLyricsStatus = {
+  running: false,
+  cancelled: false,
+  done: 0,
+  total: 0,
+  found: 0,
+  missing: 0,
+  failed: 0,
+  error: null
+}
+let sweepAgain = false
+
+export function getLyricsStatus(): MusicLyricsStatus {
+  return { ...sweepState }
+}
+
+let gate: PauseGate | null = null
+
+export function cancelLyricsFetch(): void {
+  gate?.controls.cancel?.()
+}
+
+/** Looks up every track with nothing stored. Failed lookups stay unchecked for the next sweep. */
+export async function fetchMissingLyrics(
+  readEmbedded: EmbeddedLyricsReader = realEmbeddedReader
+): Promise<MusicLyricsStatus> {
+  if (sweepState.running) throw new Error('Lyrics download already running')
+  let handle: tasks.TaskHandle
+  const runGate = cooperativeGate(
+    () => handle.progress({ state: 'paused' }),
+    () => handle.progress({ state: 'running' })
+  )
+  gate = runGate
+  return tasks.runTask(
+    {
+      kind: 'musicLyrics',
+      label: 'Downloading missing lyrics',
+      route: '/music',
+      controls: runGate.controls,
+      project: () => ({ done: sweepState.done, total: sweepState.total })
+    },
+    (h) => {
+      handle = h
+      return runWithActivitySignal(runGate.signal, () => fetchMissingLyricsInner(runGate, readEmbedded))
+    }
+  )
+}
+
+/** Downloads added tracks: sweep now, or once more when the running sweep finishes. */
+export function queueLyricsSweep(): void {
+  if (sweepState.running) {
+    sweepAgain = true
+    return
+  }
+  void fetchMissingLyrics().catch((error) => {
+    logWarn('task', `lyrics sweep failed: ${error instanceof Error ? error.message : String(error)}`)
+  })
+}
+
+function uncheckedTrackIds(): number[] {
+  return (
+    getSqlite()
+      .prepare(
+        `SELECT t.id FROM music_track t
+         LEFT JOIN music_track_lyrics l ON l.track_id = t.id
+         WHERE l.track_id IS NULL ORDER BY t.id`
+      )
+      .all() as { id: number }[]
+  ).map((row) => row.id)
+}
+
+function trackExists(trackId: number): boolean {
+  return !!getSqlite().prepare('SELECT 1 FROM music_track WHERE id = ?').get(trackId)
+}
+
+async function fetchMissingLyricsInner(
+  runGate: PauseGate,
+  readEmbedded: EmbeddedLyricsReader
+): Promise<MusicLyricsStatus> {
+  Object.assign(sweepState, {
+    running: true,
+    cancelled: false,
+    done: 0,
+    total: 0,
+    found: 0,
+    missing: 0,
+    failed: 0,
+    error: null
+  })
+  // Sidecar and failed tracks stay unchecked in the DB; this set keeps one run from retrying them.
+  const attempted = new Set<number>()
+  let failures = 0
+  try {
+    do {
+      sweepAgain = false
+      const ids = uncheckedTrackIds().filter((id) => !attempted.has(id))
+      sweepState.total += ids.length
+      for (const id of ids) {
+        if (runGate.paused) await runGate.wait()
+        if (runGate.cancelled) break
+        attempted.add(id)
+        try {
+          const result = await fetchLyrics(id, readEmbedded)
+          failures = 0
+          if (result.state === 'missing') sweepState.missing += 1
+          else sweepState.found += 1
+        } catch (error) {
+          if (runGate.cancelled) break
+          if (trackExists(id)) {
+            sweepState.failed += 1
+            failures += 1
+            if (failures >= MAX_CONSECUTIVE_FAILURES) {
+              const reason = error instanceof Error ? error.message : String(error)
+              sweepState.error = `Lyrics download stopped: ${reason}`
+              break
+            }
+          }
+        }
+        sweepState.done += 1
+      }
+    } while (sweepAgain && !runGate.cancelled && !sweepState.error)
+  } finally {
+    sweepState.running = false
+    sweepState.cancelled = runGate.cancelled
+    if (gate === runGate) gate = null
+  }
+  if (sweepState.error) throw new Error(sweepState.error)
+  return { ...sweepState }
 }

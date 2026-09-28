@@ -20,7 +20,9 @@ export {
   markWatched,
   markWatchedIn,
   rescan,
-  rescanIn
+  rescanIn,
+  setProgressUndo,
+  takeProgressUndo
 } from './scan'
 export { detectTools } from './ffmpeg'
 

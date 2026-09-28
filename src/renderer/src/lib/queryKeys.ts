@@ -39,11 +39,6 @@ const entity = (ns: EntityNamespace) => ({
 })
 
 export const qk = {
-  soundtracks: {
-    all: ['soundtracks'] as const,
-    list: (kind: string, id: number) => ['soundtracks', 'list', kind, id] as const,
-    search: (kind: string, query: string) => ['soundtracks', 'search', kind, query] as const
-  },
   vnExplore: {
     all: ['vnExplore'] as const,
     edition: (id: number) => ['vnExplore', 'edition', id] as const
@@ -364,7 +359,8 @@ export const qk = {
     spotifyQueue: ['music', 'spotifyQueue'] as const,
     spotifyEntityState: (kind: 'artist' | 'album', id: number) =>
       ['music', 'spotifyEntityState', kind, id] as const,
-    artStatus: ['music', 'artStatus'] as const
+    artStatus: ['music', 'artStatus'] as const,
+    lyricsStatus: ['music', 'lyricsStatus'] as const
   },
   wrestling: {
     // Wiki + personal layer. Ratings/favorites are denormalized into every

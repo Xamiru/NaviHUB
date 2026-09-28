@@ -25,13 +25,6 @@ const api: NaviApi = {
     preview: (rules, page) => ipcRenderer.invoke('musicSmart:preview', rules, page),
     queue: (id) => ipcRenderer.invoke('musicSmart:queue', id)
   },
-  soundtracks: {
-    list: (owner) => ipcRenderer.invoke('soundtracks:list', owner),
-    search: (kind, query) => ipcRenderer.invoke('soundtracks:search', kind, query),
-    save: (id, input) => ipcRenderer.invoke('soundtracks:save', id, input),
-    remove: (id) => ipcRenderer.invoke('soundtracks:remove', id),
-    tracks: (id) => ipcRenderer.invoke('soundtracks:tracks', id)
-  },
   vnExplore: {
     discover: (input) => ipcRenderer.invoke('vnExplore:discover', input),
     tags: (query) => ipcRenderer.invoke('vnExplore:tags', query),
@@ -498,6 +491,9 @@ const api: NaviApi = {
     decades: () => ipcRenderer.invoke('music:decades'),
     lyrics: (trackId) => ipcRenderer.invoke('music:lyrics', trackId),
     fetchLyrics: (trackId) => ipcRenderer.invoke('music:fetchLyrics', trackId),
+    lyricsFetchMissing: () => ipcRenderer.invoke('music:lyricsFetchMissing'),
+    lyricsCancel: () => ipcRenderer.invoke('music:lyricsCancel'),
+    lyricsStatus: () => ipcRenderer.invoke('music:lyricsStatus'),
     artist: (id) => ipcRenderer.invoke('music:artist', id),
     album: (id) => ipcRenderer.invoke('music:album', id),
     tracks: (filter) => ipcRenderer.invoke('music:tracks', filter),
@@ -649,7 +645,8 @@ const api: NaviApi = {
     resumeSync: () => ipcRenderer.invoke('football:resumeSync'),
     cancelSync: () => ipcRenderer.invoke('football:cancelSync'),
     resolveConflict: (id, resolution) =>
-      ipcRenderer.invoke('football:resolveConflict', id, resolution)
+      ipcRenderer.invoke('football:resolveConflict', id, resolution),
+    repairIdentities: () => ipcRenderer.invoke('football:repairIdentities')
   },
   player: {
     publishState: (snapshot) => ipcRenderer.invoke('player:publishState', snapshot),

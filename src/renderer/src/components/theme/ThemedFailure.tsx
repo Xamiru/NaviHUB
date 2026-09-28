@@ -15,7 +15,7 @@ export default function ThemedFailure({
   retryLabel?: string
   className?: string
 }) {
-  const { theme } = useAppTheme()
+  const { theme, variant } = useAppTheme()
   const navigate = useNavigate()
 
   if (theme === 'metal-gear') {
@@ -31,11 +31,43 @@ export default function ThemedFailure({
     )
   }
 
-  const art = { lain: FX_ART.lainSignalLost, miku: FX_ART.mikuHachunePanic, 'twin-peaks': FX_ART.peaksWhiteHorse }[theme]
+  if (theme === 'seinfeld') {
+    return (
+      <div className={`themed-failure themed-failure-seinfeld ${className}`} role="alert">
+        <img className="themed-failure-art" src={FX_ART.sfSoupNazi} alt="" />
+        <div className="themed-failure-copy">
+          <p className="themed-failure-title">No soup for you!</p>
+          <p className="mt-1 text-sm text-ink-muted">{message}</p>
+          <button className="btn-primary mt-4 self-start" onClick={onRetry} aria-label={retryLabel}>
+            Next!
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // JoJo blames the active part's villain.
+  const villain =
+    variant === 'diamond-is-unbreakable'
+      ? { art: FX_ART.jjDiuVillain, title: 'Killer Queen has already touched it.' }
+      : variant === 'golden-wind'
+        ? { art: FX_ART.jjGwVillain, title: 'King Crimson erased it.' }
+        : { art: FX_ART.jjScVillain, title: 'It was me, DIO!' }
+  const art = {
+    lain: FX_ART.lainSignalLost,
+    miku: FX_ART.mikuHachunePanic,
+    'twin-peaks': FX_ART.peaksWhiteHorse,
+    berserk: FX_ART.bzEclipse,
+    'one-piece': FX_ART.opTsuzuku,
+    jojo: villain.art
+  }[theme]
   const title = {
     lain: 'Connection to the Wired lost.',
     miku: "That didn't load.",
-    'twin-peaks': 'It is happening again.'
+    'twin-peaks': 'It is happening again.',
+    berserk: 'The Eclipse has come.',
+    'one-piece': 'To be continued...',
+    jojo: villain.title
   }[theme]
   return (
     <div className={`themed-failure themed-failure-${theme} ${className}`} role="alert">

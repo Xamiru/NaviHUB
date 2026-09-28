@@ -27,6 +27,7 @@ import { get as getSetting } from './repos/settingsRepo'
 import { absoluteMediaPath, downloadImages, musicRootDir } from './files'
 import { fetchWithRetry } from './http'
 import { indexMusicFiles } from './music'
+import { queueLyricsSweep } from './musicLyrics'
 import {
   claimMusicMaintenance,
   musicMaintenanceOwner,
@@ -89,7 +90,8 @@ import type {
 
 function spotifyStagingRoot(): string { return join(musicRootDir(), '.spotdl', 'navihub-downloads') }
 
-export function recoverSpotifyOutputs(root = musicRootDir()): string[] {
+/** `only` limits the move to files of finished runs, given as staged output bases without an extension. */
+export function recoverSpotifyOutputs(root = musicRootDir(), only?: string[]): string[] {
   const staging = join(root, '.navihub-downloads')
   const manifest = join(staging, 'pending-index.json')
   let paths: string[] = []
@@ -105,6 +107,7 @@ export function recoverSpotifyOutputs(root = musicRootDir()): string[] {
       if (!entry.isFile() || !['.opus', '.m4a', '.mp3', '.flac', '.ogg', '.wav'].includes(extname(abs))) continue
       // yt-dlp's metadata and thumbnail steps write `<name>.temp.<ext>` before replacing the output.
       if (/\.temp\.[^.]+$/.test(entry.name)) continue
+      if (only && !only.some((base) => abs.startsWith(`${base}.`))) continue
       const rel = relative(origin, abs)
       if (rel.split(/[\\/]/).length < 3) continue
       let target = join(root, rel)
@@ -134,10 +137,10 @@ export function discardStagedOutputs(base: string): void {
   }
 }
 
-async function indexSpotifyOutputs(owner: string): Promise<void> {
+async function indexSpotifyOutputs(owner: string, only?: string[]): Promise<void> {
   const started = Date.now()
   recoverProvenanceRenames(musicRootDir())
-  const paths = recoverSpotifyOutputs()
+  const paths = recoverSpotifyOutputs(musicRootDir(), only)
   spotifyRepo.markSourceArtifactsIndexing(paths)
   const jobId = queueRun?.owner === owner ? queueRun.id : null
   const alive = () => !jobId || !abandonedRuns.has(jobId)
@@ -380,6 +383,9 @@ let status: MusicDownloadEvent | null = null
 // A yt-dlp child that prints nothing for this long is stuck, not slow: every
 // extraction and single-track transfer normally reports within seconds.
 const AUDIO_STALL_MS = 10 * 60_000
+// Finished downloads join the library in small groups rather than once per 100-song batch.
+const LIBRARY_FLUSH_SONGS = 10
+const LIBRARY_FLUSH_MS = 20_000
 const abandonedRuns = new Set<string>()
 let inspectionPromise: Promise<SpotifyEntityInspection> | null = null
 let inspectionCancelled = false
@@ -1609,6 +1615,8 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
     // All children and finalization have settled. Paused work retains durable
     // checkpoints, while manual recovery can safely use the library gate.
     releaseMusicMaintenance(run.owner)
+    // New tracks get their lyrics now so they are already stored offline.
+    if (resolvedTracks > 0) queueLyricsSweep()
   }
 }
 
@@ -1973,118 +1981,150 @@ async function acquireLockedSongs(input: AcquireInput): Promise<number> {
   const started = Date.now()
   const workers = musicToolOptions().workers
   const running = () => !abandonedRuns.has(jobId) && (queueRun?.owner !== owner || queueRun.intent === 'running')
-  const sourceKey = (raw: Record<string, unknown>) => `${String(raw.song_id)}:${String(raw.download_url ?? '')}`
-  const savedById = new Map(songs.map((raw) => [sourceKey(raw), spotifyRepo.sourcesForSpotifyId(String(raw.song_id))
-    .filter((ref) => !ref.manual || ref.manual === raw.download_url)
-    .map((ref) => spotifyRepo.sourceEvidence(ref.kind, ref.id)).find((proof) => proof && (!raw.download_url || proof.evidence.url === raw.download_url))]))
-  const unresolved = songs.filter((raw) => !raw.download_url && !savedById.get(sourceKey(raw)))
-  const urls = new Map<string, string>()
-  const lookupErrors = new Map<string, string>()
-  input.onProgress?.(0, songs.length, 'Finding recordings on YouTube Music')
-  await runPool(unresolved, workers, async (raw) => {
-    if (!running()) return
-    const id = String(raw.song_id)
-    try {
-      const best = await findYouTubeMusicSource(raw, input.broader)
-      if (best) urls.set(id, best.source.url)
-      else lookupErrors.set(id, 'Needs review: YouTube Music has no matching recording; choose one')
-    } catch (error) {
-      lookupErrors.set(id, musicFailure('Lookup', 'YouTube Music search', error instanceof Error ? error.message : String(error)))
-    }
-  })
-  if (!running()) return 1
+  // One token per source file: two Spotify songs that resolve to one source share its
+  // download and both link to it after indexing.
+  const artifacts = new Map<string, string>()
+  // Each claim settles with the download's failure message, or null.
+  const claimedSources = new Map<string, Promise<string | null>>()
+  const finished: string[] = []
+  let lastFlush = Date.now()
+  let indexing: Promise<void> = Promise.resolve()
+  const flushFinished = () => {
+    const bases = finished.splice(0)
+    lastFlush = Date.now()
+    indexing = indexing.then(() => indexSpotifyOutputs(owner, bases)).catch((error) =>
+      logWarn('proc', `Finished downloads were not added to the library yet: ${error instanceof Error ? error.message : String(error)}`))
+  }
+  const embedsOpusCovers = await ytdlpEmbedsOpusCovers()
   const tempDir = mkdtempSync(join(tmpdir(), 'navihub-acquire-'))
-  try {
-    const infoFiles = new Map<string, string>()
-    const toInspect = songs.flatMap((raw) => {
-      const url = raw.download_url ?? savedById.get(sourceKey(raw))?.evidence.url ?? urls.get(String(raw.song_id))
-      if (typeof url !== 'string') return []
-      try { return [canonicalAudioSource(url)] } catch { return [] }
-    })
-    input.onProgress?.(0, songs.length, 'Checking the chosen recordings')
-    const inspected = await inspectAudioSourcesInQueue([...new Set(toInspect)], owner, jobId, (url, row) => {
-      const file = join(tempDir, `${infoFiles.size}.info.json`)
-      writeFileSync(file, JSON.stringify(row), { mode: 0o600 })
-      infoFiles.set(url, file)
-    })
-    if (!running()) return 1
-    const downloads: { raw: Record<string, unknown>; url: string; format: 'opus' | 'm4a' | 'mp3'; infoFile: string }[] = []
-    for (const raw of songs) {
-      if (!running()) break
-      const id = String(raw.song_id)
-      const references = spotifyRepo.sourcesForSpotifyId(id).filter((ref) => !ref.manual || ref.manual === raw.download_url)
+  let done = 0
+  input.onProgress?.(0, songs.length, null)
+  const fail = (references: ReturnType<typeof spotifyRepo.sourcesForSpotifyId>, message: string) => {
+    failures++
+    for (const ref of references) spotifyRepo.setTrackDownloadErrors(ref.kind, new Map([[ref.id, message]]))
+  }
+  const failTransfer = (id: string, url: string, message: string) => {
+    failures++
+    for (const ref of spotifyRepo.sourcesForSpotifyId(id)) {
+      if (ref.manual && ref.manual !== url) continue
+      spotifyRepo.setTrackDownloadErrors(ref.kind, new Map([[ref.id, message]]))
+      spotifyRepo.invalidateSourceAccess(ref.kind, ref.id)
+    }
+  }
+
+  /** One song from search to finished file, so files arrive while later songs are still being found. */
+  async function acquireOne(raw: Record<string, unknown>, index: number): Promise<void> {
+    const id = String(raw.song_id)
+    const references = spotifyRepo.sourcesForSpotifyId(id).filter((ref) => !ref.manual || ref.manual === raw.download_url)
+    const saved = references.map((ref) => spotifyRepo.sourceEvidence(ref.kind, ref.id))
+      .find((proof) => proof && (!raw.download_url || proof.evidence.url === raw.download_url))
+    let url = typeof raw.download_url === 'string' ? raw.download_url : saved?.evidence.url
+    if (!url) {
       try {
-        const saved = references.map((ref) => spotifyRepo.sourceEvidence(ref.kind, ref.id)).find((proof) => proof && (!raw.download_url || proof.evidence.url === raw.download_url))
-        const url = typeof raw.download_url === 'string' ? raw.download_url : saved?.evidence.url ?? urls.get(id)
-        if (!url) throw new Error(lookupErrors.get(id) ?? 'No source found; choose a recording')
-        const canonical = canonicalAudioSource(url)
-        const evidence = inspected.get(canonical)
-        if (!evidence) throw new Error(inspected.errors.get(canonical) ?? 'Extraction (yt-dlp): no verified source metadata returned; inspect the source or choose another recording')
-        if (saved?.approved && (saved.evidence.url !== evidence.url || saved.evidence.title !== evidence.title ||
-            saved.evidence.duration !== evidence.duration)) throw new Error('The approved source changed; review it again')
-        const assessment = assessMusicSource(expectedRecording(raw), evidence)
-        const approved = Boolean(saved?.approved)
-        const validated = approved || (!references.some((ref) => ref.broader || ref.manual) && assessment.strong)
-        for (const ref of references) spotifyRepo.saveSourceEvidence(ref.kind, ref.id, evidence, approved, validated)
-        if (!validated) throw new Error(`Needs review: ${assessment.reasons.join('; ') || 'Confirm this source before downloading'}`)
-        const archived = spotifyRepo.archivedAudioSource(evidence.url).find((row) => row.duration != null && row.duration > 0 && (evidence.duration == null ? approved : Math.abs(row.duration - evidence.duration) <= spotifyMatch.compatibleSpotifyDurationTolerance(evidence.duration)) && fileExists(row.filePath))
-        if (archived) { spotifyRepo.linkVerifiedSource(id, archived.id, evidence.url); continue }
-        const infoFile = infoFiles.get(canonical)
-        if (!infoFile) throw new Error('Extraction (yt-dlp): the source details were not retained; retry')
-        if (!downloads.some((download) => download.url === evidence.url)) downloads.push({ raw, url: evidence.url, format: evidence.format, infoFile })
+        url = (await findYouTubeMusicSource(raw, input.broader))?.source.url
       } catch (error) {
-        if (!running()) return 1
-        failures++
-        const message = error instanceof Error ? error.message : String(error)
-        for (const ref of references) spotifyRepo.setTrackDownloadErrors(ref.kind, new Map([[ref.id, message]]))
+        return fail(references, musicFailure('Lookup', 'YouTube Music search', error instanceof Error ? error.message : String(error)))
       }
+      if (!url) return fail(references, 'Needs review: YouTube Music has no matching recording; choose one')
     }
-    logInfo('proc', `Music source resolution: ${songs.length} tracks in ${Date.now() - started}ms`)
-    const artifact = randomUUID()
-    for (const download of downloads) for (const ref of spotifyRepo.sourcesForSpotifyId(String(download.raw.song_id))) {
+    if (!running()) return
+    let canonical: string
+    try { canonical = canonicalAudioSource(url) } catch (error) { return fail(references, error instanceof Error ? error.message : String(error)) }
+    const infoFile = join(tempDir, `${index}.info.json`)
+    const inspected = await inspectAudioSourcesInQueue([canonical], owner, jobId, (_url, row) =>
+      writeFileSync(infoFile, JSON.stringify(row), { mode: 0o600 }))
+    if (!running()) return
+    const evidence = inspected.get(canonical)
+    if (!evidence) return fail(references, inspected.errors.get(canonical) ?? 'Extraction (yt-dlp): no verified source metadata returned; inspect the source or choose another recording')
+    if (saved?.approved && (saved.evidence.url !== evidence.url || saved.evidence.title !== evidence.title ||
+        saved.evidence.duration !== evidence.duration)) return fail(references, 'The approved source changed; review it again')
+    const assessment = assessMusicSource(expectedRecording(raw), evidence)
+    const approved = Boolean(saved?.approved)
+    const validated = approved || (!references.some((ref) => ref.broader || ref.manual) && assessment.strong)
+    for (const ref of references) spotifyRepo.saveSourceEvidence(ref.kind, ref.id, evidence, approved, validated)
+    if (!validated) return fail(references, `Needs review: ${assessment.reasons.join('; ') || 'Confirm this source before downloading'}`)
+    const archived = spotifyRepo.archivedAudioSource(evidence.url).find((row) => row.duration != null && row.duration > 0 && (evidence.duration == null ? approved : Math.abs(row.duration - evidence.duration) <= spotifyMatch.compatibleSpotifyDurationTolerance(evidence.duration)) && fileExists(row.filePath))
+    if (archived) { spotifyRepo.linkVerifiedSource(id, archived.id, evidence.url); return }
+    const artifact = artifacts.get(evidence.url) ?? randomUUID()
+    artifacts.set(evidence.url, artifact)
+    for (const ref of spotifyRepo.sourcesForSpotifyId(id)) {
       const proof = spotifyRepo.sourceEvidence(ref.kind, ref.id)
-      if (proof?.validated && proof.evidence.url === download.url) spotifyRepo.stampSourceArtifact(ref.kind, ref.id, artifact)
+      if (proof?.validated && proof.evidence.url === evidence.url) spotifyRepo.stampSourceArtifact(ref.kind, ref.id, artifact)
     }
-    const embedsOpusCovers = downloads.some((download) => download.format === 'opus') && await ytdlpEmbedsOpusCovers()
-    const transferStarted = Date.now()
-    let done = 0
-    input.onProgress?.(0, downloads.length, null)
-    await runPool(downloads, workers, async (download, index) => {
+    const claim = claimedSources.get(evidence.url)
+    if (claim) {
+      const failure = await claim
+      if (failure && running()) failTransfer(id, evidence.url, failure)
+      return
+    }
+    let settle!: (failure: string | null) => void
+    claimedSources.set(evidence.url, new Promise((resolve) => { settle = resolve }))
+    let failure: string | null = null
+    try {
+      failure = await downloadClaimed(raw, index, evidence, artifact)
+    } catch (error) {
+      failure = error instanceof Error ? error.message : String(error)
+      throw error
+    } finally {
+      settle(failure)
+    }
+  }
+
+  /** Downloads a claimed source; returns the failure message, or null once done or stopped. */
+  async function downloadClaimed(
+    raw: Record<string, unknown>,
+    index: number,
+    evidence: import('@shared/types').MusicSourceEvidence,
+    artifact: string
+  ): Promise<string | null> {
+    const id = String(raw.song_id)
+    const infoFile = join(tempDir, `${index}.info.json`)
+    const taggedFile = join(tempDir, `${index}.tagged.info.json`)
+    writeFileSync(taggedFile, JSON.stringify(taggedInfoJson(JSON.parse(readFileSync(infoFile, 'utf8')), raw)), { mode: 0o600 })
+    const embedThumbnail = evidence.format !== 'opus' || embedsOpusCovers
+    let diagnostic = ''
+    const outputBase = stagedOutputBase(spotifyStagingRoot(), raw, artifact)
+    let code = 1
+    try {
+      code = await runMusicCommand(ytdlpAcquisitionArgs({
+        base: musicYtDlpArgs(),
+        infoFile: taggedFile,
+        outputTemplate: stagedOutputTemplate(spotifyStagingRoot(), raw, artifact),
+        format: evidence.format,
+        embedThumbnail
+      }), owner, (line) => { if (/^ERROR:|error|unable|failed/i.test(line)) diagnostic = line }, jobId)
+    } finally {
+      if (code !== 0) discardStagedOutputs(outputBase)
+    }
+    if (!running()) return null
+    if (code === 0) {
+      spotifyRepo.retainResolvedAudioUrls([{ song_id: raw.song_id, download_url: evidence.url }])
+      if (!embedThumbnail) await writeFolderCover(raw).catch((error) => logWarn('proc', `Album cover was not saved: ${error instanceof Error ? error.message : String(error)}`))
+      finished.push(outputBase)
+      if (finished.length >= LIBRARY_FLUSH_SONGS || Date.now() - lastFlush >= LIBRARY_FLUSH_MS) flushFinished()
+      return null
+    }
+    const failure = musicFailure('Transfer / processing', 'yt-dlp', diagnostic || 'The download stopped before the file was complete')
+    failTransfer(id, evidence.url, failure)
+    forgetAudioSource(evidence.url)
+    return failure
+  }
+
+  try {
+    await runPool(songs, workers, async (raw, index) => {
       if (!running()) return
-      const infoFile = join(tempDir, `tagged-${index}.info.json`)
-      writeFileSync(infoFile, JSON.stringify(taggedInfoJson(JSON.parse(readFileSync(download.infoFile, 'utf8')), download.raw)), { mode: 0o600 })
-      const embedThumbnail = download.format !== 'opus' || embedsOpusCovers
-      let diagnostic = ''
-      const outputBase = stagedOutputBase(spotifyStagingRoot(), download.raw, artifact)
-      let code = 1
+      input.onProgress?.(done, songs.length, String(raw.name ?? ''))
       try {
-        code = await runMusicCommand(ytdlpAcquisitionArgs({
-          base: musicYtDlpArgs(),
-          infoFile,
-          outputTemplate: stagedOutputTemplate(spotifyStagingRoot(), download.raw, artifact),
-          format: download.format,
-          embedThumbnail
-        }), owner, (line) => { if (/^ERROR:|error|unable|failed/i.test(line)) diagnostic = line }, jobId)
-      } finally {
-        if (code !== 0) discardStagedOutputs(outputBase)
+        await acquireOne(raw, index)
+      } catch (error) {
+        if (running()) fail(spotifyRepo.sourcesForSpotifyId(String(raw.song_id)), error instanceof Error ? error.message : String(error))
       }
-      if (!running()) return
-      if (code === 0) {
-        spotifyRepo.retainResolvedAudioUrls([{ song_id: download.raw.song_id, download_url: download.url }])
-        if (!embedThumbnail) await writeFolderCover(download.raw).catch((error) => logWarn('proc', `Album cover was not saved: ${error instanceof Error ? error.message : String(error)}`))
-      } else {
-        failures++
-        for (const ref of spotifyRepo.sourcesForSpotifyId(String(download.raw.song_id))) {
-          if (ref.manual && ref.manual !== download.url) continue
-          spotifyRepo.setTrackDownloadErrors(ref.kind, new Map([[ref.id, musicFailure('Transfer / processing', 'yt-dlp', diagnostic || 'The download stopped before the file was complete')]]))
-          spotifyRepo.invalidateSourceAccess(ref.kind, ref.id)
-        }
-        forgetAudioSource(download.url)
-      }
-      input.onProgress?.(++done, downloads.length, String(download.raw.name ?? ''))
+      if (running()) input.onProgress?.(++done, songs.length, null)
     })
-    logInfo('proc', `Music transfer / processing: ${downloads.length} tracks in ${Date.now() - transferStarted}ms`)
+    logInfo('proc', `Music acquisition: ${songs.length} tracks in ${Date.now() - started}ms`)
   } finally {
+    // The caller's full scan files the remainder; it must not overlap a flush still running.
+    await indexing
     rmSync(tempDir, { recursive: true, force: true })
   }
   return failures ? 1 : 0

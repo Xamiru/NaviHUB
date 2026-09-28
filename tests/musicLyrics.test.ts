@@ -27,7 +27,7 @@ vi.mock('../src/main/http', () => ({
 }))
 
 import { activeLyricIndex, formatLrc, parseLrc } from '../src/shared/lyrics'
-import { fetchLyrics, getLyrics, lyricsFromEmbedded, pickLrclibResult } from '../src/main/musicLyrics'
+import { fetchLyrics, fetchMissingLyrics, getLyrics, lyricsFromEmbedded, pickLrclibResult } from '../src/main/musicLyrics'
 
 const noEmbedded = async () => undefined
 
@@ -116,5 +116,26 @@ describe('lyrics lookup', () => {
     await fetchLyrics(1, async () => [{ text: 'Words' }])
     db.prepare('DELETE FROM music_track WHERE id = 1').run()
     expect(db.prepare('SELECT COUNT(*) AS n FROM music_track_lyrics').get()).toEqual({ n: 0 })
+  })
+
+  it('sweeps only unchecked tracks, keeps failures unchecked, and stops when the service is unreachable', async () => {
+    db.exec(`INSERT INTO music_track(id,album_id,artist_id,file_path,title,duration) VALUES
+      (2,1,1,'Radiohead/(1997) OK Computer/02 Paranoid Android.mp3','Paranoid Android',383),
+      (3,1,1,'Radiohead/(1997) OK Computer/03 Subterranean.mp3','Subterranean',268),
+      (4,1,1,'Radiohead/(1997) OK Computer/04 Exit Music.mp3','Exit Music',264)`)
+    db.prepare("INSERT INTO music_track_lyrics(track_id,state,source) VALUES(4,'missing','lrclib')").run()
+    responses['Airbag'] = { status: 200, body: { plainLyrics: 'In the next world war' } }
+    responses['Paranoid'] = { status: 200, body: { instrumental: true } }
+    expect(await fetchMissingLyrics(noEmbedded)).toMatchObject({ total: 3, done: 3, found: 2, missing: 1, failed: 0 })
+    expect(requested.some((url) => url.includes('Exit'))).toBe(false)
+    expect(getLyrics(3).state).toBe('missing')
+
+    db.exec(`DELETE FROM music_track_lyrics;
+      INSERT INTO music_track(id,album_id,artist_id,file_path,title,duration) VALUES
+      (5,1,1,'Radiohead/(1997) OK Computer/05 Let Down.mp3','Let Down',299)`)
+    responses = { '/api/': new Error('offline') }
+    await expect(fetchMissingLyrics(noEmbedded)).rejects.toThrow('Lyrics download stopped: offline')
+    expect([1, 2, 3, 4, 5].map((id) => getLyrics(id).state)).toEqual(['unchecked', 'unchecked', 'unchecked', 'unchecked', 'unchecked'])
+    expect(requested.filter((url) => url.includes('Let+Down'))).toEqual([])
   })
 })

@@ -112,6 +112,20 @@ it.each(APP_THEME_VARIANT_OPTIONS['twin-peaks'].map((variant) => variant.value))
   expect(contrast(get('ink-inverse'), get('signal-live'))).toBeGreaterThanOrEqual(4.5)
 })
 
+// Light styles with a dark sidebar island rebind every alias inside it.
+it.each([
+  ['one-piece', 'grand-line'],
+  ['jojo', 'diamond-is-unbreakable']
+] as const)('keeps the %s / %s dark sidebar island readable', (theme, variant) => {
+  const get = palette(theme, 'archive-sidebar', variant)
+  for (const surface of ['surface-canvas', 'surface-panel', 'surface-raised', 'surface-active']) {
+    for (const ink of ['ink-primary', 'ink-secondary', 'ink-muted', 'signal-live', 'signal-link']) {
+      expect(contrast(get(ink), get(surface)), `${ink} on ${surface}`).toBeGreaterThanOrEqual(4.5)
+    }
+  }
+  expect(contrast(get('ink-inverse'), get('signal-live'))).toBeGreaterThanOrEqual(4.5)
+})
+
 it.each([
   ['miku', 'crypton-teal'],
   ['miku', 'open-sky'],

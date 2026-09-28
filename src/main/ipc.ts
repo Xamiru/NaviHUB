@@ -1,7 +1,6 @@
 import * as playthroughs from './repos/playthroughRepo'
 import * as musicJournal from './repos/musicJournalRepo'
 import * as musicSmart from './repos/musicSmartRepo'
-import * as soundtracks from './repos/soundtrackRepo'
 import * as vnExplore from './vndbExplore'
 import * as vnCapture from './repos/vnCaptureRepo'
 import * as journeys from './repos/wrestlingJourneyRepo'
@@ -89,7 +88,7 @@ import * as musicRepo from './repos/musicRepo'
 import { detectBinary as detectYtDlp } from './musicTools'
 import { findEntityCandidates } from './musicCatalogue'
 import * as musicToolSetup from './musicToolSetup'
-import { fetchLyrics, getLyrics } from './musicLyrics'
+import { cancelLyricsFetch, fetchLyrics, fetchMissingLyrics, getLyrics, getLyricsStatus } from './musicLyrics'
 import * as musicSpotify from './musicSpotify'
 import * as musicSpotifyRepo from './repos/musicSpotifyRepo'
 import * as musicArt from './musicArt'
@@ -149,12 +148,6 @@ export function registerIpc(): void {
   ipcMain.handle('musicSmart:queue', (_e, id) => musicSmart.queue(id))
 
   // ---- VN captured text ----
-  // ---- Soundtrack associations ----
-  ipcMain.handle('soundtracks:list', (_e, owner) => soundtracks.list(owner))
-  ipcMain.handle('soundtracks:search', (_e, kind, query) => soundtracks.search(kind, query))
-  ipcMain.handle('soundtracks:save', (_e, id, input) => soundtracks.save(id, input))
-  ipcMain.handle('soundtracks:remove', (_e, id) => soundtracks.remove(id))
-  ipcMain.handle('soundtracks:tracks', (_e, id) => soundtracks.tracks(id))
   // ---- VN discovery and editions ----
   ipcMain.handle('vnExplore:discover', (_e, input) => vnExplore.discover(input))
   ipcMain.handle('vnExplore:tags', (_e, query) => vnExplore.tags(query))
@@ -239,22 +232,32 @@ export function registerIpc(): void {
   // write — exactly as video:markWatched does. tvRepo itself never touches
   // media_item.progress. A season toggle logs once per newly-watched episode,
   // so ticking a season credits the same as ticking each episode by hand.
+  // Un-ticking retracts what the tick logged (checklistRepo.retractEpisodeProgress),
+  // so toggling an episode back and forth cannot stack progress.
   ipcMain.handle('tv:seasons', (_e, mediaId: number) => tvRepo.listSeasons(mediaId, todayLocal()))
   ipcMain.handle('tv:setWatched', (_e, episodeId: number, watched: boolean) => {
     const res = tvRepo.setWatched(episodeId, watched)
-    if (res?.firstTime) checklistRepo.logProgress(res.mediaId, todayLocal())
+    if (!res) return
+    if (res.firstTime) {
+      tvRepo.setProgressUndo(episodeId, checklistRepo.logEpisodeProgress(res.mediaId, todayLocal()))
+    } else if (!watched) {
+      const undo = tvRepo.takeProgressUndo(episodeId)
+      if (undo) checklistRepo.retractEpisodeProgress(res.mediaId, undo)
+    }
   })
   ipcMain.handle(
     'tv:setSeasonWatched',
     (_e, mediaId: number, season: number, watched: boolean) => {
       const today = todayLocal()
-      const { firstTime } = tvRepo.setSeasonWatched(mediaId, season, watched, today)
+      const { newlyWatched, undos } = tvRepo.setSeasonWatched(mediaId, season, watched, today)
       // noRewatch: a season toggle back-fills a catalogue, so it must not wrap
       // an already-finished show into a fresh pass. Ticking ONE episode by hand
       // still does — that is a deliberate "I just watched this".
-      for (let i = 0; i < firstTime; i++) {
-        checklistRepo.logProgress(mediaId, today, undefined, { noRewatch: true })
+      for (const episodeId of newlyWatched) {
+        const undo = checklistRepo.logEpisodeProgress(mediaId, today, { noRewatch: true })
+        tvRepo.setProgressUndo(episodeId, undo)
       }
+      for (const undo of undos) checklistRepo.retractEpisodeProgress(mediaId, undo)
     }
   )
 
@@ -662,7 +665,8 @@ export function registerIpc(): void {
   // Finishing an episode is a media-progress event, so the FIRST time a file
   // becomes watched it goes through checklistRepo.logProgress — the app's one
   // "I watched another one" write (status promotion, rewatch wrap, checklist
-  // credit). markWatched itself never touches media_item.progress.
+  // credit). markWatched itself never touches media_item.progress. Un-ticking
+  // retracts what that log did, so toggling cannot stack progress.
   //
   // The scope guard is load-bearing: a wrestling row's owner is an EVENT id,
   // and handing that to logProgress would silently advance whatever media_item
@@ -671,8 +675,12 @@ export function registerIpc(): void {
   ipcMain.handle('video:markWatched', (_e, ref, watched) => {
     const scope = videoScopeFor(ref)
     const res = video.markWatchedIn(scope, ref.fileId, watched)
-    if (res?.firstTime && scope.id === 'video') {
-      checklistRepo.logProgress(res.ownerId, todayLocal())
+    if (!res || scope.id !== 'video') return
+    if (res.firstTime) {
+      video.setProgressUndo(ref.fileId, checklistRepo.logEpisodeProgress(res.ownerId, todayLocal()))
+    } else if (!watched) {
+      const undo = video.takeProgressUndo(ref.fileId)
+      if (undo) checklistRepo.retractEpisodeProgress(res.ownerId, undo)
     }
   })
 
@@ -872,6 +880,9 @@ export function registerIpc(): void {
   ipcMain.handle('music:decades', () => musicRepo.listDecades())
   ipcMain.handle('music:lyrics', (_e, trackId) => getLyrics(trackId))
   ipcMain.handle('music:fetchLyrics', (_e, trackId) => fetchLyrics(trackId))
+  ipcMain.handle('music:lyricsFetchMissing', () => fetchMissingLyrics())
+  ipcMain.handle('music:lyricsCancel', () => cancelLyricsFetch())
+  ipcMain.handle('music:lyricsStatus', () => getLyricsStatus())
   ipcMain.handle('music:artist', (_e, id) => musicRepo.getArtist(id))
   ipcMain.handle('music:album', (_e, id) => musicRepo.getAlbum(id))
   ipcMain.handle('music:tracks', (_e, filter) => musicRepo.listTracks(filter))
@@ -1089,6 +1100,7 @@ export function registerIpc(): void {
   ipcMain.handle('football:resolveConflict', (_e, id, resolution) =>
     footballRepo.resolveConflict(id, resolution)
   )
+  ipcMain.handle('football:repairIdentities', () => footballSync.repairIdentities())
 
   // ---- player (remote transport: thumbbar + pop-out widget) ----
   ipcMain.handle('player:publishState', (_e, snapshot) => playerBridge.publishState(snapshot))

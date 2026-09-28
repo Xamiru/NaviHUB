@@ -17,25 +17,6 @@ YouTube access check, cookie picker, Deno install), `musicTools.ts` (shared yt-d
 and the Spotify import dialog in `components/music/`. Music pages never import another page
 (guarded by `tests/performanceBoundaries.test.ts`).
 
-## Soundtracks and entrance themes
-
-`SoundtrackSection` appears on media detail, wrestler and music album pages.
-`soundtrack_link` is a personal many-to-many association with exactly one local
-album/track and one media item/wrestler, enforced in SQL and main-process validation.
-The user searches the local library and selects an explicit source; album pages can
-link a single track instead of the whole album. Optional labels and notes describe
-the relationship. Album pages include both their own links and their tracks' links.
-
-Links are visible in both directions. Play fetches up to the existing 2,000-track
-queue limit and uses `musicTrackToPlayerTrack`: IDs remain `music-<id>` and `mediaId`
-remains null. Work navigation belongs to the association, never the player's
-anime-specific media field. Linking and unlinking neither downloads nor retags,
-moves or deletes audio. Foreign keys clean associations when an endpoint is deleted;
-rescans that preserve IDs retain them. `soundtracks:*` methods have their own query
-prefix, and mutations also invalidate the normal broad music prefix. All association
-rows are wiped from shared exports.
-
-
 ## Personal track tags and smart playlists
 
 Track actions open a labelled tags/standout dialog; standout marks appear on album
@@ -48,10 +29,8 @@ removed on 2026-09-26; see [removed.md](removed.md).
 
 `/music/smart` owns saved `music_smart_playlist` rule definitions, separate from manual
 playlists and Spotify snapshots. Rules combine likes, played/unplayed, min/max plays,
-days since last played (including never played), artist text, track tags
-(all or any) and explicit soundtrack links. Different filter
-families always combine with AND. Soundtrack association matches either a track or
-its album, including links to works and wrestlers. Order is deterministic, and the
+days since last played (including never played), artist text and track tags
+(all or any). Different filter families always combine with AND. Order is deterministic, and the
 user-selected 1–2,000-track limit bounds playback; preview pages hold 50 rows and show
 both capped playlist size and uncapped match count. Empty filters select the local
 library up to the limit. All predicates are validated and SQL values are parameterized.
@@ -85,8 +64,12 @@ image is the archival fallback, with exact Deezer last. A known album year may
 resolve otherwise ambiguous release groups; unresolved ambiguity is rejected.
 Leading folder years such as `(1997) `, `[2001] `, and `2007 - ` are removed only
 for provider lookup; edition markers elsewhere remain part of the identity.
-Artist photos use remembered Spotify ids first, then an exact, non-disambiguation
-Wikipedia page image, then exact-name Deezer.
+Artist photos use the remembered Spotify id, else the single Spotify artist id
+that matched imported playlist rows credit under the artist's exact name. Then
+comes Spotify's web search (anonymous `searchSuggestions`, 640 px avatar) when
+exactly one artist id carries the exact name, then an exact, non-disambiguation
+Wikipedia page image, then exact-name Deezer. The photo lookup never writes
+`music_artist.spotify_id`; identity stays with the catalogue flow.
 
 Provider result order is not permission to guess: artist and album names must be
 equal after safe case/Unicode/punctuation normalization. Edition identity such as
@@ -405,8 +388,12 @@ skipping. The mixed runner
 holds one re-entrant music-maintenance owner, fetches the next card from the current DB
 order after each completion, and rechecks strict-first, unique cross-release local matches immediately before work.
 Already-local tracks are skipped without a download. Entity cards retain release-by-release
-resolution and targeted indexing; playlist cards retain 100-track chunks and index
-only completed outputs after each chunk. One failed card stays visible for Retry while later cards continue. Completed
+resolution and targeted indexing; playlist cards retain 100-track chunks. Inside a chunk,
+finished songs join the library every 10 songs or 20 seconds: those flushes move only the
+staged files of yt-dlp runs that exited successfully (never a file ffmpeg or the tagger is
+still writing), run one at a time, and finish before the chunk's closing scan files the rest.
+The `[navirun-…]` token belongs to one source file, so a flush marks only the songs that file
+serves as indexing, and two songs resolving to one source still share its download. One failed card stays visible for Retry while later cards continue. Completed
 cards stay until Clear completed.
 
 Every failed source row retains its last exact acquisition error. The expanded card offers
@@ -502,6 +489,14 @@ stored in `music_track_lyrics` so they work offline and a miss is not re-queried
 retries. `@shared/lyrics.ts` parses LRC (several time tags per line, `[offset:]`) and finds the
 active line; lines highlight 0.25 s early, scroll with playback (instant under reduced motion)
 and seek on click. Stored lyrics cascade with the track and are wiped from shared exports.
+
+**Bulk lyrics sweep (2026-09-28).** `fetchMissingLyrics` (`musicLyrics.ts`, task kind
+`musicLyrics`) runs the same lookup for every track with no `music_track_lyrics` row: Settings →
+Refresh → Local files → **Download missing lyrics**, and automatically (`queueLyricsSweep`) at the
+end of every download-queue run that resolved tracks, which covers Spotify playlists, artists,
+albums and direct URLs. A request made while a sweep runs triggers one more pass when it ends.
+Stored misses are not retried; failed lookups stay unchecked, and three consecutive failures stop
+the sweep as unreachable. Launch never starts a sweep.
 
 **Play counts (2026-09-27).** `MusicPlayLogger` follows the scrobbler rule: a `music-` track
 counts once half its length, capped at four minutes, has actually been heard; tracks under 30

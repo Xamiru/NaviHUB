@@ -155,7 +155,7 @@ export const FOOTBALL_ERAS: readonly FootballEraConfig[] = [
 export const FOOTBALL_WIKIMEDIA_MANIFEST: readonly FootballWikimediaManifestEntry[] = [
   { competitionKey: 'premier-league', page: 'List of English football champions', winnerHeaders: ['champions', 'champion', 'winners', 'winner'], runnerUpHeaders: ['runners-up', 'runner-up'], firstSeasonKey: '1888/89', minimumHonours: 100 },
   { competitionKey: 'la-liga', page: 'List of Spanish football champions', winnerHeaders: ['champions', 'champion', 'winners', 'winner'], runnerUpHeaders: ['runners-up', 'runner-up'], firstSeasonKey: '1929', minimumHonours: 80 },
-  { competitionKey: 'serie-a', page: 'List of Italian football champions', winnerHeaders: ['champions', 'champion', 'winners', 'winner'], runnerUpHeaders: ['runners-up', 'runner-up'], firstSeasonKey: '1898', minimumHonours: 90 },
+  { competitionKey: 'serie-a', page: 'List of Italian football champions', winnerHeaders: ['champions', 'champion', 'winners', 'winner'], runnerUpHeaders: ['runners-up', 'runner-up', 'second place'], firstSeasonKey: '1898', minimumHonours: 90 },
   { competitionKey: 'bundesliga', page: 'List of German football champions', winnerHeaders: ['champions', 'champion', 'winners', 'winner'], runnerUpHeaders: ['runners-up', 'runner-up'], firstSeasonKey: '1963/64', minimumHonours: 55 },
   { competitionKey: 'champions-league', page: 'List of European Cup and UEFA Champions League finals', winnerHeaders: ['winners', 'winner'], runnerUpHeaders: ['runners-up', 'runner-up'], firstSeasonKey: '1955/56', minimumHonours: 60 },
   { competitionKey: 'europa-league', page: 'List of UEFA Cup and Europa League finals', winnerHeaders: ['winners', 'winner'], runnerUpHeaders: ['runners-up', 'runner-up'], firstSeasonKey: '1971/72', minimumHonours: 45 },
@@ -187,6 +187,19 @@ export function normalizeFootballName(value: string): string {
     .toLocaleLowerCase('en')
     .replace(/[^a-z0-9]+/g, ' ')
     .trim()
+}
+
+const CLUB_WORDS = new Set([
+  'fc', 'f', 'c', 'afc', 'a', 'cf', 'sc', 's', 'ac', 'ssc', 'calcio', 'club', 'football',
+  'futbol', 'de', 'national', 'team', 'men', 'mens', 'sad', 'cfc', 'fk', 'sk', 'bk', 'if',
+  'sv', 'vfl', 'vfb', 'tsg', '1', 'fsv', 'bv', 'rcd', 'ud', 'cd', 'sd', 'rc', 'as', 'ss', 'us'
+])
+
+/** A name reduced to its distinctive words: "Arsenal F.C." and "Arsenal" agree. */
+export function footballCoreName(value: string, kind: 'team' | 'person'): string {
+  const plain = normalizeFootballName(value.replace(/\s*\([^)]*\)\s*$/, ''))
+  if (kind === 'person') return plain
+  return plain.split(' ').filter((word) => word && !CLUB_WORDS.has(word)).join(' ')
 }
 
 export function validateFootballHttpUrl(value: string): string {

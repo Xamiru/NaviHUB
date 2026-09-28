@@ -4,7 +4,7 @@ import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { FootballCompetitionMark } from '../components/football/FootballCommon'
+import { FootballFlag, footballCompetitionStyle } from '../components/football/FootballCommon'
 
 const GAMES = [
   { key: 'champion', to: '/football/quiz/champion', title: 'Champion', body: 'Name the verified winner of a completed edition.', minimum: 5, competitionKey: 'champions-league' },
@@ -29,19 +29,25 @@ export default function FootballQuizPage() {
         subtitle="Five offline solo games dealt only from complete, verified and conflict-free archive facts."
         back={{ to: '/football', label: 'Football Archive' }}
       />
-      <div className="grid gap-px border-y border-line-subtle bg-line-subtle md:grid-cols-2">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
         {GAMES.map((game) => {
           const count = availability?.[game.key] ?? 0
           const ready = count >= game.minimum
           const content = (
             <>
-              <span className="flex items-start"><FootballCompetitionMark competitionKey={game.competitionKey} size="md" /></span>
-              <span className="mt-7 block text-xl font-semibold text-ink">{game.title}</span>
+              <span className="absolute inset-y-0 left-0 w-1 bg-[rgb(var(--football-c))]" aria-hidden="true" />
+              <span className="flex items-center justify-between gap-3">
+                <FootballFlag competitionKey={game.competitionKey} />
+                <span className={`text-xs ${ready ? 'text-signal-link' : 'text-ink-muted'}`}>{ready ? 'Play ›' : 'Locked'}</span>
+              </span>
+              <span className="mt-5 block text-xl font-semibold text-ink">{game.title}</span>
               <span className="mt-2 block max-w-md text-sm leading-6 text-ink-muted">{game.body}</span>
-              <span className="mt-7 block text-xs uppercase tracking-[0.12em] text-ink-muted">{ready ? `${count} eligible facts` : `Locked / ${count} eligible`}</span>
+              <span className="mt-5 block text-xs text-ink-secondary">{ready ? `${count.toLocaleString()} eligible facts` : `${count.toLocaleString()} of ${game.minimum} needed`}</span>
             </>
           )
-          return ready ? <Link key={game.key} to={game.to} className="bg-surface-canvas p-6 hover:bg-surface-raised/70">{content}</Link> : <div key={game.key} className="bg-surface-canvas p-6 opacity-55" aria-disabled="true">{content}</div>
+          return ready
+            ? <Link key={game.key} to={game.to} className="card relative block overflow-hidden p-5 hover:border-line-strong" style={footballCompetitionStyle(game.competitionKey)}>{content}</Link>
+            : <div key={game.key} className="card relative overflow-hidden p-5 opacity-60" style={footballCompetitionStyle(game.competitionKey)} aria-disabled="true">{content}</div>
         })}
       </div>
       <details className="mt-6 border-y border-line-subtle py-4">

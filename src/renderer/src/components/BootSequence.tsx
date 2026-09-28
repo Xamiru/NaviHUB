@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { parseAppTheme, type AppTheme } from '@shared/appTheme'
+import { parseAppTheme, parseAppThemeVariant, type AppTheme } from '@shared/appTheme'
 import { FX_ART } from '../lib/themeFxArt'
 
 const BOOT_KEY = 'ui.booted'
@@ -33,11 +33,20 @@ const SCRIPTS = {
     'operations ready.'
   ].join('\n'),
   miku: ['NaviHUB', 'Your library. Your own world.', 'Leave a little room for possibility.'].join('\n'),
-  'twin-peaks': ['NaviHUB', 'Your personal archive.', 'Some stories stay with you.'].join('\n')
+  'twin-peaks': ['NaviHUB', 'Your personal archive.', 'Some stories stay with you.'].join('\n'),
+  seinfeld: ['A show about nothing.', 'A library about everything.'].join('\n'),
+  // Berserk, One Piece and JoJo have no typed script: their launches are images.
+  berserk: '',
+  'one-piece': '',
+  jojo: ''
 } satisfies Record<AppTheme, string>
 const CHAR_MS = 14
 const HOLD_MS = 400
 const FADE_MS = 200
+const CURTAIN_MS = 900
+const BERSERK_MS = 1800
+// How long each image launch holds before its hard cut to Home.
+const IMAGE_BOOT_MS: Partial<Record<AppTheme, number>> = { berserk: BERSERK_MS, 'one-piece': 1800, jojo: 1500 }
 
 type Phase = 'typing' | 'fading' | 'done'
 
@@ -58,15 +67,18 @@ export default function BootSequence() {
   // Fully typed → hold, then fade, then unmount.
   useEffect(() => {
     if (phase !== 'typing' || chars < script.length) return
-    const t = setTimeout(() => setPhase('fading'), HOLD_MS)
+    const t = setTimeout(() => setPhase('fading'), IMAGE_BOOT_MS[theme] ?? HOLD_MS)
     return () => clearTimeout(t)
-  }, [phase, chars, script.length])
+  }, [phase, chars, script.length, theme])
 
+  // Twin Peaks parts its curtains instead of fading, so the exit is longer;
+  // Berserk hard-cuts to Home like a page turn.
+  const exitMs = theme === 'twin-peaks' ? CURTAIN_MS : IMAGE_BOOT_MS[theme] ? 0 : FADE_MS
   useEffect(() => {
     if (phase !== 'fading') return
-    const t = setTimeout(() => setPhase('done'), FADE_MS)
+    const t = setTimeout(() => setPhase('done'), exitMs)
     return () => clearTimeout(t)
-  }, [phase])
+  }, [phase, exitMs])
 
   // Any key/click skips. Capture phase so the skip event can't also reach app
   // shortcuts (CommandPalette listens on window). Keyed on phase so the
@@ -87,14 +99,59 @@ export default function BootSequence() {
   }, [phase])
 
   if (phase === 'done') return null
+  if (theme === 'one-piece') {
+    return (
+      <div aria-hidden="true" className="theme-boot boot-one-piece fixed inset-0 z-[70]">
+        <div className="boot-one-piece-lens" style={{ backgroundImage: `url(${FX_ART.opEyecatch})` }} />
+      </div>
+    )
+  }
+  if (theme === 'jojo') {
+    const variant = parseAppThemeVariant('jojo', document.documentElement.dataset.themeVariant)
+    const art = variant === 'diamond-is-unbreakable' ? FX_ART.jjDiuTitle : variant === 'golden-wind' ? FX_ART.jjGwHero : FX_ART.jjScTitle
+    return (
+      <div aria-hidden="true" className="theme-boot boot-jojo fixed inset-0 z-[70] overflow-hidden">
+        <img className="boot-jojo-art" src={art} alt="" />
+        <span className="boot-jojo-lines" />
+        <span className="boot-jojo-flash" />
+      </div>
+    )
+  }
+  if (theme === 'berserk') {
+    return (
+      <div aria-hidden="true" className="theme-boot boot-berserk fixed inset-0 z-[70]">
+        <svg width="0" height="0" className="absolute">
+          <filter id="berserk-crimson" colorInterpolationFilters="sRGB">
+            <feColorMatrix type="matrix" values="0.28 0.57 0.1 0 0 0.03 0.07 0.01 0 0 0.04 0.09 0.02 0 0 0 0 0 1 0" />
+          </filter>
+        </svg>
+        <div className="boot-berserk-stage">
+          <img className="boot-berserk-panel boot-berserk-panel-ink boot-berserk-dormant" src={FX_ART.bzBehelitDormant} alt="" />
+          <img className="boot-berserk-panel boot-berserk-panel-ink boot-berserk-awake" src={FX_ART.bzBehelitAwake} alt="" />
+          <img className="boot-berserk-panel boot-berserk-brand" src={FX_ART.bzBrandPanel} alt="" />
+        </div>
+      </div>
+    )
+  }
   const lines = script.slice(0, chars).split('\n')
   return (
     <div
       aria-hidden="true"
-      className={`${theme === 'lain' ? 'lain-crt' : theme === 'metal-gear' ? 'tactical-boot' : 'theme-boot'} fixed inset-0 z-[70] flex items-center justify-center bg-base-900 transition-opacity duration-200 ${
-        phase === 'fading' ? 'opacity-0' : ''
-      }`}
+      className={
+        theme === 'twin-peaks'
+          ? `theme-boot boot-peaks fixed inset-0 z-[70] flex items-center justify-center ${phase === 'fading' ? 'boot-peaks-open' : ''}`
+          : `${theme === 'lain' ? 'lain-crt' : theme === 'metal-gear' ? 'tactical-boot' : theme === 'seinfeld' ? 'theme-boot boot-seinfeld flex-col' : 'theme-boot'} fixed inset-0 z-[70] flex items-center justify-center bg-base-900 transition-opacity duration-200 ${
+              phase === 'fading' ? 'opacity-0' : ''
+            }`
+      }
     >
+      {theme === 'seinfeld' && <img className="boot-seinfeld-logo" src={FX_ART.sfLogo} alt="" />}
+      {theme === 'twin-peaks' && (
+        <>
+          <i className="peaks-curtain peaks-curtain-left" style={{ backgroundImage: `url(${FX_ART.peaksCurtain})` }} />
+          <i className="peaks-curtain peaks-curtain-right" style={{ backgroundImage: `url(${FX_ART.peaksCurtain})` }} />
+        </>
+      )}
       {theme === 'lain' && (
         <>
           <img className="boot-lain-site" src={FX_ART.lainSite} alt="" />

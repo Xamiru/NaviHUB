@@ -45,7 +45,11 @@ describe('Toaster', () => {
     ['lain', 'NAVI / MESSAGE'],
     ['metal-gear', 'COMPLETE'],
     ['miku', 'Library'],
-    ['twin-peaks', '']
+    ['twin-peaks', ''],
+    ['seinfeld', ''],
+    ['berserk', ''],
+    ['one-piece', 'Puru puru puru'],
+    ['jojo', '']
   ])('frames the %s toast without hiding the message or its controls', (theme, frame) => {
     document.documentElement.dataset.theme = theme
     vi.useFakeTimers()

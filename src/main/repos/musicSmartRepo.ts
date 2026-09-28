@@ -24,7 +24,6 @@ export function validateRules(input: MusicSmartRules): MusicSmartRules {
     tags: validTags(input.tags),
     tagMode: choice(input.tagMode, ['all', 'any'], 'tag match'),
     artist: textValue(input.artist, 'artist filter', 200),
-    soundtrack: choice(input.soundtrack, ['any', 'linked', 'unlinked'], 'soundtrack filter'),
     order: choice(
       input.order,
       ['title', 'leastPlayed', 'recent', 'oldestPlayed'],
@@ -100,9 +99,6 @@ function selection(input: MusicSmartRules): {
     )
     params.push(rules.artist, rules.artist)
   }
-  if (rules.soundtrack !== 'any')
-    filters.push(`${rules.soundtrack === 'unlinked' ? 'NOT ' : ''}EXISTS(
-    SELECT 1 FROM soundtrack_link sl WHERE sl.track_id=t.id OR sl.album_id=t.album_id)`)
   if (rules.tags.length) {
     const tags = rules.tags.map((tag) => {
       params.push(tag)

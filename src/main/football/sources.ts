@@ -1154,3 +1154,61 @@ export function parseApiFootballLineups(raw: unknown): SourceLineup[] {
   }
   return output
 }
+
+/**
+ * One OpenFootball football.json league file (the current season is updated about twice a
+ * week). A played match carries `score.ft`; an unplayed one an empty score. The source id
+ * omits the date so a rescheduled fixture stays the same match.
+ */
+export function parseOpenFootballLeagueJson(input: {
+  json: unknown
+  competitionKey: FootballCompetitionKey
+  seasonKey: string
+  sourceUrl: string
+  fingerprint: string
+}): SourceMatch[] {
+  const matches = (input.json as { matches?: unknown[] })?.matches
+  if (!Array.isArray(matches)) throw new Error('OpenFootball JSON has no match list')
+  const team = (name: string): SourceTeam => ({
+    sourceId: `json:${normalizeFootballName(name)}`,
+    name,
+    country: null,
+    national: false
+  })
+  return matches.flatMap((raw) => {
+    const row = raw as Record<string, unknown>
+    const home = typeof row.team1 === 'string' ? row.team1.trim() : ''
+    const away = typeof row.team2 === 'string' ? row.team2.trim() : ''
+    const date = typeof row.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(row.date) ? row.date : null
+    if (!home || !away || !date) return []
+    const score = row.score && !Array.isArray(row.score) ? (row.score as { ft?: unknown; ht?: unknown }) : {}
+    const pair = (value: unknown): [number, number] | null =>
+      Array.isArray(value) && value.length === 2 && value.every((n) => Number.isInteger(n)) ? [value[0], value[1]] : null
+    const ft = pair(score.ft)
+    const ht = pair(score.ht)
+    return [{
+      sourceId: `${input.seasonKey}:${normalizeFootballName(home)}:${normalizeFootballName(away)}`,
+      competitionKey: input.competitionKey,
+      seasonKey: input.seasonKey,
+      seasonLabel: input.seasonKey,
+      date,
+      home: team(home),
+      away: team(away),
+      stage: null,
+      round: typeof row.round === 'string' ? row.round : null,
+      status: ft ? 'finished' : 'scheduled',
+      homeScore: ft?.[0] ?? null,
+      awayScore: ft?.[1] ?? null,
+      homeHalfTime: ht?.[0] ?? null,
+      awayHalfTime: ht?.[1] ?? null,
+      homeExtraTime: null,
+      awayExtraTime: null,
+      homePenalties: null,
+      awayPenalties: null,
+      goals: null,
+      source: 'openfootball',
+      sourceUrl: input.sourceUrl,
+      rawFingerprint: input.fingerprint
+    } satisfies SourceMatch]
+  })
+}

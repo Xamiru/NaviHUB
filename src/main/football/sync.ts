@@ -1,7 +1,7 @@
 import AdmZip from 'adm-zip'
 import { createHash } from 'crypto'
 import { getSqlite } from '../db/connection'
-import { get as getSetting } from '../repos/settingsRepo'
+import { get as getSetting, set as setSetting } from '../repos/settingsRepo'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from '../http'
 import { logError, logInfo, logWarn } from '../logBus'
 import * as tasks from '../tasks'
@@ -9,14 +9,18 @@ import type { TaskHandle } from '../tasks'
 import { cooperativeGate, type PauseGate } from '../taskControls'
 import * as repo from '../repos/footballRepo'
 import {
+  FOOTBALL_COMPETITION_KEYS,
   FOOTBALL_COMPETITIONS,
   FOOTBALL_WIKIMEDIA_MANIFEST,
+  footballCoreName,
   normalizeFootballName
 } from '@shared/football'
 import type {
   FootballCompetitionKey,
   FootballEntitlement,
+  FootballIdentityRepair,
   FootballSeasonStatus,
+  FootballSetupStep,
   FootballSource,
   FootballSyncRequest,
   FootballSyncStatus
@@ -35,6 +39,7 @@ import {
   parseEngsoccerCsv,
   parseInternationalResultsCsv,
   parseInternationalScorersCsv,
+  parseOpenFootballLeagueJson,
   parseOpenFootballTxt,
   parseStatsBombCompetitionSeasons,
   parseStatsBombEvents,
@@ -47,9 +52,13 @@ import {
   type SourceSlice
 } from './sources'
 import { fetchWikimediaSnapshot, saveWikimediaSnapshot } from './wikimedia'
+import { installTransfermarkt } from './transfermarkt'
 import {
+  fetchCompetitionLogo,
+  fetchEnrichmentBatch,
   fetchEntityEnrichment,
   noteEnrichmentError,
+  saveCompetitionLogo,
   saveEntityEnrichment
 } from './enrichment'
 
@@ -90,7 +99,7 @@ const ENGSOCER_FILES: Array<{
   { file: 'england.csv', competitionKey: 'premier-league', tierOneOnly: true },
   { file: 'spain.csv', competitionKey: 'la-liga' },
   { file: 'italy.csv', competitionKey: 'serie-a' },
-  { file: 'germany.csv', competitionKey: 'bundesliga' },
+  { file: 'germany.csv', competitionKey: 'bundesliga', tierOneOnly: true },
   { file: 'champs.csv', competitionKey: 'champions-league' }
 ]
 
@@ -111,7 +120,8 @@ function idleStatus(id: number): FootballSyncStatus {
     requests: 0,
     imported: 0,
     conflicts: 0,
-    message: null
+    message: null,
+    setupStep: null
   }
 }
 
@@ -245,7 +255,7 @@ function groupSlices(matches: SourceMatch[]): SourceSlice[] {
 }
 
 function sourceRefId(kind: string, source: FootballSource, externalId: string): number | null {
-  const row = getSqlite().prepare(`
+  const row = repo.cachedStatement(`
     SELECT entity_id FROM football_source_ref
     WHERE entity_kind=? AND source=? AND external_id=?
   `).get(kind, source, externalId) as { entity_id: number } | undefined
@@ -316,8 +326,7 @@ function storedResultAssertions(
   source: FootballSource,
   fallback: MatchResultAssertion
 ): Array<{ source: FootballSource; value: MatchResultAssertion }> {
-  const db = getSqlite()
-  const rows = db.prepare(`
+  const rows = repo.cachedStatement(`
     SELECT source,value FROM football_assertion
     WHERE entity_kind='match' AND entity_id=? AND facet='result' AND source<>?
     ORDER BY id
@@ -337,7 +346,7 @@ function storedResultAssertions(
   if (bySource.size) {
     return [...bySource].map(([assertionSource, value]) => ({ source: assertionSource, value }))
   }
-  const legacySource = db.prepare(`
+  const legacySource = repo.cachedStatement(`
     SELECT source FROM football_source_ref
     WHERE entity_kind='match' AND entity_id=? AND source<>?
     ORDER BY id LIMIT 1
@@ -349,9 +358,8 @@ function upsertTeam(match: SourceMatch, side: 'home' | 'away'): number {
   const sourceTeam = match[side]
   const existing = sourceRefId('team', match.source, sourceTeam.sourceId)
   if (existing != null) return existing
-  const db = getSqlite()
   const normalized = normalizeFootballName(sourceTeam.name)
-  const candidates = db.prepare(`
+  const candidates = repo.cachedStatement(`
     SELECT DISTINCT t.id FROM football_team t
     JOIN football_alias a ON a.entity_kind='team' AND a.entity_id=t.id
     WHERE a.normalized=? AND t.is_national=?
@@ -359,12 +367,12 @@ function upsertTeam(match: SourceMatch, side: 'home' | 'away'): number {
   let id: number
   if (candidates.length === 1) id = candidates[0].id
   else {
-    const result = db.prepare(`
+    const result = repo.cachedStatement(`
       INSERT INTO football_team (name,country,is_national) VALUES (?,?,?)
     `).run(sourceTeam.name, sourceTeam.country, sourceTeam.national ? 1 : 0)
     id = Number(result.lastInsertRowid)
     if (candidates.length > 1) {
-      db.prepare(`
+      repo.cachedStatement(`
         INSERT INTO football_conflict
           (entity_kind,entity_id,facet,source_a,value_a,source_b,value_b)
         VALUES ('team',?,'identity',?,?,?,?)
@@ -372,12 +380,12 @@ function upsertTeam(match: SourceMatch, side: 'home' | 'away'): number {
       status = { ...status, conflicts: status.conflicts + 1 }
     }
   }
-  db.prepare(`
+  repo.cachedStatement(`
     INSERT OR IGNORE INTO football_alias
       (entity_kind,entity_id,source,alias,normalized,external_id)
     VALUES ('team',?,?,?,?,?)
   `).run(id, match.source, sourceTeam.name, normalized, sourceTeam.sourceId)
-  db.prepare(`
+  repo.cachedStatement(`
     INSERT INTO football_source_ref
       (entity_kind,entity_id,source,external_id,source_url,raw_fingerprint,fetched_at)
     VALUES ('team',?,?,?,?,?,datetime('now'))
@@ -388,37 +396,54 @@ function upsertTeam(match: SourceMatch, side: 'home' | 'away'): number {
   return id
 }
 
+/** Same-name goal scorers already stored for a match, keyed `teamId:normalized`. */
+function matchScorers(matchId: number): Map<string, number> {
+  const rows = repo.cachedStatement(`
+    SELECT DISTINCT e.team_id AS teamId,e.person_id AS personId,a.normalized
+    FROM football_event e
+    JOIN football_alias a ON a.entity_kind='person' AND a.entity_id=e.person_id
+    WHERE e.match_id=? AND e.type='goal' AND e.team_id IS NOT NULL
+  `).all(matchId) as Array<{ teamId: number; personId: number; normalized: string }>
+  return new Map(rows.map((row) => [`${row.teamId}:${row.normalized}`, row.personId]))
+}
+
 function upsertPerson(
   match: SourceMatch,
   teamId: number,
-  goal: SourceGoal
+  goal: SourceGoal,
+  previousScorers: Map<string, number>
 ): number | null {
   if (!goal.playerName) return null
-  const externalId = `${match.seasonKey}:${teamId}:${normalizeFootballName(goal.playerName)}`
+  const normalized = normalizeFootballName(goal.playerName)
+  const externalId = `${match.seasonKey}:${teamId}:${normalized}`
   const existing = sourceRefId('person', match.source, externalId)
   if (existing != null) return existing
-  const db = getSqlite()
-  // Never merge people by a normalized name alone. A new source-scoped row is
-  // quarantined if an unrelated canonical person already carries the name.
-  const sameNames = db.prepare(`
+  // Never merge people by a normalized name alone: a scorer joins a same-name
+  // person only for the same team, in this match or within one career span.
+  // Anyone else carrying the name leaves the new row quarantined.
+  const previous = previousScorers.get(`${teamId}:${normalized}`)
+  const sameTeam = previous != null ? [previous] : repo.sameTeamPersonIds(normalized, teamId, match.date)
+  const sameNames = repo.cachedStatement(`
     SELECT DISTINCT p.id FROM football_person p JOIN football_alias a
       ON a.entity_kind='person' AND a.entity_id=p.id WHERE a.normalized=?
-  `).all(normalizeFootballName(goal.playerName)) as { id: number }[]
-  const result = db.prepare(`INSERT INTO football_person (name,role) VALUES (?,'player')`).run(
-    goal.playerName
-  )
-  const id = Number(result.lastInsertRowid)
-  db.prepare(`
-    INSERT INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id)
+  `).all(normalized) as { id: number }[]
+  const reused = sameTeam.length === 1
+  const id = reused
+    ? sameTeam[0]
+    : Number(repo.cachedStatement(`INSERT INTO football_person (name,role) VALUES (?,'player')`).run(
+        goal.playerName
+      ).lastInsertRowid)
+  repo.cachedStatement(`
+    INSERT OR IGNORE INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id)
     VALUES ('person',?,?,?,?,?)
-  `).run(id, match.source, goal.playerName, normalizeFootballName(goal.playerName), externalId)
-  db.prepare(`
+  `).run(id, match.source, goal.playerName, normalized, externalId)
+  repo.cachedStatement(`
     INSERT INTO football_source_ref
       (entity_kind,entity_id,source,external_id,source_url,raw_fingerprint,fetched_at)
     VALUES ('person',?,?,?,?,?,datetime('now'))
   `).run(id, match.source, externalId, match.sourceUrl, match.rawFingerprint)
-  if (sameNames.length) {
-    db.prepare(`
+  if (!reused && sameNames.length) {
+    repo.cachedStatement(`
       INSERT INTO football_conflict
         (entity_kind,entity_id,facet,source_a,value_a,source_b,value_b)
       VALUES ('person',?,'identity',?,?,?,?)
@@ -430,12 +455,12 @@ function upsertPerson(
 
 export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'history'): number {
   const db = getSqlite()
-  const competition = db.prepare(`SELECT id FROM football_competition WHERE key=?`).get(
+  const competition = repo.cachedStatement(`SELECT id FROM football_competition WHERE key=?`).get(
     slice.competitionKey
   ) as { id: number } | undefined
   if (!competition) throw new Error(`Unknown Football competition: ${slice.competitionKey}`)
   const startedAt = new Date().toISOString()
-  const run = db.prepare(`
+  const run = repo.cachedStatement(`
     INSERT INTO football_import_run
       (kind,source,competition_key,season_key,state,version,etag,checksum,raw_fingerprint,started_at)
     VALUES (?,?,?,?,?,?,?,?,?,?)
@@ -455,7 +480,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
   const seasonStatus = footballSeasonStatus(slice, kind)
   try {
     const written = db.transaction(() => {
-      db.prepare(`
+      repo.cachedStatement(`
         INSERT INTO football_season
           (competition_id,key,label,status,data_revision,updated_at)
         VALUES (?,?,?,?,?,datetime('now'))
@@ -469,7 +494,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
         seasonStatus,
         slice.revision
       )
-      const season = db.prepare(`
+      const season = repo.cachedStatement(`
         SELECT id FROM football_season WHERE competition_id=? AND key=?
       `).get(competition.id, slice.seasonKey) as { id: number }
       let count = 0
@@ -482,25 +507,25 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
         let stageId: number | null = null
         if (match.stage) {
           const stageKey = normalizeFootballName(match.stage) || 'stage'
-          db.prepare(`
+          repo.cachedStatement(`
             INSERT INTO football_stage (season_id,key,name,kind)
             VALUES (?,?,?,'knockout') ON CONFLICT(season_id,key) DO UPDATE SET name=excluded.name
           `).run(season.id, stageKey, match.stage)
-          stageId = (db.prepare(`
+          stageId = (repo.cachedStatement(`
             SELECT id FROM football_stage WHERE season_id=? AND key=?
           `).get(season.id, stageKey) as { id: number }).id
         }
         let matchId = sourceRefId('match', match.source, match.sourceId)
         let matchResultConflict = false
         if (matchId == null) {
-          const exact = db.prepare(`
+          const exact = repo.cachedStatement(`
             SELECT id FROM football_match WHERE season_id=? AND match_date=?
               AND home_team_id=? AND away_team_id=?
           `).all(season.id, match.date, homeId, awayId) as { id: number }[]
           if (exact.length === 1) matchId = exact[0].id
         }
         if (matchId == null) {
-          const result = db.prepare(`
+          const result = repo.cachedStatement(`
             INSERT INTO football_match
               (title,season_id,stage_id,home_team_id,away_team_id,match_date,round,status,
                home_score,away_score,home_halftime,away_halftime,home_extra_time,away_extra_time,
@@ -527,7 +552,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           )
           matchId = Number(result.lastInsertRowid)
         } else {
-          const current = db.prepare(`
+          const current = repo.cachedStatement(`
             SELECT status,home_score AS homeScore,away_score AS awayScore,
               home_halftime AS homeHalftime,away_halftime AS awayHalftime,
               home_extra_time AS homeExtraTime,away_extra_time AS awayExtraTime,
@@ -538,7 +563,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           const assertions = storedResultAssertions(matchId, match.source, current)
           for (const assertion of assertions) {
             if (resultsDisagree(assertion.value, incoming)) continue
-            db.prepare(`
+            repo.cachedStatement(`
               UPDATE football_conflict SET status='resolved',
                 resolution='Sources now agree',resolved_at=datetime('now')
               WHERE entity_kind='match' AND entity_id=? AND facet='result'
@@ -555,7 +580,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           const disagreement = assertions.find((item) => resultsDisagree(item.value, incoming))
           if (disagreement) {
             matchResultConflict = true
-            const unresolved = db.prepare(`
+            const unresolved = repo.cachedStatement(`
               SELECT id,source_a AS sourceA FROM football_conflict
               WHERE entity_kind='match' AND entity_id=? AND facet='result'
                 AND ((source_a=? AND source_b=?) OR (source_a=? AND source_b=?))
@@ -569,7 +594,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
               disagreement.source
             ) as { id: number; sourceA: FootballSource } | undefined
             if (unresolved) {
-              db.prepare(`UPDATE football_conflict SET value_a=?,value_b=? WHERE id=?`).run(
+              repo.cachedStatement(`UPDATE football_conflict SET value_a=?,value_b=? WHERE id=?`).run(
                 JSON.stringify(
                   unresolved.sourceA === disagreement.source ? disagreement.value : incoming
                 ),
@@ -579,7 +604,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
                 unresolved.id
               )
             } else {
-              db.prepare(`
+              repo.cachedStatement(`
                 INSERT INTO football_conflict
                   (entity_kind,entity_id,facet,source_a,value_a,source_b,value_b)
                 VALUES ('match',?,'result',?,?,?,?)
@@ -592,7 +617,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
               )
               status = { ...status, conflicts: status.conflicts + 1 }
             }
-            db.prepare(`
+            repo.cachedStatement(`
               UPDATE football_match SET title=?,stage_id=?,home_team_id=?,away_team_id=?,
                 match_date=?,round=?,conflicted=1,updated_at=datetime('now') WHERE id=?
             `).run(
@@ -606,7 +631,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
             )
             hasResultConflict = true
           } else {
-            db.prepare(`
+            repo.cachedStatement(`
               UPDATE football_match SET title=?,stage_id=?,home_team_id=?,away_team_id=?,
                 match_date=?,round=?,status=CASE
                   WHEN ?='scheduled' AND status<>'scheduled' THEN status ELSE ? END,
@@ -646,7 +671,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
             )
           }
         }
-        db.prepare(`
+        repo.cachedStatement(`
           INSERT INTO football_source_ref
             (entity_kind,entity_id,source,external_id,source_url,revision,raw_fingerprint,fetched_at)
           VALUES ('match',?,?,?,?,?,?,datetime('now'))
@@ -662,24 +687,25 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           slice.revision,
           match.rawFingerprint
         )
-        const sourceRef = db.prepare(`
+        const sourceRef = repo.cachedStatement(`
           SELECT id FROM football_source_ref
           WHERE entity_kind='match' AND source=? AND external_id=?
         `).get(match.source, match.sourceId) as { id: number }
-        db.prepare(`DELETE FROM football_assertion
+        repo.cachedStatement(`DELETE FROM football_assertion
           WHERE entity_kind='match' AND entity_id=? AND facet='result' AND source=?`
         ).run(matchId, match.source)
-        db.prepare(`INSERT INTO football_assertion
+        repo.cachedStatement(`INSERT INTO football_assertion
           (entity_kind,entity_id,facet,value,source,source_ref_id,status,observed_at)
           VALUES ('match',?,'result',?,?,?,'accepted',datetime('now'))`
         ).run(matchId, JSON.stringify(sourceResult(match)), match.source, sourceRef.id)
-        const quarantined = db.prepare(`SELECT conflicted FROM football_match WHERE id=?`).get(
+        const quarantined = repo.cachedStatement(`SELECT conflicted FROM football_match WHERE id=?`).get(
           matchId
         ) as { conflicted: number }
         if (quarantined.conflicted) hasResultConflict = true
         if (match.goals != null && !matchResultConflict) {
-          db.prepare(`DELETE FROM football_event WHERE match_id=? AND type='goal'`).run(matchId)
-          const event = db.prepare(`
+          const previousScorers = matchScorers(matchId)
+          repo.cachedStatement(`DELETE FROM football_event WHERE match_id=? AND type='goal'`).run(matchId)
+          const event = repo.cachedStatement(`
             INSERT INTO football_event
               (match_id,team_id,person_id,type,minute,extra_minute,own_goal,penalty,sort_order)
             VALUES (?,?,?,'goal',?,?,?,?,?)
@@ -689,7 +715,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
             event.run(
               matchId,
               teamId,
-              upsertPerson(match, teamId, goal),
+              upsertPerson(match, teamId, goal, previousScorers),
               goal.minute,
               goal.extraMinute,
               goal.ownGoal ? 1 : 0,
@@ -704,24 +730,24 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
         count++
       }
       if (slice.coverage.results === 'complete') {
-        const old = db.prepare(`
+        const old = repo.cachedStatement(`
           SELECT sr.id AS refId,sr.entity_id AS matchId
           FROM football_source_ref sr JOIN football_match m ON m.id=sr.entity_id
           WHERE sr.entity_kind='match' AND sr.source=? AND m.season_id=?
         `).all(slice.source, season.id) as Array<{ refId: number; matchId: number }>
         for (const item of old) {
           if (keepMatchIds.has(item.matchId)) continue
-          db.prepare(`DELETE FROM football_assertion
+          repo.cachedStatement(`DELETE FROM football_assertion
             WHERE entity_kind='match' AND entity_id=? AND facet='result' AND source=?`
           ).run(item.matchId, slice.source)
-          db.prepare(`UPDATE football_conflict SET status='resolved',
+          repo.cachedStatement(`UPDATE football_conflict SET status='resolved',
             resolution='Source assertion removed by complete refresh',resolved_at=datetime('now')
             WHERE entity_kind='match' AND entity_id=? AND facet='result'
               AND (source_a=? OR source_b=?) AND status<>'resolved'`
           ).run(item.matchId, slice.source, slice.source)
-          db.prepare(`DELETE FROM football_source_ref WHERE id=?`).run(item.refId)
+          repo.cachedStatement(`DELETE FROM football_source_ref WHERE id=?`).run(item.refId)
           repo.reconcileMatchResultConflicts(item.matchId, true)
-          const retained = db.prepare(`
+          const retained = repo.cachedStatement(`
             SELECT
               EXISTS(SELECT 1 FROM football_source_ref WHERE entity_kind='match' AND entity_id=?) OR
               EXISTS(SELECT 1 FROM football_favorite WHERE entity_kind='match' AND entity_id=?) OR
@@ -730,11 +756,11 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
               EXISTS(SELECT 1 FROM list_item li JOIN list l ON l.id=li.list_id
                 WHERE l.entity_kind='footballMatch' AND li.entity_id=?) AS retained
           `).get(item.matchId, item.matchId, item.matchId, item.matchId, item.matchId) as { retained: number }
-          if (!retained.retained) db.prepare(`DELETE FROM football_match WHERE id=?`).run(item.matchId)
+          if (!retained.retained) repo.cachedStatement(`DELETE FROM football_match WHERE id=?`).run(item.matchId)
         }
       }
       if (['premier-league', 'la-liga', 'serie-a', 'bundesliga'].includes(slice.competitionKey)) {
-        const resultRows = db.prepare(`
+        const resultRows = repo.cachedStatement(`
           SELECT home_team_id AS homeTeamId,away_team_id AS awayTeamId,
             home_score AS homeScore,away_score AS awayScore
           FROM football_match WHERE season_id=? AND status='finished'
@@ -749,8 +775,8 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           resultRows,
           footballPointsForWin(slice.competitionKey, slice.seasonKey)
         )
-        db.prepare(`DELETE FROM football_standing WHERE season_id=? AND rank_official=0`).run(season.id)
-        const insertStanding = db.prepare(`
+        repo.cachedStatement(`DELETE FROM football_standing WHERE season_id=? AND rank_official=0`).run(season.id)
+        const insertStanding = repo.cachedStatement(`
           INSERT INTO football_standing
             (season_id,team_id,rank,rank_official,played,won,drawn,lost,goals_for,
              goals_against,goal_difference,points,deduction,note)
@@ -776,7 +802,7 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
           (facet === 'results' && hasResultConflict) ||
           (facet === 'scorers' && hasScorerConflict)
         const savedState = state === 'complete' && conflicted ? 'conflicted' : state
-        db.prepare(`
+        repo.cachedStatement(`
           INSERT INTO football_coverage
             (competition_id,season_id,source,facet,state,item_count,revision,checked_at)
           VALUES (?,?,?,?,?,?,?,datetime('now'))
@@ -787,12 +813,12 @@ export function writeSlice(slice: SourceSlice, kind: 'history' | 'current' = 'hi
       }
       return count
     })()
-    db.prepare(`
+    repo.cachedStatement(`
       UPDATE football_import_run SET state='done',item_count=?,finished_at=datetime('now') WHERE id=?
     `).run(written, runId)
     return written
   } catch (error) {
-    db.prepare(`
+    repo.cachedStatement(`
       UPDATE football_import_run SET state='error',message=?,finished_at=datetime('now') WHERE id=?
     `).run(error instanceof Error ? error.message : String(error), runId)
     throw error
@@ -861,7 +887,8 @@ async function installOpenFootball(runGate: PauseGate): Promise<void> {
   for (const entry of entries) {
     await checkpoint(runGate)
     const competitionKey = uefaCompetitionForPath(entry.entryName)
-    const season = entry.entryName.match(/(\d{4}[-/]\d{2,4})/)?.[1]?.replace('/', '-')
+    const found = entry.entryName.match(/(\d{4}[-/]\d{2,4})/)?.[1]
+    const season = found ? archiveSeasonKey(found.replace('-', '/')) : null
     if (!competitionKey || !season) continue
     const text = entry.getData().toString('utf8')
     all.push(...parseOpenFootballTxt({
@@ -1013,9 +1040,10 @@ async function enrichOne(
 ): Promise<boolean> {
   await checkpoint(runGate)
   const table = kind === 'person' ? 'football_person' : 'football_team'
-  const row = getSqlite().prepare(`SELECT name${kind === 'person' ? ', role' : ''} FROM ${table} WHERE id=?`).get(entityId) as {
+  const row = getSqlite().prepare(`SELECT name${kind === 'person' ? ', role' : ', is_national'} FROM ${table} WHERE id=?`).get(entityId) as {
     name: string
     role?: 'player' | 'manager' | 'both'
+    is_national?: number
   } | undefined
   if (!row) throw new Error(`Football ${kind} not found`)
   status = {
@@ -1026,13 +1054,18 @@ async function enrichOne(
     message: `${quizPack ? 'Player Quiz Pack' : 'Enriching'}: ${row.name}`
   }
   try {
-    const payload = await fetchEntityEnrichment(
-      kind,
-      row.name,
-      runGate.signal,
-      quizPack,
-      row.role
-    )
+    const apiFootball = kind === 'team'
+      ? getSqlite().prepare(`SELECT external_id FROM football_source_ref
+          WHERE entity_kind='team' AND source='api-football' AND entity_id=? LIMIT 1`).get(entityId) as
+          | { external_id: string }
+          | undefined
+      : undefined
+    const payload = await fetchEntityEnrichment(kind, row.name, runGate.signal, {
+      national: !!row.is_national,
+      personRole: row.role,
+      includeCareer: kind === 'person',
+      apiFootballTeamId: apiFootball?.external_id ?? null
+    })
     await checkpoint(runGate)
     status = { ...status, phase: 'writing' }
     const saved = saveEntityEnrichment(kind, entityId, payload, quizPack)
@@ -1046,6 +1079,96 @@ async function enrichOne(
     logWarn('football', `player pack skipped ${row.name}: ${message}`)
     return false
   }
+}
+
+/**
+ * Crests, logos, portraits, colours and reference facts for the archive: the nine
+ * competitions, every club (most-played first), then players with a footprint in the
+ * archive. Entities already complete are skipped, so a paused or cancelled run resumes.
+ */
+async function installArtwork(runGate: PauseGate, competitionKeys?: FootballCompetitionKey[]): Promise<void> {
+  const db = getSqlite()
+  const keys = competitionKeys?.length ? competitionKeys : FOOTBALL_COMPETITION_KEYS
+  const scope = `IN (SELECT s.id FROM football_season s JOIN football_competition c ON c.id=s.competition_id
+    WHERE c.key IN (${keys.map(() => '?').join(',')}))`
+  const teams = db.prepare(`
+    SELECT t.id FROM football_team t
+    JOIN (SELECT home_team_id AS id FROM football_match WHERE season_id ${scope}
+      UNION ALL SELECT away_team_id FROM football_match WHERE season_id ${scope}) m ON m.id=t.id
+    WHERE t.image_path IS NULL OR t.enrichment_state<>'ready'
+    GROUP BY t.id ORDER BY COUNT(*) DESC
+  `).all(...keys, ...keys) as { id: number }[]
+  const people = db.prepare(`
+    SELECT p.id FROM football_person p
+    WHERE (p.image_path IS NULL OR p.enrichment_state<>'ready')
+      AND NOT EXISTS(SELECT 1 FROM football_conflict c
+        WHERE c.entity_kind='person' AND c.entity_id=p.id AND c.status='open')
+      AND (EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='person' AND f.entity_id=p.id)
+        OR p.quiz_pack=1
+        OR (SELECT COUNT(*) FROM football_event e JOIN football_match m ON m.id=e.match_id
+            WHERE e.person_id=p.id AND e.type='goal' AND m.season_id ${scope}) >= 3
+        OR (SELECT COUNT(*) FROM football_lineup l JOIN football_match m ON m.id=l.match_id
+            WHERE l.person_id=p.id AND m.season_id ${scope}) >= 5)
+    ORDER BY (SELECT COUNT(*) FROM football_event e WHERE e.person_id=p.id) DESC, p.id
+  `).all(...keys, ...keys) as { id: number }[]
+  status = { ...status, total: keys.length + teams.length + people.length }
+  for (const key of keys) {
+    await checkpoint(runGate)
+    status = { ...status, source: 'wikimedia', phase: 'downloading', requests: status.requests + 1, message: `Competition logo: ${key}` }
+    try {
+      const logo = await fetchCompetitionLogo(key, runGate.signal)
+      if (logo) saveCompetitionLogo(key, logo)
+    } catch (error) {
+      if (error instanceof tasks.TaskCancelledError || runGate.cancelled) throw error
+      logWarn('football', `competition logo skipped ${key}: ${error instanceof Error ? error.message : String(error)}`)
+    }
+    status = { ...status, done: status.done + 1 }
+  }
+  for (const [kind, rows] of [['team', teams], ['person', people]] as const) {
+    for (let index = 0; index < rows.length; index += 20) {
+      await checkpoint(runGate)
+      const saved = await enrichBatch(runGate, kind, rows.slice(index, index + 20).map((row) => row.id))
+      status = { ...status, done: status.done + Math.min(20, rows.length - index), imported: status.imported + saved }
+    }
+  }
+}
+
+/** Fetches and saves reference data for up to twenty entities; failures are logged, not fatal. */
+async function enrichBatch(runGate: PauseGate, kind: 'team' | 'person', ids: number[]): Promise<number> {
+  const db = getSqlite()
+  const rows = db.prepare(kind === 'team'
+    ? `SELECT t.id,t.name,t.is_national AS national,
+        (SELECT external_id FROM football_source_ref r WHERE r.entity_kind='team' AND r.source='api-football'
+          AND r.entity_id=t.id LIMIT 1) AS apiFootballId
+       FROM football_team t WHERE t.id IN (${ids.map(() => '?').join(',')})`
+    : `SELECT id,name,role FROM football_person WHERE id IN (${ids.map(() => '?').join(',')})`
+  ).all(...ids) as Array<{ id: number; name: string; national?: number; apiFootballId?: string | null; role?: 'player' | 'manager' | 'both' }>
+  status = {
+    ...status,
+    source: 'wikimedia',
+    phase: 'downloading',
+    requests: status.requests + 1,
+    message: `Pictures and facts: ${rows.slice(0, 3).map((row) => row.name).join(', ')}${rows.length > 3 ? ` and ${rows.length - 3} more` : ''}`
+  }
+  const results = await fetchEnrichmentBatch(kind, rows.map((row) => ({
+    id: row.id,
+    name: row.name,
+    options: { national: !!row.national, personRole: row.role, apiFootballTeamId: row.apiFootballId ?? null }
+  })), runGate.signal)
+  await checkpoint(runGate)
+  status = { ...status, phase: 'writing' }
+  let saved = 0
+  for (const row of rows) {
+    const result = results.get(row.id)
+    if (!result || result instanceof Error) {
+      noteEnrichmentError(kind, row.id)
+      logWarn('football', `pictures skipped ${row.name}: ${result?.message ?? 'no reference result'}`)
+      continue
+    }
+    if (saveEntityEnrichment(kind, row.id, result, false)) saved++
+    else status = { ...status, conflicts: status.conflicts + 1 }
+  }
+  return saved
 }
 
 async function installPlayerQuizPack(runGate: PauseGate): Promise<void> {
@@ -1405,6 +1528,7 @@ function deepPersonId(
   source: 'statsbomb' | 'wyscout',
   sourceId: string,
   name: string,
+  appearance: { teamId: number; date: string },
   role: 'player' | 'manager' = 'player'
 ): number {
   const existing = sourceRefId('person', source, sourceId)
@@ -1414,6 +1538,19 @@ function deepPersonId(
   }
   const db = getSqlite()
   const normalized = normalizeFootballName(name)
+  const sameTeam = repo.sameTeamPersonIds(normalized, appearance.teamId, appearance.date)
+  if (sameTeam.length === 1) {
+    mergePersonRole(sameTeam[0], role)
+    db.prepare(`
+      INSERT OR IGNORE INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id)
+      VALUES ('person',?,?,?,?,?)
+    `).run(sameTeam[0], source, name, normalized, sourceId)
+    db.prepare(`
+      INSERT INTO football_source_ref (entity_kind,entity_id,source,external_id,fetched_at)
+      VALUES ('person',?,?,?,datetime('now'))
+    `).run(sameTeam[0], source, sourceId)
+    return sameTeam[0]
+  }
   const possible = db.prepare(`
     SELECT DISTINCT p.id FROM football_person p
     JOIN football_alias a ON a.entity_kind='person' AND a.entity_id=p.id
@@ -1467,7 +1604,8 @@ export function saveOverlayFixtureDetails(
           ? deepPersonId(
               source,
               goal.playerSourceId ?? `${match.sourceId}:goal:${normalizeFootballName(goal.playerName)}`,
-              goal.playerName
+              goal.playerName,
+              { teamId: goal.team === 'home' ? homeId : awayId, date: match.date }
             )
           : null
         eventInsert.run(
@@ -1496,7 +1634,7 @@ export function saveOverlayFixtureDetails(
         lineupInsert.run(
           matchId,
           teamId,
-          deepPersonId(source, item.personSourceId, item.playerName, item.role),
+          deepPersonId(source, item.personSourceId, item.playerName, { teamId, date: match.date }, item.role),
           item.role,
           item.starter ? 1 : 0,
           item.shirt,
@@ -1948,13 +2086,172 @@ export function saveApiTopScorers(
   return true
 }
 
+export const FOOTBALL_SETUP_STEPS: readonly FootballSetupStep[] = ['history', 'detail', 'pictures']
+
+function markSetup(step: FootballSetupStep): void {
+  setSetting(`football.setup.${step}`, new Date().toISOString())
+}
+
+const OPENFOOTBALL_JSON = 'https://raw.githubusercontent.com/openfootball/football.json/master'
+const OPENFOOTBALL_LEAGUES: ReadonlyArray<[FootballCompetitionKey, string]> = [
+  ['premier-league', 'en.1'],
+  ['la-liga', 'es.1'],
+  ['serie-a', 'it.1'],
+  ['bundesliga', 'de.1']
+]
+
+/** The start year of the club season in progress: a season runs from July. */
+export function currentClubSeasonStart(now = new Date()): number {
+  return now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1
+}
+
+/**
+ * Points a league file's club names ("Arsenal FC") at the archive's clubs before writing,
+ * preferring clubs from the league's recent seasons, so the current season joins the
+ * existing club pages instead of creating look-alikes.
+ */
+function mapLeagueClubs(competitionKey: FootballCompetitionKey, matches: SourceMatch[], seasonStart: number): void {
+  const db = getSqlite()
+  const recent = db.prepare(`
+    SELECT DISTINCT t.id, t.name FROM football_match m
+    JOIN football_season s ON s.id=m.season_id
+    JOIN football_competition c ON c.id=s.competition_id
+    JOIN football_team t ON t.id IN (m.home_team_id, m.away_team_id)
+    WHERE c.key=? AND s.key>=? AND t.is_national=0
+  `).all(competitionKey, String(seasonStart - 5)) as Array<{ id: number; name: string }>
+  let everyone: Array<{ id: number; name: string }> | null = null
+  const teams = new Map(matches.flatMap((match) => [match.home, match.away]).map((team) => [team.sourceId, team]))
+  for (const team of teams.values()) {
+    if (sourceRefId('team', 'openfootball', team.sourceId) != null) continue
+    const core = footballCoreName(team.name, 'team')
+    let found = recent.filter((row) => footballCoreName(row.name, 'team') === core)
+    if (found.length !== 1) {
+      everyone ??= db.prepare(`SELECT id,name FROM football_team WHERE is_national=0`).all() as Array<{ id: number; name: string }>
+      found = everyone.filter((row) => footballCoreName(row.name, 'team') === core)
+    }
+    if (found.length !== 1) continue
+    db.prepare(`INSERT OR IGNORE INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id)
+      VALUES ('team',?,'openfootball',?,?,?)`).run(found[0].id, team.name, normalizeFootballName(team.name), team.sourceId)
+    db.prepare(`INSERT OR IGNORE INTO football_source_ref (entity_kind,entity_id,source,external_id,fetched_at)
+      VALUES ('team',?,'openfootball',?,datetime('now'))`).run(found[0].id, team.sourceId)
+  }
+}
+
+/** Writes one league file's season: clubs mapped onto the archive first, results partial while it runs. */
+export function writeLeagueFixtures(
+  competitionKey: FootballCompetitionKey,
+  seasonKey: string,
+  matches: SourceMatch[],
+  current: boolean,
+  revision: string
+): number {
+  mapLeagueClubs(competitionKey, matches, Number(seasonKey.slice(0, 4)))
+  return writeSlice({
+    source: 'openfootball',
+    competitionKey,
+    seasonKey,
+    revision,
+    checksum: revision,
+    coverage: { results: current ? 'partial' : 'complete' },
+    matches
+  }, current ? 'current' : 'history')
+}
+
+/** Keyless fixtures and results for this season and last, from OpenFootball's league files. */
+async function installCurrentFixtures(runGate: PauseGate): Promise<void> {
+  const start = currentClubSeasonStart()
+  let latest = getSetting('football.fixtures.latestResult') ?? ''
+  const files = [start - 1, start].flatMap((season) => OPENFOOTBALL_LEAGUES.map(([key, file]) => ({ season, key, file })))
+  status = { ...status, total: status.total + files.length }
+  for (const { season, key, file } of files) {
+    await checkpoint(runGate)
+    const seasonKey = `${season}/${String(season + 1).slice(-2)}`
+    const url = `${OPENFOOTBALL_JSON}/${season}-${String(season + 1).slice(-2)}/${file}.json`
+    let data: Awaited<ReturnType<typeof downloadText>>
+    try {
+      data = await downloadText(url, 'openfootball', runGate.signal)
+    } catch (error) {
+      if (error instanceof tasks.TaskCancelledError || runGate.cancelled) throw error
+      logWarn('football', `fixtures skipped ${key} ${seasonKey}: ${error instanceof Error ? error.message : String(error)}`)
+      status = { ...status, done: status.done + 1 }
+      continue
+    }
+    const matches = parseOpenFootballLeagueJson({
+      json: JSON.parse(data.text),
+      competitionKey: key,
+      seasonKey,
+      sourceUrl: url,
+      fingerprint: data.checksum
+    })
+    status = { ...status, phase: 'writing', competitionKey: key, message: `Fixtures and results: ${key} ${seasonKey}` }
+    const imported = writeLeagueFixtures(key, seasonKey, matches, season === start, data.checksum)
+    for (const match of matches) if (match.status === 'finished' && match.date > latest) latest = match.date
+    status = { ...status, done: status.done + 1, imported: status.imported + imported }
+  }
+  setSetting('football.fixtures.updated', new Date().toISOString())
+  if (latest) setSetting('football.fixtures.latestResult', latest)
+}
+
+async function runHistory(runGate: PauseGate): Promise<void> {
+  await installEngsoccer(runGate)
+  await installOpenFootball(runGate)
+  await installInternational(runGate)
+  await installWikimedia(runGate)
+  await installCurrentFixtures(runGate)
+  repo.mergeDuplicateSeasons()
+  repo.repairPersonIdentities()
+  markSetup('history')
+}
+
+async function runDetail(runGate: PauseGate, competitionKeys?: FootballCompetitionKey[]): Promise<void> {
+  const result = await installTransfermarkt(runGate.signal, async (message, done, total) => {
+    await checkpoint(runGate)
+    status = {
+      ...status,
+      source: 'transfermarkt',
+      phase: done == null ? 'downloading' : 'writing',
+      requests: done == null ? status.requests + 1 : status.requests,
+      message,
+      done: done ?? status.done,
+      total: total ?? status.total
+    }
+  }, competitionKeys)
+  status = { ...status, done: status.total, imported: result.linked }
+  repo.repairPersonIdentities()
+  logInfo('football', `transfermarkt: ${result.linked}/${result.games} games linked, ${result.lineups} lineups, ${result.goalTimelines} goal timelines, ${result.transfers} transfers`)
+  if (!competitionKeys?.length) markSetup('detail')
+}
+
+async function runPictures(runGate: PauseGate, competitionKeys?: FootballCompetitionKey[]): Promise<void> {
+  await installArtwork(runGate, competitionKeys)
+  if (!competitionKeys?.length) markSetup('pictures')
+}
+
+/** Runs the requested setup steps (or every unfinished one) in order, as one task. */
+async function runSetup(runGate: PauseGate, requested?: FootballSetupStep[]): Promise<void> {
+  const state = repo.setupState()
+  const steps = FOOTBALL_SETUP_STEPS.filter((step) => requested?.length ? requested.includes(step) : !state[step])
+  for (const [index, step] of (steps.length ? steps : FOOTBALL_SETUP_STEPS).entries()) {
+    await checkpoint(runGate)
+    status = { ...status, done: 0, total: 0, setupStep: { step, index: index + 1, count: steps.length || FOOTBALL_SETUP_STEPS.length } }
+    if (step === 'history') await runHistory(runGate)
+    else if (step === 'detail') await runDetail(runGate)
+    else await runPictures(runGate)
+  }
+}
+
 async function run(request: FootballSyncRequest, runGate: PauseGate): Promise<void> {
   repo.ensureCompetitionCatalog()
+  if (request.kind === 'setup') {
+    await runSetup(runGate, request.setupSteps)
+    return
+  }
+  if (request.kind === 'fixtures') {
+    await installCurrentFixtures(runGate)
+    return
+  }
   if (request.kind === 'history') {
-    await installEngsoccer(runGate)
-    await installOpenFootball(runGate)
-    await installInternational(runGate)
-    await installWikimedia(runGate)
+    await runHistory(runGate)
     return
   }
   if (request.kind === 'current') {
@@ -1964,13 +2261,23 @@ async function run(request: FootballSyncRequest, runGate: PauseGate): Promise<vo
   if (request.kind === 'deepPack') {
     if (request.deepSource === 'statsbomb') {
       await installStatsBomb(runGate, request.competitionKeys, request.seasonKey)
+      repo.repairPersonIdentities()
       return
     }
     if (request.deepSource === 'wyscout') {
       await installWyscout(runGate, request.competitionKeys, request.seasonKey)
+      repo.repairPersonIdentities()
       return
     }
     throw new Error('Choose StatsBomb or Wyscout for the optional deep pack.')
+  }
+  if (request.kind === 'artwork') {
+    await runPictures(runGate, request.competitionKeys)
+    return
+  }
+  if (request.kind === 'transfermarkt') {
+    await runDetail(runGate, request.competitionKeys)
+    return
   }
   if (request.kind === 'playerQuizPack') {
     await installPlayerQuizPack(runGate)
@@ -1982,6 +2289,18 @@ async function run(request: FootballSyncRequest, runGate: PauseGate): Promise<vo
   status = { ...status, total: 1 }
   const saved = await enrichOne(runGate, request.entityKind, request.entityId, false)
   status = { ...status, done: 1, imported: saved ? 1 : 0 }
+}
+
+export function repairIdentities(): FootballIdentityRepair {
+  if (['running', 'pausing', 'paused'].includes(status.state)) {
+    throw new Error('Wait for the Football sync to finish before merging duplicates')
+  }
+  const result = repo.repairPersonIdentities()
+  logInfo(
+    'football',
+    `identity repair: ${result.merged} merged, ${result.removed} removed, ${result.resolved} conflicts closed`
+  )
+  return result
 }
 
 export function start(request: FootballSyncRequest): FootballSyncStatus {
@@ -2010,11 +2329,19 @@ export function start(request: FootballSyncRequest): FootballSyncStatus {
   gate = runGate
   handle = tasks.create({
     kind: 'footballSync',
-    label: request.kind === 'history'
+    label: request.kind === 'setup'
+      ? 'Set up Football archive'
+      : request.kind === 'fixtures'
+      ? 'Update Football fixtures and results'
+      : request.kind === 'history'
       ? 'Install Football history'
       : request.kind === 'deepPack'
         ? `Install ${request.deepSource ?? 'Football'} detail pack`
-        : 'Refresh Football archive',
+        : request.kind === 'artwork'
+          ? 'Fetch Football crests, portraits and facts'
+          : request.kind === 'transfermarkt'
+            ? 'Install Transfermarkt match detail'
+            : 'Refresh Football archive',
     route: '/football/sync',
     controls: runGate.controls,
     project: () =>

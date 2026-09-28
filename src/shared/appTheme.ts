@@ -24,6 +24,30 @@ export const APP_THEME_OPTIONS = [
     label: 'Twin Peaks',
     subtitle: 'The waiting room',
     description: 'The Red Room, the Douglas firs and the Black Lodge, from the series and Fire Walk with Me.'
+  },
+  {
+    value: 'seinfeld',
+    label: 'Seinfeld',
+    subtitle: 'The show about nothing',
+    description: 'A comedy-club stage in the logo red and yellow, with Jerry, George, Elaine, Kramer and Newman.'
+  },
+  {
+    value: 'berserk',
+    label: 'Berserk',
+    subtitle: 'Struggle',
+    description: "The Deluxe Edition's black leather and red foil, with Kentaro Miura's manga art."
+  },
+  {
+    value: 'one-piece',
+    label: 'One Piece',
+    subtitle: 'The Grand Line',
+    description: 'Wanted-poster parchment, the logo blue and hat-band red, from the anime before the timeskip.'
+  },
+  {
+    value: 'jojo',
+    label: "JoJo's Bizarre Adventure",
+    subtitle: 'Stand proud',
+    description: 'Stardust Crusaders, Diamond is Unbreakable or Golden Wind, with their Stand parameter cards.'
   }
 ] as const
 
@@ -35,7 +59,7 @@ export function parseAppTheme(value: string | null | undefined): AppTheme {
     : 'lain'
 }
 
-// Each theme offers three styles. The values are stored per theme in the
+// Each theme offers one to three styles. The values are stored per theme in the
 // settings table, so they are frozen keys: renaming one orphans a choice.
 export const APP_THEME_VARIANT_OPTIONS = {
   lain: [
@@ -57,6 +81,20 @@ export const APP_THEME_VARIANT_OPTIONS = {
     { value: 'waiting-room', label: 'Waiting room', description: 'Curtain red, the chevron floor and the Red Room photograph.' },
     { value: 'douglas-firs', label: 'Douglas firs', description: 'Fir green and sawmill brown with the forest key art.' },
     { value: 'black-lodge', label: 'Black Lodge', description: 'Black and ivory press photography with red only for actions.' }
+  ],
+  seinfeld: [
+    { value: 'stand-up', label: 'Stand-up', description: 'Dark brick, the red-and-yellow logo and Jerry mid-routine.' }
+  ],
+  berserk: [
+    { value: 'deluxe-edition', label: 'Deluxe Edition', description: 'Leather grain, the embossed Brand, foil red and Guts in Miura\'s ink.' }
+  ],
+  'one-piece': [
+    { value: 'grand-line', label: 'Grand Line', description: 'Parchment, the crew in the eyecatch spyglass and a Wanted poster for your next session.' }
+  ],
+  jojo: [
+    { value: 'stardust-crusaders', label: 'Stardust Crusaders', description: "The opening's violet desert sky and the Magician's Red card." },
+    { value: 'diamond-is-unbreakable', label: 'Diamond is Unbreakable', description: "Morioh's mustard skies, Josuke's purple and the Crazy Diamond card." },
+    { value: 'golden-wind', label: 'Golden Wind', description: "Navy and gold filigree and Gold Experience's checkerboard card." }
   ]
 } as const satisfies Record<AppTheme, readonly { value: string; label: string; description: string }[]>
 
@@ -81,7 +119,11 @@ const BACKGROUNDS: { [T in AppTheme]: Record<AppThemeVariant<T>, string> } = {
   lain: { 'present-day': '#0f0d15', copland: '#0f0d15', 'red-shadows': '#0c090c' },
   'metal-gear': { codec: '#e4e6e0', dossier: '#e2d6b8', 'shadow-moses': '#0d1512' },
   miku: { 'crypton-teal': '#7ed9d3', 'open-sky': '#d6f0f8', 'concert-night': '#091228' },
-  'twin-peaks': { 'waiting-room': '#170e0c', 'douglas-firs': '#10140f', 'black-lodge': '#0c0c0c' }
+  'twin-peaks': { 'waiting-room': '#170e0c', 'douglas-firs': '#10140f', 'black-lodge': '#0c0c0c' },
+  seinfeld: { 'stand-up': '#1c1818' },
+  berserk: { 'deluxe-edition': '#1a181b' },
+  'one-piece': { 'grand-line': '#f0e4be' },
+  jojo: { 'stardust-crusaders': '#231c1e', 'diamond-is-unbreakable': '#f6f0e2', 'golden-wind': '#141a33' }
 }
 
 export function appThemeBackground(theme: AppTheme, variant?: string | null): string {

@@ -992,9 +992,3 @@ export function statsDetail(days: number | null): MusicStatsDetail {
     }
   }
 }
-
-// Explicit associated-work playback still returns ordinary music tracks.
-export function soundtrackTracks(kind: 'album' | 'track', id: number): MusicTrack[] {
-  return (getSqlite().prepare(`${TRACK_SELECT} WHERE ${kind === 'album' ? 't.album_id' : 't.id'}=?
-    ORDER BY COALESCE(t.disc_no,1),COALESCE(t.track_no,9999),t.id LIMIT ?`).all(id, MAX_PLAYBACK_QUEUE_TRACKS) as Record<string, unknown>[]).map(mapTrack)
-}

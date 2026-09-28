@@ -32,6 +32,14 @@ import {
   validateFootballRelativePath
 } from '../src/shared/football'
 
+import {
+  csvFields,
+  linkTmGames,
+  tmEventFromRow,
+  tmGameFromRow,
+  tmSeasonKey
+} from '../src/main/football/transfermarkt'
+
 describe('Football source adapters', () => {
   it('adapts heterogeneous engsoccer headers and filters England to tier one', () => {
     const rows = parseEngsoccerCsv({
@@ -282,6 +290,74 @@ describe('Football source adapters', () => {
       { seasonKey: '2023/24', seasonLabel: '2023/24', winners: ['Manchester City'], runnersUp: ['Arsenal'] }
     ])
     expect(wikimediaPlainText(text)).not.toContain('{|')
+  })
+
+  it('reads the live champions-list table styles: attributes, row headers, flags and notes', () => {
+    const league = [
+      '{| class="wikitable sortable"', '|-', '!width="80"|Season', '!width="250"|Champions (number of titles)',
+      '!width="250|Runners-up (number of times)', '|-', '! colspan="3" |Football League (1888–1892)', '|-',
+      '|style="text-align: center;"|[[1888–89 Football League|1888–89]]',
+      '|[[Preston North End F.C.|Preston North End]]{{efn|name=facup|Also won the [[FA Cup]]}} {{small|(1)}}',
+      '|[[Aston Villa F.C.|Aston Villa]] {{small|(1)}}', '|-', '|style="text-align: center;"|[[1915–16 Football League|1915–16]]',
+      '|colspan="2" style="text-align: center;" |League suspended due to the First World War', '|}'
+    ].join('\n')
+    expect(parseWikimediaHonours(league, ['champions'], ['runners-up'])).toEqual([
+      { seasonKey: '1888/89', seasonLabel: '1888/89', winners: ['Preston North End'], runnersUp: ['Aston Villa'] }
+    ])
+    const replayed = '{| class="wikitable"\n! Season !! Winners !! Runners-up\n|-\n| 1959–60 || [[Real Madrid CF|Real Madrid]]{{efn|The first final was abandoned and replayed}} || [[Eintracht Frankfurt]]\n|}'
+    expect(parseWikimediaHonours(replayed, ['winners'], ['runners-up'])).toEqual([
+      { seasonKey: '1959/60', seasonLabel: '1959/60', winners: ['Real Madrid'], runnersUp: ['Eintracht Frankfurt'] }
+    ])
+    const finals = [
+      '{|class="sortable plainrowheaders wikitable"', '|-', '!scope="col"| Year', '!scope="col"width=110px| Winners',
+      '!scope="col"| Runners-up', '|-', '!scope="row" style="text-align:center"| [[1966 FIFA World Cup|1966]]',
+      '|align=right| {{fb-rt|ENG}}', '| {{sort|Germany, West|{{fb|FRG}}}}', '|}'
+    ].join('\n')
+    expect(parseWikimediaHonours(finals, ['winners'], ['runners-up'])).toEqual([
+      { seasonKey: '1966', seasonLabel: '1966', winners: ['England'], runnersUp: ['West Germany'] }
+    ])
+    const plain = '{| class="wikitable" width=90%;\n!width=8%|Season\n!width=20%|Winners\n!width=20%|Second place\n|- \n| [[1899 Italian Football Championship|1899]] || Genoa (2) || Internazionale Torino\n|}'
+    expect(parseWikimediaHonours(plain, ['winners'], ['second place'])[0]).toMatchObject({
+      seasonKey: '1899', winners: ['Genoa'], runnersUp: ['Internazionale Torino']
+    })
+  })
+
+  it('parses Transfermarkt rows and links games to archive matches by date, score and learned clubs', () => {
+    expect(csvFields('"1","Arsenal FC","a ""quoted"", name",,"2"')).toEqual(['1', 'Arsenal FC', 'a "quoted", name', '', '2'])
+    expect(tmSeasonKey('premier-league', '2023', '2024-05-19')).toBe('2023/24')
+    expect(tmSeasonKey('world-cup', '2009', '2010-06-26')).toBe('2010')
+    const game = (id: string, date: string, home: string, away: string, hg: number, ag: number, homeName = `${home} FC`, awayName = `${away} FC`) =>
+      tmGameFromRow({ game_id: id, competition_id: 'GB1', season: '2023', date, home_club_id: home, away_club_id: away,
+        home_club_goals: String(hg), away_club_goals: String(ag), home_club_name: homeName, away_club_name: awayName,
+        referee: 'Michael Oliver', home_club_formation: '4-3-3', stadium: 'Emirates Stadium', attendance: '59984' })!
+    expect(game('1', '2023-08-12', '11', '703', 2, 1)).toMatchObject({ seasonKey: '2023/24', referee: 'Michael Oliver', attendance: 59984 })
+    expect(tmGameFromRow({ game_id: '9', competition_id: 'FR1', season: '2023', date: '2023-08-12' })).toBeNull()
+
+    const archive = [
+      { id: 100, date: '2023-08-12', homeTeamId: 1, awayTeamId: 2, homeName: 'Arsenal', awayName: 'Nottingham Forest', homeScore: 2, awayScore: 1 },
+      { id: 101, date: '2023-08-12', homeTeamId: 3, awayTeamId: 4, homeName: 'Bournemouth', awayName: 'West Ham United', homeScore: 1, awayScore: 1 },
+      { id: 102, date: '2023-08-21', homeTeamId: 2, awayTeamId: 3, homeName: 'Nottingham Forest', awayName: 'Bournemouth', homeScore: 0, awayScore: 0 },
+      { id: 103, date: '2023-08-27', homeTeamId: 4, awayTeamId: 1, homeName: 'West Ham United', awayName: 'Arsenal', homeScore: 3, awayScore: 3 }
+    ]
+    const linked = linkTmGames([
+      game('a', '2023-08-12', '11', '703', 2, 1, 'Arsenal FC', 'Nottingham Forest'),
+      game('b', '2023-08-12', '989', '379', 1, 1, 'AFC Bournemouth', 'West Ham United'),
+      game('c', '2023-08-21', '703', '989', 0, 0, 'Nottingham Forest', 'AFC Bournemouth'),
+      game('d', '2023-08-28', '379', '11', 3, 3, 'West Ham United', 'Arsenal FC')
+    ], () => archive)
+    expect(Object.fromEntries(linked.teamByClub)).toEqual({ '11': 1, '703': 2, '989': 3, '379': 4 })
+    expect(Object.fromEntries(linked.matchByGame)).toEqual({ a: 100, b: 101, c: 102, d: 103 })
+
+    expect(tmEventFromRow({ game_id: '1', type: 'Goals', minute: '62', club_id: '11', player_id: '5', player_assist_id: '7',
+      description: ', Penalty, 3. Tournament Goal Assist: , Penalty: Fouled player' })).toMatchObject({ type: 'goal', penalty: true, ownGoal: false, relatedPlayerId: '7' })
+    expect(tmEventFromRow({ game_id: '1', type: 'Goals', minute: '49', club_id: '11', player_id: '5', description: ', Own-goal Assist: , Shot on goal' }))
+      .toMatchObject({ ownGoal: true, penalty: false })
+    expect(tmEventFromRow({ game_id: '1', type: 'Cards', minute: '80', club_id: '11', player_id: '5', description: '2. Second yellow  , Foul' }))
+      .toMatchObject({ type: 'card', detail: 'Second yellow' })
+    expect(tmEventFromRow({ game_id: '1', type: 'Substitutions', minute: '70', club_id: '11', player_id: '5', player_in_id: '9', description: ', Tactical' }))
+      .toMatchObject({ type: 'substitution', relatedPlayerId: '9', detail: 'Tactical' })
+    expect(tmEventFromRow({ game_id: '1', type: 'Shootout', minute: '121', club_id: '11', player_id: '5', description: ', Saved' }))
+      .toMatchObject({ type: 'shootout', detail: 'Saved' })
   })
 
   it('rejects a Wikimedia honours slice that loses its frozen boundary or row floor', () => {

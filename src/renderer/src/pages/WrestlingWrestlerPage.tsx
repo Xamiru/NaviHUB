@@ -1,4 +1,3 @@
-import SoundtrackSection from '../components/SoundtrackSection'
 import { useMemo } from 'react'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
@@ -175,7 +174,6 @@ export default function WrestlingWrestlerPage(): JSX.Element {
             </Section>
           )}
 
-          <SoundtrackSection key={w.id} owner={{ kind: 'wrestler', id: w.id }} />
           <Tabs
             id="wrestler-record"
             label="Wrestler record view"

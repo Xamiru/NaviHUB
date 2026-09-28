@@ -13,17 +13,26 @@ vi.mock('../src/main/files', () => ({
 
 import * as football from '../src/main/repos/footballRepo'
 import { saveWikimediaSnapshot } from '../src/main/football/wikimedia'
-import { saveEntityEnrichment } from '../src/main/football/enrichment'
+import { footballCoreName } from '../src/shared/football'
+import {
+  footballEntityFacts,
+  footballTitleCandidates,
+  isFootballEntity,
+  saveEntityEnrichment
+} from '../src/main/football/enrichment'
 import {
   footballSeasonStatus,
   saveApiFixtureDetails,
   saveOverlayFixtureDetails,
   saveApiStandings,
   saveApiTopScorers,
+  writeLeagueFixtures,
   writeOverlayResultSlice,
   writeSlice
 } from '../src/main/football/sync'
+import { parseOpenFootballLeagueJson } from '../src/main/football/sources'
 import type { SourceMatch, SourceSlice } from '../src/main/football/sources'
+import { writeTransfermarktGame, type TmEvent, type TmGame, type TmLineup } from '../src/main/football/transfermarkt'
 
 function seedMatch(): void {
   football.ensureCompetitionCatalog()
@@ -322,6 +331,319 @@ describe('Football repository', () => {
       WHERE source='openfootball' AND facet='scorers'`).get()).toEqual({ state: 'conflicted' })
   })
 
+  it('marks no relegation across a gap in the stored seasons', () => {
+    const pl = db.prepare(`SELECT id FROM football_competition WHERE key='premier-league'`).get() as { id: number }
+    db.exec(`
+      INSERT INTO football_team (id,name) VALUES (3,'Later Club');
+      INSERT INTO football_season (id,competition_id,key,label,status) VALUES (2,${pl.id},'2027/28','2027/28','complete');
+      INSERT INTO football_match (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage)
+        VALUES (2,'Arsenal vs Later Club',2,1,3,'2027-08-17','finished',1,0,'complete');
+      INSERT INTO football_standing (season_id,team_id,played,won,drawn,lost,goals_for,goals_against,goal_difference,points)
+        VALUES (1,1,1,1,0,0,2,1,1,3),(1,2,1,0,0,1,1,2,-1,0);
+    `)
+    expect(football.getSeason(1)!.standings.map((row) => row.fate)).toEqual([null, null])
+  })
+
+  it('derives archive insights for seasons, teams, people and the home page', () => {
+    const pl = db.prepare(`SELECT id FROM football_competition WHERE key='premier-league'`).get() as { id: number }
+    const ucl = db.prepare(`SELECT id FROM football_competition WHERE key='champions-league'`).get() as { id: number }
+    db.exec(`
+      INSERT INTO football_team (id,name) VALUES (3,'Promoted');
+      INSERT INTO football_season (id,competition_id,key,label,status) VALUES
+        (2,${pl.id},'2024/25','2024/25','complete'),(3,${ucl.id},'2024/25','2024/25','complete');
+      INSERT INTO football_match (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage)
+        VALUES (2,'Chelsea vs Arsenal',1,2,1,'2023-10-02','finished',0,0,'complete'),
+               (3,'Arsenal vs Promoted',2,1,3,'2024-08-17','finished',3,1,'complete'),
+               (4,'Arsenal vs Chelsea',3,1,2,'2024-10-02','finished',1,0,'complete');
+      INSERT INTO football_standing (season_id,team_id,played,won,drawn,lost,goals_for,goals_against,goal_difference,points)
+        VALUES (1,2,2,0,1,1,1,2,-1,1),(1,1,2,1,1,0,2,1,1,4);
+      INSERT INTO football_honour (competition_id,season_id,team_id,title,placement,verified)
+        VALUES (${pl.id},1,1,'Champions','winner',1);
+      INSERT INTO football_person (id,name,role) VALUES (90,'Striker','player');
+      INSERT INTO football_event (match_id,team_id,person_id,type,minute,sort_order) VALUES
+        (1,1,90,'goal',10,0),(1,1,90,'goal',20,1),(3,1,90,'goal',5,0),(3,1,90,'goal',9,1),(3,1,NULL,'goal',30,2);
+      INSERT INTO football_match_journal (match_id,watched_at,rating) VALUES (4,'2026-01-05',4.5);
+    `)
+
+    const match = football.getMatch(2)!
+    expect([match.home.id, match.away.id]).toEqual([2, 1])
+
+    const table = football.getSeason(1)!.standings
+    expect(table.map((row) => [row.team.name, row.position, row.fate])).toEqual([
+      ['Arsenal', 1, 'champions-league'],
+      ['Chelsea', 2, 'relegated']
+    ])
+    expect(football.getTeam(1)!.seasonRecords.find((row) => row.seasonId === 1)).toMatchObject({
+      position: 1, teamCount: 2, fate: 'champions-league'
+    })
+
+    const team = football.getTeam(1)!
+    expect(team.scorers).toMatchObject([{ person: { name: 'Striker' }, goals: 4, rank: 1 }])
+    expect(team.rivals[0]).toMatchObject({
+      opponent: { name: 'Chelsea' }, played: 3, won: 2, drawn: 1, lost: 0, goalsFor: 3, goalsAgainst: 1
+    })
+
+    const person = football.getPerson(90)!
+    expect(person.goalsBySeason.map((row) => [row.seasonLabel, row.goals])).toEqual([
+      ['2023/24', 2], ['2024/25', 2]
+    ])
+    expect([person.goalTotal, person.matchTotal, person.scoredIn.length]).toEqual([4, 2, 2])
+
+    const competition = football.listCompetitions().find((item) => item.key === 'premier-league')!
+    expect(competition.holder?.name).toBe('Arsenal')
+    expect(competition.titleLeaders).toMatchObject({ teams: [{ name: 'Arsenal' }], titles: 1 })
+    expect(competition.goalCount).toBe(7)
+
+    expect(football.onThisDay('10-02')?.match.id).toBe(4)
+    expect(football.overview().journal).toMatchObject({ logged: 1, averageRating: 4.5 })
+  })
+
+  it('keeps one scorer identity per team across seasons and quarantines other teams', () => {
+    const match = (
+      seasonKey: string,
+      date: string,
+      home: string,
+      playerName: string
+    ): SourceMatch => ({
+      sourceId: `${seasonKey}-${home}`,
+      competitionKey: 'premier-league',
+      seasonKey,
+      seasonLabel: seasonKey,
+      date,
+      home: { sourceId: home, name: home, country: 'England', national: false },
+      away: { sourceId: 'away', name: 'Away', country: 'England', national: false },
+      stage: null,
+      round: null,
+      status: 'finished',
+      homeScore: 1,
+      awayScore: 0,
+      homeHalfTime: null,
+      awayHalfTime: null,
+      homeExtraTime: null,
+      awayExtraTime: null,
+      homePenalties: null,
+      awayPenalties: null,
+      goals: [{
+        team: 'home',
+        playerName,
+        playerSourceId: null,
+        minute: 12,
+        extraMinute: null,
+        ownGoal: false,
+        penalty: false
+      }],
+      source: 'openfootball',
+      sourceUrl: 'fixture',
+      rawFingerprint: `${seasonKey}-${home}`
+    })
+    const slice = (item: SourceMatch): SourceSlice => ({
+      source: 'openfootball',
+      competitionKey: 'premier-league',
+      seasonKey: item.seasonKey,
+      revision: item.seasonKey,
+      coverage: { results: 'complete', scorers: 'complete' },
+      matches: [item]
+    })
+
+    writeSlice(slice(match('2010/11', '2011-01-01', 'Home', 'Same Scorer')))
+    writeSlice(slice(match('2012/13', '2013-01-01', 'Home', 'Same Scorer')))
+    writeSlice(slice(match('2014/15', '2015-01-01', 'Other', 'Same Scorer')))
+
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM football_person`).get()).toEqual({ n: 2 })
+    const conflicts = football.listConflicts().filter((item) => item.status === 'open')
+    expect(conflicts).toHaveLength(1)
+    expect(conflicts[0].subject).toMatchObject({ teams: ['Other'], firstYear: 2015 })
+    expect(conflicts[0].candidates).toMatchObject([
+      { name: 'Same Scorer', teams: ['Home'], firstYear: 2011, lastYear: 2013 }
+    ])
+  })
+
+  it('folds hyphen-keyed seasons into their slash twin without losing personal rows', () => {
+    const ucl = db.prepare(`SELECT id FROM football_competition WHERE key='champions-league'`).get() as { id: number }
+    db.exec(`
+      INSERT INTO football_season (id,competition_id,key,label,status) VALUES
+        (10,${ucl.id},'2012/13','2012/13','complete'),(11,${ucl.id},'2012-13','2012-13','complete'),
+        (12,${ucl.id},'2013-14','2013-14','complete');
+      INSERT INTO football_stage (id,season_id,key,name,kind) VALUES (5,11,'group-a','Group A','group');
+      INSERT INTO football_match (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage) VALUES
+        (20,'Arsenal vs Chelsea',10,1,2,'2013-05-25','finished',1,0,'not_supplied'),
+        (21,'Arsenal vs Chelsea',11,1,2,'2013-05-25','finished',1,0,'complete'),
+        (22,'Chelsea vs Arsenal',11,2,1,'2012-10-01','finished',2,2,'not_supplied'),
+        (23,'Chelsea vs Arsenal',12,2,1,'2013-10-01','finished',0,0,'not_supplied');
+      UPDATE football_match SET stage_id=5 WHERE id=22;
+      INSERT INTO football_event (match_id,team_id,type,minute,sort_order) VALUES (21,1,'goal',50,0);
+      INSERT INTO football_match_journal (match_id,watched_at,rating) VALUES (21,'2026-01-01',4);
+      INSERT INTO football_favorite (entity_kind,entity_id) VALUES ('match',21);
+    `)
+
+    expect(football.mergeDuplicateSeasons()).toBe(2)
+    expect(db.prepare(`SELECT key FROM football_season WHERE competition_id=? ORDER BY key`).all(ucl.id)).toEqual([
+      { key: '2012/13' }, { key: '2013/14' }
+    ])
+    expect(db.prepare(`SELECT id,season_id AS season FROM football_match WHERE id IN (20,21,22,23) ORDER BY id`).all()).toEqual([
+      { id: 20, season: 10 }, { id: 22, season: 10 }, { id: 23, season: 12 }
+    ])
+    expect(football.getMatch(20)).toMatchObject({ rating: 4, favorite: true })
+    expect(football.getMatch(20)!.events).toHaveLength(1)
+    expect(football.getMatch(22)!.stageName).toBe('Group A')
+    expect(football.mergeDuplicateSeasons()).toBe(0)
+  })
+
+  it('adds the current season from OpenFootball league files onto the archive clubs', () => {
+    const matches = parseOpenFootballLeagueJson({
+      json: { name: 'English Premier League 2026/27', matches: [
+        { round: 'Matchday 1', date: '2026-08-21', time: '20:00', team1: 'Arsenal FC', team2: 'Coventry City FC', score: { ht: [2, 0], ft: [3, 0] } },
+        { round: 'Matchday 9', date: '2026-10-24', team1: 'Chelsea FC', team2: 'Arsenal FC', score: [] },
+        { round: 'Matchday 9', team1: 'No Date FC', team2: 'Arsenal FC' }
+      ] },
+      competitionKey: 'premier-league',
+      seasonKey: '2026/27',
+      sourceUrl: 'fixture',
+      fingerprint: 'f1'
+    })
+    expect(matches.map((match) => [match.home.name, match.status, match.homeScore, match.homeHalfTime])).toEqual([
+      ['Arsenal FC', 'finished', 3, 2], ['Chelsea FC', 'scheduled', null, null]
+    ])
+    expect(writeLeagueFixtures('premier-league', '2026/27', matches, true, 'f1')).toBeGreaterThan(0)
+    const stored = football.listMatches({ competitionKey: 'premier-league', dateFrom: '2026-08-01' })
+    expect(stored.map((match) => [match.home.id, match.away.name, match.status]).sort()).toEqual([
+      [1, 'Coventry City FC', 'finished'], [2, 'Arsenal', 'scheduled']
+    ])
+
+    const moved = [{ ...matches[1], date: '2026-10-25' }]
+    writeLeagueFixtures('premier-league', '2026/27', moved, true, 'f2')
+    expect(football.listMatches({ competitionKey: 'premier-league', dateFrom: '2026-10-01' }).map((match) => match.matchDate)).toEqual(['2026-10-25'])
+  })
+
+  it('reports when each setup step last finished', () => {
+    expect(football.setupState()).toEqual({ history: null, detail: null, pictures: null })
+    db.prepare(`INSERT INTO settings (key,value) VALUES ('football.setup.detail','2026-09-28T10:00:00.000Z')`).run()
+    expect(football.overview().setup).toEqual({ history: null, detail: '2026-09-28T10:00:00.000Z', pictures: null })
+    db.prepare(`INSERT INTO settings (key,value) VALUES ('football.setup.history','2026-09-28T09:00:00.000Z')`).run()
+    expect(football.setupState().history).toBe('2026-09-28T09:00:00.000Z')
+
+    const bundesliga = (db.prepare(`SELECT id FROM football_competition WHERE key='bundesliga'`).get() as { id: number }).id
+    const season = Number(db.prepare(`INSERT INTO football_season (competition_id,key,label) VALUES (?,'1990/91','1990/91')`).run(bundesliga).lastInsertRowid)
+    const insert = db.prepare(`INSERT INTO football_match (title,season_id,home_team_id,away_team_id,match_date,status) VALUES ('x',?,1,2,'1990-08-01','finished')`)
+    for (let index = 0; index < 381; index++) insert.run(season)
+    expect(football.setupState().history).toBeNull()
+  })
+
+  it('repairs people split by the old season-scoped scorer identity', () => {
+    db.exec(`
+      INSERT INTO football_team (id,name) VALUES (3,'Rival');
+      INSERT INTO football_match
+        (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage)
+        VALUES (2,'Arsenal vs Chelsea',1,1,2,'2024-04-01','finished',1,0,'complete'),
+               (3,'Rival vs Chelsea',1,3,2,'2024-05-01','finished',1,0,'complete');
+      INSERT INTO football_person (id,name,role) VALUES
+        (80,'Split Player','player'),(81,'Split Player','player'),(82,'Split Player','player'),
+        (83,'Split Player','player'),(84,'Split Player','player'),(86,'Replaced Scorer','player');
+      INSERT INTO football_person (id,name,role,image_path) VALUES (87,'Pictured Nobody','player','media/p.png');
+      INSERT INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id) VALUES
+        ('person',80,'openfootball','Split Player','split player','a'),
+        ('person',81,'openfootball','Split Player','split player','b'),
+        ('person',82,'international-results','Split Player','split player','c'),
+        ('person',83,'openfootball','Split Player','split player','d'),
+        ('person',84,'openfootball','Split Player','split player','e');
+      INSERT INTO football_event (match_id,team_id,person_id,type,sort_order) VALUES
+        (1,1,80,'goal',0),(2,1,81,'goal',0),(3,3,83,'goal',0);
+      INSERT INTO football_favorite (entity_kind,entity_id) VALUES ('person',81);
+      INSERT INTO football_conflict (entity_kind,entity_id,facet,source_a,value_a,source_b,value_b) VALUES
+        ('person',80,'identity','openfootball','Split Player','archive','Possible matches: 81'),
+        ('person',81,'identity','openfootball','Split Player','archive','Possible matches: 80'),
+        ('person',82,'identity','international-results','Split Player','archive','Possible matches: 80,81'),
+        ('person',83,'identity','openfootball','Split Player','archive','Possible matches: 80,81,82'),
+        ('person',84,'identity','openfootball','Split Player','archive','Possible matches: 80'),
+        ('person',84,'identity','openfootball','Split Player','archive','Possible matches: 83');
+      UPDATE football_conflict SET status='resolved',resolution='Confirmed separate identities'
+        WHERE entity_id=84 AND value_b='Possible matches: 83';
+    `)
+
+    expect(football.repairPersonIdentities()).toEqual({ merged: 1, removed: 2, resolved: 1 })
+
+    expect(db.prepare(`SELECT id FROM football_person WHERE id>=80 ORDER BY id`).all()).toEqual([
+      { id: 80 }, { id: 83 }, { id: 84 }, { id: 87 }
+    ])
+    expect(db.prepare(`SELECT DISTINCT person_id AS id FROM football_event WHERE team_id=1`).all())
+      .toEqual([{ id: 80 }])
+    expect(db.prepare(`SELECT entity_id AS id FROM football_favorite WHERE entity_kind='person'`).get())
+      .toEqual({ id: 80 })
+    expect(db.prepare(`SELECT entity_id AS id,value_b AS value FROM football_conflict
+      WHERE status='open' ORDER BY entity_id`).all()).toEqual([
+      { id: 80, value: 'Possible matches: 83,84' },
+      { id: 83, value: 'Possible matches: 80,84' },
+      { id: 84, value: 'Possible matches: 80,83' }
+    ])
+  })
+
+  it('closes identity conflicts between namesakes born apart or playing before birth', () => {
+    db.exec(`
+      INSERT INTO football_match
+        (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage)
+        VALUES (5,'Arsenal vs Chelsea',1,1,2,'2010-05-01','finished',1,0,'complete');
+      INSERT INTO football_person (id,name,role,birth_date) VALUES
+        (90,'Namesake','player','1998-01-31'),(91,'Namesake','player','1982-05-01'),
+        (92,'Era Player','player','2003-01-07'),(93,'Era Player','player',NULL);
+      INSERT INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id) VALUES
+        ('person',90,'transfermarkt','Namesake','namesake','1'),('person',91,'openfootball','Namesake','namesake','2'),
+        ('person',92,'transfermarkt','Era Player','era player','3'),('person',93,'openfootball','Era Player','era player','4');
+      INSERT INTO football_event (match_id,team_id,person_id,type,sort_order) VALUES (5,1,93,'goal',0);
+      INSERT INTO football_favorite (entity_kind,entity_id) VALUES ('person',90),('person',91),('person',92);
+      INSERT INTO football_conflict (entity_kind,entity_id,facet,source_a,value_a,source_b,value_b) VALUES
+        ('person',90,'identity','transfermarkt','Namesake','archive','Possible matches: 91'),
+        ('person',92,'identity','transfermarkt','Era Player','archive','Possible matches: 93');
+    `)
+
+    expect(football.repairPersonIdentities()).toMatchObject({ merged: 0, resolved: 2 })
+    expect(db.prepare(`SELECT resolution FROM football_conflict WHERE entity_id IN (90,92)`).all()).toEqual([
+      { resolution: 'Same name, different birth years or eras' },
+      { resolution: 'Same name, different birth years or eras' }
+    ])
+  })
+
+  it('never merges namesakes born apart through an undated third namesake', () => {
+    db.exec(`
+      INSERT INTO football_match
+        (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage)
+        VALUES (7,'Arsenal vs Chelsea',1,1,2,'2004-05-01','finished',1,0,'complete'),
+               (8,'Arsenal vs Chelsea',1,1,2,'2006-05-01','finished',1,0,'complete'),
+               (9,'Arsenal vs Chelsea',1,1,2,'2008-05-01','finished',1,0,'complete');
+      INSERT INTO football_person (id,name,role,birth_date) VALUES
+        (100,'Ronaldo','player','1976-09-18'),(101,'Ronaldo','player',NULL),(102,'Ronaldo','player','1985-02-05');
+      INSERT INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id) VALUES
+        ('person',100,'transfermarkt','Ronaldo','ronaldo','1'),('person',101,'openfootball','Ronaldo','ronaldo','2'),
+        ('person',102,'transfermarkt','Ronaldo','ronaldo','3');
+      INSERT INTO football_event (match_id,team_id,person_id,type,sort_order) VALUES
+        (7,1,100,'goal',0),(8,1,101,'goal',0),(9,1,102,'goal',0);
+    `)
+
+    expect(football.repairPersonIdentities()).toMatchObject({ merged: 1 })
+    expect(db.prepare(`SELECT id FROM football_person WHERE id>=100 ORDER BY id`).all())
+      .toEqual([{ id: 100 }, { id: 102 }])
+  })
+
+  it('joins a club player to the one namesake who played for their national team', () => {
+    db.exec(`
+      INSERT INTO football_team (id,name,is_national) VALUES (10,'England',1),(11,'Scotland',1);
+      INSERT INTO football_match
+        (id,title,season_id,home_team_id,away_team_id,match_date,status,home_score,away_score,event_coverage)
+        VALUES (6,'England vs Scotland',1,10,11,'2000-06-01','finished',1,1,'complete');
+      INSERT INTO football_person (id,name,role,birth_date,nationality) VALUES
+        (95,'Club Star','player','1974-11-16','England'),(96,'Club Star','player',NULL,NULL),
+        (97,'Club Star','player',NULL,NULL);
+      INSERT INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id) VALUES
+        ('person',95,'transfermarkt','Club Star','club star','1'),('person',96,'international-results','Club Star','club star','2'),
+        ('person',97,'international-results','Club Star','club star','3');
+      INSERT INTO football_event (match_id,team_id,person_id,type,sort_order) VALUES
+        (1,1,95,'goal',0),(6,10,96,'goal',0),(6,11,97,'goal',1);
+    `)
+
+    expect(football.repairPersonIdentities()).toMatchObject({ merged: 1 })
+    expect(db.prepare(`SELECT DISTINCT person_id AS id FROM football_event WHERE match_id=6 ORDER BY sort_order`).all())
+      .toEqual([{ id: 95 }, { id: 97 }])
+  })
+
   it('reconciles retained matches when a complete refresh prunes one source assertion', () => {
     const match = (
       source: SourceMatch['source'],
@@ -418,10 +740,12 @@ describe('Football repository', () => {
 
   it('merges a quarantined person only into the explicitly selected target', () => {
     db.exec(`
-      INSERT INTO football_person (id,name,role) VALUES
-        (70,'Source Player','player'),(71,'Canonical Player','manager');
+      INSERT INTO football_person (id,name,role,position) VALUES
+        (70,'Source Player','player','Midfielder'),(71,'Canonical Player','manager',NULL);
       INSERT INTO football_tenure (person_id,team_id,role,verified,complete)
         VALUES (70,1,'player',1,1);
+      INSERT INTO football_transfer (person_id,to_team_id,from_team,to_team,source,external_id)
+        VALUES (70,1,'Youth','Arsenal','transfermarkt','t70');
       INSERT INTO football_favorite (entity_kind,entity_id) VALUES ('person',70);
       INSERT INTO football_external_link (entity_kind,entity_id,provider,url)
         VALUES ('person',70,'website','https://example.com/player');
@@ -438,7 +762,10 @@ describe('Football repository', () => {
     football.resolveConflict(conflict.id, { action: 'mergeEntity', targetEntityId: 71 })
 
     expect(db.prepare(`SELECT id FROM football_person WHERE id=70`).get()).toBeUndefined()
-    expect(db.prepare(`SELECT role FROM football_person WHERE id=71`).get()).toEqual({ role: 'both' })
+    expect(db.prepare(`SELECT role,position FROM football_person WHERE id=71`).get())
+      .toEqual({ role: 'both', position: 'Midfielder' })
+    expect(db.prepare(`SELECT person_id FROM football_transfer WHERE external_id='t70'`).get())
+      .toEqual({ person_id: 71 })
     expect(db.prepare(`SELECT person_id FROM football_tenure WHERE team_id=1`).get()).toEqual({
       person_id: 71
     })
@@ -455,6 +782,137 @@ describe('Football repository', () => {
       status: 'resolved',
       resolution: 'Merged into person 71'
     })
+  })
+
+  it('matches reference pages by distinctive name and football identity, then reads their facts', () => {
+    expect(footballCoreName('Arsenal F.C.', 'team')).toBe(footballCoreName('Arsenal', 'team'))
+    expect(footballCoreName('FC Barcelona', 'team')).toBe('barcelona')
+    expect(footballCoreName('England national football team', 'team')).toBe('england')
+    expect(footballCoreName('Thierry Henry (footballer)', 'person')).toBe('thierry henry')
+    expect(footballTitleCandidates('England', 'team', true)).toEqual(['England national football team'])
+    const claim = (id: string) => ({ mainsnak: { datavalue: { value: { id } } } })
+    const value = (v: unknown) => ({ mainsnak: { datavalue: { value: v } } })
+    expect(isFootballEntity({ claims: { P641: [claim('Q2736')] } }, 'team')).toBe(true)
+    expect(isFootballEntity({ claims: { P31: [claim('Q5')] } }, 'team')).toBe(false)
+    expect(isFootballEntity({ claims: { P106: [claim('Q937857')] } }, 'person')).toBe(true)
+
+    const club = footballEntityFacts({
+      claims: {
+        P571: [value({ time: '+1886-12-01T00:00:00Z' })],
+        P6364: [claim('Q3142'), claim('Q23444')],
+        P115: [claim('Q1'), claim('Q2')]
+      }
+    }, {
+      Q3142: { claims: { P465: [value('FF0000')] } },
+      Q23444: { claims: { P465: [value('FFFFFF')] } },
+      Q2: { labels: { en: { value: 'Emirates Stadium' } }, claims: { P1083: [value({ amount: '+60704' })] } }
+    })
+    expect(club).toMatchObject({ foundedYear: 1886, colors: ['#ff0000', '#ffffff'], venue: 'Emirates Stadium', venueCapacity: 60704 })
+    expect(footballEntityFacts({ claims: { P465: [value('000080'), value('960018')] } }, {}).colors).toEqual(['#000080', '#960018'])
+
+    const person = footballEntityFacts({
+      claims: {
+        P569: [value({ time: '+1977-08-17T00:00:00Z' })],
+        P2048: [value({ amount: '+1.88', unit: 'http://www.wikidata.org/entity/Q11573' })],
+        P413: [claim('Q280658')],
+        P19: [claim('Q216844')],
+        P1532: [claim('Q142')]
+      }
+    }, {
+      Q280658: { labels: { en: { value: 'forward' } } },
+      Q216844: { labels: { en: { value: 'Les Ulis' } } },
+      Q142: { labels: { en: { value: 'France' } } }
+    })
+    expect(person).toMatchObject({ birthDate: '1977-08-17', heightCm: 188, position: 'forward', birthPlace: 'Les Ulis', nationality: 'France' })
+  })
+
+  it('stores reference colours, venue and player facts without overwriting them with blanks', () => {
+    db.exec(`INSERT INTO football_person (id,name,role) VALUES (20,'Reference Player','player')`)
+    const base = {
+      title: 'Ref', body: 'Body', sourceUrl: 'https://en.wikipedia.org/wiki/Ref', revision: '1',
+      imagePath: 'media/crest.png', imageLicense: 'Fair use', birthDate: null, foundedYear: 1886, career: []
+    }
+    expect(saveEntityEnrichment('team', 1, {
+      ...base, qid: 'Q9617', colors: ['#ef0107', '#ffffff'], venue: 'Highbury', venueCapacity: 38419,
+      managers: [{ personQid: 'Q48893', name: 'Arsène Wenger', startDate: '1996-10-01', endDate: '2018-05-21' }]
+    }, false)).toBe(true)
+    expect(football.getTeam(1)!.tenures.filter((tenure) => tenure.role === 'manager').map((tenure) => tenure.person?.name)).toEqual(['Arsène Wenger'])
+    expect(saveEntityEnrichment('team', 1, { ...base, qid: 'Q9617', imagePath: null, colors: [] }, false)).toBe(true)
+    expect(db.prepare(`SELECT image_path,primary_color,secondary_color,venue,venue_capacity FROM football_team WHERE id=1`).get()).toEqual({
+      image_path: 'media/crest.png', primary_color: '#ef0107', secondary_color: '#ffffff', venue: 'Highbury', venue_capacity: 38419
+    })
+    expect(football.getTeam(1)!.colors).toEqual({ primary: '#ef0107', secondary: '#ffffff' })
+    saveEntityEnrichment('person', 20, {
+      ...base, qid: 'Q45901', position: 'forward', heightCm: 188, birthPlace: 'Les Ulis',
+      career: [{ teamQid: 'Q9617', teamName: 'Arsenal', startDate: '1999-08-01', endDate: '2007-06-30' }]
+    }, false)
+    expect(football.getPerson(20)).toMatchObject({ position: 'forward', heightCm: 188, birthPlace: 'Les Ulis', quizPack: false })
+    expect(football.getPerson(20)!.tenures.map((tenure) => tenure.team.name)).toEqual(['Arsenal'])
+  })
+
+  it('joins a Wikidata coach only to a namesake who played for that club', () => {
+    db.exec(`
+      INSERT INTO football_person (id,name,role) VALUES (30,'Club Legend','player'),(31,'Other Club Man','player');
+      INSERT INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id) VALUES
+        ('person',30,'openfootball','Club Legend','club legend','1'),
+        ('person',31,'openfootball','Other Club Man','other club man','2');
+      INSERT INTO football_event (match_id,team_id,person_id,type,sort_order) VALUES (1,1,30,'goal',0),(1,2,31,'goal',1);
+    `)
+    const base = {
+      title: 'Ref', body: 'Body', sourceUrl: 'https://en.wikipedia.org/wiki/Ref', revision: '1',
+      imagePath: null, imageLicense: null, birthDate: null, foundedYear: null, career: [], qid: 'Q9617'
+    }
+    saveEntityEnrichment('team', 1, { ...base, managers: [
+      { personQid: 'Q1', name: 'Club Legend', startDate: '2030-07-01', endDate: null },
+      { personQid: 'Q2', name: 'Other Club Man', startDate: '2030-07-01', endDate: null }
+    ] }, false)
+    const coaches = db.prepare(`SELECT person_id AS id FROM football_tenure WHERE team_id=1 AND role='manager' ORDER BY sort_order`)
+      .all() as { id: number }[]
+    expect(coaches[0].id).toBe(30)
+    expect(db.prepare(`SELECT role FROM football_person WHERE id=30`).get()).toEqual({ role: 'both' })
+    expect(coaches[1].id).not.toBe(31)
+    expect(db.prepare(`SELECT role FROM football_person WHERE id=31`).get()).toEqual({ role: 'player' })
+    expect(db.prepare(`SELECT value_b FROM football_conflict WHERE entity_kind='person' AND entity_id=?`).get(coaches[1].id))
+      .toEqual({ value_b: 'Possible matches: 31' })
+  })
+
+  it('writes a linked Transfermarkt game: lineups, checked goals with assists, cards, subs and match facts', () => {
+    const game: TmGame = {
+      gameId: 'tm1', competitionKey: 'premier-league', seasonKey: '2023/24', date: '2024-03-01',
+      homeClubId: 'h', awayClubId: 'a', homeName: 'Arsenal FC', awayName: 'Chelsea FC', homeGoals: 2, awayGoals: 1,
+      stadium: 'Emirates Stadium', attendance: 60000, referee: 'Michael Oliver',
+      homeFormation: '4-3-3', awayFormation: '4-2-3-1', homeManager: 'Mikel Arteta', awayManager: 'Mauricio Pochettino'
+    }
+    const teams = new Map([['h', 1], ['a', 2]])
+    const lineup = (club: string, count: number): TmLineup[] => Array.from({ length: count }, (_, i) => ({
+      gameId: 'tm1', playerId: `${club}${i}`, playerName: `${club} Player ${i}`, clubId: club, starter: i < 11,
+      position: i === 0 ? 'Goalkeeper' : 'Centre-Back', shirt: i + 1, captain: i === 3
+    }))
+    const event = (type: TmEvent['type'], club: string, player: string, extra: Partial<TmEvent> = {}): TmEvent => ({
+      gameId: 'tm1', minute: 10, type, clubId: club, playerId: player, relatedPlayerId: null, detail: null, ownGoal: false, penalty: false, ...extra
+    })
+    const players = new Map([['h9', { name: 'h Player 9', birthDate: '1990-01-01', position: 'Centre-Forward', foot: 'right', heightCm: 185, nationality: 'England' }]])
+    const events = [
+      event('goal', 'h', 'h9', { minute: 12, relatedPlayerId: 'h8' }),
+      event('goal', 'h', 'h9', { minute: 60, penalty: true }),
+      event('goal', 'a', 'a9', { minute: 70 }),
+      event('card', 'a', 'a4', { minute: 30, detail: 'Yellow card' }),
+      event('substitution', 'h', 'h10', { minute: 75, relatedPlayerId: 'h12', detail: 'Tactical' })
+    ]
+
+    expect(writeTransfermarktGame(game, 1, teams, players, [...lineup('h', 14), ...lineup('a', 13)], events)).toEqual({ lineups: true, goals: true })
+    const match = football.getMatch(1)!
+    expect(match).toMatchObject({ referee: 'Michael Oliver', homeFormation: '4-3-3', awayManager: 'Mauricio Pochettino', lineupCoverage: 'complete' })
+    expect(match.lineups).toHaveLength(27)
+    expect(match.events.filter((item) => item.type === 'goal').map((item) => [item.teamId, item.person?.name, item.relatedPerson?.name ?? null, item.penalty]))
+      .toEqual([[1, 'h Player 9', 'h Player 8', false], [1, 'h Player 9', null, true], [2, 'a Player 9', null, false]])
+    expect(match.events.map((item) => item.type).sort()).toEqual(['card', 'goal', 'goal', 'goal', 'substitution'])
+    const scorer = match.events[0].person!
+    expect(football.getPerson(scorer.id)).toMatchObject({ heightCm: 185, foot: 'right', position: 'Centre-Forward' })
+
+    const disagreeing = writeTransfermarktGame(game, 1, teams, players, [], [event('goal', 'h', 'h9')])
+    expect(disagreeing).toEqual({ lineups: false, goals: false })
+    expect(football.getMatch(1)!.events.map((item) => item.type).sort()).toEqual(['card', 'goal', 'goal', 'goal', 'substitution'])
   })
 
   it('clears stale Player Quiz Pack facts when refreshed career evidence is insufficient', () => {

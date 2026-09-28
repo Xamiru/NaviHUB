@@ -99,37 +99,60 @@ export function setWatched(
   return { mediaId: row.media_id, firstTime: watched && !row.watched_at }
 }
 
+// The progress footprint of an episode's tick (checklistRepo.logEpisodeProgress).
+export function setProgressUndo(episodeId: number, footprint: string | null): void {
+  getSqlite().prepare('UPDATE tv_episode SET progress_undo = ? WHERE id = ?').run(footprint, episodeId)
+}
+
+// Reads and clears the footprint, so one un-tick can retract it only once.
+export function takeProgressUndo(episodeId: number): string | null {
+  const row = getSqlite()
+    .prepare('SELECT progress_undo FROM tv_episode WHERE id = ?')
+    .get(episodeId) as { progress_undo: string | null } | undefined
+  if (row?.progress_undo) setProgressUndo(episodeId, null)
+  return row?.progress_undo ?? null
+}
+
 // Whole-season toggle. Unaired episodes are skipped when marking watched (you
 // cannot have seen them) but ARE cleared when unmarking, so the action is a
-// reliable undo. Returns how many episodes became watched for the first time —
-// ipc.ts logs that many progress events, so a season tick credits the checklist
-// the same as ticking each episode by hand.
+// reliable undo. Marking returns the episodes that became watched for the first
+// time — ipc.ts logs one progress event each, so a season tick credits the
+// checklist the same as ticking each episode by hand. Unmarking returns the
+// cleared episodes' progress footprints, newest tick first, for ipc.ts to retract.
 export function setSeasonWatched(
   mediaId: number,
   season: number,
   watched: boolean,
   today: string
-): { firstTime: number } {
+): { newlyWatched: number[]; undos: string[] } {
   const db = getSqlite()
-  const tx = db.transaction((): { firstTime: number } => {
+  const tx = db.transaction((): { newlyWatched: number[]; undos: string[] } => {
     const rows = db
-      .prepare('SELECT id, air_date, watched_at FROM tv_episode WHERE media_id = ? AND season = ?')
+      .prepare(
+        `SELECT id, air_date, watched_at, progress_undo FROM tv_episode
+         WHERE media_id = ? AND season = ? ORDER BY number`
+      )
       .all(mediaId, season) as {
       id: number
       air_date: string | null
       watched_at: string | null
+      progress_undo: string | null
     }[]
-    let firstTime = 0
+    const newlyWatched: number[] = []
+    const undos: string[] = []
     for (const r of rows) {
       if (watched) {
         if (r.watched_at || isUnaired(r.air_date, today)) continue
         db.prepare(`UPDATE tv_episode SET watched_at = datetime('now') WHERE id = ?`).run(r.id)
-        firstTime++
+        newlyWatched.push(r.id)
       } else if (r.watched_at) {
-        db.prepare('UPDATE tv_episode SET watched_at = NULL WHERE id = ?').run(r.id)
+        db.prepare('UPDATE tv_episode SET watched_at = NULL, progress_undo = NULL WHERE id = ?').run(
+          r.id
+        )
+        if (r.progress_undo) undos.push(r.progress_undo)
       }
     }
-    return { firstTime }
+    return { newlyWatched, undos: undos.reverse() }
   })
   return tx()
 }

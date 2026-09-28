@@ -1,5 +1,4 @@
 import type { GameRun, GameRunInput, GameRunHistory, GameRunNoteInput, MusicTrackPersonal, MusicSmartInput, MusicSmartPlaylist, MusicSmartRules, MusicSmartPreview } from './types'
-import type { SoundtrackOwner, SoundtrackTarget, SoundtrackInput, SoundtrackLink } from './types'
 import type { VnDiscoverFilter, VnDiscoverPage, VnTagResult, VnEditionDetail } from './types'
 import type { VnCaptureInput, VnCapture, VnCaptureSummary } from './types'
 import type { WrestlingJourneySummary, WrestlingJourneyInput, WrestlingJourneyDetail, WrestlingJourneyStepInput, WrestlingJourneyTarget } from './types'
@@ -240,6 +239,7 @@ import type {
   MusicDecade,
   MusicGenre,
   MusicLyrics,
+  MusicLyricsStatus,
   MusicArtist,
   MusicArtistDetail,
   MusicArtResult,
@@ -298,6 +298,7 @@ import type {
   FootballCompetitionDetail,
   FootballCompetitionKey,
   FootballConflictResolution,
+  FootballIdentityRepair,
   FootballCurrentSnapshot,
   FootballEntityFilter,
   FootballEntityKind,
@@ -345,13 +346,6 @@ export interface NaviApi {
     remove(id: number): Promise<void>
     preview(rules: MusicSmartRules, page: number): Promise<MusicSmartPreview>
     queue(id: number): Promise<MusicTrack[]>
-  }
-  soundtracks: {
-    list(owner: SoundtrackOwner): Promise<SoundtrackLink[]>
-    search(kind: SoundtrackOwner['kind'], query: string): Promise<SoundtrackTarget[]>
-    save(id: number | null, input: SoundtrackInput): Promise<number>
-    remove(id: number): Promise<void>
-    tracks(id: number): Promise<MusicTrack[]>
   }
   vnExplore: {
     discover(input: VnDiscoverFilter): Promise<VnDiscoverPage>
@@ -1116,6 +1110,10 @@ export interface NaviApi {
     // lyrics: a sidecar .lrc wins; fetchLyrics looks up embedded tags, then LRCLIB, and stores the result
     lyrics(trackId: number): Promise<MusicLyrics>
     fetchLyrics(trackId: number): Promise<MusicLyrics>
+    // bulk lookup for every track with nothing stored; also runs after each download run
+    lyricsFetchMissing(): Promise<MusicLyricsStatus>
+    lyricsCancel(): Promise<void>
+    lyricsStatus(): Promise<MusicLyricsStatus>
     artist(id: number): Promise<MusicArtistDetail | null>
     album(id: number): Promise<MusicAlbumDetail | null>
     tracks(filter: { search?: string; likedOnly?: boolean }): Promise<MusicTrack[]>
@@ -1317,6 +1315,7 @@ export interface NaviApi {
     resumeSync(): Promise<void>
     cancelSync(): Promise<void>
     resolveConflict(id: number, resolution: FootballConflictResolution): Promise<void>
+    repairIdentities(): Promise<FootballIdentityRepair>
   }
 
   player: {

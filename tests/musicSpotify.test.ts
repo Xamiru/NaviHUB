@@ -635,6 +635,19 @@ describe('Spotify staged file recovery', () => {
     } finally { rmSync(root, { recursive: true, force: true }) }
   })
 
+  it('moves only the files of finished runs while other downloads are still being written', () => {
+    const root = mkdtempSync(join(tmpdir(), 'spotify-staging-'))
+    try {
+      const stage = join(root, '.spotdl', 'navihub-downloads', 'Artist', 'Album')
+      mkdirSync(stage, { recursive: true })
+      const done = join(stage, '1-01 - Done [navirun-a] [navihub-done1]')
+      writeFileSync(`${done}.opus`, 'complete')
+      writeFileSync(join(stage, '1-02 - Busy [navirun-b] [navihub-busy1].opus'), 'ffmpeg still writing')
+      expect(recoverSpotifyOutputs(root, [done])).toEqual(['Artist/Album/1-01 - Done [navirun-a] [navihub-done1].opus'])
+      expect(existsSync(join(stage, '1-02 - Busy [navirun-b] [navihub-busy1].opus'))).toBe(true)
+    } finally { rmSync(root, { recursive: true, force: true }) }
+  })
+
   it('discards every file an unfinished run staged for one track', () => {
     const root = mkdtempSync(join(tmpdir(), 'spotify-staging-'))
     try {

@@ -1,5 +1,4 @@
 import GamePlaythroughSection, { GameResumeCard } from '../components/GamePlaythroughSection'
-import SoundtrackSection from '../components/SoundtrackSection'
 import { useEffect, useState } from 'react'
 import Pager from '../components/Pager'
 import StatTile, { StatInline } from '../components/StatTile'
@@ -52,7 +51,11 @@ import type {
   HltbTimes
 } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
-import { celebrateProgress } from '../lib/themeFx'
+import { celebrateCompletion, celebrateProgress } from '../lib/themeFx'
+import SynopsisText from '../components/theme/SynopsisText'
+import StandStats from '../components/theme/StandStats'
+import { standParameters } from '../lib/standStats'
+import { useAppTheme } from '../lib/useAppTheme'
 
 type DetailTab = 'overview' | 'cast' | 'video' | 'media' | 'achievements' | 'art'
 
@@ -62,6 +65,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const scoreMax = useScoreMax()
+  const { theme } = useAppTheme()
   const [torrentsOpen, setTorrentsOpen] = useState(false)
   const [refreshOpen, setRefreshOpen] = useState(false)
   const [coverOpen, setCoverOpen] = useState(false)
@@ -260,6 +264,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               <QuickEdit cfg={cfg} m={m} />
 
               <div className="flex flex-wrap gap-6 my-5">{statsNode}</div>
+              {theme === 'jojo' && (
+                <StandStats params={standParameters(m, scoreMax, cfg.logUnitLabel ? `${cfg.logUnitLabel}s` : 'units')} />
+              )}
 
               {tagRow}
             </div>
@@ -280,9 +287,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           {m.mediaType === 'game' && <GameResumeCard key={m.id} mediaId={m.id} onOpen={() => setTab('media')} />}
           {m.synopsis && (
             <Section className="mb-6" title="Synopsis">
-              <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">
-                {m.synopsis}
-              </p>
+              <SynopsisText text={m.synopsis} />
             </Section>
           )}
           {m.mediaType === 'visual_novel' && <Link className="btn mb-6 inline-flex" to={`/visual-novels/${m.id}/reading`}>Reading plan and notebook</Link>}
@@ -294,7 +299,6 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           )}
           <CompaniesSection cfg={cfg} m={m} onChange={refresh} />
           <RelatedSection cfg={cfg} m={m} />
-          <SoundtrackSection key={m.id} owner={{ kind: 'media', id: m.id }} />
           </>
         )}
 
@@ -414,7 +418,12 @@ function QuickEdit({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
     const prev = status
     const next = status === s ? null : s
     setStatus(next)
-    void patch({ status: next }, () => setStatus(prev))
+    // Completing a unit-based item fills progress to the total, as the edit form does.
+    const fill =
+      cfg.unitProgress && isCompletedStatus(next, statuses) && m.totalUnits != null
+        ? { progress: m.totalUnits }
+        : {}
+    void patch({ status: next, ...fill }, () => setStatus(prev))
   }
   const pickScore = (n: number): void => {
     const prev = score
@@ -504,6 +513,9 @@ function LogProgressButton({
     try {
       const res = await api.media.logProgress(m.id)
       celebrateProgress(anchor)
+      if (!finished && isCompletedStatus(res.status, statuses)) {
+        celebrateCompletion(res.title, { coverPath: m.coverPath, total: cfg.formatProgressStat({ ...m, progress: m.totalUnits ?? m.progress + 1 }) })
+      }
       await qc.invalidateQueries({ queryKey: qk.media.all })
       await qc.invalidateQueries({ queryKey: qk.checklist.all })
       if (res.startedRewatch) toast(`${res.title} — pass #${res.rewatchCount} started`, 'success')

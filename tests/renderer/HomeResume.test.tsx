@@ -78,7 +78,10 @@ describe('Home resume failure', () => {
     ['lain', 'lain-wired.jpg'],
     ['metal-gear', 'mgs-snake-sketch.jpg'],
     ['miku', 'miku-sky.png'],
-    ['twin-peaks', 'peaks-red.jpg']
+    ['twin-peaks', 'peaks-red.jpg'],
+    ['berserk', 'berserk-cloak.jpg'],
+    ['one-piece', 'onepiece-crew.jpg'],
+    ['jojo', 'jojo-sc-hero.jpg']
   ])('keeps the saved video action below the %s cover wall', async (theme, artwork) => {
     settingsAll.mockResolvedValue({ ...widgetSettings(), 'ui.theme': theme })
     const media = { id: 9, mediaType: 'anime', title: 'Serial Experiments Lain', coverPath: 'media/lain.jpg', progress: 7, totalUnits: 13 }

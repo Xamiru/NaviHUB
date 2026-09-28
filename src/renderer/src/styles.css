@@ -327,6 +327,41 @@
     @apply border-signal-live/60 bg-signal-live/5;
     box-shadow: inset 0 0 0 1px rgb(var(--signal-live) / 0.16);
   }
+  /* Football identity. Components set --football-c (RGB channels) and
+     --football-ci (ink) from @shared/footballIdentity; the hues are data, not theme. */
+  .football-chip {
+    @apply inline-flex h-[1.375rem] min-w-[2.25rem] shrink-0 items-center justify-center rounded
+           px-1.5 text-[10px] font-bold tracking-wide;
+    background: rgb(var(--football-c));
+    color: var(--football-ci);
+  }
+  .football-honour {
+    @apply inline-flex items-baseline gap-1.5 rounded-full border border-line-strong
+           bg-surface-panel/60 px-3 py-0.5 text-xs text-ink-secondary;
+  }
+  .football-pitch {
+    @apply relative overflow-hidden rounded-lg border border-line-subtle;
+    background: repeating-linear-gradient(90deg, #1f5130 0 10%, #235a36 10% 20%);
+  }
+  .football-pitch::before {
+    content: '';
+    position: absolute;
+    inset: 5%;
+    border: 2px solid rgb(255 255 255 / 0.22);
+  }
+  .football-pitch::after {
+    content: '';
+    position: absolute;
+    top: 5%;
+    bottom: 5%;
+    left: 50%;
+    border-left: 2px solid rgb(255 255 255 / 0.22);
+  }
+  .football-grid-lines {
+    background-image: linear-gradient(rgb(var(--ink-primary)) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--ink-primary)) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
   /* Frameless pop-out widget: the whole pill is a drag handle, interactive
      controls opt back out (clicks never reach a drag region). */
   .app-drag {
@@ -1779,23 +1814,13 @@ html[data-theme='twin-peaks'][data-theme-variant='black-lodge'] .home-art-credit
   .task-sprite-snake { animation: task-snake 3.6s steps(27) infinite; }
   .task-sprite-hachune { animation: task-hachune 0.8s steps(8) infinite; }
   .miku-judgement { animation: miku-judge 0.95s ease-out forwards; }
-  .route-fx { animation: route-fx-hold 0.4s linear; }
   .route-fx-lain { animation: route-fx-wired 0.22s steps(4); }
-  .route-fx-metal-gear { animation: route-fx-codec 0.16s steps(3); }
-  .route-fx-twin-peaks { animation: route-fx-show 0.4s linear; }
-  .route-fx-twin-peaks i:first-child { animation: curtain-left 0.38s ease-in-out; }
-  .route-fx-twin-peaks i:last-child { animation: curtain-right 0.38s ease-in-out; }
   .theme-toast-metal-gear { animation: codec-open 0.3s ease-out; }
 }
 @keyframes task-snake { to { background-position: -756px 0; } }
 @keyframes task-hachune { to { background-position: -192px 0; } }
 @keyframes miku-judge { 0% { opacity: 0; transform: translate(-50%, -60%) scale(0.6); } 20% { opacity: 1; transform: translate(-50%, -130%) scale(1.08); } 70% { opacity: 1; transform: translate(-50%, -130%); } 100% { opacity: 0; transform: translate(-50%, -170%); } }
-@keyframes route-fx-hold { from, to { opacity: 0; } }
-@keyframes route-fx-show { from, to { opacity: 1; } }
 @keyframes route-fx-wired { 0% { opacity: 1; transform: translateY(-6px); } 50% { opacity: 0.7; transform: translateY(5px); } 100% { opacity: 0; transform: none; } }
-@keyframes route-fx-codec { 0% { opacity: 0.9; background-position: 0 0; } 50% { opacity: 0.7; background-position: 0 7px; } 100% { opacity: 0; } }
-@keyframes curtain-left { 0%, 100% { transform: translateX(-101%); } 45%, 55% { transform: none; } }
-@keyframes curtain-right { 0%, 100% { transform: translateX(101%); } 45%, 55% { transform: none; } }
 @keyframes codec-open { from { clip-path: inset(48% 0 48% 0); } to { clip-path: inset(0); } }
 
 /* ---- Lain ---------------------------------------------------------------- */
@@ -1848,7 +1873,6 @@ html[data-theme='lain'] :is([aria-busy='true'], .themed-loading) { cursor: url('
 .mgs-gameover-choices button:first-child, .mgs-gameover-choices button:hover, .mgs-gameover-choices button:focus-visible { color: #ededed; text-shadow: 0 0 8px #fff8; }
 .mgs-gameover-choices:hover button:first-child:not(:hover) { color: #8a8a8a; text-shadow: none; }
 .mgs-gameover-error { max-width: 36rem; text-align: center; font-size: 13px; color: #a8a8a8; }
-.route-fx-metal-gear { background: repeating-linear-gradient(0deg, #5fd67f33 0 1px, #0000 1px 3px), radial-gradient(circle at 30% 40%, #5fd67f44, #0000 60%), #07140c; }
 .palette-metal-gear { border-color: #2f6b3f; border-radius: 1px; background: #000; }
 .palette-metal-gear .palette-input-row { border-color: #2f6b3f; background: #07140c; }
 .palette-metal-gear input { background: transparent; font: 20px 'VT323', monospace; color: #7dfb9a; }
@@ -1910,11 +1934,796 @@ html[data-theme='twin-peaks'] :is(a[href], button:not(:disabled), [role='button'
 .empty-state-twin-peaks .empty-state-art { width: min(300px, 100%); aspect-ratio: 3 / 2; object-fit: cover; object-position: 70% 40%; box-shadow: 0 10px 24px #0008; }
 .themed-failure-twin-peaks .themed-failure-copy { justify-content: flex-start; background: linear-gradient(180deg, #000d, #0000 70%); }
 .themed-failure-twin-peaks .themed-failure-title { font: italic 500 1.6rem 'Bodoni Moda', Georgia, serif; color: #f4ece0; }
-.route-fx-twin-peaks i { position: absolute; top: 0; bottom: 0; width: 51%; background-size: cover; background-position: center top; }
-.route-fx-twin-peaks i:first-child { left: 0; transform: translateX(-101%); }
-.route-fx-twin-peaks i:last-child { right: 0; transform: translateX(101%); }
 .palette-twin-peaks { border-color: #a34232; border-radius: 0; background: #1f110e; }
 .palette-diane { position: relative; height: 74px; background-size: cover; background-position: center 30%; }
 .palette-diane span { position: absolute; bottom: 6px; left: 10px; padding: 2px 8px; background: #000b; font: 12px 'IBM Plex Mono', monospace; color: #f4ece0; }
 .palette-twin-peaks input { background: transparent; font: italic 17px 'Bodoni Moda', Georgia, serif; color: #f4ece0; }
 .palette-twin-peaks .palette-row-on { background: #611810; }
+
+/* Twin Peaks curtains: parted at launch (BootSequence), closed when idle (ThemeFx). */
+.peaks-curtain { position: absolute; top: 0; bottom: 0; width: 50.5%; background-size: cover; background-position: center top; box-shadow: 0 0 40px #000c; }
+.peaks-curtain-left { left: 0; }
+.peaks-curtain-right { right: 0; }
+.boot-peaks { background: transparent; }
+.boot-peaks .boot-copy { position: relative; color: #f4ece0; font-family: 'Bodoni Moda', Georgia, serif; text-shadow: 0 2px 10px #000; }
+.boot-peaks-open .peaks-curtain-left { transform: translateX(-101%); }
+.boot-peaks-open .peaks-curtain-right { transform: translateX(101%); }
+.boot-peaks-open .boot-copy { opacity: 0; }
+.idle-curtains { position: fixed; inset: 0; z-index: 65; overflow: hidden; pointer-events: none; }
+.idle-curtains .peaks-curtain-left { transform: translateX(-101%); }
+.idle-curtains .peaks-curtain-right { transform: translateX(101%); }
+.idle-curtains-closed { pointer-events: auto; }
+.idle-curtains-closed .peaks-curtain { transform: none; }
+@media (prefers-reduced-motion: no-preference) {
+  .boot-peaks .peaks-curtain, .boot-peaks .boot-copy { transition: transform 0.9s cubic-bezier(0.6, 0, 0.3, 1), opacity 0.3s; }
+  .idle-curtains .peaks-curtain { transition: transform 0.7s cubic-bezier(0.6, 0, 0.3, 1); }
+  .idle-curtains-closed .peaks-curtain { transition-duration: 1.6s; }
+}
+
+/* ==========================================================================
+   Seinfeld / Stand-up (2026-09-27): a dark brick comedy club in the logo's red
+   and yellow. One style. Brand is the logo treatment (Vidaloka italic on the
+   tilted yellow oval); chrome is Oswald, the free Helvetica Condensed stand-in.
+   ========================================================================== */
+@font-face {
+  font-family: 'Vidaloka';
+  src: url('./assets/themes/fonts/vidaloka-regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+html[data-theme='seinfeld'] {
+  color-scheme: dark;
+  --base-900: 28 24 24;
+  --base-800: 40 34 33;
+  --base-700: 60 50 48;
+  --base-600: 77 61 57;
+  --base-500: 110 90 84;
+  --accent: 251 214 31;
+  --accent-hover: 255 228 96;
+  --signal-cool: 160 180 250;
+  --signal-warm: 255 140 136;
+  --signal-affirmative: 160 216 160;
+  --signal-caution: 251 214 31;
+  --white: 244 238 232;
+  --gray-50: 244 238 232;
+  --gray-100: 244 238 232;
+  --gray-200: 232 224 218;
+  --gray-300: 218 208 200;
+  --gray-400: 204 192 184;
+  --gray-500: 190 178 170;
+  --gray-600: 120 108 104;
+  --gray-700: 92 82 78;
+  --gray-800: 64 56 54;
+  --gray-900: 42 36 36;
+  --gray-950: 30 26 26;
+  --ink-inverse: 40 10 10;
+  --line-subtle: 70 58 55;
+  --line-strong: 110 92 86;
+  --font-chrome: 'Oswald', 'Arial Narrow', sans-serif;
+  --radius-sm: 4px;
+  --radius: 4px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-2xl: 10px;
+  --scanline-strength: 0;
+  --chrome-scanline-strength: 0;
+  --vignette-strength: 0;
+  --heading-glow: 0;
+  --panel-glow: 0;
+  --control-glow: 0;
+  --primary-glow: 0;
+  --chromatic-split: 0;
+}
+html[data-theme='seinfeld'] .archive-main { background: rgb(var(--surface-canvas)); }
+html[data-theme='seinfeld'] .wired-surface { background-image: none; backdrop-filter: none; }
+html[data-theme='seinfeld'] :is(h1, h2, h3, .btn, .label) { font-family: var(--font-chrome); }
+html[data-theme='seinfeld'] .archive-sidebar { background: #181414; }
+html[data-theme='seinfeld'] .archive-topbar { background: #221c1c; }
+html[data-theme='seinfeld'] .archive-player { background: #181414; }
+html[data-theme='seinfeld'] .archive-sidebar nav [aria-current='page'] { background: rgb(var(--signal-live)); color: rgb(var(--ink-inverse)); box-shadow: none; }
+html[data-theme='seinfeld'] .archive-sidebar nav [aria-current='page'] * { color: inherit; }
+html[data-theme='seinfeld'] .section-heading { background: #dc1121; border-color: #fbd61f; }
+html[data-theme='seinfeld'] .section-heading :is(h2, span) { color: #fff8e0; }
+html[data-theme='seinfeld'] .section-heading h2 { font-size: 1rem; font-weight: 600; letter-spacing: 0.12em; }
+html[data-theme='seinfeld'] .home-hero { background: #1c1818; border: 1px solid #4d3d39; }
+html[data-theme='seinfeld'] .home-cover-wall { opacity: 0.12; filter: grayscale(0.5); }
+html[data-theme='seinfeld'] .home-hero-shade { background: linear-gradient(90deg, #1c1818ee, #1c1818b0 55%, #1c181820); }
+.seinfeld-brick { position: absolute; inset: 0; pointer-events: none; opacity: 0.35; background-color: #4d2c22; background-image: linear-gradient(#1c1818 2px, transparent 2px), linear-gradient(90deg, #1c1818 2px, transparent 2px), linear-gradient(90deg, #1c1818 2px, transparent 2px); background-size: 60px 26px, 60px 52px, 60px 52px; background-position: 0 0, 0 0, 30px 26px; }
+html[data-theme='seinfeld'] .home-signature { width: 44%; object-position: 50% 40%; mix-blend-mode: normal; opacity: 1; mask-image: radial-gradient(ellipse 70% 80% at 60% 50%, #000 55%, transparent); }
+html[data-theme='seinfeld'] .home-brand { display: inline-block; align-self: flex-start; padding: 0.05em 0.45em 0.12em; border-radius: 50%; background: #fbd61f; transform: rotate(-4deg); font-family: 'Vidaloka', serif; font-style: italic; font-size: clamp(3.2rem, 5.6vw, 5rem); letter-spacing: -0.01em; color: #dc1121; }
+html[data-theme='seinfeld'] .home-brand span { color: #dc1121; }
+html[data-theme='seinfeld'] .home-greeting { font-family: var(--font-chrome); font-size: 1.3rem; letter-spacing: 0.02em; color: #fbd61f; }
+html[data-theme='seinfeld'] .home-art-credit { background: #1c1818e0; color: #f4eee8; }
+.theme-swatch-seinfeld { --swatch-live: 251 214 31; --swatch-link: 220 17 33; --swatch-bg: 28 24 24; background: rgb(var(--swatch-bg)); }
+
+/* Seinfeld interaction layer: the gang's notifications, Puddy waiting, the
+   Soup Nazi, a Festivus card, the Monk's menu, Elaine's dance, idle Kramer. */
+.theme-toast.theme-toast-seinfeld { border-radius: 10px; }
+.seinfeld-toast img { width: 44px; height: 44px; flex-shrink: 0; border-radius: 50%; object-fit: cover; }
+.seinfeld-wait { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.seinfeld-wait img { width: 150px; border-radius: 8px; box-shadow: 0 10px 24px #0008; }
+.themed-loading-compact .seinfeld-wait img { width: 100px; }
+.seinfeld-wait p { font: 600 1.1rem var(--font-chrome); letter-spacing: 0.06em; color: #fbd61f; }
+.themed-failure-seinfeld { display: flex; align-items: center; gap: 20px; padding: 18px; background: rgb(var(--surface-panel)); }
+.themed-failure-seinfeld .themed-failure-art { position: static; width: 220px; height: 220px; border-radius: 8px; object-fit: cover; object-position: 50% 25%; }
+.themed-failure-seinfeld .themed-failure-copy { min-height: 0; padding: 0; background: none; }
+.themed-failure-seinfeld .themed-failure-title { font: italic 1.6rem 'Vidaloka', Georgia, serif; }
+.empty-state-seinfeld .empty-state-art { width: min(320px, 100%); border-radius: 6px; box-shadow: 0 8px 20px #0006; }
+.yada-link { font-style: italic; text-decoration: underline; color: rgb(var(--signal-link)); }
+.palette-seinfeld { --white: 30 26 26; --gray-100: 30 26 26; --gray-200: 34 30 30; --gray-300: 40 36 36; --gray-400: 60 56 56; --gray-500: 88 82 82; --base-700: 200 188 160; --ink-primary: 30 26 26; border: 2px solid #173b76; border-radius: 8px; background: #fffdf6; }
+.palette-seinfeld .input { background: transparent; font: italic 16px 'Vidaloka', Georgia, serif; color: #173b76; }
+.palette-menu { position: relative; height: 70px; background-size: cover; background-position: center 40%; }
+.palette-menu span { position: absolute; bottom: 6px; left: 12px; padding: 2px 10px; background: #173b76; font: 600 12px var(--font-chrome); letter-spacing: 0.12em; text-transform: uppercase; color: #fff; }
+.palette-seinfeld .palette-row > span:first-child { flex: 0 1 auto; }
+.palette-leader { flex: 1; min-width: 12px; border-bottom: 2px dotted #b8a888; transform: translateY(-3px); }
+.palette-seinfeld .palette-row-on { background: #173b76; color: #fff; }
+.palette-seinfeld .palette-row-on > span { color: #fff; }
+.palette-seinfeld .palette-row-on .palette-leader { border-color: #ffffff66; }
+.seinfeld-dance { position: fixed; right: 16px; bottom: 96px; z-index: 60; display: flex; align-items: center; gap: 12px; max-width: 22rem; padding: 8px 14px 8px 8px; border: 1px solid rgb(var(--line-strong)); border-radius: 12px; background: rgb(var(--surface-panel)); box-shadow: 0 10px 26px #0008; }
+.seinfeld-dance img { width: 110px; border-radius: 8px; }
+.idle-gang { position: fixed; inset: 0; z-index: 65; pointer-events: none; opacity: 0; background: #000; }
+.idle-gang-still { width: 100%; height: 100%; object-fit: cover; }
+.idle-gang-closed { pointer-events: auto; opacity: 1; }
+.idle-gang-kramer { position: fixed; bottom: 40px; left: 100%; z-index: 66; width: 360px; border-radius: 8px; pointer-events: none; box-shadow: 0 14px 34px #000a; }
+.boot-seinfeld { background-color: #3a2420; background-image: linear-gradient(#1c1818 2px, transparent 2px), linear-gradient(90deg, #1c1818 2px, transparent 2px), linear-gradient(90deg, #1c1818 2px, transparent 2px); background-size: 60px 26px, 60px 52px, 60px 52px; background-position: 0 0, 0 0, 30px 26px; }
+.boot-seinfeld-logo { width: min(440px, 70vw); margin-bottom: 18px; }
+.boot-seinfeld .boot-copy { font-family: 'Oswald', 'Arial Narrow', sans-serif; color: #fbd61f; text-align: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .theme-toast-seinfeld { animation: seinfeld-slide 0.32s cubic-bezier(0.2, 1.4, 0.4, 1); }
+  .seinfeld-dance { animation: seinfeld-slide 0.32s cubic-bezier(0.2, 1.4, 0.4, 1); }
+  .idle-gang { transition: opacity 1.2s; }
+  .idle-gang-kramer { animation: kramer-entrance 2.4s cubic-bezier(0.3, 0.7, 0.4, 1) forwards; }
+  .boot-seinfeld-logo { animation: seinfeld-drop 0.7s cubic-bezier(0.3, 1.6, 0.5, 1); }
+}
+@keyframes seinfeld-slide { from { transform: translateX(60px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes kramer-entrance { 0% { left: 100%; } 35%, 60% { left: calc(100% - 400px); } 100% { left: -420px; } }
+@keyframes seinfeld-drop { from { transform: translateY(-140%) rotate(-8deg); } to { transform: none; } }
+
+/* ==========================================================================
+   Berserk / Deluxe Edition (2026-09-28): built on the Dark Horse Deluxe
+   Edition hardcover. Leather grain from a photo of that cover, the Brand
+   blind-embossed (relief only, no fill or glow), foil red only on marks, and
+   Kentaro Miura's manga art. Nothing from the anime adaptations. The accent
+   clears 4.5:1 on the active surface only because --base-600 stays 46 42 47.
+   ========================================================================== */
+@font-face {
+  font-family: 'Alfa Slab One';
+  src: url('./assets/themes/fonts/alfa-slab-one-regular.ttf') format('truetype');
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+html[data-theme='berserk'] {
+  color-scheme: dark;
+  --base-900: 26 24 27;
+  --base-800: 33 30 34;
+  --base-700: 40 37 41;
+  --base-600: 46 42 47;
+  --base-500: 70 60 66;
+  --accent: 250 96 102;
+  --accent-hover: 255 124 128;
+  --signal-cool: 214 176 160;
+  --signal-warm: 255 130 120;
+  --signal-affirmative: 170 200 150;
+  --signal-caution: 230 180 110;
+  --white: 236 236 238;
+  --gray-50: 236 236 238;
+  --gray-100: 236 236 238;
+  --gray-200: 222 220 222;
+  --gray-300: 206 202 206;
+  --gray-400: 192 186 190;
+  --gray-500: 176 168 172;
+  --gray-600: 104 92 96;
+  --gray-700: 80 70 74;
+  --gray-800: 56 50 54;
+  --gray-900: 36 32 36;
+  --gray-950: 24 22 25;
+  --ink-inverse: 16 6 8;
+  --line-subtle: 52 44 48;
+  --line-strong: 92 60 60;
+  --font-chrome: 'Oswald', 'Arial Narrow', sans-serif;
+  --radius-sm: 0px;
+  --radius: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --scanline-strength: 0;
+  --chrome-scanline-strength: 0;
+  --vignette-strength: 0;
+  --heading-glow: 0;
+  --panel-glow: 0;
+  --control-glow: 0;
+  --primary-glow: 0;
+  --chromatic-split: 0;
+}
+html[data-theme='berserk'] .archive-main { background: #1a181b url('./assets/themes/fx/berserk-leather.jpg') 0 0 / 600px; }
+html[data-theme='berserk'] .wired-surface { background-image: none; backdrop-filter: none; }
+html[data-theme='berserk'] :is(h1, h2, h3, .btn, .label) { font-family: var(--font-chrome); }
+html[data-theme='berserk'] .archive-sidebar { background: #141215 url('./assets/themes/fx/berserk-leather.jpg') 0 0 / 600px; border-color: #2a2226; }
+html[data-theme='berserk'] .archive-topbar { background: #161417 url('./assets/themes/fx/berserk-leather.jpg') 0 0 / 600px; border-color: #2a2226; }
+html[data-theme='berserk'] .archive-player { background: #141215 url('./assets/themes/fx/berserk-leather.jpg') 0 0 / 600px; }
+html[data-theme='berserk'] .sidebar-brand { font-family: 'Oswald', sans-serif; font-size: 18px !important; font-weight: 700; letter-spacing: 0.02em; }
+html[data-theme='berserk'] .sidebar-brand span { color: #b1443b; }
+html[data-theme='berserk'] .archive-sidebar nav [aria-current='page'] { background: #2a1618; box-shadow: inset 3px 0 0 rgb(var(--accent)); }
+html[data-theme='berserk'] .section-heading { padding-left: 12px; border-left: 3px solid #b1443b; }
+html[data-theme='berserk'] .section-heading h2 { font-family: 'Alfa Slab One', Georgia, serif; font-size: 0.95rem; font-weight: 400; letter-spacing: 0.06em; color: rgb(var(--ink-primary)); }
+html[data-theme='berserk'] .section-heading > span.h-px { background: linear-gradient(90deg, #6e2724, transparent); }
+html[data-theme='berserk'] :is(.btn, .btn-primary, .btn-ghost, .btn-danger) { text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+html[data-theme='berserk'] .btn-primary { box-shadow: inset 0 -2px 0 #0004; }
+html[data-theme='berserk'] .home-hero { background: #141215 url('./assets/themes/fx/berserk-leather.jpg') 0 0 / 600px; border: 1px solid #2e2428; border-bottom: 2px solid #6e2724; }
+html[data-theme='berserk'] .home-cover-wall { opacity: 0.85; filter: grayscale(0.3) contrast(1.05); }
+html[data-theme='berserk'] .home-hero-shade { background: radial-gradient(circle, #0008 0 1px, transparent 1.5px) 0 0 / 5px 5px, linear-gradient(90deg, #141215f4, #141215cc 34%, #14121540 50%, #14121500 60%); }
+.berserk-art-bed { position: absolute; inset: 0 0 0 auto; width: 46%; pointer-events: none; background: linear-gradient(90deg, #0a090a00, #0a090aee 30%, #0a090a); }
+.berserk-emboss { position: absolute; left: 22%; top: 56%; width: 420px; transform: translate(-50%, -50%); mix-blend-mode: hard-light; pointer-events: none; mask-image: radial-gradient(ellipse 46% 48%, #000 55%, transparent); }
+html[data-theme='berserk'] .home-signature { width: 46%; object-fit: cover; object-position: 0% 40%; mix-blend-mode: lighten; opacity: 0.92; filter: contrast(1.1); mask-image: linear-gradient(90deg, transparent, #000 22%); }
+html[data-theme='berserk'] .home-brand { display: inline-block; align-self: flex-start; transform: scaleX(0.72); transform-origin: left; white-space: nowrap; font-family: 'Alfa Slab One', Georgia, serif; font-size: clamp(4.6rem, 8vw, 7rem); line-height: 0.9; text-transform: uppercase; letter-spacing: 0.01em; color: transparent; background: url('./assets/themes/fx/berserk-leather-raw.jpg') 0 0 / 300px, linear-gradient(180deg, #d05248, #9a332e 55%, #bf4a41); background-blend-mode: soft-light; -webkit-background-clip: text; background-clip: text; filter: drop-shadow(0 2px 0 #000c); }
+html[data-theme='berserk'] .home-brand span { color: transparent; }
+html[data-theme='berserk'] .home-greeting { font-family: 'Oswald', sans-serif; font-weight: 600; font-size: 1.5rem; letter-spacing: 0.32em; text-transform: uppercase; color: rgb(var(--ink-primary)); }
+html[data-theme='berserk'] .home-hero-stats strong { font-family: 'Oswald', sans-serif; font-weight: 600; color: rgb(var(--accent)); }
+html[data-theme='berserk'] .home-art-credit { background: #0a090ae0; color: #d8d4d6; }
+html[data-theme='berserk'] .home-resume { border-color: #4a2a2c; background: #1d1a1e; }
+html[data-theme='berserk'] .home-resume h2 { font-family: 'Alfa Slab One', Georgia, serif; font-weight: 400; }
+html[data-theme='berserk'] .home-resume-cover { padding: 7px; background: #8f2a28; box-shadow: 0 0 0 3px #6e5530, 0 0 0 4px #1e1814, 0 10px 24px #000c; }
+.theme-swatch-berserk { --swatch-live: 250 96 102; --swatch-link: 110 39 36; --swatch-bg: 26 24 27; background: rgb(var(--swatch-bg)) url('./assets/themes/fx/berserk-leather.jpg') 0 0 / 300px; }
+
+/* Berserk interaction layer: a fan-made cursor set, notifications from Miura's
+   faces, the screaming Behelit on deletes, the Black Swordsman loading, empty
+   screens under the Elfhelm tree, errors and idle under the Eclipse, the
+   palette as a manga page, a Dragonslayer strike and the Behelit launch.
+   Paper-white panels hang in the 2022 exhibition's red mat and bronze frame. */
+html[data-theme='berserk'] body { cursor: url('./assets/themes/fx/berserk-cursor.png') 0 0, auto; }
+html[data-theme='berserk'] :is(a[href], button:not(:disabled), [role='button'], summary, select, label[for], input[type='checkbox'], input[type='radio'], input[type='range']) { cursor: url('./assets/themes/fx/berserk-cursor-link.png') 0 0, pointer; }
+html[data-theme='berserk'] :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), textarea, [contenteditable='true']) { cursor: url('./assets/themes/fx/berserk-cursor-text.png') 0 0, text; }
+html[data-theme='berserk'] :is(:disabled, [aria-disabled='true']) { cursor: url('./assets/themes/fx/berserk-cursor-no.png') 0 0, not-allowed; }
+html[data-theme='berserk'] :is([aria-busy='true'], .themed-loading) { cursor: url('./assets/themes/fx/berserk-cursor-busy.png') 0 0, progress; }
+.berserk-frame { padding: 8px; background: #8f2a28; box-shadow: 0 0 0 3px #6e5530, 0 0 0 4px #1e1814, 0 12px 28px #000c; }
+.theme-toast.theme-toast-berserk { border-left-width: 3px; }
+.berserk-toast img { width: 44px; height: 44px; flex-shrink: 0; object-fit: cover; }
+.berserk-confirm { display: flex; gap: 20px; }
+.berserk-confirm-art { width: 84px; height: 110px; flex-shrink: 0; object-fit: cover; object-position: 50% 30%; }
+.berserk-wait { position: relative; display: flex; width: min(420px, 90%); flex-direction: column; align-items: center; gap: 12px; overflow: hidden; padding: 18px 0; background: #0a090a; }
+.berserk-wait-lines { position: absolute; inset: 0; opacity: 0.55; background: repeating-linear-gradient(0deg, transparent 0 7px, #ffffff14 7px 8px, transparent 8px 19px, #ffffff22 19px 20px, transparent 20px 31px); mask-image: linear-gradient(90deg, transparent, #000 30%, #000 70%, transparent); }
+.berserk-wait-lines::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(90deg, transparent 0 60px, #0a090a 60px 140px); }
+.berserk-wait img { position: relative; width: 100%; mix-blend-mode: lighten; }
+.themed-loading-compact .berserk-wait { width: min(260px, 90%); }
+.berserk-wait p { position: relative; font: 600 13px/1 'Oswald', sans-serif; letter-spacing: 0.28em; text-transform: uppercase; color: rgb(var(--ink-primary)); }
+.empty-state-berserk .empty-state-art { width: min(300px, 100%); aspect-ratio: 4 / 3; margin-bottom: 20px; object-fit: cover; }
+.themed-failure-berserk { background: #0a090a; }
+.themed-failure-berserk .themed-failure-art { left: auto; right: 0; width: 62%; object-position: 50% 40%; mix-blend-mode: lighten; mask-image: linear-gradient(90deg, transparent, #000 35%); }
+.themed-failure-berserk .themed-failure-copy { max-width: 55%; justify-content: center; background: none; }
+.themed-failure-berserk .themed-failure-title { font: 1.7rem/1.1 'Alfa Slab One', Georgia, serif; text-transform: uppercase; color: rgb(var(--accent)); }
+.palette-berserk { --white: 27 27 27; --gray-100: 27 27 27; --gray-200: 34 34 34; --gray-300: 40 40 40; --gray-400: 64 64 64; --gray-500: 84 84 84; --base-700: 27 27 27; --ink-primary: 27 27 27; padding: 12px; border: 3px solid #1b1b1b; background-color: #ececee; background-size: cover; background-position: center; box-shadow: 6px 6px 0 #000; }
+.palette-berserk .palette-input-row { margin-bottom: 8px; border: 0; }
+.palette-berserk .input { border: 2px solid #1b1b1b; border-radius: 50% / 45%; background: #fff; padding-inline: 22px; font: italic 16px Georgia, serif; color: #1b1b1b; }
+.palette-berserk .palette-row { margin-top: 6px; border: 2px solid #1b1b1b; background: #fff; color: #1b1b1b; }
+.palette-berserk .palette-row > span:last-child { font-family: 'Oswald', sans-serif; letter-spacing: 0.1em; text-transform: uppercase; }
+.palette-berserk .palette-row-on { background-color: #a3261f; background-image: radial-gradient(circle, #ffffff33 0 1px, transparent 1.4px); background-size: 6px 6px; color: #fff; }
+.palette-berserk .palette-row-on > span { color: #fff; }
+.palette-berserk > div:last-child { border-color: #1b1b1b; }
+.berserk-strike { position: fixed; z-index: 60; width: 360px; height: 5px; pointer-events: none; opacity: 0; transform: translate(-50%, -50%) rotate(-12deg); background: linear-gradient(90deg, transparent, #ececee 45%, #b1443b 55%, transparent); }
+.berserk-tally { position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -120%); font: 22px/1 'Alfa Slab One', Georgia, serif; letter-spacing: 0.08em; color: rgb(var(--accent)); text-shadow: 0 2px 0 #000; }
+.idle-eclipse { position: fixed; inset: 0; z-index: 65; pointer-events: none; opacity: 0; background: #0a090a url('./assets/themes/fx/berserk-eclipse.jpg') center 50% / cover; }
+.idle-eclipse-closed { pointer-events: auto; opacity: 1; }
+.boot-berserk { background: #0a090a; }
+.boot-berserk-panel { position: absolute; top: 50%; left: 50%; height: min(78vh, 680px); max-width: 80vw; object-fit: contain; opacity: 0; transform: translate(-50%, -50%); }
+.boot-berserk-panel-ink { border: 3px solid #0a090a; box-shadow: 0 0 0 2px #ececee; }
+.boot-berserk-brand { filter: url('#berserk-crimson'); }
+@media (prefers-reduced-motion: no-preference) {
+  .berserk-confirm:has(.btn-danger:is(:hover, :focus-visible)) .berserk-confirm-art { animation: berserk-tremble 0.12s steps(2) infinite; }
+  .berserk-wait-lines::after { animation: berserk-run 0.5s linear infinite; }
+  .berserk-strike { animation: berserk-cut 0.35s ease-out; }
+  .berserk-tally { animation: berserk-tally 0.9s ease-out forwards; }
+  .idle-eclipse { transition: opacity 1.6s; }
+  .boot-berserk-dormant { animation: berserk-panel-a 1.8s steps(1, end) forwards; }
+  .boot-berserk-awake { animation: berserk-panel-b 1.8s steps(1, end) forwards; }
+  .boot-berserk-brand { animation: berserk-panel-c 1.8s steps(1, end) forwards; }
+  .boot-berserk-stage { position: absolute; inset: 0; animation: berserk-jolt 1.8s linear; }
+}
+@keyframes berserk-tremble { 0% { transform: translate(0, 0) rotate(0); } 25% { transform: translate(-2px, 1px) rotate(-2deg); } 50% { transform: translate(2px, -1px) rotate(2deg); } 75% { transform: translate(-1px, -1px) rotate(-1deg); } }
+@keyframes berserk-run { to { background-position: -140px 0; } }
+@keyframes berserk-cut { 0% { opacity: 0; clip-path: inset(0 100% 0 0); } 30% { opacity: 1; } 100% { opacity: 0; clip-path: inset(0 0 0 0); } }
+@keyframes berserk-tally { 0% { opacity: 0; } 15%, 70% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes berserk-panel-a { 0% { opacity: 0; } 12% { opacity: 1; } 52%, 100% { opacity: 0; } }
+@keyframes berserk-panel-b { 0%, 52% { opacity: 0; } 53% { opacity: 1; } 80%, 100% { opacity: 0; } }
+@keyframes berserk-panel-c { 0%, 80% { opacity: 0; } 81% { opacity: 1; } 99%, 100% { opacity: 0; } }
+@keyframes berserk-jolt { 0%, 53%, 60%, 100% { transform: none; } 54% { transform: translate(-8px, 4px); } 56% { transform: translate(7px, -5px); } 58% { transform: translate(-4px, 2px); } }
+
+/* ==========================================================================
+   One Piece / Grand Line (2026-09-28): the pre-timeskip anime's own screens
+   (episodes 1-516 only). Wanted-poster parchment, the eyecatch's ink navy down
+   the sidebar, hat-band red for actions, logo blue for links, straw yellow for
+   the active page. Nothing from after the timeskip, the manga or the films.
+   ========================================================================== */
+@font-face { font-family: 'Titan One'; src: url('./assets/themes/fonts/titan-one-regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Rye'; src: url('./assets/themes/fonts/rye-regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Permanent Marker'; src: url('./assets/themes/fonts/permanent-marker-regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+html[data-theme='one-piece'] {
+  color-scheme: light;
+  --base-900: 240 228 190;
+  --base-800: 248 240 212;
+  --base-700: 233 218 176;
+  --base-600: 224 206 160;
+  --base-500: 200 180 130;
+  --accent: 168 36 18;
+  --accent-hover: 140 26 12;
+  --signal-cool: 30 78 140;
+  --signal-warm: 160 40 30;
+  --signal-affirmative: 40 100 40;
+  --signal-caution: 120 68 0;
+  --white: 22 30 52;
+  --gray-50: 22 30 52;
+  --gray-100: 22 30 52;
+  --gray-200: 34 40 60;
+  --gray-300: 52 54 70;
+  --gray-400: 70 68 72;
+  --gray-500: 88 80 72;
+  --gray-600: 150 136 108;
+  --gray-700: 176 162 128;
+  --gray-800: 200 186 150;
+  --gray-900: 222 208 170;
+  --gray-950: 236 224 190;
+  --ink-inverse: 252 244 218;
+  --line-subtle: 214 196 150;
+  --line-strong: 170 146 96;
+  --font-chrome: 'Titan One', 'Arial Rounded MT Bold', sans-serif;
+  --radius-sm: 6px;
+  --radius: 8px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 12px;
+  --radius-2xl: 14px;
+  --scanline-strength: 0;
+  --chrome-scanline-strength: 0;
+  --vignette-strength: 0;
+  --heading-glow: 0;
+  --panel-glow: 0;
+  --control-glow: 0;
+  --primary-glow: 0;
+  --chromatic-split: 0;
+}
+html[data-theme='one-piece'] .archive-main { background: #f0e4be radial-gradient(ellipse at 50% 0, #f8efd0, transparent 70%); }
+html[data-theme='one-piece'] .wired-surface { background-image: none; backdrop-filter: none; }
+html[data-theme='one-piece'] :is(h1, h2, h3, .btn, .label) { font-family: var(--font-chrome); font-weight: 400; }
+/* The sidebar is the eyecatch's ink navy: a dark island inside the light theme. */
+html[data-theme='one-piece'] .archive-sidebar {
+  color-scheme: dark;
+  --base-900: 15 29 56;
+  --base-800: 22 40 74;
+  --base-700: 34 56 98;
+  --base-600: 44 70 120;
+  --base-500: 66 92 140;
+  --surface-canvas: var(--base-900);
+  --surface-panel: var(--base-800);
+  --surface-raised: var(--base-700);
+  --surface-active: var(--base-600);
+  --line-subtle: 40 60 100;
+  --line-strong: 80 104 150;
+  --white: 246 240 222;
+  --gray-50: 246 240 222;
+  --gray-100: 246 240 222;
+  --gray-200: 232 226 208;
+  --gray-300: 220 214 196;
+  --gray-400: 206 202 190;
+  --gray-500: 196 192 182;
+  --gray-600: 120 130 150;
+  --ink-primary: var(--gray-100);
+  --ink-secondary: var(--gray-300);
+  --ink-muted: var(--gray-500);
+  --ink-decorative: var(--gray-600);
+  --accent: 244 196 48;
+  --accent-hover: 250 212 90;
+  --signal-live: var(--accent);
+  --signal-cool: 150 200 250;
+  --signal-link: var(--signal-cool);
+  --signal-warm: 255 150 130;
+  --signal-anomaly: var(--signal-warm);
+  --signal-affirmative: 160 220 160;
+  --signal-caution: 244 196 48;
+  --ink-inverse: 15 29 56;
+  color: rgb(var(--ink-primary));
+  background: #0f1d38;
+  border-color: #0a1428;
+}
+html[data-theme='one-piece'] .archive-sidebar nav [aria-current='page'] { background: #22386288; color: #f4c430; box-shadow: inset 3px 0 0 #f4c430; }
+html[data-theme='one-piece'] .sidebar-brand { font-family: 'Titan One', sans-serif; font-size: 15px !important; letter-spacing: 0.02em; color: #f6f0de; }
+html[data-theme='one-piece'] .archive-topbar { background: #e9dab0; }
+html[data-theme='one-piece'] .archive-topbar::after { content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 5px; background: repeating-linear-gradient(135deg, #8a5a2b 0 4px, #b98a4e 4px 7px, #6e4520 7px 9px); pointer-events: none; }
+html[data-theme='one-piece'] .archive-player { background: #e9dab0; }
+html[data-theme='one-piece'] .section-heading { background: transparent; border: 0; box-shadow: none; padding-left: 0; }
+html[data-theme='one-piece'] .section-heading h2 { font-family: 'Titan One', sans-serif; font-size: 1.05rem; font-weight: 400; letter-spacing: 0.03em; color: rgb(var(--ink-primary)); }
+html[data-theme='one-piece'] .section-heading > span.h-px { height: 5px; border-radius: 3px; background: repeating-linear-gradient(135deg, #8a5a2b 0 4px, #b98a4e 4px 7px, #6e4520 7px 9px); opacity: 0.85; }
+html[data-theme='one-piece'] :is(.card, .home-session-main, .home-next-up) { background-color: #f8f0d4; border-color: #d6c08e; }
+html[data-theme='one-piece'] .btn-primary { box-shadow: 0 3px 0 #6e1608; }
+html[data-theme='one-piece'] .home-hero { background: linear-gradient(180deg, #3f95d8, #9bd4f2); border: 3px solid #0f1d38; border-radius: 14px; }
+html[data-theme='one-piece'] .home-cover-wall { opacity: 0.55; filter: saturate(0.9); }
+html[data-theme='one-piece'] .home-hero-shade { background: linear-gradient(90deg, #f6ecc9f4, #f6ecc9dc 34%, #f6ecc900 56%); }
+.op-scope-bed { position: absolute; inset: 0 0 0 auto; width: 47%; background: #040816; pointer-events: none; mask-image: linear-gradient(90deg, transparent, #000 12%); }
+html[data-theme='one-piece'] .home-signature { width: 47%; object-fit: cover; object-position: 50% 38%; mix-blend-mode: normal; opacity: 1; mask-image: radial-gradient(circle 250px at 56% 50%, #000 92%, transparent 100%); }
+html[data-theme='one-piece'] .home-brand { display: inline-block; align-self: flex-start; transform: scaleX(0.82); transform-origin: left; white-space: nowrap; font-family: 'Titan One', sans-serif; font-size: clamp(4rem, 7vw, 6rem); line-height: 1; text-transform: uppercase; color: transparent; background: linear-gradient(180deg, #6cc0f0, #3f86d0 45%, #27559a); -webkit-background-clip: text; background-clip: text; -webkit-text-stroke: 5px #0f1d38; paint-order: stroke fill; filter: drop-shadow(0 3px 0 #fff8); }
+html[data-theme='one-piece'] .home-brand span { color: transparent; background: linear-gradient(180deg, #e8412a, #b72a14); -webkit-background-clip: text; background-clip: text; }
+html[data-theme='one-piece'] .home-greeting { font-family: 'Permanent Marker', cursive; font-size: 1.7rem; color: #b72a14; transform: rotate(-2deg); transform-origin: left; }
+html[data-theme='one-piece'] .home-hero-stats strong { font-family: 'Titan One', sans-serif; font-weight: 400; color: rgb(var(--accent)); }
+html[data-theme='one-piece'] .home-art-credit { background: #040816d8; color: #f6f0de; border-radius: 6px; }
+.op-resume { display: flex; gap: 22px; align-items: center; padding: 18px; border: 1px solid #d6c08e; border-radius: 12px; background: #f8f0d4; }
+.op-resume h2 { font-family: 'Titan One', sans-serif; font-weight: 400; }
+.op-poster { width: 176px; flex-shrink: 0; padding: 10px 12px 8px; background: #efe3bf; border: 1px solid #b89c64; box-shadow: inset 0 0 0 4px #efe3bf, inset 0 0 0 5px #8b6f3e, 0 8px 18px #5a3d1a55; transform: rotate(-2deg); color: #2e1c0e; text-align: center; transition: transform 0.2s; }
+.op-resume:hover .op-poster, .op-resume:focus-visible .op-poster { transform: rotate(0); }
+.op-poster-wanted { font: 29px/1 'Rye', serif; letter-spacing: 0.01em; }
+.op-poster-photo { margin: 6px 0 4px; aspect-ratio: 1.2 / 1; overflow: hidden; border: 2px solid #2e1c0e; background: #2e1c0e; }
+.op-poster-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; filter: sepia(0.35) contrast(1.05); }
+.op-poster-doa { font: 11px/1.3 'Rye', serif; letter-spacing: 0.18em; }
+.op-poster-name { margin-top: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font: 17px/1.2 'Rye', serif; text-transform: uppercase; }
+.op-poster-bounty { margin-top: 2px; font: 12px/1.2 'Rye', serif; letter-spacing: 0.08em; }
+.op-poster-marine { margin-top: 4px; text-align: right; font: 12px/1 'Rye', serif; letter-spacing: 0.1em; }
+.theme-swatch-one-piece { --swatch-live: 168 36 18; --swatch-link: 30 78 140; --swatch-bg: 240 228 190; background: rgb(var(--swatch-bg)); }
+
+/* One Piece interaction layer: a fan-made cursor set from the anime, Den Den
+   Mushi calls, the Log Pose setting, the ending's sunset, the "to be continued"
+   card, the spyglass palette, a new bounty on completion, Gomu Gomu stretches,
+   the eyecatch launch and island cutaways when idle. */
+html[data-theme='one-piece'] body { cursor: url('./assets/themes/fx/onepiece-cursor-normal.png') 0 0, auto; }
+html[data-theme='one-piece'] :is(a[href], button:not(:disabled), [role='button'], summary, select, label[for], input[type='checkbox'], input[type='radio'], input[type='range']) { cursor: url('./assets/themes/fx/onepiece-cursor-link.png') 0 0, pointer; }
+html[data-theme='one-piece'] :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), textarea, [contenteditable='true']) { cursor: url('./assets/themes/fx/onepiece-cursor-text.png') 14 15, text; }
+html[data-theme='one-piece'] :is(:disabled, [aria-disabled='true']) { cursor: url('./assets/themes/fx/onepiece-cursor-no.png') 10 15, not-allowed; }
+html[data-theme='one-piece'] :is([aria-busy='true'], .themed-loading) { cursor: url('./assets/themes/fx/onepiece-cursor-busy.png') 16 16, progress; }
+.theme-toast.theme-toast-one-piece { border: 2px solid #0f1d38; border-radius: 12px; background: #f8f0d4; color: rgb(var(--ink-primary)); box-shadow: 0 4px 0 #0f1d3833; }
+.op-toast .op-toast-snail { width: 34px; height: 34px; flex-shrink: 0; object-fit: contain; }
+.op-toast .op-toast-who { width: 44px; height: 44px; flex-shrink: 0; border: 2px solid #0f1d38; border-radius: 50%; object-fit: cover; }
+.op-toast-call { font: italic 10px/1.2 Inter, system-ui, sans-serif; color: rgb(var(--ink-muted)); }
+.op-logpose { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.op-logpose img { width: 160px; height: 160px; object-fit: cover; border: 3px solid #0f1d38; border-radius: 50%; }
+.themed-loading-compact .op-logpose img { width: 100px; height: 100px; }
+.op-logpose p { font: 1rem 'Titan One', sans-serif; color: rgb(var(--ink-primary)); }
+.empty-state-one-piece .empty-state-art { width: min(320px, 100%); aspect-ratio: 16 / 9; object-fit: cover; border: 3px solid #0f1d38; border-radius: 10px; }
+.themed-failure-one-piece { display: flex; align-items: center; gap: 20px; padding: 24px; background: #070707; border-color: #0f1d38; }
+.themed-failure-one-piece .themed-failure-art { position: static; width: 46%; height: auto; object-fit: contain; }
+.themed-failure-one-piece .themed-failure-copy { min-height: 0; padding: 0; background: none; }
+.themed-failure-one-piece .themed-failure-title { font: 1.4rem 'Titan One', sans-serif; color: #f9ef67; }
+.palette-one-piece { border: 3px solid #0f1d38; border-radius: 14px; background: #f8f0d4; }
+.palette-scope { height: 92px; background-color: #040816; background-size: cover; background-position: center 44%; mask-image: radial-gradient(ellipse 34% 90% at 50% 50%, #000 90%, transparent 100%); }
+.palette-one-piece .palette-input-row { margin: 8px 10px; border: 2px solid #0f1d38; border-radius: 10px; background: #fffaf0; }
+.palette-one-piece .input { background: transparent; }
+.palette-one-piece .palette-row { font-family: Inter, system-ui, sans-serif; }
+.palette-one-piece .palette-row + .palette-row { border-top: 4px solid transparent; border-image: repeating-linear-gradient(135deg, #8a5a2b 0 4px, #b98a4e 4px 7px) 4; }
+.palette-one-piece .palette-row-on { background: #a8240f; color: #fff; }
+.palette-one-piece .palette-row-on > span { color: #fff; }
+.op-bounty { position: fixed; right: 20px; bottom: 96px; z-index: 60; width: 190px; padding: 10px 12px 8px; background: #efe3bf; border: 1px solid #b89c64; box-shadow: inset 0 0 0 4px #efe3bf, inset 0 0 0 5px #8b6f3e, 0 10px 22px #5a3d1a66; transform: rotate(-3deg); color: #2e1c0e; text-align: center; pointer-events: none; }
+.op-bounty b { display: block; font: 30px/1 'Rye', serif; font-weight: 400; }
+.op-bounty-photo { margin: 6px 0 4px; aspect-ratio: 1.2 / 1; overflow: hidden; border: 2px solid #2e1c0e; }
+.op-bounty-photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; filter: sepia(0.35); }
+.op-bounty i { display: block; font: normal 11px 'Rye', serif; letter-spacing: 0.18em; }
+.op-bounty u { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; text-decoration: none; font: 16px/1.2 'Rye', serif; text-transform: uppercase; }
+.op-bounty-stamp { position: absolute; left: 50%; top: 58%; padding: 2px 10px; border: 3px solid #a8240f; color: #a8240f; font: 18px 'Rye', serif; letter-spacing: 0.1em; transform: translate(-50%, -50%) rotate(-14deg); opacity: 0.9; }
+.op-meat { position: fixed; z-index: 60; display: flex; gap: 2px; pointer-events: none; transform: translate(-50%, -130%); }
+.op-meat img { width: 22px; height: 22px; border: 1px solid #8a5a2b; border-radius: 50%; object-fit: cover; }
+.idle-islands { position: fixed; inset: 0; z-index: 65; pointer-events: none; opacity: 0; background: #040816; }
+.idle-islands-closed { pointer-events: auto; opacity: 1; }
+.idle-islands figure { position: absolute; inset: 0; margin: 0; opacity: 0; }
+.idle-islands figure.idle-island-on { opacity: 1; }
+.idle-islands img { width: 100%; height: 100%; object-fit: cover; }
+.idle-islands figcaption { position: absolute; left: 24px; bottom: 22px; padding: 4px 14px; border: 2px solid #0f1d38; border-radius: 8px; background: #f8f0d4; font: 1.1rem 'Titan One', sans-serif; color: #0f1d38; }
+.boot-one-piece { background: #040816; }
+.boot-one-piece-lens { position: absolute; inset: 0; background-size: cover; background-position: center; clip-path: circle(34% at 50% 50%); }
+@media (prefers-reduced-motion: no-preference) {
+  .op-toast .op-toast-snail { animation: op-ring 0.6s ease-in-out 2; }
+  .op-logpose img { animation: op-set 2.2s ease-in-out infinite; }
+  .op-bounty { animation: op-bounty-in 0.4s cubic-bezier(0.2, 1.4, 0.4, 1); }
+  .op-bounty-stamp { animation: op-slam 0.25s 1.1s both cubic-bezier(0.3, 1.6, 0.5, 1); }
+  .op-meat { animation: op-meat 0.9s ease-out forwards; }
+  .idle-islands { transition: opacity 1.2s; }
+  .idle-islands figure { transition: opacity 1.4s; }
+  .boot-one-piece-lens { animation: op-lens 1.8s cubic-bezier(0.6, 0, 0.3, 1) forwards; }
+}
+@keyframes op-ring { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-14deg); } 40% { transform: rotate(12deg); } 60% { transform: rotate(-8deg); } 80% { transform: rotate(6deg); } }
+@keyframes op-set { 0%, 100% { transform: rotate(-7deg); } 30% { transform: rotate(6deg); } 55% { transform: rotate(-3deg); } 75% { transform: rotate(1deg); } }
+@keyframes op-bounty-in { from { transform: rotate(-3deg) translateY(40px); opacity: 0; } }
+@keyframes op-slam { from { transform: translate(-50%, -50%) rotate(-14deg) scale(2.4); opacity: 0; } to { opacity: 0.9; } }
+@keyframes op-meat { 0% { opacity: 0; } 15%, 75% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes op-lens { 0% { clip-path: circle(0 at 50% 50%); } 25%, 65% { clip-path: circle(34% at 50% 50%); } 100% { clip-path: circle(80% at 50% 50%); } }
+
+/* ==========================================================================
+   JoJo's Bizarre Adventure (2026-09-28): the David Production anime, Parts 3
+   to 5 as three styles. Each is built on its part's own frames and its Stand
+   parameter eyecatch card. Stardust Crusaders is the base palette; Diamond is
+   Unbreakable (the one light style) and Golden Wind rebind it below.
+   ========================================================================== */
+@font-face { font-family: 'Dela Gothic One'; src: url('./assets/themes/fonts/dela-gothic-one-subset.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Anton'; src: url('./assets/themes/fonts/anton-regular.ttf') format('truetype'); font-weight: 400; font-display: swap; }
+@font-face { font-family: 'Shippori Mincho'; src: url('./assets/themes/fonts/shippori-mincho-bold-subset.ttf') format('truetype'); font-weight: 700; font-display: swap; }
+html[data-theme='jojo'] {
+  color-scheme: dark;
+  --base-900: 35 28 30;
+  --base-800: 44 35 38;
+  --base-700: 54 44 48;
+  --base-600: 64 52 57;
+  --base-500: 96 80 90;
+  --accent: 196 172 228;
+  --accent-hover: 214 196 240;
+  --signal-cool: 226 172 110;
+  --signal-warm: 246 140 110;
+  --signal-affirmative: 150 210 160;
+  --signal-caution: 236 196 110;
+  --white: 240 232 236;
+  --gray-50: 240 232 236;
+  --gray-100: 240 232 236;
+  --gray-200: 226 216 222;
+  --gray-300: 212 200 208;
+  --gray-400: 200 186 196;
+  --gray-500: 190 176 186;
+  --gray-600: 120 104 114;
+  --gray-700: 92 78 88;
+  --gray-800: 64 54 60;
+  --gray-900: 44 36 40;
+  --gray-950: 30 24 26;
+  --ink-inverse: 30 20 40;
+  --line-subtle: 70 56 64;
+  --line-strong: 110 90 120;
+  --font-chrome: 'Anton', 'Arial Narrow', sans-serif;
+  --radius-sm: 2px;
+  --radius: 2px;
+  --radius-md: 2px;
+  --radius-lg: 2px;
+  --radius-xl: 2px;
+  --radius-2xl: 2px;
+  --scanline-strength: 0;
+  --chrome-scanline-strength: 0;
+  --vignette-strength: 0;
+  --heading-glow: 0;
+  --panel-glow: 0;
+  --control-glow: 0;
+  --primary-glow: 0;
+  --chromatic-split: 0;
+  --jj-brand: linear-gradient(180deg, #ff9ad0, #e0368c 55%, #8a1c6e);
+  --jj-brand-stroke: #fff;
+  --jj-brand-drop: #140c1a;
+  --jj-greet: #e2acff;
+  --jj-menace: #9a6bd8;
+  --jj-menace-stroke: #1a1020;
+  --jj-card: linear-gradient(120deg, #c8321a, #f07a2a 45%, #ffb04a);
+  --jj-card-ink: #fff6ea;
+  --jj-card-fill: #a8180c;
+  --jj-rule: linear-gradient(90deg, #9675c3, #d19d60 60%, transparent);
+  --jj-duo: grayscale(1) sepia(1) hue-rotate(220deg) saturate(2.4) contrast(1.1);
+}
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] {
+  color-scheme: light;
+  --base-900: 246 240 226;
+  --base-800: 252 248 238;
+  --base-700: 238 230 210;
+  --base-600: 228 218 194;
+  --base-500: 200 188 160;
+  --accent: 98 44 140;
+  --accent-hover: 74 28 110;
+  --signal-cool: 20 100 100;
+  --signal-warm: 170 40 90;
+  --signal-affirmative: 34 100 44;
+  --signal-caution: 130 80 0;
+  --white: 36 24 52;
+  --gray-50: 36 24 52;
+  --gray-100: 36 24 52;
+  --gray-200: 48 36 64;
+  --gray-300: 62 50 78;
+  --gray-400: 78 64 92;
+  --gray-500: 92 76 96;
+  --gray-600: 150 138 150;
+  --gray-700: 176 166 172;
+  --gray-800: 200 192 190;
+  --gray-900: 222 214 206;
+  --gray-950: 236 230 218;
+  --ink-inverse: 252 246 236;
+  --line-subtle: 222 210 186;
+  --line-strong: 178 158 190;
+  --radius-sm: 4px;
+  --radius: 4px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 4px;
+  --radius-2xl: 4px;
+  --jj-brand: linear-gradient(180deg, #ffe36b, #ff8fc8 55%, #b43ea0);
+  --jj-brand-stroke: #3a1c5c;
+  --jj-brand-drop: #3a1c5c55;
+  --jj-greet: #5b2a86;
+  --jj-menace: #b26ae0;
+  --jj-menace-stroke: #2a1440;
+  --jj-card: linear-gradient(120deg, #4a1c9a, #a43ad0 45%, #ff6fcf);
+  --jj-card-ink: #fff4fb;
+  --jj-card-fill: #ff5ad2;
+  --jj-rule: linear-gradient(90deg, #d8b33a, #e889b8 55%, transparent);
+  --jj-duo: grayscale(1) sepia(1) hue-rotate(90deg) saturate(1.6) contrast(1.2);
+}
+html[data-theme='jojo'][data-theme-variant='golden-wind'] {
+  color-scheme: dark;
+  --base-900: 20 26 51;
+  --base-800: 27 34 64;
+  --base-700: 36 44 78;
+  --base-600: 46 54 92;
+  --base-500: 70 80 124;
+  --accent: 226 196 104;
+  --accent-hover: 240 214 130;
+  --signal-cool: 246 156 196;
+  --signal-warm: 250 150 140;
+  --signal-affirmative: 150 214 170;
+  --signal-caution: 240 200 120;
+  --white: 246 240 226;
+  --gray-50: 246 240 226;
+  --gray-100: 246 240 226;
+  --gray-200: 232 226 214;
+  --gray-300: 218 214 210;
+  --gray-400: 206 202 212;
+  --gray-500: 200 196 210;
+  --gray-600: 120 124 150;
+  --gray-700: 92 98 128;
+  --gray-800: 62 68 100;
+  --gray-900: 40 46 76;
+  --gray-950: 26 32 60;
+  --ink-inverse: 20 24 50;
+  --line-subtle: 52 62 100;
+  --line-strong: 120 104 70;
+  --jj-brand: linear-gradient(180deg, #fff2a8, #e8c04a 50%, #a8781e);
+  --jj-brand-stroke: #141a33;
+  --jj-brand-drop: #e05aa0;
+  --jj-greet: #f7a8d0;
+  --jj-menace: #e8c04a;
+  --jj-menace-stroke: #141a33;
+  --jj-card: repeating-conic-gradient(#e03c8c 0 25%, #f7b8d8 0 50%) 0 0 / 44px 44px;
+  --jj-card-ink: #3a1030;
+  --jj-card-fill: #ffd24a;
+  --jj-rule: linear-gradient(90deg, #cfb05a, #cfb05a 30%, transparent);
+  --jj-duo: grayscale(1) sepia(1) hue-rotate(295deg) saturate(3.2) contrast(1.1);
+}
+html[data-theme='jojo'] .wired-surface { background-image: none; backdrop-filter: none; }
+html[data-theme='jojo'] :is(h1, h2, h3, .btn, .label) { font-family: var(--font-chrome); font-weight: 400; }
+html[data-theme='jojo'] :is(.btn, .btn-primary, .btn-ghost, .btn-danger) { text-transform: uppercase; letter-spacing: 0.08em; }
+html[data-theme='jojo'] .archive-main { background: #231c1e radial-gradient(ellipse at 70% -10%, #3a2a4a 0, transparent 60%); }
+html[data-theme='jojo'] .archive-sidebar { background: #1a1416; border-color: #3a2c3a; }
+html[data-theme='jojo'] .archive-topbar { background: #1f1719; border-color: #3a2c3a; }
+html[data-theme='jojo'] .archive-player { background: #1a1416; }
+html[data-theme='jojo'] .archive-sidebar nav [aria-current='page'] { background: #3a2a4a; box-shadow: inset 3px 0 0 rgb(var(--accent)); }
+html[data-theme='jojo'] .sidebar-brand { font-family: 'Anton', sans-serif; font-size: 21px !important; letter-spacing: 0.04em; color: rgb(var(--ink-primary)); }
+html[data-theme='jojo'] .section-heading { background: transparent; border: 0; box-shadow: none; padding-left: 0; }
+html[data-theme='jojo'] .section-heading h2 { font-family: 'Anton', sans-serif; font-size: 1.15rem; font-weight: 400; letter-spacing: 0.06em; color: rgb(var(--ink-primary)); }
+html[data-theme='jojo'] .section-heading > span.h-px { height: 3px; background: var(--jj-rule); }
+html[data-theme='jojo'] :is(.card, .home-session-main, .home-next-up) { background-color: #2c2326; border-color: #46363e; }
+html[data-theme='jojo'] .home-hero { background: #8d6db2; border: 0; border-radius: 0; }
+html[data-theme='jojo'] .home-cover-wall { opacity: 0.4; filter: grayscale(0.2) sepia(0.3) hue-rotate(230deg); }
+html[data-theme='jojo'] .home-hero-shade { background: linear-gradient(90deg, #231c1ef2, #231c1ed0 36%, #231c1e30 58%, transparent); }
+html[data-theme='jojo'] .home-signature { width: 52%; object-fit: cover; object-position: 60% 55%; mix-blend-mode: normal; opacity: 1; mask-image: linear-gradient(90deg, transparent, #000 22%); }
+html[data-theme='jojo'] .home-art-credit { background: #1a1416e0; color: #eee; }
+html[data-theme='jojo'] .home-brand { display: inline-block; align-self: flex-start; transform: skewX(-10deg); white-space: nowrap; font-family: 'Dela Gothic One', sans-serif; font-size: clamp(3.6rem, 6.4vw, 5.4rem); line-height: 1; letter-spacing: -0.01em; color: transparent; background: var(--jj-brand); -webkit-background-clip: text; background-clip: text; -webkit-text-stroke: 4px var(--jj-brand-stroke); paint-order: stroke fill; filter: drop-shadow(4px 5px 0 var(--jj-brand-drop)); }
+html[data-theme='jojo'] .home-brand span { color: transparent; }
+html[data-theme='jojo'] .home-greeting { font-family: 'Anton', sans-serif; font-size: 1.45rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--jj-greet); }
+html[data-theme='jojo'] .home-hero-stats strong { font-family: 'Anton', sans-serif; font-weight: 400; font-size: 1.1em; color: rgb(var(--accent)); }
+.jj-menace { position: absolute; left: 47%; top: 14%; z-index: 2; font: 2.4rem/1 'Dela Gothic One', sans-serif; letter-spacing: -0.06em; white-space: nowrap; color: var(--jj-menace); -webkit-text-stroke: 2px var(--jj-menace-stroke); paint-order: stroke fill; transform: skewX(-12deg) rotate(8deg); pointer-events: none; }
+.jj-card { display: flex; overflow: hidden; min-height: 250px; background: var(--jj-card); box-shadow: 0 10px 26px #0006; color: var(--jj-card-ink); }
+.jj-card-art { position: relative; width: 34%; flex-shrink: 0; }
+.jj-card-art > * { position: absolute; inset: 0; width: 100%; height: 100%; mask-image: linear-gradient(90deg, #000 70%, transparent); }
+.jj-card-body { flex: 1; min-width: 0; padding: 16px 20px; }
+.jj-card-tag { font: 700 12px 'Shippori Mincho', serif; letter-spacing: 0.06em; }
+html[data-theme='jojo'] .jj-card-title { font: 700 1.7rem/1.15 'Shippori Mincho', serif; text-shadow: 0 2px 0 #0005; }
+.jj-card-row { display: flex; align-items: center; gap: 18px; margin-top: 10px; }
+.jj-radar { width: 132px; height: 132px; flex-shrink: 0; }
+.jj-card-next { font: 700 1.2rem 'Shippori Mincho', serif; }
+.theme-swatch-jojo { --swatch-live: 196 172 228; --swatch-link: 226 172 110; --swatch-bg: 35 28 30; background: rgb(var(--swatch-bg)); }
+/* Diamond is Unbreakable: Morioh daylight, with Josuke's purple as a dark sidebar island. */
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .archive-main { background: #f6f0e2; }
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .archive-sidebar {
+  color-scheme: dark;
+  --base-900: 54 26 86;
+  --base-800: 66 34 104;
+  --base-700: 82 46 124;
+  --base-600: 98 58 142;
+  --base-500: 120 80 160;
+  --surface-canvas: var(--base-900);
+  --surface-panel: var(--base-800);
+  --surface-raised: var(--base-700);
+  --surface-active: var(--base-600);
+  --line-subtle: 90 60 130;
+  --line-strong: 130 96 170;
+  --white: 252 246 236;
+  --gray-50: 252 246 236;
+  --gray-100: 252 246 236;
+  --gray-200: 244 234 240;
+  --gray-300: 236 222 240;
+  --gray-400: 226 212 234;
+  --gray-500: 220 206 230;
+  --gray-600: 150 120 170;
+  --ink-primary: var(--gray-100);
+  --ink-secondary: var(--gray-300);
+  --ink-muted: var(--gray-500);
+  --ink-decorative: var(--gray-600);
+  --accent: 232 196 70;
+  --accent-hover: 244 214 110;
+  --signal-live: var(--accent);
+  --signal-cool: 150 230 220;
+  --signal-link: var(--signal-cool);
+  --signal-warm: 255 170 200;
+  --signal-anomaly: var(--signal-warm);
+  --signal-affirmative: 170 230 170;
+  --signal-caution: 232 196 70;
+  --ink-inverse: 54 26 86;
+  color: rgb(var(--ink-primary));
+  background: #361a56;
+  border-color: #2a1244;
+}
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .archive-sidebar nav [aria-current='page'] { background: #522e7c; color: #e8c446; box-shadow: inset 3px 0 0 #e8c446; }
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .archive-topbar { background: #efe4c8; border-bottom: 3px solid #d8b33a; }
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .archive-player { background: #efe4c8; }
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] :is(.card, .home-session-main, .home-next-up) { background-color: #fcf8ee; border-color: #e0d2b4; }
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .home-hero { background: linear-gradient(180deg, #d8b33a, #f0d77a); border-radius: 4px; }
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .home-cover-wall { opacity: 0.5; filter: none; }
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .home-hero-shade { background: linear-gradient(90deg, #f6f0e2f4, #f6f0e2d6 36%, #f6f0e230 58%, transparent); }
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .home-signature { width: 46%; object-position: 50% 16%; mask-image: linear-gradient(90deg, transparent, #000 20%); }
+html[data-theme='jojo'][data-theme-variant='diamond-is-unbreakable'] .home-art-credit { background: #361a56e0; color: #fff; }
+/* Golden Wind: night navy and gold filigree. */
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .archive-main { background: #141a33 radial-gradient(ellipse at 80% -20%, #2a2f5c, transparent 60%); }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .archive-sidebar { background: #10152b; border-color: #3a3a4a; }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .archive-sidebar nav [aria-current='page'] { background: #262a4a; }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .archive-topbar { background: #161c38; border-bottom: 1px solid #cfb05a66; }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .archive-player { background: #10152b; }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .section-heading > span.h-px { background: linear-gradient(90deg, #cfb05a, #cfb05a 30%, transparent), repeating-linear-gradient(90deg, #f7a8d0 0 6px, #fff 6px 12px); }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] :is(.card, .home-session-main, .home-next-up) { background-color: #1b2240; border-color: #3a4270; }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .home-hero { background: #141a33; border: 1px solid #cfb05a88; }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .home-cover-wall { opacity: 0.35; filter: saturate(0.8); }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .home-hero-shade { background: linear-gradient(90deg, #141a33f4, #141a33d0 36%, #141a3340 56%, transparent); }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .home-signature { width: 58%; object-position: 62% 40%; mask-image: linear-gradient(90deg, transparent, #000 24%); }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .home-art-credit { background: #10152be0; color: #f6f0e2; }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] .jj-card-body { background: linear-gradient(90deg, #ffffffb8, #ffffff70); }
+html[data-theme='jojo'][data-theme-variant='golden-wind'] :is(.jj-card-title, .jj-card-next) { text-shadow: 0 1px 0 #fff8; }
+
+/* JoJo interaction layer: the To Be Continued freeze when idle, menacing ゴゴゴ
+   on deletes, the Stand card while loading, the cast's notifications, the Stand
+   cry on progress, the part's streets when empty, the villain on errors, the
+   palette as a Stand card, the title card at launch and Stand parameters. */
+.theme-toast.theme-toast-jojo { border: 1px solid rgb(var(--line-strong)); border-left: 4px solid rgb(var(--accent)); border-radius: 0; background: rgb(var(--surface-panel)); color: rgb(var(--ink-primary)); }
+.jojo-toast img { width: 46px; height: 46px; flex-shrink: 0; object-fit: cover; }
+.jojo-toast-line { font: 13px 'Anton', sans-serif; letter-spacing: 0.1em; text-transform: uppercase; color: rgb(var(--accent)); }
+.jojo-menace-confirm { position: absolute; right: -8px; top: -30px; font: 2.2rem/1 'Dela Gothic One', sans-serif; letter-spacing: -0.08em; color: var(--jj-menace); -webkit-text-stroke: 2px var(--jj-menace-stroke); paint-order: stroke fill; transform: skewX(-12deg) rotate(10deg); pointer-events: none; }
+.jojo-menace-confirm b { display: none; font-weight: 400; }
+.jojo-confirm:has(.btn-danger:is(:hover, :focus-visible)) .jojo-menace-confirm { color: #e0368c; }
+.jojo-confirm:has(.btn-danger:is(:hover, :focus-visible)) .jojo-menace-confirm span { display: none; }
+.jojo-confirm:has(.btn-danger:is(:hover, :focus-visible)) .jojo-menace-confirm b { display: inline; }
+.jojo-wait { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.jojo-wait img { width: min(460px, 90%); box-shadow: 0 10px 26px #0008; }
+.themed-loading-compact .jojo-wait img { width: min(260px, 90%); }
+.empty-state-jojo .empty-state-art { width: min(320px, 100%); aspect-ratio: 16 / 9; object-fit: cover; box-shadow: 0 8px 20px #0007; }
+.themed-failure-jojo { background: #140c14; }
+.themed-failure-jojo .themed-failure-art { left: auto; right: 0; width: 60%; object-position: 50% 25%; mask-image: linear-gradient(90deg, transparent, #000 35%); }
+.themed-failure-jojo .themed-failure-copy { max-width: 55%; justify-content: center; background: none; }
+.themed-failure-jojo .themed-failure-title { font: 1.6rem/1.15 'Anton', sans-serif; letter-spacing: 0.03em; text-transform: uppercase; color: #ff9ad0; }
+.palette-jojo .palette-stand { padding: 10px 16px 0; font: 700 12px 'Shippori Mincho', serif; letter-spacing: 0.08em; color: rgb(var(--accent)); }
+.palette-jojo .input { font-family: 'Shippori Mincho', serif; font-weight: 700; }
+.palette-jojo .palette-row-on { background: rgb(var(--accent)); color: rgb(var(--ink-inverse)); }
+.palette-jojo .palette-row-on > span { color: rgb(var(--ink-inverse)); }
+.jojo-cry { position: fixed; z-index: 60; font: 2.2rem/1 'Dela Gothic One', sans-serif; letter-spacing: -0.04em; white-space: nowrap; color: rgb(var(--accent)); -webkit-text-stroke: 3px #1a1020; paint-order: stroke fill; transform: translate(-10%, -120%) skewX(-14deg); pointer-events: none; }
+.idle-tbc { position: fixed; inset: 0; z-index: 65; pointer-events: none; opacity: 0; }
+.idle-tbc-closed { pointer-events: auto; opacity: 1; backdrop-filter: var(--jj-duo); }
+.idle-tbc img { position: absolute; left: 0; bottom: 28px; width: min(520px, 46vw); transform: translateX(-110%); }
+.idle-tbc-closed img { transform: none; }
+.boot-jojo { background: #0c0810; }
+.boot-jojo-art { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.boot-jojo-lines { position: absolute; inset: -20%; opacity: 0.35; background: repeating-conic-gradient(from 0deg at 50% 50%, #fff0 0 3deg, #ffffff55 3deg 4deg); pointer-events: none; }
+.jj-stand-stats { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; }
+.jj-stand-stats svg { width: 160px; height: 160px; flex-shrink: 0; }
+.jj-stand-stats dl { display: grid; grid-template-columns: auto auto auto; gap: 4px 14px; font-size: 13px; color: rgb(var(--ink-secondary)); }
+.jj-stand-stats dt { font: 13px 'Anton', sans-serif; letter-spacing: 0.08em; color: rgb(var(--ink-primary)); }
+.jj-stand-stats .jj-grade { font: 15px 'Anton', sans-serif; color: rgb(var(--accent)); }
+@media (prefers-reduced-motion: no-preference) {
+  .jj-menace { animation: jj-menace 1.4s ease-in-out infinite alternate; }
+  .jojo-menace-confirm { animation: jj-rise 1.2s ease-in-out infinite alternate; }
+  .jojo-confirm:has(.btn-danger:is(:hover, :focus-visible)) .jojo-menace-confirm { animation-duration: 0.25s; }
+  .jojo-cry { animation: jj-fly 0.7s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
+  .idle-tbc { transition: opacity 0.4s; }
+  .idle-tbc img { transition: transform 0.5s cubic-bezier(0.2, 1.2, 0.4, 1) 0.35s; }
+  .boot-jojo-art { animation: jj-title 1.5s steps(1, end) forwards; }
+  .boot-jojo-lines { animation: jj-lines 1.5s ease-out forwards; }
+  .boot-jojo-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; animation: jj-flash 1.5s linear forwards; }
+}
+@keyframes jj-menace { from { opacity: 0.55; transform: skewX(-12deg) rotate(8deg) translateY(0); } to { opacity: 1; transform: skewX(-12deg) rotate(8deg) translateY(-4px); } }
+@keyframes jj-rise { from { opacity: 0.7; transform: skewX(-12deg) rotate(10deg) translateY(4px); } to { opacity: 1; transform: skewX(-12deg) rotate(10deg) translateY(-4px); } }
+@keyframes jj-fly { 0% { opacity: 0; transform: translate(-30%, -80%) skewX(-14deg) scale(0.6); } 25% { opacity: 1; transform: translate(-10%, -120%) skewX(-14deg) scale(1.15); } 80% { opacity: 1; } 100% { opacity: 0; transform: translate(10%, -160%) skewX(-14deg); } }
+@keyframes jj-title { 0% { opacity: 0; } 8% { opacity: 1; } 100% { opacity: 1; } }
+@keyframes jj-lines { 0% { opacity: 0; transform: scale(1.4) rotate(0); } 10% { opacity: 0.9; } 60% { opacity: 0.35; } 100% { opacity: 0; transform: scale(1) rotate(6deg); } }
+@keyframes jj-flash { 0%, 6% { opacity: 0; } 8% { opacity: 0.9; } 20%, 100% { opacity: 0; } }

@@ -12,6 +12,7 @@ import redRoomArt from '../assets/themes/peaks-red.jpg'
 import peaksForestArt from '../assets/themes/peaks-forest.jpg'
 import peaksLodgeArt from '../assets/themes/peaks-lodge.jpg'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { FX_ART } from '../lib/themeFxArt'
 import DoorCard from '../components/DoorCard'
 import HomeCustomiseDialog from '../components/HomeCustomiseDialog'
 import {
@@ -31,7 +32,9 @@ import Section from '../components/Section'
 import EmptyState from '../components/EmptyState'
 import ThemedFailure from '../components/theme/ThemedFailure'
 import PageStatus from '../components/PageStatus'
-import { useSettings } from '../lib/hooks'
+import { useScoreMax, useSettings } from '../lib/hooks'
+import { StandRadar } from '../components/theme/StandStats'
+import { standParameters } from '../lib/standStats'
 import { usePlayerControls } from '../lib/player'
 import { playTracks } from '../lib/musicTracks'
 import { MEDIA_TYPE_COLORS } from '../lib/mediaColors'
@@ -255,8 +258,30 @@ const HOME_THEME_ART: Record<AppThemeVariant, { image: string; greeting: string;
   'concert-night': { image: mikuMiraiArt, greeting: 'The stage lights are on.', credit: 'Magical Mirai 2024 key visual / art by tama' },
   'waiting-room': { image: redRoomArt, greeting: 'Some stories stay with you.', credit: 'Fire Walk with Me / publicity photograph' },
   'douglas-firs': { image: peaksForestArt, greeting: 'The owls are not what they seem.', credit: 'Twin Peaks: The Return / Showtime key art' },
-  'black-lodge': { image: peaksLodgeArt, greeting: 'Fire walk with me.', credit: 'Fire Walk with Me / 1992 UK press still' }
+  'black-lodge': { image: peaksLodgeArt, greeting: 'Fire walk with me.', credit: 'Fire Walk with Me / 1992 UK press still' },
+  'stand-up': { image: FX_ART.sfStandup, greeting: "What's the deal with this library?", credit: 'Seinfeld / stand-up' },
+  'deluxe-edition': { image: FX_ART.bzCloak, greeting: 'Struggle.', credit: 'Kentaro Miura, Berserk (manga panel)' },
+  'grand-line': { image: FX_ART.opCrew, greeting: "I'm gonna be King of the Pirates!", credit: 'One Piece (Toei anime, pre-timeskip)' },
+  'stardust-crusaders': { image: FX_ART.jjScHero, greeting: 'Yare yare daze.', credit: 'Stardust Crusaders (David Production), opening' },
+  'diamond-is-unbreakable': { image: FX_ART.jjDiuHero, greeting: 'Great days in Morioh.', credit: 'Diamond is Unbreakable (David Production), key visual' },
+  'golden-wind': { image: FX_ART.jjGwHero, greeting: 'I, Giorno Giovanna, have a dream.', credit: 'Golden Wind (David Production), key visual' }
 }
+
+// Seinfeld swaps its greeting for a different line from the show on each visit.
+const SEINFELD_QUOTES = [
+  "What's the deal with this library?",
+  "Not that there's anything wrong with that.",
+  'These pretzels are making me thirsty!',
+  "It's not a lie if you believe it.",
+  'Serenity now!',
+  'Hello, Newman.',
+  'Giddy up!',
+  "I'm out there, Jerry, and I'm loving every minute of it!",
+  'No soup for you!',
+  'A Festivus for the rest of us.',
+  "That's a shame.",
+  'Yada yada yada.'
+]
 
 // Decorative layers owned by one style. Behind the art: atmosphere; above it:
 // window chrome or a stamp that never overlaps the hero copy.
@@ -264,6 +289,19 @@ function HeroAtmosphere({ variant }: { variant: AppThemeVariant }) {
   if (variant === 'present-day') return <div className="lain-rollbar" aria-hidden="true" />
   if (variant === 'red-shadows') return <div className="lain-shadow-dots" aria-hidden="true" />
   if (variant === 'concert-night') return <div className="miku-lights" aria-hidden="true" />
+  if (variant === 'stand-up') return <div className="seinfeld-brick" aria-hidden="true" />
+  if (variant === 'grand-line') return <div className="op-scope-bed" aria-hidden="true" />
+  if (variant === 'stardust-crusaders' || variant === 'diamond-is-unbreakable' || variant === 'golden-wind') {
+    return <span className="jj-menace" aria-hidden="true">ゴゴゴゴ</span>
+  }
+  if (variant === 'deluxe-edition') {
+    return (
+      <>
+        <div className="berserk-art-bed" aria-hidden="true" />
+        <img className="berserk-emboss" src={FX_ART.bzEmboss} alt="" aria-hidden="true" />
+      </>
+    )
+  }
   if (variant === 'shadow-moses') {
     return (
       <div className="soliton" aria-hidden="true">
@@ -340,6 +378,7 @@ function Hero({
   theme: AppTheme
   variant: AppThemeVariant
 }) {
+  const [quote] = useState(() => SEINFELD_QUOTES[Math.floor(Math.random() * SEINFELD_QUOTES.length)])
   // Re-shuffle only when the library changes, never when a poll settles.
   const tiles = useMemo(
     () => shuffle(items.filter((m) => m.coverPath)).slice(0, 24),
@@ -384,7 +423,7 @@ function Hero({
           {variant === 'present-day' && <PresentDayReadout />}
           <h1 className="home-brand">Navi<span>HUB</span></h1>
           <p className="home-greeting mt-4 text-sm">
-            {HOME_THEME_ART[variant].greeting}
+            {variant === 'stand-up' ? quote : HOME_THEME_ART[variant].greeting}
           </p>
           <div className="home-hero-stats mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm tabular-nums">
             <span><strong>{stats.titles}</strong> titles</span>
@@ -468,6 +507,63 @@ function CodecCall({
   )
 }
 
+// One Piece: the next session is a Wanted poster, cover as the portrait and
+// progress as the bounty, beside the ordinary title, next step and action.
+function WantedPoster({ media, next, meta, action }: { media: MediaSummary; next: string; meta: string; action: string }) {
+  return (
+    <>
+      <div className="op-poster" aria-hidden="true">
+        <p className="op-poster-wanted">WANTED</p>
+        <div className="op-poster-photo">
+          <CoverImage path={media.coverPath} alt="" thumbWidth={320} rounded="rounded-none" className="h-full w-full" />
+        </div>
+        <p className="op-poster-doa">DEAD OR ALIVE</p>
+        <p className="op-poster-name">{media.title}</p>
+        <p className="op-poster-bounty">{configFor(media.mediaType).formatProgressStat(media)}</p>
+        <p className="op-poster-marine">MARINE</p>
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">Set sail again</p>
+        <h2 className="mt-2 line-clamp-2 text-2xl leading-tight text-ink">{media.title}</h2>
+        <p className="mt-2 truncate text-sm text-ink-secondary">{next}</p>
+        <p className="mt-1 text-xs text-ink-muted">{meta}</p>
+        <span className="btn-primary mt-5 inline-flex">{action}</span>
+      </div>
+    </>
+  )
+}
+
+// JoJo: the next session is the part's Stand parameter eyecatch card, graded
+// from the title's own data (the grades are also listed for screen readers).
+function StandCard({ media, next, meta, action }: { media: MediaSummary; next: string; meta: string; action: string }) {
+  const scoreMax = useScoreMax()
+  const cfg = configFor(media.mediaType)
+  const params = standParameters(media, scoreMax, cfg.logUnitLabel ? `${cfg.logUnitLabel}s` : 'units')
+  return (
+    <>
+      <div className="jj-card-art" aria-hidden="true">
+        <CoverImage path={media.coverPath} alt="" thumbWidth={480} rounded="rounded-none" className="h-full w-full" />
+      </div>
+      <div className="jj-card-body">
+        <p className="jj-card-tag" aria-hidden="true">[STAND MASTER]</p>
+        <h2 className="jj-card-title line-clamp-2">{media.title}</h2>
+        <div className="jj-card-row">
+          <StandRadar params={params} fill="var(--jj-card-fill)" ink="var(--jj-card-ink)" size={132} />
+          <p className="sr-only">Stand parameters: {params.map((p) => `${p.label} ${p.grade}`).join(', ')}</p>
+          <div className="min-w-0">
+            <p className="jj-card-tag" aria-hidden="true">[STAND NAME]</p>
+            <p className="jj-card-next truncate">{next}</p>
+            <p className="mt-1 text-xs">{meta}</p>
+            <span className="btn-primary mt-4 inline-flex">{action}</span>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
+const JOJO_STYLES: readonly AppThemeVariant[] = ['stardust-crusaders', 'diamond-is-unbreakable', 'golden-wind']
+
 function HeroContinuation({
   resume,
   continuing,
@@ -502,6 +598,33 @@ function HeroContinuation({
           lines={[cfg.formatProgressStat(continuing)]}
           action="Open title"
         />
+      </Link>
+    )
+  }
+
+  const themedCard =
+    variant === 'grand-line'
+      ? { Card: WantedPoster, className: 'home-resume op-resume group' }
+      : JOJO_STYLES.includes(variant)
+        ? { Card: StandCard, className: 'home-resume jj-card group' }
+        : null
+  if (themedCard && resume) {
+    return (
+      <ResumeAction point={resume} className={themedCard.className}>
+        <themedCard.Card
+          media={resume.media}
+          next={resume.partTitle}
+          meta={`${configFor(resume.media.mediaType).formatProgressStat(resume.media)} / ${resumeLabel(resume)}`}
+          action="Continue"
+        />
+      </ResumeAction>
+    )
+  }
+  if (themedCard && continuing) {
+    const cfg = configFor(continuing.mediaType)
+    return (
+      <Link to={pathForMedia(continuing)} className={themedCard.className}>
+        <themedCard.Card media={continuing} next={`Continue ${cfg.singular.toLowerCase()}`} meta={cfg.formatProgressStat(continuing)} action="Open title" />
       </Link>
     )
   }

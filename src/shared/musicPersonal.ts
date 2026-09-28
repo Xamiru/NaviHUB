@@ -9,7 +9,6 @@ export const DEFAULT_SMART_RULES: MusicSmartRules = {
   tags: [],
   tagMode: 'all',
   artist: '',
-  soundtrack: 'any',
   order: 'title',
   maxTracks: 200
 }

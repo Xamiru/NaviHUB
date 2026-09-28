@@ -118,7 +118,7 @@ describe('tvRepo.setSeasonWatched', () => {
     ])
     tvRepo.setWatched(idOf(1, 1), true) // already watched: must not be counted again
 
-    expect(tvRepo.setSeasonWatched(showId, 1, true, TODAY)).toEqual({ firstTime: 1 })
+    expect(tvRepo.setSeasonWatched(showId, 1, true, TODAY).newlyWatched).toHaveLength(1)
     const s = tvRepo.listSeasons(showId, TODAY)[0]
     expect(s.watched).toBe(2)
     expect(s.episodes[2].watchedAt).toBeNull() // unaired stayed untouched

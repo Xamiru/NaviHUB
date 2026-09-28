@@ -180,6 +180,18 @@ describe('themeRepo.list', () => {
     expect(found('nothing here')).toEqual([])
   })
 
+  it('narrows to one artist while keeping every performer on the song', () => {
+    const a = addAnime('Cowboy Bebop')
+    const tank = addTheme(a, { title: 'Tank!' })
+    const seatbelts = addArtist(tank, 'The Seatbelts')
+    addArtist(tank, 'Yoko Kanno')
+    addTheme(a, { title: 'The Real Folk Blues', slug: 'ED1', type: 'ED' })
+
+    const songs = themeRepo.list({ media: anime(), artistId: seatbelts })
+    expect(songs.map((s) => s.title)).toEqual(['Tank!'])
+    expect(songs[0].artists.map((x) => x.name)).toEqual(['The Seatbelts', 'Yoko Kanno'])
+  })
+
   it('groups songs under their anime in source order, and shuffles songs (not anime) on random', () => {
     const a = addAnime('A', { score: 5 })
     const b = addAnime('B', { score: 9 })

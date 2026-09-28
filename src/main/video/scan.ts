@@ -490,6 +490,22 @@ export function markWatchedIn(
   return { ownerId: row.owner_id, firstTime: watched && !row.watched_at }
 }
 
+// The progress footprint of a file's tick (checklistRepo.logEpisodeProgress).
+// video_file only — wrestling rows never log progress.
+export function setProgressUndo(fileId: number, footprint: string | null): void {
+  getSqlite().prepare('UPDATE video_file SET progress_undo = ? WHERE id = ?').run(footprint, fileId)
+}
+
+// Reads and clears the footprint, so one un-tick can retract it only once.
+export function takeProgressUndo(fileId: number): string | null {
+  const db = getSqlite()
+  const row = db.prepare('SELECT progress_undo FROM video_file WHERE id = ?').get(fileId) as
+    | { progress_undo: string | null }
+    | undefined
+  if (row?.progress_undo) setProgressUndo(fileId, null)
+  return row?.progress_undo ?? null
+}
+
 export function markWatched(
   fileId: number,
   watched: boolean

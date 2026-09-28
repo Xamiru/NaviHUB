@@ -50,14 +50,16 @@ describe('application theme', () => {
 
   it.each(APP_THEME_OPTIONS.map((option) => option.value))('stamps %s without touching other attributes', (theme) => {
     const root = { dataset: { mood: 'quiet' } } as unknown as Pick<HTMLElement, 'dataset'>
-    stampAppTheme(theme, APP_THEME_VARIANT_OPTIONS[theme][1].value, root)
-    expect(root.dataset).toEqual({ mood: 'quiet', theme, themeVariant: APP_THEME_VARIANT_OPTIONS[theme][1].value })
+    const style = APP_THEME_VARIANT_OPTIONS[theme].at(-1)!.value
+    stampAppTheme(theme, style, root)
+    expect(root.dataset).toEqual({ mood: 'quiet', theme, themeVariant: style })
   })
 
-  it('offers three unique styles per theme and falls back to the first', () => {
+  it('offers one to three unique styles per theme and falls back to the first', () => {
     const all = APP_THEME_OPTIONS.flatMap((option) => {
       const styles = APP_THEME_VARIANT_OPTIONS[option.value].map((variant) => variant.value)
-      expect(styles).toHaveLength(3)
+      expect(styles.length).toBeGreaterThanOrEqual(1)
+      expect(styles.length).toBeLessThanOrEqual(3)
       expect(parseAppThemeVariant(option.value, undefined)).toBe(styles[0])
       expect(parseAppThemeVariant(option.value, 'unknown')).toBe(styles[0])
       for (const style of styles) expect(parseAppThemeVariant(option.value, style)).toBe(style)

@@ -231,6 +231,85 @@ export function logProgress(
   return tx()
 }
 
+// Episode ticks (video_file / tv_episode) keep what their logProgress did in
+// the row's progress_undo, so un-ticking takes it back and tick/untick/tick
+// nets one step rather than stacking. prior/after are null when the media row
+// did not move (a held noRewatch tick) — then only the board credit is undone.
+interface Tracking {
+  progress: number
+  status: string | null
+  rewatchCount: number
+}
+interface EpisodeProgressUndo {
+  logId: number | null
+  prior: Tracking | null
+  after: Tracking | null
+}
+
+function readTracking(mediaId: number): Tracking | undefined {
+  const row = getSqlite()
+    .prepare('SELECT progress, status, rewatch_count FROM media_item WHERE id = ?')
+    .get(mediaId) as { progress: number; status: string | null; rewatch_count: number } | undefined
+  return row && { progress: row.progress, status: row.status, rewatchCount: row.rewatch_count }
+}
+
+function sameTracking(a: Tracking, b: Tracking): boolean {
+  return a.progress === b.progress && a.status === b.status && a.rewatchCount === b.rewatchCount
+}
+
+// logProgress for an episode tick; returns the footprint to store on the row.
+export function logEpisodeProgress(
+  mediaId: number,
+  today: string,
+  opts: { noRewatch?: boolean } = {}
+): string {
+  const tx = getSqlite().transaction((): string => {
+    const before = readTracking(mediaId)
+    const res = logProgress(mediaId, today, undefined, opts)
+    const after = { progress: res.progress, status: res.status, rewatchCount: res.rewatchCount }
+    const moved = before !== undefined && !sameTracking(before, after)
+    const undo: EpisodeProgressUndo = {
+      logId: res.logId,
+      prior: moved ? before : null,
+      after: moved ? after : null
+    }
+    return JSON.stringify(undo)
+  })
+  return tx()
+}
+
+// Un-tick: drop the tick's board credit, then restore the media row exactly
+// when nothing has moved it since, or step progress back one when later ticks
+// or edits have.
+export function retractEpisodeProgress(mediaId: number, footprint: string): void {
+  let undo: EpisodeProgressUndo
+  try {
+    undo = JSON.parse(footprint) as EpisodeProgressUndo
+  } catch {
+    return
+  }
+  const db = getSqlite()
+  const tx = db.transaction(() => {
+    if (undo.logId != null) {
+      // Already undone on the board, which restored the row itself.
+      if (db.prepare('DELETE FROM checklist_log WHERE id = ?').run(undo.logId).changes === 0) return
+    }
+    if (!undo.prior || !undo.after) return
+    const now = readTracking(mediaId)
+    if (!now) return
+    if (sameTracking(now, undo.after)) {
+      mediaRepo.update(mediaId, {
+        progress: undo.prior.progress,
+        status: undo.prior.status,
+        rewatchCount: undo.prior.rewatchCount
+      })
+    } else if (now.progress > 0) {
+      mediaRepo.update(mediaId, { progress: now.progress - 1 })
+    }
+  })
+  tx()
+}
+
 // Credit the board WITHOUT touching media_item.progress.
 //
 // logProgress below is "I consumed one more unit" — it advances progress and,

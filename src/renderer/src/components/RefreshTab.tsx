@@ -381,6 +381,7 @@ function LocalLibraryMaintenance(): React.JSX.Element {
   const { data: settings } = useSettings()
   const [scanning, setScanning] = useState(false)
   const [fetchingArt, setFetchingArt] = useState(false)
+  const [fetchingLyrics, setFetchingLyrics] = useState(false)
   const busy = scanning || fetchingArt
   const hasMusicRoot = !!settings?.['music.dir']?.trim()
 
@@ -396,6 +397,13 @@ function LocalLibraryMaintenance(): React.JSX.Element {
     enabled: fetchingArt,
     refetchInterval: fetchingArt ? 500 : false
   })
+  // Also polls while a sweep started by a finished download run is going.
+  const { data: lyricsStatus } = useQuery({
+    queryKey: qk.music.lyricsStatus,
+    queryFn: () => api.music.lyricsStatus(),
+    refetchInterval: (query) => (fetchingLyrics || query.state.data?.running ? 1000 : false)
+  })
+  const lyricsRunning = fetchingLyrics || !!lyricsStatus?.running
 
   async function scanMusic(): Promise<void> {
     setScanning(true)
@@ -444,6 +452,26 @@ function LocalLibraryMaintenance(): React.JSX.Element {
     }
   }
 
+  async function downloadLyrics(): Promise<void> {
+    setFetchingLyrics(true)
+    try {
+      const result = await api.music.lyricsFetchMissing()
+      const found = `${result.found} track${result.found === 1 ? '' : 's'} with lyrics`
+      const failed = result.failed ? `; ${result.failed} failed` : ''
+      const missing = result.missing ? `; ${result.missing} had no match` : ''
+      if (result.cancelled) {
+        toast(`Lyrics download stopped — ${found}; ${result.total - result.done} not attempted`, 'warning')
+      } else {
+        toast(`Lyrics download done — ${found}${missing}${failed}`, result.failed ? 'warning' : 'success')
+      }
+      qc.invalidateQueries({ queryKey: qk.music.all })
+    } catch (error) {
+      toastError(error)
+    } finally {
+      setFetchingLyrics(false)
+    }
+  }
+
   const scanDetail = scanning
     ? scanStatus?.phase === 'tags'
       ? `Reading tags ${scanStatus.done}/${scanStatus.total}`
@@ -454,6 +482,10 @@ function LocalLibraryMaintenance(): React.JSX.Element {
   const artDetail = fetchingArt
     ? `Checking artwork ${artStatus?.done ?? 0}/${artStatus?.total ?? '…'}`
     : 'Retry blank artist photos and album covers with the current strict provider chain.'
+
+  const lyricsDetail = lyricsRunning
+    ? `Checking lyrics ${lyricsStatus?.done ?? 0}/${lyricsStatus?.total ?? '…'}`
+    : 'Store lyrics from LRCLIB for tracks that have none, so they play offline. New downloads get theirs automatically.'
 
   return (
     <QuietWorkspace
@@ -496,11 +528,32 @@ function LocalLibraryMaintenance(): React.JSX.Element {
             {fetchingArt ? 'Finding artwork…' : 'Find missing artwork'}
           </button>
         </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 py-4">
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-white">Missing lyrics</p>
+            <p className="mt-1 text-xs leading-relaxed text-gray-400" aria-live="polite">
+              {lyricsDetail}
+            </p>
+          </div>
+          <button
+            className="btn-ghost"
+            disabled={scanning || lyricsRunning}
+            onClick={() => void downloadLyrics()}
+          >
+            {lyricsRunning ? 'Downloading lyrics…' : 'Download missing lyrics'}
+          </button>
+        </div>
       </div>
 
       {fetchingArt && (
         <button className="btn-ghost mt-3 text-xs" onClick={() => api.music.artCancel()}>
           Stop artwork lookup
+        </button>
+      )}
+      {lyricsRunning && (
+        <button className="btn-ghost mt-3 text-xs" onClick={() => api.music.lyricsCancel()}>
+          Stop lyrics download
         </button>
       )}
     </QuietWorkspace>

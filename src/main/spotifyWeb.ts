@@ -11,12 +11,14 @@ import {
   parseEmbedSession,
   parsePlaylistPage,
   parseSearchAlbums,
+  parseSearchArtists,
   parseSearchTopTrack,
   pathfinderErrorMessage,
   routeChunkUrls,
   type EmbedSession,
   type SpotdlRawSong,
-  type SpotifyAlbumHit
+  type SpotifyAlbumHit,
+  type SpotifyArtistHit
 } from './spotifyWebCore'
 
 const BROWSER_UA = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36'
@@ -178,6 +180,10 @@ const SEARCH_VARIABLES = {
 
 export async function searchAlbums(query: string): Promise<SpotifyAlbumHit[]> {
   return parseSearchAlbums(await pathfinder('searchSuggestions', { query, ...SEARCH_VARIABLES }))
+}
+
+export async function searchArtists(query: string): Promise<SpotifyArtistHit[]> {
+  return parseSearchArtists(await pathfinder('searchSuggestions', { query, ...SEARCH_VARIABLES }))
 }
 
 /** Best track per free-text query; queries without a result are dropped, as `spotdl save` did. */

@@ -13,7 +13,10 @@ import EditorialDetailFrame, { RelationshipTrail } from '../components/Editorial
 import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
 import { chronologicalYear, formatBirthday } from '../lib/archiveDisplay'
 import { buildCareerTimeline } from '../lib/personCareer'
-import type { PersonCredit, MediaType } from '@shared/types'
+import { usePlayerControls } from '../lib/player'
+import { themeSongToTrack } from '../lib/themeTracks'
+import { PauseIcon, PlayIcon } from '../components/PlayerIcons'
+import type { PersonCredit, MediaType, ThemeSongEntry, ThemeSongFilter } from '@shared/types'
 
 export default function PersonDetailPage() {
   const { id } = useParams()
@@ -36,6 +39,20 @@ export default function PersonDetailPage() {
     queryKey: qk.people.credits(personId),
     queryFn: () => api.people.credits(personId)
   })
+  // Theme-song artists: the songs they performed, listed under each anime in
+  // the career chronology.
+  const isArtist = credits.some((c) => c.role === 'artist')
+  const songFilter: ThemeSongFilter = {
+    media: { mediaType: 'anime' },
+    artistId: personId,
+    playableOnly: false
+  }
+  const { data: songs = [] } = useQuery({
+    queryKey: qk.themes.list(songFilter),
+    queryFn: () => api.themes.list(songFilter),
+    enabled: isArtist
+  })
+  const player = usePlayerControls()
 
   // Group credits into acting (character-bearing) blocks per medium + a flat crew
   // list. This double-Map build runs over the whole credit list, so memoize it on
@@ -91,6 +108,21 @@ export default function PersonDetailPage() {
 
   const chronology = buildCareerTimeline(credits)
   const birthday = formatBirthday(person.birthday)
+
+  const songsByMedia = new Map<number, ThemeSongEntry[]>()
+  for (const s of songs) {
+    const list = songsByMedia.get(s.mediaId)
+    if (list) list.push(s)
+    else songsByMedia.set(s.mediaId, [s])
+  }
+  // Play queues every playable song in chronology order, so next/prev walk
+  // the artist's career.
+  const playable = chronology
+    .flatMap(({ media }) => songsByMedia.get(media.id) ?? [])
+    .filter((s) => s.audioPath || s.audioUrl)
+  const playSong = (s: ThemeSongEntry): void => {
+    player.playQueue(playable.map(themeSongToTrack), playable.indexOf(s))
+  }
 
   const actingSection =
     totalActing > 0 &&
@@ -193,35 +225,43 @@ export default function PersonDetailPage() {
         >
           <div className="card overflow-hidden p-0">
             {chronology.map(({ media, roleLabels }) => (
-              <Link
-                key={media.id}
-                to={pathForMedia(media)}
-                className="group/timeline grid min-w-0 grid-cols-[48px_52px_minmax(0,1fr)] items-center gap-3 border-t border-line-subtle px-3 py-3 transition-colors first:border-t-0 hover:bg-surface-raised sm:grid-cols-[64px_56px_minmax(0,1fr)_minmax(160px,0.65fr)] sm:gap-4 sm:px-4"
-              >
-                <span className="text-xs font-medium tabular-nums text-ink-muted sm:text-sm">
-                  {chronologicalYear(media.releaseDate)}
-                </span>
-                <CoverImage
-                  path={media.coverPath}
-                  alt=""
-                  thumbWidth={112}
-                  className="aspect-[2/3] h-[72px] w-12 transition-transform group-hover/timeline:scale-[1.03] sm:h-20 sm:w-14"
-                />
-                <span className="min-w-0 self-center">
-                  <span className="block line-clamp-2 text-sm font-semibold text-ink-primary group-hover/timeline:text-accent">
-                    {media.title}
+              <div key={media.id} className="border-t border-line-subtle first:border-t-0">
+                <Link
+                  to={pathForMedia(media)}
+                  className="group/timeline grid min-w-0 grid-cols-[48px_52px_minmax(0,1fr)] items-center gap-3 px-3 py-3 transition-colors hover:bg-surface-raised sm:grid-cols-[64px_56px_minmax(0,1fr)_minmax(160px,0.65fr)] sm:gap-4 sm:px-4"
+                >
+                  <span className="text-xs font-medium tabular-nums text-ink-muted sm:text-sm">
+                    {chronologicalYear(media.releaseDate)}
                   </span>
-                  <span className="mt-1 block text-xs capitalize text-ink-muted">
-                    {typeLabel(media.mediaType)}
+                  <CoverImage
+                    path={media.coverPath}
+                    alt=""
+                    thumbWidth={112}
+                    className="aspect-[2/3] h-[72px] w-12 transition-transform group-hover/timeline:scale-[1.03] sm:h-20 sm:w-14"
+                  />
+                  <span className="min-w-0 self-center">
+                    <span className="block line-clamp-2 text-sm font-semibold text-ink-primary group-hover/timeline:text-accent">
+                      {media.title}
+                    </span>
+                    <span className="mt-1 block text-xs capitalize text-ink-muted">
+                      {typeLabel(media.mediaType)}
+                    </span>
+                    <span className="mt-1 block line-clamp-2 text-xs capitalize text-ink-secondary sm:hidden">
+                      {roleLabels.join(' · ')}
+                    </span>
                   </span>
-                  <span className="mt-1 block line-clamp-2 text-xs capitalize text-ink-secondary sm:hidden">
+                  <span className="hidden line-clamp-3 text-sm capitalize leading-5 text-ink-secondary sm:block">
                     {roleLabels.join(' · ')}
                   </span>
-                </span>
-                <span className="hidden line-clamp-3 text-sm capitalize leading-5 text-ink-secondary sm:block">
-                  {roleLabels.join(' · ')}
-                </span>
-              </Link>
+                </Link>
+                {songsByMedia.has(media.id) && (
+                  <ul className="space-y-1 pb-3 pl-[136px] pr-3 sm:pl-[168px] sm:pr-4">
+                    {songsByMedia.get(media.id)!.map((s) => (
+                      <ArtistSongRow key={s.themeId} song={s} onPlay={() => playSong(s)} />
+                    ))}
+                  </ul>
+                )}
+              </div>
             ))}
           </div>
         </Section>
@@ -229,6 +269,35 @@ export default function PersonDetailPage() {
 
       {crewSection}
     </EditorialDetailFrame>
+  )
+}
+
+function ArtistSongRow({ song, onPlay }: { song: ThemeSongEntry; onPlay: () => void }) {
+  const player = usePlayerControls()
+  const hasAudio = !!(song.audioPath || song.audioUrl)
+  const isCurrent = player.track?.id === `theme-${song.themeId}`
+  const isPlaying = isCurrent && player.isPlaying
+  const name = song.title ?? 'Untitled'
+  return (
+    <li className="flex min-w-0 items-center gap-2">
+      <button
+        onClick={() => (isCurrent ? player.toggle() : onPlay())}
+        disabled={!hasAudio}
+        title={!hasAudio ? 'No audio available' : isPlaying ? 'Pause' : 'Play'}
+        aria-label={isPlaying ? `Pause ${name}` : `Play ${name}`}
+        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/15 text-xs text-accent hover:bg-accent/30 disabled:opacity-30 disabled:hover:bg-accent/15"
+      >
+        {isPlaying ? <PauseIcon /> : <PlayIcon />}
+      </button>
+      {song.slug && (
+        <span className="chip shrink-0 bg-accent/20 px-1.5 py-0.5 text-[11px] text-accent">
+          {song.slug}
+        </span>
+      )}
+      <span className={`truncate text-sm ${isCurrent ? 'text-accent' : 'text-ink-secondary'}`}>
+        {name}
+      </span>
+    </li>
   )
 }
 

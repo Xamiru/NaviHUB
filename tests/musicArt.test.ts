@@ -14,6 +14,10 @@ vi.mock('../src/main/db/connection', () => ({
 vi.mock('../src/main/files', () => ({
   downloadImage: (url: string | null) => downloadImage(url)
 }))
+const searchArtists = vi.fn(async (_query: string): Promise<{ id: string; name: string; imageUrl: string | null }[]> => [])
+vi.mock('../src/main/spotifyWeb', () => ({
+  searchArtists: (query: string) => searchArtists(query)
+}))
 vi.mock('../src/main/http', () => ({
   MAX_API_RESPONSE_BYTES: 32 * 1024 * 1024,
   fetchWithRetry: async (url: string) => {
@@ -48,6 +52,8 @@ beforeEach(() => {
     'en.wikipedia.org/w/api.php': { query: { pages: {} } }
   }
   downloadImage.mockClear()
+  searchArtists.mockReset()
+  searchArtists.mockResolvedValue([])
 })
 
 function seedAlbum(artist = 'Radiohead', album = 'OK Computer'): number {
@@ -420,6 +426,55 @@ describe('fetchArtistImage', () => {
     }
     const res = await fetchArtistImage(artistId)
     expect(res.sourceUrl).toBe('https://spotify/artist.jpg')
+  })
+
+  it('uses the Spotify artist id credited by matched playlist rows', async () => {
+    const albumId = seedAlbum()
+    const artistId = (db.prepare('SELECT id FROM music_artist LIMIT 1').get() as { id: number }).id
+    const trackId = db
+      .prepare(`INSERT INTO music_track (album_id, artist_id, file_path, title) VALUES (?, ?, 'a.opus', 'Airbag')`)
+      .run(albumId, artistId).lastInsertRowid
+    const playlistId = db.prepare(`INSERT INTO music_playlist (title) VALUES ('Mix')`).run().lastInsertRowid
+    db.prepare(
+      `INSERT INTO music_spotify_playlist_item (playlist_id, spotify_track_id, position, title, artists_json,
+       primary_artist, album_title, spotify_url, raw_json, matched_track_id)
+       VALUES (?, 't1', 1, 'Airbag', '[]', 'Radiohead', 'OK Computer', 'https://open.spotify.com/track/t1', ?, ?)`
+    ).run(playlistId, JSON.stringify({ artists: ['Guest', 'Radiohead'], artist_ids: ['guest-id', 'rh-id'] }), trackId)
+    responses['open.spotify.com/oembed?url=https%3A%2F%2Fopen.spotify.com%2Fartist%2Frh-id'] = {
+      thumbnail_url: 'https://spotify/rh.jpg'
+    }
+    const res = await fetchArtistImage(artistId)
+    expect(res.sourceUrl).toBe('https://spotify/rh.jpg')
+    expect(searchArtists).not.toHaveBeenCalled()
+  })
+
+  it('takes the Spotify search photo only when one artist has the exact name', async () => {
+    seedAlbum()
+    const artistId = (db.prepare('SELECT id FROM music_artist LIMIT 1').get() as { id: number }).id
+    responses['en.wikipedia.org/w/api.php'] = {
+      query: { pages: { '1': { title: 'Radiohead', original: { source: 'https://wikipedia/rh.jpg' } } } }
+    }
+    searchArtists.mockResolvedValue([
+      { id: 'tribute', name: 'Radiohead Tribute Band', imageUrl: 'https://spotify/tribute.jpg' },
+      { id: 'rh-id', name: 'Radiohead', imageUrl: 'https://spotify/rh-640.jpg' }
+    ])
+    expect((await fetchArtistImage(artistId)).sourceUrl).toBe('https://spotify/rh-640.jpg')
+
+    searchArtists.mockResolvedValue([
+      { id: 'rh-id', name: 'Radiohead', imageUrl: 'https://spotify/rh-640.jpg' },
+      { id: 'namesake', name: 'Radiohead', imageUrl: null }
+    ])
+    expect((await fetchArtistImage(artistId)).sourceUrl).toBe('https://wikipedia/rh.jpg')
+  })
+
+  it('does not mark an artist checked when the Spotify search fails', async () => {
+    seedAlbum()
+    const artistId = (db.prepare('SELECT id FROM music_artist LIMIT 1').get() as { id: number }).id
+    searchArtists.mockRejectedValue(new Error('offline'))
+    responses['api.deezer.com/search/artist'] = { data: [] }
+    expect(await fetchArtistImage(artistId)).toMatchObject({ updated: false, reason: 'download_failed' })
+    const row = db.prepare('SELECT art_checked_at FROM music_artist WHERE id = ?').get(artistId) as { art_checked_at: string | null }
+    expect(row.art_checked_at).toBeNull()
   })
 
   it('stores an exact-match Deezer artist photo', async () => {

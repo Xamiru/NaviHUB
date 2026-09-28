@@ -138,25 +138,6 @@ describe('live smart playlists', () => {
       smart.preview({ ...DEFAULT_SMART_RULES, minPlays: 1, maxPlays: 3 }).items.map((t) => t.id)
     ).toEqual([3])
   })
-  it('uses explicit album/track soundtrack links', () => {
-    db.exec(
-      'INSERT INTO soundtrack_link(album_id,media_id) VALUES(1,1); INSERT INTO soundtrack_link(track_id,media_id) VALUES(3,2)'
-    )
-    expect(smart.preview({ ...DEFAULT_SMART_RULES, soundtrack: 'linked' }).total).toBe(3)
-    expect(
-      smart
-        .preview({
-          ...DEFAULT_SMART_RULES,
-          soundtrack: 'linked',
-          playState: 'unplayed'
-        })
-        .items.map((t) => t.id)
-    ).toEqual([1])
-    db.exec('DELETE FROM soundtrack_link WHERE track_id=3')
-    expect(
-      smart.preview({ ...DEFAULT_SMART_RULES, soundtrack: 'unlinked' }).items.map((t) => t.id)
-    ).toEqual([3])
-  })
   it('limits, sorts and pages deterministically, with uncapped match counts', () => {
     for (let i = 4; i <= 60; i++)
       db.prepare(

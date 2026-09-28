@@ -526,6 +526,45 @@ describe('persistent Spotify download queue process', () => {
     expect(vi.mocked(spawn).mock.calls.filter(isDownload)).toHaveLength(1) // no second search or multiplied retries
   })
 
+  it('fails every song sharing a source when that one download fails', async () => {
+    const url = 'https://www.youtube.com/watch?v=abcdefghijk'
+    const song = (n: number) => ({
+      spotifyTrackId: `shared-${n}`, title: `Shared song ${n}`, artists: ['Artist'], primaryArtist: 'Artist',
+      albumArtist: 'Artist', albumTitle: 'Shared album', duration: 200, coverUrl: null, coverPath: null,
+      spotifyUrl: `https://open.spotify.com/track/shared-${n}`, discNo: 1, trackNo: n, year: 2026,
+      rawJson: JSON.stringify({ song_id: `shared-${n}`, name: `Shared song ${n}`, artists: ['Artist'], album_name: 'Shared album', duration: 200 }),
+      spotifyAlbumId: 'shared-album', spotifyArtistId: 'artist-id', spotifyArtistIds: ['artist-id'], albumType: 'album'
+    })
+    const playlist = spotifyRepo.createSpotifyPlaylist({
+      spotifyId: 'shared-playlist', sourceUrl: 'https://open.spotify.com/playlist/shared-playlist',
+      title: 'Shared', songs: [song(1), song(2)]
+    })
+    const itemIds = (db.prepare('SELECT id FROM music_spotify_playlist_item WHERE playlist_id=? ORDER BY id')
+      .all(playlist.playlistId) as { id: number }[]).map((row) => row.id)
+    for (const trackId of itemIds) {
+      spotifyRepo.setTrackDownloadOptions({ sourceKind: 'playlistItem', trackId, audioSourceUrl: url })
+      spotifyRepo.saveSourceEvidence('playlistItem', trackId, { url, title: 'One recording', artist: 'Artist', channel: 'Artist', duration: 200, format: 'opus', observedAt: Date.now(), accessKey: musicAccessKey() }, true)
+    }
+    vi.mocked(spawn).mockImplementation((_command, args) => {
+      const argv = args as string[]
+      if (argv.includes('--dump-json')) {
+        return ytdlpProcess(() => ({ title: 'One recording', artist: 'Artist', uploader: 'Artist', duration: 200 }))(_command, argv)
+      }
+      const proc = recordFakeProcess()
+      setTimeout(() => { proc.stderr.write('ERROR: Requested format is not available\n'); proc.exitCode = 1; proc.emit('close', 1) }, 20)
+      return proc as never
+    })
+    spotify.addPlaylistDownloadQueue({ playlistId: playlist.playlistId, itemIds })
+    spotify.startDownloadQueue()
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('error'))
+    expect(vi.mocked(spawn).mock.calls.filter(isDownload)).toHaveLength(1)
+    expect(db.prepare('SELECT download_error AS error FROM music_spotify_playlist_item WHERE playlist_id=? ORDER BY id')
+      .all(playlist.playlistId)).toEqual([
+      { error: expect.stringContaining('Transfer / processing (yt-dlp)') },
+      { error: expect.stringContaining('Transfer / processing (yt-dlp)') }
+    ])
+  })
+
   it('retains a failed card and continues to later queue work', async () => {
     const first = await seedQueuedRelease()
     const playlist = spotifyRepo.createSpotifyPlaylist({

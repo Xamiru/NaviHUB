@@ -387,7 +387,8 @@ export function cachedDownload(url: string): string | null {
 // on disk is a cache hit (no network, no rewrite) instead of a fresh download.
 export async function downloadImage(
   url: string | null | undefined,
-  into?: MediaSubdir
+  into?: MediaSubdir,
+  headers?: Record<string, string>
 ): Promise<string | null> {
   if (!url) return null
   try {
@@ -399,7 +400,9 @@ export async function downloadImage(
     // User-Agent. Importer calls keep their existing request shape.
     const res = await fetchWithRetry(
       url,
-      into ? { headers: { 'User-Agent': 'NaviHUB/1.0 (personal media hub)' } } : undefined
+      headers
+        ? { headers }
+        : into ? { headers: { 'User-Agent': 'NaviHUB/1.0 (personal media hub)' } } : undefined
     )
     if (!res.ok) return null
     await streamResponseToFile(res, dest, {

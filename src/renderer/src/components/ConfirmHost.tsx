@@ -1,5 +1,7 @@
 import { useRef, useSyncExternalStore } from 'react'
 import { subscribeConfirm, getConfirm, answerConfirm, type ConfirmRequest } from '../lib/confirm'
+import { FX_ART } from '../lib/themeFxArt'
+import { useAppTheme } from '../lib/useAppTheme'
 import Dialog from './Dialog'
 
 // Renders whatever lib/confirm has parked, one at a time. Mounted beside
@@ -13,6 +15,13 @@ export default function ConfirmHost() {
 
 function ConfirmPanel({ req }: { req: ConfirmRequest }) {
   const okRef = useRef<HTMLButtonElement>(null)
+  // Berserk: destructive confirmations show Miura's screaming Behelit, which
+  // trembles while the destructive button is hovered or focused.
+  // JoJo: menacing ゴゴゴ rises beside the question, turning to ドドド while the
+  // destructive button is hovered or focused.
+  const { theme } = useAppTheme()
+  const behelit = theme === 'berserk' && req.danger
+  const menacing = theme === 'jojo' && req.danger
 
   return (
     <Dialog
@@ -21,11 +30,20 @@ function ConfirmPanel({ req }: { req: ConfirmRequest }) {
       onClose={() => answerConfirm(req.id, false)}
       initialFocus={() => okRef.current}
       overlayClassName="fixed inset-0 z-[60] bg-black/60 p-4"
-      panelClassName="card w-full max-w-md p-5"
+      panelClassName={`card w-full max-w-md p-5 ${menacing ? 'jojo-confirm relative' : ''}`}
     >
+      {menacing && (
+        <span className="jojo-menace-confirm" aria-hidden="true">
+          <span>ゴゴゴ</span>
+          <b>ドドドド</b>
+        </span>
+      )}
       <h2 id={`confirm-title-${req.id}`} className="sr-only">
         Confirmation
       </h2>
+      <div className={behelit ? 'berserk-confirm' : undefined}>
+      {behelit && <img className="berserk-confirm-art berserk-frame" src={FX_ART.bzBehelitAwake} alt="" aria-hidden="true" />}
+      <div className="min-w-0 flex-1">
       {/* Messages carry their own blank lines (they were written for the
           native dialog's plain text), so keep the line breaks. */}
       <p
@@ -45,6 +63,8 @@ function ConfirmPanel({ req }: { req: ConfirmRequest }) {
         >
           {req.confirmLabel}
         </button>
+      </div>
+      </div>
       </div>
     </Dialog>
   )

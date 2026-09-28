@@ -258,3 +258,21 @@ export function parseSearchAlbums(body: unknown): SpotifyAlbumHit[] {
     return [{ id, name: album.name, artists: names(album.artists?.items).map((artist) => artist.name), type: albumType(album.type) }]
   })
 }
+
+export interface SpotifyArtistHit {
+  id: string
+  name: string
+  imageUrl: string | null
+}
+
+export function parseSearchArtists(body: unknown): SpotifyArtistHit[] {
+  const hits = (body as Json)?.data?.searchV2?.topResultsV2?.itemsV2
+  if (!Array.isArray(hits)) return []
+  return hits.flatMap((hit: Json): SpotifyArtistHit[] => {
+    const artist = hit?.item?.data
+    const id = idFromUri(artist?.uri)
+    const name = artist?.profile?.name
+    if (hit?.item?.__typename !== 'ArtistResponseWrapper' || !id || typeof name !== 'string') return []
+    return [{ id, name, imageUrl: largestImage(artist.visuals?.avatarImage?.sources) }]
+  })
+}

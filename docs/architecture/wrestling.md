@@ -34,9 +34,6 @@ wrestling scope. File watched controls are now visible in `WrestlingFilesSection
 A file's watched mark, a journey step's viewings and media-item progress remain
 separate. All journey rows and file references are wiped from shared exports.
 
-Wrestler pages also expose explicit local entrance-theme associations; see
-[music-quiz.md](music-quiz.md#soundtracks-and-entrance-themes).
-
 
 ## Wrestling section
 

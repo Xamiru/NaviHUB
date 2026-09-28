@@ -22,7 +22,9 @@ interface Props {
 
 // Browse online art sources and save picks straight into the library. The
 // backend decides which sources a title gets (pictures.listSources) and in what
-// order; searchable ones open prefilled with the title. Searches run in the
+// order; searchable ones open prefilled with the title. Nothing is fetched
+// until the user presses Search (or Load for a source with no query box).
+// Searches run in the
 // main process (renderer CSP blocks remote fetch); the thumbnails themselves
 // are plain remote <img>, which img-src allows.
 export default function ImageBrowseDialog({ m, kind, onClose }: Props): React.JSX.Element {
@@ -103,16 +105,18 @@ function SourcePanel({
 }): React.JSX.Element {
   const qc = useQueryClient()
   const [query, setQuery] = useState(info.query ?? '')
-  const [submitted, setSubmitted] = useState(info.query ?? '')
+  // null until the user starts a search; a source with no query box submits ''.
+  const [submitted, setSubmitted] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   // fullUrl -> transient tile state; settled "added" comes from the list query.
   const [pending, setPending] = useState<Record<string, 'busy' | 'added'>>({})
 
   const searchable = info.query !== null
   const search = useQuery({
-    queryKey: qk.pictures.search(m.id, info.source, submitted, page),
-    queryFn: () => api.pictures.search(m.id, info.source, submitted, page),
-    enabled: !info.needsKey && (!searchable || submitted.trim().length > 0),
+    queryKey: qk.pictures.search(m.id, info.source, submitted ?? '', page),
+    queryFn: () => api.pictures.search(m.id, info.source, submitted ?? '', page),
+    enabled:
+      !info.needsKey && submitted !== null && (!searchable || submitted.trim().length > 0),
     // Keep the grid and pager up while the next page loads.
     placeholderData: (previous) => previous
   })
@@ -187,6 +191,12 @@ function SourcePanel({
         </form>
       )}
 
+      {!searchable && submitted === null && (
+        <button className="btn-primary mb-3" type="button" onClick={() => run('')}>
+          Load {info.label}
+        </button>
+      )}
+
       {characters.length > 0 && (
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <span className="text-xs text-gray-400">Characters</span>
@@ -212,7 +222,7 @@ function SourcePanel({
           {search.error instanceof Error ? search.error.message : 'Search failed'}
         </p>
       )}
-      {!search.isFetching && !search.isError && results.length === 0 && (
+      {search.isSuccess && !search.isFetching && results.length === 0 && (
         <p className="text-sm text-gray-400 mb-3">No results.</p>
       )}
 

@@ -77,6 +77,31 @@ describe('a live DB that predates newer columns', () => {
     db.close()
   })
 
+  it('drops the retired soundtrack association table', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(initSql)
+    db.exec(`CREATE TABLE soundtrack_link (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        album_id INTEGER REFERENCES music_album(id) ON DELETE CASCADE,
+        track_id INTEGER REFERENCES music_track(id) ON DELETE CASCADE,
+        media_id INTEGER REFERENCES media_item(id) ON DELETE CASCADE,
+        wrestler_id INTEGER REFERENCES wrestling_wrestler(id) ON DELETE CASCADE,
+        label TEXT NOT NULL DEFAULT '', notes TEXT NOT NULL DEFAULT '');
+      CREATE INDEX idx_soundtrack_media ON soundtrack_link(media_id);
+      INSERT INTO media_item(id,media_type,title) VALUES(1,'anime','Show');
+      INSERT INTO music_artist(id,name,dir_path) VALUES(1,'Artist','Artist');
+      INSERT INTO music_album(id,artist_id,title,dir_path) VALUES(1,1,'Album','Artist/Album');
+      INSERT INTO soundtrack_link(album_id,media_id) VALUES(1,1);`)
+    runMigrations(db)
+    db.exec(initSql)
+    runMigrations(db)
+    expect(db.prepare("SELECT name FROM sqlite_master WHERE name LIKE '%soundtrack%'").all()).toEqual([])
+    expect(db.prepare('SELECT title FROM music_album WHERE id=1').get()).toEqual({ title: 'Album' })
+    expect(db.pragma('foreign_key_check')).toEqual([])
+    db.close()
+  })
+
   it('adds all hobby-depth tables to a pre-existing library idempotently', () => {
     const db = new Database(':memory:')
     db.exec(initSql.slice(0, initSql.indexOf('-- Personal VN reading state')))
@@ -86,7 +111,7 @@ describe('a live DB that predates newer columns', () => {
     db.exec(initSql)
     runMigrations(db)
     db.exec("INSERT INTO vn_reading_node(media_id,kind,title) VALUES(1,'chapter','Chapter one')")
-    for (const table of ['vn_reading_resume', 'vn_notebook', 'vn_text_capture', 'vn_release_cache', 'vn_edition', 'wrestling_journey', 'wrestling_journey_step', 'wrestling_journey_viewing', 'soundtrack_link']) {
+    for (const table of ['vn_reading_resume', 'vn_notebook', 'vn_text_capture', 'vn_release_cache', 'vn_edition', 'wrestling_journey', 'wrestling_journey_step', 'wrestling_journey_viewing']) {
       expect(db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table)).toEqual({ name: table })
     }
     expect(db.pragma('foreign_key_check')).toEqual([])
@@ -94,6 +119,34 @@ describe('a live DB that predates newer columns', () => {
     expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
     db.close()
   })
+  it('adds Football crest, colour and reference columns to a pre-existing archive', () => {
+    const db = new Database(':memory:')
+    const legacy = initSql
+      .replace(/^\s*image_path       TEXT,\n(?=\s*created_at)/m, '')
+      .replace(/^\s*(primary_color|secondary_color|venue|venue_capacity)\s+\w+,\n/gm, '')
+      .replace(/^\s*(position|height_cm|birth_place|foot)\s+\w+,\n/gm, '')
+      .replace(/^\s*(home_formation|away_formation|home_manager|away_manager)\s+\w+,\n/gm, '')
+    expect(legacy).not.toContain('primary_color')
+    expect(legacy).not.toContain('home_formation')
+    db.exec(legacy)
+    db.exec(`INSERT INTO football_team (id,name) VALUES (1,'Arsenal')`)
+    db.exec(initSql)
+    runMigrations(db)
+    db.exec(initSql)
+    runMigrations(db)
+    db.exec(`UPDATE football_team SET primary_color='#ef0107', venue='Highbury', venue_capacity=38419 WHERE id=1`)
+    db.exec(`INSERT INTO football_person (id,name,role,position,height_cm,birth_place) VALUES (1,'Thierry Henry','player','Forward',188,'Les Ulis')`)
+    db.exec(`UPDATE football_competition SET image_path='media/logo.png'`)
+    expect(db.prepare('SELECT name,primary_color,venue_capacity FROM football_team').get()).toEqual({
+      name: 'Arsenal', primary_color: '#ef0107', venue_capacity: 38419
+    })
+    expect(db.prepare('SELECT height_cm FROM football_person').get()).toEqual({ height_cm: 188 })
+    db.exec(`UPDATE football_person SET foot='right'`)
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM pragma_table_info('football_match')
+      WHERE name IN ('home_formation','away_formation','home_manager','away_manager')`).get()).toEqual({ n: 4 })
+    db.close()
+  })
+
   it('deduplicates competition-level Football coverage before enforcing uniqueness', () => {
     const db = new Database(':memory:')
     db.exec(initSql)

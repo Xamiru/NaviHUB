@@ -352,6 +352,54 @@ describe('logging an anime episode', () => {
   })
 })
 
+describe('episode tick footprints', () => {
+  beforeEach(() => {
+    checklistRepo.addTask('anime-episode', 'daily')
+  })
+
+  it('tick, untick, tick nets one episode rather than stacking', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'Plan to Watch', progress: 3, totalUnits: 26 })
+    const first = checklistRepo.logEpisodeProgress(id, SAT)
+    checklistRepo.retractEpisodeProgress(id, first)
+    expect(mediaRow(id)).toEqual({ status: 'Plan to Watch', progress: 3 })
+    expect(taskByKey(SAT, 'anime-episode').progress).toBe(0)
+    checklistRepo.logEpisodeProgress(id, SAT)
+    expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 4 })
+  })
+
+  it('un-completes a title whose last episode is unticked', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'Watching', progress: 25, totalUnits: 26 })
+    checklistRepo.retractEpisodeProgress(id, checklistRepo.logEpisodeProgress(id, SAT))
+    expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 25 })
+  })
+
+  it('steps back one when a later tick has moved the title since', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'Watching', progress: 3, totalUnits: 26 })
+    const first = checklistRepo.logEpisodeProgress(id, SAT)
+    checklistRepo.logEpisodeProgress(id, SAT)
+    checklistRepo.retractEpisodeProgress(id, first)
+    expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 4 })
+    expect(taskByKey(SAT, 'anime-episode').progress).toBe(1)
+  })
+
+  it('leaves progress alone when the board already undid the tick', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'Watching', progress: 4, totalUnits: 26 })
+    const undo = checklistRepo.logEpisodeProgress(id, SAT)
+    checklistRepo.undoLog((JSON.parse(undo) as { logId: number }).logId)
+    checklistRepo.retractEpisodeProgress(id, undo)
+    expect(mediaRow(id)).toEqual({ status: 'Watching', progress: 4 })
+  })
+
+  it('undoes only the board credit of a held noRewatch tick', () => {
+    const id = addMedia('anime', 'Bebop', { status: 'Completed', progress: 26, totalUnits: 26 })
+    const undo = checklistRepo.logEpisodeProgress(id, SAT, { noRewatch: true })
+    checklistRepo.retractEpisodeProgress(id, undo)
+    expect(mediaRow(id)).toEqual({ status: 'Completed', progress: 26 })
+    expect(rewatchCount(id)).toBe(0)
+    expect(taskByKey(SAT, 'anime-episode').progress).toBe(0)
+  })
+})
+
 describe('logging a movie', () => {
   beforeEach(() => {
     checklistRepo.addTask('movie-watch', 'weekly')

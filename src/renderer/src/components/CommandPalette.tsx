@@ -261,14 +261,29 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
         aria-modal="true"
         aria-label="Command palette"
         tabIndex={-1}
-        className={`palette palette-${theme} ${theme !== 'miku' ? 'theme-dark' : ''} card mt-24 w-full max-w-xl overflow-hidden p-0`}
-        style={theme === 'miku' ? { backgroundImage: `url(${FX_ART.mikuSongSelect})` } : undefined}
+        className={`palette palette-${theme} ${theme !== 'miku' && theme !== 'berserk' && theme !== 'one-piece' && theme !== 'jojo' ? 'theme-dark' : ''} card mt-24 w-full max-w-xl overflow-hidden p-0`}
+        style={
+          theme === 'miku'
+            ? { backgroundImage: `url(${FX_ART.mikuSongSelect})` }
+            : theme === 'berserk'
+              ? { backgroundImage: `linear-gradient(#ececeee0, #ececeee0), url(${FX_ART.bzSpread})` }
+              : undefined
+        }
       >
         {theme === 'twin-peaks' && (
           <div className="palette-diane" style={{ backgroundImage: `url(${FX_ART.peaksDiane})` }} aria-hidden="true">
             <span>{stamp}, TAPE FOR DIANE</span>
           </div>
         )}
+        {theme === 'seinfeld' && (
+          <div className="palette-menu" style={{ backgroundImage: `url(${FX_ART.sfMenu})` }} aria-hidden="true">
+            <span>Monk's Café</span>
+          </div>
+        )}
+        {theme === 'one-piece' && (
+          <div className="palette-scope" style={{ backgroundImage: `url(${FX_ART.opEyecatch})` }} aria-hidden="true" />
+        )}
+        {theme === 'jojo' && <p className="palette-stand" aria-hidden="true">[STAND NAME]</p>}
         {theme === 'lain' && (
           <div className="palette-navi" style={{ backgroundImage: `url(${FX_ART.lainNavi})` }} aria-hidden="true" />
         )}
@@ -277,7 +292,7 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
         <Field label="Search commands and library" hiddenLabel className="contents">
           <input
             className="input rounded-none border-0 px-4 py-3"
-            placeholder={theme === 'twin-peaks' ? 'Diane, I\'m looking for…' : 'Search your library, or jump to a section…'}
+            placeholder={theme === 'twin-peaks' ? 'Diane, I\'m looking for…' : theme === 'seinfeld' ? 'What\'ll it be?' : 'Search your library, or jump to a section…'}
             value={query}
             autoFocus
             onChange={(e) => {
@@ -322,6 +337,7 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
                 onClick={() => go(item)}
               >
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                {theme === 'seinfeld' && <i className="palette-leader" aria-hidden="true" />}
                 <span className="shrink-0 text-xs text-gray-500">{item.hint}</span>
               </button>
             ))}

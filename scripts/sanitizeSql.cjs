@@ -39,7 +39,6 @@ const FIXED_WIPES = [
   'DELETE FROM game_playthrough',
   'DELETE FROM music_track_personal',
   'DELETE FROM music_smart_playlist',
-  'DELETE FROM soundtrack_link',
   'DELETE FROM vn_edition',
   'DELETE FROM vn_text_capture',
   'DELETE FROM wrestling_journey_viewing',
@@ -68,6 +67,7 @@ const FIXED_WIPES = [
   'DELETE FROM football_standing',
   'DELETE FROM football_honour',
   'DELETE FROM football_tenure',
+  'DELETE FROM football_transfer',
   'DELETE FROM football_media',
   'DELETE FROM football_match',
   'DELETE FROM football_stage',
@@ -205,6 +205,7 @@ function sanitizeDb(db, input) {
         options.includeProgress ? '' : ', status=NULL, progress=0, rewatch_count=0'
       }${options.includeRatings ? '' : ', score=NULL, notes=NULL, favorite=0'}`
     )
+    run('UPDATE tv_episode SET progress_undo=NULL')
     if (!options.includeProgress) run('UPDATE tv_episode SET watched_at=NULL')
 
     run('UPDATE wrestling_event SET local_dir=NULL, poster_path=NULL')

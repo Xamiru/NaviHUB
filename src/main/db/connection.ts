@@ -284,6 +284,23 @@ export function runMigrations(sqlite: Database.Database): string[] {
   // tables shipped before the feature, so both need the migration.
   ensureColumn(sqlite, 'wrestling_match', 'show_label', 'show_label TEXT')
   ensureColumn(sqlite, 'wrestling_match', 'match_date', 'match_date TEXT')
+  // 2026-09-27: un-ticking an episode takes back the progress its tick logged.
+  ensureColumn(sqlite, 'video_file', 'progress_undo', 'progress_undo TEXT')
+  ensureColumn(sqlite, 'tv_episode', 'progress_undo', 'progress_undo TEXT')
+  // 2026-09-28: Football crests, club colours and reference facts.
+  ensureColumn(sqlite, 'football_competition', 'image_path', 'image_path TEXT')
+  ensureColumn(sqlite, 'football_team', 'primary_color', 'primary_color TEXT')
+  ensureColumn(sqlite, 'football_team', 'secondary_color', 'secondary_color TEXT')
+  ensureColumn(sqlite, 'football_team', 'venue', 'venue TEXT')
+  ensureColumn(sqlite, 'football_team', 'venue_capacity', 'venue_capacity INTEGER')
+  ensureColumn(sqlite, 'football_person', 'position', 'position TEXT')
+  ensureColumn(sqlite, 'football_person', 'height_cm', 'height_cm INTEGER')
+  ensureColumn(sqlite, 'football_person', 'birth_place', 'birth_place TEXT')
+  ensureColumn(sqlite, 'football_person', 'foot', 'foot TEXT')
+  ensureColumn(sqlite, 'football_match', 'home_formation', 'home_formation TEXT')
+  ensureColumn(sqlite, 'football_match', 'away_formation', 'away_formation TEXT')
+  ensureColumn(sqlite, 'football_match', 'home_manager', 'home_manager TEXT')
+  ensureColumn(sqlite, 'football_match', 'away_manager', 'away_manager TEXT')
   dropNotNull(
     sqlite,
     'wrestling_match',
@@ -397,6 +414,7 @@ export function runMigrations(sqlite: Database.Database): string[] {
   // media/ paths before dropping its schema; a file anything else still
   // references is kept.
   retireAlbumJournal(sqlite)
+  retireSoundtrackLinks(sqlite)
   const retired = [...retireBannerColumn(sqlite), ...retireGacha(sqlite)]
   if (!retired.length) return []
   const inUse = referencedMediaPaths(sqlite)
@@ -418,6 +436,16 @@ function retireBannerColumn(sqlite: Database.Database): string[] {
 // 2026-09-26: the album listening journal (album ratings, shelves, reviews and
 // dated listens) was removed. Per-track tags and standouts stay in
 // music_track_personal.
+// 2026-09-27: soundtrack associations were removed ahead of a redesign.
+function retireSoundtrackLinks(sqlite: Database.Database): void {
+  const present = sqlite
+    .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'soundtrack_link'")
+    .get()
+  if (!present) return
+  sqlite.exec('DROP TABLE soundtrack_link')
+  logInfo('db', 'migration: removed the soundtrack association table')
+}
+
 function retireAlbumJournal(sqlite: Database.Database): void {
   const present = sqlite.prepare(
     "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name IN ('music_listen', 'music_album_personal')"

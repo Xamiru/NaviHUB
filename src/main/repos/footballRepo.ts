@@ -1,11 +1,14 @@
 import { existsSync, realpathSync } from 'fs'
 import { relative, resolve, sep } from 'path'
+import type Database from 'better-sqlite3'
 import { getSqlite } from '../db/connection'
+import { get as getSetting } from './settingsRepo'
 import { absoluteMediaPath, footballRootDir } from '../files'
 import {
   FOOTBALL_COMPETITIONS,
   FOOTBALL_ERAS,
   escapeFootballLike,
+  normalizeFootballName,
   validateFootballExternalLink,
   validateFootballHttpUrl,
   validateFootballRelativePath
@@ -16,6 +19,7 @@ import type {
   FootballCompetitionDetail,
   FootballCompetitionKey,
   FootballConflict,
+  FootballConflictCandidate,
   FootballConflictResolution,
   FootballCoverage,
   FootballCurrentSnapshot,
@@ -23,8 +27,11 @@ import type {
   FootballEntityKind,
   FootballExternalLink,
   FootballExternalProvider,
+  FootballHeadToHead,
   FootballHonour,
+  FootballIdentityRepair,
   FootballJournalInput,
+  FootballJournalStats,
   FootballLineupEntry,
   FootballMatchDetail,
   FootballMatchEvent,
@@ -32,6 +39,7 @@ import type {
   FootballMatchSummary,
   FootballMedia,
   FootballMediaInput,
+  FootballOnThisDay,
   FootballOverview,
   FootballPersonDetail,
   FootballPersonSummary,
@@ -39,11 +47,16 @@ import type {
   FootballSearchResults,
   FootballSeason,
   FootballSeasonDetail,
+  FootballSeasonFate,
+  FootballSeasonGoals,
+  FootballSetupState,
   FootballStanding,
   FootballSyncOverview,
   FootballTeamDetail,
   FootballTeamSummary,
-  FootballTenure
+  FootballTenure,
+  FootballTopScorer,
+  FootballTransfer
 } from '@shared/types'
 
 type Row = Record<string, unknown>
@@ -52,6 +65,7 @@ const TEAM_SELECT = `
   t.id AS team_id, t.name AS team_name, t.short_name AS team_short_name,
   t.country AS team_country, t.is_national AS team_is_national,
   t.image_path AS team_image_path,
+  t.primary_color AS team_primary_color, t.secondary_color AS team_secondary_color,
   EXISTS(SELECT 1 FROM football_favorite f
          WHERE f.entity_kind='team' AND f.entity_id=t.id) AS team_favorite`
 
@@ -66,12 +80,14 @@ const MATCH_SELECT = `
   m.*, s.competition_id, s.label AS season_label,
   c.key AS competition_key, c.name AS competition_name,
   st.name AS stage_name,
-  ht.name AS home_name, ht.short_name AS home_short_name, ht.country AS home_country,
+  ht.id AS home_id, ht.name AS home_name, ht.short_name AS home_short_name, ht.country AS home_country,
   ht.is_national AS home_is_national, ht.image_path AS home_image_path,
+  ht.primary_color AS home_primary_color, ht.secondary_color AS home_secondary_color,
   EXISTS(SELECT 1 FROM football_favorite f
          WHERE f.entity_kind='team' AND f.entity_id=ht.id) AS home_favorite,
-  at.name AS away_name, at.short_name AS away_short_name, at.country AS away_country,
+  at.id AS away_id, at.name AS away_name, at.short_name AS away_short_name, at.country AS away_country,
   at.is_national AS away_is_national, at.image_path AS away_image_path,
+  at.primary_color AS away_primary_color, at.secondary_color AS away_secondary_color,
   EXISTS(SELECT 1 FROM football_favorite f
          WHERE f.entity_kind='team' AND f.entity_id=at.id) AS away_favorite,
   EXISTS(SELECT 1 FROM football_favorite f
@@ -99,6 +115,12 @@ function asTeam(row: Row, prefix = ''): FootballTeamSummary {
     country: (row[`${prefix}country`] as string) ?? null,
     isNational: bool(row[`${prefix}is_national`]),
     imagePath: (row[`${prefix}image_path`] as string) ?? null,
+    colors: row[`${prefix}primary_color`]
+      ? {
+          primary: row[`${prefix}primary_color`] as string,
+          secondary: (row[`${prefix}secondary_color`] as string) ?? null
+        }
+      : null,
     favorite: bool(row[`${prefix}favorite`])
   }
 }
@@ -146,6 +168,15 @@ function asMatch(row: Row): FootballMatchSummary {
   }
 }
 
+function teamsById(ids: number[]): FootballTeamSummary[] {
+  if (!ids.length) return []
+  const rows = getSqlite().prepare(`
+    SELECT ${TEAM_SELECT} FROM football_team t WHERE t.id IN (${ids.map(() => '?').join(',')})
+  `).all(...ids) as Row[]
+  const byId = new Map(rows.map((row) => [row.team_id as number, asTeam(row, 'team_')]))
+  return ids.flatMap((id) => byId.get(id) ?? [])
+}
+
 function limitOffset(filter: FootballEntityFilter): { limit: number; offset: number } {
   return {
     limit: Math.min(500, Math.max(1, Math.floor(filter.limit ?? 100))),
@@ -190,11 +221,25 @@ export function listCompetitions(): FootballCompetition[] {
       EXISTS(SELECT 1 FROM football_favorite f
         WHERE f.entity_kind='competition' AND f.entity_id=c.id) AS favorite,
       (SELECT label FROM football_season s WHERE s.competition_id=c.id
-        ORDER BY COALESCE(start_date, key) DESC LIMIT 1) AS latest_season
+        ORDER BY COALESCE(start_date, key) DESC LIMIT 1) AS latest_season,
+      (SELECT COALESCE(SUM(m.home_score+m.away_score),0) FROM football_match m
+        JOIN football_season s ON s.id=m.season_id WHERE s.competition_id=c.id) AS goal_count,
+      (SELECT h.team_id FROM football_honour h JOIN football_season s ON s.id=h.season_id
+        WHERE s.competition_id=c.id AND h.placement='winner' AND h.verified=1 AND h.shared=0
+          AND h.team_id IS NOT NULL
+        ORDER BY COALESCE(s.start_date, s.key) DESC LIMIT 1) AS holder_id
     FROM football_competition c
     ORDER BY c.id
   `).all() as Row[]
-  return rows.map((row) => ({
+  const titles = getSqlite().prepare(`
+    SELECT h.team_id AS teamId, COUNT(*) AS titles FROM football_honour h
+    WHERE h.competition_id=? AND h.placement='winner' AND h.verified=1 AND h.team_id IS NOT NULL
+    GROUP BY h.team_id ORDER BY titles DESC
+  `)
+  return rows.map((row) => {
+    const counts = titles.all(row.id) as Array<{ teamId: number; titles: number }>
+    const most = counts[0]?.titles ?? 0
+    return {
     id: row.id as number,
     key: row.key as FootballCompetitionKey,
     name: row.name as string,
@@ -209,8 +254,18 @@ export function listCompetitions(): FootballCompetition[] {
     seasonCount: row.season_count as number,
     matchCount: row.match_count as number,
     favorite: bool(row.favorite),
-    latestSeason: (row.latest_season as string) ?? null
-  }))
+    latestSeason: (row.latest_season as string) ?? null,
+    goalCount: row.goal_count as number,
+    imagePath: (row.image_path as string) ?? null,
+    holder: teamsById(row.holder_id == null ? [] : [row.holder_id as number])[0] ?? null,
+    titleLeaders: most
+      ? {
+          teams: teamsById(counts.filter((item) => item.titles === most).map((item) => item.teamId)),
+          titles: most
+        }
+      : null
+    }
+  })
 }
 
 function articleFor(entityKind: string, entityId: number): FootballArticle | null {
@@ -268,10 +323,11 @@ function coverageFor(competitionId?: number, seasonId?: number): FootballCoverag
 
 function honoursFor(whereSql: string, value: number): FootballHonour[] {
   const rows = getSqlite().prepare(`
-    SELECT h.*, s.label AS season_label,
+    SELECT h.*, s.label AS season_label, hc.name AS competition_name,
       t.id AS team_id_value, t.name AS team_name, t.short_name AS team_short_name,
       t.country AS team_country, t.is_national AS team_is_national,
       t.image_path AS team_image_path,
+  t.primary_color AS team_primary_color, t.secondary_color AS team_secondary_color,
       EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='team' AND f.entity_id=t.id)
         AS team_favorite,
       p.id AS person_id_value, p.name AS person_name, p.role AS person_role,
@@ -280,6 +336,7 @@ function honoursFor(whereSql: string, value: number): FootballHonour[] {
       EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='person' AND f.entity_id=p.id)
         AS person_favorite
     FROM football_honour h
+    JOIN football_competition hc ON hc.id=h.competition_id
     LEFT JOIN football_season s ON s.id=h.season_id
     LEFT JOIN football_team t ON t.id=h.team_id
     LEFT JOIN football_person p ON p.id=h.person_id
@@ -289,6 +346,7 @@ function honoursFor(whereSql: string, value: number): FootballHonour[] {
   return rows.map((row) => ({
     id: row.id as number,
     competitionId: row.competition_id as number,
+    competitionName: row.competition_name as string,
     seasonId: (row.season_id as number) ?? null,
     seasonLabel: (row.season_label as string) ?? null,
     team: row.team_id_value == null ? null : asTeam(row, 'team_'),
@@ -308,11 +366,13 @@ export function listSeasons(competitionKey?: FootballCompetitionKey | null): Foo
       wt.id AS winner_id, wt.name AS winner_name, wt.short_name AS winner_short_name,
       wt.country AS winner_country, wt.is_national AS winner_is_national,
       wt.image_path AS winner_image_path,
+  wt.primary_color AS winner_primary_color, wt.secondary_color AS winner_secondary_color,
       EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='team' AND f.entity_id=wt.id)
         AS winner_favorite,
       rt.id AS runner_id, rt.name AS runner_name, rt.short_name AS runner_short_name,
       rt.country AS runner_country, rt.is_national AS runner_is_national,
       rt.image_path AS runner_image_path,
+  rt.primary_color AS runner_primary_color, rt.secondary_color AS runner_secondary_color,
       EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='team' AND f.entity_id=rt.id)
         AS runner_favorite
     FROM football_season s
@@ -378,15 +438,70 @@ export function getCompetition(key: FootballCompetitionKey): FootballCompetition
   }
 }
 
+const STANDING_ORDER = `CASE WHEN fs.rank IS NULL THEN 1 ELSE 0 END, fs.rank, fs.points DESC,
+  fs.goal_difference DESC, fs.goals_for DESC`
+
+const UEFA_FATES: Array<[FootballCompetitionKey, FootballSeasonFate]> = [
+  ['champions-league', 'champions-league'],
+  ['europa-league', 'europa-league'],
+  ['conference-league', 'conference-league']
+]
+
+function nextSeasonKey(key: string): string | null {
+  const start = Number(key.match(/^(\d{4})\//)?.[1])
+  return start ? `${start + 1}/${String(start + 2).slice(-2)}` : null
+}
+
+/**
+ * What each team of a domestic league season did next, read from the archive itself:
+ * absent from the next stored season of the league means relegated; a match in the
+ * following calendar season of a UEFA competition means it went to Europe.
+ */
+function seasonFates(seasonId: number): Map<number, FootballSeasonFate> {
+  const db = getSqlite()
+  const fates = new Map<number, FootballSeasonFate>()
+  const season = db.prepare(`
+    SELECT s.key, s.competition_id AS competitionId, c.scope, c.format
+    FROM football_season s JOIN football_competition c ON c.id=s.competition_id WHERE s.id=?
+  `).get(seasonId) as { key: string; competitionId: number; scope: string; format: string } | undefined
+  if (!season || season.scope !== 'domestic' || season.format !== 'league') return fates
+  const teamsIn = (where: string, ...args: unknown[]): Set<number> => new Set((db.prepare(`
+    SELECT home_team_id AS id FROM football_match m JOIN football_season s ON s.id=m.season_id WHERE ${where}
+    UNION SELECT away_team_id FROM football_match m JOIN football_season s ON s.id=m.season_id WHERE ${where}
+  `).all(...args, ...args) as { id: number }[]).map((row) => row.id))
+  const current = teamsIn('s.id=?', seasonId)
+  const nextKey = nextSeasonKey(season.key)
+  if (nextKey) {
+    for (const [competitionKey, fate] of [...UEFA_FATES].reverse()) {
+      for (const id of teamsIn(
+        's.key=? AND s.competition_id=(SELECT id FROM football_competition WHERE key=?)',
+        nextKey,
+        competitionKey
+      )) {
+        if (current.has(id)) fates.set(id, fate)
+      }
+    }
+  }
+  // Only the directly following season: an archive gap proves nothing about relegation.
+  const next = nextKey ? db.prepare(`
+    SELECT id FROM football_season WHERE competition_id=? AND key=?
+  `).get(season.competitionId, nextKey) as { id: number } | undefined : undefined
+  if (next) {
+    const stayed = teamsIn('s.id=?', next.id)
+    if (stayed.size) for (const id of current) if (!stayed.has(id)) fates.set(id, 'relegated')
+  }
+  return fates
+}
+
 function standingsFor(seasonId: number): FootballStanding[] {
   const rows = getSqlite().prepare(`
     SELECT fs.*, ${TEAM_SELECT}
     FROM football_standing fs JOIN football_team t ON t.id=fs.team_id
     WHERE fs.season_id=?
-    ORDER BY CASE WHEN fs.rank IS NULL THEN 1 ELSE 0 END, fs.rank, fs.points DESC,
-      fs.goal_difference DESC, t.name
+    ORDER BY ${STANDING_ORDER}, t.name
   `).all(seasonId) as Row[]
-  return rows.map((row) => ({
+  const fates = seasonFates(seasonId)
+  return rows.map((row, index) => ({
     team: asTeam(row, 'team_'),
     rank: (row.rank as number) ?? null,
     rankOfficial: bool(row.rank_official),
@@ -399,7 +514,10 @@ function standingsFor(seasonId: number): FootballStanding[] {
     goalDifference: row.goal_difference as number,
     points: row.points as number,
     deduction: row.deduction as number,
-    note: (row.note as string) ?? null
+    note: (row.note as string) ?? null,
+    position: index + 1,
+    teamCount: rows.length,
+    fate: fates.get(row.team_id as number) ?? null
   }))
 }
 
@@ -457,7 +575,7 @@ export function listTeams(filter: FootballEntityFilter = {}): FootballTeamSummar
   const rows = getSqlite().prepare(`
     SELECT ${TEAM_SELECT} FROM football_team t
     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-    ORDER BY t.name LIMIT ? OFFSET ?
+    ORDER BY (t.image_path IS NULL), t.name LIMIT ? OFFSET ?
   `).all(...args, limit, offset) as Row[]
   return rows.map((row) => asTeam(row, 'team_'))
 }
@@ -489,6 +607,49 @@ function tenuresFor(personId?: number, teamId?: number): FootballTenure[] {
   }))
 }
 
+function teamScorers(teamId: number): FootballTopScorer[] {
+  const rows = getSqlite().prepare(`
+    SELECT ${PERSON_SELECT}, COUNT(*) AS goals FROM football_event e
+    JOIN football_person p ON p.id=e.person_id
+    WHERE e.team_id=? AND e.type='goal' AND e.own_goal=0
+    GROUP BY p.id ORDER BY goals DESC, p.name LIMIT 10
+  `).all(teamId) as Row[]
+  return rows.map((row, index) => ({
+    rank: rows.findIndex((prior) => prior.goals === row.goals) + 1,
+    person: asPerson(row, 'person_'),
+    team: null,
+    goals: row.goals as number,
+    tied: rows.some((other, otherIndex) => otherIndex !== index && other.goals === row.goals)
+  }))
+}
+
+function headToHeads(teamId: number): FootballHeadToHead[] {
+  const rows = getSqlite().prepare(`
+    SELECT opponent, COUNT(*) AS played, SUM(gf>ga) AS won, SUM(gf=ga) AS drawn,
+      SUM(gf<ga) AS lost, SUM(gf) AS goals_for, SUM(ga) AS goals_against
+    FROM (
+      SELECT away_team_id AS opponent, home_score AS gf, away_score AS ga FROM football_match
+      WHERE home_team_id=? AND home_score IS NOT NULL AND away_score IS NOT NULL
+      UNION ALL
+      SELECT home_team_id, away_score, home_score FROM football_match
+      WHERE away_team_id=? AND home_score IS NOT NULL AND away_score IS NOT NULL
+    ) GROUP BY opponent ORDER BY played DESC LIMIT 4
+  `).all(teamId, teamId) as Row[]
+  const teams = teamsById(rows.map((row) => row.opponent as number))
+  return rows.flatMap((row) => {
+    const opponent = teams.find((team) => team.id === row.opponent)
+    return opponent ? [{
+      opponent,
+      played: row.played as number,
+      won: row.won as number,
+      drawn: row.drawn as number,
+      lost: row.lost as number,
+      goalsFor: row.goals_for as number,
+      goalsAgainst: row.goals_against as number
+    }] : []
+  })
+}
+
 export function getTeam(id: number): FootballTeamDetail | null {
   const row = getSqlite().prepare(`
     SELECT t.*, EXISTS(SELECT 1 FROM football_favorite f
@@ -499,6 +660,8 @@ export function getTeam(id: number): FootballTeamDetail | null {
   return {
     ...asTeam(row),
     foundedYear: (row.founded_year as number) ?? null,
+    venue: (row.venue as string) ?? null,
+    venueCapacity: (row.venue_capacity as number) ?? null,
     bio: (row.bio as string) ?? null,
     enrichmentState: row.enrichment_state as FootballTeamDetail['enrichmentState'],
     tenures: tenuresFor(undefined, id),
@@ -507,12 +670,18 @@ export function getTeam(id: number): FootballTeamDetail | null {
     seasonRecords: (getSqlite().prepare(`
       SELECT fs.*, s.id AS season_id, s.label AS season_label,
         c.key AS competition_key, c.name AS competition_name, ${TEAM_SELECT}
-      FROM football_standing fs
+      FROM (
+        SELECT fs.*, ROW_NUMBER() OVER (PARTITION BY fs.season_id ORDER BY ${STANDING_ORDER})
+            AS position,
+          COUNT(*) OVER (PARTITION BY fs.season_id) AS team_count
+        FROM football_standing fs
+        WHERE fs.season_id IN (SELECT season_id FROM football_standing WHERE team_id=?)
+      ) fs
       JOIN football_season s ON s.id=fs.season_id
       JOIN football_competition c ON c.id=s.competition_id
       JOIN football_team t ON t.id=fs.team_id WHERE fs.team_id=?
-      ORDER BY fs.season_id DESC
-    `).all(id) as Row[]).map((standing) => ({
+      ORDER BY COALESCE(s.start_date, s.key) DESC
+    `).all(id, id) as Row[]).map((standing) => ({
       team: asTeam(standing, 'team_'),
       seasonId: standing.season_id as number,
       seasonLabel: standing.season_label as string,
@@ -529,8 +698,13 @@ export function getTeam(id: number): FootballTeamDetail | null {
       goalDifference: standing.goal_difference as number,
       points: standing.points as number,
       deduction: standing.deduction as number,
-      note: (standing.note as string) ?? null
+      note: (standing.note as string) ?? null,
+      position: standing.position as number,
+      teamCount: standing.team_count as number,
+      fate: seasonFates(standing.season_id as number).get(id) ?? null
     })),
+    scorers: teamScorers(id),
+    rivals: headToHeads(id),
     media: derivedMediaForEntity('team', id),
     externalLinks: listExternalLinks('team', id),
     article: articleFor('team', id)
@@ -557,9 +731,68 @@ export function listPeople(filter: FootballEntityFilter = {}): FootballPersonSum
   const rows = getSqlite().prepare(`
     SELECT ${PERSON_SELECT} FROM football_person p
     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-    ORDER BY p.name LIMIT ? OFFSET ?
+    ORDER BY (p.image_path IS NULL), p.name LIMIT ? OFFSET ?
   `).all(...args, limit, offset) as Row[]
   return rows.map((row) => asPerson(row, 'person_'))
+}
+
+function transfersFor(personId: number): FootballTransfer[] {
+  const rows = getSqlite().prepare(`SELECT * FROM football_transfer WHERE person_id=?
+    ORDER BY transfer_date DESC, id DESC`).all(personId) as Row[]
+  const teams = teamsById([...new Set(rows.flatMap((row) => [row.from_team_id, row.to_team_id]).filter((id): id is number => typeof id === 'number'))])
+  const team = (id: unknown) => teams.find((item) => item.id === id) ?? null
+  return rows.map((row) => ({
+    id: row.id as number,
+    date: (row.transfer_date as string) ?? null,
+    season: (row.season as string) ?? null,
+    from: team(row.from_team_id),
+    to: team(row.to_team_id),
+    fromName: row.from_team as string,
+    toName: row.to_team as string,
+    fee: (row.fee as number) ?? null,
+    marketValue: (row.market_value as number) ?? null
+  }))
+}
+
+function personGoals(personId: number): Pick<
+  FootballPersonDetail,
+  'goalsBySeason' | 'goalTotal' | 'matchTotal' | 'scoredIn'
+> {
+  const db = getSqlite()
+  const goalsBySeason = (db.prepare(`
+    SELECT s.id AS season_id, s.label AS season_label, c.key AS competition_key, COUNT(*) AS goals
+    FROM football_event e
+    JOIN football_match m ON m.id=e.match_id
+    JOIN football_season s ON s.id=m.season_id
+    JOIN football_competition c ON c.id=s.competition_id
+    WHERE e.person_id=? AND e.type='goal' AND e.own_goal=0
+    GROUP BY s.id ORDER BY COALESCE(s.start_date, s.key), s.id
+  `).all(personId) as Row[]).map((row): FootballSeasonGoals => ({
+    seasonId: row.season_id as number,
+    seasonLabel: row.season_label as string,
+    competitionKey: row.competition_key as FootballCompetitionKey,
+    goals: row.goals as number
+  }))
+  const matches = db.prepare(`
+    SELECT COUNT(*) AS n FROM (
+      SELECT match_id FROM football_lineup WHERE person_id=?
+      UNION SELECT match_id FROM football_event WHERE person_id=? AND type='goal'
+    )
+  `).get(personId, personId) as { n: number }
+  const scoredIn = (db.prepare(`
+    SELECT ${MATCH_SELECT}, g.goals AS person_goals ${MATCH_FROM}
+    JOIN (
+      SELECT match_id, COUNT(*) AS goals FROM football_event
+      WHERE person_id=? AND type='goal' AND own_goal=0 GROUP BY match_id
+    ) g ON g.match_id=m.id
+    ORDER BY g.goals DESC, m.match_date DESC LIMIT 12
+  `).all(personId) as Row[]).map((row) => ({ match: asMatch(row), goals: row.person_goals as number }))
+  return {
+    goalsBySeason,
+    goalTotal: goalsBySeason.reduce((total, row) => total + row.goals, 0),
+    matchTotal: matches.n,
+    scoredIn
+  }
 }
 
 export function getPerson(id: number): FootballPersonDetail | null {
@@ -573,6 +806,11 @@ export function getPerson(id: number): FootballPersonDetail | null {
   return {
     ...summary,
     birthDate: (row.birth_date as string) ?? null,
+    position: (row.position as string) ?? null,
+    heightCm: (row.height_cm as number) ?? null,
+    birthPlace: (row.birth_place as string) ?? null,
+    foot: (row.foot as string) ?? null,
+    transfers: transfersFor(id),
     deathDate: (row.death_date as string) ?? null,
     bio: (row.bio as string) ?? null,
     tenures: tenuresFor(id),
@@ -582,6 +820,7 @@ export function getPerson(id: number): FootballPersonDetail | null {
       JOIN football_lineup fl ON fl.match_id=m.id
       WHERE fl.person_id=? ORDER BY m.match_date DESC LIMIT 200
     `).all(id) as Row[]).map(asMatch),
+    ...personGoals(id),
     media: derivedMediaForEntity('person', id),
     externalLinks: listExternalLinks('person', id),
     article: articleFor('person', id)
@@ -626,7 +865,8 @@ export function listMatches(filter: FootballMatchFilter = {}): FootballMatchSumm
   const rows = getSqlite().prepare(`
     SELECT ${MATCH_SELECT} ${MATCH_FROM}
     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-    ORDER BY m.match_date DESC, COALESCE(m.kickoff_at,''), m.id DESC LIMIT ? OFFSET ?
+    ORDER BY ${filter.watchedOnly ? 'j.watched_at DESC,' : ''} m.match_date DESC,
+      COALESCE(m.kickoff_at,''), m.id DESC LIMIT ? OFFSET ?
   `).all(...args, limit, offset) as Row[]
   return rows.map(asMatch)
 }
@@ -716,6 +956,10 @@ export function getMatch(id: number): FootballMatchDetail | null {
     city: (row.city as string) ?? null,
     attendance: (row.attendance as number) ?? null,
     referee: (row.referee as string) ?? null,
+    homeFormation: (row.home_formation as string) ?? null,
+    awayFormation: (row.away_formation as string) ?? null,
+    homeManager: (row.home_manager as string) ?? null,
+    awayManager: (row.away_manager as string) ?? null,
     lineupCoverage: row.lineup_coverage as FootballMatchDetail['lineupCoverage'],
     lineups: lineupsFor(id),
     events: eventsFor(id),
@@ -734,6 +978,7 @@ function topScorersForSeason(seasonId: number): FootballCurrentSnapshot['topScor
       t.name AS scorer_team_name, t.short_name AS scorer_team_short_name,
       t.country AS scorer_team_country, t.is_national AS scorer_team_is_national,
       t.image_path AS scorer_team_image_path,
+  t.primary_color AS scorer_team_primary_color, t.secondary_color AS scorer_team_secondary_color,
       EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='team' AND f.entity_id=t.id)
         AS scorer_team_favorite,
       EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='person' AND f.entity_id=p.id)
@@ -750,6 +995,7 @@ function topScorersForSeason(seasonId: number): FootballCurrentSnapshot['topScor
       t.name AS scorer_team_name, t.short_name AS scorer_team_short_name,
       t.country AS scorer_team_country, t.is_national AS scorer_team_is_national,
       t.image_path AS scorer_team_image_path,
+  t.primary_color AS scorer_team_primary_color, t.secondary_color AS scorer_team_secondary_color,
       EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='team' AND f.entity_id=t.id)
         AS scorer_team_favorite,
       EXISTS(SELECT 1 FROM football_favorite f WHERE f.entity_kind='person' AND f.entity_id=p.id)
@@ -846,6 +1092,61 @@ export function currentSnapshot(
   }
 }
 
+/** The most notable finished match played on this month-day in any year. */
+export function onThisDay(monthDay: string): FootballOnThisDay | null {
+  const row = getSqlite().prepare(`
+    SELECT ${MATCH_SELECT} ${MATCH_FROM}
+    WHERE substr(m.match_date,6,5)=? AND m.home_score IS NOT NULL AND m.away_score IS NOT NULL
+    ORDER BY (j.watched_at IS NOT NULL) + EXISTS(SELECT 1 FROM football_favorite f
+        WHERE f.entity_kind='team' AND f.entity_id IN (m.home_team_id,m.away_team_id)) DESC,
+      (st.name LIKE '%final%' AND st.name NOT LIKE '%semi%' AND st.name NOT LIKE '%quarter%') DESC,
+      m.home_score+m.away_score DESC, m.match_date DESC
+    LIMIT 1
+  `).get(monthDay) as Row | undefined
+  return row ? { match: asMatch(row), events: eventsFor(row.id as number) } : null
+}
+
+function journalStats(year: string): FootballJournalStats {
+  const db = getSqlite()
+  const totals = db.prepare(`
+    SELECT COUNT(*) AS logged, COALESCE(SUM(substr(watched_at,1,4)=?),0) AS this_year,
+      AVG(rating) AS average
+    FROM football_match_journal WHERE watched_at IS NOT NULL
+  `).get(year) as { logged: number; this_year: number; average: number | null }
+  const top = db.prepare(`
+    SELECT team_id AS id FROM (
+      SELECT m.home_team_id AS team_id FROM football_match_journal j
+      JOIN football_match m ON m.id=j.match_id WHERE j.watched_at IS NOT NULL
+      UNION ALL SELECT m.away_team_id FROM football_match_journal j
+      JOIN football_match m ON m.id=j.match_id WHERE j.watched_at IS NOT NULL
+    ) GROUP BY team_id ORDER BY COUNT(*) DESC LIMIT 1
+  `).get() as { id: number } | undefined
+  return {
+    logged: totals.logged,
+    thisYear: totals.this_year,
+    averageRating: totals.average == null ? null : Math.round(totals.average * 10) / 10,
+    mostWatched: teamsById(top ? [top.id] : [])[0] ?? null
+  }
+}
+
+/** When each setup step last completed; the settings rows are written by the Football sync. */
+/** Archives installed before germany.csv was filtered to tier 1 hold 2. Bundesliga matches too. */
+function historyHasLowerTiers(): boolean {
+  return !!getSqlite().prepare(`
+    SELECT 1 FROM football_season s JOIN football_competition c ON c.id=s.competition_id
+    WHERE c.key='bundesliga' AND (SELECT COUNT(*) FROM football_match m WHERE m.season_id=s.id) > 380
+    LIMIT 1
+  `).get()
+}
+
+export function setupState(): FootballSetupState {
+  return {
+    history: historyHasLowerTiers() ? null : getSetting('football.setup.history') ?? null,
+    detail: getSetting('football.setup.detail') ?? null,
+    pictures: getSetting('football.setup.pictures') ?? null
+  }
+}
+
 export function overview(): FootballOverview {
   const competitions = listCompetitions()
   const db = getSqlite()
@@ -863,10 +1164,17 @@ export function overview(): FootballOverview {
   `).get() as { finished_at?: string } | undefined
   return {
     installed: counts.matches > 0,
+    setup: setupState(),
+    fixtures: {
+      updatedAt: getSetting('football.fixtures.updated') ?? null,
+      latestResult: getSetting('football.fixtures.latestResult') ?? null
+    },
     competitions,
     currentMatches: listMatches({ dateFrom: today, dateTo: today, limit: 100 }),
     recentJournal: listMatches({ watchedOnly: true, limit: 8 }),
     recentMedia: listMedia({ limit: 8 }),
+    onThisDay: onThisDay(today.slice(5)),
+    journal: journalStats(today.slice(0, 4)),
     totals: counts,
     coverage: coverageFor().slice(0, 30),
     lastSyncAt: lastSync?.finished_at ?? null
@@ -1150,7 +1458,100 @@ export function removeExternalLink(id: number): void {
   getSqlite().prepare(`DELETE FROM football_external_link WHERE id=?`).run(id)
 }
 
+// Same-name appearances for one team this close together are one career.
+const SAME_CAREER_DAYS = 365 * 15
+
+const PERSON_APPEARANCES = `
+  SELECT person_id,team_id,match_id FROM football_event
+  WHERE person_id IS NOT NULL AND team_id IS NOT NULL
+  UNION SELECT person_id,team_id,match_id FROM football_lineup`
+
+type Statement = Database.Statement<unknown[]>
+const statementCache = new WeakMap<object, Map<string, Statement>>()
+
+/**
+ * One prepared statement per SQL text and connection. Import loops call helpers a million
+ * times; preparing each time piles up native statements the garbage collector barely sees.
+ */
+export function cachedStatement(sql: string): Statement {
+  const db = getSqlite()
+  let statements = statementCache.get(db)
+  if (!statements) {
+    statements = new Map()
+    statementCache.set(db, statements)
+  }
+  let statement = statements.get(sql)
+  if (!statement) {
+    statement = db.prepare<unknown[]>(sql)
+    statements.set(sql, statement)
+  }
+  return statement
+}
+
+/** People with this normalized name who appeared for the team within one career span of the date. */
+export function sameTeamPersonIds(normalized: string, teamId: number, matchDate: string): number[] {
+  // Each branch filters by person first so the event and lineup person indexes do the work;
+  // a shared appearance union here is materialized in full on every call.
+  return (cachedStatement(`
+    SELECT DISTINCT a.entity_id AS id FROM football_alias a
+    WHERE a.entity_kind='person' AND a.normalized=@name AND (
+      EXISTS(SELECT 1 FROM football_event e JOIN football_match m ON m.id=e.match_id
+        WHERE e.person_id=a.entity_id AND e.team_id=@team AND abs(julianday(m.match_date)-julianday(@date))<=@days)
+      OR EXISTS(SELECT 1 FROM football_lineup l JOIN football_match m ON m.id=l.match_id
+        WHERE l.person_id=a.entity_id AND l.team_id=@team AND abs(julianday(m.match_date)-julianday(@date))<=@days)
+    ) ORDER BY a.entity_id
+  `).all({ team: teamId, date: matchDate, days: SAME_CAREER_DAYS, name: normalized }) as { id: number }[]).map((row) => row.id)
+}
+
+function sameNamePeople(personId: number): Array<{ id: number; name: string }> {
+  return getSqlite().prepare(`
+    SELECT DISTINCT p.id,p.name FROM football_alias mine
+    JOIN football_alias other ON other.entity_kind='person' AND other.normalized=mine.normalized
+    JOIN football_person p ON p.id=other.entity_id
+    WHERE mine.entity_kind='person' AND mine.entity_id=? AND p.id<>?
+    ORDER BY p.id
+  `).all(personId, personId) as Array<{ id: number; name: string }>
+}
+
+function conflictPeople(personId: number): {
+  subject: FootballConflictCandidate | null
+  candidates: FootballConflictCandidate[]
+} {
+  const db = getSqlite()
+  const describe = (id: number, name: string): FootballConflictCandidate => {
+    const spans = db.prepare(`
+      SELECT t.name AS team, MIN(m.match_date) AS first, MAX(m.match_date) AS last
+      FROM (
+        SELECT team_id,match_id FROM football_event WHERE person_id=@person AND team_id IS NOT NULL
+        UNION SELECT team_id,match_id FROM football_lineup WHERE person_id=@person
+      ) x
+      JOIN football_team t ON t.id=x.team_id JOIN football_match m ON m.id=x.match_id
+      GROUP BY t.id ORDER BY COUNT(*) DESC
+    `).all({ person: id }) as Array<{ team: string; first: string; last: string }>
+    const years = spans.flatMap((span) => [Number(span.first.slice(0, 4)), Number(span.last.slice(0, 4))])
+    return {
+      id,
+      name,
+      teams: spans.slice(0, 3).map((span) => span.team),
+      firstYear: years.length ? Math.min(...years) : null,
+      lastYear: years.length ? Math.max(...years) : null
+    }
+  }
+  const subject = db.prepare(`SELECT id,name FROM football_person WHERE id=?`).get(personId) as
+    | { id: number; name: string }
+    | undefined
+  if (!subject) return { subject: null, candidates: [] }
+  return {
+    subject: describe(subject.id, subject.name),
+    candidates: sameNamePeople(personId).slice(0, 8).map((other) => describe(other.id, other.name))
+  }
+}
+
+// Candidate details cost a few queries per row and the Sync page polls during installs.
+const DETAILED_CONFLICTS = 100
+
 export function listConflicts(): FootballConflict[] {
+  let detailed = 0
   return (getSqlite().prepare(`
     SELECT fc.*,
       CASE fc.entity_kind
@@ -1173,7 +1574,11 @@ export function listConflicts(): FootballConflict[] {
     valueB: (row.value_b as string) ?? null,
     status: row.status as FootballConflict['status'],
     resolution: (row.resolution as string) ?? null,
-    createdAt: row.created_at as string
+    createdAt: row.created_at as string,
+    ...(row.entity_kind === 'person' && row.facet === 'identity' && row.status === 'open' &&
+      row.entity_id != null && detailed++ < DETAILED_CONFLICTS
+      ? conflictPeople(row.entity_id as number)
+      : { subject: null, candidates: [] })
   }))
 }
 
@@ -1257,8 +1662,12 @@ function mergeFootballEntity(
       founded_year=COALESCE(founded_year,(SELECT founded_year FROM football_team WHERE id=?)),
       bio=COALESCE(bio,(SELECT bio FROM football_team WHERE id=?)),
       image_path=COALESCE(image_path,(SELECT image_path FROM football_team WHERE id=?)),
+      primary_color=COALESCE(primary_color,(SELECT primary_color FROM football_team WHERE id=?)),
+      secondary_color=COALESCE(secondary_color,(SELECT secondary_color FROM football_team WHERE id=?)),
+      venue=COALESCE(venue,(SELECT venue FROM football_team WHERE id=?)),
+      venue_capacity=COALESCE(venue_capacity,(SELECT venue_capacity FROM football_team WHERE id=?)),
       updated_at=datetime('now') WHERE id=?`
-    ).run(sourceId, sourceId, sourceId, sourceId, sourceId, targetId)
+    ).run(...Array<number>(9).fill(sourceId), targetId)
     db.prepare(`UPDATE football_tenure SET team_id=? WHERE team_id=?`).run(targetId, sourceId)
     db.prepare(`UPDATE football_match SET home_team_id=? WHERE home_team_id=?`).run(targetId, sourceId)
     db.prepare(`UPDATE football_match SET away_team_id=? WHERE away_team_id=?`).run(targetId, sourceId)
@@ -1268,6 +1677,8 @@ function mergeFootballEntity(
     db.prepare(`UPDATE OR IGNORE football_standing SET team_id=? WHERE team_id=?`).run(targetId, sourceId)
     db.prepare(`DELETE FROM football_standing WHERE team_id=?`).run(sourceId)
     db.prepare(`UPDATE football_honour SET team_id=? WHERE team_id=?`).run(targetId, sourceId)
+    db.prepare(`UPDATE football_transfer SET from_team_id=? WHERE from_team_id=?`).run(targetId, sourceId)
+    db.prepare(`UPDATE football_transfer SET to_team_id=? WHERE to_team_id=?`).run(targetId, sourceId)
   } else {
     db.prepare(`UPDATE football_person SET
       role=CASE WHEN role=(SELECT role FROM football_person WHERE id=?) THEN role ELSE 'both' END,
@@ -1276,9 +1687,13 @@ function mergeFootballEntity(
       nationality=COALESCE(nationality,(SELECT nationality FROM football_person WHERE id=?)),
       bio=COALESCE(bio,(SELECT bio FROM football_person WHERE id=?)),
       image_path=COALESCE(image_path,(SELECT image_path FROM football_person WHERE id=?)),
+      position=COALESCE(position,(SELECT position FROM football_person WHERE id=?)),
+      height_cm=COALESCE(height_cm,(SELECT height_cm FROM football_person WHERE id=?)),
+      birth_place=COALESCE(birth_place,(SELECT birth_place FROM football_person WHERE id=?)),
+      foot=COALESCE(foot,(SELECT foot FROM football_person WHERE id=?)),
       quiz_pack=MAX(quiz_pack,(SELECT quiz_pack FROM football_person WHERE id=?)),
       updated_at=datetime('now') WHERE id=?`
-    ).run(sourceId, sourceId, sourceId, sourceId, sourceId, sourceId, sourceId, targetId)
+    ).run(...Array<number>(11).fill(sourceId), targetId)
     db.prepare(`UPDATE football_tenure SET person_id=? WHERE person_id=?`).run(targetId, sourceId)
     db.prepare(`UPDATE OR IGNORE football_lineup SET person_id=? WHERE person_id=?`).run(targetId, sourceId)
     db.prepare(`DELETE FROM football_lineup WHERE person_id=?`).run(sourceId)
@@ -1288,6 +1703,7 @@ function mergeFootballEntity(
       sourceId
     )
     db.prepare(`UPDATE football_honour SET person_id=? WHERE person_id=?`).run(targetId, sourceId)
+    db.prepare(`UPDATE football_transfer SET person_id=? WHERE person_id=?`).run(targetId, sourceId)
   }
   movePolymorphicFootballRows(entityKind, sourceId, targetId)
   db.prepare(`DELETE FROM ${table} WHERE id=?`).run(sourceId)
@@ -1408,6 +1824,228 @@ export function resolveConflict(id: number, resolution: FootballConflictResoluti
   })()
 }
 
+/** Moves a duplicate match's personal and source rows onto its twin, then deletes the duplicate. */
+function foldMatch(duplicateId: number, twinId: number): void {
+  const db = getSqlite()
+  db.prepare(`UPDATE OR IGNORE football_match_journal SET match_id=? WHERE match_id=?`).run(twinId, duplicateId)
+  for (const table of ['football_favorite', 'football_media_link', 'football_external_link', 'football_article',
+    'football_source_ref', 'football_assertion', 'football_conflict']) {
+    db.prepare(`UPDATE OR IGNORE ${table} SET entity_id=? WHERE entity_kind='match' AND entity_id=?`).run(twinId, duplicateId)
+    db.prepare(`DELETE FROM ${table} WHERE entity_kind='match' AND entity_id=?`).run(duplicateId)
+  }
+  db.prepare(`UPDATE OR IGNORE list_item SET entity_id=? WHERE entity_id=?
+    AND list_id IN (SELECT id FROM list WHERE entity_kind='footballMatch')`).run(twinId, duplicateId)
+  for (const table of ['football_event', 'football_lineup']) {
+    db.prepare(`UPDATE ${table} SET match_id=? WHERE match_id=?
+      AND NOT EXISTS(SELECT 1 FROM ${table} WHERE match_id=?)`).run(twinId, duplicateId, twinId)
+  }
+  db.prepare(`DELETE FROM list_item WHERE entity_id=?
+    AND list_id IN (SELECT id FROM list WHERE entity_kind='footballMatch')`).run(duplicateId)
+  db.prepare(`DELETE FROM football_match WHERE id=?`).run(duplicateId)
+}
+
+/**
+ * Folds seasons keyed `2012-13` (an OpenFootball import before keys were normalised) into
+ * their `2012/13` twin: duplicate matches merge into the twin with every personal row, the
+ * rest move across, and a season without a twin is renamed. Returns the seasons folded.
+ */
+export function mergeDuplicateSeasons(): number {
+  const db = getSqlite()
+  const hyphenated = db.prepare(`SELECT id, competition_id AS competitionId, key FROM football_season
+    WHERE key GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]'`).all() as Array<{ id: number; competitionId: number; key: string }>
+  for (const season of hyphenated) {
+    const key = season.key.replace('-', '/')
+    db.transaction(() => {
+      const twin = db.prepare(`SELECT id FROM football_season WHERE competition_id=? AND key=?`).get(season.competitionId, key) as
+        | { id: number }
+        | undefined
+      if (!twin) {
+        db.prepare(`UPDATE football_season SET key=?,label=?,updated_at=datetime('now') WHERE id=?`).run(key, key, season.id)
+        return
+      }
+      for (const stage of db.prepare(`SELECT id,key FROM football_stage WHERE season_id=?`).all(season.id) as Array<{ id: number; key: string }>) {
+        const same = db.prepare(`SELECT id FROM football_stage WHERE season_id=? AND key=?`).get(twin.id, stage.key) as { id: number } | undefined
+        if (same) db.prepare(`UPDATE football_match SET stage_id=? WHERE stage_id=?`).run(same.id, stage.id)
+        else db.prepare(`UPDATE football_stage SET season_id=? WHERE id=?`).run(twin.id, stage.id)
+      }
+      const matches = db.prepare(`SELECT id, match_date AS date, home_team_id AS home, away_team_id AS away
+        FROM football_match WHERE season_id=?`).all(season.id) as Array<{ id: number; date: string; home: number; away: number }>
+      for (const match of matches) {
+        const duplicate = db.prepare(`SELECT id FROM football_match WHERE season_id=? AND home_team_id=? AND away_team_id=?
+          AND abs(julianday(match_date)-julianday(?))<=1 LIMIT 1`).get(twin.id, match.home, match.away, match.date) as
+          | { id: number }
+          | undefined
+        if (duplicate) foldMatch(match.id, duplicate.id)
+        else db.prepare(`UPDATE football_match SET season_id=? WHERE id=?`).run(twin.id, match.id)
+      }
+      db.prepare(`DELETE FROM football_season WHERE id=?`).run(season.id)
+    })()
+  }
+  return hyphenated.length
+}
+
+/**
+ * Collapses people split by the old season-scoped scorer identity: same name, same team,
+ * appearances within one career span. Removes people nothing refers to any more (a source
+ * replaced a match's scorers, leaving the old scorer behind),
+ * then closes identity conflicts that no longer have another person with the name.
+ */
+export function repairPersonIdentities(): FootballIdentityRepair {
+  const db = getSqlite()
+  const settled = new Set((db.prepare(`
+    SELECT DISTINCT entity_id AS id FROM football_conflict
+    WHERE entity_kind='person' AND facet='identity' AND entity_id IS NOT NULL
+      AND (status='ignored' OR resolution='Confirmed separate identities')
+  `).all() as { id: number }[]).map((row) => row.id))
+  const spans = new Map<number, Map<number, [number, number]>>()
+  for (const row of db.prepare(`
+    SELECT x.person_id AS personId,x.team_id AS teamId,
+      MIN(julianday(m.match_date)) AS first,MAX(julianday(m.match_date)) AS last
+    FROM (${PERSON_APPEARANCES}) x JOIN football_match m ON m.id=x.match_id
+    GROUP BY x.person_id,x.team_id
+  `).all() as Array<{ personId: number; teamId: number; first: number; last: number }>) {
+    const teams = spans.get(row.personId) ?? new Map<number, [number, number]>()
+    teams.set(row.teamId, [row.first, row.last])
+    spans.set(row.personId, teams)
+  }
+  const sameCareer = (a: number, b: number): boolean => {
+    const teamsA = spans.get(a)
+    const teamsB = spans.get(b)
+    if (!teamsA || !teamsB) return false
+    for (const [teamId, [firstA, lastA]] of teamsA) {
+      const span = teamsB.get(teamId)
+      if (span && Math.max(0, span[0] - lastA, firstA - span[1]) <= SAME_CAREER_DAYS) return true
+    }
+    return false
+  }
+  const births = new Map((db.prepare(`
+    SELECT id,birth_date AS birthDate FROM football_person WHERE birth_date GLOB '[12][0-9][0-9][0-9]*'
+  `).all() as Array<{ id: number; birthDate: string }>).map((row) => [row.id, row.birthDate]))
+  const firstPlayed = (id: number): number | null => {
+    const teams = spans.get(id)
+    return teams ? Math.min(...[...teams.values()].map(([first]) => first)) : null
+  }
+  const julian = (birthDate: string): number =>
+    Date.parse(`${birthDate.slice(0, 4)}-01-01T00:00:00Z`) / 86_400_000 + 2_440_587.5
+  const differentPeople = (a: number, b: number): boolean => {
+    const [birthA, birthB] = [births.get(a), births.get(b)]
+    if (birthA && birthB) return birthA.length >= 10 && birthB.length >= 10 ? birthA.slice(0, 10) !== birthB.slice(0, 10) : birthA.slice(0, 4) !== birthB.slice(0, 4)
+    const [born, other] = birthA ? [birthA, b] : birthB ? [birthB, a] : [null, null]
+    const played = other == null ? null : firstPlayed(other)
+    return born != null && played != null && played < julian(born) + 15 * 365
+  }
+
+  const nationality = new Map((db.prepare(`
+    SELECT id,nationality FROM football_person WHERE nationality IS NOT NULL
+  `).all() as Array<{ id: number; nationality: string }>).map((row) => [row.id, normalizeFootballName(row.nationality)]))
+  const nationalTeams = new Map((db.prepare(`SELECT id,name FROM football_team WHERE is_national=1`)
+    .all() as Array<{ id: number; name: string }>).map((row) => [row.id, normalizeFootballName(row.name)]))
+  const playsFor = (id: number, nation: string | undefined): boolean =>
+    !!nation && [...(spans.get(id)?.keys() ?? [])].some((teamId) => nationalTeams.get(teamId) === nation)
+  const sameNation = (a: number, b: number): boolean =>
+    playsFor(b, nationality.get(a)) || playsFor(a, nationality.get(b))
+
+  const byName = new Map<string, number[]>()
+  for (const row of db.prepare(`
+    SELECT DISTINCT a.normalized,a.entity_id AS id FROM football_alias a
+    JOIN football_person p ON p.id=a.entity_id WHERE a.entity_kind='person'
+  `).all() as Array<{ normalized: string; id: number }>) {
+    if (settled.has(row.id)) continue
+    byName.set(row.normalized, [...(byName.get(row.normalized) ?? []), row.id])
+  }
+  const parent = new Map<number, number>()
+  const root = (id: number): number => {
+    let current = id
+    while (parent.has(current)) current = parent.get(current)!
+    return current
+  }
+  // Pairs join whole sets, so a namesake bridging two provably different people must not.
+  const members = new Map<number, number[]>()
+  const join = (x: number, y: number) => {
+    const [a, b] = [root(x), root(y)]
+    if (a === b) return
+    const [setA, setB] = [members.get(a) ?? [a], members.get(b) ?? [b]]
+    if (setA.some((m) => setB.some((n) => differentPeople(m, n)))) return
+    const [keep, fold] = [Math.min(a, b), Math.max(a, b)]
+    parent.set(fold, keep)
+    members.set(keep, [...setA, ...setB])
+    members.delete(fold)
+  }
+  for (const ids of byName.values()) {
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        if (sameCareer(ids[i], ids[j]) && !differentPeople(ids[i], ids[j])) join(ids[i], ids[j])
+      }
+    }
+    // A club player and a namesake who played for their national team are one person
+    // when no other namesake fits either way.
+    for (const id of ids) {
+      const fits = ids.filter((other) => other !== id && sameNation(id, other) && !differentPeople(id, other))
+      if (fits.length === 1 && ids.filter((other) => other !== fits[0] && sameNation(fits[0], other)
+        && !differentPeople(fits[0], other)).length === 1) join(id, fits[0])
+    }
+  }
+  let merged = 0
+  for (const id of [...parent.keys()].sort((a, b) => b - a)) {
+    db.transaction(() => mergeFootballEntity('person', id, root(id)))()
+    merged++
+  }
+
+  const orphans = (db.prepare(`
+    SELECT p.id FROM football_person p
+    WHERE p.quiz_pack=0 AND p.bio IS NULL AND p.image_path IS NULL
+      AND NOT EXISTS(SELECT 1 FROM football_event e WHERE e.person_id=p.id)
+      AND NOT EXISTS(SELECT 1 FROM football_event e WHERE e.related_person_id=p.id)
+      AND NOT EXISTS(SELECT 1 FROM football_lineup l WHERE l.person_id=p.id)
+      AND NOT EXISTS(SELECT 1 FROM football_tenure t WHERE t.person_id=p.id)
+      AND NOT EXISTS(SELECT 1 FROM football_honour h WHERE h.person_id=p.id)
+      AND NOT EXISTS(SELECT 1 FROM football_assertion a WHERE a.entity_kind='person' AND a.entity_id=p.id)
+      ${['football_favorite', 'football_media_link', 'football_external_link', 'football_article']
+        .map((table) => `AND NOT EXISTS(SELECT 1 FROM ${table} r
+          WHERE r.entity_kind='person' AND r.entity_id=p.id)`).join('\n')}
+      AND NOT EXISTS(SELECT 1 FROM list_item li JOIN list l ON l.id=li.list_id
+        WHERE l.entity_kind='footballPerson' AND li.entity_id=p.id)
+  `).all() as { id: number }[]).filter((row) => !settled.has(row.id))
+  db.transaction(() => {
+    for (const { id } of orphans) {
+      for (const table of ['football_alias', 'football_source_ref', 'football_conflict']) {
+        db.prepare(`DELETE FROM ${table} WHERE entity_kind='person' AND entity_id=?`).run(id)
+      }
+      db.prepare(`DELETE FROM football_person WHERE id=?`).run(id)
+    }
+  })()
+
+  let resolved = 0
+  db.transaction(() => {
+    const open = db.prepare(`
+      SELECT id,entity_id AS personId FROM football_conflict
+      WHERE entity_kind='person' AND facet='identity' AND status='open' ORDER BY id
+    `).all() as Array<{ id: number; personId: number | null }>
+    const close = db.prepare(`UPDATE football_conflict SET status='resolved',resolution=?,
+      resolved_at=datetime('now') WHERE id=?`)
+    const seen = new Set<number>()
+    for (const conflict of open) {
+      const sameName = conflict.personId == null ? [] : sameNamePeople(conflict.personId)
+      const others = sameName.filter((other) => !differentPeople(conflict.personId!, other.id))
+      const reason = conflict.personId == null || seen.has(conflict.personId)
+        ? 'Duplicate identity conflict'
+        : sameName.length === 0 ? 'No other person carries this name'
+        : others.length === 0 ? 'Same name, different birth years or eras' : null
+      if (conflict.personId != null) seen.add(conflict.personId)
+      if (reason) {
+        close.run(reason, conflict.id)
+        resolved++
+      } else {
+        db.prepare(`UPDATE football_conflict SET value_b=? WHERE id=?`).run(
+          `Possible matches: ${others.map((other) => other.id).join(',')}`,
+          conflict.id
+        )
+      }
+    }
+  })()
+  return { merged, removed: orphans.length, resolved }
+}
+
 export function syncOverview(status: FootballSyncOverview['status']): FootballSyncOverview {
   const db = getSqlite()
   const entitlementRows = db.prepare(`
@@ -1446,6 +2084,15 @@ export function syncOverview(status: FootballSyncOverview['status']): FootballSy
     conflicts: listConflicts(),
     playerQuizEligible: eligible.n,
     playerQuizTarget: 250,
+    setup: setupState(),
+    artwork: db.prepare(`
+      SELECT
+        (SELECT COUNT(*) FROM football_competition WHERE image_path IS NOT NULL) AS competitionsWithLogo,
+        (SELECT COUNT(*) FROM football_team) AS teams,
+        (SELECT COUNT(*) FROM football_team WHERE image_path IS NOT NULL) AS teamsWithCrest,
+        (SELECT COUNT(*) FROM football_team WHERE primary_color IS NOT NULL) AS teamsWithColors,
+        (SELECT COUNT(*) FROM football_person WHERE image_path IS NOT NULL) AS peopleWithPortrait
+    `).get() as FootballSyncOverview['artwork'],
     lastRuns
   }
 }

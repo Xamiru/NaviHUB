@@ -1,27 +1,47 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { useLocation } from 'react-router-dom'
 import { FX_ART } from '../../lib/themeFxArt'
-import { clearProgressFx, getProgressFx, subscribeProgressFx } from '../../lib/themeFx'
+import {
+  clearCompletionFx,
+  clearProgressFx,
+  getCompletionFx,
+  getProgressFx,
+  subscribeProgressFx
+} from '../../lib/themeFx'
+import { mediaUrl } from '@shared/mediaUrl'
 import { usePlayerControls } from '../../lib/player'
 import { useAppTheme } from '../../lib/useAppTheme'
 import { prefersReducedMotion } from './ThemeText'
 
-// Theme effects that are not tied to one component: the page-change transition,
-// Miku's progress judgement and her beat pulse. Everything here is decorative,
-// pointer-transparent, hidden from assistive technology, and never delays the
-// route (the new page is already rendered underneath).
+// Theme effects that are not tied to one component: Lain's page-change glitch,
+// Miku's progress judgement and beat pulse, the Twin Peaks idle curtains,
+// Seinfeld's completion dance and idle gang, Berserk's Dragonslayer strike and
+// idle Eclipse, One Piece's rubber stretch, bounty poster and island cutaways,
+// and JoJo's Stand cry and To Be Continued freeze. Everything here is decorative, pointer-transparent, hidden
+// from assistive technology, and never delays the route (the new page is
+// already rendered underneath).
 export default function ThemeFx() {
-  const { theme } = useAppTheme()
+  const { theme, variant } = useAppTheme()
   return (
     <>
-      {theme !== 'miku' && <RouteTransition theme={theme} />}
+      {theme === 'lain' && <RouteTransition />}
       {theme === 'miku' && <ProgressJudgement />}
       {theme === 'miku' && <BeatPulse />}
+      {theme === 'twin-peaks' && <IdleCurtains />}
+      {theme === 'seinfeld' && <CompletionDance />}
+      {theme === 'seinfeld' && <IdleGang />}
+      {theme === 'berserk' && <DragonslayerStrike />}
+      {theme === 'berserk' && <IdleEclipse />}
+      {theme === 'one-piece' && <RubberStretch />}
+      {theme === 'one-piece' && <BountyPoster />}
+      {theme === 'one-piece' && <IdleIslands />}
+      {theme === 'jojo' && <StandCry cry={variant === 'diamond-is-unbreakable' ? 'DORA' : variant === 'golden-wind' ? 'MUDA' : 'ORA'} />}
+      {theme === 'jojo' && <IdleTbc />}
     </>
   )
 }
 
-function RouteTransition({ theme }: { theme: 'lain' | 'metal-gear' | 'twin-peaks' }) {
+function RouteTransition() {
   const { pathname } = useLocation()
   const previous = useRef(pathname)
   const [run, setRun] = useState(0)
@@ -32,16 +52,7 @@ function RouteTransition({ theme }: { theme: 'lain' | 'metal-gear' | 'twin-peaks
   }, [pathname])
   if (run === 0) return null
   return (
-    <div key={run} className={`route-fx route-fx-${theme}`} aria-hidden="true" onAnimationEnd={(e) => {
-      if (e.target === e.currentTarget) setRun(0)
-    }}>
-      {theme === 'twin-peaks' && (
-        <>
-          <i style={{ backgroundImage: `url(${FX_ART.peaksCurtain})` }} />
-          <i style={{ backgroundImage: `url(${FX_ART.peaksCurtain})` }} />
-        </>
-      )}
-    </div>
+    <div key={run} className="route-fx route-fx-lain" aria-hidden="true" onAnimationEnd={() => setRun(0)} />
   )
 }
 
@@ -87,4 +98,232 @@ function BeatPulse() {
     }
   }, [isPlaying])
   return null
+}
+
+export const IDLE_CURTAIN_MS = 10 * 60_000
+const ACTIVITY_EVENTS = ['pointermove', 'pointerdown', 'keydown', 'wheel', 'touchstart'] as const
+
+// After ten minutes without input an idle cover closes over the app (Twin
+// Peaks curtains, the Seinfeld gang, the Berserk Eclipse); any input lifts it
+// again. The input that wakes it is swallowed so it cannot also press whatever
+// sits under the pointer. A hidden window never closes it, and the readers
+// (outside the shell) never mount this. `wakes` counts reopenings for a
+// wake-up animation.
+function useIdleCover(): { closed: boolean; wakes: number } {
+  const [closed, setClosed] = useState(false)
+  const [wakes, setWakes] = useState(0)
+  const closedRef = useRef(false)
+  closedRef.current = closed
+
+  useEffect(() => {
+    let timer = 0
+    const arm = (): void => {
+      window.clearTimeout(timer)
+      timer = window.setTimeout(() => {
+        if (document.hidden) arm()
+        else setClosed(true)
+      }, IDLE_CURTAIN_MS)
+    }
+    const onActivity = (event: Event): void => {
+      if (closedRef.current) {
+        if (event.type !== 'pointermove') {
+          event.preventDefault()
+          event.stopPropagation()
+        }
+        closedRef.current = false
+        setClosed(false)
+        setWakes((n) => n + 1)
+      }
+      arm()
+    }
+    for (const type of ACTIVITY_EVENTS) window.addEventListener(type, onActivity, { capture: true })
+    arm()
+    return () => {
+      window.clearTimeout(timer)
+      for (const type of ACTIVITY_EVENTS) window.removeEventListener(type, onActivity, { capture: true })
+    }
+  }, [])
+  return { closed, wakes }
+}
+
+export function IdleCurtains() {
+  const { closed } = useIdleCover()
+  return (
+    <div className={`idle-curtains ${closed ? 'idle-curtains-closed' : ''}`} aria-hidden="true" data-testid="idle-curtains">
+      <i className="peaks-curtain peaks-curtain-left" style={{ backgroundImage: `url(${FX_ART.peaksCurtain})` }} />
+      <i className="peaks-curtain peaks-curtain-right" style={{ backgroundImage: `url(${FX_ART.peaksCurtain})` }} />
+    </div>
+  )
+}
+
+// Seinfeld: the gang bursting into the apartment fills the idle screen, and on
+// the way back Kramer's entrance slides across once.
+export function IdleGang() {
+  const { closed, wakes } = useIdleCover()
+  return (
+    <>
+      <div className={`idle-gang ${closed ? 'idle-gang-closed' : ''}`} aria-hidden="true" data-testid="idle-gang">
+        <img className="idle-gang-still" src={FX_ART.sfGang} alt="" />
+      </div>
+      {wakes > 0 && !prefersReducedMotion() && (
+        <img key={wakes} className="idle-gang-kramer" src={FX_ART.sfKramerEntrance} alt="" aria-hidden="true" />
+      )}
+    </>
+  )
+}
+
+// Berserk: Miura's Eclipse page slowly darkens the idle screen.
+export function IdleEclipse() {
+  const { closed } = useIdleCover()
+  return <div className={`idle-eclipse ${closed ? 'idle-eclipse-closed' : ''}`} aria-hidden="true" data-testid="idle-eclipse" />
+}
+
+// Berserk: logging progress cuts one Dragonslayer slash across the pressed
+// control and adds a tally mark (one per log in the combo window, grouped in
+// fives). The slash is skipped with reduced motion; the tally still shows.
+function DragonslayerStrike() {
+  const fx = useSyncExternalStore(subscribeProgressFx, getProgressFx)
+  useEffect(() => {
+    if (!fx) return
+    const id = window.setTimeout(() => clearProgressFx(fx.id), 900)
+    return () => window.clearTimeout(id)
+  }, [fx])
+  if (!fx) return null
+  const marks = '|'.repeat(fx.combo % 5 || 5)
+  const fives = Math.floor((fx.combo - 1) / 5) * 5
+  return (
+    <div key={fx.id} aria-hidden="true">
+      {!prefersReducedMotion() && <span className="berserk-strike" style={{ left: fx.x, top: fx.y + 12 }} />}
+      <span className="berserk-tally" style={{ left: fx.x, top: fx.y }}>
+        {fives > 0 ? `${fives} ${marks}` : marks}
+      </span>
+    </div>
+  )
+}
+
+// One Piece: the pressed control stretches like Luffy's arm and snaps back, and
+// a piece of meat on the bone joins a tally, one per log in fives. With reduced
+// motion only the tally shows.
+function RubberStretch() {
+  const fx = useSyncExternalStore(subscribeProgressFx, getProgressFx)
+  useEffect(() => {
+    if (!fx) return
+    if (fx.el && !prefersReducedMotion()) {
+      fx.el.animate(
+        [{ transform: 'scaleX(1)' }, { transform: 'scaleX(1.7)', offset: 0.35 }, { transform: 'scaleX(1)' }],
+        { duration: 450, easing: 'cubic-bezier(.3,1.8,.5,1)' }
+      )
+    }
+    const id = window.setTimeout(() => clearProgressFx(fx.id), 900)
+    return () => window.clearTimeout(id)
+  }, [fx])
+  if (!fx) return null
+  return (
+    <div key={fx.id} className="op-meat" style={{ left: fx.x, top: fx.y }} aria-hidden="true">
+      {Array.from({ length: fx.combo % 5 || 5 }, (_, i) => <img key={i} src={FX_ART.opMeat} alt="" />)}
+    </div>
+  )
+}
+
+// One Piece: finishing a title prints its Wanted poster in the corner.
+function BountyPoster() {
+  const fx = useSyncExternalStore(subscribeProgressFx, getCompletionFx)
+  useEffect(() => {
+    if (!fx) return
+    const id = window.setTimeout(() => clearCompletionFx(fx.id), 5000)
+    return () => window.clearTimeout(id)
+  }, [fx])
+  if (!fx) return null
+  return (
+    <div key={fx.id} className="op-bounty" role="status">
+      <b aria-hidden="true">WANTED</b>
+      <div className="op-bounty-photo" aria-hidden="true">
+        {fx.coverPath && <img src={mediaUrl(fx.coverPath) ?? undefined} alt="" />}
+      </div>
+      <i aria-hidden="true">DEAD OR ALIVE</i>
+      <u>{fx.title}</u>
+      <span className="block text-xs">{fx.total}</span>
+      <span className="op-bounty-stamp">COMPLETE</span>
+    </div>
+  )
+}
+
+const ISLANDS = [
+  ['Whisky Peak', FX_ART.opIslandWhiskyPeak],
+  ['Drum Island', FX_ART.opIslandDrum],
+  ['Alabasta', FX_ART.opIslandAlabasta],
+  ['Skypiea', FX_ART.opIslandSkypiea],
+  ['Thriller Bark', FX_ART.opIslandThrillerBark],
+  ['Marineford', FX_ART.opIslandMarineford]
+] as const
+
+// One Piece: when idle, the show's island cutaways cross-fade, each held a few
+// seconds with its name. With reduced motion the first island stays still.
+export function IdleIslands() {
+  const { closed } = useIdleCover()
+  const [shown, setShown] = useState(0)
+  useEffect(() => {
+    if (!closed || prefersReducedMotion()) return
+    const id = window.setInterval(() => setShown((n) => (n + 1) % ISLANDS.length), 6000)
+    return () => window.clearInterval(id)
+  }, [closed])
+  return (
+    <div className={`idle-islands ${closed ? 'idle-islands-closed' : ''}`} aria-hidden="true" data-testid="idle-islands">
+      {closed &&
+        ISLANDS.map(([name, art], i) => (
+          <figure key={name} className={i === shown ? 'idle-island-on' : ''}>
+            <img src={art} alt="" />
+            <figcaption>{name}</figcaption>
+          </figure>
+        ))}
+    </div>
+  )
+}
+
+// JoJo: logging progress throws the part's Stand cry beside the pressed
+// control, stacking into a rush on quick repeats.
+function StandCry({ cry }: { cry: string }) {
+  const fx = useSyncExternalStore(subscribeProgressFx, getProgressFx)
+  useEffect(() => {
+    if (!fx) return
+    const id = window.setTimeout(() => clearProgressFx(fx.id), 800)
+    return () => window.clearTimeout(id)
+  }, [fx])
+  if (!fx) return null
+  const rush = Array.from({ length: Math.min(fx.combo, 6) }, () => cry).join(' ')
+  return (
+    <span key={fx.id} className="jojo-cry" style={{ left: fx.x, top: fx.y }} aria-hidden="true">
+      {fx.combo > 1 ? `${rush}!` : rush}
+    </span>
+  )
+}
+
+// JoJo: when idle, the episode ends. The screen drains into the part's
+// freeze-frame tint and the To Be Continued arrow slides in.
+export function IdleTbc() {
+  const { closed } = useIdleCover()
+  return (
+    <div className={`idle-tbc ${closed ? 'idle-tbc-closed' : ''}`} aria-hidden="true" data-testid="idle-tbc">
+      <img src={FX_ART.jjTbcArrow} alt="" />
+    </div>
+  )
+}
+
+function CompletionDance() {
+  const fx = useSyncExternalStore(subscribeProgressFx, getCompletionFx)
+  useEffect(() => {
+    if (!fx) return
+    const id = window.setTimeout(() => clearCompletionFx(fx.id), 5000)
+    return () => window.clearTimeout(id)
+  }, [fx])
+  if (!fx) return null
+  return (
+    <div key={fx.id} className="seinfeld-dance" role="status">
+      <img src={prefersReducedMotion() ? FX_ART.sfElaineStill : FX_ART.sfElaineDance} alt="" />
+      <span className="min-w-0">
+        <span className="block text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">Little kicks!</span>
+        <span className="block text-sm text-ink">{fx.title} completed.</span>
+      </span>
+    </div>
+  )
 }

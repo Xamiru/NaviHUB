@@ -6,7 +6,8 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useStatuses, useDebouncedValue, useIncrementalList } from '../lib/hooks'
-import { usePlayerControls, type Track } from '../lib/player'
+import { usePlayerControls } from '../lib/player'
+import { themeSongToTrack as toTrack } from '../lib/themeTracks'
 import { ANIME } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
@@ -40,25 +41,6 @@ const SORTS: { value: MediaSort; label: string }[] = [
 ]
 
 const newSeed = (): number => Math.floor(Math.random() * 1_000_000)
-
-function songTitle(s: ThemeSongEntry): string {
-  return s.slug ? `${s.slug} / ${s.title ?? 'Untitled'}` : (s.title ?? 'Untitled')
-}
-
-// Queue track. Keeps the `theme-<id>` id namespace the detail page and the
-// player already speak, so a song queued here still highlights on its anime page.
-function toTrack(s: ThemeSongEntry): Track {
-  return {
-    id: `theme-${s.themeId}`,
-    audioPath: s.audioPath,
-    audioUrl: s.audioUrl,
-    title: songTitle(s),
-    subtitle: s.artists.map((a) => a.name).join(', ') || null,
-    context: s.animeTitle,
-    coverPath: s.coverPath,
-    mediaId: s.mediaId
-  }
-}
 
 export default function ThemeSongsPage(): JSX.Element {
   const player = usePlayerControls()

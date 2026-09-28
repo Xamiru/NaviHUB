@@ -120,4 +120,53 @@ describe('ConfirmHost', () => {
     expect(answer).toBe(false)
     expect(opener).toHaveFocus()
   })
+
+  it('raises JoJo menacing lettering only on destructive confirmations, hidden from screen readers', async () => {
+    document.documentElement.dataset.theme = 'jojo'
+    const user = userEvent.setup()
+    render(
+      <>
+        <button type="button" onClick={() => void confirmDialog('Delete this item?', { danger: true })}>Delete item</button>
+        <button type="button" onClick={() => void confirmDialog('Rescan the folder?')}>Rescan</button>
+        <ConfirmHost />
+      </>
+    )
+    try {
+      await user.click(screen.getByRole('button', { name: 'Delete item' }))
+      const dialog = screen.getByRole('dialog', { name: 'Confirmation' })
+      expect(dialog).toHaveAccessibleDescription('Delete this item?')
+      expect(dialog.querySelector('.jojo-menace-confirm')).toHaveAttribute('aria-hidden', 'true')
+      await user.keyboard('{Escape}')
+      await user.click(screen.getByRole('button', { name: 'Rescan' }))
+      expect(screen.getByRole('dialog', { name: 'Confirmation' }).querySelector('.jojo-menace-confirm')).toBeNull()
+      await user.keyboard('{Escape}')
+    } finally {
+      delete document.documentElement.dataset.theme
+    }
+  })
+
+  it('shows the Berserk Behelit only on destructive confirmations, without changing the message', async () => {
+    document.documentElement.dataset.theme = 'berserk'
+    const user = userEvent.setup()
+    render(
+      <>
+        <button type="button" onClick={() => void confirmDialog('Delete this item?', { danger: true })}>Delete item</button>
+        <button type="button" onClick={() => void confirmDialog('Rescan the folder?')}>Rescan</button>
+        <ConfirmHost />
+      </>
+    )
+    try {
+      await user.click(screen.getByRole('button', { name: 'Delete item' }))
+      const dialog = screen.getByRole('dialog', { name: 'Confirmation' })
+      expect(dialog).toHaveAccessibleDescription('Delete this item?')
+      expect(dialog.querySelector('.berserk-confirm-art')).toHaveAttribute('aria-hidden', 'true')
+      await user.keyboard('{Escape}')
+
+      await user.click(screen.getByRole('button', { name: 'Rescan' }))
+      expect(screen.getByRole('dialog', { name: 'Confirmation' }).querySelector('.berserk-confirm-art')).toBeNull()
+      await user.keyboard('{Escape}')
+    } finally {
+      delete document.documentElement.dataset.theme
+    }
+  })
 })

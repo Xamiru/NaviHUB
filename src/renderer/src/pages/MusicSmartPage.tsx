@@ -68,8 +68,8 @@ export default function MusicSmartPage() {
                   {id ? 'Smart playlist not found' : 'Choose a playlist or create your first'}
                 </h2>
                 <p className="mt-3 max-w-2xl text-sm text-ink-muted">
-                  Try unheard soundtracks, rarely played favorites, or a study mix using your
-                  personal tags. Everything matches against your local music library.
+                  Try rarely played favorites or a study mix using your personal tags.
+                  Everything matches against your local music library.
                 </p>
               </div>
             )}
@@ -186,15 +186,6 @@ function SmartEditor({ value }: { value: MusicSmartPlaylist | null }) {
               type="button"
               className="btn-ghost"
               onClick={() =>
-                preset('Unheard soundtracks', { soundtrack: 'linked', playState: 'unplayed' })
-              }
-            >
-              Unheard soundtracks
-            </button>
-            <button
-              type="button"
-              className="btn-ghost"
-              onClick={() =>
                 preset('Rediscover favorites', {
                   liked: 'liked',
                   notPlayedDays: 90,
@@ -280,17 +271,6 @@ function SmartEditor({ value }: { value: MusicSmartPlaylist | null }) {
               <option value="any">Any play count</option>
               <option value="unplayed">Never played</option>
               <option value="played">Played before</option>
-            </select>
-          </Field>
-          <Field label="Soundtrack connections">
-            <select
-              className="input"
-              value={form.rules.soundtrack}
-              onChange={(e) => rule('soundtrack', e.target.value as MusicSmartRules['soundtrack'])}
-            >
-              <option value="any">Any track</option>
-              <option value="linked">Linked to a work or wrestler</option>
-              <option value="unlinked">No soundtrack link</option>
             </select>
           </Field>
         </div>

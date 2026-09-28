@@ -6,6 +6,7 @@ import * as tasks from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
 import { stripAlbumYearPrefix } from './musicSpotifyMatch'
 import { runWithActivitySignal } from './activityContext'
+import { searchArtists } from './spotifyWeb'
 import type { MusicArtResult, MusicArtStatus } from '@shared/types'
 
 // Online fallback for art the scanner could not find locally. Albums prefer a
@@ -238,6 +239,46 @@ async function spotifyImage(
   return typeof url === 'string' && url ? { kind: 'ok', value: url } : { kind: 'miss' }
 }
 
+/** The one Spotify artist id imported playlist rows credit under this library artist's exact name. */
+function playlistSpotifyArtistId(artistId: number, name: string): string | null {
+  const rows = getSqlite()
+    .prepare(
+      `SELECT DISTINCT i.raw_json FROM music_spotify_playlist_item i
+       JOIN music_track t ON t.id = i.matched_track_id WHERE t.artist_id = ?`
+    )
+    .all(artistId) as { raw_json: string }[]
+  const want = normalizeForMatch(name)
+  const ids = new Set<string>()
+  for (const row of rows) {
+    let raw: { artists?: unknown; artist_ids?: unknown }
+    try {
+      raw = JSON.parse(row.raw_json)
+    } catch {
+      continue
+    }
+    if (!Array.isArray(raw.artists) || !Array.isArray(raw.artist_ids)) continue
+    raw.artists.forEach((artist, index) => {
+      const id = (raw.artist_ids as unknown[])[index]
+      if (typeof artist === 'string' && typeof id === 'string' && normalizeForMatch(artist) === want) ids.add(id)
+    })
+  }
+  return ids.size === 1 ? [...ids][0] : null
+}
+
+/** Spotify's artist search, accepted only when exactly one hit carries the exact name. */
+async function spotifyArtistByName(name: string): Promise<ProviderResult<string>> {
+  let hits: Awaited<ReturnType<typeof searchArtists>>
+  try {
+    hits = await searchArtists(name)
+  } catch {
+    return { kind: 'error' }
+  }
+  const want = normalizeForMatch(name)
+  const exact = hits.filter((hit) => normalizeForMatch(hit.name) === want)
+  const url = new Set(exact.map((hit) => hit.id)).size === 1 ? exact[0].imageUrl : null
+  return url ? { kind: 'ok', value: url } : { kind: 'miss' }
+}
+
 const MUSICBRAINZ_UA = 'NaviHUB/0.2 (https://github.com/Xamiru/NaviHUB)'
 const MUSICBRAINZ_INTERVAL_MS = process.env.NODE_ENV === 'test' ? 0 : 1100
 let musicBrainzQueue: Promise<void> = Promise.resolve()
@@ -420,9 +461,15 @@ export async function fetchArtistImage(
 
   let transientFailure = false
   await checkpoint()
-  const spotify = await spotifyImage('artist', row.spotify_id)
+  const spotify = await spotifyImage('artist', row.spotify_id ?? playlistSpotifyArtistId(artistId, row.name))
   let url = spotify.kind === 'ok' ? spotify.value : null
   if (spotify.kind === 'error') transientFailure = true
+  if (!url) {
+    await checkpoint()
+    const search = await spotifyArtistByName(row.name)
+    if (search.kind === 'ok') url = search.value
+    if (search.kind === 'error') transientFailure = true
+  }
   if (!url) {
     await checkpoint()
     const wikipedia = await wikipediaArtist(row.name)

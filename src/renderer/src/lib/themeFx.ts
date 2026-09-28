@@ -5,6 +5,8 @@ export interface ProgressFx {
   x: number
   y: number
   combo: number
+  // The pressed control, for effects that move it (One Piece's rubber stretch).
+  el: HTMLElement | null
 }
 
 const COMBO_WINDOW_MS = 45_000
@@ -39,7 +41,33 @@ export function celebrateProgress(anchor: Element | null = document.activeElemen
     id: nextId++,
     x: rect ? rect.left + rect.width / 2 : window.innerWidth - 160,
     y: rect ? rect.top : window.innerHeight - 160,
-    combo
+    combo,
+    el: anchor instanceof HTMLElement ? anchor : null
   }
+  for (const l of listeners) l()
+}
+
+// Completing a title. Seinfeld answers with Elaine's little kicks; One Piece
+// prints the title's Wanted poster with its cover and total as the bounty.
+export interface CompletionFx {
+  id: number
+  title: string
+  coverPath: string | null
+  total: string
+}
+let completion: CompletionFx | null = null
+
+export function getCompletionFx(): CompletionFx | null {
+  return completion
+}
+
+export function clearCompletionFx(id: number): void {
+  if (completion?.id !== id) return
+  completion = null
+  for (const l of listeners) l()
+}
+
+export function celebrateCompletion(title: string, detail: { coverPath?: string | null; total?: string } = {}): void {
+  completion = { id: nextId++, title, coverPath: detail.coverPath ?? null, total: detail.total ?? '' }
   for (const l of listeners) l()
 }

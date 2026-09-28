@@ -421,6 +421,7 @@ export const tvEpisode = sqliteTable(
     airDate: text('air_date'),
     runtime: integer('runtime'),
     watchedAt: text('watched_at'),
+    progressUndo: text('progress_undo'),
     createdAt: text('created_at').notNull()
   },
   (t) => ({
@@ -618,6 +619,7 @@ export const videoFile = sqliteTable(
     playability: text('playability'),
     resumeSeconds: real('resume_seconds'),
     watchedAt: text('watched_at'),
+    progressUndo: text('progress_undo'),
     createdAt: text('created_at')
       .notNull()
       .default(sql`(datetime('now'))`),
@@ -1658,6 +1660,7 @@ export const footballCompetition = sqliteTable(
     lineageNote: text('lineage_note'),
     summary: text('summary'),
     currentSeasonId: integer('current_season_id'),
+    imagePath: text('image_path'),
     createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
     updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
   }
@@ -1741,6 +1744,10 @@ export const footballTeam = sqliteTable(
     isNational: integer('is_national').notNull().default(0),
     bio: text('bio'),
     imagePath: text('image_path'),
+    primaryColor: text('primary_color'),
+    secondaryColor: text('secondary_color'),
+    venue: text('venue'),
+    venueCapacity: integer('venue_capacity'),
     enrichmentState: text('enrichment_state').notNull().default('not_requested'),
     enrichedAt: text('enriched_at'),
     createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
@@ -1760,6 +1767,10 @@ export const footballPerson = sqliteTable(
     nationality: text('nationality'),
     bio: text('bio'),
     imagePath: text('image_path'),
+    position: text('position'),
+    heightCm: integer('height_cm'),
+    birthPlace: text('birth_place'),
+    foot: text('foot'),
     enrichmentState: text('enrichment_state').notNull().default('not_requested'),
     enrichedAt: text('enriched_at'),
     quizPack: integer('quiz_pack').notNull().default(0),
@@ -1829,6 +1840,10 @@ export const footballMatch = sqliteTable(
     city: text('city'),
     attendance: integer('attendance'),
     referee: text('referee'),
+    homeFormation: text('home_formation'),
+    awayFormation: text('away_formation'),
+    homeManager: text('home_manager'),
+    awayManager: text('away_manager'),
     eventCoverage: text('event_coverage').notNull().default('not_supplied'),
     lineupCoverage: text('lineup_coverage').notNull().default('not_supplied'),
     conflicted: integer('conflicted').notNull().default(0),
@@ -1838,7 +1853,8 @@ export const footballMatch = sqliteTable(
   (t) => ({
     bySeason: index('idx_football_match_season').on(t.seasonId, t.matchDate),
     byHome: index('idx_football_match_home').on(t.homeTeamId, t.matchDate),
-    byAway: index('idx_football_match_away').on(t.awayTeamId, t.matchDate)
+    byAway: index('idx_football_match_away').on(t.awayTeamId, t.matchDate),
+    byDay: index('idx_football_match_day').on(sql`substr(${t.matchDate}, 6, 5)`)
   })
 )
 
@@ -1895,7 +1911,9 @@ export const footballEvent = sqliteTable(
   },
   (t) => ({
     byMatch: index('idx_football_event_match').on(t.matchId, t.sortOrder),
-    byPerson: index('idx_football_event_person').on(t.personId)
+    byPerson: index('idx_football_event_person').on(t.personId),
+    byRelated: index('idx_football_event_related').on(t.relatedPersonId),
+    byTeam: index('idx_football_event_team').on(t.teamId, t.type)
   })
 )
 
@@ -1952,6 +1970,32 @@ export const footballHonour = sqliteTable(
   })
 )
 
+export const footballTransfer = sqliteTable(
+  'football_transfer',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    personId: integer('person_id')
+      .notNull()
+      .references(() => footballPerson.id, { onDelete: 'cascade' }),
+    transferDate: text('transfer_date'),
+    season: text('season'),
+    fromTeamId: integer('from_team_id').references(() => footballTeam.id, { onDelete: 'set null' }),
+    toTeamId: integer('to_team_id').references(() => footballTeam.id, { onDelete: 'set null' }),
+    fromTeam: text('from_team').notNull(),
+    toTeam: text('to_team').notNull(),
+    fee: integer('fee'),
+    marketValue: integer('market_value'),
+    source: text('source').notNull(),
+    externalId: text('external_id').notNull()
+  },
+  (t) => ({
+    bySource: uniqueIndex('football_transfer_source_external_id_unique').on(t.source, t.externalId),
+    byPerson: index('idx_football_transfer_person').on(t.personId, t.transferDate),
+    byFrom: index('idx_football_transfer_from').on(t.fromTeamId),
+    byTo: index('idx_football_transfer_to').on(t.toTeamId)
+  })
+)
+
 export const footballAlias = sqliteTable(
   'football_alias',
   {
@@ -1965,6 +2009,7 @@ export const footballAlias = sqliteTable(
   },
   (t) => ({
     byLookup: index('idx_football_alias_lookup').on(t.entityKind, t.source, t.normalized),
+    byNormalized: index('idx_football_alias_normalized').on(t.entityKind, t.normalized),
     uniq: unique('uniq_football_alias').on(t.entityKind, t.source, t.normalized, t.externalId)
   })
 )
@@ -2271,24 +2316,6 @@ export const vnEdition = sqliteTable('vn_edition', {
   snapshotJson: text('snapshot_json'),
   notes: text('notes').notNull().default('')
 })
-
-export const soundtrackLink = sqliteTable('soundtrack_link', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  albumId: integer('album_id').references(() => musicAlbum.id, { onDelete: 'cascade' }),
-  trackId: integer('track_id').references(() => musicTrack.id, { onDelete: 'cascade' }),
-  mediaId: integer('media_id').references(() => mediaItem.id, { onDelete: 'cascade' }),
-  wrestlerId: integer('wrestler_id').references(() => wrestlingWrestler.id, { onDelete: 'cascade' }),
-  label: text('label').notNull().default(''),
-  notes: text('notes').notNull().default('')
-}, (t) => ({
-  identity: uniqueIndex('idx_soundtrack_identity').on(sql`COALESCE(${t.albumId},0)`, sql`COALESCE(${t.trackId},0)`, sql`COALESCE(${t.mediaId},0)`, sql`COALESCE(${t.wrestlerId},0)`),
-  media: index('idx_soundtrack_media').on(t.mediaId),
-  wrestler: index('idx_soundtrack_wrestler').on(t.wrestlerId),
-  album: index('idx_soundtrack_album').on(t.albumId),
-  track: index('idx_soundtrack_track').on(t.trackId),
-  musicSource: check('soundtrack_music_source', sql`(${t.albumId} IS NOT NULL) + (${t.trackId} IS NOT NULL) = 1`),
-  target: check('soundtrack_target', sql`(${t.mediaId} IS NOT NULL) + (${t.wrestlerId} IS NOT NULL) = 1`)
-}))
 
 export const gamePlaythrough = sqliteTable('game_playthrough', {
   id: integer('id').primaryKey({ autoIncrement: true }),

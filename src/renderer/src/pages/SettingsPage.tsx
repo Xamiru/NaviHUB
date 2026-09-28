@@ -499,6 +499,8 @@ export function ThemeSettings({
           )
         })}
       </div>
+      {APP_THEME_VARIANT_OPTIONS[current].length > 1 && (
+      <>
       <p className="label mt-5">{currentLabel} style</p>
       <div className="grid gap-2 sm:grid-cols-3" role="group" aria-label={`${currentLabel} style`}>
         {APP_THEME_VARIANT_OPTIONS[current].map((option) => {
@@ -520,6 +522,8 @@ export function ThemeSettings({
           )
         })}
       </div>
+      </>
+      )}
     </SettingCard>
   )
 }

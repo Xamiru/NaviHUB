@@ -28,17 +28,70 @@ export function wikimediaHonoursComplete(
   return seasons.size >= entry.minimumHonours && seasons.has(entry.firstSeasonKey)
 }
 
+// FIFA codes used by the fb/fba/fb-rt flag templates on the international finals pages.
+const FIFA_COUNTRIES: Record<string, string> = {
+  ARG: 'Argentina', AUT: 'Austria', BEL: 'Belgium', BRA: 'Brazil', BUL: 'Bulgaria', CRO: 'Croatia',
+  CSK: 'Czechoslovakia', TCH: 'Czechoslovakia', CZE: 'Czech Republic', DEN: 'Denmark', ENG: 'England',
+  ESP: 'Spain', FRA: 'France', FRG: 'West Germany', GER: 'Germany', GRE: 'Greece', HUN: 'Hungary',
+  ITA: 'Italy', NED: 'Netherlands', POR: 'Portugal', RUS: 'Russia', SCO: 'Scotland', SWE: 'Sweden',
+  SUI: 'Switzerland', TUR: 'Turkey', URS: 'Soviet Union', URU: 'Uruguay', YUG: 'Yugoslavia',
+  POL: 'Poland', ROU: 'Romania', WAL: 'Wales', IRL: 'Republic of Ireland', NIR: 'Northern Ireland',
+  UKR: 'Ukraine', SRB: 'Serbia', SVK: 'Slovakia', SVN: 'Slovenia', CHI: 'Chile', MEX: 'Mexico',
+  USA: 'United States', KOR: 'South Korea', JPN: 'Japan', MAR: 'Morocco', CMR: 'Cameroon'
+}
+
+/** Index of the first `|` outside links and templates, or -1. */
+function topLevelPipe(value: string): number {
+  let depth = 0
+  for (let i = 0; i < value.length; i++) {
+    const pair = value.slice(i, i + 2)
+    if (pair === '[[' || pair === '{{') {
+      depth++
+      i++
+    } else if (pair === ']]' || pair === '}}') {
+      depth = Math.max(0, depth - 1)
+      i++
+    } else if (value[i] === '|' && depth === 0) {
+      return i
+    }
+  }
+  return -1
+}
+
 function stripCellAttributes(value: string): string {
-  const first = value.indexOf('|')
+  const first = topLevelPipe(value)
   if (first < 0) return value
   const before = value.slice(0, first)
-  return /(?:style|rowspan|colspan|scope|class|align|bgcolor)\s*=/.test(before)
+  return /^\s*(?:[a-z-]+\s*=\s*("[^"]*"?|'[^']*'?|[^\s|]*)\s*)+$/i.test(before)
     ? value.slice(first + 1)
     : value
 }
 
-function stripWiki(value: string): string {
+/** Footnotes and references can hold links (an FA Cup double) that are not the cell's value. */
+function stripNotes(value: string): string {
   let next = value
+    .replace(/<ref\b[^>]*\/>/gi, '')
+    .replace(/<ref\b[^>]*>[\s\S]*?<\/ref>/gi, '')
+  for (let i = 0; i < 3; i++) {
+    next = next.replace(/\{\{(?:efn|refn|sfn|note|ref label|efn-lr|efn-ua|cn|citation needed)\b(?:[^{}]|\{\{[^{}]*\}\})*\}\}/gi, '')
+  }
+  return next
+    .replace(
+      /\{\{(?:fb|fba|fb-rt|fbw|fbu)\|([A-Z]{3})(?:\|[^{}]*)?\}\}/g,
+      (_match, code: string) => FIFA_COUNTRIES[code] ?? ''
+    )
+    .replace(/\{\{sort\|[^|{}]*\|((?:[^{}]|\[\[[^\]]*\]\])*)\}\}/gi, '$1')
+}
+
+/** A merged or explanatory winner cell ("No champions ... per DFB") names no winner. */
+// A merged cell spans the winner column; footnotes on a real winner may mention an abandoned tie.
+function noWinner(cell: string): boolean {
+  return /colspan/i.test(cell) ||
+    /no (?:champion|winner)|not (?:held|awarded|played|contested)|abandoned|cancelled|voided/i.test(stripCellAttributes(stripNotes(cell)))
+}
+
+function stripWiki(value: string): string {
+  let next = stripNotes(value)
     .replace(/<ref\b[^>]*\/>/gi, '')
     .replace(/<ref\b[^>]*>[\s\S]*?<\/ref>/gi, '')
     .replace(/<!--[^]*?-->/g, '')
@@ -73,7 +126,8 @@ function seasonIdentity(value: string): { key: string; label: string } | null {
   return year ? { key: year[1], label: year[1] } : null
 }
 
-function linkedLabels(value: string): string[] {
+function linkedLabels(raw: string): string[] {
+  const value = stripCellAttributes(stripNotes(raw))
   const links = [...value.matchAll(/\[\[([^|\]]+)(?:\|([^\]]+))?\]\]/g)]
     .filter((match) => !/^(?:File|Image|Flag|Category):/i.test(match[1]))
     .map((match) => stripWiki(match[2] ?? match[1]))
@@ -81,7 +135,10 @@ function linkedLabels(value: string): string[] {
   const values = links.length
     ? links
     : stripWiki(value).split(/\s+\/\s+|\s*;\s*/).map((item) => item.trim()).filter(Boolean)
-  return [...new Set(values.map((item) => item.replace(/\s*\([^)]*(?:title|win|champion)[^)]*\)\s*$/i, '').trim()).filter(Boolean))]
+  return [...new Set(values.map((item) => item
+    .replace(/\s*\([^)]*(?:title|win|champion)[^)]*\)\s*$/i, '')
+    .replace(/\s*\(\d+\)\s*$/, '')
+    .trim()).filter(Boolean))]
 }
 
 function tableRows(table: string): { headers: string[]; rows: string[][] } {
@@ -98,9 +155,16 @@ function tableRows(table: string): { headers: string[]; rows: string[][] } {
     const cells: string[] = []
     for (const line of lines) {
       const trimmed = line.trim()
+      if (trimmed.startsWith('!')) {
+        // Row headers (`!scope="row"| 1930`) are data cells once the column headers are known.
+        cells.push(...trimmed.slice(1).split('!!').map((cell) => cell.trim()))
+        continue
+      }
       if (!trimmed.startsWith('|') || trimmed.startsWith('|+')) continue
       cells.push(...trimmed.slice(1).split('||').map((cell) => cell.trim()))
     }
+    // A lone full-width section header row (`! colspan=5 | Football League`) is not a record.
+    if (cells.length === 1 && lines.every((line) => !line.trim().startsWith('|'))) continue
     if (cells.length) rows.push(cells)
   }
   return { headers, rows }
@@ -126,6 +190,7 @@ export function parseWikimediaHonours(
     if (seasonCol < 0 || winnerCol < 0) continue
     for (const row of rows) {
       const season = seasonIdentity(row[seasonCol] ?? '')
+      if (noWinner(row[winnerCol] ?? '')) continue
       const winners = linkedLabels(row[winnerCol] ?? '')
       if (!season || !winners.length) continue
       const runnersUp = runnerCol < 0 ? [] : linkedLabels(row[runnerCol] ?? '')

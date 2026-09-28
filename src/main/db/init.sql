@@ -361,6 +361,7 @@ CREATE TABLE IF NOT EXISTS tv_episode (
   air_date    TEXT,
   runtime     INTEGER,                    -- minutes
   watched_at  TEXT,                       -- NULL = unwatched (personal)
+  progress_undo TEXT,                     -- JSON footprint of the tick's logProgress (checklistRepo)
   created_at  TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(media_id, season, number)
 );
@@ -486,6 +487,7 @@ CREATE TABLE IF NOT EXISTS video_file (
   playability    TEXT,
   resume_seconds REAL,
   watched_at     TEXT,
+  progress_undo  TEXT,                    -- JSON footprint of the tick's logProgress (checklistRepo)
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE(media_id, file_path)
@@ -1340,6 +1342,7 @@ CREATE TABLE IF NOT EXISTS football_competition (
   lineage_note     TEXT,
   summary          TEXT,
   current_season_id INTEGER,
+  image_path       TEXT,
   created_at       TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -1399,6 +1402,10 @@ CREATE TABLE IF NOT EXISTS football_team (
   is_national    INTEGER NOT NULL DEFAULT 0,
   bio            TEXT,
   image_path     TEXT,
+  primary_color  TEXT,
+  secondary_color TEXT,
+  venue          TEXT,
+  venue_capacity INTEGER,
   enrichment_state TEXT NOT NULL DEFAULT 'not_requested',
   enriched_at    TEXT,
   created_at     TEXT NOT NULL DEFAULT (datetime('now')),
@@ -1415,6 +1422,10 @@ CREATE TABLE IF NOT EXISTS football_person (
   nationality      TEXT,
   bio              TEXT,
   image_path       TEXT,
+  position         TEXT,
+  height_cm        INTEGER,
+  birth_place      TEXT,
+  foot             TEXT,
   enrichment_state TEXT NOT NULL DEFAULT 'not_requested',
   enriched_at      TEXT,
   quiz_pack        INTEGER NOT NULL DEFAULT 0,
@@ -1466,6 +1477,10 @@ CREATE TABLE IF NOT EXISTS football_match (
   city                TEXT,
   attendance          INTEGER,
   referee             TEXT,
+  home_formation      TEXT,
+  away_formation      TEXT,
+  home_manager        TEXT,
+  away_manager        TEXT,
   event_coverage      TEXT NOT NULL DEFAULT 'not_supplied',
   lineup_coverage     TEXT NOT NULL DEFAULT 'not_supplied',
   conflicted          INTEGER NOT NULL DEFAULT 0,
@@ -1475,6 +1490,7 @@ CREATE TABLE IF NOT EXISTS football_match (
 CREATE INDEX IF NOT EXISTS idx_football_match_season ON football_match(season_id, match_date);
 CREATE INDEX IF NOT EXISTS idx_football_match_home ON football_match(home_team_id, match_date);
 CREATE INDEX IF NOT EXISTS idx_football_match_away ON football_match(away_team_id, match_date);
+CREATE INDEX IF NOT EXISTS idx_football_match_day ON football_match(substr(match_date, 6, 5));
 
 CREATE TABLE IF NOT EXISTS football_lineup (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1510,6 +1526,8 @@ CREATE TABLE IF NOT EXISTS football_event (
 );
 CREATE INDEX IF NOT EXISTS idx_football_event_match ON football_event(match_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_football_event_person ON football_event(person_id);
+CREATE INDEX IF NOT EXISTS idx_football_event_related ON football_event(related_person_id);
+CREATE INDEX IF NOT EXISTS idx_football_event_team ON football_event(team_id, type);
 
 CREATE TABLE IF NOT EXISTS football_standing (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1548,6 +1566,26 @@ CREATE INDEX IF NOT EXISTS idx_football_honour_season ON football_honour(season_
 CREATE INDEX IF NOT EXISTS idx_football_honour_team ON football_honour(team_id);
 CREATE INDEX IF NOT EXISTS idx_football_honour_person ON football_honour(person_id);
 
+-- Player moves from Transfermarkt's CC0 dataset. Clubs outside the archive keep their name only.
+CREATE TABLE IF NOT EXISTS football_transfer (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  person_id     INTEGER NOT NULL REFERENCES football_person(id) ON DELETE CASCADE,
+  transfer_date TEXT,
+  season        TEXT,
+  from_team_id  INTEGER REFERENCES football_team(id) ON DELETE SET NULL,
+  to_team_id    INTEGER REFERENCES football_team(id) ON DELETE SET NULL,
+  from_team     TEXT NOT NULL,
+  to_team       TEXT NOT NULL,
+  fee           INTEGER,
+  market_value  INTEGER,
+  source        TEXT NOT NULL,
+  external_id   TEXT NOT NULL,
+  UNIQUE(source, external_id)
+);
+CREATE INDEX IF NOT EXISTS idx_football_transfer_person ON football_transfer(person_id, transfer_date);
+CREATE INDEX IF NOT EXISTS idx_football_transfer_from ON football_transfer(from_team_id);
+CREATE INDEX IF NOT EXISTS idx_football_transfer_to ON football_transfer(to_team_id);
+
 -- Identity and source-integrity layer. Entity links are polymorphic on purpose:
 -- conflicts and aliases can exist before a canonical row has been resolved.
 CREATE TABLE IF NOT EXISTS football_alias (
@@ -1561,6 +1599,7 @@ CREATE TABLE IF NOT EXISTS football_alias (
   UNIQUE(entity_kind, source, normalized, external_id)
 );
 CREATE INDEX IF NOT EXISTS idx_football_alias_lookup ON football_alias(entity_kind, source, normalized);
+CREATE INDEX IF NOT EXISTS idx_football_alias_normalized ON football_alias(entity_kind, normalized);
 
 CREATE TABLE IF NOT EXISTS football_source_ref (
   id              INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1886,24 +1925,6 @@ CREATE TABLE IF NOT EXISTS vn_edition (
   snapshot_json TEXT,
   notes TEXT NOT NULL DEFAULT ''
 );
-
--- Personal links; exactly one music source and one associated work/wrestler.
-CREATE TABLE IF NOT EXISTS soundtrack_link (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  album_id INTEGER REFERENCES music_album(id) ON DELETE CASCADE,
-  track_id INTEGER REFERENCES music_track(id) ON DELETE CASCADE,
-  media_id INTEGER REFERENCES media_item(id) ON DELETE CASCADE,
-  wrestler_id INTEGER REFERENCES wrestling_wrestler(id) ON DELETE CASCADE,
-  label TEXT NOT NULL DEFAULT '',
-  notes TEXT NOT NULL DEFAULT '',
-  CHECK ((album_id IS NOT NULL) + (track_id IS NOT NULL) = 1),
-  CHECK ((media_id IS NOT NULL) + (wrestler_id IS NOT NULL) = 1)
-);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_soundtrack_identity ON soundtrack_link(COALESCE(album_id,0),COALESCE(track_id,0),COALESCE(media_id,0),COALESCE(wrestler_id,0));
-CREATE INDEX IF NOT EXISTS idx_soundtrack_media ON soundtrack_link(media_id);
-CREATE INDEX IF NOT EXISTS idx_soundtrack_wrestler ON soundtrack_link(wrestler_id);
-CREATE INDEX IF NOT EXISTS idx_soundtrack_album ON soundtrack_link(album_id);
-CREATE INDEX IF NOT EXISTS idx_soundtrack_track ON soundtrack_link(track_id);
 
 -- Personal playthroughs and listening collections. Existing sessions remain untouched.
 CREATE TABLE IF NOT EXISTS game_playthrough (

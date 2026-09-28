@@ -1,4 +1,3 @@
-import SoundtrackSection from '../components/SoundtrackSection'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -136,7 +135,6 @@ export default function MusicAlbumPage() {
         ]}
       />
 
-      <SoundtrackSection key={albumId} owner={{ kind: 'album', id: albumId }} tracks={tracks} />
       <div className="max-w-5xl">
         {visible.map((t, i) => {
           const disc = t.discNo ?? 1

@@ -74,5 +74,89 @@ below; nothing was drawn or generated. Fan-made items are marked.
 | `miku-hachune-panic.jpg` | Hachune Miku, Project DIVA promotional art. [vocaloid.fandom.com](https://vocaloid.fandom.com/wiki/Hachune_Miku) |
 | `peaks-cursor-coffee.png` | Black coffee cup photo, CC0, background removed. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:White_cup_of_black_coffee.jpg) |
 | `peaks-cursor-owl.png` | Great horned owl photo, CC BY-SA 3.0, background removed. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Great_Horned_Owl.jpg) |
-| `peaks-red-room.jpg`, `peaks-curtain.jpg`, `peaks-white-horse.jpg`, `peaks-wren.jpg`, `peaks-falls.jpg`, `peaks-mist.jpg`, `peaks-double-r.jpg`, `peaks-diane.jpg` | Twin Peaks stills and promotional images. [TMDB](https://www.themoviedb.org/tv/1920-twin-peaks/images/backdrops) |
+| `peaks-red-room.jpg`, `peaks-curtain.jpg` (launch and idle curtains), `peaks-white-horse.jpg`, `peaks-wren.jpg`, `peaks-falls.jpg`, `peaks-mist.jpg`, `peaks-double-r.jpg`, `peaks-diane.jpg` | Twin Peaks stills and promotional images. [TMDB](https://www.themoviedb.org/tv/1920-twin-peaks/images/backdrops) |
 | `peaks-logo.png` | Twin Peaks (1990) title lettering, public-domain recreation. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Twin_Peaks_(1990)_logo.png) |
+
+## Seinfeld (`fx/seinfeld-*`, 2026-09-27)
+
+One style, Stand-up. Vidaloka (OFL, `fonts/vidaloka-regular.ttf` with `vidaloka-OFL.txt`) is the free
+match for the ITC Fenice Oblique logo face; Oswald (already bundled) stands in for the condensed credits face.
+
+| File | Source |
+| --- | --- |
+| `seinfeld-logo.png` | Seinfeld logo, Wikimedia Commons trademark file. [Commons](https://commons.wikimedia.org/wiki/File:Seinfeld_English_logo.png) |
+| `seinfeld-standup.jpg` | Season 6 stand-up, episode screenshot. [seinfeld.fandom.com](https://seinfeld.fandom.com/wiki/Jerry_Seinfeld) |
+| `seinfeld-jerry.jpg`, `seinfeld-george.jpg`, `seinfeld-elaine.jpg`, `seinfeld-kramer.jpg` | NBC promotional photograph, faces cropped. [TMDB](https://www.themoviedb.org/tv/1400-seinfeld/images/backdrops) |
+| `seinfeld-newman.jpg` | Newman, episode screenshot, cropped. [seinfeld.fandom.com](https://seinfeld.fandom.com/wiki/Newman) |
+| `seinfeld-puddy.jpg` | David Puddy, episode screenshot. [seinfeld.fandom.com](https://seinfeld.fandom.com/wiki/David_Puddy) |
+| `seinfeld-soup-nazi.jpg` | The Soup Nazi, episode screenshot. [seinfeld.fandom.com](https://seinfeld.fandom.com/wiki/The_Soup_Nazi) |
+| `seinfeld-festivus.jpg` | Human Fund "Happy Festivus" card, photograph (Flickr, CC). [Flickr](https://www.flickr.com/photos/93378328@N00/2460658) |
+| `seinfeld-menu.jpg` | Tom's Restaurant menu, Wikimedia Commons. [Commons](https://commons.wikimedia.org/wiki/File:Tom's_Restaurant_Menu.JPG) |
+| `seinfeld-elaine-dance.gif`, `seinfeld-elaine-still.jpg` | Elaine's "little kicks", episode clip, resized. [seinfeld.fandom.com](https://seinfeld.fandom.com/wiki/The_Little_Kicks) |
+| `seinfeld-gang.jpg` | The four entering Jerry's apartment, episode still. [TMDB](https://www.themoviedb.org/tv/1400-seinfeld/images/backdrops) |
+| `seinfeld-kramer-entrance.jpg` | Kramer's entrance, episode screenshot. Listed in previews/assets/seinfeld/sources.md |
+
+## Berserk (`fx/berserk-*`, 2026-09-28)
+
+One style, Deluxe Edition, built on the Dark Horse Berserk Deluxe Edition hardcover. Manga art only:
+nothing from the 1997 or 2016 anime or the films. Alfa Slab One (OFL, `fonts/alfa-slab-one-regular.ttf`
+with `alfa-slab-one-OFL.txt`) is the free match for the Deluxe wordmark; Oswald (already bundled) takes
+the small labels.
+
+| File | Source |
+| --- | --- |
+| `berserk-leather.jpg`, `berserk-leather-raw.jpg`, `berserk-emboss.jpg` | Leather grain and the blind-embossed Brand, cropped from the Deluxe Edition vol. 1 cover photograph (Dark Horse press image), darkened, tiled and high-passed. [darkhorse.com](https://d2lzb5v10mb0lj.cloudfront.net/darkhorse/blog/-2018/berserkhccov.jpg) |
+| `berserk-cloak.jpg` | Guts in his cloak, a Kentaro Miura manga panel reformatted as a widescreen wallpaper. [wallpapers.com](https://wallpapers.com/wallpapers/berserk-guts-bacfcc3nzoe066ca.html) |
+| `berserk-casca.jpg` | Casca, Kentaro Miura colour illustration, face cropped. [berserk.fandom.com](https://berserk.fandom.com/wiki/File:Casca_Post-Eclipse_Manga.jpg) |
+| `berserk-guts.jpg` | Guts, shikishi drawn and signed by Kentaro Miura (volume 34), face cropped. [berserk.fandom.com](https://berserk.fandom.com/wiki/File:Volume_34_Guts_shikishi_by_Kentarou_Miura.jpg) |
+| `berserk-skull.jpg` | Skull Knight, manga splash page, cropped. [berserk.fandom.com](https://berserk.fandom.com/wiki/File:SkullKnight.png) |
+| `berserk-brand-panel.jpg`, `berserk-brand.jpg`, `berserk-mark.png` | The Brand of Sacrifice between the God Hand's fingers, manga panel, and crops of it. [berserk.fandom.com](https://berserk.fandom.com/wiki/File:Branding.png) |
+| `berserk-behelit-dormant.jpg` | The Crimson Behelit asleep, manga panel. [berserk.fandom.com](https://berserk.fandom.com/wiki/File:Beherit.png) |
+| `berserk-behelit-awake.jpg` | The Crimson Behelit awake, manga panel (episode 73). [berserk.fandom.com](https://berserk.fandom.com/wiki/Beherit) |
+| `berserk-eclipse.jpg` | The Eclipse, manga page. [berserk.fandom.com](https://berserk.fandom.com/wiki/File:Eclipse_Eye.png) |
+| `berserk-elfhelm.jpg` | Elfhelm cherry tree, manga illustration. [berserk.fandom.com](https://berserk.fandom.com/wiki/Elfhelm) |
+| `berserk-spread.jpg` | Volume 1, pages 186-187, manga spread (palette background). [berserk.fandom.com](https://berserk.fandom.com/wiki/Gallery:Griffith) |
+| `berserk-cursor*.png` | "BlackSwordman" cursor set, fan-made (RW Designer); busy and unavailable scaled from 256 px. [rw-designer.com](https://www.rw-designer.com/cursor-downloadset/blackswordman.zip) |
+
+The red mat and bronze frame around paper-white panels copy the 2022 Great Berserk Exhibition in Tokyo.
+
+## One Piece (`fx/onepiece-*`, 2026-09-28)
+
+One style, Grand Line, from the Toei TV anime before the timeskip (episodes 1-516) only: no manga,
+no post-timeskip, no films. Titan One and Rye (OFL) and Permanent Marker (Apache 2.0) are in
+`fonts/` with their licences; they stand in for the anime logo, the Wanted-poster wood type and the
+"to be continued" brush card. Full provenance, with an era check per file, is in the research folder's
+`sources.md` (previews/assets/onepiece, local only).
+
+| File | Source |
+| --- | --- |
+| `onepiece-crew.jpg` | The Straw Hat crew, pre-timeskip anime still. [onepiece.fandom.com](https://onepiece.fandom.com/wiki/Straw_Hat_Pirates) |
+| `onepiece-jolly.png` | The Straw Hat Jolly Roger flag, anime still, cropped. [onepiece.fandom.com](https://onepiece.fandom.com/wiki/Jolly_Roger) |
+| `onepiece-luffy.jpg`, `-nami`, `-chopper`, `-usopp`, `-smoker` | Pre-timeskip anime infobox art, faces cropped. [onepiece.fandom.com](https://onepiece.fandom.com/wiki/Straw_Hat_Pirates) |
+| `onepiece-denden.png` | The Straw Hats' Den Den Mushi, anime still. [onepiece.fandom.com](https://onepiece.fandom.com/wiki/Den_Den_Mushi) |
+| `onepiece-logpose.jpg` | The Log Pose, anime still. [onepiece.fandom.com](https://onepiece.fandom.com/wiki/Log_Pose) |
+| `onepiece-sunset.jpg` | "Mirai Kōkai" ending sequence, anime still. [onepiece.fandom.com](https://onepiece.fandom.com/wiki/Mirai_K%C5%8Dkai) |
+| `onepiece-tsuzuku.jpg` | "To be continued" (つづく) brush card, episode 406. [onepiece.fandom.com](https://onepiece.fandom.com/) |
+| `onepiece-eyecatch.jpg` | Eyecatch: the straw hat and logo in the spyglass circle. [onepiece.fandom.com](https://onepiece.fandom.com/wiki/Eyecatcher) |
+| `onepiece-meat.jpg` | Luffy's meat on the bone, anime still, cropped. [onepiece.fandom.com](https://onepiece.fandom.com/) |
+| `onepiece-island-*.jpg` | Whisky Peak, Drum Castle, Alabasta's Sandora River, Skypiea, Thriller Bark and Marineford, anime stills. [onepiece.fandom.com](https://onepiece.fandom.com/) |
+| `onepiece-cursor-*.png` | "OnePiece_By-RizarProject" cursor set, fan-made from the anime, public domain; busy is the first frame of its animated cursor. [rw-designer.com](http://www.rw-designer.com/cursor-set/onepiece-byrizarproject) |
+
+## JoJo's Bizarre Adventure (`fx/jojo-*`, 2026-09-28)
+
+Three styles from the David Production TV anime only: Stardust Crusaders, Diamond is Unbreakable and
+Golden Wind. Anton (OFL) is the condensed title-card face; Dela Gothic One and Shippori Mincho (OFL) are
+Latin-and-kana subsets (`*-subset.ttf`, made with fonttools) for the logo-style lettering, the ゴゴゴ and
+Stand-cry lettering and the Stand card brackets.
+
+| File | Source |
+| --- | --- |
+| `jojo-sc-hero.jpg`, `jojo-sc-title.jpg` | Stardust Crusaders opening: the crusaders in the desert, and the Stand Proud title card. [jojo.fandom.com](https://jojo.fandom.com/) |
+| `jojo-diu-hero.jpg`, `jojo-diu-title.jpg` | Diamond is Unbreakable key visual and banner art. [kitsu.app](https://kitsu.app/anime/jojo-no-kimyou-na-bouken-diamond-wa-kudakenai) |
+| `jojo-gw-hero.jpg` | Golden Wind key visual (AniList banner). [anilist.co](https://anilist.co/anime/102883) |
+| `jojo-sc-mark.png`, `jojo-diu-mark.png`, `jojo-gw-mark.png` | Star Platinum avatar, Crazy Diamond anime art, Giorno's gold ladybug brooch. [jojo.fandom.com](https://jojo.fandom.com/) |
+| `jojo-sc-card.jpg`, `jojo-diu-card.jpg`, `jojo-gw-card.jpg` | Stand parameter eyecatch cards: Magician's Red (ep. 22), Crazy Diamond, Gold Experience. [jojo.fandom.com](https://jojo.fandom.com/wiki/Crazy_Diamond) |
+| `jojo-tbc-arrow.png` | The To Be Continued arrow, cropped from a Diamond is Unbreakable episode ending. [jojo.fandom.com](https://jojo.fandom.com/) |
+| `jojo-*-plate.jpg` | DIO's mansion, the Morioh country bridge and a Golden Wind church frame, anime stills. [jojo.fandom.com](https://jojo.fandom.com/) |
+| `jojo-*-villain.jpg` | DIO (character sheet), Kira at home (ep. 21), King Crimson (ep. 25), anime. [jojo.fandom.com](https://jojo.fandom.com/) |
+| `jojo-jotaro.jpg` and the other cast faces | Anime character sheets and episode frames, faces cropped. [jojo.fandom.com](https://jojo.fandom.com/) |

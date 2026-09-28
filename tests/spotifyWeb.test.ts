@@ -12,6 +12,7 @@ import {
   parseAlbumPage,
   parseEmbedSession,
   parsePlaylistPage,
+  parseSearchArtists,
   parseSearchTopTrack,
   routeChunkUrls
 } from '../src/main/spotifyWebCore'
@@ -96,6 +97,17 @@ describe('Spotify web payload mapping', () => {
       { item: { __typename: 'TrackResponseWrapper', data: track(7) } }
     ] } } } })
     expect(hit).toMatchObject({ name: 'Song 7', song_id: 'track7' })
+    expect(parseSearchArtists({ data: { searchV2: { topResultsV2: { itemsV2: [
+      { item: { __typename: 'TrackResponseWrapper', data: track(7) } },
+      { item: { __typename: 'ArtistResponseWrapper', data: {
+        uri: 'spotify:artist:rh', profile: { name: 'Radiohead' },
+        visuals: { avatarImage: { sources: [{ url: 'a640.jpg', width: 640 }, { url: 'a160.jpg', width: 160 }] } }
+      } } },
+      { item: { __typename: 'ArtistResponseWrapper', data: { uri: 'spotify:artist:bare', profile: { name: 'Bare' } } } }
+    ] } } } })).toEqual([
+      { id: 'rh', name: 'Radiohead', imageUrl: 'a640.jpg' },
+      { id: 'bare', name: 'Bare', imageUrl: null }
+    ])
   })
 })
 

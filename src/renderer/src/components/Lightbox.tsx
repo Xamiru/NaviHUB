@@ -3,7 +3,7 @@ import { useDialog } from '../lib/hooks'
 
 // Fullscreen image viewer for the wallpaper/fan-art grids: object-contain over
 // a near-black backdrop, ←/→ steps through the section's images (wrapping),
-// Escape / backdrop click / × closes. Deliberately chrome-light — no zoom; the
+// Escape / the mouse Back button / a click beside the image / × closes. Deliberately chrome-light — no zoom; the
 // manga reader remains the heavy-duty viewer.
 export default function Lightbox({
   images,
@@ -33,16 +33,32 @@ export default function Lightbox({
     return () => document.removeEventListener('keydown', onKey)
   }, [index, count, onIndexChange])
 
+  // Mouse Back button (button 3). Captured on window so nothing underneath
+  // treats it as history navigation while the viewer is open.
+  useEffect(() => {
+    function onDown(e: MouseEvent): void {
+      if (e.button === 3) e.preventDefault()
+    }
+    function onUp(e: MouseEvent): void {
+      if (e.button !== 3) return
+      e.preventDefault()
+      e.stopPropagation()
+      onClose()
+    }
+    window.addEventListener('mousedown', onDown, true)
+    window.addEventListener('mouseup', onUp, true)
+    return () => {
+      window.removeEventListener('mousedown', onDown, true)
+      window.removeEventListener('mouseup', onUp, true)
+    }
+  }, [onClose])
+
   const img = images[index]
   if (!img) return null
 
   return (
-    <div
-      className="theme-dark fixed inset-0 z-50 bg-black/90 flex items-center justify-center"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose()
-      }}
-    >
+    <div className="theme-dark fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
+      {/* The panel fills the backdrop, so the click-beside-the-image close lives here. */}
       <div
         ref={panelRef}
         role="dialog"
@@ -50,6 +66,9 @@ export default function Lightbox({
         aria-label={img.alt ?? 'Image viewer'}
         tabIndex={-1}
         className="relative w-full h-full flex items-center justify-center p-4 outline-none"
+        onMouseDown={(e) => {
+          if (e.button === 0 && e.target === e.currentTarget) onClose()
+        }}
       >
         <img
           src={img.url}

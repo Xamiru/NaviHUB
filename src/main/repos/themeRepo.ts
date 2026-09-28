@@ -27,6 +27,12 @@ export function list(filter: ThemeSongFilter): ThemeSongEntry[] {
     params.push(filter.songType)
   }
   if (filter.favoriteOnly) where.push('ts.favorite = 1')
+  if (filter.artistId != null) {
+    where.push(
+      'EXISTS (SELECT 1 FROM theme_artist ta3 WHERE ta3.theme_song_id = ts.id AND ta3.person_id = ?)'
+    )
+    params.push(filter.artistId)
+  }
 
   // The page's own search box: song title, performer or anime title. Wider than
   // the media filter's title-only search on purpose — on a songs page, typing a

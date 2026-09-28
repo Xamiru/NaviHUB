@@ -1,116 +1,227 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useEffect, useMemo, useRef } from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
-import CoverImage from '../components/CoverImage'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { FOOTBALL_COMPETITIONS } from '@shared/football'
-import type { FootballCompetitionKey } from '@shared/types'
+import type { FootballCompetitionKey, FootballMatchSummary } from '@shared/types'
 import {
   FootballCoverageStrip,
   FootballFlag,
   FootballMatchRow,
-  FootballSectionTitle,
-  FootballTeamMark
+  FootballPanel,
+  FootballTeamMark,
+  FootballZoneBadge,
+  footballCompetitionStyle
 } from '../components/football/FootballCommon'
 
+const DAY = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
+const SHORT = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' })
+const LEAGUES: FootballCompetitionKey[] = ['premier-league', 'la-liga', 'serie-a', 'bundesliga']
+
+function iso(date: Date): string {
+  return date.toISOString().slice(0, 10)
+}
+
+/** Monday of the week containing the date, as an ISO day. */
+function weekStartOf(day: string): string {
+  const date = new Date(`${day}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() - ((date.getUTCDay() + 6) % 7))
+  return iso(date)
+}
+
+function addDays(day: string, days: number): string {
+  const date = new Date(`${day}T00:00:00Z`)
+  date.setUTCDate(date.getUTCDate() + days)
+  return iso(date)
+}
+
+function label(day: string): string {
+  return DAY.format(new Date(`${day}T00:00:00Z`))
+}
+
 export default function FootballCurrentPage() {
-  const navigate = useNavigate()
-  const [competition, setCompetition] = usePersistedState<FootballCompetitionKey | null>('footballCurrentCompetition', 'premier-league')
-  const [dateFrom, setDateFrom] = usePersistedState('footballCurrentFrom', '')
-  const [dateTo, setDateTo] = usePersistedState('footballCurrentTo', '')
-  const [starting, setStarting] = useState(false)
-  const key = useMemo(() => qk.football.current(competition, dateFrom || null, dateTo || null), [competition, dateFrom, dateTo])
-  const { data, isLoading, isError } = useQuery({ queryKey: key, queryFn: () => api.football.current(competition, dateFrom || null, dateTo || null) })
+  const qc = useQueryClient()
+  const today = iso(new Date())
+  const [competition, setCompetition] = usePersistedState<FootballCompetitionKey | null>('footballMatchdayCompetition', null)
+  const [week, setWeek] = usePersistedState('footballMatchdayWeek', weekStartOf(today))
+  const weekEnd = addDays(week, 6)
+  const tableKey = competition ?? 'premier-league'
 
-  async function refresh() {
-    if (!competition) return
-    setStarting(true)
-    try {
-      await api.football.startSync({ kind: 'current', competitionKeys: [competition] })
-      navigate('/football/sync')
-    } finally {
-      setStarting(false)
+  const weekQuery = useQuery({
+    queryKey: qk.football.current(competition, week, weekEnd),
+    queryFn: () => api.football.current(competition, week, weekEnd)
+  })
+  const tableQuery = useQuery({
+    queryKey: qk.football.current(tableKey, null, null),
+    queryFn: () => api.football.current(tableKey, null, null)
+  })
+  const overviewQuery = useQuery({ queryKey: qk.football.overview, queryFn: () => api.football.overview() })
+  const statusQuery = useQuery({
+    queryKey: qk.football.syncStatus,
+    queryFn: () => api.football.syncStatus(),
+    refetchInterval: (query) => {
+      const state = query.state.data?.state
+      if (state && ['running', 'pausing', 'paused'].includes(state)) return 1000
+      return false
     }
-  }
+  })
+  const running = !!statusQuery.data && ['running', 'pausing', 'paused'].includes(statusQuery.data.state)
 
-  const selected = FOOTBALL_COMPETITIONS.find((item) => item.key === competition)
+  const days = useMemo(() => {
+    const byDay = new Map<string, FootballMatchSummary[]>()
+    for (const match of [...(weekQuery.data?.matches ?? [])].sort((a, b) =>
+      a.matchDate.localeCompare(b.matchDate) || a.competitionKey.localeCompare(b.competitionKey) || (a.kickoffAt ?? '').localeCompare(b.kickoffAt ?? '')
+    )) {
+      byDay.set(match.matchDate, [...(byDay.get(match.matchDate) ?? []), match])
+    }
+    return [...byDay]
+  }, [weekQuery.data])
+
+  async function update(kind: 'fixtures' | 'current') {
+    await api.football.startSync(kind === 'current' && competition ? { kind, competitionKeys: [competition] } : { kind })
+    await qc.invalidateQueries({ queryKey: qk.football.syncStatus })
+  }
+  const wasRunning = useRef(false)
+  useEffect(() => {
+    if (running) {
+      wasRunning.current = true
+      return
+    }
+    if (!wasRunning.current) return
+    wasRunning.current = false
+    void qc.invalidateQueries({ queryKey: qk.football.all })
+  }, [qc, running])
+
+  const fixtures = overviewQuery.data?.fixtures
+  const freshness = fixtures?.latestResult
+    ? `Results up to ${label(fixtures.latestResult)}, updated ${fixtures.updatedAt?.slice(0, 10)}.`
+    : 'Fixtures and results have not been downloaded yet.'
+  const table = tableQuery.data?.standings ?? []
 
   return (
-    <div className="mx-auto max-w-[1600px] p-6">
+    <div className="mx-auto max-w-[1500px] p-6">
       <PageHeader
         title="Matchday"
-        subtitle="Stored fixtures, permanent scores and season tables. Nothing refreshes until you ask."
+        subtitle={`${freshness} OpenFootball publishes results about twice a week, free and without a key; for live scores use FotMob.`}
         back={{ to: '/football', label: 'Football Almanac' }}
-        actions={<button className="btn-primary" disabled={starting || !competition} onClick={refresh}>Refresh {selected?.shortName ?? 'selected'}</button>}
+        actions={
+          <button className="btn-primary" disabled={running} onClick={() => update('fixtures')}>
+            {running ? statusQuery.data?.message ?? 'Updating' : 'Update fixtures and results'}
+          </button>
+        }
       />
 
-      <div className="mb-8 flex flex-wrap items-end gap-3 border-b border-line-subtle pb-5">
-        <label className="min-w-56 flex-1 sm:max-w-sm"><span className="label">Competition</span><select className="input" value={competition ?? ''} onChange={(event) => setCompetition(event.target.value as FootballCompetitionKey)}>{FOOTBALL_COMPETITIONS.map((item) => <option key={item.key} value={item.key}>{item.shortName}</option>)}</select></label>
-        <label><span className="label">From</span><input className="input" type="date" value={dateFrom} onChange={(event) => setDateFrom(event.target.value)} /></label>
-        <label><span className="label">To</span><input className="input" type="date" value={dateTo} onChange={(event) => setDateTo(event.target.value)} /></label>
-        {(dateFrom || dateTo) && <button className="btn-ghost" onClick={() => { setDateFrom(''); setDateTo('') }}>Clear dates</button>}
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Competition">
+          <button className={`pill ${competition == null ? 'pill-active' : ''}`} onClick={() => setCompetition(null)}>All</button>
+          {FOOTBALL_COMPETITIONS.map((item) => (
+            <button key={item.key} className={`pill ${competition === item.key ? 'pill-active' : ''}`} onClick={() => setCompetition(item.key)}>
+              {item.shortName ?? item.name}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="btn-ghost px-2" aria-label="Previous week" onClick={() => setWeek(addDays(week, -7))}>‹</button>
+          <span className="min-w-36 text-center text-sm tabular-nums text-ink">{SHORT.format(new Date(`${week}T00:00:00Z`))} - {SHORT.format(new Date(`${weekEnd}T00:00:00Z`))}</span>
+          <button className="btn-ghost px-2" aria-label="Next week" onClick={() => setWeek(addDays(week, 7))}>›</button>
+          {week !== weekStartOf(today) && <button className="btn-ghost" onClick={() => setWeek(weekStartOf(today))}>This week</button>}
+        </div>
       </div>
 
-      {isError ? <PageStatus>Could not load the stored matchday.</PageStatus> : isLoading || !data ? <PageStatus>Reading the stored matchday...</PageStatus> : (
-        <>
-          {data.entitlement && !data.entitlement.entitled && (
-            <div className="mb-7 flex flex-wrap items-center justify-between gap-3 border-y border-signal-anomaly/35 py-4">
-              <p className="max-w-4xl text-sm text-ink-secondary">Current provider coverage is unavailable for this edition. Stored and OpenFootball results remain visible.</p>
-              <button className="text-xs text-signal-anomaly" onClick={() => document.getElementById('football-data-status')?.scrollIntoView({ behavior: 'smooth' })}>View data status</button>
+      <div className="grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <section className="min-w-0">
+          {weekQuery.isError ? <PageStatus>Could not load this week's matches.</PageStatus> : weekQuery.isLoading ? <PageStatus>Reading the week...</PageStatus> : days.length ? (
+            <div className="space-y-7">
+              {days.map(([day, matches]) => (
+                <div key={day}>
+                  <h2 className="mb-2 flex items-center gap-3 text-sm font-semibold text-ink">
+                    {label(day)}
+                    {day === today && <span className="rounded bg-signal-live px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-ink-inverse">Today</span>}
+                    <span className="text-xs font-normal text-ink-muted">{matches.filter((match) => match.homeScore != null).length} of {matches.length} played</span>
+                  </h2>
+                  <div className="card px-2">
+                    {matches.map((match) => <FootballMatchRow key={match.id} match={match} />)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="card p-6">
+              <p className="text-sm text-ink-secondary">No matches are stored for this week{competition ? ' in this competition' : ''}.</p>
+              <p className="mt-1 text-xs text-ink-muted">{fixtures?.updatedAt ? 'Try another week, or update fixtures and results.' : 'Update fixtures and results to download the current season.'}</p>
             </div>
           )}
+        </section>
 
-          <div className="grid items-start gap-10 xl:grid-cols-[minmax(0,1.35fr)_360px]">
-            <section>
-              <FootballSectionTitle title="Fixtures and results" detail={`${data.matches.length} stored`} />
-              {data.matches.length ? data.matches.map((match) => <FootballMatchRow key={match.id} match={match} />) : <p className="border-y border-line-subtle py-7 text-sm text-ink-muted">No stored matches match these dates.</p>}
-            </section>
-            <aside>
-              <FootballSectionTitle title="Top scorers" detail="Top 20" />
-              {data.topScorers.length ? (
-                <ol className="divide-y divide-line-subtle">
-                  {data.topScorers.map((entry) => (
-                    <li key={entry.person.id} className="grid grid-cols-[32px_42px_minmax(0,1fr)_auto] items-center gap-2 py-3 text-sm">
-                      <span className="text-xs tabular-nums text-ink-muted">{entry.rank}</span>
-                      <CoverImage path={entry.person.imagePath} alt={entry.person.name} className="h-10 w-10" rounded="rounded-full" thumbWidth={80} />
-                      <span className="min-w-0"><span className="block truncate font-medium text-ink">{entry.person.name}</span><span className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-ink-muted">{entry.team && <FootballTeamMark team={entry.team} size="sm" />}{entry.team?.name ?? 'Team not supplied'}</span></span>
-                      <span className="text-lg font-semibold tabular-nums text-ink">{entry.goals}</span>
-                    </li>
-                  ))}
-                </ol>
-              ) : <p className="border-y border-line-subtle py-5 text-sm text-ink-muted">Scorer data not supplied.</p>}
-            </aside>
-          </div>
-
-          <section className="mt-12">
-            <FootballSectionTitle title="Season table" detail={data.standings.some((row) => row.rankOfficial) ? 'Official order' : 'Results ledger'} />
-            {data.standings.length ? (
-              <div className="overflow-x-auto border-y border-line-subtle">
-                <table className="w-full text-sm">
-                  <thead className="text-left text-xs text-ink-muted"><tr><th className="py-3">Pos</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GF</th><th>GA</th><th>GD</th><th>Pts</th></tr></thead>
-                  <tbody className="divide-y divide-line-subtle">{data.standings.map((row) => <tr key={row.team.id}><td className="py-3 tabular-nums text-ink-muted">{row.rankOfficial ? row.rank : '-'}</td><td><span className="flex items-center gap-2 font-medium text-ink"><FootballTeamMark team={row.team} size="sm" />{row.team.name}</span></td>{[row.played,row.won,row.drawn,row.lost,row.goalsFor,row.goalsAgainst,row.goalDifference,row.points].map((value,index) => <td key={index} className="tabular-nums text-ink-secondary">{value}</td>)}</tr>)}</tbody>
+        <aside className="space-y-6">
+          <FootballPanel title={`${FOOTBALL_COMPETITIONS.find((item) => item.key === tableKey)?.shortName ?? ''} table`}>
+            {table.length ? (
+              <>
+                <table className="w-full text-sm" style={footballCompetitionStyle(tableKey)}>
+                  <thead>
+                    <tr className="text-left text-[10px] font-semibold uppercase tracking-[0.14em] text-ink-muted">
+                      <th className="w-8 py-1.5">#</th><th>Club</th><th className="w-8 text-right">P</th><th className="w-10 text-right">GD</th><th className="w-10 text-right">Pts</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line-subtle">
+                    {table.map((row) => (
+                      <tr key={row.team.id}>
+                        <td className="py-1.5"><FootballZoneBadge position={row.rankOfficial ? row.rank : row.position} /></td>
+                        <td className="max-w-0"><Link to={`/football/team/${row.team.id}`} className="flex min-w-0 items-center gap-2 text-ink hover:text-signal-link"><FootballTeamMark team={row.team} size="xs" /><span className="truncate">{row.team.name}</span></Link></td>
+                        <td className="text-right tabular-nums text-ink-muted">{row.played}</td>
+                        <td className="text-right tabular-nums text-ink-secondary">{row.goalDifference > 0 ? '+' : ''}{row.goalDifference}</td>
+                        <td className="text-right font-semibold tabular-nums text-ink">{row.points}</td>
+                      </tr>
+                    ))}
+                  </tbody>
                 </table>
-              </div>
-            ) : <p className="border-y border-line-subtle py-5 text-sm text-ink-muted">A table is not supplied for this competition or season.</p>}
-          </section>
+                {tableQuery.data?.matches[0] && (
+                  <Link to={`/football/season/${tableQuery.data.matches[0].seasonId}`} className="mt-3 block text-xs text-signal-link hover:underline">Full season, results and form ›</Link>
+                )}
+              </>
+            ) : (
+              <p className="text-sm text-ink-muted">{LEAGUES.includes(tableKey) ? 'No table yet for this season.' : 'This competition has no league table.'}</p>
+            )}
+          </FootballPanel>
 
-          <details id="football-data-status" className="mt-10 border-y border-line-subtle py-4">
-            <summary className="cursor-pointer text-sm font-medium text-ink">Data status and refresh budget</summary>
-            <div className="mt-5 grid gap-6 md:grid-cols-[repeat(4,minmax(0,1fr))]">
-              <div><p className="text-xs text-ink-muted">Competition</p><p className="mt-1 flex items-center gap-2 text-sm font-medium text-ink">{competition && <FootballFlag competitionKey={competition} />}{selected?.shortName}</p></div>
-              <div><p className="text-xs text-ink-muted">Last refresh</p><p className="mt-1 text-sm font-medium text-ink">{data.lastRefreshAt?.slice(0,16).replace('T',' ') ?? 'Never'}</p></div>
-              <div><p className="text-xs text-ink-muted">Daily quota</p><p className="mt-1 text-sm font-medium tabular-nums text-ink">{data.quota.remaining} of {data.quota.limit}</p></div>
-              <div><p className="text-xs text-ink-muted">Waiting</p><p className="mt-1 text-sm font-medium tabular-nums text-ink">{data.quota.backlog} requests</p></div>
-            </div>
-            {data.entitlement?.message && <p className="mt-5 max-w-4xl text-sm leading-relaxed text-ink-muted">{data.entitlement.message}</p>}
-            <div className="mt-5"><FootballCoverageStrip coverage={data.coverage} /></div>
+          {(tableQuery.data?.topScorers.length ?? 0) > 0 && (
+            <FootballPanel title="Top scorers">
+              <ol className="divide-y divide-line-subtle text-sm">
+                {tableQuery.data!.topScorers.slice(0, 10).map((entry) => (
+                  <li key={entry.person.id} className="flex items-center justify-between gap-3 py-1.5">
+                    <Link to={`/football/person/${entry.person.id}`} className="flex min-w-0 items-center gap-2 text-ink hover:text-signal-link">
+                      {entry.team && <FootballTeamMark team={entry.team} size="xs" />}
+                      <span className="truncate">{entry.person.name}</span>
+                    </Link>
+                    <span className="font-semibold tabular-nums text-ink">{entry.goals}</span>
+                  </li>
+                ))}
+              </ol>
+            </FootballPanel>
+          )}
+
+          <details className="border-y border-line-subtle py-3 text-sm">
+            <summary className="cursor-pointer text-ink-secondary">Same-day scores with API-Football (optional)</summary>
+            <p className="mt-3 text-xs leading-relaxed text-ink-muted">
+              With a free API-Football key in Settings, a refresh adds same-day scores, lineups and top scorers within its daily limit
+              ({tableQuery.data?.quota.remaining ?? 0} of {tableQuery.data?.quota.limit ?? 0} requests left today).
+            </p>
+            <button className="btn-ghost mt-3" disabled={running} onClick={() => update('current')}>
+              Refresh {competition ? FOOTBALL_COMPETITIONS.find((item) => item.key === competition)?.shortName : 'all competitions'} from API-Football
+            </button>
+            {tableQuery.data?.entitlement?.message && <p className="mt-3 text-xs text-ink-muted">{tableQuery.data.entitlement.message}</p>}
+            <div className="mt-3"><FootballCoverageStrip coverage={tableQuery.data?.coverage ?? []} /></div>
           </details>
-        </>
-      )}
+          <p className="flex flex-wrap gap-2 text-xs text-ink-muted">
+            {LEAGUES.map((key) => <FootballFlag key={key} competitionKey={key} />)}
+            <span>current season from OpenFootball</span>
+          </p>
+        </aside>
+      </div>
     </div>
   )
 }

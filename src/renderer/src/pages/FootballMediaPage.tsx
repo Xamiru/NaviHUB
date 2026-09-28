@@ -1,16 +1,51 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import { Group, Pill } from '../components/PillGroup'
+import StatTile from '../components/StatTile'
+import Tabs, { TabPanel } from '../components/Tabs'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useDebouncedValue } from '../lib/hooks'
 import { confirmDialog } from '../lib/confirm'
 import { FOOTBALL_MEDIA_KINDS } from '@shared/football'
-import type { FootballEntityKind, FootballMediaKind } from '@shared/types'
+import type { FootballEntityKind, FootballMatchSummary, FootballMediaKind } from '@shared/types'
+import {
+  FootballFlag,
+  FootballStars,
+  FootballTeamMark,
+  footballCompetitionStyle
+} from '../components/football/FootballCommon'
+
+const MONTH_FORMAT = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numeric' })
+
+function DiaryRow({ match }: { match: FootballMatchSummary }) {
+  const watched = match.watchedAt ?? match.matchDate
+  return (
+    <Link
+      to={`/football/match/${match.id}`}
+      className="group grid grid-cols-[48px_4px_minmax(0,1fr)_auto] items-center gap-4 border-b border-line-subtle py-3 hover:bg-surface-raised/40"
+      style={footballCompetitionStyle(match.competitionKey)}
+    >
+      <span className="text-center text-2xl font-semibold tabular-nums text-ink-secondary">{watched.slice(8, 10)}</span>
+      <span className="h-10 rounded-full bg-[rgb(var(--football-c))]" aria-hidden="true" />
+      <span className="min-w-0">
+        <span className="flex min-w-0 items-center gap-2 text-sm font-medium text-ink group-hover:text-signal-link">
+          <FootballTeamMark team={match.home} size="xs" />
+          <span className="truncate">{match.home.name}</span>
+          <span className="shrink-0 rounded bg-surface-raised px-1.5 tabular-nums">{match.homeScore ?? '-'}-{match.awayScore ?? '-'}</span>
+          <span className="truncate">{match.away.name}</span>
+          <FootballTeamMark team={match.away} size="xs" />
+        </span>
+        <span className="mt-1 flex items-center gap-2 text-xs text-ink-muted"><FootballFlag competitionKey={match.competitionKey} />{match.seasonLabel}{match.stageName ? ` / ${match.stageName}` : ''} / played {match.matchDate}</span>
+      </span>
+      <FootballStars rating={match.rating} className="text-sm" />
+    </Link>
+  )
+}
 
 interface LinkDraft {
   entityKind: FootballEntityKind
@@ -21,7 +56,24 @@ interface LinkDraft {
 export default function FootballMediaPage() {
   const [params] = useSearchParams()
   const qc = useQueryClient()
+  const [tab, setTab] = usePersistedState<'diary' | 'media'>('footballArchiveTab', params.has('match') ? 'media' : 'diary')
   const [showAttach, setShowAttach] = useState(() => params.has('match'))
+  const overviewQuery = useQuery({ queryKey: qk.football.overview, queryFn: () => api.football.overview() })
+  const diaryQuery = useInfiniteQuery({
+    queryKey: qk.football.matches({ watchedOnly: true }),
+    queryFn: ({ pageParam }) => api.football.matches({ watchedOnly: true, limit: 100, offset: pageParam }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => lastPage.length === 100 ? pages.length * 100 : undefined
+  })
+  const diary = diaryQuery.data?.pages.flat() ?? []
+  const diaryMonths = useMemo(() => {
+    const months = new Map<string, FootballMatchSummary[]>()
+    for (const match of diary) {
+      const month = (match.watchedAt ?? match.matchDate).slice(0, 7)
+      months.set(month, [...(months.get(month) ?? []), match])
+    }
+    return [...months]
+  }, [diary])
   const [filterKind, setFilterKind] = usePersistedState<FootballMediaKind | null>('footballMediaKind', null)
   const [filterSearch, setFilterSearch] = usePersistedState('footballMediaSearch', '')
   const filter = useMemo(() => ({ kind: filterKind, search: filterSearch || null }), [filterKind, filterSearch])
@@ -54,6 +106,7 @@ export default function FootballMediaPage() {
     if (!rawMatch || !Number.isInteger(matchId) || matchId < 1 || consumedMatch.current === rawMatch) return
     consumedMatch.current = rawMatch
     setShowAttach(true)
+    setTab('media')
     api.football.match(matchId).then((match) => {
       if (!match) return
       setLinks([{ entityKind: 'match', entityId: match.id, label: `${match.home.name} vs ${match.away.name}` }])
@@ -110,14 +163,62 @@ export default function FootballMediaPage() {
     qc.invalidateQueries({ queryKey: qk.football.all })
   }
 
+  const journal = overviewQuery.data?.journal
   return (
     <div className="mx-auto max-w-[1500px] p-6">
       <PageHeader
-        title="My football archive"
-        subtitle="Clips, highlights, full matches, interviews and documentaries collected around the history record. Files stay where you put them."
+        title="My archive"
+        subtitle="Every match you have watched, rated and noted, plus your clips, highlights and full matches. Files stay where you put them."
         back={{ to: '/football', label: 'Football Archive' }}
-        actions={<button className={showAttach ? 'btn-ghost' : 'btn-primary'} onClick={() => setShowAttach((value) => !value)}>{showAttach ? 'Close form' : 'Add media'}</button>}
+        actions={<button className={showAttach ? 'btn-ghost' : 'btn-primary'} onClick={() => { setTab('media'); setShowAttach((value) => !value) }}>{showAttach ? 'Close form' : 'Add media'}</button>}
       />
+
+      {journal && (
+        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatTile label="Matches logged" value={journal.logged} accent />
+          <StatTile label={`In ${new Date().getFullYear()}`} value={journal.thisYear} />
+          <StatTile label="Average rating" value={journal.averageRating?.toFixed(1) ?? '-'} />
+          <div className="card border-t border-t-line-strong p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-ink-muted">Most watched</p>
+            {journal.mostWatched
+              ? <Link to={`/football/team/${journal.mostWatched.id}`} className="mt-2 flex items-center gap-2 text-lg font-semibold text-ink hover:text-signal-link"><FootballTeamMark team={journal.mostWatched} size="xs" /><span className="truncate">{journal.mostWatched.name}</span></Link>
+              : <p className="mt-2 text-lg font-semibold text-ink-muted">-</p>}
+          </div>
+        </div>
+      )}
+
+      <Tabs
+        id="football-archive"
+        label="Archive view"
+        className="mb-5"
+        value={tab}
+        onChange={setTab}
+        tabs={[
+          { key: 'diary', label: 'Diary', count: journal?.logged },
+          { key: 'media', label: 'Media' }
+        ]}
+      />
+      <TabPanel tabsId="football-archive" value={tab}>
+      {tab === 'diary' && (
+        <section>
+          {diaryQuery.isError && <PageStatus>Could not load your match diary.</PageStatus>}
+          {diaryMonths.map(([month, matches]) => (
+            <div key={month} className="mb-6">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-ink-muted">{MONTH_FORMAT.format(new Date(`${month}-01T12:00:00`))}</p>
+              {matches.map((match) => <DiaryRow key={match.id} match={match} />)}
+            </div>
+          ))}
+          {!diaryQuery.isLoading && !diaryQuery.isError && !diary.length && (
+            <p className="border-y border-line-subtle py-6 text-sm text-ink-muted">Nothing logged yet. Open any match and tick Watched to start your diary.</p>
+          )}
+          {diaryQuery.hasNextPage && (
+            <button className="btn-ghost mt-2" disabled={diaryQuery.isFetchingNextPage} onClick={() => diaryQuery.fetchNextPage()}>
+              {diaryQuery.isFetchingNextPage ? 'Loading more...' : 'Load earlier entries'}
+            </button>
+          )}
+        </section>
+      )}
+      {tab === 'media' && <>
 
       {mediaQuery.isError && <PageStatus>Could not load saved Football media.</PageStatus>}
 
@@ -164,6 +265,8 @@ export default function FootballMediaPage() {
           {mediaQuery.isFetchingNextPage ? 'Loading more...' : 'Load more media'}
         </button>
       )}
+      </>}
+      </TabPanel>
     </div>
   )
 }
