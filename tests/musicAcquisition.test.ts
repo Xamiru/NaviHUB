@@ -3,6 +3,7 @@ import {
   expectedRecording,
   rankYtmSources,
   safePathComponent,
+  sourceSearchLocales,
   sourceSearchQueries,
   stagedOutputTemplate,
   taggedInfoJson,
@@ -60,6 +61,36 @@ describe('YouTube Music source choice', () => {
     expect(ranked.at(-1)?.reasons).toContain('Recording variant differs')
   })
 
+  it('keeps a Japanese credit separator out of the artist list', () => {
+    const row = (runs: string[]) => ({ contents: { tabbedSearchResultsRenderer: { tabs: [{ tabRenderer: { content: { sectionListRenderer: { contents: [{ musicShelfRenderer: { contents: [{
+      musicResponsiveListItemRenderer: { playlistItemData: { videoId: 'aaaaaaaaaaa' }, flexColumns: [
+        { musicResponsiveListItemFlexColumnRenderer: { text: { runs: [{ text: 'veil' }] } } },
+        { musicResponsiveListItemFlexColumnRenderer: { text: { runs: runs.map((text) => ({ text })) } } }
+      ] }
+    }] } }] } } } }] } } })
+    expect(parseYtmSearch(row(['フレデリック', '、', '須田景凪', ' • ', '3:28']))[0].artists).toEqual(['フレデリック', '須田景凪'])
+  })
+
+  it('combines one video seen from several catalogue languages', () => {
+    const expected = { title: 'We love sweets', artist: '花冷え。', duration: 160, albumTitle: "Girl's Reform Manifest" }
+    const english = song({ videoId: 'sweets00001', title: '我甘党 - We love sweets', artists: ['HANABIE.'], duration: 160 })
+    const japanese = song({ videoId: 'sweets00001', title: '我甘党', artists: ['花冷え。'], duration: 160 })
+    expect(rankYtmSources(expected, [english]).map((row) => row.strong)).toEqual([false])
+    const ranked = rankYtmSources(expected, [english, japanese])
+    expect(ranked).toHaveLength(1)
+    expect(ranked[0].strong).toBe(true)
+    expect(ranked[0].source.videoId).toBe('sweets00001')
+  })
+
+  it('searches the native catalogues only for songs written in their scripts', () => {
+    const locales = (title: string, artist: string) => sourceSearchLocales({ title, artist, duration: null, albumTitle: '' })
+    expect(locales('Blinding Lights', 'The Weeknd')).toEqual(['en'])
+    expect(locales('ひとりぼっち東京', '結束バンド')).toEqual(['en', 'ja'])
+    expect(locales('春雷', 'Kenshi Yonezu')).toEqual(['en', 'ja', 'zh'])
+    expect(locales('봄날', 'BTS')).toEqual(['en', 'ko'])
+    expect(locales('Группа крови', 'Кино')).toEqual(['en', 'ru'])
+  })
+
   it('accepts the primary artist inside a joined collaboration credit', () => {
     const ranked = rankYtmSources({ title: 'Under Pressure', artist: 'Queen', duration: 248, albumTitle: 'Hot Space' },
       [song({ title: 'Under Pressure', artists: ['Queen', 'David Bowie'], duration: 248 })])
@@ -92,7 +123,8 @@ describe('native acquisition output', () => {
       album_artist: 'Billy Idol', track_number: 3, disc_number: 1, release_year: 1983, release_date: '19831110',
       description: null, thumbnails: [{ url: raw.cover_url }], upload_date: '19831110', timestamp: null, categories: null
     })
-    expect(taggedInfoJson({}, { ...raw, date: '1983' }).upload_date).toBe('1983')
+    // yt-dlp's date filter throws on a non-YYYYMMDD upload_date ("time data '1983' does not match format").
+    expect(taggedInfoJson({}, { ...raw, date: '1983' })).toMatchObject({ upload_date: null, meta_date: '1983' })
   })
 
   it('selects the observed codec exactly so audio is copied, not transcoded', () => {

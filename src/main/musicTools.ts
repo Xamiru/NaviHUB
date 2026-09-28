@@ -37,17 +37,24 @@ export function musicYtDlpArgs(standalone = true): string[] {
   ]
 }
 
+const FAILURE_REASONS: [RegExp, string][] = [
+  [/confirm your age|age.restricted|inappropriate for some users/i, 'The video is age-restricted; YouTube needs signed-in cookies in Settings'],
+  [/sign in|captcha|bot verification|login_required|cookies.*(?:expired|invalid|rotated)/i, 'Authentication or bot verification is required; test fresh cookies in Settings'],
+  [/members[- ]only|join this channel/i, 'The video is for channel members only; choose another source'],
+  [/requested format|no suitable format|format.*not available/i, 'The requested audio format is unavailable'],
+  [/no compatible native audio/i, 'The source has no compatible native audio; choose another source'],
+  [/HTTP Error 429|too many requests/i, 'YouTube is limiting requests; try again later'],
+  [/HTTP Error 403|forbidden/i, 'YouTube refused the download; update yt-dlp or try again later'],
+  [/been removed|account.*terminated|no longer available|copyright (?:claim|grounds)/i, 'The video was removed; choose another source'],
+  [/private video|video.*private|unavailable|not available|geo.restrict/i, 'The selected source is unavailable'],
+  [/timed out|timeout/i, 'The request timed out']
+]
+
 export function musicFailure(stage: string, tool: string, raw: string): string {
-  const detail = redact(raw).replace(/https?:\/\/[^\s"']+/g, (url) => {
+  const detail = redact(raw).replace(new RegExp(`^${stage}:\\s*`), '').replace(/https?:\/\/[^\s"']+/g, (url) => {
     try { const parsed = new URL(url); return `${parsed.origin}${parsed.pathname}` } catch { return '[URL]' }
   }).slice(-1200)
-  const reason = /sign in|captcha|bot verification|login_required|cookies.*(?:expired|invalid|rotated)/i.test(detail)
-    ? 'Authentication or bot verification is required; test fresh cookies in Settings'
-    : /requested format|no suitable format|format.*not available/i.test(detail)
-      ? 'The requested audio format is unavailable'
-      : /private video|video.*private|unavailable|not available|geo.restrict/i.test(detail)
-        ? 'The selected source is unavailable'
-        : /timed out|timeout/i.test(detail) ? 'The request timed out' : 'Operation failed'
+  const reason = FAILURE_REASONS.find(([pattern]) => pattern.test(detail))?.[1] ?? 'Operation failed'
   return `${stage} (${tool}): ${reason}. ${detail}`
 }
 

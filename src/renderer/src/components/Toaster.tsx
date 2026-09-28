@@ -258,10 +258,12 @@ function ThemedToastBody({
       </span>
     )
   }
+  // Twin Peaks: warnings come from the Log Lady and her log.
   return (
     <span className="peaks-toast flex items-center gap-3">
-      <img src={FX_ART.peaksRedRoom} alt="" />
+      <img src={kind === 'warning' ? FX_ART.peaksLogLady : FX_ART.peaksRedRoom} alt="" />
       <span className="peaks-toast-text min-w-0">
+        {kind === 'warning' && <span className="peaks-log-line block">My log has something to tell you.</span>}
         <ReversedText text={message} />
       </span>
     </span>

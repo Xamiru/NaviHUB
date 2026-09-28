@@ -13,4 +13,16 @@ describe('music tool policy', () => {
     expect(musicFailure('Extraction', 'embedded yt-dlp', 'AudioProviderError: Requested format is not available')).toContain('requested audio format is unavailable')
     expect(musicFailure('Transfer', 'yt-dlp', 'https://a.googlevideo.com/videoplayback?sig=never-expose-this')).not.toContain('never-expose-this')
   })
+  it('names the failures a different source or a later retry can fix', () => {
+    const reason = (raw: string) => musicFailure('Transfer', 'yt-dlp', raw).split('. ')[0]
+    expect(reason('ERROR: [youtube] abc: Sign in to confirm your age. This video may be inappropriate for some users.')).toContain('age-restricted')
+    expect(reason("ERROR: [youtube] abc: Sign in to confirm you're not a bot")).toContain('bot verification')
+    expect(reason('ERROR: [youtube] abc: Join this channel to get access to members-only content like this video')).toContain('members only')
+    expect(reason('ERROR: unable to download video data: HTTP Error 403: Forbidden')).toContain('refused the download')
+    expect(reason('ERROR: HTTP Error 429: Too Many Requests')).toContain('limiting requests')
+    expect(reason('ERROR: [youtube] abc: Video unavailable. This video has been removed by the uploader')).toContain('was removed')
+    expect(reason('ERROR: [youtube] abc: Private video')).toContain('unavailable')
+    expect(musicFailure('Extraction', 'standalone yt-dlp', 'Extraction: no compatible native audio is available'))
+      .toBe('Extraction (standalone yt-dlp): The source has no compatible native audio; choose another source. no compatible native audio is available')
+  })
 })

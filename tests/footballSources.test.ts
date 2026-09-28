@@ -284,10 +284,11 @@ describe('Football source adapters', () => {
   })
 
   it('extracts explicit Wikimedia winners and runners-up from manifested tables', () => {
-    const text = `{| class="wikitable"\n! Season !! Winners !! Runners-up\n|-\n| 2022–23 || [[Manchester City F.C.|Manchester City]] || [[Arsenal F.C.|Arsenal]]\n|-\n| 2023–24 || [[Manchester City F.C.|Manchester City]] || [[Arsenal F.C.|Arsenal]]\n|}\n\nA long narrative paragraph about the competition history that is deliberately plain text after extraction.`
+    const text = `{| class="wikitable"\n! Season !! Winners !! Runners-up\n|-\n| 2022–23 || [[Manchester City F.C.|Manchester City]] || [[Arsenal F.C.|Arsenal]]\n|-\n| 2023–24 || [[Manchester City F.C.|Manchester City]] || [[Arsenal F.C.|Arsenal]]\n|-\n| 2024–25 || [[Liverpool F.C.|Liverpool]] || —\n|}\n\nA long narrative paragraph about the competition history that is deliberately plain text after extraction.`
     expect(parseWikimediaHonours(text, ['winners'], ['runners-up'])).toEqual([
       { seasonKey: '2022/23', seasonLabel: '2022/23', winners: ['Manchester City'], runnersUp: ['Arsenal'] },
-      { seasonKey: '2023/24', seasonLabel: '2023/24', winners: ['Manchester City'], runnersUp: ['Arsenal'] }
+      { seasonKey: '2023/24', seasonLabel: '2023/24', winners: ['Manchester City'], runnersUp: ['Arsenal'] },
+      { seasonKey: '2024/25', seasonLabel: '2024/25', winners: ['Liverpool'], runnersUp: [] }
     ])
     expect(wikimediaPlainText(text)).not.toContain('{|')
   })

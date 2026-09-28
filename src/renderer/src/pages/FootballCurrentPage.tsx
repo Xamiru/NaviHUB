@@ -70,6 +70,21 @@ export default function FootballCurrentPage() {
     }
   })
   const running = !!statusQuery.data && ['running', 'pausing', 'paused'].includes(statusQuery.data.state)
+  const emptyWeek = weekQuery.isSuccess && weekQuery.data.matches.length === 0
+  const afterFilter = { competitionKey: competition, dateFrom: addDays(weekEnd, 1), dateTo: addDays(weekEnd, 60), limit: 1, oldestFirst: true }
+  const beforeFilter = { competitionKey: competition, dateFrom: addDays(week, -60), dateTo: addDays(week, -1), limit: 1 }
+  const afterQuery = useQuery({
+    queryKey: qk.football.matches(afterFilter),
+    queryFn: () => api.football.matches(afterFilter),
+    enabled: emptyWeek
+  })
+  const beforeQuery = useQuery({
+    queryKey: qk.football.matches(beforeFilter),
+    queryFn: () => api.football.matches(beforeFilter),
+    enabled: emptyWeek
+  })
+  const nextDay = afterQuery.data?.[0]?.matchDate
+  const previousDay = beforeQuery.data?.[0]?.matchDate
 
   const days = useMemo(() => {
     const byDay = new Map<string, FootballMatchSummary[]>()
@@ -152,7 +167,13 @@ export default function FootballCurrentPage() {
           ) : (
             <div className="card p-6">
               <p className="text-sm text-ink-secondary">No matches are stored for this week{competition ? ' in this competition' : ''}.</p>
-              <p className="mt-1 text-xs text-ink-muted">{fixtures?.updatedAt ? 'Try another week, or update fixtures and results.' : 'Update fixtures and results to download the current season.'}</p>
+              {!fixtures?.updatedAt && <p className="mt-1 text-xs text-ink-muted">Update fixtures and results to download the current season.</p>}
+              {(previousDay || nextDay) && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {previousDay && <button className="btn-ghost" onClick={() => setWeek(weekStartOf(previousDay))}>Previous matchday: {label(previousDay)}</button>}
+                  {nextDay && <button className="btn-ghost" onClick={() => setWeek(weekStartOf(nextDay))}>Next matchday: {label(nextDay)}</button>}
+                </div>
+              )}
             </div>
           )}
         </section>

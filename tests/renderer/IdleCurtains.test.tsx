@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { IDLE_CURTAIN_MS, IdleCurtains, IdleIslands, IdleTbc } from '@/components/theme/ThemeFx'
+import { IDLE_CURTAIN_MS, IdleArt, IdleCurtains, IdleIslands, IdleTbc } from '@/components/theme/ThemeFx'
 
 vi.mock('@/lib/api', () => ({ api: {} }))
 
@@ -50,5 +50,19 @@ describe('One Piece and JoJo idle covers', () => {
     expect(screen.getByTestId('idle-tbc')).toHaveClass('idle-tbc-closed')
     fireEvent.pointerDown(window)
     expect(screen.getByTestId('idle-tbc')).not.toHaveClass('idle-tbc-closed')
+  })
+})
+
+describe('Round-2 idle stills', () => {
+  it('cover the app with the source still after the idle period and lift on input', () => {
+    vi.useFakeTimers()
+    render(<IdleArt className="idle-art-mgs" src="mgs-title.jpg" />)
+    const art = screen.getByTestId('idle-art')
+    expect(art).toHaveAttribute('aria-hidden', 'true')
+    expect(art).not.toHaveClass('idle-art-closed')
+    act(() => vi.advanceTimersByTime(IDLE_CURTAIN_MS))
+    expect(art).toHaveClass('idle-art-closed')
+    fireEvent.keyDown(window, { key: 'a' })
+    expect(art).not.toHaveClass('idle-art-closed')
   })
 })

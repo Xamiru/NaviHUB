@@ -59,8 +59,6 @@ below; nothing was drawn or generated. Fan-made items are marked.
 | `lain-navi.jpg` | NAVI "Knowledge NAVIgator" screen, anime screenshot, cropped. [lain.fandom.com](https://lain.fandom.com/wiki/File:NAVI.jpg) |
 | `lain-portrait.png` | Lain cutout of a promotional cel. [lain.fandom.com](https://lain.fandom.com/wiki/File:Lain-transparent.png) |
 | `lain-signal-lost.jpg` | Episode 13 screenshot. [lain.fandom.com](https://lain.fandom.com/wiki/File:Serial_Experiments_Lain_13_ENDEnglish_dubbed_15-6_screenshot.png) |
-| `lain-logo.png` | Series logo. [lain.fandom.com](https://lain.fandom.com/wiki/File:SerialExperimentsLain-Logo.png) |
-| `lain-site.jpg` | PS1 game "Site" profile screen. [lain.fandom.com](https://lain.fandom.com/wiki/File:Touko%27s_NAVI_Screen.png) |
 | `mgs-codec-naomi.png`, `mgs-codec-snake.png`, `mgs-codec-freq.png` | MGS1 codec screenshot, cropped. [metalgear.fandom.com](https://metalgear.fandom.com/wiki/Codec) |
 | `mgs-codec-meiling.png` | MGS1 unused Mei Ling codec screen, cropped and scaled. [metalgear.fandom.com](https://metalgear.fandom.com/wiki/File:MGS1_MeiLing_Unused_Codec.png) |
 | `mgs-gameover.jpg` | MGS1 GAME OVER card, fan-made recreation. [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=1569904154) |
@@ -76,6 +74,19 @@ below; nothing was drawn or generated. Fan-made items are marked.
 | `peaks-cursor-owl.png` | Great horned owl photo, CC BY-SA 3.0, background removed. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Great_Horned_Owl.jpg) |
 | `peaks-red-room.jpg`, `peaks-curtain.jpg` (launch and idle curtains), `peaks-white-horse.jpg`, `peaks-wren.jpg`, `peaks-falls.jpg`, `peaks-mist.jpg`, `peaks-double-r.jpg`, `peaks-diane.jpg` | Twin Peaks stills and promotional images. [TMDB](https://www.themoviedb.org/tv/1920-twin-peaks/images/backdrops) |
 | `peaks-logo.png` | Twin Peaks (1990) title lettering, public-domain recreation. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:Twin_Peaks_(1990)_logo.png) |
+| `lain-wires-dusk.jpg` | Utility pole and wires against a dusk sky, Layer 01 cold-open frame. [Internet Archive](https://archive.org/details/serial-experiments-lain-english) |
+| `lain-present-day.jpg`, `lain-present-time.jpg` | The PRESENT DAY and PRESENT TIME cold-open cards, Layer 01 frames. [Internet Archive](https://archive.org/details/serial-experiments-lain-english) |
+| `lain-bear.jpg` | Lain in the bear-hood pajamas at dusk, Layer 09 frame, cropped. [Internet Archive](https://archive.org/details/serial-experiments-lain-english) |
+| `lain-protocol7.jpg` | The GLOBAL SYSTEM network diagram, Layer 09 frame. [Internet Archive](https://archive.org/details/serial-experiments-lain-english) |
+| `lain-layer-card.jpg` | "Layer:07 SOCIETY" title card, blurred for a background. [lain.fandom.com](https://lain.fandom.com/wiki/Layer_07:_Society) |
+| `mgs-title.jpg` | MGS1 title screen capture. [YouTube](https://www.youtube.com/watch?v=ae2QNmw0pfg) |
+| `mgs-foxhound.png` | FOXHOUND emblem. [metalgear.fandom.com](https://metalgear.fandom.com/wiki/File:FOXHOUND_Logo.png) |
+| `miku-concert.jpg` | Hatsune Butōsai 2024 fan concert, photograph. [Wikimedia Commons](https://commons.wikimedia.org/wiki/File:初音舞踏祭2024_-_The_HATSUNE_Miku_concert_is_handmade_by_Hokkaido_University_student_volunteers.jpg) |
+| `peaks-recorder.jpg` | Cooper's micro-cassette recorder prop, close-up. [twinpeaks.fandom.com](https://twinpeaks.fandom.com/wiki/File:Tape_recorder.jpg) |
+| `peaks-pie.jpg` | Cherry pie and coffee on the Double R counter, promotional photograph, cropped. [twinpeaks.fandom.com](https://twinpeaks.fandom.com/wiki/File:PiePromo.jpg) |
+| `peaks-thumbs-up.jpg` | Cooper's thumbs-up, episode still. [Imgflip](https://imgflip.com/memetemplate/115220243/cooper-thumbs-up-from-twin-peaks) |
+| `peaks-log-lady.jpg` | The Log Lady, 1993 introduction segment. [twinpeaks.fandom.com](https://twinpeaks.fandom.com/wiki/File:LogLadyIntro.png) |
+| `peaks-sign.jpg` | The real Welcome to Twin Peaks sign, photograph. [twinpeaksblog.com](https://twinpeaksblog.com/2026/03/07/did-you-really-go-to-the-real-twin-peaks-if-you-dont-stop-at-the-welcome-sign/) |
 
 ## Seinfeld (`fx/seinfeld-*`, 2026-09-27)
 
@@ -95,6 +106,8 @@ match for the ITC Fenice Oblique logo face; Oswald (already bundled) stands in f
 | `seinfeld-elaine-dance.gif`, `seinfeld-elaine-still.jpg` | Elaine's "little kicks", episode clip, resized. [seinfeld.fandom.com](https://seinfeld.fandom.com/wiki/The_Little_Kicks) |
 | `seinfeld-gang.jpg` | The four entering Jerry's apartment, episode still. [TMDB](https://www.themoviedb.org/tv/1400-seinfeld/images/backdrops) |
 | `seinfeld-kramer-entrance.jpg` | Kramer's entrance, episode screenshot. Listed in previews/assets/seinfeld/sources.md |
+| `seinfeld-building.jpg` | The Shelley, the apartment exterior, episode screenshot. [thatfilmspot.com](https://thatfilmspot.com/locations/the-shelley/) |
+| `seinfeld-junior-mints.png`, `seinfeld-mint.png` | Junior Mints theater box product photograph, and one mint cropped from it. [candynation.com](https://www.candynation.com/junior-mints-theater-box-12-piece/) |
 
 ## Berserk (`fx/berserk-*`, 2026-09-28)
 
@@ -160,3 +173,25 @@ Stand-cry lettering and the Stand card brackets.
 | `jojo-*-plate.jpg` | DIO's mansion, the Morioh country bridge and a Golden Wind church frame, anime stills. [jojo.fandom.com](https://jojo.fandom.com/) |
 | `jojo-*-villain.jpg` | DIO (character sheet), Kira at home (ep. 21), King Crimson (ep. 25), anime. [jojo.fandom.com](https://jojo.fandom.com/) |
 | `jojo-jotaro.jpg` and the other cast faces | Anime character sheets and episode frames, faces cropped. [jojo.fandom.com](https://jojo.fandom.com/) |
+
+## Round 2 for the older themes (2026-09-28)
+
+| File | Source |
+| --- | --- |
+| `lain-layer-card.jpg` | "Layer:07 SOCIETY" episode title card, blurred so its words disappear. [lain.fandom.com](https://lain.fandom.com/wiki/Layer_07:_Society) |
+| `lain-present-day.jpg`, `lain-present-time.jpg` | "PRESENT DAY" and "PRESENT TIME" frames from the opening of Layer:01. [lain.fandom.com](https://lain.fandom.com/) |
+| `lain-wires-dusk.jpg` | Power lines at dusk, anime frame. [lain.fandom.com](https://lain.fandom.com/) |
+| `lain-bear.jpg` | Lain in the bear pyjamas, anime frame, cropped. [lain.fandom.com](https://lain.fandom.com/) |
+| `lain-protocol7.jpg` | Protocol 7 "Global System" diagram, anime frame, cropped. [lain.fandom.com](https://lain.fandom.com/) |
+| `mgs-title.jpg` | MGS1 title screen (1280x720 capture of the 320x224 frame). [metalgear.fandom.com](https://metalgear.fandom.com/) |
+| `mgs-foxhound.png` | FOXHOUND unit emblem. [metalgear.fandom.com](https://metalgear.fandom.com/wiki/FOXHOUND) |
+| `miku-concert.jpg` | Hatsune Miku concert with glowsticks, Wikimedia Commons (free licence). [commons.wikimedia.org](https://commons.wikimedia.org/) |
+| `peaks-recorder.jpg` | Cooper's MC-60 microcassette recorder, prop close-up. [twinpeaks.fandom.com](https://twinpeaks.fandom.com/) |
+| `peaks-pie.jpg` | Cherry pie at the Double R, promotional still, cropped. [twinpeaks.fandom.com](https://twinpeaks.fandom.com/) |
+| `peaks-thumbs-up.jpg` | Cooper's thumbs-up, episode still, cropped. [twinpeaks.fandom.com](https://twinpeaks.fandom.com/) |
+| `peaks-log-lady.jpg` | Catherine Coulson as the Log Lady, 1993 Log Lady introductions, cropped. [twinpeaks.fandom.com](https://twinpeaks.fandom.com/wiki/File:LogLadyIntro.png) |
+| `peaks-sign.jpg` | "Welcome to Twin Peaks" sign, detail photograph, population number blurred out (the app prints your library size there). [twinpeaks.fandom.com](https://twinpeaks.fandom.com/wiki/Welcome_to_Twin_Peaks_sign) |
+| `seinfeld-building.jpg` | Jerry's building exterior ("The Shelley"), establishing shot. [seinfeld.fandom.com](https://seinfeld.fandom.com/) |
+| `seinfeld-junior-mints.png`, `seinfeld-mint.png` | Junior Mints theatre box, product photograph, and a crop of one mint. [tootsie.com](https://www.tootsie.com/) |
+
+Full provenance for each is in the local research folders (`previews/assets/<theme>/round2-sources.md`).

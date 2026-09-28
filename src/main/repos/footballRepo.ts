@@ -865,7 +865,7 @@ export function listMatches(filter: FootballMatchFilter = {}): FootballMatchSumm
   const rows = getSqlite().prepare(`
     SELECT ${MATCH_SELECT} ${MATCH_FROM}
     ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-    ORDER BY ${filter.watchedOnly ? 'j.watched_at DESC,' : ''} m.match_date DESC,
+    ORDER BY ${filter.watchedOnly ? 'j.watched_at DESC,' : ''} m.match_date ${filter.oldestFirst ? 'ASC' : 'DESC'},
       COALESCE(m.kickoff_at,''), m.id DESC LIMIT ? OFFSET ?
   `).all(...args, limit, offset) as Row[]
   return rows.map(asMatch)
@@ -1844,6 +1844,39 @@ function foldMatch(duplicateId: number, twinId: number): void {
   db.prepare(`DELETE FROM football_match WHERE id=?`).run(duplicateId)
 }
 
+/** Deletes clubs nothing refers to any more, such as lower-tier clubs a filtered refresh pruned. */
+export function removeOrphanTeams(): number {
+  const db = getSqlite()
+  const orphans = db.prepare(`
+    SELECT t.id FROM football_team t
+    WHERE NOT EXISTS(SELECT 1 FROM football_match m WHERE m.home_team_id=t.id)
+      AND NOT EXISTS(SELECT 1 FROM football_match m WHERE m.away_team_id=t.id)
+      AND NOT EXISTS(SELECT 1 FROM football_lineup l WHERE l.team_id=t.id)
+      AND NOT EXISTS(SELECT 1 FROM football_event e WHERE e.team_id=t.id)
+      AND NOT EXISTS(SELECT 1 FROM football_tenure x WHERE x.team_id=t.id)
+      AND NOT EXISTS(SELECT 1 FROM football_standing x WHERE x.team_id=t.id)
+      AND NOT EXISTS(SELECT 1 FROM football_honour x WHERE x.team_id=t.id)
+      AND NOT EXISTS(SELECT 1 FROM football_transfer x WHERE x.from_team_id=t.id)
+      AND NOT EXISTS(SELECT 1 FROM football_transfer x WHERE x.to_team_id=t.id)
+      ${['football_favorite', 'football_media_link', 'football_external_link', 'football_article']
+        .map((table) => `AND NOT EXISTS(SELECT 1 FROM ${table} r
+          WHERE r.entity_kind='team' AND r.entity_id=t.id)`).join('\n')}
+      AND NOT EXISTS(SELECT 1 FROM list_item li JOIN list l ON l.id=li.list_id
+        WHERE l.entity_kind='footballTeam' AND li.entity_id=t.id)
+      AND NOT EXISTS(SELECT 1 FROM tier_item ti JOIN tier_list l ON l.id=ti.list_id
+        WHERE l.entity_kind='footballTeam' AND ti.entity_id=t.id)
+  `).all() as { id: number }[]
+  db.transaction(() => {
+    for (const { id } of orphans) {
+      for (const table of ['football_alias', 'football_source_ref', 'football_assertion', 'football_conflict']) {
+        cachedStatement(`DELETE FROM ${table} WHERE entity_kind='team' AND entity_id=?`).run(id)
+      }
+      cachedStatement(`DELETE FROM football_team WHERE id=?`).run(id)
+    }
+  })()
+  return orphans.length
+}
+
 /**
  * Folds seasons keyed `2012-13` (an OpenFootball import before keys were normalised) into
  * their `2012/13` twin: duplicate matches merge into the twin with every personal row, the
@@ -2005,6 +2038,8 @@ export function repairPersonIdentities(): FootballIdentityRepair {
           WHERE r.entity_kind='person' AND r.entity_id=p.id)`).join('\n')}
       AND NOT EXISTS(SELECT 1 FROM list_item li JOIN list l ON l.id=li.list_id
         WHERE l.entity_kind='footballPerson' AND li.entity_id=p.id)
+      AND NOT EXISTS(SELECT 1 FROM tier_item ti JOIN tier_list l ON l.id=ti.list_id
+        WHERE l.entity_kind='footballPerson' AND ti.entity_id=p.id)
   `).all() as { id: number }[]).filter((row) => !settled.has(row.id))
   db.transaction(() => {
     for (const { id } of orphans) {

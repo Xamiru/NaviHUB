@@ -19,13 +19,6 @@ const shouldBoot = ((): boolean => {
 
 // ASCII "..." on purpose — VT323 has no '…' glyph.
 const SCRIPTS = {
-  lain: [
-    'TACHIBANA GENERAL LABORATORIES',
-    'COPLAND OS ENTERPRISE',
-    'connecting to the Wired...',
-    'Present day. Present time.',
-    'Close the world, open the nExt.'
-  ].join('\n'),
   'metal-gear': [
     'NAVI TACTICAL ARCHIVE',
     'LOCAL DATABASE LINK',
@@ -35,7 +28,8 @@ const SCRIPTS = {
   miku: ['NaviHUB', 'Your library. Your own world.', 'Leave a little room for possibility.'].join('\n'),
   'twin-peaks': ['NaviHUB', 'Your personal archive.', 'Some stories stay with you.'].join('\n'),
   seinfeld: ['A show about nothing.', 'A library about everything.'].join('\n'),
-  // Berserk, One Piece and JoJo have no typed script: their launches are images.
+  // Lain, Berserk, One Piece and JoJo have no typed script: their launches are images.
+  lain: '',
   berserk: '',
   'one-piece': '',
   jojo: ''
@@ -46,7 +40,7 @@ const FADE_MS = 200
 const CURTAIN_MS = 900
 const BERSERK_MS = 1800
 // How long each image launch holds before its hard cut to Home.
-const IMAGE_BOOT_MS: Partial<Record<AppTheme, number>> = { berserk: BERSERK_MS, 'one-piece': 1800, jojo: 1500 }
+const IMAGE_BOOT_MS: Partial<Record<AppTheme, number>> = { lain: 2000, berserk: BERSERK_MS, 'one-piece': 1800, jojo: 1500 }
 
 type Phase = 'typing' | 'fading' | 'done'
 
@@ -99,6 +93,15 @@ export default function BootSequence() {
   }, [phase])
 
   if (phase === 'done') return null
+  // Lain: the series' cold open, PRESENT DAY then PRESENT TIME in red katakana.
+  if (theme === 'lain') {
+    return (
+      <div aria-hidden="true" className="theme-boot boot-lain-present fixed inset-0 z-[70]">
+        <img className="boot-present boot-present-day" src={FX_ART.lainPresentDay} alt="" />
+        <img className="boot-present boot-present-time" src={FX_ART.lainPresentTime} alt="" />
+      </div>
+    )
+  }
   if (theme === 'one-piece') {
     return (
       <div aria-hidden="true" className="theme-boot boot-one-piece fixed inset-0 z-[70]">
@@ -140,7 +143,7 @@ export default function BootSequence() {
       className={
         theme === 'twin-peaks'
           ? `theme-boot boot-peaks fixed inset-0 z-[70] flex items-center justify-center ${phase === 'fading' ? 'boot-peaks-open' : ''}`
-          : `${theme === 'lain' ? 'lain-crt' : theme === 'metal-gear' ? 'tactical-boot' : theme === 'seinfeld' ? 'theme-boot boot-seinfeld flex-col' : 'theme-boot'} fixed inset-0 z-[70] flex items-center justify-center bg-base-900 transition-opacity duration-200 ${
+          : `${theme === 'metal-gear' ? 'tactical-boot' : theme === 'seinfeld' ? 'theme-boot boot-seinfeld flex-col' : 'theme-boot'} fixed inset-0 z-[70] flex items-center justify-center bg-base-900 transition-opacity duration-200 ${
               phase === 'fading' ? 'opacity-0' : ''
             }`
       }
@@ -150,12 +153,6 @@ export default function BootSequence() {
         <>
           <i className="peaks-curtain peaks-curtain-left" style={{ backgroundImage: `url(${FX_ART.peaksCurtain})` }} />
           <i className="peaks-curtain peaks-curtain-right" style={{ backgroundImage: `url(${FX_ART.peaksCurtain})` }} />
-        </>
-      )}
-      {theme === 'lain' && (
-        <>
-          <img className="boot-lain-site" src={FX_ART.lainSite} alt="" />
-          <img className="boot-lain-logo" src={FX_ART.lainLogo} alt="" />
         </>
       )}
       <div className="boot-copy text-signal-live text-2xl leading-relaxed">

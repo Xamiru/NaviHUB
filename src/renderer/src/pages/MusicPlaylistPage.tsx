@@ -180,7 +180,8 @@ export default function MusicPlaylistPage() {
 
   async function queueDownload(
     itemsToDownload: MusicSpotifyPlaylistEntry[],
-    startNow = false
+    startNow = false,
+    onlyThese = false
   ): Promise<void> {
     if (itemsToDownload.length === 0) return
     try {
@@ -194,8 +195,10 @@ export default function MusicPlaylistPage() {
         return
       }
       if (startNow) {
-        const freshQueue = await api.music.spotifyDownloadQueue()
-        const mergedCard = freshQueue.pending.find((card) => card.id === result.jobId)
+        // A single song runs alone, so only the whole-card start is sized by the merged card.
+        const mergedCard = onlyThese
+          ? undefined
+          : (await api.music.spotifyDownloadQueue()).pending.find((card) => card.id === result.jobId)
         const missingCount = mergedCard?.missingCount ?? result.missingCount
         const estimatedBytes = mergedCard?.missingEstimatedBytes ?? Math.ceil(
           itemsToDownload.reduce(
@@ -218,12 +221,16 @@ export default function MusicPlaylistPage() {
         }
         const queueWasActive = downloadStatus?.source === 'spotifyQueue' &&
           ACTIVE_DOWNLOAD.has(downloadStatus.status)
-        await api.music.spotifyQueueStart({ jobId: result.jobId, prioritize: true })
+        await api.music.spotifyQueueStart({
+          jobId: result.jobId,
+          itemIds: onlyThese ? itemsToDownload.map((item) => item.itemId) : undefined,
+          prioritize: true
+        })
         toast(
           queueWasActive
             ? downloadStatus.status === 'paused'
               ? 'Saved to run after the paused download resumes'
-              : 'Saved first; this playlist will run next'
+              : onlyThese ? 'Saved first; this song will run next' : 'Saved first; this playlist will run next'
             : `Starting ${missingCount} song${missingCount === 1 ? '' : 's'}`,
           'success',
           { label: 'View downloads', route: '/music/downloads' }
@@ -250,6 +257,12 @@ export default function MusicPlaylistPage() {
       .filter((selection) => selection.kind === 'playlistItem')
       .map((selection) => selection.sourceId) ?? []
   )
+  // A single song's Download runs only that song; the card's other songs are not coming soon.
+  const runningOnly = downloadStatus?.queueCardId != null && downloadStatus.queueCardId === playlistQueueCard?.id
+    ? downloadStatus.queueItemIds
+    : null
+  const downloadingSoon = (itemId: number) =>
+    queueRunning && queuedItemIds.has(itemId) && (runningOnly == null || runningOnly.includes(itemId))
   const allMissingQueued = downloadableMissing.length > 0 &&
     downloadableMissing.every((item) => queuedItemIds.has(item.itemId))
 
@@ -474,8 +487,8 @@ export default function MusicPlaylistPage() {
                 <SpotifyMissingRow
                   key={`spotify-${item.itemId}`}
                   item={item}
-                  queued={queuedItemIds.has(item.itemId) && queueRunning}
-                  onDownload={() => void queueDownload([item], true)}
+                  queued={downloadingSoon(item.itemId)}
+                  onDownload={() => void queueDownload([item], true, true)}
                   onFix={() => setRecoveryItem(item)}
                   onUseLocal={() => setLocalMatchItem(item)}
                   onReject={() => void rejectDownloaded(item.itemId)}

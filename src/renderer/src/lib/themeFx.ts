@@ -7,6 +7,9 @@ export interface ProgressFx {
   combo: number
   // The pressed control, for effects that move it (One Piece's rubber stretch).
   el: HTMLElement | null
+  // The new count and total when the caller knows them (Metal Gear's weapon window).
+  count: number | null
+  total: number | null
 }
 
 const COMBO_WINDOW_MS = 45_000
@@ -32,7 +35,10 @@ export function clearProgressFx(id: number): void {
 }
 
 // Anchors on the element the user pressed, falling back to the focused one.
-export function celebrateProgress(anchor: Element | null = document.activeElement): void {
+export function celebrateProgress(
+  anchor: Element | null = document.activeElement,
+  detail: { count?: number | null; total?: number | null } = {}
+): void {
   const now = Date.now()
   combo = now - lastAt <= COMBO_WINDOW_MS ? combo + 1 : 1
   lastAt = now
@@ -42,7 +48,9 @@ export function celebrateProgress(anchor: Element | null = document.activeElemen
     x: rect ? rect.left + rect.width / 2 : window.innerWidth - 160,
     y: rect ? rect.top : window.innerHeight - 160,
     combo,
-    el: anchor instanceof HTMLElement ? anchor : null
+    el: anchor instanceof HTMLElement ? anchor : null,
+    count: detail.count ?? null,
+    total: detail.total ?? null
   }
   for (const l of listeners) l()
 }

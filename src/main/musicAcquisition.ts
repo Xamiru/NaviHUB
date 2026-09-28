@@ -1,6 +1,6 @@
 import { join } from 'path'
 import { assessMusicSource } from '@shared/musicSourceMatch'
-import type { YtmSong } from './youtubeMusic'
+import type { YtmLocale, YtmSong } from './youtubeMusic'
 
 /**
  * Pure decisions for the native Spotify-to-audio pipeline (orchestrated in
@@ -31,8 +31,22 @@ export function expectedRecording(raw: Json): ExpectedRecording {
 export function sourceSearchQueries(expected: ExpectedRecording): string[] {
   const base = `${expected.artist} ${expected.title}`.trim()
   // A "(feat. …)" or "- Remastered" suffix can hide the canonical upload; retry without it.
-  const plain = expected.title.replace(/\s*[([].*?[)\]]\s*/g, ' ').replace(/\s+-\s+.*$/, '').trim()
+  const plain = expected.title.normalize('NFKC').replace(/\s*[([].*?[)\]]\s*/g, ' ').replace(/\s+-\s+.*$/, '').trim()
   return [...new Set([base, plain && plain !== expected.title ? `${expected.artist} ${plain}` : ''])].filter(Boolean)
+}
+
+/** English first, then the catalogues whose script appears in the text. */
+export function ytmLocalesFor(text: string): YtmLocale[] {
+  const locales: YtmLocale[] = ['en']
+  if (/[\p{Script=Hiragana}\p{Script=Katakana}]/u.test(text)) locales.push('ja')
+  else if (/\p{Script=Han}/u.test(text)) locales.push('ja', 'zh')
+  if (/\p{Script=Hangul}/u.test(text)) locales.push('ko')
+  if (/\p{Script=Cyrillic}/u.test(text)) locales.push('ru')
+  return locales
+}
+
+export function sourceSearchLocales(expected: ExpectedRecording): YtmLocale[] {
+  return ytmLocalesFor(`${expected.title} ${expected.artist} ${expected.albumTitle}`)
 }
 
 export interface RankedSource {
@@ -42,18 +56,32 @@ export interface RankedSource {
   rank: number
 }
 
+/**
+ * Candidates may repeat one video as seen from several catalogue languages; its title can
+ * match in one and its artist credit in another ("花冷え。" credits "We love sweets").
+ */
 export function rankYtmSources(expected: ExpectedRecording, candidates: YtmSong[]): RankedSource[] {
   const same = (a: string | null, b: string) => (a ?? '').normalize('NFKC').toLowerCase().trim() === b.normalize('NFKC').toLowerCase().trim()
-  return candidates
-    .map((source, index) => {
-      const assessment = assessMusicSource(expected, {
-        title: source.title,
-        artist: source.artists.join(', ') || null,
-        channel: source.artists.join(', '),
-        duration: source.duration,
-        albumTitle: source.album
-      })
-      const albumBonus = same(source.album, expected.albumTitle) ? 1 : 0
+  const views = new Map<string, YtmSong[]>()
+  for (const candidate of candidates) views.set(candidate.videoId, [...(views.get(candidate.videoId) ?? []), candidate])
+  return [...views.values()]
+    .map((list, index) => {
+      const [{ source, assessment }] = list
+        .flatMap((titled) => list.map((credited) => {
+          const source = { ...titled, artists: credited.artists }
+          return {
+            source,
+            assessment: assessMusicSource(expected, {
+              title: source.title,
+              artist: source.artists.join(', ') || null,
+              channel: source.artists.join(', '),
+              duration: source.duration,
+              albumTitle: source.album
+            })
+          }
+        }))
+        .sort((a, b) => Number(b.assessment.strong) - Number(a.assessment.strong) || b.assessment.rank - a.assessment.rank)
+      const albumBonus = list.some((view) => same(view.album, expected.albumTitle)) ? 1 : 0
       const drift = expected.duration != null && source.duration != null ? Math.abs(expected.duration - source.duration) : 99
       return { source, strong: assessment.strong, reasons: assessment.reasons, rank: assessment.rank, albumBonus, drift, index }
     })
@@ -107,6 +135,7 @@ export function taggedInfoJson(info: Json, raw: Json): Json {
   const artists = Array.isArray(raw.artists) ? raw.artists.filter((value: unknown) => typeof value === 'string') : []
   const cover = typeof raw.cover_url === 'string' ? raw.cover_url : null
   const date = typeof raw.date === 'string' ? raw.date.replace(/-/g, '') : null
+  const fullDate = date && date.length === 8 ? date : null
   return {
     ...info,
     title: raw.name,
@@ -121,10 +150,12 @@ export function taggedInfoJson(info: Json, raw: Json): Json {
     track_number: raw.track_number ?? null,
     disc_number: raw.disc_number ?? null,
     release_year: raw.year ?? null,
-    release_date: date && date.length === 8 ? date : null,
-    // `--embed-metadata` writes the date tag from upload_date only, and yt-dlp
-    // rebuilds it from the video timestamp when it is empty.
-    upload_date: date,
+    release_date: fullDate,
+    // `--embed-metadata` writes the date tag from upload_date, and yt-dlp rebuilds
+    // it from the video timestamp when it is empty. yt-dlp's date filter parses
+    // upload_date as YYYYMMDD, so a year-only date is tagged through meta_date.
+    upload_date: fullDate,
+    ...(date && !fullDate ? { meta_date: raw.date } : {}),
     timestamp: null,
     release_timestamp: null,
     modified_timestamp: null,

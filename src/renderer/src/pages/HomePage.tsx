@@ -33,6 +33,7 @@ import EmptyState from '../components/EmptyState'
 import ThemedFailure from '../components/theme/ThemedFailure'
 import PageStatus from '../components/PageStatus'
 import { useScoreMax, useSettings } from '../lib/hooks'
+import { TypedText } from '../components/theme/ThemeText'
 import { StandRadar } from '../components/theme/StandStats'
 import { standParameters } from '../lib/standStats'
 import { usePlayerControls } from '../lib/player'
@@ -426,7 +427,14 @@ function Hero({
             {variant === 'stand-up' ? quote : HOME_THEME_ART[variant].greeting}
           </p>
           <div className="home-hero-stats mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm tabular-nums">
-            <span><strong>{stats.titles}</strong> titles</span>
+            {theme === 'twin-peaks' ? (
+              <span className="peaks-sign" role="img" aria-label={`Population ${stats.titles} titles`}>
+                <img src={FX_ART.peaksSign} alt="" />
+                <span aria-hidden="true">{stats.titles}</span>
+              </span>
+            ) : (
+              <span><strong>{stats.titles}</strong> titles</span>
+            )}
             <span><strong>{stats.inProgress}</strong> in progress</span>
             <span><strong>{stats.favorites}</strong> favorites</span>
           </div>
@@ -564,6 +572,123 @@ function StandCard({ media, next, meta, action }: { media: MediaSummary; next: s
 
 const JOJO_STYLES: readonly AppThemeVariant[] = ['stardust-crusaders', 'diamond-is-unbreakable', 'golden-wind']
 
+type CardProps = { media: MediaSummary; next: string; meta: string; action: string }
+
+// Lain: the next session as the episode title card ("Layer:07 SOCIETY"), the
+// title as the word and the next unit as the Layer number.
+function LayerCard({ media, next, meta, action }: CardProps) {
+  return (
+    <>
+      <div className="layer-card-art" aria-hidden="true">
+        <CoverImage path={media.coverPath} alt="" thumbWidth={320} rounded="rounded-none" className="h-full w-full" />
+      </div>
+      <div className="layer-card-body">
+        <h2 className="layer-card-word line-clamp-2">{media.title}</h2>
+        <p className="layer-card-ghost" aria-hidden="true">serial experiments lain</p>
+        <p className="layer-card-meta truncate">{next}</p>
+        <p className="layer-card-meta">{meta}</p>
+        <p className="layer-card-layer">Layer:{String(media.progress + 1).padStart(2, '0')}</p>
+        <span className="btn-primary layer-card-action">{action}</span>
+      </div>
+    </>
+  )
+}
+
+// Metal Gear (Dossier, Shadow Moses): MGS1's BRIEFING FILE menu.
+function BriefingFile({ media, next, meta, action }: CardProps) {
+  return (
+    <>
+      <div className="briefing-menu min-w-0 flex-1">
+        <span className="briefing-head" aria-hidden="true">BRIEFING FILE</span>
+        <p><span aria-hidden="true">mission description</span><strong className="line-clamp-2">{media.title}</strong></p>
+        <p><span aria-hidden="true">operation outline</span><strong className="truncate">{next}</strong></p>
+        <p><span aria-hidden="true">detailed information</span><strong>{meta}</strong></p>
+        <p className="briefing-on">{action}</p>
+      </div>
+      <div className="briefing-portrait" aria-hidden="true">
+        <CoverImage path={media.coverPath} alt="" thumbWidth={320} rounded="rounded-none" className="h-full w-full" />
+      </div>
+    </>
+  )
+}
+
+// Miku: a Project DIVA song select entry. Stars for length, the difficulty tab
+// for how far along you are.
+function SongSelectEntry({ media, next, meta, action }: CardProps) {
+  const total = media.totalUnits ?? 0
+  const stars = total >= 200 ? 5 : total >= 100 ? 4 : total >= 50 ? 3 : total >= 13 ? 2 : 1
+  const share = total ? media.progress / total : 0
+  const tabs = ['EASY', 'NORMAL', 'HARD', 'EXTREME'] as const
+  const lit = tabs[Math.min(3, Math.floor(share * 4))]
+  return (
+    <>
+      <div className="song-jacket" aria-hidden="true">
+        <CoverImage path={media.coverPath} alt="" thumbWidth={480} rounded="rounded-none" className="h-full w-full" />
+      </div>
+      <div className="song-body">
+        <div className="song-row">
+          <h2 className="truncate">{media.title}</h2>
+          <span className="song-stars" aria-label={`${stars} of 5 stars`}>{'★'.repeat(stars)}</span>
+        </div>
+        <div className="song-tabs" aria-label={`Difficulty: ${lit.toLowerCase()}`}>
+          {tabs.map((t) => <span key={t} className={t === lit ? 'on' : ''} aria-hidden="true">{t}</span>)}
+        </div>
+        <p className="mt-3 truncate text-sm">{next}</p>
+        <p className="text-xs">{meta}</p>
+        <span className="btn-primary mt-4 self-start">{action}</span>
+      </div>
+    </>
+  )
+}
+
+// Twin Peaks: a tape for Diane, typed beside Cooper's recorder.
+function DianeTape({ media, next, meta, action }: CardProps) {
+  const now = new Date()
+  const time = now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }).toLowerCase()
+  const day = now.toLocaleDateString('en-US', { weekday: 'long' })
+  return (
+    <>
+      <img className="diane-recorder" src={FX_ART.peaksRecorder} alt="" aria-hidden="true" />
+      <div className="diane-body">
+        <p className="diane-label" aria-hidden="true">Recording</p>
+        <h2 className="sr-only">{media.title}</h2>
+        <p className="diane-entry">
+          <TypedText text={`Diane, ${time}, ${day}. Resuming ${media.title}: ${next}. ${meta}.`} speed={18} />
+        </p>
+        <span className="btn-primary mt-3 self-start">{action}</span>
+      </div>
+    </>
+  )
+}
+
+// Seinfeld: every episode is "The Something", over the establishing shot of
+// Jerry's building.
+function SeinfeldEpisode({ media, next, meta, action }: CardProps) {
+  const episode = /^the\s/i.test(media.title) ? media.title : `The ${media.title}`
+  return (
+    <>
+      <div className="sf-episode-shot" aria-hidden="true">
+        <CoverImage path={media.coverPath} alt="" thumbWidth={160} rounded="rounded" className="sf-episode-cover" />
+      </div>
+      <div className="sf-episode-body">
+        <p className="sf-episode-kick" aria-hidden="true">Tonight&apos;s episode</p>
+        <h2 className="sf-episode-title line-clamp-2">{episode}</h2>
+        <p className="mt-2 truncate text-sm text-ink-secondary">{next}</p>
+        <p className="mt-1 text-xs text-ink-muted">{meta}</p>
+        <span className="btn-primary mt-4 self-start">{action}</span>
+      </div>
+    </>
+  )
+}
+
+const ROUND2_CARDS: Partial<Record<AppTheme, { Card: (p: CardProps) => ReactNode; className: string }>> = {
+  lain: { Card: LayerCard, className: 'home-resume layer-card group' },
+  'metal-gear': { Card: BriefingFile, className: 'home-resume briefing-file group' },
+  miku: { Card: SongSelectEntry, className: 'home-resume song-select group' },
+  'twin-peaks': { Card: DianeTape, className: 'home-resume diane-tape group' },
+  seinfeld: { Card: SeinfeldEpisode, className: 'home-resume sf-episode group' }
+}
+
 function HeroContinuation({
   resume,
   continuing,
@@ -607,7 +732,9 @@ function HeroContinuation({
       ? { Card: WantedPoster, className: 'home-resume op-resume group' }
       : JOJO_STYLES.includes(variant)
         ? { Card: StandCard, className: 'home-resume jj-card group' }
-        : null
+        : ROUND2_CARDS[theme] && variant !== 'codec'
+          ? ROUND2_CARDS[theme]
+          : null
   if (themedCard && resume) {
     return (
       <ResumeAction point={resume} className={themedCard.className}>

@@ -41,6 +41,17 @@ describe('Toaster', () => {
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
   })
 
+  it('brings Twin Peaks warnings from the Log Lady without hiding the message', () => {
+    document.documentElement.dataset.theme = 'twin-peaks'
+    vi.useFakeTimers()
+    toast('The music folder is almost full', 'warning')
+    render(<Toaster />)
+    act(() => vi.advanceTimersByTime(1_000))
+    const notice = screen.getByRole('status')
+    expect(notice).toHaveTextContent('My log has something to tell you.')
+    expect(notice).toHaveTextContent('The music folder is almost full')
+  })
+
   it.each([
     ['lain', 'NAVI / MESSAGE'],
     ['metal-gear', 'COMPLETE'],

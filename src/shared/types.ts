@@ -3218,6 +3218,8 @@ export interface SpotifyDownloadQueueAddResult {
 
 export interface SpotifyDownloadQueueStartInput {
   jobId?: number
+  /** Limits this run's pass over `jobId` to these playlist items; other selections stay queued. */
+  itemIds?: number[]
   prioritize?: boolean
   resume?: boolean
 }
@@ -3341,6 +3343,8 @@ export interface MusicDownloadEvent {
   releaseTitle?: string | null
   startedAt?: number | null
   queueCardId?: number | null
+  /** The only playlist items the active card's pass covers; null when it covers the whole card. */
+  queueItemIds?: number[] | null
 }
 
 export interface YtDlpDetectResult {
@@ -4825,6 +4829,8 @@ export interface FootballMatchFilter extends FootballEntityFilter {
   teamId?: number | null
   status?: FootballMatchStatus | null
   watchedOnly?: boolean
+  /** Earliest match first instead of the newest. */
+  oldestFirst?: boolean
 }
 
 export interface FootballSearchResults {

@@ -509,6 +509,8 @@ describe('Football repository', () => {
     expect(stored.map((match) => [match.home.id, match.away.name, match.status]).sort()).toEqual([
       [1, 'Coventry City FC', 'finished'], [2, 'Arsenal', 'scheduled']
     ])
+    expect(football.listMatches({ dateFrom: '2026-08-01', limit: 1, oldestFirst: true }).map((match) => match.matchDate))
+      .toEqual(['2026-08-21'])
 
     const moved = [{ ...matches[1], date: '2026-10-25' }]
     writeLeagueFixtures('premier-league', '2026/27', moved, true, 'f2')
@@ -642,6 +644,26 @@ describe('Football repository', () => {
     expect(football.repairPersonIdentities()).toMatchObject({ merged: 1 })
     expect(db.prepare(`SELECT DISTINCT person_id AS id FROM football_event WHERE match_id=6 ORDER BY sort_order`).all())
       .toEqual([{ id: 95 }, { id: 97 }])
+  })
+
+  it('removes clubs nothing refers to any more', () => {
+    db.exec(`
+      INSERT INTO football_team (id,name) VALUES (20,'Pruned Club'),(21,'Favourite Club'),(22,'Transfer Club');
+      INSERT INTO football_alias (entity_kind,entity_id,source,alias,normalized,external_id) VALUES
+        ('team',20,'engsoccerdata','Pruned Club','pruned club','Pruned Club');
+      INSERT INTO football_favorite (entity_kind,entity_id) VALUES ('team',21);
+      INSERT INTO football_person (id,name,role) VALUES (60,'Mover','player');
+      INSERT INTO football_transfer (person_id,from_team_id,transfer_date,from_team,to_team,source,external_id)
+        VALUES (60,22,'2020-07-01','Transfer Club','Elsewhere','transfermarkt','t1');
+      INSERT INTO football_assertion (entity_kind,entity_id,facet,value,source) VALUES ('team',20,'name','Pruned Club','engsoccerdata');
+      INSERT INTO football_team (id,name) VALUES (23,'Ranked Club');
+      INSERT INTO tier_list (id,title,entity_kind) VALUES (1,'Clubs','footballTeam');
+      INSERT INTO tier_item (list_id,entity_id) VALUES (1,23);
+    `)
+    expect(football.removeOrphanTeams()).toBe(1)
+    expect(db.prepare(`SELECT id FROM football_team WHERE id>=20 ORDER BY id`).all()).toEqual([{ id: 21 }, { id: 22 }, { id: 23 }])
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM football_alias WHERE entity_kind='team' AND entity_id=20`).get()).toEqual({ n: 0 })
+    expect(db.prepare(`SELECT COUNT(*) AS n FROM football_assertion WHERE entity_kind='team' AND entity_id=20`).get()).toEqual({ n: 0 })
   })
 
   it('reconciles retained matches when a complete refresh prunes one source assertion', () => {

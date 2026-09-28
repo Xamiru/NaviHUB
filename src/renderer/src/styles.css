@@ -1846,8 +1846,6 @@ html[data-theme='lain'] :is([aria-busy='true'], .themed-loading) { cursor: url('
 .palette-lain input { padding-left: 6px; background: transparent; color: #dbe6ff; }
 .palette-lain .palette-row { font: 19px/1.1 'VT323', monospace; letter-spacing: 0.03em; }
 .palette-lain .palette-row-on { background: #23316bcc; }
-.boot-lain-site { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.35; }
-.boot-lain-logo { position: absolute; top: 16%; left: 50%; width: min(420px, 60vw); transform: translateX(-50%); filter: drop-shadow(0 0 10px #000); }
 .lain-crt .boot-copy { position: relative; margin-top: 18vh; }
 
 /* ---- Metal Gear ----------------------------------------------------------- */
@@ -2145,7 +2143,8 @@ html[data-theme='berserk'] :is(h1, h2, h3, .btn, .label) { font-family: var(--fo
 html[data-theme='berserk'] .archive-sidebar { background: #141215 url('./assets/themes/fx/berserk-leather.jpg') 0 0 / 600px; border-color: #2a2226; }
 html[data-theme='berserk'] .archive-topbar { background: #161417 url('./assets/themes/fx/berserk-leather.jpg') 0 0 / 600px; border-color: #2a2226; }
 html[data-theme='berserk'] .archive-player { background: #141215 url('./assets/themes/fx/berserk-leather.jpg') 0 0 / 600px; }
-html[data-theme='berserk'] .sidebar-brand { font-family: 'Oswald', sans-serif; font-size: 18px !important; font-weight: 700; letter-spacing: 0.02em; }
+html[data-theme='berserk'] .sidebar-brand { font-family: 'Oswald', sans-serif; font-weight: 700; letter-spacing: 0.02em; }
+html[data-theme='berserk'] .archive-sidebar:not([data-expanded='true']) .sidebar-brand { font-size: 18px !important; }
 html[data-theme='berserk'] .sidebar-brand span { color: #b1443b; }
 html[data-theme='berserk'] .archive-sidebar nav [aria-current='page'] { background: #2a1618; box-shadow: inset 3px 0 0 rgb(var(--accent)); }
 html[data-theme='berserk'] .section-heading { padding-left: 12px; border-left: 3px solid #b1443b; }
@@ -2328,7 +2327,8 @@ html[data-theme='one-piece'] .archive-sidebar {
   border-color: #0a1428;
 }
 html[data-theme='one-piece'] .archive-sidebar nav [aria-current='page'] { background: #22386288; color: #f4c430; box-shadow: inset 3px 0 0 #f4c430; }
-html[data-theme='one-piece'] .sidebar-brand { font-family: 'Titan One', sans-serif; font-size: 15px !important; letter-spacing: 0.02em; color: #f6f0de; }
+html[data-theme='one-piece'] .sidebar-brand { font-family: 'Titan One', sans-serif; letter-spacing: 0.02em; color: #f6f0de; }
+html[data-theme='one-piece'] .archive-sidebar:not([data-expanded='true']) .sidebar-brand { font-size: 15px !important; }
 html[data-theme='one-piece'] .archive-topbar { background: #e9dab0; }
 html[data-theme='one-piece'] .archive-topbar::after { content: ''; position: absolute; left: 0; right: 0; bottom: -3px; height: 5px; background: repeating-linear-gradient(135deg, #8a5a2b 0 4px, #b98a4e 4px 7px, #6e4520 7px 9px); pointer-events: none; }
 html[data-theme='one-piece'] .archive-player { background: #e9dab0; }
@@ -2582,7 +2582,8 @@ html[data-theme='jojo'] .archive-sidebar { background: #1a1416; border-color: #3
 html[data-theme='jojo'] .archive-topbar { background: #1f1719; border-color: #3a2c3a; }
 html[data-theme='jojo'] .archive-player { background: #1a1416; }
 html[data-theme='jojo'] .archive-sidebar nav [aria-current='page'] { background: #3a2a4a; box-shadow: inset 3px 0 0 rgb(var(--accent)); }
-html[data-theme='jojo'] .sidebar-brand { font-family: 'Anton', sans-serif; font-size: 21px !important; letter-spacing: 0.04em; color: rgb(var(--ink-primary)); }
+html[data-theme='jojo'] .sidebar-brand { font-family: 'Anton', sans-serif; letter-spacing: 0.04em; color: rgb(var(--ink-primary)); }
+html[data-theme='jojo'] .archive-sidebar:not([data-expanded='true']) .sidebar-brand { font-size: 21px !important; }
 html[data-theme='jojo'] .section-heading { background: transparent; border: 0; box-shadow: none; padding-left: 0; }
 html[data-theme='jojo'] .section-heading h2 { font-family: 'Anton', sans-serif; font-size: 1.15rem; font-weight: 400; letter-spacing: 0.06em; color: rgb(var(--ink-primary)); }
 html[data-theme='jojo'] .section-heading > span.h-px { height: 3px; background: var(--jj-rule); }
@@ -2727,3 +2728,147 @@ html[data-theme='jojo'][data-theme-variant='golden-wind'] :is(.jj-card-title, .j
 @keyframes jj-title { 0% { opacity: 0; } 8% { opacity: 1; } 100% { opacity: 1; } }
 @keyframes jj-lines { 0% { opacity: 0; transform: scale(1.4) rotate(0); } 10% { opacity: 0.9; } 60% { opacity: 0.35; } 100% { opacity: 0; transform: scale(1) rotate(6deg); } }
 @keyframes jj-flash { 0%, 6% { opacity: 0; } 8% { opacity: 0.9; } 20%, 100% { opacity: 0; } }
+
+/* ==========================================================================
+   Round 2 for the older themes (2026-09-28): fixes found in the running app,
+   the cover wall at the strength the newer themes use, and each theme's own
+   next-session card, progress and completion moments and idle screen, built
+   from real material in its source. Lain, Metal Gear, Miku, Twin Peaks, Seinfeld.
+   ========================================================================== */
+/* Wide faces overflowed the 80 px rail ("NAVIHUE", "NAVIIIU"). */
+html[data-theme='miku'] .archive-sidebar:not([data-expanded='true']) .sidebar-brand { font-size: 16px !important; letter-spacing: 0; }
+html[data-theme='twin-peaks'] .archive-sidebar:not([data-expanded='true']) .sidebar-brand { font-size: 15px !important; letter-spacing: 0; }
+html[data-theme='twin-peaks'] .sidebar-brand { font-weight: 600; font-variation-settings: 'opsz' 11; }
+/* Bodoni Moda's display optical size drops the H's crossbar at hero size. */
+html[data-theme='twin-peaks'] .home-brand { font-weight: 600; font-variation-settings: 'opsz' 11; }
+/* Cover wall: your library shows through, the fade still covers the title. */
+html[data-theme='metal-gear'] .home-cover-wall { opacity: 0.55; filter: grayscale(1) contrast(1.1); }
+html[data-theme='metal-gear'] .home-hero-shade { background: linear-gradient(90deg, #f1f0e8f5, #f1f0e8c8 40%, #f1f0e820 66%); }
+html[data-theme='metal-gear'][data-theme-variant='dossier'] .home-cover-wall { opacity: 0.5; filter: grayscale(1) sepia(0.4); }
+html[data-theme='metal-gear'][data-theme-variant='dossier'] .home-hero-shade { background: linear-gradient(90deg, #ece2c6f5, #ece2c6c8 40%, #ece2c620 66%); }
+html[data-theme='metal-gear'][data-theme-variant='shadow-moses'] .home-cover-wall { opacity: 0.5; filter: grayscale(1); }
+html[data-theme='metal-gear'][data-theme-variant='shadow-moses'] .home-hero-shade { background: linear-gradient(90deg, #0a120ff2, #0a120fc8 40%, #0a120f30 68%); }
+html[data-theme='miku'] .home-cover-wall { opacity: 0.5; filter: saturate(0.85); }
+html[data-theme='miku'] .home-hero-shade { background: linear-gradient(90deg, #50c7d9f0, #50c7d9c8 40%, #50c7d920 66%); }
+html[data-theme='miku'][data-theme-variant='open-sky'] .home-cover-wall { opacity: 0.45; filter: saturate(0.8); }
+html[data-theme='miku'][data-theme-variant='open-sky'] .home-hero-shade { background: linear-gradient(90deg, #8fd3eff0, #b9e6f7c8 40%, #f2fbfe20 66%); }
+html[data-theme='miku'][data-theme-variant='concert-night'] .home-cover-wall { opacity: 0.5; filter: saturate(0.85); }
+html[data-theme='miku'][data-theme-variant='concert-night'] .home-hero-shade { background: linear-gradient(90deg, #091228f2, #091228c8 40%, #09122830 68%); }
+html[data-theme='twin-peaks'] .home-cover-wall { opacity: 0.5; filter: sepia(0.25); }
+html[data-theme='twin-peaks'] .home-hero-shade { background: linear-gradient(90deg, #2f100cf2, #2f100cc8 40%, #2f100c30 68%); }
+html[data-theme='twin-peaks'][data-theme-variant='douglas-firs'] .home-cover-wall { opacity: 0.5; filter: sepia(0.3) saturate(0.8); }
+html[data-theme='twin-peaks'][data-theme-variant='douglas-firs'] .home-hero-shade { background: linear-gradient(90deg, #10140ff2, #10140fc8 40%, #10140f30 68%); }
+html[data-theme='twin-peaks'][data-theme-variant='black-lodge'] .home-cover-wall { opacity: 0.5; filter: grayscale(1); }
+html[data-theme='twin-peaks'][data-theme-variant='black-lodge'] .home-hero-shade { background: linear-gradient(90deg, #0c0c0cf2, #0c0c0cc8 40%, #0c0c0c30 68%); }
+html[data-theme='seinfeld'] .home-cover-wall { opacity: 0.45; filter: grayscale(0.15); }
+html[data-theme='seinfeld'] .home-hero-shade { background: linear-gradient(90deg, #1c1818f2, #1c1818c8 40%, #1c181830 68%); }
+
+/* Next-session cards. */
+html[data-theme='lain'] .home-resume.layer-card { position: relative; display: flex; min-height: 220px; overflow: hidden; border: 0; background: #06103a url('./assets/themes/fx/lain-layer-card.jpg') center / cover; }
+.layer-card-art { position: relative; width: 30%; flex-shrink: 0; opacity: 0.9; mix-blend-mode: luminosity; }
+.layer-card-art > * { position: absolute; inset: 0; }
+.layer-card-body { position: relative; flex: 1; min-width: 0; padding: 18px 22px 64px; color: #cfe9ff; }
+.layer-card-word { font: 700 2.2rem/1.05 'Shippori Mincho', Georgia, serif; text-transform: uppercase; letter-spacing: 0.02em; color: #b9e6ff; text-shadow: 0 0 6px #5cc8ff, 0 0 18px #2a7bff; }
+.layer-card-ghost { margin: 4px 0 8px; font: italic 1.2rem 'Shippori Mincho', serif; letter-spacing: 0.06em; color: #8fd6ff40; }
+.layer-card-meta { font-size: 0.8rem; color: #d8efff; }
+.layer-card-layer { position: absolute; right: 22px; bottom: 18px; font: 700 1.35rem 'Shippori Mincho', serif; color: #b9e6ff; text-shadow: 0 0 6px #5cc8ff; }
+.layer-card-action { position: absolute; left: 22px; bottom: 18px; }
+html[data-theme='metal-gear'] .home-resume.briefing-file { display: flex; gap: 18px; padding: 16px 18px; border: 2px solid #8a8f88; background: #1b1d1c; color: #e6ece4; font-family: 'IBM Plex Mono', monospace; }
+.briefing-head { display: inline-block; margin-bottom: 12px; padding: 2px 26px; background: #d8ddd6; color: #1b1d1c; font-size: 12px; font-weight: 700; letter-spacing: 0.14em; }
+.briefing-menu p { margin: 0 0 7px; padding: 3px 10px; border: 1px solid #9aa097; font-size: 12px; letter-spacing: 0.06em; }
+.briefing-menu p > span { display: block; text-transform: lowercase; color: #c8cec6; }
+.briefing-menu strong { display: block; margin-top: 2px; font-size: 13px; font-weight: 500; color: #fff; }
+.briefing-menu .briefing-on { border-color: #7df0b0; box-shadow: inset 0 0 0 1px #7df0b0; color: #7df0b0; text-transform: lowercase; }
+.briefing-portrait { position: relative; width: 96px; height: 128px; flex-shrink: 0; border: 1px solid #9aa097; filter: grayscale(0.3) contrast(1.1); }
+.briefing-portrait > * { position: absolute; inset: 0; }
+html[data-theme='miku'] .home-resume.song-select { display: flex; overflow: hidden; border: 0; border-radius: 14px; background: linear-gradient(120deg, #173483, #1f5fb8 55%, #1a6a82); color: #fff; box-shadow: 0 10px 26px #0b2a6a55; }
+.song-jacket { position: relative; width: 34%; flex-shrink: 0; }
+.song-jacket > * { position: absolute; inset: 0; }
+.song-body { display: flex; flex: 1; min-width: 0; flex-direction: column; padding: 16px 18px; }
+.song-row { display: flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 999px; background: #ffffffe6; color: #123a7a; }
+.song-row h2 { font: 700 1.1rem 'Quicksand', sans-serif; }
+.song-stars { margin-left: auto; color: #8a5a00; letter-spacing: 1px; }
+.song-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.song-tabs span { padding: 3px 10px; border-radius: 999px; background: #ffffff33; font: 700 11px 'Quicksand', sans-serif; letter-spacing: 0.08em; }
+.song-tabs span.on { background: #d6247a; box-shadow: 0 0 10px #ff4fa0; }
+html[data-theme='twin-peaks'] .home-resume.diane-tape { display: flex; overflow: hidden; border: 1px solid rgb(var(--line-strong)); background: rgb(var(--surface-panel)); }
+.diane-recorder { width: 38%; flex-shrink: 0; object-fit: cover; }
+.diane-body { display: flex; flex: 1; min-width: 0; flex-direction: column; padding: 18px 20px; }
+.diane-label { font: 11px/1 Inter, system-ui, sans-serif; letter-spacing: 0.2em; text-transform: uppercase; color: rgb(var(--accent)); }
+.diane-entry { margin-top: 10px; font: italic 1.1rem/1.45 'Bodoni Moda', Georgia, serif; color: rgb(var(--ink-primary)); }
+.diane-entry::after { content: ''; display: inline-block; width: 0.5em; height: 1em; margin-left: 2px; vertical-align: -2px; background: #c5241a; }
+html[data-theme='seinfeld'] .home-resume.sf-episode { display: flex; overflow: hidden; border: 1px solid rgb(var(--line-strong)); border-radius: 10px; background: rgb(var(--surface-panel)); }
+.sf-episode-shot { position: relative; width: 42%; flex-shrink: 0; background: url('./assets/themes/fx/seinfeld-building.jpg') 50% 60% / cover; }
+.sf-episode-cover { position: absolute; right: 12px; bottom: 12px; width: 62px; height: 88px; border: 2px solid #fbd61f; box-shadow: 0 6px 14px #0009; }
+.sf-episode-body { display: flex; flex: 1; min-width: 0; flex-direction: column; padding: 18px 20px; }
+.sf-episode-kick { font: 600 11px 'Oswald', sans-serif; letter-spacing: 0.18em; text-transform: uppercase; color: rgb(var(--accent)); }
+.sf-episode-title { margin-top: 6px; font: italic 2rem/1.1 'Vidaloka', Georgia, serif; color: #fbd61f; }
+/* Twin Peaks: the town sign's population is your library. */
+.peaks-sign { position: relative; display: inline-block; width: 220px; }
+.peaks-sign img { display: block; width: 100%; border-radius: 3px; box-shadow: 0 6px 16px #000a; }
+.peaks-sign > span { position: absolute; left: 60.5%; top: 83%; font: italic 600 0.95rem/1 'Bodoni Moda', Georgia, serif; color: #e8e4cc; text-shadow: 0 1px 1px #0008; }
+.peaks-log-line { font: italic 12px 'Bodoni Moda', Georgia, serif; color: #e7c27a; }
+
+/* Progress: a tally beside the pressed control. */
+.progress-tally { position: fixed; z-index: 60; display: flex; align-items: center; gap: 3px; padding: 4px 8px; border: 1px solid rgb(var(--line-strong)); background: rgb(var(--surface-panel) / 0.95); pointer-events: none; transform: translate(-50%, -130%); }
+.progress-tally img { width: 26px; height: 26px; object-fit: cover; }
+.progress-tally > span { margin-left: 6px; white-space: nowrap; font-size: 12px; color: rgb(var(--ink-primary)); }
+.lain-nodes .progress-tally-lead { width: 70px; height: 50px; mix-blend-mode: screen; }
+.lain-nodes i { width: 9px; height: 9px; border-radius: 50%; background: rgb(var(--accent)); box-shadow: 0 0 6px rgb(var(--accent)); }
+.lain-nodes > span { font: 18px 'VT323', monospace; color: rgb(var(--accent)); }
+.peaks-pie img { border-radius: 50%; border: 1px solid #ead6b3; }
+.peaks-pie > span { font: italic 14px 'Bodoni Moda', serif; color: #f0c7b6; }
+.seinfeld-mints { border-radius: 8px; }
+.seinfeld-mints .progress-tally-lead { width: 54px; height: auto; object-fit: contain; }
+.seinfeld-mints img:not(.progress-tally-lead) { object-fit: contain; }
+.seinfeld-mints > span { font: italic 13px 'Vidaloka', Georgia, serif; color: #fbd61f; }
+.mgs-weapon { position: fixed; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: #0c0f0de6; border: 1px solid #6f746c; pointer-events: none; transform: translate(-50%, -130%); }
+.mgs-weapon img { width: 30px; height: 30px; object-fit: contain; }
+.mgs-weapon b { display: block; font: 700 18px/1 'IBM Plex Mono', monospace; letter-spacing: 0.04em; color: #cfd4cc; }
+.mgs-weapon-bar { display: flex; gap: 2px; margin-top: 4px; }
+.mgs-weapon-bar i { width: 5px; height: 10px; background: #4a5158; }
+.mgs-weapon-bar i.on { background: #f0b43a; }
+
+/* Completion: a card in the corner. */
+.completion-card { position: fixed; right: 16px; bottom: 96px; z-index: 60; display: flex; align-items: center; gap: 12px; max-width: 24rem; padding: 8px 14px 8px 8px; border: 1px solid rgb(var(--line-strong)); background: rgb(var(--surface-panel)); box-shadow: 0 10px 26px #0008; }
+.completion-card > img { width: 80px; height: 80px; flex-shrink: 0; object-fit: cover; }
+.lain-done-line { display: block; font: 20px/1.1 'VT323', monospace; font-weight: 400; color: rgb(var(--accent)); }
+.mgs-done > img { object-fit: contain; }
+.mgs-done-line { display: block; font: 700 1.1rem/1 'IBM Plex Mono', monospace; letter-spacing: 0.14em; color: rgb(var(--accent)); }
+.miku-clear { flex-direction: column; border-radius: 14px; padding: 12px 16px; text-align: center; }
+.miku-clear-line { display: block; font: 700 1.8rem/1 'Quicksand', sans-serif; letter-spacing: 0.06em; color: #c4166a; }
+.miku-clear-stars { display: block; color: #b87a00; letter-spacing: 2px; }
+.miku-clear-singers { display: flex; justify-content: center; gap: 4px; margin-top: 6px; }
+.miku-clear-singers img { width: 40px; height: 40px; }
+.peaks-done-line { display: block; font: italic 500 1.1rem 'Bodoni Moda', serif; color: #f0c7b6; }
+
+/* Idle: a still from the source. */
+.idle-art { position: fixed; inset: 0; z-index: 65; pointer-events: none; opacity: 0; background-color: #000; background-position: center; background-size: cover; }
+.idle-art-closed { pointer-events: auto; opacity: 1; }
+.idle-art-mgs { background-size: contain; background-repeat: no-repeat; }
+.idle-art-lain::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #0003 0 1px, transparent 1px 3px); }
+.idle-art-miku::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, #39c5bb44, transparent 60%); }
+.boot-lain-present { background: #fff; }
+.boot-present { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+@media (prefers-reduced-motion: no-preference) {
+  .progress-tally img:last-of-type, .progress-tally i:last-of-type { animation: tally-in 0.4s cubic-bezier(0.2, 1.5, 0.4, 1); }
+  .mgs-weapon { animation: mgs-flash 0.5s steps(2) 2; }
+  .completion-card { animation: completion-in 0.45s cubic-bezier(0.2, 1.3, 0.4, 1); }
+  .mgs-done > img { animation: mgs-slam 0.35s cubic-bezier(0.3, 1.6, 0.5, 1); }
+  .idle-art { transition: opacity 1.4s; }
+  .idle-art-lain.idle-art-closed { animation: wires-drift 40s linear infinite alternate; }
+  .idle-art-miku.idle-art-closed::after { animation: stage-pulse 1s ease-in-out infinite alternate; }
+  .diane-entry::after { animation: tape-rec 1s steps(1) infinite; }
+  .boot-present-day { animation: present-a 2s steps(1, end) forwards; }
+  .boot-present-time { animation: present-b 2s steps(1, end) forwards; }
+}
+@media (prefers-reduced-motion: reduce) { .boot-present-time { opacity: 1; } }
+@keyframes tally-in { from { transform: translateY(-14px) scale(0.4); opacity: 0; } }
+@keyframes mgs-flash { 50% { opacity: 0.35; } }
+@keyframes completion-in { from { transform: translateX(60px); opacity: 0; } }
+@keyframes mgs-slam { from { transform: scale(2); opacity: 0; } }
+@keyframes wires-drift { from { background-position: 40% 50%; } to { background-position: 60% 45%; } }
+@keyframes stage-pulse { from { opacity: 0.3; } to { opacity: 1; } }
+@keyframes tape-rec { 50% { opacity: 0; } }
+@keyframes present-a { 0% { opacity: 0; } 5% { opacity: 1; } 48%, 100% { opacity: 0; } }
+@keyframes present-b { 0%, 48% { opacity: 0; } 49% { opacity: 1; } 100% { opacity: 1; } }

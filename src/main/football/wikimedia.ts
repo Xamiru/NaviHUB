@@ -138,7 +138,7 @@ function linkedLabels(raw: string): string[] {
   return [...new Set(values.map((item) => item
     .replace(/\s*\([^)]*(?:title|win|champion)[^)]*\)\s*$/i, '')
     .replace(/\s*\(\d+\)\s*$/, '')
-    .trim()).filter(Boolean))]
+    .trim()).filter((item) => /\p{L}/u.test(item)))]
 }
 
 function tableRows(table: string): { headers: string[]; rows: string[][] } {

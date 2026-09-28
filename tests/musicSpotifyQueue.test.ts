@@ -176,6 +176,95 @@ describe('persistent Spotify download queue process', () => {
     expect(spawned).toHaveLength(0)
   })
 
+  it("runs only the song whose Download was pressed, leaving the playlist's other queued songs queued", async () => {
+    const payload = validateSpotdlPayload([
+      { song_id: 'first', name: 'First', artists: ['Artist'], album_name: 'Album', duration: 200 },
+      { song_id: 'second', name: 'Second', artists: ['Artist'], album_name: 'Album', duration: 210 }
+    ])
+    const playlist = spotifyRepo.createSpotifyPlaylist({ spotifyId: 'playlist', sourceUrl: 'https://open.spotify.com/playlist/playlist', title: 'Playlist', songs: payload.songs.map((song) => ({ ...song, coverPath: null })) })
+    const [first, second] = (db.prepare('SELECT id FROM music_spotify_playlist_item ORDER BY position')
+      .all() as { id: number }[]).map((row) => row.id)
+    spotify.addPlaylistDownloadQueue({ playlistId: playlist.playlistId })
+    const { jobId } = spotify.addPlaylistDownloadQueue({ playlistId: playlist.playlistId, itemIds: [second] })
+    vi.mocked(searchYouTubeMusic).mockRejectedValue(new Error('YouTube Music search failed (HTTP 503)'))
+    spotify.startDownloadQueue({ jobId: jobId!, itemIds: [second], prioritize: true })
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('error'))
+    expect(spotify.getStatus()?.queueItemIds).toEqual([second])
+    const error = (id: number) => (db.prepare('SELECT download_error FROM music_spotify_playlist_item WHERE id=?')
+      .get(id) as { download_error: string | null }).download_error
+    expect(error(second)).toContain('HTTP 503')
+    expect(error(first)).toBeNull()
+    expect(spotifyRepo.getDownloadQueueCard(jobId!)?.state).toBe('queued')
+  })
+
+  it('downloads a strong YouTube Music match although yt-dlp reports only the translated title', async () => {
+    const payload = validateSpotdlPayload([{ song_id: 'gurenge', name: '紅蓮華', artists: ['LiSA'], album_name: 'LEO-NiNE', duration: 238 }])
+    const playlist = spotifyRepo.createSpotifyPlaylist({ spotifyId: 'jp', sourceUrl: 'https://open.spotify.com/playlist/jp', title: 'JP', songs: payload.songs.map((song) => ({ ...song, coverPath: null })) })
+    const catalogue = { ...ytm(0), artists: ['LiSA'], album: 'LEO-NiNE', duration: 238 }
+    vi.mocked(searchYouTubeMusic).mockImplementation(async (_query, _kind, locale) =>
+      [{ ...catalogue, title: locale === 'ja' ? '紅蓮華' : '紅蓮華 - Gurenge' }])
+    const inspect = (duration: number) => ytdlpProcess(() => ({ title: 'Gurenge', artist: 'LiSA', uploader: 'LiSA Official YouTube', duration }))
+    vi.mocked(spawn).mockImplementation(inspect(238))
+    const { jobId } = spotify.addPlaylistDownloadQueue({ playlistId: playlist.playlistId })
+    spotify.startDownloadQueue({ jobId: jobId! })
+    await vi.waitFor(() => expect(vi.mocked(spawn).mock.calls.some(isDownload)).toBe(true))
+    const download = spawned[vi.mocked(spawn).mock.calls.findIndex(isDownload)]
+    download.exitCode = 1
+    download.emit('close', 1)
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('error'))
+
+    // A retry reuses the validated video without searching and still downloads it.
+    vi.mocked(searchYouTubeMusic).mockClear()
+    vi.mocked(spawn).mockClear()
+    spawned = []
+    spotify.startDownloadQueue({ jobId: jobId! })
+    await vi.waitFor(() => expect(vi.mocked(spawn).mock.calls.some(isDownload)).toBe(true))
+    expect(searchYouTubeMusic).not.toHaveBeenCalled()
+    const retry = spawned[vi.mocked(spawn).mock.calls.findIndex(isDownload)]
+    retry.exitCode = 1
+    retry.emit('close', 1)
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('error'))
+
+    // yt-dlp must still confirm the length: a different cut stays in review.
+    vi.mocked(spawn).mockClear()
+    vi.mocked(spawn).mockImplementation(inspect(290))
+    db.prepare('DELETE FROM music_source_evidence').run()
+    spotify.startDownloadQueue({ jobId: jobId! })
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('error'))
+    expect(vi.mocked(spawn).mock.calls.some(isDownload)).toBe(false)
+    expect((db.prepare('SELECT download_error FROM music_spotify_playlist_item').get() as { download_error: string }).download_error)
+      .toMatch(/^Needs review:/)
+  })
+
+  it('keeps a near miss for review when a later catalogue language fails', async () => {
+    const payload = validateSpotdlPayload([{ song_id: 'gurenge', name: '紅蓮華', artists: ['LiSA'], album_name: 'LEO-NiNE', duration: 238 }])
+    const playlist = spotifyRepo.createSpotifyPlaylist({ spotifyId: 'jp', sourceUrl: 'https://open.spotify.com/playlist/jp', title: 'JP', songs: payload.songs.map((song) => ({ ...song, coverPath: null })) })
+    vi.mocked(searchYouTubeMusic).mockImplementation(async (_query, _kind, locale) => {
+      if (locale !== 'en') throw new Error('YouTube Music returned a search page NaviHUB cannot read')
+      return [{ ...ytm(0), title: '紅蓮華', artists: ['LiSA'], album: 'LEO-NiNE', duration: 290 }]
+    })
+    vi.mocked(spawn).mockImplementation(ytdlpProcess(() => ({ title: 'Gurenge', artist: 'LiSA', uploader: 'LiSA', duration: 290 })))
+    const { jobId } = spotify.addPlaylistDownloadQueue({ playlistId: playlist.playlistId })
+    spotify.startDownloadQueue({ jobId: jobId! })
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('error'))
+    expect(vi.mocked(searchYouTubeMusic).mock.calls.some(([, , locale]) => locale === 'ja')).toBe(true)
+    expect((db.prepare('SELECT download_error FROM music_spotify_playlist_item').get() as { download_error: string }).download_error)
+      .toMatch(/^Needs review:/)
+  })
+
+  it('searches again instead of reusing a pick that failed review', async () => {
+    const payload = validateSpotdlPayload([{ song_id: 'song', name: 'Song', artists: ['Artist'], album_name: 'Album', duration: 200 }])
+    const playlist = spotifyRepo.createSpotifyPlaylist({ spotifyId: 'playlist', sourceUrl: 'https://open.spotify.com/playlist/playlist', title: 'Playlist', songs: payload.songs.map((song) => ({ ...song, coverPath: null })) })
+    const itemId = (db.prepare('SELECT id FROM music_spotify_playlist_item').get() as { id: number }).id
+    spotifyRepo.saveSourceEvidence('playlistItem', itemId, { url: 'https://www.youtube.com/watch?v=zzzzzzzzzzz', title: 'Other song', artist: 'Artist', channel: 'Artist', duration: 200, format: 'opus', observedAt: Date.now(), accessKey: musicAccessKey() }, false, false)
+    vi.mocked(searchYouTubeMusic).mockRejectedValue(new Error('YouTube Music search failed (HTTP 503)'))
+    const { jobId } = spotify.addPlaylistDownloadQueue({ playlistId: playlist.playlistId })
+    spotify.startDownloadQueue({ jobId: jobId! })
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('error'))
+    expect(searchYouTubeMusic).toHaveBeenCalled()
+    expect(spawned).toHaveLength(0)
+  })
+
   it('builds a first artist catalogue without requiring a representative local track', async () => {
     db.prepare(`INSERT INTO music_artist (id, name, dir_path) VALUES (1, 'Sabrina Carpenter', 'Sabrina Carpenter')`).run()
     vi.mocked(fetchWithRetry).mockImplementation(async (url) => {

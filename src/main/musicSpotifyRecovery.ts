@@ -1,5 +1,6 @@
 import { musicToolOptions, musicYtDlpArgs, musicFailure, musicAccessKey } from './musicTools'
 import { searchYouTubeMusic } from './youtubeMusic'
+import { ytmLocalesFor } from './musicAcquisition'
 import { execFile } from 'child_process'
 import { BrowserWindow, dialog } from 'electron'
 import { copyFileSync, constants, mkdirSync, existsSync, statSync } from 'fs'
@@ -51,7 +52,13 @@ export async function searchAudio(query: string): Promise<SpotifyAudioCandidate[
   const trimmed = query.trim().slice(0, 300)
   if (!trimmed) return []
   try {
-    const [songs, videos] = await Promise.all([searchYouTubeMusic(trimmed, 'songs'), searchYouTubeMusic(trimmed, 'videos')])
+    // One failing catalogue language must not discard what the others found.
+    const [videos, english, ...native] = (await Promise.allSettled([
+      searchYouTubeMusic(trimmed, 'videos'),
+      ...ytmLocalesFor(trimmed).map((locale) => searchYouTubeMusic(trimmed, 'songs', locale))
+    ])).map((result) => result.status === 'fulfilled' ? result.value : [])
+    // The native catalogue first: its titles and credits read like the song being fixed.
+    const songs = [...native.flat(), ...english].filter((song, index, all) => all.findIndex((row) => row.videoId === song.videoId) === index)
     const seen = new Set<string>()
     const results = [
       ...songs.slice(0, 6).map((song) => ({ song, official: true })),

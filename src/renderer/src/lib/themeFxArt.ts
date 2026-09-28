@@ -5,8 +5,6 @@ import lainCoplandEye from '../assets/themes/fx/lain-copland-eye.png'
 import lainNavi from '../assets/themes/fx/lain-navi.jpg'
 import lainPortrait from '../assets/themes/fx/lain-portrait.png'
 import lainSignalLost from '../assets/themes/fx/lain-signal-lost.jpg'
-import lainLogo from '../assets/themes/fx/lain-logo.png'
-import lainSite from '../assets/themes/fx/lain-site.jpg'
 import mgsNaomi from '../assets/themes/fx/mgs-codec-naomi.png'
 import mgsSnake from '../assets/themes/fx/mgs-codec-snake.png'
 import mgsMeiLing from '../assets/themes/fx/mgs-codec-meiling.png'
@@ -29,6 +27,8 @@ import mikuSingerMiku from '../assets/themes/fx/miku-singer-miku.png'
 import mikuSingerRin from '../assets/themes/fx/miku-singer-rin.png'
 import mikuSingerKaito from '../assets/themes/fx/miku-singer-kaito.png'
 import mikuSingerMeiko from '../assets/themes/fx/miku-singer-meiko.png'
+import mikuSingerLen from '../assets/themes/fx/miku-singer-len.png'
+import mikuSingerLuka from '../assets/themes/fx/miku-singer-luka.png'
 import mikuHachune from '../assets/themes/fx/miku-hachune.png'
 import mikuHachunePanic from '../assets/themes/fx/miku-hachune-panic.jpg'
 import mikuSongSelect from '../assets/themes/fx/miku-song-select.jpg'
@@ -57,6 +57,24 @@ import sfElaineDance from '../assets/themes/fx/seinfeld-elaine-dance.gif'
 import sfElaineStill from '../assets/themes/fx/seinfeld-elaine-still.jpg'
 import sfGang from '../assets/themes/fx/seinfeld-gang.jpg'
 import sfKramerEntrance from '../assets/themes/fx/seinfeld-kramer-entrance.jpg'
+
+import lainLayerCard from '../assets/themes/fx/lain-layer-card.jpg'
+import lainPresentDay from '../assets/themes/fx/lain-present-day.jpg'
+import lainPresentTime from '../assets/themes/fx/lain-present-time.jpg'
+import lainWiresDusk from '../assets/themes/fx/lain-wires-dusk.jpg'
+import lainBear from '../assets/themes/fx/lain-bear.jpg'
+import lainProtocol7 from '../assets/themes/fx/lain-protocol7.jpg'
+import mgsTitle from '../assets/themes/fx/mgs-title.jpg'
+import mgsFoxhound from '../assets/themes/fx/mgs-foxhound.png'
+import mikuConcert from '../assets/themes/fx/miku-concert.jpg'
+import peaksRecorder from '../assets/themes/fx/peaks-recorder.jpg'
+import peaksPie from '../assets/themes/fx/peaks-pie.jpg'
+import peaksThumbsUp from '../assets/themes/fx/peaks-thumbs-up.jpg'
+import peaksLogLady from '../assets/themes/fx/peaks-log-lady.jpg'
+import peaksSign from '../assets/themes/fx/peaks-sign.jpg'
+import sfBuilding from '../assets/themes/fx/seinfeld-building.jpg'
+import sfMint from '../assets/themes/fx/seinfeld-mint.png'
+import sfJuniorMints from '../assets/themes/fx/seinfeld-junior-mints.png'
 
 import bzCloak from '../assets/themes/fx/berserk-cloak.jpg'
 import bzEmboss from '../assets/themes/fx/berserk-emboss.jpg'
@@ -123,14 +141,15 @@ import jjScTitle from '../assets/themes/fx/jojo-sc-title.jpg'
 import jjDiuTitle from '../assets/themes/fx/jojo-diu-title.jpg'
 
 export const FX_ART = {
-  lainDancing, lainCoplandEye, lainNavi, lainPortrait, lainSignalLost, lainLogo, lainSite,
+  lainDancing, lainCoplandEye, lainNavi, lainPortrait, lainSignalLost,
   mgsNaomi, mgsSnake, mgsMeiLing, mgsFreq, mgsGameOver, mgsBox, mgsRadar, mgsSnakeWalk,
   mgsItems: { ration: mgsRation, scope: mgsScope, thermal: mgsThermal, card: mgsCard, bandage: mgsBandage, suppressor: mgsSuppressor },
   mikuHachuneBusy, mikuHachuneWork, mikuCool, mikuNote, mikuHachune, mikuHachunePanic, mikuSongSelect,
-  mikuSingers: { miku: mikuSingerMiku, rin: mikuSingerRin, kaito: mikuSingerKaito, meiko: mikuSingerMeiko },
+  mikuSingers: { miku: mikuSingerMiku, rin: mikuSingerRin, len: mikuSingerLen, luka: mikuSingerLuka, kaito: mikuSingerKaito, meiko: mikuSingerMeiko },
   sfLogo, sfStandup, sfJerry, sfGeorge, sfElaine, sfKramer, sfNewman, sfSoupNazi, sfPuddy, sfFestivus, sfMenu, sfElaineDance, sfElaineStill, sfGang, sfKramerEntrance,
   bzCloak, bzEmboss, bzMark, bzCasca, bzGuts, bzSkull, bzBrand, bzBrandPanel, bzBehelitAwake, bzBehelitDormant, bzElfhelm, bzEclipse, bzSpread,
   opCrew, opJolly, opLuffy, opNami, opChopper, opUsopp, opSmoker, opDenden, opLogpose, opSunset, opTsuzuku, opEyecatch, opMeat, opIslandWhiskyPeak, opIslandDrum, opIslandAlabasta, opIslandSkypiea, opIslandThrillerBark, opIslandMarineford,
   jjScHero, jjDiuHero, jjGwHero, jjScMark, jjDiuMark, jjGwMark, jjJotaro, jjJoseph, jjPolnareff, jjDio, jjJosuke, jjKoichi, jjRohan, jjKira, jjGiorno, jjMista, jjBucciarati, jjKingcrimson, jjTbcArrow, jjScCard, jjDiuCard, jjGwCard, jjScPlate, jjDiuPlate, jjGwPlate, jjScVillain, jjDiuVillain, jjGwVillain, jjScTitle, jjDiuTitle,
+  lainLayerCard, lainPresentDay, lainPresentTime, lainWiresDusk, lainBear, lainProtocol7, mgsTitle, mgsFoxhound, mikuConcert, peaksRecorder, peaksPie, peaksThumbsUp, peaksLogLady, peaksSign, sfBuilding, sfMint, sfJuniorMints,
   peaksRedRoom, peaksCurtain, peaksWhiteHorse, peaksWren, peaksFalls, peaksMist, peaksLogo, peaksDoubleR, peaksDiane
 }

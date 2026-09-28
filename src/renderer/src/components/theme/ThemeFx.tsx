@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { FX_ART } from '../../lib/themeFxArt'
 import {
@@ -11,20 +11,59 @@ import {
 import { mediaUrl } from '@shared/mediaUrl'
 import { usePlayerControls } from '../../lib/player'
 import { useAppTheme } from '../../lib/useAppTheme'
-import { prefersReducedMotion } from './ThemeText'
+import { prefersReducedMotion, TypedText } from './ThemeText'
 
 // Theme effects that are not tied to one component: Lain's page-change glitch,
 // Miku's progress judgement and beat pulse, the Twin Peaks idle curtains,
 // Seinfeld's completion dance and idle gang, Berserk's Dragonslayer strike and
 // idle Eclipse, One Piece's rubber stretch, bounty poster and island cutaways,
-// and JoJo's Stand cry and To Be Continued freeze. Everything here is decorative, pointer-transparent, hidden
+// JoJo's Stand cry and To Be Continued freeze, and the round-2 moments for the
+// older themes (progress tallies, completion cards and idle screens). Everything here is decorative, pointer-transparent, hidden
 // from assistive technology, and never delays the route (the new page is
-// already rendered underneath).
+// already rendered underneath). The one exception is the completion notice: the
+// card and bounty poster announce the finished title as a status, since nothing
+// else does.
 export default function ThemeFx() {
   const { theme, variant } = useAppTheme()
   return (
     <>
       {theme === 'lain' && <RouteTransition />}
+      {theme === 'lain' && <ProgressTally className="lain-nodes" lead={FX_ART.lainProtocol7} caption={(n) => `NODE ${String(n).padStart(2, '0')}`} />}
+      {theme === 'lain' && (
+        <CompletionCard className="lain-done" art={FX_ART.lainBear}>
+          {() => <b className="lain-done-line"><TypedText text="Close the world, open the nExt." speed={28} /></b>}
+        </CompletionCard>
+      )}
+      {theme === 'lain' && <IdleArt className="idle-art-lain" src={FX_ART.lainWiresDusk} />}
+      {theme === 'metal-gear' && <WeaponWindow />}
+      {theme === 'metal-gear' && (
+        <CompletionCard className="mgs-done" art={FX_ART.mgsFoxhound}>
+          {() => <b className="mgs-done-line">MISSION COMPLETE</b>}
+        </CompletionCard>
+      )}
+      {theme === 'metal-gear' && <IdleArt className="idle-art-mgs" src={FX_ART.mgsTitle} />}
+      {theme === 'miku' && (
+        <CompletionCard
+          className="miku-clear"
+          footer={
+            <span className="miku-clear-singers" aria-hidden="true">
+              {(['miku', 'rin', 'len', 'luka', 'kaito', 'meiko'] as const).map((n) => <img key={n} src={FX_ART.mikuSingers[n]} alt="" />)}
+            </span>
+          }
+        >
+          {() => <b className="miku-clear-line">CLEAR!</b>}
+        </CompletionCard>
+      )}
+      {theme === 'miku' && <IdleArt className="idle-art-miku" src={FX_ART.mikuConcert} />}
+      {theme === 'twin-peaks' && <ProgressTally className="peaks-pie" icon={FX_ART.peaksPie} caption={() => 'Damn fine.'} />}
+      {theme === 'twin-peaks' && (
+        <CompletionCard className="peaks-done" art={FX_ART.peaksThumbsUp}>
+          {() => <b className="peaks-done-line">Damn fine work.</b>}
+        </CompletionCard>
+      )}
+      {theme === 'seinfeld' && (
+        <ProgressTally className="seinfeld-mints" lead={FX_ART.sfJuniorMints} icon={FX_ART.sfMint} caption={(n) => (n === 1 ? "Who's gonna turn down a Junior Mint?" : '')} />
+      )}
       {theme === 'miku' && <ProgressJudgement />}
       {theme === 'miku' && <BeatPulse />}
       {theme === 'twin-peaks' && <IdleCurtains />}
@@ -306,6 +345,87 @@ export function IdleTbc() {
     <div className={`idle-tbc ${closed ? 'idle-tbc-closed' : ''}`} aria-hidden="true" data-testid="idle-tbc">
       <img src={FX_ART.jjTbcArrow} alt="" />
     </div>
+  )
+}
+
+// A tally beside the pressed control: one icon per log in the combo window,
+// grouped in fives (or dots when there is no icon), with an optional lead image
+// and caption. Shared by Lain, Twin Peaks and Seinfeld.
+function ProgressTally({ className, icon, lead, caption }: { className: string; icon?: string; lead?: string; caption?: (combo: number) => string }) {
+  const fx = useSyncExternalStore(subscribeProgressFx, getProgressFx)
+  useEffect(() => {
+    if (!fx) return
+    const id = window.setTimeout(() => clearProgressFx(fx.id), 1100)
+    return () => window.clearTimeout(id)
+  }, [fx])
+  if (!fx) return null
+  const marks = fx.combo % 5 || 5
+  const text = caption?.(fx.combo)
+  return (
+    <div key={fx.id} className={`progress-tally ${className}`} style={{ left: fx.x, top: fx.y }} aria-hidden="true">
+      {lead && <img className="progress-tally-lead" src={lead} alt="" />}
+      {Array.from({ length: marks }, (_, i) => (icon ? <img key={i} src={icon} alt="" /> : <i key={i} />))}
+      {text && <span>{text}</span>}
+    </div>
+  )
+}
+
+// Metal Gear: the HUD weapon window flashes the new count over its segment bar.
+function WeaponWindow() {
+  const fx = useSyncExternalStore(subscribeProgressFx, getProgressFx)
+  useEffect(() => {
+    if (!fx) return
+    const id = window.setTimeout(() => clearProgressFx(fx.id), 1200)
+    return () => window.clearTimeout(id)
+  }, [fx])
+  if (!fx) return null
+  const lit = fx.count != null && fx.total ? Math.round((Math.min(fx.count, fx.total) / fx.total) * 12) : Math.min(12, fx.combo)
+  return (
+    <div key={fx.id} className="mgs-weapon" style={{ left: fx.x, top: fx.y }} aria-hidden="true">
+      <img src={FX_ART.mgsItems.ration} alt="" />
+      <div>
+        <b>{fx.count != null ? (fx.total ? `${fx.count}/${fx.total}` : String(fx.count)) : `x${fx.combo}`}</b>
+        <span className="mgs-weapon-bar">
+          {Array.from({ length: 12 }, (_, i) => <i key={i} className={i < lit ? 'on' : ''} />)}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// A completion card in the corner for a few seconds: the theme's art, its line
+// and the title. Lain, Metal Gear, Miku and Twin Peaks.
+function CompletionCard({ className, art, footer, children }: { className: string; art?: string; footer?: ReactNode; children: () => ReactNode }) {
+  const fx = useSyncExternalStore(subscribeProgressFx, getCompletionFx)
+  useEffect(() => {
+    if (!fx) return
+    const id = window.setTimeout(() => clearCompletionFx(fx.id), 5000)
+    return () => window.clearTimeout(id)
+  }, [fx])
+  if (!fx) return null
+  return (
+    <div key={fx.id} className={`completion-card ${className}`} role="status">
+      {art && <img src={art} alt="" />}
+      <span className="min-w-0">
+        {children()}
+        <span className="block text-sm text-ink">{fx.title} completed.</span>
+        {footer}
+      </span>
+    </div>
+  )
+}
+
+// A still from the source as the idle cover (Lain's power lines, the MGS1
+// title screen, a Miku concert).
+export function IdleArt({ className, src }: { className: string; src: string }) {
+  const { closed } = useIdleCover()
+  return (
+    <div
+      className={`idle-art ${className} ${closed ? 'idle-art-closed' : ''}`}
+      style={{ backgroundImage: `url(${src})` }}
+      aria-hidden="true"
+      data-testid="idle-art"
+    />
   )
 }
 

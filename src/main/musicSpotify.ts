@@ -1,16 +1,17 @@
 import { randomUUID } from 'crypto'
 import { processUrlJob, validateUrlInput } from './musicUrlQueue'
 import { addUrlJob } from './repos/musicUrlRepo'
-import { assessMusicSource } from '@shared/musicSourceMatch'
+import { assessMusicSource, durationFits } from '@shared/musicSourceMatch'
 import { musicToolOptions, musicYtDlpArgs, musicFailure } from './musicTools'
 import { youtubeSourceUrl, inspectAudio, audioSourceInspection, forgetAudioSource, canonicalAudioSource } from './musicSpotifyRecovery'
 import * as spotifyWeb from './spotifyWeb'
-import { searchYouTubeMusic, type YtmSong } from './youtubeMusic'
+import { searchYouTubeMusic, type YtmLocale, type YtmSong } from './youtubeMusic'
 import {
   albumFolders,
   expectedRecording,
   rankYtmSources,
   runPool,
+  sourceSearchLocales,
   sourceSearchQueries,
   stagedOutputBase,
   stagedOutputTemplate,
@@ -1094,6 +1095,8 @@ interface QueueRun extends SpotifyRunControl {
   processed: Set<number>
   /** Cards that received new songs while they were being processed. */
   rerun: Set<number>
+  /** Playlist cards this run passes over only partly: a single song's Download leaves the rest queued. */
+  onlyItems: Map<number, Set<number>>
   needsRecoveryScan: boolean
 }
 let queueRun: QueueRun | null = null
@@ -1167,9 +1170,15 @@ export function clearCompletedDownloadQueue(): number {
   return spotifyRepo.clearCompletedDownloadQueue()
 }
 
+function queueOnlyItemIds(cardId: number): number[] | null {
+  const only = queueRun?.onlyItems.get(cardId)
+  return only ? [...only] : null
+}
+
 function updateQueueStatusCard(card: NonNullable<ReturnType<typeof spotifyRepo.getDownloadQueueCard>>): void {
   if (!status || status.id !== queueRun?.id) return
   status.queueCardId = card.id
+  status.queueItemIds = queueOnlyItemIds(card.id)
   status.route = '/music/downloads'
   status.playlistId = card.playlistId
   status.entityKind = card.entityKind ?? undefined
@@ -1340,8 +1349,9 @@ async function processPlaylistQueueCard(
   card: NonNullable<ReturnType<typeof spotifyRepo.getDownloadQueueCard>>
 ): Promise<{ total: number; resolved: number; error: string | null }> {
   if (card.playlistId == null) throw new Error('The queued playlist no longer exists')
+  const only = run.onlyItems.get(card.id)
   const itemIds = card.selections
-    .filter((selection) => selection.kind === 'playlistItem')
+    .filter((selection) => selection.kind === 'playlistItem' && (!only || only.has(selection.sourceId)))
     .map((selection) => selection.sourceId)
   const rows = spotifyRepo.pendingSpotifyItems(card.playlistId, itemIds)
   const total = itemIds.length
@@ -1547,8 +1557,17 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
         continue
       }
       run.processed.add(card.id)
-      if (result.error) {
-        failedCards += 1
+      const only = run.onlyItems.get(card.id)
+      run.onlyItems.delete(card.id)
+      if (result.error) failedCards += 1
+      if (only && card.playlistId != null && spotifyRepo.pendingSpotifyItems(
+        card.playlistId,
+        card.selections.filter((selection) => selection.kind === 'playlistItem' && !only.has(selection.sourceId))
+          .map((selection) => selection.sourceId)
+      ).length > 0) {
+        // The rest of the card was never part of this pass; its failures stay on the song rows.
+        spotifyRepo.setDownloadQueueCardState(card.id, 'queued', null, false)
+      } else if (result.error) {
         spotifyRepo.setDownloadQueueCardState(card.id, 'failed', result.error, false)
       } else {
         spotifyRepo.setDownloadQueueCardState(card.id, 'completed', null, false)
@@ -1561,6 +1580,7 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
         spotifyRepo.setDownloadQueueCardState(next.id, 'paused', null, run.mode === 'all')
         if (status?.id === run.id) {
           status.queueCardId = next.id
+          status.queueItemIds = queueOnlyItemIds(next.id)
           status.status = 'paused'
           status.phase = 'paused'
           status.message = 'Paused safely; Resume continues unresolved queue work'
@@ -1623,9 +1643,18 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
 export function startDownloadQueue(input: SpotifyDownloadQueueStartInput = {}): { id: string | null } {
   if (queueRun) {
     if (input.prioritize && input.jobId != null) {
+      const whole = !queueRun.processed.has(input.jobId) && !queueRun.onlyItems.has(input.jobId) &&
+        (queueRun.mode === 'all' || queueRun.targetJobIds.has(input.jobId))
+      if (!input.itemIds?.length) queueRun.onlyItems.delete(input.jobId)
+      else if (!whole) {
+        queueRun.onlyItems.set(input.jobId, new Set([...(queueRun.onlyItems.get(input.jobId) ?? []), ...input.itemIds]))
+      }
       queueRun.processed.delete(input.jobId)
       queueRun.targetJobIds.add(input.jobId)
-      if (queueRun.activeCardId === input.jobId) queueRun.rerun.add(input.jobId)
+      if (queueRun.activeCardId === input.jobId) {
+        queueRun.rerun.add(input.jobId)
+        if (status?.id === queueRun.id) status.queueItemIds = queueOnlyItemIds(input.jobId)
+      }
       spotifyRepo.prioritizeDownloadQueueCard(input.jobId)
       return { id: queueRun.id }
     }
@@ -1684,6 +1713,7 @@ export function startDownloadQueue(input: SpotifyDownloadQueueStartInput = {}): 
     activeCardId: null,
     processed: new Set(),
     rerun: new Set(),
+    onlyItems: new Map(mode === 'single' && input.itemIds?.length ? [[target.id, new Set(input.itemIds)]] : []),
     needsRecoveryScan: Boolean(input.resume)
   }
   queueRun = run
@@ -1806,7 +1836,11 @@ export async function setTrackDownloadOptions(input: SpotifyTrackDownloadOptions
     const queued = spotifyRepo.sourceQueue(input.sourceKind, input.trackId)
     if (input.startNow && queued.jobId != null) {
       if (queueRun?.intent === 'pause' && !queueRun.active) stopQueueRun(queueRun, 'cancel')
-      startDownloadQueue({ jobId: queued.jobId, prioritize: true })
+      startDownloadQueue({
+        jobId: queued.jobId,
+        itemIds: input.sourceKind === 'playlistItem' ? [input.trackId] : undefined,
+        prioritize: true
+      })
     }
   }
 }
@@ -1912,23 +1946,42 @@ interface AcquireInput {
 
 async function findYouTubeMusicSource(raw: Record<string, unknown>, broader: boolean): Promise<RankedSource | null> {
   const expected = expectedRecording(raw)
+  // One view per video and catalogue language: ranking combines them.
   const seen = new Map<string, YtmSong>()
   let ranked: RankedSource[] = []
-  const search = async (query: string, kind: 'songs' | 'videos') => {
-    for (const song of await searchYouTubeMusic(query, kind)) if (!seen.has(song.videoId)) seen.set(song.videoId, song)
+  // Once one search has answered, a later failing one (another locale) only narrows the evidence.
+  let answered = false
+  let failure: unknown = null
+  const search = async (query: string, kind: 'songs' | 'videos', locale: YtmLocale = 'en') => {
+    let songs: YtmSong[]
+    try {
+      songs = await searchYouTubeMusic(query, kind, locale)
+    } catch (error) {
+      if (!answered) throw error
+      failure ??= error
+      return
+    }
+    answered = true
+    for (const song of songs) {
+      if (!seen.has(`${song.videoId}:${locale}`)) seen.set(`${song.videoId}:${locale}`, song)
+    }
     ranked = rankYtmSources(expected, [...seen.values()])
   }
   const queries = sourceSearchQueries(expected)
   for (const query of queries) {
-    await search(query, 'songs')
-    if (ranked[0]?.strong) return ranked[0]
+    for (const locale of sourceSearchLocales(expected)) {
+      await search(query, 'songs', locale)
+      if (ranked[0]?.strong) return ranked[0]
+    }
   }
-  if (broader) {
-    await search(queries[0], 'videos')
-    return ranked[0] ?? null
-  }
+  if (broader) await search(queries[0], 'videos')
   // A different song is no evidence at all; only a same-title near miss is worth reviewing.
-  return ranked[0] && !ranked[0].reasons.includes('Title or recording version differs') ? ranked[0] : null
+  const result = broader
+    ? ranked[0] ?? null
+    : ranked[0] && !ranked[0].reasons.includes('Title or recording version differs') ? ranked[0] : null
+  // A failed search may have hidden the recording, so nothing found is then a lookup failure.
+  if (!result && failure) throw failure
+  return result
 }
 
 /** Without embedded art the album folder gets the Spotify cover, which the library scan reads. */
@@ -2016,12 +2069,15 @@ async function acquireLockedSongs(input: AcquireInput): Promise<number> {
   async function acquireOne(raw: Record<string, unknown>, index: number): Promise<void> {
     const id = String(raw.song_id)
     const references = spotifyRepo.sourcesForSpotifyId(id).filter((ref) => !ref.manual || ref.manual === raw.download_url)
+    // A pick that failed review is searched again, so better matching reaches it.
     const saved = references.map((ref) => spotifyRepo.sourceEvidence(ref.kind, ref.id))
-      .find((proof) => proof && (!raw.download_url || proof.evidence.url === raw.download_url))
+      .find((proof) => proof && (raw.download_url ? proof.evidence.url === raw.download_url : proof.approved || proof.validated))
     let url = typeof raw.download_url === 'string' ? raw.download_url : saved?.evidence.url
+    let found: RankedSource | null = null
     if (!url) {
       try {
-        url = (await findYouTubeMusicSource(raw, input.broader))?.source.url
+        found = await findYouTubeMusicSource(raw, input.broader)
+        url = found?.source.url
       } catch (error) {
         return fail(references, musicFailure('Lookup', 'YouTube Music search', error instanceof Error ? error.message : String(error)))
       }
@@ -2038,9 +2094,16 @@ async function acquireLockedSongs(input: AcquireInput): Promise<number> {
     if (!evidence) return fail(references, inspected.errors.get(canonical) ?? 'Extraction (yt-dlp): no verified source metadata returned; inspect the source or choose another recording')
     if (saved?.approved && (saved.evidence.url !== evidence.url || saved.evidence.title !== evidence.title ||
         saved.evidence.duration !== evidence.duration)) return fail(references, 'The approved source changed; review it again')
-    const assessment = assessMusicSource(expectedRecording(raw), evidence)
+    const expected = expectedRecording(raw)
+    const assessment = assessMusicSource(expected, evidence)
+    // yt-dlp reports YouTube's translated title ("Gurenge" for 紅蓮華), so a strong YouTube Music
+    // match for this exact video stands once yt-dlp confirms its length and no version wording.
+    // A retry reuses the validated video without searching, so that earlier match still counts.
+    const catalogued = found?.strong === true || (found == null && saved?.validated === true && saved.evidence.url === evidence.url)
+    const catalogueMatch = catalogued && durationFits(expected.duration, evidence.duration) &&
+      !assessment.reasons.includes('Recording variant differs')
     const approved = Boolean(saved?.approved)
-    const validated = approved || (!references.some((ref) => ref.broader || ref.manual) && assessment.strong)
+    const validated = approved || (!references.some((ref) => ref.broader || ref.manual) && (assessment.strong || catalogueMatch))
     for (const ref of references) spotifyRepo.saveSourceEvidence(ref.kind, ref.id, evidence, approved, validated)
     if (!validated) return fail(references, `Needs review: ${assessment.reasons.join('; ') || 'Confirm this source before downloading'}`)
     const archived = spotifyRepo.archivedAudioSource(evidence.url).find((row) => row.duration != null && row.duration > 0 && (evidence.duration == null ? approved : Math.abs(row.duration - evidence.duration) <= spotifyMatch.compatibleSpotifyDurationTolerance(evidence.duration)) && fileExists(row.filePath))
@@ -2162,9 +2225,11 @@ async function runMusicCommand(args: string[], owner: string, onLine?: (line: st
       if (/error|timed out|connection/i.test(line)) diagnostic = line
       onLine?.(line)
     }, jobId, spawn, AUDIO_STALL_MS)
-    if (code === 0 || attempt === 2 || !/timed out|timeout|connection reset|HTTP Error 5\d\d/i.test(diagnostic) ||
+    if (code === 0 || attempt === 2 || !/timed out|timeout|connection reset|HTTP Error (?:5\d\d|403|429)|too many requests/i.test(diagnostic) ||
       /sign in|captcha|cookie|format.*not available|unavailable/i.test(diagnostic) || stopped()) return code
-    await new Promise((resolve) => setTimeout(resolve, 500 * 2 ** attempt))
+    // A 403 is usually an expired stream URL; a 429 needs a real pause.
+    const limited = /HTTP Error 429|too many requests/i.test(diagnostic)
+    await new Promise((resolve) => setTimeout(resolve, (limited ? 5000 : 500) * 2 ** attempt))
     if (stopped()) return code
   }
   return 1

@@ -7,10 +7,15 @@ import FootballExternalLinks from '@/components/football/FootballExternalLinks'
 import { FootballCoverageStrip } from '@/components/football/FootballCommon'
 import FootballTeamPage from '@/pages/FootballTeamPage'
 import FootballSyncPage from '@/pages/FootballSyncPage'
+import FootballCurrentPage from '@/pages/FootballCurrentPage'
 
 const apiMock = vi.hoisted(() => ({
   football: {
     team: vi.fn(),
+    current: vi.fn(),
+    overview: vi.fn(),
+    matches: vi.fn(),
+    syncStatus: vi.fn(),
     syncOverview: vi.fn(),
     startSync: vi.fn(),
     setFavorite: vi.fn(),
@@ -97,6 +102,29 @@ describe('Football pages', () => {
     expect(screen.queryByText(/Resolution queue/)).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Continue setup' }))
     expect(apiMock.football.startSync).toHaveBeenCalledWith({ kind: 'setup' })
+  })
+
+  it('offers the next matchday when the week has no matches', async () => {
+    const user = userEvent.setup()
+    const day = (offset: number) => new Date(Date.now() + offset * 86_400_000).toISOString().slice(0, 10)
+    const next = day(30)
+    const monday = new Date(`${next}T00:00:00Z`)
+    monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay() + 6) % 7))
+    apiMock.football.current.mockResolvedValue({
+      matches: [], standings: [], topScorers: [], coverage: [], entitlement: null, lastRefreshAt: null,
+      quota: { used: 0, limit: 0, remaining: 0 }
+    })
+    apiMock.football.overview.mockResolvedValue({ fixtures: { updatedAt: '2026-09-28T10:00:00.000Z', latestResult: null } })
+    apiMock.football.syncStatus.mockResolvedValue({ state: 'idle' })
+    apiMock.football.matches.mockImplementation(async (filter: { dateFrom: string }) =>
+      filter.dateFrom > day(0) ? [{ matchDate: next }] : [])
+
+    renderWithQuery(<MemoryRouter><FootballCurrentPage /></MemoryRouter>)
+
+    await user.click(await screen.findByRole('button', { name: /^Next matchday:/ }))
+    const start = monday.toISOString().slice(0, 10)
+    await waitFor(() => expect(apiMock.football.current).toHaveBeenCalledWith(null, start, expect.any(String)))
+    expect(screen.queryByRole('button', { name: /^Previous matchday:/ })).not.toBeInTheDocument()
   })
 
   it('provides labelled external-link creation and preserves source-scoped coverage labels', async () => {

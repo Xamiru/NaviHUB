@@ -512,7 +512,7 @@ function LogProgressButton({
     setBusy(true)
     try {
       const res = await api.media.logProgress(m.id)
-      celebrateProgress(anchor)
+      celebrateProgress(anchor, { count: finished ? null : m.progress + 1, total: m.totalUnits })
       if (!finished && isCompletedStatus(res.status, statuses)) {
         celebrateCompletion(res.title, { coverPath: m.coverPath, total: cfg.formatProgressStat({ ...m, progress: m.totalUnits ?? m.progress + 1 }) })
       }

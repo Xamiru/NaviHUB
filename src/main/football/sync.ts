@@ -158,6 +158,8 @@ export function cancelActiveFootballSync(): void {
 }
 
 async function checkpoint(runGate: PauseGate): Promise<void> {
+  // Yield a macrotask so status polls, pause and cancel get through between writes.
+  await new Promise((resolve) => setImmediate(resolve))
   if (runGate.paused) await runGate.wait()
   if (runGate.cancelled) {
     const error = new tasks.TaskCancelledError('Football sync')
@@ -2199,6 +2201,7 @@ async function runHistory(runGate: PauseGate): Promise<void> {
   await installWikimedia(runGate)
   await installCurrentFixtures(runGate)
   repo.mergeDuplicateSeasons()
+  repo.removeOrphanTeams()
   repo.repairPersonIdentities()
   markSetup('history')
 }

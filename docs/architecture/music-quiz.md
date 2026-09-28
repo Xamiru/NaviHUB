@@ -195,9 +195,34 @@ always need review. The primary artist may be one member of a joined credit ("A,
 official uploads from an artist channel ("IndilaMusic", "(Clip Officiel)") are recognised
 without trusting fan re-uploads.
 
+**Non-English catalogues (2026-09-28).** Under English, YouTube Music romanizes artists
+("Keina Suda") and pairs native titles with a translation ("紅蓮華 - Gurenge"); the native
+catalogue keeps 須田景凪 and 紅蓮華, and Spotify mixes both conventions. Songs whose title,
+artist or album contains kana, Han, Hangul or Cyrillic are therefore also searched in that
+catalogue (`sourceSearchLocales`: ja; ja then zh-TW; ko; ru), and `rankYtmSources` combines
+every language view of one video, so a title can match in one and the artist credit in the
+other. `titleAliases` accepts either half of a native/Latin title pair (" - " or a trailing
+bracket) unless the Latin half is version wording. Artist credits compare through `&`/`and`,
+Latin accents, a leading "The", spacing and two-word order; "Original Mix" is the plain track
+and "Mono Version" equals "(Mono)". Any "live" in a release title marks its tracks live: "Live
+Through This" (studio) cannot be told from "Live and Dangerous" (concert), so the studio album
+needs review when the source reports no album rather than risking a studio take for a live one
+(user decision, 2026-09-28). yt-dlp
+reports YouTube's translated title ("Gurenge"), so a strong YouTube Music match for the exact
+video is validated when yt-dlp confirms its duration and no variant wording; a retry that reuses
+that validated video without searching applies the same checks. A retry reuses
+only an approved or validated saved source; a pick that failed review is searched again. An
+unreadable search page is a Lookup error rather than "no matching recording", unless an earlier
+search for the song already answered: a later failing catalogue language only narrows the
+evidence, and nothing found then is still a Lookup error. Remaining gaps
+stay in review: Chinese artists that YouTube Music credits only in Chinese ("Jay Chou" vs
+周杰倫), Latin transliterations of native-script uploads ("Gruppa krovi"), and songs the
+catalogue lacks.
+
 The recovery dialog (**Choose audio**) is shared by playlist and artist/album tracks. It shows
 the song's current problem, searches YouTube Music on open (official audio first, then its
-videos; plain YouTube search only when that fails) and marks strong results **Match**; the
+videos, native-script catalogues first for a native-script query; plain YouTube search only
+when that fails) and marks strong results **Match**; the
 library section is prefilled with the title. **Download this** / **Download link** approves that
 exact permanent source and starts it at once, even while the queue runs; **Use this** or
 **Import an audio file…** links a library copy. The separate broader-matching toggles and the
@@ -382,7 +407,11 @@ Adding is inert: the user explicitly starts all cards or one card. A playlist pa
 **Download missing** action is such an explicit start (it saves the selection, then runs it
 next); **Add missing to Downloads without starting** remains in its More menu. A card that is
 downloading accepts more songs: the runner gives it another pass when the current pass ends, and
-a "start now" request joins a running single-card run instead of being refused. While the queue
+a "start now" request joins a running single-card run instead of being refused. A single playlist
+row's **Download** (and a Use-this-version start) passes `itemIds`, so the run passes over only that
+song: the card's other selections, including earlier failures, stay on it untouched and the card
+returns to Queued while any of them remains pending. In-process Resume keeps that narrowing; a
+startup-interrupted card resumes whole. While the queue
 runs, only the songs inside the active acquisition batch are locked against source changes or
 skipping. The mixed runner
 holds one re-entrant music-maintenance owner, fetches the next card from the current DB
