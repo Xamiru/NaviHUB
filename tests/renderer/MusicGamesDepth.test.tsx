@@ -200,7 +200,8 @@ describe('playthrough workflow', () => {
   it('assigns an old session and logs a dated note without changing playtime', async () => {
     const user = userEvent.setup()
     mount(<GamePlaythroughSection mediaId={1} />)
-    await user.selectOptions(await screen.findByLabelText('Playthrough for session 5'), '2')
+    await user.click(await screen.findByRole('button', { name: 'Playthrough for session 5' }))
+    await user.click(screen.getByRole('menuitem', { name: 'Mage run' }))
     await waitFor(() => expect(m.assign).toHaveBeenCalledWith(1, 5, 2))
     await user.click(screen.getByRole('button', { name: 'Add journal entry' }))
     await user.type(screen.getByLabelText('Journal entry'), 'Beat the boss')

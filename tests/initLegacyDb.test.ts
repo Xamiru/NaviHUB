@@ -661,6 +661,93 @@ describe('a live DB that predates newer columns', () => {
     db.close()
   })
 
+  it('relaxes media_image.media_id for Unsorted pictures, keeping rows, index and child FKs', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    // The 2026-08 shape: is_background and slideshow_item exist, media_id is
+    // still NOT NULL and is_favorite does not.
+    db.exec(`CREATE TABLE media_item (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      media_type      TEXT NOT NULL,
+      title           TEXT NOT NULL,
+      title_original  TEXT,
+      synopsis        TEXT,
+      cover_path      TEXT,
+      release_date    TEXT,
+      total_units     INTEGER,
+      status          TEXT,
+      score           REAL,
+      progress        INTEGER NOT NULL DEFAULT 0,
+      rewatch_count   INTEGER NOT NULL DEFAULT 0,
+      notes           TEXT,
+      favorite        INTEGER NOT NULL DEFAULT 0,
+      metadata        TEXT,
+      external_source TEXT,
+      external_id     TEXT,
+      created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE media_image (
+      id          INTEGER PRIMARY KEY AUTOINCREMENT,
+      media_id    INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+      kind        TEXT NOT NULL,
+      file_path   TEXT NOT NULL,
+      source_url  TEXT,
+      source      TEXT,
+      width       INTEGER, height INTEGER, sort_order INTEGER,
+      is_background INTEGER NOT NULL DEFAULT 0,
+      created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX idx_media_image_media ON media_image(media_id, kind);
+    CREATE TABLE slideshow_item (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      image_id INTEGER NOT NULL UNIQUE REFERENCES media_image(id) ON DELETE CASCADE,
+      file_name TEXT NOT NULL,
+      added_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    INSERT INTO media_item (id, media_type, title) VALUES (1, 'anime', 'Berserk');
+    INSERT INTO media_image (id, media_id, kind, file_path, width, height, is_background)
+      VALUES (5, 1, 'wallpaper', 'pictures/Berserk (anime)/wallpapers/a.jpg', 1920, 1080, 1);
+    INSERT INTO slideshow_item (image_id, file_name) VALUES (5, 'Berserk - a.jpg');`)
+
+    db.exec(initSql)
+    runMigrations(db)
+
+    const cols = db.prepare('PRAGMA table_info(media_image)').all() as {
+      name: string
+      notnull: number
+    }[]
+    expect(cols.find((c) => c.name === 'media_id')?.notnull).toBe(0)
+    expect(cols.map((c) => c.name)).toContain('is_favorite')
+    expect(db.prepare('SELECT media_id, width, is_background, is_favorite FROM media_image').get())
+      .toEqual({ media_id: 1, width: 1920, is_background: 1, is_favorite: 0 })
+    const indexes = (
+      db.prepare(`SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='media_image'`).all() as {
+        name: string
+      }[]
+    ).map((r) => r.name)
+    expect(indexes).toEqual(expect.arrayContaining(['idx_media_image_media', 'idx_media_image_favorite']))
+    expect(db.prepare('SELECT file_name FROM slideshow_item WHERE image_id=5').get()).toEqual({
+      file_name: 'Berserk - a.jpg'
+    })
+
+    // Unsorted rows are now legal, and the gallery tables hang off the rebuilt table.
+    db.prepare(
+      `INSERT INTO media_image (id, media_id, kind, file_path) VALUES (6, NULL, 'fanart', 'pictures/Unsorted/fanart/b.png')`
+    ).run()
+    db.prepare(`INSERT INTO picture_album (id, name) VALUES (1, 'Mixed')`).run()
+    db.prepare('INSERT INTO picture_album_item (album_id, image_id) VALUES (1, 5), (1, 6)').run()
+
+    // Idempotent, and the cascades still bite through the rebuilt table.
+    runMigrations(db)
+    db.prepare('DELETE FROM media_item WHERE id=1').run()
+    expect(db.prepare('SELECT COUNT(*) AS n FROM slideshow_item').get()).toEqual({ n: 0 })
+    expect(db.prepare('SELECT image_id FROM picture_album_item').all()).toEqual([{ image_id: 6 }])
+    expect(db.pragma('foreign_key_check')).toEqual([])
+    expect(db.pragma('integrity_check', { simple: true })).toBe('ok')
+    db.close()
+  })
+
   it('NO init.sql statement references a column that only migrations create', () => {
     // The drift guard: parses the real ensureColumn list out of connection.ts
     // and cross-checks every index in init.sql against it, so the next index

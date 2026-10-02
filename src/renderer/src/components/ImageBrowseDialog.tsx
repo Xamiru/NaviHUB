@@ -14,8 +14,16 @@ import type {
 import { Field } from './Field'
 import Tabs, { TabPanel } from './Tabs'
 
+// The title the picks are saved to. id null = the gallery's Unsorted bucket,
+// which browses only the free-text sources.
+export interface BrowseTarget {
+  id: number | null
+  title: string
+  characters: MediaDetail['characters']
+}
+
 interface Props {
-  m: MediaDetail
+  m: BrowseTarget
   kind: ImageKind
   onClose: () => void
 }
@@ -99,7 +107,7 @@ function SourcePanel({
   kind,
   info
 }: {
-  m: MediaDetail
+  m: BrowseTarget
   kind: ImageKind
   info: WallpaperSourceInfo
 }): React.JSX.Element {
@@ -121,9 +129,16 @@ function SourcePanel({
     placeholderData: (previous) => previous
   })
   // Shares the section's cache entry — used to mark already-saved results.
+  const mediaId = m.id
   const { data: existing = [] } = useQuery({
-    queryKey: qk.pictures.list(m.id, kind),
-    queryFn: () => api.pictures.list(m.id, kind)
+    queryKey:
+      mediaId == null
+        ? qk.pictures.gallery({ unsorted: true, kind })
+        : qk.pictures.list(mediaId, kind),
+    queryFn: () =>
+      mediaId == null
+        ? api.pictures.gallery({ unsorted: true, kind })
+        : api.pictures.list(mediaId, kind)
   })
 
   const results = search.data?.results ?? []
@@ -147,7 +162,8 @@ function SourcePanel({
     try {
       await api.pictures.addFromSearch(m.id, kind, r)
       setPending((p) => ({ ...p, [r.fullUrl]: 'added' }))
-      qc.invalidateQueries({ queryKey: qk.pictures.list(m.id, kind) })
+      if (mediaId != null) void qc.invalidateQueries({ queryKey: qk.pictures.list(mediaId, kind) })
+      void qc.invalidateQueries({ queryKey: qk.pictures.galleryAll })
     } catch (e) {
       setPending((p) => {
         const next = { ...p }

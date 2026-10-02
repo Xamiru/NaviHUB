@@ -109,6 +109,10 @@ const FIXED_WIPES = [
   'DELETE FROM video_cache',
   'DELETE FROM wrestling_video',
   'DELETE FROM slideshow_item',
+  'DELETE FROM picture_album_item',
+  'DELETE FROM picture_album',
+  'DELETE FROM picture_tag_link',
+  'DELETE FROM picture_tag',
   'DELETE FROM media_image',
   // Before the asset pass nulls cover/photo/image paths: a surviving row
   // would make the restore triggers put the hand-picked image back.
@@ -129,7 +133,7 @@ const FIXED_WIPES = [
   'DELETE FROM sync_batch',
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path','spotdl.cookieFile','spotdl.pythonPath','music.ffmpegPath',
-      'music.dir','manga.dir','books.dir','audio.dir','media.dir','pictures.dir','slideshow.dir','video.dir','wrestling.dir','football.dir',
+      'music.dir','manga.dir','books.dir','audio.dir','media.dir','pictures.dir','slideshow.dir','pictures.slideshowSource','video.dir','wrestling.dir','football.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
       'steam.web_api_key','ra.username','ra.api_key','football.api_key','football.api_quota',

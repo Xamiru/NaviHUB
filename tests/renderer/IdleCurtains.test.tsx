@@ -43,10 +43,10 @@ describe('One Piece and JoJo idle covers', () => {
         <IdleTbc />
       </>
     )
-    expect(screen.getByTestId('idle-islands')).not.toHaveTextContent('Whisky Peak')
+    expect(screen.getByTestId('idle-islands')).not.toHaveTextContent('Water 7')
     act(() => vi.advanceTimersByTime(IDLE_CURTAIN_MS))
     expect(screen.getByTestId('idle-islands')).toHaveClass('idle-islands-closed')
-    expect(screen.getByTestId('idle-islands')).toHaveTextContent('Whisky Peak')
+    expect(screen.getByTestId('idle-islands')).toHaveTextContent('Water 7')
     expect(screen.getByTestId('idle-tbc')).toHaveClass('idle-tbc-closed')
     fireEvent.pointerDown(window)
     expect(screen.getByTestId('idle-tbc')).not.toHaveClass('idle-tbc-closed')

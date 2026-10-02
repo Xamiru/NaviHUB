@@ -1,27 +1,37 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useIncrementalList } from '../lib/hooks'
 import { usePlayerControls } from '../lib/player'
-import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
+import {
+  TRACK_SEARCH_MIN,
+  filterTracks,
+  musicTrackToPlayerTrack,
+  playTracks,
+  totalDuration
+} from '../lib/musicTracks'
+import { useLeaveDeleted, usePersistedState } from '../lib/navState'
 import { toast, toastError } from '../lib/toast'
 import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
 import MusicEntityHeader from '../components/MusicEntityHeader'
-import MusicTrackRow, { formatDuration } from '../components/MusicTrackRow'
+import MusicTrackRow, { formatLongDuration } from '../components/MusicTrackRow'
 import { confirmDialog } from '../lib/confirm'
 import SpotifyEntityDownloadDialog from '../components/SpotifyEntityDownloadDialog'
+import { TrackSearch } from '../components/music/MusicBrowse'
+import TrackListScope from '../components/music/TrackListScope'
 
 export default function MusicAlbumPage() {
   const { id } = useParams()
   const albumId = Number(id)
   const qc = useQueryClient()
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const player = usePlayerControls()
   const [searchParams, setSearchParams] = useSearchParams()
   const [spotifyOpen, setSpotifyOpen] = useState(false)
+  const [search, setSearch] = usePersistedState('musicAlbumSearch', '')
 
   useEffect(() => {
     if (searchParams.get('spotify') === 'download') setSpotifyOpen(true)
@@ -49,17 +59,18 @@ export default function MusicAlbumPage() {
   // (EntityListView-style). `visible` is a prefix of `tracks`, so row indexes
   // still line up with the full queue. Called before the early returns so the
   // hook order stays stable.
-  const tracks = album?.tracks ?? []
-  const { visible, sentinelRef, hasMore } = useIncrementalList(tracks)
+  const tracks = useMemo(() => album?.tracks ?? [], [album?.tracks])
+  const shown = useMemo(() => filterTracks(tracks, search), [tracks, search])
+  const { visible, sentinelRef, hasMore, reveal } = useIncrementalList(shown)
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
   if (isError) return <PageStatus>Could not load album. <button className="btn" onClick={() => void refetch()}>Retry album</button></PageStatus>
   if (!album) return <PageStatus>Album not found.</PageStatus>
-  const totalSeconds = tracks.reduce((sum, t) => sum + (t.duration ?? 0), 0)
+  const totalSeconds = totalDuration(tracks)
   const multiDisc = new Set(tracks.map((t) => t.discNo ?? 1)).size > 1
 
   function playFrom(i: number): void {
-    player.playQueue(tracks.map(musicTrackToPlayerTrack), i)
+    player.playQueue(shown.map(musicTrackToPlayerTrack), i)
   }
 
   async function findCover(): Promise<void> {
@@ -92,10 +103,14 @@ export default function MusicAlbumPage() {
     if (!ok) return
     const artistId = album.artistId
     try {
-      await api.music.deleteAlbum(albumId)
-      toast(`Deleted "${album.title}"`)
+      const removed = await api.music.deleteAlbum(albumId)
+      toast(`Deleted "${album.title}"`, 'success')
       qc.invalidateQueries({ queryKey: qk.music.all })
-      navigate(`/music/artists/${artistId}`, { replace: true })
+      const artistGone = removed.artistIds.includes(artistId)
+      leaveDeleted(
+        (path) => path === `/music/albums/${albumId}` || (artistGone && path === `/music/artists/${artistId}`),
+        artistGone ? '/music' : `/music/artists/${artistId}`
+      )
     } catch (e) {
       toastError(e)
     }
@@ -104,7 +119,7 @@ export default function MusicAlbumPage() {
   let lastDisc: number | null = null
   return (
     <div className="mx-auto max-w-[1200px] p-4 sm:p-6">
-      <BackButton />
+      <BackButton fallback="/music" />
 
       <MusicEntityHeader
         coverPath={album.coverPath}
@@ -116,11 +131,12 @@ export default function MusicAlbumPage() {
             </Link>
             {album.year != null && <> · {album.year}</>} · {tracks.length}{' '}
             {tracks.length === 1 ? 'track' : 'tracks'}
-            {totalSeconds > 0 && <> · {formatDuration(totalSeconds)}</>}
+            {totalSeconds > 0 && <> · {formatLongDuration(totalSeconds)}</>}
           </>
         }
         onPlay={() => playFrom(0)}
-        onShuffle={() => playTracks(player, tracks, { shuffle: true })}
+        onShuffle={() => playTracks(player, shown, { shuffle: true })}
+        queueTracks={shown}
         artNoun="cover"
         art={{ kind: 'music_album', id: albumId }}
         onFindArt={findCover}
@@ -136,31 +152,41 @@ export default function MusicAlbumPage() {
       />
 
       <div className="max-w-5xl">
-        {visible.map((t, i) => {
-          const disc = t.discNo ?? 1
-          const discHeader = multiDisc && disc !== lastDisc
-          lastDisc = disc
-          return (
-            <Fragment key={t.id}>
-              {discHeader && (
-                <p className="mb-1 mt-3 px-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
-                  Disc {disc}
-                </p>
-              )}
-              <MusicTrackRow
-                track={t}
-                index={t.trackNo ?? i + 1}
-                showCover={false}
-                trailing={standoutIds.has(t.id) ? <span className="chip text-xs">Standout</span> : undefined}
-                onPlay={() => playFrom(i)}
-              />
-            </Fragment>
-          )
-        })}
+        {(tracks.length >= TRACK_SEARCH_MIN || search) && (
+          <div className="mb-4 flex">
+            <TrackSearch value={search} onChange={setSearch} label="Search this album" />
+          </div>
+        )}
+        {shown.length === 0 && search.trim() && (
+          <p className="text-sm text-gray-400">No tracks match “{search.trim()}”.</p>
+        )}
+        <TrackListScope tracks={shown} reveal={reveal}>
+          {visible.map((t, i) => {
+            const disc = t.discNo ?? 1
+            const discHeader = multiDisc && disc !== lastDisc
+            lastDisc = disc
+            return (
+              <Fragment key={t.id}>
+                {discHeader && (
+                  <p className="mb-1 mt-3 px-2 text-xs font-semibold uppercase tracking-widest text-gray-500">
+                    Disc {disc}
+                  </p>
+                )}
+                <MusicTrackRow
+                  track={t}
+                  index={t.trackNo ?? i + 1}
+                  showCover={false}
+                  trailing={standoutIds.has(t.id) ? <span className="chip text-xs">Standout</span> : undefined}
+                  onPlay={() => playFrom(i)}
+                />
+              </Fragment>
+            )
+          })}
+        </TrackListScope>
         <div ref={sentinelRef} />
         {hasMore && (
           <p className="mt-4 text-center text-xs text-gray-400">
-            Showing {visible.length} of {tracks.length} — scroll for more
+            Showing {visible.length} of {shown.length} — scroll for more
           </p>
         )}
       </div>

@@ -39,6 +39,7 @@ export function sidebarSectionDefs(): SidebarSectionDef[] {
     { key: 'stats', label: 'Stats', group: 'core' },
     ...mediaDefs(),
     { key: 'music', label: 'Music', group: 'library' },
+    { key: 'pictures', label: 'Pictures', group: 'library' },
     { key: 'wrestling', label: 'Wrestling', group: 'library' },
     { key: 'football', label: 'Football', group: 'library' },
     { key: 'lists', label: 'Lists', group: 'library' },

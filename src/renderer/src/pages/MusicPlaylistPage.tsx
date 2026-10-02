@@ -1,22 +1,23 @@
 import SpotifyTrackRecoveryDialog from '../components/SpotifyTrackRecoveryDialog'
-import { useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useCallback, useMemo, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePlayerControls } from '../lib/player'
-import { musicTrackToPlayerTrack, playTracks } from '../lib/musicTracks'
+import { TRACK_SEARCH_MIN, musicTrackToPlayerTrack, playTracks, totalDuration } from '../lib/musicTracks'
 import { useDebouncedValue, useDialog, useIncrementalList } from '../lib/hooks'
 import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
 import ActionMenu from '../components/ActionMenu'
 import { SortableList, SortableRow, useOptimisticReorder } from '../components/SortableList'
-import MusicTrackRow from '../components/MusicTrackRow'
+import MusicTrackRow, { formatLongDuration } from '../components/MusicTrackRow'
+import TrackListScope, { QueueMenu } from '../components/music/TrackListScope'
 import { confirmDialog } from '../lib/confirm'
 import { RelationshipTrail } from '../components/EditorialDetailFrame'
 import CoverImage from '../components/CoverImage'
 import { formatDuration } from '../components/MusicTrackRow'
-import { usePersistedState } from '../lib/navState'
+import { useLeaveDeleted, usePersistedState } from '../lib/navState'
 import { useDownloadStatus } from '../components/MusicDownloadDialog'
 import { toast, toastError } from '../lib/toast'
 import type {
@@ -46,7 +47,7 @@ function formatBytes(bytes: number): string {
 export default function MusicPlaylistPage() {
   const { id } = useParams()
   const playlistId = Number(id)
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const qc = useQueryClient()
   const player = usePlayerControls()
   const downloadStatus = useDownloadStatus()
@@ -98,6 +99,7 @@ export default function MusicPlaylistPage() {
     if (item.kind === 'local') playable.push({ item, track: item.track })
     else if (item.matchedTrack) playable.push({ item, track: item.matchedTrack })
   }
+  const playableSeconds = totalDuration(playable.map((entry) => entry.track))
   const missingSpotify = allItems.filter(
     (item): item is MusicSpotifyPlaylistEntry => item.kind === 'spotify' && !item.matchedTrack
   )
@@ -131,6 +133,20 @@ export default function MusicPlaylistPage() {
     return text.toLocaleLowerCase().includes(normalizedSearch)
   }), [allItems, filter, normalizedSearch])
   const incremental = useIncrementalList(filteredItems, 96, playlistId)
+  // The songs listed right now, for the selection bar and "Jump to playing".
+  const [listedTracks, listedRows] = useMemo(() => {
+    const songs: MusicTrack[] = []
+    const rows: number[] = [] // each listed song's row in filteredItems; missing songs have no song
+    filteredItems.forEach((item, row) => {
+      const track = item.kind === 'local' ? item.track : item.matchedTrack
+      if (!track) return
+      songs.push(track)
+      rows.push(row)
+    })
+    return [songs, rows] as const
+  }, [filteredItems])
+  const revealListed = useCallback((index: number) => incremental.reveal(listedRows[index] ?? index),
+    [incremental.reveal, listedRows])
   const playlistCardId = [...(downloadQueue?.pending ?? []), ...(downloadQueue?.completed ?? [])]
     .find((card) => card.sourceKind === 'playlist' && card.playlistId === playlistId)?.id
   // Queue runs report their card rather than a playlist id.
@@ -155,6 +171,26 @@ export default function MusicPlaylistPage() {
     setItems((prev) => prev.filter((i) => i.itemId !== itemId))
     await api.music.removePlaylistTrack(itemId)
     invalidate()
+  }
+
+  async function removeTracks(trackIds: number[]): Promise<void> {
+    const ids = new Set(trackIds)
+    const picked = filteredItems.filter((item) => {
+      const track = item.kind === 'local' ? item.track : item.matchedTrack
+      return track != null && ids.has(track.id)
+    })
+    const localIds = new Set(picked.flatMap((item) => (item.kind === 'local' ? [item.itemId] : [])))
+    setItems((prev) => prev.filter((i) => !localIds.has(i.itemId)))
+    try {
+      for (const item of picked) {
+        if (item.kind === 'local') await api.music.removePlaylistTrack(item.itemId)
+        else await api.music.spotifyRemoveItem(item.itemId)
+      }
+      toast(`Removed ${picked.length} ${picked.length === 1 ? 'song' : 'songs'} from this playlist`, 'success')
+    } finally {
+      invalidate()
+      if (picked.length > localIds.size) qc.invalidateQueries({ queryKey: qk.music.spotifyQueue })
+    }
   }
 
   async function removeSpotifyItem(itemId: number): Promise<void> {
@@ -282,7 +318,7 @@ export default function MusicPlaylistPage() {
     if (!ok) return
     await api.music.removePlaylist(playlistId)
     qc.invalidateQueries({ queryKey: qk.music.playlists })
-    navigate('/music', { replace: true })
+    leaveDeleted((path) => path === `/music/playlists/${playlistId}`, '/music')
   }
 
   const pills: { key: typeof filter; label: string; count: number }[] = [
@@ -295,7 +331,7 @@ export default function MusicPlaylistPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-4 sm:p-6">
-      <BackButton />
+      <BackButton fallback="/music" />
       <RelationshipTrail>
         <Link to="/music" className="hover:text-accent">Music</Link>
         <span className="text-gray-600" aria-hidden="true">›</span>
@@ -335,6 +371,7 @@ export default function MusicPlaylistPage() {
             {isSpotify
               ? `From Spotify · ${counts.all} ${counts.all === 1 ? 'song' : 'songs'} · ${counts.playable} in your library${counts.missing ? ` · ${counts.missing} missing` : ''}`
               : `Playlist · ${counts.all} ${counts.all === 1 ? 'track' : 'tracks'}`}
+            {playableSeconds > 0 && ` · ${formatLongDuration(playableSeconds)}`}
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap justify-end gap-2">
@@ -358,6 +395,7 @@ export default function MusicPlaylistPage() {
           >
             Shuffle
           </button>
+          <QueueMenu tracks={playable.map((item) => item.track)} />
           {busy ? (
             <Link className="btn-ghost" to="/music/downloads">View downloads</Link>
           ) : downloadableMissing.length > 0 && (
@@ -424,17 +462,17 @@ export default function MusicPlaylistPage() {
         </div>
       )}
 
-      {isSpotify && (
+      {(isSpotify || allItems.length >= TRACK_SEARCH_MIN || search) && (
         <div className="mb-5 flex flex-wrap items-center gap-2">
-          <label className="sr-only" htmlFor="spotify-playlist-search">Search this playlist</label>
+          <label className="sr-only" htmlFor="playlist-search">Search this playlist</label>
           <input
-            id="spotify-playlist-search"
+            id="playlist-search"
             className="input min-w-56 flex-1"
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search this playlist"
           />
-          <div className="flex flex-wrap gap-2" role="group" aria-label="Track availability">
+          {isSpotify && <div className="flex flex-wrap gap-2" role="group" aria-label="Track availability">
             {pills.map((pill) => (
               <button
                 key={pill.key}
@@ -445,7 +483,7 @@ export default function MusicPlaylistPage() {
                 {pill.label} <span className="tabular-nums opacity-70">{pill.count}</span>
               </button>
             ))}
-          </div>
+          </div>}
         </div>
       )}
 
@@ -460,7 +498,7 @@ export default function MusicPlaylistPage() {
       {allItems.length === 0 ? (
         <p className="text-sm text-gray-400">No tracks yet — search above to add some.</p>
       ) : isSpotify ? (
-        <>
+        <TrackListScope tracks={listedTracks} reveal={revealListed} onRemove={removeTracks}>
           {filteredItems.length === 0 && <p className="text-sm text-gray-400">No songs match this view.</p>}
           <div className="space-y-0.5">
             {incremental.visible.map((item) =>
@@ -504,23 +542,42 @@ export default function MusicPlaylistPage() {
             )}
           </div>
           <div ref={incremental.sentinelRef} />
-        </>
+        </TrackListScope>
       ) : (
-        <SortableList ids={sortableItems.map((i) => i.itemId)} sensors={sensors} onDragEnd={onDragEnd}>
-          {sortableItems.map((item) => (
-            <SortableRow key={item.itemId} id={item.itemId}>
-              {(handle) => (
+        <TrackListScope tracks={listedTracks} onRemove={removeTracks}>
+          {normalizedSearch ? (
+            // Manual order can only be edited on the whole list.
+            filteredItems.length === 0 ? (
+              <p className="text-sm text-gray-400">No songs match this view.</p>
+            ) : (
+              filteredItems.map((item) => item.kind === 'local' && (
                 <MusicTrackRow
+                  key={item.itemId}
                   track={item.track}
                   showAlbum
                   onPlay={() => playItem(item)}
                   onRemove={() => removeItem(item.itemId)}
-                  leading={handle}
                 />
-              )}
-            </SortableRow>
-          ))}
-        </SortableList>
+              ))
+            )
+          ) : (
+            <SortableList ids={sortableItems.map((i) => i.itemId)} sensors={sensors} onDragEnd={onDragEnd}>
+              {sortableItems.map((item) => (
+                <SortableRow key={item.itemId} id={item.itemId}>
+                  {(handle) => (
+                    <MusicTrackRow
+                      track={item.track}
+                      showAlbum
+                      onPlay={() => playItem(item)}
+                      onRemove={() => removeItem(item.itemId)}
+                      leading={handle}
+                    />
+                  )}
+                </SortableRow>
+              ))}
+            </SortableList>
+          )}
+        </TrackListScope>
       )}
       {recoveryItem && <SpotifyTrackRecoveryDialog sourceKind="playlistItem" trackId={recoveryItem.itemId}
         title={recoveryItem.title} artist={recoveryItem.artists.join(', ')} duration={recoveryItem.duration}
@@ -589,6 +646,8 @@ function SpotifyMissingRow({
           : queued ? null : { label: 'Download', onClick: onDownload }
   return (
     <div className="group flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-base-700">
+      {/* Lines up with the selection checkbox on playable rows. */}
+      <span className="w-4 shrink-0" aria-hidden="true" />
       <CoverImage
         path={item.coverPath}
         alt=""

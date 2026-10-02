@@ -397,8 +397,15 @@ describe('delete (files + rows)', () => {
     await startScan(fakeReader())
     const id = (db.prepare('SELECT id FROM music_track').get() as { id: number }).id
 
+    const ids = db.prepare('SELECT album_id, artist_id FROM music_track').get() as {
+      album_id: number
+      artist_id: number
+    }
+
     const res = await deleteTracks([id])
-    expect(res).toEqual({ tracks: 1 })
+    // The emptied album and artist rows go too, so their pages can leave instead of showing nothing.
+    expect(res).toEqual({ tracks: 1, albumIds: [ids.album_id], artistIds: [ids.artist_id] })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_album').get()).toEqual({ n: 0 })
     expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 0 })
     expect(existsSync(join(root, 'Radiohead/OK Computer/01 Airbag.mp3'))).toBe(false)
     // last file gone -> album folder and its now-empty artist folder are pruned
@@ -412,7 +419,7 @@ describe('delete (files + rows)', () => {
     const id = (db.prepare('SELECT id FROM music_track').get() as { id: number }).id
     rmSync(join(root, 'A/One/01 a.mp3'))
     const res = await deleteTracks([id])
-    expect(res).toEqual({ tracks: 1 })
+    expect(res.tracks).toBe(1)
     expect(db.prepare('SELECT COUNT(*) AS n FROM music_track').get()).toEqual({ n: 0 })
   })
 
@@ -424,7 +431,9 @@ describe('delete (files + rows)', () => {
       .prepare("SELECT id FROM music_album WHERE title = 'Singles'")
       .get() as { id: number }
 
-    await deleteAlbum(singles.id)
+    const res = await deleteAlbum(singles.id)
+    // The artist keeps its real album, so only the album is reported gone.
+    expect(res).toMatchObject({ albumIds: [singles.id], artistIds: [] })
 
     // Loose single + its row gone…
     expect(existsSync(join(root, 'Aimer/Brave Shine.mp3'))).toBe(false)

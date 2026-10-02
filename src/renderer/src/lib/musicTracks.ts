@@ -20,6 +20,23 @@ export function musicTrackToPlayerTrack(t: MusicTrack): Track {
   }
 }
 
+// A list this short fits on screen, so its page shows no search box.
+export const TRACK_SEARCH_MIN = 25
+
+// Case-insensitive match on title, artist and album — the in-page search on
+// liked songs, playlists, albums and artist catalogs.
+export function filterTracks<T extends MusicTrack>(tracks: T[], query: string): T[] {
+  const q = query.trim().toLocaleLowerCase()
+  if (!q) return tracks
+  return tracks.filter((t) =>
+    `${t.title} ${t.tagArtist ?? ''} ${t.artistName} ${t.albumTitle}`.toLocaleLowerCase().includes(q)
+  )
+}
+
+export function totalDuration(tracks: MusicTrack[]): number {
+  return tracks.reduce((sum, t) => sum + (t.duration ?? 0), 0)
+}
+
 export function musicTrackId(t: MusicTrack): string {
   return `music-${t.id}`
 }

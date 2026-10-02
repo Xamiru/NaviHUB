@@ -96,6 +96,10 @@ function seed(): void {
         'https://w.wallhaven.cc/full/x1.jpg', 'wallhaven', 1920, 1080, 1);
     INSERT INTO slideshow_item (image_id, file_name)
       VALUES (7, 'Cowboy Bebop - wallhaven-x1.jpg');
+    INSERT INTO picture_album (id, name) VALUES (1, 'Night skies');
+    INSERT INTO picture_album_item (album_id, image_id) VALUES (1, 7);
+    INSERT INTO picture_tag (id, name) VALUES (1, 'city');
+    INSERT INTO picture_tag_link (image_id, tag_id) VALUES (7, 1);
 
     INSERT INTO video_file (media_id, file_path, title, number, watched_at, resume_seconds)
       VALUES (1, 'Cowboy Bebop/ep01.mkv', 'Session 1', 1, '2026-08-01 22:00:00', 431);
@@ -242,6 +246,7 @@ describe('export sanitize', () => {
       'music_spotify_entity_track', 'music_spotify_download_queue',
       'music_spotify_download_queue_selection', 'music_source_evidence', 'music_url_job', 'music_url_item', 'music_audio_source',
       'music_play_log', 'manga_chapter', 'media_image', 'slideshow_item',
+      'picture_album', 'picture_album_item', 'picture_tag', 'picture_tag_link',
       'quiz_session',
       'game_session',
       'checklist_task', 'checklist_log', 'en_word', 'en_review_log', 'en_writing', 'prog_progress',

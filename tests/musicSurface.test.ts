@@ -31,7 +31,7 @@ describe('Sonic Archive product surface', () => {
   it('shows an artist catalog instead of hiding it behind Play', () => {
     expect(artist).toContain('qk.music.artistTracks(artistId)')
     expect(artist).toContain('title="All tracks"')
-    expect(artist).toContain('<TrackList tracks={tracks} />')
+    expect(artist).toContain('<TrackList tracks={shown} />')
   })
 
   it('separates listening, adding music, and maintenance', () => {

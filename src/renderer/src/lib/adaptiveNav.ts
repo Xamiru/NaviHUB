@@ -29,6 +29,7 @@ const MEDIA_DRAWER_ITEMS: ArchiveNavItem[] = [
   })),
   { to: '/guides', label: 'Cross-media guides' },
   { to: '/music', label: 'Music', visibilityKey: 'music' },
+  { to: '/pictures', label: 'Pictures', visibilityKey: 'pictures' },
   { to: '/wrestling', label: 'Wrestling', visibilityKey: 'wrestling' },
   { to: '/football', label: 'Football', visibilityKey: 'football' },
   { to: '/lists', label: 'Lists', visibilityKey: 'lists' },
@@ -324,6 +325,16 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
         { to: '/music/liked', label: 'Liked' },
         { to: '/music/stats', label: 'Listening Stats' },
         { to: '/now-playing', label: 'Now Playing' }
+      ]
+    }
+  }
+  if (pathname.startsWith('/pictures')) {
+    return {
+      title: 'Pictures',
+      descriptor: 'Image archive',
+      items: [
+        { to: '/pictures', label: 'Gallery' },
+        { to: '/pictures/albums', label: 'Albums' }
       ]
     }
   }

@@ -354,9 +354,8 @@ export const mediaImage = sqliteTable(
   'media_image',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
-    mediaId: integer('media_id')
-      .notNull()
-      .references(() => mediaItem.id, { onDelete: 'cascade' }),
+    // NULL = the Pictures gallery's Unsorted bucket.
+    mediaId: integer('media_id').references(() => mediaItem.id, { onDelete: 'cascade' }),
     kind: text('kind').notNull(), // 'wallpaper' | 'fanart'
     filePath: text('file_path').notNull(),
     sourceUrl: text('source_url'),
@@ -366,10 +365,60 @@ export const mediaImage = sqliteTable(
     sortOrder: integer('sort_order'),
     // 1 = the item's detail-page backdrop; at most one per media_id.
     isBackground: integer('is_background').notNull().default(0),
+    isFavorite: integer('is_favorite').notNull().default(0),
     createdAt: text('created_at').notNull()
   },
   (t) => ({
     byMedia: index('idx_media_image_media').on(t.mediaId, t.kind)
+  })
+)
+
+// ---------------------------------------------------------------------------
+// picture_album / picture_tag — Pictures gallery albums and tags. Personal;
+// wiped on export.
+// ---------------------------------------------------------------------------
+export const pictureAlbum = sqliteTable('picture_album', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  createdAt: text('created_at').notNull()
+})
+
+export const pictureAlbumItem = sqliteTable(
+  'picture_album_item',
+  {
+    albumId: integer('album_id')
+      .notNull()
+      .references(() => pictureAlbum.id, { onDelete: 'cascade' }),
+    imageId: integer('image_id')
+      .notNull()
+      .references(() => mediaImage.id, { onDelete: 'cascade' }),
+    sortOrder: integer('sort_order').notNull().default(0),
+    addedAt: text('added_at').notNull()
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.albumId, t.imageId] }),
+    byImage: index('idx_picture_album_item_image').on(t.imageId)
+  })
+)
+
+export const pictureTag = sqliteTable('picture_tag', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull().unique()
+})
+
+export const pictureTagLink = sqliteTable(
+  'picture_tag_link',
+  {
+    imageId: integer('image_id')
+      .notNull()
+      .references(() => mediaImage.id, { onDelete: 'cascade' }),
+    tagId: integer('tag_id')
+      .notNull()
+      .references(() => pictureTag.id, { onDelete: 'cascade' })
+  },
+  (t) => ({
+    pk: primaryKey({ columns: [t.imageId, t.tagId] }),
+    byTag: index('idx_picture_tag_link_tag').on(t.tagId)
   })
 )
 

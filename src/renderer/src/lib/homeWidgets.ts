@@ -20,6 +20,7 @@ export type HomeWidgetKey =
   | 'people'
   | 'recent'
   | 'favorites'
+  | 'pictures'
 
 export interface HomeWidgetDef {
   key: HomeWidgetKey
@@ -44,7 +45,10 @@ export const HOME_WIDGETS: HomeWidgetDef[] = [
   { key: 'unlocks', label: 'Recent unlocks', hint: 'Achievements', span: 'full' },
   { key: 'people', label: 'Your people', hint: 'Most-seen voice actors and studios', span: 'full' },
   { key: 'recent', label: 'Recently added', hint: 'Newest in the library', span: 'full' },
-  { key: 'favorites', label: 'Favorites', hint: 'Everything you starred', span: 'full' }
+  { key: 'favorites', label: 'Favorites', hint: 'Everything you starred', span: 'full' },
+  // Renders nothing until a picture is starred, so its automatic appearance in
+  // existing layouts stays invisible for anyone who never uses the gallery.
+  { key: 'pictures', label: 'Pictures', hint: 'A random favorite picture', span: 'full' }
 ]
 
 export const HOME_LAYOUT_SETTING = 'home.widgets'

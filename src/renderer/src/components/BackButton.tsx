@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { historyIndex } from '../lib/navState'
 
 // Consistent "← Back" for sub-pages (album/artist/playlist/liked/stats):
 // always history-back, so it returns wherever the user actually came from.
@@ -8,11 +9,13 @@ import { useNavigate } from 'react-router-dom'
 // old bg-base-900/85 backdrop-blur strip read as a foreign rectangle on the
 // detail pages (reported 2026-08-22), and content scrolling under plain quiet
 // text is unobtrusive in a way a blurred slab never was.
-export default function BackButton({ label = 'Back' }: { label?: string }) {
+// A page opened with no earlier entry (the first page of a session) goes to
+// `fallback` instead of doing nothing.
+export default function BackButton({ label = 'Back', fallback = '/' }: { label?: string; fallback?: string }) {
   const navigate = useNavigate()
   return (
     <div className="sticky top-0 z-20 py-2">
-      <button className="text-sm text-gray-500 hover:text-gray-300" onClick={() => navigate(-1)}>
+      <button className="text-sm text-gray-500 hover:text-gray-300" onClick={() => (historyIndex() > 0 ? navigate(-1) : navigate(fallback, { replace: true }))}>
         ← {label}
       </button>
     </div>

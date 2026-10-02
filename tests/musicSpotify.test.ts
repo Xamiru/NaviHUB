@@ -19,6 +19,7 @@ vi.mock('../src/main/repos/settingsRepo', () => ({ get: vi.fn() }))
 
 import {
   recoverSpotifyOutputs,
+  recoverProvenanceRenames,
   discardStagedOutputs,
   assertPlaylistSnapshotComplete,
   groupResolvedReleases,
@@ -601,6 +602,37 @@ describe('Spotify completeness and batching', () => {
 })
 
 describe('Spotify staged file recovery', () => {
+  it('drops an interrupted rename it cannot finish instead of blocking every later run', () => {
+    const root = mkdtempSync(join(tmpdir(), 'spotify-rename-'))
+    try {
+      const staging = join(root, '.navihub-downloads')
+      const journal = join(staging, 'pending-rename.json')
+      mkdirSync(join(root, 'Artist', 'Album'), { recursive: true })
+      mkdirSync(staging, { recursive: true })
+      const from = 'Artist/Album/Song [navihub-abc].opus'
+      const to = 'Artist/Album/Song.opus'
+      const record = (value: string) => writeFileSync(journal, value)
+
+      writeFileSync(join(root, from), 'download')
+      writeFileSync(join(root, to), 'someone else')
+      record(JSON.stringify({ from, to }))
+      expect(() => recoverProvenanceRenames(root)).not.toThrow()
+      expect(existsSync(journal)).toBe(false)
+      expect(readFileSync(join(root, from), 'utf8')).toBe('download')
+      expect(readFileSync(join(root, to), 'utf8')).toBe('someone else')
+
+      rmSync(join(root, from))
+      rmSync(join(root, to))
+      record(JSON.stringify({ from, to }))
+      expect(() => recoverProvenanceRenames(root)).not.toThrow()
+      expect(existsSync(journal)).toBe(false)
+
+      record('{"from":')
+      expect(() => recoverProvenanceRenames(root)).not.toThrow()
+      expect(existsSync(journal)).toBe(false)
+    } finally { rmSync(root, { recursive: true, force: true }) }
+  })
+
   it('recovers the dot-preserving spotDL directory', () => {
     const root = mkdtempSync(join(tmpdir(), 'spotify-staging-'))
     try {

@@ -557,11 +557,14 @@ export interface ImageOverrideState {
   providerPath: string | null
 }
 
-// A wallpaper or fan-art image attached to a media item. The file lives under
-// pictures.dir (virtual "pictures/" prefix) — filePath feeds straight to mediaUrl().
+// A wallpaper or fan-art image attached to a media item, or to the Pictures
+// gallery's Unsorted bucket (mediaId null). The file lives under pictures.dir
+// (virtual "pictures/" prefix) — filePath feeds straight to mediaUrl().
 export interface MediaImage {
   id: number
-  mediaId: number
+  mediaId: number | null
+  mediaTitle: string | null
+  mediaType: MediaType | null
   kind: ImageKind
   filePath: string // 'pictures/<title folder>/<wallpapers|fanart>/<file>'
   sourceUrl: string | null // original remote URL (null for picked local files)
@@ -571,9 +574,58 @@ export interface MediaImage {
   // This image is the media item's full-page detail backdrop (at most one per
   // item) — MediaDetail.backgroundPath is the same file, resolved server-side.
   isBackground: boolean
+  isFavorite: boolean
   // A copy of this image sits in the Windows desktop-slideshow folder
   // (slideshow.dir). Membership is a slideshow_item row, not a file scan.
   inSlideshow: boolean
+  tagIds: number[]
+  createdAt: string
+}
+
+// What fills the Windows slideshow folder. 'manual' = per-image toggles;
+// 'favorites' and 'album:<id>' keep the folder an exact mirror of that set.
+// Stored in the pictures.slideshowSource setting — frozen values.
+export type SlideshowSource = 'manual' | 'favorites' | `album:${number}`
+
+export interface SlideshowSyncResult {
+  added: number
+  removed: number
+  // Images whose file was missing or could not be copied.
+  failed: number
+}
+
+export type PictureOrientation = 'landscape' | 'portrait' | 'square'
+export type PictureSort = 'newest' | 'oldest' | 'title'
+
+// The Pictures gallery query. Every field narrows; an empty filter is every
+// image. albumId switches the order to the album's own.
+export interface PictureGalleryFilter {
+  mediaType?: MediaType | null
+  mediaId?: number | null
+  unsorted?: boolean
+  kind?: ImageKind | null
+  favorites?: boolean
+  // An image must carry every listed tag.
+  tagIds?: number[]
+  orientation?: PictureOrientation | null
+  inSlideshow?: boolean
+  albumId?: number | null
+  sort?: PictureSort
+}
+
+export interface PictureAlbum {
+  id: number
+  name: string
+  count: number
+  // The first image in album order, for the album card.
+  coverPath: string | null
+  createdAt: string
+}
+
+export interface PictureTag {
+  id: number
+  name: string
+  count: number
 }
 
 // One result in the wallpaper Browse dialog. thumbUrl is shown in the grid
@@ -3309,6 +3361,9 @@ export interface MusicScanSummary {
 // disk. `tracks` = number of track rows (and their files) removed.
 export interface MusicDeleteResult {
   tracks: number
+  // Albums and artists the delete left empty and removed, so a page showing one can leave.
+  albumIds: number[]
+  artistIds: number[]
 }
 
 // ---- Music downloads (yt-dlp) ----
@@ -3416,6 +3471,7 @@ export type TaskKind =
   | 'franchiseArt'
   | 'libraryExport'
   | 'storageMove'
+  | 'pictureSlideshow'
 // Achievement fetches deliberately have NO kind of their own: they run through
 // withActivity in ipc.ts, so they are 'import' rows with a clear label
 // ("Fetching achievements"). Adding a kind nothing creates would be a lie the

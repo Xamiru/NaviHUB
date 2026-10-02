@@ -277,6 +277,30 @@ export function runMigrations(sqlite: Database.Database): string[] {
   // 2026-08-17: the Art tab's "Set background" flag. media_image predates it.
   // No index on this column — an index in init.sql would run BEFORE this ALTER.
   ensureColumn(sqlite, 'media_image', 'is_background', 'is_background INTEGER NOT NULL DEFAULT 0')
+  // 2026-10-02: the Pictures gallery — favorites, and images with no title
+  // (media_id NULL = Unsorted). The rebuild must follow both ensureColumns so
+  // its column list exists, and it drops the table's index with the old copy.
+  ensureColumn(sqlite, 'media_image', 'is_favorite', 'is_favorite INTEGER NOT NULL DEFAULT 0')
+  dropNotNull(
+    sqlite,
+    'media_image',
+    'media_id',
+    `CREATE TABLE media_image__new (
+       id INTEGER PRIMARY KEY AUTOINCREMENT,
+       media_id INTEGER REFERENCES media_item(id) ON DELETE CASCADE,
+       kind TEXT NOT NULL, file_path TEXT NOT NULL, source_url TEXT, source TEXT,
+       width INTEGER, height INTEGER, sort_order INTEGER,
+       is_background INTEGER NOT NULL DEFAULT 0,
+       is_favorite INTEGER NOT NULL DEFAULT 0,
+       created_at TEXT NOT NULL DEFAULT (datetime('now'))
+     )`,
+    `id, media_id, kind, file_path, source_url, source, width, height, sort_order,
+     is_background, is_favorite, created_at`
+  )
+  sqlite.exec('CREATE INDEX IF NOT EXISTS idx_media_image_media ON media_image(media_id, kind)')
+  sqlite.exec(
+    'CREATE INDEX IF NOT EXISTS idx_media_image_favorite ON media_image(is_favorite) WHERE is_favorite = 1'
+  )
   // Shipped one build after the wrestling section, so live DBs already have the
   // table without it.
   ensureColumn(sqlite, 'wrestling_match', 'method', 'method TEXT')

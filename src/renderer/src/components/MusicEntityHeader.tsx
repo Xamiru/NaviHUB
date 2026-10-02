@@ -5,6 +5,8 @@ import { qk } from '../lib/queryKeys'
 import CoverImage from './CoverImage'
 import ActionMenu, { type ActionItem } from './ActionMenu'
 import ImagePickerDialog from './ImagePickerDialog'
+import { QueueMenu } from './music/TrackListScope'
+import type { MusicTrack } from '@shared/types'
 
 // Hero header shared by the album and artist pages: art + title + meta line +
 // Play/Shuffle + find/clear-art actions. `round` switches to the artist look
@@ -16,6 +18,7 @@ export default function MusicEntityHeader({
   round = false,
   onPlay,
   onShuffle,
+  queueTracks,
   artNoun,
   art,
   onFindArt,
@@ -30,6 +33,7 @@ export default function MusicEntityHeader({
   round?: boolean
   onPlay: () => void
   onShuffle: () => void
+  queueTracks: MusicTrack[] // what the Queue menu's Play next / Add to queue add
   artNoun: 'cover' | 'photo'
   // A picked image is held through rescans and "Find" until Clear or Restore.
   art: { kind: 'music_album' | 'music_artist'; id: number }
@@ -83,6 +87,7 @@ export default function MusicEntityHeader({
           <button className="btn-ghost" onClick={onShuffle}>
             Shuffle
           </button>
+          <QueueMenu tracks={queueTracks} />
           {addMusicItems.length > 0 && <ActionMenu label="Add music" items={addMusicItems} />}
           <ActionMenu label="Library maintenance" items={maintenanceItems} />
         </div>

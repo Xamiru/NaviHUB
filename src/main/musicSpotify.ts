@@ -2,7 +2,7 @@ import { randomUUID } from 'crypto'
 import { processUrlJob, validateUrlInput } from './musicUrlQueue'
 import { addUrlJob } from './repos/musicUrlRepo'
 import { assessMusicSource, durationFits } from '@shared/musicSourceMatch'
-import { musicToolOptions, musicYtDlpArgs, musicFailure } from './musicTools'
+import { musicToolOptions, musicYtDlpArgs, musicFailure, BARE_UNAVAILABLE, YOUTUBE_LIMIT } from './musicTools'
 import { youtubeSourceUrl, inspectAudio, audioSourceInspection, forgetAudioSource, canonicalAudioSource } from './musicSpotifyRecovery'
 import * as spotifyWeb from './spotifyWeb'
 import { searchYouTubeMusic, type YtmLocale, type YtmSong } from './youtubeMusic'
@@ -174,7 +174,14 @@ export function normalizeProvenanceFiles(root: string, trackIds: string[]): { fr
     mkdirSync(dirname(journal), { recursive: true })
     writeFileSync(`${journal}.tmp`, JSON.stringify(rename), { mode: 0o600 })
     renameSync(`${journal}.tmp`, journal)
-    renameSync(abs, target)
+    try {
+      renameSync(abs, target)
+    } catch (error) {
+      // A file open in a player cannot be renamed on Windows; it keeps its download name.
+      rmSync(journal, { force: true })
+      logWarn('proc', `Downloaded audio kept its download name (${rel}): ${error instanceof Error ? error.message : String(error)}`)
+      continue
+    }
     spotifyRepo.updateProvenanceTrackPaths([rename])
     rmSync(journal, { force: true })
     renames.push(rename)
@@ -182,17 +189,27 @@ export function normalizeProvenanceFiles(root: string, trackIds: string[]): { fr
   return renames
 }
 
-function recoverProvenanceRenames(root: string): void {
+/**
+ * Finishes a rename an interrupted run left behind. A record that cannot be finished is
+ * dropped, never thrown: it would otherwise fail every later queue run before it starts.
+ * The library row still names the original file in each of those cases.
+ */
+export function recoverProvenanceRenames(root: string): void {
   const journal = join(root, '.navihub-downloads', 'pending-rename.json')
   if (!existsSync(journal)) return
-  const value = JSON.parse(readFileSync(journal, 'utf8')) as { from: string; to: string }
-  if (![value.from, value.to].every((path) => typeof path === 'string' && !isAbsolute(path) && !path.split(/[\\/]/).includes('..'))) throw new Error('Invalid pending audio rename')
+  const skip = (problem: string) => {
+    logWarn('proc', `Interrupted audio rename skipped (${problem})`)
+    rmSync(journal, { force: true })
+  }
+  let value: { from: string; to: string }
+  try { value = JSON.parse(readFileSync(journal, 'utf8')) } catch { return skip('unreadable record') }
+  if (![value?.from, value?.to].every((path) => typeof path === 'string' && !isAbsolute(path) && !path.split(/[\\/]/).includes('..'))) return skip('invalid paths')
   const from = join(root, value.from), to = join(root, value.to)
   if (existsSync(from)) {
-    if (existsSync(to)) throw new Error('Audio rename needs review: both paths exist')
-    renameSync(from, to)
+    if (existsSync(to)) return skip(`both ${value.from} and ${value.to} exist; the original name is kept`)
+    try { renameSync(from, to) } catch (error) { return skip(`${value.from} could not be renamed: ${error instanceof Error ? error.message : String(error)}`) }
   }
-  if (!existsSync(to)) throw new Error('Audio rename needs review: completed file is missing')
+  if (!existsSync(to)) return skip(`${value.from} no longer exists`)
   spotifyRepo.updateProvenanceTrackPaths([value])
   rmSync(journal, { force: true })
 }
@@ -1095,6 +1112,8 @@ interface QueueRun extends SpotifyRunControl {
   processed: Set<number>
   /** Cards that received new songs while they were being processed. */
   rerun: Set<number>
+  /** Why the run paused itself, shown instead of the ordinary pause message. */
+  pauseNote?: string
   /** Playlist cards this run passes over only partly: a single song's Download leaves the rest queued. */
   onlyItems: Map<number, Set<number>>
   needsRecoveryScan: boolean
@@ -1299,6 +1318,7 @@ async function processEntityQueueCard(
         owner: run.owner,
         jobId: run.id,
         broader: chunks[chunkIndex].allowUnverified,
+        onLimit: () => pauseForYouTubeLimit(run),
         onProgress: (done, _total, title) => {
           if (status?.id !== run.id) return
           if (title) status.title = title
@@ -1328,7 +1348,8 @@ async function processEntityQueueCard(
   const total = selectedTracks.length
   const resolved = selectedTracks.filter((track) => track.matchedTrackId != null).length
   const missing = Math.max(0, total - resolved)
-  if (missing > 0) {
+  // A paused run never reached its remaining songs; they are not failures.
+  if (missing > 0 && run.intent === 'running') {
     const generic = failures[0] ?? 'No suitable YouTube audio match was found'
     spotifyRepo.setTrackDownloadErrors(
       'entityTrack',
@@ -1390,6 +1411,7 @@ async function processPlaylistQueueCard(
       owner: run.owner,
       jobId: run.id,
       broader: chunks[chunkIndex].allowUnverified,
+      onLimit: () => pauseForYouTubeLimit(run),
       onProgress: (done, _total, title) => {
         if (status?.id !== run.id) return
         if (title) status.title = title
@@ -1411,7 +1433,8 @@ async function processPlaylistQueueCard(
   }
   if (abandonedRuns.has(run.id)) return { total: 0, resolved: 0, error: null }
   const remaining = spotifyRepo.pendingSpotifyItems(card.playlistId, itemIds)
-  if (remaining.length > 0) {
+  // A paused run never reached its remaining songs; they are not failures.
+  if (remaining.length > 0 && run.intent === 'running') {
     const generic = failures[0] ?? 'No suitable YouTube audio match was found'
     spotifyRepo.setTrackDownloadErrors(
       'playlistItem',
@@ -1462,6 +1485,7 @@ function resumeQueueRun(run: QueueRun): void {
   if (queueRun?.id !== run.id || run.intent !== 'pause' || run.active) return
   claimMusicMaintenance(run.owner)
   run.intent = 'running'
+  run.pauseNote = undefined
   run.needsRecoveryScan = true
   if (status?.id === run.id) {
     status.status = 'starting'
@@ -1469,6 +1493,14 @@ function resumeQueueRun(run: QueueRun): void {
     status.message = 'Resuming the paused Spotify queue'
   }
   void runDownloadQueue(run)
+}
+
+/** Every further request would fail and extend YouTube's block, so the queue waits for the user. */
+function pauseForYouTubeLimit(run: QueueRun): void {
+  if (run.intent !== 'running') return
+  run.pauseNote = 'Paused: YouTube is limiting requests from this network. Resume in about an hour'
+  logWarn('proc', 'YouTube is limiting requests; the music download queue paused')
+  stopQueueRun(run, 'pause')
 }
 
 function nextQueueCard(run: QueueRun): NonNullable<ReturnType<typeof spotifyRepo.getDownloadQueueCard>> | null {
@@ -1537,7 +1569,7 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
         if (status?.id === run.id) {
           status.status = 'paused'
           status.phase = 'paused'
-          status.message = 'Paused safely; Resume continues unresolved queue work'
+          status.message = run.pauseNote ?? 'Paused safely; Resume continues unresolved queue work'
         }
         return
       }
@@ -1583,7 +1615,7 @@ async function runDownloadQueue(run: QueueRun): Promise<void> {
           status.queueItemIds = queueOnlyItemIds(next.id)
           status.status = 'paused'
           status.phase = 'paused'
-          status.message = 'Paused safely; Resume continues unresolved queue work'
+          status.message = run.pauseNote ?? 'Paused safely; Resume continues unresolved queue work'
         }
         return
       }
@@ -1941,6 +1973,8 @@ interface AcquireInput {
   jobId: string
   /** Broader retry: also consider ordinary YouTube videos; results always need review. */
   broader: boolean
+  /** YouTube is throttling this session; the caller stops starting new work. */
+  onLimit?: () => void
   onProgress?: (done: number, total: number, title: string | null) => void
 }
 
@@ -2052,17 +2086,36 @@ async function acquireLockedSongs(input: AcquireInput): Promise<number> {
   const tempDir = mkdtempSync(join(tmpdir(), 'navihub-acquire-'))
   let done = 0
   input.onProgress?.(0, songs.length, null)
+  // A throttled session fails every song the same way. An explicit limit, or three bare
+  // "Video unavailable" answers in a row, pauses the run; those songs are not marked failed.
+  let limited = false
+  let unavailableStreak: ReturnType<typeof spotifyRepo.sourcesForSpotifyId>[] = []
+  const noteOutcome = (references: ReturnType<typeof spotifyRepo.sourcesForSpotifyId>, message: string | null) => {
+    const explicit = message != null && YOUTUBE_LIMIT.test(message)
+    if (!explicit && !(message != null && BARE_UNAVAILABLE.test(message))) {
+      if (!limited) unavailableStreak = []
+      return
+    }
+    unavailableStreak.push(references)
+    if (!limited && !explicit && unavailableStreak.length < 3) return
+    for (const ref of unavailableStreak.flat()) spotifyRepo.clearTrackDownloadErrors(ref.kind, [ref.id])
+    unavailableStreak = []
+    if (!limited) input.onLimit?.()
+    limited = true
+  }
   const fail = (references: ReturnType<typeof spotifyRepo.sourcesForSpotifyId>, message: string) => {
     failures++
     for (const ref of references) spotifyRepo.setTrackDownloadErrors(ref.kind, new Map([[ref.id, message]]))
+    noteOutcome(references, message)
   }
   const failTransfer = (id: string, url: string, message: string) => {
     failures++
-    for (const ref of spotifyRepo.sourcesForSpotifyId(id)) {
-      if (ref.manual && ref.manual !== url) continue
+    const references = spotifyRepo.sourcesForSpotifyId(id).filter((ref) => !ref.manual || ref.manual === url)
+    for (const ref of references) {
       spotifyRepo.setTrackDownloadErrors(ref.kind, new Map([[ref.id, message]]))
       spotifyRepo.invalidateSourceAccess(ref.kind, ref.id)
     }
+    noteOutcome(references, message)
   }
 
   /** One song from search to finished file, so files arrive while later songs are still being found. */
@@ -2161,6 +2214,7 @@ async function acquireLockedSongs(input: AcquireInput): Promise<number> {
     }
     if (!running()) return null
     if (code === 0) {
+      noteOutcome([], null)
       spotifyRepo.retainResolvedAudioUrls([{ song_id: raw.song_id, download_url: evidence.url }])
       if (!embedThumbnail) await writeFolderCover(raw).catch((error) => logWarn('proc', `Album cover was not saved: ${error instanceof Error ? error.message : String(error)}`))
       finished.push(outputBase)

@@ -214,7 +214,11 @@ that validated video without searching applies the same checks. A retry reuses
 only an approved or validated saved source; a pick that failed review is searched again. An
 unreadable search page is a Lookup error rather than "no matching recording", unless an earlier
 search for the song already answered: a later failing catalogue language only narrows the
-evidence, and nothing found then is still a Lookup error. Remaining gaps
+evidence, and nothing found then is still a Lookup error. A throttled YouTube session ("try
+again later", "rate-limited", HTTP 429, or three bare "Video unavailable" answers in a row for
+videos the catalogue just listed) pauses the queue with a note instead of failing every
+remaining song; those songs keep no error, and a paused run never stamps its unstarted songs as
+failed. Remaining gaps
 stay in review: Chinese artists that YouTube Music credits only in Chinese ("Jay Chou" vs
 周杰倫), Latin transliterations of native-script uploads ("Gruppa krovi"), and songs the
 catalogue lacks.
@@ -291,7 +295,7 @@ fallback may bypass source verification. Metadata checkpoints, complete snapshot
 order, lazy album expansion and small-release batching remain. Completed Spotify outputs move
 from `.spotdl/navihub-downloads` (the historical staging path, kept so older interrupted runs
 recover) without overwriting existing audio. The private
-pending-index manifest remains in `.navihub-downloads` and survives interruption. Explicit queue
+pending-index manifest remains in `.navihub-downloads` and survives interruption. An interrupted provenance rename that cannot be finished (both names exist, the file is gone, a locked file, an unreadable record) is logged and dropped rather than thrown, so it can never block later runs; the library row keeps the original name. Explicit queue
 recovery also reads old `.navihub-downloads` outputs. Approved linking selects the
 exact acquisition token before considering duplicate files; unrelated old copies cannot block
 it. Filename markers are removed only after an archived source or durable review candidate
@@ -486,6 +490,30 @@ queues. The Downloads page lists, inside an opened card, only songs that still n
 flat rows (status line plus **Choose audio** / **Check** / **Remove**), collapses the rest into
 "N songs are already in your library", and its running panel shows the release and the current
 step (finding recordings, checking them, downloading).
+
+**Track lists: selection, right-click and search (2026-09-30).** `components/music/TrackListScope.tsx`
+wraps each visible list (`TrackList`, album, playlist) and owns its multi-selection, a sticky
+selection bar (Play, Play next, Add to queue, Add to playlist, Remove from playlist on playlist
+pages, Delete…, Clear) and **Jump to playing** for lists of 30 or more, which grows an incremental
+list through `useIncrementalList().reveal` before scrolling. In a scope, Ctrl+click toggles a row,
+Shift+click extends from the last toggled row, and while anything is selected a plain click selects
+rather than plays; each row also has a checkbox (hover/focus revealed until a selection exists).
+Escape clears. Selection queues in list order and prunes rows a filter hides. The artist's Most
+played list is not selectable, so one page never shows two bars. Every `MusicTrackRow` has a
+right-click menu (the shared `ContextMenu`, destructive items behind a separator) whose
+**Add to playlist…** opens the row's own ⋯ popover. Album, artist and playlist headers and Liked
+songs carry an **Add to queue** menu (Play next / Add to end for the whole list). Liked songs has search
+and a client-side sort; album pages, an artist's full track list and ordinary playlists show search
+from 25 tracks (`TRACK_SEARCH_MIN`). Header Play/Shuffle on Liked and album pages follow the filtered
+list; a playlist's Play keeps the whole playlist. Searching an ordinary playlist hides drag handles,
+because manual order is edited only on the whole list.
+
+**Deletes leave their page (2026-09-30).** `deleteTracks`/`deleteAlbum`/`deleteArtist` return the
+album and artist ids the delete removed; deleting songs or an album prunes an album or artist it
+emptied at once (the scan's rule, Spotify-snapshot exception included) instead of leaving an empty
+page until the next scan. Album, artist, playlist and smart-playlist deletes, and a song delete that
+empties the page being shown, leave through `useLeaveDeleted()`: back to the nearest history entry
+that still exists, else a parent route. The row menus hide **Go to artist/album** on that page.
 
 **Genres (2026-09-26).** The folder stays the artist; genre comes only from tags. The scanner
 splits every genre tag on `;`, `/`, `|` and NUL (never commas, which Discogs-style names use

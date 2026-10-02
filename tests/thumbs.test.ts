@@ -101,7 +101,12 @@ describe('parseThumbRequest', () => {
     expect(thumbs.parseThumbRequest('')).toBeNull()
   })
 
-  it('only serves the content-addressed media store', () => {
+  it('only serves the app-owned image roots', () => {
+    expect(thumbs.parseThumbRequest('thumb/320/pictures/Lain (anime)/wallpapers/a.jpg')).toEqual({
+      width: 320,
+      sourceRel: 'pictures/Lain (anime)/wallpapers/a.jpg'
+    })
+    expect(thumbs.parseThumbRequest('thumb/320/pictures/../media/x.jpg')).toBeNull()
     expect(thumbs.parseThumbRequest('thumb/320/audio/theme.ogg')).toBeNull()
     expect(thumbs.parseThumbRequest('thumb/320/video/movie.mkv')).toBeNull()
     expect(thumbs.parseThumbRequest('thumb/320/open/token.mkv')).toBeNull()
@@ -126,7 +131,8 @@ describe('thumbUrl', () => {
 
   it('uses originals for oversized art and paths outside the thumbnail store', () => {
     expect(thumbUrl('media/hero.jpg', 1200)).toBeNull()
-    expect(thumbUrl('pictures/art.jpg', 320)).toBeNull()
+    expect(thumbUrl('audio/art.jpg', 320)).toBeNull()
+    expect(thumbUrl('pictures/art.jpg', 320)).toBe('navimg://thumb/320/pictures/art.jpg')
     expect(thumbUrl('media/cover.jpg', 0)).toBeNull()
   })
 })
@@ -139,6 +145,10 @@ describe('thumbCacheName', () => {
     expect(a).not.toBe(thumbs.thumbCacheName('media/dl-other.jpg', 320))
     expect(a.endsWith('.jpg')).toBe(true)
     expect(a).not.toContain('/') // flat cache dir
+    // A reused pictures/ name with new contents gets its own entry.
+    expect(thumbs.thumbCacheName('pictures/a.jpg', 320, '1-2')).not.toBe(
+      thumbs.thumbCacheName('pictures/a.jpg', 320, '3-4')
+    )
   })
 })
 

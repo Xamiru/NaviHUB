@@ -10,6 +10,7 @@ import { fmtDurationSec } from '../lib/useGameSession'
 import Section from './Section'
 import { Field } from './Field'
 import Pager from './Pager'
+import GameSessionList from './GameSessionList'
 
 const KINDS = { first: 'First playthrough', replay: 'Replay', newGamePlus: 'New Game Plus' }
 const freshRun = (): GameRunInput => ({
@@ -294,42 +295,17 @@ export default function GamePlaythroughSection({ mediaId }: { mediaId: number })
               No tracked sessions on this page. Sessions appear after a linked game exits.
             </p>
           )}
-          <ul className="divide-y divide-line-subtle">
-            {history.data.sessions.map((s) => (
-              <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div>
-                  <p className="text-sm">
-                    {new Date(s.startedAt.replace(' ', 'T') + 'Z').toLocaleString()} ·{' '}
-                    {fmtDurationSec(s.duration)}
-                  </p>
-                  <p className="mt-1 text-xs text-ink-muted">
-                    {s.runTitle ?? 'Unassigned session'}
-                  </p>
-                </div>
-                <Field label={`Playthrough for session ${s.id}`} hiddenLabel>
-                  <select
-                    className="input max-w-xs"
-                    disabled={action.busy}
-                    value={s.runId ?? ''}
-                    onChange={(e) => {
-                      const id = e.target.value ? Number(e.target.value) : null
-                      void action.run(async () => {
-                        await api.playthroughs.assignSession(mediaId, s.id, id)
-                        await refresh()
-                      })
-                    }}
-                  >
-                    <option value="">Unassigned</option>
-                    {runs.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.title}
-                      </option>
-                    ))}
-                  </select>
-                </Field>
-              </li>
-            ))}
-          </ul>
+          <GameSessionList
+            sessions={history.data.sessions}
+            runs={runs}
+            busy={action.busy}
+            onAssign={(sessionId, runId) =>
+              void action.run(async () => {
+                await api.playthroughs.assignSession(mediaId, sessionId, runId)
+                await refresh()
+              })
+            }
+          />
           <Pager
             page={page}
             pageCount={Math.ceil(Math.max(history.data.sessionTotal, history.data.noteTotal) / 50)}

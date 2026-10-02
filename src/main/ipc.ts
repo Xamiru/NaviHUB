@@ -62,6 +62,7 @@ import * as bulkImport from './bulkImport'
 import * as openlibrary from './openlibrary'
 import * as themes from './themes'
 import * as pictures from './pictures'
+import * as pictureLibrary from './pictureLibrary'
 import * as storageMove from './storageMove'
 import * as franchiseArt from './franchiseArt'
 import * as jackett from './jackett'
@@ -797,6 +798,46 @@ export function registerIpc(): void {
   ipcMain.handle('pictures:openSlideshowFolder', async () => {
     await shell.openPath(files.ensureSlideshowDir())
   })
+  ipcMain.handle('pictures:gallery', (_e, filter) => {
+    pictureLibrary.backfillDims()
+    return pictureLibrary.listGallery(filter)
+  })
+  ipcMain.handle('pictures:homePick', () => pictureLibrary.homePick())
+  ipcMain.handle('pictures:setFavorite', (_e, imageIds, favorite) =>
+    pictureLibrary.setFavorite(imageIds, favorite)
+  )
+  ipcMain.handle('pictures:move', (_e, imageIds, mediaId, kind) =>
+    pictureLibrary.moveImages(imageIds, mediaId, kind)
+  )
+  ipcMain.handle('pictures:albums', () => pictureLibrary.listAlbums())
+  ipcMain.handle('pictures:album', (_e, albumId) => pictureLibrary.getAlbum(albumId))
+  ipcMain.handle('pictures:albumCreate', (_e, name, imageIds) =>
+    pictureLibrary.createAlbum(name, imageIds)
+  )
+  ipcMain.handle('pictures:albumRename', (_e, albumId, name) =>
+    pictureLibrary.renameAlbum(albumId, name)
+  )
+  ipcMain.handle('pictures:albumDelete', (_e, albumId) => pictureLibrary.deleteAlbum(albumId))
+  ipcMain.handle('pictures:albumAdd', (_e, albumId, imageIds) =>
+    pictureLibrary.addToAlbum(albumId, imageIds)
+  )
+  ipcMain.handle('pictures:albumRemove', (_e, albumId, imageIds) =>
+    pictureLibrary.removeFromAlbum(albumId, imageIds)
+  )
+  ipcMain.handle('pictures:albumReorder', (_e, albumId, orderedIds) =>
+    pictureLibrary.reorderAlbum(albumId, orderedIds)
+  )
+  ipcMain.handle('pictures:tags', () => pictureLibrary.listTags())
+  ipcMain.handle('pictures:tag', (_e, imageIds, name) => pictureLibrary.tagImages(imageIds, name))
+  ipcMain.handle('pictures:untag', (_e, imageIds, tagId) =>
+    pictureLibrary.untagImages(imageIds, tagId)
+  )
+  ipcMain.handle('pictures:tagRename', (_e, tagId, name) => pictureLibrary.renameTag(tagId, name))
+  ipcMain.handle('pictures:tagDelete', (_e, tagId) => pictureLibrary.deleteTag(tagId))
+  ipcMain.handle('pictures:slideshowSource', () => pictures.getSlideshowSource())
+  ipcMain.handle('pictures:setSlideshowSource', (_e, source) =>
+    pictureLibrary.setSlideshowSource(source)
+  )
 
   // ---- franchise (curated pages' art cache) ----
   ipcMain.handle('franchise:ensureArt', (_e, franchiseId) => franchiseArt.ensureArt(franchiseId))

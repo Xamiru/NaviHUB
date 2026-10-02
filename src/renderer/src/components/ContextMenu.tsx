@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 // The app's right-click menu — drawn in the renderer, not by the OS. Electron
 // ships no context menu of its own (main/index.ts only adds cut/copy/paste for
@@ -115,21 +115,26 @@ export default function ContextMenu({
       className="fixed z-50 min-w-44 rounded-md border border-base-500 bg-base-800 p-1 shadow-lg"
       onContextMenu={(e) => e.preventDefault()}
     >
-      {items.map((item) => (
-        <button
-          key={item.label}
-          role="menuitem"
-          className={`w-full rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-base-700 disabled:cursor-not-allowed disabled:opacity-50 ${
-            item.danger ? 'text-red-400' : 'text-gray-200'
-          }`}
-          disabled={item.disabled}
-          onClick={() => {
-            onClose()
-            void item.onSelect()
-          }}
-        >
-          {item.label}
-        </button>
+      {items.map((item, i) => (
+        <Fragment key={item.label}>
+          {/* Destructive items sit behind a separator, as in ActionMenu. */}
+          {item.danger && i > 0 && !items[i - 1].danger && (
+            <div role="separator" className="my-1 border-t border-base-600" />
+          )}
+          <button
+            role="menuitem"
+            className={`w-full rounded px-2 py-1.5 text-left text-sm transition-colors hover:bg-base-700 disabled:cursor-not-allowed disabled:opacity-50 ${
+              item.danger ? 'text-red-400' : 'text-gray-200'
+            }`}
+            disabled={item.disabled}
+            onClick={() => {
+              onClose()
+              void item.onSelect()
+            }}
+          >
+            {item.label}
+          </button>
+        </Fragment>
       ))}
     </div>
   )

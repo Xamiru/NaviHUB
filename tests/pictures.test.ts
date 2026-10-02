@@ -18,6 +18,25 @@ import {
   tmdbBackdropResults,
   wallhavenSearchUrl
 } from '../src/main/pictures'
+import {
+  addToAlbum,
+  backfillDims,
+  createAlbum,
+  deleteAlbum,
+  homePick,
+  listAlbums,
+  listGallery,
+  listTags,
+  moveImages,
+  removeFromAlbum,
+  renameTag,
+  reorderAlbum,
+  setFavorite,
+  setSlideshowSource,
+  tagImages,
+  untagImages
+} from '../src/main/pictureLibrary'
+import * as settingsRepo from '../src/main/repos/settingsRepo'
 import type { WallpaperSearchResult } from '../src/shared/types'
 
 // Wallpapers/fan art against the real schema: Wallhaven URL/parse invariants
@@ -35,6 +54,7 @@ const files = vi.hoisted(() => ({
   pickImageFiles: vi.fn(),
   copyIntoSlideshow: vi.fn(),
   removeSlideshowCopy: vi.fn(),
+  moveImageInto: vi.fn(),
   absoluteMediaPath: vi.fn((rel: string) => `/nonexistent-test-root/${rel}`),
   sanitizeFileBase: (s: string, fallback = 'theme'): string => {
     const clean = s
@@ -77,6 +97,9 @@ beforeEach(() => {
   // The real helper de-clashes against the folder; by default it writes the name
   // it was asked for.
   files.copyIntoSlideshow.mockImplementation((_src: string, name: string) => name)
+  files.moveImageInto.mockImplementation(
+    (rel: string, subdir: string) => `pictures/${subdir}/${rel.split('/').pop()}`
+  )
 })
 
 const wallhavenFixture = {
@@ -484,5 +507,198 @@ describe('browse sources', () => {
       'Berserk (anime)/fanart',
       'danbooru-12253500'
     )
+  })
+})
+
+// ---- Pictures gallery (pictureLibrary.ts) ------------------------------------
+
+function setDims(id: number, width: number, height: number): void {
+  db.prepare('UPDATE media_image SET width=?, height=? WHERE id=?').run(width, height, id)
+}
+
+describe('Unsorted pictures', () => {
+  it('stores title-less images under Unsorted and names their slideshow copy after it', async () => {
+    const img = await addFromUrl(null, 'fanart', 'https://x.com/crossover.png')
+    expect(img).toMatchObject({ mediaId: null, mediaTitle: null, mediaType: null })
+    expect(files.downloadImageTo).toHaveBeenCalledWith(
+      'https://x.com/crossover.png',
+      'Unsorted/fanart',
+      'crossover'
+    )
+    expect(await addFromUrl(null, 'fanart', 'https://x.com/crossover.png')).toEqual(img)
+    toggleSlideshow(img.id)
+    expect(files.copyIntoSlideshow).toHaveBeenLastCalledWith(
+      expect.any(String),
+      'Unsorted - crossover.jpg'
+    )
+  })
+
+  it('offers only the free-text sources', () => {
+    expect(listSources(null, 'fanart').map((s) => s.source)).toEqual(['danbooru', 'wallhaven'])
+    expect(listSources(null, 'wallpaper').map((s) => s.source)).toEqual(['wallhaven', 'danbooru'])
+  })
+
+  it('reads the header for dimensions on insert, recording 0 when unreadable', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    expect(img.width).toBeNull()
+    expect(db.prepare('SELECT width, height FROM media_image WHERE id=?').get(img.id)).toEqual({
+      width: 0,
+      height: 0
+    })
+    // A file that is not there (an unmounted drive) stays unprobed for later.
+    db.prepare('UPDATE media_image SET width=NULL, height=NULL WHERE id=?').run(img.id)
+    expect(backfillDims()).toBe(0)
+    expect(db.prepare('SELECT width FROM media_image WHERE id=?').get(img.id)).toEqual({ width: null })
+
+    // Missing files cannot hold back a readable one behind them.
+    const readable = await addFromUrl(1, 'wallpaper', 'https://x.com/two.jpg')
+    db.prepare('UPDATE media_image SET width=NULL, height=NULL WHERE id=?').run(readable.id)
+    const { file_path } = db.prepare('SELECT file_path FROM media_image WHERE id=?').get(readable.id) as { file_path: string }
+    files.absoluteMediaPath.mockImplementation((rel: string) => rel === file_path ? __filename : `/nonexistent-test-root/${rel}`)
+    try {
+      expect(backfillDims(1)).toBe(0)
+      expect(backfillDims(1)).toBe(1)
+    } finally {
+      files.absoluteMediaPath.mockImplementation((rel: string) => `/nonexistent-test-root/${rel}`)
+    }
+  })
+})
+
+describe('listGallery', () => {
+  it('narrows by title, Unsorted, type, kind, favorites, tags, orientation and slideshow', async () => {
+    const wide = await addFromUrl(1, 'wallpaper', 'https://x.com/wide.jpg')
+    const tall = await addFromUrl(1, 'fanart', 'https://x.com/tall.jpg')
+    const film = await addFromUrl(2, 'wallpaper', 'https://x.com/film.jpg')
+    const loose = await addFromUrl(null, 'fanart', 'https://x.com/loose.jpg')
+    setDims(wide.id, 1920, 1080)
+    setDims(tall.id, 800, 1200)
+    setDims(film.id, 1000, 1000)
+    await setFavorite([wide.id, loose.id], true)
+    tagImages([wide.id, tall.id], 'Night')
+    tagImages([wide.id], 'City')
+    toggleSlideshow(film.id)
+    const ids = (f: Parameters<typeof listGallery>[0]): number[] =>
+      listGallery(f).map((i) => i.id).sort((a, b) => a - b)
+
+    expect(ids({})).toEqual([wide.id, tall.id, film.id, loose.id])
+    expect(ids({ mediaId: 1 })).toEqual([wide.id, tall.id])
+    expect(ids({ unsorted: true })).toEqual([loose.id])
+    expect(ids({ mediaType: 'movie' })).toEqual([film.id])
+    expect(ids({ kind: 'fanart' })).toEqual([tall.id, loose.id])
+    expect(ids({ favorites: true })).toEqual([wide.id, loose.id])
+    const night = listTags().find((t) => t.name === 'Night')!.id
+    const city = listTags().find((t) => t.name === 'City')!.id
+    expect(ids({ tagIds: [night] })).toEqual([wide.id, tall.id])
+    expect(ids({ tagIds: [night, city] })).toEqual([wide.id])
+    expect(ids({ orientation: 'landscape' })).toEqual([wide.id])
+    expect(ids({ orientation: 'portrait' })).toEqual([tall.id])
+    // Unknown dimensions (loose) match no orientation.
+    expect(ids({ orientation: 'square' })).toEqual([film.id])
+    expect(ids({ inSlideshow: true })).toEqual([film.id])
+  })
+
+  it('sorts by title with Unsorted last, and by the album order inside an album', async () => {
+    const loose = await addFromUrl(null, 'wallpaper', 'https://x.com/a.jpg')
+    const film = await addFromUrl(2, 'wallpaper', 'https://x.com/b.jpg')
+    const anime = await addFromUrl(1, 'wallpaper', 'https://x.com/c.jpg')
+    expect(listGallery({ sort: 'title' }).map((i) => i.id)).toEqual([anime.id, film.id, loose.id])
+
+    const album = await createAlbum('  Mixed   bag ', [film.id, loose.id, anime.id])
+    expect(album).toMatchObject({ name: 'Mixed bag', count: 3, coverPath: film.filePath })
+    reorderAlbum(album.id, [anime.id, film.id, loose.id])
+    expect(listGallery({ albumId: album.id }).map((i) => i.id)).toEqual([anime.id, film.id, loose.id])
+    expect(listAlbums()[0].coverPath).toBe(anime.filePath)
+  })
+})
+
+describe('moveImages', () => {
+  it('moves the file before the row, and drops the background only when the title changes', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    setBackground(1, img.id)
+
+    const [asFanart] = moveImages([img.id], 1, 'fanart')
+    expect(asFanart).toMatchObject({ kind: 'fanart', isBackground: true })
+    expect(files.moveImageInto).toHaveBeenLastCalledWith(img.filePath, 'Berserk (anime)/fanart')
+
+    const [loose] = moveImages([img.id], null, null)
+    expect(loose).toMatchObject({
+      mediaId: null,
+      kind: 'fanart',
+      isBackground: false,
+      filePath: 'pictures/Unsorted/fanart/one.jpg'
+    })
+  })
+
+  it('leaves the row untouched when the file cannot move', async () => {
+    const img = await addFromUrl(1, 'wallpaper', 'https://x.com/one.jpg')
+    files.moveImageInto.mockImplementationOnce(() => {
+      throw new Error('The image file is missing on disk')
+    })
+    expect(() => moveImages([img.id], 2, null)).toThrow(/missing/)
+    expect(listImages(1, 'wallpaper').map((i) => i.id)).toEqual([img.id])
+  })
+})
+
+describe('picture tags', () => {
+  it('reuses a tag case-insensitively, deletes it with its last image, and merges on rename', async () => {
+    const a = await addFromUrl(1, 'wallpaper', 'https://x.com/a.jpg')
+    const b = await addFromUrl(1, 'wallpaper', 'https://x.com/b.jpg')
+    const night = tagImages([a.id], 'Night')
+    expect(tagImages([b.id], 'night')).toEqual({ id: night.id, name: 'Night', count: 2 })
+
+    const dusk = tagImages([a.id], 'Dusk')
+    renameTag(dusk.id, 'NIGHT')
+    expect(listTags()).toEqual([{ id: night.id, name: 'Night', count: 2 }])
+
+    untagImages([a.id, b.id], night.id)
+    expect(listTags()).toEqual([])
+  })
+})
+
+describe('slideshow mirror', () => {
+  it('keeps the folder equal to the favorites, and refuses hand toggles meanwhile', async () => {
+    const fav = await addFromUrl(1, 'wallpaper', 'https://x.com/fav.jpg')
+    const manual = await addFromUrl(1, 'wallpaper', 'https://x.com/manual.jpg')
+    toggleSlideshow(manual.id)
+    await setFavorite([fav.id], true)
+
+    expect(await setSlideshowSource('favorites')).toEqual({ added: 1, removed: 1, failed: 0 })
+    expect(files.removeSlideshowCopy).toHaveBeenCalledWith('Berserk - manual.jpg')
+    expect(listGallery({ inSlideshow: true }).map((i) => i.id)).toEqual([fav.id])
+    expect(() => toggleSlideshow(manual.id)).toThrow(/Manual/)
+
+    await setFavorite([fav.id], false)
+    expect(listGallery({ inSlideshow: true })).toEqual([])
+    expect(homePick()).toBeNull()
+  })
+
+  it('counts a failed copy and carries on', async () => {
+    const a = await addFromUrl(1, 'wallpaper', 'https://x.com/a.jpg')
+    const b = await addFromUrl(1, 'wallpaper', 'https://x.com/b.jpg')
+    const album = await createAlbum('Desk', [a.id, b.id])
+    files.copyIntoSlideshow.mockImplementationOnce(() => {
+      throw new Error('The image file is missing on disk')
+    })
+    expect(await setSlideshowSource(`album:${album.id}`)).toEqual({ added: 1, removed: 0, failed: 1 })
+
+    await removeFromAlbum(album.id, [a.id, b.id])
+    expect(listGallery({ inSlideshow: true })).toEqual([])
+    await addToAlbum(album.id, [b.id])
+    expect(listGallery({ inSlideshow: true }).map((i) => i.id)).toEqual([b.id])
+  })
+
+  it('falls back to Manual, keeping the copies, when the mirrored album is deleted', async () => {
+    const a = await addFromUrl(1, 'wallpaper', 'https://x.com/a.jpg')
+    const album = await createAlbum('Desk', [a.id])
+    await setSlideshowSource(`album:${album.id}`)
+    deleteAlbum(album.id)
+    expect(settingsRepo.get('pictures.slideshowSource')).toBe('manual')
+    expect(listGallery({ inSlideshow: true }).map((i) => i.id)).toEqual([a.id])
+    expect(() => toggleSlideshow(a.id)).not.toThrow()
+  })
+
+  it('rejects an unknown source or a missing album', async () => {
+    expect(() => setSlideshowSource('album:99')).toThrow(/Album not found/)
+    expect(() => setSlideshowSource('everything' as never)).toThrow(/Unknown/)
   })
 })

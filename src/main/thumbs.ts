@@ -1,10 +1,10 @@
 import { createHash } from 'crypto'
-import { existsSync } from 'fs'
+import { existsSync, statSync } from 'fs'
 import { mkdir, writeFile } from 'fs/promises'
 import { join } from 'path'
 import { app, nativeImage } from 'electron'
 import { absoluteMediaPath } from './files'
-import { THUMB_WIDTHS } from '@shared/mediaUrl'
+import { THUMB_SOURCE_PREFIXES, THUMB_WIDTHS } from '@shared/mediaUrl'
 
 export { THUMB_WIDTHS } from '@shared/mediaUrl'
 
@@ -31,25 +31,29 @@ export interface ThumbRequest {
 }
 
 // PURE: "thumb/320/media/dl-<sha1>.jpg" -> { width, sourceRel }, or null when
-// the request is malformed. Restricted to media/ (the content-addressed cover
-// store) so a crafted URL can't demand thumbs of arbitrary user files, and
-// traversal is rejected before absoluteMediaPath ever sees it.
+// the request is malformed. Restricted to the app-owned image roots (the cover
+// store and pictures/) so a crafted URL can't demand thumbs of arbitrary user
+// files, and traversal is rejected before absoluteMediaPath ever sees it.
 export function parseThumbRequest(relPath: string): ThumbRequest | null {
   const m = /^thumb\/(\d+)\/(.+)$/.exec(relPath)
   if (!m) return null
   const width = Number(m[1])
   if (!THUMB_WIDTHS.includes(width)) return null
   const sourceRel = m[2].split('\\').join('/')
-  if (!sourceRel.startsWith('media/')) return null
+  if (!THUMB_SOURCE_PREFIXES.some((p) => sourceRel.startsWith(p))) return null
   if (sourceRel.split('/').includes('..')) return null
   return { width, sourceRel }
 }
 
 // PURE: deterministic cache file name under userData/thumbs. Keyed by width +
-// rel path (rel paths are already content-addressed by downloadImage, so a
-// re-imported cover is a new file name and gets its own thumb).
-export function thumbCacheName(sourceRel: string, width: number): string {
-  const hash = createHash('sha1').update(`${width}:${sourceRel}`).digest('hex')
+// rel path (media/ paths are content-addressed by downloadImage, so a
+// re-imported cover is a new file name and gets its own thumb). pictures/
+// names are readable and can be reused after a delete, so their callers pass
+// the file's mtime and size as `version`.
+export function thumbCacheName(sourceRel: string, width: number, version = ''): string {
+  const hash = createHash('sha1')
+    .update(`${width}:${sourceRel}${version ? `@${version}` : ''}`)
+    .digest('hex')
   return `${hash}-${width}.jpg`
 }
 
@@ -95,7 +99,12 @@ async function generateThumb(width: number, sourceRel: string): Promise<string |
   }
   if (!existsSync(absSource)) return null
 
-  const outPath = join(thumbsDir(), thumbCacheName(sourceRel, width))
+  let version = ''
+  if (!sourceRel.startsWith('media/')) {
+    const st = statSync(absSource)
+    version = `${Math.floor(st.mtimeMs)}-${st.size}`
+  }
+  const outPath = join(thumbsDir(), thumbCacheName(sourceRel, width, version))
   if (existsSync(outPath)) return outPath
 
   // nativeImage decoding is synchronous. The global queue bounds it to one

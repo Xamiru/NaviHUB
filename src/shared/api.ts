@@ -55,6 +55,11 @@ import type {
   StoragePaths,
   StorageRootKey,
   MediaImage,
+  PictureAlbum,
+  PictureGalleryFilter,
+  PictureTag,
+  SlideshowSource,
+  SlideshowSyncResult,
   JackettEnsureResult,
   TorrentAddInput,
   TorrentSearchStatus,
@@ -727,22 +732,27 @@ export interface NaviApi {
   }
   pictures: {
     // Wallpapers + fan art per media item; files live under pictures.dir.
+    // mediaId null everywhere below means the gallery's Unsorted bucket.
     list(mediaId: number, kind: ImageKind): Promise<MediaImage[]>
     // Browse-dialog searches (main-process — renderer CSP blocks remote fetch).
     // Sources this title can browse, in tab order (pictures.listSources).
-    sources(mediaId: number, kind: ImageKind): Promise<WallpaperSourceInfo[]>
+    sources(mediaId: number | null, kind: ImageKind): Promise<WallpaperSourceInfo[]>
     // query is ignored by id-bound sources (TMDB, VNDB, AniList banner).
     search(
-      mediaId: number,
+      mediaId: number | null,
       source: WallpaperSource,
       query: string,
       page: number
     ): Promise<WallpaperSearchPage>
     // Download a picked search result / pasted URL into pictures.dir + record it.
-    addFromSearch(mediaId: number, kind: ImageKind, result: WallpaperSearchResult): Promise<MediaImage>
-    addFromUrl(mediaId: number, kind: ImageKind, url: string): Promise<MediaImage>
+    addFromSearch(
+      mediaId: number | null,
+      kind: ImageKind,
+      result: WallpaperSearchResult
+    ): Promise<MediaImage>
+    addFromUrl(mediaId: number | null, kind: ImageKind, url: string): Promise<MediaImage>
     // Native multi-select picker; copies into pictures.dir. [] when cancelled.
-    addFromFiles(mediaId: number, kind: ImageKind): Promise<MediaImage[]>
+    addFromFiles(mediaId: number | null, kind: ImageKind): Promise<MediaImage[]>
     // Removes the row and deletes its file on disk (and its slideshow copy).
     remove(imageId: number): Promise<void>
     // Adds/removes a COPY of the image in the Windows desktop-slideshow folder
@@ -753,6 +763,33 @@ export interface NaviApi {
     // Opens slideshow.dir in the OS file manager (creating it if needed) so the
     // user can point Windows Personalization > Background > Slideshow at it.
     openSlideshowFolder(): Promise<void>
+    // The Pictures gallery: every image, narrowed by the filter. Probes missing
+    // dimensions in a bounded batch first.
+    gallery(filter: PictureGalleryFilter): Promise<MediaImage[]>
+    // One random favorite for the Home widget; null when there are none.
+    homePick(): Promise<MediaImage | null>
+    setFavorite(imageIds: number[], favorite: boolean): Promise<void>
+    // To another title or Unsorted (mediaId null); kind null keeps each image's
+    // own. Files move into the target folder.
+    move(imageIds: number[], mediaId: number | null, kind: ImageKind | null): Promise<MediaImage[]>
+    albums(): Promise<PictureAlbum[]>
+    album(albumId: number): Promise<PictureAlbum>
+    albumCreate(name: string, imageIds: number[]): Promise<PictureAlbum>
+    albumRename(albumId: number, name: string): Promise<void>
+    albumDelete(albumId: number): Promise<void>
+    albumAdd(albumId: number, imageIds: number[]): Promise<void>
+    albumRemove(albumId: number, imageIds: number[]): Promise<void>
+    // The album's full new order.
+    albumReorder(albumId: number, orderedIds: number[]): Promise<void>
+    tags(): Promise<PictureTag[]>
+    // Creates the tag when the name is new (case-insensitive match otherwise).
+    tag(imageIds: number[], name: string): Promise<PictureTag>
+    untag(imageIds: number[], tagId: number): Promise<void>
+    tagRename(tagId: number, name: string): Promise<void>
+    tagDelete(tagId: number): Promise<void>
+    // Manual, or the folder mirrors favorites / one album exactly.
+    slideshowSource(): Promise<SlideshowSource>
+    setSlideshowSource(source: SlideshowSource): Promise<SlideshowSyncResult>
   }
   franchise: {
     // The curated franchise data ships in the bundle (@shared/franchises) —

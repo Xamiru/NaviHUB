@@ -1,5 +1,5 @@
 import { app, dialog, BrowserWindow } from 'electron'
-import { join, extname, basename } from 'path'
+import { join, extname, basename, dirname } from 'path'
 import {
   closeSync,
   copyFileSync,
@@ -553,6 +553,21 @@ export function copyImageInto(srcPath: string, subdir: string): string | null {
   } catch {
     return null
   }
+}
+
+// Moves an existing pictures/ file into `<picturesDir()>/<subdir>` under a
+// de-clashed name and returns its new relative path. THROWS on failure, so the
+// caller never points a row at a file that did not move.
+export function moveImageInto(relPath: string, subdir: string): string {
+  if (!relPath.startsWith('pictures/')) throw new Error('Only gallery images can be moved')
+  const src = absoluteMediaPath(relPath)
+  if (!existsSync(src)) throw new Error('The image file is missing on disk')
+  const dir = join(picturesDir(), subdir)
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+  if (dirname(src) === dir) return relPath
+  const fileName = unclashName(dir, basename(src))
+  renameSync(src, join(dir, fileName))
+  return `pictures/${subdir}/${fileName}`
 }
 
 // Native multi-select image picker. Returns absolute source paths ([] on

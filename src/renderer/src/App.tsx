@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useScrollRestoration } from './lib/navState'
+import { useHistoryTrail, useScrollRestoration } from './lib/navState'
 import { api } from './lib/api'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
@@ -118,6 +118,9 @@ const MusicLikedPage = lazy(() => import('./pages/MusicLikedPage'))
 const MusicStatsPage = lazy(() => import('./pages/MusicStatsPage'))
 const MusicDownloadsPage = lazy(() => import('./pages/MusicDownloadsPage'))
 const NowPlayingPage = lazy(() => import('./pages/NowPlayingPage'))
+const PicturesPage = lazy(() => import('./pages/PicturesPage'))
+const PictureAlbumsPage = lazy(() => import('./pages/PictureAlbumsPage'))
+const PictureAlbumPage = lazy(() => import('./pages/PictureAlbumPage'))
 const WrestlingJourneysPage = lazy(() => import('./pages/WrestlingJourneysPage'))
 const WrestlingHomePage = lazy(() => import('./pages/WrestlingHomePage'))
 const WrestlingPromotionPage = lazy(() => import('./pages/WrestlingPromotionPage'))
@@ -191,6 +194,7 @@ export default function App() {
   const themeVariant = resolveAppThemeVariant(appTheme, settings)
   const signalClarity = parseSignalClarity(settings?.[SIGNAL_CLARITY_SETTING])
   useScrollRestoration(mainRef)
+  useHistoryTrail()
 
   // The manga/book readers are immersive: no
   // sidebar/topbar/now-playing chrome, full-bleed. Audio keeps playing — the
@@ -480,6 +484,11 @@ export default function App() {
             <Route path="/now-playing" element={<NowPlayingPage />} />
             {/* pre-stats sessions may still have /music/history in back-history */}
             <Route path="/music/history" element={<Navigate to="/music/stats" replace />} />
+
+            {/* Pictures — every Art-tab image plus Unsorted, with albums and tags */}
+            <Route path="/pictures" element={<PicturesPage />} />
+            <Route path="/pictures/albums" element={<PictureAlbumsPage />} />
+            <Route path="/pictures/albums/:id" element={<PictureAlbumPage />} />
 
             {/* Japanese learning — standalone section (courses, SRS review, quiz) */}
             <Route path="/japanese" element={<JapaneseHomePage />} />

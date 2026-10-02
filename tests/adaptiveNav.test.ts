@@ -25,6 +25,7 @@ describe('adaptive archive navigation', () => {
     ['/tv', 'library'],
     ['/tv/42/edit', 'library'],
     ['/football/match/42', 'library'],
+    ['/pictures/albums/3', 'library'],
     ['/quiz/song', 'play'],
     ['/japanese/review', 'learn'],
     ['/programming/sql', 'learn'],
@@ -70,6 +71,13 @@ describe('adaptive archive navigation', () => {
     expect(archiveContextForPath('/music/downloads').items).toContainEqual({
       to: '/music/downloads',
       label: 'Downloads'
+    })
+    expect(archiveContextForPath('/pictures/albums/3')).toMatchObject({
+      title: 'Pictures',
+      items: [
+        { to: '/pictures', label: 'Gallery' },
+        { to: '/pictures/albums', label: 'Albums' }
+      ]
     })
     expect(archiveContextForPath('/english/review')).toMatchObject({
       title: 'English',

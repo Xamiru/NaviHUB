@@ -152,7 +152,7 @@ no post-timeskip, no films. Titan One and Rye (OFL) and Permanent Marker (Apache
 | `onepiece-tsuzuku.jpg` | "To be continued" (つづく) brush card, episode 406. [onepiece.fandom.com](https://onepiece.fandom.com/) |
 | `onepiece-eyecatch.jpg` | Eyecatch: the straw hat and logo in the spyglass circle. [onepiece.fandom.com](https://onepiece.fandom.com/wiki/Eyecatcher) |
 | `onepiece-meat.jpg` | Luffy's meat on the bone, anime still, cropped. [onepiece.fandom.com](https://onepiece.fandom.com/) |
-| `onepiece-island-*.jpg` | Whisky Peak, Drum Castle, Alabasta's Sandora River, Skypiea, Thriller Bark and Marineford, anime stills. [onepiece.fandom.com](https://onepiece.fandom.com/) |
+| `onepiece-island-*.jpg` | Water 7, Enies Lobby, Thriller Bark's arena, Amazon Lily (cropped from a panorama), Impel Down underwater and Marineford's Gate of Justice: HD anime stills from the pre-timeskip arcs (the earlier arcs aired in SD only). [onepiece.fandom.com](https://onepiece.fandom.com/) |
 | `onepiece-cursor-*.png` | "OnePiece_By-RizarProject" cursor set, fan-made from the anime, public domain; busy is the first frame of its animated cursor. [rw-designer.com](http://www.rw-designer.com/cursor-set/onepiece-byrizarproject) |
 
 ## JoJo's Bizarre Adventure (`fx/jojo-*`, 2026-09-28)
@@ -183,7 +183,7 @@ Stand-cry lettering and the Stand card brackets.
 | `lain-wires-dusk.jpg` | Power lines at dusk, anime frame. [lain.fandom.com](https://lain.fandom.com/) |
 | `lain-bear.jpg` | Lain in the bear pyjamas, anime frame, cropped. [lain.fandom.com](https://lain.fandom.com/) |
 | `lain-protocol7.jpg` | Protocol 7 "Global System" diagram, anime frame, cropped. [lain.fandom.com](https://lain.fandom.com/) |
-| `mgs-title.jpg` | MGS1 title screen (1280x720 capture of the 320x224 frame). [metalgear.fandom.com](https://metalgear.fandom.com/) |
+| `mgs-title.png` | MGS1 title screen, native 320x224 frame (drawn at whole-pixel scale). [metalgear.fandom.com](https://metalgear.fandom.com/) |
 | `mgs-foxhound.png` | FOXHOUND unit emblem. [metalgear.fandom.com](https://metalgear.fandom.com/wiki/FOXHOUND) |
 | `miku-concert.jpg` | Hatsune Miku concert with glowsticks, Wikimedia Commons (free licence). [commons.wikimedia.org](https://commons.wikimedia.org/) |
 | `peaks-recorder.jpg` | Cooper's MC-60 microcassette recorder, prop close-up. [twinpeaks.fandom.com](https://twinpeaks.fandom.com/) |

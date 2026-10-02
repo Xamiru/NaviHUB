@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useState, type RefObject } from 'react'
-import { useLocation, useNavigationType } from 'react-router-dom'
+import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 
 // In-memory snapshot store, keyed by `${history-entry key}:${name}`. Each entry
 // in the browser history has a unique, stable `location.key`, so going back
@@ -80,4 +80,44 @@ export function useScrollRestoration(ref: RefObject<HTMLElement | null>): void {
     // navType intentionally omitted: it can lag the key; key change is the trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
+}
+
+// The router keeps each history entry's position in `history.state.idx`.
+export function historyIndex(): number {
+  const idx = (window.history.state as { idx?: unknown } | null)?.idx
+  return typeof idx === 'number' ? idx : 0
+}
+
+// Pathname of every in-app history entry, by position. Entries past the current
+// one may be stale after a new branch, so lookups only walk backwards.
+const trail = new Map<number, string>()
+
+// Mounted once in the app shell.
+export function useHistoryTrail(): void {
+  const { key, pathname } = useLocation()
+  useEffect(() => {
+    trail.set(historyIndex(), pathname)
+  }, [key, pathname])
+}
+
+// Leaves a page whose subject was just deleted: back to the nearest earlier
+// entry that still exists (so Back afterwards never revisits the deleted page
+// or lands on a duplicate), or — with no such entry — replace it with `fallback`.
+export function useLeaveDeleted(): (gone: (pathname: string) => boolean, fallback: string) => void {
+  const navigate = useNavigate()
+  return useCallback(
+    (gone, fallback) => {
+      const here = historyIndex()
+      for (let i = here - 1; i >= 0; i--) {
+        const path = trail.get(i)
+        if (path === undefined) break
+        if (!gone(path)) {
+          navigate(i - here)
+          return
+        }
+      }
+      navigate(fallback, { replace: true })
+    },
+    [navigate]
+  )
 }

@@ -288,11 +288,11 @@ function BountyPoster() {
 }
 
 const ISLANDS = [
-  ['Whisky Peak', FX_ART.opIslandWhiskyPeak],
-  ['Drum Island', FX_ART.opIslandDrum],
-  ['Alabasta', FX_ART.opIslandAlabasta],
-  ['Skypiea', FX_ART.opIslandSkypiea],
+  ['Water 7', FX_ART.opIslandWater7],
+  ['Enies Lobby', FX_ART.opIslandEniesLobby],
   ['Thriller Bark', FX_ART.opIslandThrillerBark],
+  ['Amazon Lily', FX_ART.opIslandAmazonLily],
+  ['Impel Down', FX_ART.opIslandImpelDown],
   ['Marineford', FX_ART.opIslandMarineford]
 ] as const
 

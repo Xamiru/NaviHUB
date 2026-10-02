@@ -1,6 +1,6 @@
 import MusicTrackPersonalDialog from './MusicTrackPersonalDialog'
-import { useEffect, useId, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { useCallback, useEffect, useId, useState, type ReactNode } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -13,6 +13,8 @@ import { NextIcon } from './PlayerIcons'
 import type { MusicTrack } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
 import { usePopover } from '../lib/hooks'
+import ContextMenu, { type ContextMenuItem } from './ContextMenu'
+import { useLeaveEmptiedPage, useTrackSelection } from './music/TrackListScope'
 
 export function formatDuration(seconds: number | null): string {
   if (seconds == null || !Number.isFinite(seconds)) return '–:––'
@@ -41,7 +43,7 @@ export default function MusicTrackRow({
   trailing,
   onPlay,
   onRemove,
-  menuItems
+  menuItems = []
 }: {
   track: MusicTrack
   index?: number // visible number (album pages pass the track #)
@@ -55,8 +57,17 @@ export default function MusicTrackRow({
   menuItems?: { label: string; onSelect: () => void }[]
 }) {
   const qc = useQueryClient()
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
   const player = usePlayerControls()
+  const selection = useTrackSelection()
+  const selected = selection?.isSelected(track.id) ?? false
   const isCurrent = player.track?.id === musicTrackId(track)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [tagsOpen, setTagsOpen] = useState(false)
+  const [contextAt, setContextAt] = useState<{ x: number; y: number } | null>(null)
+  const closeContext = useCallback(() => setContextAt(null), [])
+  const deleteFromDisk = useDeleteFromDisk(track)
 
   // Optimistic heart: flip locally, persist, then let the invalidation settle.
   const [liked, setLiked] = useState(!!track.likedAt)
@@ -64,19 +75,73 @@ export default function MusicTrackRow({
   async function toggleLike(): Promise<void> {
     const next = !liked
     setLiked(next)
-    await api.music.setLiked(track.id, next)
+    try {
+      await api.music.setLiked(track.id, next)
+    } catch (e) {
+      setLiked(!next)
+      toastError(e)
+      return
+    }
     // Deliberately the broad prefix: likedAt is denormalized into every
     // track-returning query (album/artist/playlist/search/recent/stats), and
     // invalidation only refetches *mounted* queries — the rest just go stale.
     qc.invalidateQueries({ queryKey: qk.music.all })
   }
 
+  // Inside a selectable list: Ctrl+click toggles, Shift+click extends, and
+  // while anything is selected a plain click toggles too instead of playing.
+  function onTitleClick(e: React.MouseEvent): void {
+    if (selection && e.shiftKey) selection.selectRange(track.id)
+    else if (selection && (e.ctrlKey || e.metaKey || selection.selecting)) selection.toggle(track.id)
+    else onPlay()
+  }
+
+  // Hidden on the page it would open, which would only stack a duplicate history entry.
+  const goTo = (label: string, to: string): ContextMenuItem[] =>
+    pathname === to ? [] : [{ label, onSelect: () => navigate(to) }]
+
+  const contextItems: ContextMenuItem[] = [
+    { label: 'Play', onSelect: onPlay },
+    { label: 'Play next', onSelect: () => player.enqueue([musicTrackToPlayerTrack(track)], { next: true }) },
+    { label: 'Add to queue', onSelect: () => player.enqueue([musicTrackToPlayerTrack(track)]) },
+    { label: 'Add to playlist…', onSelect: () => setMenuOpen(true) },
+    ...menuItems,
+    ...(selection
+      ? [{ label: selected ? 'Deselect' : 'Select', onSelect: () => selection.toggle(track.id) }]
+      : []),
+    ...goTo('Go to artist', `/music/artists/${track.artistId}`),
+    ...goTo('Go to album', `/music/albums/${track.albumId}`),
+    { label: 'Tags and standout track…', onSelect: () => setTagsOpen(true) },
+    ...(onRemove ? [{ label: 'Remove from this playlist', onSelect: onRemove }] : []),
+    { label: 'Delete from computer…', danger: true, onSelect: deleteFromDisk }
+  ]
+
   return (
     <div
+      data-music-track={track.id}
       className={`group flex items-center gap-3 rounded-md px-2 py-1.5 hover:bg-base-700 ${
-        isCurrent ? 'bg-accent/10' : ''
+        selected ? 'bg-accent/15 ring-1 ring-inset ring-accent/40' : isCurrent ? 'bg-accent/10' : ''
       }`}
+      onContextMenu={(e) => {
+        e.preventDefault()
+        setContextAt({ x: e.clientX, y: e.clientY })
+      }}
     >
+      {selection && (
+        <input
+          type="checkbox"
+          checked={selected}
+          aria-label={`Select ${track.title}`}
+          className={`h-4 w-4 shrink-0 cursor-pointer accent-accent ${
+            selection.selecting ? '' : 'opacity-0 focus-visible:opacity-100 group-hover:opacity-100'
+          }`}
+          // React derives a checkbox's change from its click, so Shift is readable here.
+          onChange={(e) => {
+            if ((e.nativeEvent as MouseEvent).shiftKey) selection.selectRange(track.id)
+            else selection.toggle(track.id)
+          }}
+        />
+      )}
       {leading}
       {index != null && (
         <span className="w-6 shrink-0 text-center text-sm tabular-nums text-gray-500">
@@ -91,7 +156,12 @@ export default function MusicTrackRow({
           fallback="music"
         />
       )}
-      <button className="min-w-0 flex-1 text-left" onClick={onPlay} title="Play">
+      <button
+        data-track-play
+        className="min-w-0 flex-1 select-none text-left"
+        onClick={onTitleClick}
+        title={selection?.selecting ? 'Select' : selection ? 'Play (Ctrl+click to select)' : 'Play'}
+      >
         <p
           className={`line-clamp-1 text-sm font-medium ${
             isCurrent ? 'text-accent' : 'group-hover:text-white'
@@ -115,16 +185,67 @@ export default function MusicTrackRow({
       <span className="w-10 shrink-0 text-right text-xs tabular-nums text-gray-500">
         {formatDuration(track.duration)}
       </span>
-      <TrackMenu track={track} onRemove={onRemove} menuItems={menuItems} />
+      <TrackMenu
+        track={track}
+        open={menuOpen}
+        setOpen={setMenuOpen}
+        onTags={() => setTagsOpen(true)}
+        onDelete={deleteFromDisk}
+        onRemove={onRemove}
+        menuItems={menuItems}
+      />
+      {tagsOpen && <MusicTrackPersonalDialog track={track} onClose={() => setTagsOpen(false)} />}
+      {contextAt && (
+        <ContextMenu x={contextAt.x} y={contextAt.y} items={contextItems} onClose={closeContext} />
+      )}
     </div>
   )
 }
 
-function TrackMenu({ track, onRemove, menuItems = [] }: { track: MusicTrack; onRemove?: () => void; menuItems?: { label: string; onSelect: () => void }[] }) {
+function useDeleteFromDisk(track: MusicTrack): () => Promise<void> {
   const qc = useQueryClient()
   const player = usePlayerControls()
-  const [open, setOpen] = useState(false)
-  const [tagsOpen, setTagsOpen] = useState(false)
+  const leaveEmptied = useLeaveEmptiedPage()
+  return async () => {
+    const ok = await confirmDialog(
+      `Delete "${track.title}" from your computer?\n\nThis permanently removes the file from disk — it cannot be undone.`,
+      { confirmLabel: 'Delete', danger: true }
+    )
+    if (!ok) return
+    try {
+      const removed = await api.music.deleteTracks([track.id])
+      // The file is gone; stop playback if this was the current track so the
+      // player doesn't sit on a dead <audio> src.
+      if (player.track?.id === musicTrackId(track)) player.stop()
+      toast(`Deleted "${track.title}"`, 'success')
+      qc.invalidateQueries({ queryKey: qk.music.all })
+      leaveEmptied(removed)
+    } catch (e) {
+      toastError(e)
+    }
+  }
+}
+
+function TrackMenu({
+  track,
+  open,
+  setOpen,
+  onTags,
+  onDelete,
+  onRemove,
+  menuItems
+}: {
+  track: MusicTrack
+  open: boolean
+  setOpen: (open: boolean | ((v: boolean) => boolean)) => void
+  onTags: () => void
+  onDelete: () => Promise<void>
+  onRemove?: () => void
+  menuItems: { label: string; onSelect: () => void }[]
+}) {
+  const qc = useQueryClient()
+  const player = usePlayerControls()
+  const { pathname } = useLocation()
   const [newTitle, setNewTitle] = useState('')
   const triggerId = useId()
   const panelId = useId()
@@ -137,6 +258,10 @@ function TrackMenu({ track, onRemove, menuItems = [] }: { track: MusicTrack; onR
     queryFn: () => api.music.playlistsForTrack(track.id),
     enabled: open
   })
+  // A menu opened on a low row would otherwise hang below the window.
+  useEffect(() => {
+    if (open) panelRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [open, panelRef, playlists.length])
 
   function refreshPlaylists(): void {
     qc.invalidateQueries({ queryKey: qk.music.all })
@@ -157,27 +282,8 @@ function TrackMenu({ track, onRemove, menuItems = [] }: { track: MusicTrack; onR
     refreshPlaylists()
   }
 
-  async function deleteFromDisk(): Promise<void> {
-    const ok = await confirmDialog(
-      `Delete "${track.title}" from your computer?\n\nThis permanently removes the file from disk — it cannot be undone.`,
-      { confirmLabel: 'Delete', danger: true }
-    )
-    if (!ok) return
-    try {
-      await api.music.deleteTracks([track.id])
-      // The file is gone; stop playback if this was the current track so the
-      // player doesn't sit on a dead <audio> src.
-      if (player.track?.id === musicTrackId(track)) player.stop()
-      toast(`Deleted "${track.title}"`)
-      qc.invalidateQueries({ queryKey: qk.music.all })
-    } catch (e) {
-      toastError(e)
-    }
-  }
-
   return (
     <div className="relative">
-      {tagsOpen && <MusicTrackPersonalDialog track={track} onClose={() => setTagsOpen(false)} />}
       <button
         id={triggerId}
         ref={triggerRef}
@@ -229,26 +335,30 @@ function TrackMenu({ track, onRemove, menuItems = [] }: { track: MusicTrack; onR
           >
             Add to queue
           </button>
-          <Link
-            className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
-            to={`/music/artists/${track.artistId}`}
-            onClick={() => setOpen(false)}
-          >
-            Go to artist
-          </Link>
-          <Link
-            className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
-            to={`/music/albums/${track.albumId}`}
-            onClick={() => setOpen(false)}
-          >
-            Go to album
-          </Link>
-          <button className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700" onClick={() => { setOpen(false); setTagsOpen(true) }}>
+          {pathname !== `/music/artists/${track.artistId}` && (
+            <Link
+              className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
+              to={`/music/artists/${track.artistId}`}
+              onClick={() => setOpen(false)}
+            >
+              Go to artist
+            </Link>
+          )}
+          {pathname !== `/music/albums/${track.albumId}` && (
+            <Link
+              className="block rounded px-1 py-1.5 text-sm hover:bg-base-700"
+              to={`/music/albums/${track.albumId}`}
+              onClick={() => setOpen(false)}
+            >
+              Go to album
+            </Link>
+          )}
+          <button className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700" onClick={() => { setOpen(false); onTags() }}>
             Tags and standout track
           </button>
           {onRemove && (
             <button
-              className="block w-full rounded px-1 py-1.5 text-left text-sm text-red-400 hover:bg-base-700"
+              className="block w-full rounded px-1 py-1.5 text-left text-sm hover:bg-base-700"
               onClick={() => {
                 onRemove()
                 setOpen(false)
@@ -257,11 +367,12 @@ function TrackMenu({ track, onRemove, menuItems = [] }: { track: MusicTrack; onR
               Remove from this playlist
             </button>
           )}
+          <div className="my-1 border-t border-base-600" />
           <button
             className="block w-full rounded px-1 py-1.5 text-left text-sm text-red-400 hover:bg-base-700"
             onClick={() => {
               setOpen(false)
-              void deleteFromDisk()
+              void onDelete()
             }}
           >
             Delete from computer

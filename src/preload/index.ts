@@ -294,7 +294,27 @@ const api: NaviApi = {
     toggleSlideshow: (imageId) => ipcRenderer.invoke('pictures:toggleSlideshow', imageId),
     setBackground: (mediaId, imageId) =>
       ipcRenderer.invoke('pictures:setBackground', mediaId, imageId),
-    openSlideshowFolder: () => ipcRenderer.invoke('pictures:openSlideshowFolder')
+    openSlideshowFolder: () => ipcRenderer.invoke('pictures:openSlideshowFolder'),
+    gallery: (filter) => ipcRenderer.invoke('pictures:gallery', filter),
+    homePick: () => ipcRenderer.invoke('pictures:homePick'),
+    setFavorite: (imageIds, favorite) => ipcRenderer.invoke('pictures:setFavorite', imageIds, favorite),
+    move: (imageIds, mediaId, kind) => ipcRenderer.invoke('pictures:move', imageIds, mediaId, kind),
+    albums: () => ipcRenderer.invoke('pictures:albums'),
+    album: (albumId) => ipcRenderer.invoke('pictures:album', albumId),
+    albumCreate: (name, imageIds) => ipcRenderer.invoke('pictures:albumCreate', name, imageIds),
+    albumRename: (albumId, name) => ipcRenderer.invoke('pictures:albumRename', albumId, name),
+    albumDelete: (albumId) => ipcRenderer.invoke('pictures:albumDelete', albumId),
+    albumAdd: (albumId, imageIds) => ipcRenderer.invoke('pictures:albumAdd', albumId, imageIds),
+    albumRemove: (albumId, imageIds) => ipcRenderer.invoke('pictures:albumRemove', albumId, imageIds),
+    albumReorder: (albumId, orderedIds) =>
+      ipcRenderer.invoke('pictures:albumReorder', albumId, orderedIds),
+    tags: () => ipcRenderer.invoke('pictures:tags'),
+    tag: (imageIds, name) => ipcRenderer.invoke('pictures:tag', imageIds, name),
+    untag: (imageIds, tagId) => ipcRenderer.invoke('pictures:untag', imageIds, tagId),
+    tagRename: (tagId, name) => ipcRenderer.invoke('pictures:tagRename', tagId, name),
+    tagDelete: (tagId) => ipcRenderer.invoke('pictures:tagDelete', tagId),
+    slideshowSource: () => ipcRenderer.invoke('pictures:slideshowSource'),
+    setSlideshowSource: (source) => ipcRenderer.invoke('pictures:setSlideshowSource', source)
   },
   franchise: {
     ensureArt: (franchiseId) => ipcRenderer.invoke('franchise:ensureArt', franchiseId),

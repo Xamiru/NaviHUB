@@ -37,14 +37,19 @@ export function musicYtDlpArgs(standalone = true): string[] {
   ]
 }
 
+/** YouTube's answers to a session it is throttling (yt-dlp: "rate-limited by YouTube for up to an hour"). */
+export const YOUTUBE_LIMIT = /rate-limited|try again later|content isn't available|HTTP (?:Error )?429|too many requests/i
+/** A throttled session can also get a bare "Video unavailable" for videos its catalogue just listed. */
+export const BARE_UNAVAILABLE = /\bvideo unavailable\.?\s*$/i
+
 const FAILURE_REASONS: [RegExp, string][] = [
   [/confirm your age|age.restricted|inappropriate for some users/i, 'The video is age-restricted; YouTube needs signed-in cookies in Settings'],
+  [YOUTUBE_LIMIT, 'YouTube is limiting requests from this network; try again later'],
   [/sign in|captcha|bot verification|login_required|cookies.*(?:expired|invalid|rotated)/i, 'Authentication or bot verification is required; test fresh cookies in Settings'],
   [/members[- ]only|join this channel/i, 'The video is for channel members only; choose another source'],
   [/requested format|no suitable format|format.*not available/i, 'The requested audio format is unavailable'],
   [/no compatible native audio/i, 'The source has no compatible native audio; choose another source'],
-  [/HTTP Error 429|too many requests/i, 'YouTube is limiting requests; try again later'],
-  [/HTTP Error 403|forbidden/i, 'YouTube refused the download; update yt-dlp or try again later'],
+  [/HTTP Error 403|forbidden/i, 'YouTube refused the download; update yt-dlp or retry the song'],
   [/been removed|account.*terminated|no longer available|copyright (?:claim|grounds)/i, 'The video was removed; choose another source'],
   [/private video|video.*private|unavailable|not available|geo.restrict/i, 'The selected source is unavailable'],
   [/timed out|timeout/i, 'The request timed out']

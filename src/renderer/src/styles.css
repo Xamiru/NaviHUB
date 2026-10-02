@@ -2204,7 +2204,7 @@ html[data-theme='berserk'] :is([aria-busy='true'], .themed-loading) { cursor: ur
 .palette-berserk > div:last-child { border-color: #1b1b1b; }
 .berserk-strike { position: fixed; z-index: 60; width: 360px; height: 5px; pointer-events: none; opacity: 0; transform: translate(-50%, -50%) rotate(-12deg); background: linear-gradient(90deg, transparent, #ececee 45%, #b1443b 55%, transparent); }
 .berserk-tally { position: fixed; z-index: 60; pointer-events: none; transform: translate(-50%, -120%); font: 22px/1 'Alfa Slab One', Georgia, serif; letter-spacing: 0.08em; color: rgb(var(--accent)); text-shadow: 0 2px 0 #000; }
-.idle-eclipse { position: fixed; inset: 0; z-index: 65; pointer-events: none; opacity: 0; background: #0a090a url('./assets/themes/fx/berserk-eclipse.jpg') center 50% / cover; }
+.idle-eclipse { position: fixed; inset: 0; z-index: 65; pointer-events: none; opacity: 0; background: #040404 url('./assets/themes/fx/berserk-eclipse.jpg') center / auto min(100%, 1600px) no-repeat; }
 .idle-eclipse-closed { pointer-events: auto; opacity: 1; }
 .boot-berserk { background: #0a090a; }
 .boot-berserk-panel { position: absolute; top: 50%; left: 50%; height: min(78vh, 680px); max-width: 80vw; object-fit: contain; opacity: 0; transform: translate(-50%, -50%); }
@@ -2845,7 +2845,9 @@ html[data-theme='seinfeld'] .home-resume.sf-episode { display: flex; overflow: h
 /* Idle: a still from the source. */
 .idle-art { position: fixed; inset: 0; z-index: 65; pointer-events: none; opacity: 0; background-color: #000; background-position: center; background-size: cover; }
 .idle-art-closed { pointer-events: auto; opacity: 1; }
-.idle-art-mgs { background-size: contain; background-repeat: no-repeat; }
+.idle-art-mgs { background-size: auto 100%; background-repeat: no-repeat; image-rendering: pixelated; }
+@media (min-aspect-ratio: 320/224) { .idle-art-mgs { background-size: auto calc(224px * round(down, 100vh / 224px, 1)); } }
+.idle-art-lain { background-size: auto 100%; background-repeat: no-repeat; }
 .idle-art-lain::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(0deg, #0003 0 1px, transparent 1px 3px); }
 .idle-art-miku::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 30%, #39c5bb44, transparent 60%); }
 .boot-lain-present { background: #fff; }

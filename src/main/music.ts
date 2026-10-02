@@ -779,15 +779,48 @@ async function rmdirIfEmpty(abs: string): Promise<void> {
   }
 }
 
+// Drops the given albums, then artists, once nothing is left in them — the same
+// rule (and Spotify-snapshot exception) the scan applies, limited to the rows a
+// delete touched so a page can leave an entity that no longer exists.
+function pruneEmptied(albumIds: number[], artistIds: number[]): { albumIds: number[]; artistIds: number[] } {
+  const db = getSqlite()
+  const emptyAlbum = db.prepare(
+    `SELECT 1 FROM music_album WHERE id = ?
+       AND NOT EXISTS (SELECT 1 FROM music_track WHERE album_id = music_album.id)
+       AND NOT (dir_path LIKE 'navihub-downloads/%' AND EXISTS
+         (SELECT 1 FROM music_spotify_entity_snapshot WHERE album_id = music_album.id))`
+  )
+  const emptyArtist = db.prepare(
+    `SELECT 1 FROM music_artist WHERE id = ?
+       AND NOT EXISTS (SELECT 1 FROM music_album WHERE artist_id = music_artist.id)
+       AND NOT (dir_path = 'navihub-downloads' AND EXISTS
+         (SELECT 1 FROM music_spotify_entity_snapshot WHERE artist_id = music_artist.id))`
+  )
+  const removed = { albumIds: [] as number[], artistIds: [] as number[] }
+  db.transaction(() => {
+    for (const id of new Set(albumIds)) {
+      if (!emptyAlbum.get(id)) continue
+      db.prepare('DELETE FROM music_album WHERE id = ?').run(id)
+      removed.albumIds.push(id)
+    }
+    for (const id of new Set(artistIds)) {
+      if (!emptyArtist.get(id)) continue
+      db.prepare('DELETE FROM music_artist WHERE id = ?').run(id)
+      removed.artistIds.push(id)
+    }
+  })()
+  return removed
+}
+
 // Delete individual tracks: unlink each file, drop the rows (cascades play_log +
-// playlist entries), then prune any album/artist folder the removals emptied.
+// playlist entries), then prune any album/artist (rows and folders) the removals emptied.
 export async function deleteTracks(trackIds: number[]): Promise<MusicDeleteResult> {
-  if (!trackIds.length) return { tracks: 0 }
+  if (!trackIds.length) return { tracks: 0, albumIds: [], artistIds: [] }
   const db = getSqlite()
   const ph = trackIds.map(() => '?').join(',')
   const rows = db
-    .prepare(`SELECT file_path FROM music_track WHERE id IN (${ph})`)
-    .all(...trackIds) as { file_path: string }[]
+    .prepare(`SELECT file_path, album_id, artist_id FROM music_track WHERE id IN (${ph})`)
+    .all(...trackIds) as { file_path: string; album_id: number; artist_id: number }[]
   const dirs = new Set<string>()
   for (const r of rows) {
     await unlinkTrackFile(r.file_path)
@@ -798,7 +831,11 @@ export async function deleteTracks(trackIds: number[]): Promise<MusicDeleteResul
     await rmdirIfEmpty(d) // album folder
     await rmdirIfEmpty(dirname(d)) // its artist folder, if that was the last album
   }
-  return { tracks: info.changes }
+  const removed = pruneEmptied(
+    rows.map((r) => r.album_id),
+    rows.map((r) => r.artist_id)
+  )
+  return { tracks: info.changes, ...removed }
 }
 
 // Delete a whole album. Unlinks files PER TRACK (never a recursive rm): a
@@ -809,6 +846,9 @@ export async function deleteAlbum(albumId: number): Promise<MusicDeleteResult> {
   const rows = db
     .prepare('SELECT file_path FROM music_track WHERE album_id = ?')
     .all(albumId) as { file_path: string }[]
+  const owner = db.prepare('SELECT artist_id FROM music_album WHERE id = ?').get(albumId) as
+    | { artist_id: number }
+    | undefined
   const dirs = new Set<string>()
   for (const r of rows) {
     await unlinkTrackFile(r.file_path)
@@ -819,7 +859,8 @@ export async function deleteAlbum(albumId: number): Promise<MusicDeleteResult> {
     await rmdirIfEmpty(d)
     await rmdirIfEmpty(dirname(d))
   }
-  return { tracks: rows.length }
+  const removed = pruneEmptied([], owner ? [owner.artist_id] : [])
+  return { tracks: rows.length, albumIds: owner ? [albumId] : [], artistIds: removed.artistIds }
 }
 
 // Delete an artist and everything under them. The artist folder is a distinct
@@ -840,6 +881,9 @@ export async function deleteArtist(artistId: number): Promise<MusicDeleteResult>
     assertInsideMusicRoot(abs)
     await rm(abs, { recursive: true, force: true })
   }
+  const albumIds = (
+    db.prepare('SELECT id FROM music_album WHERE artist_id = ?').all(artistId) as { id: number }[]
+  ).map((a) => a.id)
   db.prepare('DELETE FROM music_artist WHERE id = ?').run(artistId) // only after filesystem success
-  return { tracks: trackCount }
+  return { tracks: trackCount, albumIds, artistIds: artist ? [artistId] : [] }
 }

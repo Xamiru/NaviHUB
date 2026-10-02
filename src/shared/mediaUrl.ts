@@ -21,12 +21,16 @@ export function mediaUrl(relPath: string | null | undefined): string | null {
 // width the main process can serve. Keep these sorted from smallest to largest.
 export const THUMB_WIDTHS: readonly number[] = [160, 320, 480]
 
+// The app-owned image roots thumbnails may be generated from: the cover store
+// and the Pictures gallery's wallpapers and fan art.
+export const THUMB_SOURCE_PREFIXES: readonly string[] = ['media/', 'pictures/']
+
 // Use the smallest cached size at least as wide as the caller needs. Larger
-// artwork and paths outside media/ use their original URL via CoverImage.
+// artwork and paths outside those roots use their original URL via CoverImage.
 export function thumbUrl(relPath: string | null | undefined, width: number): string | null {
   if (!relPath || !Number.isFinite(width) || width <= 0) return null
   const sourceRel = relPath.split('\\').join('/')
-  if (!sourceRel.startsWith('media/')) return null
+  if (!THUMB_SOURCE_PREFIXES.some((p) => sourceRel.startsWith(p))) return null
   const cachedWidth = THUMB_WIDTHS.find((candidate) => candidate >= width)
   return cachedWidth ? mediaUrl(`thumb/${cachedWidth}/${sourceRel}`) : null
 }

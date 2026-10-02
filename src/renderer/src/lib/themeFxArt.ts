@@ -64,7 +64,7 @@ import lainPresentTime from '../assets/themes/fx/lain-present-time.jpg'
 import lainWiresDusk from '../assets/themes/fx/lain-wires-dusk.jpg'
 import lainBear from '../assets/themes/fx/lain-bear.jpg'
 import lainProtocol7 from '../assets/themes/fx/lain-protocol7.jpg'
-import mgsTitle from '../assets/themes/fx/mgs-title.jpg'
+import mgsTitle from '../assets/themes/fx/mgs-title.png'
 import mgsFoxhound from '../assets/themes/fx/mgs-foxhound.png'
 import mikuConcert from '../assets/themes/fx/miku-concert.jpg'
 import peaksRecorder from '../assets/themes/fx/peaks-recorder.jpg'
@@ -76,6 +76,12 @@ import sfBuilding from '../assets/themes/fx/seinfeld-building.jpg'
 import sfMint from '../assets/themes/fx/seinfeld-mint.png'
 import sfJuniorMints from '../assets/themes/fx/seinfeld-junior-mints.png'
 
+import opIslandWater7 from '../assets/themes/fx/onepiece-island-water-7.jpg'
+import opIslandEniesLobby from '../assets/themes/fx/onepiece-island-enies-lobby.jpg'
+import opIslandThrillerBark from '../assets/themes/fx/onepiece-island-thriller-bark.jpg'
+import opIslandAmazonLily from '../assets/themes/fx/onepiece-island-amazon-lily.jpg'
+import opIslandImpelDown from '../assets/themes/fx/onepiece-island-impel-down.jpg'
+import opIslandMarineford from '../assets/themes/fx/onepiece-island-marineford.jpg'
 import bzCloak from '../assets/themes/fx/berserk-cloak.jpg'
 import bzEmboss from '../assets/themes/fx/berserk-emboss.jpg'
 import bzMark from '../assets/themes/fx/berserk-mark.png'
@@ -103,12 +109,6 @@ import opSunset from '../assets/themes/fx/onepiece-sunset.jpg'
 import opTsuzuku from '../assets/themes/fx/onepiece-tsuzuku.jpg'
 import opEyecatch from '../assets/themes/fx/onepiece-eyecatch.jpg'
 import opMeat from '../assets/themes/fx/onepiece-meat.jpg'
-import opIslandWhiskyPeak from '../assets/themes/fx/onepiece-island-whisky-peak.jpg'
-import opIslandDrum from '../assets/themes/fx/onepiece-island-drum.jpg'
-import opIslandAlabasta from '../assets/themes/fx/onepiece-island-alabasta.jpg'
-import opIslandSkypiea from '../assets/themes/fx/onepiece-island-skypiea.jpg'
-import opIslandThrillerBark from '../assets/themes/fx/onepiece-island-thriller-bark.jpg'
-import opIslandMarineford from '../assets/themes/fx/onepiece-island-marineford.jpg'
 import jjScHero from '../assets/themes/fx/jojo-sc-hero.jpg'
 import jjDiuHero from '../assets/themes/fx/jojo-diu-hero.jpg'
 import jjGwHero from '../assets/themes/fx/jojo-gw-hero.jpg'
@@ -148,7 +148,7 @@ export const FX_ART = {
   mikuSingers: { miku: mikuSingerMiku, rin: mikuSingerRin, len: mikuSingerLen, luka: mikuSingerLuka, kaito: mikuSingerKaito, meiko: mikuSingerMeiko },
   sfLogo, sfStandup, sfJerry, sfGeorge, sfElaine, sfKramer, sfNewman, sfSoupNazi, sfPuddy, sfFestivus, sfMenu, sfElaineDance, sfElaineStill, sfGang, sfKramerEntrance,
   bzCloak, bzEmboss, bzMark, bzCasca, bzGuts, bzSkull, bzBrand, bzBrandPanel, bzBehelitAwake, bzBehelitDormant, bzElfhelm, bzEclipse, bzSpread,
-  opCrew, opJolly, opLuffy, opNami, opChopper, opUsopp, opSmoker, opDenden, opLogpose, opSunset, opTsuzuku, opEyecatch, opMeat, opIslandWhiskyPeak, opIslandDrum, opIslandAlabasta, opIslandSkypiea, opIslandThrillerBark, opIslandMarineford,
+  opCrew, opJolly, opLuffy, opNami, opChopper, opUsopp, opSmoker, opDenden, opLogpose, opSunset, opTsuzuku, opEyecatch, opMeat, opIslandWater7, opIslandEniesLobby, opIslandThrillerBark, opIslandAmazonLily, opIslandImpelDown, opIslandMarineford,
   jjScHero, jjDiuHero, jjGwHero, jjScMark, jjDiuMark, jjGwMark, jjJotaro, jjJoseph, jjPolnareff, jjDio, jjJosuke, jjKoichi, jjRohan, jjKira, jjGiorno, jjMista, jjBucciarati, jjKingcrimson, jjTbcArrow, jjScCard, jjDiuCard, jjGwCard, jjScPlate, jjDiuPlate, jjGwPlate, jjScVillain, jjDiuVillain, jjGwVillain, jjScTitle, jjDiuTitle,
   lainLayerCard, lainPresentDay, lainPresentTime, lainWiresDusk, lainBear, lainProtocol7, mgsTitle, mgsFoxhound, mikuConcert, peaksRecorder, peaksPie, peaksThumbsUp, peaksLogLady, peaksSign, sfBuilding, sfMint, sfJuniorMints,
   peaksRedRoom, peaksCurtain, peaksWhiteHorse, peaksWren, peaksFalls, peaksMist, peaksLogo, peaksDoubleR, peaksDiane

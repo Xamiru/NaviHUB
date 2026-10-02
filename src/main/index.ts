@@ -23,6 +23,7 @@ import { killActiveUpdate } from './updater'
 import { killActiveOcr } from './mokuroRun'
 import { cancelActiveLibraryExport } from './libraryExport'
 import { cancelActiveStorageMove, pinPicturesDir } from './storageMove'
+import { cancelSlideshowSync } from './pictureLibrary'
 import { killSqlSandbox } from './sqlSandbox'
 import { finalizeActiveGameSession } from './gameLaunch'
 import { stopAchievementWatcher } from './achievementWatcher'
@@ -350,6 +351,9 @@ app.on('before-quit', () => {
   // A folder move only switches its setting after a complete copy, so stopping
   // it here leaves the library on its old folder (storageMove.ts).
   cancelActiveStorageMove()
+  // A slideshow-folder sync stops before its next copy, so it never writes
+  // into the closed database (pictureLibrary.ts).
+  cancelSlideshowSync()
   // The SQL sandbox's utility process holds nothing durable — an in-memory
   // copy of a dataset that is code — so it is simply dropped.
   killSqlSandbox()

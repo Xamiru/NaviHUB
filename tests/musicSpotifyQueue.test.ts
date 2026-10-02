@@ -252,6 +252,27 @@ describe('persistent Spotify download queue process', () => {
       .toMatch(/^Needs review:/)
   })
 
+  it('pauses on a throttled YouTube session instead of failing every remaining song', async () => {
+    const payload = validateSpotdlPayload([1, 2, 3, 4, 5, 6].map((n) =>
+      ({ song_id: `s${n}`, name: `Song ${n}`, artists: ['Artist'], album_name: 'Missing album', duration: 200 + n })))
+    const playlist = spotifyRepo.createSpotifyPlaylist({ spotifyId: 'limited', sourceUrl: 'https://open.spotify.com/playlist/limited', title: 'Limited', songs: payload.songs.map((song) => ({ ...song, coverPath: null })) })
+    vi.mocked(searchYouTubeMusic).mockImplementation(async (query) => [ytm(Number(query.match(/\d$/)?.[0] ?? 0))])
+    vi.mocked(spawn).mockImplementation((_command, args) => {
+      const proc = recordFakeProcess()
+      const id = (args as string[]).at(-1)!.split('v=')[1]
+      queueMicrotask(() => { proc.stderr.write(`ERROR: [youtube] ${id}: Video unavailable\n`); proc.exitCode = 1; proc.emit('close', 1) })
+      return proc as never
+    })
+    const { jobId } = spotify.addPlaylistDownloadQueue({ playlistId: playlist.playlistId })
+    spotify.startDownloadQueue({ jobId: jobId! })
+    await vi.waitFor(() => expect(spotify.getStatus()?.status).toBe('paused'))
+    expect(spotify.getStatus()?.message).toMatch(/YouTube is limiting requests/)
+    expect(spotifyRepo.getDownloadQueueCard(jobId!)?.state).toBe('paused')
+    // Neither the throttled songs nor the unstarted ones are marked as failed.
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_spotify_playlist_item WHERE download_error IS NOT NULL').get()).toEqual({ n: 0 })
+    expect(vi.mocked(spawn).mock.calls.length).toBeLessThan(6)
+  })
+
   it('searches again instead of reusing a pick that failed review', async () => {
     const payload = validateSpotdlPayload([{ song_id: 'song', name: 'Song', artists: ['Artist'], album_name: 'Album', duration: 200 }])
     const playlist = spotifyRepo.createSpotifyPlaylist({ spotifyId: 'playlist', sourceUrl: 'https://open.spotify.com/playlist/playlist', title: 'Playlist', songs: payload.songs.map((song) => ({ ...song, coverPath: null })) })

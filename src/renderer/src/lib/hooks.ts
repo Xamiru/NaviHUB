@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from './api'
 import { qk } from './queryKeys'
@@ -269,7 +269,13 @@ export function useIncrementalList<T>(items: T[], batch = 96, resetKey: unknown 
     return () => obs.disconnect()
   }, [items, count, batch, hasMore])
 
-  return { visible: hasMore ? items.slice(0, count) : items, sentinelRef, hasMore }
+  // Grows the window far enough to render row `index` (e.g. "Jump to playing").
+  const reveal = useCallback(
+    (index: number) => setCount((c) => Math.max(c, Math.ceil((index + 1) / batch) * batch)),
+    [batch]
+  )
+
+  return { visible: hasMore ? items.slice(0, count) : items, sentinelRef, hasMore, reveal }
 }
 
 // Resolves a stored relative image path to a navimg:// URL the renderer can show.

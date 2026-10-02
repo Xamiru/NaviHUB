@@ -7,7 +7,7 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { useDebouncedValue } from '../lib/hooks'
 import { useHobbyAction } from '../lib/hobbyForms'
-import { usePersistedState } from '../lib/navState'
+import { useLeaveDeleted, usePersistedState } from '../lib/navState'
 import { usePlayerControls } from '../lib/player'
 import { playTracks, musicTrackToPlayerTrack } from '../lib/musicTracks'
 import { confirmDialog } from '../lib/confirm'
@@ -93,6 +93,7 @@ function SmartEditor({ value }: { value: MusicSmartPlaylist | null }) {
   const [page, setPage] = usePersistedState(`music.smartPage.${value?.id ?? 'new'}`, 0)
   const qc = useQueryClient()
   const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const player = usePlayerControls()
   const action = useHobbyAction()
   const debouncedRules = useDebouncedValue(form.rules, 300)
@@ -372,7 +373,7 @@ function SmartEditor({ value }: { value: MusicSmartPlaylist | null }) {
                     return
                   await api.musicSmart.remove(value.id)
                   await qc.invalidateQueries({ queryKey: qk.music.all })
-                  navigate('/music/smart', { replace: true })
+                  leaveDeleted((path) => path === `/music/smart/${value.id}`, '/music/smart')
                 })
               }
             >

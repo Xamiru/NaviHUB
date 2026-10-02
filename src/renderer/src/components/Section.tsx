@@ -5,11 +5,13 @@ import type { ReactNode } from 'react'
 export default function Section({
   title,
   subtitle,
+  actions,
   className = 'mb-8',
   children
 }: {
   title: string
   subtitle?: ReactNode
+  actions?: ReactNode
   className?: string
   children: ReactNode
 }) {
@@ -21,6 +23,7 @@ export default function Section({
         </h2>
         <span className="h-px flex-1 bg-line-subtle" aria-hidden="true" />
         {subtitle && <span className="text-xs text-ink-muted">{subtitle}</span>}
+        {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </div>
       {children}
     </section>

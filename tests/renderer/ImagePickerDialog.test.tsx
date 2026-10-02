@@ -83,6 +83,8 @@ describe('ImagePickerDialog', () => {
             {
               id: 3,
               mediaId: 7,
+              mediaTitle: 'Lain',
+              mediaType: 'anime',
               kind: 'wallpaper',
               filePath: 'pictures/Lain (anime)/wallpapers/a.jpg',
               sourceUrl: null,
@@ -90,7 +92,10 @@ describe('ImagePickerDialog', () => {
               width: null,
               height: null,
               isBackground: false,
-              inSlideshow: false
+              isFavorite: false,
+              inSlideshow: false,
+              tagIds: [],
+              createdAt: '2026-10-01 10:00:00'
             }
           ]
         : []

@@ -1,16 +1,26 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useDialog } from '../lib/hooks'
+import { shuffle } from '@shared/shuffle'
+import { PauseIcon, PlayIcon, ShuffleIcon } from './PlayerIcons'
+
+const SLIDESHOW_SECONDS = [5, 10, 20]
 
 // Fullscreen image viewer for the wallpaper/fan-art grids: object-contain over
 // a near-black backdrop, ←/→ steps through the section's images (wrapping),
 // Escape / the mouse Back button / a click beside the image / × closes. Deliberately chrome-light — no zoom; the
 // manga reader remains the heavy-duty viewer.
+//
+// With `slideshow`, it also plays: a play/pause control, a 5/10/20 s interval
+// and shuffle. The timer is a renderer timeout that restarts on every image
+// change, so stepping by hand never cuts the next slide short.
 export default function Lightbox({
   images,
   index,
   onIndexChange,
   onClose,
-  onContextMenu
+  onContextMenu,
+  slideshow = false,
+  autoplay = false
 }: {
   images: { url: string; alt?: string }[]
   index: number
@@ -19,19 +29,42 @@ export default function Lightbox({
   // Right-click on the image itself; the OWNER draws the menu (the grid section
   // knows which row this index is and what the actions do).
   onContextMenu?: (index: number, e: React.MouseEvent) => void
+  // Offer the play controls; autoplay starts playing on open.
+  slideshow?: boolean
+  autoplay?: boolean
 }): React.JSX.Element | null {
   const panelRef = useDialog(onClose)
   const count = images.length
+  const [playing, setPlaying] = useState(slideshow && autoplay)
+  const [seconds, setSeconds] = useState(10)
+  // A shuffled visiting order, or null to step through in order.
+  const [order, setOrder] = useState<number[] | null>(null)
+  const canPlay = slideshow && count > 1
+
+  const nextIndex = (): number => {
+    if (!order) return (index + 1) % count
+    return order[(order.indexOf(index) + 1) % order.length] ?? 0
+  }
 
   useEffect(() => {
     if (count < 2) return
     function onKey(e: KeyboardEvent): void {
       if (e.key === 'ArrowLeft') onIndexChange((index - 1 + count) % count)
       else if (e.key === 'ArrowRight') onIndexChange((index + 1) % count)
+      else if (e.key === ' ' && canPlay && e.target === panelRef.current) {
+        e.preventDefault()
+        setPlaying((p) => !p)
+      }
     }
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [index, count, onIndexChange])
+  }, [index, count, onIndexChange, canPlay, panelRef])
+
+  useEffect(() => {
+    if (!playing || !canPlay) return
+    const timer = setTimeout(() => onIndexChange(nextIndex()), seconds * 1000)
+    return () => clearTimeout(timer)
+  }, [playing, canPlay, seconds, index, order, onIndexChange])
 
   // Mouse Back button (button 3). Captured on window so nothing underneath
   // treats it as history navigation while the viewer is open.
@@ -109,8 +142,48 @@ export default function Lightbox({
             >
               ›
             </button>
-            <div className="media-contrast absolute bottom-3 left-1/2 -translate-x-1/2 rounded bg-black/70 px-2 py-0.5 text-xs text-gray-300">
-              {index + 1} / {count}
+            <div className="media-contrast absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded bg-black/70 px-2 py-1 text-xs text-gray-300">
+              {canPlay && (
+                <>
+                  <button
+                    className="text-gray-300 hover:text-gray-100"
+                    onClick={() => setPlaying((p) => !p)}
+                    aria-label={playing ? 'Pause slideshow' : 'Play slideshow'}
+                    title={playing ? 'Pause (Space)' : 'Play (Space)'}
+                  >
+                    {playing ? <PauseIcon className="h-4 w-4" /> : <PlayIcon className="h-4 w-4" />}
+                  </button>
+                  <label className="sr-only" htmlFor="lightbox-interval">
+                    Seconds per image
+                  </label>
+                  <select
+                    id="lightbox-interval"
+                    className="rounded bg-transparent text-xs text-gray-300"
+                    value={seconds}
+                    onChange={(e) => setSeconds(Number(e.target.value))}
+                  >
+                    {SLIDESHOW_SECONDS.map((s) => (
+                      <option key={s} value={s} className="bg-black">
+                        {s} s
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    className={order ? 'text-accent' : 'text-gray-400 hover:text-gray-100'}
+                    onClick={() =>
+                      setOrder((o) => (o ? null : shuffle(images.map((_, i) => i))))
+                    }
+                    aria-pressed={order != null}
+                    aria-label="Shuffle"
+                    title="Shuffle"
+                  >
+                    <ShuffleIcon className="h-4 w-4" />
+                  </button>
+                </>
+              )}
+              <span>
+                {index + 1} / {count}
+              </span>
             </div>
           </>
         )}

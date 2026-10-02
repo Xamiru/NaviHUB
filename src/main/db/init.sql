@@ -244,13 +244,14 @@ CREATE INDEX IF NOT EXISTS idx_media_relation_related
   ON media_relation(related_source, related_external_id);
 CREATE INDEX IF NOT EXISTS idx_theme_artist_person ON theme_artist(person_id);
 
--- media_image — wallpapers + fan art attached to a media item. Files live under
+-- media_image — wallpapers + fan art, attached to a media item or (media_id
+-- NULL) to the Pictures gallery's Unsorted bucket. Files live under
 -- pictures.dir (virtual "pictures/" prefix in file_path); rows are personal and
 -- stripped on library export (sanitizeSql.cjs). source_url is NULL for images
 -- picked from local disk, and is the soft dedupe key for re-downloads.
 CREATE TABLE IF NOT EXISTS media_image (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  media_id    INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  media_id    INTEGER REFERENCES media_item(id) ON DELETE CASCADE,
   kind        TEXT NOT NULL,              -- 'wallpaper' | 'fanart'
   file_path   TEXT NOT NULL,              -- 'pictures/<title folder>/<kind>/<file>'
   source_url  TEXT,
@@ -262,9 +263,39 @@ CREATE TABLE IF NOT EXISTS media_image (
   -- "Set background"). At most one per media_id, enforced by
   -- pictures.setBackground; personal, wiped with the table on export.
   is_background INTEGER NOT NULL DEFAULT 0,
+  -- 1 = starred in the Pictures gallery. Its index lives in runMigrations().
+  is_favorite INTEGER NOT NULL DEFAULT 0,
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_media_image_media ON media_image(media_id, kind);
+
+-- picture_album / picture_tag — the Pictures gallery's personal organisation:
+-- named albums with their own order, and free tags kept apart from the media
+-- `tag` table so they never surface on /tags or meet an importer prune.
+-- Personal; wiped on export.
+CREATE TABLE IF NOT EXISTS picture_album (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS picture_album_item (
+  album_id    INTEGER NOT NULL REFERENCES picture_album(id) ON DELETE CASCADE,
+  image_id    INTEGER NOT NULL REFERENCES media_image(id) ON DELETE CASCADE,
+  sort_order  INTEGER NOT NULL DEFAULT 0,
+  added_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (album_id, image_id)
+);
+CREATE INDEX IF NOT EXISTS idx_picture_album_item_image ON picture_album_item(image_id);
+CREATE TABLE IF NOT EXISTS picture_tag (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  name        TEXT NOT NULL UNIQUE COLLATE NOCASE
+);
+CREATE TABLE IF NOT EXISTS picture_tag_link (
+  image_id    INTEGER NOT NULL REFERENCES media_image(id) ON DELETE CASCADE,
+  tag_id      INTEGER NOT NULL REFERENCES picture_tag(id) ON DELETE CASCADE,
+  PRIMARY KEY (image_id, tag_id)
+);
+CREATE INDEX IF NOT EXISTS idx_picture_tag_link_tag ON picture_tag_link(tag_id);
 
 -- slideshow_item — Art-tab images the user pushed into the Windows desktop
 -- slideshow folder (setting slideshow.dir, default <pictures.dir>/Slideshow).

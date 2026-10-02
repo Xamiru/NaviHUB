@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePlayerControls } from '../lib/player'
-import { playTracks } from '../lib/musicTracks'
+import { TRACK_SEARCH_MIN, filterTracks, playTracks, totalDuration } from '../lib/musicTracks'
+import { useLeaveDeleted, usePersistedState } from '../lib/navState'
+import { formatLongDuration } from '../components/MusicTrackRow'
 import { toast, toastError } from '../lib/toast'
 import BackButton from '../components/BackButton'
 import PageStatus from '../components/PageStatus'
@@ -13,18 +15,19 @@ import Section from '../components/Section'
 import TorrentSearchDialog from '../components/TorrentSearchDialog'
 import SpotifyEntityDownloadDialog from '../components/SpotifyEntityDownloadDialog'
 import { AUDIO_CATEGORIES, discographyQuery } from '@shared/torrents'
-import { AlbumCard, TrackList } from '../components/music/MusicBrowse'
+import { AlbumCard, TrackList, TrackSearch } from '../components/music/MusicBrowse'
 import { confirmDialog } from '../lib/confirm'
 
 export default function MusicArtistPage() {
   const { id } = useParams()
   const artistId = Number(id)
   const qc = useQueryClient()
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const player = usePlayerControls()
   const [searchParams, setSearchParams] = useSearchParams()
   const [torrentsOpen, setTorrentsOpen] = useState(false)
   const [spotifyOpen, setSpotifyOpen] = useState(false)
+  const [search, setSearch] = usePersistedState('musicArtistTrackSearch', '')
 
   useEffect(() => {
     if (searchParams.get('spotify') === 'download') setSpotifyOpen(true)
@@ -51,6 +54,9 @@ export default function MusicArtistPage() {
     queryKey: qk.music.artistTracks(artistId),
     queryFn: () => api.music.artistTracks(artistId)
   })
+
+  const shown = useMemo(() => filterTracks(tracks, search), [tracks, search])
+  const seconds = totalDuration(tracks)
 
   async function playAll(shuffle: boolean): Promise<void> {
     playTracks(player, tracks, { shuffle })
@@ -85,12 +91,16 @@ export default function MusicArtistPage() {
     )
     if (!ok) return
     try {
-      await api.music.deleteArtist(artistId)
+      const removed = await api.music.deleteArtist(artistId)
       // A now-dead track still in the queue is skipped by the player's onError
       // when it's next reached, so no queue surgery is needed here.
-      toast(`Deleted ${artist.name}`)
+      toast(`Deleted ${artist.name}`, 'success')
       qc.invalidateQueries({ queryKey: qk.music.all })
-      navigate('/music', { replace: true })
+      const gone = new Set([
+        `/music/artists/${artistId}`,
+        ...removed.albumIds.map((id) => `/music/albums/${id}`)
+      ])
+      leaveDeleted((path) => gone.has(path), '/music')
     } catch (e) {
       toastError(e)
     }
@@ -102,7 +112,7 @@ export default function MusicArtistPage() {
 
   return (
     <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
-      <BackButton />
+      <BackButton fallback="/music" />
 
       <MusicEntityHeader
         coverPath={artist.coverPath}
@@ -112,10 +122,12 @@ export default function MusicArtistPage() {
           <>
             {artist.albums.length} {artist.albums.length === 1 ? 'album' : 'albums'} ·{' '}
             {artist.trackCount} tracks
+            {seconds > 0 && <> · {formatLongDuration(seconds)}</>}
           </>
         }
         onPlay={() => playAll(false)}
         onShuffle={() => playAll(true)}
+        queueTracks={tracks}
         artNoun="photo"
         art={{ kind: 'music_artist', id: artistId }}
         onFindArt={findPhoto}
@@ -136,9 +148,25 @@ export default function MusicArtistPage() {
       />
 
       {artist.topTracks.length > 0 && (
-        <Section title="Most played" className="mb-6">
+        <Section
+          title="Most played"
+          className="mb-6"
+          actions={
+            <>
+              <button className="btn-ghost py-1 text-xs" onClick={() => playTracks(player, artist.topTracks)}>
+                Play top tracks
+              </button>
+              <button
+                className="btn-ghost py-1 text-xs"
+                onClick={() => playTracks(player, artist.topTracks, { shuffle: true })}
+              >
+                Shuffle
+              </button>
+            </>
+          }
+        >
           <div className="max-w-5xl">
-            <TrackList tracks={artist.topTracks} />
+            <TrackList tracks={artist.topTracks} selectable={false} />
           </div>
         </Section>
       )}
@@ -167,7 +195,18 @@ export default function MusicArtistPage() {
               </button>
             </p>
           ) : (
-            <TrackList tracks={tracks} />
+            <>
+              {(tracks.length >= TRACK_SEARCH_MIN || search) && (
+                <div className="mb-4 flex">
+                  <TrackSearch value={search} onChange={setSearch} label={`Search ${artist.name}'s tracks`} />
+                </div>
+              )}
+              {shown.length === 0 && search.trim() ? (
+                <p className="text-sm text-gray-400">No tracks match “{search.trim()}”.</p>
+              ) : (
+                <TrackList tracks={shown} />
+              )}
+            </>
           )}
         </div>
       </Section>

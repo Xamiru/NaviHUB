@@ -46,6 +46,7 @@ import { mediaUrl } from '@shared/mediaUrl'
 import type { MediaSummary, ResumePoint } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
 import { toastError } from '../lib/toast'
+import Lightbox from '../components/Lightbox'
 
 // The same seiyuu pool the /people browse page shows (anime + VN + games).
 const VA_TYPES: MediaSummary['mediaType'][] = ['anime', 'visual_novel', 'game']
@@ -150,7 +151,8 @@ export default function HomePage() {
       </Section>
     ),
     favorites:
-      favorites.length > 0 ? <Strip title="Favorites" items={favorites.slice(0, 12)} /> : null
+      favorites.length > 0 ? <Strip title="Favorites" items={favorites.slice(0, 12)} /> : null,
+    pictures: <PictureCard />
   }
 
   return (
@@ -1025,6 +1027,54 @@ function PlayCard() {
       body="Song quiz and tournaments over your library."
       meta={pool && pool.length > 0 ? `${pool.length} songs ready` : undefined}
     />
+  )
+}
+
+// One random favorite from the Pictures gallery, drawn again on each visit to
+// Home but not on window focus, so it never swaps under the user.
+function PictureCard() {
+  const [viewing, setViewing] = useState(false)
+  const { data: image, isPending, isError, refetch } = useQuery({
+    queryKey: qk.pictures.homePick,
+    queryFn: () => api.pictures.homePick(),
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: false
+  })
+  if (isPending || isError) {
+    return <HomeReadState title="your pictures" pending={isPending} retry={() => void refetch()} />
+  }
+  if (!image) return null
+  const name = image.mediaTitle ?? 'Unsorted'
+  return (
+    <div className="card overflow-hidden p-0">
+      <button
+        type="button"
+        className="block w-full cursor-zoom-in"
+        aria-label={`View favorite picture from ${name}`}
+        onClick={() => setViewing(true)}
+      >
+        <CoverImage
+          path={image.filePath}
+          alt={name}
+          rounded="rounded-none"
+          className="h-[min(42vh,420px)] w-full"
+        />
+      </button>
+      <div className="flex items-center justify-between gap-3 px-4 py-2">
+        <p className="min-w-0 truncate text-sm text-gray-300">{name}</p>
+        <Link to="/pictures" className="shrink-0 text-xs text-gray-500 hover:text-accent">
+          Pictures →
+        </Link>
+      </div>
+      {viewing && (
+        <Lightbox
+          images={[{ url: mediaUrl(image.filePath) ?? '', alt: name }]}
+          index={0}
+          onIndexChange={() => undefined}
+          onClose={() => setViewing(false)}
+        />
+      )}
+    </div>
   )
 }
 

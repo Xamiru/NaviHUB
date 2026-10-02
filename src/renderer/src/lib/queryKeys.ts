@@ -2,6 +2,7 @@ import type {
   WrestlingEventFilter,
   CreditRole,
   ImageKind,
+  PictureGalleryFilter,
   ImageOverrideKind,
   JpFeedRequest,
   JpQuizScope,
@@ -188,9 +189,21 @@ export const qk = {
     // background/slideshow toggles need (flagging a wallpaper clears a marker
     // that may be sitting on a fan-art tile).
     lists: (mediaId: number) => ['pictures', 'list', mediaId] as const,
-    sources: (mediaId: number, kind: ImageKind) => ['pictures', 'sources', mediaId, kind] as const,
-    search: (mediaId: number, source: WallpaperSource, q: string, page: number) =>
-      ['pictures', 'search', mediaId, source, q, page] as const
+    // mediaId null = the gallery's Unsorted bucket.
+    sources: (mediaId: number | null, kind: ImageKind) =>
+      ['pictures', 'sources', mediaId, kind] as const,
+    search: (mediaId: number | null, source: WallpaperSource, q: string, page: number) =>
+      ['pictures', 'search', mediaId, source, q, page] as const,
+    // The Pictures gallery. Its own actions invalidate the whole `all` prefix
+    // (favorite, tag and album state ride on every image row); the Browse
+    // dialog invalidates only galleryAll, so it never refetches its searches.
+    galleryAll: ['pictures', 'gallery'] as const,
+    gallery: (filter: PictureGalleryFilter) => ['pictures', 'gallery', filter] as const,
+    albums: ['pictures', 'albums'] as const,
+    album: (albumId: number) => ['pictures', 'albums', albumId] as const,
+    tags: ['pictures', 'tags'] as const,
+    homePick: ['pictures', 'homePick'] as const,
+    slideshowSource: ['pictures', 'slideshowSource'] as const
   },
   images: {
     // Hand-picked cover/photo lock state per entity (ImagePickerDialog).

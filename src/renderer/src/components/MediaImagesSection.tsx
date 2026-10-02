@@ -9,13 +9,15 @@ import CoverImage from './CoverImage'
 import Lightbox from './Lightbox'
 import ImageBrowseDialog from './ImageBrowseDialog'
 import ContextMenu from './ContextMenu'
-import type { ImageKind, MediaDetail, MediaImage } from '@shared/types'
-import { confirmDialog } from '../lib/confirm'
+import FavoriteButton from './FavoriteButton'
+import { usePictureActions } from './pictures/PictureActions'
+import type { ImageKind, MediaDetail } from '@shared/types'
 import { Field } from './Field'
 
 // One gallery section powers both "Wallpapers" and "Fan Art" (kind prop).
 // Images come from its own query (not MediaDetail) so add/remove only refetch
-// this grid. Files live under pictures.dir; tiles click into the Lightbox.
+// this grid. Files live under pictures.dir; tiles click into the Lightbox. The
+// right-click menu is the Pictures gallery's (usePictureActions).
 export default function MediaImagesSection({
   m,
   kind
@@ -32,6 +34,7 @@ export default function MediaImagesSection({
   // Right-click target, held by id rather than by object: the list refetches
   // after every toggle, so a captured row would show stale menu labels.
   const [menu, setMenu] = useState<{ x: number; y: number; imageId: number } | null>(null)
+  const actions = usePictureActions({ onRemoved: () => setLightboxAt(null) })
 
   const { data } = useQuery({
     queryKey: qk.pictures.list(m.id, kind),
@@ -73,40 +76,6 @@ export default function MediaImagesSection({
       toast('Image added', 'success')
     })
 
-  const toggleSlideshow = (img: MediaImage): Promise<void> =>
-    run(async () => {
-      const updated = await api.pictures.toggleSlideshow(img.id)
-      toast(updated.inSlideshow ? 'Added to slideshow' : 'Removed from slideshow', 'success')
-    })
-
-  const toggleBackground = (img: MediaImage): Promise<void> =>
-    run(async () => {
-      await api.pictures.setBackground(m.id, img.isBackground ? null : img.id)
-      // The page backdrop is painted from MediaDetail, not from this query.
-      await qc.invalidateQueries({ queryKey: qk.media.detail(m.id) })
-      toast(img.isBackground ? 'Background cleared' : 'Background set', 'success')
-    })
-
-  const setAsCover = (img: MediaImage): Promise<void> =>
-    run(async () => {
-      await api.images.setManual('media', m.id, await api.images.fromArt(img.id))
-      await qc.invalidateQueries({ queryKey: qk.media.all })
-      qc.invalidateQueries({ queryKey: qk.images.all })
-      toast('Cover set', 'success')
-    })
-
-  const remove = async (imageId: number): Promise<void> => {
-    const ok = await confirmDialog('Remove this image? The file is deleted from disk too.', {
-      confirmLabel: 'Remove',
-      danger: true
-    })
-    if (!ok) return
-    await run(async () => {
-      await api.pictures.remove(imageId)
-      setLightboxAt(null)
-    })
-  }
-
   return (
     <Section
       className="mb-6"
@@ -134,6 +103,7 @@ export default function MediaImagesSection({
               >
                 <CoverImage
                   path={img.filePath}
+                  thumbWidth={480}
                   alt={`${m.title} ${label.toLowerCase()}`}
                   className="h-full w-full transition-transform group-hover:scale-105"
                   rounded="rounded-lg"
@@ -158,11 +128,17 @@ export default function MediaImagesSection({
                   </span>
                 )}
               </button>
+              <FavoriteButton
+                variant="overlay"
+                active={img.isFavorite}
+                onClick={() => actions.toggleFavorite([img])}
+                className="absolute left-1.5 top-1.5"
+              />
               <button
                 className="media-contrast absolute top-1.5 right-1.5 hidden group-hover:block group-focus-within:block rounded bg-black/70 px-1.5 py-0.5 text-sm text-gray-300 hover:text-red-400"
                 onClick={(e) => {
                   e.stopPropagation()
-                  void remove(img.id)
+                  void actions.remove([img])
                 }}
                 aria-label="Remove image"
                 title="Remove image"
@@ -251,21 +227,10 @@ export default function MediaImagesSection({
           x={menu.x}
           y={menu.y}
           onClose={() => setMenu(null)}
-          items={[
-            {
-              label: menuImg.inSlideshow ? 'Remove from slideshow' : 'Add to slideshow',
-              disabled: busy,
-              onSelect: () => toggleSlideshow(menuImg)
-            },
-            {
-              label: menuImg.isBackground ? 'Clear background' : 'Set background',
-              disabled: busy,
-              onSelect: () => toggleBackground(menuImg)
-            },
-            { label: 'Use as cover', disabled: busy, onSelect: () => setAsCover(menuImg) }
-          ]}
+          items={actions.itemsFor([menuImg])}
         />
       )}
+      {actions.dialogs}
     </Section>
   )
 }

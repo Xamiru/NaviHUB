@@ -154,7 +154,7 @@ Custom privileged `navimg://` protocol serves everything (images, audio, manga p
 | `football/…` | `football.dir` setting — local clips, highlights, full matches, interviews and documentaries |
 | `jpaudio/…` | always `userData` — mining clips, minimal pairs, Tatoeba audio |
 | `videocache/…` | always `userData/videocache` — extracted subtitle tracks + legacy converted copies |
-| `thumb/<w>/…` | generated cover thumbnails (`userData/thumbs`, `src/main/thumbs.ts`) — disk-cached downscaled JPEG of a stored image, built on first request; small cover slots use `CoverImage thumbWidth` so grids don't decode full-resolution sources. Missing/undecodable source 404s and the `<img>` falls back to the original |
+| `thumb/<w>/…` | generated cover thumbnails (`userData/thumbs`, `src/main/thumbs.ts`) — disk-cached downscaled JPEG of a stored image, built on first request from `media/` or `pictures/` (`THUMB_SOURCE_PREFIXES`; `pictures/` names are reusable, so their cache key includes mtime and size); small cover slots and the Pictures gallery use `CoverImage thumbWidth` so grids don't decode full-resolution sources. Missing/undecodable source 404s and the `<img>` falls back to the original |
 | `open/<token>` | the ONE stateful branch — a process-lifetime `Map<token, absPath>` for "open any file" |
 
 `slideshow.dir` (default `<pictures.dir>/Slideshow`) is deliberately **absent from that table**: it holds flat COPIES of Art-tab images for the Windows desktop slideshow and nothing in the app ever displays them, so it needs no prefix and no `absoluteMediaPath` branch.
@@ -204,7 +204,7 @@ Provider secrets keep their existing setting keys but are stored as versioned El
 - Music, Spotify, player and quiz behavior has dense subsystem contracts in [`docs/architecture/music-quiz.md`](docs/architecture/music-quiz.md). Before changing those paths, read the relevant sections and preserve their matching rules, persistent state, queue and cancellation semantics, source identities, spoiler boundaries, deterministic dealing, scoring/session policy, metadata masking and tournament-resume behavior unless the user's task explicitly changes them.
 - Cross-cutting quiz invariants remain here: time-attack kinds belong in `quizRepo.SCORE_RANKED_KINDS` and log correct/attempted; each page uses one guarded `endGame()` funnel and decides personal best before invalidating history; central pools default to consumed content; shared builders own injected seeded randomness; party/tournament sessions never enter solo personal-best calculations; image/audio loading gates timers and broken assets use unscored replacements.
 - HomePage resolves per-type statuses positionally from settings via `statusesFrom` (lib/hooks.ts) — first = in-progress, second = completed, last = planned — so renamed statuses keep the Home strips working. Don't reintroduce `defaultStatuses[i]` lookups. The Settings editor anchors those three roles, inserts new statuses before planned, and checks for titles using a status before renaming or removing it; preserve those guards so tracking values do not become unreachable. Saving a status list also invalidates `qk.media.homeOverview`, whose main-process projection groups titles by those saved positions.
-- **After a save or delete, navigate with `replace: true`** so the mutated form/detail route leaves the history stack. Four separate bug reports came from this: Back returning to the edit page after saving, Back landing in the manga reader, Back needing two clicks, Back going to the wrong list after a delete.
+- **After a save or delete, navigate with `replace: true`** so the mutated form/detail route leaves the history stack. Four separate bug reports came from this: Back returning to the edit page after saving, Back landing in the manga reader, Back needing two clicks, Back going to the wrong list after a delete. A page whose subject was **deleted** leaves through `useLeaveDeleted()` (`lib/navState.ts`) instead: it goes back to the nearest earlier history entry that still exists (so a replaced parent never sits twice in the stack) and replaces with a fallback only when there is none. Its trail is recorded by `useHistoryTrail()` in the app shell. `BackButton` takes a `fallback` for a page opened as the first entry.
 - Shared UI primitives, the Lain theme and the dialog conventions are catalogued in [`docs/architecture/ui-conventions.md`](docs/architecture/ui-conventions.md) — **reuse before writing new ones**.
 
 ## Tests
@@ -249,13 +249,13 @@ Break one of these and something silently corrupts, leaks, or fails to start. Th
 
 ### The before-quit registry
 
-`src/main/index.ts` — **fourteen calls, and the order is load-bearing**:
+`src/main/index.ts` — **fifteen calls, and the order is load-bearing**:
 
 ```
 settleAllTasksOnQuit
 → cancelActiveFootballSync
 → killActiveMusicDownload → killActiveUpdate
-→ killActiveOcr → cancelActiveLibraryExport → cancelActiveStorageMove → killSqlSandbox → stopAchievementWatcher → finalizeActiveGameSession
+→ killActiveOcr → cancelActiveLibraryExport → cancelActiveStorageMove → cancelSlideshowSync → killSqlSandbox → stopAchievementWatcher → finalizeActiveGameSession
 → closeDatabase → closeCatalogDb → closeDictDb
 → stopFileSink
 ```
@@ -267,6 +267,8 @@ settleAllTasksOnQuit
 `cancelActiveLibraryExport()` precedes every database close: an in-app export owns a live SQLite backup and temporary sibling output, so shutdown aborts the task and removes partial files before teardown.
 
 `cancelActiveStorageMove()` stops a pictures/media folder move between files; the move switches its setting only after a complete verified copy, so quitting leaves the library on its old folder.
+
+`cancelSlideshowSync()` stops a Pictures slideshow-folder sync before its next copy, so it never writes `slideshow_item` rows into the closed database.
 
 `killSqlSandbox()` drops the SQL sandbox's utility process (`src/main/sqlSandbox.ts` — the ONE `utilityProcess.fork` in the app, spawned lazily so a runaway user query can be killed; nothing durable lives in it). `stopAchievementWatcher()` and `finalizeActiveGameSession()` **must precede** `closeDatabase()` — the first writes unlock rows (its final sweep of the emulator save file), the second writes the session row. `closeCatalogDb()`/`closeDictDb()` come **after**. Any new long-running main-process singleton adds its killer here. The game child is the one process deliberately *not* killed (spawned detached so the game outlives the app).
 
@@ -331,7 +333,7 @@ tables from shared exports; only the public VN release cache may survive.
 
 ### Frozen key strings
 
-Stored in the DB, so renaming one orphans data: checklist `task_key`, programming course/lesson/sheet keys (+ SQL exercise / regex golf puzzle / snippet keys, `prog_solve.kind` `sql`/`regex`, `prog_cli_miss.cmd_key` = `<sheetKey>/<answers[0]>`), every `src/shared/english/` content key (passage, mechanics, cloze/wf/tr, punct, spot, match, idiom — they ride `quiz_session.settings`), bulk-import sort keys, theme style values (`APP_THEME_VARIANT_OPTIONS`, stored as `ui.themeVariant.<theme>`), Home widget keys (`HOME_WIDGETS` in `lib/homeWidgets.ts` — they ride the `home.widgets` settings row), `tournament.saved` (the autosaved unfinished bracket), wrestling promotion ids, wrestling journey template keys and cross-media guide/entry ids, the nine `FootballCompetitionKey` values and four Football `ListKind` values, `achievement_game.provider` (`steam`/`ra`) and `achievement_unlock.source` (`emu`/`ra`/`manual`), the importer tag scopes in `tag.category` (`genre`, plus `anilist`/`steam`/`VNDB` listed in `tagRepo.IMPORTED_TAG_SCOPES_SQL` — a re-import replaces its links to those, and uncategorized hand-made tags are never pruned), the partial-ISO `person.birthday` forms (`1965-05-23`, `1965`, `--05-23`), and every `external_source` value.
+Stored in the DB, so renaming one orphans data: checklist `task_key`, programming course/lesson/sheet keys (+ SQL exercise / regex golf puzzle / snippet keys, `prog_solve.kind` `sql`/`regex`, `prog_cli_miss.cmd_key` = `<sheetKey>/<answers[0]>`), every `src/shared/english/` content key (passage, mechanics, cloze/wf/tr, punct, spot, match, idiom — they ride `quiz_session.settings`), bulk-import sort keys, theme style values (`APP_THEME_VARIANT_OPTIONS`, stored as `ui.themeVariant.<theme>`), Home widget keys (`HOME_WIDGETS` in `lib/homeWidgets.ts` — they ride the `home.widgets` settings row), `tournament.saved` (the autosaved unfinished bracket), the `pictures.slideshowSource` values (`manual`, `favorites`, `album:<id>`), wrestling promotion ids, wrestling journey template keys and cross-media guide/entry ids, the nine `FootballCompetitionKey` values and four Football `ListKind` values, `achievement_game.provider` (`steam`/`ra`) and `achievement_unlock.source` (`emu`/`ra`/`manual`), the importer tag scopes in `tag.category` (`genre`, plus `anilist`/`steam`/`VNDB` listed in `tagRepo.IMPORTED_TAG_SCOPES_SQL` — a re-import replaces its links to those, and uncategorized hand-made tags are never pruned), the partial-ISO `person.birthday` forms (`1965-05-23`, `1965`, `--05-23`), and every `external_source` value.
 
 ## Known open issues
 
@@ -356,7 +358,7 @@ Per-subsystem detail lives in [`docs/architecture/`](docs/architecture/00-index.
 
 | Working on… | Read |
 |---|---|
-| A media type, wallpapers/fan art, books, game launch + playtime, achievements, seasonal, list filters | [media-types.md](docs/architecture/media-types.md) |
+| A media type, wallpapers/fan art and the Pictures gallery, books, game launch + playtime, achievements, seasonal, list filters | [media-types.md](docs/architecture/media-types.md) |
 | A games importer (RAWG → IGDB → Steam history, offline catalog) | [importers.md](docs/architecture/importers.md) |
 | Manga scanner, EPUB books, the readers, mokuro OCR | [readers.md](docs/architecture/readers.md) |
 | Linked local videos, external playback, metadata and subtitle corpus | [video.md](docs/architecture/video.md) |
