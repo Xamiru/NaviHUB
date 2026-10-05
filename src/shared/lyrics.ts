@@ -61,3 +61,87 @@ export function formatLrc(lines: readonly LyricLine[]): string {
     })
     .join('\n')
 }
+
+// ---------------------------------------------------------------------------
+// Lyrics search
+// ---------------------------------------------------------------------------
+
+/** Search form of lyric text: case, apostrophes and punctuation never decide a match. */
+export function normalizeLyricText(text: string): string {
+  return text
+    .normalize('NFKC')
+    .toLowerCase()
+    .replace(/['‘’`´]/g, '')
+    .replace(/[^\p{L}\p{N}\p{M}]+/gu, ' ')
+    .trim()
+}
+
+/** Lines of stored lyrics, with times when the lyrics are synced. */
+export function lyricSearchLines(
+  synced: string | null,
+  plain: string | null
+): { text: string; time: number | null }[] {
+  const timed = synced ? parseLrc(synced).filter((line) => line.text) : []
+  if (timed.length) return timed
+  return (plain ?? '')
+    .split(/\r\n?|\n/)
+    .map((text) => text.trim())
+    .filter(Boolean)
+    .map((text) => ({ text, time: null }))
+}
+
+function searchableLines(lines: readonly { text: string; time: number | null }[]) {
+  return lines
+    .map((line) => ({ ...line, norm: normalizeLyricText(line.text) }))
+    .filter((line) => line.norm)
+}
+
+/** The one indexed document per track: normalized lines joined, so a phrase may cross a line break. */
+export function lyricSearchDocument(synced: string | null, plain: string | null): string {
+  return searchableLines(lyricSearchLines(synced, plain))
+    .map((line) => line.norm)
+    .join(' ')
+}
+
+export interface LyricMatchLocation {
+  line: string // the matched line(s) as written, joined with " / " when the phrase crosses lines
+  time: number | null // start of the first matched line, synced lyrics only
+  count: number // non-overlapping occurrences in the song
+}
+
+/** Where a query occurs in a track's lyrics; null when it does not. */
+export function locateLyricMatch(
+  synced: string | null,
+  plain: string | null,
+  query: string
+): LyricMatchLocation | null {
+  const q = normalizeLyricText(query)
+  if (!q) return null
+  const lines = searchableLines(lyricSearchLines(synced, plain))
+  const starts: number[] = []
+  let doc = ''
+  for (const line of lines) {
+    if (doc) doc += ' '
+    starts.push(doc.length)
+    doc += line.norm
+  }
+  const at = doc.indexOf(q)
+  if (at < 0) return null
+  let count = 0
+  for (let i = at; i >= 0; i = doc.indexOf(q, i + q.length)) count += 1
+  const lineAt = (offset: number): number => {
+    let index = 0
+    while (index + 1 < starts.length && starts[index + 1] <= offset) index += 1
+    return index
+  }
+  const first = lineAt(at)
+  const last = lineAt(at + q.length - 1)
+  return {
+    line: lines
+      .slice(first, last + 1)
+      .map((line) => line.text)
+      .join(' / '),
+    time: lines[first].time,
+    count
+  }
+}

@@ -12,6 +12,8 @@ import { Field } from './Field'
 import Pager from './Pager'
 import GameSessionList from './GameSessionList'
 
+// Sessions shown before "Show all" expands the full paged list.
+const RECENT_SESSIONS = 5
 const KINDS = { first: 'First playthrough', replay: 'Replay', newGamePlus: 'New Game Plus' }
 const freshRun = (): GameRunInput => ({
   title: 'First playthrough',
@@ -82,6 +84,7 @@ export default function GamePlaythroughSection({ mediaId }: { mediaId: number })
   const qc = useQueryClient()
   const [selected, setSelected] = usePersistedState<number | null>(`game.run.${mediaId}`, null)
   const [page, setPage] = usePersistedState(`game.history.${mediaId}`, 0)
+  const [allSessions, setAllSessions] = usePersistedState(`game.sessions.all.${mediaId}`, false)
   const [editor, setEditor] = useState<GameRun | 'new' | null>(null)
   const [note, setNote] = useState<{ runId: number; value: GameRunNote | null } | null>(null)
   const action = useHobbyAction()
@@ -296,7 +299,9 @@ export default function GamePlaythroughSection({ mediaId }: { mediaId: number })
             </p>
           )}
           <GameSessionList
-            sessions={history.data.sessions}
+            sessions={
+              allSessions ? history.data.sessions : history.data.sessions.slice(0, RECENT_SESSIONS)
+            }
             runs={runs}
             busy={action.busy}
             onAssign={(sessionId, runId) =>
@@ -306,9 +311,23 @@ export default function GamePlaythroughSection({ mediaId }: { mediaId: number })
               })
             }
           />
+          {history.data.sessionTotal > RECENT_SESSIONS && (
+            <button
+              className="btn-ghost mt-2 text-xs"
+              aria-expanded={allSessions}
+              onClick={() => {
+                setAllSessions(!allSessions)
+                setPage(0)
+              }}
+            >
+              {allSessions ? 'Show fewer ▾' : `Show all ${history.data.sessionTotal} sessions ▸`}
+            </button>
+          )}
           <Pager
             page={page}
-            pageCount={Math.ceil(Math.max(history.data.sessionTotal, history.data.noteTotal) / 50)}
+            pageCount={Math.ceil(
+              Math.max(allSessions ? history.data.sessionTotal : 0, history.data.noteTotal) / 50
+            )}
             onChange={setPage}
           />
         </>

@@ -6,6 +6,8 @@
 // Steel I-IV (Zero/Azure and CS I/II run concurrently; the arc-internal order
 // used here is the fan-standard one) -> Reverie -> Daybreak I/II -> Horizon.
 // All art URLs curl-verified 2026-08-15.
+// Adaptations (2026-10-05): the Sky OVA and the Northern War anime, both side
+// stories. Ids from AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -37,6 +39,17 @@ export const TRAILS: FranchiseCfg = {
     { id: 'trails-sky-3rd', title: 'The Legend of Heroes: Trails in the Sky the 3rd', aliases: ['Trails in the Sky the 3rd'], externalIds: [{ source: 'steam', id: '436670' }], year: 2007, chrono: 3, mc: 79, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/436670/library_hero.jpg', note: 'Liberl — Kevin, and the doors' },
     { id: 'trails-zero', title: 'The Legend of Heroes: Trails from Zero', aliases: ['Trails from Zero'], externalIds: [{ source: 'steam', id: '1668510' }], year: 2010, chrono: 4, mc: 84, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1668510/library_hero.jpg', note: 'Crossbell — Lloyd and the SSS' },
     { id: 'trails-azure', title: 'The Legend of Heroes: Trails to Azure', aliases: ['Trails to Azure'], externalIds: [{ source: 'steam', id: '1668520' }], year: 2011, chrono: 5, mc: 82, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1668520/library_hero.jpg', note: 'Crossbell — the fan-favourite ending' },
+    {
+      id: 'trails-sky-ova',
+      title: 'Trails in the Sky: The Animation',
+      mediaType: 'anime',
+      aliases: ['Eiyuu Densetsu: Sora no Kiseki THE ANIMATION', 'Legend of the Heroes: Trails in the Sky'],
+      externalIds: [{ source: 'anilist', id: '10260' }],
+      year: 2011,
+      releaseDate: '2011-10-10',
+      spinOff: true,
+      note: 'Two-episode OVA in Liberl with Estelle and Joshua'
+    },
     { id: 'trails-cs1', title: 'The Legend of Heroes: Trails of Cold Steel', aliases: ['Trails of Cold Steel'], externalIds: [{ source: 'steam', id: '538680' }], year: 2013, chrono: 6, mc: 82, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/538680/library_hero.jpg', note: 'Erebonia — Rean and Class VII' },
     { id: 'trails-cs2', title: 'The Legend of Heroes: Trails of Cold Steel II', aliases: ['Trails of Cold Steel II'], externalIds: [{ source: 'steam', id: '748490' }], year: 2014, chrono: 7, mc: 82, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/748490/library_hero.jpg', note: 'Erebonia — the civil war' },
     { id: 'trails-cs3', title: 'The Legend of Heroes: Trails of Cold Steel III', aliases: ['Trails of Cold Steel III'], externalIds: [{ source: 'steam', id: '991270' }], year: 2017, chrono: 8, mc: 82, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/991270/library_hero.jpg', note: 'Erebonia — the new Class VII' },
@@ -44,6 +57,17 @@ export const TRAILS: FranchiseCfg = {
     { id: 'trails-reverie', title: 'The Legend of Heroes: Trails into Reverie', aliases: ['Trails into Reverie'], externalIds: [{ source: 'steam', id: '1668540' }], year: 2020, chrono: 10, mc: 84, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1668540/library_hero.jpg', note: 'Three routes — Rean, Lloyd, and C' },
     { id: 'trails-daybreak', title: 'The Legend of Heroes: Trails through Daybreak', aliases: ['Trails through Daybreak'], externalIds: [{ source: 'steam', id: '2138610' }], year: 2021, chrono: 11, mc: 82, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2138610/library_hero.jpg', note: 'Calvard — Van Arkride, spriggan' },
     { id: 'trails-daybreak-2', title: 'The Legend of Heroes: Trails through Daybreak II', aliases: ['Trails through Daybreak II'], externalIds: [{ source: 'steam', id: '2668430' }], year: 2022, chrono: 12, mc: 78, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2668430/library_hero.jpg', note: 'Calvard — the crimson beast' },
+    {
+      id: 'trails-northern-war',
+      title: 'Trails of Cold Steel: Northern War',
+      mediaType: 'anime',
+      aliases: ['The Legend of Heroes: Sen no Kiseki - Northern War', 'The Legend of Heroes: Trails of Cold Steel - Northern War'],
+      externalIds: [{ source: 'anilist', id: '130696' }],
+      year: 2023,
+      releaseDate: '2023-01-06',
+      spinOff: true,
+      note: 'Anime-original story in Lamare during the war of Cold Steel III and IV'
+    },
     { id: 'trails-horizon', title: 'The Legend of Heroes: Trails beyond the Horizon', aliases: ['Trails beyond the Horizon', 'Kai no Kiseki', 'The Legend of Heroes: Kai no Kiseki -Farewell, O Zemuria-'], externalIds: [{ source: 'steam', id: '3316940' }, { source: 'steam', id: '3319980' }], year: 2024, chrono: 13, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3316940/library_hero.jpg', note: 'Van meets Rean — the arcs converge (West: Jan 2026)' },
     { id: 'trails-sky-1st', title: 'The Legend of Heroes: Trails in the Sky 1st Chapter', aliases: ['Trails in the Sky 1st Chapter'], externalIds: [{ source: 'steam', id: '3375780' }], year: 2025, chrono: 14, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/3375780/library_hero.jpg', note: 'Full 3D remake of Sky FC' }
   ],

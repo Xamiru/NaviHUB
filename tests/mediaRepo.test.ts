@@ -103,10 +103,12 @@ describe('mediaRepo browse projections', () => {
       titles: 3,
       inProgress: 1,
       completed: 1,
+      planned: 1,
       favorites: 1,
       avgScore: '9.0'
     })
     expect(overview.continuing.map((item) => item.title)).toEqual(['Continue'])
+    expect(overview.planned.map((item) => item.title)).toEqual(['Tonight'])
     expect(overview.spotlightFromBacklog).toBe(true)
     expect(overview.spotlight[0]).toMatchObject({
       title: 'Tonight',

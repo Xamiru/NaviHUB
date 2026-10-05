@@ -6,6 +6,8 @@
 // ("Legacy") and new ids are included so any import era matches.
 // All art URLs curl-verified 2026-08-15. The two PS2 originals have no
 // widescreen press art — their official SEGA wallpapers are 4:3.
+// Adaptations (2026-10-05): the 2007 Miike film and the 2024 series, both
+// outside the game story order. Ids from AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -52,6 +54,17 @@ export const YAKUZA: FranchiseCfg = {
       bgUrl:
         'https://static.wikia.nocookie.net/yakuza/images/1/19/Wallpaper13_yakuza2_10788631416_o.jpg/revision/latest?cb=20190929095434',
       note: 'PS2 original — remade as Kiwami 2'
+    },
+    {
+      id: 'yakuza-film-2007',
+      title: 'Like a Dragon',
+      mediaType: 'movie',
+      aliases: ['Yakuza: Like a Dragon'],
+      externalIds: [{ source: 'tmdb', id: '28796' }],
+      year: 2007,
+      releaseDate: '2007-03-03',
+      adaptation: true,
+      note: 'Takashi Miike’s loose film of the first game, Kiryu and Haruka in Kamurocho'
     },
     {
       id: 'yakuza-3',
@@ -190,6 +203,16 @@ export const YAKUZA: FranchiseCfg = {
       mc: 89,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2072450/library_hero.jpg',
       note: 'Hawaii — two heroes, one series'
+    },
+    {
+      id: 'yakuza-series-2024',
+      title: 'Like a Dragon: Yakuza',
+      mediaType: 'tv',
+      externalIds: [{ source: 'tmdb', id: '256116' }],
+      year: 2024,
+      releaseDate: '2024-10-24',
+      adaptation: true,
+      note: 'Prime Video series retelling the first game across 1995 and 2005'
     }
   ],
   characters: [

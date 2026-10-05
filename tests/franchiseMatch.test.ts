@@ -22,7 +22,6 @@ const item = (over: Partial<MediaItem>): MediaItem =>
 
 const entry = (over: Partial<FranchiseEntry> & { id: string; title: string }): FranchiseEntry => ({
   year: 2000,
-  bgUrl: 'https://example.test/bg.jpg',
   ...over
 })
 
@@ -114,5 +113,28 @@ describe('matchLibrary', () => {
     const first = item({ title: 'Dup' })
     const second = item({ title: 'Dup' })
     expect(matchLibrary([e], [first, second]).get('a')).toBe(first)
+  })
+
+  it('matches only within each entry’s media type', () => {
+    const vn = entry({ id: 'vn', title: 'Steins;Gate', mediaType: 'visual_novel' })
+    const anime = entry({ id: 'anime', title: 'Steins;Gate', mediaType: 'anime' })
+    const game = entry({ id: 'game', title: 'Steins;Gate' }) // absent type = game
+    const animeRow = item({ title: 'STEINS;GATE', mediaType: 'anime' })
+    const vnRow = item({ title: 'Steins;Gate', mediaType: 'visual_novel' })
+    const m = matchLibrary([vn, anime, game], [animeRow, vnRow])
+    expect(m.get('vn')).toBe(vnRow)
+    expect(m.get('anime')).toBe(animeRow)
+    expect(m.has('game')).toBe(false)
+  })
+
+  it('never lets a TMDB movie id claim a TV row with the same number', () => {
+    const film = entry({
+      id: 'film',
+      title: 'Fire Walk with Me',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '1920' }]
+    })
+    const show = item({ title: 'Twin Peaks', mediaType: 'tv', externalSource: 'tmdb', externalId: '1920' })
+    expect(matchLibrary([film], [show]).has('film')).toBe(false)
   })
 })

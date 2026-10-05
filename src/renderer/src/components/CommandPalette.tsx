@@ -1,10 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { useDebouncedValue, useDialog } from '../lib/hooks'
-import { MEDIA_CONFIGS, configFor, pathForMedia } from '../lib/mediaConfig'
+import { statusesFrom, useDebouncedValue, useDialog, useSettings } from '../lib/hooks'
+import { MEDIA_CONFIGS, configFor, isCompletedStatus, pathForMedia } from '../lib/mediaConfig'
+import { useLogProgress } from '../lib/logProgress'
+import CoverImage from './CoverImage'
+import type { MediaItem } from '@shared/types'
 import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 import { Field } from './Field'
 import { FX_ART } from '../lib/themeFxArt'
@@ -16,6 +19,16 @@ interface PaletteItem {
   hint: string // right-aligned kind/section hint
   to: string
   icon?: string // Metal Gear item box art
+  group?: string // result heading while searching
+  image?: { path: string | null; round: boolean } // cover, photo or logo
+  sub?: string // second line: type, status and progress
+  media?: MediaItem // titles carry their row for the Tab action list
+}
+
+interface PaletteAction {
+  key: string
+  label: string
+  run: () => void | Promise<void>
 }
 
 // Metal Gear opens on the MGS2 item window: real destinations as item boxes.
@@ -50,6 +63,7 @@ const NAV_ITEMS: PaletteItem[] = [
   { key: 'nav-music-liked', label: 'Liked songs', hint: 'Go to', to: '/music/liked' },
   { key: 'nav-music-stats', label: 'Listening stats', hint: 'Go to', to: '/music/stats' },
   { key: 'nav-lists', label: 'Lists', hint: 'Go to', to: '/lists' },
+  { key: 'nav-franchises', label: 'Franchises', hint: 'Go to', to: '/franchises' },
   { key: 'nav-tags', label: 'Tags', hint: 'Go to', to: '/tags' },
   { key: 'nav-torrents', label: 'Torrents', hint: 'Go to', to: '/torrents' },
   { key: 'nav-tasks', label: 'Tasks', hint: 'Go to', to: '/tasks' },
@@ -168,7 +182,12 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
   const { theme } = useAppTheme()
   const [stamp] = useState(dianeStamp)
   const listRef = useRef<HTMLDivElement>(null)
-  const panelRef = useDialog(onClose) // Escape + focus handling
+  // Tab on a title opens its action list; Escape steps back out of it first.
+  const [actionsFor, setActionsFor] = useState<PaletteItem | null>(null)
+  const [actionSel, setActionSel] = useState(0)
+  const panelRef = useDialog(() => (actionsFor ? setActionsFor(null) : onClose()))
+  const logProgress = useLogProgress()
+  const { data: settings } = useSettings()
 
   const debounced = useDebouncedValue(query, 250)
   const term = debounced.trim()
@@ -186,30 +205,36 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
     const found: PaletteItem[] = []
     if (results) {
       for (const m of results.media.slice(0, 6)) {
+        const cfg = configFor(m.mediaType)
         found.push({
           key: `media-${m.mediaType}-${m.id}`,
           label: m.title,
-          hint: configFor(m.mediaType).singular,
-          to: pathForMedia(m)
+          hint: cfg.singular,
+          to: pathForMedia(m),
+          group: 'Titles',
+          image: { path: m.coverPath, round: false },
+          sub: [cfg.singular, m.status, m.status ? cfg.formatProgressStat(m) : null].filter(Boolean).join(' · '),
+          media: m
         })
       }
       for (const p of results.people.slice(0, 4)) {
-        found.push({ key: `person-${p.id}`, label: p.name, hint: 'Person', to: `/people/${p.id}` })
-      }
-      for (const c of results.companies.slice(0, 3)) {
-        found.push({ key: `company-${c.id}`, label: c.name, hint: 'Studio', to: `/studios/${c.id}` })
+        found.push({ key: `person-${p.id}`, label: p.name, hint: 'Person', to: `/people/${p.id}`, group: 'People and characters', image: { path: p.photoPath, round: true } })
       }
       for (const c of results.characters.slice(0, 4)) {
-        found.push({ key: `char-${c.id}`, label: c.name, hint: 'Character', to: `/characters/${c.id}` })
+        found.push({ key: `char-${c.id}`, label: c.name, hint: 'Character', to: `/characters/${c.id}`, group: 'People and characters', image: { path: c.imagePath, round: true } })
+      }
+      for (const c of results.companies.slice(0, 3)) {
+        found.push({ key: `company-${c.id}`, label: c.name, hint: 'Studio', to: `/studios/${c.id}`, group: 'Studios', image: { path: c.logoPath, round: false } })
       }
     }
     found.push({
       key: 'search-all',
       label: `Search everywhere for “${query.trim()}”`,
       hint: 'Search',
-      to: `/search?q=${encodeURIComponent(query.trim())}`
+      to: `/search?q=${encodeURIComponent(query.trim())}`,
+      group: 'Search'
     })
-    return [...found, ...nav]
+    return [...found, ...nav.map((n) => ({ ...n, group: 'Go to' }))]
   }, [query, results, theme])
 
   // Clamp + scroll the selection as the list changes.
@@ -226,7 +251,55 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
     onGo(item.to)
   }
 
+  // What a title offers without opening it first: the same one-click log as
+  // its detail page, and its tabs as direct jumps.
+  function actionsOf(item: PaletteItem): PaletteAction[] {
+    const m = item.media
+    if (!m) return []
+    const cfg = configFor(m.mediaType)
+    const statuses = statusesFrom(settings, cfg)
+    const finished = isCompletedStatus(m.status, statuses) || (!!m.totalUnits && m.progress >= m.totalUnits)
+    const out: PaletteAction[] = [{ key: 'open', label: `Open ${cfg.singular.toLowerCase()}`, run: () => go(item) }]
+    if (cfg.logUnitLabel && !finished) {
+      out.push({
+        key: 'log',
+        label: `Log one more ${cfg.logUnitLabel}`,
+        run: async () => {
+          onClose()
+          await logProgress(m, { announce: true })
+        }
+      })
+    }
+    out.push({ key: 'cast', label: `Open ${cfg.castSectionTitle.toLowerCase()}`, run: () => go({ ...item, to: `${item.to}?tab=cast` }) })
+    if (cfg.mediaTabLabel) {
+      out.push({ key: 'media', label: `Open ${cfg.mediaTabLabel.toLowerCase()}`, run: () => go({ ...item, to: `${item.to}?tab=media` }) })
+    }
+    out.push({ key: 'art', label: 'Open art', run: () => go({ ...item, to: `${item.to}?tab=art` }) })
+    return out
+  }
+  const actions = actionsFor ? actionsOf(actionsFor) : []
+
   function onKeyDown(e: React.KeyboardEvent) {
+    if (actionsFor) {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault()
+        const n = Math.max(1, actions.length)
+        setActionSel((s) => (s + (e.key === 'ArrowDown' ? 1 : n - 1)) % n)
+      } else if (e.key === 'Enter') {
+        e.preventDefault()
+        void actions[actionSel]?.run()
+      } else if (e.key === 'Tab' || e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setActionsFor(null)
+      }
+      return
+    }
+    if (e.key === 'Tab' && !e.shiftKey && items[selIdx]?.media) {
+      e.preventDefault()
+      setActionsFor(items[selIdx])
+      setActionSel(0)
+      return
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setSel((s) => (s + 1) % Math.max(1, items.length))
@@ -326,26 +399,68 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
                 ))}
               </div>
             )}
-            {items.map((item, i) => item.icon ? null : (
-              <button
-                key={item.key}
-                data-idx={i}
-                className={`palette-row flex w-full items-center gap-3 px-4 py-2 text-left text-sm ${
-                  i === selIdx ? 'palette-row-on bg-accent/20 text-white' : 'text-gray-300'
-                }`}
-                onMouseMove={() => setSel(i)}
-                onClick={() => go(item)}
-              >
-                <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                {theme === 'seinfeld' && <i className="palette-leader" aria-hidden="true" />}
-                <span className="shrink-0 text-xs text-gray-500">{item.hint}</span>
-              </button>
-            ))}
+            {actionsFor ? (
+              <div role="group" aria-label={`Actions for ${actionsFor.label}`}>
+                <p className="px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                  {actionsFor.label} · actions
+                </p>
+                {actions.map((a, i) => (
+                  <button
+                    key={a.key}
+                    className={`palette-row flex w-full items-center gap-3 px-4 py-2 text-left text-sm ${
+                      i === actionSel ? 'palette-row-on bg-accent/20 text-white' : 'text-gray-300'
+                    }`}
+                    onMouseMove={() => setActionSel(i)}
+                    onClick={() => void a.run()}
+                  >
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              items.map((item, i) => item.icon ? null : (
+                <Fragment key={item.key}>
+                  {query.trim() && item.group && item.group !== items[i - 1]?.group && (
+                    <p className="px-4 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">
+                      {item.group}
+                    </p>
+                  )}
+                  <button
+                    data-idx={i}
+                    className={`palette-row flex w-full items-center gap-3 px-4 py-2 text-left text-sm ${
+                      i === selIdx ? 'palette-row-on bg-accent/20 text-white' : 'text-gray-300'
+                    }`}
+                    onMouseMove={() => setSel(i)}
+                    onClick={() => go(item)}
+                  >
+                    {item.image && (
+                      <CoverImage
+                        path={item.image.path}
+                        alt={item.label}
+                        thumbWidth={80}
+                        rounded={item.image.round ? 'rounded-full' : 'rounded'}
+                        className={`shrink-0 text-xs ${item.image.round ? 'h-8 w-8' : 'h-10 w-7'}`}
+                      />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate">{item.label}</span>
+                      {item.sub && <span className="block truncate text-xs text-gray-400">{item.sub}</span>}
+                    </span>
+                    {theme === 'seinfeld' && <i className="palette-leader" aria-hidden="true" />}
+                    {item.media && i === selIdx ? (
+                      <span className="shrink-0 text-xs text-gray-400">Tab for actions</span>
+                    ) : (
+                      !item.sub && <span className="shrink-0 text-xs text-gray-500">{item.hint}</span>
+                    )}
+                  </button>
+                </Fragment>
+              ))
+            )}
             </>
           )}
         </div>
         <div className="border-t border-base-700 px-4 py-1.5 text-[10px] text-gray-500">
-          ↑↓ navigate · ↵ open · esc close · / also opens
+          {actionsFor ? '↑↓ choose · ↵ run · tab or esc back' : '↑↓ navigate · ↵ open · tab actions on a title · esc close · / also opens'}
         </div>
       </div>
     </div>

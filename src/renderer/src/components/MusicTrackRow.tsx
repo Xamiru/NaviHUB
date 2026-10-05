@@ -39,6 +39,7 @@ export default function MusicTrackRow({
   index,
   showCover = true,
   showAlbum = false,
+  hideArtist,
   leading,
   trailing,
   onPlay,
@@ -49,6 +50,8 @@ export default function MusicTrackRow({
   index?: number // visible number (album pages pass the track #)
   showCover?: boolean
   showAlbum?: boolean
+  // The album page's artist: a track by that same artist skips the line.
+  hideArtist?: string
   leading?: ReactNode // e.g. a drag handle on playlist rows
   trailing?: ReactNode // e.g. a play-count chip on the stats page
   onPlay: () => void
@@ -68,6 +71,10 @@ export default function MusicTrackRow({
   const [contextAt, setContextAt] = useState<{ x: number; y: number } | null>(null)
   const closeContext = useCallback(() => setContextAt(null), [])
   const deleteFromDisk = useDeleteFromDisk(track)
+  const artist = track.tagArtist ?? track.artistName
+  const subtitle = [artist === hideArtist ? null : artist, showAlbum ? track.albumTitle : null]
+    .filter(Boolean)
+    .join(' · ')
 
   // Optimistic heart: flip locally, persist, then let the invalidation settle.
   const [liked, setLiked] = useState(!!track.likedAt)
@@ -169,10 +176,7 @@ export default function MusicTrackRow({
         >
           {track.title}
         </p>
-        <p className="line-clamp-1 text-xs text-gray-500">
-          {track.tagArtist ?? track.artistName}
-          {showAlbum && <> · {track.albumTitle}</>}
-        </p>
+        {subtitle && <p className="line-clamp-1 text-xs text-gray-500">{subtitle}</p>}
       </button>
       {trailing}
       <FavoriteButton

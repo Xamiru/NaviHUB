@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   HOME_WIDGETS,
+  RETIRED_HOME_WIDGET_KEYS,
   defaultHomeLayout,
   moveHomeWidget,
   parseHomeLayout,
@@ -118,5 +119,19 @@ describe('the catalogue itself', () => {
       expect(w.label.length).toBeGreaterThan(0)
       expect(['full', 'half']).toContain(w.span)
     }
+  })
+
+  it('never reuses a retired key, and drops retired keys from stored layouts', () => {
+    const ks: string[] = HOME_WIDGETS.map((w) => w.key)
+    for (const retired of RETIRED_HOME_WIDGET_KEYS) expect(ks).not.toContain(retired)
+    const stored = JSON.stringify([
+      { key: 'today', visible: true },
+      { key: 'resume', visible: false },
+      { key: 'continue', visible: true },
+      { key: 'music', visible: false }
+    ])
+    const layout = parseHomeLayout(stored)
+    expect(keys(layout).slice(0, 2)).toEqual(['today', 'music'])
+    expect(layout.find((e) => e.key === 'music')!.visible).toBe(false)
   })
 })

@@ -101,6 +101,14 @@ know. Fix them; a class that silently does nothing here will silently do nothing
 Fonts (IBM Plex Mono, VT323 and the bundled theme fonts) and the sidebar avatar are inlined automatically (~350 KB baseline);
 the result is one file with no external references.
 
+**Looking at it yourself.** Screenshots are the only way you see the design, so take them, but
+keep each one small: screenshot the changed region (`locator.screenshot()` or a `clip`), not the
+full page, and save JPEG at quality ~70 so each stays under ~150 KB. Take one after each design
+change, not after every rebuild; batch spacing and copy tweaks into one look. Every image stays in
+the conversation, and a session that piled up 84 full-page PNGs (~33 MB) hit the API's request-size
+limit while its context was under a third full, then stalled with "No response from API". After
+roughly 30 screenshots, `/compact` or hand off to a fresh session.
+
 ## 4. Hand over the file — do not publish it
 
 The deliverable is the path `previews/<slug>.html`. How the user opens it:

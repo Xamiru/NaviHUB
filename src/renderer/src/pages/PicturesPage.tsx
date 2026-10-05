@@ -6,6 +6,7 @@ import { usePersistedState } from '../lib/navState'
 import { MEDIA_CONFIGS } from '../lib/mediaConfig'
 import { toast, toastError } from '../lib/toast'
 import PageHeader from '../components/PageHeader'
+import ActionMenu from '../components/ActionMenu'
 import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
 import ThemedFailure from '../components/theme/ThemedFailure'
@@ -121,6 +122,11 @@ export default function PicturesPage(): React.JSX.Element {
     queryFn: () => api.pictures.slideshowSource()
   })
 
+  const sources: { value: SlideshowSource; label: string }[] = [
+    { value: 'manual', label: 'Mirror manual picks' },
+    { value: 'favorites', label: 'Mirror favorites' },
+    ...albums.map((a) => ({ value: `album:${a.id}` as SlideshowSource, label: `Mirror album: ${a.name}` }))
+  ]
   const filtered = JSON.stringify(filters) !== JSON.stringify(NO_FILTERS)
   const images = gallery.data ?? []
 
@@ -152,24 +158,21 @@ export default function PicturesPage(): React.JSX.Element {
         subtitle="Wallpapers and fan art from every title"
         actions={
           <>
-            <Field label="Slideshow folder" className="flex items-center gap-2">
-              <select
-                className="input w-auto"
-                value={source}
-                onChange={(e) => void changeSource(e.target.value as SlideshowSource)}
-              >
-                <option value="manual">Manual picks</option>
-                <option value="favorites">Favorites</option>
-                {albums.map((a) => (
-                  <option key={a.id} value={`album:${a.id}`}>
-                    Album: {a.name}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <button className="btn-ghost" onClick={() => void api.pictures.openSlideshowFolder()}>
-              Open folder
-            </button>
+            {/* The desktop slideshow folder: which pictures it mirrors, and a
+                way to open it. One menu, so the header keeps a single row. */}
+            <ActionMenu
+              label="Slideshow"
+              items={[
+                ...sources.map((option) => ({
+                  label: `${option.value === source ? '✓ ' : ''}${option.label}`,
+                  title: option.value === source ? 'The slideshow folder mirrors this now' : undefined,
+                  onSelect: () => {
+                    if (option.value !== source) void changeSource(option.value)
+                  }
+                })),
+                { label: 'Open slideshow folder', onSelect: () => void api.pictures.openSlideshowFolder() }
+              ]}
+            />
             {/* An empty gallery offers Add in its empty state instead. */}
             {(images.length > 0 || filtered) && (
               <button className="btn-primary" onClick={() => setAdding(true)}>
@@ -180,16 +183,39 @@ export default function PicturesPage(): React.JSX.Element {
         }
       />
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <Field label="Section">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
+        {filters.scope !== 'unsorted' &&
+          (filters.mediaId != null ? (
+            <span className="chip inline-flex items-center gap-1">
+              {filters.mediaTitle}
+              <button
+                className="text-gray-400 hover:text-white"
+                onClick={() => set({ mediaId: null, mediaTitle: null })}
+                aria-label="Clear title filter"
+                title="Clear title filter"
+              >
+                ✕
+              </button>
+            </span>
+          ) : (
+            <div className="w-44">
+              <UniversalPicker
+                kind="media"
+                placeholder="Filter by title…"
+                mediaTypes={filters.scope !== 'all' ? [filters.scope as MediaType] : undefined}
+                onPick={(p) => set({ mediaId: p.entityId, mediaTitle: p.name })}
+              />
+            </div>
+          ))}
+        <Field label="Section" hiddenLabel className="contents">
           <select
-            className="input mt-1 w-auto"
+            className="input w-auto py-1.5 text-sm"
             value={filters.scope}
             onChange={(e) =>
               set({ scope: e.target.value as Filters['scope'], mediaId: null, mediaTitle: null })
             }
           >
-            <option value="all">Everything</option>
+            <option value="all">Every section</option>
             {MEDIA_CONFIGS.map((cfg) => (
               <option key={cfg.key} value={cfg.key}>
                 {cfg.plural}
@@ -198,63 +224,50 @@ export default function PicturesPage(): React.JSX.Element {
             <option value="unsorted">Unsorted</option>
           </select>
         </Field>
-        {filters.scope !== 'unsorted' && (
-          <div>
-            <p className="label">Title</p>
-            {filters.mediaId != null ? (
-              <span className="chip mt-1 inline-flex items-center gap-1">
-                {filters.mediaTitle}
-                <button
-                  className="text-gray-400 hover:text-white"
-                  onClick={() => set({ mediaId: null, mediaTitle: null })}
-                  aria-label="Clear title filter"
-                  title="Clear title filter"
-                >
-                  ✕
-                </button>
-              </span>
-            ) : (
-              <div className="mt-1 w-64">
-                <UniversalPicker
-                  kind="media"
-                  placeholder="Any title"
-                  mediaTypes={
-                    filters.scope !== 'all' ? [filters.scope as MediaType] : undefined
-                  }
-                  onPick={(p) => set({ mediaId: p.entityId, mediaTitle: p.name })}
-                />
-              </div>
-            )}
-          </div>
+        <span className="h-6 w-px bg-base-700" aria-hidden="true" />
+        <PillChoice
+          label="Kind"
+          value={filters.kind}
+          options={[
+            ['wallpaper', 'Wallpapers'],
+            ['fanart', 'Fan art']
+          ]}
+          onChange={(kind) => set({ kind })}
+        />
+        <span className="h-6 w-px bg-base-700" aria-hidden="true" />
+        <PillChoice
+          label="Shape"
+          value={filters.orientation}
+          options={[
+            ['landscape', 'Landscape'],
+            ['portrait', 'Portrait'],
+            ['square', 'Square']
+          ]}
+          onChange={(orientation) => set({ orientation })}
+        />
+        <span className="h-6 w-px bg-base-700" aria-hidden="true" />
+        <button
+          className={`pill !px-2.5 !py-1 !text-xs ${filters.favorites ? 'pill-active' : ''}`}
+          aria-pressed={filters.favorites}
+          onClick={() => set({ favorites: !filters.favorites })}
+        >
+          Favorites
+        </button>
+        <button
+          className={`pill !px-2.5 !py-1 !text-xs ${filters.inSlideshow ? 'pill-active' : ''}`}
+          aria-pressed={filters.inSlideshow}
+          onClick={() => set({ inSlideshow: !filters.inSlideshow })}
+        >
+          In slideshow
+        </button>
+        {filtered && (
+          <button className="btn-ghost text-sm" onClick={() => setFilters(NO_FILTERS)}>
+            Clear filters
+          </button>
         )}
-        <Field label="Kind">
+        <Field label="Sort" hiddenLabel className="contents">
           <select
-            className="input mt-1 w-auto"
-            value={filters.kind ?? ''}
-            onChange={(e) => set({ kind: (e.target.value || null) as ImageKind | null })}
-          >
-            <option value="">Wallpapers and fan art</option>
-            <option value="wallpaper">Wallpapers</option>
-            <option value="fanart">Fan art</option>
-          </select>
-        </Field>
-        <Field label="Shape">
-          <select
-            className="input mt-1 w-auto"
-            value={filters.orientation ?? ''}
-            onChange={(e) =>
-              set({ orientation: (e.target.value || null) as PictureOrientation | null })
-            }
-          >
-            <option value="">Any shape</option>
-            <option value="landscape">Landscape</option>
-            <option value="portrait">Portrait</option>
-            <option value="square">Square</option>
-          </select>
-        </Field>
-        <Field label="Sort">
-          <select
-            className="input mt-1 w-auto"
+            className="input ml-auto w-auto py-1.5 text-sm"
             value={sort}
             onChange={(e) => setSort(e.target.value as PictureSort)}
           >
@@ -265,27 +278,6 @@ export default function PicturesPage(): React.JSX.Element {
             ))}
           </select>
         </Field>
-        <div className="flex gap-2">
-          <button
-            className={`pill ${filters.favorites ? 'pill-active' : ''}`}
-            aria-pressed={filters.favorites}
-            onClick={() => set({ favorites: !filters.favorites })}
-          >
-            Favorites
-          </button>
-          <button
-            className={`pill ${filters.inSlideshow ? 'pill-active' : ''}`}
-            aria-pressed={filters.inSlideshow}
-            onClick={() => set({ inSlideshow: !filters.inSlideshow })}
-          >
-            In slideshow
-          </button>
-          {filtered && (
-            <button className="btn-ghost text-sm" onClick={() => setFilters(NO_FILTERS)}>
-              Clear filters
-            </button>
-          )}
-        </div>
       </div>
 
       {tags.length > 0 && (
@@ -343,6 +335,34 @@ export default function PicturesPage(): React.JSX.Element {
       )}
 
       {adding && <PictureAddDialog onClose={() => setAdding(false)} />}
+    </div>
+  )
+}
+
+// A single-select pill row: picking the active pill again clears the filter.
+function PillChoice<T extends string>({
+  label,
+  value,
+  options,
+  onChange
+}: {
+  label: string
+  value: T | null
+  options: [T, string][]
+  onChange: (value: T | null) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-1.5" role="group" aria-label={label}>
+      {options.map(([v, text]) => (
+        <button
+          key={text}
+          className={`pill !px-2.5 !py-1 !text-xs ${value === v ? 'pill-active' : ''}`}
+          aria-pressed={value === v}
+          onClick={() => onChange(value === v ? null : v)}
+        >
+          {text}
+        </button>
+      ))}
     </div>
   )
 }

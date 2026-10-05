@@ -6,6 +6,8 @@
 // carried in the notes rather than a half-meaningful order.
 // All art URLs curl-verified 2026-08-15; SH1/2/3/Origins/SM/Downpour have
 // no Steam release, so their backgrounds are official key/promo art.
+// Adaptations (2026-10-05): the three live-action films, a separate continuity.
+// Ids from AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -67,6 +69,15 @@ export const SILENT_HILL: FranchiseCfg = {
       note: 'Team Silent\'s last — Room 302'
     },
     {
+      id: 'sh-film-2006',
+      title: 'Silent Hill',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '588' }],
+      year: 2006,
+      adaptation: true,
+      note: 'Christophe Gans’ film: Rose searches the town for her adopted daughter Sharon'
+    },
+    {
       id: 'sh-origins',
       title: 'Silent Hill: Origins',
       aliases: ['Silent Hill: Zero'],
@@ -101,6 +112,16 @@ export const SILENT_HILL: FranchiseCfg = {
       note: 'The last of the old guard'
     },
     {
+      id: 'sh-film-revelation',
+      title: 'Silent Hill: Revelation',
+      mediaType: 'movie',
+      aliases: ['Silent Hill: Revelation 3D'],
+      externalIds: [{ source: 'tmdb', id: '61012' }],
+      year: 2012,
+      adaptation: true,
+      note: 'Sequel film loosely based on Silent Hill 3: Heather is drawn back to the town'
+    },
+    {
       id: 'sh-2-remake',
       title: 'Silent Hill 2',
       aliases: ['Silent Hill 2 (2024)', 'Silent Hill 2 Remake'],
@@ -119,6 +140,15 @@ export const SILENT_HILL: FranchiseCfg = {
       mc: 86,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2947440/library_hero.jpg',
       note: '1960s Japan — Ebisugaoka, not the town'
+    },
+    {
+      id: 'sh-film-return',
+      title: 'Return to Silent Hill',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '680493' }],
+      year: 2026,
+      adaptation: true,
+      note: 'Gans’ adaptation of Silent Hill 2: James follows Mary’s letter into the fog'
     }
   ],
   characters: [

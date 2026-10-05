@@ -197,6 +197,23 @@ describe('playthrough workflow', () => {
       )
     )
   })
+  it('shows the latest five sessions until all are expanded', async () => {
+    const user = userEvent.setup()
+    const sessions = Array.from({ length: 7 }, (_, i) => ({
+      id: 20 + i,
+      startedAt: `2026-09-${String(20 - i).padStart(2, '0')} 10:00:00`,
+      endedAt: `2026-09-${String(20 - i).padStart(2, '0')} 11:00:00`,
+      duration: 3600,
+      runId: null,
+      runTitle: null
+    }))
+    m.history.mockResolvedValue({ sessions, notes: [], sessionTotal: 7, noteTotal: 0 })
+    mount(<GamePlaythroughSection mediaId={1} />)
+    await user.click(await screen.findByRole('button', { name: 'Show all 7 sessions ▸' }))
+    expect(screen.getAllByRole('button', { name: /^Playthrough for session/ })).toHaveLength(7)
+    await user.click(screen.getByRole('button', { name: 'Show fewer ▾' }))
+    expect(screen.getAllByRole('button', { name: /^Playthrough for session/ })).toHaveLength(5)
+  })
   it('assigns an old session and logs a dated note without changing playtime', async () => {
     const user = userEvent.setup()
     mount(<GamePlaythroughSection mediaId={1} />)

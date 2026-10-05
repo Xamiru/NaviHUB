@@ -20,7 +20,7 @@ export function ArtistCard({ artist }: { artist: MusicArtist }) {
         thumbWidth={320}
         rounded="rounded-full"
         className="mx-auto aspect-square w-full"
-        fallback="music"
+        fallback="monogram"
       />
       <p className="mt-2 line-clamp-1 text-sm font-medium group-hover:text-accent">
         {artist.name}

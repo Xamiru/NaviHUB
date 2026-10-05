@@ -2412,6 +2412,10 @@ export const musicTrackLyrics = sqliteTable('music_track_lyrics', {
   state: check('music_track_lyrics_state', sql`${t.state} IN ('found','instrumental','missing')`),
   source: check('music_track_lyrics_source', sql`${t.source} IN ('embedded','lrclib')`)
 }))
+// Type-only mirror of the lyrics search FTS5 table (rowid = track id).
+export const musicLyricsFts = sqliteTable('music_lyrics_fts', {
+  body: text('body')
+})
 export const musicSmartPlaylist = sqliteTable('music_smart_playlist', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   title: text('title').notNull(), description: text('description').notNull().default(''),

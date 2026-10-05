@@ -62,4 +62,9 @@ const page = await app.firstWindow()
   display (no xvfb installed); keep sessions short. Read-only flows only —
   this is the live personal DB (concurrent open alongside the user's running
   instance is fine, SQLite WAL).
+- **Keep screenshots small and few.** Capture the region under test
+  (`locator.screenshot()` or a `clip`) as JPEG at quality ~70, one per state
+  you need to see. Every image stays in the conversation; full-page PNGs add
+  up to the API's request-size limit long before the context fills, and the
+  session then stalls with "No response from API". Past ~30, `/compact`.
 - Capture `page.on('pageerror')` + console errors — a clean run prints none.

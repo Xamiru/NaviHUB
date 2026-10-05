@@ -19,7 +19,7 @@ describe('adaptive archive navigation', () => {
     ['/', 'home'],
     ['/checklist', 'home'],
     ['/anime/42', 'library'],
-    ['/guides/science-adventure', 'library'],
+    ['/franchises/science-adventure', 'library'],
     ['/visual-novels/discover', 'library'],
     ['/wrestling/journeys/1', 'library'],
     ['/tv', 'library'],
@@ -154,7 +154,7 @@ describe('adaptive archive navigation', () => {
     expect(archiveContextForPath('/visual-novels').items).toEqual([
       { to: '/visual-novels', label: 'Visual Novels' },
       { to: '/visual-novels/discover', label: 'Discover' },
-      { to: '/guides', label: 'Guides' }
+      { to: '/franchises', label: 'Franchises' }
     ])
   })
 
@@ -176,6 +176,6 @@ describe('adaptive archive navigation', () => {
 it('exposes hobby-depth destinations through shared navigation', () => {
   expect(archiveContextForPath('/visual-novels/42').items.map((i) => i.to)).toContain('/visual-novels/discover')
   expect(archiveContextForPath('/wrestling/journeys').items.map((i) => i.to)).toContain('/wrestling/journeys')
-  expect(archiveContextForPath('/guides/science-adventure').title).toBe('Cross-media guides')
-  expect(drawerItemsForArea('library').map((i) => i.to)).toContain('/guides')
+  expect(archiveContextForPath('/franchises/science-adventure').title).toBe('Franchises')
+  expect(drawerItemsForArea('library').map((i) => i.to)).toContain('/franchises')
 })

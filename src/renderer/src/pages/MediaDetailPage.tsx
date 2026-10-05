@@ -19,8 +19,10 @@ import {
   pathForMedia,
   type MediaConfig
 } from '../lib/mediaConfig'
-import { toast, toastError } from '../lib/toast'
+import { toastError } from '../lib/toast'
 import { mediaUrl } from '@shared/mediaUrl'
+import { seasonForItem, seasonLabel, type SeasonBucket } from '@shared/season'
+import type { FranchiseMembership } from '@shared/franchises'
 import CoverImage from '../components/CoverImage'
 import FavoriteButton from '../components/FavoriteButton'
 import RefreshMediaDialog from '../components/RefreshMediaDialog'
@@ -32,7 +34,7 @@ import TvSeasonsSection from '../components/TvSeasonsSection'
 import GameLaunchSection from '../components/GameLaunchSection'
 import AchievementsSection from '../components/AchievementsSection'
 import GameLaunchButton, { useHasLaunchTarget } from '../components/GameLaunchButton'
-import { HeartIcon, PlayIcon, PauseIcon } from '../components/PlayerIcons'
+import { PlayIcon, PauseIcon } from '../components/PlayerIcons'
 import VideoEpisodesSection from '../components/VideoEpisodesSection'
 import CoverageSection from '../components/japanese/CoverageSection'
 import MediaImagesSection from '../components/MediaImagesSection'
@@ -41,6 +43,7 @@ import TorrentSearchDialog from '../components/TorrentSearchDialog'
 import ImportDialog from '../components/ImportDialog'
 import { torznabCategoriesFor } from '@shared/torrents'
 import Section from '../components/Section'
+import { Field } from '../components/Field'
 import PageStatus from '../components/PageStatus'
 import { RelationshipTrail } from '../components/EditorialDetailFrame'
 import type {
@@ -51,7 +54,7 @@ import type {
   HltbTimes
 } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
-import { celebrateCompletion, celebrateProgress } from '../lib/themeFx'
+import { useLogProgress } from '../lib/logProgress'
 import SynopsisText from '../components/theme/SynopsisText'
 import StandStats from '../components/theme/StandStats'
 import { standParameters } from '../lib/standStats'
@@ -69,7 +72,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
   const [torrentsOpen, setTorrentsOpen] = useState(false)
   const [refreshOpen, setRefreshOpen] = useState(false)
   const [coverOpen, setCoverOpen] = useState(false)
-  // Drives which action is the filled one (see the action column below).
+  // Drives which action is the filled one (see the action row below).
   const hasLaunch = useHasLaunchTarget(mediaId, !!cfg.hasGameLaunch)
 
   // The type's tab set. `mediaTabLabel` names the type-specific middle tab
@@ -155,30 +158,19 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
   // One filled action per screen. For a game/VN with a linked executable that is
   // Play — you launch far more often than you log an hour — and the log button
-  // steps down to ghost. Delete lives behind More, away from Edit's elbow.
-  const actionStack = (
+  // steps down to ghost. Delete and the rarer tools live behind More, away from
+  // Edit's elbow.
+  const actionRow = (
     <>
-      {cfg.hasGameLaunch && (
-        <GameLaunchButton mediaId={m.id} className="btn-primary w-full" />
-      )}
+      {cfg.hasGameLaunch && <GameLaunchButton mediaId={m.id} className="btn-primary" />}
       <LogProgressButton cfg={cfg} m={m} demoted={hasLaunch} />
-      <Link
-        replace
-        to={`${cfg.basePath}/${m.id}/edit`}
-        className="btn-ghost w-full"
-      >
+      <Link replace to={`${cfg.basePath}/${m.id}/edit`} className="btn-ghost">
         Edit
       </Link>
-      <AddToListMenu kind="media" entityId={mediaId} fullWidth />
-      <button
-        className="btn-ghost w-full"
-        onClick={() => setTorrentsOpen(true)}
-      >
-        Find torrents
-      </button>
+      <AddToListMenu kind="media" entityId={mediaId} />
       <ActionMenu
-        buttonClassName="btn-ghost w-full"
         items={[
+          { label: 'Find torrents…', onSelect: () => setTorrentsOpen(true) },
           // Re-pulls only the aspects you tick — never the cast or your own
           // tracking. The whole-library version lives on /bulk's Refresh tab.
           ...(m.externalSource ? [{ label: 'Refresh…', onSelect: () => setRefreshOpen(true) }] : []),
@@ -186,6 +178,7 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
           { label: 'Delete…', danger: true, onSelect: del }
         ]}
       />
+      <FavoriteToggle m={m} />
     </>
   )
 
@@ -197,14 +190,18 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
       {rottenTomatoes != null && <StatInline label="Rotten Tomatoes" value={`${rottenTomatoes}%`} />}
       {metacritic != null && <StatInline label="Metacritic" value={`${metacritic} / 100`} />}
       {olScore != null && <StatInline label="Open Library" value={`${olScore} / ${scoreMax}`} />}
-      <StatInline label={cfg.progressStatLabel} value={cfg.formatProgressStat(m)} />
-      <StatInline label={cfg.timesConsumedLabel} value={String(m.rewatchCount)} />
-      <StatInline label="Released" value={m.releaseDate ?? '—'} />
     </>
   )
+  const hasCommunityScore = [anilistAvg, vndbScore, imdb, rottenTomatoes, metacritic, olScore].some((v) => v != null)
+  const season = cfg.key === 'anime' ? seasonForItem(m) : null
+  const releaseYear = m.releaseDate?.match(/^\d{4}/)?.[0] ?? null
+  const eyebrow = [
+    cfg.singular,
+    season ? `${seasonLabel(season.season)} ${season.year}` : releaseYear
+  ].filter(Boolean).join(' · ')
 
   const tagRow = m.tags.length > 0 && (
-    <div className="flex flex-wrap gap-2 mb-5">
+    <div className="mt-4 flex flex-wrap gap-2">
       {m.tags.map((t) => (
         <Link key={t.id} to={`/tags/${t.id}`} className="chip hover:text-accent">
           {t.name}
@@ -220,6 +217,9 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
     // and can never paint over the sidebar or Topbar.
     <div className="relative min-h-full">
       <FranchiseBackground url={mediaUrl(m.backgroundPath)} />
+      {/* Without an Art-tab backdrop, the header sits on a blur of the cover
+          itself — no extra download, and it fades out before the tabs. */}
+      {!m.backgroundPath && <CoverBackdrop path={m.coverPath} />}
 
       <div className="relative z-10">
         <div className="mx-auto max-w-[1400px] p-4 sm:p-6">
@@ -227,50 +227,49 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
         <RelationshipTrail>
           <Link to={cfg.basePath} className="hover:text-accent">{cfg.plural}</Link>
-          <span className="text-gray-600" aria-hidden="true">›</span>
-          {m.companies.slice(0, 2).map((link, index) => (
-            <span key={link.id} className="contents">
-              {index > 0 && <span className="text-gray-600" aria-hidden="true">·</span>}
-              <Link to={`/studios/${link.company.id}`} className="hover:text-accent">
-                {link.company.name}
-              </Link>
-            </span>
-          ))}
-          <span className="ml-auto capitalize text-gray-500">{m.status ?? 'Untracked'}</span>
+          {m.companies.length > 0 && <span className="text-gray-600" aria-hidden="true">›</span>}
+          {/* One company can hold two roles (developer and publisher), and some
+              importers store each role as its own company row of the same name. */}
+          {m.companies
+            .filter((link, i, all) => all.findIndex((l) => l.company.name === link.company.name) === i)
+            .slice(0, 2)
+            .map((link, index) => (
+              <span key={link.id} className="contents">
+                {index > 0 && <span className="text-gray-600" aria-hidden="true">·</span>}
+                <Link to={`/studios/${link.company.id}`} className="hover:text-accent">
+                  {link.company.name}
+                </Link>
+              </span>
+            ))}
         </RelationshipTrail>
 
-        <div className="grid gap-7 sm:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)]">
-            <div className="mx-auto w-full max-w-[240px] sm:mx-0">
-              <CoverImage
-                path={m.coverPath}
-                alt={m.title}
-                rounded="rounded-xl"
-                className="w-full aspect-[2/3]"
-              />
-              <div className="mt-3 space-y-2">{actionStack}</div>
-            </div>
-
-            <div className="min-w-0">
-              <div className="flex items-start gap-2">
-                <h1 className="text-3xl font-semibold text-white text-balance">{m.title}</h1>
-                {m.favorite && (
-                  <span className="text-accent" title="Favorite">
-                    <HeartIcon className="h-5 w-5" />
-                  </span>
-                )}
-              </div>
-              {m.titleOriginal && <p className="text-gray-500 mb-4">{m.titleOriginal}</p>}
-
-              <QuickEdit cfg={cfg} m={m} />
-
-              <div className="flex flex-wrap gap-6 my-5">{statsNode}</div>
-              {theme === 'jojo' && (
-                <StandStats params={standParameters(m, scoreMax, cfg.logUnitLabel ? `${cfg.logUnitLabel}s` : 'units')} />
-              )}
-
-              {tagRow}
-            </div>
+        <div className="grid gap-7 sm:grid-cols-[200px_minmax(0,1fr)] lg:grid-cols-[240px_minmax(0,1fr)] xl:grid-cols-[240px_minmax(0,1fr)_300px]">
+          <div className="mx-auto w-full max-w-[240px] sm:mx-0">
+            <CoverImage
+              path={m.coverPath}
+              alt={m.title}
+              rounded="rounded-xl"
+              className="w-full aspect-[2/3] shadow-2xl ring-1 ring-white/10"
+            />
           </div>
+
+          <div className="flex min-w-0 flex-col">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-accent">{eyebrow}</p>
+            <h1 className="mt-1 text-3xl font-semibold text-white text-balance sm:text-4xl">{m.title}</h1>
+            {m.titleOriginal && <p className="mt-1 text-lg text-gray-400">{m.titleOriginal}</p>}
+
+            {hasCommunityScore && <div className="mt-4 flex flex-wrap gap-6">{statsNode}</div>}
+            {theme === 'jojo' && (
+              <StandStats params={standParameters(m, scoreMax, cfg.logUnitLabel ? `${cfg.logUnitLabel}s` : 'units')} />
+            )}
+
+            {tagRow}
+
+            <div className="mt-auto flex flex-wrap items-center gap-2 pt-5">{actionRow}</div>
+          </div>
+
+          <TrackingCard cfg={cfg} m={m} />
+        </div>
 
       <Tabs
         id="media-detail"
@@ -283,11 +282,14 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 
       <TabPanel tabsId="media-detail" value={tab}>
         {tab === 'overview' && (
-          <>
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_260px]">
+          <div className="min-w-0">
           {m.mediaType === 'game' && <GameResumeCard key={m.id} mediaId={m.id} onOpen={() => setTab('media')} />}
           {m.synopsis && (
             <Section className="mb-6" title="Synopsis">
-              <SynopsisText text={m.synopsis} />
+              <div className="max-w-[72ch]">
+                <SynopsisText text={m.synopsis} />
+              </div>
             </Section>
           )}
           {m.mediaType === 'visual_novel' && <Link className="btn mb-6 inline-flex" to={`/visual-novels/${m.id}/reading`}>Reading plan and notebook</Link>}
@@ -297,9 +299,11 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
               <p className="text-sm text-gray-300 whitespace-pre-wrap leading-relaxed">{m.notes}</p>
             </Section>
           )}
-          <CompaniesSection cfg={cfg} m={m} onChange={refresh} />
+          <MainCastStrip cfg={cfg} m={m} onShowAll={() => setTab('cast')} />
           <RelatedSection cfg={cfg} m={m} />
-          </>
+          </div>
+          <FactsColumn cfg={cfg} m={m} season={season} onChange={refresh} />
+          </div>
         )}
 
         {tab === 'cast' && (
@@ -384,24 +388,13 @@ export default function MediaDetailPage({ cfg }: { cfg: MediaConfig }) {
 // something you just finished cost two pure-navigation hops for one value, on
 // the two actions a tracker performs most. Optimistic like ThemeRow's heart,
 // re-synced from props so an unrelated refetch cannot leave it stale.
-function QuickEdit({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
+//
+// Roll back on failure, like MediaCard's heart and the queue's — an optimistic
+// control that stays lit after a failed write is showing a value the database
+// does not hold. One invalidation: qk.media.all is a prefix of the detail key.
+function useMediaPatch(m: MediaDetail) {
   const qc = useQueryClient()
-  const scoreMax = useScoreMax()
-  const statuses = useStatuses(cfg)
-  const [status, setStatus] = useState(m.status)
-  const [score, setScore] = useState(m.score)
-  const [favorite, setFavorite] = useState(m.favorite)
-  useEffect(() => setStatus(m.status), [m.status])
-  useEffect(() => setScore(m.score), [m.score])
-  useEffect(() => setFavorite(m.favorite), [m.favorite])
-
-  // Roll back on failure, like MediaCard's heart and the queue's — an optimistic
-  // pill that stays lit after a failed write is showing a value the database
-  // does not hold. One invalidation: qk.media.all is a prefix of the detail key.
-  async function patch(
-    input: Parameters<typeof api.media.update>[1],
-    revert: () => void
-  ): Promise<void> {
+  return async (input: Parameters<typeof api.media.update>[1], revert: () => void): Promise<void> => {
     try {
       await api.media.update(m.id, input)
       await qc.invalidateQueries({ queryKey: qk.media.all })
@@ -410,13 +403,40 @@ function QuickEdit({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
       toastError(e)
     }
   }
+}
 
-  // Clicking the active status clears it; clicking the active score clears it.
-  // Both are legitimate states (a title with no opinion yet) and the form is
-  // otherwise the only way back to them.
-  const pickStatus = (s: string): void => {
+function FavoriteToggle({ m }: { m: MediaDetail }) {
+  const patch = useMediaPatch(m)
+  const [favorite, setFavorite] = useState(m.favorite)
+  useEffect(() => setFavorite(m.favorite), [m.favorite])
+  return (
+    <FavoriteButton
+      active={favorite}
+      onClick={() => {
+        const next = !favorite
+        setFavorite(next)
+        void patch({ favorite: next }, () => setFavorite(!next))
+      }}
+    />
+  )
+}
+
+// The one place a title's personal state lives: status, progress, score and
+// passes. Below xl it drops under the header as a full-width row.
+export function TrackingCard({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
+  const patch = useMediaPatch(m)
+  const scoreMax = useScoreMax()
+  const statuses = useStatuses(cfg)
+  const [status, setStatus] = useState(m.status)
+  const [score, setScore] = useState(m.score)
+  useEffect(() => setStatus(m.status), [m.status])
+  useEffect(() => setScore(m.score), [m.score])
+
+  // An empty choice clears the status — a title with no opinion yet is a
+  // legitimate state and the form is otherwise the only way back to it.
+  const pickStatus = (value: string): void => {
     const prev = status
-    const next = status === s ? null : s
+    const next = value || null
     setStatus(next)
     // Completing a unit-based item fills progress to the total, as the edit form does.
     const fill =
@@ -425,60 +445,117 @@ function QuickEdit({ cfg, m }: { cfg: MediaConfig; m: MediaDetail }) {
         : {}
     void patch({ status: next, ...fill }, () => setStatus(prev))
   }
-  const pickScore = (n: number): void => {
+  // Clicking the active score clears it, like the status's empty choice.
+  const pickScore = (n: number | null): void => {
     const prev = score
-    const next = score === n ? null : n
+    const next = n === score ? null : n
     setScore(next)
     void patch({ score: next }, () => setScore(prev))
   }
 
+  const pct = m.totalUnits ? Math.min(100, Math.round((m.progress / m.totalUnits) * 100)) : null
   return (
-    <div className="mt-4 space-y-2">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {/* A status written before the user renamed their list still shows. */}
-        {status != null && !statuses.includes(status) && (
-          <span className="chip" title="Not in your configured status list">
-            {status}
-          </span>
-        )}
-        {statuses.map((s) => (
-          <button
-            key={s}
-            className={status === s ? 'pill pill-active' : 'pill'}
-            onClick={() => pickStatus(s)}
-          >
-            {s}
-          </button>
-        ))}
-        <FavoriteButton
-          active={favorite}
-          className="ml-1"
-          onClick={() => {
-            const next = !favorite
-            setFavorite(next)
-            void patch({ favorite: next }, () => setFavorite(!next))
-          }}
+    <section className="card self-start p-4 sm:col-span-2 xl:col-span-1" aria-label="Your tracking">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500">Your tracking</p>
+      <Field label="Status" className="mt-3 block">
+        <select className="input mt-1" value={status ?? ''} onChange={(e) => pickStatus(e.target.value)}>
+          <option value="">Not tracked</option>
+          {/* A status written before the user renamed their list still shows. */}
+          {status != null && !statuses.includes(status) && <option value={status}>{status}</option>}
+          {statuses.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <div className="mt-3 flex items-center justify-between">
+        <span className="text-xs text-gray-400">{cfg.progressStatLabel}</span>
+        <span className="text-sm tabular-nums text-white">{cfg.formatProgressStat(m)}</span>
+      </div>
+      {cfg.unitProgress && pct != null && (
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded bg-base-700" aria-hidden="true">
+          <div className="h-full rounded bg-accent" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+      <ScoreControl score={score} scoreMax={scoreMax} onPick={pickScore} />
+      <div className="mt-3 flex items-center justify-between border-t border-base-700 pt-3">
+        <span className="text-xs text-gray-400">{cfg.timesConsumedLabel}</span>
+        <span className="text-sm tabular-nums text-white">{m.rewatchCount}</span>
+      </div>
+    </section>
+  )
+}
+
+// Stars for scales up to ten, where each star is one point; a longer scale
+// takes a number. A score the stars cannot light exactly (a half point from the
+// edit form) still reads as its number beside them.
+function ScoreControl({
+  score,
+  scoreMax,
+  onPick
+}: {
+  score: number | null
+  scoreMax: number
+  onPick: (n: number | null) => void
+}) {
+  const [draft, setDraft] = useState(score == null ? '' : String(score))
+  useEffect(() => setDraft(score == null ? '' : String(score)), [score])
+  if (scoreMax > 10) {
+    const commit = (): void => {
+      const n = draft.trim() === '' ? null : Number(draft)
+      if (n === score || (n != null && (!Number.isFinite(n) || n < 0 || n > scoreMax))) {
+        setDraft(score == null ? '' : String(score))
+        return
+      }
+      onPick(n)
+    }
+    return (
+      <Field label={`Score out of ${scoreMax}`} className="mt-3 flex items-center justify-between gap-3">
+        <input
+          className="input w-24 text-right"
+          inputMode="decimal"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={commit}
+          onKeyDown={(e) => e.key === 'Enter' && commit()}
         />
+      </Field>
+    )
+  }
+  return (
+    <div className="mt-3 flex items-center justify-between gap-3">
+      <span className="text-xs text-gray-400">Score</span>
+      <div className="flex items-center gap-1.5">
+        <div className="flex" role="group" aria-label="Score">
+          {Array.from({ length: scoreMax }, (_, i) => i + 1).map((n) => (
+            <button
+              key={n}
+              className={`px-px text-[15px] leading-none ${score != null && n <= score ? 'text-signal-caution' : 'text-gray-500 hover:text-gray-300'}`}
+              aria-label={`Score ${n} of ${scoreMax}`}
+              title={`Score ${n} of ${scoreMax}`}
+              aria-pressed={score === n}
+              onClick={() => onPick(n)}
+            >
+              ★
+            </button>
+          ))}
+        </div>
+        <span className="w-8 text-right text-sm tabular-nums text-white">{score ?? '–'}</span>
       </div>
-      <div className="flex flex-wrap items-center gap-1.5">
-        <span className="label mr-1">Score</span>
-        {/* The pills are whole numbers 1..scoreMax, but the form accepts 0 and
-            half points — so anything they cannot light is shown as text rather
-            than silently reading as "unrated" and being overwritten. */}
-        {score != null && !Number.isInteger(score) && (
-          <span className="chip">{score} / {scoreMax}</span>
-        )}
-        {score === 0 && <span className="chip">0 / {scoreMax}</span>}
-        {Array.from({ length: scoreMax }, (_, i) => i + 1).map((n) => (
-          <button
-            key={n}
-            className={score === n ? 'pill pill-active' : 'pill'}
-            onClick={() => pickScore(n)}
-          >
-            {n}
-          </button>
-        ))}
-      </div>
+    </div>
+  )
+}
+
+// A soft blur of the cover behind the header, used when the title has no
+// Art-tab backdrop. Decorative and behind the content layer.
+function CoverBackdrop({ path }: { path: string | null }) {
+  const url = mediaUrl(path)
+  if (!url) return null
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-[520px] overflow-hidden" aria-hidden="true">
+      <img src={url} alt="" className="h-full w-full scale-125 object-cover opacity-25 blur-2xl" />
+      <div className="absolute inset-0 bg-gradient-to-t from-base-900 via-base-900/70 to-base-900/20" />
     </div>
   )
 }
@@ -496,8 +573,8 @@ function LogProgressButton({
   m: MediaDetail
   demoted?: boolean
 }) {
-  const qc = useQueryClient()
   const [busy, setBusy] = useState(false)
+  const logProgress = useLogProgress()
 
   const statuses = useStatuses(cfg)
   const finished = isCompletedStatus(m.status, statuses) || (!!m.totalUnits && m.progress >= m.totalUnits)
@@ -508,27 +585,14 @@ function LogProgressButton({
       : `Mark ${(cfg.defaultStatuses[1] ?? 'completed').toLowerCase()}`
 
   async function log(): Promise<void> {
-    const anchor = document.activeElement
     setBusy(true)
-    try {
-      const res = await api.media.logProgress(m.id)
-      celebrateProgress(anchor, { count: finished ? null : m.progress + 1, total: m.totalUnits })
-      if (!finished && isCompletedStatus(res.status, statuses)) {
-        celebrateCompletion(res.title, { coverPath: m.coverPath, total: cfg.formatProgressStat({ ...m, progress: m.totalUnits ?? m.progress + 1 }) })
-      }
-      await qc.invalidateQueries({ queryKey: qk.media.all })
-      await qc.invalidateQueries({ queryKey: qk.checklist.all })
-      if (res.startedRewatch) toast(`${res.title} — pass #${res.rewatchCount} started`, 'success')
-    } catch (e) {
-      toastError(e)
-    } finally {
-      setBusy(false)
-    }
+    await logProgress(m)
+    setBusy(false)
   }
 
   return (
     <button
-      className={`${demoted ? 'btn-ghost' : 'btn-primary'} w-full mt-2`}
+      className={demoted ? 'btn-ghost' : 'btn-primary'}
       onClick={log}
       disabled={busy}
       title={
@@ -627,19 +691,39 @@ function PlaytimeSection({ m, onChange }: { m: MediaDetail; onChange: () => void
   )
 }
 
-function CompaniesSection({
+// The overview's facts column: dates, the companies behind the title, the
+// curated franchises it belongs to and the user's lists that hold it. Imported titles get their companies from the
+// source (and re-import prunes/refreshes them), so manual removal doesn't
+// apply — the ✕ shows only on hand-made titles.
+function FactsColumn({
   cfg,
   m,
+  season,
   onChange
 }: {
   cfg: MediaConfig
   m: MediaDetail
+  season: SeasonBucket | null
   onChange: () => void
 }) {
-  // Imported titles get their companies from the source (and re-import prunes/
-  // refreshes them), so manual removal doesn't apply — hide the × on those.
   const imported = !!m.externalSource
   const qc = useQueryClient()
+  const { data: lists = [] } = useQuery({
+    queryKey: qk.lists.forEntity('media', m.id),
+    queryFn: () => api.lists.forEntity('media', m.id)
+  })
+  const inLists = lists.filter((l) => l.contains)
+  // The curated catalog is large; load it on demand rather than in this chunk.
+  const [franchises, setFranchises] = useState<FranchiseMembership[]>([])
+  useEffect(() => {
+    let live = true
+    void import('@shared/franchises').then(({ franchisesForItem }) => {
+      if (live) setFranchises(franchisesForItem(m))
+    })
+    return () => {
+      live = false
+    }
+  }, [m])
 
   async function remove(linkId: number) {
     await api.mediaCompanies.remove(linkId)
@@ -647,28 +731,113 @@ function CompaniesSection({
     onChange()
   }
 
+  const fact = 'text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500'
   return (
-    <Section className="mb-6" title={cfg.companyTitle}>
-      <div className="flex flex-wrap gap-2">
-        {m.companies.length === 0 && <span className="text-sm text-gray-400">None yet</span>}
-        {m.companies.map((c) => (
-          <span key={c.id} className="chip">
-            <Link to={`/studios/${c.company.id}`} className="hover:text-accent">
-              {c.company.name}
-            </Link>
-            <span className="text-gray-500">· {c.role.replace(/_/g, ' ')}</span>
-            {!imported && (
-              <button
-                className="text-gray-500 hover:text-red-400"
-                onClick={() => remove(c.id)}
-                aria-label={`Remove ${c.company.name}`}
-                title={`Remove ${c.company.name}`}
-              >
-                ✕
-              </button>
-            )}
-          </span>
-        ))}
+    <aside className="space-y-5 text-sm" aria-label="Facts">
+      <div>
+        <p className={fact}>Released</p>
+        <p className="mt-1 text-white">{m.releaseDate ?? '—'}</p>
+      </div>
+      {season && (
+        <div>
+          <p className={fact}>Season</p>
+          <p className="mt-1 text-white">
+            {seasonLabel(season.season)} {season.year}
+          </p>
+        </div>
+      )}
+      <div>
+        <p className={fact}>{cfg.companyTitle}</p>
+        {m.companies.length === 0 && <p className="mt-1 text-gray-400">None yet</p>}
+        <ul className="mt-1 space-y-1">
+          {m.companies.map((c) => (
+            <li key={c.id} className="flex items-baseline gap-2">
+              <Link to={`/studios/${c.company.id}`} className="text-signal-link hover:underline">
+                {c.company.name}
+              </Link>
+              <span className="text-xs text-gray-500">{c.role.replace(/_/g, ' ')}</span>
+              {!imported && (
+                <button
+                  className="ml-auto text-gray-500 hover:text-red-400"
+                  onClick={() => remove(c.id)}
+                  aria-label={`Remove ${c.company.name}`}
+                  title={`Remove ${c.company.name}`}
+                >
+                  ✕
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      </div>
+      {franchises.length > 0 && (
+        <div>
+          <p className={fact}>Franchise</p>
+          <ul className="mt-1 space-y-1">
+            {franchises.map(({ cfg: f, next }) => (
+              <li key={f.id}>
+                <Link to={`/franchises/${f.id}`} className="text-signal-link hover:underline">
+                  {f.name}
+                </Link>
+                {next && (
+                  <p className="text-xs text-gray-400">
+                    Next: {next.title}
+                    {(next.mediaType ?? 'game') !== m.mediaType &&
+                      ` (${configFor(next.mediaType ?? 'game').singular})`}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {inLists.length > 0 && (
+        <div>
+          <p className={fact}>Your lists</p>
+          <ul className="mt-1 space-y-1">
+            {inLists.map((l) => (
+              <li key={l.id}>
+                <Link to={`/lists/${l.id}`} className="text-white hover:text-accent">
+                  {l.title}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </aside>
+  )
+}
+
+// The first few cast entries on the overview, in the same cards as the cast
+// tab; the full, editable list stays one click away.
+function MainCastStrip({ cfg, m, onShowAll }: { cfg: MediaConfig; m: MediaDetail; onShowAll: () => void }) {
+  const list = m.characters
+  if (list.length === 0) return null
+  const characterOnly = cfg.castLayout === 'character-only'
+  const shown = list.slice(0, characterOnly ? 8 : 6)
+  return (
+    <Section
+      className="mb-6"
+      title={`Main ${cfg.castSectionTitle.toLowerCase()}`}
+      actions={
+        list.length > shown.length && (
+          <button className="text-xs text-gray-400 hover:text-white" onClick={onShowAll}>
+            All {list.length} ›
+          </button>
+        )
+      }
+    >
+      <div className={`grid gap-3 ${characterOnly ? 'grid-cols-4 sm:grid-cols-6 xl:grid-cols-8' : 'sm:grid-cols-2 2xl:grid-cols-3'}`}>
+        {shown.map((e) =>
+          cfg.castLayout === 'actor' ? (
+            <ActorCard key={e.character.id} entry={e} />
+          ) : characterOnly ? (
+            <CharacterOnlyCard key={e.character.id} entry={e} />
+          ) : (
+            <CharacterCard key={e.character.id} entry={e} showLanguage={cfg.castShowLanguage} />
+          )
+        )}
       </div>
     </Section>
   )

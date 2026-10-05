@@ -2006,6 +2006,13 @@ CREATE TABLE IF NOT EXISTS music_track_lyrics (
   source     TEXT CHECK(source IN ('embedded','lrclib')),
   fetched_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+-- Lyrics search: one normalized document per track (rowid = track id), written
+-- with each stored lyrics row by musicLyricsIndex.ts. Trigram makes any phrase
+-- of three or more characters a substring match, including Japanese.
+CREATE VIRTUAL TABLE IF NOT EXISTS music_lyrics_fts USING fts5(body, tokenize='trigram');
+CREATE TRIGGER IF NOT EXISTS music_lyrics_fts_delete AFTER DELETE ON music_track_lyrics BEGIN
+  DELETE FROM music_lyrics_fts WHERE rowid = old.track_id;
+END;
 CREATE TABLE IF NOT EXISTS music_smart_playlist (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', rules_json TEXT NOT NULL

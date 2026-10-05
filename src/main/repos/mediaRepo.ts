@@ -353,6 +353,8 @@ export function homeOverview(today: string): HomeLibraryOverview {
     wall: shuffle(rows.filter((item) => item.coverPath)).slice(0, 24),
     recent: [...rows].sort(byCreatedDesc).slice(0, 10),
     continuing: continuing.slice(0, 12),
+    // Home's "Start next": the backlog, newest additions first.
+    planned: [...planned].sort(byCreatedDesc).slice(0, 12),
     favorites: rows.filter((item) => item.favorite).sort(byUpdatedDesc).slice(0, 12),
     spotlight: spotlightWindow.map((item) => ({
       ...item,
@@ -363,6 +365,7 @@ export function homeOverview(today: string): HomeLibraryOverview {
       titles: rows.length,
       inProgress: continuing.length,
       completed: completed.length,
+      planned: planned.length,
       favorites: rows.filter((item) => item.favorite).length,
       avgScore: scores.length
         ? (scores.reduce((total, score) => total + score, 0) / scores.length).toFixed(1)

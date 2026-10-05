@@ -33,21 +33,19 @@ async function testPopup(): Promise<void> {
   }
 }
 
+// Exclusive fullscreen bypasses desktop overlays; this sits in the header
+// subtitle so the actions slot stays one button tall.
+const OVERLAY_HINT = 'In-game popups show over windowed and borderless games, not exclusive fullscreen.'
+
 function PopupTestAction() {
   return (
-    <div className="max-w-sm text-left sm:text-right">
-      <button
-        className="btn-ghost"
-        onClick={() => void testPopup()}
-        title="Raise the in-game overlay with a test unlock"
-      >
-        Test popup and sound
-      </button>
-      <p className="mt-2 text-xs leading-5 text-gray-400">
-        Works over windowed and borderless games. True exclusive fullscreen bypasses desktop
-        overlays, so use borderless mode when you want popups visible in-game.
-      </p>
-    </div>
+    <button
+      className="btn-ghost"
+      onClick={() => void testPopup()}
+      title="Raise the in-game overlay with a test unlock"
+    >
+      Test popup and sound
+    </button>
   )
 }
 
@@ -108,6 +106,7 @@ export default function AchievementsPage() {
       <div className="p-4 sm:p-6">
         <PageHeader
           title="Achievement archive"
+          subtitle={OVERLAY_HINT}
           actions={<PopupTestAction />}
         />
         <EmptyState
@@ -130,7 +129,7 @@ export default function AchievementsPage() {
       <div className="relative">
         <PageHeader
           title="Achievement archive"
-          subtitle="A local trophy cabinet built from your real Steam and RetroAchievements sets."
+          subtitle={`A local trophy cabinet built from your real Steam and RetroAchievements sets. ${OVERLAY_HINT}`}
           actions={<PopupTestAction />}
         />
 

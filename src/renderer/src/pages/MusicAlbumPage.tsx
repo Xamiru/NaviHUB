@@ -7,6 +7,7 @@ import { useIncrementalList } from '../lib/hooks'
 import { usePlayerControls } from '../lib/player'
 import {
   TRACK_SEARCH_MIN,
+  albumTrackNumbers,
   filterTracks,
   musicTrackToPlayerTrack,
   playTracks,
@@ -61,6 +62,7 @@ export default function MusicAlbumPage() {
   // hook order stays stable.
   const tracks = useMemo(() => album?.tracks ?? [], [album?.tracks])
   const shown = useMemo(() => filterTracks(tracks, search), [tracks, search])
+  const trackNumbers = useMemo(() => albumTrackNumbers(tracks), [tracks])
   const { visible, sentinelRef, hasMore, reveal } = useIncrementalList(shown)
 
   if (isLoading) return <PageStatus>Loading…</PageStatus>
@@ -174,9 +176,19 @@ export default function MusicAlbumPage() {
                 )}
                 <MusicTrackRow
                   track={t}
-                  index={t.trackNo ?? i + 1}
+                  index={trackNumbers.get(t.id) ?? i + 1}
                   showCover={false}
-                  trailing={standoutIds.has(t.id) ? <span className="chip text-xs">Standout</span> : undefined}
+                  hideArtist={album.artistName}
+                  trailing={
+                    <>
+                      {standoutIds.has(t.id) && <span className="chip text-xs">Standout</span>}
+                      {t.playCount > 0 && (
+                        <span className="shrink-0 text-xs tabular-nums text-gray-500">
+                          {t.playCount} {t.playCount === 1 ? 'play' : 'plays'}
+                        </span>
+                      )}
+                    </>
+                  }
                   onPlay={() => playFrom(i)}
                 />
               </Fragment>

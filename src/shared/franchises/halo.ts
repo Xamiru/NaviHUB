@@ -6,6 +6,9 @@
 // -> Reach 2552 -> CE (Campaign Evolved retells it) -> 2 -> ODST -> 3 -> 4
 // (2557) -> 5 -> Wars 2 -> Infinite.
 // All art URLs curl-verified 2026-08-15.
+// Adaptations (2026-10-05): Halo Legends and the live-action series carry no
+// story slot; the 2022 TV series is its own Silver Timeline. Ids from
+// AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -38,10 +41,14 @@ export const HALO: FranchiseCfg = {
     { id: 'halo-wars', title: 'Halo Wars', aliases: ['Halo Wars: Definitive Edition'], externalIds: [{ source: 'steam', id: '459220' }], year: 2009, releaseDate: '2009-02-26', chrono: 1, mc: 82, spinOff: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/459220/capsule_616x353.jpg', note: 'RTS — 2531, the Spirit of Fire' },
     { id: 'halo-odst', title: 'Halo 3: ODST', externalIds: [{ source: 'steam', id: '1064272' }], year: 2009, releaseDate: '2009-09-22', chrono: 6, mc: 83, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1064272/capsule_616x353.jpg', note: 'New Mombasa, no Chief, all jazz' },
     { id: 'halo-reach', title: 'Halo: Reach', externalIds: [{ source: 'steam', id: '1064220' }], year: 2010, chrono: 2, mc: 91, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1064220/capsule_616x353.jpg', note: 'Bungie\'s farewell — you already know how it ends' },
+    { id: 'halo-legends', title: 'Halo Legends', mediaType: 'anime', externalIds: [{ source: 'anilist', id: '6867' }], year: 2010, releaseDate: '2010-02-16', spinOff: true, note: 'Anime anthology from six Japanese studios' },
     { id: 'halo-4', title: 'Halo 4', externalIds: [{ source: 'steam', id: '1064273' }], year: 2012, chrono: 8, mc: 87, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1064273/capsule_616x353.jpg', note: '343 takes over — the Didact' },
+    { id: 'halo-fud', title: 'Halo 4: Forward Unto Dawn', mediaType: 'tv', aliases: ['Halo: Forward Unto Dawn'], externalIds: [{ source: 'tmdb', id: '56295' }], year: 2012, releaseDate: '2012-10-05', spinOff: true, note: 'Live-action web series: Lasky’s cadet class meets the Master Chief' },
+    { id: 'halo-nightfall', title: 'Halo: Nightfall', mediaType: 'tv', externalIds: [{ source: 'tmdb', id: '61634' }], year: 2014, releaseDate: '2014-11-11', spinOff: true, note: 'Live-action series introducing Agent Locke before Halo 5' },
     { id: 'halo-5', title: 'Halo 5: Guardians', year: 2015, chrono: 9, mc: 84, bgUrl: 'https://www.halopedia.org/images/c/c6/H5G_-_Chief_vs_Warden.jpg', note: 'Xbox One only — Fireteam Osiris' },
     { id: 'halo-wars-2', title: 'Halo Wars 2', year: 2017, chrono: 10, mc: 79, spinOff: true, bgUrl: 'https://www.halopedia.org/images/1/16/HW2-TheHaloBattle01.png', note: 'RTS — Atriox and the Banished' },
     { id: 'halo-infinite', title: 'Halo Infinite', externalIds: [{ source: 'steam', id: '1240440' }], year: 2021, chrono: 11, mc: 87, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1240440/library_hero.jpg', note: 'Zeta Halo, open world' },
+    { id: 'halo-tv', title: 'Halo', mediaType: 'tv', externalIds: [{ source: 'tmdb', id: '52814' }], year: 2022, releaseDate: '2022-03-24', adaptation: true, note: 'Paramount+ series in its own Silver Timeline, two seasons' },
     { id: 'halo-campaign-evolved', title: 'Halo: Campaign Evolved', externalIds: [{ source: 'steam', id: '2806050' }], year: 2026, chrono: 4, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2806050/library_hero.jpg', note: 'Ground-up remake of Combat Evolved' }
   ],
   characters: [

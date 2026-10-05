@@ -110,6 +110,49 @@ describe('Home resume failure', () => {
     expect(openExternal).toHaveBeenCalledWith({ kind: 'file', fileId: 42 })
   })
 
+  it('shows each in-progress title once in Up next and switches to the backlog', async () => {
+    const title = (id: number, name: string, status: string) => ({
+      id, mediaType: 'manga', title: name, coverPath: null, progress: 3, totalUnits: 10,
+      status, score: null, favorite: false, metadata: null, rewatchCount: 0
+    })
+    const vagabond = title(1, 'Vagabond', 'Reading')
+    const bleach = title(2, 'Bleach', 'Reading')
+    const claymore = title(3, 'Claymore', 'Reading')
+    homeOverview.mockResolvedValue({
+      wall: [], recent: [], favorites: [], spotlight: [], spotlightFromBacklog: false,
+      continuing: [vagabond, bleach, claymore],
+      planned: [title(4, 'Homunculus', 'Plan to Read')],
+      stats: { titles: 4, inProgress: 3, completed: 0, planned: 1, favorites: 0, avgScore: null }
+    })
+    const point = (media: typeof vagabond, refId: number) => ({
+      kind: 'chapter', refId, media, dirPath: `manga/${media.title}`,
+      partTitle: `${media.title} chapter`, position: 4, total: 20, updatedAt: '2026-10-04'
+    })
+    resumePoints.mockResolvedValue([point(vagabond, 11), point(claymore, 13)])
+    const user = userEvent.setup()
+    renderPage()
+
+    const upNext = (await screen.findByRole('heading', { name: 'Up next' })).closest('section')!
+    await screen.findByText('Claymore chapter')
+    // The next-session card leads with the newest saved position; the queue
+    // then holds the other saved position before titles with none, once each.
+    const names = [...upNext.querySelectorAll('h2, p')]
+      .map((el) => el.textContent)
+      .filter((text) => text === 'Vagabond' || text === 'Bleach' || text === 'Claymore')
+    expect(names).toEqual(['Vagabond', 'Claymore', 'Bleach'])
+    expect(screen.getByRole('link', { name: /Claymore chapter/ })).toHaveAttribute(
+      'href',
+      expect.stringContaining('/manga/3/read/13')
+    )
+
+    await user.click(screen.getByRole('button', { name: /Start next/ }))
+    expect(await screen.findByText('Homunculus')).toBeInTheDocument()
+    expect(screen.queryByText('Bleach')).not.toBeInTheDocument()
+    // The choice is history-scoped page state, shared by this file's renders.
+    await user.click(screen.getByRole('button', { name: /^Continue/ }))
+    expect(await screen.findByText('Bleach')).toBeInTheDocument()
+  })
+
   it('shows a durable retry instead of presenting a failed read as an empty library', async () => {
     settingsAll.mockResolvedValue(widgetSettings('recent'))
     homeOverview
@@ -147,6 +190,18 @@ describe('Home resume failure', () => {
 
     expect(await screen.findByText('Loading saved positions…')).toBeInTheDocument()
     expect(screen.queryByText('Build your personal archive')).not.toBeInTheDocument()
+  })
+
+  it('keeps the newest in-progress title in Up next while saved positions load', async () => {
+    homeOverview.mockResolvedValue({
+      wall: [], recent: [], favorites: [], spotlight: [], spotlightFromBacklog: false, planned: [],
+      continuing: [{ id: 3, mediaType: 'manga', title: 'Vagabond', coverPath: null, progress: 2, totalUnits: 10, status: 'Reading', score: null, favorite: false, metadata: null, rewatchCount: 0 }],
+      stats: { titles: 1, inProgress: 1, completed: 0, planned: 0, favorites: 0, avgScore: null }
+    })
+    resumePoints.mockReturnValue(new Promise(() => {}))
+    renderPage()
+    expect(await screen.findByText('Loading saved positions…')).toBeInTheDocument()
+    expect(await screen.findByText('Vagabond')).toBeInTheDocument()
   })
 
   it('shows a retry when Japanese stats fail instead of claiming there is no deck', async () => {

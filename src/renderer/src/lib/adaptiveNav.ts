@@ -27,7 +27,7 @@ const MEDIA_DRAWER_ITEMS: ArchiveNavItem[] = [
     label: cfg.sidebarLabel ?? cfg.plural,
     visibilityKey: cfg.key
   })),
-  { to: '/guides', label: 'Cross-media guides' },
+  { to: '/franchises', label: 'Franchises' },
   { to: '/music', label: 'Music', visibilityKey: 'music' },
   { to: '/pictures', label: 'Pictures', visibilityKey: 'pictures' },
   { to: '/wrestling', label: 'Wrestling', visibilityKey: 'wrestling' },
@@ -183,7 +183,7 @@ function mediaContext(pathname: string): ArchiveContext | null {
     return {
       title: 'Visual novels',
       descriptor: 'Archive directory',
-      items: [{ to: '/visual-novels', label: 'Visual Novels' }, { to: '/visual-novels/discover', label: 'Discover' }, { to: '/guides', label: 'Guides' }]
+      items: [{ to: '/visual-novels', label: 'Visual Novels' }, { to: '/visual-novels/discover', label: 'Discover' }, { to: '/franchises', label: 'Franchises' }]
     }
   }
   if (pathname.startsWith('/games')) {
@@ -194,7 +194,7 @@ function mediaContext(pathname: string): ArchiveContext | null {
         { to: '/games', label: 'Games' },
         { to: '/games/installed', label: 'Installed' },
         { to: '/games/achievements', label: 'Achievements' },
-        { to: '/games/franchises', label: 'Franchises' }
+        { to: '/franchises', label: 'Franchises' }
       ]
     }
   }
@@ -357,14 +357,16 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
     return { title: 'System', descriptor: 'Tasks and settings', items: SYSTEM_DRAWER_ITEMS }
   }
 
-  if (pathname === '/guides' || pathname.startsWith('/guides/')) {
+  if (pathname === '/franchises' || pathname.startsWith('/franchises/')) {
     return {
-      title: 'Cross-media guides',
-      descriptor: 'Reading and viewing orders',
+      title: 'Franchises',
+      descriptor: 'Series across media',
       items: [
-        { to: '/guides', label: 'All guides' },
+        { to: '/franchises', label: 'All franchises' },
+        { to: '/anime', label: 'Anime' },
         { to: '/visual-novels', label: 'Visual Novels' },
-        { to: '/games/franchises', label: 'Game franchises' }
+        { to: '/games', label: 'Games' },
+        { to: '/movies', label: 'Movies' }
       ]
     }
   }

@@ -357,6 +357,7 @@ export const qk = {
       ['music', 'trackPage', sort, filter, scope.genre ?? null, scope.decade ?? null] as const,
     trackLead: ['music', 'trackLead'] as const,
     search: (q: string) => ['music', 'search', q] as const,
+    lyricsSearch: (q: string) => ['music', 'lyricsSearch', q] as const,
     playlists: ['music', 'playlists'] as const,
     playlist: (id: number) => ['music', 'playlist', id] as const,
     playlistsForTrack: (trackId: number) => ['music', 'playlistsForTrack', trackId] as const,
@@ -499,6 +500,8 @@ export const qk = {
     tail: ['logs', 'tail'] as const
   },
   search: (q: string) => ['search', q] as const,
+  // Prefix of every global search result, refreshed when a title's tracking changes.
+  searchAll: ['search'] as const,
   // External import-source search: the source key ('anilist', 'tmdb', …) is the
   // namespace itself, so these have no shared `all` prefix to invalidate.
   importSearch: (sourceKey: string, query: string) => [sourceKey, 'search', query] as const

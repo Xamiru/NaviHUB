@@ -26,8 +26,10 @@ vi.mock('../src/main/http', () => ({
   }
 }))
 
-import { activeLyricIndex, formatLrc, parseLrc } from '../src/shared/lyrics'
+import { activeLyricIndex, formatLrc, locateLyricMatch, parseLrc } from '../src/shared/lyrics'
 import { fetchLyrics, fetchMissingLyrics, getLyrics, lyricsFromEmbedded, pickLrclibResult } from '../src/main/musicLyrics'
+import { rebuildLyricsIndex } from '../src/main/musicLyricsIndex'
+import { searchLyrics } from '../src/main/repos/musicRepo'
 
 const noEmbedded = async () => undefined
 
@@ -112,10 +114,12 @@ describe('lyrics lookup', () => {
     expect(getLyrics(1)).toMatchObject({ source: 'file', synced: '[00:03.00]From the sidecar' })
   })
 
-  it('drops stored lyrics with the track', async () => {
+  it('drops stored lyrics and their search entry with the track', async () => {
     await fetchLyrics(1, async () => [{ text: 'Words' }])
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_lyrics_fts').get()).toEqual({ n: 1 })
     db.prepare('DELETE FROM music_track WHERE id = 1').run()
     expect(db.prepare('SELECT COUNT(*) AS n FROM music_track_lyrics').get()).toEqual({ n: 0 })
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_lyrics_fts').get()).toEqual({ n: 0 })
   })
 
   it('sweeps only unchecked tracks, keeps failures unchecked, and stops when the service is unreachable', async () => {
@@ -137,5 +141,54 @@ describe('lyrics lookup', () => {
     await expect(fetchMissingLyrics(noEmbedded)).rejects.toThrow('Lyrics download stopped: offline')
     expect([1, 2, 3, 4, 5].map((id) => getLyrics(id).state)).toEqual(['unchecked', 'unchecked', 'unchecked', 'unchecked', 'unchecked'])
     expect(requested.filter((url) => url.includes('Let+Down'))).toEqual([])
+  })
+})
+
+describe('lyrics search', () => {
+  beforeEach(() => {
+    db.exec(`INSERT INTO music_track(id,album_id,artist_id,file_path,title,duration) VALUES
+      (2,1,1,'Radiohead/(1997) OK Computer/02 Let Down.mp3','Let Down',299)`)
+  })
+
+  it('finds a phrase regardless of case, apostrophes and line breaks, and plays from its line', async () => {
+    await fetchLyrics(1, async () => [{ text: "[00:12.00]In an interstellar burst\n[00:20.50]I'm back to save the universe" }])
+    await fetchLyrics(2, async () => [{ text: "Don't get sentimental\nIt always ends up drivel\nDon't get sentimental" }])
+    expect(searchLyrics('BURST im back')).toEqual([
+      expect.objectContaining({
+        track: expect.objectContaining({ id: 1, title: 'Airbag' }),
+        line: "In an interstellar burst / I'm back to save the universe",
+        time: 12,
+        count: 1
+      })
+    ])
+    expect(searchLyrics('dont get sentimental')).toEqual([
+      expect.objectContaining({ track: expect.objectContaining({ id: 2 }), line: "Don't get sentimental", time: null, count: 2 })
+    ])
+    expect(searchLyrics('ba')).toEqual([])
+    expect(searchLyrics('"OR" NEAR')).toEqual([])
+  })
+
+  it('replaces a track entry when its lyrics are looked up again', async () => {
+    await fetchLyrics(1, async () => [{ text: 'Old words' }])
+    await fetchLyrics(1, async () => [{ text: 'New words' }])
+    expect(searchLyrics('old words')).toEqual([])
+    expect(searchLyrics('new words').map((m) => m.track.id)).toEqual([1])
+  })
+
+  it('indexes lyrics stored before the index existed', () => {
+    db.prepare("INSERT INTO music_track_lyrics(track_id,state,plain,source) VALUES(2,'found','Floor collapsing','lrclib')").run()
+    db.prepare("INSERT INTO music_track_lyrics(track_id,state,source) VALUES(1,'missing','lrclib')").run()
+    expect(searchLyrics('floor collapsing')).toEqual([])
+    rebuildLyricsIndex(db)
+    expect(searchLyrics('floor collapsing').map((m) => m.track.id)).toEqual([2])
+    expect(db.prepare('SELECT COUNT(*) AS n FROM music_lyrics_fts').get()).toEqual({ n: 1 })
+  })
+
+  it('locates Japanese phrases and skips blank lines', () => {
+    expect(locateLyricMatch('[00:01.00]\n[00:02.00]残酷な天使のテーゼ\n[00:05.00]窓辺からやがて飛び立つ', null, '天使のテーゼ')).toEqual({
+      line: '残酷な天使のテーゼ',
+      time: 2,
+      count: 1
+    })
   })
 })

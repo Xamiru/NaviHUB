@@ -1,4 +1,4 @@
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -11,11 +11,16 @@ import Section from '../components/Section'
 import EditorialDetailFrame, { RelationshipTrail } from '../components/EditorialDetailFrame'
 import { pathForMedia } from '../lib/mediaConfig'
 import { chronologicalYear } from '../lib/archiveDisplay'
+import { useLeaveDeleted } from '../lib/navState'
+import type { MediaType, Person } from '@shared/types'
+
+// Titles whose cast is played on screen rather than voiced.
+const LIVE_ACTION = new Set<MediaType>(['movie', 'tv'])
 
 export default function CharacterDetailPage() {
   const { id } = useParams()
   const characterId = Number(id)
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const qc = useQueryClient()
 
   const { data: character } = useQuery({
@@ -29,21 +34,31 @@ export default function CharacterDetailPage() {
 
   if (!character) return <PageStatus>Loading…</PageStatus>
 
+  // Oldest first, so the list reads as the character's history.
   const chronologicalRoles = [...roles].sort((a, b) =>
-    (b.media.releaseDate ?? '').localeCompare(a.media.releaseDate ?? '')
+    (a.media.releaseDate ?? '').localeCompare(b.media.releaseDate ?? '')
   )
+  // Everyone who voiced or played the character, once each, with the work
+  // they first did it in.
+  const cast = new Map<number, { person: Person; language: string | null; firstYear: string; works: number }>()
+  for (const r of chronologicalRoles) {
+    for (const v of r.voices) {
+      const seen = cast.get(v.person.id)
+      if (seen) seen.works++
+      else cast.set(v.person.id, { person: v.person, language: v.language, firstYear: chronologicalYear(r.media.releaseDate), works: 1 })
+    }
+  }
+  const liveAction = roles.length > 0 && roles.every((r) => LIVE_ACTION.has(r.media.mediaType))
 
   return (
-    <EditorialDetailFrame width="reading">
+    <EditorialDetailFrame width="wide">
       <BackButton />
       <RelationshipTrail>
         <span>Characters</span>
         <span className="text-gray-600" aria-hidden="true">›</span>
         <span>{character.name}</span>
-        <span className="ml-auto tabular-nums text-gray-500">{roles.length} appearances</span>
       </RelationshipTrail>
       <EntityHeader
-        rounded="rounded-full"
         longTextLabel="Description"
         initial={{
           name: character.name,
@@ -51,6 +66,10 @@ export default function CharacterDetailPage() {
           longText: character.description ?? '',
           imgPath: character.imagePath
         }}
+        facts={[
+          ...(character.gender ? [{ label: 'Gender', value: character.gender }] : []),
+          { label: 'In your library', value: `${roles.length} ${roles.length === 1 ? 'appearance' : 'appearances'}` }
+        ]}
         onSave={async (f) => {
           await api.characters.upsert({
             id: characterId,
@@ -59,7 +78,7 @@ export default function CharacterDetailPage() {
             description: f.longText || null,
             imagePath: f.imgPath
           })
-          qc.invalidateQueries({ queryKey: qk.characters.all })
+          await qc.invalidateQueries({ queryKey: qk.characters.all })
         }}
         imageOverride={{
           kind: 'character',
@@ -70,56 +89,58 @@ export default function CharacterDetailPage() {
           await api.characters.remove(characterId)
           qc.invalidateQueries({ queryKey: qk.characters.all })
           // No /characters index exists — return to wherever the user came from.
-          navigate(-1)
+          leaveDeleted((path) => path === `/characters/${characterId}`, '/')
         }}
         actions={<AddToListMenu kind="character" entityId={characterId} />}
-      />
+      >
+        {cast.size > 0 && (
+          <Section title={liveAction ? 'Played by' : 'Voiced by'}>
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {[...cast.values()].map(({ person, language, firstYear, works }) => (
+                <Link
+                  key={person.id}
+                  to={`/people/${person.id}`}
+                  className="card flex items-center gap-3 p-2.5 transition-colors hover:border-accent/60"
+                >
+                  <CoverImage path={person.photoPath} alt="" rounded="rounded-full" className="h-14 w-14 shrink-0" />
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm text-white">{person.name}</span>
+                    <span className="block truncate text-xs text-gray-400">
+                      {[language, firstYear !== 'Undated' ? `from ${firstYear}` : null, works > 1 ? `${works} works` : null].filter(Boolean).join(' · ')}
+                    </span>
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </Section>
+        )}
 
-      <Section title={`Appears in · ${roles.length}`}>
-        {roles.length === 0 ? (
-          <p className="text-sm text-gray-400">
-            No appearances yet. Add this character to a title&apos;s cast.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {chronologicalRoles.map((r) => (
-              <div
-                key={r.media.id}
-                className="flex items-center gap-3 bg-base-800 rounded-md px-3 py-2"
-              >
-                <Link to={pathForMedia(r.media)} className="shrink-0">
+        <Section title={`Appears in · ${roles.length}`} subtitle="Oldest first">
+          {roles.length === 0 ? (
+            <p className="text-sm text-gray-400">
+              No appearances yet. Add this character to a title&apos;s cast.
+            </p>
+          ) : (
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(130px,1fr))] gap-4">
+              {chronologicalRoles.map((r) => (
+                <Link key={r.media.id} to={pathForMedia(r.media)} className="group block min-w-0">
                   <CoverImage
                     path={r.media.coverPath}
-                    alt={r.media.title}
-                    rounded="rounded"
-                    className="w-10 h-14"
+                    alt=""
+                    thumbWidth={240}
+                    rounded="rounded-lg"
+                    className="aspect-[2/3] w-full transition-transform group-hover:scale-[1.03]"
                   />
+                  <p className="mt-1.5 line-clamp-2 text-sm text-white group-hover:text-accent">{r.media.title}</p>
+                  <p className="truncate text-xs text-gray-400">
+                    {[chronologicalYear(r.media.releaseDate), r.media.status].filter(Boolean).join(' · ')}
+                  </p>
                 </Link>
-                <div className="text-sm flex-1 min-w-0">
-                  <Link to={pathForMedia(r.media)} className="font-medium hover:text-accent">
-                    {r.media.title}
-                  </Link>
-                  <div className="text-gray-500">
-                    {r.media.mediaType === 'movie' ? 'played by' : 'voiced by'}{' '}
-                    {r.voices.map((v, i) => (
-                      <span key={v.creditId}>
-                        {i > 0 && ', '}
-                        <Link to={`/people/${v.person.id}`} className="hover:text-accent">
-                          {v.person.name}
-                        </Link>
-                        {v.language && ` · ${v.language}`}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-                <span className="text-xs tabular-nums text-gray-500">
-                  {chronologicalYear(r.media.releaseDate)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </Section>
+              ))}
+            </div>
+          )}
+        </Section>
+      </EntityHeader>
     </EditorialDetailFrame>
   )
 }

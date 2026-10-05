@@ -5,7 +5,7 @@ import { toastError } from '../lib/toast'
 import { useGameSession, fmtDurationSec } from '../lib/useGameSession'
 
 // THE launch control for games/VNs (cfg.hasGameLaunch). It lives in the detail
-// page's action column so a linked game is one click from anywhere on the page,
+// page's action row so a linked game is one click from anywhere on the page,
 // rather than only from the Playtime tab — GameLaunchSection deliberately no
 // longer has a Play button of its own, so the two can never drift.
 //
@@ -41,7 +41,7 @@ export default function GameLaunchButton({
   })
 
   // Nothing to launch: the section on the Playtime tab is where you link one,
-  // and an empty slot in the action column would just be a dead button.
+  // and an empty slot in the action row would just be a dead button.
   if (!ov?.exePath) return null
 
   // This title's session vs some other title's — both block Play, different copy.

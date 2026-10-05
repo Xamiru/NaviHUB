@@ -1015,6 +1015,14 @@ function FoldersSettings({ data, onSave }: { data?: Record<string, string>; onSa
         description="The root folder your books (EPUBs) live in. Set automatically the first time you link a book's folder from a book page; volume paths are stored relative to this root, so if you move the library, just update this to the new location."
       />
       <TextSetting
+        settingKey="video.dir"
+        data={data}
+        onSave={onSave}
+        title="Video library folder"
+        placeholder="/home/you/Videos"
+        description="The root folder your anime, movie and TV episodes live in. Set automatically the first time you attach a folder from a title page; file paths are stored relative to this root, so if you move the library, just update this and rescan."
+      />
+      <TextSetting
         settingKey="wrestling.dir"
         data={data}
         onSave={onSave}

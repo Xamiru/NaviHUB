@@ -117,7 +117,12 @@ describe('tierListRepo', () => {
     const all = tierListRepo.list()
     expect(all.find((l) => l.id === t1)!.itemCount).toBe(2)
     expect(all.find((l) => l.id === empty)!.itemCount).toBe(0)
-    expect(all.find((l) => l.id === t1)!.previewImages[0]).toBe('media/cover.png')
+    // The miniature board: the first three tiers in order, each with its covers.
+    const rows = all.find((l) => l.id === t1)!.previewRows
+    expect(rows.map((r) => r.label)).toEqual(board.rows.slice(0, 3).map((g) => g.row.label))
+    expect(rows[0]).toMatchObject({ color: board.rows[0].row.color, images: ['media/cover.png'] })
+    expect(rows[1].images).toEqual([])
+    expect(all.find((l) => l.id === empty)!.previewRows).toHaveLength(3)
   })
 
   it('items pointing at a deleted entity vanish from get()', () => {

@@ -625,6 +625,9 @@ export default function MangaReaderPage() {
     return nat && zoom !== 1 ? { width: nat.w * zoom } : {}
   }
 
+  // Right-to-left paging mirrors the whole bottom bar with the slider, so the
+  // current page number and the hairline start on the right like the thumb.
+  const rtlBar = direction === 'rtl' && mode !== 'vertical'
   const barCls = `absolute left-0 right-0 z-20 bg-base-900/90 backdrop-blur border-base-800 px-4 py-2 flex items-center gap-3 transition-opacity duration-300 motion-reduce:transition-none focus-within:opacity-100 focus-within:pointer-events-auto ${
     barsVisible ? 'opacity-100' : 'opacity-0 pointer-events-none'
   }`
@@ -677,7 +680,7 @@ export default function MangaReaderPage() {
           </span>
           <div className="absolute inset-x-0 bottom-0 h-px bg-base-800" aria-hidden="true">
             <div
-              className="h-full bg-accent transition-[width] motion-reduce:transition-none"
+              className={`h-full bg-accent transition-[width] motion-reduce:transition-none ${rtlBar ? 'ml-auto' : ''}`}
               style={{ width: `${((page + 1) / Math.max(1, pageCount)) * 100}%` }}
             />
           </div>
@@ -797,63 +800,71 @@ export default function MangaReaderPage() {
           onFocusCapture={pokeBar}
           onBlurCapture={pokeBar}
         >
-          <button
-            className="btn-ghost py-1 px-2 text-xs"
-            disabled={!prevChapter}
-            onClick={() => prevChapter && goToChapter(prevChapter)}
-            title="Previous chapter"
-            aria-label="Previous chapter"
-          >
-            <PrevIcon />
-          </button>
-          <button
-            className="max-w-48 shrink-0 truncate text-xs text-gray-400 hover:text-white"
-            title="Jump to chapter"
-            aria-label="Jump to chapter"
-            aria-expanded={chapterListOpen}
-            onClick={() => {
-              setChapterListOpen((v) => !v)
-              pokeBar()
-            }}
-          >
-            {chapter?.title ?? 'Chapter'} ▾
-          </button>
-          {chapterListOpen && (
-            <ChapterListPopover
-              chapters={chapters}
-              currentId={chapterId}
-              onPick={(c) => {
-                setChapterListOpen(false)
-                if (c.id !== chapterId) goToChapter(c)
-              }}
-              onClose={() => setChapterListOpen(false)}
+          <div className={`flex min-w-0 flex-1 items-center gap-3 ${rtlBar ? 'flex-row-reverse' : ''}`}>
+            {!adhoc && (
+              <button
+                className="btn-ghost py-1 px-2 text-xs"
+                disabled={!prevChapter}
+                onClick={() => prevChapter && goToChapter(prevChapter)}
+                title="Previous chapter"
+                aria-label="Previous chapter"
+              >
+                <PrevIcon />
+              </button>
+            )}
+            {!adhoc && (
+              <button
+                className="max-w-48 shrink-0 truncate text-xs text-gray-400 hover:text-white"
+                title="Jump to chapter"
+                aria-label="Jump to chapter"
+                aria-expanded={chapterListOpen}
+                onClick={() => {
+                  setChapterListOpen((v) => !v)
+                  pokeBar()
+                }}
+              >
+                {chapter?.title ?? 'Chapter'} ▾
+              </button>
+            )}
+            {chapterListOpen && (
+              <ChapterListPopover
+                chapters={chapters}
+                currentId={chapterId}
+                onPick={(c) => {
+                  setChapterListOpen(false)
+                  if (c.id !== chapterId) goToChapter(c)
+                }}
+                onClose={() => setChapterListOpen(false)}
+              />
+            )}
+            {/* The counter flanks the slider as well as sitting in the top bar:
+                while you drag, the top bar is the furthest thing from your eye. */}
+            <span className={`w-8 shrink-0 text-xs tabular-nums text-gray-400 ${rtlBar ? '' : 'text-right'}`}>
+              {page + 1}
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={Math.max(0, pageCount - 1)}
+              value={page}
+              onChange={(e) => gotoPage(Number(e.target.value))}
+              className="flex-1 accent-accent"
+              style={{ direction: rtlBar ? 'rtl' : 'ltr' }}
+              aria-label="Page"
             />
-          )}
-          {/* The counter flanks the slider as well as sitting in the top bar:
-              while you drag, the top bar is the furthest thing from your eye. */}
-          <span className="w-8 shrink-0 text-right text-xs tabular-nums text-gray-400">
-            {page + 1}
-          </span>
-          <input
-            type="range"
-            min={0}
-            max={Math.max(0, pageCount - 1)}
-            value={page}
-            onChange={(e) => gotoPage(Number(e.target.value))}
-            className="flex-1 accent-accent"
-            style={{ direction: direction === 'rtl' && mode !== 'vertical' ? 'rtl' : 'ltr' }}
-            aria-label="Page"
-          />
-          <span className="w-8 shrink-0 text-xs tabular-nums text-gray-500">{pageCount}</span>
-          <button
-            className="btn-ghost py-1 px-2 text-xs"
-            disabled={!nextChapter}
-            onClick={() => nextChapter && goToChapter(nextChapter)}
-            title="Next chapter"
-            aria-label="Next chapter"
-          >
-            <NextIcon />
-          </button>
+            <span className={`w-8 shrink-0 text-xs tabular-nums text-gray-500 ${rtlBar ? 'text-right' : ''}`}>{pageCount}</span>
+            {!adhoc && (
+              <button
+                className="btn-ghost py-1 px-2 text-xs"
+                disabled={!nextChapter}
+                onClick={() => nextChapter && goToChapter(nextChapter)}
+                title="Next chapter"
+                aria-label="Next chapter"
+              >
+                <NextIcon />
+              </button>
+            )}
+          </div>
           <div className="relative flex items-center gap-1 shrink-0 text-xs">
             <BarButton label="−" title="Zoom out (-)" onClick={() => zoomBy(1 / 1.25)} />
             <button

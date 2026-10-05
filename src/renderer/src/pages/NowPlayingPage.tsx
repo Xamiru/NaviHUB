@@ -1,6 +1,10 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { usePlayer } from '../lib/player'
+import { api } from '../lib/api'
+import { qk } from '../lib/queryKeys'
+import { playTracks } from '../lib/musicTracks'
 import { useIncrementalList } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { musicIdOf } from '../lib/playerTrackIds'
@@ -48,7 +52,8 @@ export default function NowPlayingPage() {
     setVolume,
     playAt,
     removeFromQueue,
-    moveInQueue
+    moveInQueue,
+    playQueue
   } = usePlayer()
 
   // Memoized (identity only changes on real queue changes, not timeupdate
@@ -58,18 +63,46 @@ export default function NowPlayingPage() {
   const likedIds = useLikedTrackIds()
   const { visible, sentinelRef, hasMore } = useIncrementalList(upNext)
   const [panel, setPanel] = usePersistedState<'queue' | 'lyrics'>('nowPlayingPanel', 'queue')
+  // With nothing playing, the last library track you heard is one click away.
+  const { data: lastPlayed } = useQuery({
+    queryKey: qk.music.recent(1),
+    queryFn: () => api.music.recent(1),
+    enabled: !track
+  })
 
   if (!track) {
+    const last = lastPlayed?.[0]
     return (
       <div className="p-6 max-w-3xl mx-auto">
         <BackButton />
-        <p className="mt-8 text-center text-gray-500">
-          Nothing is playing. Start something from the{' '}
-          <Link to="/music" className="text-accent hover:underline">
-            Music
-          </Link>{' '}
-          section.
-        </p>
+        {last ? (
+          <div className="card mt-8 flex items-center gap-5 p-5">
+            <CoverImage path={last.coverPath} alt={last.title} className="h-24 w-24 shrink-0" fallback="music" />
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-500">Nothing is playing · last played</p>
+              <p className="mt-1 truncate text-lg font-semibold text-white">{last.title}</p>
+              <p className="truncate text-sm text-gray-400">
+                {last.tagArtist ?? last.artistName} · {last.albumTitle}
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button className="btn-primary" onClick={() => playTracks({ playQueue }, [last])}>
+                  Play it again
+                </button>
+                <Link to="/music" className="btn-ghost">
+                  Open Music
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-8 text-center text-gray-500">
+            Nothing is playing. Start something from the{' '}
+            <Link to="/music" className="text-accent hover:underline">
+              Music
+            </Link>{' '}
+            section.
+          </p>
+        )}
       </div>
     )
   }

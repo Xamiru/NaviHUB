@@ -6,6 +6,7 @@
 // Radiant Dawn after Path of Radiance, Awakening millennia after Archanea)
 // ride in the notes. Nintendo-only, so matching is title/alias-only.
 // All art URLs curl-verified 2026-08-15.
+// Adaptations (2026-10-05): the 1996 OVA. Ids from AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -36,6 +37,17 @@ export const FIRE_EMBLEM: FranchiseCfg = {
     { id: 'fe-gaiden', title: 'Fire Emblem Gaiden', year: 1992, bgUrl: 'https://cdn.fireemblemwiki.org/5/59/FEG_Valentia_Map_02.png', note: 'Valentia — the odd one, remade as Echoes' },
     { id: 'fe-mystery', title: 'Fire Emblem: Mystery of the Emblem', year: 1994, bgUrl: 'https://cdn.fireemblemwiki.org/e/e6/FEMN_Battle.png', note: 'Super Famicom — Book 1 remakes the first, Book 2 continues it' },
     { id: 'fe-genealogy', title: 'Fire Emblem: Genealogy of the Holy War', year: 1996, bgUrl: 'https://cdn.fireemblemwiki.org/d/de/FESK_Tyrfing_03.png', note: 'Jugdral — two generations, the darkest script' },
+    {
+      id: 'fe-ova',
+      title: 'Fire Emblem: Monshou no Nazo',
+      mediaType: 'anime',
+      aliases: ['Fire Emblem'],
+      externalIds: [{ source: 'anilist', id: '2782' }],
+      year: 1996,
+      releaseDate: '1996-01-26',
+      adaptation: true,
+      note: 'Two-episode OVA of Marth’s early campaign'
+    },
     { id: 'fe-thracia', title: 'Fire Emblem: Thracia 776', year: 1999, bgUrl: 'https://cdn.fireemblemwiki.org/2/20/FE776_Thracia_776.jpg', note: 'Jugdral — set inside Genealogy; the hardest one' },
     { id: 'fe-binding-blade', title: 'Fire Emblem: The Binding Blade', aliases: ['Fire Emblem: Fuuin no Tsurugi'], year: 2002, bgUrl: 'https://cdn.fireemblemwiki.org/0/06/FEFT_box_art.jpg', note: 'GBA — Roy; sequel to Blazing Blade' },
     { id: 'fe-blazing-blade', title: 'Fire Emblem', aliases: ['Fire Emblem: The Blazing Blade', 'Fire Emblem: Rekka no Ken'], year: 2003, mc: 88, bgUrl: 'https://cdn.fireemblemwiki.org/9/93/FERK_cover_art.png', note: 'GBA — the first Western release; prequel to Binding Blade' },

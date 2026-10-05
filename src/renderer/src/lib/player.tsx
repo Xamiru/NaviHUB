@@ -55,7 +55,8 @@ interface PlayerControlsValue {
   repeat: RepeatMode
   // Plays a track; if it's already the current one, toggles play/pause instead.
   play: (track: Track) => void
-  playQueue: (tracks: Track[], startIndex: number, opts?: { shuffle?: boolean }) => void
+  // startTime: seconds into the first track (a lyrics search hit starts at its line)
+  playQueue: (tracks: Track[], startIndex: number, opts?: { shuffle?: boolean; startTime?: number }) => void
   // Adds tracks to the queue without interrupting playback: right after the
   // current track ({next: true}) or at the end. Starts playing when idle.
   enqueue: (tracks: Track[], opts?: { next?: boolean }) => void
@@ -161,7 +162,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
   const srcCacheRef = useRef(new Map<string, string>())
   const errorSkipsRef = useRef(0) // consecutive dead tracks, caps auto-skip
 
-  const startAt = useCallback(async (i: number) => {
+  const startAt = useCallback(async (i: number, startTime = 0) => {
     const a = audioRef.current
     const t = queueRef.current[i]
     if (!a || !t) return
@@ -201,12 +202,12 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
     srcCacheRef.current.set(t.id, src)
     errorSkipsRef.current = 0
     a.src = src
-    a.currentTime = 0
+    a.currentTime = Number.isFinite(startTime) ? startTime : 0
     void a.play().catch(() => {})
   }, [])
 
   const playQueue = useCallback(
-    (tracks: Track[], startIndex: number, opts?: { shuffle?: boolean }) => {
+    (tracks: Track[], startIndex: number, opts?: { shuffle?: boolean; startTime?: number }) => {
       if (tracks.length === 0) return
       let list = tracks
       let start = Math.min(Math.max(startIndex, 0), tracks.length - 1)
@@ -226,7 +227,7 @@ export function AudioPlayerProvider({ children }: { children: ReactNode }): Reac
       queueRef.current = list
       setQueue(list)
       errorSkipsRef.current = 0
-      void startAt(start)
+      void startAt(start, opts?.startTime)
     },
     [startAt]
   )

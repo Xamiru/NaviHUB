@@ -46,11 +46,11 @@ export function heroMap(): Record<string, string | null> {
 export async function ensureArt(franchiseId: string): Promise<{ started: boolean }> {
   const cfg = franchiseCfg(franchiseId)
   if (!cfg) return { started: false }
-  return ensureUrls(franchiseArtUrls(cfg), franchiseId, `Caching ${cfg.name} artwork`, `/games/franchises/${cfg.id}`)
+  return ensureUrls(franchiseArtUrls(cfg), franchiseId, `Caching ${cfg.name} artwork`, `/franchises/${cfg.id}`)
 }
 
 export async function ensureHeroes(): Promise<{ started: boolean }> {
-  return ensureUrls(Object.values(franchiseHeroUrls()), null, 'Caching franchise art', '/games/franchises')
+  return ensureUrls(Object.values(franchiseHeroUrls()), null, 'Caching franchise art', '/franchises')
 }
 
 // Single-flight: one batch at a time. Fire-and-forget — the handler returns

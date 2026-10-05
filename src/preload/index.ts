@@ -521,6 +521,7 @@ const api: NaviApi = {
     playbackQueue: (shuffle, scope) => ipcRenderer.invoke('music:playbackQueue', shuffle, scope),
     artistTracks: (artistId) => ipcRenderer.invoke('music:artistTracks', artistId),
     search: (query) => ipcRenderer.invoke('music:search', query),
+    searchLyrics: (query) => ipcRenderer.invoke('music:searchLyrics', query),
     stats: () => ipcRenderer.invoke('music:stats'),
     deleteTracks: (trackIds) => ipcRenderer.invoke('music:deleteTracks', trackIds),
     deleteAlbum: (albumId) => ipcRenderer.invoke('music:deleteAlbum', albumId),

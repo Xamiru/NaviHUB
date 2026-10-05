@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -14,6 +14,7 @@ import { pathForMedia, MEDIA_CONFIGS } from '../lib/mediaConfig'
 import { chronologicalYear, formatBirthday } from '../lib/archiveDisplay'
 import { buildCareerTimeline } from '../lib/personCareer'
 import { usePlayerControls } from '../lib/player'
+import { useLeaveDeleted, usePersistedState } from '../lib/navState'
 import { themeSongToTrack } from '../lib/themeTracks'
 import { PauseIcon, PlayIcon } from '../components/PlayerIcons'
 import type { PersonCredit, MediaType, ThemeSongEntry, ThemeSongFilter } from '@shared/types'
@@ -21,8 +22,9 @@ import type { PersonCredit, MediaType, ThemeSongEntry, ThemeSongFilter } from '@
 export default function PersonDetailPage() {
   const { id } = useParams()
   const personId = Number(id)
-  const navigate = useNavigate()
+  const leaveDeleted = useLeaveDeleted()
   const qc = useQueryClient()
+  const [typeFilter, setTypeFilter] = usePersistedState<MediaType | 'all'>('personCreditType', 'all')
   // Where the user came from: person lists and crew sections append ?role=…
   // (EntityListView, MediaDetailPage). Keep a selected crew role prominent
   // within its own list without moving that list above the picture-led roles.
@@ -108,6 +110,24 @@ export default function PersonDetailPage() {
 
   const chronology = buildCareerTimeline(credits)
   const birthday = formatBirthday(person.birthday)
+  const chronologyTypes = [...new Set(chronology.map(({ media }) => media.mediaType))]
+  // A remembered type this person no longer has credits in falls back to All.
+  const activeType = typeFilter !== 'all' && chronologyTypes.includes(typeFilter) ? typeFilter : 'all'
+  const shownChronology =
+    activeType === 'all' ? chronology : chronology.filter(({ media }) => media.mediaType === activeType)
+  const libraryBreakdown = chronologyTypes
+    .map((t) => `${chronology.filter(({ media }) => media.mediaType === t).length} ${typeLabel(t).toLowerCase()}`)
+    .join(' · ')
+
+  // Known for: the user's own highest-scored titles this person worked on, so
+  // the strip reflects their library rather than a global popularity rank.
+  const knownFor = [...new Map(credits.filter((c) => c.media.score != null).map((c) => [c.media.id, c])).values()]
+    .sort(
+      (a, b) =>
+        (b.media.score ?? 0) - (a.media.score ?? 0) ||
+        (b.media.releaseDate ?? '').localeCompare(a.media.releaseDate ?? '')
+    )
+    .slice(0, 6)
 
   const songsByMedia = new Map<number, ThemeSongEntry[]>()
   for (const s of songs) {
@@ -163,10 +183,8 @@ export default function PersonDetailPage() {
         <Link to="/people" className="hover:text-accent">People</Link>
         <span className="text-gray-600" aria-hidden="true">›</span>
         <span>{person.name}</span>
-        <span className="ml-auto tabular-nums text-gray-500">{credits.length} credits</span>
       </RelationshipTrail>
       <EntityHeader
-        rounded="rounded-full"
         longTextLabel="Biography"
         initial={{
           name: person.name,
@@ -174,6 +192,18 @@ export default function PersonDetailPage() {
           longText: person.bio ?? '',
           imgPath: person.photoPath
         }}
+        facts={[
+          ...(birthday ? [{ label: 'Born', value: birthday }] : []),
+          {
+            label: 'In your library',
+            value: (
+              <>
+                {credits.length} credits
+                {libraryBreakdown && <span className="block text-xs text-gray-400">{libraryBreakdown}</span>}
+              </>
+            )
+          }
+        ]}
         onSave={async (f) => {
           await api.people.upsert({
             id: personId,
@@ -182,7 +212,7 @@ export default function PersonDetailPage() {
             bio: f.longText || null,
             photoPath: f.imgPath
           })
-          qc.invalidateQueries({ queryKey: qk.people.all })
+          await qc.invalidateQueries({ queryKey: qk.people.all })
         }}
         imageOverride={{
           kind: 'person',
@@ -192,82 +222,111 @@ export default function PersonDetailPage() {
         onDelete={async () => {
           await api.people.remove(personId)
           qc.invalidateQueries({ queryKey: qk.people.all })
-          // Return to wherever the user came from (an actors/directors/artists
-          // list, or a title's cast) rather than a hardcoded '/people' — that
-          // route is specifically Voice Actors, wrong for a movie actor etc.
-          navigate(-1)
+          // Back to wherever the user came from (an actors/directors/artists
+          // list, or a title's cast) — '/people' is specifically Voice Actors.
+          leaveDeleted((path) => path === `/people/${personId}`, '/people')
         }}
-        extra={
-          birthday && (
-            <p className="text-sm text-gray-400">
-              Born <span className="text-gray-200">{birthday}</span>
-            </p>
-          )
-        }
         actions={<AddToListMenu kind="person" entityId={personId} />}
-      />
-
-      {totalActing === 0 && staffRoles.length === 0 && (
-        <Section title="Roles">
-          <p className="text-sm text-gray-400">
-            No roles yet. Add this person to a title&apos;s cast from its page.
-          </p>
-        </Section>
-      )}
-
-      {actingSection}
-
-      {chronology.length > 0 && (
-        <Section
-          title={`Career chronology · ${chronology.length}`}
-          subtitle="Oldest to newest across every medium"
-          className={crewSection ? undefined : 'mb-0'}
-        >
-          <div className="card overflow-hidden p-0">
-            {chronology.map(({ media, roleLabels }) => (
-              <div key={media.id} className="border-t border-line-subtle first:border-t-0">
-                <Link
-                  to={pathForMedia(media)}
-                  className="group/timeline grid min-w-0 grid-cols-[48px_52px_minmax(0,1fr)] items-center gap-3 px-3 py-3 transition-colors hover:bg-surface-raised sm:grid-cols-[64px_56px_minmax(0,1fr)_minmax(160px,0.65fr)] sm:gap-4 sm:px-4"
-                >
-                  <span className="text-xs font-medium tabular-nums text-ink-muted sm:text-sm">
-                    {chronologicalYear(media.releaseDate)}
-                  </span>
+      >
+        {knownFor.length > 0 && (
+          <Section title="Known for" subtitle="Your highest-scored titles">
+            <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
+              {knownFor.map((c) => (
+                <Link key={c.media.id} to={pathForMedia(c.media)} className="group block min-w-0">
                   <CoverImage
-                    path={media.coverPath}
+                    path={c.media.coverPath}
                     alt=""
-                    thumbWidth={112}
-                    className="aspect-[2/3] h-[72px] w-12 transition-transform group-hover/timeline:scale-[1.03] sm:h-20 sm:w-14"
+                    thumbWidth={240}
+                    rounded="rounded-lg"
+                    className="aspect-[2/3] w-full transition-transform group-hover:scale-[1.03]"
                   />
-                  <span className="min-w-0 self-center">
-                    <span className="block line-clamp-2 text-sm font-semibold text-ink-primary group-hover/timeline:text-accent">
-                      {media.title}
+                  <p className="mt-1.5 truncate text-sm text-white group-hover:text-accent">{c.media.title}</p>
+                  <p className={`truncate text-xs text-gray-400 ${c.character ? '' : 'capitalize'}`}>
+                    {c.character ? `as ${c.character.name}` : c.role.replace(/_/g, ' ')}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {totalActing === 0 && staffRoles.length === 0 && (
+          <Section title="Roles">
+            <p className="text-sm text-gray-400">
+              No roles yet. Add this person to a title&apos;s cast from its page.
+            </p>
+          </Section>
+        )}
+
+        {actingSection}
+
+        {chronology.length > 0 && (
+          <Section
+            title={`Career chronology · ${shownChronology.length}`}
+            subtitle="Oldest to newest"
+            className={crewSection ? undefined : 'mb-0'}
+            actions={
+              chronologyTypes.length > 1 && (
+                <div className="flex flex-wrap gap-1.5" role="group" aria-label="Filter by type">
+                  {(['all', ...chronologyTypes] as const).map((t) => (
+                    <button
+                      key={t}
+                      className={`pill !py-0.5 !text-xs ${activeType === t ? 'pill-active' : ''}`}
+                      aria-pressed={activeType === t}
+                      onClick={() => setTypeFilter(t)}
+                    >
+                      {t === 'all' ? 'All' : typeLabel(t)}
+                    </button>
+                  ))}
+                </div>
+              )
+            }
+          >
+            <div className="card overflow-hidden p-0">
+              {shownChronology.map(({ media, roleLabels }) => (
+                <div key={media.id} className="border-t border-line-subtle first:border-t-0">
+                  <Link
+                    to={pathForMedia(media)}
+                    className="group/timeline grid min-w-0 grid-cols-[48px_52px_minmax(0,1fr)] items-center gap-3 px-3 py-3 transition-colors hover:bg-surface-raised sm:grid-cols-[64px_56px_minmax(0,1fr)_minmax(160px,0.65fr)] sm:gap-4 sm:px-4"
+                  >
+                    <span className="text-xs font-medium tabular-nums text-ink-muted sm:text-sm">
+                      {chronologicalYear(media.releaseDate)}
                     </span>
-                    <span className="mt-1 block text-xs capitalize text-ink-muted">
-                      {typeLabel(media.mediaType)}
+                    <CoverImage
+                      path={media.coverPath}
+                      alt=""
+                      thumbWidth={112}
+                      className="aspect-[2/3] h-[72px] w-12 transition-transform group-hover/timeline:scale-[1.03] sm:h-20 sm:w-14"
+                    />
+                    <span className="min-w-0 self-center">
+                      <span className="block line-clamp-2 text-sm font-semibold text-ink-primary group-hover/timeline:text-accent">
+                        {media.title}
+                      </span>
+                      <span className="mt-1 block text-xs capitalize text-ink-muted">
+                        {typeLabel(media.mediaType)}
+                      </span>
+                      <span className="mt-1 block line-clamp-2 text-xs capitalize text-ink-secondary sm:hidden">
+                        {roleLabels.join(' · ')}
+                      </span>
                     </span>
-                    <span className="mt-1 block line-clamp-2 text-xs capitalize text-ink-secondary sm:hidden">
+                    <span className="hidden line-clamp-3 text-sm capitalize leading-5 text-ink-secondary sm:block">
                       {roleLabels.join(' · ')}
                     </span>
-                  </span>
-                  <span className="hidden line-clamp-3 text-sm capitalize leading-5 text-ink-secondary sm:block">
-                    {roleLabels.join(' · ')}
-                  </span>
-                </Link>
-                {songsByMedia.has(media.id) && (
-                  <ul className="space-y-1 pb-3 pl-[136px] pr-3 sm:pl-[168px] sm:pr-4">
-                    {songsByMedia.get(media.id)!.map((s) => (
-                      <ArtistSongRow key={s.themeId} song={s} onPlay={() => playSong(s)} />
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {crewSection}
+                  </Link>
+                  {songsByMedia.has(media.id) && (
+                    <ul className="space-y-1 pb-3 pl-[136px] pr-3 sm:pl-[168px] sm:pr-4">
+                      {songsByMedia.get(media.id)!.map((s) => (
+                        <ArtistSongRow key={s.themeId} song={s} onPlay={() => playSong(s)} />
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+        {crewSection}
+      </EntityHeader>
     </EditorialDetailFrame>
   )
 }

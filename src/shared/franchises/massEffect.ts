@@ -2,6 +2,8 @@
 // remaster (its own row — a separate purchase and Steam product), and
 // Andromeda. Story order: 1 -> 2 -> 3, Legendary re-tells 1-3, Andromeda is
 // 600 years later. All art URLs curl-verified 2026-08-15.
+// Adaptations (2026-10-05): the Paragon Lost anime film, outside the story
+// order. Ids from AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -31,6 +33,16 @@ export const MASS_EFFECT: FranchiseCfg = {
     { id: 'me-1', title: 'Mass Effect', aliases: ['Mass Effect (2007)'], externalIds: [{ source: 'steam', id: '17460' }], year: 2007, chrono: 1, mc: 89, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/17460/library_hero.jpg', note: 'Eden Prime — Saren and the Reapers' },
     { id: 'me-2', title: 'Mass Effect 2', externalIds: [{ source: 'steam', id: '24980' }], year: 2010, chrono: 2, mc: 94, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/24980/library_hero.jpg', note: 'The suicide mission' },
     { id: 'me-3', title: 'Mass Effect 3', externalIds: [{ source: 'steam', id: '1238020' }], year: 2012, chrono: 3, mc: 89, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1238020/library_hero.jpg', note: 'Earth falls, the galaxy answers' },
+    {
+      id: 'me-paragon-lost',
+      title: 'Mass Effect: Paragon Lost',
+      mediaType: 'anime',
+      externalIds: [{ source: 'anilist', id: '13239' }],
+      year: 2012,
+      releaseDate: '2012-11-29',
+      spinOff: true,
+      note: 'Anime introducing Mass Effect 3’s James Vega: his squad against the Collectors'
+    },
     { id: 'me-andromeda', title: 'Mass Effect: Andromeda', externalIds: [{ source: 'steam', id: '1238000' }], year: 2017, chrono: 5, mc: 72, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1238000/library_hero.jpg', note: 'Heleus, 600 years on — the Ryders' },
     { id: 'me-legendary', title: 'Mass Effect Legendary Edition', externalIds: [{ source: 'steam', id: '1328670' }], year: 2021, chrono: 4, mc: 86, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1328670/library_hero.jpg', note: 'Remaster of the trilogy in one package' }
   ],

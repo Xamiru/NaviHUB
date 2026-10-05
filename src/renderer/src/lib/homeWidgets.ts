@@ -11,8 +11,6 @@
 
 export type HomeWidgetKey =
   | 'today'
-  | 'resume'
-  | 'continue'
   | 'spotlight'
   | 'timeStats'
   | 'music'
@@ -37,8 +35,6 @@ export interface HomeWidgetDef {
 // never.
 export const HOME_WIDGETS: HomeWidgetDef[] = [
   { key: 'today', label: 'Today', hint: 'Checklist, Japanese, English and Play', span: 'full' },
-  { key: 'resume', label: 'Pick up where you left off', hint: 'Saved positions', span: 'full' },
-  { key: 'continue', label: 'Continue', hint: 'Everything in progress', span: 'full' },
   { key: 'spotlight', label: 'Spotlight', hint: 'One title from the backlog, daily', span: 'half' },
   { key: 'timeStats', label: 'Time spent', hint: 'Hours across the library', span: 'half' },
   { key: 'music', label: 'Music', hint: 'Recent listening', span: 'half' },
@@ -50,6 +46,12 @@ export const HOME_WIDGETS: HomeWidgetDef[] = [
   // existing layouts stays invisible for anyone who never uses the gallery.
   { key: 'pictures', label: 'Pictures', hint: 'A random favorite picture', span: 'full' }
 ]
+
+// Retired keys still sit in stored layouts, where parseHomeLayout drops them.
+// Never give one to a new widget: an old row would bring it back with the old
+// widget's visibility. 'resume' (Pick up where you left off) and 'continue'
+// (Continue) merged into Home's pinned Up next shelf on 2026-10-04.
+export const RETIRED_HOME_WIDGET_KEYS: readonly string[] = ['resume', 'continue']
 
 export const HOME_LAYOUT_SETTING = 'home.widgets'
 

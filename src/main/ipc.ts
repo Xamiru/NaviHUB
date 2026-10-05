@@ -931,6 +931,7 @@ export function registerIpc(): void {
   ipcMain.handle('music:playbackQueue', (_e, shuffle, scope) => musicRepo.playbackQueue(shuffle, scope))
   ipcMain.handle('music:artistTracks', (_e, artistId) => musicRepo.artistTracks(artistId))
   ipcMain.handle('music:search', (_e, query) => musicRepo.searchAll(query))
+  ipcMain.handle('music:searchLyrics', (_e, query) => musicRepo.searchLyrics(query))
   ipcMain.handle('music:stats', () => musicRepo.stats())
   // Destructive deletes (rows + files on disk).
   ipcMain.handle('music:deleteTracks', (_e, ids: number[]) => music.deleteTracks(ids))

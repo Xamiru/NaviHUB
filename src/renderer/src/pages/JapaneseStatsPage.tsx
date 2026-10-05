@@ -17,13 +17,11 @@ import { configFor } from '../lib/mediaConfig'
 import type { JpStatsDetail, SrsGrade } from '@shared/types'
 import { confirmDialog } from '../lib/confirm'
 import EditorialDetailFrame from '../components/EditorialDetailFrame'
+import { localDayString } from '../lib/archiveDisplay'
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const DAY_MS = 86_400_000
 
-const pad = (n: number): string => String(n).padStart(2, '0')
-const localDayString = (d: Date): string =>
-  `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 // 'YYYY-MM-DD' → short human label like "21 Jun"
 const shortDay = (day: string): string =>
   `${Number(day.slice(8, 10))} ${MONTHS[Number(day.slice(5, 7)) - 1]}`

@@ -5,8 +5,6 @@ import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
-import StatTile from '../components/StatTile'
-import HubCard from '../components/HubCard'
 import { Field } from '../components/Field'
 import { recommendLesson } from '@shared/programming/recommendation'
 import { PROG_COURSES, progLessonKey } from '@shared/programming/courses'
@@ -15,10 +13,11 @@ import { passedChecks } from '@shared/programming/attempts'
 import { SQL_EXERCISES } from '@shared/programming/sqlExercises'
 import { REGEX_GOLF_PUZZLES } from '@shared/programming/regexGolf'
 
-// Programming section dashboard: course cards with progress, the drills (quiz,
-// CLI typing, SQL sandbox, regex golf), and the tracking layer over them
-// (self-check passes, weak commands, solves). Content is code
-// (src/shared/programming/) — only progress rows are fetched.
+// Programming section dashboard: the focus course and its recommended lesson,
+// the drills (quiz, CLI typing, SQL sandbox, regex golf) each with its own
+// record, then the course archive. Reading ("marked read") and self-check
+// evidence stay separate everywhere. Content is code (src/shared/programming/)
+// — only progress rows are fetched.
 export default function ProgrammingHomePage() {
   const [activeCourse, setActiveCourse] = useState(() => {
     try { return localStorage.getItem('programming.activeCourse') ?? '' } catch { return '' }
@@ -68,11 +67,33 @@ export default function ProgrammingHomePage() {
   const recommendation = focusCourse ? recommendLesson(focusCourse, progress, attempts) : null
   const recommendedLesson = recommendation?.lesson
 
+  const pickFocus = (key: string): void => {
+    setActiveCourse(key)
+    try { localStorage.setItem('programming.activeCourse', key) } catch { /* Preference is optional. */ }
+  }
+  const courseSelect = (
+    <select className="input w-auto" value={focusCourse?.key ?? ''} onChange={(event) => pickFocus(event.target.value)}>
+      <option value="">Choose a course</option>
+      {PROG_COURSES.map((course) => <option key={course.key} value={course.key}>{course.title}</option>)}
+    </select>
+  )
+  const recIndex = focusCourse ? focusCourse.lessons.findIndex((lesson) => lesson.key === recommendedLesson?.key) : -1
+  const spine = focusCourse ? focusCourse.lessons.slice(Math.max(0, recIndex - 3), Math.max(8, recIndex + 5)) : []
+  const best = (h: typeof quizHistory): string =>
+    h?.best ? ` · best ${h.best.score}/${h.best.total}` : ''
+  const practice = [
+    { to: '/programming/quiz', title: 'Quiz', body: 'Course questions, which command does what, or code snippets.', record: `${quizHistory?.totalSessions ?? 0} rounds${best(quizHistory)}` },
+    { to: '/programming/practice', title: 'CLI typing drill', body: 'Read the task, type the command. Misses come back around.', record: `${cliHistory?.totalSessions ?? 0} rounds${best(cliHistory)}${weak.length ? ` · ${weak.length} weak` : ''}` },
+    { to: '/programming/sql', title: 'SQL sandbox', body: 'Real queries against a small anime dataset, graded against the expected rows.', record: `${sqlSolved} / ${SQL_EXERCISES.length} solved` },
+    { to: '/programming/regex-golf', title: 'Regex golf', body: 'Match these, not those, in as few characters as you can.', record: `${regexSolved} / ${REGEX_GOLF_PUZZLES.length} solved` },
+    { to: '/programming/cheatsheets', title: 'Cheatsheets', body: 'Searchable command references.', record: `${CHEAT_SHEETS.reduce((n, sheet) => n + sheet.entries.length, 0)} commands · ${CHEAT_SHEETS.length} sheets` }
+  ]
+
   return (
     <div className="p-6 max-w-[1600px] mx-auto">
       <PageHeader
         title="Skill graph"
-        subtitle="Choose a course, repair missed concepts, and track reading separately from practical evidence."
+        subtitle={`${doneLessons} of ${totalLessons} lessons marked read · ${attemptedLessons ? `${passed} of ${attemptedLessons} attempted checks passed with full marks` : 'no self-checks yet'}`}
         actions={
           <>
             <Link to="/programming/cheatsheets" className="btn-ghost">
@@ -90,57 +111,15 @@ export default function ProgrammingHomePage() {
         }
       />
 
-      <Field label="Course to focus on" className="mb-6" description="Recommendations use your latest checks and unread lessons in this course. You can still explore any course.">
-        <select className="input" value={focusCourse?.key ?? ''} onChange={(event) => {
-          setActiveCourse(event.target.value)
-          try { localStorage.setItem('programming.activeCourse', event.target.value) } catch { /* Preference is optional. */ }
-        }}>
-          <option value="">Choose a course</option>
-          {PROG_COURSES.map((course) => <option key={course.key} value={course.key}>{course.title}</option>)}
-        </select>
-      </Field>
-
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 mb-6">
-        <StatTile
-          label="Lessons read"
-          value={`${doneLessons} / ${totalLessons}`}
-          accent={doneLessons > 0}
-        />
-        <StatTile
-          label="Checks passed"
-          value={`${passed} / ${attemptedLessons}`}
-          sub="full marks / attempted"
-        />
-        <StatTile
-          label="Quiz rounds"
-          value={quizHistory?.totalSessions ?? 0}
-          sub={
-            quizHistory?.best ? `best ${quizHistory.best.score}/${quizHistory.best.total}` : undefined
-          }
-        />
-        <StatTile
-          label="CLI practice rounds"
-          value={cliHistory?.totalSessions ?? 0}
-          sub={cliHistory?.best ? `best ${cliHistory.best.score}/${cliHistory.best.total}` : undefined}
-        />
-        <StatTile
-          label="SQL exercises"
-          value={`${sqlSolved} / ${SQL_EXERCISES.length}`}
-          sub="solved"
-          accent={sqlSolved > 0}
-        />
-        <StatTile
-          label="Regex golf"
-          value={`${regexSolved} / ${REGEX_GOLF_PUZZLES.length}`}
-          sub="solved"
-          accent={regexSolved > 0}
-        />
-      </div>
-
-      {focusCourse && (
+      {focusCourse ? (
         <Section
           title="Skill graph"
           subtitle={`${doneByCourse.get(focusCourse.key) ?? 0} of ${focusCourse.lessons.length} lessons marked read`}
+          actions={
+            <Field label="Course to focus on" hiddenLabel className="contents">
+              {courseSelect}
+            </Field>
+          }
         >
           <div className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(280px,0.7fr)]">
             <div className="card p-6">
@@ -155,31 +134,40 @@ export default function ProgrammingHomePage() {
                   Open course
                 </Link>
               </div>
-              <div className="mt-7 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {focusCourse.lessons.slice(Math.max(0, focusCourse.lessons.findIndex((lesson) => lesson.key === recommendedLesson?.key) - 3), Math.max(8, focusCourse.lessons.findIndex((lesson) => lesson.key === recommendedLesson?.key) + 5)).map((lesson) => {
-                  const key = progLessonKey(focusCourse.key, lesson.key)
-                  const complete = done.has(key)
+              {/* The lesson spine around the recommendation: a line of nodes,
+                  read ones filled, the recommended one ringed. */}
+              <ol className="relative mt-6 space-y-1 before:absolute before:bottom-3 before:left-[11px] before:top-3 before:w-px before:bg-base-600">
+                {spine.map((lesson) => {
+                  const complete = done.has(progLessonKey(focusCourse.key, lesson.key))
                   const current = lesson.key === recommendedLesson?.key
                   return (
-                    <Link
-                      key={lesson.key}
-                      to={`/programming/course/${focusCourse.key}/${lesson.key}`}
-                      className={`min-h-28 rounded-lg border p-4 transition-colors hover:border-accent ${
-                        current
-                          ? 'border-accent/60 bg-accent/10'
-                          : complete
-                            ? 'border-accent/25 bg-base-700/50'
-                            : 'border-base-700'
-                      }`}
-                    >
-                      <p className={`text-[10px] font-semibold uppercase tracking-wider ${current ? 'text-accent' : 'text-gray-500'}`}>
-                        {current ? 'Recommended' : complete ? 'Read' : 'Available'}
-                      </p>
-                      <p className="mt-2 text-sm font-medium">{lesson.title}</p>
-                    </Link>
+                    <li key={lesson.key} className="relative">
+                      <Link
+                        to={`/programming/course/${focusCourse.key}/${lesson.key}`}
+                        aria-current={current ? 'step' : undefined}
+                        className={`group flex items-center gap-4 rounded-md py-2 pr-3 ${current ? 'bg-accent/10' : 'hover:bg-base-700/50'}`}
+                      >
+                        <span
+                          className={`relative z-10 ml-1.5 h-3 w-3 shrink-0 rounded-full ${
+                            current
+                              ? 'bg-accent ring-4 ring-accent/25'
+                              : complete
+                                ? 'bg-accent/70'
+                                : 'border border-base-500 bg-base-800'
+                          }`}
+                          aria-hidden="true"
+                        />
+                        <span className={`min-w-0 flex-1 truncate text-sm ${current ? 'text-white' : 'text-gray-300'} group-hover:text-accent`}>
+                          {lesson.title}
+                        </span>
+                        <span className={`shrink-0 text-xs ${current ? 'text-accent' : 'text-gray-500'}`}>
+                          {current ? 'Recommended' : complete ? 'Read' : 'Available'}
+                        </span>
+                      </Link>
+                    </li>
                   )
                 })}
-              </div>
+              </ol>
             </div>
             <aside className="space-y-4">
               <div className="card-glow p-6">
@@ -206,37 +194,31 @@ export default function ProgrammingHomePage() {
             </aside>
           </div>
         </Section>
+      ) : (
+        <section className="card-glow mb-8 p-6" aria-label="Pick a focus">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-accent">Pick a focus</p>
+          <p className="mt-2 max-w-[60ch] text-sm leading-relaxed text-gray-300">
+            Choosing a course turns this page into your next lesson, from your latest checks and unread lessons. Every
+            course stays open to explore.
+          </p>
+          <Field label="Course to focus on" className="mt-4 max-w-md">
+            {courseSelect}
+          </Field>
+        </section>
       )}
 
       {/* The section owns its own drills — the Quiz hub is library-only */}
       <Section title="Practice">
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-3">
-          <HubCard
-            to="/programming/quiz"
-            title="Quiz"
-            body="Multiple choice over the courses' questions, which command does what, or code snippets."
-          />
-          <HubCard
-            to="/programming/practice"
-            title="CLI typing drill"
-            body="Read the task, type the command. Misses come back around."
-            badge={weak.length > 0 ? `${weak.length} weak` : undefined}
-          />
-          <HubCard
-            to="/programming/sql"
-            title="SQL sandbox"
-            body="Real queries against a small anime dataset, graded against the expected rows."
-          />
-          <HubCard
-            to="/programming/regex-golf"
-            title="Regex golf"
-            body="Match these, not those — in as few characters as you can."
-          />
-          <HubCard
-            to="/programming/cheatsheets"
-            title="Cheatsheets"
-            body={`${CHEAT_SHEETS.reduce((n, s) => n + s.entries.length, 0)} commands across ${CHEAT_SHEETS.length} sheets, searchable.`}
-          />
+        <div className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
+          {practice.map((tool) => (
+            <Link key={tool.to} to={tool.to} className="group block border-b border-base-700/60 py-2.5">
+              <span className="flex items-baseline justify-between gap-3">
+                <span className="text-sm font-medium group-hover:text-accent">{tool.title}</span>
+                <span className="shrink-0 text-xs tabular-nums text-gray-400">{tool.record}</span>
+              </span>
+              <span className="mt-0.5 block text-xs text-gray-500">{tool.body}</span>
+            </Link>
+          ))}
         </div>
       </Section>
 
@@ -264,31 +246,24 @@ export default function ProgrammingHomePage() {
         </Section>
       )}
 
-      <Section title="Course archive">
-        <div className="grid gap-3 sm:grid-cols-2">
+      <Section title="Course archive" subtitle={`${PROG_COURSES.length} courses`}>
+        <div className="grid gap-x-8 sm:grid-cols-2 xl:grid-cols-3">
           {PROG_COURSES.map((c) => {
             const n = doneByCourse.get(c.key) ?? 0
             const pct = c.lessons.length > 0 ? Math.round((n / c.lessons.length) * 100) : 0
             return (
-              <HubCard
-                key={c.key}
-                to={`/programming/course/${c.key}`}
-                title={c.title}
-                body={c.description}
-              >
-                <div className="mt-3 flex items-center gap-3">
-                  <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-base-700">
-                    <div
-                      className="h-full rounded-full bg-accent"
-                      style={{ width: `${pct}%` }}
-                      aria-hidden="true"
-                    />
-                  </div>
-                  <span className="shrink-0 text-xs text-gray-500">
+              <Link key={c.key} to={`/programming/course/${c.key}`} className="group block border-b border-base-700/60 py-2.5">
+                <span className="flex items-baseline justify-between gap-3">
+                  <span className="truncate text-sm font-medium group-hover:text-accent">{c.title}</span>
+                  <span className="shrink-0 text-xs tabular-nums text-gray-500">
                     {n} / {c.lessons.length}
                   </span>
-                </div>
-              </HubCard>
+                </span>
+                <span className="mt-0.5 block truncate text-xs text-gray-500">{c.description}</span>
+                <span className="mt-1.5 block h-1 overflow-hidden rounded-full bg-base-700" aria-hidden="true">
+                  <span className="block h-full rounded-full bg-accent" style={{ width: `${pct}%` }} />
+                </span>
+              </Link>
             )
           })}
         </div>

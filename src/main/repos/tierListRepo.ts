@@ -103,8 +103,8 @@ export function list(kind?: ListKind | null): TierListSummary[] {
     countMap.set(c.list_id, c.n)
   }
 
-  // A few preview thumbnails per board — ranked items first (row order), then
-  // the pool. One windowed query per distinct kind, exactly like listRepo.
+  // Entities live in per-kind tables, so the tier covers below are read one
+  // windowed query per distinct kind.
   const idsByKind = new Map<ListKind, number[]>()
   for (const l of lists) {
     if (!KIND[l.kind]) continue
@@ -112,39 +112,47 @@ export function list(kind?: ListKind | null): TierListSummary[] {
     arr.push(l.id)
     idsByKind.set(l.kind, arr)
   }
-  const previewMap = new Map<number, (string | null)[]>()
+  // The first three tiers of each board with up to six covers each, in board
+  // order, for the index card's miniature board.
+  const rowsByList = new Map<number, { id: number; label: string; color: string; images: (string | null)[] }[]>()
+  const rowById = new Map<number, { images: (string | null)[] }>()
+  for (const r of db
+    .prepare(
+      `SELECT id, list_id, label, color FROM tier_row WHERE list_id IN (${idHoles})
+       ORDER BY list_id ASC, sort_order ASC, id ASC`
+    )
+    .all(...ids) as { id: number; list_id: number; label: string; color: string }[]) {
+    const arr = rowsByList.get(r.list_id) ?? []
+    if (arr.length >= 3) continue
+    const row = { id: r.id, label: r.label, color: r.color, images: [] as (string | null)[] }
+    arr.push(row)
+    rowsByList.set(r.list_id, arr)
+    rowById.set(r.id, row)
+  }
   for (const [k, kindIds] of idsByKind) {
     const meta = KIND[k]
-    const holes = kindIds.map(() => '?').join(', ')
-    const previews = db
+    const rowIds = kindIds.flatMap((id) => (rowsByList.get(id) ?? []).map((r) => r.id))
+    if (rowIds.length === 0) continue
+    for (const p of db
       .prepare(
-        `SELECT list_id, image FROM (
-           SELECT ti.list_id AS list_id, ${meta.imageCol} AS image,
-                  ROW_NUMBER() OVER (
-                    PARTITION BY ti.list_id
-                    ORDER BY CASE WHEN ti.row_id IS NULL THEN 1 ELSE 0 END ASC,
-                             tr.sort_order ASC,
-                             ti.sort_order ASC, ti.id ASC
-                  ) AS rn
+        `SELECT row_id, image FROM (
+           SELECT ti.row_id AS row_id, ${meta.imageCol} AS image,
+                  ROW_NUMBER() OVER (PARTITION BY ti.row_id ORDER BY ti.sort_order ASC, ti.id ASC) AS rn
            FROM tier_item ti
-           LEFT JOIN tier_row tr ON tr.id = ti.row_id
            JOIN ${meta.table} e ON e.id = ti.entity_id
-           WHERE ti.list_id IN (${holes})
-         ) WHERE rn <= 5
-         ORDER BY list_id ASC, rn ASC`
+           WHERE ti.row_id IN (${rowIds.map(() => '?').join(', ')})
+         ) WHERE rn <= 6
+         ORDER BY row_id ASC, rn ASC`
       )
-      .all(...kindIds) as { list_id: number; image: string | null }[]
-    for (const p of previews) {
-      const arr = previewMap.get(p.list_id) ?? []
-      arr.push(p.image ?? null)
-      previewMap.set(p.list_id, arr)
+      .all(...rowIds) as { row_id: number; image: string | null }[]) {
+      rowById.get(p.row_id)?.images.push(p.image ?? null)
     }
   }
 
   return lists.map((base) => ({
     ...base,
     itemCount: countMap.get(base.id) ?? 0,
-    previewImages: previewMap.get(base.id) ?? []
+    previewRows: (rowsByList.get(base.id) ?? []).map(({ label, color, images }) => ({ label, color, images }))
   }))
 }
 

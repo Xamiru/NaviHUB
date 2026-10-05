@@ -8,7 +8,7 @@ import { api } from '../lib/api'
 import { usePersistedState } from '../lib/navState'
 import { useStatuses, useDebouncedValue } from '../lib/hooks'
 import { qk } from '../lib/queryKeys'
-import { configFor, type MediaConfig } from '../lib/mediaConfig'
+import { configFor, isCompletedStatus, type MediaConfig } from '../lib/mediaConfig'
 import CoverImage from '../components/CoverImage'
 import MediaCard from '../components/MediaCard'
 import ImportDialog from '../components/ImportDialog'
@@ -18,8 +18,9 @@ import MediaFilterPanel, {
   toListFilter,
   type MediaFilters
 } from '../components/MediaFilterPanel'
-import { seasonLabel } from '@shared/season'
-import { loadListSort, saveListSort } from '../lib/listSortPrefs'
+import { seasonForItem, seasonLabel } from '@shared/season'
+import { loadListLayout, loadListSort, saveListLayout, saveListSort, type ListLayout } from '../lib/listSortPrefs'
+import { useLogProgress } from '../lib/logProgress'
 import type { MediaListFilter, MediaSort, MediaSummary } from '@shared/types'
 import { Field } from '../components/Field'
 
@@ -70,6 +71,8 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   const [filters, setFilters] = usePersistedState<MediaFilters>('filters', EMPTY_FILTERS)
   const [showFilters, setShowFilters] = usePersistedState('showFilters', false)
   const [contextId, setContextId] = useState<number | null>(null)
+  const [layout, setLayout] = useState<ListLayout>(() => loadListLayout(cfg.key))
+  const logOne = useLogProgress()
   // `?import=1` opens the dialog on arrival (the one-shot `?tab=` idiom), so
   // Home's Import chip lands on the importer instead of just this list.
   const [params] = useSearchParams()
@@ -254,6 +257,21 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
         {/* Both controls write the choice back to listSortPrefs: this library
             reopens on whatever you picked last, here and after a restart. */}
         <div className="flex items-center gap-2 ml-auto text-sm">
+          <div className="flex overflow-hidden rounded border border-base-600" role="group" aria-label="Layout">
+            {(['grid', 'list'] as const).map((l) => (
+              <button
+                key={l}
+                className={`px-3 py-1.5 text-xs capitalize ${layout === l ? 'bg-accent/15 text-accent' : 'text-gray-400 hover:text-white'}`}
+                aria-pressed={layout === l}
+                onClick={() => {
+                  setLayout(l)
+                  saveListLayout(cfg.key, l)
+                }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
           <label className="text-gray-500" htmlFor={`${cfg.key}-library-sort`}>
             Sort
           </label>
@@ -407,25 +425,36 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
               {matched} of {total} {cfg.plural.toLowerCase()} match
             </p>
           )}
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
-            <div className="grid grid-cols-[repeat(auto-fill,minmax(145px,1fr))] gap-4">
-              {items.map((m) => (
-                <div
-                  key={m.id}
-                  onMouseEnter={() => setContextId(m.id)}
-                  onFocusCapture={() => setContextId(m.id)}
-                  className={contextItem?.id === m.id ? 'rounded-lg ring-1 ring-accent/60' : ''}
-                >
-                  <MediaCard
-                    cfg={cfg}
-                    item={m}
-                    showFavorite
-                    achievements={achievementSummaries?.[m.id]}
-                  />
-                </div>
-              ))}
-            </div>
-            <ContextLens item={contextItem} cfg={cfg} />
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]">
+            {layout === 'list' ? (
+              <ListTable
+                cfg={cfg}
+                items={items}
+                statuses={statuses}
+                activeId={contextItem?.id}
+                onActive={setContextId}
+                onLog={logOne}
+              />
+            ) : (
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(145px,1fr))] gap-4">
+                {items.map((m) => (
+                  <div
+                    key={m.id}
+                    onMouseEnter={() => setContextId(m.id)}
+                    onFocusCapture={() => setContextId(m.id)}
+                    className={contextItem?.id === m.id ? 'rounded-lg ring-1 ring-accent/60' : ''}
+                  >
+                    <MediaCard
+                      cfg={cfg}
+                      item={m}
+                      showFavorite
+                      achievements={achievementSummaries?.[m.id]}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+            <ContextLens item={contextItem} cfg={cfg} statuses={statuses} onLog={logOne} />
           </div>
           <div ref={sentinelRef} />
           {isError && (
@@ -452,7 +481,17 @@ export default function MediaListPage({ cfg }: { cfg: MediaConfig }) {
   )
 }
 
-function ContextLens({ item, cfg }: { item: MediaSummary; cfg: MediaConfig }) {
+function ContextLens({
+  item,
+  cfg,
+  statuses,
+  onLog
+}: {
+  item: MediaSummary
+  cfg: MediaConfig
+  statuses: string[]
+  onLog: (m: MediaSummary) => Promise<unknown>
+}) {
   const year = item.releaseDate?.slice(0, 4)
   return (
     <aside className="card sticky top-5 hidden overflow-hidden lg:block">
@@ -480,17 +519,19 @@ function ContextLens({ item, cfg }: { item: MediaSummary; cfg: MediaConfig }) {
         </h2>
         <div className="mt-3 flex flex-wrap gap-2">
           {item.status && <span className="chip">{item.status}</span>}
-          {item.score != null && <span className="chip">Score {item.score}</span>}
           {year && <span className="chip">{year}</span>}
         </div>
         <div className="mt-5 grid grid-cols-2 gap-3 border-y border-base-700 py-4">
           <div>
             <p className="text-[10px] uppercase tracking-wider text-gray-500">Progress</p>
-            <p className="mt-1 text-sm text-gray-200">{cfg.formatProgressStat(item)}</p>
+            <p className="mt-1 flex items-center gap-2 text-sm text-gray-200">
+              {cfg.formatProgressStat(item)}
+              <LogOneButton cfg={cfg} item={item} statuses={statuses} onLog={onLog} />
+            </p>
           </div>
           <div>
-            <p className="text-[10px] uppercase tracking-wider text-gray-500">Archive</p>
-            <p className="mt-1 text-sm text-gray-200">{cfg.singular}</p>
+            <p className="text-[10px] uppercase tracking-wider text-gray-500">Your score</p>
+            <p className="mt-1 text-sm text-gray-200">{item.score ?? '–'}</p>
           </div>
         </div>
         {item.synopsis && (
@@ -513,6 +554,116 @@ function ContextLens({ item, cfg }: { item: MediaSummary; cfg: MediaConfig }) {
         )}
       </div>
     </aside>
+  )
+}
+
+// +1 for a title still in progress. Finished titles show none here: starting a
+// new pass is a deliberate act that stays on the detail page.
+function LogOneButton({
+  cfg,
+  item,
+  statuses,
+  onLog
+}: {
+  cfg: MediaConfig
+  item: MediaSummary
+  statuses: string[]
+  onLog: (m: MediaSummary) => Promise<unknown>
+}) {
+  const [busy, setBusy] = useState(false)
+  const finished = isCompletedStatus(item.status, statuses) || (!!item.totalUnits && item.progress >= item.totalUnits)
+  if (!cfg.logUnitLabel || finished) return null
+  return (
+    <button
+      className="btn-ghost !px-2 !py-0.5 !text-xs"
+      disabled={busy}
+      aria-label={`Log one more ${cfg.logUnitLabel} of ${item.title}`}
+      title={`Log one more ${cfg.logUnitLabel}`}
+      onClick={async () => {
+        setBusy(true)
+        await onLog(item)
+        setBusy(false)
+      }}
+    >
+      +1
+    </button>
+  )
+}
+
+// Rows for tracking work: many titles' status, progress and score at once,
+// with +1 in place. Hover or focus picks the Context Lens title as the grid does.
+function ListTable({
+  cfg,
+  items,
+  statuses,
+  activeId,
+  onActive,
+  onLog
+}: {
+  cfg: MediaConfig
+  items: MediaSummary[]
+  statuses: string[]
+  activeId: number | undefined
+  onActive: (id: number) => void
+  onLog: (m: MediaSummary) => Promise<unknown>
+}) {
+  const th = 'px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-500'
+  return (
+    <div className="card min-w-0 overflow-x-auto">
+      <table className="w-full text-sm">
+        <caption className="sr-only">{cfg.plural}</caption>
+        <thead className="border-b border-base-700">
+          <tr>
+            <th className={`${th} w-14`}>
+              <span className="sr-only">Cover</span>
+            </th>
+            <th className={`${th} w-[45%]`}>Title</th>
+            <th className={th}>Status</th>
+            <th className={th}>{cfg.progressStatLabel}</th>
+            <th className={`${th} text-right`}>Score</th>
+            <th className={th}>{cfg.key === 'anime' ? 'Season' : 'Year'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((m) => {
+            const season = cfg.key === 'anime' ? seasonForItem(m) : null
+            const when = season ? `${seasonLabel(season.season)} ${season.year}` : (m.releaseDate?.slice(0, 4) ?? '—')
+            const to = `${cfg.basePath}/${m.id}`
+            return (
+              <tr
+                key={m.id}
+                className={`border-b border-base-700/60 last:border-b-0 ${activeId === m.id ? 'bg-accent/5' : ''}`}
+                onMouseEnter={() => onActive(m.id)}
+                onFocusCapture={() => onActive(m.id)}
+              >
+                <td className="px-3 py-2">
+                  <Link to={to} tabIndex={-1} aria-hidden="true">
+                    <CoverImage path={m.coverPath} alt="" thumbWidth={80} rounded="rounded" className="h-14 w-10" />
+                  </Link>
+                </td>
+                <td className="max-w-0 px-3 py-2">
+                  <Link to={to} className={`block truncate font-medium hover:text-accent ${activeId === m.id ? 'text-accent' : 'text-white'}`}>
+                    {m.title}
+                  </Link>
+                  {m.titleOriginal && <p className="truncate text-xs text-gray-500">{m.titleOriginal}</p>}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-gray-300">{m.status ?? '—'}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <span className="flex items-center gap-2 tabular-nums text-gray-300">
+                    {cfg.formatProgressStat(m)}
+                    <LogOneButton cfg={cfg} item={m} statuses={statuses} onLog={onLog} />
+                  </span>
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-right tabular-nums">
+                  {m.score != null ? <span className="text-signal-caution">★ {m.score}</span> : <span className="text-gray-500">–</span>}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 text-xs text-gray-400">{when}</td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
   )
 }
 

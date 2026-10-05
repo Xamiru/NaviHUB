@@ -3,6 +3,7 @@ import { getSqlite } from './db/connection'
 import { absoluteMediaPath } from './files'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from './http'
 import { logWarn } from './logBus'
+import { writeLyricsIndex } from './musicLyricsIndex'
 import { stripAlbumYearPrefix } from './musicSpotifyMatch'
 import * as tasks from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
@@ -190,14 +191,17 @@ export async function fetchLyrics(
       result = hit ? lyricsFromLrclib(hit) : { state: 'missing', synced: null, plain: null, source: 'lrclib' }
     }
   }
-  getSqlite()
-    .prepare(
+  const stored = result
+  const db = getSqlite()
+  db.transaction(() => {
+    db.prepare(
       `INSERT INTO music_track_lyrics (track_id, state, synced, plain, source, fetched_at)
        VALUES (?, ?, ?, ?, ?, datetime('now'))
        ON CONFLICT(track_id) DO UPDATE SET state = excluded.state, synced = excluded.synced,
          plain = excluded.plain, source = excluded.source, fetched_at = excluded.fetched_at`
-    )
-    .run(trackId, result.state, result.synced, result.plain, result.source)
+    ).run(trackId, stored.state, stored.synced, stored.plain, stored.source)
+    writeLyricsIndex(db, trackId, stored.synced, stored.plain)
+  })()
   return getLyrics(trackId)
 }
 

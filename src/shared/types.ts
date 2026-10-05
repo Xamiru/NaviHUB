@@ -209,6 +209,7 @@ export interface HomeLibraryOverview {
   wall: MediaSummary[]
   recent: MediaSummary[]
   continuing: MediaSummary[]
+  planned: MediaSummary[]
   favorites: MediaSummary[]
   spotlight: MediaSummary[]
   spotlightFromBacklog: boolean
@@ -216,6 +217,7 @@ export interface HomeLibraryOverview {
     titles: number
     inProgress: number
     completed: number
+    planned: number
     favorites: number
     avgScore: string | null
   }
@@ -340,7 +342,9 @@ export interface TierBoard extends TierList {
 
 export interface TierListSummary extends TierList {
   itemCount: number // includes pool items
-  previewImages: (string | null)[] // ranked items first, then the pool
+  // The board's first three tiers, each with its first few covers, so the
+  // index card can show the board itself.
+  previewRows: { label: string; color: string; images: (string | null)[] }[]
 }
 
 export interface TierListInput {
@@ -3329,6 +3333,14 @@ export interface MusicSearchResults {
   artists: MusicArtist[]
   albums: MusicAlbumSummary[]
   tracks: MusicTrack[]
+}
+
+/** A library track whose stored lyrics contain the searched phrase. */
+export interface MusicLyricMatch {
+  track: MusicTrack
+  line: string // matched line(s) as written, joined with " / " when the phrase crosses lines
+  time: number | null // seconds; synced lyrics only
+  count: number // occurrences in the song
 }
 
 export interface MusicLibraryStats {

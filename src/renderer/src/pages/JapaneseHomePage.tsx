@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -9,7 +9,10 @@ import { jpDailyPacing } from '@shared/japanese/dailyPlan'
 import { loadJpDailyTarget } from '../lib/japanesePrefs'
 import PageHeader from '../components/PageHeader'
 import Section from '../components/Section'
-import StatTile from '../components/StatTile'
+import { StatInline } from '../components/StatTile'
+import ActionMenu from '../components/ActionMenu'
+import BarChart, { type Bar } from '../components/BarChart'
+import { localDayString } from '../lib/archiveDisplay'
 import EmptyState from '../components/EmptyState'
 import PageStatus from '../components/PageStatus'
 import Tabs, { TabPanel } from '../components/Tabs'
@@ -72,6 +75,7 @@ const TOOL_GROUPS: Record<ToolGroup, { title: string; body: string; tools: ToolL
 }
 
 export default function JapaneseHomePage() {
+  const navigate = useNavigate()
   const [coreDeck, setCoreDeck] = useState(false)
   const [toolGroup, setToolGroup] = useState<ToolGroup>('practice')
   const [dailyTarget] = useState(loadJpDailyTarget)
@@ -134,27 +138,20 @@ export default function JapaneseHomePage() {
         title="Knowledge map"
         subtitle="Follow the tutor’s balanced hour, then use the map and offline toolbox when you need a specific repair."
         actions={<>
-          <Link to="/japanese/guide" className="btn-ghost">Guide</Link>
           <Link to="/japanese/stats" className="btn-ghost">Stats</Link>
-          {hasCourses && <Link to="/japanese/courses/new" className="btn-ghost">New course</Link>}
-          {roadmap?.nextLesson && (
-            <Link to={`/japanese/lessons/${roadmap.nextLesson.id}`} className="btn-ghost">
-              Continue lesson
-            </Link>
-          )}
+          <ActionMenu
+            items={[
+              { label: 'Guide', onSelect: () => navigate('/japanese/guide') },
+              ...(hasCourses ? [{ label: 'New course', onSelect: () => navigate('/japanese/courses/new') }] : [])
+            ]}
+          />
           <Link to="/japanese/tutor" className="btn-primary">Open tutor plan</Link>
         </>}
       />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-6">
-        <StatTile label="Due now" value={due} accent={due > 0} />
-        <StatTile label="Unseen backlog" value={unseen} accent={unseen > 0} />
-        <StatTile label="New today" value={`${daily.introducedToday} / ${daily.dailyTarget}`} />
-        <StatTile label="Reviews today" value={stats?.reviewsToday ?? 0} />
-      </div>
-
+      <div className="mb-8 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
       {hasCourses ? (
-        <Section title="Today" subtitle="A balanced hour: recall, hear, then read.">
+        <Section title="Today" subtitle="A balanced hour: recall, hear, then read." className="min-w-0">
           <div className="card p-5">
             <div className="grid gap-3 md:grid-cols-3">
               <DailyAction eyebrow="Recall" to="/japanese/review"
@@ -182,10 +179,17 @@ export default function JapaneseHomePage() {
           </div>
         </Section>
       ) : (
-        <EmptyState className="card mb-8 p-12 text-center" title="No courses yet"
+        <EmptyState className="card p-12 text-center" title="No courses yet"
           body="A course groups grammar lessons and vocabulary decks. Create one."
           action={<Link to="/japanese/courses/new" className="btn-primary">Create a course</Link>} />
       )}
+      <ReviewLoad
+        due={due}
+        unseen={unseen}
+        newToday={`${daily.introducedToday} / ${daily.dailyTarget}`}
+        reviewsToday={stats?.reviewsToday ?? 0}
+      />
+      </div>
 
       {roadmap && roadmap.steps.length > 0 && (
         <Section
@@ -195,47 +199,49 @@ export default function JapaneseHomePage() {
             : 'Progress moves from left to right; every course remains open.'}
         >
           <div className="card p-5">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <ol className="relative flex flex-col gap-5 sm:flex-row sm:gap-3">
+              {/* The path line runs between the first and last node centres. */}
+              <span
+                className="absolute top-5 hidden h-px bg-base-600 sm:block"
+                style={{ left: `${50 / visibleCourses.length}%`, right: `${50 / visibleCourses.length}%` }}
+                aria-hidden="true"
+              />
               {visibleCourses.map((course) => {
                 const current = course.id === roadmap.frontierCourseId
                 const complete = course.lessonCount > 0 && course.learnedLessonCount >= course.lessonCount
-                const pct = course.lessonCount
-                  ? Math.round((course.learnedLessonCount / course.lessonCount) * 100)
-                  : 0
                 return (
-                  <Link
-                    key={course.id}
-                    to={`/japanese/courses/${course.id}`}
-                    aria-current={current ? 'step' : undefined}
-                    className={`rounded-lg border p-4 transition-colors hover:border-accent ${
-                      current
-                        ? 'border-accent/60 bg-accent/10'
-                        : complete
-                          ? 'border-accent/25 bg-base-700/50'
-                          : 'border-base-700'
-                    }`}
-                  >
-                    <p className={`text-[10px] font-semibold uppercase tracking-wider ${current ? 'text-accent' : 'text-gray-500'}`}>
-                      {current ? 'Current node' : complete ? 'Learned' : `Step ${course.difficulty}`}
-                    </p>
-                    <p className="mt-2 line-clamp-2 text-sm font-medium">{course.title}</p>
-                    <div
-                      className="mt-4 h-1 overflow-hidden rounded-full bg-base-700"
-                      role="progressbar"
-                      aria-label={`${course.title} lesson progress`}
-                      aria-valuemin={0}
-                      aria-valuemax={Math.max(1, course.lessonCount)}
-                      aria-valuenow={course.learnedLessonCount}
+                  <li key={course.id} className="relative min-w-0 sm:flex-1">
+                    <Link
+                      to={`/japanese/courses/${course.id}`}
+                      aria-current={current ? 'step' : undefined}
+                      className="group flex items-center gap-3 sm:flex-col sm:text-center"
                     >
-                      <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
-                    </div>
-                    <p className="mt-2 text-xs text-gray-500">
-                      {course.learnedLessonCount} / {course.lessonCount} lessons
-                    </p>
-                  </Link>
+                      <span
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
+                          current
+                            ? 'bg-accent text-[rgb(var(--ink-inverse))] ring-4 ring-accent/20'
+                            : complete
+                              ? 'border border-accent/60 bg-base-800 text-accent'
+                              : 'border border-base-600 bg-base-800 text-gray-400 group-hover:border-accent'
+                        }`}
+                        aria-hidden="true"
+                      >
+                        {complete ? '✓' : course.difficulty}
+                      </span>
+                      <span className="min-w-0">
+                        <span className={`block line-clamp-2 text-sm ${current ? 'text-white' : 'text-gray-300'} group-hover:text-accent`}>
+                          {course.title}
+                        </span>
+                        <span className="mt-0.5 block text-xs text-gray-500">
+                          {course.learnedLessonCount} / {course.lessonCount} lessons
+                          {current ? ' · current' : complete ? ' · learned' : ''}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
                 )
               })}
-            </div>
+            </ol>
             {roadmap.steps.length > visibleCourses.length && (
               <Link to="/japanese/roadmap" className="btn-ghost mt-4">
                 Open all {roadmap.steps.length} courses
@@ -264,12 +270,12 @@ export default function JapaneseHomePage() {
             <p className="text-sm font-semibold">{selected.title}</p>
             <p className="mt-1 text-xs text-gray-500">{selected.body}</p>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
             {selected.tools.map((tool) => tool.action === 'core' ? (
-              <button key={tool.title} className="rounded-lg border border-base-700 p-3 text-left hover:border-accent"
+              <button key={tool.title} className="group block border-b border-base-700/60 py-2.5 text-left"
                 onClick={() => setCoreDeck(true)}><ToolBody tool={tool} /></button>
             ) : (
-              <Link key={tool.title} to={tool.to!} className="rounded-lg border border-base-700 p-3 hover:border-accent">
+              <Link key={tool.title} to={tool.to!} className="group block border-b border-base-700/60 py-2.5">
                 <ToolBody tool={tool} />
               </Link>
             ))}
@@ -295,5 +301,62 @@ function DailyAction({ eyebrow, to, title, body, hot = false }: {
 }
 
 function ToolBody({ tool }: { tool: ToolLink }) {
-  return <><p className="text-sm font-medium">{tool.title}</p><p className="mt-1 text-xs text-gray-500">{tool.body}</p></>
+  return <><p className="text-sm font-medium group-hover:text-accent">{tool.title}</p><p className="mt-0.5 text-xs text-gray-500">{tool.body}</p></>
+}
+
+// The week ahead instead of a row of zero tiles: the same due forecast the
+// stats page charts (shared cache), with today's four counts beneath it.
+function ReviewLoad({
+  due,
+  unseen,
+  newToday,
+  reviewsToday
+}: {
+  due: number
+  unseen: number
+  newToday: string
+  reviewsToday: number
+}) {
+  const detail = useQuery({ queryKey: qk.japanese.statsDetail, queryFn: () => api.japanese.statsDetail() })
+  const byDay = new Map((detail.data?.dueForecast ?? []).map((d) => [d.day, d.due]))
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const bars: Bar[] = Array.from({ length: 7 }, (_, i) => {
+    const date = new Date(today)
+    date.setDate(today.getDate() + i)
+    const day = localDayString(date)
+    const value = byDay.get(day) ?? 0
+    return {
+      key: day,
+      label: i === 0 ? 'Today' : date.toLocaleDateString(undefined, { weekday: 'short' }),
+      value,
+      title: `${day} · ${value} due`
+    }
+  })
+  return (
+    <Section title="Review load" subtitle="Next 7 days" className="min-w-0">
+      <div className="card p-5">
+        {detail.isError ? (
+          <p className="text-sm text-gray-400">
+            Could not load the forecast.{' '}
+            <button className="text-signal-link hover:underline" onClick={() => void detail.refetch()}>
+              Retry forecast
+            </button>
+          </p>
+        ) : !detail.data ? (
+          <p className="text-sm text-gray-500">Loading the forecast…</p>
+        ) : bars.every((b) => b.value === 0) ? (
+          <p className="text-sm text-gray-400">No reviews scheduled this week.</p>
+        ) : (
+          <BarChart bars={bars} height={72} label="Reviews due over the next 7 days" />
+        )}
+        <div className="mt-4 grid grid-cols-2 gap-3 border-t border-base-700 pt-4">
+          <StatInline label="Due now" value={due} accent={due > 0} />
+          <StatInline label="Unseen backlog" value={unseen} accent={unseen > 0} />
+          <StatInline label="New today" value={newToday} />
+          <StatInline label="Reviews today" value={reviewsToday} />
+        </div>
+      </div>
+    </Section>
+  )
 }

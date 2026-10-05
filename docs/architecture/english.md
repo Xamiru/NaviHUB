@@ -17,6 +17,8 @@
 
 The writing mistake ledger links to a category's repair units. Mechanics rounds retain the exact missed item keys in the personal `learning.evidence.v1.english.mistakes` setting; the Home queue and summary link those items to repair while displaying the original prompt, answer and explanation. Rule suggestions are heuristic, labelled as suggestions, and can be changed. A later correct first response clears the item; repeated post-reveal answers in the same round cannot erase a miss. `?weak=1` retests the saved items without repeating within that round, and `?category=` seeds a focused round. Interrupted rounds that never reach End are not added to this queue.
 
+**Hub layout (2026-10-04).** `/english` leads with the Mistake ledger, which now renders before any evidence exists and explains how it fills (graded writing corrections and Mechanics misses) instead of disappearing, with the Rules to revisit queue under it. A side column shows one saved word a day from `english.deck()` (picked by the local date, shared `qk.english.deck` cache) and the four review counts as compact stats. The Study, Tests and Games tools are compact rows in three columns, with the due and leech counts on the Review and Deck rows. The header keeps its single action (Review N cards, else Start writing task).
+
 Shared `LearningPractice` tracks guided/assisted versus delayed evidence, reserves exposure before showing cold prompts and labels repeats honestly. `LearningProject` saves the learner's written work and checklist separately. All evidence uses the sanitized `learning.evidence.v1.` settings prefix. Existing provider-graded full writing tasks remain unchanged and still require the configured provider; the repair layer itself works offline.
 
 ## English dictionary

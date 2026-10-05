@@ -54,6 +54,14 @@ describe('renderer loading boundaries', () => {
     }
   })
 
+  it('loads the curated franchise catalog on demand outside the franchise pages', () => {
+    // Every title's detail page shows its franchise; the catalog is several
+    // hundred KB of curated data, so only a dynamic import may pull it in.
+    const detail = read('src/renderer/src/pages/MediaDetailPage.tsx')
+    expect(detail).not.toMatch(/^import (?!type )[^\n]*'@shared\/franchises'/m)
+    expect(detail).toContain("import('@shared/franchises')")
+  })
+
   it('does not poll prep-deck status while the coverage panel is idle', () => {
     const coverage = read('src/renderer/src/components/japanese/CoverageSection.tsx')
     expect(coverage).toContain('queryKey: qk.japanese.prepDeckStatus')

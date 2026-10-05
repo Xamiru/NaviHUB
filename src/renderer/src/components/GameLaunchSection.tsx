@@ -12,7 +12,7 @@ import type { MediaDetail, HltbTimes } from '@shared/types'
 // Launch-from-app + tracked playtime for games/VNs (cfg.hasGameLaunch), on the
 // Playtime tab beside the HLTB estimates: link a per-title executable, see the
 // tracked total. Launching itself is NOT here —
-// GameLaunchButton in the detail page's action column owns it, so Play is
+// GameLaunchButton in the detail page's action row owns it, so Play is
 // reachable from every tab and exists exactly once.
 
 export default function GameLaunchSection({ m }: { m: MediaDetail }) {

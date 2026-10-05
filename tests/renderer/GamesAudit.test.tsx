@@ -38,8 +38,8 @@ function renderRoute(path: string) {
     <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="/games/franchises" element={<FranchisesPage />} />
-          <Route path="/games/franchises/:id" element={<FranchisePage />} />
+          <Route path="/franchises" element={<FranchisesPage />} />
+          <Route path="/franchises/:id" element={<FranchisePage />} />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -52,7 +52,7 @@ describe('Games audit regressions', () => {
     settingsAll.mockResolvedValue({})
   })
 
-  it.each(['/games/franchises', '/games/franchises/metal-gear'])(
+  it.each(['/franchises', '/franchises/metal-gear'])(
     'shows a retryable library error on %s instead of zero ownership',
     async (path) => {
       listGames.mockRejectedValueOnce(new Error('database unavailable')).mockResolvedValue([])
@@ -60,7 +60,7 @@ describe('Games audit regressions', () => {
       renderRoute(path)
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
-        'Could not load games — database unavailable'
+        'Could not load your library — database unavailable'
       )
       expect(screen.queryByText(/Owned 0/)).not.toBeInTheDocument()
       await user.click(screen.getByRole('button', { name: 'Try again' }))
@@ -68,6 +68,16 @@ describe('Games audit regressions', () => {
       expect(listGames).toHaveBeenCalledWith({ mediaType: 'game' })
     }
   )
+
+  it('hides a franchise hero that fails to load instead of showing a broken image', async () => {
+    listGames.mockResolvedValue([])
+    const { container } = renderRoute('/franchises')
+    await waitFor(() => expect(screen.getAllByText(/Owned 0/).length).toBeGreaterThan(0))
+    const heroes = container.querySelectorAll('a[href^="/franchises/"] img')
+    expect(heroes.length).toBeGreaterThan(0)
+    fireEvent.error(heroes[0])
+    expect(container.querySelectorAll('a[href^="/franchises/"] img')).toHaveLength(heroes.length - 1)
+  })
 
   it('keeps the Goldberg instructions visible until generation finishes', async () => {
     let finish!: (value: { dir: string; achievements: number }) => void

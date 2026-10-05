@@ -1,4 +1,5 @@
 import { getSqlite } from '../db/connection'
+import { locateLyricMatch, normalizeLyricText } from '@shared/lyrics'
 import type {
   MusicAlbumDetail,
   MusicAlbumSummary,
@@ -8,6 +9,7 @@ import type {
   MusicArtist,
   MusicArtistDetail,
   MusicLibraryStats,
+  MusicLyricMatch,
   MusicPlaylistDetail,
   MusicPlaylistSummary,
   MusicPlaybackQueue,
@@ -364,6 +366,32 @@ export function searchAll(query: string): MusicSearchResults {
       .all(like) as Record<string, unknown>[]
   ).map(mapTrack)
   return { artists, albums, tracks }
+}
+
+// Lyrics search: the trigram index narrows candidates to tracks whose stored
+// lyrics contain the normalized phrase; the matched line, its time and the
+// occurrence count are then read from the stored lyrics themselves.
+export function searchLyrics(query: string): MusicLyricMatch[] {
+  const q = normalizeLyricText(query)
+  if ([...q].length < 3) return []
+  const rows = getSqlite()
+    .prepare(
+      `SELECT ${TRACK_COLS}, l.synced, l.plain
+       FROM music_lyrics_fts f
+       JOIN music_track t ON t.id = f.rowid
+       JOIN music_album al ON al.id = t.album_id
+       JOIN music_artist ar ON ar.id = t.artist_id
+       JOIN music_track_lyrics l ON l.track_id = t.id
+       WHERE music_lyrics_fts MATCH ? ORDER BY f.rank LIMIT 100`
+    )
+    .all(`"${q.replaceAll('"', '""')}"`) as Record<string, unknown>[]
+  return rows
+    .flatMap((r) => {
+      const at = locateLyricMatch((r.synced as string) ?? null, (r.plain as string) ?? null, q)
+      return at ? [{ track: mapTrack(r), ...at }] : []
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 30)
 }
 
 export function stats(): MusicLibraryStats {

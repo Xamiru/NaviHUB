@@ -1,38 +1,56 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
-import { useStatuses } from '../lib/hooks'
-import { GAME } from '../lib/mediaConfig'
+import { usePersistedState } from '../lib/navState'
+import { configFor } from '../lib/mediaConfig'
+import { useFranchiseLibrary } from '../lib/useFranchiseLibrary'
 import { mediaUrl } from '@shared/mediaUrl'
-import { FRANCHISES, matchLibrary, type FranchiseCfg } from '@shared/franchises'
-import type { MediaItem } from '@shared/types'
+import {
+  FRANCHISES,
+  FRANCHISE_MEDIA_TYPES,
+  franchiseMediaTypes,
+  matchLibrary,
+  type FranchiseCfg
+} from '@shared/franchises'
+import type { MediaType } from '@shared/types'
 import PageHeader from '../components/PageHeader'
 
+const SUBTITLE = 'Curated series pages across games, novels, anime, film and TV, mapped onto your library.'
+
 // The franchise index: one hero card per curated franchise with the user's
-// completion state. Everything derives from the bundled canon + the games
-// list — no queries beyond the one HomePage already holds, plus the hero
-// art cache map (remote URL until cached).
+// completion state. Everything derives from the bundled canon + the per-type
+// library lists HomePage-style pages already share, plus the hero art cache
+// map (remote URL until cached).
 export default function FranchisesPage() {
-  const { data: games = [], isLoading, isError, error, refetch: refetchGames } = useQuery({
-    // Same key + filter as HomePage's per-type list — one shared cache entry.
-    queryKey: qk.media.home('game'),
-    queryFn: () => api.media.list({ mediaType: 'game' })
-  })
-  const statuses = useStatuses(GAME)
-  const completedStatus = statuses[1]
-  const isFinished = (m: MediaItem): boolean =>
-    (m.status != null && m.status === completedStatus) ||
-    (!!m.totalUnits && m.progress >= m.totalUnits)
+  const { items, isLoading, error, refetch: refetchLibrary, isFinished } =
+    useFranchiseLibrary(FRANCHISE_MEDIA_TYPES)
+  const [typeFilter, setTypeFilter] = usePersistedState<MediaType | 'all'>('franchises.type', 'all')
+  const activeType =
+    typeFilter !== 'all' && FRANCHISE_MEDIA_TYPES.includes(typeFilter) ? typeFilter : 'all'
+  const shown =
+    activeType === 'all'
+      ? FRANCHISES
+      : FRANCHISES.filter((f) => franchiseMediaTypes(f).includes(activeType))
+  // One pass over the library for every card, not one per card render.
+  const progress = useMemo(() => {
+    const out = new Map<string, { owned: number; finished: number }>()
+    for (const f of FRANCHISES) {
+      const owned = [...matchLibrary(f.entries, items).values()]
+      out.set(f.id, { owned: owned.length, finished: owned.filter(isFinished).length })
+    }
+    return out
+  }, [items, isFinished])
 
   const { data: heroMap = {}, refetch } = useQuery({
     queryKey: qk.franchise.heroMap,
     queryFn: () => api.franchise.heroMap()
   })
   // Fire the (tiny) hero download once per mount; re-read the map when the
-  // batch settles. Five files — polling artStatus would be more machinery
-  // than the wait is worth, so a short delayed refetch does.
+  // batch settles. Cards show the remote URL until a cached path lands, so a
+  // short delayed refetch is enough — polling artStatus would be more
+  // machinery than the swap is worth.
   const fired = useRef(false)
   useEffect(() => {
     if (fired.current) return
@@ -42,18 +60,18 @@ export default function FranchisesPage() {
     })
   }, [refetch])
 
-  if (isLoading || isError) {
+  if (isLoading || error) {
     return (
       <div className="p-6">
-        <PageHeader title="Franchises" subtitle="Curated series pages — your library mapped onto each canon." />
+        <PageHeader title="Franchises" subtitle={SUBTITLE} />
         {isLoading ? (
-          <p className="text-sm text-gray-400" role="status">Loading games…</p>
+          <p className="text-sm text-gray-400" role="status">Loading your library…</p>
         ) : (
           <div className="card p-6" role="alert">
             <p className="text-sm text-red-300">
-              Could not load games{error instanceof Error ? ` — ${error.message}` : '.'}
+              Could not load your library{error instanceof Error ? ` — ${error.message}` : '.'}
             </p>
-            <button className="btn-ghost mt-3" onClick={() => void refetchGames()}>Try again</button>
+            <button className="btn-ghost mt-3" onClick={refetchLibrary}>Try again</button>
           </div>
         )}
       </div>
@@ -62,18 +80,27 @@ export default function FranchisesPage() {
 
   return (
     <div className="p-6">
-      <PageHeader
-        title="Franchises"
-        subtitle="Curated series pages — your library mapped onto each canon."
-      />
+      <PageHeader title="Franchises" subtitle={SUBTITLE} />
+      <div className="mb-4 flex flex-wrap gap-1.5" role="group" aria-label="Filter by type">
+        {(['all', ...FRANCHISE_MEDIA_TYPES] as const).map((t) => (
+          <button
+            key={t}
+            className={`pill ${activeType === t ? 'pill-active' : ''}`}
+            aria-pressed={activeType === t}
+            onClick={() => setTypeFilter(t)}
+          >
+            {t === 'all' ? 'All' : configFor(t).plural}
+          </button>
+        ))}
+      </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {FRANCHISES.map((f) => (
+        {shown.map((f) => (
           <FranchiseCard
             key={f.id}
             cfg={f}
             heroSrc={(heroMap[f.id] && mediaUrl(heroMap[f.id]!)) || f.heroUrl}
-            games={games}
-            isFinished={isFinished}
+            owned={progress.get(f.id)?.owned ?? 0}
+            finished={progress.get(f.id)?.finished ?? 0}
           />
         ))}
       </div>
@@ -84,35 +111,37 @@ export default function FranchisesPage() {
 function FranchiseCard({
   cfg,
   heroSrc,
-  games,
-  isFinished
+  owned,
+  finished
 }: {
   cfg: FranchiseCfg
   heroSrc: string
-  games: MediaItem[]
-  isFinished: (m: MediaItem) => boolean
+  owned: number
+  finished: number
 }) {
-  const { owned, finished } = useMemo(() => {
-    const matched = matchLibrary(cfg.entries, games)
-    const ownedItems = [...matched.values()]
-    return { owned: ownedItems.length, finished: ownedItems.filter(isFinished).length }
-  }, [cfg, games, isFinished])
+  // A remote hero can fail before the cache lands; the card then shows its
+  // tinted panel instead of a broken image, and retries when the cached path
+  // replaces the URL.
+  const [failedSrc, setFailedSrc] = useState<string | null>(null)
   const total = cfg.entries.length
   const pct = total ? Math.round((finished / total) * 100) : 0
   return (
     <Link
-      to={`/games/franchises/${cfg.id}`}
+      to={`/franchises/${cfg.id}`}
       className="card group block overflow-hidden transition-colors hover:border-accent/60"
     >
-      <div className="relative h-40">
-        <img
-          src={heroSrc}
-          alt=""
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
-          loading="lazy"
-          decoding="async"
-          draggable={false}
-        />
+      <div className="relative h-40 bg-base-700">
+        {failedSrc !== heroSrc && (
+          <img
+            src={heroSrc}
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            onError={() => setFailedSrc(heroSrc)}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/30 to-transparent" />
         <div className="absolute bottom-2 left-4 right-4">
           <p className="truncate text-xl font-semibold drop-shadow" style={{ color: cfg.color }}>
@@ -124,6 +153,9 @@ function FranchiseCard({
         <p className="mb-2 truncate text-xs text-gray-500">{cfg.tagline}</p>
         <p className="mb-2 text-sm text-gray-300">
           Owned {owned} of {total} · Finished {finished}
+        </p>
+        <p className="mb-2 truncate text-xs text-gray-500">
+          {franchiseMediaTypes(cfg).map((t) => configFor(t).plural).join(' · ')}
         </p>
         <div className="h-1.5 overflow-hidden rounded-full bg-base-700">
           <div

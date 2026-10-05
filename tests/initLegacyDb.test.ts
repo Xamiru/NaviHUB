@@ -48,6 +48,26 @@ describe('a live DB that predates newer columns', () => {
     db.close()
   })
 
+  it('indexes lyrics stored before lyrics search existed, once', () => {
+    const db = new Database(':memory:')
+    db.pragma('foreign_keys = ON')
+    db.exec(initSql)
+    db.exec(`DROP TRIGGER music_lyrics_fts_delete;
+      DROP TABLE music_lyrics_fts;
+      INSERT INTO music_artist(id,name,dir_path) VALUES(1,'Artist','Artist');
+      INSERT INTO music_album(id,artist_id,title,dir_path) VALUES(1,1,'Album','Artist/Album');
+      INSERT INTO music_track(id,album_id,artist_id,file_path,title) VALUES(1,1,1,'song.mp3','Song');
+      INSERT INTO music_track_lyrics(track_id,state,synced,source) VALUES(1,'found','[00:04.00]Stored before search','lrclib');`)
+    db.exec(initSql)
+    runMigrations(db)
+    db.exec(initSql)
+    runMigrations(db)
+    expect(db.prepare("SELECT rowid, body FROM music_lyrics_fts WHERE music_lyrics_fts MATCH '\"before search\"'").all()).toEqual([
+      { rowid: 1, body: 'stored before search' }
+    ])
+    db.close()
+  })
+
   it('drops the retired album journal tables while keeping track tags', () => {
     const db = new Database(':memory:')
     db.pragma('foreign_keys = ON')

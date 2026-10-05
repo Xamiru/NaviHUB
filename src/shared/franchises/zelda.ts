@@ -10,6 +10,8 @@
 // library rows). The 1993 Link's Awakening and its 2019 remake share an
 // official title; the plain title matches the 1993 entry (declared first),
 // the remake carries the '(2019)' disambiguator.
+// Adaptations (2026-10-05): the manga adaptations share their game's story
+// slot. Ids from AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -62,6 +64,17 @@ export const ZELDA: FranchiseCfg = {
       note: 'SNES — the formula, codified'
     },
     {
+      id: 'zelda-manga-alttp',
+      title: 'The Legend of Zelda: A Link to the Past',
+      mediaType: 'manga',
+      aliases: ['Zelda no Densetsu: Kamigami no Triforce'],
+      externalIds: [{ source: 'anilist', id: '35939' }],
+      year: 1992,
+      chrono: 4,
+      adaptation: true,
+      note: 'Shotaro Ishinomori’s manga of A Link to the Past'
+    },
+    {
       id: 'zelda-links-awakening',
       title: "The Legend of Zelda: Link's Awakening",
       aliases: ["The Legend of Zelda: Link's Awakening DX"],
@@ -91,6 +104,17 @@ export const ZELDA: FranchiseCfg = {
       note: 'Three days, forever'
     },
     {
+      id: 'zelda-manga-oot',
+      title: 'The Legend of Zelda: Ocarina of Time',
+      mediaType: 'manga',
+      aliases: ['Zelda no Densetsu: Toki no Ocarina'],
+      externalIds: [{ source: 'anilist', id: '30726' }],
+      year: 2000,
+      chrono: 3,
+      adaptation: true,
+      note: 'Akira Himekawa’s two-volume manga of Ocarina of Time'
+    },
+    {
       id: 'zelda-oracle',
       title: 'The Legend of Zelda: Oracle of Seasons / Oracle of Ages',
       aliases: [
@@ -102,6 +126,28 @@ export const ZELDA: FranchiseCfg = {
       mc: 91,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/5/57/OoS_Artwork_2.png',
       note: 'The Capcom twins — one entry for both'
+    },
+    {
+      id: 'zelda-manga-oracle-seasons',
+      title: 'The Legend of Zelda: Oracle of Seasons',
+      mediaType: 'manga',
+      aliases: ['Zelda no Densetsu: Fushigi no Kinomi - Daichi no Shou'],
+      externalIds: [{ source: 'anilist', id: '31420' }],
+      year: 2001,
+      chrono: 5,
+      adaptation: true,
+      note: 'Akira Himekawa’s manga of Oracle of Seasons'
+    },
+    {
+      id: 'zelda-manga-oracle-ages',
+      title: 'The Legend of Zelda: Oracle of Ages',
+      mediaType: 'manga',
+      aliases: ['Zelda no Densetsu: Fushigi no Kinomi - Jikuu no Shou'],
+      externalIds: [{ source: 'anilist', id: '31422' }],
+      year: 2001,
+      chrono: 5,
+      adaptation: true,
+      note: 'Akira Himekawa’s manga of Oracle of Ages'
     },
     {
       id: 'zelda-wind-waker',
@@ -133,6 +179,17 @@ export const ZELDA: FranchiseCfg = {
       note: 'The dark one'
     },
     {
+      id: 'zelda-manga-minish-cap',
+      title: 'The Legend of Zelda: The Minish Cap',
+      mediaType: 'manga',
+      aliases: ['Zelda no Densetsu: Fushigi no Boushi'],
+      externalIds: [{ source: 'anilist', id: '31902' }],
+      year: 2006,
+      chrono: 2,
+      adaptation: true,
+      note: 'Akira Himekawa’s manga of The Minish Cap'
+    },
+    {
       id: 'zelda-phantom-hourglass',
       title: 'The Legend of Zelda: Phantom Hourglass',
       year: 2007,
@@ -149,6 +206,17 @@ export const ZELDA: FranchiseCfg = {
       mc: 87,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/c/c5/ST_Link_Phantom_Zelda_Spirit_Train_Artwork.png',
       note: 'DS — Hyrule by rail'
+    },
+    {
+      id: 'zelda-manga-phantom-hourglass',
+      title: 'The Legend of Zelda: Phantom Hourglass',
+      mediaType: 'manga',
+      aliases: ['Zelda no Densetsu: Mugen no Sunadokei'],
+      externalIds: [{ source: 'anilist', id: '43513' }],
+      year: 2009,
+      chrono: 14,
+      adaptation: true,
+      note: 'Akira Himekawa’s manga of Phantom Hourglass'
     },
     {
       id: 'zelda-skyward-sword',
@@ -168,6 +236,18 @@ export const ZELDA: FranchiseCfg = {
       mc: 91,
       bgUrl: 'https://static.wikia.nocookie.net/zelda_gamepedia_en/images/c/cd/ALBW_Hyrule_Lorule.png',
       note: '3DS — ALttP, generations later'
+    },
+    {
+      id: 'zelda-manga-twilight-princess',
+      title: 'The Legend of Zelda: Twilight Princess',
+      mediaType: 'manga',
+      aliases: ['Zelda no Densetsu: Twilight Princess'],
+      externalIds: [{ source: 'anilist', id: '96842' }],
+      year: 2016,
+      releaseDate: '2016-02-08',
+      chrono: 12,
+      adaptation: true,
+      note: 'Akira Himekawa’s eleven-volume manga, the longest Zelda adaptation'
     },
     {
       id: 'zelda-botw',

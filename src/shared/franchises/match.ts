@@ -1,7 +1,11 @@
-// Matches curated franchise entries against the user's game library. Pure and
+// Matches curated franchise entries against the user's library. Pure and
 // deterministic so tests/franchiseMatch.test.ts can exercise it directly.
 //
-// Two passes, each library item consumed at most once:
+// Matching runs separately per media type: an entry only ever claims a row of
+// its own type, so the Steins;Gate novel and anime cannot collide, nor can a
+// TMDB movie id that happens to equal a TMDB TV id.
+//
+// Two passes per type, each library item consumed at most once:
 //   1. external ids — exact (external_source, external_id) equality, the
 //      strong signal (steam appids etc. are authored into the data files).
 //   2. normalized title equality against the entry title + its aliases, vs
@@ -9,8 +13,10 @@
 //      a substring rule would match "Final Fantasy VII" against "Final
 //      Fantasy VII Remake", and remakes are separate canon entries.
 
-import type { MediaItem } from '../types'
+import type { MediaItem, MediaType } from '../types'
 import type { FranchiseEntry } from './types'
+
+export const entryMediaType = (e: FranchiseEntry): MediaType => e.mediaType ?? 'game'
 
 // Lowercase, strip trademark glyphs and diacritics, collapse every non-
 // alphanumeric run to a single space. "Yakuza 0™" / "YAKUZA: 0" / "yakuza 0"
@@ -26,11 +32,42 @@ export function normalizeGameTitle(s: string): string {
     .trim()
 }
 
+// The index page matches every franchise against the whole library; library
+// rows are stable query-cache objects, so their normalized titles are computed
+// once rather than once per franchise.
+const keyCache = new WeakMap<MediaItem, string[]>()
+function itemKeys(it: MediaItem): string[] {
+  let keys = keyCache.get(it)
+  if (!keys) {
+    keys = [it.title, it.titleOriginal].flatMap((raw) => {
+      const key = raw ? normalizeGameTitle(raw) : ''
+      return key ? [key] : []
+    })
+    keyCache.set(it, keys)
+  }
+  return keys
+}
+
 export function matchLibrary(
   entries: FranchiseEntry[],
   items: MediaItem[]
 ): Map<string, MediaItem> {
   const matched = new Map<string, MediaItem>()
+  for (const type of new Set(entries.map(entryMediaType))) {
+    matchType(
+      entries.filter((e) => entryMediaType(e) === type),
+      items.filter((it) => it.mediaType === type),
+      matched
+    )
+  }
+  return matched
+}
+
+function matchType(
+  entries: FranchiseEntry[],
+  items: MediaItem[],
+  matched: Map<string, MediaItem>
+): void {
   const taken = new Set<number>()
 
   // Pass 1 — external ids.
@@ -57,11 +94,7 @@ export function matchLibrary(
   const byTitle = new Map<string, MediaItem>()
   for (const it of items) {
     if (taken.has(it.id)) continue
-    for (const raw of [it.title, it.titleOriginal]) {
-      if (!raw) continue
-      const key = normalizeGameTitle(raw)
-      if (key && !byTitle.has(key)) byTitle.set(key, it)
-    }
+    for (const key of itemKeys(it)) if (!byTitle.has(key)) byTitle.set(key, it)
   }
   for (const entry of entries) {
     if (matched.has(entry.id)) continue
@@ -74,6 +107,4 @@ export function matchLibrary(
       }
     }
   }
-
-  return matched
 }

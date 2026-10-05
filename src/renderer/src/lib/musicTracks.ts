@@ -33,6 +33,26 @@ export function filterTracks<T extends MusicTrack>(tracks: T[], query: string): 
   )
 }
 
+// The number shown beside each album track. Tag numbers are used as long as
+// they are unique within their disc; a folder of singles keeps each file's own
+// source-album number (1, 1, 2, 2 ...), so a disc with a repeated or missing
+// number is numbered by position instead. Keyed by track id so a search filter
+// keeps every track's album number.
+export function albumTrackNumbers(tracks: MusicTrack[]): Map<number, number> {
+  const byDisc = new Map<number, MusicTrack[]>()
+  for (const t of tracks) {
+    const disc = t.discNo ?? 1
+    byDisc.set(disc, [...(byDisc.get(disc) ?? []), t])
+  }
+  const out = new Map<number, number>()
+  for (const discTracks of byDisc.values()) {
+    const tagged = discTracks.map((t) => t.trackNo)
+    const trustTags = tagged.every((n) => n != null) && new Set(tagged).size === tagged.length
+    discTracks.forEach((t, i) => out.set(t.id, trustTags ? (t.trackNo as number) : i + 1))
+  }
+  return out
+}
+
 export function totalDuration(tracks: MusicTrack[]): number {
   return tracks.reduce((sum, t) => sum + (t.duration ?? 0), 0)
 }

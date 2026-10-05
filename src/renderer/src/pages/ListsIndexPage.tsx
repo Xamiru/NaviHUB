@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import EmptyState from '../components/EmptyState'
 import PageHeader from '../components/PageHeader'
@@ -9,8 +10,11 @@ import { KIND_LABEL } from '../lib/listLinks'
 import CoverImage from '../components/CoverImage'
 import type { ListKind, ListSummary, TierListSummary } from '@shared/types'
 
-const KIND_FILTERS: (ListKind | null)[] = [
-  null,
+type Tab = 'lists' | 'tiers'
+
+// Kinds are offered as filters only when a list of that kind exists, in the
+// order the archive presents them; the full set stays in New list.
+const KIND_ORDER: ListKind[] = [
   'media',
   'person',
   'character',
@@ -24,21 +28,23 @@ const KIND_FILTERS: (ListKind | null)[] = [
   'footballMatch'
 ]
 
-const TIER_KIND_FILTERS = KIND_FILTERS.filter(
-  (kind) => kind == null || !kind.startsWith('football')
-)
-
-type Tab = 'lists' | 'tiers'
-
 export default function ListsIndexPage() {
   const [tab, setTab] = usePersistedState<Tab>('listsTab', 'lists')
   const [kind, setKind] = usePersistedState<ListKind | null>('listKind', null)
   const isTiers = tab === 'tiers'
 
-  const { data: lists = [], isLoading } = useQuery({
-    queryKey: isTiers ? qk.tierLists.index(kind) : qk.lists.index(kind),
-    queryFn: () => (isTiers ? api.tierLists.list(kind) : api.lists.list(kind))
-  })
+  // Both indexes load whole (they are small): the tab counts and the kind
+  // filters come from them, and filtering is local.
+  const listsQuery = useQuery({ queryKey: qk.lists.index(null), queryFn: () => api.lists.list(null) })
+  const tiersQuery = useQuery({ queryKey: qk.tierLists.index(null), queryFn: () => api.tierLists.list(null) })
+  const all: (ListSummary | TierListSummary)[] = (isTiers ? tiersQuery.data : listsQuery.data) ?? []
+  const isLoading = isTiers ? tiersQuery.isLoading : listsQuery.isLoading
+  const kindCounts = new Map<ListKind, number>()
+  for (const l of all) kindCounts.set(l.kind, (kindCounts.get(l.kind) ?? 0) + 1)
+  const kinds = KIND_ORDER.filter((k) => kindCounts.has(k))
+  // A remembered kind with nothing left in it falls back to All.
+  const activeKind = kind && kindCounts.has(kind) ? kind : null
+  const lists = activeKind ? all.filter((l) => l.kind === activeKind) : all
 
   const newTo = isTiers ? '/lists/tier/new' : '/lists/new'
 
@@ -48,7 +54,7 @@ export default function ListsIndexPage() {
         title="Curated collections"
         subtitle="Authored shelves, rankings and tier boards drawn from every part of the archive."
         actions={
-          !isLoading && lists.length === 0 ? undefined : (
+          !isLoading && all.length === 0 ? undefined : (
             <Link to={newTo} className="btn-primary">
               {isTiers ? 'New tier list' : 'New list'}
             </Link>
@@ -56,31 +62,40 @@ export default function ListsIndexPage() {
         }
       />
 
-      <div className="mb-3 flex gap-2">
-        <button className={`pill ${!isTiers ? 'pill-active' : ''}`} onClick={() => setTab('lists')}>
-          Lists
-        </button>
-        <button
-          className={`pill ${isTiers ? 'pill-active' : ''}`}
-          onClick={() => {
-            setTab('tiers')
-            if (kind?.startsWith('football')) setKind(null)
-          }}
-        >
-          Tier lists
-        </button>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-6">
-        {(isTiers ? TIER_KIND_FILTERS : KIND_FILTERS).map((k) => (
-          <button
-            key={k ?? 'all'}
-            onClick={() => setKind(k)}
-            className={`pill ${kind === k ? 'pill-active' : ''}`}
-          >
-            {k ? KIND_LABEL[k] : 'All'}
-          </button>
-        ))}
+      <div className="mb-6 flex flex-wrap items-center gap-2">
+        <div className="flex gap-2" role="group" aria-label="Collection type">
+          {(['lists', 'tiers'] as const).map((t) => (
+            <button
+              key={t}
+              className={`pill ${tab === t ? 'pill-active' : ''}`}
+              aria-pressed={tab === t}
+              onClick={() => setTab(t)}
+            >
+              {t === 'lists' ? 'Lists' : 'Tier lists'}{' '}
+              <span className="tabular-nums opacity-70">
+                {(t === 'lists' ? listsQuery.data : tiersQuery.data)?.length ?? 0}
+              </span>
+            </button>
+          ))}
+        </div>
+        {kinds.length > 1 && (
+          <>
+            <span className="mx-1 h-5 w-px bg-base-700" aria-hidden="true" />
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Kind">
+              {[null, ...kinds].map((k) => (
+                <button
+                  key={k ?? 'all'}
+                  onClick={() => setKind(k)}
+                  className={`pill ${activeKind === k ? 'pill-active' : ''}`}
+                  aria-pressed={activeKind === k}
+                >
+                  {k ? KIND_LABEL[k] : 'All'}{' '}
+                  <span className="tabular-nums opacity-70">{k ? kindCounts.get(k) : all.length}</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       {isLoading ? (
@@ -108,7 +123,7 @@ export default function ListsIndexPage() {
           />
         )
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-5">
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-6">
           {lists.map((l) =>
             isTiers ? (
               <TierCard key={l.id} summary={l as TierListSummary} />
@@ -122,37 +137,62 @@ export default function ListsIndexPage() {
   )
 }
 
-function CardFace({
-  to,
-  eyebrow,
-  title,
-  meta,
-  previews
-}: {
-  to: string
-  eyebrow: string
-  title: string
-  meta: string
-  previews: (string | null)[]
-}) {
-  const shown = previews.slice(0, 4)
+// Up to five covers fanned left to right, the first on top — a list's face is
+// its opening entries. An empty list shows one dashed slot.
+function FannedCovers({ images }: { images: (string | null)[] }) {
+  const shown = images.slice(0, 5)
+  if (shown.length === 0) {
+    return (
+      <div className="flex h-[170px] w-[114px] items-center justify-center rounded-lg border border-dashed border-base-600 text-xs text-gray-500">
+        Empty
+      </div>
+    )
+  }
   return (
-    <Link to={to} className="card overflow-hidden group">
-      <div className="grid grid-cols-4 aspect-[16/6] bg-base-700">
-        {shown.length === 0 ? (
-          <div className="col-span-4 flex items-center justify-center text-xs uppercase tracking-widest text-gray-500">
-            {eyebrow}
-          </div>
-        ) : (
-          shown.map((p, i) => (
-            <CoverImage key={i} path={p} alt="" rounded="rounded-none" className="h-full w-full" />
-          ))
-        )}
-      </div>
-      <div className="p-3">
-        <p className="font-medium line-clamp-1 group-hover:text-accent">{title}</p>
-        <p className="mt-1 text-xs text-gray-500">{meta}</p>
-      </div>
+    <div className="relative h-[170px]">
+      {shown.map((path, i) => (
+        <div key={i} className="absolute top-0" style={{ left: i * 46, zIndex: shown.length - i }}>
+          <CoverImage
+            path={path}
+            alt=""
+            thumbWidth={240}
+            rounded="rounded-lg"
+            className="h-[170px] w-[114px] shadow-xl ring-1 ring-black/40"
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// A tier list's face is a miniature of its board: the first three tiers with
+// their colours and covers.
+function MiniBoard({ rows }: { rows: TierListSummary['previewRows'] }) {
+  return (
+    <div className="card flex h-[170px] flex-col gap-1 overflow-hidden p-2">
+      {rows.map((r, i) => (
+        <div key={i} className="flex min-h-0 flex-1 items-stretch gap-1">
+          <span
+            className="flex w-9 shrink-0 items-center justify-center rounded text-xs font-bold text-black"
+            style={{ background: r.color }}
+          >
+            {r.label}
+          </span>
+          {r.images.map((path, j) => (
+            <CoverImage key={j} path={path} alt="" thumbWidth={80} rounded="rounded" className="h-full w-8 shrink-0" />
+          ))}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function CardFace({ to, title, meta, face }: { to: string; title: string; meta: string; face: ReactNode }) {
+  return (
+    <Link to={to} className="group block">
+      {face}
+      <p className="mt-3 line-clamp-1 font-semibold text-white group-hover:text-accent">{title}</p>
+      <p className="mt-0.5 text-xs text-gray-400">{meta}</p>
     </Link>
   )
 }
@@ -161,10 +201,9 @@ function ListCard({ list }: { list: ListSummary }) {
   return (
     <CardFace
       to={`/lists/${list.id}`}
-      eyebrow="List"
       title={list.title}
-      meta={`${KIND_LABEL[list.kind]} · ${list.itemCount} ${list.itemCount === 1 ? 'item' : 'items'}${list.ranked ? ' · Ranked' : ''}`}
-      previews={list.previewImages}
+      meta={`${list.ranked ? 'Ranked · ' : ''}${KIND_LABEL[list.kind]} · ${list.itemCount} ${list.itemCount === 1 ? 'item' : 'items'}`}
+      face={<FannedCovers images={list.previewImages} />}
     />
   )
 }
@@ -173,10 +212,9 @@ function TierCard({ summary }: { summary: TierListSummary }) {
   return (
     <CardFace
       to={`/lists/tier/${summary.id}`}
-      eyebrow="Tier list"
       title={summary.title}
-      meta={`${KIND_LABEL[summary.kind]} · ${summary.itemCount} ${summary.itemCount === 1 ? 'item' : 'items'} · Tier list`}
-      previews={summary.previewImages}
+      meta={`Tier list · ${KIND_LABEL[summary.kind]} · ${summary.itemCount} ${summary.itemCount === 1 ? 'item' : 'items'}`}
+      face={<MiniBoard rows={summary.previewRows} />}
     />
   )
 }

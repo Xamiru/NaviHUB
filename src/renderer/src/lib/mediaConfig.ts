@@ -346,7 +346,7 @@ export const GAME: MediaConfig = {
   children: [
     { to: '/games/installed', label: 'Installed' },
     { to: '/games/achievements', label: 'Achievements' },
-    { to: '/games/franchises', label: 'Franchises' },
+    { to: '/franchises', label: 'Franchises' },
     { to: '/people', label: 'Voice Actors', role: 'voice_actor' }
   ],
   importSource: { key: 'steam', label: 'Steam', placeholder: 'Search Steam (e.g. Persona 5)…' },

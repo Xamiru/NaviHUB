@@ -12,13 +12,11 @@ import { Field } from './Field'
 export default function AddToListMenu({
   kind,
   entityId,
-  label,
-  fullWidth = false
+  label
 }: {
   kind: ListKind
   entityId: number
   label?: string
-  fullWidth?: boolean // detail-page action column stacks full-width buttons
 }) {
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
@@ -59,7 +57,7 @@ export default function AddToListMenu({
       <button
         id={triggerId}
         ref={triggerRef}
-        className={`btn-ghost ${fullWidth ? 'w-full' : ''}`}
+        className="btn-ghost"
         aria-expanded={open}
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen((v) => !v)}

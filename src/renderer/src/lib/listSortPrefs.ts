@@ -53,3 +53,28 @@ export function saveListSort(scope: string, patch: Partial<ListSort>): void {
     // A full or disabled localStorage must never break the list.
   }
 }
+
+// Grid or list, remembered per media type the same way: a tracker working
+// through a long watching list wants the rows back next time, while the
+// covers stay the default for browsing.
+export type ListLayout = 'grid' | 'list'
+
+const LAYOUT_KEY = 'library.listLayout'
+
+export function loadListLayout(scope: string): ListLayout {
+  try {
+    const all = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? '{}')
+    return all?.[scope] === 'list' ? 'list' : 'grid'
+  } catch {
+    return 'grid'
+  }
+}
+
+export function saveListLayout(scope: string, layout: ListLayout): void {
+  try {
+    const all = JSON.parse(localStorage.getItem(LAYOUT_KEY) ?? '{}')
+    localStorage.setItem(LAYOUT_KEY, JSON.stringify({ ...(all && typeof all === 'object' ? all : {}), [scope]: layout }))
+  } catch {
+    // A full or disabled localStorage must never break the list.
+  }
+}

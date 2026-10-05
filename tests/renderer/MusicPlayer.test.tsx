@@ -2,7 +2,8 @@ import { act, fireEvent, render } from '@testing-library/react'
 import { beforeEach, expect, it, vi } from 'vitest'
 import { AudioPlayerProvider, usePlayerControls, type Track } from '@/lib/player'
 import { api } from '@/lib/api'
-import { advanceListen, playCountThreshold, type ListenProgress } from '@/lib/musicTracks'
+import { advanceListen, albumTrackNumbers, playCountThreshold, type ListenProgress } from '@/lib/musicTracks'
+import type { MusicTrack } from '@shared/types'
 
 vi.mock('@/lib/api', () => ({ api: {
   files: { resolveUrl: vi.fn() },
@@ -64,6 +65,14 @@ it('falls forward after a failed source lookup and ignores an older lookup compl
   expect(player.track?.id).toBe('c')
 })
 
+it('starts the first track at a requested time and later tracks from the beginning', async () => {
+  const audio = mount()
+  await act(async () => player.playQueue([song('a'), song('b')], 0, { startTime: 42 }))
+  expect(audio.currentTime).toBe(42)
+  await act(async () => player.next())
+  expect(audio.currentTime).toBe(0)
+})
+
 it('unshuffles to the same occurrence when a song appears twice', async () => {
   const audio = mount()
   const first = song('duplicate')
@@ -109,4 +118,15 @@ it('counts a play only after half the track (at most four minutes) is actually h
   expect(play([...ticks(0, 60), ...ticks(0, 60)]).counts).toBe(2)
   // One counted play per listen, however long it keeps playing.
   expect(play(ticks(0, 59.75)).counts).toBe(1)
+})
+
+it('numbers album tracks by position when their tag numbers collide within a disc', () => {
+  const t = (id: number, trackNo: number | null, discNo: number | null = 1) => ({ id, trackNo, discNo }) as MusicTrack
+  const numbers = (tracks: MusicTrack[]) => [...albumTrackNumbers(tracks).values()]
+  // A folder of singles: every file keeps its source album's number.
+  expect(numbers([t(1, 1), t(2, 1), t(3, 2), t(4, 2)])).toEqual([1, 2, 3, 4])
+  // Unique tags are kept, including gaps.
+  expect(numbers([t(1, 1), t(2, 2), t(3, 5)])).toEqual([1, 2, 5])
+  // Each disc is judged on its own; a missing tag falls back to position.
+  expect(numbers([t(1, 1, 1), t(2, 2, 1), t(3, 1, 2), t(4, null, 2)])).toEqual([1, 2, 1, 2])
 })

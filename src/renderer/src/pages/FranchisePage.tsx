@@ -4,31 +4,36 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
-import { useSettings, useStatuses } from '../lib/hooks'
+import { useSettings } from '../lib/hooks'
 import { useFlipList } from '../lib/useFlip'
-import { GAME } from '../lib/mediaConfig'
+import { configFor, pathForMedia } from '../lib/mediaConfig'
+import { useFranchiseLibrary } from '../lib/useFranchiseLibrary'
 import { toast } from '../lib/toast'
 import { mediaUrl } from '@shared/mediaUrl'
 import {
+  communityScoreFor,
+  entryMediaType,
   franchiseBackgroundKey,
   franchiseCfg,
+  franchiseMediaTypes,
   matchLibrary,
-  metaScoreFor,
+  nextRouteEntry,
   type FranchiseCfg,
   type FranchiseEntry
 } from '@shared/franchises'
-import type { MediaItem } from '@shared/types'
+import type { MediaItem, MediaType } from '@shared/types'
 import PageHeader from '../components/PageHeader'
 import CoverImage from '../components/CoverImage'
 import FranchiseBackground from '../components/FranchiseBackground'
 import { HeartIcon } from '../components/PlayerIcons'
 
-type SortKey = 'release' | 'year' | 'story' | 'score' | 'meta'
+type SortKey = 'release' | 'year' | 'story' | 'route' | 'score' | 'meta'
 type SortState = { key: SortKey; dir: 'asc' | 'desc' }
 
-// One curated franchise: the canon checklist over the user's library with
-// live re-sortable columns, a cover timeline, the character showcase, trivia,
-// and ONE pinned page background (curated hero, or the user's own file).
+// One curated franchise: the canon checklist over the user's library (every
+// media type the franchise spans) with live re-sortable columns, a cover
+// timeline, the character showcase, trivia, and ONE pinned page background
+// (curated hero, or the user's own file).
 export default function FranchisePage() {
   const { id = '' } = useParams()
   const cfg = franchiseCfg(id)
@@ -37,7 +42,7 @@ export default function FranchisePage() {
       <div className="p-6">
         <PageHeader
           title="Unknown franchise"
-          back={{ to: '/games/franchises', label: 'Franchises' }}
+          back={{ to: '/franchises', label: 'Franchises' }}
         />
         <p className="text-gray-400">No franchise is registered under this id.</p>
       </div>
@@ -48,15 +53,10 @@ export default function FranchisePage() {
 
 function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
   const qc = useQueryClient()
-  // Same key + filter as HomePage's per-type list — one shared cache entry
-  // (keep the filter shape byte-identical, see CLAUDE.md).
-  const { data: games = [], isLoading, isError, error, refetch: refetchGames } = useQuery({
-    queryKey: qk.media.home('game'),
-    queryFn: () => api.media.list({ mediaType: 'game' })
-  })
-  const statuses = useStatuses(GAME)
+  const types = useMemo(() => franchiseMediaTypes(cfg), [cfg])
+  const { items, isLoading, error, refetch, isFinished } = useFranchiseLibrary(types)
   const { data: settings } = useSettings()
-  const matched = useMemo(() => matchLibrary(cfg.entries, games), [cfg, games])
+  const matched = useMemo(() => matchLibrary(cfg.entries, items), [cfg, items])
 
   // ---- curated art cache: fire once, poll while running, then re-fetch ----
   const { data: artMap = {} } = useQuery({
@@ -104,17 +104,21 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
     await qc.invalidateQueries({ queryKey: qk.settings.all })
   }
 
-  // ---- finished check ----
-  // Positional, from settings: statuses[1] is "completed" whatever the user
-  // renamed it to (the HomePage convention) — plus the progress fallback the
-  // detail page uses. isCompletedStatus() would silently break on renames.
-  const completedStatus = statuses[1]
-  const isFinished = (m: MediaItem): boolean =>
-    (m.status != null && m.status === completedStatus) ||
-    (!!m.totalUnits && m.progress >= m.totalUnits)
+  // ---- media-type filter (only offered when the franchise spans several) ----
+  const [typeFilter, setTypeFilter] = usePersistedState<MediaType | 'all'>(
+    `franchise.${cfg.id}.type`,
+    'all'
+  )
+  const activeType = typeFilter !== 'all' && types.includes(typeFilter) ? typeFilter : 'all'
+  const visible = useMemo(
+    () =>
+      activeType === 'all' ? cfg.entries : cfg.entries.filter((e) => entryMediaType(e) === activeType),
+    [cfg, activeType]
+  )
 
   // ---- sorting: clickable column headers, rows FLIP into place ----
   const hasStory = cfg.entries.some((e) => e.chrono != null)
+  const hasRoute = cfg.entries.some((e) => e.route != null)
   const [sort, setSort] = usePersistedState<SortState>(`franchise.${cfg.id}.sort`, {
     key: 'release',
     dir: 'asc'
@@ -128,7 +132,7 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
     )
   const entries = useMemo(() => {
     const item = (e: FranchiseEntry): MediaItem | null => matched.get(e.id) ?? null
-    const rows = [...cfg.entries] // authored order IS release order (tested)
+    const rows = [...visible] // authored order IS release order (tested)
     const flip = sort.dir === 'asc' ? 1 : -1
     // Nullable numeric sorts: rows without a value ALWAYS sink to the bottom,
     // in release order, whichever direction is active.
@@ -146,14 +150,16 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
         return rows.sort((a, b) => (a.year - b.year) * flip)
       case 'story':
         return byNullable((e) => e.chrono ?? null)
+      case 'route':
+        return byNullable((e) => e.route ?? null)
       case 'score':
         return byNullable((e) => item(e)?.score ?? null)
       case 'meta':
-        return byNullable((e) => metaScoreFor(e, item(e)))
+        return byNullable((e) => communityScoreFor(e, item(e)))
       default:
         return flip === 1 ? rows : rows.reverse()
     }
-  }, [cfg, sort, matched])
+  }, [visible, sort, matched])
   const ranked = sort.key === 'score' || sort.key === 'meta'
   const listRef = useRef<HTMLDivElement>(null)
   useFlipList(listRef, entries.map((e) => e.id).join('|'))
@@ -165,9 +171,16 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
   const avgScore = scored.length
     ? (scored.reduce((s, m) => s + (m.score ?? 0), 0) / scored.length).toFixed(1)
     : null
-  const totalHours = Math.round(owned.reduce((s, m) => s + (m.progress ?? 0), 0))
+  // Game progress is hours; other types count episodes, chapters or pages.
+  const totalHours = Math.round(
+    owned.filter((m) => m.mediaType === 'game').reduce((s, m) => s + (m.progress ?? 0), 0)
+  )
   const favorite =
     owned.filter((m) => m.favorite).sort((a, b) => (b.score ?? -1) - (a.score ?? -1))[0] ?? null
+  const next = nextRouteEntry(cfg, (e) => {
+    const m = matched.get(e.id)
+    return !!m && isFinished(m)
+  })
 
   const headers: { key: SortKey; label: string; title: string; className: string }[] = [
     { key: 'release', label: 'Title', title: 'Release order', className: 'flex-1 text-left' },
@@ -175,24 +188,27 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
     ...(hasStory
       ? [{ key: 'story' as SortKey, label: 'Story', title: 'In-universe order', className: 'w-14 text-right' }]
       : []),
+    ...(hasRoute
+      ? [{ key: 'route' as SortKey, label: 'Route', title: 'Suggested order', className: 'w-14 text-right' }]
+      : []),
     { key: 'score', label: '★', title: 'Your score', className: 'w-12 text-right' },
-    { key: 'meta', label: 'MC', title: 'Metacritic', className: 'w-12 text-right' }
+    { key: 'meta', label: 'Rating', title: 'Community rating', className: 'w-14 text-right' }
   ]
 
-  if (isLoading || isError) {
+  if (isLoading || error) {
     return (
       <div className="relative min-h-full">
         <FranchiseBackground url={backgroundUrl} />
         <div className="relative z-10 p-6">
-          <PageHeader back={{ to: '/games/franchises', label: 'Franchises' }} title={cfg.name} />
+          <PageHeader back={{ to: '/franchises', label: 'Franchises' }} title={cfg.name} />
           {isLoading ? (
-            <p className="text-sm text-gray-400" role="status">Loading games…</p>
+            <p className="text-sm text-gray-400" role="status">Loading your library…</p>
           ) : (
             <div className="card p-6" role="alert">
               <p className="text-sm text-red-300">
-                Could not load games{error instanceof Error ? ` — ${error.message}` : '.'}
+                Could not load your library{error instanceof Error ? ` — ${error.message}` : '.'}
               </p>
-              <button className="btn-ghost mt-3" onClick={() => void refetchGames()}>Try again</button>
+              <button className="btn-ghost mt-3" onClick={refetch}>Try again</button>
             </div>
           )}
         </div>
@@ -205,7 +221,7 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
       <FranchiseBackground url={backgroundUrl} />
       <div className="relative z-10 p-6">
         <PageHeader
-          back={{ to: '/games/franchises', label: 'Franchises' }}
+          back={{ to: '/franchises', label: 'Franchises' }}
           title={<span style={{ color: cfg.color }}>{cfg.name}</span>}
           subtitle={
             <>
@@ -234,6 +250,7 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
           </span>
           <span className="chip">Owned {owned.length}</span>
           {avgScore != null && <span className="chip">Avg score {avgScore}</span>}
+          {next && <span className="chip">Next up: {next.title}</span>}
           {totalHours > 0 && <span className="chip">{totalHours} h played</span>}
           {favorite && (
             <span className="chip gap-1.5" title="Your favorite entry">
@@ -250,6 +267,20 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
         {/* Rows left (half width), timeline + characters right; trivia below. */}
         <div className="mb-8 grid gap-6 lg:grid-cols-2">
           <div>
+            {types.length > 1 && (
+              <div className="mb-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by type">
+                {(['all', ...types] as const).map((t) => (
+                  <button
+                    key={t}
+                    className={`pill !py-0.5 !text-xs ${activeType === t ? 'pill-active' : ''}`}
+                    aria-pressed={activeType === t}
+                    onClick={() => setTypeFilter(t)}
+                  >
+                    {t === 'all' ? 'All' : configFor(t).plural}
+                  </button>
+                ))}
+              </div>
+            )}
             {/* Sortable header row */}
             <div className="mb-1 flex items-center gap-3 px-3 text-xs uppercase tracking-wide text-gray-500">
               {ranked && <span className="w-6 shrink-0" />}
@@ -278,6 +309,8 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
                   item={matched.get(entry.id) ?? null}
                   rank={ranked ? i + 1 : null}
                   showStory={hasStory}
+                  showRoute={hasRoute}
+                  showType={types.length > 1}
                   finished={isFinished}
                   accent={cfg.color}
                 />
@@ -287,7 +320,7 @@ function FranchiseView({ cfg }: { cfg: FranchiseCfg }) {
 
           {/* Right half: vertical timeline | vertical character list */}
           <div className="grid min-w-0 gap-4 sm:grid-cols-2">
-            <Timeline cfg={cfg} matched={matched} isFinished={isFinished} />
+            <Timeline cfg={cfg} entries={visible} matched={matched} isFinished={isFinished} />
             {cfg.characters.length > 0 && (
               <section className="min-w-0">
                 <h2 className="mb-3 text-lg font-semibold">Characters</h2>
@@ -329,6 +362,8 @@ function EntryRow({
   item,
   rank,
   showStory,
+  showRoute,
+  showType,
   finished,
   accent
 }: {
@@ -336,10 +371,12 @@ function EntryRow({
   item: MediaItem | null
   rank: number | null
   showStory: boolean
+  showRoute: boolean
+  showType: boolean
   finished: (m: MediaItem) => boolean
   accent: string
 }) {
-  const meta = metaScoreFor(entry, item)
+  const meta = communityScoreFor(entry, item)
   const done = item != null && finished(item)
   return (
     <div
@@ -361,29 +398,50 @@ function EntryRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           {item ? (
-            <Link to={`/games/${item.id}`} className="truncate font-medium hover:text-accent">
+            <Link
+              to={pathForMedia(item)}
+              className="truncate font-medium hover:text-accent"
+              title={entry.title}
+            >
               {entry.title}
             </Link>
           ) : (
-            <span className="truncate font-medium">{entry.title}</span>
+            <span className="truncate font-medium" title={entry.title}>
+              {entry.title}
+            </span>
           )}
           {done && (
             <span title="Finished" style={{ color: accent }}>
               ✓
             </span>
           )}
-          {entry.spinOff && <span className="chip py-0 text-[11px]">spin-off</span>}
-          {entry.remake && <span className="chip py-0 text-[11px]">remake</span>}
         </div>
-        <p className="truncate text-xs text-gray-400">
-          {entry.note ?? ''}
-          {!item ? (entry.note ? ' · ' : '') + 'not in library' : item.status ? `${entry.note ? ' · ' : ''}${item.status}` : ''}
-        </p>
+        {/* Chips share the second line with the note so the title keeps the width. */}
+        <div className="flex min-w-0 items-center gap-1.5">
+          {showType && (
+            <span className="chip shrink-0 py-0 text-[11px]">
+              {configFor(entryMediaType(entry)).singular}
+            </span>
+          )}
+          {entry.spinOff && <span className="chip shrink-0 py-0 text-[11px]">spin-off</span>}
+          {entry.remake && <span className="chip shrink-0 py-0 text-[11px]">remake</span>}
+          {entry.adaptation && <span className="chip shrink-0 py-0 text-[11px]">adaptation</span>}
+          {entry.optional && <span className="chip shrink-0 py-0 text-[11px]">optional</span>}
+          <p className="min-w-0 truncate text-xs text-gray-400">
+            {entry.note ?? ''}
+            {!item ? (entry.note ? ' · ' : '') + 'not in library' : item.status ? `${entry.note ? ' · ' : ''}${item.status}` : ''}
+          </p>
+        </div>
       </div>
       <span className="w-12 shrink-0 text-right text-sm text-gray-400">{entry.year}</span>
       {showStory && (
         <span className="w-14 shrink-0 text-right text-sm text-gray-400">
           {entry.chrono != null ? `#${entry.chrono}` : ''}
+        </span>
+      )}
+      {showRoute && (
+        <span className="w-14 shrink-0 text-right text-sm text-gray-400">
+          {entry.route != null ? `#${entry.route}` : ''}
         </span>
       )}
       <span className="w-12 shrink-0 text-right text-sm" title="Your score">
@@ -395,7 +453,7 @@ function EntryRow({
           ''
         )}
       </span>
-      <span className="w-12 shrink-0 text-right text-sm text-gray-400" title="Metacritic">
+      <span className="w-14 shrink-0 text-right text-sm text-gray-400" title="Community rating">
         {meta ?? ''}
       </span>
     </div>
@@ -405,18 +463,20 @@ function EntryRow({
 // A vertical timeline: a spine with the release year beside each cover,
 // spacing proportional to the gap between releases (clamped, so a 40-year
 // franchise stays scannable). Owned = library cover (accent ring + ✓ when
-// finished, links to the game); missing = greyed placeholder tile. Decade
+// finished, links to the title); missing = greyed placeholder tile. Decade
 // changes get a small divider label.
 function Timeline({
   cfg,
+  entries,
   matched,
   isFinished
 }: {
   cfg: FranchiseCfg
+  entries: FranchiseEntry[]
   matched: Map<string, MediaItem>
   isFinished: (m: MediaItem) => boolean
 }) {
-  const sorted = [...cfg.entries].sort((a, b) => a.year - b.year)
+  const sorted = [...entries].sort((a, b) => a.year - b.year)
   return (
     <section className="min-w-0">
       <h2 className="mb-3 text-lg font-semibold">Timeline</h2>
@@ -477,7 +537,7 @@ function Timeline({
                 }}
               />
               {item ? (
-                <Link to={`/games/${item.id}`} className="block" title={label} aria-label={label}>
+                <Link to={pathForMedia(item)} className="block" title={label} aria-label={label}>
                   {body}
                 </Link>
               ) : (

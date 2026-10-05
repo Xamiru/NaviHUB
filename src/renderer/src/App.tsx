@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { useHistoryTrail, useScrollRestoration } from './lib/navState'
 import { api } from './lib/api'
 import Sidebar from './components/Sidebar'
@@ -41,7 +41,6 @@ const MediaFormPage = lazy(() => import('./pages/MediaFormPage'))
 const SeasonalAnimePage = lazy(() => import('./pages/SeasonalAnimePage'))
 const InstalledGamesPage = lazy(() => import('./pages/InstalledGamesPage'))
 const FranchisesPage = lazy(() => import('./pages/FranchisesPage'))
-const MediaGuidesPage = lazy(() => import('./pages/MediaGuidesPage'))
 const VnDiscoverPage = lazy(() => import('./pages/VnDiscoverPage'))
 const VnEditionPage = lazy(() => import('./pages/VnEditionPage'))
 const VnStudyPage = lazy(() => import('./pages/VnStudyPage'))
@@ -300,8 +299,6 @@ export default function App() {
             {/* Visual Novels (VNDB) */}
             <Route path="/visual-novels" element={<MediaListPage cfg={VISUAL_NOVEL} />} />
             <Route path="/visual-novels/new" element={<MediaFormPage cfg={VISUAL_NOVEL} />} />
-            <Route path="/guides" element={<MediaGuidesPage />} />
-            <Route path="/guides/:id" element={<MediaGuidesPage />} />
             <Route path="/visual-novels/discover" element={<VnDiscoverPage />} />
             <Route path="/visual-novels/:id/editions" element={<VnEditionPage />} />
             <Route path="/visual-novels/:id/study" element={<VnStudyPage />} />
@@ -309,14 +306,22 @@ export default function App() {
             <Route path="/visual-novels/:id" element={<MediaDetailPage cfg={VISUAL_NOVEL} />} />
             <Route path="/visual-novels/:id/edit" element={<MediaFormPage cfg={VISUAL_NOVEL} />} />
 
+            {/* Franchises — curated cross-media series over the library */}
+            <Route path="/franchises" element={<FranchisesPage />} />
+            <Route path="/franchises/:id" element={<FranchisePage />} />
+            <Route path="/guides" element={<Navigate to="/franchises" replace />} />
+            <Route path="/guides/:id" element={<ParamRedirect to="/franchises" />} />
+
             {/* Games (RAWG) — cast is manual; VAs share the anime/VN seiyuu pool */}
             <Route path="/games" element={<MediaListPage cfg={GAME} />} />
             <Route path="/games/new" element={<MediaFormPage cfg={GAME} />} />
             {/* Above /games/:id — the /anime/seasonal precedent. */}
             <Route path="/games/installed" element={<InstalledGamesPage />} />
             <Route path="/games/achievements" element={<AchievementsPage />} />
-            <Route path="/games/franchises" element={<FranchisesPage />} />
-            <Route path="/games/franchises/:id" element={<FranchisePage />} />
+            {/* Franchises moved to /franchises when they went cross-media; the
+                old game-only and guide URLs redirect (guide ids became franchise ids). */}
+            <Route path="/games/franchises" element={<Navigate to="/franchises" replace />} />
+            <Route path="/games/franchises/:id" element={<ParamRedirect to="/franchises" />} />
             <Route path="/games/:id" element={<MediaDetailPage cfg={GAME} />} />
             <Route path="/games/:id/edit" element={<MediaFormPage cfg={GAME} />} />
 
@@ -612,6 +617,12 @@ export default function App() {
       <OpenFileHandler />
     </div>
   )
+}
+
+// A moved route that keeps its :id segment.
+function ParamRedirect({ to }: { to: string }): React.JSX.Element {
+  const { id = '' } = useParams()
+  return <Navigate to={`${to}/${id}`} replace />
 }
 
 function RouteLoading({ label }: { label: string }): React.JSX.Element {

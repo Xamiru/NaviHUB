@@ -7,6 +7,10 @@
 // All art URLs curl-verified 2026-08-15. The four pre-Steam games (1996-2000)
 // have no 16:9 hero art anywhere official — their backgrounds are the widest
 // official Capcom assets that exist (box scans / print ads / render banners).
+// Adaptations (2026-10-05): the game-canon CG films/series are anime rows
+// (AniList) with story-order slots; the live-action films and the Netflix
+// series are a separate continuity, so they carry no chrono and sink below
+// the story order. Ids from AniList and TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -77,6 +81,16 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       note: 'The Redfields vs the Ashfords'
     },
     {
+      id: 're-film-2002',
+      title: 'Resident Evil',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '1576' }],
+      year: 2002,
+      releaseDate: '2002-03-15',
+      adaptation: true,
+      note: 'Paul W. S. Anderson’s first film: Alice wakes in the Hive beneath Raccoon City'
+    },
+    {
       id: 're-remake',
       title: 'Resident Evil (2002)',
       aliases: ['Resident Evil', 'Resident Evil HD Remaster'],
@@ -102,6 +116,16 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       note: 'The night before the mansion'
     },
     {
+      id: 're-film-apocalypse',
+      title: 'Resident Evil: Apocalypse',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '1577' }],
+      year: 2004,
+      releaseDate: '2004-09-10',
+      adaptation: true,
+      note: 'Raccoon City falls; Jill Valentine and Nemesis join the film series'
+    },
+    {
       id: 're-4',
       title: 'Resident Evil 4 (2005)',
       aliases: ['Resident Evil 4: Ultimate HD Edition'],
@@ -111,6 +135,28 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       mc: 96,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/254700/library_hero.jpg',
       note: 'The reinvention'
+    },
+    {
+      id: 're-film-extinction',
+      title: 'Resident Evil: Extinction',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '7737' }],
+      year: 2007,
+      releaseDate: '2007-09-21',
+      adaptation: true,
+      note: 'The T-virus has spread worldwide; Alice crosses the Nevada desert'
+    },
+    {
+      id: 're-cg-degeneration',
+      title: 'Resident Evil: Degeneration',
+      mediaType: 'anime',
+      aliases: ['Biohazard: Degeneration'],
+      externalIds: [{ source: 'anilist', id: '3446' }],
+      year: 2008,
+      releaseDate: '2008-10-18',
+      chrono: 9,
+      spinOff: true,
+      note: 'Game-canon CG film: Leon and Claire at a T-virus outbreak in Harvardville airport'
     },
     {
       id: 're-5',
@@ -124,6 +170,16 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       note: 'Co-op action era peaks'
     },
     {
+      id: 're-film-afterlife',
+      title: 'Resident Evil: Afterlife',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '35791' }],
+      year: 2010,
+      releaseDate: '2010-09-10',
+      adaptation: true,
+      note: 'Alice, Claire and Chris Redfield against Wesker in Los Angeles'
+    },
+    {
       id: 're-revelations',
       title: 'Resident Evil: Revelations',
       externalIds: [{ source: 'steam', id: '222480' }],
@@ -134,6 +190,28 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       spinOff: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/222480/library_hero.jpg',
       note: 'Between 4 and 5, at sea'
+    },
+    {
+      id: 're-film-retribution',
+      title: 'Resident Evil: Retribution',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '71679' }],
+      year: 2012,
+      releaseDate: '2012-09-14',
+      adaptation: true,
+      note: 'Escape from Umbrella’s underwater simulation facility, with Leon and Ada'
+    },
+    {
+      id: 're-cg-damnation',
+      title: 'Resident Evil: Damnation',
+      mediaType: 'anime',
+      aliases: ['Biohazard: Damnation'],
+      externalIds: [{ source: 'anilist', id: '9544' }],
+      year: 2012,
+      releaseDate: '2012-09-15',
+      chrono: 12,
+      spinOff: true,
+      note: 'Game-canon CG film: Leon in an Eastern European civil war fought with Plagas'
     },
     {
       id: 're-6',
@@ -158,6 +236,16 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       note: 'Claire and Barry, episodic'
     },
     {
+      id: 're-film-final-chapter',
+      title: 'Resident Evil: The Final Chapter',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '173897' }],
+      year: 2016,
+      releaseDate: '2016-12-23',
+      adaptation: true,
+      note: 'Alice returns to the Hive to end the Anderson series'
+    },
+    {
       id: 're-7',
       title: 'Resident Evil 7: Biohazard',
       externalIds: [{ source: 'steam', id: '418370' }],
@@ -166,6 +254,18 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       mc: 86,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/418370/library_hero.jpg',
       note: 'The second reinvention — welcome to the family'
+    },
+    {
+      id: 're-cg-vendetta',
+      title: 'Resident Evil: Vendetta',
+      mediaType: 'anime',
+      aliases: ['Biohazard: Vendetta'],
+      externalIds: [{ source: 'anilist', id: '21464' }],
+      year: 2017,
+      releaseDate: '2017-05-27',
+      chrono: 14,
+      spinOff: true,
+      note: 'Game-canon CG film: Chris, Leon and Rebecca against a bioterrorist in New York'
     },
     {
       id: 're-2-remake',
@@ -203,6 +303,38 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       note: 'RE7\'s gothic sequel'
     },
     {
+      id: 're-cg-infinite-darkness',
+      title: 'Resident Evil: Infinite Darkness',
+      mediaType: 'anime',
+      aliases: ['Biohazard: Infinite Darkness'],
+      externalIds: [{ source: 'anilist', id: '124494' }],
+      year: 2021,
+      releaseDate: '2021-07-08',
+      chrono: 11,
+      spinOff: true,
+      note: 'Game-canon CG series: Leon and Claire uncover a White House cover-up in 2006'
+    },
+    {
+      id: 're-film-raccoon-city',
+      title: 'Resident Evil: Welcome to Raccoon City',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '460458' }],
+      year: 2021,
+      releaseDate: '2021-11-24',
+      adaptation: true,
+      note: 'Reboot film that merges the first two games into one night in Raccoon City'
+    },
+    {
+      id: 're-netflix-series',
+      title: 'Resident Evil',
+      mediaType: 'tv',
+      externalIds: [{ source: 'tmdb', id: '108296' }],
+      year: 2022,
+      releaseDate: '2022-07-14',
+      spinOff: true,
+      note: 'Netflix series: Wesker’s daughters in New Raccoon City and a ruined 2036'
+    },
+    {
       id: 're-4-remake',
       title: 'Resident Evil 4 (2023)',
       aliases: ['Resident Evil 4'],
@@ -213,6 +345,28 @@ export const RESIDENT_EVIL: FranchiseCfg = {
       remake: true,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2050650/library_hero.jpg',
       note: 'Remake of the reinvention'
+    },
+    {
+      id: 're-cg-death-island',
+      title: 'Resident Evil: Death Island',
+      mediaType: 'anime',
+      aliases: ['Biohazard: Death Island'],
+      externalIds: [{ source: 'anilist', id: '161441' }],
+      year: 2023,
+      releaseDate: '2023-07-07',
+      chrono: 14,
+      spinOff: true,
+      note: 'Game-canon CG film: Leon, Chris, Jill, Claire and Rebecca together on Alcatraz'
+    },
+    {
+      id: 're-film-2026',
+      title: 'Resident Evil (2026)',
+      mediaType: 'movie',
+      externalIds: [{ source: 'tmdb', id: '1423191' }],
+      year: 2026,
+      releaseDate: '2026-09-18',
+      adaptation: true,
+      note: 'Zach Cregger’s new film, separate from both earlier film series'
     }
   ],
   characters: [

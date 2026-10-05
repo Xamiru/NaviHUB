@@ -243,6 +243,7 @@ import type {
   MusicBrowseScope,
   MusicDecade,
   MusicGenre,
+  MusicLyricMatch,
   MusicLyrics,
   MusicLyricsStatus,
   MusicArtist,
@@ -1158,6 +1159,8 @@ export interface NaviApi {
     playbackQueue(shuffle: boolean, scope?: MusicBrowseScope | null): Promise<MusicPlaybackQueue>
     artistTracks(artistId: number): Promise<MusicTrack[]>
     search(query: string): Promise<MusicSearchResults>
+    // tracks whose stored lyrics contain the phrase (3+ characters after normalizing)
+    searchLyrics(query: string): Promise<MusicLyricMatch[]>
     stats(): Promise<MusicLibraryStats>
     // Destructive: also deletes the underlying files from disk (artist delete
     // removes the whole artist folder). Gated behind a confirm in the renderer.

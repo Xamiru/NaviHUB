@@ -6,6 +6,8 @@
 // re-listed a game (FF7: 39140 classic + 3837340 "2013 Edition" relaunch).
 // All art URLs curl-verified 2026-08-15. MC values omitted for the pre-
 // Metacritic classics (I-VI).
+// Adaptations (2026-10-05): the anime and CG films, matched as AniList anime
+// rows (Advent Children Complete folded in). Ids from AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -84,6 +86,16 @@ export const FINAL_FANTASY: FranchiseCfg = {
       note: 'Kefka wins. For a while.'
     },
     {
+      id: 'ff-anime-crystals',
+      title: 'Legend of the Crystals: Final Fantasy',
+      mediaType: 'anime',
+      externalIds: [{ source: 'anilist', id: '426' }],
+      year: 1994,
+      releaseDate: '1994-03-21',
+      spinOff: true,
+      note: 'Four-episode OVA set two hundred years after Final Fantasy V'
+    },
+    {
       id: 'ff-7',
       title: 'Final Fantasy VII',
       externalIds: [
@@ -145,6 +157,50 @@ export const FINAL_FANTASY: FranchiseCfg = {
       note: 'Spira and the endless pilgrimage'
     },
     {
+      id: 'ff-spirits-within',
+      title: 'Final Fantasy: The Spirits Within',
+      mediaType: 'anime',
+      externalIds: [{ source: 'anilist', id: '1361' }],
+      year: 2001,
+      releaseDate: '2001-07-02',
+      spinOff: true,
+      note: 'Square Pictures’ photoreal CG film: phantoms occupy a future Earth'
+    },
+    {
+      id: 'ff-unlimited',
+      title: 'Final Fantasy: Unlimited',
+      mediaType: 'anime',
+      externalIds: [{ source: 'anilist', id: '1157' }],
+      year: 2001,
+      releaseDate: '2001-10-02',
+      spinOff: true,
+      note: 'TV anime: two children search the other world of Wonderland for their parents'
+    },
+    {
+      id: 'ff-advent-children',
+      title: 'Final Fantasy VII: Advent Children',
+      mediaType: 'anime',
+      aliases: ['Final Fantasy VII: Advent Children Complete'],
+      externalIds: [
+        { source: 'anilist', id: '317' },
+        { source: 'anilist', id: '2952' }
+      ],
+      year: 2005,
+      releaseDate: '2005-09-14',
+      spinOff: true,
+      note: 'CG sequel two years after FF7: Cloud, Geostigma and the remnants of Sephiroth (Complete cut folded in)'
+    },
+    {
+      id: 'ff-last-order',
+      title: 'Final Fantasy VII: Last Order',
+      mediaType: 'anime',
+      externalIds: [{ source: 'anilist', id: '408' }],
+      year: 2005,
+      releaseDate: '2005-09-14',
+      adaptation: true,
+      note: 'Madhouse OVA of the Nibelheim incident and Zack’s escape'
+    },
+    {
       id: 'ff-12',
       title: 'Final Fantasy XII',
       aliases: ['Final Fantasy XII: The Zodiac Age'],
@@ -193,6 +249,26 @@ export const FINAL_FANTASY: FranchiseCfg = {
       mc: 81,
       bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/637650/library_hero.jpg',
       note: 'A road trip with the boys'
+    },
+    {
+      id: 'ff-brotherhood',
+      title: 'Brotherhood: Final Fantasy XV',
+      mediaType: 'anime',
+      externalIds: [{ source: 'anilist', id: '21728' }],
+      year: 2016,
+      releaseDate: '2016-03-31',
+      spinOff: true,
+      note: 'Five-episode prequel about Noctis and his three companions'
+    },
+    {
+      id: 'ff-kingsglaive',
+      title: 'Kingsglaive: Final Fantasy XV',
+      mediaType: 'anime',
+      externalIds: [{ source: 'anilist', id: '21729' }],
+      year: 2016,
+      releaseDate: '2016-07-09',
+      spinOff: true,
+      note: 'CG film of the fall of Insomnia, running alongside the game’s opening'
     },
     {
       id: 'ff-7-remake',

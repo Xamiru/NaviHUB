@@ -43,9 +43,10 @@ import { APP_THEME_SETTING, type AppTheme, type AppThemeVariant } from '@shared/
 import { resolveAppTheme, resolveAppThemeVariant } from '../lib/theme'
 import { readerPath } from '../lib/readerPath'
 import { mediaUrl } from '@shared/mediaUrl'
-import type { MediaSummary, ResumePoint } from '@shared/types'
+import type { HomeLibraryOverview, MediaSummary, ResumePoint } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
 import { toastError } from '../lib/toast'
+import { usePersistedState } from '../lib/navState'
 import Lightbox from '../components/Lightbox'
 
 // The same seiyuu pool the /people browse page shows (anime + VN + games).
@@ -75,12 +76,14 @@ export default function HomePage() {
   const wall = overview?.wall ?? []
   const recent = overview?.recent ?? []
   const continuing = overview?.continuing ?? []
+  const planned = overview?.planned ?? []
   const favorites = overview?.favorites ?? []
   const spotlight = overview?.spotlight ?? []
   const stats = overview?.stats ?? {
     titles: 0,
     inProgress: 0,
     completed: 0,
+    planned: 0,
     favorites: 0,
     avgScore: null
   }
@@ -119,11 +122,6 @@ export default function HomePage() {
         <PlayCard />
       </div>
     ),
-    resume: <ResumeStrip points={resumePoints} />,
-    continue:
-      continuing.length > 0 ? (
-        <Strip title="Continue" items={continuing.slice(0, 12)} showProgress />
-      ) : null,
     spotlight: (
       <Spotlight pool={spotlight} fromBacklog={overview?.spotlightFromBacklog ?? false} />
     ),
@@ -157,14 +155,15 @@ export default function HomePage() {
 
   return (
     <div className="mx-auto max-w-[1760px] p-5 sm:p-6 xl:p-8">
-      <Hero
-        items={wall}
-        stats={stats}
-        resume={resumePoints[0]}
+      <Hero items={wall} stats={stats} theme={theme} variant={variant} />
+      <UpNext
+        resumePoints={resumePoints}
         resumePending={resumePending}
         resumeError={resumeError}
         retryResume={() => void refetchResume()}
         continuing={continuing}
+        planned={planned}
+        stats={stats}
         theme={theme}
         variant={variant}
       />
@@ -354,30 +353,16 @@ function PresentDayReadout() {
 // The library as wallpaper: a dimmed, slightly tilted wall of the user's own
 // covers behind the brand, fading into the page. Falls back to the plain hero
 // while the library is empty or still loading.
+type HomeStats = HomeLibraryOverview['stats']
+
 function Hero({
   items,
   stats,
-  resume,
-  resumePending,
-  resumeError,
-  retryResume,
-  continuing,
   theme,
   variant
 }: {
   items: MediaSummary[]
-  stats: {
-    titles: number
-    inProgress: number
-    completed: number
-    favorites: number
-    avgScore: string | null
-  }
-  resume?: ResumePoint
-  resumePending: boolean
-  resumeError: boolean
-  retryResume: () => void
-  continuing: MediaSummary[]
+  stats: HomeStats
   theme: AppTheme
   variant: AppThemeVariant
 }) {
@@ -387,94 +372,195 @@ function Hero({
     () => shuffle(items.filter((m) => m.coverPath)).slice(0, 24),
     [items]
   )
-  const primaryId = resume?.media.id ?? continuing[0]?.id
-  const nextUp = continuing.filter((item) => item.id !== primaryId).slice(0, 3)
-
   return (
-    <>
-      <section className="home-hero" aria-label="Your archive">
-        {tiles.length >= 12 && (
-          <div
-            className="home-cover-wall absolute -inset-8 grid grid-cols-6 auto-rows-fr gap-2 -rotate-2 scale-105 md:grid-cols-8"
-            aria-hidden="true"
-          >
-            {tiles.map((m) => (
-              <CoverImage
-                key={cardKey(m)}
-                path={m.coverPath}
-                alt=""
-                thumbWidth={320}
-                rounded="rounded"
-                className="h-full w-full"
-              />
-            ))}
-          </div>
-        )}
-        <div className="home-hero-shade" aria-hidden="true" />
-        <HeroAtmosphere variant={variant} />
-        <img
-          src={HOME_THEME_ART[variant].image}
-          className="home-signature"
-          alt=""
+    <section className="home-hero" aria-label="Your archive">
+      {tiles.length >= 12 && (
+        <div
+          className="home-cover-wall absolute -inset-8 grid grid-cols-6 auto-rows-fr gap-2 -rotate-2 scale-105 md:grid-cols-8"
           aria-hidden="true"
-        />
-        <HeroFrame variant={variant} />
-        {HOME_THEME_ART[variant].credit && (
-          <p className="home-art-credit">{HOME_THEME_ART[variant].credit}</p>
-        )}
-        <div className="home-hero-copy">
-          {variant === 'present-day' && <PresentDayReadout />}
-          <h1 className="home-brand">Navi<span>HUB</span></h1>
-          <p className="home-greeting mt-4 text-sm">
-            {variant === 'stand-up' ? quote : HOME_THEME_ART[variant].greeting}
-          </p>
-          <div className="home-hero-stats mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm tabular-nums">
-            {theme === 'twin-peaks' ? (
-              <span className="peaks-sign" role="img" aria-label={`Population ${stats.titles} titles`}>
-                <img src={FX_ART.peaksSign} alt="" />
-                <span aria-hidden="true">{stats.titles}</span>
-              </span>
-            ) : (
-              <span><strong>{stats.titles}</strong> titles</span>
-            )}
-            <span><strong>{stats.inProgress}</strong> in progress</span>
-            <span><strong>{stats.favorites}</strong> favorites</span>
-          </div>
-          <div className="mt-6 flex flex-wrap items-center gap-5">
-            <p className="text-xs text-ink-muted">Your library. Your own world.</p>
-            <Link to="/anime" className="btn-ghost text-xs">Browse library</Link>
-          </div>
+        >
+          {tiles.map((m) => (
+            <CoverImage
+              key={cardKey(m)}
+              path={m.coverPath}
+              alt=""
+              thumbWidth={320}
+              rounded="rounded"
+              className="h-full w-full"
+            />
+          ))}
         </div>
-      </section>
-      <div className={`home-session-grid mt-6 grid gap-6 ${nextUp.length ? 'xl:grid-cols-[minmax(0,1fr)_300px]' : ''}`}>
-        <Section title="Your next session" className="home-session-main min-w-0">
-          {resumePending || resumeError ? (
-            <HomeReadState title="saved positions" pending={resumePending} retry={retryResume} />
+      )}
+      <div className="home-hero-shade" aria-hidden="true" />
+      <HeroAtmosphere variant={variant} />
+      <img
+        src={HOME_THEME_ART[variant].image}
+        className="home-signature"
+        alt=""
+        aria-hidden="true"
+      />
+      <HeroFrame variant={variant} />
+      {HOME_THEME_ART[variant].credit && (
+        <p className="home-art-credit">{HOME_THEME_ART[variant].credit}</p>
+      )}
+      <div className="home-hero-copy">
+        {variant === 'present-day' && <PresentDayReadout />}
+        <h1 className="home-brand">Navi<span>HUB</span></h1>
+        <p className="home-greeting mt-4 text-sm">
+          {variant === 'stand-up' ? quote : HOME_THEME_ART[variant].greeting}
+        </p>
+        <div className="home-hero-stats mt-6 flex flex-wrap gap-x-6 gap-y-2 text-sm tabular-nums">
+          {theme === 'twin-peaks' ? (
+            <span className="peaks-sign" role="img" aria-label={`Population ${stats.titles} titles`}>
+              <img src={FX_ART.peaksSign} alt="" />
+              <span aria-hidden="true">{stats.titles}</span>
+            </span>
           ) : (
-            <HeroContinuation resume={resume} continuing={continuing[0]} theme={theme} variant={variant} />
+            <span><strong>{stats.titles}</strong> titles</span>
           )}
-        </Section>
-        {nextUp.length > 0 && (
-          <Section title="Also in progress" className="home-next-up min-w-0">
-            <div className="divide-y divide-line-subtle">
-              {nextUp.map((item) => (
-                <Link
-                  key={cardKey(item)}
-                  to={pathForMedia(item)}
-                  className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-surface-raised"
-                >
-                  <CoverImage path={item.coverPath} alt="" thumbWidth={160} className="h-12 w-9 shrink-0" />
-                  <div className="min-w-0">
-                    <p className="truncate text-sm text-ink">{item.title}</p>
-                    <p className="mt-1 text-xs text-ink-muted">{configFor(item.mediaType).formatProgressStat(item)}</p>
+          <span><strong>{stats.inProgress}</strong> in progress</span>
+          <span><strong>{stats.favorites}</strong> favorites</span>
+        </div>
+        <div className="mt-6 flex flex-wrap items-center gap-5">
+          <p className="text-xs text-ink-muted">Your library. Your own world.</p>
+          <Link to="/anime" className="btn-ghost text-xs">Browse library</Link>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+type UpNextEntry = { kind: 'resume'; point: ResumePoint } | { kind: 'title'; media: MediaSummary }
+
+// Up next: the one place Home answers "what now". Continue leads with the
+// themed next-session card, then every other saved reader/video position and
+// in-progress title once each, in that order. Start next is the backlog,
+// newest additions first. This replaced four surfaces that repeated the same
+// titles (Your next session, Also in progress, Pick up where you left off and
+// the Continue strip).
+function UpNext({
+  resumePoints,
+  resumePending,
+  resumeError,
+  retryResume,
+  continuing,
+  planned,
+  stats,
+  theme,
+  variant
+}: {
+  resumePoints: ResumePoint[]
+  resumePending: boolean
+  resumeError: boolean
+  retryResume: () => void
+  continuing: MediaSummary[]
+  planned: MediaSummary[]
+  stats: HomeStats
+  theme: AppTheme
+  variant: AppThemeVariant
+}) {
+  const [mode, setMode] = usePersistedState<'continue' | 'start'>('homeUpNext', 'continue')
+  const resume = resumePoints[0]
+  const seen = new Set<number>()
+  // The session card shows this title only once saved positions have loaded;
+  // until then (or if that read fails) it stays in the row.
+  const primaryId = resumePending || resumeError ? null : (resume?.media.id ?? continuing[0]?.id)
+  if (primaryId != null) seen.add(primaryId)
+  const queue: UpNextEntry[] = []
+  for (const point of resumePoints) {
+    if (seen.has(point.media.id)) continue
+    seen.add(point.media.id)
+    queue.push({ kind: 'resume', point })
+  }
+  for (const media of continuing) {
+    if (seen.has(media.id)) continue
+    seen.add(media.id)
+    queue.push({ kind: 'title', media })
+  }
+
+  const modes = [
+    { key: 'continue' as const, label: 'Continue', count: stats.inProgress },
+    { key: 'start' as const, label: 'Start next', count: stats.planned }
+  ]
+  return (
+    <Section
+      title="Up next"
+      className="home-session-main mt-6 min-w-0"
+      actions={
+        <div className="flex gap-1.5" role="group" aria-label="Up next">
+          {modes.map((m) => (
+            <button
+              key={m.key}
+              className={`pill !py-0.5 !text-xs ${mode === m.key ? 'pill-active' : ''}`}
+              aria-pressed={mode === m.key}
+              onClick={() => setMode(m.key)}
+            >
+              {m.label} <span className="tabular-nums opacity-70">{m.count}</span>
+            </button>
+          ))}
+        </div>
+      }
+    >
+      {mode === 'continue' ? (
+        <div className={`grid gap-5 ${queue.length ? 'xl:grid-cols-[minmax(0,520px)_minmax(0,1fr)]' : ''}`}>
+          <div className="min-w-0">
+            {resumePending || resumeError ? (
+              <HomeReadState title="saved positions" pending={resumePending} retry={retryResume} />
+            ) : (
+              <HeroContinuation resume={resume} continuing={continuing[0]} theme={theme} variant={variant} />
+            )}
+          </div>
+          {queue.length > 0 && (
+            <div className="flex min-w-0 gap-4 overflow-x-auto p-4 xl:pl-0">
+              {queue.map((entry) =>
+                entry.kind === 'resume' ? (
+                  <ResumeCover key={`${entry.point.kind}-${entry.point.refId}`} point={entry.point} />
+                ) : (
+                  <div key={cardKey(entry.media)} className="w-[150px] shrink-0">
+                    <MediaCard item={entry.media} showTypeBadge showProgressBar showFavorite />
                   </div>
-                </Link>
-              ))}
+                )
+              )}
             </div>
-          </Section>
+          )}
+        </div>
+      ) : planned.length > 0 ? (
+        <div className="p-4">
+          <Strip items={planned} />
+        </div>
+      ) : (
+        <p className="p-4 text-sm text-gray-400">
+          Nothing planned yet. Set a title to your last status (Plan to Watch, Plan to Read…) to line it up here.
+        </p>
+      )}
+    </Section>
+  )
+}
+
+// A saved reader page or video position as a cover: opening it goes straight
+// back to that page or file, skipping the detail page.
+function ResumeCover({ point }: { point: ResumePoint }) {
+  const pct = point.total ? Math.min(100, Math.round(((point.position + 1) / point.total) * 100)) : null
+  return (
+    <ResumeAction point={point} className="group block w-[150px] shrink-0 text-left">
+      <div className="relative overflow-hidden rounded-lg">
+        <CoverImage
+          path={point.media.coverPath}
+          alt=""
+          thumbWidth={320}
+          rounded="rounded-lg"
+          className="aspect-[2/3] w-full transition-transform group-hover:scale-[1.03]"
+        />
+        {pct != null && (
+          <div className="absolute inset-x-0 bottom-0 h-1 bg-black/60" aria-hidden="true">
+            <div className="h-full bg-accent" style={{ width: `${pct}%` }} />
+          </div>
         )}
       </div>
-    </>
+      <p className="mt-2 truncate text-sm font-medium group-hover:text-accent">{point.media.title}</p>
+      <p className="truncate text-xs text-gray-400">{point.partTitle}</p>
+      <p className="text-xs text-gray-500">{resumeLabel(point)}</p>
+    </ResumeAction>
   )
 }
 
@@ -1299,45 +1385,6 @@ function TopPeople() {
   )
 }
 
-// A horizontally-scrolling row of covers — used for the shelf sections
-// (Continue watching, Recently added, Favorites). Without a title it renders
-// just the row, for embedding inside another Section.
-// "You were on page 143." Deliberately distinct from Continue below it, which
-// is "in progress by status": these open the saved reader position or tracked
-// video file, skipping the detail page entirely. Capped at 4 so it
-// stays a shortcut rather than a second library.
-function ResumeStrip({ points }: { points: ResumePoint[] }) {
-  const shown = points.slice(0, 4)
-  if (shown.length === 0) return null
-  return (
-    <Section title="Pick up where you left off">
-      <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
-        {shown.map((p) => (
-          <ResumeAction
-            key={`${p.kind}-${p.refId}`}
-            point={p}
-            className="group flex w-[280px] shrink-0 gap-3 rounded-lg bg-base-800 p-2 hover:bg-base-700"
-          >
-            <CoverImage
-              path={p.media.coverPath}
-              alt={p.media.title}
-              rounded="rounded"
-              className="h-[84px] w-[56px] shrink-0"
-            />
-            <div className="min-w-0 self-center">
-              <p className="truncate text-sm font-medium group-hover:text-accent">
-                {p.media.title}
-              </p>
-              <p className="truncate text-xs text-gray-400">{p.partTitle}</p>
-              <p className="text-xs text-gray-500">{resumeLabel(p)}</p>
-            </div>
-          </ResumeAction>
-        ))}
-      </div>
-    </Section>
-  )
-}
-
 // Chapters carry a page index; videos carry whole seconds.
 function resumeLabel(p: ResumePoint): string {
   if (p.kind === 'video') {
@@ -1381,6 +1428,9 @@ function ResumeAction({
   )
 }
 
+// A horizontally-scrolling row of covers — used for the shelf sections
+// (Start next, Recently added, Favorites). Without a title it renders just the
+// row, for embedding inside another Section.
 function Strip({
   title,
   items,

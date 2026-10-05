@@ -5,6 +5,9 @@
 // enhanced version. Arena, Dancing, Q and Tactica are excluded. Story order:
 // 1 -> 2 IS -> 2 EP -> 3 (Reload retells it) -> 4 -> 5 -> Strikers.
 // All art URLs curl-verified 2026-08-15.
+// Adaptations (2026-10-05): the anime series and the four Persona 3 films share
+// their game's story slot; Trinity Soul is an anime-original spin-off. Ids from
+// AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -36,7 +39,15 @@ export const PERSONA: FranchiseCfg = {
     { id: 'persona-2-ep', title: 'Persona 2: Eternal Punishment', aliases: ['Shin Megami Tensei: Persona 2: Eternal Punishment'], year: 2000, chrono: 3, bgUrl: 'https://static.wikia.nocookie.net/megamitensei/images/4/4d/Persona_2_characters.png/revision/latest?cb=20161017160710', note: 'The other side of Innocent Sin' },
     { id: 'persona-3', title: 'Persona 3', aliases: ['Shin Megami Tensei: Persona 3', 'Persona 3 FES', 'Persona 3 Portable', 'Shin Megami Tensei: Persona 3 FES', 'Shin Megami Tensei: Persona 3 Portable'], externalIds: [{ source: 'steam', id: '1809700' }], year: 2006, chrono: 4, mc: 86, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1809700/library_hero.jpg', note: 'The Dark Hour — where modern Persona starts (FES / Portable folded in)' },
     { id: 'persona-4', title: 'Persona 4', aliases: ['Shin Megami Tensei: Persona 4', 'Persona 4 Golden'], externalIds: [{ source: 'steam', id: '1113000' }], year: 2008, chrono: 6, mc: 90, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1113000/library_hero.jpg', note: 'Inaba, the Midnight Channel (Golden folded in)' },
+    { id: 'persona-trinity-soul', title: 'Persona: Trinity Soul', mediaType: 'anime', externalIds: [{ source: 'anilist', id: '3366' }], year: 2008, releaseDate: '2008-01-05', spinOff: true, note: 'Anime-original story set ten years after Persona 3' },
+    { id: 'persona-4-anime', title: 'Persona 4 the Animation', mediaType: 'anime', externalIds: [{ source: 'anilist', id: '10588' }], year: 2011, releaseDate: '2011-10-07', chrono: 6, adaptation: true, note: 'Yu Narukami’s year in Inaba, 25 episodes' },
+    { id: 'persona-3-movie-1', title: 'Persona 3 the Movie: #1 Spring of Birth', mediaType: 'anime', externalIds: [{ source: 'anilist', id: '14407' }], year: 2013, releaseDate: '2013-11-23', chrono: 4, adaptation: true, note: 'Film 1 of 4: Makoto arrives and SEES forms' },
+    { id: 'persona-3-movie-2', title: 'Persona 3 the Movie: #2 Midsummer Knight’s Dream', mediaType: 'anime', externalIds: [{ source: 'anilist', id: '20736' }], year: 2014, releaseDate: '2014-06-07', chrono: 4, adaptation: true, note: 'Film 2 of 4: Aigis joins over the summer' },
+    { id: 'persona-4-golden-anime', title: 'Persona 4 the Golden Animation', mediaType: 'anime', aliases: ['Persona4 the Golden ANIMATION'], externalIds: [{ source: 'anilist', id: '20713' }], year: 2014, releaseDate: '2014-07-11', chrono: 6, adaptation: true, note: 'The Golden version retold around Marie' },
+    { id: 'persona-3-movie-3', title: 'Persona 3 the Movie: #3 Falling Down', mediaType: 'anime', externalIds: [{ source: 'anilist', id: '20737' }], year: 2015, releaseDate: '2015-04-04', chrono: 4, adaptation: true, note: 'Film 3 of 4: the truth behind the Dark Hour' },
     { id: 'persona-5', title: 'Persona 5', aliases: ['Persona 5 Royal'], externalIds: [{ source: 'steam', id: '1687950' }], year: 2016, chrono: 7, mc: 93, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1687950/library_hero.jpg', note: 'The Phantom Thieves (Royal folded in)' },
+    { id: 'persona-3-movie-4', title: 'Persona 3 the Movie: #4 Winter of Rebirth', mediaType: 'anime', externalIds: [{ source: 'anilist', id: '21248' }], year: 2016, releaseDate: '2016-01-24', chrono: 4, adaptation: true, note: 'Film 4 of 4: Nyx and the ending' },
+    { id: 'persona-5-anime', title: 'Persona 5 the Animation', mediaType: 'anime', externalIds: [{ source: 'anilist', id: '99693' }], year: 2018, releaseDate: '2018-04-08', chrono: 7, adaptation: true, note: 'The Phantom Thieves’ year, 26 episodes plus specials' },
     { id: 'persona-5-strikers', title: 'Persona 5 Strikers', aliases: ['Persona 5 Scramble: The Phantom Strikers'], externalIds: [{ source: 'steam', id: '1382330' }], year: 2020, chrono: 8, mc: 81, spinOff: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1382330/library_hero.jpg', note: 'Canon summer road-trip sequel, musou-style' },
     { id: 'persona-3-reload', title: 'Persona 3 Reload', externalIds: [{ source: 'steam', id: '2161700' }], year: 2024, chrono: 5, mc: 87, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2161700/library_hero.jpg', note: 'Full remake of Persona 3' }
   ],

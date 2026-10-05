@@ -60,3 +60,10 @@ export function formatRunTime(seconds: number): string {
   const hours = Math.round((seconds / 3600) * 2) / 2
   return `about ${hours} hour${hours === 1 ? '' : 's'}`
 }
+
+// The local calendar day of a date as 'YYYY-MM-DD', the key SQLite's
+// date(..., 'localtime') produces.
+export function localDayString(d: Date): string {
+  const pad = (n: number): string => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}

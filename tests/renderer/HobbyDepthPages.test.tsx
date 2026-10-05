@@ -9,7 +9,7 @@ import VnDiscoverPage from '../../src/renderer/src/pages/VnDiscoverPage'
 import VnEditionPage from '../../src/renderer/src/pages/VnEditionPage'
 import WrestlingJourneysPage from '../../src/renderer/src/pages/WrestlingJourneysPage'
 import WrestlingFilesSection from '../../src/renderer/src/components/wrestling/WrestlingFilesSection'
-import MediaGuidesPage from '../../src/renderer/src/pages/MediaGuidesPage'
+import FranchisePage from '../../src/renderer/src/pages/FranchisePage'
 const m = vi.hoisted(() => ({
   overview: vi.fn(),
   captures: vi.fn(),
@@ -31,7 +31,8 @@ const m = vi.hoisted(() => ({
   markWatched: vi.fn(),
   list: vi.fn(),
   openExternal: vi.fn(),
-  settings: vi.fn()
+  settings: vi.fn(),
+  setSetting: vi.fn()
 }))
 vi.mock('../../src/renderer/src/lib/api', () => ({
   api: {
@@ -61,7 +62,13 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
     wrestling: { files: m.files },
     video: { markWatched: m.markWatched },
     media: { list: m.list },
-    settings: { all: m.settings }
+    settings: { all: m.settings, set: m.setSetting },
+    franchise: {
+      artMap: async () => ({}),
+      ensureArt: async () => ({ started: false }),
+      artStatus: async () => ({ running: false, franchiseId: null, done: 0, total: 0 })
+    },
+    files: { pickImage: async () => null }
   }
 }))
 vi.mock('../../src/renderer/src/components/reader/MiningPanel', () => ({
@@ -261,24 +268,44 @@ describe('hobby-depth interactions', () => {
       expect(m.markWatched).toHaveBeenCalledWith({ kind: 'wrestling', fileId: 5 }, true)
     )
   })
-  it('keeps guide completion separate across media types and follows renamed statuses', async () => {
+  it('keeps franchise completion separate across media types and follows renamed statuses', async () => {
+    const row = (id: number, mediaType: string, status: string) => ({
+      id,
+      title: 'Steins;Gate',
+      titleOriginal: null,
+      mediaType,
+      status,
+      progress: 0,
+      totalUnits: null,
+      score: null,
+      favorite: false,
+      externalSource: null,
+      externalId: null,
+      metadata: null,
+      coverPath: null
+    })
     m.list.mockImplementation(async ({ mediaType }: { mediaType: string }) =>
       mediaType === 'visual_novel'
-        ? [{ id: 2, title: 'Steins;Gate', mediaType, status: 'Finished it', coverPath: null }]
-        : [{ id: 3, title: 'Steins;Gate', mediaType, status: 'Planned', coverPath: null }]
+        ? [row(2, mediaType, 'Finished it')]
+        : [row(3, mediaType, 'Planned')]
     )
     m.settings.mockResolvedValue({
       'visual_novel.statuses': JSON.stringify(['Reading', 'Finished it', 'Planned'])
     })
-    mount('/guides/science-adventure', '/guides/:id', <MediaGuidesPage />)
-    const links = await screen.findAllByRole('link', { name: 'Steins;Gate' })
-    expect(links.map((l) => l.getAttribute('href')).sort()).toEqual([
+    mount('/franchises/science-adventure', '/franchises/:id', <FranchisePage />)
+    // Rows and timeline tiles both link; each type goes to its own detail page.
+    const links = await screen.findAllByRole('link', { name: /^Steins;Gate/ })
+    expect([...new Set(links.map((l) => l.getAttribute('href')))].sort()).toEqual([
       '/anime/3',
       '/visual-novels/2'
     ])
-    expect(screen.getByText(/1\/4 core entries completed/)).toBeInTheDocument()
-    await userEvent.setup().click(screen.getAllByRole('button', { name: 'Source' })[0])
-    expect(m.openExternal).toHaveBeenCalledWith('https://www.kagaku-adv.com/titles/chaoshead_noah/')
+    expect(screen.getByText('Finished 1 of 16')).toBeInTheDocument()
+    // Steins;Gate (route stop 2) is done, but stop 1 is still unread.
+    expect(screen.getByText('Next up: Chaos;Head Noah')).toBeInTheDocument()
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: 'Anime' }))
+    expect(screen.getByRole('button', { name: 'Anime' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByText('Robotics;Notes DaSH')).not.toBeInTheDocument()
   })
   it('offers retry instead of onboarding when wrestling files fail to load', async () => {
     m.files.mockRejectedValue(new Error('DB busy'))

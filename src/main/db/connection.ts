@@ -6,6 +6,7 @@ import initSql from './init.sql?raw'
 import { seedJapanese } from './japaneseSeed'
 import { CHECKLIST_SEED } from '@shared/checklist'
 import { logInfo } from '../logBus'
+import { rebuildLyricsIndex } from '../musicLyricsIndex'
 
 let _sqlite: Database.Database | null = null
 
@@ -417,6 +418,9 @@ export function runMigrations(sqlite: Database.Database): string[] {
         .run()
     })()
   }
+
+  // Lyrics stored before the lyrics search index existed are indexed once.
+  if (!sqlite.prepare('SELECT 1 FROM music_lyrics_fts LIMIT 1').get()) rebuildLyricsIndex(sqlite)
 
   // Movies used to store "times watched" in the generic `progress` column;
   // it's now unified into `rewatch_count` (the universal times-consumed counter)

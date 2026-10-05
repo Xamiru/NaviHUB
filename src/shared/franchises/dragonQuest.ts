@@ -5,6 +5,8 @@
 // worlds; the Erdrick trilogy runs III -> I -> II and the Zenithian trilogy
 // VI -> IV -> V, and both are noted on the rows.
 // All art URLs curl-verified 2026-08-15.
+// Adaptations (2026-10-05): the Abel and Dai anime and the Your Story film. Ids
+// from AniList/TMDB.
 
 import type { FranchiseCfg } from './types'
 
@@ -34,7 +36,28 @@ export const DRAGON_QUEST: FranchiseCfg = {
     { id: 'dq-1', title: 'Dragon Quest', aliases: ['Dragon Warrior', 'Dragon Quest I'], year: 1986, bgUrl: 'https://static.wikia.nocookie.net/dragonquest/images/3/37/GvkNOEeWcAALZEG.jpg/revision/latest?cb=20250716154202', note: 'Erdrick trilogy — the one hero' },
     { id: 'dq-2', title: 'Dragon Quest II: Luminaries of the Legendary Line', aliases: ['Dragon Quest II', 'Dragon Warrior II'], year: 1987, bgUrl: 'https://dragon-quest.org/w/images/a/a7/Dragon-Quest-II-japanese-box-art.jpg', note: 'Erdrick trilogy — a party of three' },
     { id: 'dq-3', title: 'Dragon Quest III: The Seeds of Salvation', aliases: ['Dragon Quest III', 'Dragon Warrior III'], year: 1988, bgUrl: 'https://dragon-quest.org/w/images/4/4e/DQIII_Famicom_Box_%28Front_Side%29.jpg', note: 'Erdrick trilogy — the prequel that started the legend' },
+    {
+      id: 'dq-anime-abel',
+      title: 'Dragon Quest: Abel Yuusha Densetsu',
+      mediaType: 'anime',
+      aliases: ['Dragon Warrior'],
+      externalIds: [{ source: 'anilist', id: '2819' }],
+      year: 1989,
+      releaseDate: '1989-12-02',
+      spinOff: true,
+      note: 'TV anime loosely built on Dragon Quest III'
+    },
     { id: 'dq-4', title: 'Dragon Quest IV: Chapters of the Chosen', aliases: ['Dragon Quest IV', 'Dragon Warrior IV'], year: 1990, bgUrl: 'https://static.wikia.nocookie.net/dragonquest/images/9/9b/Dragon_Quest_4_remake_promo_art.jpg/revision/latest?cb=20241119005249', note: 'Zenithian trilogy — five chapters' },
+    {
+      id: 'dq-anime-dai-1991',
+      title: 'Dragon Quest: Dai no Daibouken',
+      mediaType: 'anime',
+      externalIds: [{ source: 'anilist', id: '2229' }],
+      year: 1991,
+      releaseDate: '1991-10-17',
+      spinOff: true,
+      note: 'First TV adaptation of the Jump manga, cancelled partway'
+    },
     { id: 'dq-5', title: 'Dragon Quest V: Hand of the Heavenly Bride', aliases: ['Dragon Quest V'], year: 1992, mc: 87, bgUrl: 'https://static.wikia.nocookie.net/dragonquest/images/5/59/Dragon_quest_v_wall_1.jpg/revision/latest?cb=20140414034522', note: 'Zenithian trilogy — a whole life, and a bride' },
     { id: 'dq-6', title: 'Dragon Quest VI: Realms of Revelation', aliases: ['Dragon Quest VI'], year: 1995, mc: 80, bgUrl: 'https://static.wikia.nocookie.net/dragonquest/images/5/50/DQVISNES.jpg/revision/latest?cb=20211030014620', note: 'Zenithian trilogy — the dream world' },
     { id: 'dq-7', title: 'Dragon Quest VII: Fragments of the Forgotten Past', aliases: ['Dragon Quest VII', 'Dragon Warrior VII', 'Dragon Quest VII Reimagined'], externalIds: [{ source: 'steam', id: '2499860' }], year: 2000, mc: 82, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2499860/library_hero.jpg', note: 'The 100-hour one' },
@@ -43,6 +66,27 @@ export const DRAGON_QUEST: FranchiseCfg = {
     { id: 'dq-builders', title: 'Dragon Quest Builders', externalIds: [{ source: 'steam', id: '2436570' }], year: 2016, mc: 83, spinOff: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2436570/library_hero.jpg', note: 'Block-building in a fallen Alefgard' },
     { id: 'dq-11', title: 'Dragon Quest XI: Echoes of an Elusive Age', aliases: ['Dragon Quest XI', 'Dragon Quest XI S: Echoes of an Elusive Age - Definitive Edition'], externalIds: [{ source: 'steam', id: '1295510' }, { source: 'steam', id: '742120' }], year: 2017, mc: 86, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1295510/library_hero.jpg', note: 'The modern classic' },
     { id: 'dq-builders-2', title: 'Dragon Quest Builders 2', externalIds: [{ source: 'steam', id: '1072420' }], year: 2018, mc: 86, spinOff: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1072420/library_hero.jpg', note: 'Bigger, kinder, better' },
+    {
+      id: 'dq-your-story',
+      title: 'Dragon Quest: Your Story',
+      mediaType: 'anime',
+      externalIds: [{ source: 'anilist', id: '107905' }],
+      year: 2019,
+      releaseDate: '2019-08-02',
+      adaptation: true,
+      note: 'CG film of Dragon Quest V'
+    },
+    {
+      id: 'dq-anime-dai-2020',
+      title: 'Dragon Quest: The Adventure of Dai',
+      mediaType: 'anime',
+      aliases: ['Dragon Quest: Dai no Daibouken (2020)'],
+      externalIds: [{ source: 'anilist', id: '114099' }],
+      year: 2020,
+      releaseDate: '2020-10-03',
+      spinOff: true,
+      note: 'Complete 100-episode adaptation of the manga'
+    },
     { id: 'dq-3-hd2d', title: 'Dragon Quest III HD-2D Remake', externalIds: [{ source: 'steam', id: '2701660' }], year: 2024, mc: 83, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2701660/library_hero.jpg', note: 'Remake of III — start of the Erdrick trilogy in HD-2D' },
     { id: 'dq-1-2-hd2d', title: 'Dragon Quest I & II HD-2D Remake', externalIds: [{ source: 'steam', id: '2893570' }], year: 2025, remake: true, bgUrl: 'https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/2893570/library_hero.jpg', note: 'Remake of I and II — the trilogy complete' }
   ],

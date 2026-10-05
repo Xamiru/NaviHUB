@@ -14,9 +14,9 @@ import { usePersistedState } from '../lib/navState'
 import { toast, toastError } from '../lib/toast'
 import CoverImage from '../components/CoverImage'
 import Section from '../components/Section'
-import MusicTrackRow, { formatLongDuration } from '../components/MusicTrackRow'
+import MusicTrackRow, { formatDuration, formatLongDuration } from '../components/MusicTrackRow'
 import MusicDownloadDialog, { DownloadPill } from '../components/MusicDownloadDialog'
-import type { MusicBrowseScope } from '@shared/types'
+import type { MusicBrowseScope, MusicLyricMatch } from '@shared/types'
 import { Field } from '../components/Field'
 import { GRID, ArtistCard, AlbumCard, TrackList } from '../components/music/MusicBrowse'
 import { LoadFailed, ArtistsTab, AlbumsTab, TracksTab, PlaylistsTab } from '../components/music/MusicLibraryTabs'
@@ -217,7 +217,7 @@ export default function MusicLibraryPage() {
       <Field label="Search music library" hiddenLabel className="contents">
         <input
           className="input mb-4 max-w-md"
-          placeholder="Search artists, albums, tracks…"
+          placeholder="Search artists, albums, tracks, lyrics…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -404,10 +404,17 @@ function SearchResults({ query }: { query: string }) {
     queryKey: qk.music.search(query),
     queryFn: () => api.music.search(query)
   })
+  const lyrics = useQuery({
+    queryKey: qk.music.lyricsSearch(query),
+    queryFn: () => api.music.searchLyrics(query)
+  })
   if (isLoadingError) return <LoadFailed what="search results" onRetry={() => void refetch()} />
   if (isLoading || !data) return <p className="text-sm text-gray-500">Searching…</p>
-  const nothing = data.artists.length === 0 && data.albums.length === 0 && data.tracks.length === 0
-  if (nothing) return <p className="text-sm text-gray-500">No matches for “{query}”.</p>
+  const noTitles = data.artists.length === 0 && data.albums.length === 0 && data.tracks.length === 0
+  if (noTitles && lyrics.isLoading) return <p className="text-sm text-gray-500">Searching…</p>
+  if (noTitles && lyrics.data?.length === 0) {
+    return <p className="text-sm text-gray-500">No matches for “{query}”.</p>
+  }
   return (
     <div className="space-y-6">
       {data.artists.length > 0 && (
@@ -433,6 +440,48 @@ function SearchResults({ query }: { query: string }) {
           <TrackList tracks={data.tracks} />
         </Section>
       )}
+      {lyrics.isLoadingError ? (
+        <LoadFailed what="lyrics matches" onRetry={() => void lyrics.refetch()} />
+      ) : (
+        lyrics.data &&
+        lyrics.data.length > 0 && (
+          <Section title="Lyrics" className="">
+            <LyricMatches matches={lyrics.data} />
+          </Section>
+        )
+      )}
+    </div>
+  )
+}
+
+// Each hit plays its song from the matched line when the lyrics are synced.
+function LyricMatches({ matches }: { matches: MusicLyricMatch[] }) {
+  const player = usePlayerControls()
+  return (
+    <div>
+      {matches.map((m) => (
+        <div key={m.track.id}>
+          <MusicTrackRow
+            track={m.track}
+            onPlay={() =>
+              player.playQueue([musicTrackToPlayerTrack(m.track)], 0, { startTime: m.time ?? 0 })
+            }
+          />
+          <p className="mb-2 ml-2 border-l-2 border-base-700 pl-3 text-sm text-gray-400">
+            <span className="line-clamp-2">{m.line}</span>
+            {(m.time != null || m.count > 1) && (
+              <span className="text-xs text-gray-500">
+                {[
+                  m.time != null ? `at ${formatDuration(m.time)}` : null,
+                  m.count > 1 ? `${m.count} times in the song` : null
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </span>
+            )}
+          </p>
+        </div>
+      ))}
     </div>
   )
 }

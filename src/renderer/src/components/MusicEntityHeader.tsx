@@ -75,7 +75,7 @@ export default function MusicEntityHeader({
         alt={title}
         rounded={round ? 'rounded-full' : undefined}
         className={`mx-auto shrink-0 sm:mx-0 ${round ? 'h-40 w-40' : 'h-48 w-48'}`}
-        fallback="music"
+        fallback={round ? 'monogram' : 'music'}
       />
       <div className="min-w-0">
         <h1 className="text-3xl font-semibold text-white sm:text-4xl text-balance">{title}</h1>
