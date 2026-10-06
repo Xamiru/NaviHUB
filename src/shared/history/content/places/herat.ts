@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['south-asia'],
-  modernCountry: 'AF'
+  modernCountry: 'AF',
+  coords: {
+    lat: 34.33,
+    lon: 62.17,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Herat (ne_id 1159150319)' }
+      }
+    ]
+  }
 })

@@ -129,6 +129,8 @@ const loadEnglishWriting = (): Promise<typeof import('./englishWriting')> =>
 const loadProgrammingRepo = (): Promise<typeof import('./repos/programmingRepo')> =>
   import('./repos/programmingRepo')
 const loadHistory = (): Promise<typeof import('./history/historyService')> => import('./history/historyService')
+// The map's borders (1.6 MB of CShapes outlines) load only when the map opens.
+const loadHistoryMap = (): Promise<typeof import('./history/historyMap')> => import('./history/historyMap')
 
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
@@ -851,6 +853,8 @@ export function registerIpc(): void {
 
   // ---- history (curated content loaded on first use + personal layer) ----
   ipcMain.handle('history:overview', async () => (await loadHistory()).overview())
+  ipcMain.handle('history:borders', async () => (await loadHistoryMap()).borders())
+  ipcMain.handle('history:mapPins', async () => (await loadHistory()).mapPins())
   ipcMain.handle('history:decade', async (_e, start: number) => (await loadHistory()).decade(start))
   ipcMain.handle('history:article', async (_e, ref: string) => (await loadHistory()).article(ref))
   ipcMain.handle('history:sources', async () => (await loadHistory()).sources())

@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['latin-america'],
-  modernCountry: 'PA'
+  modernCountry: 'PA',
+  coords: {
+    lat: 8.97,
+    lon: -79.535,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Panama City (ne_id 1159150667)' }
+      }
+    ]
+  }
 })

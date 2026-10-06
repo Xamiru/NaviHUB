@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['latin-america'],
-  modernCountry: 'MX'
+  modernCountry: 'MX',
+  coords: {
+    lat: 19.0519,
+    lon: -98.202,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Puebla (ne_id 1159151295)' }
+      }
+    ]
+  }
 })

@@ -29,7 +29,7 @@ const TYPE_LABEL: Record<string, string> = {
 function posterSrc(card: HistoryMediaCard): string | null {
   if (card.library?.cover) return thumbUrl(card.library.cover, 320) ?? mediaUrl(card.library.cover)
   if (card.posterCached) return thumbUrl(card.posterCached, 320) ?? mediaUrl(card.posterCached)
-  return card.poster
+  return null
 }
 
 export function MediaPoster({ card, className = '' }: { card: HistoryMediaCard; className?: string }) {

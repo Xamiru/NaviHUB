@@ -387,6 +387,11 @@ function Hero({
         </div>
         <div className="flex shrink-0 items-center gap-2">
           {menu}
+          {view.mapYear !== null && (
+            <Link to={`/history/map?focus=${encodeURIComponent(view.ref)}`} className="btn-ghost bg-black/50">
+              On the map
+            </Link>
+          )}
           <FavoriteButton variant="overlay" active={view.mark.favorite} onClick={() => onMark('favorite', !view.mark.favorite)} className="!inline-flex" />
           <button type="button" className={view.mark.read ? 'btn-ghost bg-black/50' : 'btn-primary'} onClick={() => onMark('read', !view.mark.read)}>
             {view.mark.read ? '✓ Read' : 'Mark as read'}

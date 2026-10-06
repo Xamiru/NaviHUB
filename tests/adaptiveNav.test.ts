@@ -102,7 +102,7 @@ describe('adaptive archive navigation', () => {
   it('gives History one context across its timeline, articles and sources', () => {
     const ctx = archiveContextForPath('/history/person/mohammad-mosaddegh')
     expect(ctx).toMatchObject({ title: 'History', descriptor: 'World chronicle' })
-    expect(ctx.items.map((i) => i.to)).toEqual(['/history', '/history/sources', '/history/my', '/history/corrections'])
+    expect(ctx.items.map((i) => i.to)).toEqual(['/history', '/history/map', '/history/sources', '/history/my', '/history/corrections'])
     expect(drawerItemsForArea('learn').map((i) => i.to)).toContain('/history')
   })
 

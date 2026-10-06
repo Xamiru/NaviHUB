@@ -4,6 +4,7 @@ import {
   article,
   backlinks,
   decade,
+  mapPins,
   overview,
   search,
   sourceRows,
@@ -11,7 +12,7 @@ import {
   type LibraryPort,
   type ViewContext
 } from '../src/main/history/historyViews'
-import { defineEvent, definePerson } from '../src/shared/history/schema'
+import { defineEvent, definePerson, definePlace } from '../src/shared/history/schema'
 import type { HistoryMark, HistoryUserEntity } from '../src/shared/types'
 import { fixture, q } from './historyFixture'
 
@@ -200,5 +201,45 @@ describe('History sources, search and backlinks', () => {
       ['event:sample-revolution', 'set-during', 'curated'],
       ['person:sample-person', 'features-person', 'personal']
     ])
+  })
+})
+
+describe('History map pins', () => {
+  const tehran = definePlace({
+    id: 'tehran',
+    names: [{ text: 'Tehran', lang: 'en', role: 'primary' }],
+    researched: '2026-10-12',
+    placeType: 'city',
+    regions: ['iran'],
+    coords: { lat: 35.69, lon: 51.42, cites: [{ source: 'book-a', loc: { page: '3' } }] }
+  })
+  const nowhere = definePlace({
+    id: 'nowhere',
+    names: [{ text: 'Nowhere', lang: 'en', role: 'primary' }],
+    researched: '2026-10-12',
+    placeType: 'site',
+    regions: ['iran']
+  })
+  const located = defineEvent({
+    ...elsewhere,
+    id: 'located',
+    names: [{ text: 'Located', lang: 'en', role: 'primary' }],
+    places: [{ ref: 'place:nowhere' }, { ref: 'place:tehran' }]
+  })
+  const idx = buildIndex([
+    ...fixture(),
+    { path: 'places/tehran.ts', entity: tehran },
+    { path: 'places/nowhere.ts', entity: nowhere },
+    { path: 'events/located.ts', entity: located }
+  ])
+
+  it('pins an event at its first place with coordinates and leaves the rest off the map', () => {
+    const pins = mapPins(idx, { marks: new Map() })
+    expect(pins.map((p) => [p.ref, p.place, p.lat, p.lon])).toEqual([['event:located', 'Tehran', 35.69, 51.42]])
+  })
+
+  it('offers the map from the article only for a located event', () => {
+    expect(article(idx, 'event:located', { ...ctx(), note: null })!.mapYear).toBe(1978)
+    expect(article(idx, 'event:sample-revolution', { ...ctx(), note: null })!.mapYear).toBeNull()
   })
 })

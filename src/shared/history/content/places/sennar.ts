@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['subsaharan-africa'],
-  modernCountry: 'SD'
+  modernCountry: 'SD',
+  coords: {
+    lat: 13.55,
+    lon: 33.6,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Sennar (ne_id 1159147983)' }
+      }
+    ]
+  }
 })

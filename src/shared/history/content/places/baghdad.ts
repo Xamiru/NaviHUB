@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['mena'],
-  modernCountry: 'IQ'
+  modernCountry: 'IQ',
+  coords: {
+    lat: 33.3406,
+    lon: 44.3919,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Baghdad (ne_id 1159151547)' }
+      }
+    ]
+  }
 })

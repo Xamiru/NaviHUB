@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['iran'],
-  modernCountry: 'IR'
+  modernCountry: 'IR',
+  coords: {
+    lat: 34.382,
+    lon: 47.0581,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Kermanshah (ne_id 1159148681)' }
+      }
+    ]
+  }
 })

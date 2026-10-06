@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['mena'],
-  modernCountry: 'DZ'
+  modernCountry: 'DZ',
+  coords: {
+    lat: 36.765,
+    lon: 3.0486,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Algiers (ne_id 1159151471)' }
+      }
+    ]
+  }
 })

@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'AT'
+  modernCountry: 'AT',
+  coords: {
+    lat: 48.202,
+    lon: 16.3647,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Vienna (ne_id 1159151563)' }
+      }
+    ]
+  }
 })

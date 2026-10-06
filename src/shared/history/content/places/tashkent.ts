@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['russia-central-asia'],
-  modernCountry: 'UZ'
+  modernCountry: 'UZ',
+  coords: {
+    lat: 41.3136,
+    lon: 69.293,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Tashkent (ne_id 1159151501)' }
+      }
+    ]
+  }
 })

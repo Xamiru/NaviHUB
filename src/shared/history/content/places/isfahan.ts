@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['iran'],
-  modernCountry: 'IR'
+  modernCountry: 'IR',
+  coords: {
+    lat: 32.702,
+    lon: 51.6981,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Isfahan (ne_id 1159150971)' }
+      }
+    ]
+  }
 })

@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'FR'
+  modernCountry: 'FR',
+  coords: {
+    lat: 48.8005,
+    lon: 2.1333,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Versailles (ne_id 1159142029)' }
+      }
+    ]
+  }
 })

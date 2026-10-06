@@ -8,6 +8,7 @@ import {
   REGIONS,
   mediaFileId,
   parseRef,
+  primaryName,
   refOf,
   type ArchiveKind,
   type HistoryArticle,
@@ -27,6 +28,7 @@ import type {
   HistoryMediaBacklink,
   HistoryMediaCard,
   HistoryNote,
+  HistoryMapPin,
   HistoryOverview,
   HistoryRefInfo,
   HistorySearchHit,
@@ -108,15 +110,18 @@ export interface ViewContext {
 
 const isRead = (ctx: Pick<ViewContext, 'marks'>, ref: string): boolean => !!ctx.marks.get(ref)?.read
 
-function timelineItem(t: TimelineEntry, ctx: Pick<ViewContext, 'marks'>): HistoryTimelineItem {
-  return { ...t, read: isRead(ctx, t.ref) }
+type TimelineCtx = Pick<ViewContext, 'marks'> & { cached?: CachedLookup }
+
+function timelineItem(index: HistoryIndex, t: TimelineEntry, ctx: TimelineCtx): HistoryTimelineItem {
+  const e = lookup(index.catalog, t.ref)
+  return { ...t, read: isRead(ctx, t.ref), image: e ? toImage(imageOfEntity(e), ctx.cached ?? (() => null)) : null }
 }
 
 // ---- overview ----
 
-export function overview(index: HistoryIndex, ctx: Pick<ViewContext, 'marks'>): HistoryOverview {
-  const items = index.events.map((t) => timelineItem(t, ctx))
-  const periods = index.periods.map((t) => timelineItem(t, ctx))
+export function overview(index: HistoryIndex, ctx: TimelineCtx): HistoryOverview {
+  const items = index.events.map((t) => timelineItem(index, t, ctx))
+  const periods = index.periods.map((t) => timelineItem(index, t, ctx))
   const decades = new Map<number, { events: number; read: number }>()
   for (const t of items) {
     const d = Math.floor(t.s / 10) * 10
@@ -501,8 +506,20 @@ export function article(
     archive: archiveItems(e, ref, ctx),
     mark: ctx.marks.get(ref) ?? { read: null, favorite: false },
     note: ctx.note,
-    solarHijri: 'regions' in e && (e.regions as string[]).includes('iran')
+    solarHijri: 'regions' in e && (e.regions as string[]).includes('iran'),
+    mapYear: mapYearOf(index, e)
   }
+}
+
+/** An event's start year when one of its places carries coordinates. */
+function mapYearOf(index: HistoryIndex, e: HistoryArticle): number | null {
+  if (e.kind !== 'event') return null
+  const located = (e.places ?? []).some((l) => {
+    const p = parseRef(l.ref)
+    return p?.kind === 'place' && !!index.catalog.places.get(p.id)?.coords
+  })
+  const start = index.events.find((t) => t.ref === refOf('event', e.id))
+  return located && start ? Math.floor(start.s) : null
 }
 
 // ---- sources ----
@@ -608,4 +625,42 @@ export function decadeImageUrls(index: HistoryIndex, start: number): string[] {
     .map((p) => index.catalog.media.get(p.mediaId)?.title.posterUrl)
     .filter((u): u is string => !!u)
   return [...imageUrls(index, [...refs, ...people]), ...posters]
+}
+
+// ---- map ----
+
+/**
+ * Events with a located place, pinned at the first one that has coordinates.
+ * Events whose places carry no coordinates (or that name no place) stay off
+ * the map rather than being guessed at.
+ */
+export function mapPins(index: HistoryIndex, ctx: TimelineCtx): HistoryMapPin[] {
+  const pins: HistoryMapPin[] = []
+  for (const t of index.events) {
+    const e = lookup(index.catalog, t.ref)
+    if (!e || e.kind !== 'event') continue
+    for (const link of e.places ?? []) {
+      const parsed = parseRef(link.ref)
+      const place = parsed?.kind === 'place' ? index.catalog.places.get(parsed.id) : undefined
+      if (!place?.coords) continue
+      const item = timelineItem(index, t, ctx)
+      pins.push({
+        ref: t.ref,
+        title: t.title,
+        native: t.native,
+        typeLabel: t.typeLabel,
+        s: t.s,
+        e: t.e,
+        lane: t.lane,
+        prominence: t.prominence,
+        lat: place.coords.lat,
+        lon: place.coords.lon,
+        place: primaryName(place),
+        image: item.image,
+        read: item.read
+      })
+      break
+    }
+  }
+  return pins
 }

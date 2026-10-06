@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['south-asia'],
-  modernCountry: 'BD'
+  modernCountry: 'BD',
+  coords: {
+    lat: 23.725,
+    lon: 90.4066,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Dhaka (ne_id 1159151467)' }
+      }
+    ]
+  }
 })

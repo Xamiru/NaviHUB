@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['east-asia'],
-  modernCountry: 'CN'
+  modernCountry: 'CN',
+  coords: {
+    lat: 39.9308,
+    lon: 116.3863,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Beijing (ne_id 1159151595)' }
+      }
+    ]
+  }
 })

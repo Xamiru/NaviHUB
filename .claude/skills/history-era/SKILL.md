@@ -83,6 +83,9 @@ that imports these tools; run it with `PYTHONPATH=.claude/skills/history-era/too
   .claude/skills/history-era/tools/validate_spec.ts out.json` from the repo root).
 - `commons.py "words"` and `ia.py 'query'` look up Commons images and Internet Archive items with
   their license, creator, holding institution, size and files.
+- `gazetteer.py`: `coords(name, iso_country, today)` gives a place its Natural Earth position as cited
+  data (by name and country, never by name alone). The decade builds apply it to every place without
+  coordinates, so the map can pin its events; give a place `modernCountry` so it can be found.
 
 ## 3. Interpretations
 

@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['mena'],
-  modernCountry: 'EG'
+  modernCountry: 'EG',
+  coords: {
+    lat: 31.202,
+    lon: 29.948,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Alexandria (ne_id 1159151349)' }
+      }
+    ]
+  }
 })

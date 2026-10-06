@@ -47,6 +47,8 @@ import type {
   HistoryNoteKind,
   HistoryNoteRow,
   HistoryOverview,
+  HistoryBorders,
+  HistoryMapPin,
   HistorySaveResult,
   HistorySearchHit,
   HistorySourceRow,
@@ -827,6 +829,8 @@ export interface NaviApi {
     // loaded lazily in main; these views resolve it against this machine's
     // library, marks, notes and archive files.
     overview(): Promise<HistoryOverview>
+    borders(): Promise<HistoryBorders>
+    mapPins(): Promise<HistoryMapPin[]>
     decade(start: number): Promise<HistoryDecade>
     // ref = `event:<slug>`, `person:<slug>`, `period:<slug>` or `place:<slug>`.
     article(ref: string): Promise<HistoryArticleView | null>

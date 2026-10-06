@@ -103,8 +103,8 @@ describe('History citations', () => {
 })
 
 const items: HistoryTimelineItem[] = [
-  { ref: 'event:a', kind: 'event', title: 'Sample Revolution', native: null, typeLabel: 'Revolution', s: 1978, e: 1979.2, lane: 'iran', regions: ['iran'], prominence: 1, read: true, personal: false },
-  { ref: 'event:b', kind: 'event', title: 'Faraway War', native: null, typeLabel: 'War', s: 1950.5, e: 1953.5, lane: 'east-asia', regions: ['east-asia'], prominence: 1, read: false, personal: false }
+  { ref: 'event:a', kind: 'event', title: 'Sample Revolution', native: null, typeLabel: 'Revolution', s: 1978, e: 1979.2, lane: 'iran', regions: ['iran'], prominence: 1, read: true, personal: false, image: null },
+  { ref: 'event:b', kind: 'event', title: 'Faraway War', native: null, typeLabel: 'War', s: 1950.5, e: 1953.5, lane: 'east-asia', regions: ['east-asia'], prominence: 1, read: false, personal: false, image: null }
 ]
 
 describe('History timeline', () => {
@@ -134,6 +134,7 @@ describe('History timeline', () => {
 function articleView(): HistoryArticleView {
   return {
     ref: 'event:sample',
+    mapYear: null,
     entity: {
       v: 1,
       kind: 'event',

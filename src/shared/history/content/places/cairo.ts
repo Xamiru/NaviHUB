@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['mena'],
-  modernCountry: 'EG'
+  modernCountry: 'EG',
+  coords: {
+    lat: 30.0519,
+    lon: 31.248,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Cairo (ne_id 1159151603)' }
+      }
+    ]
+  }
 })

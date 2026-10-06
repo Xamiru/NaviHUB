@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'GB'
+  modernCountry: 'GB',
+  coords: {
+    lat: 53.5024,
+    lon: -2.2499,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Manchester (ne_id 1159149119)' }
+      }
+    ]
+  }
 })

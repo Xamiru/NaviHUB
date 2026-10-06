@@ -20,10 +20,13 @@ CONTENT = os.path.join(REPO, 'src/shared/history/content')
 
 PAGES = {}  # url -> dict(section=..., base=int | None)
 
-def page(url, section, base=None):
+def page(url, section, base=None, keep_forms=False):
     """Registers a page. `base` is the paragraph index of the body's first
-    paragraph, so locators count paragraphs as a reader would."""
+    paragraph, so locators count paragraphs as a reader would. `keep_forms`
+    reads a page whose body sits inside a <form> (fetch.KEEP_FORMS)."""
     PAGES[url] = {'section': section, 'base': base}
+    if keep_forms:
+        fetch.KEEP_FORMS.add(url)
     return url
 
 def para_text(url, i):

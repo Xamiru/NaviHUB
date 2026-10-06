@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['russia-central-asia'],
-  modernCountry: 'UZ'
+  modernCountry: 'UZ',
+  coords: {
+    lat: 39.78,
+    lon: 64.43,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Bukhara (ne_id 1159149337)' }
+      }
+    ]
+  }
 })

@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['latin-america'],
-  modernCountry: 'VE'
+  modernCountry: 'VE',
+  coords: {
+    lat: 10.5029,
+    lon: -66.919,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Caracas (ne_id 1159151493)' }
+      }
+    ]
+  }
 })

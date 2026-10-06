@@ -7,6 +7,19 @@ export default definePerson({
     { text: 'محمد طباطبایی', lang: 'fa', role: 'native' }
   ],
   researched: '2026-10-06',
+  died: {
+    alts: [
+      {
+        value: { d: '1921' },
+        cites: [
+          {
+            source: 'iranica-yarshater-chronology-part-2',
+            loc: { section: 'Chronology of Iranian History Part 2, 1921' }
+          }
+        ]
+      }
+    ]
+  },
   regions: ['iran'],
   roles: ['cleric'],
   sections: [

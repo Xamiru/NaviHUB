@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'DE'
+  modernCountry: 'DE',
+  coords: {
+    lat: 51.3354,
+    lon: 12.41,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Leipzig (ne_id 1159140685)' }
+      }
+    ]
+  }
 })

@@ -4,6 +4,7 @@ import PageStatus from '../components/PageStatus'
 import EmptyState from '../components/EmptyState'
 import { RefRow } from '../components/history/HistoryBits'
 import { api } from '../lib/api'
+import { useHistoryImageRefresh } from '../lib/historyUi'
 import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { toast } from '../lib/toast'
@@ -14,10 +15,11 @@ import { toast } from '../lib/toast'
 
 export default function HistoryCorrectionsPage() {
   const [kind, setKind] = usePersistedState<'correction' | 'all'>('history.notes.kind', 'correction')
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, dataUpdatedAt } = useQuery({
     queryKey: qk.history.notes(kind),
     queryFn: () => api.history.notes(kind === 'all' ? undefined : 'correction')
   })
+  useHistoryImageRefresh(dataUpdatedAt)
   if (isLoading) return <PageStatus>Loading…</PageStatus>
   const notes = data ?? []
   const copy = async (): Promise<void> => {

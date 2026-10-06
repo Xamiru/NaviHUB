@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['russia-central-asia'],
-  modernCountry: 'RU'
+  modernCountry: 'RU',
+  coords: {
+    lat: 59.941,
+    lon: 30.3141,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'St.  Petersburg (ne_id 1159151291)' }
+      }
+    ]
+  }
 })

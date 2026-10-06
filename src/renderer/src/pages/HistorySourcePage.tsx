@@ -7,6 +7,7 @@ import PageStatus from '../components/PageStatus'
 import { PersonalBadge, RefRow } from '../components/history/HistoryBits'
 import { SourceReference } from '../components/history/Citations'
 import { api } from '../lib/api'
+import { useHistoryImageRefresh } from '../lib/historyUi'
 import { qk } from '../lib/queryKeys'
 
 // One cited work: its full reference, translations, and every History page
@@ -14,7 +15,11 @@ import { qk } from '../lib/queryKeys'
 
 export default function HistorySourcePage() {
   const { id = '' } = useParams()
-  const { data, isLoading } = useQuery({ queryKey: qk.history.source(id), queryFn: () => api.history.source(id) })
+  const { data, isLoading, dataUpdatedAt } = useQuery({
+    queryKey: qk.history.source(id),
+    queryFn: () => api.history.source(id)
+  })
+  useHistoryImageRefresh(dataUpdatedAt)
   if (isLoading) return <PageStatus>Loading…</PageStatus>
   if (!data) {
     return (

@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'NL'
+  modernCountry: 'NL',
+  coords: {
+    lat: 52.08,
+    lon: 4.27,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'The Hague (ne_id 1159149457)' }
+      }
+    ]
+  }
 })

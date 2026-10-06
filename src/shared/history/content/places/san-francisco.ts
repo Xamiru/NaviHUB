@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['north-america'],
-  modernCountry: 'US'
+  modernCountry: 'US',
+  coords: {
+    lat: 37.7692,
+    lon: -122.4172,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'San Francisco (ne_id 1159151479)' }
+      }
+    ]
+  }
 })

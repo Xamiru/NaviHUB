@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['east-asia'],
-  modernCountry: 'JP'
+  modernCountry: 'JP',
+  coords: {
+    lat: 32.765,
+    lon: 129.885,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Nagasaki (ne_id 1159150893)' }
+      }
+    ]
+  }
 })

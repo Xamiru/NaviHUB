@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['subsaharan-africa'],
-  modernCountry: 'SD'
+  modernCountry: 'SD',
+  coords: {
+    lat: 15.59,
+    lon: 32.5322,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Khartoum (ne_id 1159151275)' }
+      }
+    ]
+  }
 })

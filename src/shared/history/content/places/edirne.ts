@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'TR'
+  modernCountry: 'TR',
+  coords: {
+    lat: 41.6704,
+    lon: 26.57,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Edirne (ne_id 1159135139)' }
+      }
+    ]
+  }
 })

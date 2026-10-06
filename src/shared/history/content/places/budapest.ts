@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'HU'
+  modernCountry: 'HU',
+  coords: {
+    lat: 47.502,
+    lon: 19.0814,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Budapest (ne_id 1159151257)' }
+      }
+    ]
+  }
 })

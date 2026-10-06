@@ -28,11 +28,11 @@ export default definePerson({
       end: {
         alts: [
           {
-            value: { d: '1925' },
+            value: { d: '1925-10-31' },
             cites: [
               {
                 source: 'iranica-sheikh-ol-islami-ahmad-shah',
-                loc: { section: 'AḤMAD SHAH QĀJĀR', para: '1' }
+                loc: { section: 'AḤMAD SHAH QĀJĀR', para: '16' }
               }
             ]
           }

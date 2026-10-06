@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'DE'
+  modernCountry: 'DE',
+  coords: {
+    lat: 50.1,
+    lon: 8.675,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Frankfurt (ne_id 1159151351)' }
+      }
+    ]
+  }
 })

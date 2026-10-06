@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['latin-america'],
-  modernCountry: 'MX'
+  modernCountry: 'MX',
+  coords: {
+    lat: 19.4444,
+    lon: -99.1329,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Mexico City (ne_id 1159151587)' }
+      }
+    ]
+  }
 })

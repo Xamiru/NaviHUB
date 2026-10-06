@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['south-asia'],
-  modernCountry: 'IN'
+  modernCountry: 'IN',
+  coords: {
+    lat: 28.6719,
+    lon: 77.2281,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Delhi (ne_id 1159151405)' }
+      }
+    ]
+  }
 })

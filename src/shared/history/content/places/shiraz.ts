@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['iran'],
-  modernCountry: 'IR'
+  modernCountry: 'IR',
+  coords: {
+    lat: 29.6319,
+    lon: 52.5681,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Shiraz (ne_id 1159150973)' }
+      }
+    ]
+  }
 })

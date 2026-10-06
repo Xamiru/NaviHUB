@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['south-asia'],
-  modernCountry: 'IN'
+  modernCountry: 'IN',
+  coords: {
+    lat: 29.0024,
+    lon: 77.6981,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Meerut (ne_id 1159149181)' }
+      }
+    ]
+  }
 })

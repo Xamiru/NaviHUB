@@ -15,9 +15,15 @@ UA = 'NaviHUB/1.0 (personal offline history archive; research session)'
 BLOCK = {'p', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'blockquote', 'dd', 'dt', 'td', 'th', 'pre', 'figcaption', 'caption', 'div', 'br', 'tr', 'section', 'article'}
 SKIP = {'script', 'style', 'noscript', 'svg', 'nav', 'footer', 'header', 'form', 'button', 'select'}
 
+# Pages whose whole body sits inside a <form> (old ASP.NET sites): parsed without
+# skipping forms. Opt-in per URL (lib.page(..., keep_forms=True)) so every other
+# page keeps the paragraph numbering its committed quotes were cut against.
+KEEP_FORMS = set()
+
 class P(HTMLParser):
-    def __init__(self):
+    def __init__(self, skip_tags=None):
         super().__init__(convert_charrefs=True)
+        self.skip_tags = SKIP if skip_tags is None else skip_tags
         self.parts, self.tags, self.cur, self.skip, self.tag = [], [], [], 0, ''
     def flush(self):
         t = re.sub(r'\s+', ' ', ''.join(self.cur)).strip()
@@ -25,11 +31,11 @@ class P(HTMLParser):
             self.parts.append(t); self.tags.append(self.tag)
         self.cur = []
     def handle_starttag(self, tag, attrs):
-        if tag in SKIP: self.skip += 1
+        if tag in self.skip_tags: self.skip += 1
         elif tag in BLOCK:
             self.flush(); self.tag = tag
     def handle_endtag(self, tag):
-        if tag in SKIP: self.skip = max(0, self.skip - 1)
+        if tag in self.skip_tags: self.skip = max(0, self.skip - 1)
         elif tag in BLOCK: self.flush()
     def handle_data(self, data):
         if not self.skip: self.cur.append(data)
@@ -105,7 +111,7 @@ def paragraphs(url):
     text = decode(raw)
     if url.endswith('.txt'):
         return [re.sub(r'\s+', ' ', b).strip() for b in re.split(r'\n\s*\n', text) if b.strip()]
-    p = P(); p.feed(text); p.flush()
+    p = P(SKIP - {'form'} if url in KEEP_FORMS else None); p.feed(text); p.flush()
     return p.parts
 
 def tagged(url):

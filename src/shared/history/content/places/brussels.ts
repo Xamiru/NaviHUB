@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'BE'
+  modernCountry: 'BE',
+  coords: {
+    lat: 50.8353,
+    lon: 4.3314,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Brussels (ne_id 1159151465)' }
+      }
+    ]
+  }
 })

@@ -12,11 +12,13 @@ import { validateEntity } from '@shared/history/validate'
 import type {
   HistoryArticleView,
   HistoryDecade,
+  HistoryImage,
   HistoryMark,
   HistoryMediaBacklink,
   HistoryNote,
   HistoryNoteKind,
   HistoryNoteRow,
+  HistoryMapPin,
   HistoryOverview,
   HistorySaveResult,
   HistorySearchHit,
@@ -69,7 +71,13 @@ function context(): views.ViewContext {
 }
 
 export function overview(): HistoryOverview {
-  return views.overview(index(), { marks: repo.marks() })
+  const o = views.overview(index(), { marks: repo.marks(), cached: cachedUrl })
+  // The timeline's medallions: the lead events' pictures, through the paced
+  // queue behind any page that asked first. Cached once, so this is a no-op
+  // after the first visit.
+  const lead = o.items.filter((i) => i.prominence === 1 && i.image && !i.image.cached).map((i) => i.image!.url)
+  ensureImages(lead, 'Caching timeline images', Date.now(), { back: true })
+  return o
 }
 
 export function decade(start: number): HistoryDecade {
@@ -91,8 +99,23 @@ export function sources(): HistorySourceRow[] {
   return views.sourceRows(index())
 }
 
+/** The uncached image URLs of rows a page shows (pages never load remote URLs themselves). */
+function missingImages(rows: Array<{ image: HistoryImage | null }>): string[] {
+  return rows.filter((r) => r.image && !r.image.cached).map((r) => r.image!.url)
+}
+
 export function source(id: string): HistorySourceView | null {
-  return views.sourceView(index(), id, cachedUrl)
+  const view = views.sourceView(index(), id, cachedUrl)
+  if (view) ensureImages(missingImages(view.citedBy), 'Caching History images')
+  return view
+}
+
+export function mapPins(): HistoryMapPin[] {
+  const pins = views.mapPins(index(), { marks: repo.marks(), cached: cachedUrl })
+  // Every pin's hover card shows its picture: a background prefetch behind any
+  // page that asked first, as for the timeline's medallions.
+  ensureImages(missingImages(pins), 'Caching map images', Date.now(), { back: true })
+  return pins
 }
 
 export function search(q: string): HistorySearchHit[] {
@@ -119,7 +142,9 @@ export function saveNote(ref: string, body: string, kind: HistoryNoteKind): Hist
 
 export function notes(kind?: HistoryNoteKind): HistoryNoteRow[] {
   const idx = index()
-  return repo.notes(kind).map((n) => ({ ...n, target: refInfo(idx, n.ref, cachedUrl) }))
+  const rows = repo.notes(kind).map((n) => ({ ...n, target: refInfo(idx, n.ref, cachedUrl) }))
+  ensureImages(missingImages(rows.map((r) => r.target)), 'Caching History images')
+  return rows
 }
 
 export function linkMedia(ref: string, mediaId: number, kind: string): number {

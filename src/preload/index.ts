@@ -325,6 +325,8 @@ const api: NaviApi = {
   },
   history: {
     overview: () => ipcRenderer.invoke('history:overview'),
+    borders: () => ipcRenderer.invoke('history:borders'),
+    mapPins: () => ipcRenderer.invoke('history:mapPins'),
     decade: (start) => ipcRenderer.invoke('history:decade', start),
     article: (ref) => ipcRenderer.invoke('history:article', ref),
     sources: () => ipcRenderer.invoke('history:sources'),

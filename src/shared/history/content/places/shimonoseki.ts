@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['east-asia'],
-  modernCountry: 'JP'
+  modernCountry: 'JP',
+  coords: {
+    lat: 33.9654,
+    lon: 130.9454,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Shimonoseki (ne_id 1159130233)' }
+      }
+    ]
+  }
 })

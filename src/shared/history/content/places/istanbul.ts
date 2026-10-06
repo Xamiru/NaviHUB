@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['mena'],
-  modernCountry: 'TR'
+  modernCountry: 'TR',
+  coords: {
+    lat: 41.1069,
+    lon: 29.0081,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Istanbul (ne_id 1159151579)' }
+      }
+    ]
+  }
 })

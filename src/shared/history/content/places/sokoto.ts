@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['subsaharan-africa'],
-  modernCountry: 'NG'
+  modernCountry: 'NG',
+  coords: {
+    lat: 13.06,
+    lon: 5.24,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Sokoto (ne_id 1159150773)' }
+      }
+    ]
+  }
 })

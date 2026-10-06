@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['southeast-asia'],
-  modernCountry: 'ID'
+  modernCountry: 'ID',
+  coords: {
+    lat: -7.78,
+    lon: 110.375,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Yogyakarta (ne_id 1159148273)' }
+      }
+    ]
+  }
 })

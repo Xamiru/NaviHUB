@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['latin-america'],
-  modernCountry: 'CU'
+  modernCountry: 'CU',
+  coords: {
+    lat: 23.1339,
+    lon: -82.3661,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Havana (ne_id 1159151347)' }
+      }
+    ]
+  }
 })

@@ -15,11 +15,15 @@ export function historyPath(ref: string): string | null {
   return `/history/${p.kind}/${p.id}`
 }
 
-/** The cached copy once it exists (as a thumbnail when small), else the remote URL. */
+/**
+ * The local copy only. Pages never load the remote URL themselves: a decade or
+ * article would fire dozens of parallel requests at Wikimedia (which rate-limits
+ * bursts) on top of the paced background cache, so an image shows a placeholder
+ * until its copy lands.
+ */
 export function historyImageSrc(img: HistoryImage | null | undefined, width?: number): string | null {
-  if (!img) return null
-  if (img.cached) return (width ? thumbUrl(img.cached, width) : null) ?? mediaUrl(img.cached)
-  return img.url
+  if (!img?.cached) return null
+  return (width ? thumbUrl(img.cached, width) : null) ?? mediaUrl(img.cached)
 }
 
 const MEDIA_TYPE_PATHS: Record<MediaType, string> = {
@@ -35,6 +39,8 @@ const MEDIA_TYPE_PATHS: Record<MediaType, string> = {
 export function libraryPath(mediaType: MediaType, id: number): string {
   return `${MEDIA_TYPE_PATHS[mediaType]}/${id}`
 }
+
+const NO_IMAGE_KEYS = new Set<unknown>([qk.history.imageStatus[1], qk.history.borders[1], qk.history.archiveJobs[1]])
 
 /**
  * Pages trigger a background image-cache batch when they load; poll its
@@ -52,14 +58,25 @@ export function useHistoryImageRefresh(loadedAt: number): void {
   useEffect(() => {
     if (loadedAt) void refetch()
   }, [loadedAt, refetch])
+  // Refresh the views as images land (each poll that saw progress) and once more
+  // when the queue settles, so pictures appear one by one instead of all at the end.
   const wasRunning = useRef(false)
+  const seenDone = useRef(0)
   useEffect(() => {
-    if (data?.running) wasRunning.current = true
-    else if (wasRunning.current && data && !data.running) {
-      wasRunning.current = false
+    if (!data) return
+    // Only views that carry images: the map's borders are large and never change.
+    const refresh = (): void =>
       void queryClient.invalidateQueries({
-        predicate: (q) => q.queryKey[0] === 'history' && q.queryKey[1] !== 'imageStatus'
+        predicate: (q) => q.queryKey[0] === 'history' && !NO_IMAGE_KEYS.has(q.queryKey[1])
       })
+    if (data.running) {
+      if (wasRunning.current && data.done > seenDone.current) refresh()
+      wasRunning.current = true
+      seenDone.current = data.done
+    } else if (wasRunning.current) {
+      wasRunning.current = false
+      seenDone.current = 0
+      refresh()
     }
   }, [data, queryClient])
 }

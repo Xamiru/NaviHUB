@@ -238,6 +238,7 @@ export function archiveContextForPath(pathname: string): ArchiveContext {
       descriptor: 'World chronicle',
       items: [
         { to: '/history', label: 'Timeline' },
+        { to: '/history/map', label: 'Map' },
         { to: '/history/sources', label: 'Sources' },
         { to: '/history/my', label: 'My additions' },
         { to: '/history/corrections', label: 'Corrections' }

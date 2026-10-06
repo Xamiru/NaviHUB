@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['latin-america'],
-  modernCountry: 'EC'
+  modernCountry: 'EC',
+  coords: {
+    lat: -0.213,
+    lon: -78.502,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Quito (ne_id 1159150847)' }
+      }
+    ]
+  }
 })

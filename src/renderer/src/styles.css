@@ -2872,3 +2872,53 @@ html[data-theme='seinfeld'] .home-resume.sf-episode { display: flex; overflow: h
 @keyframes tape-rec { 50% { opacity: 0; } }
 @keyframes present-a { 0% { opacity: 0; } 5% { opacity: 1; } 48%, 100% { opacity: 0; } }
 @keyframes present-b { 0%, 48% { opacity: 0; } 49% { opacity: 1; } 100% { opacity: 1; } }
+
+/* ---- History timeline stage ----
+   A fixed night-sky island whatever the page theme (like .theme-dark for the
+   readers): its own canvas and ink, one hue per region lane. Components refer
+   only to these variables, never to colour literals. */
+.history-stage {
+  color-scheme: dark;
+  --stage-bg: 8 10 18;
+  --stage-bg-2: 16 19 33;
+  --ink-primary: 238 236 230;
+  --ink-secondary: 186 189 204;
+  --ink-muted: 132 137 158;
+  --ink-decorative: 82 86 104;
+  --line-subtle: 255 255 255;
+  --hist-iran: 255 178 122;
+  --hist-mena: 240 196 98;
+  --hist-europe: 128 168 255;
+  --hist-russia-central-asia: 190 150 255;
+  --hist-south-asia: 255 132 132;
+  --hist-east-asia: 246 110 160;
+  --hist-southeast-asia: 96 226 156;
+  --hist-subsaharan-africa: 214 226 92;
+  --hist-north-america: 94 204 250;
+  --hist-latin-america: 64 222 200;
+  --hist-oceania: 146 156 255;
+  --hist-global: 214 220 232;
+  background:
+    radial-gradient(120% 80% at 15% -10%, rgb(var(--hist-iran) / 0.10), transparent 55%),
+    radial-gradient(90% 70% at 100% 110%, rgb(var(--hist-europe) / 0.10), transparent 60%),
+    linear-gradient(180deg, rgb(var(--stage-bg-2)), rgb(var(--stage-bg)));
+  color: rgb(var(--ink-primary));
+}
+.history-stage .hist-display { font-family: var(--font-chrome); }
+.history-stage .stage-grain {
+  background-image: radial-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+.history-stage .ev-glow { box-shadow: 0 0 0 1px rgb(var(--lane) / 0.55), 0 0 14px rgb(var(--lane) / 0.45); }
+.history-stage .ev-glow-strong { box-shadow: 0 0 0 2px rgb(var(--lane)), 0 0 22px rgb(var(--lane) / 0.7); }
+.history-stage .hist-numeral {
+  font-size: clamp(64px, 9vw, 132px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: rgb(255 255 255 / 0.035);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .history-stage .ev-pop { transition: transform 160ms ease, box-shadow 160ms ease, opacity 160ms ease; }
+  .history-stage .hover-card { animation: hist-card-in 140ms ease-out; }
+}
+@keyframes hist-card-in { from { opacity: 0; transform: translateY(6px) scale(0.98); } }

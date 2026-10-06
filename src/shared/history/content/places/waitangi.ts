@@ -8,5 +8,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'site',
   regions: ['oceania'],
-  modernCountry: 'NZ'
+  modernCountry: 'NZ',
+  coords: {
+    lat: -44.0263,
+    lon: -176.3696,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Waitangi (ne_id 1159151737)' }
+      }
+    ]
+  }
 })

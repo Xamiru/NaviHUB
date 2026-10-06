@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['east-asia'],
-  modernCountry: 'CN'
+  modernCountry: 'CN',
+  coords: {
+    lat: 32.052,
+    lon: 118.778,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Nanjing (ne_id 1159151385)' }
+      }
+    ]
+  }
 })

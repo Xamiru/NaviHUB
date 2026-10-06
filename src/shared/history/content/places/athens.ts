@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['europe'],
-  modernCountry: 'GR'
+  modernCountry: 'GR',
+  coords: {
+    lat: 37.9853,
+    lon: 23.7314,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Athens (ne_id 1159151545)' }
+      }
+    ]
+  }
 })

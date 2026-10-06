@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['iran'],
-  modernCountry: 'IR'
+  modernCountry: 'IR',
+  coords: {
+    lat: 36.272,
+    lon: 59.5681,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Mashhad (ne_id 1159151421)' }
+      }
+    ]
+  }
 })

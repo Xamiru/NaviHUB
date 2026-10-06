@@ -303,6 +303,8 @@ export const qk = {
     userEntity: (id: string) => ['history', 'userEntity', id] as const,
     backlinks: (mediaId: number) => ['history', 'backlinks', mediaId] as const,
     imageStatus: ['history', 'imageStatus'] as const,
+    borders: ['history', 'borders'] as const,
+    mapPins: ['history', 'mapPins'] as const,
     archiveJobs: ['history', 'archiveJobs'] as const,
     search: (q: string) => ['history', 'search', q] as const
   },

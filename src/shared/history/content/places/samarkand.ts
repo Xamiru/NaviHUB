@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['russia-central-asia'],
-  modernCountry: 'UZ'
+  modernCountry: 'UZ',
+  coords: {
+    lat: 39.67,
+    lon: 66.945,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Samarkand (ne_id 1159150569)' }
+      }
+    ]
+  }
 })

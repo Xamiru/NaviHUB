@@ -30,5 +30,15 @@ export default definePlace({
         }
       ]
     }
-  ]
+  ],
+  coords: {
+    lat: 38.0882,
+    lon: 46.2993,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Tabriz (ne_id 1159150135)' }
+      }
+    ]
+  }
 })

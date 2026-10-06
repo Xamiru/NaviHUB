@@ -8,7 +8,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const files = vi.hoisted(() => ({
   onDisk: new Set<string>(),
   downloaded: [] as string[],
-  failFor: new Set<string>()
+  failFor: new Set<string>(),
+  active: 0,
+  maxActive: 0
 }))
 
 vi.mock('electron', () => ({ app: { getPath: () => '/tmp/navihub-history-images-test' }, dialog: {} }))
@@ -16,20 +18,27 @@ vi.mock('../src/main/files', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   cachedDownload: (url: string) => (files.onDisk.has(url) ? `media/dl-${url}` : null),
   downloadImage: async (url: string) => {
+    files.active += 1
+    files.maxActive = Math.max(files.maxActive, files.active)
     files.downloaded.push(url)
+    await new Promise((r) => setTimeout(r, 2))
+    files.active -= 1
     if (files.failFor.has(url)) return null
     files.onDisk.add(url)
     return `media/dl-${url}`
   }
 }))
 
-import { RETRY_COOLDOWN_MS, ensureImages, imageStatus } from '../src/main/history/historyImages'
+import { RETRY_COOLDOWN_MS, ensureImages, imageStatus, setDownloadGapForTests } from '../src/main/history/historyImages'
 
 async function settle(): Promise<void> {
-  for (let i = 0; i < 50 && imageStatus().running; i++) await new Promise((r) => setTimeout(r, 5))
+  for (let i = 0; i < 400 && imageStatus().running; i++) await new Promise((r) => setTimeout(r, 5))
 }
 
 beforeEach(() => {
+  setDownloadGapForTests(1)
+  files.active = 0
+  files.maxActive = 0
   files.onDisk.clear()
   files.downloaded.length = 0
   files.failFor.clear()
@@ -52,5 +61,26 @@ describe('History image cache', () => {
     expect(ensureImages([dead, good], 'test', Date.now() + RETRY_COOLDOWN_MS + 1)).toEqual({ started: true })
     await settle()
     expect(files.downloaded.filter((u) => u === dead)).toHaveLength(2)
+  })
+
+  it('downloads one image at a time, never in parallel', async () => {
+    const urls = Array.from({ length: 6 }, (_, i) => `https://upload.wikimedia.org/p${i}.jpg`)
+    ensureImages(urls, 'test')
+    await settle()
+    expect(files.downloaded.sort()).toEqual([...urls].sort())
+    expect(files.maxActive).toBe(1)
+  })
+
+  it('puts the latest page first and lets it join a running queue', async () => {
+    const first = Array.from({ length: 4 }, (_, i) => `https://upload.wikimedia.org/a${i}.jpg`)
+    const second = ['https://upload.wikimedia.org/b0.jpg', 'https://upload.wikimedia.org/b1.jpg']
+    ensureImages(first, 'decade')
+    expect(ensureImages(second, 'article')).toEqual({ started: true })
+    expect(imageStatus()).toMatchObject({ running: true, total: 6 })
+    await settle()
+    // a0 was already in flight; the article's images come straight after it.
+    expect(files.downloaded.slice(0, 3)).toEqual([first[0], ...second])
+    expect(new Set(files.downloaded)).toEqual(new Set([...first, ...second]))
+    expect(imageStatus()).toMatchObject({ running: false, done: 6, total: 6 })
   })
 })

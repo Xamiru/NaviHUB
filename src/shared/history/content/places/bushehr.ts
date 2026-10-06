@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['iran'],
-  modernCountry: 'IR'
+  modernCountry: 'IR',
+  coords: {
+    lat: 28.92,
+    lon: 50.83,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Bandar-e Bushehr (ne_id 1159148665)' }
+      }
+    ]
+  }
 })

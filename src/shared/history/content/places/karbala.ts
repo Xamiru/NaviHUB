@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['mena'],
-  modernCountry: 'IQ'
+  modernCountry: 'IQ',
+  coords: {
+    lat: 32.6149,
+    lon: 44.0245,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Karbala (ne_id 1159142291)' }
+      }
+    ]
+  }
 })

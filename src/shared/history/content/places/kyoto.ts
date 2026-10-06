@@ -9,5 +9,15 @@ export default definePlace({
   researched: '2026-10-06',
   placeType: 'city',
   regions: ['east-asia'],
-  modernCountry: 'JP'
+  modernCountry: 'JP',
+  coords: {
+    lat: 35.0319,
+    lon: 135.7481,
+    cites: [
+      {
+        source: 'natural-earth-populated-places',
+        loc: { section: 'Kyoto (ne_id 1159149967)' }
+      }
+    ]
+  }
 })

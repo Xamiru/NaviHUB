@@ -5285,12 +5285,59 @@ export interface HistoryTimelineItem {
   prominence: 1 | 2 | 3
   read: boolean
   personal: boolean
+  /** Hero or portrait, for the timeline's medallions and hover card. */
+  image: HistoryImage | null
 }
 
 export interface HistoryDecadeSummary {
   start: number
   events: number
   read: number
+}
+
+/** One historical border version (CShapes); its outline is `shapes[shape]`. */
+export interface HistoryMapUnit {
+  set: 'world' | 'europe'
+  name: string
+  code: number
+  /** Decimal years, end exclusive. */
+  from: number
+  to: number
+  status?: string
+  shape: number
+  /** [lon, lat] of the label point. */
+  label: [number, number]
+  capital: string | null
+  capitalAt: [number, number] | null
+}
+
+export interface HistoryBorders {
+  attribution: string
+  url: string
+  /** Degrees per encoded unit. */
+  quantum: number
+  /** First year the world set covers; earlier years have Europe only. */
+  worldFrom: number
+  /** Each shape: rings of delta-encoded [x, y, dx, dy, ...] integers. */
+  shapes: number[][][]
+  units: HistoryMapUnit[]
+}
+
+/** An event placed on the map at its first located place. */
+export interface HistoryMapPin {
+  ref: string
+  title: string
+  native: string | null
+  typeLabel: string
+  s: number
+  e: number | null
+  lane: RegionKey
+  prominence: 1 | 2 | 3
+  lat: number
+  lon: number
+  place: string
+  image: HistoryImage | null
+  read: boolean
 }
 
 export interface HistoryOverview {
@@ -5397,6 +5444,8 @@ export interface HistoryParticipation {
 
 export interface HistoryArticleView {
   ref: string
+  /** The year to open the map at when the event has a located place, else null. */
+  mapYear: number | null
   entity: HistoryArticle
   personal: boolean
   /** Every entity the article mentions, resolved. */

@@ -100,12 +100,16 @@ describe('main-process loading boundaries', () => {
   it('loads the History content catalog only through the lazy History service', () => {
     // The committed content grows by a decade per research session; it must
     // never parse at launch or ride into the renderer bundle.
-    const staticImport = /^import [^\n]*from ['"][^'"]*(history\/historyService|history\/catalog)['"]/m
+    const staticImport = /^import [^\n]*from ['"][^'"]*(history\/historyService|history\/catalog|history\/historyMap)['"]/m
     for (const file of ['src/main/ipc.ts', 'src/main/repos/searchRepo.ts', 'src/main/index.ts']) {
       expect(read(file), file).not.toMatch(staticImport)
     }
     expect(read('src/main/ipc.ts')).toContain("import('./history/historyService')")
     expect(read('src/main/repos/searchRepo.ts')).toContain("import('../history/historyService')")
+    // The map's 1.6 MB of borders load only when the map opens, as raw text.
+    expect(read('src/main/ipc.ts')).toContain("import('./history/historyMap')")
+    expect(read('src/main/history/historyMap.ts')).toContain("import('./data/borders.json?raw')")
+    expect(read('src/main/history/historyService.ts')).not.toMatch(/borders\.json|historyMap/)
     // Media detail pages ask for backlinks on every visit; a cheap gate decides first.
     expect(read('src/main/ipc.ts')).toContain("import('./history/historyBacklinkGate')")
     expect(read('src/main/history/historyBacklinkGate.ts')).not.toMatch(/history\/(catalog|historyService)/)

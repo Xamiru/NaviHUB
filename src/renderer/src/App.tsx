@@ -135,6 +135,7 @@ const FootballHomePage = lazy(() => import('./pages/FootballHomePage'))
 const HistoryHomePage = lazy(() => import('./pages/HistoryHomePage'))
 const HistoryArticlePage = lazy(() => import('./pages/HistoryArticlePage'))
 const HistorySourcesPage = lazy(() => import('./pages/HistorySourcesPage'))
+const HistoryMapPage = lazy(() => import('./pages/HistoryMapPage'))
 const HistorySourcePage = lazy(() => import('./pages/HistorySourcePage'))
 const HistoryEditPage = lazy(() => import('./pages/HistoryEditPage'))
 const HistoryMyPage = lazy(() => import('./pages/HistoryMyPage'))
@@ -600,6 +601,7 @@ export default function App() {
             <Route path="/history/period/:id" element={<HistoryArticlePage kind="period" />} />
             <Route path="/history/place/:id" element={<HistoryArticlePage kind="place" />} />
             <Route path="/history/sources" element={<HistorySourcesPage />} />
+            <Route path="/history/map" element={<HistoryMapPage />} />
             <Route path="/history/source/:id" element={<HistorySourcePage />} />
             <Route path="/history/my" element={<HistoryMyPage />} />
             <Route path="/history/my/:id/edit" element={<HistoryEditPage />} />
