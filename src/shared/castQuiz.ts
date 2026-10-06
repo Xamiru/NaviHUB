@@ -10,9 +10,13 @@ export interface CastQuizQuestionSeed {
   validKeys: string[]
 }
 
-function canBuildCastQuestion(item: QuizCastItem, pool: readonly QuizCastItem[]): boolean {
-  const forbidden = new Set(item.validMediaIds)
-  return new Set(pool.filter((candidate) => !forbidden.has(candidate.mediaId)).map((x) => x.mediaId)).size >= 3
+// A seed needs three pool titles outside every title its actor appears in.
+// Counted against the pool's distinct titles once; re-scanning the pool per
+// item was quadratic and froze the page for seconds on a large library.
+function canBuildCastQuestion(item: QuizCastItem, poolMedia: ReadonlySet<number>): boolean {
+  let forbidden = 0
+  for (const id of new Set(item.validMediaIds)) if (poolMedia.has(id)) forbidden++
+  return poolMedia.size - forbidden >= 3
 }
 
 // Greedy two-axis deal: at each slot prefer an actor/title pair whose actor and
@@ -23,7 +27,8 @@ export function balancedCastDeal(
   length: number,
   rng: () => number
 ): QuizCastItem[] {
-  const remaining = shuffle(pool.filter((item) => canBuildCastQuestion(item, pool)), rng)
+  const poolMedia = new Set(pool.map((item) => item.mediaId))
+  const remaining = shuffle(pool.filter((item) => canBuildCastQuestion(item, poolMedia)), rng)
   const people = new Map<number, number>()
   const media = new Map<number, number>()
   const out: QuizCastItem[] = []

@@ -10,6 +10,7 @@ import Markdown from '../components/Markdown'
 import { EN_PASSAGES } from '@shared/english/passages'
 import type { EnPassage, EnReadingQuestion } from '@shared/english/types'
 import { shuffle } from '@shared/shuffle'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Reading comprehension over the authored C1/C2 passages (content is code —
 // src/shared/english/passages.ts). Pick a passage, read it, answer its
@@ -37,6 +38,7 @@ const wordCount = (text: string): number => text.split(/\s+/).filter(Boolean).le
 export default function EnglishReadingPage() {
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [passage, setPassage] = useState<EnPassage | null>(null)
   const [questions, setQuestions] = useState<Question[]>([])
   const [index, setIndex] = useState(0)

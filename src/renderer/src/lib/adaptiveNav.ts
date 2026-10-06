@@ -43,7 +43,8 @@ const PLAY_DRAWER_ITEMS: ArchiveNavItem[] = [
 const LEARN_DRAWER_ITEMS: ArchiveNavItem[] = [
   { to: '/japanese', label: 'Japanese', visibilityKey: 'japanese' },
   { to: '/english', label: 'English', visibilityKey: 'english' },
-  { to: '/programming', label: 'Programming', visibilityKey: 'programming' }
+  { to: '/programming', label: 'Programming', visibilityKey: 'programming' },
+  { to: '/history', label: 'History', visibilityKey: 'history' }
 ]
 
 const SYSTEM_DRAWER_ITEMS: ArchiveNavItem[] = [
@@ -101,7 +102,9 @@ export function archiveAreaForPath(pathname: string): ArchiveArea {
   if (
     pathname.startsWith('/japanese') ||
     pathname.startsWith('/english') ||
-    pathname.startsWith('/programming')
+    pathname.startsWith('/programming') ||
+    pathname === '/history' ||
+    pathname.startsWith('/history/')
   ) {
     return 'learn'
   }
@@ -229,6 +232,18 @@ function mediaContext(pathname: string): ArchiveContext | null {
 }
 
 export function archiveContextForPath(pathname: string): ArchiveContext {
+  if (pathname === '/history' || pathname.startsWith('/history/')) {
+    return {
+      title: 'History',
+      descriptor: 'World chronicle',
+      items: [
+        { to: '/history', label: 'Timeline' },
+        { to: '/history/sources', label: 'Sources' },
+        { to: '/history/my', label: 'My additions' },
+        { to: '/history/corrections', label: 'Corrections' }
+      ]
+    }
+  }
   if (pathname.startsWith('/football')) {
     return {
       title: 'Football',

@@ -19,6 +19,7 @@ import type {
   QuizMysteryCareerQuestion,
   QuizScreenMediaMode
 } from '@shared/types'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 type Outcome = 'playing' | 'solved' | 'failed' | 'gaveUp'
@@ -35,6 +36,7 @@ export default function MysteryCareerPage() {
   const [scope, setScope] = usePersistedState<QuizConsumptionScope>('mysteryCareerScope', 'consumed')
   const [mediaMode, setMediaMode] = usePersistedState<QuizScreenMediaMode>('mysteryCareerMode', 'both')
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [question, setQuestion] = useState<QuizMysteryCareerQuestion | null>(null)
   const [guessedKeys, setGuessedKeys] = useState<string[]>([])
   const [outcome, setOutcome] = useState<Outcome>('playing')

@@ -98,38 +98,16 @@ export function buildMovieChainEdges(media: readonly MovieChainCandidate[]): Qui
 
 function adjacency(edges: readonly QuizMovieChainEdge[]): Map<string, string[]> {
   const map = new Map<string, string[]>()
+  const link = (from: string, to: string): void => {
+    const neighbours = map.get(from)
+    if (neighbours) neighbours.push(to)
+    else map.set(from, [to])
+  }
   for (const edge of edges) {
-    map.set(edge.leftKey, [...(map.get(edge.leftKey) ?? []), edge.rightKey])
-    map.set(edge.rightKey, [...(map.get(edge.rightKey) ?? []), edge.leftKey])
+    link(edge.leftKey, edge.rightKey)
+    link(edge.rightKey, edge.leftKey)
   }
   return map
-}
-
-function endpointPairsAtDistance<T extends { key: string }>(
-  media: readonly T[],
-  edges: readonly QuizMovieChainEdge[],
-  targetDistance: number
-): Array<[T, T]> {
-  const graph = adjacency(edges)
-  const pairs: Array<[T, T]> = []
-  for (let i = 0; i < media.length; i++) {
-    const distances = new Map<string, number>([[media[i].key, 0]])
-    const queue = [media[i].key]
-    while (queue.length > 0) {
-      const current = queue.shift()!
-      const distance = distances.get(current)!
-      if (distance >= targetDistance) continue
-      for (const next of graph.get(current) ?? []) {
-        if (distances.has(next)) continue
-        distances.set(next, distance + 1)
-        queue.push(next)
-      }
-    }
-    for (let j = i + 1; j < media.length; j++) {
-      if (distances.get(media[j].key) === targetDistance) pairs.push([media[i], media[j]])
-    }
-  }
-  return pairs
 }
 
 export function shortestMovieChainPath(
@@ -145,8 +123,8 @@ export function shortestMovieChainPath(
   const graph = adjacency(edges)
   const queue = [startKey]
   const previous = new Map<string, string | null>([[startKey, null]])
-  while (queue.length > 0) {
-    const current = queue.shift()!
+  for (let head = 0; head < queue.length; head++) {
+    const current = queue[head]
     for (const next of graph.get(current) ?? []) {
       if (blocked.has(next) || previous.has(next)) continue
       previous.set(next, current)
@@ -170,12 +148,7 @@ export function movieChainEndpointCount(
   mediaMode: QuizScreenMediaMode,
   difficulty: QuizMovieChainDifficulty
 ): number {
-  const media = candidates.filter(
-    (item) => item.imagePath.trim() && screenMediaMatches(mediaMode, item.mediaType)
-  )
-  const edges = buildMovieChainEdges(media)
-  const distance = MOVIE_CHAIN_DISTANCE[difficulty]
-  return endpointPairsAtDistance(media, edges, distance).length
+  return movieChainEndpointCounts(candidates, mediaMode)[difficulty]
 }
 
 export function movieChainEndpointCounts(
@@ -185,33 +158,79 @@ export function movieChainEndpointCounts(
   const media = candidates.filter(
     (item) => item.imagePath.trim() && screenMediaMatches(mediaMode, item.mediaType)
   )
-  const graph = adjacency(buildMovieChainEdges(media))
+  const position = new Map(media.map((item, index) => [item.key, index]))
+  const neighbours: number[][] = media.map(() => [])
+  for (const edge of buildMovieChainEdges(media)) {
+    const left = position.get(edge.leftKey)
+    const right = position.get(edge.rightKey)
+    if (left == null || right == null) continue
+    neighbours[left].push(right)
+    neighbours[right].push(left)
+  }
+  // Every title's within-k-hops set as a bitset row: hop k+1 ORs the hop-k
+  // rows of the title and its neighbours. This runs on every availability
+  // read, where a search from each title grew with titles times edges.
+  const size = media.length
+  const words = (size + 31) >>> 5
+  let within = new Uint32Array(size * words)
+  for (let i = 0; i < size; i++) {
+    for (const j of [i, ...neighbours[i]]) within[i * words + (j >>> 5)] |= 1 << (j & 31)
+  }
   const counts: Record<QuizMovieChainDifficulty, number> = { easy: 0, normal: 0, hard: 0 }
-  const difficultyByDistance = new Map<number, QuizMovieChainDifficulty>([
-    [2, 'easy'],
-    [3, 'normal'],
-    [4, 'hard']
-  ])
-  for (let i = 0; i < media.length; i++) {
-    const start = media[i].key
-    const distances = new Map<string, number>([[start, 0]])
-    const queue = [start]
-    while (queue.length > 0) {
-      const current = queue.shift()!
+  const difficultyByDistance: Array<QuizMovieChainDifficulty | null> = [null, null, 'easy', 'normal', 'hard']
+  for (let distance = 2; distance <= 4; distance++) {
+    const next = new Uint32Array(size * words)
+    let exact = 0
+    for (let i = 0; i < size; i++) {
+      const row = i * words
+      for (const j of [i, ...neighbours[i]]) {
+        const from = j * words
+        for (let w = 0; w < words; w++) next[row + w] |= within[from + w]
+      }
+      for (let w = 0; w < words; w++) exact += bitCount(next[row + w] & ~within[row + w])
+    }
+    // Distances are symmetric, so each unordered pair was counted from both ends.
+    counts[difficultyByDistance[distance]!] = exact / 2
+    within = next
+  }
+  return counts
+}
+
+function bitCount(value: number): number {
+  let v = value - ((value >>> 1) & 0x55555555)
+  v = (v & 0x33333333) + ((v >>> 2) & 0x33333333)
+  return (((v + (v >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24
+}
+
+// A seeded random start, then a random endpoint at exactly the target distance
+// from it. Listing every qualifying pair first meant a search from every title,
+// which grew quadratically with the library.
+function pickEndpoints<T extends { key: string }>(
+  media: readonly T[],
+  graph: ReadonlyMap<string, string[]>,
+  targetDistance: number,
+  rng: () => number
+): [T, T] | null {
+  const byKey = new Map(media.map((item) => [item.key, item]))
+  for (const start of shuffle(media, rng)) {
+    const distances = new Map<string, number>([[start.key, 0]])
+    const queue = [start.key]
+    const endpoints: string[] = []
+    for (let head = 0; head < queue.length; head++) {
+      const current = queue[head]
       const distance = distances.get(current)!
-      if (distance >= 4) continue
+      if (distance >= targetDistance) continue
       for (const next of graph.get(current) ?? []) {
         if (distances.has(next)) continue
         distances.set(next, distance + 1)
+        if (distance + 1 === targetDistance) endpoints.push(next)
         queue.push(next)
       }
     }
-    for (let j = i + 1; j < media.length; j++) {
-      const difficulty = difficultyByDistance.get(distances.get(media[j].key) ?? -1)
-      if (difficulty) counts[difficulty]++
-    }
+    const target = endpoints.length ? byKey.get(endpoints[Math.floor(rng() * endpoints.length)]) : null
+    if (target) return [start, target]
   }
-  return counts
+  return null
 }
 
 export function buildMovieChainQuestion(
@@ -225,16 +244,15 @@ export function buildMovieChainQuestion(
     (item) => item.imagePath.trim() && screenMediaMatches(mediaMode, item.mediaType)
   )
   const edges = buildMovieChainEdges(media)
-  const distance = MOVIE_CHAIN_DISTANCE[difficulty]
-  const pairs = endpointPairsAtDistance(media, edges, distance)
-  if (pairs.length === 0) return null
-  const picked = shuffle(pairs, rng)[0]
-  const [start, target] = rng() < 0.5 ? picked : [picked[1], picked[0]]
   const graph = adjacency(edges)
+  const distance = MOVIE_CHAIN_DISTANCE[difficulty]
+  const endpoints = pickEndpoints(media, graph, distance, rng)
+  if (!endpoints) return null
+  const [start, target] = endpoints
   const component = new Set<string>([start.key])
   const queue = [start.key]
-  while (queue.length > 0) {
-    for (const next of graph.get(queue.shift()!) ?? []) {
+  for (let head = 0; head < queue.length; head++) {
+    for (const next of graph.get(queue[head]) ?? []) {
       if (component.has(next)) continue
       component.add(next)
       queue.push(next)

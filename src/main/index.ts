@@ -25,6 +25,7 @@ import { cancelActiveLibraryExport } from './libraryExport'
 import { cancelActiveStorageMove, pinPicturesDir } from './storageMove'
 import { cancelSlideshowSync } from './pictureLibrary'
 import { killSqlSandbox } from './sqlSandbox'
+import { stopQuizPools } from './quizPools'
 import { finalizeActiveGameSession } from './gameLaunch'
 import { stopAchievementWatcher } from './achievementWatcher'
 import { closeCatalogDb } from './gamesCatalogDb'
@@ -36,6 +37,7 @@ import { logError, logInfo } from './logBus'
 import { startFileSink, stopFileSink } from './logFile'
 import { settleAllOnQuit as settleAllTasksOnQuit } from './tasks'
 import { cancelActiveFootballSync } from './football/sync'
+import { cancelHistoryJobs } from './history/historyJobs'
 import { installAppMenu } from './appMenu'
 import { initializeSecretStorage } from './secretStorage'
 
@@ -337,6 +339,9 @@ app.on('before-quit', () => {
   // Football writes one complete source slice per transaction. Abort active
   // network work before the DB closes; completed slices remain resumable.
   cancelActiveFootballSync()
+  // History archive copies and downloads write under a .partial name; abort
+  // them so no half-copied file is left in the History folder.
+  cancelHistoryJobs()
   // Don't let a half-finished yt-dlp outlive the app; its .part files survive
   // and resume on the next try.
   killActiveMusicDownload()
@@ -357,6 +362,9 @@ app.on('before-quit', () => {
   // The SQL sandbox's utility process holds nothing durable — an in-memory
   // copy of a dataset that is code — so it is simply dropped.
   killSqlSandbox()
+  // The quiz pool process only caches what it can rebuild; it goes before
+  // closeDatabase() so its reader is not holding the WAL at the checkpoint.
+  stopQuizPools()
   // Stop the achievement poll and take one last look at the emulator's save
   // file — quitting mid-session is the moment those unlocks would be lost.
   // Also must precede closeDatabase(): it writes unlock rows.

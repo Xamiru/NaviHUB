@@ -1,7 +1,7 @@
 import { Field } from './Field'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type {
   SpotifyEntityCandidate,
   SpotifyEntityInspection,
@@ -56,6 +56,7 @@ export default function SpotifyEntityDownloadDialog({
   onClose: () => void
 }) {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const panelRef = useDialog(onClose)
   const downloadStatus = useDownloadStatus()
   const bootstrapped = useRef(false)
@@ -568,7 +569,7 @@ export default function SpotifyEntityDownloadDialog({
               {queueCard?.state === 'running' ? (
                 <button
                   className="btn-primary"
-                  onClick={() => { window.location.hash = '#/music/downloads' }}
+                  onClick={() => navigate('/music/downloads')}
                 >
                   View download
                 </button>

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { historyIndex } from '../lib/navState'
+import { useCanGoBack } from '../lib/navState'
 
 // Consistent "← Back" for sub-pages (album/artist/playlist/liked/stats):
 // always history-back, so it returns wherever the user actually came from.
@@ -15,9 +15,10 @@ import { historyIndex } from '../lib/navState'
 // `fallback` instead of doing nothing.
 export default function BackButton({ label = 'Back', fallback = '/' }: { label?: string; fallback?: string }) {
   const navigate = useNavigate()
+  const canGoBack = useCanGoBack()
   return (
     <div className="pointer-events-none sticky top-0 z-20 py-2">
-      <button className="pointer-events-auto -mx-2 rounded bg-base-900/80 px-2 py-0.5 text-sm text-gray-500 backdrop-blur hover:text-gray-300" onClick={() => (historyIndex() > 0 ? navigate(-1) : navigate(fallback, { replace: true }))}>
+      <button className="pointer-events-auto -mx-2 rounded bg-base-900/80 px-2 py-0.5 text-sm text-gray-500 backdrop-blur hover:text-gray-300" onClick={() => (canGoBack() ? navigate(-1) : navigate(fallback, { replace: true }))}>
         ← {label}
       </button>
     </div>

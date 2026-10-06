@@ -145,8 +145,6 @@ export const qk = {
     songPool: (filter: QuizSongFilter) => ['quiz', 'songPool', filter] as const,
     castPool: (filter: import('@shared/types').QuizLibFilter) =>
       ['quiz', 'castPool', filter] as const,
-    vaPool: (filter: import('@shared/types').QuizLibFilter) =>
-      ['quiz', 'vaPool', filter] as const,
     synopsisPool: (filter: import('@shared/types').QuizSynopsisFilter) =>
       ['quiz', 'synopsisPool', filter] as const,
     mangaPanelPool: (filter: import('@shared/types').QuizMangaPanelFilter, length: number) =>
@@ -290,6 +288,23 @@ export const qk = {
     errorTally: ['english', 'errorTally'] as const,
     deck: ['english', 'deck'] as const,
     leeches: ['english', 'leeches'] as const
+  },
+  history: {
+    // History section (/history): curated content resolved in main plus this
+    // machine's marks, notes, links and files. Global search hits ride qk.search.
+    all: ['history'] as const,
+    overview: ['history', 'overview'] as const,
+    decade: (start: number) => ['history', 'decade', start] as const,
+    article: (ref: string) => ['history', 'article', ref] as const,
+    sources: ['history', 'sources'] as const,
+    source: (id: string) => ['history', 'source', id] as const,
+    notes: (kind: string) => ['history', 'notes', kind] as const,
+    userEntities: ['history', 'userEntities'] as const,
+    userEntity: (id: string) => ['history', 'userEntity', id] as const,
+    backlinks: (mediaId: number) => ['history', 'backlinks', mediaId] as const,
+    imageStatus: ['history', 'imageStatus'] as const,
+    archiveJobs: ['history', 'archiveJobs'] as const,
+    search: (q: string) => ['history', 'search', q] as const
   },
   programming: {
     // Programming learn section (/programming): lesson completion only — the

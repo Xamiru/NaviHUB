@@ -29,6 +29,7 @@ import type {
   QuizScreenMediaMode,
   QuizScreenTitle
 } from '@shared/types'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 interface ChainAttempt {
@@ -64,6 +65,7 @@ export default function MovieChainPage() {
   const [difficulty, setDifficulty] = usePersistedState<QuizMovieChainDifficulty>('movieChainDifficulty', 'normal')
   const kind = KIND[difficulty]
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [question, setQuestion] = useState<QuizMovieChainQuestion | null>(null)
   const [state, setState] = useState<MovieChainState | null>(null)
   const [seed, setSeed] = useState(0)

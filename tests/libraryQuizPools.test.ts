@@ -2,9 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type Database from 'better-sqlite3'
 import { createTestDb } from './helpers'
 import * as quizRepo from '../src/main/repos/quizRepo'
+import { runQuizPoolRequest } from '../src/main/quizPoolsCore'
+import type { VaQuizQuestionSeed } from '../src/shared/vaQuiz'
 
 let db: Database.Database
-vi.mock('../src/main/db/connection', () => ({
+vi.mock('../src/main/db/sqliteHandle', () => ({
   getSqlite: () => db
 }))
 
@@ -296,5 +298,37 @@ describe('quizRepo.synopsisPool', () => {
         hasEarlierRelation: true
       }
     ])
+  })
+})
+
+describe('quiz pool process requests', () => {
+  function addVoicedRole(index: number, personId: number): void {
+    const mediaId = addMedia(`Anime ${index}`)
+    addCredit(mediaId, personId, addCharacter(`Character ${index}`, `characters/${index}.webp`, 'female'))
+  }
+
+  it('deals VA rounds from a pool kept until the library changes', () => {
+    const people = [addPerson('VA One', null), addPerson('VA Two', null), addPerson('VA Three', null)]
+    for (let i = 0; i < 6; i++) addVoicedRole(i, people[i % 3])
+    const deal = (count: number) =>
+      runQuizPoolRequest('vaQuestions', [{ statuses: null }, count, 7]) as VaQuizQuestionSeed[]
+
+    expect(deal(3)).toHaveLength(3)
+    expect(deal(3)).toEqual(deal(3))
+    expect(deal(8)).toHaveLength(6)
+    const extra = addPerson('VA Four', null)
+    addVoicedRole(6, extra)
+    addVoicedRole(7, extra)
+    expect(deal(8)).toHaveLength(8)
+  })
+
+  it('answers the same reads as the repo and refuses anything else', () => {
+    addMedia('Film', { type: 'movie', status: 'Completed' })
+    expect(runQuizPoolRequest('availability', [{}])).toEqual(quizRepo.availability({}))
+    expect(runQuizPoolRequest('castPool', [{}])).toEqual(quizRepo.castPool({}))
+    expect(() => runQuizPoolRequest('logSession', [{ kind: 'cast', score: 1, total: 1 }])).toThrow(
+      'Unknown quiz request'
+    )
+    expect(() => runQuizPoolRequest('toString', [])).toThrow('Unknown quiz request')
   })
 })

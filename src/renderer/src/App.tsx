@@ -1,9 +1,11 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useRef } from 'react'
 import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
-import { useHistoryTrail, useScrollRestoration } from './lib/navState'
+import { useScrollRestoration } from './lib/navState'
+import { sectionTitle, usePageKey, useTabTitle } from './lib/browserTabs'
 import { api } from './lib/api'
 import Sidebar from './components/Sidebar'
 import Topbar from './components/Topbar'
+import TabStrip from './components/TabStrip'
 import RouteFocus from './components/RouteFocus'
 import NowPlayingBar from './components/NowPlayingBar'
 import CommandPalette from './components/CommandPalette'
@@ -130,6 +132,13 @@ const WrestlingYearPage = lazy(() => import('./pages/WrestlingYearPage'))
 const WrestlingMatchRedirect = lazy(() => import('./pages/WrestlingMatchRedirect'))
 const WrestlingCollectionPage = lazy(() => import('./pages/WrestlingCollectionPage'))
 const FootballHomePage = lazy(() => import('./pages/FootballHomePage'))
+const HistoryHomePage = lazy(() => import('./pages/HistoryHomePage'))
+const HistoryArticlePage = lazy(() => import('./pages/HistoryArticlePage'))
+const HistorySourcesPage = lazy(() => import('./pages/HistorySourcesPage'))
+const HistorySourcePage = lazy(() => import('./pages/HistorySourcePage'))
+const HistoryEditPage = lazy(() => import('./pages/HistoryEditPage'))
+const HistoryMyPage = lazy(() => import('./pages/HistoryMyPage'))
+const HistoryCorrectionsPage = lazy(() => import('./pages/HistoryCorrectionsPage'))
 const FootballCurrentPage = lazy(() => import('./pages/FootballCurrentPage'))
 const FootballCompetitionsPage = lazy(() => import('./pages/FootballCompetitionsPage'))
 const FootballCompetitionPage = lazy(() => import('./pages/FootballCompetitionPage'))
@@ -187,13 +196,13 @@ const JapaneseLeechDrillPage = lazy(() => import('./pages/JapaneseLeechDrillPage
 export default function App() {
   const mainRef = useRef<HTMLElement>(null)
   const location = useLocation()
+  const pageKey = usePageKey()
   const surfaceMood = surfaceMoodForPath(location.pathname)
   const { data: settings } = useSettings()
   const appTheme = resolveAppTheme(settings?.[APP_THEME_SETTING])
   const themeVariant = resolveAppThemeVariant(appTheme, settings)
   const signalClarity = parseSignalClarity(settings?.[SIGNAL_CLARITY_SETTING])
   useScrollRestoration(mainRef)
-  useHistoryTrail()
 
   // The manga/book readers are immersive: no
   // sidebar/topbar/now-playing chrome, full-bleed. Audio keeps playing — the
@@ -203,6 +212,8 @@ export default function App() {
     /^\/(manga|books)\/\d+\/(read|book)\/|^\/read\/(manga|book)\//.test(
       location.pathname
     )
+  // The reader branch has no <main>, so its tab is simply "Reader".
+  useTabTitle(mainRef, isReader ? 'Reader' : sectionTitle(location.pathname))
 
   // Theme and route atmosphere key off these attributes. Effects are painted
   // into shell backgrounds, never over content; readers render no shell at all.
@@ -238,7 +249,7 @@ export default function App() {
 
   if (isReader) {
     return (
-      <ErrorBoundary key={location.pathname}>
+      <ErrorBoundary key={pageKey}>
         <Suspense fallback={<RouteLoading label="Loading reader…" />}>
           <Routes>
             <Route path="/manga/:id/read/:chapterId" element={<MangaReaderPage />} />
@@ -261,7 +272,9 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col">
+    <TabStrip />
+    <div className="flex min-h-0 flex-1">
       <Sidebar />
       <div className="flex-1 min-w-0 flex flex-col">
         <Topbar />
@@ -274,7 +287,7 @@ export default function App() {
           <RouteFocus mainRef={mainRef} />
           <LearningContextBand />
           <TutorSessionStrip />
-          <ErrorBoundary key={location.pathname}>
+          <ErrorBoundary key={pageKey}>
           <Suspense fallback={<RouteLoading label="Loading section…" />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -581,6 +594,17 @@ export default function App() {
 
             {/* Football Archive — scored history volumes, current snapshots,
                 private match journal, manual media shelves and offline quizzes. */}
+            <Route path="/history" element={<HistoryHomePage />} />
+            <Route path="/history/event/:id" element={<HistoryArticlePage kind="event" />} />
+            <Route path="/history/person/:id" element={<HistoryArticlePage kind="person" />} />
+            <Route path="/history/period/:id" element={<HistoryArticlePage kind="period" />} />
+            <Route path="/history/place/:id" element={<HistoryArticlePage kind="place" />} />
+            <Route path="/history/sources" element={<HistorySourcesPage />} />
+            <Route path="/history/source/:id" element={<HistorySourcePage />} />
+            <Route path="/history/my" element={<HistoryMyPage />} />
+            <Route path="/history/my/:id/edit" element={<HistoryEditPage />} />
+            <Route path="/history/new/:kind" element={<HistoryEditPage />} />
+            <Route path="/history/corrections" element={<HistoryCorrectionsPage />} />
             <Route path="/football" element={<FootballHomePage />} />
             <Route path="/football/current" element={<FootballCurrentPage />} />
             <Route path="/football/search" element={<FootballSearchPage />} />
@@ -615,6 +639,7 @@ export default function App() {
       <CommandPalette />
       <PlayerShortcuts />
       <OpenFileHandler />
+    </div>
     </div>
   )
 }

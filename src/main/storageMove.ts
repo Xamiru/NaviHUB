@@ -9,6 +9,7 @@ import {
   audioDirSetting,
   booksRootDir,
   footballRootDir,
+  historyRootDir,
   mangaRootDir,
   mediaRoot,
   musicRootDir,
@@ -20,12 +21,14 @@ import {
   initialPicturesDir,
   isCrossDeviceError,
   moveTargetProblem,
+  STORAGE_LABEL,
   STORAGE_SETTING,
   type StorageRoot
 } from './storageCore'
 import type { StorageMoveStatus, StoragePaths } from '@shared/types'
 
-// Moves the pictures or media root to another folder (Settings → Folders).
+// Moves the pictures, media or History archive root to another folder
+// (Settings → Folders).
 // Order is what keeps it safe: nothing in the old root is deleted until every
 // file has a verified copy AND the setting points at the new root, so a crash,
 // cancel or full disk at any earlier moment leaves the library exactly as it
@@ -52,12 +55,13 @@ export function paths(): StoragePaths {
   return {
     pictures: picturesDir(),
     media: mediaRoot(),
+    history: historyRootDir(),
     slideshowInsidePictures: !settingsRepo.get('slideshow.dir')?.trim()
   }
 }
 
 function rootDir(root: StorageRoot): string {
-  return root === 'pictures' ? picturesDir() : mediaRoot()
+  return root === 'pictures' ? picturesDir() : root === 'history' ? historyRootDir() : mediaRoot()
 }
 
 // For "Open folder": the root may not exist yet on a fresh library.
@@ -261,7 +265,9 @@ async function cleanUp(
 
 function otherRoots(root: StorageRoot): { label: string; dir: string }[] {
   const out: { label: string; dir: string }[] = [
-    { label: root === 'pictures' ? 'media folder' : 'pictures folder', dir: rootDir(root === 'pictures' ? 'media' : 'pictures') },
+    ...(Object.keys(STORAGE_LABEL) as StorageRoot[])
+      .filter((r) => r !== root)
+      .map((r) => ({ label: STORAGE_LABEL[r], dir: rootDir(r) })),
     { label: 'music library', dir: musicRootDir() },
     { label: 'manga library', dir: mangaRootDir() },
     { label: 'books library', dir: booksRootDir() },
@@ -286,7 +292,7 @@ function emptyDir(dir: string): boolean {
 
 export async function chooseFolder(root: StorageRoot, parent: BrowserWindow | null): Promise<string | null> {
   const options = {
-    title: root === 'pictures' ? 'Choose the new pictures folder' : 'Choose the new media folder',
+    title: `Choose the new ${STORAGE_LABEL[root]}`,
     properties: ['openDirectory', 'createDirectory'] as ('openDirectory' | 'createDirectory')[]
   }
   const picked = parent ? await dialog.showOpenDialog(parent, options) : await dialog.showOpenDialog(options)
@@ -316,7 +322,7 @@ export function start(root: StorageRoot, to: string): void {
   const run = { cancelled: false, handle: null as unknown as tasks.TaskHandle }
   const handle = tasks.create({
     kind: 'storageMove',
-    label: root === 'pictures' ? 'Moving the pictures folder' : 'Moving the media folder',
+    label: `Moving the ${STORAGE_LABEL[root]}`,
     route: '/settings?tab=data',
     controls: {
       // Only the copy can stop; once the setting points at the new folder the

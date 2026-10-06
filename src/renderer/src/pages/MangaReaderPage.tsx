@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useCanGoBack } from '../lib/navState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -87,6 +88,7 @@ export default function MangaReaderPage() {
     retry
   } = useReaderSource()
   const navigate = useNavigate()
+  const canGoBack = useCanGoBack()
   const location = useLocation()
   const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -278,16 +280,16 @@ export default function MangaReaderPage() {
   // Leaving the reader must unwind history, not push the detail page again —
   // otherwise detail's own "← Back" (navigate(-1)) bounces straight back here.
   // The reader is only ever entered from the detail page, so -1 is the detail
-  // page; the location.key check covers a deep link / refresh with no history.
+  // page; canGoBack covers a deep link, refresh or new tab with no history.
   // The same reader serves /manga and /books routes (a books folder can hold
   // CBZ volumes); the URL says which section exits and switches stay inside.
   const basePath = location.pathname.startsWith('/books') ? ('/books' as const) : ('/manga' as const)
 
   const exitToDetail = useCallback(() => {
-    if (location.key !== 'default') navigate(-1)
+    if (canGoBack()) navigate(-1)
     // An ad-hoc archive has no series page to go back to.
     else navigate(adhoc ? '/' : `${basePath}/${mediaId}`)
-  }, [navigate, mediaId, location.key, basePath])
+  }, [navigate, canGoBack, mediaId, basePath])
 
   const goToChapter = useCallback(
     (ch: MangaChapter) => {

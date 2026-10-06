@@ -15,6 +15,7 @@ import type {
   QuizFootballPlayerGridQuestion,
   QuizKind
 } from '@shared/types'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 export type FootballQuizGameKind =
   | 'footballChampion'
@@ -38,6 +39,7 @@ export default function FootballQuizGamePage({ kind }: { kind: FootballQuizGameK
   const defaults = kind === 'footballCareerPath' ? 5 : kind === 'footballChronology' ? 5 : kind === 'footballPlayerGrid' ? 1 : 10
   const [length, setLength] = useState(defaults)
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [questions, setQuestions] = useState<QuizChallengeQuestion[]>([])
   const [index, setIndex] = useState(0)
   const [seed, setSeed] = useState(0)

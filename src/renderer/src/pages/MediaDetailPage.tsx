@@ -27,6 +27,8 @@ import CoverImage from '../components/CoverImage'
 import FavoriteButton from '../components/FavoriteButton'
 import RefreshMediaDialog from '../components/RefreshMediaDialog'
 import FranchiseBackground from '../components/FranchiseBackground'
+import { MEDIA_LINK_KINDS } from '@shared/history/schema'
+import { historyPath } from '../lib/historyUi'
 import BackButton from '../components/BackButton'
 import AddToListMenu from '../components/AddToListMenu'
 import MangaChaptersSection from '../components/MangaChaptersSection'
@@ -713,6 +715,10 @@ function FactsColumn({
     queryFn: () => api.lists.forEntity('media', m.id)
   })
   const inLists = lists.filter((l) => l.contains)
+  const { data: historyLinks = [] } = useQuery({
+    queryKey: qk.history.backlinks(m.id),
+    queryFn: () => api.history.backlinks(m.id)
+  })
   // The curated catalog is large; load it on demand rather than in this chunk.
   const [franchises, setFranchises] = useState<FranchiseMembership[]>([])
   useEffect(() => {
@@ -786,6 +792,22 @@ function FactsColumn({
                       ` (${configFor(next.mediaType ?? 'game').singular})`}
                   </p>
                 )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {historyLinks.length > 0 && (
+        <div>
+          <p className={fact}>History</p>
+          <ul className="mt-1 space-y-1">
+            {historyLinks.map((h) => (
+              <li key={`${h.target.ref}-${h.kind}-${h.origin}`}>
+                <span className="text-xs text-gray-400">{MEDIA_LINK_KINDS[h.kind]} </span>
+                <Link to={historyPath(h.target.ref) ?? '/history'} className="text-signal-link hover:underline">
+                  {h.target.title}
+                </Link>
+                {h.target.years && <span className="text-xs text-gray-500"> {h.target.years}</span>}
               </li>
             ))}
           </ul>

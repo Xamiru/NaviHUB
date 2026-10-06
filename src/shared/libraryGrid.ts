@@ -164,7 +164,11 @@ function chooseClues(
   // Keep prolific clue families from crowding out genres/decades while keeping
   // the constraint search bounded for large personal libraries.
   const byKind = new Map<QuizLibraryGridClueKind, IndexedClue[]>()
-  for (const clue of clues) byKind.set(clue.kind, [...(byKind.get(clue.kind) ?? []), clue])
+  for (const clue of clues) {
+    const family = byKind.get(clue.kind)
+    if (family) family.push(clue)
+    else byKind.set(clue.kind, [clue])
+  }
   const pool = [...byKind.values()]
     .flatMap((values) =>
       [...values]
@@ -239,9 +243,8 @@ export function buildLibraryGridQuestion(
     const nearMisses = allKeys.filter(
       (key) => rowIds.has(key) !== columnIds.has(key)
     )
-    const fallback = allKeys.filter(
-      (key) => !validKeys.includes(key) && !nearMisses.includes(key)
-    )
+    const excluded = new Set([...validKeys, ...nearMisses])
+    const fallback = allKeys.filter((key) => !excluded.has(key))
     const invalid = [...shuffle(nearMisses, rng), ...shuffle(fallback, rng)].slice(0, 2)
     if (invalid.length < 2) return null
     return {

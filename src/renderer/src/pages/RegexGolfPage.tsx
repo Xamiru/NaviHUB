@@ -15,6 +15,7 @@ import {
   type RegexGolfPuzzle
 } from '@shared/programming/regexGolf'
 import { shuffle } from '@shared/shuffle'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Regex golf: match every string on the left, none on the right, in as few
 // characters as you can. Graded live in the renderer (pure `gradeRegexGolf`,
@@ -27,6 +28,7 @@ type Phase = 'setup' | 'play' | 'summary'
 export default function RegexGolfPage() {
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [length, setLength] = usePersistedState<number>('regexGolfLength', 5)
   const [order, setOrder] = usePersistedState<'easy' | 'random'>('regexGolfOrder', 'easy')
 

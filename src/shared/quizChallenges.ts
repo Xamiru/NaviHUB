@@ -3,7 +3,7 @@ import type {
   QuizChallengeQuestion,
   QuizChallengeRequest
 } from './types'
-import { balancedDeal, seededRng } from './quizCore'
+import { balancedBuiltDeal, seededRng } from './quizCore'
 import { higherLowerCopy, higherLowerValue } from './higherLowerQuiz'
 import type { MediaType } from './types'
 import { buildLibraryGridQuestion, type LibraryGridCandidate } from './libraryGrid'
@@ -47,6 +47,19 @@ function shuffled<T>(items: readonly T[], rng: () => number): T[] {
   for (let i = out.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))
     ;[out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
+// Partial Fisher-Yates over `order` (reordered in place, so callers reuse one
+// copy): visits items in seeded random order and returns the first `count`
+// that `accept` keeps, stopping as soon as it has them.
+function drawUntil<T>(order: T[], rng: () => number, accept: (item: T) => boolean, count: number): T[] {
+  const out: T[] = []
+  for (let i = order.length - 1; i >= 0 && out.length < count; i--) {
+    const j = Math.floor(rng() * (i + 1))
+    ;[order[i], order[j]] = [order[j], order[i]]
+    if (accept(order[i])) out.push(order[i])
   }
   return out
 }
@@ -271,15 +284,19 @@ export function buildChallengeQuestions(
         }))
         .filter((character) => character.media.length > 0)
       if (mode === 'title') {
-        const seeds = pool.flatMap((character) => {
+        const animeById = new Map(anime.map((item) => [item.id, item]))
+        const picks = pool.flatMap((character) => {
           const answerAppearance = character.media[Math.floor(rng() * character.media.length)]
-          const answer = anime.find((item) => item.id === answerAppearance.id)
-          if (!answer) return []
+          const answer = animeById.get(answerAppearance.id)
+          return answer ? [{ character, answer }] : []
+        })
+        // Distractors rank the whole anime pool, so they are built only for
+        // the picks the balanced deal reaches.
+        return balancedBuiltDeal(picks, length, (pick) => pick.answer.id, ({ character, answer }) => {
           const validIds = new Set(character.media.map((appearance) => appearance.id))
           const wrong = rankedMediaDistractors(answer, anime, validIds, rng).slice(0, 3)
-          return wrong.length < 3 ? [] : [{ character, answer, wrong, validIds }]
-        })
-        return balancedDeal(seeds, length, (seed) => seed.answer.id, rng).map((seed, index) => ({
+          return wrong.length < 3 ? null : { character, answer, wrong, validIds }
+        }, rng).map((seed, index) => ({
           id: `silhouette-${request.seed}-${index}`,
           kind: 'silhouette' as const,
           prompt: 'Which anime features this character?',
@@ -293,23 +310,29 @@ export function buildChallengeQuestions(
         }))
       }
 
-      const characterSeeds = pool.flatMap((character) => {
+      // Each seed shuffles the whole character pool for its options, so seeds
+      // are built only for the characters the balanced deal reaches.
+      const order = [...pool]
+      const characterSeed = (character: (typeof pool)[number]) => {
         const sourceIds = new Set(character.media.map((appearance) => appearance.id))
         const uniqueNames = new Set<string>([character.name.trim().toLowerCase()])
-        const differentAnime = shuffled(pool, rng).filter((candidate) => {
+        const differentAnime: typeof pool = []
+        const sameGender: typeof pool = []
+        // Draw in seeded random order until three options of the answer's
+        // gender (or any three, when unknown) instead of shuffling every character.
+        drawUntil(order, rng, (candidate) => {
           if (candidate.id === character.id || candidate.media.some((item) => sourceIds.has(item.id))) return false
           const name = candidate.name.trim().toLowerCase()
           if (!name || uniqueNames.has(name)) return false
           uniqueNames.add(name)
-          return true
-        })
-        const sameGender = character.gender
-          ? differentAnime.filter((candidate) => candidate.gender === character.gender)
-          : []
+          differentAnime.push(candidate)
+          if (character.gender && candidate.gender === character.gender) sameGender.push(candidate)
+          return character.gender ? candidate.gender === character.gender : true
+        }, 3)
         const wrong = (sameGender.length >= 3 ? sameGender : differentAnime).slice(0, 3)
-        return wrong.length < 3 ? [] : [{ character, wrong }]
-      })
-      return balancedDeal(characterSeeds, length, (seed) => seed.character.media[0].id, rng).map(
+        return wrong.length < 3 ? null : { character, wrong }
+      }
+      return balancedBuiltDeal(pool, length, (character) => character.media[0].id, characterSeed, rng).map(
         (seed, index) => ({
           id: `silhouette-${request.seed}-${index}`,
           kind: 'silhouette' as const,
@@ -407,8 +430,15 @@ export function buildChallengeQuestions(
       }
 
       const actorPool = [...connectors.values()].map(({ id, name }) => ({ id, name }))
+      // Wrong options come from the people outside the pair's shared cast;
+      // counted from the shared cast rather than re-filtering the whole pool.
+      const forbiddenInPool = (pair: Omit<Pair, 'answer'>): number => {
+        let n = 0
+        for (const id of pair.forbiddenIds) if (connectors.has(id)) n++
+        return n
+      }
       const candidates: Pair[] = shuffled([...pairMap.values()], rng).flatMap((pair) => {
-        if (actorPool.filter((actor) => !pair.forbiddenIds.has(actor.id)).length < 3) return []
+        if (actorPool.length - forbiddenInPool(pair) < 3) return []
         return [{
           ...pair,
           answer: pair.valid[Math.floor(rng() * pair.valid.length)]
@@ -482,10 +512,14 @@ export function buildChallengeQuestions(
         group: Group
         entries: ChallengeMediaCandidate[]
       }
-      const releaseYear = (item: ChallengeMediaCandidate): number | null => {
+      // Every title sits in dozens of person/company groups, so its year is
+      // parsed once rather than on every group and dealing attempt.
+      const yearById = new Map<number, number | null>()
+      for (const item of media) {
         const match = item.releaseDate?.match(/^(\d{4})/)
-        return match ? Number(match[1]) : null
+        yearById.set(item.id, match ? Number(match[1]) : null)
       }
+      const releaseYear = (item: ChallengeMediaCandidate): number | null => yearById.get(item.id) ?? null
       const groups = new Map<string, Group>()
       const add = (
         key: string,
@@ -512,7 +546,12 @@ export function buildChallengeQuestions(
 
       const candidatesByPriority: Candidate[][] = [[], [], []]
       const seenSets = new Set<string>()
+      let generated = 0
+      let filledPriority: number | null = null
       for (const group of shuffled([...groups.values()], rng).sort((a, b) => a.priority - b.priority)) {
+        // Dealing exhausts each tier before the next, so once the finished
+        // tiers hold a full round the lower-priority groups are unreachable.
+        if (filledPriority != null && group.priority > filledPriority) break
         const all = [...group.media.values()]
         if (new Set(all.map(releaseYear)).size < 4) continue
         const sameType = [...new Set(all.map((item) => item.mediaType))]
@@ -523,22 +562,27 @@ export function buildChallengeQuestions(
         const target = Math.max(length, 1)
         for (const pool of pools) {
           const attempts = Math.max(24, target * 8)
+          // Each attempt draws in seeded random order only until it has four
+          // distinct years; company groups can hold thousands of titles.
+          const order = [...pool]
           for (let attempt = 0; attempt < attempts && localSets.size < target; attempt++) {
             const years = new Set<number>()
-            const entries = shuffled(pool, rng).filter((item) => {
+            const entries = drawUntil(order, rng, (item) => {
               const year = releaseYear(item)!
               if (years.has(year)) return false
               years.add(year)
               return true
-            }).slice(0, 4)
+            }, 4)
             if (entries.length < 4) continue
             const setKey = entries.map((item) => item.id).sort((a, b) => a - b).join(':')
             if (localSets.has(setKey) || seenSets.has(setKey)) continue
             localSets.add(setKey)
             seenSets.add(setKey)
             candidatesByPriority[group.priority].push({ group, entries })
+            generated++
           }
         }
+        if (filledPriority == null && generated >= Math.max(length, 1)) filledPriority = group.priority
       }
 
       const dealt: Candidate[] = []

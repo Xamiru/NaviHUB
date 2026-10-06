@@ -37,6 +37,45 @@ import { WIZARDING_WORLD } from './wizardingWorld'
 import { DUNE } from './dune'
 import { BATMAN } from './batman'
 import { TWIN_PEAKS } from './twinPeaks'
+import { KINGDOM_HEARTS } from './kingdomHearts'
+import { ACE_ATTORNEY } from './aceAttorney'
+import { DANGANRONPA } from './danganronpa'
+import { ZERO_ESCAPE } from './zeroEscape'
+import { XENO } from './xeno'
+import { NIER_DRAKENGARD } from './nier'
+import { SHIN_MEGAMI_TENSEI } from './shinMegamiTensei'
+import { TALES_OF } from './talesOf'
+import { MONSTER_HUNTER } from './monsterHunter'
+import { POKEMON } from './pokemon'
+import { SUPER_MARIO } from './superMario'
+import { METROID } from './metroid'
+import { STREET_FIGHTER } from './streetFighter'
+import { DEVIL_MAY_CRY } from './devilMayCry'
+import { CASTLEVANIA } from './castlevania'
+import { MEGA_MAN } from './megaMan'
+import { SONIC } from './sonic'
+import { ACE_COMBAT } from './aceCombat'
+import { ARMORED_CORE } from './armoredCore'
+import { CHRONO } from './chrono'
+import { YS } from './ys'
+import { SUIKODEN } from './suikoden'
+import { STAR_OCEAN } from './starOcean'
+import { BREATH_OF_FIRE } from './breathOfFire'
+import { MOTHER } from './mother'
+import { MANA } from './mana'
+import { PHANTASY_STAR } from './phantasyStar'
+import { VALKYRIA_CHRONICLES } from './valkyriaChronicles'
+import { ATELIER } from './atelier'
+import { DISGAEA } from './disgaea'
+import { KEY_VISUAL_ARTS } from './key'
+import { TYPE_MOON } from './typeMoon'
+import { SWORD_ART_ONLINE } from './swordArtOnline'
+import { OVERLORD } from './overlord'
+import { MUSHOKU_TENSEI } from './mushokuTensei'
+import { WITCHER } from './witcher'
+import { SONG_OF_ICE_AND_FIRE } from './songOfIceAndFire'
+import { DIGIMON } from './digimon'
+import { WARCRAFT } from './warcraft'
 
 export * from './types'
 export { entryMediaType, matchLibrary, normalizeGameTitle } from './match'
@@ -72,7 +111,46 @@ export const FRANCHISES: FranchiseCfg[] = [
   WIZARDING_WORLD,
   DUNE,
   BATMAN,
-  TWIN_PEAKS
+  TWIN_PEAKS,
+  KINGDOM_HEARTS,
+  ACE_ATTORNEY,
+  DANGANRONPA,
+  ZERO_ESCAPE,
+  XENO,
+  NIER_DRAKENGARD,
+  SHIN_MEGAMI_TENSEI,
+  TALES_OF,
+  MONSTER_HUNTER,
+  POKEMON,
+  SUPER_MARIO,
+  METROID,
+  STREET_FIGHTER,
+  DEVIL_MAY_CRY,
+  CASTLEVANIA,
+  MEGA_MAN,
+  SONIC,
+  ACE_COMBAT,
+  ARMORED_CORE,
+  CHRONO,
+  YS,
+  SUIKODEN,
+  STAR_OCEAN,
+  BREATH_OF_FIRE,
+  MOTHER,
+  MANA,
+  PHANTASY_STAR,
+  VALKYRIA_CHRONICLES,
+  ATELIER,
+  DISGAEA,
+  KEY_VISUAL_ARTS,
+  TYPE_MOON,
+  SWORD_ART_ONLINE,
+  OVERLORD,
+  MUSHOKU_TENSEI,
+  WITCHER,
+  SONG_OF_ICE_AND_FIRE,
+  DIGIMON,
+  WARCRAFT
 ]
 
 export function franchiseCfg(id: string): FranchiseCfg | null {

@@ -10,6 +10,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import type { GrammarPoint } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Grammar cloze drill (kind 'grammar'): a real example sentence with the
 // grammar point blanked out (＿＿), the EN translation always visible as the
@@ -75,6 +76,7 @@ export default function JapaneseGrammarQuizPage() {
   const [length, setLength] = usePersistedState<number>('jpGrammarQuizLength', 10) // 0 = endless
 
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [question, setQuestion] = useState<Question | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
   const [answered, setAnswered] = useState(false)

@@ -1,0 +1,217 @@
+import { defineEvent } from '../../schema'
+
+export default defineEvent({
+  id: 'jameson-raid',
+  names: [
+    { text: 'Jameson Raid', lang: 'en', role: 'primary' }
+  ],
+  researched: '2026-10-06',
+  type: 'invasion',
+  start: {
+    alts: [
+      {
+        value: { d: '1895-12-29' },
+        cites: [
+          { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '64' } }
+        ]
+      }
+    ]
+  },
+  end: {
+    alts: [
+      {
+        value: { d: '1896-01-02' },
+        cites: [
+          { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '5' } },
+          { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '6' } }
+        ]
+      }
+    ]
+  },
+  regions: ['subsaharan-africa', 'europe'],
+  prominence: 3,
+  participants: [
+    {
+      ref: 'person:cecil-rhodes',
+      role: 'organizer',
+      cites: [
+        {
+          source: 'loc-south-africa-country-study-1996',
+          loc: { section: 'British Imperialism and the Afrikaners', para: '4' }
+        },
+        { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '65' } }
+      ]
+    },
+    {
+      name: 'Leander Starr Jameson',
+      role: 'commander',
+      cites: [
+        {
+          source: 'loc-south-africa-country-study-1996',
+          loc: { section: 'British Imperialism and the Afrikaners', para: '4' }
+        }
+      ]
+    },
+    {
+      name: 'Paul Kruger',
+      role: 'head-of-state',
+      cites: [
+        {
+          source: 'loc-south-africa-country-study-1996',
+          loc: { section: 'British Imperialism and the Afrikaners', para: '4' }
+        }
+      ]
+    }
+  ],
+  figures: [
+    {
+      key: 'participants',
+      value: {
+        alts: [
+          {
+            value: { min: 500 },
+            cites: [
+              {
+                source: 'loc-south-africa-country-study-1996',
+                loc: { section: 'British Imperialism and the Afrikaners', para: '4' }
+              }
+            ],
+            heldBy: [
+              { kind: 'organization', name: 'Library of Congress, Federal Research Division' }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  related: [
+    {
+      ref: 'event:south-african-war',
+      rel: 'contributed-to',
+      cites: [
+        { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '65' } },
+        {
+          source: 'loc-south-africa-country-study-1996',
+          loc: { section: 'British Imperialism and the Afrikaners', para: '5' }
+        }
+      ]
+    }
+  ],
+  sections: [
+    {
+      kind: 'background',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'These economic tensions lay at the base of a political issue: the right of English speakers to have the vote.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-africa-country-study-1996',
+            loc: { section: 'British Imperialism and the Afrikaners', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/16.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q2',
+          text: 'In December 1895, Cecil Rhodes took matters a step further by sending 500 armed men, employees of his British South Africa Company, into the South African Republic under the leadership of Dr. Leander Starr Jameson.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-africa-country-study-1996',
+            loc: { section: 'British Imperialism and the Afrikaners', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/16.htm' }
+        },
+        {
+          id: 'q3',
+          text: 'The invasion, however, was a fiasco: Boer commandos disarmed Jameson and his men with little resistance, and the uitlanders took no action.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-africa-country-study-1996',
+            loc: { section: 'British Imperialism and the Afrikaners', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/16.htm' }
+        }
+      ]
+    },
+    {
+      kind: 'aftermath',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'Kaiser Wilhelm II. beglückwünscht den Präsidenten der Burenrepublik Transvaal, Paulus "Ohm" Krüger (1825-1904), zu einem Abwehrsieg gegen britische Übergriffe.',
+          lang: 'de',
+          cite: { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '6' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.dhm.de/lemo/jahreschronik/1896.html'
+          }
+        },
+        {
+          id: 'q5',
+          text: 'Diese so genannte Krügerdepesche verstärkt die spürbar gewordene Entfremdung zwischen Großbritannien und dem Deutschen Reich.',
+          lang: 'de',
+          cite: { source: 'lemo-chronik-1896', loc: { section: 'Chronik 1896', para: '6' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.dhm.de/lemo/jahreschronik/1896.html'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'consequences',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'The Jameson Raid and anti-Boer sentiments expressed by gold magnates and British officials further cemented an Afrikaner sense of distinctiveness, which in the 1890s reached across political boundaries to include Dutch speakers in the Cape and the citizens of the Orange Free State as well as the Transvaalers.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-africa-country-study-1996',
+            loc: { section: 'British Imperialism and the Afrikaners', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/16.htm' }
+        },
+        {
+          id: 'q7',
+          text: 'Dieser so genannte Jameson Raid verschärft die Spannungen zwischen Großbritannen und Transvaal im Vorfeld des Burenkriegs.',
+          lang: 'de',
+          cite: { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '65' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.dhm.de/lemo/jahreschronik/1895.html'
+          }
+        }
+      ]
+    }
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/ae/Jameson_Raid.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Jameson_Raid.jpg',
+    credit: { creator: 'William Heysham Overend' },
+    license: { id: 'cc-by', version: '4.0' }
+  },
+  archive: [
+    {
+      id: 'garrett-edwards-african-crisis-1897',
+      mediaKind: 'document',
+      title: 'The story of an African crisis: being the truth about the Jameson Raid and Johannesburg revolt of 1896',
+      date: { d: '1897' },
+      url: 'https://archive.org/download/storyofafricancr00garruoft/storyofafricancr00garruoft.pdf',
+      page: 'https://archive.org/details/storyofafricancr00garruoft',
+      credit: {
+        institution: 'Robarts - University of Toronto (Internet Archive)',
+        creator: 'Garrett, Fydell Edmund, 1865-1907; Edwards, E. J.'
+      },
+      license: { id: 'public-domain' },
+      bytes: 14727711
+    }
+  ]
+})

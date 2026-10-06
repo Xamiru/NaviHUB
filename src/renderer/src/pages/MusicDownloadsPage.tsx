@@ -1,6 +1,6 @@
 import SpotifyTrackRecoveryDialog from '../components/SpotifyTrackRecoveryDialog'
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import type { SpotifyDownloadQueueCard, SpotifyDownloadQueueTrack, MusicUrlQueueItem } from '@shared/types'
 import ActionMenu from '../components/ActionMenu'
@@ -319,6 +319,7 @@ function QueueCardRow({
   onRemove: () => void
   onRemoveSelection: (id: number) => void
 }) {
+  const navigate = useNavigate()
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
   const [reviewTrack, setReviewTrack] = useState<SpotifyDownloadQueueTrack | null>(null)
@@ -404,7 +405,7 @@ function QueueCardRow({
             buttonClassName="btn-ghost px-2 py-1 text-xs"
             items={[
               ...(card.sourceKind === 'entity'
-                ? [{ label: 'Add releases', onSelect: () => { window.location.hash = `#${addRoute}` } }]
+                ? [{ label: 'Add releases', onSelect: () => navigate(addRoute) }]
                 : []),
               ...(card.sourceUrl ? [{ label: card.sourceKind === 'url' ? 'Open source' : 'Open in Spotify', onSelect: () => api.app.openExternal(card.sourceUrl!) }] : []),
               { label: 'Remove from downloads', onSelect: onRemove, danger: true }

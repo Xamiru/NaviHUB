@@ -30,6 +30,12 @@ describe('quiz synopsis text', () => {
     )
   })
 
+  it('still redacts an ASCII name spelled with the long s', () => {
+    expect(redactQuizNames('Kaſumi arrives.', ['Kasumi', 'Absent Name'])).toBe(
+      '[name omitted] arrives.'
+    )
+  })
+
   it('prefers a complete sentence near the excerpt boundary', () => {
     const first = `${'A'.repeat(190)}. `
     const result = synopsisExcerpt(`${first}${'B'.repeat(300)}`, [], 320)

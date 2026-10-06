@@ -233,13 +233,35 @@ export default function PersonDetailPage() {
             <div className="grid grid-cols-3 gap-4 sm:grid-cols-6">
               {knownFor.map((c) => (
                 <Link key={c.media.id} to={pathForMedia(c.media)} className="group block min-w-0">
-                  <CoverImage
-                    path={c.media.coverPath}
-                    alt=""
-                    thumbWidth={240}
-                    rounded="rounded-lg"
-                    className="aspect-[2/3] w-full transition-transform group-hover:scale-[1.03]"
-                  />
+                  {/* A voiced role leads with the character, the title's cover
+                      inset; live-action credits store the actor's headshot as
+                      the character image, so they keep the poster alone. */}
+                  {c.character && c.role !== 'actor' ? (
+                    <div className="relative">
+                      <CoverImage
+                        path={c.character.imagePath ?? c.media.coverPath}
+                        alt=""
+                        thumbWidth={240}
+                        rounded="rounded-lg"
+                        className="aspect-[2/3] w-full transition-transform group-hover:scale-[1.03]"
+                      />
+                      <CoverImage
+                        path={c.media.coverPath}
+                        alt=""
+                        thumbWidth={80}
+                        rounded="rounded"
+                        className="absolute bottom-1.5 right-1.5 aspect-[2/3] w-1/3 shadow-lg ring-2 ring-base-900"
+                      />
+                    </div>
+                  ) : (
+                    <CoverImage
+                      path={c.media.coverPath}
+                      alt=""
+                      thumbWidth={240}
+                      rounded="rounded-lg"
+                      className="aspect-[2/3] w-full transition-transform group-hover:scale-[1.03]"
+                    />
+                  )}
                   <p className="mt-1.5 truncate text-sm text-white group-hover:text-accent">{c.media.title}</p>
                   <p className={`truncate text-xs text-gray-400 ${c.character ? '' : 'capitalize'}`}>
                     {c.character ? `as ${c.character.name}` : c.role.replace(/_/g, ' ')}

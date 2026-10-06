@@ -19,6 +19,7 @@ import type {
   QuizScreenMediaMode,
   QuizScreenTitle
 } from '@shared/types'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 interface FilledCell {
@@ -43,6 +44,7 @@ export default function LibraryGridPage() {
   const [scope, setScope] = usePersistedState<QuizConsumptionScope>('libraryGridScope', 'consumed')
   const [mediaMode, setMediaMode] = usePersistedState<QuizScreenMediaMode>('libraryGridMode', 'both')
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [question, setQuestion] = useState<QuizLibraryGridQuestion | null>(null)
   const [seed, setSeed] = useState(0)
   const [activeCell, setActiveCell] = useState('cell-0')

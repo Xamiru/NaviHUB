@@ -1,0 +1,85 @@
+import { definePerson } from '../../schema'
+
+export default definePerson({
+  id: 'mikhail-kutuzov',
+  names: [
+    { text: 'Mikhail Kutuzov', lang: 'en', role: 'primary' },
+    { text: 'Михаил Илларионович Кутузов', lang: 'ru', role: 'native' }
+  ],
+  researched: '2026-10-06',
+  died: {
+    alts: [
+      {
+        value: { d: '1813-04-28' },
+        cites: [
+          {
+            source: 'fondation-napoleon-kutuzov',
+            loc: { section: 'KUTUZOV, Mikhail Illarionovich Golenishchev', para: '1' }
+          }
+        ]
+      }
+    ]
+  },
+  regions: ['russia-central-asia'],
+  roles: ['military'],
+  sections: [
+    {
+      kind: 'career',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'His popularity with the army saw him appointed – from the end of August 1812 – commander-in-chief of Russian forces, during which he executed the scorched-earth retreat policy. After offering battle at Borodino and then retreating, he subsequently abandoned Moscow.',
+          lang: 'en',
+          cite: {
+            source: 'fondation-napoleon-kutuzov',
+            loc: { section: 'KUTUZOV, Mikhail Illarionovich Golenishchev', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.napoleon.org/en/reading_room/biographies/files/481511.asp'
+          }
+        },
+        {
+          id: 'q2',
+          text: 'Promoted to general field marshal on 11 September 1812, he was successful at Tarutino, Maloiaroslavets, Viazma, and Krasnyi, and was subsequently named Prince of Smolensk.',
+          lang: 'en',
+          cite: {
+            source: 'fondation-napoleon-kutuzov',
+            loc: { section: 'KUTUZOV, Mikhail Illarionovich Golenishchev', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.napoleon.org/en/reading_room/biographies/files/481511.asp'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'death',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'Despite his opposition to Alexander\'s wish to pursue the war into Germany, the Russian army marched through Poland, where Kutuzov fell ill and died, on 28 April, 1813.',
+          lang: 'en',
+          cite: {
+            source: 'fondation-napoleon-kutuzov',
+            loc: { section: 'KUTUZOV, Mikhail Illarionovich Golenishchev', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.napoleon.org/en/reading_room/biographies/files/481511.asp'
+          }
+        }
+      ]
+    }
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/0/0d/Kutuzov_by_Volkov.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Kutuzov_by_Volkov.jpg',
+    credit: { creator: 'Roman Volkov' },
+    license: { id: 'public-domain' }
+  }
+})

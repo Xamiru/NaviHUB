@@ -9,6 +9,7 @@ import EmptyState from '../components/EmptyState'
 import PageStatus from '../components/PageStatus'
 import ContextPanel, { ContextFact, ContextTrail } from '../components/ContextPanel'
 import { pathForMedia } from '../lib/mediaConfig'
+import { historyPath } from '../lib/historyUi'
 import {
   contextLensRoute,
   reconcileContextLensSelection,
@@ -36,7 +37,7 @@ export default function SearchPage() {
 
   const selected = reconcileContextLensSelection(data, selection)
   const total = data
-    ? data.media.length + data.people.length + data.companies.length + data.characters.length
+    ? data.media.length + data.people.length + data.companies.length + data.characters.length + data.history.length
     : 0
 
   return (
@@ -58,7 +59,7 @@ export default function SearchPage() {
       {!q.trim() && (
         <EmptyState
           title="Search from the top bar"
-          body="Look for a title, person, character or studio already in your local archive."
+          body="Look for a title, person, character, studio or History entry already in your local archive."
         />
       )}
 
@@ -111,6 +112,21 @@ export default function SearchPage() {
                   portrait={false}
                   selected={selected?.kind === 'company' && selected.id === item.id}
                   onSelect={() => setSelection({ kind: 'company', id: item.id })}
+                />
+              ))}
+            </SearchGroup>
+
+            <SearchGroup title="History" count={data.history.length}>
+              {data.history.map((item) => (
+                <SearchResultRow
+                  key={item.ref}
+                  to={historyPath(item.ref) ?? '/history'}
+                  title={item.title}
+                  subtitle={item.subtitle ?? 'History'}
+                  image={item.image?.cached ?? null}
+                  portrait={item.kind === 'person'}
+                  selected={false}
+                  onSelect={() => setSelection(null)}
                 />
               ))}
             </SearchGroup>

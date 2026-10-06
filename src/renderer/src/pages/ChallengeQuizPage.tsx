@@ -27,6 +27,7 @@ import type {
   QuizConsumptionScope,
   QuizHigherLowerMetric
 } from '@shared/types'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 type StandardChallengeKind = Exclude<
@@ -55,6 +56,7 @@ export default function ChallengeQuizPage({ kind }: { kind: StandardChallengeKin
   const completedStatuses = useAllCompletedStatuses()
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [scope, setScope] = useState<QuizConsumptionScope>('consumed')
   const [timer, setTimer] = useState(true)
   const [imageSource, setImageSource] = useState<'covers' | 'art'>('covers')

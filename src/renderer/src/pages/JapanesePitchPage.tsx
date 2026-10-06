@@ -15,6 +15,7 @@ import MinimalPairsDrill from '../components/japanese/MinimalPairsDrill'
 import SpeakDrill from '../components/japanese/SpeakDrill'
 import { shuffle } from '@shared/shuffle'
 import StudySessionFrame, { SessionEvidence, SessionFeedback } from '../components/StudySessionFrame'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Pitch accent training, TheMoeWay's optional-but-recommended pillar. Two
 // halves: the KNOWLEDGE quiz (see a word, pick its contour — Kanjium data) and
@@ -109,6 +110,7 @@ function PatternQuizSetup() {
   const [length, setLength] = usePersistedState<number>('jpPitchLength', 10) // 0 = endless
 
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [question, setQuestion] = useState<PitchQuestion | null>(null)
   const [picked, setPicked] = useState<number | null>(null)
   const [answered, setAnswered] = useState(false)

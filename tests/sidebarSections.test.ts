@@ -36,7 +36,8 @@ describe('sidebarSectionDefs', () => {
       'quiz',
       'japanese',
       'english',
-      'programming'
+      'programming',
+      'history'
     ]) {
       expect(keys.has(k)).toBe(true)
     }

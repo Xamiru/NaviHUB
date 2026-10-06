@@ -1,11 +1,29 @@
 import { getSqlite } from '../db/connection'
+import { logWarn } from '../logBus'
 import { mapMedia, mapPerson, mapCompany, mapCharacter } from './mappers'
 import type { GlobalSearchResults } from '@shared/types'
+
+// History's content is a lazily loaded in-memory catalog, not a table, so it
+// joins the library results here through a cached dynamic import rather than
+// the FTS projection (tests/performanceBoundaries.test.ts).
+const loadHistory = (): Promise<typeof import('../history/historyService')> => import('../history/historyService')
+
+export async function globalAll(query: string): Promise<GlobalSearchResults> {
+  const library = global(query)
+  if (!query.trim()) return library
+  try {
+    return { ...library, history: (await loadHistory()).search(query) }
+  } catch (err) {
+    // A broken History catalog must not take the library results down with it.
+    logWarn('app', `search: History results unavailable: ${err instanceof Error ? err.message : String(err)}`)
+    return library
+  }
+}
 
 // One query per entity, capped — feeds the global search dropdown / page.
 export function global(query: string): GlobalSearchResults {
   const db = getSqlite()
-  const empty: GlobalSearchResults = { media: [], people: [], companies: [], characters: [] }
+  const empty: GlobalSearchResults = { media: [], people: [], companies: [], characters: [], history: [] }
   const term = query.trim()
   if (!term) return empty
 
@@ -49,6 +67,7 @@ export function global(query: string): GlobalSearchResults {
     characters: db
       .prepare(entitySql('character', 'character'))
       .all(...params)
-      .map(mapCharacter)
+      .map(mapCharacter),
+    history: []
   }
 }

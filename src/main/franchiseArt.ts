@@ -26,6 +26,14 @@ export function getArtStatus(): FranchiseArtStatus {
   return { ...artState }
 }
 
+// Fandom's image CDN answers 403 to a request without a Referer; every other
+// curated art host takes the default request.
+export function artRequestHeaders(url: string): Record<string, string> | undefined {
+  return new URL(url).hostname === 'static.wikia.nocookie.net'
+    ? { Referer: 'https://www.fandom.com/', 'User-Agent': 'NaviHUB/1.0 (personal media hub)' }
+    : undefined
+}
+
 // url -> cached relative path (null while not yet downloaded). Synchronous
 // existsSync sweep — a franchise has a few dozen URLs at most.
 export function artMap(franchiseId: string): Record<string, string | null> {
@@ -90,7 +98,7 @@ function ensureUrls(
         while (next < missing.length) {
           if (handle.cancelRequested()) throw new tasks.TaskCancelledError(label)
           const url = missing[next++]
-          if ((await downloadImage(url)) == null) failed += 1
+          if ((await downloadImage(url, undefined, artRequestHeaders(url))) == null) failed += 1
           artState.done += 1
         }
       }

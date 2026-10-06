@@ -27,6 +27,7 @@ const CINEMATIC_PREFIXES = [
   '/now-playing',
   '/wrestling',
   '/football',
+  '/history',
   '/lists',
   '/tags',
   '/people',

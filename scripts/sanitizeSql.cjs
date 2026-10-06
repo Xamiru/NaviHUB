@@ -122,6 +122,13 @@ const FIXED_WIPES = [
   'DELETE FROM game_session',
   'DELETE FROM achievement_unlock',
   'DELETE FROM checklist_log',
+  // History's personal layer: reading marks, private notes, own links, files
+  // on this machine and the user's own entities.
+  'DELETE FROM history_mark',
+  'DELETE FROM history_note',
+  'DELETE FROM history_media_link',
+  'DELETE FROM history_archive',
+  'DELETE FROM history_user_entity',
   'DELETE FROM checklist_task',
   'DELETE FROM en_review_log',
   'DELETE FROM en_word',
@@ -134,7 +141,7 @@ const FIXED_WIPES = [
   'DELETE FROM sync_batch',
   `DELETE FROM settings WHERE key IN
      ('tmdb.api_key','rawg.api_key','igdb.client_id','igdb.client_secret','omdb.api_key','ytdlp.path','spotdl.path','spotdl.cookieFile','spotdl.pythonPath','music.ffmpegPath',
-      'music.dir','manga.dir','books.dir','audio.dir','media.dir','pictures.dir','slideshow.dir','pictures.slideshowSource','video.dir','wrestling.dir','football.dir',
+      'music.dir','manga.dir','books.dir','audio.dir','media.dir','pictures.dir','slideshow.dir','pictures.slideshowSource','video.dir','wrestling.dir','football.dir','history.dir',
       'ffmpeg.path','ffprobe.path','mokuro.path',
       'gemini.api_key','anthropic.api_key',
       'steam.web_api_key','ra.username','ra.api_key','football.api_key','football.api_quota',

@@ -34,6 +34,7 @@ import {
   songAnswerKey,
   shouldStopQuizTrack
 } from '@shared/quizAudioCore'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 type ListSource = 'consumed' | 'all'
@@ -95,6 +96,7 @@ export default function SongQuizPage() {
   const [autoNext, setAutoNext] = usePersistedState('quizAutoNext', true)
 
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [current, setCurrent] = useState<QuizSong | null>(null)
   const [options, setOptions] = useState<QuizSong[]>([])
   const [picked, setPicked] = useState<string | null>(null)

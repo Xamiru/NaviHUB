@@ -43,6 +43,7 @@ import { qk } from '../lib/queryKeys'
 import { useAllCompletedStatuses } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { usePlayerControls } from '../lib/player'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 type ThemeScope = 'completed' | 'all'
@@ -111,6 +112,7 @@ export default function GuessTrackPage() {
   const [albumId, setAlbumId] = usePersistedState<number | null>('guessTrackAlbum', null)
 
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [loading, setLoading] = useState(false)
   const [audioLoading, setAudioLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)

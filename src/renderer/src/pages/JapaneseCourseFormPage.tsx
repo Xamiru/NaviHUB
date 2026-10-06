@@ -6,6 +6,7 @@ import { qk } from '../lib/queryKeys'
 import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import QuietWorkspace from '../components/QuietWorkspace'
+import { useEditLeaveGuard } from '../lib/browserTabs'
 
 export default function JapaneseCourseFormPage() {
   const { id } = useParams()
@@ -19,6 +20,7 @@ export default function JapaneseCourseFormPage() {
   const [difficulty, setDifficulty] = useState('')
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(!editing)
+  useEditLeaveGuard({ title, description, level, difficulty }, loaded)
 
   useEffect(() => {
     if (!editing) return

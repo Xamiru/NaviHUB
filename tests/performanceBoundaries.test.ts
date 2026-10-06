@@ -71,6 +71,16 @@ describe('renderer loading boundaries', () => {
 })
 
 describe('main-process loading boundaries', () => {
+  it('keeps the quiz pool process free of electron and the main connection', () => {
+    for (const file of ['src/main/quizPoolChild.ts', 'src/main/quizPoolsCore.ts', 'src/main/repos/quizRepo.ts']) {
+      const src = read(file)
+      expect(src, file).not.toMatch(/from 'electron'/)
+      expect(src, file).not.toMatch(/db\/connection'/)
+    }
+    expect(read('src/main/quizPools.ts')).toContain("import childPath from './quizPoolChild?modulePath'")
+    expect(read('src/main/index.ts')).toMatch(/stopQuizPools\(\)[\s\S]*closeDatabase\(\)/)
+  })
+
   it('defers offline learning catalogs until their first IPC call', () => {
     const ipc = read('src/main/ipc.ts')
     const sandbox = read('src/main/sqlSandbox.ts')
@@ -85,6 +95,35 @@ describe('main-process loading boundaries', () => {
     const watcher = read('src/main/achievementWatcher.ts')
     expect(watcher).not.toMatch(/^import \* as retroAchievements/m)
     expect(watcher).toContain("await import('./retroAchievements')")
+  })
+
+  it('loads the History content catalog only through the lazy History service', () => {
+    // The committed content grows by a decade per research session; it must
+    // never parse at launch or ride into the renderer bundle.
+    const staticImport = /^import [^\n]*from ['"][^'"]*(history\/historyService|history\/catalog)['"]/m
+    for (const file of ['src/main/ipc.ts', 'src/main/repos/searchRepo.ts', 'src/main/index.ts']) {
+      expect(read(file), file).not.toMatch(staticImport)
+    }
+    expect(read('src/main/ipc.ts')).toContain("import('./history/historyService')")
+    expect(read('src/main/repos/searchRepo.ts')).toContain("import('../history/historyService')")
+    // Media detail pages ask for backlinks on every visit; a cheap gate decides first.
+    expect(read('src/main/ipc.ts')).toContain("import('./history/historyBacklinkGate')")
+    expect(read('src/main/history/historyBacklinkGate.ts')).not.toMatch(/history\/(catalog|historyService)/)
+    const walk = (dir: string): string[] =>
+      readdirSync(fileURLToPath(new URL(`../${dir}`, import.meta.url)), { withFileTypes: true }).flatMap((d) =>
+        d.isDirectory() ? walk(`${dir}/${d.name}`) : /\.tsx?$/.test(d.name) ? [`${dir}/${d.name}`] : []
+      )
+    for (const file of walk('src/renderer/src')) {
+      expect(read(file), file).not.toMatch(/history\/(catalog|content)/)
+    }
+    // The pure halves stay free of electron, the filesystem and the database.
+    for (const file of [
+      ...walk('src/shared/history').filter((f) => !f.includes('/content/')),
+      'src/main/history/historyIndex.ts',
+      'src/main/history/historyViews.ts'
+    ]) {
+      expect(read(file), file).not.toMatch(/from ['"](electron|fs|node:fs|better-sqlite3)['"]|db\/connection/)
+    }
   })
 
   it('streams large catalog and media downloads instead of buffering response bodies', () => {

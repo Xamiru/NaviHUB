@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   answerIsCorrect,
+  balancedBuiltDeal,
   balancedDeckAvoiding,
   balancedDeal,
   compareQuizResults,
@@ -27,6 +28,29 @@ describe('quiz seeded dealing', () => {
     ]
     const dealt = balancedDeal(rows, 3, (r) => r.show, seededRng(5))
     expect(new Set(dealt.map((r) => r.show))).toEqual(new Set(['a', 'b', 'c']))
+  })
+
+  it('builds only the values a balanced deal reaches and skips unbuildable ones', () => {
+    const rows = [
+      ...Array.from({ length: 50 }, (_, i) => ({ show: 'a', i })),
+      { show: 'b', i: 50 },
+      { show: 'b', i: 51 },
+      { show: 'c', i: 52 }
+    ]
+    const built: number[] = []
+    const dealt = balancedBuiltDeal(
+      rows,
+      3,
+      (r) => r.show,
+      (r) => {
+        built.push(r.i)
+        return r.show === 'c' ? null : r
+      },
+      seededRng(5)
+    )
+    expect(dealt).toHaveLength(3)
+    expect(new Set(dealt.map((r) => r.show))).toEqual(new Set(['a', 'b']))
+    expect(built).toHaveLength(4)
   })
 
   it('does not repeat the previous item across a deck boundary', () => {

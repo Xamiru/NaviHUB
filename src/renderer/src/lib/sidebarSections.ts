@@ -47,7 +47,8 @@ export function sidebarSectionDefs(): SidebarSectionDef[] {
     { key: 'quiz', label: 'Quiz', group: 'play' },
     { key: 'japanese', label: 'Japanese', group: 'learn' },
     { key: 'english', label: 'English', group: 'learn' },
-    { key: 'programming', label: 'Programming', group: 'learn' }
+    { key: 'programming', label: 'Programming', group: 'learn' },
+    { key: 'history', label: 'History', group: 'learn' }
   ]
 }
 

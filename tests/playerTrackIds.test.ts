@@ -15,4 +15,10 @@ describe('player track database ids', () => {
     expect(themeIdOf('theme-17-extra')).toBeNull()
     expect(themeIdOf('quiz-17')).toBeNull()
   })
+
+  it('treats History archive recordings as neither music nor themes', () => {
+    // `history-<archive row id>`: no Like, no Favorite, no play logging.
+    expect(musicIdOf('history-12')).toBeNull()
+    expect(themeIdOf('history-12')).toBeNull()
+  })
 })

@@ -7,6 +7,7 @@ import { seedJapanese } from './japaneseSeed'
 import { CHECKLIST_SEED } from '@shared/checklist'
 import { logInfo } from '../logBus'
 import { rebuildLyricsIndex } from '../musicLyricsIndex'
+import { installSqlite } from './sqliteHandle'
 
 let _sqlite: Database.Database | null = null
 
@@ -609,6 +610,8 @@ export function getSqlite(): Database.Database {
   if (!_sqlite) initDatabase()
   return _sqlite!
 }
+
+installSqlite(getSqlite)
 
 export function closeDatabase(): void {
   // Fold the WAL back into the main db file and truncate it on exit, so it can't

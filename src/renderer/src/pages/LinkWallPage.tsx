@@ -25,6 +25,7 @@ import type {
   QuizLinkWallQuestion,
   QuizScreenMediaMode
 } from '@shared/types'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 
@@ -40,6 +41,7 @@ export default function LinkWallPage() {
   const [scope, setScope] = usePersistedState<QuizConsumptionScope>('linkWallScope', 'consumed')
   const [mediaMode, setMediaMode] = usePersistedState<QuizScreenMediaMode>('linkWallMode', 'both')
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [question, setQuestion] = useState<QuizLinkWallQuestion | null>(null)
   const [state, setState] = useState<LinkWallState>(initialLinkWallState)
   const [orderKeys, setOrderKeys] = useState<string[]>([])

@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import Toaster from '@/components/Toaster'
 import { dismissToast, getToasts, toast } from '@/lib/toast'
@@ -13,7 +14,7 @@ afterEach(() => {
 describe('Toaster', () => {
   it('announces errors assertively and provides an explicit close action', async () => {
     toast('Database unavailable', 'error')
-    render(<Toaster />)
+    render(<Toaster />, { wrapper: MemoryRouter })
 
     expect(screen.getByRole('alert')).toHaveAttribute('aria-live', 'assertive')
     await userEvent.click(
@@ -25,7 +26,7 @@ describe('Toaster', () => {
   it('pauses automatic dismissal while hovered or focused', () => {
     vi.useFakeTimers()
     toast('Saved', 'success')
-    render(<Toaster />)
+    render(<Toaster />, { wrapper: MemoryRouter })
     const notice = screen.getByRole('status')
     const close = screen.getByRole('button', { name: 'Close notification: Saved' })
 
@@ -45,7 +46,7 @@ describe('Toaster', () => {
     document.documentElement.dataset.theme = 'twin-peaks'
     vi.useFakeTimers()
     toast('The music folder is almost full', 'warning')
-    render(<Toaster />)
+    render(<Toaster />, { wrapper: MemoryRouter })
     act(() => vi.advanceTimersByTime(1_000))
     const notice = screen.getByRole('status')
     expect(notice).toHaveTextContent('My log has something to tell you.')
@@ -65,7 +66,7 @@ describe('Toaster', () => {
     document.documentElement.dataset.theme = theme
     vi.useFakeTimers()
     toast('Settings saved', 'success')
-    render(<Toaster />)
+    render(<Toaster />, { wrapper: MemoryRouter })
     act(() => vi.advanceTimersByTime(1_000))
     const notice = screen.getByRole('status')
     expect(notice).toHaveClass(`theme-toast-${theme}`)

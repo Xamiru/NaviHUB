@@ -4,7 +4,7 @@ import { createTestDb } from './helpers'
 import * as quizRepo from '../src/main/repos/quizRepo'
 
 let db: Database.Database
-vi.mock('../src/main/db/connection', () => ({
+vi.mock('../src/main/db/sqliteHandle', () => ({
   getSqlite: () => db
 }))
 

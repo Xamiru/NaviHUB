@@ -1,4 +1,5 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useNavigate } from 'react-router-dom'
 import type { AppTheme, AppThemeVariant } from '@shared/appTheme'
 import { FX_ART } from '../lib/themeFxArt'
 import { useAppTheme } from '../lib/useAppTheme'
@@ -15,6 +16,7 @@ import {
 // Click a toast to dismiss it early (they auto-dismiss after a few seconds).
 export default function Toaster() {
   const toasts = useSyncExternalStore(subscribeToasts, getToasts)
+  const navigate = useNavigate()
   const { theme, variant } = useAppTheme()
   if (toasts.length === 0) return null
   return (
@@ -64,7 +66,7 @@ export default function Toaster() {
               className="shrink-0 text-xs font-medium text-accent hover:text-white"
               onClick={() => {
                 dismissToast(t.id)
-                window.location.hash = `#${t.action!.route}`
+                navigate(t.action!.route)
               }}
             >
               {t.action.label}

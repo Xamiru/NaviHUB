@@ -19,7 +19,8 @@ vi.mock('../../src/renderer/src/lib/api', () => ({
         }],
         people: [{ id: 1, name: 'Toshiyuki Morikawa', photoPath: null }],
         companies: [],
-        characters: [{ id: 2, name: 'Guts', imagePath: null }]
+        characters: [{ id: 2, name: 'Guts', imagePath: null }],
+        history: []
       })
     },
     media: { logProgress: (...args: unknown[]) => logProgress(...args) }

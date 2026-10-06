@@ -28,6 +28,20 @@ export function balancedDeal<T>(
   identity: (value: T) => string | number,
   rng: () => number = Math.random
 ): T[] {
+  return balancedBuiltDeal(values, count, identity, (value) => value, rng)
+}
+
+// balancedDeal for values whose question is expensive to build: each value is
+// built only when the identity round-robin reaches it, and a null build falls
+// through to the next value of the same identity. The round stays balanced
+// over the buildable values without building the whole pool first.
+export function balancedBuiltDeal<T, S>(
+  values: readonly T[],
+  count: number,
+  identity: (value: T) => string | number,
+  build: (value: T) => S | null,
+  rng: () => number = Math.random
+): S[] {
   const buckets = new Map<string | number, T[]>()
   for (const value of shuffle(values, rng)) {
     const key = identity(value)
@@ -36,13 +50,17 @@ export function balancedDeal<T>(
     else buckets.set(key, [value])
   }
   const ordered = shuffle([...buckets.values()], rng)
-  const out: T[] = []
+  const out: S[] = []
   while (out.length < count) {
     let added = false
     for (const bucket of ordered) {
-      const value = bucket.pop()
-      if (value == null) continue
-      out.push(value)
+      let built: S | null = null
+      while (built == null && bucket.length > 0) {
+        const value = bucket.pop()
+        if (value != null) built = build(value)
+      }
+      if (built == null) continue
+      out.push(built)
       added = true
       if (out.length >= count) break
     }

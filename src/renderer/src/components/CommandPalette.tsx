@@ -12,6 +12,7 @@ import { WRESTLING_PROMOTIONS } from '@shared/wrestling'
 import { Field } from './Field'
 import { FX_ART } from '../lib/themeFxArt'
 import { useAppTheme } from '../lib/useAppTheme'
+import { historyPath } from '../lib/historyUi'
 
 interface PaletteItem {
   key: string
@@ -225,6 +226,19 @@ function PalettePanel({ onClose, onGo }: { onClose: () => void; onGo: (to: strin
       }
       for (const c of results.companies.slice(0, 3)) {
         found.push({ key: `company-${c.id}`, label: c.name, hint: 'Studio', to: `/studios/${c.id}`, group: 'Studios', image: { path: c.logoPath, round: false } })
+      }
+      for (const h of results.history.slice(0, 5)) {
+        const to = historyPath(h.ref)
+        if (!to) continue
+        found.push({
+          key: `history-${h.ref}`,
+          label: h.title,
+          hint: 'History',
+          to,
+          group: 'History',
+          image: { path: h.image?.cached ?? null, round: h.kind === 'person' },
+          sub: h.subtitle ?? undefined
+        })
       }
     }
     found.push({

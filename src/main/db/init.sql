@@ -2017,3 +2017,55 @@ CREATE TABLE IF NOT EXISTS music_smart_playlist (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   title TEXT NOT NULL, description TEXT NOT NULL DEFAULT '', rules_json TEXT NOT NULL
 );
+-- ---- History (curated content lives in src/shared/history/content; these
+-- tables hold only this machine's personal layer over it) ----
+-- Refs are the content's frozen `kind:slug` strings, so these tables are
+-- FK-less on the content side; a ref whose entity is gone is simply ignored.
+CREATE TABLE IF NOT EXISTS history_mark (
+  ref        TEXT PRIMARY KEY,
+  read_at    TEXT,
+  favorite   INTEGER NOT NULL DEFAULT 0 CHECK(favorite IN (0,1)),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE TABLE IF NOT EXISTS history_note (
+  ref        TEXT PRIMARY KEY,
+  body       TEXT NOT NULL,
+  kind       TEXT NOT NULL DEFAULT 'note' CHECK(kind IN ('note','correction')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+-- The user's own title links, on top of the curated media files.
+CREATE TABLE IF NOT EXISTS history_media_link (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  ref        TEXT NOT NULL,
+  media_id   INTEGER NOT NULL REFERENCES media_item(id) ON DELETE CASCADE,
+  kind       TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE(ref, media_id, kind)
+);
+CREATE INDEX IF NOT EXISTS idx_history_media_link_media ON history_media_link(media_id);
+-- Files attached by the user or downloaded from a research suggestion, under
+-- the history/ prefix (history.dir). suggestion_key = `<ref>#<suggestion id>`.
+CREATE TABLE IF NOT EXISTS history_archive (
+  id             INTEGER PRIMARY KEY AUTOINCREMENT,
+  ref            TEXT NOT NULL,
+  kind           TEXT NOT NULL CHECK(kind IN ('video','audio','image','document')),
+  rel_path       TEXT NOT NULL,
+  title          TEXT NOT NULL,
+  credit         TEXT,
+  license        TEXT,
+  page           TEXT,
+  suggestion_key TEXT UNIQUE,
+  sha256         TEXT,
+  bytes          INTEGER,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_history_archive_ref ON history_archive(ref);
+-- Personal entities written in the in-app editor: the content schema's own
+-- JSON, validated on save, ids reserved under the `my-` prefix.
+CREATE TABLE IF NOT EXISTS history_user_entity (
+  id         TEXT PRIMARY KEY CHECK(id LIKE 'my-%'),
+  kind       TEXT NOT NULL CHECK(kind IN ('event','person','period','place','source','interpretation')),
+  json       TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);

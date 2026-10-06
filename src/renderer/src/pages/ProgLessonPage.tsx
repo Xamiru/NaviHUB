@@ -15,6 +15,7 @@ import { progCourse, progLessonKey } from '@shared/programming/courses'
 import type { ProgQuestion } from '@shared/programming/types'
 import { shuffle } from '@shared/shuffle'
 import { bestAttempts } from '@shared/programming/attempts'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // One lesson: the Markdown body, a click-to-check "Check understanding" block
 // (a finished check — every question answered — is recorded once as a
@@ -52,6 +53,7 @@ function Lesson({ courseKey, index }: { courseKey: string; index: number }) {
   const summary = bestAttempts(attempts).get(fullKey)
   const total = lesson.questions.length
   const checkDone = total > 0 && results.size === total
+  useTabLeaveGuard(results.size > 0 && !checkDone, 'run')
   const score = [...results.values()].filter(Boolean).length
 
   // One prog_attempt row per finished check, guarded like the quiz pages'

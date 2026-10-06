@@ -6,7 +6,7 @@ import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { configFor } from '../lib/mediaConfig'
 import { useFranchiseLibrary } from '../lib/useFranchiseLibrary'
-import { mediaUrl } from '@shared/mediaUrl'
+import { mediaUrl, thumbUrl } from '@shared/mediaUrl'
 import {
   FRANCHISES,
   FRANCHISE_MEDIA_TYPES,
@@ -98,7 +98,7 @@ export default function FranchisesPage() {
           <FranchiseCard
             key={f.id}
             cfg={f}
-            heroSrc={(heroMap[f.id] && mediaUrl(heroMap[f.id]!)) || f.heroUrl}
+            heroSrcs={heroSources(heroMap[f.id], f.heroUrl)}
             owned={progress.get(f.id)?.owned ?? 0}
             finished={progress.get(f.id)?.finished ?? 0}
           />
@@ -108,21 +108,30 @@ export default function FranchisesPage() {
   )
 }
 
+// The cached hero is wide artwork shown in a 10rem banner, so cards load its
+// thumbnail and fall back to the full file; the remote URL serves until the
+// cache lands.
+function heroSources(cached: string | null | undefined, remote: string): string[] {
+  if (!cached) return [remote]
+  return [thumbUrl(cached, 480), mediaUrl(cached)].filter((src): src is string => !!src)
+}
+
 function FranchiseCard({
   cfg,
-  heroSrc,
+  heroSrcs,
   owned,
   finished
 }: {
   cfg: FranchiseCfg
-  heroSrc: string
+  heroSrcs: string[]
   owned: number
   finished: number
 }) {
-  // A remote hero can fail before the cache lands; the card then shows its
-  // tinted panel instead of a broken image, and retries when the cached path
-  // replaces the URL.
-  const [failedSrc, setFailedSrc] = useState<string | null>(null)
+  // A failed source falls through to the next; when every one fails (a remote
+  // hero before the cache lands) the card shows its tinted panel instead of a
+  // broken image, and retries once the cached paths replace the URL.
+  const [failed, setFailed] = useState<ReadonlySet<string>>(() => new Set())
+  const heroSrc = heroSrcs.find((src) => !failed.has(src))
   const total = cfg.entries.length
   const pct = total ? Math.round((finished / total) * 100) : 0
   return (
@@ -131,7 +140,7 @@ function FranchiseCard({
       className="card group block overflow-hidden transition-colors hover:border-accent/60"
     >
       <div className="relative h-40 bg-base-700">
-        {failedSrc !== heroSrc && (
+        {heroSrc && (
           <img
             src={heroSrc}
             alt=""
@@ -139,7 +148,7 @@ function FranchiseCard({
             loading="lazy"
             decoding="async"
             draggable={false}
-            onError={() => setFailedSrc(heroSrc)}
+            onError={() => setFailed((prev) => new Set(prev).add(heroSrc))}
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-base-800 via-base-800/30 to-transparent" />

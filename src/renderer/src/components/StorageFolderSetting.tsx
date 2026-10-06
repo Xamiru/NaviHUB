@@ -6,9 +6,10 @@ import { confirmDialog } from '../lib/confirm'
 import QuietWorkspace from './QuietWorkspace'
 import type { StorageRootKey } from '@shared/types'
 
-// One of the app's own image roots (pictures, media) in Settings → Folders.
-// The path is not free text: stored rows are relative to it, so changing it
-// without moving the files would break every image. Move… does both.
+// One of the app's own file roots (pictures, media, History archive) in
+// Settings → Folders. The path is not free text: stored rows are relative to
+// it, so changing it without moving the files would break every one of them.
+// Move… does both.
 export default function StorageFolderSetting({
   root,
   title,

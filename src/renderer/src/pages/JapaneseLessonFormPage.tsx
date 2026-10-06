@@ -8,6 +8,7 @@ import PageStatus from '../components/PageStatus'
 import QuietWorkspace from '../components/QuietWorkspace'
 import { toast } from '../lib/toast'
 import type { JpCardInput, JpLessonKind } from '@shared/types'
+import { useEditLeaveGuard } from '../lib/browserTabs'
 
 // One editable card row. Existing cards keep their id so saving can diff
 // against the original snapshot (update/remove) instead of recreating them —
@@ -68,6 +69,7 @@ export default function JapaneseLessonFormPage() {
   const [original, setOriginal] = useState<Map<number, JpCardInput>>(new Map())
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(!editing)
+  useEditLeaveGuard({ courseId, kind, title, body, rows }, loaded)
 
   useEffect(() => {
     if (!editing) return

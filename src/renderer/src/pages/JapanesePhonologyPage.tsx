@@ -11,6 +11,7 @@ import StudySessionFrame, {
 } from '../components/StudySessionFrame'
 import TutorSessionContinue from '../components/TutorSessionContinue'
 import { PHONOLOGY_UNITS, type PhonologyUnit } from '@shared/japanese/phonology'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'learn' | 'check' | 'summary'
 
@@ -38,6 +39,7 @@ export default function JapanesePhonologyPage() {
   const qc = useQueryClient()
   const [unitId, setUnitId] = useState(PHONOLOGY_UNITS[0].id)
   const [phase, setPhase] = useState<Phase>('learn')
+  useTabLeaveGuard(phase === 'check', 'run')
   const [index, setIndex] = useState(0)
   const [picked, setPicked] = useState<number | null>(null)
   const [score, setScore] = useState(0)

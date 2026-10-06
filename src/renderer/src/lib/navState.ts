@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useLayoutEffect, useState, type RefObject } from 'react'
-import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
+import { useCallback, useContext, useEffect, useLayoutEffect, useState, type RefObject } from 'react'
+import {
+  UNSAFE_NavigationContext,
+  useLocation,
+  useNavigate,
+  useNavigationType,
+  type Navigator
+} from 'react-router-dom'
+import { TabHistory } from './tabHistory'
 
 // In-memory snapshot store, keyed by `${history-entry key}:${name}`. Each entry
 // in the browser history has a unique, stable `location.key`, so going back
@@ -60,20 +67,33 @@ export function useScrollRestoration(ref: RefObject<HTMLElement | null>): void {
     return () => el.removeEventListener('scroll', onScroll)
   }, [key, ref])
 
-  // On entry change: restore on POP (back/forward), else jump to top. Content
-  // often loads a frame or two later (react-query), so retry across frames
-  // until the target is reachable.
+  // On entry change: restore on POP (back/forward, or a browser tab brought back
+  // to the front), else jump to top. Content often loads a little later
+  // (react-query; a tab idle past gcTime refetches), so retry across frames
+  // until the target is reachable — and stop the moment the user scrolls.
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return
     const saved = store.get(`${key}:scroll`)
     if (navType === 'POP' && typeof saved === 'number') {
       let frame = 0
+      let handle = 0
+      const stop = (): void => {
+        cancelAnimationFrame(handle)
+        el.removeEventListener('wheel', stop)
+        el.removeEventListener('pointerdown', stop)
+        el.removeEventListener('keydown', stop)
+      }
       const restore = (): void => {
         el.scrollTop = saved
-        if (++frame < 60 && Math.abs(el.scrollTop - saved) > 1) requestAnimationFrame(restore)
+        if (++frame < 150 && Math.abs(el.scrollTop - saved) > 1) handle = requestAnimationFrame(restore)
+        else stop()
       }
-      requestAnimationFrame(restore)
+      el.addEventListener('wheel', stop, { passive: true })
+      el.addEventListener('pointerdown', stop)
+      el.addEventListener('keydown', stop)
+      handle = requestAnimationFrame(restore)
+      return stop
     } else {
       el.scrollTop = 0
     }
@@ -82,22 +102,17 @@ export function useScrollRestoration(ref: RefObject<HTMLElement | null>): void {
   }, [key])
 }
 
-// The router keeps each history entry's position in `history.state.idx`.
-export function historyIndex(): number {
-  const idx = (window.history.state as { idx?: unknown } | null)?.idx
-  return typeof idx === 'number' ? idx : 0
+// The active browser tab's own history (lib/tabHistory.ts). A page rendered
+// under any other router (a test's MemoryRouter) has none.
+function tabHistoryOf(navigator: Navigator): TabHistory | null {
+  return navigator instanceof TabHistory ? navigator : null
 }
 
-// Pathname of every in-app history entry, by position. Entries past the current
-// one may be stale after a new branch, so lookups only walk backwards.
-const trail = new Map<number, string>()
-
-// Mounted once in the app shell.
-export function useHistoryTrail(): void {
-  const { key, pathname } = useLocation()
-  useEffect(() => {
-    trail.set(historyIndex(), pathname)
-  }, [key, pathname])
+// Whether this tab has an earlier entry to go back to. Read at call time, so a
+// click handler never acts on a stale position.
+export function useCanGoBack(): () => boolean {
+  const { navigator } = useContext(UNSAFE_NavigationContext)
+  return useCallback(() => tabHistoryOf(navigator)?.canGoBack ?? false, [navigator])
 }
 
 // Leaves a page whose subject was just deleted: back to the nearest earlier
@@ -105,19 +120,20 @@ export function useHistoryTrail(): void {
 // or lands on a duplicate), or — with no such entry — replace it with `fallback`.
 export function useLeaveDeleted(): (gone: (pathname: string) => boolean, fallback: string) => void {
   const navigate = useNavigate()
+  const { navigator } = useContext(UNSAFE_NavigationContext)
   return useCallback(
     (gone, fallback) => {
-      const here = historyIndex()
-      for (let i = here - 1; i >= 0; i--) {
-        const path = trail.get(i)
-        if (path === undefined) break
-        if (!gone(path)) {
-          navigate(i - here)
-          return
+      const tab = tabHistoryOf(navigator)
+      if (tab) {
+        for (let i = tab.index - 1; i >= 0; i--) {
+          if (!gone(tab.entries[i].pathname)) {
+            navigate(i - tab.index)
+            return
+          }
         }
       }
       navigate(fallback, { replace: true })
     },
-    [navigate]
+    [navigate, navigator]
   )
 }

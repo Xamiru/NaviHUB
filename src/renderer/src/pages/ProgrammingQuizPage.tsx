@@ -18,6 +18,7 @@ import {
 } from '@shared/programming/quizPools'
 import { shuffle } from '@shared/shuffle'
 import StudySessionFrame, { SessionFeedback } from '../components/StudySessionFrame'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Multiple-choice quiz over the programming section. Three pools, all built
 // entirely in the renderer from the code catalog (@shared/programming/
@@ -49,6 +50,7 @@ interface MissGroup {
 export default function ProgrammingQuizPage() {
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [mode, setMode] = usePersistedState<Mode>('progQuizMode', 'course')
   const [courseKey, setCourseKey] = usePersistedState<string | null>('progQuizCourse', null)
   const [sheetKey, setSheetKey] = usePersistedState<string | null>('progQuizSheet', null)

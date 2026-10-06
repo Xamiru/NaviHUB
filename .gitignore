@@ -25,3 +25,6 @@ npm-debug.log*
 .DS_Store
 Thumbs.db
 game-settings-rtx5060.pdf
+
+# Python bytecode from the history-era research tools
+__pycache__/

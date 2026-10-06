@@ -20,6 +20,7 @@ import type {
   QuizScreenMediaMode,
   QuizScreenTitle
 } from '@shared/types'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 type Outcome = 'playing' | 'solved' | 'failed' | 'gaveUp'
@@ -55,6 +56,7 @@ export default function LibrarylePage() {
   const [scope, setScope] = usePersistedState<QuizConsumptionScope>('libraryleScope', 'consumed')
   const [mediaMode, setMediaMode] = usePersistedState<QuizScreenMediaMode>('libraryleMode', 'both')
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [question, setQuestion] = useState<QuizLibraryleQuestion | null>(null)
   const [guesses, setGuesses] = useState<Guess[]>([])
   const [outcome, setOutcome] = useState<Outcome>('playing')

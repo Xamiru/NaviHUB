@@ -56,8 +56,16 @@ const page = await app.firstWindow()
   browser has been closed".
 - **Delete `ELECTRON_RUN_AS_NODE` from env** (the CLAUDE.md terminal gotcha
   applies to programmatic launches too).
-- Navigate with `page.evaluate(() => { window.location.hash = '#/route' })`
-  (HashRouter); the scroll container is `<main>` (check `main.scrollTop`).
+- **Navigating:** a `window.location.hash` write no longer moves the app, because
+  nothing listens for `hashchange` (browser tabs, `components/TabbedRouter.tsx`).
+  Shift+click an injected in-app link instead; the tab router pushes it in the
+  active tab:
+  `page.evaluate((p) => { const a = document.createElement('a'); a.href = '#' + p; document.body.appendChild(a); a.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, shiftKey: true })); a.remove() }, '/route')`.
+  Reading `window.location.hash` still works (it mirrors the active tab). The
+  scroll container is `<main>` (check `main.scrollTop`).
+- Playwright key presses go through CDP, which bypasses native menu
+  accelerators. Physical Ctrl+W (released from the default menu in `appMenu.ts`)
+  needs a real keystroke.
 - `page.screenshot()` works even though the window appears on the user's real
   display (no xvfb installed); keep sessions short. Read-only flows only —
   this is the live personal DB (concurrent open alongside the user's running

@@ -8,6 +8,7 @@ import PageStatus from '../components/PageStatus'
 import QuietWorkspace from '../components/QuietWorkspace'
 import { KIND_LABEL } from '../lib/listLinks'
 import type { ListKind } from '@shared/types'
+import { useEditLeaveGuard } from '../lib/browserTabs'
 
 const KINDS: ListKind[] = ['media', 'person', 'character', 'company', 'wrestlingEvent', 'wrestlingWrestler', 'wrestlingMatch']
 
@@ -22,6 +23,7 @@ export default function TierListFormPage() {
   const [kind, setKind] = useState<ListKind>('media')
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(!editing)
+  useEditLeaveGuard({ title, description, kind }, loaded)
 
   useEffect(() => {
     if (!editing) return

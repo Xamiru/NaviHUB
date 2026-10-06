@@ -12,6 +12,7 @@ import { Group, Pill } from '../components/PillGroup'
 import { confusableTier } from '@shared/confusables'
 import type { JpLessonKind, JpQuizItem } from '@shared/types'
 import { shuffle } from '@shared/shuffle'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 type Direction = 'jp2en' | 'en2jp' | 'jp2reading' | 'cloze'
@@ -102,6 +103,7 @@ export default function JapaneseQuizPage() {
   })
 
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [current, setCurrent] = useState<JpQuizItem | null>(null)
   const [options, setOptions] = useState<JpQuizItem[]>([])
   const [picked, setPicked] = useState<number | null>(null)

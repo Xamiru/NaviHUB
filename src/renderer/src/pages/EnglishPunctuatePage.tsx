@@ -23,6 +23,7 @@ import {
   type PunctToken
 } from '@shared/english/punctuate'
 import { shuffle } from '@shared/shuffle'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Punctuate-it: a sentence arrives with every internal mark and apostrophe
 // removed; click a gap (or use the keys) to put the mark back, click a word to
@@ -48,6 +49,7 @@ const MARK_LABEL: Record<PunctMark, string> = { '': '', ',': ',', ';': ';', ':':
 export default function EnglishPunctuatePage() {
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [focus, setFocus] = usePersistedState<Focus>('enPunctFocus', 'all')
   const [length, setLength] = usePersistedState<number>('enPunctLength', 10)
 

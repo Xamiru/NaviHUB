@@ -9,6 +9,7 @@ import QuietWorkspace from '../components/QuietWorkspace'
 import { KIND_LABEL } from '../lib/listLinks'
 import type { ListKind } from '@shared/types'
 import { Field } from '../components/Field'
+import { useEditLeaveGuard } from '../lib/browserTabs'
 
 const KINDS: ListKind[] = [
   'media',
@@ -36,6 +37,7 @@ export default function ListFormPage() {
   const [ranked, setRanked] = useState(false)
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(!editing)
+  useEditLeaveGuard({ title, description, kind, ranked }, loaded)
 
   useEffect(() => {
     if (!editing) return

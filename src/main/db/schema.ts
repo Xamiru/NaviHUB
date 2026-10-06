@@ -2421,3 +2421,58 @@ export const musicSmartPlaylist = sqliteTable('music_smart_playlist', {
   title: text('title').notNull(), description: text('description').notNull().default(''),
   rulesJson: text('rules_json').notNull()
 })
+
+// ---- History personal layer (content itself is src/shared/history/content) ----
+export const historyMark = sqliteTable('history_mark', {
+  ref: text('ref').primaryKey(),
+  readAt: text('read_at'),
+  favorite: integer('favorite').notNull().default(0),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  favorite: check('history_mark_favorite', sql`${t.favorite} IN (0,1)`)
+}))
+export const historyNote = sqliteTable('history_note', {
+  ref: text('ref').primaryKey(),
+  body: text('body').notNull(),
+  kind: text('kind').notNull().default('note'),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  kind: check('history_note_kind', sql`${t.kind} IN ('note','correction')`)
+}))
+export const historyMediaLink = sqliteTable('history_media_link', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  ref: text('ref').notNull(),
+  mediaId: integer('media_id').notNull().references(() => mediaItem.id, { onDelete: 'cascade' }),
+  kind: text('kind').notNull(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  uniq: unique().on(t.ref, t.mediaId, t.kind),
+  byMedia: index('idx_history_media_link_media').on(t.mediaId)
+}))
+export const historyArchive = sqliteTable('history_archive', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  ref: text('ref').notNull(),
+  kind: text('kind').notNull(),
+  relPath: text('rel_path').notNull(),
+  title: text('title').notNull(),
+  credit: text('credit'),
+  license: text('license'),
+  page: text('page'),
+  suggestionKey: text('suggestion_key').unique(),
+  sha256: text('sha256'),
+  bytes: integer('bytes'),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  kind: check('history_archive_kind', sql`${t.kind} IN ('video','audio','image','document')`),
+  byRef: index('idx_history_archive_ref').on(t.ref)
+}))
+export const historyUserEntity = sqliteTable('history_user_entity', {
+  id: text('id').primaryKey(),
+  kind: text('kind').notNull(),
+  json: text('json').notNull(),
+  createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
+  updatedAt: text('updated_at').notNull().default(sql`(datetime('now'))`)
+}, (t) => ({
+  id: check('history_user_entity_id', sql`${t.id} LIKE 'my-%'`),
+  kind: check('history_user_entity_kind', sql`${t.kind} IN ('event','person','period','place','source','interpretation')`)
+}))

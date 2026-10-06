@@ -12,6 +12,7 @@ import { JP_OUTPUT_TRANSFER } from '@shared/japanese/outputTransfer'
 import { learningSettingKey } from '@shared/learningEvidence'
 import LearningPractice from '../components/LearningPractice'
 import LearningProject from '../components/LearningProject'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 type Phase = 'setup' | 'play' | 'summary'
 type SelfRating = 'needs-work' | 'close' | 'ready'
@@ -27,6 +28,7 @@ export default function JapaneseOutputPage() {
   const recorder = usePitchRecorder()
   const [unitId, setUnitId] = useState(OUTPUT_UNITS[0].id)
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [index, setIndex] = useState(0)
   const [answer, setAnswer] = useState('')
   const [firstDraft, setFirstDraft] = useState('')

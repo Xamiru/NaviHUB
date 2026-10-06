@@ -1068,6 +1068,11 @@ function FoldersSettings({ data, onSave }: { data?: Record<string, string>; onSa
           </>
         }
       />
+      <StorageFolderSetting
+        root="history"
+        title="History archive folder"
+        description="Where files you attach to History pages, and public-domain recordings you download from research suggestions, are copied (one folder per page). Defaults to the app's data folder. Move… copies everything to the new folder, then removes the old copies."
+      />
       <TextSetting
         settingKey="slideshow.dir"
         data={data}

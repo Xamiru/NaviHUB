@@ -7,6 +7,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const files = vi.hoisted(() => ({
   onDisk: new Set<string>(),
   downloaded: [] as string[],
+  headers: [] as (Record<string, string> | undefined)[],
   failFor: new Set<string>()
 }))
 
@@ -19,15 +20,23 @@ vi.mock('electron', () => ({
 vi.mock('../src/main/files', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   cachedDownload: (url: string) => (files.onDisk.has(url) ? `media/dl-${url}` : null),
-  downloadImage: async (url: string) => {
+  downloadImage: async (url: string, _into?: string, headers?: Record<string, string>) => {
     files.downloaded.push(url)
+    files.headers.push(headers)
     if (files.failFor.has(url)) return null
     files.onDisk.add(url)
     return `media/dl-${url}`
   }
 }))
 
-import { artMap, ensureArt, ensureHeroes, getArtStatus, heroMap } from '../src/main/franchiseArt'
+import {
+  artMap,
+  artRequestHeaders,
+  ensureArt,
+  ensureHeroes,
+  getArtStatus,
+  heroMap
+} from '../src/main/franchiseArt'
 import { FRANCHISES, franchiseArtUrls } from '../src/shared/franchises'
 import { dlFileName } from '../src/main/files'
 
@@ -42,7 +51,17 @@ async function settle(): Promise<void> {
 beforeEach(() => {
   files.onDisk.clear()
   files.downloaded.length = 0
+  files.headers.length = 0
   files.failFor.clear()
+})
+
+describe('artRequestHeaders', () => {
+  it('sends a Referer only to the Fandom image CDN, which refuses requests without one', () => {
+    expect(
+      artRequestHeaders('https://static.wikia.nocookie.net/megamitensei/images/a/b.png/revision/latest')
+    ).toMatchObject({ Referer: 'https://www.fandom.com/' })
+    expect(artRequestHeaders('https://s4.anilist.co/file/anilistcdn/character/large/b1.png')).toBeUndefined()
+  })
 })
 
 describe('franchiseArt', () => {
@@ -64,6 +83,8 @@ describe('franchiseArt', () => {
     await settle()
     expect(files.downloaded).not.toContain(URLS[0])
     expect(new Set(files.downloaded).size).toBe(URLS.length - 1)
+    // Each request carries its host's headers (a Referer for Fandom only).
+    expect(files.headers).toEqual(files.downloaded.map(artRequestHeaders))
     const status = getArtStatus()
     expect(status.running).toBe(false)
     expect(status.done).toBe(URLS.length - 1)

@@ -119,4 +119,18 @@ describe('same-VA question builder', () => {
     expect(countBuildableVaSources(sameTitle)).toBe(0)
     expect(buildVaQuizQuestions(sameTitle, 1, 1)).toEqual([])
   })
+
+  it('deals a full round from a sampled large pool, reproducibly', () => {
+    const pool = Array.from({ length: 2000 }, (_, i) =>
+      role(i + 1, i + 1, [1000 + (i % 400)], {
+        gender: i % 2 ? 'male' : 'female',
+        year: 1990 + (i % 30)
+      })
+    )
+    const round = buildVaQuizQuestions(pool, 20, 'large')
+    expect(round).toHaveLength(20)
+    expect(new Set(round.map((question) => vaAppearanceKey(question.source))).size).toBe(20)
+    expect(buildVaQuizQuestions(pool, 20, 'large')).toEqual(round)
+    expect(countBuildableVaSources(pool)).toBe(2000)
+  })
 })

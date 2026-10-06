@@ -14,6 +14,7 @@ import {
   type CliPracticeItem
 } from '@shared/programming/cheatsheets'
 import { shuffle } from '@shared/shuffle'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Typed CLI drill — the kana dojo's loop, pointed at commands: the prompt is a
 // task description, you type the command, and the answer is checked on every
@@ -131,6 +132,7 @@ function Drill({
   const missedKeysRef = useRef<Set<string>>(new Set())
   const firstTryKeysRef = useRef<Set<string>>(new Set())
   const [stopped, setStopped] = useState(false)
+  useTabLeaveGuard(answered > 0 && !stopped, 'run')
   const loggedRef = useRef(false)
 
   const current = queue[0] ?? null

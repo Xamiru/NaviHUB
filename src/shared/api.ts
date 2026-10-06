@@ -7,6 +7,7 @@ import type { VnReadingOverview, VnReadingNodeInput, VnReadingResume, VnNoteInpu
 // bridge) and the renderer (which consumes it) import this so they never drift.
 
 import type { RefreshAspect, RefreshRequest } from './refresh'
+import type { VaQuizQuestionSeed } from './vaQuiz'
 import type {
   ChecklistCadence,
   ChecklistStatus,
@@ -36,6 +37,21 @@ import type {
   CharacterAppearance,
   CreditRole,
   GlobalSearchResults,
+  HistoryArchiveJob,
+  HistoryArticleView,
+  HistoryDecade,
+  HistoryImageStatus,
+  HistoryMark,
+  HistoryMediaBacklink,
+  HistoryNote,
+  HistoryNoteKind,
+  HistoryNoteRow,
+  HistoryOverview,
+  HistorySaveResult,
+  HistorySearchHit,
+  HistorySourceRow,
+  HistorySourceView,
+  HistoryUserEntity,
   BulkListParams,
   BulkPreviewItem,
   BulkRunStatus,
@@ -84,7 +100,6 @@ import type {
   QuizSongFilter,
   QuizSynopsisFilter,
   QuizSynopsisItem,
-  QuizVaItem,
   TournamentEntry,
   TournamentSource,
   HltbTimes,
@@ -497,10 +512,12 @@ export interface NaviApi {
     // The pool of playable anime theme songs for the song quiz, narrowed by the
     // given filter (OP/ED, list statuses). Game logic runs in the renderer.
     songPool(filter: QuizSongFilter): Promise<QuizSong[]>
-    // Library MCQ pools for cast / VA / synopsis quizzes: photographed screen
-    // actors, anime character appearances grouped with Japanese VAs, and synopses.
+    // Library MCQ pools for the cast and synopsis quizzes: photographed screen
+    // actors and synopses. The renderer deals from them.
     castPool(filter: QuizLibFilter): Promise<QuizCastItem[]>
-    vaPool(filter: QuizLibFilter): Promise<QuizVaItem[]>
+    // A dealt same-voice round: the VA pool is hundreds of thousands of
+    // character appearances on a large library, so main builds the questions.
+    vaQuestions(filter: QuizLibFilter, count: number, seed: number): Promise<VaQuizQuestionSeed[]>
     synopsisPool(filter: QuizSynopsisFilter): Promise<QuizSynopsisItem[]>
     // Manga-panel quiz seeds: length questions, each a reproducibly selected
     // eligible page from one locally-linked series (one per series).
@@ -804,6 +821,41 @@ export interface NaviApi {
     ensureHeroes(): Promise<{ started: boolean }>
     heroMap(): Promise<Record<string, string | null>>
     artStatus(): Promise<FranchiseArtStatus>
+  }
+  history: {
+    // Curated content ships in the bundle (src/shared/history/content) and is
+    // loaded lazily in main; these views resolve it against this machine's
+    // library, marks, notes and archive files.
+    overview(): Promise<HistoryOverview>
+    decade(start: number): Promise<HistoryDecade>
+    // ref = `event:<slug>`, `person:<slug>`, `period:<slug>` or `place:<slug>`.
+    article(ref: string): Promise<HistoryArticleView | null>
+    sources(): Promise<HistorySourceRow[]>
+    source(id: string): Promise<HistorySourceView | null>
+    search(query: string): Promise<HistorySearchHit[]>
+    // History links of one library title, for its detail page.
+    backlinks(mediaId: number): Promise<HistoryMediaBacklink[]>
+    setMark(ref: string, field: 'read' | 'favorite', value: boolean): Promise<HistoryMark>
+    // An empty body removes the note.
+    saveNote(ref: string, body: string, kind: HistoryNoteKind): Promise<HistoryNote | null>
+    notes(kind?: HistoryNoteKind): Promise<HistoryNoteRow[]>
+    linkMedia(ref: string, mediaId: number, kind: string): Promise<number>
+    unlinkMedia(id: number): Promise<void>
+    userEntities(): Promise<HistoryUserEntity[]>
+    userEntity(id: string): Promise<HistoryUserEntity | null>
+    // Validated like committed content; a new entity gets a `my-` id.
+    saveUserEntity(entity: HistoryUserEntity): Promise<HistorySaveResult>
+    removeUserEntity(id: string): Promise<void>
+    imageStatus(): Promise<HistoryImageStatus>
+    // Archive files (history.dir): attaching opens a picker and copies the
+    // file in; research suggestions download in the background. Poll
+    // archiveJobs while either runs.
+    attachFile(ref: string): Promise<{ started: boolean }>
+    downloadSuggestion(ref: string, suggestionId: string): Promise<{ started: boolean }>
+    archiveJobs(): Promise<HistoryArchiveJob[]>
+    cancelArchiveJob(id: string): Promise<void>
+    openArchive(rowId: number): Promise<void>
+    removeArchive(rowId: number, deleteFile: boolean): Promise<void>
   }
   torrents: {
     // Progressive Jackett search (main-process — renderer CSP blocks remote

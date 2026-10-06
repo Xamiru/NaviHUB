@@ -36,6 +36,17 @@ function goTo(route: string, win: BrowserWindow | null): void {
   }
 }
 
+// Ctrl+W belongs to the renderer's browser tabs (components/TabbedRouter.tsx).
+// The default Window menu's Close item would otherwise claim it and close the
+// whole window. The item stays in the menu and still works when clicked; only
+// its system accelerator is released. Exported for tests.
+export function releaseCloseAccelerator(menu: Pick<Menu, 'items'>): void {
+  for (const item of menu.items) {
+    if (item.role === 'close') item.registerAccelerator = false
+    if (item.submenu) releaseCloseAccelerator(item.submenu)
+  }
+}
+
 export function installAppMenu(getWindow: () => BrowserWindow | null): void {
   const base = Menu.getApplicationMenu()
   // No default menu on this platform — leave it alone rather than inventing
@@ -60,5 +71,6 @@ export function installAppMenu(getWindow: () => BrowserWindow | null): void {
   // and anything it drops is a default accelerator silently gone. append()
   // touches nothing that already exists.
   base.append(new MenuItem(tools))
+  releaseCloseAccelerator(base)
   Menu.setApplicationMenu(base)
 }

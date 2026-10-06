@@ -1,4 +1,6 @@
-import { getSqlite } from '../db/connection'
+// The quiz pool process runs this module too, so it reads through the handle
+// rather than importing connection.ts.
+import { getSqlite } from '../db/sqliteHandle'
 import { ERAS } from '@shared/era'
 import type {
   QuizAvailability,
@@ -236,6 +238,37 @@ export const YEAR_EXPR = `CAST(COALESCE(
 export const GENRE_CSV_EXPR = `(SELECT GROUP_CONCAT(DISTINCT t.name) FROM media_tag mt
    JOIN tag t ON t.id = mt.tag_id WHERE mt.media_id = mi.id)`
 
+// Tags every candidate whose resolved relations reach another candidate with
+// its component's smallest id. The relation table is small, so it is read
+// whole and filtered here: bounding both ends with library-sized IN lists made
+// SQLite probe one list per row of the other (seconds on a 3,600-title library).
+function assignRelationComponents(media: Map<number, ChallengeMediaCandidate>): void {
+  const parents = new Map<number, number>()
+  const root = (id: number): number => {
+    const parent = parents.get(id) ?? id
+    if (parent === id) return id
+    const found = root(parent)
+    parents.set(id, found)
+    return found
+  }
+  for (const row of getSqlite().prepare(
+    `SELECT mr.media_id, related.id AS related_id FROM media_relation mr
+     JOIN media_item related ON related.external_source=mr.related_source
+       AND related.external_id=mr.related_external_id`
+  ).all() as Array<{ media_id: number; related_id: number }>) {
+    if (!media.has(row.media_id) || !media.has(row.related_id)) continue
+    const left = root(row.media_id)
+    const right = root(row.related_id)
+    if (left !== right) parents.set(Math.max(left, right), Math.min(left, right))
+  }
+  const sizes = new Map<number, number>()
+  for (const id of media.keys()) sizes.set(root(id), (sizes.get(root(id)) ?? 0) + 1)
+  for (const [id, item] of media) {
+    const component = root(id)
+    if ((sizes.get(component) ?? 0) > 1) item.relations.push(String(component))
+  }
+}
+
 function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaCandidate[] {
   const db = getSqlite()
   const statusSql = statuses.length
@@ -309,30 +342,7 @@ function screenChallengeCandidates(statuses: readonly string[]): ChallengeMediaC
   ).all(...ids) as Array<{ media_id: number; id: number; name: string; role: string }>) {
     media.get(row.media_id)?.studios.push({ id: row.id, name: row.name, role: row.role })
   }
-  const parents = new Map(ids.map((id) => [id, id]))
-  const root = (id: number): number => {
-    const parent = parents.get(id) ?? id
-    if (parent === id) return id
-    const found = root(parent)
-    parents.set(id, found)
-    return found
-  }
-  for (const row of db.prepare(
-    `SELECT mr.media_id, related.id AS related_id FROM media_relation mr
-     JOIN media_item related ON related.external_source=mr.related_source
-       AND related.external_id=mr.related_external_id
-     WHERE mr.media_id IN (${slots}) AND related.id IN (${slots})`
-  ).all(...ids, ...ids) as Array<{ media_id: number; related_id: number }>) {
-    const left = root(row.media_id)
-    const right = root(row.related_id)
-    if (left !== right) parents.set(Math.max(left, right), Math.min(left, right))
-  }
-  const relationSizes = new Map<number, number>()
-  for (const id of ids) relationSizes.set(root(id), (relationSizes.get(root(id)) ?? 0) + 1)
-  for (const id of ids) {
-    const component = root(id)
-    if ((relationSizes.get(component) ?? 0) > 1) media.get(id)?.relations.push(String(component))
-  }
+  assignRelationComponents(media)
   return [...media.values()]
 }
 
@@ -440,11 +450,13 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     [request.scope ?? 'consumed']
   )
   const imageReveal = scalar(
-    `SELECT COUNT(*) AS n FROM media_item mi
-     WHERE mi.cover_path IS NOT NULL ${statusSql}
-       AND (SELECT COUNT(*) FROM media_item opt
-            WHERE opt.media_type=mi.media_type
-              ${statuses.length ? `AND opt.status IN (${statuses.map(() => '?').join(',')})` : ''}) >= 4`,
+    `WITH type_counts AS (
+       SELECT mi.media_type, COUNT(*) AS n FROM media_item mi WHERE 1=1 ${statusSql}
+       GROUP BY mi.media_type
+     )
+     SELECT COUNT(*) AS n FROM media_item mi
+     JOIN type_counts tc ON tc.media_type=mi.media_type AND tc.n >= 4
+     WHERE mi.cover_path IS NOT NULL ${statusSql}`,
     [...statuses, ...statuses]
   )
   // Use the real deterministic builder so relation components, distinct-year
@@ -456,6 +468,9 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
     statuses: statuses.length ? statuses : null,
     length: 20
   }).length
+  // A pair needs three eligible people outside its shared cast. Shared cast
+  // never exceeds the smaller title's eligible cast, so most pairs pass on the
+  // two sizes and only the rest pay for the exact shared count.
   const connections = scalar(
     `WITH scoped_people AS (
        SELECT DISTINCT c.person_id, c.media_id, c.role,
@@ -476,9 +491,15 @@ function computeAvailability(request: QuizAvailabilityRequest): QuizAvailability
        JOIN eligible right_credit ON right_credit.person_id=left_credit.person_id
          AND right_credit.media_id>left_credit.media_id
        GROUP BY left_credit.media_id, right_credit.media_id
+     ), cast_size AS (
+       SELECT media_id, COUNT(DISTINCT person_id) AS n FROM scoped_people
+       WHERE person_id IN (SELECT person_id FROM eligible) GROUP BY media_id
      )
      SELECT COUNT(*) AS n FROM pairs
-     WHERE (SELECT n FROM person_count) - (
+     JOIN cast_size left_size ON left_size.media_id=pairs.left_id
+     JOIN cast_size right_size ON right_size.media_id=pairs.right_id
+     WHERE (SELECT n FROM person_count) - MIN(left_size.n, right_size.n) >= 3
+        OR (SELECT n FROM person_count) - (
        SELECT COUNT(DISTINCT left_cast.person_id)
        FROM scoped_people left_cast
        JOIN scoped_people right_cast ON right_cast.person_id=left_cast.person_id
@@ -732,10 +753,15 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
   }
   const ids = [...mediaById.keys()]
   const slots = ids.map(() => '?').join(',')
-  for (const row of db.prepare(
-    `SELECT media_id, file_path FROM media_image WHERE media_id IN (${slots}) ORDER BY id`
-  ).all(...ids) as Array<{ media_id: number; file_path: string }>) {
-    mediaById.get(row.media_id)?.artPaths.push(row.file_path)
+  // Each kind loads only the children its builder reads: credits and the
+  // character table are each ~100k rows on a large library.
+  const usesPeople = request.kind === 'connections' || request.kind === 'chronology'
+  if (request.kind === 'imageReveal') {
+    for (const row of db.prepare(
+      `SELECT media_id, file_path FROM media_image WHERE media_id IN (${slots}) ORDER BY id`
+    ).all(...ids) as Array<{ media_id: number; file_path: string }>) {
+      mediaById.get(row.media_id)?.artPaths.push(row.file_path)
+    }
   }
   for (const row of db.prepare(
     `SELECT mt.media_id, t.name FROM media_tag mt JOIN tag t ON t.id=mt.tag_id
@@ -743,34 +769,11 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
   ).all(...ids) as Array<{ media_id: number; name: string }>) {
     mediaById.get(row.media_id)?.genres.push(row.name)
   }
-  const parents = new Map(ids.map((id) => [id, id]))
-  const root = (id: number): number => {
-    const parent = parents.get(id) ?? id
-    if (parent === id) return id
-    const found = root(parent)
-    parents.set(id, found)
-    return found
-  }
-  for (const row of db.prepare(
-    `SELECT mr.media_id, related.id AS related_id FROM media_relation mr
-     JOIN media_item related ON related.external_source=mr.related_source
-       AND related.external_id=mr.related_external_id
-     WHERE mr.media_id IN (${slots}) AND related.id IN (${slots})`
-  ).all(...ids, ...ids) as Array<{ media_id: number; related_id: number }>) {
-    const a = root(row.media_id)
-    const b = root(row.related_id)
-    if (a !== b) parents.set(Math.max(a, b), Math.min(a, b))
-  }
-  const relationSizes = new Map<number, number>()
-  for (const id of ids) relationSizes.set(root(id), (relationSizes.get(root(id)) ?? 0) + 1)
-  for (const id of ids) {
-    const component = root(id)
-    if ((relationSizes.get(component) ?? 0) > 1) mediaById.get(id)?.relations.push(String(component))
-  }
+  if (request.kind === 'chronology') assignRelationComponents(mediaById)
   const connectionCreditSql = request.kind === 'connections'
     ? `AND c.role IN ('actor','director')`
     : ''
-  for (const row of db.prepare(
+  if (usesPeople) for (const row of db.prepare(
     `SELECT c.media_id, p.id, p.name, c.role, ch.name AS character_name,
             COALESCE(c.importance, mch.sort_order) AS billing_order
      FROM credit c JOIN person p ON p.id=c.person_id
@@ -795,7 +798,7 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
       billingOrder: row.billing_order
     })
   }
-  for (const row of db.prepare(
+  if (request.kind === 'chronology') for (const row of db.prepare(
     `SELECT mc.media_id, co.id, co.name, mc.role FROM media_company mc
      JOIN company co ON co.id=mc.company_id WHERE mc.media_id IN (${slots})
      ORDER BY mc.media_id, mc.id`
@@ -803,11 +806,12 @@ export function challengePool(request: QuizChallengeRequest): QuizChallengeQuest
     mediaById.get(row.media_id)?.studios.push({ id: row.id, name: row.name, role: row.role })
   }
   const charactersById = new Map<number, ChallengeCharacterCandidate>()
-  for (const row of db.prepare(
+  if (request.kind === 'silhouette') for (const row of db.prepare(
     `SELECT ch.id, ch.name, ch.gender, ch.image_path, mc.media_id, mi.title
      FROM media_character mc JOIN character ch ON ch.id=mc.character_id
      JOIN media_item mi ON mi.id=mc.media_id
-     WHERE ch.image_path IS NOT NULL AND mc.media_id IN (${slots}) ORDER BY ch.id, mc.id`
+     WHERE ch.image_path IS NOT NULL AND mi.media_type='anime' AND mc.media_id IN (${slots})
+     ORDER BY ch.id, mc.id`
   ).all(...ids) as Array<{ id: number; name: string; gender: string | null; image_path: string; media_id: number; title: string }>) {
     const found = charactersById.get(row.id)
     if (found) found.media.push({ id: row.media_id, title: row.title })

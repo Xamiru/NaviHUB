@@ -13,6 +13,7 @@ import type { EnBand, EnVocabMode, EnVocabQuestion, EnWordInput } from '@shared/
 import { shuffle } from '@shared/shuffle'
 import { EN_IDIOMS } from '@shared/english/idioms'
 import { buildIdiomPool } from '@shared/english/idiomPool'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Advanced-vocabulary MCQ (the ProgrammingQuizPage loop over an IPC pool):
 // words tiered by OpenSubtitles frequency band, or the user's saved list.
@@ -57,6 +58,7 @@ function toQuestion(q: EnVocabQuestion, i: number): Question {
 export default function EnglishVocabQuizPage() {
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [mode, setMode] = usePersistedState<EnVocabMode>('enVocabMode', 'word2def')
   const [source, setSource] = usePersistedState<Source>('enVocabSource', 'advanced')
   const [length, setLength] = usePersistedState<number>('enVocabLength', 10)

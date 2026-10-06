@@ -15,7 +15,7 @@ import { balancedDeal, quizSeed, seededRng } from '@shared/quizCore'
 import { advanceParty, answerParty, createPartyState, partyResult, type PartyQuizState } from '@shared/partyQuiz'
 import { pickDistractors } from '@shared/quizDistractors'
 import { buildCastQuizQuestions } from '@shared/castQuiz'
-import { buildVaQuizQuestions, vaAppearanceKey } from '@shared/vaQuiz'
+import { vaAppearanceKey } from '@shared/vaQuiz'
 import { buildSynopsisQuizQuestions } from '@shared/synopsisQuiz'
 import { buildMangaPanelQuestions } from '@shared/mangaPanelQuiz'
 import { IMAGE_REVEAL_STAGE_SECONDS, imageRevealStageStyle } from '@shared/imageRevealQuiz'
@@ -31,6 +31,7 @@ import type {
   QuizPartyParticipants,
   QuizSong
 } from '@shared/types'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 interface PartyChoice { key: string; label: string; imagePath?: string | null }
 interface PartyQuestion {
@@ -91,6 +92,7 @@ export default function PartyQuizPage() {
   const [higherLowerMetric, setHigherLowerMetric] = useState<QuizHigherLowerMetric>('releaseDate')
   const [questions, setQuestions] = useState<PartyQuestion[]>([])
   const [state, setState] = useState<PartyQuizState | null>(null)
+  useTabLeaveGuard(state !== null && state.phase !== 'done', 'run')
   const [picked, setPicked] = useState<string | null>(null)
   const [order, setOrder] = useState<string[]>([])
   const [remaining, setRemaining] = useState(20)
@@ -182,11 +184,7 @@ export default function PartyQuizPage() {
     }
     if (kind === 'va') {
       const filter = { statuses }
-      const pool = await qc.fetchQuery({
-        queryKey: qk.quiz.vaPool(filter),
-        queryFn: () => api.quiz.vaPool(filter)
-      })
-      return buildVaQuizQuestions(pool, count, nextSeed).map((item) => ({
+      return (await api.quiz.vaQuestions(filter, count, nextSeed)).map((item) => ({
         id: item.key,
         prompt: `Which character shares a Japanese voice actor with ${item.source.characterName} from ${item.source.mediaTitle}?`,
         imagePath: item.source.characterImagePath,

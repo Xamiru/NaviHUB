@@ -29,6 +29,9 @@ describe('adaptive archive navigation', () => {
     ['/quiz/song', 'play'],
     ['/japanese/review', 'learn'],
     ['/programming/sql', 'learn'],
+    ['/history', 'learn'],
+    ['/history/event/1953-iranian-coup', 'learn'],
+    ['/historyx', 'home'],
     ['/tasks/logs', 'system'],
     ['/settings', 'system']
   ] as const)('classifies %s as %s', (path, area) => {
@@ -94,6 +97,13 @@ describe('adaptive archive navigation', () => {
       to: '/japanese/tutor',
       label: 'Tutor'
     })
+  })
+
+  it('gives History one context across its timeline, articles and sources', () => {
+    const ctx = archiveContextForPath('/history/person/mohammad-mosaddegh')
+    expect(ctx).toMatchObject({ title: 'History', descriptor: 'World chronicle' })
+    expect(ctx.items.map((i) => i.to)).toEqual(['/history', '/history/sources', '/history/my', '/history/corrections'])
+    expect(drawerItemsForArea('learn').map((i) => i.to)).toContain('/history')
   })
 
   it('uses the consolidated quiz context while direct game routes remain hub-owned', () => {

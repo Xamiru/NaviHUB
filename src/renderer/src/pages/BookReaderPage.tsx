@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useCanGoBack } from '../lib/navState'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -68,6 +69,7 @@ function splitBookRelPath(relPath: string): { prefix: string; entryPath: string 
 export default function BookReaderPage() {
   const { doc, library, chapterId, mediaId, adhoc } = useReaderSource()
   const navigate = useNavigate()
+  const canGoBack = useCanGoBack()
   const location = useLocation()
   const qc = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -176,10 +178,10 @@ export default function BookReaderPage() {
 
   const exitToDetail = useCallback(() => {
     // Same history contract as the manga reader: unwind, don't re-push detail.
-    if (location.key !== 'default') navigate(-1)
+    if (canGoBack()) navigate(-1)
     // An ad-hoc book has no series page to go back to.
     else navigate(adhoc ? '/' : `${basePath}/${mediaId}`)
-  }, [navigate, mediaId, location.key, basePath])
+  }, [navigate, canGoBack, mediaId, basePath])
 
   const goToChapter = useCallback(
     (ch: MangaChapter) => {

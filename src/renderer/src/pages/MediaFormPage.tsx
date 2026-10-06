@@ -12,6 +12,7 @@ import Section from '../components/Section'
 import { Field } from '../components/Field'
 import ImagePickerDialog from '../components/ImagePickerDialog'
 import type { MediaItemInput } from '@shared/types'
+import { useEditLeaveGuard } from '../lib/browserTabs'
 
 // The full editor for one library entry. Status, score and favorite are also
 // editable inline on the detail page now, so this is the place for everything
@@ -69,6 +70,7 @@ export default function MediaFormPage({ cfg }: { cfg: MediaConfig }) {
   const [tagIds, setTagIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const [loaded, setLoaded] = useState(!editing)
+  useEditLeaveGuard({ form, tagIds }, loaded)
   const [loadAttempt, setLoadAttempt] = useState(0)
   // A missing row and a FAILED read are different: the second must not drop
   // the loading gate, or the user edits a blank form over a live title and

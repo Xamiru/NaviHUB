@@ -73,6 +73,30 @@ Idle polling remains capability-driven: the task registry keeps its five-second 
 
 **Global search performance (2026-08-31).** `global_search_fts` is a derived FTS5 trigram projection of media, people, companies and characters, maintained by init.sql triggers and count-backfilled in `runMigrations()` for libraries that predate it. Three-character and longer contains-searches use MATCH; one- and two-character searches use escaped LIKE so `%` and `_` are literal. The export sanitizer wipes the projection before pruning library sections, and startup reconstructs it when the source/index counts differ.
 
+## Browser tabs
+
+Added 2026-10-05. Up to five tabs (`MAX_TABS` in `lib/browserTabs.ts`), each with its own Back/Forward. They are not saved: every launch starts with one tab where the window loaded. The strip (`components/TabStrip.tsx`) spans the top of the window above the sidebar and Topbar, so their 76 px header rows stay aligned, and it renders only with two or more tabs; with one tab the app looks exactly as it did before tabs.
+
+**One router, one history per tab.** `lib/tabHistory.ts` is a pure `Navigator` implementation: an entry stack, a clamped `go()`, `listen()`, and hrefs in the old `#/…` form. `push`/`replace`/`go` are arrow properties because react-router calls them detached. `components/TabbedRouter.tsx` renders the single low-level `<Router>` with the active tab's location and history, so no router is ever nested. Switching tabs swaps those props without remounting the shell. Every navigator stays bound to its own tab, so a late `navigate()` from a page that already unmounted moves only its own background tab. The active location is mirrored into the window URL with `replaceState`, so Ctrl+R and the error-boundary reload come back to the page. Nothing listens for `hashchange`, which is why hash assignments are banned.
+
+**Background tabs are snapshots, not hidden pages.** Only the active tab renders. Keep-alive (hidden mounted trees, react-freeze/react-activation, React 19 `<Activity>`) was rejected: dozens of pages register window keydown listeners and `refetchInterval` polls, so a hidden page would keep reacting to keys and polling, and React 18 cannot pause it. A background tab is therefore only its history stack and title, and an idle tab costs nothing. On return, `markRestored()` makes the render a `POP`, so `usePersistedState` and `useScrollRestoration` restore it through the unique `location.key` of each entry. The scroll retry runs up to about 2.5 s for data refetched after `gcTime` and stops as soon as the user scrolls. `usePageKey()` keys App's routed subtree by tab id and pathname, so two tabs on one route never share component state.
+
+**Leave guard.** Plain `useState` progress (a quiz run, a drill, an edited form) does not survive a switch. Pages register `useTabLeaveGuard(running, 'run')` or `useEditLeaveGuard(draft, ready)`. The edit guard takes its baseline at the user's first key or pointer press, so values a form fills in by itself never count. Activating another tab, closing the active one, or Ctrl+T then asks through `confirmDialog`. Navigating inside a tab is unchanged. Reviews, readers, the SQL sandbox and the tournament already persist their state and carry no guard. Dialog drafts need none, because shortcuts are ignored while a modal is open.
+
+**Input.** `TabInput` listens on `window` in the capture phase, mounted before the pages, matches `e.code` (so Persian and Japanese layouts work), and does nothing while any `[aria-modal="true"]` is open:
+
+| Keys | Action |
+|---|---|
+| Ctrl+T / Ctrl+Shift+T | New tab at Home / reopen the last closed tab with its history |
+| Ctrl+W | Close the tab; nothing on the last tab |
+| Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+PageDown/PageUp | Next / previous tab |
+| Ctrl+1…5 | Jump to a tab |
+| Alt+Left/Right, mouse buttons 4/5 | Back / Forward in this tab |
+
+The mouse side buttons are handled on `mouseup` in the bubble phase, so the Lightbox's capture-phase Back still closes it first. Ctrl/Cmd+click and middle-click on an in-app `<Link>` open a background tab (Ctrl+Shift+click switches to it). A card that calls `navigate()` in `onClick` stays single-tab. At five tabs a toast asks to close one first.
+
+**Ctrl+W.** Electron's default Window menu binds Ctrl+W to Close, which would close the app window. `appMenu.ts:releaseCloseAccelerator` sets `registerAccelerator = false` on that item, so the keystroke reaches the renderer while the menu item still works by click.
+
 ## Design previews (the `ui-preview` skill)
 
 **UI previews (2026-08-15):** the VPS has no display, and even on the laptop a redesign is cheaper to judge before it is coded, so `.claude/skills/ui-preview/` renders a screen as ONE self-contained local HTML file under `previews/` (gitignored; the user opens it in a browser or downloads it through VS Code from the VPS — it is never uploaded: standing directive 2026-08-15, nothing from the repo goes to the Claude account). `shell.html` is the app shell in `Sidebar.tsx`/`Topbar.tsx`'s exact markup plus live examples of every primitive above; `build.mjs` runs the mockup through the project's own Tailwind (`tailwind.config.js` + `styles.css`, mockup as the sole content file), inlines the bundled fonts and the Lain avatar as data: URIs (one file, no server, no network), and lists every class token that produced no CSS — a typo in the mock is a typo in the JSX later. The point of compiling with the real config rather than hand-styling a mock: what the user approves is what the component renders, and porting is copy-paste. Mockup sources live in `previews/src/`, builds in `previews/` — both gitignored, neither ever tracked; when the sidebar, topbar or a primitive changes shape, `shell.html` must follow, since it is a copy. A preview is a design step, not verification — the `verify` skill (laptop) still applies once the code exists.

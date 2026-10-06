@@ -94,6 +94,14 @@ export function footballRootDir(): string {
   return custom && custom.length ? custom : join(app.getPath('userData'), 'football')
 }
 
+// History archive root (settings key `history.dir`): documentaries, speeches,
+// photos and scans the user attached or downloaded from a research suggestion.
+// Unlike football/, NaviHUB owns these files: attaching copies into this root.
+export function historyRootDir(): string {
+  const custom = getSetting('history.dir')?.trim()
+  return custom && custom.length ? custom : join(app.getPath('userData'), 'history')
+}
+
 // Local music library root (settings key `music.dir`, set from the Music page's
 // folder picker or Settings). DB rows and navimg URLs use a virtual "music/"
 // prefix, mirroring the manga/ scheme above.
@@ -289,6 +297,9 @@ export function absoluteMediaPath(relPath: string): string {
   }
   if (norm.startsWith('football/')) {
     return join(footballRootDir(), norm.slice('football/'.length))
+  }
+  if (norm.startsWith('history/')) {
+    return join(historyRootDir(), norm.slice('history/'.length))
   }
   // "jpaudio/" and "videocache/" would resolve identically through the default
   // branch (both live under userData) — the explicit lines document the prefix

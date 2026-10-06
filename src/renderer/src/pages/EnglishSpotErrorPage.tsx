@@ -12,6 +12,7 @@ import { EN_SPOT_ERRORS } from '@shared/english/spotErrors'
 import { EN_MECHANICS_CATEGORIES, type EnMechanicsCategory, type EnSpotErrorItem } from '@shared/english/types'
 import { weightedOrder } from '@shared/english/weightedDeck'
 import { shuffle } from '@shared/shuffle'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Spot-the-error: one sentence, one wrong word (or none) — click it, or press
 // 0 for "No error". Weighted toward the categories the writing grader keeps
@@ -33,6 +34,7 @@ const CAT_LABEL: Record<EnMechanicsCategory, string> = {
 export default function EnglishSpotErrorPage() {
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [focus, setFocus] = usePersistedState<Focus>('enSpotFocus', 'all')
   const [length, setLength] = usePersistedState<number>('enSpotLength', 10)
 

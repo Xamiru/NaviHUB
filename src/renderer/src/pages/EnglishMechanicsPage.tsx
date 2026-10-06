@@ -14,6 +14,7 @@ import { shuffle } from '@shared/shuffle'
 import { weightedOrder } from '@shared/english/weightedDeck'
 import { EN_MECHANICS_CATEGORIES } from '@shared/english/types'
 import { ENGLISH_MISTAKES_KEY, parseEnglishMistakes, updateEnglishMistakes } from '@shared/english/mistakes'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Mechanics drill over the authored error-spot items (content is code —
 // src/shared/english/mechanics.ts): articles, punctuation, sentence
@@ -82,6 +83,7 @@ export default function EnglishMechanicsPage() {
   const weakKeys = new Set(parseEnglishMistakes(settings[ENGLISH_MISTAKES_KEY]).map((item) => item.key))
   const resultsRef = useRef<{ key: string; correct: boolean }[]>([])
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [category, setCategory] = usePersistedState<Category>('enMechCategory', EN_MECHANICS_CATEGORIES.includes(initialCategory) ? initialCategory : 'all')
   const [missed, setMissed] = useState<Question[]>([])
   // Read once for the round; a tally that arrives mid-round must not reshuffle.

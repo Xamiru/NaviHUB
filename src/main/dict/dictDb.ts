@@ -19,27 +19,66 @@ export function getDictDbPath(): string {
   return join(app.getPath('userData'), 'dictionaries.db')
 }
 
-// Deletes rows left behind by a crash mid-import: every registry row (`dict`,
-// `sentence_bank`, `stroke_set`) is written last, so child rows whose parent id
-// has no registry entry are orphans from an import that never finished.
-function sweepOrphans(db: Database.Database): void {
-  for (const table of ['term', 'kanji', 'pitch', 'tag', 'gloss_fts', 'freq']) {
-    db.exec(`DELETE FROM ${table} WHERE dict_id NOT IN (SELECT id FROM dict)`)
+// Deletes rows left behind by a crash mid-import or mid-removal: every
+// registry row (`dict`, `sentence_bank`, `stroke_set`, ...) is written last and
+// deleted last, so child rows whose parent id has no registry entry are
+// orphans. This runs on every open, where scanning every child table read
+// hundreds of MB from disk on a cold launch, so it only seeks: each child's
+// parent id leads an index or its WITHOUT ROWID key, and its distinct values
+// are read one seek apiece.
+//
+// The FTS tables cannot be seeked. Their rows are written in the same
+// transaction as their content table's rows and deleted before them, so an
+// orphaned FTS row always has an orphaned content row beside it (gloss_fts
+// with term, sentence_fts with sentence); an id's rows go in one transaction,
+// FTS first, so a crash mid-sweep cannot split them either.
+export function sweepOrphans(db: Database.Database): void {
+  for (const { registry, column, children, fts } of ORPHAN_SWEEPS) {
+    const live = new Set(
+      (db.prepare(`SELECT id FROM ${registry}`).all() as { id: number }[]).map((r) => r.id)
+    )
+    const orphans = new Set<number>()
+    for (const child of children) {
+      for (const id of distinctParentIds(db, child, column)) if (!live.has(id)) orphans.add(id)
+    }
+    const purge = db.transaction((id: number) => {
+      for (const table of [...fts, ...children]) {
+        db.prepare(`DELETE FROM ${table} WHERE ${column} = ?`).run(id)
+      }
+    })
+    for (const id of orphans) purge(id)
   }
-  for (const table of ['sentence', 'sentence_fts']) {
-    db.exec(`DELETE FROM ${table} WHERE bank_id NOT IN (SELECT id FROM sentence_bank)`)
+}
+
+export const ORPHAN_SWEEPS: ReadonlyArray<{
+  registry: string
+  column: string
+  children: readonly string[]
+  fts: readonly string[]
+}> = [
+  { registry: 'dict', column: 'dict_id', children: ['term', 'kanji', 'pitch', 'tag', 'freq'], fts: ['gloss_fts'] },
+  { registry: 'sentence_bank', column: 'bank_id', children: ['sentence'], fts: ['sentence_fts'] },
+  { registry: 'stroke_set', column: 'set_id', children: ['stroke'], fts: [] },
+  { registry: 'en_dict', column: 'bank_id', children: ['en_lemma', 'en_synset', 'en_exc', 'en_pron'], fts: [] },
+  { registry: 'en_freq_set', column: 'bank_id', children: ['en_freq'], fts: [] },
+  { registry: 'krad_set', column: 'set_id', children: ['krad', 'krad_part', 'krad_component'], fts: [] },
+  { registry: 'grammar_bank', column: 'bank_id', children: ['grammar_point'], fts: [] },
+  { registry: 'audio_bank', column: 'bank_id', children: ['sentence_audio'], fts: [] },
+  { registry: 'pair_set', column: 'set_id', children: ['minimal_pair'], fts: [] }
+]
+
+// The distinct non-null values of an indexed column, one index seek each.
+export function distinctParentIds(db: Database.Database, table: string, column: string): number[] {
+  const next = db.prepare(
+    `SELECT ${column} AS id FROM ${table} WHERE ${column} > ? ORDER BY ${column} LIMIT 1`
+  )
+  const ids: number[] = []
+  let row = next.get(Number.MIN_SAFE_INTEGER) as { id: number } | undefined
+  while (row) {
+    ids.push(row.id)
+    row = next.get(row.id) as { id: number } | undefined
   }
-  db.exec('DELETE FROM stroke WHERE set_id NOT IN (SELECT id FROM stroke_set)')
-  for (const table of ['en_lemma', 'en_synset', 'en_exc', 'en_pron']) {
-    db.exec(`DELETE FROM ${table} WHERE bank_id NOT IN (SELECT id FROM en_dict)`)
-  }
-  db.exec('DELETE FROM en_freq WHERE bank_id NOT IN (SELECT id FROM en_freq_set)')
-  for (const table of ['krad', 'krad_part', 'krad_component']) {
-    db.exec(`DELETE FROM ${table} WHERE set_id NOT IN (SELECT id FROM krad_set)`)
-  }
-  db.exec('DELETE FROM grammar_point WHERE bank_id NOT IN (SELECT id FROM grammar_bank)')
-  db.exec('DELETE FROM sentence_audio WHERE bank_id NOT IN (SELECT id FROM audio_bank)')
-  db.exec('DELETE FROM minimal_pair WHERE set_id NOT IN (SELECT id FROM pair_set)')
+  return ids
 }
 
 function open(): Database.Database {

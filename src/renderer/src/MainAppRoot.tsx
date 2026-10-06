@@ -1,8 +1,8 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import { HashRouter } from 'react-router-dom'
 import App from './App'
 import BootSequence from './components/BootSequence'
 import MusicPlayLogger from './components/MusicPlayLogger'
+import TabbedRouter from './components/TabbedRouter'
 import { AudioPlayerProvider } from './lib/player'
 import { createAppQueryClient } from './lib/queryClient'
 
@@ -18,9 +18,9 @@ export default function MainAppRoot(): React.JSX.Element {
         {/* Same placement rationale: the once-per-launch themed boot splash
             covers deep links into the readers too. */}
         <BootSequence />
-        <HashRouter>
+        <TabbedRouter>
           <App />
-        </HashRouter>
+        </TabbedRouter>
       </AudioPlayerProvider>
     </QueryClientProvider>
   )

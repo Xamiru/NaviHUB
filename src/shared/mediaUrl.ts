@@ -21,9 +21,9 @@ export function mediaUrl(relPath: string | null | undefined): string | null {
 // width the main process can serve. Keep these sorted from smallest to largest.
 export const THUMB_WIDTHS: readonly number[] = [160, 320, 480]
 
-// The app-owned image roots thumbnails may be generated from: the cover store
-// and the Pictures gallery's wallpapers and fan art.
-export const THUMB_SOURCE_PREFIXES: readonly string[] = ['media/', 'pictures/']
+// The app-owned image roots thumbnails may be generated from: the cover store,
+// the Pictures gallery's wallpapers and fan art, and History archive photos.
+export const THUMB_SOURCE_PREFIXES: readonly string[] = ['media/', 'pictures/', 'history/']
 
 // Use the smallest cached size at least as wide as the caller needs. Larger
 // artwork and paths outside those roots use their original URL via CoverImage.

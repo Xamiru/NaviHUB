@@ -11,6 +11,7 @@ import { Group, Pill } from '../components/PillGroup'
 import { EN_MATCH_SETS } from '@shared/english/collocations'
 import { EN_MATCH_THEMES, type EnMatchSet, type EnMatchTheme } from '@shared/english/types'
 import { shuffle } from '@shared/shuffle'
+import { useTabLeaveGuard } from '../lib/browserTabs'
 
 // Collocation match: six pairs per set, lefts in order, rights shuffled; click
 // a left then a right (or the reverse; keys 1-6 pick left then right, Esc
@@ -31,6 +32,7 @@ const THEME_LABEL: Record<EnMatchTheme, string> = {
 export default function EnglishMatchPage() {
   const qc = useQueryClient()
   const [phase, setPhase] = useState<Phase>('setup')
+  useTabLeaveGuard(phase === 'play', 'run')
   const [theme, setTheme] = usePersistedState<ThemeFilter>('enMatchTheme', 'all')
   const [sets, setSets] = usePersistedState<number>('enMatchSets', 5)
 

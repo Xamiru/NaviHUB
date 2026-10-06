@@ -389,7 +389,7 @@ function EntryRow({
         <span className="w-6 shrink-0 text-right font-mono text-sm text-gray-500">{rank}</span>
       )}
       {item ? (
-        <CoverImage path={item.coverPath} alt="" className="h-14 w-10 shrink-0" />
+        <CoverImage path={item.coverPath} alt="" className="h-14 w-10 shrink-0" thumbWidth={80} />
       ) : (
         <div className="flex h-14 w-10 shrink-0 items-center justify-center rounded-md bg-base-700 text-gray-600">
           ○
@@ -493,7 +493,7 @@ function Timeline({
           const newDecade = i === 0 || Math.floor(prev.year / 10) * 10 !== decade
           const sameYear = prev != null && prev.year === e.year
           const tile = item ? (
-            <CoverImage path={item.coverPath} alt="" className="h-24 w-16" />
+            <CoverImage path={item.coverPath} alt="" className="h-24 w-16" thumbWidth={128} />
           ) : (
             <div className="flex h-24 w-16 items-center justify-center rounded-md bg-base-700 text-gray-600 opacity-60">
               ○

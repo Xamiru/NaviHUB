@@ -1,14 +1,22 @@
 import path, { join } from 'path'
 
-// Pure decisions for relocating the two app-owned image roots (the IO half is
-// storageMove.ts). Rows store "pictures/…" and "media/…" paths relative to
-// these roots, so moving a root is: move the files, then change one setting.
+// Pure decisions for relocating the app-owned file roots (the IO half is
+// storageMove.ts). Rows store "pictures/…", "media/…" and "history/…" paths
+// relative to these roots, so moving a root is: move the files, then change one
+// setting.
 
-export type StorageRoot = 'pictures' | 'media'
+export type StorageRoot = 'pictures' | 'media' | 'history'
 
 export const STORAGE_SETTING: Record<StorageRoot, string> = {
   pictures: 'pictures.dir',
-  media: 'media.dir'
+  media: 'media.dir',
+  history: 'history.dir'
+}
+
+export const STORAGE_LABEL: Record<StorageRoot, string> = {
+  pictures: 'pictures folder',
+  media: 'media folder',
+  history: 'History archive folder'
 }
 
 // Where an unset pictures.dir should point on startup. A library that already

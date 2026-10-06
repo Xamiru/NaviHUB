@@ -17,7 +17,17 @@ function redactValues(
   const unique = [...new Set(values.map((value) => value?.trim()).filter(Boolean) as string[])]
     .filter((value) => !/^[ai]$/i.test(value))
     .sort((a, b) => b.length - a.length)
+  // A long-running title lists hundreds of character names, nearly all absent
+  // from one excerpt, and each Unicode regex is costly to compile. For an ASCII
+  // value a lowercase substring test is exact once the long s (which matches s
+  // case-insensitively) is folded, so absent values skip their regex.
+  let folded: string | null = null
   for (const value of unique) {
+    if (/^[\x20-\x7e]+$/.test(value)) {
+      folded ??= out.toLowerCase().replace(/ſ/g, 's')
+      if (!folded.includes(value.toLowerCase())) continue
+    }
+    folded = null
     const escaped = escapeRegExp(value)
     const pattern = hasWordEdges(value)
       ? `(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`

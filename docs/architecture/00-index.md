@@ -19,12 +19,14 @@ things that were tried and rejected, and the gotchas that were paid for once alr
 | The programming section — courses, cheatsheets, the CLI drill | [programming.md](programming.md) |
 | The wrestling section — the Wikipedia importer, matches, the local collection | [wrestling.md](wrestling.md) |
 | The Football Archive — history sources, current snapshots, journal, media, quizzes | [football.md](football.md) |
+| The History section — sourcing rules, content model, timeline and articles, personal layer, archive, research sessions | [history.md](history.md) |
 | Torrent search (Jackett/qBittorrent) or the bulk importer | [torrents-bulk.md](torrents-bulk.md) |
 | Theme songs, the music library, the tournament bracket | [music-quiz.md](music-quiz.md) |
 | The checklist, streaks, or anything that advances progress on a title | [checklist-progress.md](checklist-progress.md) |
 | The task registry, pause/cancel, the structured log, the Tools menu | [tasks-logs.md](tasks-logs.md) |
 | Shared UI components, the Lain theme, dialogs, the menu bar, zoom | [ui-conventions.md](ui-conventions.md) |
 | Packaging, the release workflow, in-app updates, the library export | [packaging-ci-updates.md](packaging-ci-updates.md) |
+| Anything that reads the whole library, a quiz deal builder, a hot query, or an image grid | [performance.md](performance.md) |
 | Anything that sounds like a feature request — check it was not already removed | [removed.md](removed.md) |
 
 ## Also in `docs/`

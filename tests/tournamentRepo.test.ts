@@ -7,6 +7,10 @@ let db: Database.Database
 vi.mock('../src/main/db/connection', () => ({
   getSqlite: () => db
 }))
+// Theme sources delegate to quizRepo, which reads through the handle.
+vi.mock('../src/main/db/sqliteHandle', () => ({
+  getSqlite: () => db
+}))
 
 beforeEach(() => {
   db = createTestDb()

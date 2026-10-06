@@ -1,6 +1,18 @@
 // Shared types — the contract between the main process (DB) and the renderer (UI).
 // Kept framework-free so both sides can import it.
 
+import type {
+  ArchiveKind,
+  EntityKind,
+  HistoryArticle,
+  HistoryEntity,
+  HistoryInterpretation,
+  HistorySource,
+  MediaLinkKind,
+  Quote,
+  RegionKey
+} from './history/schema'
+
 export type MediaType = 'anime' | 'manga' | 'visual_novel' | 'game' | 'movie' | 'tv' | 'book'
 
 export type CompanyType = 'studio' | 'publisher' | 'developer' | 'other'
@@ -240,6 +252,7 @@ export interface GlobalSearchResults {
   people: Person[]
   companies: Company[]
   characters: Character[]
+  history: HistorySearchHit[]
 }
 
 // ---- Lists (user-curated collections) ----
@@ -3481,6 +3494,9 @@ export type TaskKind =
   | 'coverageScan'
   | 'torrentSearch'
   | 'franchiseArt'
+  | 'historyImages'
+  | 'historyAttach'
+  | 'historyDownload'
   | 'libraryExport'
   | 'storageMove'
   | 'pictureSlideshow'
@@ -3561,11 +3577,12 @@ export type LibraryExportPhase =
   | 'error'
 
 // Settings → Folders: relocating the app's own image roots (storageMove.ts).
-export type StorageRootKey = 'pictures' | 'media'
+export type StorageRootKey = 'pictures' | 'media' | 'history'
 
 export interface StoragePaths {
   pictures: string
   media: string
+  history: string
   // slideshow.dir is unset, so the Slideshow folder lives inside (and moves
   // with) the pictures folder.
   slideshowInsidePictures: boolean
@@ -5220,3 +5237,247 @@ export interface MusicSmartRules {
 export interface MusicSmartInput { title: string; description: string; rules: MusicSmartRules }
 export interface MusicSmartPlaylist extends MusicSmartInput { id: number }
 export interface MusicSmartPreview { items: MusicTrack[]; total: number; matching: number }
+
+// ---- History ----
+// Curated content is src/shared/history (schema.ts); these are the main
+// process's resolved views of it plus this machine's personal layer.
+
+/** A curated image: the remote URL until the art cache holds a copy. */
+export interface HistoryImage {
+  url: string
+  /** `media/` path once cached. */
+  cached: string | null
+  credit: string | null
+  license: string | null
+  page: string | null
+  title: string | null
+}
+
+/** Everything a card or link needs to show another entity. */
+export interface HistoryRefInfo {
+  ref: string
+  kind: EntityKind
+  title: string
+  native: { text: string; lang: string } | null
+  /** Display years, e.g. "1978 to 1979" or "1902 to 1989". */
+  years: string | null
+  /** Type label, e.g. "Revolution", "Cleric". */
+  sub: string | null
+  image: HistoryImage | null
+  /** Lane region of events and periods. */
+  region: RegionKey | null
+  personal: boolean
+  /** The ref did not resolve (removed or never existed). */
+  missing: boolean
+}
+
+export interface HistoryTimelineItem {
+  ref: string
+  kind: 'event' | 'period'
+  title: string
+  native: string | null
+  typeLabel: string
+  /** Decimal years. */
+  s: number
+  e: number | null
+  lane: RegionKey
+  regions: RegionKey[]
+  prominence: 1 | 2 | 3
+  read: boolean
+  personal: boolean
+}
+
+export interface HistoryDecadeSummary {
+  start: number
+  events: number
+  read: number
+}
+
+export interface HistoryOverview {
+  items: HistoryTimelineItem[]
+  periods: HistoryTimelineItem[]
+  decades: HistoryDecadeSummary[]
+  counts: {
+    events: number
+    people: number
+    periods: number
+    sources: number
+    quotes: number
+    read: number
+    personal: number
+  }
+  /** Decimal-year extent of the content, null while there is none. */
+  range: { min: number; max: number } | null
+}
+
+export interface HistoryPortrayalView {
+  person: HistoryRefInfo
+  characterName: string | null
+  /** Library people credited for this character in the linked title. */
+  actors: Array<{ personId: number; name: string; characterId: number | null; photo: string | null }>
+}
+
+export interface HistoryMediaCard {
+  /** Curated media file id, or `mine-<link id>`. */
+  key: string
+  origin: 'curated' | 'personal'
+  personalLinkId: number | null
+  mediaType: MediaType
+  source: string | null
+  externalId: string | null
+  title: string
+  year: number | null
+  /** Remote poster for titles not in the library. */
+  poster: string | null
+  posterCached: string | null
+  library: { id: number; cover: string | null; status: string | null } | null
+  kind: MediaLinkKind
+  target: HistoryRefInfo
+  accuracy: Quote[]
+  portrayals: HistoryPortrayalView[]
+}
+
+export interface HistoryDecade {
+  start: number
+  lead: HistoryRefInfo[]
+  byRegion: Array<{ region: RegionKey; items: HistoryRefInfo[] }>
+  /** Events that began in an earlier decade and run into this one. */
+  continuing: HistoryRefInfo[]
+  born: HistoryRefInfo[]
+  died: HistoryRefInfo[]
+  media: HistoryMediaCard[]
+  read: number
+  total: number
+}
+
+export interface HistoryArchiveItem {
+  /** `<ref>#<suggestion id>` for research items, `file-<row id>` for attachments. */
+  key: string
+  kind: ArchiveKind
+  title: string
+  /** Display text (`April 1906`), formatted in main. */
+  date: string | null
+  credit: string | null
+  license: string | null
+  page: string | null
+  origin: 'research' | 'user'
+  state: 'suggested' | 'local' | 'missing'
+  rowId: number | null
+  /** `history/` path of the local copy. */
+  relPath: string | null
+  /** Source URL of a suggestion. */
+  url: string | null
+  bytes: number | null
+  durationSec: number | null
+}
+
+export interface HistoryMark {
+  read: string | null
+  favorite: boolean
+}
+
+export type HistoryNoteKind = 'note' | 'correction'
+
+export interface HistoryNote {
+  ref: string
+  body: string
+  kind: HistoryNoteKind
+  updatedAt: string
+}
+
+export interface HistoryNoteRow extends HistoryNote {
+  target: HistoryRefInfo
+}
+
+export interface HistoryParticipation {
+  ref: string
+  role: string
+  side: string | null
+}
+
+export interface HistoryArticleView {
+  ref: string
+  entity: HistoryArticle
+  personal: boolean
+  /** Every entity the article mentions, resolved. */
+  refs: Record<string, HistoryRefInfo>
+  /** Every cited source, by id. */
+  sources: Record<string, HistorySource>
+  /** Footnote numbering: source ids in order of first citation. */
+  sourceOrder: string[]
+  hero: HistoryImage | null
+  interpretations: HistoryInterpretation[]
+  /** Events and periods that are part of this one. */
+  children: HistoryRefInfo[]
+  /** Relations other entities point at this one. */
+  inbound: Array<{ ref: string; rel: string }>
+  /** Person pages: the events they took part in. */
+  appearsIn: HistoryParticipation[]
+  meanwhile: HistoryRefInfo[]
+  contemporaries: HistoryRefInfo[]
+  media: HistoryMediaCard[]
+  archive: HistoryArchiveItem[]
+  mark: HistoryMark
+  note: HistoryNote | null
+  /** Iran-related entities show Solar Hijri dates. */
+  solarHijri: boolean
+}
+
+export interface HistorySourceRow {
+  id: string
+  title: string
+  type: string
+  date: string
+  contributors: string
+  cited: number
+  personal: boolean
+}
+
+export interface HistorySourceView {
+  source: HistorySource
+  personal: boolean
+  translationOf: HistorySource | null
+  translations: HistorySource[]
+  citedBy: Array<HistoryRefInfo & { quotes: number }>
+}
+
+export interface HistorySearchHit {
+  ref: string
+  kind: EntityKind
+  title: string
+  subtitle: string | null
+  image: HistoryImage | null
+}
+
+export interface HistoryMediaBacklink {
+  target: HistoryRefInfo
+  kind: MediaLinkKind
+  origin: 'curated' | 'personal'
+}
+
+export interface HistoryArchiveJob {
+  id: string
+  kind: 'attach' | 'download'
+  ref: string
+  /** Suggestion key for downloads. */
+  key: string | null
+  title: string
+  state: 'running' | 'done' | 'error' | 'cancelled'
+  done: number
+  total: number
+  error: string | null
+}
+
+export interface HistoryImageStatus {
+  running: boolean
+  done: number
+  total: number
+}
+
+export interface HistorySaveResult {
+  ok: boolean
+  id: string | null
+  issues: Array<{ severity: 'error' | 'warning'; code: string; message: string }>
+}
+
+export type HistoryUserEntity = Exclude<HistoryEntity, { kind: 'media' }>

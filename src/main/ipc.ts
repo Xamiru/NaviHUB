@@ -23,6 +23,8 @@ import * as secretStorage from './secretStorage'
 import { isSecretSettingKey } from '@shared/secretSettings'
 import * as searchRepo from './repos/searchRepo'
 import * as quizRepo from './repos/quizRepo'
+import { callQuizPools } from './quizPools'
+import { timeIpcHandlers } from './ipcTiming'
 import * as themeRepo from './repos/themeRepo'
 import * as tournamentRepo from './repos/tournamentRepo'
 import * as listRepo from './repos/listRepo'
@@ -116,6 +118,8 @@ import * as coreDeck from './coreDeck'
 import * as coverage from './coverage'
 import * as coverageRepo from './repos/coverageRepo'
 import * as analyzeText from './analyzeText'
+// History archive IO stays eager: it imports no content, and index.ts needs its quit hook.
+import * as historyJobs from './history/historyJobs'
 
 // These feature modules carry large offline content catalogs. Their IPC
 // channels are always registered, but the implementation is parsed only on
@@ -124,10 +128,13 @@ const loadEnglishWriting = (): Promise<typeof import('./englishWriting')> =>
   import('./englishWriting')
 const loadProgrammingRepo = (): Promise<typeof import('./repos/programmingRepo')> =>
   import('./repos/programmingRepo')
+const loadHistory = (): Promise<typeof import('./history/historyService')> => import('./history/historyService')
 
 // Each channel name mirrors the NaviApi surface in src/shared/api.ts.
 // Handlers are thin: validate nothing exotic, delegate to a repo, return data.
 export function registerIpc(): void {
+  timeIpcHandlers(ipcMain)
+
   // ---- playthroughs ----
   ipcMain.handle('playthroughs:list', (_e, mediaId) => playthroughs.list(mediaId))
   ipcMain.handle('playthroughs:save', (_e, mediaId, id, input) => playthroughs.save(mediaId, id, input))
@@ -319,15 +326,18 @@ export function registerIpc(): void {
   ipcMain.handle('tags:remove', (_e, id) => tagRepo.remove(id))
 
   // ---- global search ----
-  ipcMain.handle('search:global', (_e, query) => searchRepo.global(query))
+  ipcMain.handle('search:global', (_e, query) => searchRepo.globalAll(query))
 
   // ---- quiz ----
-  ipcMain.handle('quiz:availability', (_e, request) => quizRepo.availability(request))
-  ipcMain.handle('quiz:challengePool', (_e, request) => quizRepo.challengePool(request))
-  ipcMain.handle('quiz:songPool', (_e, filter) => quizRepo.songPool(filter))
-  ipcMain.handle('quiz:castPool', (_e, filter) => quizRepo.castPool(filter))
-  ipcMain.handle('quiz:vaPool', (_e, filter) => quizRepo.vaPool(filter))
-  ipcMain.handle('quiz:synopsisPool', (_e, filter) => quizRepo.synopsisPool(filter))
+  // Library-wide quiz reads run in the quiz pool process (quizPools.ts).
+  ipcMain.handle('quiz:availability', (_e, request) => callQuizPools('availability', request))
+  ipcMain.handle('quiz:challengePool', (_e, request) => callQuizPools('challengePool', request))
+  ipcMain.handle('quiz:songPool', (_e, filter) => callQuizPools('songPool', filter))
+  ipcMain.handle('quiz:castPool', (_e, filter) => callQuizPools('castPool', filter))
+  ipcMain.handle('quiz:vaQuestions', (_e, filter, count, seed) =>
+    callQuizPools('vaQuestions', filter, count, seed)
+  )
+  ipcMain.handle('quiz:synopsisPool', (_e, filter) => callQuizPools('synopsisPool', filter))
   ipcMain.handle('quiz:mangaPanelPool', (_e, filter, length) =>
     manga.panelPool(filter, length ?? 10)
   )
@@ -838,6 +848,33 @@ export function registerIpc(): void {
   ipcMain.handle('pictures:setSlideshowSource', (_e, source) =>
     pictureLibrary.setSlideshowSource(source)
   )
+
+  // ---- history (curated content loaded on first use + personal layer) ----
+  ipcMain.handle('history:overview', async () => (await loadHistory()).overview())
+  ipcMain.handle('history:decade', async (_e, start: number) => (await loadHistory()).decade(start))
+  ipcMain.handle('history:article', async (_e, ref: string) => (await loadHistory()).article(ref))
+  ipcMain.handle('history:sources', async () => (await loadHistory()).sources())
+  ipcMain.handle('history:source', async (_e, id: string) => (await loadHistory()).source(id))
+  ipcMain.handle('history:search', async (_e, query: string) => (await loadHistory()).search(query))
+  ipcMain.handle('history:backlinks', async (_e, mediaId: number) =>
+    (await import('./history/historyBacklinkGate')).mayHaveBacklinks(mediaId) ? (await loadHistory()).backlinks(mediaId) : []
+  )
+  ipcMain.handle('history:setMark', async (_e, ref, field, value) => (await loadHistory()).setMark(ref, field, value))
+  ipcMain.handle('history:saveNote', async (_e, ref, body, kind) => (await loadHistory()).saveNote(ref, body, kind))
+  ipcMain.handle('history:notes', async (_e, kind) => (await loadHistory()).notes(kind))
+  ipcMain.handle('history:linkMedia', async (_e, ref, mediaId, kind) => (await loadHistory()).linkMedia(ref, mediaId, kind))
+  ipcMain.handle('history:unlinkMedia', async (_e, id: number) => (await loadHistory()).unlinkMedia(id))
+  ipcMain.handle('history:userEntities', async () => (await loadHistory()).userEntities())
+  ipcMain.handle('history:userEntity', async (_e, id: string) => (await loadHistory()).userEntity(id))
+  ipcMain.handle('history:saveUserEntity', async (_e, entity) => (await loadHistory()).saveUserEntity(entity))
+  ipcMain.handle('history:removeUserEntity', async (_e, id: string) => (await loadHistory()).removeUserEntity(id))
+  ipcMain.handle('history:imageStatus', async () => (await import('./history/historyImages')).imageStatus())
+  ipcMain.handle('history:attachFile', (_e, ref: string) => historyJobs.attachFile(ref))
+  ipcMain.handle('history:downloadSuggestion', (_e, ref: string, id: string) => historyJobs.downloadSuggestion(ref, id))
+  ipcMain.handle('history:archiveJobs', () => historyJobs.archiveJobs())
+  ipcMain.handle('history:cancelArchiveJob', (_e, id: string) => historyJobs.cancelJob(id))
+  ipcMain.handle('history:openArchive', (_e, rowId: number) => historyJobs.openArchive(rowId))
+  ipcMain.handle('history:removeArchive', (_e, rowId: number, deleteFile: boolean) => historyJobs.removeArchive(rowId, deleteFile))
 
   // ---- franchise (curated pages' art cache) ----
   ipcMain.handle('franchise:ensureArt', (_e, franchiseId) => franchiseArt.ensureArt(franchiseId))

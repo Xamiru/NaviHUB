@@ -1,20 +1,17 @@
 import { useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import PageHeader from '../components/PageHeader'
 import { api } from '../lib/api'
-import { qk } from '../lib/queryKeys'
 import { usePersistedState } from '../lib/navState'
 import { useAllCompletedStatuses } from '../lib/hooks'
 import CoverImage from '../components/CoverImage'
 import QuizRecord from '../components/QuizRecord'
 import LibMcRound, { type McQuestion } from '../components/libraryQuiz/LibMcRound'
 import { Group, Pill } from '../components/PillGroup'
-import { buildVaQuizQuestions, vaAppearanceKey } from '@shared/vaQuiz'
+import { vaAppearanceKey } from '@shared/vaQuiz'
 import { quizSeed } from '@shared/quizCore'
 import type { QuizLibFilter } from '@shared/types'
 
 export default function VaQuizPage() {
-  const qc = useQueryClient()
   const completedStatuses = useAllCompletedStatuses()
   const [scope, setScope] = usePersistedState<'consumed' | 'all'>('quizVaScope', 'consumed')
   const [length, setLength] = usePersistedState<number>('quizVaLength', 10)
@@ -31,11 +28,7 @@ export default function VaQuizPage() {
     try {
       const seed = quizSeed(`${Date.now()}-${Math.random()}`)
       const filter: QuizLibFilter = { statuses: scope === 'all' ? null : completedStatuses }
-      const pool = await qc.fetchQuery({
-        queryKey: qk.quiz.vaPool(filter),
-        queryFn: () => api.quiz.vaPool(filter)
-      })
-      const built = buildVaQuizQuestions(pool, length, seed)
+      const built = await api.quiz.vaQuestions(filter, length, seed)
       if (built.length < length) {
         setError(
           `Only ${built.length} solvable same-voice questions are available for these filters; choose a shorter round, widen the scope, or re-import anime cast.`
