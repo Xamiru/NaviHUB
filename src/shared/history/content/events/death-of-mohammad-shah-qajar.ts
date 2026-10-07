@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Death of Mohammad Shah Qajar', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -101,6 +101,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q10',
+          text: 'The death of Moḥammad Shah and the accession of Nāṣer-al-dīn Mīrzā to the throne in 1264/1848 did not lead to better relations between Iran and Britain.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-kazemzadeh-anglo-iranian-relations-qajar',
+            loc: { section: 'ANGLO-IRANIAN RELATIONS ii. The Qajar Period', para: '23' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
+          }
+        },
         {
           id: 'q1',
           text: 'MOḤAMMAD SHAH QĀJĀR, (b. Tabriz, 6 Ḏu’l-qaʿda 1222/5 January 1808; d. Tehran, 6 Šawwāl 1264/5 September 1848), the third ruler of the Qajar dynasty after his grandfather Fatḥ-ʿAli Shah.',

@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
@@ -121,5 +121,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/c/c7/MirzaAghaKhanNuri-BySaniolmolk.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:MirzaAghaKhanNuri-BySaniolmolk.jpg',
+    credit: { institution: 'Golestan Palace Museum', creator: 'Sani ol-Molk' },
+    license: { id: 'cc-by-sa', version: '4.0', url: 'https://creativecommons.org/licenses/by-sa/4.0' }
+  }
 })

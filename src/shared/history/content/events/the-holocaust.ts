@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'genocide',
   start: {
     alts: [
@@ -197,6 +197,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q8',
+          text: 'The impact of the Holocaust on world Jewry, either on contemporaries of the horror or on succeeding generations, cannot be exaggerated. The scope of Hitler\'s genocidal efforts can be quickly summarized. In 1939 about 10 million of the estimated 16 million Jews in the world lived in Europe. By 1945 almost 6 million had been killed, most of them in the nineteen main concentration camps.',
+          lang: 'en',
+          cite: {
+            source: 'loc-israel-country-study-1988',
+            loc: { section: 'The Holocaust', para: '1' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/israel/19.htm' }
+        },
+        {
           id: 'q1',
           text: 'However, wartime conditions and the presence of millions of Jews in Poland, the Soviet Union, and other occupied areas in Eastern Europe gradually led to the adoption of another plan: the systematic extermination of all Jews who came under German control.',
           lang: 'en',
@@ -300,16 +310,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/kapitel/der-zweite-weltkrieg/voelkermord'
           }
-        },
-        {
-          id: 'q8',
-          text: 'In 1939 about 10 million of the estimated 16 million Jews in the world lived in Europe. By 1945 almost 6 million had been killed, most of them in the nineteen main concentration camps.',
-          lang: 'en',
-          cite: {
-            source: 'loc-israel-country-study-1988',
-            loc: { section: 'The Holocaust', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/19.htm' }
         }
       ]
     },

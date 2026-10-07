@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Satsuma Rebellion', lang: 'en', role: 'primary' },
     { text: '西南戦争', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -71,8 +71,8 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q3',
-          text: 'Three years later, the last major armed uprising--but the most serious challenge to the Meiji government-- took shape in the Satsuma Rebellion, this time with Saigo playing an active role.',
+          id: 'q4',
+          text: 'Saigo, with some reluctance and only after more widespread dissatisfaction with the Meiji reforms, raised a rebellion in 1877.',
           lang: 'en',
           cite: {
             source: 'loc-japan-country-study-1994',
@@ -81,8 +81,8 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/24.htm' }
         },
         {
-          id: 'q4',
-          text: 'Saigo, with some reluctance and only after more widespread dissatisfaction with the Meiji reforms, raised a rebellion in 1877.',
+          id: 'q3',
+          text: 'Three years later, the last major armed uprising--but the most serious challenge to the Meiji government-- took shape in the Satsuma Rebellion, this time with Saigo playing an active role.',
           lang: 'en',
           cite: {
             source: 'loc-japan-country-study-1994',

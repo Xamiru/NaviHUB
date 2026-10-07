@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -92,5 +92,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/7/7f/Gardane_pg293.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Gardane_pg293.jpg',
+    credit: { institution: 'Encyclopædia Iranica' },
+    license: { id: 'public-domain' }
+  }
 })

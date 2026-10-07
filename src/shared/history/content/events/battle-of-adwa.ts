@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -112,6 +112,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q10',
+          text: 'In 1893 Menelek denounced the treaty of Uccialli, and eventually, in a great battle, fought at Adowa on the 1st of March 1896, the Italians were disastrously defeated.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-africa',
+            loc: { section: 'AFRICA, V. Partition among European Powers', para: '65' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Africa'
+          }
+        },
         {
           id: 'q3',
           text: 'In late 1895, Italian forces invaded Tigray.',

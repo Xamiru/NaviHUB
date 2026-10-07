@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -68,6 +68,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q6',
+          text: 'The Paris Commune was a seizure of power by a popularly-led government that ruled Paris for three months. Members of the National Guard that had been defending Paris rose up against what was seen as a forced surrender to Prussia.',
+          lang: 'en',
+          cite: {
+            source: 'loc-guide-paris-commune-1871',
+            loc: { section: 'The Paris Commune and the Franco-Prussian War of 1871', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://guides.loc.gov/women-in-the-french-revolution/revolutions-rebellions/paris-commune-franco-prussian-war-1871'
+          }
+        },
         {
           id: 'q1',
           text: 'Aufstand in Paris: Die französische Regierung flieht nach Versailles.',

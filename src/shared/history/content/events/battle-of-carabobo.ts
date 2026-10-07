@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Carabobo', lang: 'en', role: 'primary' },
     { text: 'Batalla de Carabobo', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -47,13 +47,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Nearly two years later, in June 1821, Bolívar\'s troops fought the decisive Battle of Carabobo that liberated Caracas from Spanish rule.',
+          text: 'Although Caracas remained in royalist hands, the 1819 Congress at Angostura (present-day Ciudad Bolívar) established the Third Republic and named Bolívar as its first president. Bolívar then quickly marched his troops across the llanos and into the Andes, where a surprise attack on the Spanish garrison at Boyacá, near Bogotá, routed the royalist forces and liberated New Granada. Nearly two years later, in June 1821, Bolívar\'s troops fought the decisive Battle of Carabobo that liberated Caracas from Spanish rule.',
           lang: 'en',
           cite: {
             source: 'loc-venezuela-country-study-1990',
             loc: { section: 'The Epic of Independence', para: '8' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/venezuela/4.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/venezuela/4.htm' }
         }
       ]
     },
@@ -82,5 +82,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9d/Batalla_de_Carabobo02.jpg/1280px-Batalla_de_Carabobo02.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Batalla_de_Carabobo02.jpg',
+    credit: { institution: 'Capitolio Nacional de Venezuela', creator: 'Martín Tovar y Tovar' },
+    license: { id: 'public-domain' }
+  }
 })

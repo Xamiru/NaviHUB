@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Fall of Diriyah', lang: 'en', role: 'primary' },
     { text: 'سقوط الدرعية', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -96,8 +96,8 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q3',
-          text: 'Tursun\'s forces took Mecca and Medina almost immediately.',
+          id: 'q4',
+          text: 'The Wahhabis made their stand at the traditional Al Saud capital of Ad Diriyah, where they managed to hold out for two years against superior Egyptian forces and weaponry. In the end, however, the Wahhabis proved no match for a modern army, and Ad Diriyah--and Abd Allah with it--fell in 1818.',
           lang: 'en',
           cite: {
             source: 'loc-saudi-arabia-country-study-1992',
@@ -106,8 +106,8 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/saudi-arabia/7.htm' }
         },
         {
-          id: 'q4',
-          text: 'The Wahhabis made their stand at the traditional Al Saud capital of Ad Diriyah, where they managed to hold out for two years against superior Egyptian forces and weaponry. In the end, however, the Wahhabis proved no match for a modern army, and Ad Diriyah--and Abd Allah with it--fell in 1818.',
+          id: 'q3',
+          text: 'Tursun\'s forces took Mecca and Medina almost immediately.',
           lang: 'en',
           cite: {
             source: 'loc-saudi-arabia-country-study-1992',
@@ -152,5 +152,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/c/ca/Diriyah_Ruins_Near_Riyadh_10_by_Tom_And_Linda_Anderson_3840959304.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Diriyah_Ruins_Near_Riyadh_10_by_Tom_And_Linda_Anderson_3840959304.jpg',
+    credit: { institution: 'Saudi Aramco', creator: 'Tom and Linda Anderson' },
+    license: { id: 'public-domain' }
+  }
 })

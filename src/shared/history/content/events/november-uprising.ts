@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -251,5 +251,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e6/Marcin_Zaleski%2C_Wzi%C4%99cie_Arsena%C5%82u.jpg/1280px-Marcin_Zaleski%2C_Wzi%C4%99cie_Arsena%C5%82u.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Marcin_Zaleski,_Wzi%C4%99cie_Arsena%C5%82u.jpg',
+    credit: { institution: 'National Museum in Warsaw', creator: 'Marcin Zaleski' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Republican movement of 1924', lang: 'en', role: 'primary' },
     { text: 'جمهوری‌خواهی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'movement',
   start: {
     alts: [
@@ -93,8 +93,8 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'With the shah’s departure, an extensive campaign, encouraged by Reżā Khan, was initiated in favor of the abolition of the monarchy and the establishment of a republic on the model of neighboring Turkey.',
+          id: 'q2',
+          text: 'On 13 March 1924, the Majlis met in extraordinary session and appointed a special committee to consider the question of proclaiming a republic.',
           lang: 'en',
           cite: {
             source: 'iranica-sheikh-ol-islami-ahmad-shah',
@@ -107,8 +107,8 @@ export default defineEvent({
           }
         },
         {
-          id: 'q2',
-          text: 'On 13 March 1924, the Majlis met in extraordinary session and appointed a special committee to consider the question of proclaiming a republic.',
+          id: 'q1',
+          text: 'With the shah’s departure, an extensive campaign, encouraged by Reżā Khan, was initiated in favor of the abolition of the monarchy and the establishment of a republic on the model of neighboring Turkey.',
           lang: 'en',
           cite: {
             source: 'iranica-sheikh-ol-islami-ahmad-shah',
@@ -183,5 +183,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/e/ec/RezaKhanCab1.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:RezaKhanCab1.jpg',
+    credit: { institution: 'Hossein Makki, Tarikh-e bistsaleh-ye Iran, vol. 3 (1979)' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Independence of Liberia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'independence',
   start: {
     alts: [
@@ -51,7 +51,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'As a result, in 1847, Liberia declared independence from the American Colonization Society in order to establish a sovereign state and create its own laws governing commerce.',
+          text: 'The U.S. Government had provided Liberia some financial support, but Washington expected Monrovia to move toward self-sufficiency. Commerce was the first economic sector to grow in the colony. However, French and British traders continually encroached upon Liberian territory. As it was not a sovereign state, it was hard-pressed to defend its economic interests. The U.S. Government lent some diplomatic support, but Britain and France had territories in West Africa and were better poised to act. As a result, in 1847, Liberia declared independence from the American Colonization Society in order to establish a sovereign state and create its own laws governing commerce.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-founding-of-liberia',
@@ -59,7 +59,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://history.state.gov/milestones/1830-1860/liberia'
           }
         },
@@ -103,34 +103,6 @@ export default defineEvent({
           cite: {
             source: 'state-dept-milestones-founding-of-liberia',
             loc: { section: 'Founding of Liberia, 1847', para: '4' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1830-1860/liberia'
-          }
-        },
-        {
-          id: 'q5',
-          text: 'However, French and British traders continually encroached upon Liberian territory.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-founding-of-liberia',
-            loc: { section: 'Founding of Liberia, 1847', para: '7' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1830-1860/liberia'
-          }
-        },
-        {
-          id: 'q6',
-          text: 'As it was not a sovereign state, it was hard-pressed to defend its economic interests.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-founding-of-liberia',
-            loc: { section: 'Founding of Liberia, 1847', para: '7' }
           },
           provenance: {
             via: 'web',

@@ -16,7 +16,7 @@ export default definePeriod({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'movement',
   start: {
     alts: [
@@ -127,5 +127,14 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b7/Writings-bab-handwriting-mulla-husayn.jpg/1280px-Writings-bab-handwriting-mulla-husayn.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Writings-bab-handwriting-mulla-husayn.jpg',
+    credit: {
+      institution: 'Ruhu\'llah Mehrabkhani, Mulla Husayn: Disciple at Dawn (Kalimát Press, 1987)',
+      creator: 'Mullá Husayn Bushru\'i'
+    },
+    license: { id: 'public-domain' }
+  }
 })

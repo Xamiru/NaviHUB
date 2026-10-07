@@ -11,6 +11,7 @@
 // each request puts its URLs at the front.
 
 import type { HistoryImageStatus } from '@shared/types'
+import { WIKIMEDIA_USER_AGENT } from '@shared/wikimediaAgent'
 import { runWithActivitySignal } from '../activityContext'
 import { cachedDownload, downloadImage } from '../files'
 import { logWarn } from '../logBus'
@@ -21,9 +22,18 @@ const state: HistoryImageStatus = { running: false, done: 0, total: 0 }
 // A URL that failed (or was cancelled before its turn) is not retried until the
 // cooldown passes. Pages refetch as images land, and every refetch asks for
 // images again, so without this an offline machine or one dead URL would be
-// queued again on every poll for as long as the page stays open.
+// queued again on every poll for as long as the page stays open. Each further
+// failure doubles the wait (capped), so a dead URL in the timeline prefetch stops
+// restarting a caching task every ten minutes for the rest of the session.
 export const RETRY_COOLDOWN_MS = 10 * 60_000
+export const MAX_RETRY_COOLDOWN_MS = 6 * 60 * 60_000
 const retryAfter = new Map<string, number>()
+const failures = new Map<string, number>()
+
+/** The wait after a URL's `count`-th consecutive failed download. */
+export function retryCooldown(count: number): number {
+  return Math.min(RETRY_COOLDOWN_MS * 2 ** Math.max(0, count - 1), MAX_RETRY_COOLDOWN_MS)
+}
 
 /** Minimum spacing between two downloads. */
 export const MIN_GAP_MS = 1100
@@ -45,7 +55,7 @@ export function imageStatus(): HistoryImageStatus {
 export function historyRequestHeaders(url: string): Record<string, string> | undefined {
   const host = new URL(url).hostname
   return /(^|\.)wikimedia\.org$/.test(host) || /(^|\.)archive\.org$/.test(host) || /(^|\.)loc\.gov$/.test(host)
-    ? { 'User-Agent': 'NaviHUB/1.0 (personal offline history archive; one request at a time)' }
+    ? { 'User-Agent': WIKIMEDIA_USER_AGENT }
     : undefined
 }
 
@@ -117,7 +127,11 @@ function start(label: string): void {
             attempted += 1
             if (!cachedDownload(url) && (await downloadImage(url, undefined, historyRequestHeaders(url))) == null) {
               failed += 1
-              retryAfter.set(url, Date.now() + RETRY_COOLDOWN_MS)
+              const count = (failures.get(url) ?? 0) + 1
+              failures.set(url, count)
+              retryAfter.set(url, Date.now() + retryCooldown(count))
+            } else {
+              failures.delete(url)
             }
             inFlight = null
             state.done += 1

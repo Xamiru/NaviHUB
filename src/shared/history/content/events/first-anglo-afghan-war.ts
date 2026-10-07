@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -210,6 +210,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'From the British point of view, the First Anglo-Afghan War (1838-42) (often called "Auckland\'s Folly") was an unmitigated disaster, despite the ease with which Dost Mohammad was deposed and Shuja enthroned.',
+          lang: 'en',
+          cite: {
+            source: 'loc-afghanistan-country-study-2001',
+            loc: { section: 'The First Anglo-Afghan War', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/afghanistan/13.htm' }
+        },
+        {
           id: 'q1',
           text: 'This war was fought between a British Indian army in alliance with the still-independent Sikhs under Ranjit Singh, and the Bārakzay rulers of Kabul and Qandahār.',
           lang: 'en',
@@ -222,16 +232,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/anglo-afghan-wars'
           }
-        },
-        {
-          id: 'q2',
-          text: 'From the British point of view, the First Anglo-Afghan War (1838-42) (often called "Auckland\'s Folly") was an unmitigated disaster, despite the ease with which Dost Mohammad was deposed and Shuja enthroned.',
-          lang: 'en',
-          cite: {
-            source: 'loc-afghanistan-country-study-2001',
-            loc: { section: 'The First Anglo-Afghan War', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/afghanistan/13.htm' }
         },
         {
           id: 'q3',

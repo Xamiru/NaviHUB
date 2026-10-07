@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Wilhelmine Era', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'era',
   start: {
     alts: [
@@ -71,5 +71,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/63/Bain_News_Service_-_The_Library_of_Congress_-_Kaiser_Wilhelm_%28LOC%29_%28pd%29.jpg/1280px-Bain_News_Service_-_The_Library_of_Congress_-_Kaiser_Wilhelm_%28LOC%29_%28pd%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Bain_News_Service_-_The_Library_of_Congress_-_Kaiser_Wilhelm_(LOC)_(pd).jpg',
+    credit: { institution: 'Library of Congress', creator: 'E. Bieber' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -1,0 +1,197 @@
+import { definePerson } from '../../schema'
+
+export default definePerson({
+  id: 'ruhollah-khomeini',
+  names: [
+    { text: 'Ruhollah Khomeini', lang: 'en', role: 'primary' },
+    { text: 'روح‌الله خمینی', lang: 'fa', role: 'native' }
+  ],
+  researched: '2026-10-07',
+  born: {
+    alts: [
+      {
+        value: { d: '1902-09-24' },
+        cites: [
+          {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '1' }
+          }
+        ],
+        heldBy: [
+          { kind: 'scholar', name: 'Hamid Algar' }
+        ]
+      },
+      {
+        value: { d: '1900-05-17' },
+        cites: [
+          {
+            source: 'khamenei-ir-imam-khomeini-biography',
+            loc: { section: 'Imam Khomeini’s Biography', para: '1' }
+          }
+        ],
+        heldBy: [
+          { kind: 'organization', name: 'Khamenei.ir' }
+        ]
+      }
+    ]
+  },
+  died: {
+    alts: [
+      {
+        value: { d: '1989-06-03' },
+        cites: [
+          {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '129' }
+          },
+          {
+            source: 'khamenei-ir-imam-khomeini-biography',
+            loc: { section: 'Imam Khomeini’s Biography', para: '53' }
+          }
+        ]
+      }
+    ]
+  },
+  bornIn: {
+    ref: 'place:khomeyn',
+    cites: [
+      {
+        source: 'iranica-algar-khomeini-life',
+        loc: { section: 'KHOMEINI i. Life', para: '1' }
+      }
+    ]
+  },
+  regions: ['iran'],
+  roles: ['cleric', 'revolutionary'],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/81/%D9%85%D8%B5%D8%B7%D9%81%DB%8C_%D9%88_%D8%AE%D9%85%DB%8C%D9%86%DB%8C.JPG',
+    page: 'https://commons.wikimedia.org/wiki/File:%D9%85%D8%B5%D8%B7%D9%81%DB%8C_%D9%88_%D8%AE%D9%85%DB%8C%D9%86%DB%8C.JPG',
+    credit: {
+      institution: 'Imam Khomeini Information Portal (payegah-e ettela-rasani-ye Emam Khomeini)'
+    },
+    license: { id: 'public-domain' }
+  },
+  sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q1',
+          text: 'Imam Ayatollah Seyed Ruhollah Musavi Khomeini (May 17, 1900 – June 3, 1989) was a Muslim cleric and Marja, and the political leader of the 1979 Islamic Revolution of Iran which overthrew Mohammad Reza Pahlavi, the last Shah of Iran.',
+          lang: 'en',
+          cite: {
+            source: 'khamenei-ir-imam-khomeini-biography',
+            loc: { section: 'Imam Khomeini’s Biography', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://web.archive.org/web/20260610181904/https://english.khamenei.ir/news/2116/Imam-Khomeini-s-Biography'
+          }
+        },
+        {
+          id: 'q2',
+          text: 'Early life and education. Ruhollah Khomeini was born on 20 Jomādā II 1320/24 September 1902 in Ḵomeyn, a small town in the province of Lorestān (now Markazi), about 135 miles from Isfahan, that numbered Jews and Armenians among its population (PLATE I and PLATE II).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'career',
+      quotes: [
+        {
+          id: 'q3',
+          text: 'On the death of Borujerdi on 30 March 1961, several of Khomeini’s associates pressed him to declare his availability as marjʿa-e taqlid and successor to Borujerdi. Initially reluctant, he consented first to the publication of a selection of his fatwās as a supplement to the Wasilat al-najāt of Ayatollah Abu’l-Ḥasan Eṣfaḥāni (1860-1946); then his commentary on the ʿOrwat al-woṯqā by Sayyed Moḥammad Kāẓem Yazdi (1831-1919); and finally his own resāla-ye ʿamaliya (a qualifying text expected for the rank), entitled, like other works of this genre, Tawżiḥ al-masāʾel.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '33' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
+          }
+        },
+        {
+          id: 'q4',
+          text: 'A more serious confrontation ensued in January 1963, when Moḥammad-Reżā Shah announced a six-point program of reform that he termed the “White Revolution,” a package of measures designed to give the regime a liberal façade. Among its provisions were land reform, the sale of government-owned factories to provide funds for buying out landlords, a new electoral law providing for the enfranchisement of women, and the creation of a Literacy Corps designed to extend state-sponsored education into the countryside. Numerous oppositional groups and personalities opposed it, but none with the same vigor and resonance as Khomeini (see Azimi).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '35' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
+          }
+        },
+        {
+          id: 'q5',
+          text: 'Once settled in his final destination, he began teaching feqh at the Shaykh Mortażā Anṣāri madrasa. His lectures were well attended, by students not only from Iran, but also India, Pakistan, Afghanistan, and the Persian Gulf states.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '40' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'in-their-words',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'This Agreement has made us a colonized country, it has presented the Muslim people of Iran to the world as lower than savages.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-rahnema-jamiyat-e-motalefa-ye-eslami',
+            loc: {
+              section: 'JAMʿIYAT-E MOʾTALEFA-YE ESLĀMI i. Hayʾathā-ye Moʾtalefa-ye Eslāmi 1963-79',
+              para: '32'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://web.archive.org/web/20260407183707/https://www.iranicaonline.org/articles/jamiyat-e-motalefa-i/'
+          }
+        }
+      ]
+    },
+    {
+      kind: 'death',
+      quotes: [
+        {
+          id: 'q7',
+          text: 'Khomeini passed away shortly before midnight on 3 June 1989, after suffering a series of heart attacks.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-algar-khomeini-life',
+            loc: { section: 'KHOMEINI i. Life', para: '129' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://web.archive.org/web/20260928150602/https://www.iranicaonline.org/articles/khomeini-i-life/'
+          }
+        }
+      ]
+    }
+  ]
+})

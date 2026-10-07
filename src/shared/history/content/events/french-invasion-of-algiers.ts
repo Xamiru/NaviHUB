@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'invasion',
   start: {
     alts: [
@@ -229,5 +229,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2b/PRISE_DE_LA_CASBAR_D%27ALGER._%28Juillet_1830.%29%2C_Paris_Mus%C3%A9es_20230520120910.jpg/1280px-PRISE_DE_LA_CASBAR_D%27ALGER._%28Juillet_1830.%29%2C_Paris_Mus%C3%A9es_20230520120910.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:PRISE_DE_LA_CASBAR_D%27ALGER._(Juillet_1830.),_Paris_Mus%C3%A9es_20230520120910.jpg',
+    credit: { institution: 'Musée Carnavalet, Paris Musées', creator: 'Louis-François Couché' },
+    license: { id: 'cc0' }
+  }
 })

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Russian bombardment of the Imam Reza shrine', lang: 'en', role: 'primary' },
     { text: 'توپ‌باران حرم امام رضا', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'massacre',
   start: {
     alts: [
@@ -242,5 +242,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Imam_Reza_shrine_and_Goharshad_Mosque%2C_view_from_Tehran_st_-_1935.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Imam_Reza_shrine_and_Goharshad_Mosque,_view_from_Tehran_st_-_1935.jpg',
+    credit: { institution: 'Astan Quds Razavi photo archive' },
+    license: { id: 'public-domain' }
+  }
 })

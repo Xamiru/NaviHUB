@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'British warship at Nagasaki (1808)', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -66,5 +66,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/HMS_Phaeton.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:HMS_Phaeton.jpg',
+    credit: { institution: 'Nagasaki Museum of History and Culture' },
+    license: { id: 'public-domain' }
+  }
 })

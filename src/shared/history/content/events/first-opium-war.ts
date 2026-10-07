@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -166,33 +166,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'In 1839 the Qing government, after a decade of unsuccessful anti-opium campaigns, adopted drastic prohibitory laws against the opium trade.',
+          text: 'In 1839 the Qing government, after a decade of unsuccessful anti-opium campaigns, adopted drastic prohibitory laws against the opium trade. The emperor dispatched a commissioner, Lin Zexu (1785- 1850), to Guangzhou to suppress illicit opium traffic. Lin seized illegal stocks of opium owned by Chinese dealers and then detained the entire foreign community and confiscated and destroyed some 20,000 chests of illicit British opium. The British retaliated with a punitive expedition, thus initiating the first Anglo-Chinese war, better known as the Opium War (1839-42).',
           lang: 'en',
           cite: {
             source: 'loc-china-country-study-1987',
             loc: { section: 'The Opium War, 1839-42', para: '2' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/15.htm' }
-        },
-        {
-          id: 'q5',
-          text: 'Lin seized illegal stocks of opium owned by Chinese dealers and then detained the entire foreign community and confiscated and destroyed some 20,000 chests of illicit British opium.',
-          lang: 'en',
-          cite: {
-            source: 'loc-china-country-study-1987',
-            loc: { section: 'The Opium War, 1839-42', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/15.htm' }
-        },
-        {
-          id: 'q6',
-          text: 'The British retaliated with a punitive expedition, thus initiating the first Anglo-Chinese war, better known as the Opium War (1839-42).',
-          lang: 'en',
-          cite: {
-            source: 'loc-china-country-study-1987',
-            loc: { section: 'The Opium War, 1839-42', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/15.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/china/15.htm' }
         },
         {
           id: 'q7',

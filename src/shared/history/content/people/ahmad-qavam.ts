@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -167,5 +167,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Ghavam_al-Saltaneh.jpg/1280px-Ghavam_al-Saltaneh.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Ghavam_al-Saltaneh.jpg',
+    credit: { institution: 'The Strangling of Persia (W. Morgan Shuster, 1912)' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -239,6 +239,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q11',
+          text: '1826 Second war with Russia; Persian forces are defeated.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-1',
+            loc: { section: 'Chronology of Iranian History Part 1, 1800' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-1/'
+          }
+        },
         {
           id: 'q1',
           text: 'However a second war with Russia in 1826 ended in another disastrous defeat, with the Russians actually entering Tabriz in November 1827, and was concluded with the Treaty of Turkmanchay (21 February 1828; cf. Williamson).',

@@ -12,7 +12,7 @@ import { footballForm, footballSeasonRecords } from '@shared/footballInsights'
 import type { FootballMatchSummary, FootballSeasonFate } from '@shared/types'
 import {
   FootballCoverageStrip,
-  FootballFlag,
+  FootballCompetitionMark,
   FootballFormGuide,
   FootballHero,
   FootballMatchRow,
@@ -67,7 +67,7 @@ export default function FootballSeasonPage() {
         back={{ to: `/football/competition/${data.competitionKey}`, label: data.competitionName }}
       >
         <div className="mt-3 flex flex-wrap items-center gap-4">
-          <FootballFlag competitionKey={data.competitionKey} />
+          <Link to={`/football/competition/${data.competitionKey}`} aria-label={data.competitionName}><FootballCompetitionMark competitionKey={data.competitionKey} size="md" /></Link>
           <div className="flex items-center gap-1">
             {previous
               ? <Link to={`/football/season/${previous.id}`} className="btn-ghost px-2" aria-label={`Previous season, ${previous.label}`}>‹</Link>
@@ -86,7 +86,7 @@ export default function FootballSeasonPage() {
               <span>
                 <span className="block text-[10px] font-semibold uppercase tracking-[0.2em] text-signal-caution">Champion</span>
                 <span className="block text-lg font-semibold text-ink">{champion.name}</span>
-                {data.runnerUp && <span className="block text-xs text-ink-muted">Runner-up {data.runnerUp.name}</span>}
+                {data.runnerUp && <span className="mt-0.5 flex items-center gap-1.5 text-xs text-ink-muted">Runner-up <FootballTeamMark team={data.runnerUp} size="xs" />{data.runnerUp.name}</span>}
               </span>
             </Link>
           ) : (

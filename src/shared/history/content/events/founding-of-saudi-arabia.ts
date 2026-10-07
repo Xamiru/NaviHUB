@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -89,7 +89,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'The name of the state was changed to the Kingdom of Saudi Arabia by a decree of September 18, 1932.',
+          text: 'The United States recognized the Kingdom of Hejaz and Nejd and its Dependencies on May 1, 1931, when the U.S. Minister at London Charles G. Dawes conveyed this information to the Hejazi Minister at London. The name of the state was changed to the Kingdom of Saudi Arabia by a decree of September 18, 1932.',
           lang: 'en',
           cite: {
             source: 'state-dept-countries-saudi-arabia',
@@ -97,7 +97,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://history.state.gov/countries/saudi-arabia'
           }
         },
@@ -201,5 +201,11 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/saudi-arabia/40.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/7/75/Official_Portrait_of_King_Abdulaziz.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Official_Portrait_of_King_Abdulaziz.jpg',
+    credit: { institution: 'Saudi Press Agency', creator: 'Saudi Press Agency' },
+    license: { id: 'public-domain' }
+  }
 })

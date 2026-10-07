@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Declaration of Baháʼu\'lláh', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'religious',
   start: {
     alts: [
@@ -207,5 +207,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a3/Unloading_boats_at_river_in_Baghdad_LOC_matpc.13209.jpg/1280px-Unloading_boats_at_river_in_Baghdad_LOC_matpc.13209.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Unloading_boats_at_river_in_Baghdad_LOC_matpc.13209.jpg',
+    credit: { institution: 'Library of Congress, Matson Collection' },
+    license: { id: 'public-domain' }
+  }
 })

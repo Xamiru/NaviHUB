@@ -14,7 +14,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -150,5 +150,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/5/5d/Sheikh_Khazal.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Sheikh_Khazal.jpg',
+    credit: { institution: 'Tarikh-e Mashruteh (book)' },
+    license: { id: 'public-domain' }
+  }
 })

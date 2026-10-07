@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Treaty of Adrianople', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -81,5 +81,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/0/02/%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B5_%D0%B2_%D0%90%D0%B4%D1%80%D0%B8%D0%B0%D0%BD%D0%B0%D0%BF%D0%BE%D0%BB%D0%B5_1829.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B5_%D0%B2_%D0%90%D0%B4%D1%80%D0%B8%D0%B0%D0%BD%D0%B0%D0%BF%D0%BE%D0%BB%D0%B5_1829.jpg',
+    credit: { institution: 'N. A. Epanchin, Ocherk pokhoda 1829 g. v Evropeiskoi Turtsii' },
+    license: { id: 'public-domain' }
+  }
 })

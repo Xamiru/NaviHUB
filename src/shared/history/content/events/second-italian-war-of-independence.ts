@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Second Italian War of Independence', lang: 'en', role: 'primary' },
     { text: 'Seconda guerra d\'indipendenza italiana', lang: 'it', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -115,6 +115,16 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q5',
+          text: 'The first crack in Franz Joseph\'s neo-absolutist rule developed in 1859, when the forces of Sardinia and France defeated Austria at Solferno.',
+          lang: 'en',
+          cite: {
+            source: 'loc-hungary-country-study-1989',
+            loc: { section: 'Aftermath of the Revolution', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/hungary/22.htm' }
+        },
         {
           id: 'q2',
           text: 'Because Franz Joseph was unwilling to make the concessions that were Prussia\'s price for assistance from the German Confederation and because he feared the French might stir up trouble in Hungary, Franz Joseph surrendered Lombardy in July 1859.',

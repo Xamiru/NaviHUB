@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -119,5 +119,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Portrait_of_Lin_Zexu.jpeg/1280px-Portrait_of_Lin_Zexu.jpeg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Lin_Zexu.jpeg',
+    credit: { institution: 'Google Arts & Culture', creator: 'Lam Qua' },
+    license: { id: 'public-domain' }
+  }
 })

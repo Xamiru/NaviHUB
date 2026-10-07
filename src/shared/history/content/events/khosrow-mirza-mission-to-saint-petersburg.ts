@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Khosrow Mirza’s mission to Saint Petersburg', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -318,5 +318,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/c/cb/Khusraw_Mirza_in_St_Petersburg%27._Iran%2C_1829._State_Hermitage%2C_St._Petersburg.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Khusraw_Mirza_in_St_Petersburg%27._Iran,_1829._State_Hermitage,_St._Petersburg.jpg',
+    credit: { institution: 'State Hermitage Museum', creator: 'Eduard Caspar Hauser' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -28,7 +28,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -212,5 +212,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/a8/Al_afghani.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Al_afghani.jpg',
+    credit: { institution: 'E. G. Browne, The Persian Revolution (Cambridge University Press, 1910)' },
+    license: { id: 'public-domain' }
+  }
 })

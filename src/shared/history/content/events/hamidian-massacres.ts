@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'massacre',
   start: {
     alts: [
@@ -143,6 +143,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q6',
+          text: 'Armenian radicals, along with Young Turk and Macedonian revolutionaries, were seen as a serious threat to the sultan’s despotism, and in 1894-1896 massive violence led to the death of hundreds of thousands of Armenians in Anatolia.',
+          lang: 'en',
+          cite: {
+            source: 'eo1418-suny-armenian-genocide',
+            loc: { section: 'The Background of Ethnic and Religious Minorities', para: '2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/armenian-genocide/'
+          }
+        },
         {
           id: 'q3',
           text: 'That was the context in which the first large-scale massacres of Armenians, the precise number of victims of which remains uncertain, took place.',

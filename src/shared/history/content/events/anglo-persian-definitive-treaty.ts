@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -111,6 +111,23 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'The arrival of three British diplomatic missions in Tehran between 1808-1811: Harford Jones, John Malcolm, and Gore Ouseley, immediately after the dismissal of General Gardane (see gardane mission) and the French withdrawal, reflected the urgency that both London and Calcutta attached to the Persian alliance, primarily out of concern for a recurring French threat. The renewed relations ultimately lead to the 1814 Anglo-Persian Definitive Treaty, which obliged Persia to cancel all treaties with other European powers hostile to England and exclude their armies from entering Persia in exchange for British military and monetary aid to the tune of 150,000 Pounds Sterling annually in case of a European threat',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amanat-great-britain-ii',
+            loc: {
+              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
+              para: '7'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
+          }
+        },
+        {
           id: 'q1',
           text: 'Ouseley’s influence within the Qajar state eventually led to the conclusion of the Definitive Treaty of 1814 based on the Preliminary Agreement negotiated by Jones.',
           lang: 'en',
@@ -136,23 +153,6 @@ export default defineEvent({
             loc: {
               section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
               para: '9'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'The renewed relations ultimately lead to the 1814 Anglo-Persian Definitive Treaty, which obliged Persia to cancel all treaties with other European powers hostile to England and exclude their armies from entering Persia in exchange for British military and monetary aid to the tune of 150,000 Pounds Sterling annually in case of a European threat',
-          lang: 'en',
-          cite: {
-            source: 'iranica-amanat-great-britain-ii',
-            loc: {
-              section: 'GREAT BRITAIN ii. British influence in Persia in the 19th century',
-              para: '7'
             }
           },
           provenance: {
@@ -278,6 +278,12 @@ export default defineEvent({
       }
     }
   ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Sir_Gore_Ouseley%2C_PA06227.jpg/1280px-Sir_Gore_Ouseley%2C_PA06227.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Sir_Gore_Ouseley,_PA06227.jpg',
+    credit: { institution: 'KU Leuven Libraries', creator: 'Henry Richard Cook' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'morier-1818',

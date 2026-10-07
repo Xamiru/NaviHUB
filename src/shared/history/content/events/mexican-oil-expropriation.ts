@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Mexican oil expropriation', lang: 'en', role: 'primary' },
     { text: 'Expropiación petrolera', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'nationalization',
   start: {
     alts: [
@@ -227,5 +227,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/1/1e/L%C3%A1zaro_C%C3%A1rdenas%2C_Retrato.png',
+    page: 'https://commons.wikimedia.org/wiki/File:L%C3%A1zaro_C%C3%A1rdenas,_Retrato.png',
+    credit: { institution: 'Secretaría de Cultura (México), Mexicana' },
+    license: { id: 'cc-by', version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0' }
+  }
 })

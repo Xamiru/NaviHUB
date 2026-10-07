@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Founding of the Soviet Union', lang: 'en', role: 'primary' },
     { text: 'Образование СССР', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -59,6 +59,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Some communists favored a centralized Soviet state, while nationalists wanted autonomy for the borderlands. A compromise between the two positions was reached in December 1922 with the formation of the USSR.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'The Era of the New Economic Policy', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/9.htm' }
+        },
+        {
           id: 'q1',
           text: 'Der X. Allrussische Rätekongress in Moskau beschließt die Gründung der Union der Sozialistischen Sowjetrepubliken (UdSSR). Damit soll eine engere Bindung von der Ukraine, Weißrusslands und der Kaukasusrepubliken an Sowjetrussland erreicht werden.',
           lang: 'de',
@@ -68,16 +78,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/jahreschronik/1922.html'
           }
-        },
-        {
-          id: 'q2',
-          text: 'About the time that the party sanctioned partial decentralization of the economy, it also approved a quasi-federal structure for the state. During the Civil War, the non-Russian Soviet republics on the periphery of Russia were theoretically independent, but in fact they were controlled by the central government through the party and the Red Army. Some communists favored a centralized Soviet state, while nationalists wanted autonomy for the borderlands. A compromise between the two positions was reached in December 1922 with the formation of the USSR.',
-          lang: 'en',
-          cite: {
-            source: 'loc-russia-country-study-1996',
-            loc: { section: 'The Era of the New Economic Policy', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/9.htm' }
         }
       ]
     },

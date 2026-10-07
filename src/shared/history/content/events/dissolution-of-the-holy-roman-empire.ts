@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Dissolution of the Holy Roman Empire', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'dissolution',
   start: {
     alts: [
@@ -92,5 +92,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1c/Johann_Nepomuk_H%C3%B6chle_-_Kaiser_Franz_I._%28II.%29_von_%C3%96sterreich_-_3622_-_Kunsthistorisches_Museum.jpg/1280px-Johann_Nepomuk_H%C3%B6chle_-_Kaiser_Franz_I._%28II.%29_von_%C3%96sterreich_-_3622_-_Kunsthistorisches_Museum.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Johann_Nepomuk_H%C3%B6chle_-_Kaiser_Franz_I._(II.)_von_%C3%96sterreich_-_3622_-_Kunsthistorisches_Museum.jpg',
+    credit: { institution: 'Österreichische Galerie Belvedere', creator: 'Johann Nepomuk Höchle' },
+    license: { id: 'public-domain' }
+  }
 })

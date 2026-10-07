@@ -19,7 +19,7 @@ export default defineEvent({
     },
     { text: 'Groot Trek', lang: 'af', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'migration',
   start: {
     alts: [
@@ -301,5 +301,14 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/12.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/51/G.S._Smithard%3B_J.S._Skelton_%281909%29_-_The_Voortrekkers.jpg/1280px-G.S._Smithard%3B_J.S._Skelton_%281909%29_-_The_Voortrekkers.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:G.S._Smithard;_J.S._Skelton_(1909)_-_The_Voortrekkers.jpg',
+    credit: {
+      institution: 'Ian Colvin, South Africa (Caxton, 1909)',
+      creator: 'G. S. Smithard and J. R. Skelton'
+    },
+    license: { id: 'public-domain' }
+  }
 })

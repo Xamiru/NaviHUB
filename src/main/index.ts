@@ -253,10 +253,10 @@ app.whenReady().then(async () => {
       const thumbAbs = await ensureThumb(parsed.width, parsed.sourceRel)
       if (!thumbAbs) return new Response('Not found', { status: 404 })
       const st = await stat(thumbAbs)
-      // Output is always our own JPEG re-encode, so the mime is fixed.
+      // Output is our own re-encode: JPEG, or PNG for a source with transparency.
       return new Response(Readable.toWeb(createReadStream(thumbAbs)) as unknown as BodyInit, {
         headers: {
-          'content-type': 'image/jpeg',
+          'content-type': thumbAbs.endsWith('.png') ? 'image/png' : 'image/jpeg',
           'content-length': String(st.size),
           'access-control-allow-origin': '*'
         }

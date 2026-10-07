@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -240,5 +240,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/ac/Harry_S._Truman_Presidential_Portrait_%283x4_cropped%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Harry_S._Truman_Presidential_Portrait_(3x4_cropped).jpg',
+    credit: { institution: 'US National Archives and Records Administration' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -6,7 +6,7 @@ export default definePeriod({
     { text: 'Spanish Reconquest of Chile', lang: 'en', role: 'primary' },
     { text: 'La Reconquista', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -62,5 +62,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Batalla-Rancagua.jpg/1280px-Batalla-Rancagua.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Batalla-Rancagua.jpg',
+    credit: { institution: 'Museo Histórico Nacional de Chile', creator: 'Giulio Nanetti' },
+    license: { id: 'public-domain' }
+  }
 })

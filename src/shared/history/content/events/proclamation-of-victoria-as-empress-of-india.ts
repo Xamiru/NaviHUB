@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Proclamation of Victoria as Empress of India', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -60,6 +60,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q6',
+          text: 'In Delhi’s Coronation Park on January 1, 1877, the British monarch Queen Victoria (1837-1901) assumed a new title: Qaisar-i Hind, the Empress of India. Victoria’s proclamation was the central event of the jalsah-i qaisari, a massive imperial assemblage otherwise known in English as the Delhi Durbar.',
+          lang: 'en',
+          cite: {
+            source: 'loc-blog-khatoon-2017-delhi-durbar',
+            loc: { section: 'The Delhi Durbar and the Proclamation of Queen Victoria', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://blogs.loc.gov/international-collections/2017/11/the-delhi-durbar-and-the-proclamation-of-queen-victoria/'
+          }
+        },
         {
           id: 'q1',
           text: 'Der Vizekönig von Britisch-Indien Robert Bulwer Earl Lytton (1831-1891) proklamiert in Delhi die britische Königin Viktoria zur Kaiserin von Indien.',

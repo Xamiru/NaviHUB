@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Sokoto jihad', lang: 'en', role: 'primary' },
     { text: 'Fulani jihad', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'religious',
   start: {
     alts: [
@@ -72,32 +72,17 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'By the late eighteenth century, many Muslim scholars and teachers had become disenchanted with the insecurity that characterized the Hausa states and Borno.',
-          lang: 'en',
-          cite: {
-            source: 'loc-nigeria-country-study-1991',
-            loc: { section: 'Usman dan Fodio and the Sokoto Caliphate', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/nigeria/9.htm' }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
           id: 'q2',
-          text: 'Many of his supporters were Fulani, and because of his ethnicity he was able to appeal to all Fulani, particularly the clan leaders and wealthy cattle owners whose clients and dependents provided most of the troops in the jihad that began in Gobir in 1804.',
+          text: 'By the late eighteenth century, many Muslim scholars and teachers had become disenchanted with the insecurity that characterized the Hausa states and Borno. Some clerics (mallams) continued to reside at the courts of the Hausa states and Borno, but others, who joined the Qadiriyah brotherhood, began to think about a revolution that would overthrow existing authorities. Prominent among these radical mallams was Usman dan Fodio, who with his brother and son, attracted a following among the clerical class. Many of his supporters were Fulani, and because of his ethnicity he was able to appeal to all Fulani, particularly the clan leaders and wealthy cattle owners whose clients and dependents provided most of the troops in the jihad that began in Gobir in 1804.',
           lang: 'en',
           cite: {
             source: 'loc-nigeria-country-study-1991',
             loc: { section: 'Usman dan Fodio and the Sokoto Caliphate', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/nigeria/9.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/nigeria/9.htm' }
         },
         {
           id: 'q3',

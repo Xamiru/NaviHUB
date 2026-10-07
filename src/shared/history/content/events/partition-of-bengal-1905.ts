@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Partition of Bengal (1905)', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'partition',
   start: {
     alts: [
@@ -65,6 +65,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'Lord Curzon (George Nathaniel Curzon), the viceroy, partitioned the large province of Bengal (which then included Bihar and Orissa) in 1905.',
+          lang: 'en',
+          cite: {
+            source: 'loc-pakistan-country-study-1994',
+            loc: { section: 'The Seeds of Muslim Nationalism', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/pakistan/10.htm' }
+        },
+        {
           id: 'q1',
           text: 'Curzon established a new province called Eastern Bengal and Assam, which had its capital at Dhaka. The new province of West Bengal (the present-day state of West Bengal in India) had its capital at Calcutta, which also was the capital of British India.',
           lang: 'en',
@@ -101,5 +111,14 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/f/fc/Pope1880BengalPres2.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Pope1880BengalPres2.jpg',
+    credit: {
+      institution: 'G. U. Pope, Text-book of Indian History (W. H. Allen, 1880)',
+      creator: 'W. H. Allen and Co.'
+    },
+    license: { id: 'public-domain' }
+  }
 })

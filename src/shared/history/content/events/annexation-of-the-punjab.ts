@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Annexation of the Punjab', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'occupation',
   start: {
     alts: [
@@ -59,23 +59,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'After Ranjit Singh died in 1839, political conditions in Punjab deteriorated, and the British fought two wars with the Sikhs.',
+          text: 'After Ranjit Singh died in 1839, political conditions in Punjab deteriorated, and the British fought two wars with the Sikhs. The second of these wars, in 1849, saw the annexation of Punjab, including the present-day North-West Frontier Province, to the company\'s territories.',
           lang: 'en',
           cite: {
             source: 'loc-pakistan-country-study-1994',
             loc: { section: 'COMPANY RULE', para: '4' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/pakistan/7.htm' }
-        },
-        {
-          id: 'q2',
-          text: 'The second of these wars, in 1849, saw the annexation of Punjab, including the present-day North-West Frontier Province, to the company\'s territories.',
-          lang: 'en',
-          cite: {
-            source: 'loc-pakistan-country-study-1994',
-            loc: { section: 'COMPANY RULE', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/pakistan/7.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/pakistan/7.htm' }
         }
       ]
     },

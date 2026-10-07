@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -151,8 +151,8 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'In March 1848, revolution erupted in Vienna, forcing Austria\'s Chancellor Klemens von Metternich to flee the capital.',
+          id: 'q2',
+          text: 'Unrest broke out in Hungary on March 15, when radicals and students stormed the Buda fortress to release political prisoners.',
           lang: 'en',
           cite: {
             source: 'loc-hungary-country-study-1989',
@@ -161,8 +161,8 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/hungary/21.htm' }
         },
         {
-          id: 'q2',
-          text: 'Unrest broke out in Hungary on March 15, when radicals and students stormed the Buda fortress to release political prisoners.',
+          id: 'q1',
+          text: 'In March 1848, revolution erupted in Vienna, forcing Austria\'s Chancellor Klemens von Metternich to flee the capital.',
           lang: 'en',
           cite: {
             source: 'loc-hungary-country-study-1989',

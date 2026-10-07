@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Formation of the Anglo-Persian Oil Company', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -70,5 +70,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/6/6d/Anglo-Persian_Oil_Company_workers_%281%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Anglo-Persian_Oil_Company_workers_(1).jpg',
+    credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
+    license: { id: 'public-domain' }
+  }
 })

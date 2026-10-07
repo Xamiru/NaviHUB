@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Seyyed Zia al-Din Tabatabai', lang: 'en', role: 'primary' },
     { text: 'سید ضیاءالدین طباطبایی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -143,5 +143,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Iran_Over_Volcano_-_Ziaeddin_Tabatabai.png/1280px-Iran_Over_Volcano_-_Ziaeddin_Tabatabai.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Iran_Over_Volcano_-_Ziaeddin_Tabatabai.png',
+    credit: { institution: 'Mohamed Hassanein Heikal, Iran fawq burkan (Cairo: Akhbar al-Yawm, 1951)' },
+    license: { id: 'public-domain' }
+  }
 })

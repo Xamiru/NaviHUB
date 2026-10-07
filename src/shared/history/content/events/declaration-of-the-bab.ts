@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Declaration of the Báb', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'religious',
   start: {
     alts: [
@@ -335,5 +335,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/b/b9/Tablet-Bab-to-first-letter-of-the-living.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Tablet-Bab-to-first-letter-of-the-living.jpg',
+    credit: { institution: 'The Dawn-Breakers (bahai-library.com)', creator: 'The Báb' },
+    license: { id: 'public-domain' }
+  }
 })

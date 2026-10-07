@@ -27,7 +27,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -100,6 +100,21 @@ export default defineEvent({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q6',
+          text: 'Ath Thawra al Iraqiyya al Kubra, or The Great Iraqi Revolution (as the 1920 rebellion is called), was a watershed event in contemporary Iraqi history.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iraq-country-study-1988',
+            loc: { section: 'WORLD WAR I AND THE BRITISH MANDATE', para: '12' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/iraq/19.htm' }
+        }
+      ]
+    },
+    {
       kind: 'causes',
       quotes: [
         {
@@ -168,16 +183,6 @@ export default defineEvent({
       kind: 'legacy',
       quotes: [
         {
-          id: 'q6',
-          text: 'was a watershed event in contemporary Iraqi history.',
-          lang: 'en',
-          cite: {
-            source: 'loc-iraq-country-study-1988',
-            loc: { section: 'WORLD WAR I AND THE BRITISH MANDATE', para: '12' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iraq/19.htm' }
-        },
-        {
           id: 'q7',
           text: 'For the first time, Sunnis and Shias, tribes and cities, were brought together in a common effort.',
           lang: 'en',
@@ -241,5 +246,11 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iraq/19.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/0/0e/Tal_Afar_1920.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Tal_Afar_1920.png',
+    credit: { institution: 'Newcastle University, Gertrude Bell Archive' },
+    license: { id: 'public-domain' }
+  }
 })

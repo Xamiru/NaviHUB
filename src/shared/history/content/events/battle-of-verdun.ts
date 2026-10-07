@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'Bataille de Verdun', lang: 'fr', role: 'native' },
     { text: 'Schlacht um Verdun', lang: 'de', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -125,12 +125,12 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'The Franco-German battle of 1916 quickly became emblematic of the entire war to the French, while in Germany it subsequently inspired heroic literature highlighting the collective determination of the German soldier. After the Second World War, Verdun gradually emerged as a shared site of memory, a symbol of suffering and of an aspiration for peace.',
+          id: 'q2',
+          text: 'Verdun may have been a long battle, but it was not a decisive one. It was a battle of materiel, yet it proved less murderous than the first months of the conflict. Combat conditions were terrible, but no worse than at Ypres or in the Aisne.',
           lang: 'en',
           cite: {
             source: 'eo1418-julien-verdun-site-of-memory',
-            loc: { section: 'Verdun, site of memory' }
+            loc: { section: 'One Battle, Two Distinct Myths', para: '1' }
           },
           provenance: {
             via: 'web',
@@ -139,12 +139,12 @@ export default defineEvent({
           }
         },
         {
-          id: 'q2',
-          text: 'Verdun may have been a long battle, but it was not a decisive one. It was a battle of materiel, yet it proved less murderous than the first months of the conflict. Combat conditions were terrible, but no worse than at Ypres or in the Aisne.',
+          id: 'q1',
+          text: 'The Franco-German battle of 1916 quickly became emblematic of the entire war to the French, while in Germany it subsequently inspired heroic literature highlighting the collective determination of the German soldier. After the Second World War, Verdun gradually emerged as a shared site of memory, a symbol of suffering and of an aspiration for peace.',
           lang: 'en',
           cite: {
             source: 'eo1418-julien-verdun-site-of-memory',
-            loc: { section: 'One Battle, Two Distinct Myths', para: '1' }
+            loc: { section: 'Verdun, site of memory' }
           },
           provenance: {
             via: 'web',

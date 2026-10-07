@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Blood River', lang: 'en', role: 'primary' },
     { text: 'Slag van Bloedrivier', lang: 'af', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -121,28 +121,18 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'Commanded by Andries Pretorius, the Voortrekkers pledged that they would commemorate a victory as a sign of divine protection. They then met and defeated Dingane\'s army at the Battle of Blood River.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-africa-country-study-1996',
+            loc: { section: 'The Great Trek', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/south-africa/12.htm' }
+        },
+        {
           id: 'q2',
           text: 'Not all of the settlers were killed, however, and in December the survivors, reinforced by men from the Cape Colony, marched 500 strong to avenge the deaths of Retief and his followers.',
-          lang: 'en',
-          cite: {
-            source: 'loc-south-africa-country-study-1996',
-            loc: { section: 'The Great Trek', para: '5' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/12.htm' }
-        },
-        {
-          id: 'q3',
-          text: 'Commanded by Andries Pretorius, the Voortrekkers pledged that they would commemorate a victory as a sign of divine protection.',
-          lang: 'en',
-          cite: {
-            source: 'loc-south-africa-country-study-1996',
-            loc: { section: 'The Great Trek', para: '5' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/12.htm' }
-        },
-        {
-          id: 'q4',
-          text: 'They then met and defeated Dingane\'s army at the Battle of Blood River.',
           lang: 'en',
           cite: {
             source: 'loc-south-africa-country-study-1996',
@@ -192,5 +182,14 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Gardiner_-_Dingane_in_Ordinary_and_Dancing_Dresses_%281836%29.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Gardiner_-_Dingane_in_Ordinary_and_Dancing_Dresses_(1836).png',
+    credit: {
+      institution: 'Allen F. Gardiner, Narrative of a Journey to the Zoolu Country (1836)',
+      creator: 'Allen Francis Gardiner'
+    },
+    license: { id: 'public-domain' }
+  }
 })

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Egyptian conquest of Sudan', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'invasion',
   start: {
     alts: [
@@ -164,23 +164,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'In 1820 the sultan of Sannar informed Muhammad Ali that he was unable to comply with the demand to expel the Mamluks.',
+          text: 'In 1820 the sultan of Sannar informed Muhammad Ali that he was unable to comply with the demand to expel the Mamluks. In response the pasha sent 4,000 troops to invade Sudan, clear it of Mamluks, and reclaim it for Egypt.',
           lang: 'en',
           cite: {
             source: 'loc-sudan-country-study-1991',
             loc: { section: 'THE TURKIYAH, 1821-85', para: '3' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/sudan/11.htm' }
-        },
-        {
-          id: 'q5',
-          text: 'In response the pasha sent 4,000 troops to invade Sudan, clear it of Mamluks, and reclaim it for Egypt.',
-          lang: 'en',
-          cite: {
-            source: 'loc-sudan-country-study-1991',
-            loc: { section: 'THE TURKIYAH, 1821-85', para: '3' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/sudan/11.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/sudan/11.htm' }
         },
         {
           id: 'q6',
@@ -239,5 +229,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b6/John_Frederick_Lewis_-_Study_for_Mehmet_Ali_Pasha_-_1986.78_-_Cleveland_Museum_of_Art.tif/lossy-page1-1280px-John_Frederick_Lewis_-_Study_for_Mehmet_Ali_Pasha_-_1986.78_-_Cleveland_Museum_of_Art.tif.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:John_Frederick_Lewis_-_Study_for_Mehmet_Ali_Pasha_-_1986.78_-_Cleveland_Museum_of_Art.tif',
+    credit: { institution: 'Cleveland Museum of Art', creator: 'John Frederick Lewis' },
+    license: { id: 'cc0' }
+  }
 })

@@ -421,6 +421,7 @@ export const qk = {
     all: ['football'] as const,
     overview: ['football', 'overview'] as const,
     competitions: ['football', 'competitions'] as const,
+    competitionLogos: ['football', 'competitionLogos'] as const,
     competition: (key: import('@shared/types').FootballCompetitionKey) =>
       ['football', 'competition', key] as const,
     competitionPending: (routeParam: string) =>

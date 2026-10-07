@@ -17,7 +17,7 @@ export default defineEvent({
     },
     { text: '大日本帝國憲法', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -59,6 +59,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'When finally granted by the emperor as a sign of his sharing his authority and giving rights and liberties to his subjects, the 1889 Constitution of the Empire of Japan (the Meiji Constitution) provided for the Imperial Diet (Teikoku Gikai), composed of a popularly elected House of Representatives with a very limited franchise of male citizens who paid ¥15 in national taxes, about 1 percent of the population; the House of Peers, composed of nobility and imperial appointees; and a cabinet responsible to the emperor and independent of the legislature.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'The Development of Representative Government', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/25.htm' }
+        },
+        {
           id: 'q1',
           text: 'Mit Verkündung der Verfassung durch Kaiser Mutsuhito (1852-1912) wird Japan konstitutionelle Monarchie.',
           lang: 'de',
@@ -68,16 +78,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/jahreschronik/1889.html'
           }
-        },
-        {
-          id: 'q2',
-          text: 'When finally granted by the emperor as a sign of his sharing his authority and giving rights and liberties to his subjects, the 1889 Constitution of the Empire of Japan (the Meiji Constitution) provided for the Imperial Diet (Teikoku Gikai), composed of a popularly elected House of Representatives with a very limited franchise of male citizens who paid ¥15 in national taxes, about 1 percent of the population; the House of Peers, composed of nobility and imperial appointees; and a cabinet responsible to the emperor and independent of the legislature.',
-          lang: 'en',
-          cite: {
-            source: 'loc-japan-country-study-1994',
-            loc: { section: 'The Development of Representative Government', para: '7' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/25.htm' }
         }
       ]
     },

@@ -17,7 +17,7 @@ export default definePeriod({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -80,5 +80,14 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2b/Khart%C3%BBm_and_environs.png/1280px-Khart%C3%BBm_and_environs.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Khart%C3%BBm_and_environs.png',
+    credit: {
+      institution: 'Bibliothèque nationale de France (Gallica)',
+      creator: 'Great Britain. War Office. Intelligence Branch'
+    },
+    license: { id: 'public-domain' }
+  }
 })

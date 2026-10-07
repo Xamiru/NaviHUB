@@ -13,6 +13,8 @@ interface FakeImg {
   getSize(): { width: number; height: number }
   resize(opts: { width: number }): FakeImg
   toJPEG(q: number): Buffer
+  toPNG(): Buffer
+  toBitmap(): Buffer
 }
 
 let userDataDir: string
@@ -22,6 +24,7 @@ let resizeCalls: number[]
 let jpegBodies: Map<string, Buffer>
 let emptyImages: Set<string>
 let sourceSizes: Map<string, { width: number; height: number }>
+let transparentImages: Set<string>
 
 vi.mock('electron', () => ({
   app: { getPath: () => userDataDir },
@@ -42,6 +45,13 @@ vi.mock('electron', () => ({
           const body = Buffer.from(`jpeg:${abs}:${resized ? 'scaled' : 'native'}`)
           jpegBodies.set(abs, body)
           return body
+        },
+        toPNG() {
+          return Buffer.from(`png:${abs}:${resized ? 'scaled' : 'native'}`)
+        },
+        toBitmap() {
+          // Two BGRA pixels; the second is see-through for a transparent source.
+          return Buffer.from([0, 0, 0, 255, 0, 0, 0, transparentImages.has(abs) ? 0 : 255])
         }
       }
     }
@@ -62,6 +72,7 @@ beforeEach(() => {
   jpegBodies = new Map()
   emptyImages = new Set()
   sourceSizes = new Map()
+  transparentImages = new Set()
 })
 
 afterEach(() => {
@@ -161,6 +172,17 @@ describe('ensureThumb', () => {
     expect(join(out as string, '')).toContain(join(userDataDir, 'thumbs'))
     expect(resizeCalls).toEqual([320])
     expect(readFileSync(out as string).toString()).toBe(`jpeg:${mediaRoot}/dl-big.jpg:scaled`)
+  })
+
+  it('keeps a transparent source as PNG so a crest does not land on black', async () => {
+    const abs = makeSource('media/dl-crest.png')
+    transparentImages.add(abs)
+    const out = await thumbs.ensureThumb(160, 'media/dl-crest.png')
+    expect(out).toMatch(/\.png$/)
+    expect(readFileSync(out as string).toString()).toBe(`png:${abs}:scaled`)
+    const decodeCount = decodeCalls.length
+    expect(await thumbs.ensureThumb(160, 'media/dl-crest.png')).toBe(out)
+    expect(decodeCalls.length).toBe(decodeCount)
   })
 
   it('never upscales a smaller source', async () => {

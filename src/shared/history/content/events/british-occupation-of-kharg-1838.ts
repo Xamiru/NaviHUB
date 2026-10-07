@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'British occupation of Kharg Island (1838)', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'occupation',
   start: {
     alts: [
@@ -119,6 +119,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'A British force occupied Kharg briefly in 1837 as part of a strategy to force the Persians to withdraw from Herat (English, 1971, p. 23; Perry, 1973, p. 95).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-potts-kharg-island-ii',
+            loc: { section: 'KHARG ISLAND ii. History and archaeology', para: '14' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/kharg-island-02'
+          }
+        },
+        {
           id: 'q2',
           text: 'Ten days later the British Indian fleet that had been dispatched months earlier from Bombay occupied the Persian Gulf of Ḵārk and threatened the port of Bušehr.',
           lang: 'en',
@@ -144,20 +158,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/herat-vi'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'A British force occupied Kharg briefly in 1837 as part of a strategy to force the Persians to withdraw from Herat (English, 1971, p. 23; Perry, 1973, p. 95).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-potts-kharg-island-ii',
-            loc: { section: 'KHARG ISLAND ii. History and archaeology', para: '14' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/kharg-island-02'
           }
         }
       ]

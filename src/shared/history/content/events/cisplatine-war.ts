@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Cisplatine War', lang: 'en', role: 'primary' },
     { text: 'Guerra da Cisplatina', lang: 'pt', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -112,6 +112,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'In 1825 war flared again over the Cisplatine Province, this time with Buenos Aires determined to annex the East Bank. The empire could little afford the troops, some of whom were recruited in Ireland and Germany, or the sixty warships needed to blockade the Río de la Plata.',
+          lang: 'en',
+          cite: {
+            source: 'loc-brazil-country-study-1997',
+            loc: { section: 'The Empire, 1822-89', para: '12' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/brazil/11.htm' }
+        },
+        {
           id: 'q2',
           text: 'Brazil declared war on them.',
           lang: 'en',
@@ -130,16 +140,6 @@ export default defineEvent({
             loc: { section: 'From Insurrection to State Organization, 1820-30', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/uruguay/4.htm' }
-        },
-        {
-          id: 'q4',
-          text: 'The empire could little afford the troops, some of whom were recruited in Ireland and Germany, or the sixty warships needed to blockade the Río de la Plata.',
-          lang: 'en',
-          cite: {
-            source: 'loc-brazil-country-study-1997',
-            loc: { section: 'The Empire, 1822-89', para: '12' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/11.htm' }
         }
       ]
     },

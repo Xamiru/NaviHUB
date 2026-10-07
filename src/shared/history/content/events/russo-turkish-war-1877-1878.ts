@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russo-Turkish War of 1877–1878', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -148,16 +148,6 @@ export default defineEvent({
       kind: 'causes',
       quotes: [
         {
-          id: 'q4',
-          text: 'War resumed between Russia and the Ottoman Empire in 1877. Russia opened hostilities in response to Ottoman suppression of uprisings in Bulgaria and to the threat posed to Serbia by Ottoman forces.',
-          lang: 'en',
-          cite: {
-            source: 'loc-turkey-country-study-1995',
-            loc: { section: 'External Threats and Internal Transformations', para: '6' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/10.htm' }
-        },
-        {
           id: 'q5',
           text: 'This was Russia\'s golden opportunity to gain control of Western trade routes to its southwest and finally destroy the empire that had blocked this ambition for centuries.',
           lang: 'en',
@@ -172,6 +162,16 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q4',
+          text: 'War resumed between Russia and the Ottoman Empire in 1877. Russia opened hostilities in response to Ottoman suppression of uprisings in Bulgaria and to the threat posed to Serbia by Ottoman forces.',
+          lang: 'en',
+          cite: {
+            source: 'loc-turkey-country-study-1995',
+            loc: { section: 'External Threats and Internal Transformations', para: '6' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/10.htm' }
+        },
         {
           id: 'q6',
           text: 'Russland erklärt als Protektor der Balkanvölker dem Osmanischen Reich den Krieg. Die russischen Truppen dringen über die Donau rasch nach Bulgarien vor und stehen Ende Januar 1878 vor Konstantinopel. Auf die Eroberung der Stadt wird mit Rücksicht auf die drohende Haltung Großbritanniens verzichtet.',

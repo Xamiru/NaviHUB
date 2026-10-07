@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'conference',
   start: {
     alts: [
@@ -111,6 +111,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q8',
+          text: 'In July 1848 Elizabeth Cady Stanton and Lucretia Mott organized the first women\'s rights convention in Seneca Falls, NY. The Seneca Falls Convention produced a list of demands called the Declaration of Sentiments.',
+          lang: 'en',
+          cite: {
+            source: 'nara-lesson-woman-suffrage-19th-amendment',
+            loc: { section: 'Additional Background Information', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.archives.gov/education/lessons/woman-suffrage'
+          }
+        },
         {
           id: 'q1',
           text: 'The park commemorates women\'s struggle for equal rights, and the First Women\'s Rights Convention, held at the Wesleyan Chapel in Seneca Falls, NY on July 19 and 20, 1848.',

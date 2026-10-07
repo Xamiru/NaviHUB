@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Founding of the Indian National Congress', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -146,5 +146,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/b/bb/1st_INC1885.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:1st_INC1885.jpg',
+    credit: { institution: 'Moving Here' },
+    license: { id: 'public-domain' }
+  }
 })

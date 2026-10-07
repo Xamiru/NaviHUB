@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'crisis',
   start: {
     alts: [
@@ -145,6 +145,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'After the Panǰdeh incident in which a Russian detachment killed hundreds of Afghan soldiers in full view of English observers, and war between Britain and Russia became probable, the British minister in Tehran asked what course Iran would pursue in case of such a war. The Shah replied that Iran could not rely on British friendship, was helpless before Russia, and would not even attempt to resist her any longer',
+          lang: 'en',
+          cite: {
+            source: 'iranica-kazemzadeh-anglo-iranian-relations-qajar',
+            loc: { section: 'ANGLO-IRANIAN RELATIONS ii. The Qajar Period', para: '33' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
+          }
+        },
+        {
           id: 'q2',
           text: 'While the diplomats pursued negotiations on this point, the Russian army hastened to reinforce its local positions under the astonished eyes of the British commissioners, occupying Pol-e Ḵātūn and the Ḏu’l-Feqār pass (445 m), two indispensable crossing points on the steep right bank of the Harīrūd, and capturing the small Panjdeh oasis (now Taḵt-e Bāzār) at the confluence of the Morḡāb and Koškrūd, which the Afghans had held since June, 1884 (30 March 1885).',
           lang: 'en',
@@ -177,20 +191,6 @@ export default defineEvent({
     {
       kind: 'consequences',
       quotes: [
-        {
-          id: 'q4',
-          text: 'After the Panǰdeh incident in which a Russian detachment killed hundreds of Afghan soldiers in full view of English observers, and war between Britain and Russia became probable, the British minister in Tehran asked what course Iran would pursue in case of such a war. The Shah replied that Iran could not rely on British friendship, was helpless before Russia, and would not even attempt to resist her any longer',
-          lang: 'en',
-          cite: {
-            source: 'iranica-kazemzadeh-anglo-iranian-relations-qajar',
-            loc: { section: 'ANGLO-IRANIAN RELATIONS ii. The Qajar Period', para: '33' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
-          }
-        },
         {
           id: 'q5',
           text: 'The stabilization in Central Asia after 1885 once again permitted Britain to ignore Iran, leaving the Shah to the predominant influence of Russia.',

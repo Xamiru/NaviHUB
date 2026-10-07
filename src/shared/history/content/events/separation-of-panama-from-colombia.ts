@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Separation of Panama from Colombia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'independence',
   start: {
     alts: [
@@ -122,22 +122,22 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q2',
-          text: 'This treaty, however, was not ratified in Bogotá, and the United States, determined to construct a canal across the isthmus, intensively encouraged the Panamanian separatist movement.',
-          lang: 'en',
-          cite: {
-            source: 'loc-panama-country-study-1987',
-            loc: { section: 'The 1903 Treaty and Qualified Independence', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/panama/8.htm' }
-        },
-        {
           id: 'q3',
           text: 'In October and November 1903, the revolutionary junta, with the protection of United States naval forces, carried out a successful uprising against the Colombian government. Acting, paradoxically, under the Bidlack-Mallarino Treaty of 1846 between the United States and Colombia--which provided that United States forces could intervene in the event of disorder on the isthmus to guarantee Colombian sovereignty and open transit across the isthmus --the United States prevented a Colombian force from moving across the isthmus to Panama City to suppress the insurrection.',
           lang: 'en',
           cite: {
             source: 'loc-panama-country-study-1987',
             loc: { section: 'The 1903 Treaty and Qualified Independence', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/panama/8.htm' }
+        },
+        {
+          id: 'q2',
+          text: 'This treaty, however, was not ratified in Bogotá, and the United States, determined to construct a canal across the isthmus, intensively encouraged the Panamanian separatist movement.',
+          lang: 'en',
+          cite: {
+            source: 'loc-panama-country-study-1987',
+            loc: { section: 'The 1903 Treaty and Qualified Independence', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/panama/8.htm' }
         },
@@ -265,5 +265,11 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/panama/8.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/f/fd/Junta_Provisional_de_Gobierno_de_Panam%C3%A1_de_1903.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Junta_Provisional_de_Gobierno_de_Panam%C3%A1_de_1903.jpg',
+    credit: { institution: 'Biblioteca Nacional de Panamá (Estudios sobre el Panamá republicano)' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Bengal famine of 1943', lang: 'en', role: 'primary' },
     { text: 'পঞ্চাশের মন্বন্তর', lang: 'bn', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'famine',
   start: {
     alts: [
@@ -99,6 +99,17 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q6',
+          text: 'The Bengal famine of 1943 stands out as a great calamity',
+          lang: 'en',
+          cite: { source: 'famine-inquiry-commission-1945-report-on-bengal', loc: { page: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://archive.org/download/dli.ernet.26318/26318-Famine%20Inquiry%20Commission%20Report%20On%20Bengal_djvu.txt'
+          }
+        },
+        {
           id: 'q1',
           text: 'Well-to-do people, and industrial workers in Greater Calcutta and elsewhere did not go short of food in 1943. We have estimated in our report that perhaps one-tenth of the population—6 million people—were seriously affected by the famine.',
           lang: 'en',
@@ -165,5 +176,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b6/FatherSonCowRummagingFoodBengalFamine1943.jpg/1280px-FatherSonCowRummagingFoodBengalFamine1943.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:FatherSonCowRummagingFoodBengalFamine1943.jpg',
+    credit: { institution: 'Bengal Speaks (Hind Kitabs, Bombay, 1944)' },
+    license: { id: 'public-domain' }
+  }
 })

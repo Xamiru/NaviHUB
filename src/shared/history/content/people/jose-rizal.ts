@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'José Rizal', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -104,5 +104,14 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/aa/Jose_rizal_craig01g.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Jose_rizal_craig01g.jpg',
+    credit: {
+      institution: 'Austin Craig, Lineage, Life and Labors of José Rizal (1909)',
+      creator: 'Juan Luna'
+    },
+    license: { id: 'public-domain' }
+  }
 })

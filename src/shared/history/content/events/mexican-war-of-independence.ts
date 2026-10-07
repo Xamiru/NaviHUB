@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Mexican War of Independence', lang: 'en', role: 'primary' },
     { text: 'Guerra de Independencia de México', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -91,7 +91,7 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'causes',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -102,12 +102,7 @@ export default defineEvent({
             loc: { section: 'Wars of Independence, 1810-21', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/mexico/11.htm' }
-        }
-      ]
-    },
-    {
-      kind: 'overview',
-      quotes: [
+        },
         {
           id: 'q2',
           text: 'The independence movement was born out of these informal discussions and was directed against Spanish domination of political and economic life in New Spain.',

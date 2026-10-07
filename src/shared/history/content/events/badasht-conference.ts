@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Conference of Badasht', lang: 'en', role: 'primary' },
     { text: 'Badašt', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'religious',
   start: {
     alts: [
@@ -100,17 +100,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'BADAŠT, small village of about 1,000 inhabitants, 7 km east of the city of Šāhrūd, in the Qajar-period province of Khorasan (now in Semnān Province); it was the site of a Babi conference in late Rajab-early Šaʿbān, 1264/late June-early July, 1848, convened on the instructions of the Bāb.',
-          lang: 'en',
-          cite: { source: 'iranica-momen-badasht', loc: { section: 'BADAŠT', para: '1' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/badast'
-          }
-        },
-        {
           id: 'q2',
           text: 'In July, 1848, a gathering of some eighty Babi activists, including Qorrat-al-ʿAyn and Mollā Moḥammad-ʿAlī Bārforūšī, formally proclaimed the advent of the qīāma.',
           lang: 'en',
@@ -122,6 +111,17 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/babism-index/babism-ii-babi-executions-and-uprisings'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'BADAŠT, small village of about 1,000 inhabitants, 7 km east of the city of Šāhrūd, in the Qajar-period province of Khorasan (now in Semnān Province); it was the site of a Babi conference in late Rajab-early Šaʿbān, 1264/late June-early July, 1848, convened on the instructions of the Bāb.',
+          lang: 'en',
+          cite: { source: 'iranica-momen-badasht', loc: { section: 'BADAŠT', para: '1' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/badast'
           }
         },
         {

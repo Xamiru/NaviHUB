@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'British purchase of the Suez Canal shares', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -60,32 +60,17 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'Moreover, Ismail\'s infrastructure development entailed more expenditure than Egypt\'s income could provide, with the result that he was obliged to contract foreign loans. These loans, added to the expensive concessions that Said had made concerning the Suez Canal, meant that by 1875 Egypt was £100 million in debt.',
-          lang: 'en',
-          cite: {
-            source: 'loc-egypt-country-study-1990',
-            loc: { section: 'Khedive Ismail, 1863-79', para: '5' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/24.htm' }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
           id: 'q2',
-          text: 'In that year, Ismail sold his shares in the Suez Canal Company, making the British government overnight the single largest shareholder in the company.',
+          text: 'Ismail greatly expanded Egypt\'s revenues and exports during his reign. But the country\'s prosperity was tied to the export of cotton, whose price was set on a fluctuating world market, making income uncertain. Moreover, Ismail\'s infrastructure development entailed more expenditure than Egypt\'s income could provide, with the result that he was obliged to contract foreign loans. These loans, added to the expensive concessions that Said had made concerning the Suez Canal, meant that by 1875 Egypt was £100 million in debt. In that year, Ismail sold his shares in the Suez Canal Company, making the British government overnight the single largest shareholder in the company.',
           lang: 'en',
           cite: {
             source: 'loc-egypt-country-study-1990',
             loc: { section: 'Khedive Ismail, 1863-79', para: '5' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/24.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/egypt/24.htm' }
         },
         {
           id: 'q3',

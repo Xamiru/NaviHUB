@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'expedition',
   start: {
     alts: [
@@ -93,20 +93,6 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q1',
-          text: 'Two years later, he decided to organize an official, government-sponsored expedition to explore the upper reaches of the Missouri River and by so doing to find the elusive Northwest Passage to the Pacific Ocean.',
-          lang: 'en',
-          cite: {
-            source: 'nps-missouri-national-recreational-river-lewis-and-clark',
-            loc: { section: 'The Lewis and Clark Expedition', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.nps.gov/mnrr/learn/historyculture/the-lewis-and-clark-expedition.htm'
-          }
-        },
-        {
           id: 'q2',
           text: 'No document proved more important for the exploration of the American West than the letter of instructions Jefferson prepared for Lewis.',
           lang: 'en',
@@ -128,6 +114,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q1',
+          text: 'Thomas Jefferson was elected to the presidency in 1800. Two years later, he decided to organize an official, government-sponsored expedition to explore the upper reaches of the Missouri River and by so doing to find the elusive Northwest Passage to the Pacific Ocean. He chose Meriwether Lewis, his personal secretary, to lead the expedition.',
+          lang: 'en',
+          cite: {
+            source: 'nps-missouri-national-recreational-river-lewis-and-clark',
+            loc: { section: 'The Lewis and Clark Expedition', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.nps.gov/mnrr/learn/historyculture/the-lewis-and-clark-expedition.htm'
+          }
+        },
         {
           id: 'q3',
           text: 'The expedition was meant to prepare the way for the extension of the American fur trade and to advance geographical knowledge.',

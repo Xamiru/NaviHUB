@@ -45,7 +45,8 @@ export function parseThumbRequest(relPath: string): ThumbRequest | null {
   return { width, sourceRel }
 }
 
-// PURE: deterministic cache file name under userData/thumbs. Keyed by width +
+// PURE: deterministic cache file name under userData/thumbs (the JPEG form; a
+// source with transparency is cached beside it as .png, see generateThumb). Keyed by width +
 // rel path (media/ paths are content-addressed by downloadImage, so a
 // re-imported cover is a new file name and gets its own thumb). pictures/
 // names are readable and can be reused after a delete, so their callers pass
@@ -105,6 +106,8 @@ async function generateThumb(width: number, sourceRel: string): Promise<string |
     version = `${Math.floor(st.mtimeMs)}-${st.size}`
   }
   const outPath = join(thumbsDir(), thumbCacheName(sourceRel, width, version))
+  const pngPath = outPath.replace(/\.jpg$/, '.png')
+  if (existsSync(pngPath)) return pngPath
   if (existsSync(outPath)) return outPath
 
   // nativeImage decoding is synchronous. The global queue bounds it to one
@@ -114,9 +117,21 @@ async function generateThumb(width: number, sourceRel: string): Promise<string |
   if (img.isEmpty()) return null
   const size = img.getSize()
   const scaled = size.width > width ? img.resize({ width }) : img
-  const jpeg = scaled.toJPEG(80)
+  // JPEG has no alpha: a transparent crest or logo would come out on black, so
+  // those stay PNG (small at these widths).
+  const transparent = hasTransparency(scaled.toBitmap())
 
   await mkdir(thumbsDir(), { recursive: true })
-  await writeFile(outPath, jpeg)
+  if (transparent) {
+    await writeFile(pngPath, scaled.toPNG())
+    return pngPath
+  }
+  await writeFile(outPath, scaled.toJPEG(80))
   return outPath
+}
+
+// PURE: whether a BGRA/RGBA bitmap has any pixel that is not fully opaque.
+export function hasTransparency(bitmap: Buffer): boolean {
+  for (let i = 3; i < bitmap.length; i += 4) if (bitmap[i] !== 255) return true
+  return false
 }

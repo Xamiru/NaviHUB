@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Assassination of Naser al-Din Shah', lang: 'en', role: 'primary' },
     { text: 'ترور ناصرالدین شاه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'assassination',
   start: {
     alts: [
@@ -253,9 +253,9 @@ export default defineEvent({
     }
   ],
   hero: {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/1/12/Antoin_Sevruguin_public_hanging_of_Mirza_Reza_Kermani.jpg',
-    page: 'https://commons.wikimedia.org/wiki/File:Antoin_Sevruguin_public_hanging_of_Mirza_Reza_Kermani.jpg',
-    credit: { creator: 'Antoin Sevruguin' },
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/The_Young_Nasir_Al-Din_Shah_Qajar.jpg/1280px-The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
+    credit: { creator: 'Mirza Abolhassan Khan Ghaffari' },
     license: { id: 'public-domain' }
   },
   archive: [

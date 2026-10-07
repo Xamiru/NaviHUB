@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Proclamation of the German Empire', lang: 'en', role: 'primary' },
     { text: 'Kaiserproklamation', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -76,6 +76,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Months before a peace treaty was signed with France in May 1871, a united Germany was established as the German Empire, and the Prussian king, Wilhelm I, was crowned its emperor in the Hall of Mirrors at Versailles.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'Bismarck and Unification', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
+        },
+        {
           id: 'q1',
           text: 'Im Spiegelsaal des Schlosses von Versailles wird König Wilhelm I. von Preußen zum Deutschen Kaiser ausgerufen.',
           lang: 'de',
@@ -85,16 +95,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/jahreschronik/1871.html'
           }
-        },
-        {
-          id: 'q2',
-          text: 'Months before a peace treaty was signed with France in May 1871, a united Germany was established as the German Empire, and the Prussian king, Wilhelm I, was crowned its emperor in the Hall of Mirrors at Versailles.',
-          lang: 'en',
-          cite: {
-            source: 'loc-germany-country-study-1995',
-            loc: { section: 'Bismarck and Unification', para: '5' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
         }
       ]
     },

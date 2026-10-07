@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -96,13 +96,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'Dingiswayo was so impressed by Shaka that in 1816 he helped him become chief of the Zulu upon the death of Senzangakona.',
+          text: 'Shaka Zulu was born in 1787, the illegitimate son of Senzangakona, chief of the Zulu clan. An outcast as a child, Shaka was brought up among a number of neighboring groups, finally ending with the Mthethwa where he distinguished himself as a skilled warrior in Dingiswayo\'s army. Dingiswayo was so impressed by Shaka that in 1816 he helped him become chief of the Zulu upon the death of Senzangakona.',
           lang: 'en',
           cite: {
             source: 'loc-south-africa-country-study-1996',
             loc: { section: 'Shaka and the Rise of the Zulu State', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-africa/9.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/south-africa/9.htm' }
         },
         {
           id: 'q4',

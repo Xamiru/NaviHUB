@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Abdul Hamid II', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'reign',
   start: {
     alts: [
@@ -74,5 +74,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/6/6e/Cuma_selaml%C4%B1%C4%9F%C4%B1_Abd%C3%BCl_Hamid_II_Hamidiye_Mosque_4.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Cuma_selaml%C4%B1%C4%9F%C4%B1_Abd%C3%BCl_Hamid_II_Hamidiye_Mosque_4.jpg',
+    credit: { institution: 'Library of Congress', creator: 'Abdullah Frères' },
+    license: { id: 'public-domain' }
+  }
 })

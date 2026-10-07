@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Oil strike at Masjed Soleyman', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'discovery',
   start: {
     alts: [
@@ -42,8 +42,8 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'The specific well location, Masjed-e Soleymān, was named after a nearby fire temple.',
+          id: 'q2',
+          text: 'Shortly after 4.00 A.M. on the 26th of May 1908, a gusher of petroleum, rising perhaps fifty feet above the top of the drilling rig, was smothering the drillers and oil had been at last struck in Persia.',
           lang: 'en',
           cite: {
             source: 'iranica-mina-oil-agreements',
@@ -56,8 +56,8 @@ export default defineEvent({
           }
         },
         {
-          id: 'q2',
-          text: 'Shortly after 4.00 A.M. on the 26th of May 1908, a gusher of petroleum, rising perhaps fifty feet above the top of the drilling rig, was smothering the drillers and oil had been at last struck in Persia.',
+          id: 'q1',
+          text: 'The specific well location, Masjed-e Soleymān, was named after a nearby fire temple.',
           lang: 'en',
           cite: {
             source: 'iranica-mina-oil-agreements',
@@ -85,5 +85,13 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/94/FirstoildrillingMIS.jpg/1280px-FirstoildrillingMIS.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:FirstoildrillingMIS.jpg',
+    credit: {
+      institution: 'National Iranian Oil Company (Oil and Economic Development of Iran, 1967)'
+    },
+    license: { id: 'public-domain' }
+  }
 })

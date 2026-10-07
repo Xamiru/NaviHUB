@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'migration',
   start: {
     alts: [
@@ -349,5 +349,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Cherokee_Nation_Territory_Map_1884_Royce.jpg/1280px-Cherokee_Nation_Territory_Map_1884_Royce.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Cherokee_Nation_Territory_Map_1884_Royce.jpg',
+    credit: { institution: 'Library of Congress', creator: 'Charles C. Royce' },
+    license: { id: 'public-domain' }
+  }
 })

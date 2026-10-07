@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'La Paz revolution of 1809', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -189,5 +189,11 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/bolivia/8.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/87/Pedro_Murillo.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Pedro_Murillo.jpg',
+    credit: { institution: 'Palacio de Gobierno de Bolivia', creator: 'Joaquín Pinto' },
+    license: { id: 'public-domain' }
+  }
 })

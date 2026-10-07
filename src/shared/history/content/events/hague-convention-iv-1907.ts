@@ -18,7 +18,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -121,5 +121,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Vredesconferentie_Den_Haag%2C_Tweede_1907_-_Second_Peace_Conference_The_Hague_1907.jpg/1280px-Vredesconferentie_Den_Haag%2C_Tweede_1907_-_Second_Peace_Conference_The_Hague_1907.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Vredesconferentie_Den_Haag,_Tweede_1907_-_Second_Peace_Conference_The_Hague_1907.jpg',
+    credit: { institution: 'Gemeente Den Haag' },
+    license: { id: 'cc-by-sa', version: '3.0', url: 'https://creativecommons.org/licenses/by-sa/3.0' }
+  }
 })

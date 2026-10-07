@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -160,13 +160,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Sukarno and Hatta formally declared the nation\'s independence on August 17 at the former\'s residence in Jakarta, raised the red and white national flag, and sang the new nation\'s national anthem, Indonesia Raya (Greater Indonesia).',
+          text: 'On August 15, 1945, Japan surrendered. The Indonesian leadership, pressured by radical youth groups (the pemuda), were obliged to move quickly. With the cooperation of individual Japanese navy and army officers (others feared reprisals from the Allies or were not sympathetic to the Indonesian cause), Sukarno and Hatta formally declared the nation\'s independence on August 17 at the former\'s residence in Jakarta, raised the red and white national flag, and sang the new nation\'s national anthem, Indonesia Raya (Greater Indonesia).',
           lang: 'en',
           cite: {
             source: 'loc-indonesia-country-study-1993',
             loc: { section: 'The National Revolution, 1945-50', para: '3' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/indonesia/16.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/indonesia/16.htm' }
         },
         {
           id: 'q2',

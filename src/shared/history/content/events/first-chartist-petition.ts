@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'protest',
   start: {
     alts: [
@@ -116,20 +116,6 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q1',
-          text: 'Chartism was a movement for the rights and suffrage of the working class based on the People’s Charter – a petition of six demands for reforms, the vote for all men over the age of 21 being the most significant.',
-          lang: 'en',
-          cite: {
-            source: 'tna-william-cuffey',
-            loc: { section: 'William Cuffey: The black man and his party' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.nationalarchives.gov.uk/explore-the-collection/stories/william-cuffey/'
-          }
-        },
-        {
           id: 'q2',
           text: 'The petition originated in the town of Birmingham.',
           lang: 'en',
@@ -148,6 +134,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q1',
+          text: 'Chartism was a movement for the rights and suffrage of the working class based on the People’s Charter – a petition of six demands for reforms, the vote for all men over the age of 21 being the most significant.',
+          lang: 'en',
+          cite: {
+            source: 'tna-william-cuffey',
+            loc: { section: 'William Cuffey: The black man and his party' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.nationalarchives.gov.uk/explore-the-collection/stories/william-cuffey/'
+          }
+        },
         {
           id: 'q3',
           text: 'He held in his hand a list of two hundred and fourteen towns and villages, in different parts of Great Britain, where the petition had been deliberately adopted and signed; and it was now presented to that House with 1,280,000 signatures, the result of not less than 500 public meetings, which had been held in support of the principles contained in this petition.',

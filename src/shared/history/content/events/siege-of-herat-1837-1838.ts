@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -246,6 +246,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q19',
+          text: '1837 The siege of Herat over British objections (it ends in failure in 1838).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-2',
+            loc: { section: 'Chronology of Iranian History Part 2, 1927' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
+          }
+        },
         {
           id: 'q4',
           text: 'Yār-Moḥammad Khan, on the other hand, switched sides to the British camp, and his Sunni tribal forces prepared for the defense of Herat.',

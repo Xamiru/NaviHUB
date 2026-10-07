@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Guangxu Emperor', lang: 'en', role: 'primary' },
     { text: '光緒帝', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   regions: ['east-asia'],
   roles: ['monarch'],
   offices: [
@@ -62,5 +62,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e9/%E5%85%89%E7%BB%AA%E5%B8%9D.jpg/1280px-%E5%85%89%E7%BB%AA%E5%B8%9D.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:%E5%85%89%E7%BB%AA%E5%B8%9D.jpg',
+    credit: { institution: 'Palace Museum' },
+    license: { id: 'public-domain' }
+  }
 })

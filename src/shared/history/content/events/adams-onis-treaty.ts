@@ -33,7 +33,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -190,5 +190,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Map_of_the_United_States_of_America_-_with_the_contiguous_British_and_Spanish_possessions_LOC_96686661.jpg/1280px-Map_of_the_United_States_of_America_-_with_the_contiguous_British_and_Spanish_possessions_LOC_96686661.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Map_of_the_United_States_of_America_-_with_the_contiguous_British_and_Spanish_possessions_LOC_96686661.jpg',
+    credit: { institution: 'Library of Congress', creator: 'John Melish' },
+    license: { id: 'public-domain' }
+  }
 })

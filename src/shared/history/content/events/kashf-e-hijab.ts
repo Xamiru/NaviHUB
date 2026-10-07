@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'reform',
   start: {
     alts: [
@@ -129,20 +129,6 @@ export default defineEvent({
           }
         },
         {
-          id: 'q2',
-          text: 'Reẓā Shah formulated his policy of banning the veil (čādor, q.v.) after his state visit to Turkey in the Summer of 1934.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-sedghi-feminist-movements-pahlavi',
-            loc: { section: 'FEMINIST MOVEMENTS iii. IN THE PAHLAVI PERIOD', para: '8' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/feminist-movements-iii/'
-          }
-        },
-        {
           id: 'q3',
           text: 'Before the Gowharšād incident Reżā Shah had not personally stressed the necessity for change in women’s dress.',
           lang: 'en',
@@ -161,6 +147,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q2',
+          text: 'Reẓā Shah formulated his policy of banning the veil (čādor, q.v.) after his state visit to Turkey in the Summer of 1934.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-sedghi-feminist-movements-pahlavi',
+            loc: { section: 'FEMINIST MOVEMENTS iii. IN THE PAHLAVI PERIOD', para: '8' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/feminist-movements-iii/'
+          }
+        },
         {
           id: 'q4',
           text: 'Eventually, in 1314 Š./1936, Reżā Shah did abolish the veil, the first ruler in the region to do so (Atatürk had not banned the veil; see Keddie, pp. 108-09).',
@@ -379,5 +379,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/%D8%AD%D8%B6%D9%88%D8%B1_%D8%AE%D8%A7%D9%86%D9%88%D8%A7%D8%AF%D9%87_%D8%B3%D9%84%D8%B7%D9%86%D8%AA%DB%8C_%D8%AF%D8%B1_%D8%AF%D8%A7%D9%86%D8%B4%D8%B3%D8%B1%D8%A7%DB%8C_%D9%85%D9%82%D8%AF%D9%85%D8%A7%D8%AA%DB%8C_%D8%AA%D9%87%D8%B1%D8%A7%D9%86%D8%8C_%DB%B1%DB%B7_%D8%AF%DB%8C_%DB%B1%DB%B3%DB%B1%DB%B4.jpg/1280px-%D8%AD%D8%B6%D9%88%D8%B1_%D8%AE%D8%A7%D9%86%D9%88%D8%A7%D8%AF%D9%87_%D8%B3%D9%84%D8%B7%D9%86%D8%AA%DB%8C_%D8%AF%D8%B1_%D8%AF%D8%A7%D9%86%D8%B4%D8%B3%D8%B1%D8%A7%DB%8C_%D9%85%D9%82%D8%AF%D9%85%D8%A7%D8%AA%DB%8C_%D8%AA%D9%87%D8%B1%D8%A7%D9%86%D8%8C_%DB%B1%DB%B7_%D8%AF%DB%8C_%DB%B1%DB%B3%DB%B1%DB%B4.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:%D8%AD%D8%B6%D9%88%D8%B1_%D8%AE%D8%A7%D9%86%D9%88%D8%A7%D8%AF%D9%87_%D8%B3%D9%84%D8%B7%D9%86%D8%AA%DB%8C_%D8%AF%D8%B1_%D8%AF%D8%A7%D9%86%D8%B4%D8%B3%D8%B1%D8%A7%DB%8C_%D9%85%D9%82%D8%AF%D9%85%D8%A7%D8%AA%DB%8C_%D8%AA%D9%87%D8%B1%D8%A7%D9%86%D8%8C_%DB%B1%DB%B7_%D8%AF%DB%8C_%DB%B1%DB%B3%DB%B1%DB%B4.jpg',
+    credit: { institution: 'Ettelaat' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -7,7 +7,7 @@ export default definePerson({
     { text: 'آقاخان محلاتی', lang: 'fa', role: 'native' },
     { text: 'Ḥasan-ʿAlī Šāh Āqā Khan Maḥallātī', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -131,5 +131,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/f/f5/Aga_Khan_I.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Aga_Khan_I.jpg',
+    credit: { institution: 'H. Butler, India Insistent (Heinemann, 1931)' },
+    license: { id: 'public-domain' }
+  }
 })

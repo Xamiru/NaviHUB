@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -214,17 +214,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'The 1916 Battle of the Somme is the most well known engagement in this region, notorious for its heavy casualties.',
-          lang: 'en',
-          cite: { source: 'eo1418-philpott-somme', loc: { section: 'Somme, Battles of' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://encyclopedia.1914-1918-online.net/article/somme-battles-of/'
-          }
-        },
-        {
           id: 'q2',
           text: 'The Battle of the Somme was the Anglo-French contribution to the general Allied offensive during the 1916 campaign, whose objective was to overstretch and wear down the Central Powers’ armies. After the French army was engaged at Verdun, the offensive shrank in ambition, as did the French army’s contribution, leaving the British to take the principal role in the attack on 1 July 1916.',
           lang: 'en',
@@ -232,6 +221,17 @@ export default defineEvent({
             source: 'eo1418-philpott-somme',
             loc: { section: 'The 1916 Battle of the Somme', para: '1' }
           },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://encyclopedia.1914-1918-online.net/article/somme-battles-of/'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'The 1916 Battle of the Somme is the most well known engagement in this region, notorious for its heavy casualties.',
+          lang: 'en',
+          cite: { source: 'eo1418-philpott-somme', loc: { section: 'Somme, Battles of' } },
           provenance: {
             via: 'web',
             at: '2026-10-06',

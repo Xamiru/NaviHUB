@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Belgian reform of the Persian customs', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'reform',
   start: {
     alts: [
@@ -298,5 +298,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/87/19_phot._de_Perse_par_E._Pirou%2C_principalement_des_portraits_-_Mirza_Ali_Khan_Amin_od-Dowleh.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:19_phot._de_Perse_par_E._Pirou,_principalement_des_portraits_-_Mirza_Ali_Khan_Amin_od-Dowleh.jpg',
+    credit: { creator: 'Eugène Pirou' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -110,30 +110,11 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'In the mid-19th century there were disputes between the Durrani kings of Afghanistan and the Qajars of Persia over control of the region, with a Persian invasion in 1865 and the installation of a Persian governor, the Hešmat-al-Molk,',
-          lang: 'en',
-          cite: {
-            source: 'iranica-bosworth-sistan-islamic-period',
-            loc: { section: 'SISTĀN ii. In the Islamic period', para: '6' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/sistan-ii-islamic-period'
-          }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
           id: 'q2',
-          text: 'Border disputes nevertheless continued, and in 1872 a Seistan Border Commission was set up, awarding much of Sistān to the Persians, but the frontier was not definitively demarcated until a further Boundary Commission of 1903-05 (see Tait, 1909, and the work arising out of these demarcation proceedings, Tait, 1910-12).',
+          text: 'In the mid-19th century there were disputes between the Durrani kings of Afghanistan and the Qajars of Persia over control of the region, with a Persian invasion in 1865 and the installation of a Persian governor, the Hešmat-al-Molk, Border disputes nevertheless continued, and in 1872 a Seistan Border Commission was set up, awarding much of Sistān to the Persians, but the frontier was not definitively demarcated until a further Boundary Commission of 1903-05 (see Tait, 1909, and the work arising out of these demarcation proceedings, Tait, 1910-12).',
           lang: 'en',
           cite: {
             source: 'iranica-bosworth-sistan-islamic-period',
@@ -141,7 +122,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/sistan-ii-islamic-period'
           }
         },

@@ -1173,6 +1173,8 @@ export interface QuizFootballScorelineQuestion extends QuizChallengeBase {
   matchId: number
   homeTeam: string
   awayTeam: string
+  homeImagePath?: string | null
+  awayImagePath?: string | null
   matchDate: string
   stage: string | null
   reveal: string
@@ -1181,6 +1183,7 @@ export interface QuizFootballScorelineQuestion extends QuizChallengeBase {
 
 export interface QuizFootballCareerSpell {
   team: string
+  imagePath?: string | null
   start: string | null
   end: string | null
   loan: boolean
@@ -4681,6 +4684,7 @@ export interface FootballJournalStats {
 export interface FootballHonour {
   id: number
   competitionId: number
+  competitionKey: FootballCompetitionKey
   competitionName: string
   seasonId: number | null
   seasonLabel: string | null

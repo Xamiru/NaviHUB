@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Herero and Nama genocide', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'genocide',
   start: {
     alts: [
@@ -390,5 +390,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Nama_und_Damara_pg172_Johannes_Samuel_Maharero_Oberh%C3%A4uptling_der_Herero.jpg/1280px-Nama_und_Damara_pg172_Johannes_Samuel_Maharero_Oberh%C3%A4uptling_der_Herero.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Nama_und_Damara_pg172_Johannes_Samuel_Maharero_Oberh%C3%A4uptling_der_Herero.jpg',
+    credit: { institution: 'British Library' },
+    license: { id: 'public-domain' }
+  }
 })

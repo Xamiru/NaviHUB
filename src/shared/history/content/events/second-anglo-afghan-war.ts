@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Second Anglo-Afghan War', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -203,6 +203,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'After sending an ultimatum that was left unanswered, the British dispatched three different columns totaling 30,000 men through the Bolān, Paywār, and Khyber passes (Moḥarram, 1296/November, 1878). Only the second met with some resistance. Jalālābād and Qandahār were occupied without fighting, and the capital found itself threatened when Šēr ʿAlī departed, leaving his son Moḥammad Yaʿqūb as regent.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-balland-afghanistan-political-history',
+            loc: { section: 'AFGHANISTAN x. Political History', para: '14' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/afghanistan-x-political-history'
+          }
+        },
+        {
           id: 'q1',
           text: 'The mission was turned back as it approached the eastern entrance of the Khyber Pass, thus triggering the Second Anglo-Afghan War. A British force of about 40,000 fighting men were distributed into military columns which penetrated Afghanistan at three different points.',
           lang: 'en',
@@ -211,20 +225,6 @@ export default defineEvent({
             loc: { section: 'The Second Anglo-Afghan War', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/afghanistan/14.htm' }
-        },
-        {
-          id: 'q2',
-          text: 'Only the second met with some resistance. Jalālābād and Qandahār were occupied without fighting, and the capital found itself threatened when Šēr ʿAlī departed, leaving his son Moḥammad Yaʿqūb as regent.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-balland-afghanistan-political-history',
-            loc: { section: 'AFGHANISTAN x. Political History', para: '14' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/afghanistan-x-political-history'
-          }
         }
       ]
     },

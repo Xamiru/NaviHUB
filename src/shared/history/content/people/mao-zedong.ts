@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Mao Zedong', lang: 'en', role: 'primary' },
     { text: '毛泽东', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -125,5 +125,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Mao_Zedong_1950_Portrait_%283x4_cropped%29%282%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Mao_Zedong_1950_Portrait_(3x4_cropped)(2).jpg',
+    credit: { institution: 'Associated Press', creator: 'Chen Zhengqing' },
+    license: { id: 'public-domain' }
+  }
 })

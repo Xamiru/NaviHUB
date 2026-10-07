@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -87,17 +87,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'In Paris gründen unter maßgeblicher Beteiligung von Friedrich Engels sozialistische Parteien aus 20 Ländern die II. Internationale.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1889', loc: { section: 'Chronik 1889', para: '44' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1889.html'
-          }
-        },
-        {
           id: 'q2',
           text: 'European socialism’s interest in peace awakened primarily with the emergence of the Second International, or the Socialist International, which was founded in 1889.',
           lang: 'en',
@@ -109,6 +98,17 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://ehne.fr/en/encyclopedia/themes/international-relations/cultures-peace/socialists-and-peace'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'In Paris gründen unter maßgeblicher Beteiligung von Friedrich Engels sozialistische Parteien aus 20 Ländern die II. Internationale.',
+          lang: 'de',
+          cite: { source: 'lemo-chronik-1889', loc: { section: 'Chronik 1889', para: '44' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.dhm.de/lemo/jahreschronik/1889.html'
           }
         }
       ]
@@ -162,5 +162,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/ad/Congresso_Socialdem_1910.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Congresso_Socialdem_1910.jpg',
+    credit: { institution: 'Den Store Danske' },
+    license: { id: 'public-domain' }
+  }
 })

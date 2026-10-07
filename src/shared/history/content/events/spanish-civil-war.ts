@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -201,6 +201,16 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q15',
+          text: 'In 1936 Germany began closer relations with fascist Italy, a pariah state because of its invasion of Ethiopia the year before. The two antidemocratic states joined together to assist General Francisco Franco in overthrowing Spain\'s republican government during the Spanish Civil War (1936-39).',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'The Third Reich: Foreign Policy', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/40.htm' }
+        },
         {
           id: 'q2',
           text: 'Mit einem Aufstand in Spanisch-Marokko beginnt der Putsch faschistischer Militärs unter General Francisco Franco. In den folgenden Tagen brechen überall in Spanien rechte Aufstände aus.',

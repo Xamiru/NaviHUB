@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Persian Constitutional Revolution', lang: 'en', role: 'primary' },
     { text: 'انقلاب مشروطه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -132,6 +132,13 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q17',
+          text: 'Foreign interference in Iran, Qajar misrule, and new ideas on government led in 1905 to protests and eventually to the Constitutional Revolution (1905-07), which, at least on paper, limited royal absolutism, created in Iran a constitutional monarchy, and recognized the people as a source of legitimacy.',
+          lang: 'en',
+          cite: { source: 'loc-iran-country-study-1987', loc: { section: 'History', para: '6' } },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/iran/3.htm' }
+        },
         {
           id: 'q1',
           text: 'The shah\'s failure to respond to protests by the religious establishment, the merchants, and other classes led the merchants and clerical leaders in January 1906 to take sanctuary from probable arrest in mosques in Tehran and outside the capital. When the shah reneged on a promise to permit the establishment of a "house of justice," or consultative assembly, 10,000 people, led by the merchants, took sanctuary in June in the compound of the British legation in Tehran. In August the shah was forced to issue a decree promising a constitution.',

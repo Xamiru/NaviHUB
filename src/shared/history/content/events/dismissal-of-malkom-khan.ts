@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Dismissal of Malkom Khan', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'crisis',
   start: {
     alts: [
@@ -132,5 +132,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Mirza_Malkam_Khan.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Mirza_Malkam_Khan.jpg',
+    credit: { institution: 'E. G. Browne, The Press and Poetry of Modern Persia (1914)' },
+    license: { id: 'public-domain' }
+  }
 })

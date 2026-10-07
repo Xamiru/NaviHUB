@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Long March', lang: 'en', role: 'primary' },
     { text: '长征', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -98,32 +98,17 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'In the early 1930s, amid continued Political Bureau opposition to his military and agrarian policies and the deadly annihilation campaigns being waged against the Red Army by Chiang Kai-shek\'s forces, Mao\'s control of the Chinese Communist movement increased.',
-          lang: 'en',
-          cite: {
-            source: 'loc-china-country-study-1987',
-            loc: { section: 'Nationalism and Communism', para: '15' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/21.htm' }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
           id: 'q2',
-          text: 'The epic Long March of his Red Army and its supporters, which began in October 1934, would ensure his place in history.',
+          text: 'In the early 1930s, amid continued Political Bureau opposition to his military and agrarian policies and the deadly annihilation campaigns being waged against the Red Army by Chiang Kai-shek\'s forces, Mao\'s control of the Chinese Communist movement increased. The epic Long March of his Red Army and its supporters, which began in October 1934, would ensure his place in history.',
           lang: 'en',
           cite: {
             source: 'loc-china-country-study-1987',
             loc: { section: 'Nationalism and Communism', para: '15' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/21.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/china/21.htm' }
         },
         {
           id: 'q3',
@@ -172,5 +157,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Mao_Zedong_1950_Portrait_%283x4_cropped%29%282%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Mao_Zedong_1950_Portrait_(3x4_cropped)(2).jpg',
+    credit: { institution: 'Associated Press', creator: 'Chen Zhengqing' },
+    license: { id: 'public-domain' }
+  }
 })

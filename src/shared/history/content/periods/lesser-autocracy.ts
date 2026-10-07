@@ -6,7 +6,7 @@ export default definePeriod({
     { text: 'Lesser Autocracy', lang: 'en', role: 'primary' },
     { text: 'استبداد صغیر', lang: 'fa', role: 'native', translit: 'estebdād-e ṣaḡīr' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -79,5 +79,12 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/Mohammad_Ali_Shah_Qajar.png/1280px-Mohammad_Ali_Shah_Qajar.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Mohammad_Ali_Shah_Qajar.png',
+    title: 'Shah of Persia, Mohammed Ali Mirzi, Dec. 19, 1907',
+    credit: { institution: 'Library of Congress', creator: 'Bain News Service' },
+    license: { id: 'public-domain' }
+  }
 })

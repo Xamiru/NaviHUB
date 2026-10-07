@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Mohammad Tabatabai', lang: 'en', role: 'primary' },
     { text: 'محمد طباطبایی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   died: {
     alts: [
       {
@@ -70,5 +70,14 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/53/Portrait_of_Sayyed_Mohammad_Tabatabai_by_Ali_Mahmudi.jpg/1280px-Portrait_of_Sayyed_Mohammad_Tabatabai_by_Ali_Mahmudi.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Sayyed_Mohammad_Tabatabai_by_Ali_Mahmudi.jpg',
+    credit: {
+      institution: 'Library, Museum and Document Center of the Islamic Parliament of Iran',
+      creator: 'Ali Mahmudi'
+    },
+    license: { id: 'public-domain' }
+  }
 })

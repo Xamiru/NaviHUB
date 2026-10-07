@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Deposition of the Qajar dynasty', lang: 'en', role: 'primary' },
     { text: 'انقراض قاجاریه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'dissolution',
   start: {
     alts: [
@@ -276,5 +276,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/19-3-22%2C_arriv%C3%A9e_du_Shah_de_Perse_%C3%A0_Paris_%28gare_de_Lyon%29_-_btv1b53076790t.jpg/1280px-19-3-22%2C_arriv%C3%A9e_du_Shah_de_Perse_%C3%A0_Paris_%28gare_de_Lyon%29_-_btv1b53076790t.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:19-3-22,_arriv%C3%A9e_du_Shah_de_Perse_%C3%A0_Paris_(gare_de_Lyon)_-_btv1b53076790t.jpg',
+    credit: { institution: 'Bibliothèque nationale de France', creator: 'Agence Rol' },
+    license: { id: 'public-domain' }
+  }
 })

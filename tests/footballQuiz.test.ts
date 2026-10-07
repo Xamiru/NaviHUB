@@ -36,6 +36,9 @@ describe('Football quiz builders', () => {
       expect(new Set(question.choices.map((choice) => choice.key)).size).toBe(4)
       expect(question.validKeys).toHaveLength(1)
     }
+    const crested = buildFootballChampionQuestions(champions.map((item) => ({ ...item, teamImagePath: `media/crest-${item.teamId}.png` })), 1, 42)[0]
+    for (const choice of crested.choices) expect(choice.imagePath).toBe(`media/crest-${choice.key}.png`)
+    expect(first[0].choices.every((choice) => !('imagePath' in choice))).toBe(true)
   })
 
   it('creates four distinct plausible scorelines and preserves penalties', () => {

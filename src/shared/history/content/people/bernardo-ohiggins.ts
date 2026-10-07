@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   regions: ['latin-america'],
   roles: ['revolutionary', 'military', 'head-of-state'],
   sections: [
@@ -45,5 +45,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/a2/Ohiggins.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Ohiggins.jpg',
+    credit: { institution: 'Instituto Geográfico Militar de Chile', creator: 'José Gil de Castro' },
+    license: { id: 'public-domain' }
+  }
 })

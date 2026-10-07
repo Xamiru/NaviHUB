@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'reform',
   start: {
     alts: [
@@ -105,20 +105,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q3',
-          text: 'Even then he realized that the Persian army was no match for Russian tactics and weapons, and he began to train his troops along European lines (neẓām-e ǰadīd).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-busse-abbas-mirza',
-            loc: { section: 'ʿABBĀS MĪRZĀ QAJAR', para: '10' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/abbas-mirza'
-          }
-        },
-        {
           id: 'q4',
           text: 'ʿAbbās Mirzā, consciously modelling himself on his contemporary, the reform-oriented Ottoman sultan Selim III (r. 1789-1809), began in Azarbaijan with the construction of his own version of the reformed Ottoman army (neẓām-e jadid).He imported first French, then British instructors, sent students abroad, tried to form disciplined infantry and artillery and introduced a regularized, though rudimentary, system of conscription (boniča-ye sarbāz), and established foundries to produce arms.',
           lang: 'en',
@@ -130,6 +116,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/army-v/'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'Even then he realized that the Persian army was no match for Russian tactics and weapons, and he began to train his troops along European lines (neẓām-e ǰadīd).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-busse-abbas-mirza',
+            loc: { section: 'ʿABBĀS MĪRZĀ QAJAR', para: '10' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/abbas-mirza'
           }
         },
         {
@@ -167,5 +167,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Abbas_Mirza_in_battle.jpg/1280px-Abbas_Mirza_in_battle.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Abbas_Mirza_in_battle.jpg',
+    credit: { institution: 'Brown University Library', creator: 'Hippolyte Bellangé' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -73,6 +73,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q4',
+          text: 'The Abolition of the Slave Trade Act was passed in Britain in March 1807. But the international campaign against slavery (as distinct from the trade) continued and it was not until 1833 that legislation was passed in the British Parliament starting the process for the abolition of slavery itself.',
+          lang: 'en',
+          cite: {
+            source: 'tna-guide-british-transatlantic-slave-trade-records',
+            loc: { section: '5. Campaign for abolition of the slave trade', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.nationalarchives.gov.uk/help-with-your-research/research-guides/british-transatlantic-slave-trade-records/'
+          }
+        },
         {
           id: 'q1',
           text: 'The royal assent was given by commission to the Slave Trade Abolition bill, the Irish Licence bill, and the Thames Police bill, and two private bills.',

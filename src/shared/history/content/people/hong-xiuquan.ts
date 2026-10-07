@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Hong Xiuquan', lang: 'en', role: 'primary' },
     { text: '洪秀全', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -61,5 +61,14 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/ae/Alleged_engraving_of_Hong_Xiuquan_%28full%29.jpg/1280px-Alleged_engraving_of_Hong_Xiuquan_%28full%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Alleged_engraving_of_Hong_Xiuquan_(full).jpg',
+    credit: {
+      institution: 'History of the Insurrection in China (1853)',
+      creator: 'Ford & West Lith.'
+    },
+    license: { id: 'public-domain' }
+  }
 })

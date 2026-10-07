@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   died: {
     alts: [
       {
@@ -100,5 +100,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/b/bd/Painting_of_Mirza_Bozorg_Issa_Qa%27em-Maqam_%28scanned_from_Ris%C3%A1liy-i-Jih%C3%A1d%C3%ADyyih_reprinted_in_1979%29.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Painting_of_Mirza_Bozorg_Issa_Qa%27em-Maqam_(scanned_from_Ris%C3%A1liy-i-Jih%C3%A1d%C3%ADyyih_reprinted_in_1979).png',
+    credit: { institution: 'Risáliy-i-Jihádíyyih (1979 reprint), Internet Archive' },
+    license: { id: 'public-domain' }
+  }
 })

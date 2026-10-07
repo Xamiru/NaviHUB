@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'movement',
   start: {
     alts: [
@@ -60,6 +60,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'During his first nationwide satyagraha, Gandhi urged the people to boycott British education institutions, law courts, and products (in favor of swadeshi ); to resign from government employment; to refuse to pay taxes; and to forsake British titles and honors.',
+          lang: 'en',
+          cite: {
+            source: 'loc-india-country-study-1995',
+            loc: { section: 'Mahatma Gandhi', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/20.htm' }
+        },
+        {
           id: 'q1',
           text: 'Das Komitee des indischen Nationalkongresses beschließt, das gegen die britische Kolonialmacht gerichtete Konzept zur Erlangung der Unabhängigkeit des Freiheitskämpfers "Mahatma" Gandhi (1869-1948) zu unterstützen.',
           lang: 'de',
@@ -69,16 +79,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/jahreschronik/1920.html'
           }
-        },
-        {
-          id: 'q2',
-          text: 'During his first nationwide satyagraha, Gandhi urged the people to boycott British education institutions, law courts, and products (in favor of swadeshi ); to resign from government employment; to refuse to pay taxes; and to forsake British titles and honors.',
-          lang: 'en',
-          cite: {
-            source: 'loc-india-country-study-1995',
-            loc: { section: 'Mahatma Gandhi', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/india/20.htm' }
         },
         {
           id: 'q3',
@@ -143,6 +143,12 @@ export default defineEvent({
       }
     }
   ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Gandhi_and_Indira_1924.jpg/1280px-Gandhi_and_Indira_1924.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Gandhi_and_Indira_1924.jpg',
+    credit: { institution: 'Gujarat Vidyapith' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'andrews-non-co-operation',

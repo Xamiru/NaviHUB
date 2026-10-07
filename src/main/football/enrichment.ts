@@ -1,6 +1,7 @@
 import { getSqlite } from '../db/connection'
-import { downloadImage } from '../files'
-import { fetchWithRetry, MAX_API_RESPONSE_BYTES } from '../http'
+import { cachedDownload, downloadImage } from '../files'
+import { fetchWithRetry, isWikimediaUrl, MAX_API_RESPONSE_BYTES } from '../http'
+import { stripWikimediaTracking, WIKIMEDIA_USER_AGENT } from '@shared/wikimediaAgent'
 import { footballCoreName, normalizeFootballName } from '@shared/football'
 import { sameTeamPersonIds } from '../repos/footballRepo'
 
@@ -9,7 +10,7 @@ import { sameTeamPersonIds } from '../repos/footballRepo'
 // images whatever their license (personal local archive), with TheSportsDB and
 // API-Football as fallbacks for clubs Wikipedia has no crest for.
 
-const HEADERS = { 'User-Agent': 'NaviHUB/FootballArchive (personal local archive)' }
+const HEADERS = { 'User-Agent': WIKIMEDIA_USER_AGENT }
 const ASSOCIATION_FOOTBALL = 'Q2736'
 const FOOTBALL_OCCUPATIONS = new Set(['Q937857', 'Q628099'])
 const CENTIMETRE = 'Q174728'
@@ -64,17 +65,19 @@ export interface EnrichmentOptions {
 }
 
 type WikidataEntity = {
-  claims?: Record<string, Array<{ mainsnak?: { datavalue?: { value?: unknown } } }>>
+  claims?: Record<string, Array<{ rank?: string; mainsnak?: { datavalue?: { value?: unknown } } }>>
   labels?: Record<string, { value?: string }>
 }
 
-// Wikimedia asks anonymous clients to send requests in series; TheSportsDB's free tier
-// allows 30 a minute. Every reference request takes the next slot for its site.
+// TheSportsDB's free tier allows 30 requests a minute; other reference hosts take a
+// short serial gap. Every such request takes the next slot for its site. Wikimedia is
+// paced inside fetchWithRetry instead, by the one budget every feature shares.
 const SITE_SPACING: Record<string, number> = { 'thesportsdb.com': 2100 }
 const DEFAULT_SPACING = 350
 const nextSlot = new Map<string, number>()
 
 async function spaced(url: string): Promise<void> {
+  if (isWikimediaUrl(url)) return
   const site = new URL(url).hostname.split('.').slice(-2).join('.')
   const now = Date.now()
   const at = Math.max(now, nextSlot.get(site) ?? 0)
@@ -95,6 +98,9 @@ async function json(url: string, signal: AbortSignal): Promise<any> {
 }
 
 async function image(url: string): Promise<string | null> {
+  // A file already on disk makes no request, so it must not take a slot either.
+  const cached = cachedDownload(url)
+  if (cached) return cached
   await spaced(url)
   return downloadImage(url, undefined, HEADERS)
 }
@@ -107,6 +113,16 @@ export function footballTitleCandidates(name: string, kind: 'team' | 'person', n
 
 function claimValues(entity: WikidataEntity | undefined, property: string): unknown[] {
   return (entity?.claims?.[property] ?? []).map((claim) => claim.mainsnak?.datavalue?.value).filter((value) => value != null)
+}
+
+/**
+ * The statement Wikidata ranks best: a preferred one if any, else the first normal one,
+ * never a deprecated one (a competition's P154 lists its historic logos too).
+ */
+function bestClaimValue(entity: WikidataEntity | undefined, property: string): unknown {
+  const claims = (entity?.claims?.[property] ?? []).filter((claim) => claim.mainsnak?.datavalue?.value != null)
+  const best = claims.find((claim) => claim.rank === 'preferred') ?? claims.find((claim) => claim.rank !== 'deprecated')
+  return best?.mainsnak?.datavalue?.value
 }
 
 function claimIds(entity: WikidataEntity | undefined, property: string): string[] {
@@ -261,8 +277,9 @@ async function fileUrls(files: string[], width: number, signal: AbortSignal): Pr
     const normalized = new Map(((result.normalized ?? []) as Array<{ from: string; to: string }>).map((item) => [item.to, item.from]))
     for (const page of (result.pages ?? []) as Array<{ title: string; imageinfo?: Array<Record<string, any>> }>) {
       const info = page.imageinfo?.[0]
-      const url = info?.thumburl ?? info?.url
-      if (!url) continue
+      const raw = info?.thumburl ?? info?.url
+      if (!raw) continue
+      const url = stripWikimediaTracking(String(raw))
       const requested = (normalized.get(page.title) ?? page.title).replace(/^File:/, '')
       const license = String(info?.extmetadata?.LicenseShortName?.value ?? '').trim() || null
       found.set(requested, { url: String(url), license })
@@ -405,10 +422,10 @@ export async function fetchEnrichmentBatch(
     ...claimIds(entity, 'P27').slice(0, 1)
   ]), 'labels|claims', signal)
   const files = [...resolved.values()].flatMap(({ page, entity }) => {
-    const logo = claimValues(entity, 'P154')[0]
+    const logo = bestClaimValue(entity, 'P154')
     return [page.pageimage, kind === 'team' && typeof logo === 'string' ? logo : undefined].filter((file): file is string => !!file)
   })
-  const urls = await fileUrls(files, kind === 'person' ? 480 : 320, signal)
+  const urls = await fileUrls(files, kind === 'person' ? 500 : 330, signal)
   const qids = [...resolved.values()].map(({ page }) => page.pageprops!.wikibase_item!)
   const managedClubs = items.filter((item) => resolved.has(item.id) && !item.options?.national)
     .map((item) => resolved.get(item.id)!.page.pageprops!.wikibase_item!)
@@ -481,13 +498,22 @@ const COMPETITION_ARTICLES: Record<string, string> = {
   euros: 'UEFA European Championship'
 }
 
-/** The competition's current logo from its Wikipedia article infobox. */
+/**
+ * The competition's current logo from its Wikipedia article infobox, else its Wikidata
+ * logo (P154): the FIFA World Cup article carries no infobox image.
+ */
 export async function fetchCompetitionLogo(key: string, signal: AbortSignal): Promise<string | null> {
   const title = COMPETITION_ARTICLES[key]
   if (!title) return null
   const lookup = await lookupTitles([title], signal)
-  const file = lookup.pages.get(lookup.landed.get(title) ?? title)?.pageimage
-  const source = file ? (await fileUrls([file], 320, signal)).get(file) : undefined
+  const page = lookup.pages.get(lookup.landed.get(title) ?? title)
+  let file = page?.pageimage
+  const qid = page?.pageprops?.wikibase_item
+  if (!file && qid) {
+    const logo = bestClaimValue((await wikidataEntities([qid], 'claims', signal))[qid], 'P154')
+    if (typeof logo === 'string') file = logo.replace(/ /g, '_')
+  }
+  const source = file ? (await fileUrls([file], 330, signal)).get(file) : undefined
   return source ? image(source.url) : null
 }
 

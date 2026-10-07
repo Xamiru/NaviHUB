@@ -17,7 +17,7 @@ export default defineEvent({
     },
     { text: 'بانک شاهی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -128,6 +128,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: '1889 Establishment of the Imperial Bank of Persia; it becomes a focal point of British interests with the right to issue currency and exploit the mineral deposits (excluding gold or silver) of Persia.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-2',
+            loc: { section: 'Chronology of Iranian History Part 2' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
+          }
+        },
+        {
           id: 'q1',
           text: 'The establishment of the Imperial Bank of Persia in January 1889, however, has to be seen as Britain’s crowning achievement and its most effective economic tool in penetrating the Persian markets.',
           lang: 'en',
@@ -142,20 +156,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/great-britain-ii/'
-          }
-        },
-        {
-          id: 'q2',
-          text: '1889 Establishment of the Imperial Bank of Persia; it becomes a focal point of British interests with the right to issue currency and exploit the mineral deposits (excluding gold or silver) of Persia.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-chronology-part-2',
-            loc: { section: 'Chronology of Iranian History Part 2' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         },
         {

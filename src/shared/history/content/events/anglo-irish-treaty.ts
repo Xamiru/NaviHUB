@@ -20,7 +20,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -119,20 +119,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: '1. Ireland shall have the same constitutional status in the Community of Nations known as the British Empire as the Dominion of Canada, the Commonwealth of Australia, the Dominion of New Zealand, and the Union of South Africa with a Parliament having powers to make laws for the peace, order and good government of Ireland and an Executive responsible to that Parliament, and shall be styled and known as the Irish Free State.',
-          lang: 'en',
-          cite: {
-            source: 'difp-1921-12-06-articles-of-agreement',
-            loc: { section: 'No. 214', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.difp.ie/volume-1/1921/anglo-irish-treaty/214/'
-          }
-        },
-        {
           id: 'q2',
           text: '11 Oct. – 6 Dec. Negotiations in London lead to signature of ‘Articles of Agreement’ (Anglo-Irish treaty), creating the Irish Free State with dominion status within British Empire from December 1922 onwards.',
           lang: 'en',
@@ -144,6 +130,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.difp.ie/timeline-of-events-1919-69/'
+          }
+        },
+        {
+          id: 'q1',
+          text: '1. Ireland shall have the same constitutional status in the Community of Nations known as the British Empire as the Dominion of Canada, the Commonwealth of Australia, the Dominion of New Zealand, and the Union of South Africa with a Parliament having powers to make laws for the peace, order and good government of Ireland and an Executive responsible to that Parliament, and shall be styled and known as the Irish Free State.',
+          lang: 'en',
+          cite: {
+            source: 'difp-1921-12-06-articles-of-agreement',
+            loc: { section: 'No. 214', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.difp.ie/volume-1/1921/anglo-irish-treaty/214/'
           }
         }
       ]
@@ -289,5 +289,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/f/fe/Michael_Collins_1921.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Michael_Collins_1921.jpg',
+    credit: { institution: 'Bibliothèque nationale de France', creator: 'Agence de presse Meurisse' },
+    license: { id: 'public-domain' }
+  }
 })

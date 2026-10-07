@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -42,6 +42,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Women had in practice long been excluded from formal parliamentary participation, but the Representation of the People Act 1832, also known as the Reform Act, legally prevented women from voting. It extended voting rights to more men but also defined voters as male.',
+          lang: 'en',
+          cite: {
+            source: 'tna-1866-womens-suffrage-petition',
+            loc: { section: 'The making of a movement' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.nationalarchives.gov.uk/explore-the-collection/stories/the-1866-mass-womens-suffrage-petition/'
+          }
+        },
+        {
           id: 'q1',
           text: 'Bills. Received the Royal Assent:—Reform of Parliament (England.)',
           lang: 'en',
@@ -53,34 +67,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://api.parliament.uk/historic-hansard/lords/1832/jun/07/minutes'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Women had in practice long been excluded from formal parliamentary participation, but the Representation of the People Act 1832, also known as the Reform Act, legally prevented women from voting.',
-          lang: 'en',
-          cite: {
-            source: 'tna-1866-womens-suffrage-petition',
-            loc: { section: 'The making of a movement' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.nationalarchives.gov.uk/explore-the-collection/stories/the-1866-mass-womens-suffrage-petition/'
-          }
-        },
-        {
-          id: 'q3',
-          text: 'It extended voting rights to more men but also defined voters as male.',
-          lang: 'en',
-          cite: {
-            source: 'tna-1866-womens-suffrage-petition',
-            loc: { section: 'The making of a movement' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.nationalarchives.gov.uk/explore-the-collection/stories/the-1866-mass-womens-suffrage-petition/'
           }
         }
       ]
@@ -118,5 +104,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/George_Hayter_%281792-1871%29_-_The_First_Reformed_House_of_Commons%2C_1833_%28sketch%29_-_WOA_363_-_Parliamentary_Art_Collection.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:George_Hayter_(1792-1871)_-_The_First_Reformed_House_of_Commons,_1833_(sketch)_-_WOA_363_-_Parliamentary_Art_Collection.jpg',
+    credit: { institution: 'Parliamentary Art Collection', creator: 'George Hayter' },
+    license: { id: 'public-domain' }
+  }
 })

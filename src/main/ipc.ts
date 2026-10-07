@@ -1135,6 +1135,7 @@ export function registerIpc(): void {
   // polled. FotMob is stored/opened only as a validated user-pasted link.
   ipcMain.handle('football:overview', () => footballRepo.overview())
   ipcMain.handle('football:competitions', () => footballRepo.listCompetitions())
+  ipcMain.handle('football:competitionLogos', () => footballRepo.competitionLogos())
   ipcMain.handle('football:competition', (_e, key) => footballRepo.getCompetition(key))
   ipcMain.handle('football:seasons', (_e, key) => footballRepo.listSeasons(key))
   ipcMain.handle('football:season', (_e, id) => footballRepo.getSeason(id))

@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -56,20 +56,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'The terms of occupation, meanwhile, were set in the Tripartite Treaty of Alliance (29 January, 1942), under which Britain and Russia agreed to respect the territorial integrity, sovereignty, and political independence of Iran (Art. 1) and to withdraw from Iran within six months of an armistice between the allied and axis powers (Art. 5).',
-          lang: 'en',
-          cite: {
-            source: 'iranica-kuniholm-azerbaijan-1941-1947',
-            loc: { section: 'AZERBAIJAN v. History from 1941 to 1947', para: '3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/azerbaijan-v/'
-          }
-        },
-        {
           id: 'q2',
           text: 'The Tripartite Treaty is signed between Iran, Britain, and the Soviet Union, allowing the Allies to remain in Iran for the duration of the War.',
           lang: 'en',
@@ -81,6 +67,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-3/'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'The terms of occupation, meanwhile, were set in the Tripartite Treaty of Alliance (29 January, 1942), under which Britain and Russia agreed to respect the territorial integrity, sovereignty, and political independence of Iran (Art. 1) and to withdraw from Iran within six months of an armistice between the allied and axis powers (Art. 5).',
+          lang: 'en',
+          cite: {
+            source: 'iranica-kuniholm-azerbaijan-1941-1947',
+            loc: { section: 'AZERBAIJAN v. History from 1941 to 1947', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/azerbaijan-v/'
           }
         },
         {

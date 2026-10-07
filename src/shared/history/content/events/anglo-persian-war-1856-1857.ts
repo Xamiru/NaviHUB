@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Anglo-Persian War', lang: 'en', role: 'primary' },
     { text: 'جنگ ایران و انگلیس', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -317,7 +317,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q5',
-          text: 'In response Britain began the Anglo-Persian war (q.v.) which resulted in Iran’s quick defeat and the conclusion of the peace treaty of Paris in 1857, by which Iran finally gave up its claim to Afghanistan.',
+          text: 'Mīrzā Āqā Khan turned his attention to Herat where (1855) a new opportunity to reestablish Iranian control presented itself. Grasping the opportunity, the Shah sent an army do Afghanistan. In October, 1856, Herat fell to the Iranians. In response Britain began the Anglo-Persian war (q.v.) which resulted in Iran’s quick defeat and the conclusion of the peace treaty of Paris in 1857, by which Iran finally gave up its claim to Afghanistan.',
           lang: 'en',
           cite: {
             source: 'iranica-kazemzadeh-anglo-iranian-relations-qajar',
@@ -325,7 +325,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
           }
         },

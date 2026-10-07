@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -75,22 +75,22 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q3',
-          text: 'As the principal aim of the new constitution was the prevention of arbitrary and corrupt royal rule, it provided for a limited monarchy which governed through ministers subject to parliamentary control.',
-          lang: 'en',
-          cite: {
-            source: 'loc-spain-country-study-1988',
-            loc: { section: 'THE LIBERAL ASCENDANCY: The Cadiz Cortes', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/spain/14.htm' }
-        },
-        {
           id: 'q4',
           text: 'The product of the Cortes\' deliberations reflected the liberals dominance for the constitution of 1812 came to be the "sacred codex" of liberalism, and during the nineteenth century it served as a model for liberal constitutions of Latin nations.',
           lang: 'en',
           cite: {
             source: 'loc-spain-country-study-1988',
             loc: { section: 'THE LIBERAL ASCENDANCY: The Cadiz Cortes', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/spain/14.htm' }
+        },
+        {
+          id: 'q3',
+          text: 'As the principal aim of the new constitution was the prevention of arbitrary and corrupt royal rule, it provided for a limited monarchy which governed through ministers subject to parliamentary control.',
+          lang: 'en',
+          cite: {
+            source: 'loc-spain-country-study-1988',
+            loc: { section: 'THE LIBERAL ASCENDANCY: The Cadiz Cortes', para: '4' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/spain/14.htm' }
         }
@@ -112,6 +112,12 @@ export default defineEvent({
       ]
     }
   ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/90/Const._C%C3%A1diz.JPG/1280px-Const._C%C3%A1diz.JPG',
+    page: 'https://commons.wikimedia.org/wiki/File:Const._C%C3%A1diz.JPG',
+    credit: { institution: 'Memoria de las revoluciones en México, no. 5 (2009)' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'cadiz-1812',

@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Saigo Takamori', lang: 'en', role: 'primary' },
     { text: '西郷隆盛', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -86,5 +86,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9a/Saigo_Takamori_%28b%29.jpg/1280px-Saigo_Takamori_%28b%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Saigo_Takamori_(b).jpg',
+    credit: { institution: 'National Diet Library', creator: 'C. Nakagawa' },
+    license: { id: 'public-domain' }
+  }
 })

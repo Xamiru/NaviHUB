@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Alexander I of Russia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'reign',
   start: {
     alts: [
@@ -86,5 +86,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/Alexander_I_of_Russia_by_F.Kruger_%281837%2C_Hermitage%29.jpg/1280px-Alexander_I_of_Russia_by_F.Kruger_%281837%2C_Hermitage%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Alexander_I_of_Russia_by_F.Kruger_(1837,_Hermitage).jpg',
+    credit: { institution: 'State Hermitage Museum', creator: 'Franz Krüger' },
+    license: { id: 'public-domain' }
+  }
 })

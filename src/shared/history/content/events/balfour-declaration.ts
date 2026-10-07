@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'הצהרת בלפור', lang: 'he', role: 'alternative' },
     { text: 'وعد بلفور', lang: 'ar', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -103,20 +103,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: '"His Majesty\'s Government view with favour the establishment in Palestine of a national home for the Jewish people, and will use their best endeavours to facilitate the achievement of this object, it being clearly understood that nothing shall be done which may prejudice the civil and religious rights of existing non-Jewish communities in Palestine, or the rights and political status enjoyed by Jews in any other country."',
-          lang: 'en',
-          cite: {
-            source: 'avalon-balfour-declaration-1917',
-            loc: { section: 'Balfour Declaration November 2, 1917', para: '3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://avalon.law.yale.edu/20th_century/balfour.asp'
-          }
-        },
-        {
           id: 'q2',
           text: 'The Balfour Declaration, issued on 2 November 1917, is one of the most influential documents leading to the establishment of the state of Israel.',
           lang: 'en',
@@ -128,6 +114,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/balfour-declaration/'
+          }
+        },
+        {
+          id: 'q1',
+          text: '"His Majesty\'s Government view with favour the establishment in Palestine of a national home for the Jewish people, and will use their best endeavours to facilitate the achievement of this object, it being clearly understood that nothing shall be done which may prejudice the civil and religious rights of existing non-Jewish communities in Palestine, or the rights and political status enjoyed by Jews in any other country."',
+          lang: 'en',
+          cite: {
+            source: 'avalon-balfour-declaration-1917',
+            loc: { section: 'Balfour Declaration November 2, 1917', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://avalon.law.yale.edu/20th_century/balfour.asp'
           }
         }
       ]

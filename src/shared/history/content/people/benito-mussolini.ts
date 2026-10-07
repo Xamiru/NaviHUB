@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Benito Mussolini', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -134,6 +134,12 @@ export default definePerson({
       ]
     }
   ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/42/Benito_Mussolini_LCCN2014715051_%28cropped%29.jpg/1280px-Benito_Mussolini_LCCN2014715051_%28cropped%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Benito_Mussolini_LCCN2014715051_(cropped).jpg',
+    credit: { institution: 'Library of Congress', creator: 'Bain News Service' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'mussolini-political-speeches-1923',

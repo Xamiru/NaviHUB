@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'British Raj', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -85,5 +85,14 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/36/British_Indian_Empire_1909_Imperial_Gazetteer_of_India.jpg/1280px-British_Indian_Empire_1909_Imperial_Gazetteer_of_India.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:British_Indian_Empire_1909_Imperial_Gazetteer_of_India.jpg',
+    credit: {
+      institution: 'Imperial Gazetteer of India (Oxford University Press, 1909)',
+      creator: 'Edinburgh Geographical Institute; J. G. Bartholomew and Sons'
+    },
+    license: { id: 'public-domain' }
+  }
 })

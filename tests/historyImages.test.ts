@@ -29,7 +29,14 @@ vi.mock('../src/main/files', async (importOriginal) => ({
   }
 }))
 
-import { RETRY_COOLDOWN_MS, ensureImages, imageStatus, setDownloadGapForTests } from '../src/main/history/historyImages'
+import {
+  MAX_RETRY_COOLDOWN_MS,
+  RETRY_COOLDOWN_MS,
+  ensureImages,
+  imageStatus,
+  retryCooldown,
+  setDownloadGapForTests
+} from '../src/main/history/historyImages'
 
 async function settle(): Promise<void> {
   for (let i = 0; i < 400 && imageStatus().running; i++) await new Promise((r) => setTimeout(r, 5))
@@ -61,6 +68,18 @@ describe('History image cache', () => {
     expect(ensureImages([dead, good], 'test', Date.now() + RETRY_COOLDOWN_MS + 1)).toEqual({ started: true })
     await settle()
     expect(files.downloaded.filter((u) => u === dead)).toHaveLength(2)
+
+    // A second failure doubles the wait before the next try.
+    const later = Date.now() + RETRY_COOLDOWN_MS + 1
+    expect(ensureImages([dead], 'test', later)).toEqual({ started: false })
+    expect(ensureImages([dead], 'test', Date.now() + 2 * RETRY_COOLDOWN_MS + 1)).toEqual({ started: true })
+    await settle()
+    expect(files.downloaded.filter((u) => u === dead)).toHaveLength(3)
+  })
+
+  it('backs off a repeatedly failing URL up to a cap', () => {
+    expect([1, 2, 3].map(retryCooldown)).toEqual([RETRY_COOLDOWN_MS, 2 * RETRY_COOLDOWN_MS, 4 * RETRY_COOLDOWN_MS])
+    expect(retryCooldown(50)).toBe(MAX_RETRY_COOLDOWN_MS)
   })
 
   it('downloads one image at a time, never in parallel', async () => {

@@ -25,7 +25,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   regions: ['iran'],
   roles: ['politician'],
   offices: [
@@ -146,5 +146,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/85/Hvosough.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Hvosough.jpg',
+    credit: { institution: 'W. Morgan Shuster, The Strangling of Persia (1912)' },
+    license: { id: 'public-domain' }
+  }
 })

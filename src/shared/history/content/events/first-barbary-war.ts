@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'First Barbary War', lang: 'en', role: 'primary' },
     { text: 'Tripolitan War', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -97,5 +97,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/EnterpriseTripoli.jpg/1280px-EnterpriseTripoli.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:EnterpriseTripoli.jpg',
+    credit: { institution: 'U.S. National Archives', creator: 'William Bainbridge Hoff' },
+    license: { id: 'public-domain' }
+  }
 })

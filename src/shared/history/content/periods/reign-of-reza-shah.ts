@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Reza Shah Pahlavi', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'reign',
   start: {
     alts: [
@@ -119,5 +119,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/Perse_Le_roi_de_Perse_%2C_Reza_Chah_Pahlavi%2C_sur_son_tr%C3%B4ne.jpg/1280px-Perse_Le_roi_de_Perse_%2C_Reza_Chah_Pahlavi%2C_sur_son_tr%C3%B4ne.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Perse_Le_roi_de_Perse_,_Reza_Chah_Pahlavi,_sur_son_tr%C3%B4ne.jpg',
+    credit: { institution: 'Musée départemental Albert-Kahn' },
+    license: { id: 'cc-by', version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0' }
+  }
 })

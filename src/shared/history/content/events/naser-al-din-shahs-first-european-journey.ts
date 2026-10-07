@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Naser al-Din Shah’s first European journey', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -123,6 +123,23 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'In 1873, Nāṣer-al-Din Shah visited Russia and suggested that Russia and Iran join efforts to “pacify” Turcoman tribes. He offered his assistance again in the next year, according to the Russian minister in Tehran, A. F. Berger, but the Russian government rejected his offer.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-andreeva-russia-relations',
+            loc: {
+              section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
+              para: '32'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
+          }
+        },
+        {
           id: 'q1',
           text: 'He granted a concession for railroad construction and other economic projects to a Briton, Baron Julius de Reuter, and visited Russia and Britain himself.',
           lang: 'en',
@@ -151,23 +168,6 @@ export default defineEvent({
     {
       kind: 'course',
       quotes: [
-        {
-          id: 'q3',
-          text: 'In 1873, Nāṣer-al-Din Shah visited Russia and suggested that Russia and Iran join efforts to “pacify” Turcoman tribes. He offered his assistance again in the next year, according to the Russian minister in Tehran, A. F. Berger, but the Russian government rejected his offer.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-andreeva-russia-relations',
-            loc: {
-              section: 'RUSSIA i. Russo-Iranian Relations up to the Bolshevik Revolution',
-              para: '32'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
-          }
-        },
         {
           id: 'q4',
           text: 'During the 1873 and 1889 royal tours of England, with the help of the British government, influential Jewish figures such as Sir Moses Montefiore, Baron Lionel de Rothschild, and Sir Albert Sassoon urged Nāṣer-al-Din Shah to improve the condition of the Persian Jewry.',

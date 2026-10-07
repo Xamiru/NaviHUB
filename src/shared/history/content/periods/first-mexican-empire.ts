@@ -6,7 +6,7 @@ export default definePeriod({
     { text: 'First Mexican Empire', lang: 'en', role: 'primary' },
     { text: 'Primer Imperio Mexicano', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -97,5 +97,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Portrait_of_Agust%C3%ADn_de_Iturbide%2C_Emperor_of_Mexico.jpg/1280px-Portrait_of_Agust%C3%ADn_de_Iturbide%2C_Emperor_of_Mexico.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Agust%C3%ADn_de_Iturbide,_Emperor_of_Mexico.jpg',
+    credit: { institution: 'Philadelphia Museum of Art', creator: 'Josephus Arias Huarte' },
+    license: { id: 'cc-by-sa', version: '4.0', url: 'https://creativecommons.org/licenses/by-sa/4.0' }
+  }
 })

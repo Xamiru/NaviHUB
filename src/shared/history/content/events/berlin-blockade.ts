@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'crisis',
   start: {
     alts: [
@@ -146,7 +146,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'The crisis started on June 24, 1948, when Soviet forces blockaded rail, road, and water access to Allied-controlled areas of Berlin. The United States and United Kingdom responded by airlifting food and fuel to Berlin from Allied airbases in western Germany. The crisis ended on May 12, 1949, when Soviet forces lifted the blockade on land access to western Berlin.',
+          text: 'As the wartime alliance between the Western Allies and the Soviet Union ended and friendly relations turned hostile, the question of whether the western occupation zones in Berlin would remain under Western Allied control or whether the city would be absorbed into Soviet-controlled eastern Germany led to the first Berlin crisis of the Cold War. The crisis started on June 24, 1948, when Soviet forces blockaded rail, road, and water access to Allied-controlled areas of Berlin. The United States and United Kingdom responded by airlifting food and fuel to Berlin from Allied airbases in western Germany. The crisis ended on May 12, 1949, when Soviet forces lifted the blockade on land access to western Berlin.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-berlin-airlift',
@@ -154,7 +154,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://history.state.gov/milestones/1945-1952/berlin-airlift'
           }
         }

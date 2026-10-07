@@ -21,6 +21,7 @@ export interface FootballChampionCandidate {
   year: number
   teamId: number
   teamName: string
+  teamImagePath?: string | null
   datasetRevision: string
 }
 
@@ -30,6 +31,8 @@ export interface FootballScorelineCandidate {
   competitionName: string
   homeTeam: string
   awayTeam: string
+  homeImagePath?: string | null
+  awayImagePath?: string | null
   matchDate: string
   stage: string | null
   homeScore: number
@@ -47,6 +50,7 @@ export interface FootballCareerCandidate {
   datasetRevision: string
   spells: Array<{
     team: string
+    imagePath?: string | null
     start: string | null
     end: string | null
     loan: boolean
@@ -66,8 +70,8 @@ export interface FootballGridPool {
   datasetRevision: string
 }
 
-function choice(key: string | number, label: string): QuizChallengeChoice {
-  return { key: String(key), label }
+function choice(key: string | number, label: string, imagePath?: string | null): QuizChallengeChoice {
+  return imagePath ? { key: String(key), label, imagePath } : { key: String(key), label }
 }
 
 export function buildFootballChampionQuestions(
@@ -99,7 +103,7 @@ export function buildFootballChampionQuestions(
         .slice(0, 3)
         .map((entry) => entry.item)
       const choices = shuffle([answer, ...distractors], rng).map((item) =>
-        choice(item.teamId, item.teamName)
+        choice(item.teamId, item.teamName, item.teamImagePath)
       )
       return {
         id: `football-champion-${seed}-${index}`,
@@ -182,6 +186,8 @@ export function buildFootballScorelineQuestions(
         matchId: answer.matchId,
         homeTeam: answer.homeTeam,
         awayTeam: answer.awayTeam,
+        homeImagePath: answer.homeImagePath ?? null,
+        awayImagePath: answer.awayImagePath ?? null,
         matchDate: answer.matchDate,
         stage: answer.stage,
         reveal: `${answer.competitionName}: ${answer.homeTeam} ${answerChoice.label} ${answer.awayTeam}`,

@@ -10,7 +10,7 @@ export default defineEvent({
     },
     { text: 'ترور نافرجام محمدرضا شاه در ۱۵ بهمن ۱۳۲۷', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'assassination',
   start: {
     alts: [
@@ -195,5 +195,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Portrait_of_a_Young_Mohammad_Reza_Shah_Pahlavi_in_Full_Military_Dress.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_a_Young_Mohammad_Reza_Shah_Pahlavi_in_Full_Military_Dress.jpg',
+    credit: { institution: 'Harry S. Truman Library', creator: 'Hessler Studio' },
+    license: { id: 'public-domain' }
+  }
 })

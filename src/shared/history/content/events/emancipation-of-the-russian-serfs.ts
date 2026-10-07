@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Emancipation of the serfs in Russia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'reform',
   start: {
     alts: [
@@ -47,13 +47,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'In 1861 he proclaimed the emancipation of about 20 million privately held serfs.',
+          text: 'Tsar Alexander II, who succeeded Nicholas I in 1855, was a conservative who saw no alternative but to implement change. Alexander initiated substantial reforms in education, the government, the judiciary, and the military. In 1861 he proclaimed the emancipation of about 20 million privately held serfs.',
           lang: 'en',
           cite: {
             source: 'loc-russia-country-study-1996',
             loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '6' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/6.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/6.htm' }
         },
         {
           id: 'q2',
@@ -70,16 +70,6 @@ export default defineEvent({
     {
       kind: 'causes',
       quotes: [
-        {
-          id: 'q3',
-          text: 'Tsar Alexander II, who succeeded Nicholas I in 1855, was a conservative who saw no alternative but to implement change.',
-          lang: 'en',
-          cite: {
-            source: 'loc-russia-country-study-1996',
-            loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '6' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/6.htm' }
-        },
         {
           id: 'q4',
           text: 'One of the chief reasons for the emancipation of the serfs was to facilitate the transition from a large standing army to a reserve army by instituting territorial levies and mobilization in times of need.',

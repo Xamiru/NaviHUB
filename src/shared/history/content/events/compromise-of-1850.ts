@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Compromise of 1850', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -85,6 +85,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q5',
+          text: 'The Compromise of 1850 is composed of five statutes enacted in September of 1850.',
+          lang: 'en',
+          cite: {
+            source: 'nara-milestone-compromise-of-1850',
+            loc: { section: 'Compromise of 1850 (1850)', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.archives.gov/milestone-documents/compromise-of-1850'
+          }
+        },
+        {
           id: 'q3',
           text: 'The Compromise was actually a series of bills passed mainly to address issues related to slavery.',
           lang: 'en',
@@ -105,20 +119,6 @@ export default defineEvent({
           cite: {
             source: 'nara-milestone-compromise-of-1850',
             loc: { section: 'Compromise of 1850 (1850)', para: '4' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.archives.gov/milestone-documents/compromise-of-1850'
-          }
-        },
-        {
-          id: 'q5',
-          text: 'The Compromise of 1850 is composed of five statutes enacted in September of 1850.',
-          lang: 'en',
-          cite: {
-            source: 'nara-milestone-compromise-of-1850',
-            loc: { section: 'Compromise of 1850 (1850)', para: '6' }
           },
           provenance: {
             via: 'web',

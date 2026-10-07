@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -329,5 +329,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Iran_Over_Volcano_-_Tudeh_demonstration.png/1280px-Iran_Over_Volcano_-_Tudeh_demonstration.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Iran_Over_Volcano_-_Tudeh_demonstration.png',
+    credit: { institution: 'Mohamed Hassanein Heikal, Iran fawq burkan (Cairo: Akhbar al-Yawm, 1951)' },
+    license: { id: 'public-domain' }
+  }
 })

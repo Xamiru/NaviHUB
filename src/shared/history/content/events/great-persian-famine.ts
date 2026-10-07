@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'famine',
   start: {
     alts: [
@@ -90,17 +90,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'The great famine of 1870-72, the best documented one (Smith, passim; Brittlebank, passim; St. John, pp. 94-98; Bellew, passim, Fasāʾī, pp. 327 sqq.; Eṣfahānī, pp. 281-82; Wazīrī, p. 214), was thus the result of a series of combined climatic catastrophes made worse by poor administration and the human factors previously cited.',
-          lang: 'en',
-          cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '4' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/famines'
-          }
-        },
-        {
           id: 'q2',
           text: 'One of the worst developments for Khorasan during the last three decades of Nāṣer-al-Din Shah’s reign was the Great Famine that began 1285/1869 and lasted until 1288/1873. It was so severe that people were reduced to eating grass, animals, and religiously forbidden meats, or even digging up corpses for food (Eʿtemād-al-Salṭana, Matlaʿ, II, p. 377; Majd, 2018, pp. 53-68).',
           lang: 'en',
@@ -112,6 +101,17 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/khorasan-xi-history-in-the-qajar-and-pahlavi-periods'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'The great famine of 1870-72, the best documented one (Smith, passim; Brittlebank, passim; St. John, pp. 94-98; Bellew, passim, Fasāʾī, pp. 327 sqq.; Eṣfahānī, pp. 281-82; Wazīrī, p. 214), was thus the result of a series of combined climatic catastrophes made worse by poor administration and the human factors previously cited.',
+          lang: 'en',
+          cite: { source: 'iranica-de-planhol-famines', loc: { section: 'FAMINES', para: '4' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/famines'
           }
         }
       ]

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Cancellation of the D’Arcy concession', lang: 'en', role: 'primary' },
     { text: 'لغو امتیاز دارسی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'crisis',
   start: {
     alts: [
@@ -518,5 +518,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/0/09/Abdolhossein_Teymourtash.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Abdolhossein_Teymourtash.jpg',
+    credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
+    license: { id: 'public-domain' }
+  }
 })

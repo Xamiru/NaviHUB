@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Anglo-Persian Preliminary Treaty of 1809', lang: 'en', role: 'primary' },
     { text: 'Preliminary Treaty of Friendship and Alliance', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -108,20 +108,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q3',
-          text: 'Its leader, Sir Harford Jones, brought rich gifts and made rich promises. He offered the Shah an alliance against Russia which had declared war on Britain, and annual subsidy of 120,000 pounds sterling for as long as that war lasted, and British officers to take the place of the no longer useful French. The Shah signed the treaty in March, 1809',
-          lang: 'en',
-          cite: {
-            source: 'iranica-kazemzadeh-anglo-iranian-relations-qajar',
-            loc: { section: 'ANGLO-IRANIAN RELATIONS ii. The Qajar Period', para: '12' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
-          }
-        },
-        {
           id: 'q4',
           text: 'The Preliminary Treaty of Friendship and Alliance (17 June 1809) provided for a British subsidy to pay for British military stores, equipment and officers and men, in exchange for the shah’s severing his ties with the French.',
           lang: 'en',
@@ -133,6 +119,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/army-v/'
+          }
+        },
+        {
+          id: 'q3',
+          text: 'Its leader, Sir Harford Jones, brought rich gifts and made rich promises. He offered the Shah an alliance against Russia which had declared war on Britain, and annual subsidy of 120,000 pounds sterling for as long as that war lasted, and British officers to take the place of the no longer useful French. The Shah signed the treaty in March, 1809',
+          lang: 'en',
+          cite: {
+            source: 'iranica-kazemzadeh-anglo-iranian-relations-qajar',
+            loc: { section: 'ANGLO-IRANIAN RELATIONS ii. The Qajar Period', para: '12' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
           }
         },
         {
@@ -171,6 +171,12 @@ export default defineEvent({
       ]
     }
   ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/Portrait_of_Fath_%27Ali_Shah%2C_nearly_half-length_slightly_to_right%2C_with_heavily_decorated_turban_with_jewels%2C_in_oval%3B_illustration_to_%27The_History_of_Persia%27_by_Sir_John_Malcolm_%28London%2C_1815%2C_vol._II%2C_p.314%29._1815.jpg/1280px-thumbnail.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Fath_%27Ali_Shah,_nearly_half-length_slightly_to_right,_with_heavily_decorated_turban_with_jewels,_in_oval;_illustration_to_%27The_History_of_Persia%27_by_Sir_John_Malcolm_(London,_1815,_vol._II,_p.314)._1815.jpg',
+    credit: { institution: 'British Museum', creator: 'Charles Heath' },
+    license: { id: 'cc-by', version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0' }
+  },
   archive: [
     {
       id: 'morier-1812-journey',

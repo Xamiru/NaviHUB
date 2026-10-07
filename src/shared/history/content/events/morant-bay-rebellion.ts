@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Morant Bay rebellion', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -361,6 +361,15 @@ export default defineEvent({
       }
     }
   ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/3/33/William_Heysham_Overend_-_The_attack_on_the_cout_house_St_Thomas_in_the_East_Jamaica%2C_1865.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:William_Heysham_Overend_-_The_attack_on_the_cout_house_St_Thomas_in_the_East_Jamaica,_1865.jpg',
+    credit: {
+      institution: 'Cassell\'s History of England, vol. 6 (1909)',
+      creator: 'William Heysham Overend'
+    },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'bleby-reign-of-terror-1868',

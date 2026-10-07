@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -97,6 +97,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q6',
+          text: 'During the 1870s, the Democratic Party recaptured local and state governments across the South, largely through the use of violence and other means to stop African Americans from voting and undermine the Republican Party.',
+          lang: 'en',
+          cite: {
+            source: 'house-history-demise-of-reconstruction',
+            loc: { section: 'The Demise of Reconstruction', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://history.house.gov/Exhibitions-and-Publications/BAIC/Historical-Essays/Fifteenth-Amendment/Demise/'
+          }
+        },
+        {
           id: 'q4',
           text: 'The commission’s slim Republican majority allocated the disputed electoral votes to Republican Rutherford B. Hayes. During his one term in office, however, Hayes turned the attention of the federal government away from the South, effectively ending Reconstruction by reducing the number of federal troops in the region and doing little to protect the civil and political rights of African Americans.',
           lang: 'en',
@@ -126,20 +140,6 @@ export default defineEvent({
     {
       kind: 'consequences',
       quotes: [
-        {
-          id: 'q6',
-          text: 'During the 1870s, the Democratic Party recaptured local and state governments across the South, largely through the use of violence and other means to stop African Americans from voting and undermine the Republican Party.',
-          lang: 'en',
-          cite: {
-            source: 'house-history-demise-of-reconstruction',
-            loc: { section: 'The Demise of Reconstruction', para: '7' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.house.gov/Exhibitions-and-Publications/BAIC/Historical-Essays/Fifteenth-Amendment/Demise/'
-          }
-        },
         {
           id: 'q7',
           text: 'These Supreme Court decisions severely curtailed the federal government’s efforts to guarantee the rights of the millions of formerly enslaved men and women.',

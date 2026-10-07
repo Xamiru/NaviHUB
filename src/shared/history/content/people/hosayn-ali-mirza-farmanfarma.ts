@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Hosayn-Ali Mirza Farmanfarma', lang: 'en', role: 'primary' },
     { text: 'حسینعلی میرزا فرمانفرما', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -195,6 +195,12 @@ export default definePerson({
       ]
     }
   ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/9/91/HosseinAliMirzaFarmanfarma.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:HosseinAliMirzaFarmanfarma.jpg',
+    credit: { institution: 'Digital Library of India, Internet Archive' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'fraser-1838',

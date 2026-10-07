@@ -6,7 +6,7 @@ export default definePeriod({
     { text: 'French Consulate', lang: 'en', role: 'primary' },
     { text: 'Consulat', lang: 'fr', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -76,5 +76,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8a/Couder_-_Installation_du_Conseil_d%27Etat.png/1280px-Couder_-_Installation_du_Conseil_d%27Etat.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Couder_-_Installation_du_Conseil_d%27Etat.png',
+    credit: { institution: 'Joconde database, French Ministry of Culture', creator: 'Auguste Couder' },
+    license: { id: 'public-domain' }
+  }
 })

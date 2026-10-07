@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Trans-Iranian Railway', lang: 'en', role: 'primary' },
     { text: 'راه‌آهن سراسری ایران', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -64,6 +64,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q7',
+          text: 'The Trans-Iranian railway system, constructed entirely with Iranian capital and financed primarily by sugar and tea customs duties, is opened by the Shah; it runs from Khorramshahr to Tehran to Bandar-e Shah, connecting the Persian Gulf to the Caspian Sea.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-3',
+            loc: { section: 'Chronology of Iranian History Part 3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-3/'
+          }
+        },
         {
           id: 'q1',
           text: 'He embarked on a number of important transportation and communication projects, the most ambitious of which was the construction of the 1,394 km long Trans-Iranian Railway, linking Bandar-e Šāh (now Bandar-e Torkaman) on the Caspian Sea with Bandar-e Šāhpūr (now Bandar-e Emām Ḵomeynī) on the Persian Gulf.',
@@ -152,22 +166,14 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-iii/'
           }
-        },
-        {
-          id: 'q7',
-          text: 'The Trans-Iranian railway system, constructed entirely with Iranian capital and financed primarily by sugar and tea customs duties, is opened by the Shah; it runs from Khorramshahr to Tehran to Bandar-e Shah, connecting the Persian Gulf to the Caspian Sea.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-chronology-part-3',
-            loc: { section: 'Chronology of Iranian History Part 3' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-3/'
-          }
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/B20_Panorama_of_the_Vresk_valley_-_USACE-p15141coll5-9280.jpeg/1280px-B20_Panorama_of_the_Vresk_valley_-_USACE-p15141coll5-9280.jpeg',
+    page: 'https://commons.wikimedia.org/wiki/File:B20_Panorama_of_the_Vresk_valley_-_USACE-p15141coll5-9280.jpeg',
+    credit: { institution: 'U.S. Army Corps of Engineers, Stanley Scott Collection' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -242,5 +242,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/f/f5/Some_members_of_firts_national_front_of_Iran%2C_Mohammad_Mosaddegh_and_Hossein_Fatemi_-_Early_1950s.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Some_members_of_firts_national_front_of_Iran,_Mohammad_Mosaddegh_and_Hossein_Fatemi_-_Early_1950s.jpg',
+    credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
+    license: { id: 'public-domain' }
+  }
 })

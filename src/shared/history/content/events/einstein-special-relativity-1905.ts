@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Einstein’s special theory of relativity', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'discovery',
   start: {
     alts: [
@@ -48,6 +48,17 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q5',
+          text: 'Einstein had long been convinced that the Principle of Relativity must apply to all phenomena, mechanical or not. Now he found a way to show that this principle was compatible with electromagnetic theory after all. As Einstein later remarked, reconciling these seemingly incompatible ideas required "only" a new and more careful consideration of the concept of time. His new theory, later called the special theory of relativity, was based on a novel analysis of space and time',
+          lang: 'en',
+          cite: { source: 'aip-einstein-exhibit-great-works', loc: { section: 'Great Works' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://history.aip.org/exhibits/einstein/great1.htm'
+          }
+        },
         {
           id: 'q1',
           text: 'For SRT we have the paper On the Electrodynamics of Moving Bodies, in which the theory was first set forth in 1905 in its finished form',

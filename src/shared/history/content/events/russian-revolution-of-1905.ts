@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Russian Revolution of 1905', lang: 'en', role: 'primary' },
     { text: 'Революция 1905 года', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -112,6 +112,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q10',
+          text: 'Social and political unrest swept the Russian Empire in 1905, forcing the autocratic tsarist regime to grant the creation of a popularly-elected legislative body; the State Duma. However, the army remained largely loyal to the Tsar, unlike in the wartime conditions of 1917, and the regime did not topple.',
+          lang: 'en',
+          cite: {
+            source: 'eo1418-peeling-revolution-of-1905',
+            loc: { section: 'Revolution of 1905 (Russian Empire)' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/revolution-of-1905-russian-empire/'
+          }
+        },
         {
           id: 'q2',
           text: 'This event, which came to be called Bloody Sunday, combined with the embarrassing failures in the war with Japan to prompt more strikes, agrarian disorders, army mutinies, and terrorist acts organized by opposition groups. Workers formed a council, or soviet, in St. Petersburg. Armed uprisings occurred in Moscow, the Urals, Latvia, and parts of Poland. Activists from the zemstva and the broad professional Union of Unions formed the Constitutional Democratic Party, whose initials lent the party its informal name, the Kadets.',

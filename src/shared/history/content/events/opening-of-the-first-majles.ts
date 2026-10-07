@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Opening of the first Majles', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -39,6 +39,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q4',
+          text: 'The first Majles opens on October 7 and ratifies the Constitutional Charter on October 17.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-2',
+            loc: { section: 'Chronology of Iranian History Part 2, 1906' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
+          }
+        },
         {
           id: 'q1',
           text: 'The regulations provided for 156 deputies (Tārīḵ-e bīdārī, ed. Saʿīdī Sīrjānī, I, pp. 601-08); sixty of them were allotted to Tehran, reportedly in order to permit swift establishment of the Majles.',
@@ -88,20 +102,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/constitutional-revolution-ii'
-          }
-        },
-        {
-          id: 'q4',
-          text: 'The first Majles opens on October 7 and ratifies the Constitutional Charter on October 17.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-chronology-part-2',
-            loc: { section: 'Chronology of Iranian History Part 2, 1906' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         }
       ]

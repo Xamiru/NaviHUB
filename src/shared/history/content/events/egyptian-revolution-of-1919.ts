@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -234,6 +234,22 @@ export default defineEvent({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q10',
+          text: 'The strain on local agriculture and food resources resulted in widespread inflation, food scarcity, and increased disease, and the measures taken to deal with them resulted in widespread discontent with British rule that culminated in a national uprising which became known as the “Egyptian Revolution of 1919”.',
+          lang: 'en',
+          cite: { source: 'eo1418-rose-egypt', loc: { section: 'Egypt' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://encyclopedia.1914-1918-online.net/article/egypt/'
+          }
+        }
+      ]
+    },
+    {
       kind: 'causes',
       quotes: [
         {
@@ -408,5 +424,11 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/28.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/15/Zaghlul_Pacha_-_btv1b53119930j.jpg/1280px-Zaghlul_Pacha_-_btv1b53119930j.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Zaghlul_Pacha_-_btv1b53119930j.jpg',
+    credit: { institution: 'Bibliothèque nationale de France', creator: 'Agence Rol' },
+    license: { id: 'public-domain' }
+  }
 })

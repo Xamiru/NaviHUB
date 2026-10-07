@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Meiji Restoration', lang: 'en', role: 'primary' },
     { text: '明治維新', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -111,23 +111,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Those people who wanted to end Tokugawa rule did not envision a new government or a new society; they merely sought the transfer of power from Edo to Kyoto while retaining all their feudal prerogatives.',
+          text: 'Those people who wanted to end Tokugawa rule did not envision a new government or a new society; they merely sought the transfer of power from Edo to Kyoto while retaining all their feudal prerogatives. Instead, a profound change took place. The emperor emerged as a national symbol of unity in the midst of reforms that were much more radical than had been envisioned.',
           lang: 'en',
           cite: {
             source: 'loc-japan-country-study-1994',
             loc: { section: 'THE EMERGENCE OF MODERN JAPAN: The Meiji Restoration', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/22.htm' }
-        },
-        {
-          id: 'q2',
-          text: 'Instead, a profound change took place.',
-          lang: 'en',
-          cite: {
-            source: 'loc-japan-country-study-1994',
-            loc: { section: 'THE EMERGENCE OF MODERN JAPAN: The Meiji Restoration', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/22.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/japan/22.htm' }
         }
       ]
     },

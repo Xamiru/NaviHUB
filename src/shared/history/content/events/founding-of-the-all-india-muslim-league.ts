@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Founding of the All-India Muslim League', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -72,5 +72,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3c/All_India_Muslim_League_Dhaka_1906.jpg/1280px-All_India_Muslim_League_Dhaka_1906.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:All_India_Muslim_League_Dhaka_1906.jpg',
+    credit: { institution: 'Dawn' },
+    license: { id: 'public-domain' }
+  }
 })

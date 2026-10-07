@@ -23,7 +23,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -181,6 +181,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q6',
+          text: 'The Munich Agreement stipulated that Czechoslovakia must cede Sudeten territory to Germany.',
+          lang: 'en',
+          cite: {
+            source: 'loc-czechoslovakia-country-study-1987',
+            loc: { section: 'Munich', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'http://countrystudies.us/czech-republic/28.htm'
+          }
+        },
+        {
           id: 'q4',
           text: 'On September 28, Chamberlain appealed to Hitler for a conference. Hitler met the next day, at Munich, with the chiefs of government of France, Italy, and Britain. The Czechoslovak government was neither invited nor consulted.',
           lang: 'en',
@@ -203,20 +217,6 @@ export default defineEvent({
             loc: { section: 'Agreement concluded at Munich, September 29, 1938' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'https://avalon.law.yale.edu/imt/munich1.asp' }
-        },
-        {
-          id: 'q6',
-          text: 'The Munich Agreement stipulated that Czechoslovakia must cede Sudeten territory to Germany.',
-          lang: 'en',
-          cite: {
-            source: 'loc-czechoslovakia-country-study-1987',
-            loc: { section: 'Munich', para: '6' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'http://countrystudies.us/czech-republic/28.htm'
-          }
         }
       ]
     },

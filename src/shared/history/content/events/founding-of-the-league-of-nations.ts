@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Founding of the League of Nations', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -269,6 +269,12 @@ export default defineEvent({
       }
     }
   ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/79/President_Woodrow_Wilson%2C_portrait_photograph.tif/lossy-page1-1280px-President_Woodrow_Wilson%2C_portrait_photograph.tif.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:President_Woodrow_Wilson,_portrait_photograph.tif',
+    credit: { institution: 'Library of Congress', creator: 'Arnold Genthe' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'taft-papers-on-league-of-nations-1920',

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Philippine Revolution', lang: 'en', role: 'primary' },
     { text: 'Himagsikang Pilipino', lang: 'tl', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -337,5 +337,11 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/philippines/14.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/b/b2/AguinaldoMP.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:AguinaldoMP.jpg',
+    credit: { institution: 'Malacañang Palace' },
+    license: { id: 'public-domain' }
+  }
 })

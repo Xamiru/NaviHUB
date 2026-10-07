@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'भारत का विभाजन', lang: 'hi', role: 'native' },
     { text: 'تقسیم ہند', lang: 'ur', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'partition',
   start: {
     alts: [
@@ -164,6 +164,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q6',
+          text: 'On June 3, 1947, British prime minister Clement Attlee introduced a bill in the House of Commons calling for the independence and partition of India. On July 14, the House of Commons passed the India Independence Act, by which two independent dominions were created on the subcontinent; the princely states were left to accede to either.',
+          lang: 'en',
+          cite: {
+            source: 'loc-pakistan-country-study-1994',
+            loc: { section: 'Toward Partition', para: '10' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/pakistan/13.htm' }
+        },
+        {
           id: 'q1',
           text: '(1)As from the fifteenth day of August, nineteen hundred and forty-seven, two independent Dominions shall be set up in India, to be known respectively as India and Pakistan.',
           lang: 'en',
@@ -224,16 +234,6 @@ export default defineEvent({
           cite: {
             source: 'loc-pakistan-country-study-1994',
             loc: { section: 'Toward Partition', para: '8' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/pakistan/13.htm' }
-        },
-        {
-          id: 'q6',
-          text: 'On June 3, 1947, British prime minister Clement Attlee introduced a bill in the House of Commons calling for the independence and partition of India. On July 14, the House of Commons passed the India Independence Act, by which two independent dominions were created on the subcontinent; the princely states were left to accede to either.',
-          lang: 'en',
-          cite: {
-            source: 'loc-pakistan-country-study-1994',
-            loc: { section: 'Toward Partition', para: '10' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/pakistan/13.htm' }
         }
@@ -403,5 +403,14 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/pakistan/14.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/06/Map_of_the_partition_boundaries_in_the_Punjab%2C_Research_Dept.%2C_F.O.%2C_September%2C_1948.jpg/1280px-Map_of_the_partition_boundaries_in_the_Punjab%2C_Research_Dept.%2C_F.O.%2C_September%2C_1948.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Map_of_the_partition_boundaries_in_the_Punjab,_Research_Dept.,_F.O.,_September,_1948.jpg',
+    credit: {
+      institution: 'India: The Transfer of Power, 1942-47, vol. 12 (1983)',
+      creator: 'Research Department, Foreign Office'
+    },
+    license: { id: 'public-domain' }
+  }
 })

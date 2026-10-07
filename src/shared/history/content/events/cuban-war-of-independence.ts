@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Cuban War of Independence', lang: 'en', role: 'primary' },
     { text: 'Guerra de Independencia cubana', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -55,17 +55,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Auf Kuba beginnt der bis 1898 andauernde Unabhängigkeitskampf gegen die spanische Kolonialmacht.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '8' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1895.html'
-          }
-        },
-        {
           id: 'q2',
           text: 'The war that erupted in 1898 between the United States and Spain was preceded by three years of fighting by Cuban revolutionaries to gain independence from Spanish colonial rule.',
           lang: 'en',
@@ -77,6 +66,17 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1866-1898/spanish-american-war'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'Auf Kuba beginnt der bis 1898 andauernde Unabhängigkeitskampf gegen die spanische Kolonialmacht.',
+          lang: 'de',
+          cite: { source: 'lemo-chronik-1895', loc: { section: 'Chronik 1895', para: '8' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.dhm.de/lemo/jahreschronik/1895.html'
           }
         }
       ]

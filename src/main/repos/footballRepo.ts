@@ -211,6 +211,13 @@ export function ensureCompetitionCatalog(): void {
   })()
 }
 
+export function competitionLogos(): Partial<Record<FootballCompetitionKey, string>> {
+  const rows = getSqlite().prepare(`
+    SELECT key,image_path AS imagePath FROM football_competition WHERE image_path IS NOT NULL
+  `).all() as Array<{ key: FootballCompetitionKey; imagePath: string }>
+  return Object.fromEntries(rows.map((row) => [row.key, row.imagePath]))
+}
+
 export function listCompetitions(): FootballCompetition[] {
   ensureCompetitionCatalog()
   const rows = getSqlite().prepare(`
@@ -323,7 +330,7 @@ function coverageFor(competitionId?: number, seasonId?: number): FootballCoverag
 
 function honoursFor(whereSql: string, value: number): FootballHonour[] {
   const rows = getSqlite().prepare(`
-    SELECT h.*, s.label AS season_label, hc.name AS competition_name,
+    SELECT h.*, s.label AS season_label, hc.name AS competition_name, hc.key AS competition_key,
       t.id AS team_id_value, t.name AS team_name, t.short_name AS team_short_name,
       t.country AS team_country, t.is_national AS team_is_national,
       t.image_path AS team_image_path,
@@ -346,6 +353,7 @@ function honoursFor(whereSql: string, value: number): FootballHonour[] {
   return rows.map((row) => ({
     id: row.id as number,
     competitionId: row.competition_id as number,
+    competitionKey: row.competition_key as FootballCompetitionKey,
     competitionName: row.competition_name as string,
     seasonId: (row.season_id as number) ?? null,
     seasonLabel: (row.season_label as string) ?? null,

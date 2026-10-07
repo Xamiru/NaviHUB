@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'German hyperinflation of 1923', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -78,8 +78,8 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'The government also began printing money at such a rate that it soon became virtually worthless; by the fall of 1923, wheelbarrows were needed to carry enough currency for simple purchases as inflation reached rates beyond comprehension.',
+          id: 'q2',
+          text: 'In 1914 US$1 had equaled 4 marks. By mid-1920, US$1 was worth 40 marks, by early 1922 about 200 marks, a year later 18,000 marks, and by November 1923 4.2 trillion marks.',
           lang: 'en',
           cite: {
             source: 'loc-germany-country-study-1995',
@@ -88,8 +88,8 @@ export default defineEvent({
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/36.htm' }
         },
         {
-          id: 'q2',
-          text: 'In 1914 US$1 had equaled 4 marks. By mid-1920, US$1 was worth 40 marks, by early 1922 about 200 marks, a year later 18,000 marks, and by November 1923 4.2 trillion marks.',
+          id: 'q1',
+          text: 'The government also began printing money at such a rate that it soon became virtually worthless; by the fall of 1923, wheelbarrows were needed to carry enough currency for simple purchases as inflation reached rates beyond comprehension.',
           lang: 'en',
           cite: {
             source: 'loc-germany-country-study-1995',

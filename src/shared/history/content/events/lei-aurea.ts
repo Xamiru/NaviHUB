@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -83,6 +83,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'The so-called Golden Law of May 13, 1888, which ended slavery, was not an act of great bravery but a recognition that slavery was no longer viable.',
+          lang: 'en',
+          cite: {
+            source: 'loc-brazil-country-study-1997',
+            loc: { section: 'The Second Empire, 1840-89', para: '23' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/13.htm' }
+        },
+        {
           id: 'q1',
           text: 'Aufhebung der Sklaverei in Brasilien.',
           lang: 'de',
@@ -92,16 +102,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/jahreschronik/1888.html'
           }
-        },
-        {
-          id: 'q2',
-          text: 'The so-called Golden Law of May 13, 1888, which ended slavery, was not an act of great bravery but a recognition that slavery was no longer viable.',
-          lang: 'en',
-          cite: {
-            source: 'loc-brazil-country-study-1997',
-            loc: { section: 'The Second Empire, 1840-89', para: '23' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/13.htm' }
         }
       ]
     },

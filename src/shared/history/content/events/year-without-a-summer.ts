@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'disaster',
   start: {
     alts: [
@@ -38,11 +38,11 @@ export default defineEvent({
   prominence: 2,
   sections: [
     {
-      kind: 'causes',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
-          text: 'Enough ash was put into the atmosphere from the April 10 eruption to reduce incident sunlight on the Earth’s surface, causing global cooling, which resulted in the 1816 “year without a summer.”',
+          text: 'On April 10, 1815, the Tambora Volcano produced the largest eruption in recorded history. An estimated 150 cubic kilometers (36 cubic miles) of tephra—exploded rock and ash—resulted, with ash from the eruption recognized at least 1,300 kilometers (808 miles) away to the northwest. While the April 10 eruption was catastrophic, historical records and geological analysis of eruption deposits indicate that the volcano had been active between 1812 and 1815. Enough ash was put into the atmosphere from the April 10 eruption to reduce incident sunlight on the Earth’s surface, causing global cooling, which resulted in the 1816 “year without a summer.”',
           lang: 'en',
           cite: {
             source: 'nasa-earth-observatory-stefanov-tambora',
@@ -50,15 +50,10 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://earthobservatory.nasa.gov/images/39412/mount-tambora-volcano-sumbawa-island-indonesia'
           }
-        }
-      ]
-    },
-    {
-      kind: 'overview',
-      quotes: [
+        },
         {
           id: 'q2',
           text: 'The year following the eruption was known as The Year Without A Summer , where average temperatures in the Northern Hemisphere dropped a full degree Fahrenheit due to the resulting dust that was spewed high into the atmosphere.',
@@ -112,5 +107,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3b/CH-KBAR_-_Denkmaal_von_der_sehr_merkw%C3%BCrdigen_und_nie_erh%C3%B6rten_Theurung_des_Jahres_1817_-_KB-032500.tif/lossy-page1-1280px-CH-KBAR_-_Denkmaal_von_der_sehr_merkw%C3%BCrdigen_und_nie_erh%C3%B6rten_Theurung_des_Jahres_1817_-_KB-032500.tif.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:CH-KBAR_-_Denkmaal_von_der_sehr_merkw%C3%BCrdigen_und_nie_erh%C3%B6rten_Theurung_des_Jahres_1817_-_KB-032500.tif',
+    credit: { institution: 'Kantonsbibliothek Appenzell Ausserrhoden', creator: 'Johannes Gmünder' },
+    license: { id: 'public-domain' }
+  }
 })

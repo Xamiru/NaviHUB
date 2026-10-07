@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Aslanduz', lang: 'en', role: 'primary' },
     { text: 'نبرد اصلاندوز', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -100,6 +100,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q8',
+          text: 'Despite the efforts of the British mission, ʿAbbās Mirzā’s attempt to exploit Russian weakness during Napoleon’s invasion of 1812 and to regain the lost territory of Georgia was a failure.Four British officers and 12 NCOs actually accompanied the Iranian troops into battle and, although the Iranians snatched one victory when they routed a Russian force near the Aras (Araxes) river in February 1812, the campaign ended in complete defeat at the battle of Āṣlānduz on 31 October 1812 during which one British officer, Charles Christie, was killed.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-cronin-army-qajar',
+            loc: { section: 'ARMY v. Qajar Period', para: '15' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/army-v/'
+          }
+        },
         {
           id: 'q1',
           text: 'ĀṢLĀNDŪZ (or AṢLĀNDŪZ), a small village in the northeast of the Iranian province of East Azarbaijan (dehestān of Moḡān, baḵš of Germī, šahrestān of Ardabīl) on the south bank of the Aras river.',
@@ -203,5 +217,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/b/bf/%D0%90%D1%81%D0%BB%D0%B0%D0%BD%D0%B4%D1%83%D0%B7%D1%81%D0%BA%D0%B0%D1%8F_%D0%B1%D0%B8%D1%82%D0%B2%D0%B0.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:%D0%90%D1%81%D0%BB%D0%B0%D0%BD%D0%B4%D1%83%D0%B7%D1%81%D0%BA%D0%B0%D1%8F_%D0%B1%D0%B8%D1%82%D0%B2%D0%B0.jpg',
+    credit: { institution: 'Pokorennyi Kavkaz (St Petersburg, 1904)', creator: 'M. Andreev' },
+    license: { id: 'public-domain' }
+  }
 })

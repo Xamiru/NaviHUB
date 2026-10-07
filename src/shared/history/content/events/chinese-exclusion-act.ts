@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -221,5 +221,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/97/Chineseexclusionact.JPG/1280px-Chineseexclusionact.JPG',
+    page: 'https://commons.wikimedia.org/wiki/File:Chineseexclusionact.JPG',
+    credit: { institution: 'National Archives and Records Administration' },
+    license: { id: 'public-domain' }
+  }
 })

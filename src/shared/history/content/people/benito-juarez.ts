@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Benito Juárez', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   regions: ['latin-america'],
   roles: ['politician', 'head-of-state'],
   offices: [
@@ -68,5 +68,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/8b/Benito_Juarez.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Benito_Juarez.jpg',
+    credit: { institution: 'Library of Congress' },
+    license: { id: 'public-domain' }
+  }
 })

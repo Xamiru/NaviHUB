@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Anschluss', lang: 'en', role: 'primary' },
     { text: 'Anschluss Österreichs', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'occupation',
   start: {
     alts: [
@@ -107,6 +107,16 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q12',
+          text: 'In March 1938, the German army was permitted to occupy Austria by that country\'s browbeaten political leadership. The annexation (Anschluss) of Austria was welcomed by most Austrians, who wished to become part of a greater Germany, something forbidden by the Treaty of Versailles.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'The Third Reich: Foreign Policy', para: '5' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/40.htm' }
+        },
         {
           id: 'q3',
           text: 'Nonetheless, on March 12, Hitler sent the German army into Austria.',

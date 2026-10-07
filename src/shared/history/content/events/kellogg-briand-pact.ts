@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -252,5 +252,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/dc/Kellogg%E2%80%93Briand_Pact_%281928%29.jpg/1280px-Kellogg%E2%80%93Briand_Pact_%281928%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Kellogg%E2%80%93Briand_Pact_(1928).jpg',
+    credit: { institution: 'Nationaal Archief' },
+    license: { id: 'public-domain' }
+  }
 })

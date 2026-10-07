@@ -16,7 +16,7 @@ export default definePeriod({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -124,5 +124,14 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/5/52/Portrait_d%27Ibrahim_Pacha_2.JPG',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_d%27Ibrahim_Pacha_2.JPG',
+    credit: {
+      institution: 'Réunion des musées nationaux (art.rmngp.fr)',
+      creator: 'Charles-Philippe Larivière'
+    },
+    license: { id: 'public-domain' }
+  }
 })

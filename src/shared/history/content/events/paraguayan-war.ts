@@ -26,7 +26,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -167,14 +167,14 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Apart from some Paraguayan victories on the northern front, the war was a disaster for Solano López.',
+          id: 'q19',
+          text: 'Solano López, mistakenly expecting help from anti-Buenos Aires caudillos, sent his forces into Corrientes to get at Rio Grande do Sul and Uruguay and found himself at war with both Argentina and Brazil.',
           lang: 'en',
           cite: {
-            source: 'loc-paraguay-country-study-1988',
-            loc: { section: 'The War of the Triple Alliance', para: '3' }
+            source: 'loc-brazil-country-study-1997',
+            loc: { section: 'The Second Empire, 1840-89', para: '9' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/paraguay/11.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/brazil/13.htm' }
         },
         {
           id: 'q2',
@@ -185,6 +185,16 @@ export default defineEvent({
             loc: { section: 'The Second Empire, 1840-89', para: '9' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/13.htm' }
+        },
+        {
+          id: 'q1',
+          text: 'Apart from some Paraguayan victories on the northern front, the war was a disaster for Solano López.',
+          lang: 'en',
+          cite: {
+            source: 'loc-paraguay-country-study-1988',
+            loc: { section: 'The War of the Triple Alliance', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/paraguay/11.htm' }
         }
       ]
     },
@@ -440,5 +450,11 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/paraguay/11.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Legion_Paraguaya.jpg/1280px-Legion_Paraguaya.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Legion_Paraguaya.jpg',
+    credit: { institution: 'Biblioteca Nacional de Uruguay' },
+    license: { id: 'public-domain' }
+  }
 })

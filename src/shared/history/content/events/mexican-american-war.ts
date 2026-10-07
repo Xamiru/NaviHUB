@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Mexican–American War', lang: 'en', role: 'primary' },
     { text: 'Guerra de Estados Unidos-México', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -183,6 +183,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Hostilities between Mexico and the United States began on April 25, 1846, when several United States soldiers were killed in a cavalry skirmish with Mexican forces in the disputed territory.',
+          lang: 'en',
+          cite: {
+            source: 'loc-mexico-country-study-1996',
+            loc: { section: 'The Mexican-American War', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/mexico/18.htm' }
+        },
+        {
           id: 'q1',
           text: 'During his tenure, U.S. President James K. Polk oversaw the greatest territorial expansion of the United States to date.',
           lang: 'en',
@@ -198,16 +208,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1830-1860/texas-annexation'
           }
-        },
-        {
-          id: 'q2',
-          text: 'Hostilities between Mexico and the United States began on April 25, 1846, when several United States soldiers were killed in a cavalry skirmish with Mexican forces in the disputed territory.',
-          lang: 'en',
-          cite: {
-            source: 'loc-mexico-country-study-1996',
-            loc: { section: 'The Mexican-American War', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/mexico/18.htm' }
         },
         {
           id: 'q3',

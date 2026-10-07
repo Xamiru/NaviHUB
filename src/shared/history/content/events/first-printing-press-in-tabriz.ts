@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'First printing press in Tabriz', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'invention',
   start: {
     alts: [
@@ -124,5 +124,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/ba/Manuscript_of_the_Jih%C4%81d%C4%AByyah_%28%22Treatise_on_holy_war%22%29_by_Abu_al-Qasim_ibn_%27Is%C3%A1_Qa%27im%27maqam_Farahani%2C_Persian_manuscript%2C_printed_in_Tabriz%2C_Iran%2C_dated_1817.jpg/1280px-thumbnail.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Manuscript_of_the_Jih%C4%81d%C4%AByyah_(%22Treatise_on_holy_war%22)_by_Abu_al-Qasim_ibn_%27Is%C3%A1_Qa%27im%27maqam_Farahani,_Persian_manuscript,_printed_in_Tabriz,_Iran,_dated_1817.jpg',
+    credit: { institution: 'Library of Congress, World Digital Library' },
+    license: { id: 'cc0' }
+  }
 })

@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -85,16 +85,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q2',
-          text: 'The price the sultan paid Russia for its assistance was the Treaty of Hünkar Iskelesi of 1833.',
-          lang: 'en',
-          cite: {
-            source: 'loc-turkey-country-study-1995',
-            loc: { section: 'External Threats and Internal Transformations', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/10.htm' }
-        },
-        {
           id: 'q3',
           text: 'In 1833 Russia negotiated the Treaty of Unkiar-Skelessi with the Ottoman Empire.',
           lang: 'en',
@@ -103,6 +93,16 @@ export default defineEvent({
             loc: { section: 'Ruling the Empire', para: '17' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/5.htm' }
+        },
+        {
+          id: 'q2',
+          text: 'The price the sultan paid Russia for its assistance was the Treaty of Hünkar Iskelesi of 1833.',
+          lang: 'en',
+          cite: {
+            source: 'loc-turkey-country-study-1995',
+            loc: { section: 'External Threats and Internal Transformations', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/10.htm' }
         }
       ]
     },
@@ -131,5 +131,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d8/Mahmud_II.jpg/1280px-Mahmud_II.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Mahmud_II.jpg',
+    credit: { institution: 'Château de Versailles', creator: 'Henri-Guillaume Schlesinger' },
+    license: { id: 'public-domain' }
+  }
 })

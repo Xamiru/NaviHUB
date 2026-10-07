@@ -17,10 +17,11 @@
 //    interchangeably, and all three are redirects to one article.
 
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from '../http'
+import { stripWikimediaTracking, WIKIMEDIA_USER_AGENT } from '@shared/wikimediaAgent'
 import type { WrestlingPromotionCfg } from '@shared/wrestling'
 
 const API = 'https://en.wikipedia.org/w/api.php'
-const UA = 'NaviHUB/0.1 (personal media tracker; wrestling wiki import)'
+const UA = WIKIMEDIA_USER_AGENT
 
 // The API's own cap for a titles= batch on an anonymous connection.
 export const TITLES_PER_REQUEST = 50
@@ -179,15 +180,6 @@ export async function enumerateEvents(cfg: WrestlingPromotionCfg): Promise<strin
   return [...all]
 }
 
-// The API now appends `?utm_source=…&utm_campaign=api&utm_content=…` to every
-// image URL it returns. downloadImage is content-addressed on sha1(url), so
-// leaving those on means the whole poster set re-downloads the day WMF changes
-// a campaign string.
-function stripTracking(url: string): string {
-  const q = url.indexOf('?')
-  return q < 0 ? url : url.slice(0, q)
-}
-
 // Resolves `File:…` names to downloadable URLs.
 //
 // This exists instead of `prop=pageimages` because pageimages does not work for
@@ -223,7 +215,7 @@ export async function resolveFiles(fileNames: string[]): Promise<Map<string, str
     for (const p of json?.query?.pages ?? []) {
       const src = p?.imageinfo?.[0]?.url
       if (p?.title && typeof src === 'string') {
-        const url = stripTracking(src)
+        const url = stripWikimediaTracking(src)
         out.set(p.title, url)
         const asked = back.get(p.title)
         if (asked) out.set(asked, url)
@@ -250,7 +242,7 @@ export async function pageImages(titles: string[]): Promise<Map<string, string>>
     })
     for (const p of json?.query?.pages ?? []) {
       const src = p?.original?.source
-      if (p?.title && typeof src === 'string') out.set(p.title, stripTracking(src))
+      if (p?.title && typeof src === 'string') out.set(p.title, stripWikimediaTracking(src))
     }
     await sleep(REQUEST_DELAY_MS)
   }

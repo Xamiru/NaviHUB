@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Construction of the Panama Canal', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -61,6 +61,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q6',
+          text: 'President Theodore Roosevelt oversaw the realization of a long-term United States goal—a trans-isthmian canal. Throughout the 1800s, American and British leaders and businessmen wanted to ship goods quickly and cheaply between the Atlantic and Pacific coasts.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-panama-canal',
+            loc: { section: 'Building the Panama Canal, 1903–1914', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://history.state.gov/milestones/1899-1913/panama-canal'
+          }
+        },
         {
           id: 'q1',
           text: 'When the United States canal builders arrived in 1904 to begin their momentous task, Panama City and Colón were both small, squalid towns. A single railroad stretched between the towns, running alongside the muddy scars of the abortive French effort. The new builders were haunted by the ghosts of de Lesseps\'s failure and of the workers, some 25,000 of whom had died on the project.',

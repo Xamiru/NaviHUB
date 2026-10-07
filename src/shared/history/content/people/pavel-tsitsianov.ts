@@ -19,7 +19,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   regions: ['russia-central-asia', 'iran'],
   roles: ['military'],
   sections: [
@@ -62,5 +62,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/9/95/Pavel_Dmitrievich_Tsitsianov-a.JPG',
+    page: 'https://commons.wikimedia.org/wiki/File:Pavel_Dmitrievich_Tsitsianov-a.JPG',
+    credit: { institution: 'Russkie portrety XVIII i XIX stoletii (1905-1909)' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -5,6 +5,7 @@ import PageHeader from '../components/PageHeader'
 import PageStatus from '../components/PageStatus'
 import { Field } from '../components/Field'
 import ChronologyOrder from '../components/quiz/ChronologyOrder'
+import { FootballTeamMark } from '../components/football/FootballCommon'
 import { Group, Pill } from '../components/PillGroup'
 import { api } from '../lib/api'
 import { qk } from '../lib/queryKeys'
@@ -33,6 +34,11 @@ const COPY: Record<FootballQuizGameKind, { title: string; body: string }> = {
 }
 
 type Phase = 'setup' | 'play' | 'summary'
+
+/** A crest for a team the quiz names only as text; teams without a picture get the two-colour crest. */
+function QuizCrest({ name, imagePath, size = 'xs' }: { name: string; imagePath?: string | null; size?: 'xs' | 'sm' | 'md' }) {
+  return <FootballTeamMark team={{ id: 0, name, shortName: null, country: null, isNational: false, imagePath: imagePath ?? null, colors: null, favorite: false }} size={size} />
+}
 
 export default function FootballQuizGamePage({ kind }: { kind: FootballQuizGameKind }) {
   const qc = useQueryClient()
@@ -267,9 +273,18 @@ export default function FootballQuizGamePage({ kind }: { kind: FootballQuizGameK
     <div className="mx-auto max-w-4xl p-6">
       <PageHeader title={COPY[kind].title} subtitle={`Question ${index + 1} of ${questions.length}`} back={{ to: '/football/quiz', label: 'Football quiz room' }} />
       <p className="mb-5 text-xl font-semibold text-ink">{question.prompt}</p>
-      {question.kind === 'footballScoreline' && <p className="mb-5 text-sm text-ink-muted">{question.homeTeam} vs {question.awayTeam} / {question.matchDate}{question.stage ? ` / ${question.stage}` : ''}</p>}
-      {question.kind === 'footballCareerPath' && <ol className="mb-6 border-y border-line-subtle py-2">{question.spells.map((spell, spellIndex) => <li key={`${spell.team}-${spellIndex}`} className="grid grid-cols-[110px_minmax(0,1fr)_auto] gap-3 border-b border-line-subtle py-2.5 last:border-0"><span className="text-xs text-ink-muted">{spell.ellipsisBefore ? '... ' : ''}{spell.start ?? '?'} to {spell.end ?? '?'}</span><span className="font-medium text-ink">{spell.team}</span><span className="text-xs text-ink-muted">{spell.loan ? 'loan' : 'senior'}</span></li>)}</ol>}
-      {chronology ? <ChronologyOrder order={order} choices={question.choices} disabled={selected != null} onChange={setOrder} /> : <div className="grid gap-3 sm:grid-cols-2">{question.choices.map((choice) => <button key={choice.key} className={`card min-h-20 p-4 text-left text-sm ${selected === choice.key ? 'border-accent' : ''}`} disabled={selected != null} onClick={() => submitChoice(choice.key)}>{choice.label}</button>)}</div>}
+      {question.kind === 'footballScoreline' && (
+        <div className="mb-5">
+          <p className="flex flex-wrap items-center gap-2 text-lg font-semibold text-ink">
+            <QuizCrest name={question.homeTeam} imagePath={question.homeImagePath} size="sm" />{question.homeTeam}
+            <span className="text-sm font-normal text-ink-muted">vs</span>
+            {question.awayTeam}<QuizCrest name={question.awayTeam} imagePath={question.awayImagePath} size="sm" />
+          </p>
+          <p className="mt-1 text-sm text-ink-muted">{question.matchDate}{question.stage ? ` / ${question.stage}` : ''}</p>
+        </div>
+      )}
+      {question.kind === 'footballCareerPath' && <ol className="mb-6 border-y border-line-subtle py-2">{question.spells.map((spell, spellIndex) => <li key={`${spell.team}-${spellIndex}`} className="grid grid-cols-[110px_minmax(0,1fr)_auto] gap-3 border-b border-line-subtle py-2.5 last:border-0"><span className="text-xs text-ink-muted">{spell.ellipsisBefore ? '... ' : ''}{spell.start ?? '?'} to {spell.end ?? '?'}</span><span className="flex min-w-0 items-center gap-2 font-medium text-ink"><QuizCrest name={spell.team} imagePath={spell.imagePath} /><span className="truncate">{spell.team}</span></span><span className="text-xs text-ink-muted">{spell.loan ? 'loan' : 'senior'}</span></li>)}</ol>}
+      {chronology ? <ChronologyOrder order={order} choices={question.choices} disabled={selected != null} onChange={setOrder} /> : <div className="grid gap-3 sm:grid-cols-2">{question.choices.map((choice) => <button key={choice.key} className={`card flex min-h-20 items-center gap-3 p-4 text-left text-sm ${selected === choice.key ? 'border-accent' : ''}`} disabled={selected != null} onClick={() => submitChoice(choice.key)}>{question.kind === 'footballChampion' && <QuizCrest name={choice.label} imagePath={choice.imagePath} size="md" />}<span>{choice.label}</span></button>)}</div>}
       {selected == null ? chronology && <button className="btn-primary mt-5" onClick={submitChronology}>Submit order</button> : (
         <div className="mt-6 border-t border-line-subtle pt-5">
           <div className="flex items-center justify-between gap-4">

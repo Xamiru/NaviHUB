@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Independence of Brazil', lang: 'en', role: 'primary' },
     { text: 'Independência do Brasil', lang: 'pt', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'independence',
   start: {
     alts: [
@@ -160,13 +160,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'In a famous scene at Ipiranga on September 7, 1822, he had to choose between returning to Portugal in disgrace or opting for independence.',
+          text: 'Returning from an excursion to Santos, Pedro received messages from his wife and from Andrada e Silva that the Côrtes considered his government traitorous and was dispatching more troops. In a famous scene at Ipiranga on September 7, 1822, he had to choose between returning to Portugal in disgrace or opting for independence.',
           lang: 'en',
           cite: {
             source: 'loc-brazil-country-study-1997',
             loc: { section: 'The Empire, 1822-89', para: '6' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/11.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/brazil/11.htm' }
         },
         {
           id: 'q5',

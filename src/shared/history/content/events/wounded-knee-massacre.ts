@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'massacre',
   start: {
     alts: [
@@ -391,11 +391,5 @@ export default defineEvent({
         }
       }
     }
-  ],
-  hero: {
-    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/91/Burial_of_the_dead_at_the_battle_of_Wounded_Knee%2C_S.D._LCCN2007681010.jpg/1280px-Burial_of_the_dead_at_the_battle_of_Wounded_Knee%2C_S.D._LCCN2007681010.jpg',
-    page: 'https://commons.wikimedia.org/wiki/File:Burial_of_the_dead_at_the_battle_of_Wounded_Knee,_S.D._LCCN2007681010.jpg',
-    credit: { institution: 'Library of Congress' },
-    license: { id: 'public-domain' }
-  }
+  ]
 })

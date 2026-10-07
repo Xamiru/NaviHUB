@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Fall and killing of Qaem-Maqam Farahani', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'assassination',
   start: {
     alts: [
@@ -103,6 +103,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q7',
+          text: '1835 Murder of Abu’l-Qāsem Qāʾemmaqām by order of the shah and the appointment of Hājj Mirzā Āḡāsi as grand vizier.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-2',
+            loc: { section: 'Chronology of Iranian History Part 2, 1927' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
+          }
+        },
+        {
           id: 'q3',
           text: 'Victim of slanderous accusations, he was arrested and murdered on the shah’s order on 29 Ṣafar 1251/26 June 1835 (Ḵormuji, p. 25; Eʿteżād-al-Salṭana, p. 398, 437-38; Fasāʾi, ed. Rasgār, p. 767; Solṭān-Aḥmad Mirzā, editor’s note, pp. 253-64).',
           lang: 'en',
@@ -162,5 +176,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/Portrait_of_Muhammad_Shah_Qajar_and_his_Vizier_Haj_Mirza_Aghasi_MET_DP345140.jpg/1280px-Portrait_of_Muhammad_Shah_Qajar_and_his_Vizier_Haj_Mirza_Aghasi_MET_DP345140.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Muhammad_Shah_Qajar_and_his_Vizier_Haj_Mirza_Aghasi_MET_DP345140.jpg',
+    credit: { institution: 'Metropolitan Museum of Art' },
+    license: { id: 'cc0' }
+  }
 })

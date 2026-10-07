@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Khorasan campaign of Abbas Mirza', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -120,20 +120,6 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q1',
-          text: 'In the aftermath of Persia’s 1827 defeat in the second round of wars with Russia, the whole of Khorasan plunged into a phase of tribal insurrection. Fearing the immanent loss of the province to Afghans, Turkmans, and Kurds, in 1830 the shah summoned ʿAbbās Mirzā from Azarbaijan and gave him the task of pacifying Khorasan, a move that was bound to arouse British suspicion.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-amanat-herat-vi',
-            loc: { section: 'HERAT vi. THE HERAT QUESTION', para: '7' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/herat-vi'
-          }
-        },
-        {
           id: 'q2',
           text: 'The crown prince’s position was always in jeopardy from the lack of any clear order of succession and the decentralizing policy of Fatḥ-ʿAlī Shah (factors which had an important effect on British and Russian attitudes).',
           lang: 'en',
@@ -152,6 +138,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q1',
+          text: 'In the aftermath of Persia’s 1827 defeat in the second round of wars with Russia, the whole of Khorasan plunged into a phase of tribal insurrection. Fearing the immanent loss of the province to Afghans, Turkmans, and Kurds, in 1830 the shah summoned ʿAbbās Mirzā from Azarbaijan and gave him the task of pacifying Khorasan, a move that was bound to arouse British suspicion.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-amanat-herat-vi',
+            loc: { section: 'HERAT vi. THE HERAT QUESTION', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/herat-vi'
+          }
+        },
         {
           id: 'q3',
           text: 'ʿAbbās Mīrzā departed at once for the east and, in the summer and autumn of 1832, conquered the territory east and northeast of Mašhad—Ḵabūšān, Saraḵs, and Torbat-e Haydarī (Hedāyat, X, pp. 52, 55).',

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Sino-French War', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -68,6 +68,17 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q11',
+          text: 'During 1884 the French made themselves masters of the lower delta. Throughout the campaign Chinese regulars fought against the French, who thus found themselves involved in war with China.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-tongking', loc: { section: 'TONGKING', para: '31' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Tongking'
+          }
+        },
         {
           id: 'q1',
           text: 'Following a victorious war against China in 1884-85, France also took Annam.',

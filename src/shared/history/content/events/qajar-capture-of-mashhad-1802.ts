@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Qajar capture of Mashhad (1802)', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -113,5 +113,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8e/Main_Gate_of_Imam_Riza%2C_Mashhad%2C_Iran-1850s.jpg/1280px-Main_Gate_of_Imam_Riza%2C_Mashhad%2C_Iran-1850s.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Main_Gate_of_Imam_Riza,_Mashhad,_Iran-1850s.jpg',
+    credit: { institution: 'Metropolitan Museum of Art' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'جشن هزاره فردوسی', lang: 'fa', role: 'native' },
     { text: 'jašn-e hazāra', lang: 'fa-Latn', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'cultural',
   start: {
     alts: [
@@ -226,5 +226,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/a3/Rpferdosi.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Rpferdosi.jpg',
+    credit: { institution: 'Catherine and Jacques Legrand, Shah-i Iran (1999)' },
+    license: { id: 'public-domain' }
+  }
 })

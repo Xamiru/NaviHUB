@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'First cholera pandemic in Iran', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'epidemic',
   start: {
     alts: [
@@ -81,7 +81,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'In fact, it is possible to recognize the first clear appearance of the disease in Persia in the first great pandemic, which broke out in India in 1232/1817 and reached Persia in 1236/1821.',
+          text: 'In Persian cholera was usually called wabā (wabāʾ), the term for any epidemic disease, but sometimes also hayża, which was more correctly applied to clinically similar but relatively benign diseases with which cholera was frequently confused before the German Robert Koch (1843-1910) discovered the bacterium (cholera vibrio, Vibrio comma, Vibrio cholerae Pacini 1854; Howard-Jones, p. 20) in 1301/1884, for example, Cholera sporadica (wabā-­ye pāʾīza “autumn cholera,” ṯeql-e sard “sporadic chol­era”) and infant diarrheas (Cholera ablactatorum; Schlimmer, pp. 130-35; Polak, I, p. 196, II, p. 345). In fact, it is possible to recognize the first clear appearance of the disease in Persia in the first great pandemic, which broke out in India in 1232/1817 and reached Persia in 1236/1821.',
           lang: 'en',
           cite: {
             source: 'iranica-de-planhol-balland-cholera',
@@ -89,7 +89,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/cholera-disease/'
           }
         },

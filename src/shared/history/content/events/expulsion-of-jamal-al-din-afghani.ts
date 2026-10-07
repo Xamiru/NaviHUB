@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Expulsion of Jamal al-Din al-Afghani', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -186,5 +186,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/a8/Al_afghani.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Al_afghani.jpg',
+    credit: { institution: 'E. G. Browne, The Persian Revolution (Cambridge University Press, 1910)' },
+    license: { id: 'public-domain' }
+  }
 })

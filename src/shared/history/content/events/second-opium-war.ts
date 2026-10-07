@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Second Opium War', lang: 'en', role: 'primary' },
     { text: '第二次鴉片戰爭', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -131,33 +131,11 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'Following the First Opium War in the 1840s, the Western powers concluded a series of treaties with China in an effort to open its lucrative markets to Western trade. In the 1850s, the United States and the European powers grew increasingly dissatisfied with both the terms of their treaties with China and the Qing Government’s failure to adhere to them.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-opening-to-china-2',
-            loc: {
-              section: 'The Opening to China Part II: the Second Opium War, the United States, and the Treaty of Tianjin, 1857–1859',
-              para: '1'
-            }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1830-1860/china-2'
-          }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
-          id: 'q2',
-          text: 'The British forced the issue by attacking the Chinese port cities of Guangzhou and Tianjin in the Second Opium War.',
+          id: 'q1',
+          text: 'Following the First Opium War in the 1840s, the Western powers concluded a series of treaties with China in an effort to open its lucrative markets to Western trade. In the 1850s, the United States and the European powers grew increasingly dissatisfied with both the terms of their treaties with China and the Qing Government’s failure to adhere to them. The British forced the issue by attacking the Chinese port cities of Guangzhou and Tianjin in the Second Opium War.',
           lang: 'en',
           cite: {
             source: 'state-dept-milestones-opening-to-china-2',
@@ -168,7 +146,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://history.state.gov/milestones/1830-1860/china-2'
           }
         },

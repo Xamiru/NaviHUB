@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Pierre de Coubertin', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -85,5 +85,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Baron_P._de_Coubertin_LCCN2014698094.jpg/1280px-Baron_P._de_Coubertin_LCCN2014698094.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Baron_P._de_Coubertin_LCCN2014698094.jpg',
+    credit: { institution: 'Library of Congress', creator: 'Bain News Service' },
+    license: { id: 'public-domain' }
+  }
 })

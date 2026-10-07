@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -314,5 +314,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/89/MohammadKhiabaniAndOthers.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:MohammadKhiabaniAndOthers.jpg',
+    credit: { institution: 'Digital Library of India (Internet Archive)' },
+    license: { id: 'public-domain' }
+  }
 })

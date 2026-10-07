@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Proclamation of the Republic in Brazil', lang: 'en', role: 'primary' },
     { text: 'Proclamação da República', lang: 'pt', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'coup',
   start: {
     alts: [
@@ -61,6 +61,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Taking advantage of cabinet crises in 1888 and 1889 and of rising frustration among military officers, republicans favoring change by revolution rather than by evolution drew military officers, led by Field Marshal Fonseca, into a conspiracy to replace the cabinet in November 1889. What started as an armed demonstration demanding replacement of a cabinet turned within hours into a coup d\'état deposing Emperor Pedro II.',
+          lang: 'en',
+          cite: {
+            source: 'loc-brazil-country-study-1997',
+            loc: { section: 'The Second Empire, 1840-89', para: '24' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/13.htm' }
+        },
+        {
           id: 'q1',
           text: 'Kaiser Peter II. von Brasilien (1825-1891) wird durch einen Militärputsch gestürzt. Brasilien wird Republik.',
           lang: 'de',
@@ -70,16 +80,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/jahreschronik/1889.html'
           }
-        },
-        {
-          id: 'q2',
-          text: 'Taking advantage of cabinet crises in 1888 and 1889 and of rising frustration among military officers, republicans favoring change by revolution rather than by evolution drew military officers, led by Field Marshal Fonseca, into a conspiracy to replace the cabinet in November 1889. What started as an armed demonstration demanding replacement of a cabinet turned within hours into a coup d\'état deposing Emperor Pedro II.',
-          lang: 'en',
-          cite: {
-            source: 'loc-brazil-country-study-1997',
-            loc: { section: 'The Second Empire, 1840-89', para: '24' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/brazil/13.htm' }
         }
       ]
     },

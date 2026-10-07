@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -62,32 +62,17 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'causes',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'By 1936 the increase in Jewish immigration and land acquisition, the growing power of Hajj Amin al Husayni, and general Arab frustration at the continuation of European rule, radicalized increasing numbers of Palestinian Arabs.',
-          lang: 'en',
-          cite: {
-            source: 'loc-israel-country-study-1988',
-            loc: { section: 'The Palestinian Revolt', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/17.htm' }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
           id: 'q2',
-          text: 'Thus, in April 1936 an Arab attack on a Jewish bus led to a series of incidents that escalated into a major Palestinian rebellion.',
+          text: 'By 1936 the increase in Jewish immigration and land acquisition, the growing power of Hajj Amin al Husayni, and general Arab frustration at the continuation of European rule, radicalized increasing numbers of Palestinian Arabs. Thus, in April 1936 an Arab attack on a Jewish bus led to a series of incidents that escalated into a major Palestinian rebellion.',
           lang: 'en',
           cite: {
             source: 'loc-israel-country-study-1988',
             loc: { section: 'The Palestinian Revolt', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/17.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/israel/17.htm' }
         },
         {
           id: 'q3',

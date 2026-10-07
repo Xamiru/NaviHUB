@@ -15,7 +15,7 @@ export default defineEvent({
     },
     { text: '日中戦争', lang: 'ja', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -167,6 +167,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'War was launched against China after the Marco Polo Bridge Incident of July 7, 1937, in which an allegedly unplanned clash took place near Beiping (as Beijing was then called) between Chinese and Japanese troops and quickly escalated into full-scale warfare. The Second Sino-Japanese War (1937-45) ensued, and relations with the United States, Britain, and the Soviet Union deteriorated.',
+          lang: 'en',
+          cite: {
+            source: 'loc-japan-country-study-1994',
+            loc: { section: 'The Rise of the Militarists', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/32.htm' }
+        },
+        {
           id: 'q2',
           text: 'The Chinese resistance stiffened after July 7, 1937, when a clash occurred between Chinese and Japanese troops outside Beijing (then renamed Beiping) near the Marco Polo Bridge.',
           lang: 'en',
@@ -185,16 +195,6 @@ export default defineEvent({
             loc: { section: 'Anti-Japanese War', para: '2' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/22.htm' }
-        },
-        {
-          id: 'q4',
-          text: 'War was launched against China after the Marco Polo Bridge Incident of July 7, 1937, in which an allegedly unplanned clash took place near Beiping (as Beijing was then called) between Chinese and Japanese troops and quickly escalated into full-scale warfare. The Second Sino-Japanese War (1937-45) ensued, and relations with the United States, Britain, and the Soviet Union deteriorated.',
-          lang: 'en',
-          cite: {
-            source: 'loc-japan-country-study-1994',
-            loc: { section: 'The Rise of the Militarists', para: '7' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/32.htm' }
         }
       ]
     },

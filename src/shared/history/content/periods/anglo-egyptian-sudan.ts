@@ -16,7 +16,7 @@ export default definePeriod({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -84,5 +84,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/4/45/Century_Mag_the_Nile_and_NE_Africa.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Century_Mag_the_Nile_and_NE_Africa.png',
+    credit: { institution: 'The Century Magazine (February 1899)' },
+    license: { id: 'public-domain' }
+  }
 })

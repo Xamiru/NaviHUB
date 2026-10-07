@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russian annexation of Georgia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'occupation',
   start: {
     alts: [
@@ -97,6 +97,19 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'In 1801 Tsar Alexander I summarily abolished the kingdom of Kartli-Kakhetia, and the heir to the Bagratid throne was forced to abdicate. In the next decade, the Russian Empire gradually annexed Georgia\'s entire territory. Eastern Georgia (the regions of Kartli and Kakhetia) became part of the Russian Empire in 1801, and western Georgia (Imeretia) was incorporated in 1804.',
+          lang: 'en',
+          cite: {
+            source: 'loc-georgia-country-study-1994',
+            loc: {
+              section: 'Within the Russian Empire: Russian Influence in the Nineteenth Century',
+              para: '3'
+            }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/georgia/5.htm' }
+        },
+        {
           id: 'q1',
           text: 'Simultaneously, a confrontation was impending, since Iran and Russia both claimed the same territories in the eastern Caucasus. Threatened by Fatḥ-ʿAli Shah, Georgia asked Russia for protection in 1799, and the following year Georgia became a part of the Russian empire.',
           lang: 'en',
@@ -143,19 +156,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/army-v/'
           }
-        },
-        {
-          id: 'q4',
-          text: 'In 1801 Tsar Alexander I summarily abolished the kingdom of Kartli-Kakhetia, and the heir to the Bagratid throne was forced to abdicate. In the next decade, the Russian Empire gradually annexed Georgia\'s entire territory. Eastern Georgia (the regions of Kartli and Kakhetia) became part of the Russian Empire in 1801, and western Georgia (Imeretia) was incorporated in 1804.',
-          lang: 'en',
-          cite: {
-            source: 'loc-georgia-country-study-1994',
-            loc: {
-              section: 'Within the Russian Empire: Russian Influence in the Nineteenth Century',
-              para: '3'
-            }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/georgia/5.htm' }
         }
       ]
     },
@@ -178,5 +178,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/0/08/George_XII_of_Georgia%2C_copy_by_Grigory_Gagarin.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:George_XII_of_Georgia,_copy_by_Grigory_Gagarin.jpg',
+    credit: { institution: 'Art Palace of Georgia', creator: 'Grigory Gagarin' },
+    license: { id: 'cc0' }
+  }
 })

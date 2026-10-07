@@ -1,10 +1,10 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import FootballExternalLinks from '@/components/football/FootballExternalLinks'
-import { FootballCoverageStrip } from '@/components/football/FootballCommon'
+import { FootballCompetitionMark, FootballCoverageStrip, FootballFlag } from '@/components/football/FootballCommon'
 import FootballTeamPage from '@/pages/FootballTeamPage'
 import FootballSyncPage from '@/pages/FootballSyncPage'
 import FootballCurrentPage from '@/pages/FootballCurrentPage'
@@ -21,7 +21,8 @@ const apiMock = vi.hoisted(() => ({
     setFavorite: vi.fn(),
     saveExternalLink: vi.fn(),
     removeExternalLink: vi.fn(),
-    openExternalLink: vi.fn()
+    openExternalLink: vi.fn(),
+    competitionLogos: vi.fn(async () => ({}))
   },
   lists: {
     all: vi.fn(async () => []),
@@ -38,6 +39,28 @@ function renderWithQuery(ui: React.ReactNode) {
 }
 
 describe('Football pages', () => {
+  it('shows a stored competition logo as a thumbnail, then the original, then the code badge', async () => {
+    apiMock.football.competitionLogos.mockResolvedValueOnce({ 'premier-league': 'media/dl-pl.png' })
+    const { container } = renderWithQuery(
+      <>
+        <FootballFlag competitionKey="premier-league" />
+        <FootballCompetitionMark competitionKey="premier-league" size="xs" />
+      </>
+    )
+    await waitFor(() => expect(container.querySelectorAll('img')).toHaveLength(2))
+    const [, mark] = [...container.querySelectorAll('img')]
+    expect(mark.getAttribute('src')).toContain('thumb/160/media/dl-pl.png')
+
+    fireEvent.error(mark)
+    const original = container.querySelectorAll('img')[1]
+    expect(original.getAttribute('src')).toContain('media/dl-pl.png')
+    expect(original.getAttribute('src')).not.toContain('thumb/')
+
+    fireEvent.error(original)
+    expect(container.querySelectorAll('img')).toHaveLength(1)
+    expect(screen.getAllByText('PL').length).toBeGreaterThanOrEqual(2)
+  })
+
   it('opens a team without starting enrichment in the background', async () => {
     apiMock.football.team.mockResolvedValue({
       id: 1,

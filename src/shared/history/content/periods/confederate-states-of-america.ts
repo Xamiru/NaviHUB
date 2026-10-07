@@ -6,7 +6,7 @@ export default definePeriod({
     { text: 'Confederate States of America', lang: 'en', role: 'primary' },
     { text: 'Confederacy', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -103,5 +103,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Confederate_Cabinet_%28cropped%29.jpg/1280px-Confederate_Cabinet_%28cropped%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Confederate_Cabinet_(cropped).jpg',
+    credit: { institution: 'Library of Congress', creator: 'Harper\'s Weekly' },
+    license: { id: 'public-domain' }
+  }
 })

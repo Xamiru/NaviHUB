@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -139,5 +139,15 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0d/Antoin_Sevruguin_51_14_SI.jpg/1280px-Antoin_Sevruguin_51_14_SI.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Antoin_Sevruguin_51_14_SI.jpg',
+    title: 'Studio Portrait of Muzaffar Al-Din Shah after Coronation',
+    credit: {
+      institution: 'Freer Gallery of Art and Arthur M. Sackler Gallery Archives, Smithsonian Institution',
+      creator: 'Antoin Sevruguin'
+    },
+    license: { id: 'public-domain' }
+  }
 })

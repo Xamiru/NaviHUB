@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Second Italo-Ethiopian War', lang: 'en', role: 'primary' },
     { text: 'Abessinienkrieg', lang: 'de', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -372,5 +372,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8f/Military_Parade_of_Italian_Troops_in_Addis_Ababa_%281936%29.jpg/1280px-Military_Parade_of_Italian_Troops_in_Addis_Ababa_%281936%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Military_Parade_of_Italian_Troops_in_Addis_Ababa_(1936).jpg',
+    credit: { institution: 'Narodowe Archiwum Cyfrowe' },
+    license: { id: 'public-domain' }
+  }
 })

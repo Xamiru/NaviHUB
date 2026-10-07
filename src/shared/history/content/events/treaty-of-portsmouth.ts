@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Treaty of Portsmouth', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -122,5 +122,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Portraits_of_envoys_at_the_Portsmouth_Peace_Conference%2C_Baron_Komura_and_Kogoro_Takahira_%28left%29%2C_M._Witte_and_Baron_Rosen_%28right%29%2C_and_President_Theodore_Roosevelt_%28center%29._Written_at_LCCN2005680007.jpg/1280px-thumbnail.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portraits_of_envoys_at_the_Portsmouth_Peace_Conference,_Baron_Komura_and_Kogoro_Takahira_(left),_M._Witte_and_Baron_Rosen_(right),_and_President_Theodore_Roosevelt_(center)._Written_at_LCCN2005680007.jpg',
+    credit: { institution: 'Library of Congress' },
+    license: { id: 'public-domain' }
+  }
 })

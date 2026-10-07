@@ -13,7 +13,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -126,5 +126,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Ghazi_Moustapha_Kemal_Pasha_LCCN2014716853_%28cropped%29.jpg/1280px-Ghazi_Moustapha_Kemal_Pasha_LCCN2014716853_%28cropped%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Ghazi_Moustapha_Kemal_Pasha_LCCN2014716853_(cropped).jpg',
+    credit: { institution: 'Library of Congress', creator: 'Bain News Service' },
+    license: { id: 'public-domain' }
+  }
 })

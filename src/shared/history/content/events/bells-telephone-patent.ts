@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Bell’s telephone patent', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'invention',
   start: {
     alts: [
@@ -39,6 +39,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q4',
+          text: 'On March 7, 1876, Alexander Graham Bell successfully received a patent for the telephone and secured the rights to the discovery.',
+          lang: 'en',
+          cite: {
+            source: 'loc-guide-invention-of-the-telephone',
+            loc: { section: 'Introduction', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://guides.loc.gov/chronicling-america-telephone-invention'
+          }
+        },
         {
           id: 'q1',
           text: 'Alexander Graham Bell (1847-1922) erhält das Patent auf den ersten für den praktischen Telefonverkehr brauchbaren Fernsprechapparat.',
@@ -100,5 +114,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/Patent_Drawing_of_Telegraphy_by_Alexander_Graham_Bell_-_NARA_-_6120306_%28page_1%29.jpg/1280px-Patent_Drawing_of_Telegraphy_by_Alexander_Graham_Bell_-_NARA_-_6120306_%28page_1%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Patent_Drawing_of_Telegraphy_by_Alexander_Graham_Bell_-_NARA_-_6120306_(page_1).jpg',
+    credit: { institution: 'National Archives and Records Administration' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -286,5 +286,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/83/Portrait_of_Hamzeh_Mirza_Heshmat_od-Dowleh_by_Sani_ol-Molk.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Hamzeh_Mirza_Heshmat_od-Dowleh_by_Sani_ol-Molk.jpg',
+    credit: { institution: 'Dowlat-e Elliye-ye Iran, no. 552 (1863)', creator: 'Sani ol-Molk' },
+    license: { id: 'public-domain' }
+  }
 })

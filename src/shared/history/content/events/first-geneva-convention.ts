@@ -31,7 +31,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -102,6 +102,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q11',
+          text: 'In August 1864, delegates from a dozen countries adopted the first Geneva Convention, which put a legal framework around these decisions and made it compulsory for armies to care for all wounded soldiers, whatever side they were on.',
+          lang: 'en',
+          cite: {
+            source: 'icrc-founding-and-early-years-1863-1914',
+            loc: { section: 'Founding and early years of the ICRC (1863-1914)', para: '4' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.icrc.org/en/document/founding-and-early-years-icrc-1863-1914'
+          }
+        },
         {
           id: 'q1',
           text: 'That same year, twelve nations signed the first of a series of international conventions establishing standards for dealing with wounded soldiers.',

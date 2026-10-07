@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Saudi-Wahhabi conquest of the Hijaz', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'invasion',
   start: {
     alts: [
@@ -31,13 +31,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'In 1803 they moved to take control of Sunni towns in the Hijaz. Although the Wahhabis spared Mecca and Medina the destruction they visited upon Karbala, they destroyed monuments and grave markers that were being used for prayer to Muslim saints and for votive rituals, which the Wahhabis consider acts of polytheism.',
+          text: 'After Muhammad ibn Saud died in 1765, his son, Abd al Aziz, continued the Wahhabi advance. In 1801 the Al Saud-Wahhabi armies attacked and sacked Karbala, the Shia shrine in eastern Iraq that commemorates the death of Husayn. In 1803 they moved to take control of Sunni towns in the Hijaz. Although the Wahhabis spared Mecca and Medina the destruction they visited upon Karbala, they destroyed monuments and grave markers that were being used for prayer to Muslim saints and for votive rituals, which the Wahhabis consider acts of polytheism.',
           lang: 'en',
           cite: {
             source: 'loc-saudi-arabia-country-study-1992',
             loc: { section: 'The Saud Family and Wahhabi Islam', para: '11' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/saudi-arabia/7.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/saudi-arabia/7.htm' }
         }
       ]
     },

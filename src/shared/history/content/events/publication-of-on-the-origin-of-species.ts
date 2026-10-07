@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Publication of On the Origin of Species', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'discovery',
   start: {
     alts: [
@@ -57,20 +57,6 @@ export default defineEvent({
       kind: 'background',
       quotes: [
         {
-          id: 'q1',
-          text: 'From a quiet rural existence filled with steady work on his \'big book\' on species, he was jolted into action by the arrival of an unexpected letter from Alfred Russel Wallace. This letter led to the first announcement of Darwin\'s and Wallace\'s respective theories of organic change at the Linnean Society of London in July 1858 and prompted the composition and publication, in November 1859, of Darwin\'s major treatise On the origin of species by means of natural selection.',
-          lang: 'en',
-          cite: {
-            source: 'darwin-correspondence-project-1858-1859-origin',
-            loc: { section: '1858-1859: Origin', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.darwinproject.ac.uk/letters/darwins-life-letters/darwin-letters-1858-1859-origin'
-          }
-        },
-        {
           id: 'q2',
           text: 'When on board H.M.S. ‘Beagle,’ as naturalist, I was much struck with certain facts in the distribution of the inhabitants of South America, and in the geological relations of the present to the past inhabitants of that continent. These facts seemed to me to throw some light on the origin of species—that mystery of mysteries, as it has been called by one of our greatest philosophers.',
           lang: 'en',
@@ -86,6 +72,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q1',
+          text: 'The years 1858 and 1859 were, without doubt, the most momentous of Darwin\'s life. From a quiet rural existence filled with steady work on his \'big book\' on species, he was jolted into action by the arrival of an unexpected letter from Alfred Russel Wallace. This letter led to the first announcement of Darwin\'s and Wallace\'s respective theories of organic change at the Linnean Society of London in July 1858 and prompted the composition and publication, in November 1859, of Darwin\'s major treatise On the origin of species by means of natural selection.',
+          lang: 'en',
+          cite: {
+            source: 'darwin-correspondence-project-1858-1859-origin',
+            loc: { section: '1858-1859: Origin', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.darwinproject.ac.uk/letters/darwins-life-letters/darwin-letters-1858-1859-origin'
+          }
+        },
         {
           id: 'q3',
           text: 'In considering the Origin of Species, it is quite conceivable that a naturalist, reflecting on the mutual affinities of organic beings, on their embryological relations, their geographical distribution, geological succession, and other such facts, might come to the conclusion that each species had not been independently created, but had descended, like varieties, from other species.',

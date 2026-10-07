@@ -9,6 +9,7 @@ import { usePersistedState } from '../lib/navState'
 import { FOOTBALL_COMPETITIONS } from '@shared/football'
 import type { FootballCompetitionKey, FootballMatchSummary } from '@shared/types'
 import {
+  FootballCompetitionMark,
   FootballCoverageStrip,
   FootballFlag,
   FootballMatchRow,
@@ -134,7 +135,8 @@ export default function FootballCurrentPage() {
         <div className="flex flex-wrap gap-2" role="group" aria-label="Competition">
           <button className={`pill ${competition == null ? 'pill-active' : ''}`} onClick={() => setCompetition(null)}>All</button>
           {FOOTBALL_COMPETITIONS.map((item) => (
-            <button key={item.key} className={`pill ${competition === item.key ? 'pill-active' : ''}`} onClick={() => setCompetition(item.key)}>
+            <button key={item.key} className={`pill inline-flex items-center gap-1.5 ${competition === item.key ? 'pill-active' : ''}`} onClick={() => setCompetition(item.key)}>
+              <FootballCompetitionMark competitionKey={item.key} size="xs" />
               {item.shortName ?? item.name}
             </button>
           ))}

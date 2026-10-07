@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'First Persian students sent to England', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'reform',
   start: {
     alts: [
@@ -164,5 +164,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/85/Portrait_of_Mirza_Saleh_Shirazi_by_Karl_Hampeln.jpg/1280px-Portrait_of_Mirza_Saleh_Shirazi_by_Karl_Hampeln.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Mirza_Saleh_Shirazi_by_Karl_Hampeln.jpg',
+    credit: { institution: 'State Hermitage Museum', creator: 'Karl Hampeln' },
+    license: { id: 'public-domain' }
+  }
 })

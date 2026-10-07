@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Opening of the Suez Canal', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -57,17 +57,24 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'The canal was opened to navigation in November 1869 under a concession to Britain and France scheduled to expire in 1968.',
+          id: 'q8',
+          text: 'The French played a significant role in the building of the Suez Canal, which links the Red Sea and the Mediterranean.',
           lang: 'en',
-          cite: { source: 'loc-egypt-country-study-1990', loc: { section: 'Suez Canal', para: '2' } },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/99.htm' }
+          cite: { source: 'loc-egypt-country-study-1990', loc: { section: 'Suez Canal', para: '1' } },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/egypt/99.htm' }
         },
         {
           id: 'q2',
           text: 'French engineer Ferdinand de Lesseps designed and supervised the construction of the project.',
           lang: 'en',
           cite: { source: 'loc-egypt-country-study-1990', loc: { section: 'Suez Canal', para: '1' } },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/99.htm' }
+        },
+        {
+          id: 'q1',
+          text: 'The canal was opened to navigation in November 1869 under a concession to Britain and France scheduled to expire in 1968.',
+          lang: 'en',
+          cite: { source: 'loc-egypt-country-study-1990', loc: { section: 'Suez Canal', para: '2' } },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/99.htm' }
         }
       ]

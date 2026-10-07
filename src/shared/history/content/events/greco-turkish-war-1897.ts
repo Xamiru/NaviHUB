@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -188,5 +188,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4f/Greek_retreat_from_Domokos_-_Crown_Prince_Constantine_and_entourage.jpg/1280px-Greek_retreat_from_Domokos_-_Crown_Prince_Constantine_and_entourage.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Greek_retreat_from_Domokos_-_Crown_Prince_Constantine_and_entourage.jpg',
+    credit: { institution: 'The Graphic (5 June 1897)', creator: 'Henry Marriott Paget' },
+    license: { id: 'public-domain' }
+  }
 })

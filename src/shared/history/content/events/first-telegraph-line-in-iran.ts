@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'First telegraph line in Iran', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -91,7 +91,7 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -106,12 +106,7 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/telegraph-i-first-telegraph-lines-in-persia/'
           }
-        }
-      ]
-    },
-    {
-      kind: 'overview',
-      quotes: [
+        },
         {
           id: 'q2',
           text: 'On Sunday, 10 Ramadan 1274/24 April 1858, Nāṣer-al-Din Shah was invited to operate the line connecting the Golestān Palace with Bāḡ-e Lālazār for himself. Amazed at the speed and accuracy with which messages were exchanged, the Shah praised the participants of the project and ordered the line to be made permanent—an order which was carried out by Kržiž (Eʿtemād-al-Salṭana, 1877-80, II, p. 219).',
@@ -235,5 +230,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/b/b0/Mirza_Malkam_Khan.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Mirza_Malkam_Khan.jpg',
+    credit: { institution: 'E. G. Browne, The Press and Poetry of Modern Persia (1914)' },
+    license: { id: 'public-domain' }
+  }
 })

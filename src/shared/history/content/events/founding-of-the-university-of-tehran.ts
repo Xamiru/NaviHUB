@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Founding of the University of Tehran', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -218,5 +218,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/a2/%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%D9%87%D9%86%DA%AF%D8%A7%D9%85_%D9%86%D8%B5%D8%A8_%D9%84%D9%88%D8%AD_%D8%AA%D8%A7%D8%B1%DB%8C%D8%AE%DB%8C_%D8%AF%D8%A7%D9%86%D8%B4%DA%AF%D8%A7%D9%87_%D8%AA%D9%87%D8%B1%D8%A7%D9%86_-_%D8%AA%D8%B5%D9%88%DB%8C%D8%B1_%D9%85%D9%86%D8%AA%D8%B4%D8%B1%D8%B4%D8%AF%D9%87_%D8%AF%D8%B1_%DA%A9%D8%AA%D8%A7%D8%A8_%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%DA%A9%D8%A8%DB%8C%D8%B1_%DB%8C%D8%A7_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86_%D9%86%D9%88.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%D9%87%D9%86%DA%AF%D8%A7%D9%85_%D9%86%D8%B5%D8%A8_%D9%84%D9%88%D8%AD_%D8%AA%D8%A7%D8%B1%DB%8C%D8%AE%DB%8C_%D8%AF%D8%A7%D9%86%D8%B4%DA%AF%D8%A7%D9%87_%D8%AA%D9%87%D8%B1%D8%A7%D9%86_-_%D8%AA%D8%B5%D9%88%DB%8C%D8%B1_%D9%85%D9%86%D8%AA%D8%B4%D8%B1%D8%B4%D8%AF%D9%87_%D8%AF%D8%B1_%DA%A9%D8%AA%D8%A7%D8%A8_%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%DA%A9%D8%A8%DB%8C%D8%B1_%DB%8C%D8%A7_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86_%D9%86%D9%88.jpg',
+    credit: { institution: 'Grand Ayatollah Boroujerdi Library' },
+    license: { id: 'public-domain' }
+  }
 })

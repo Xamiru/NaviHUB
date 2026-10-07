@@ -8,7 +8,8 @@ vi.mock('../src/main/db/connection', () => ({ getSqlite: () => db }))
 vi.mock('../src/main/files', () => ({
   footballRootDir: () => '/tmp/navihub-football-test',
   absoluteMediaPath: (value: string) => `/tmp/navihub-football-test/${value.replace(/^football\//, '')}`,
-  downloadImage: vi.fn(async () => null)
+  downloadImage: vi.fn(async () => null),
+  cachedDownload: vi.fn(() => null)
 }))
 
 import * as football from '../src/main/repos/footballRepo'
@@ -72,6 +73,10 @@ describe('Football repository', () => {
     expect(season?.champion?.name).toBe('Arsenal')
     expect(season?.runnerUp?.name).toBe('Chelsea')
     expect(db.prepare(`SELECT COUNT(*) AS n FROM football_honour`).get()).toEqual({ n: 2 })
+    expect(football.getTeam(season!.champion!.id)?.honours[0]).toMatchObject({ competitionKey: 'premier-league', competitionName: 'Premier League' })
+    expect(football.competitionLogos()).toEqual({})
+    db.prepare(`UPDATE football_competition SET image_path='media/pl.png' WHERE key='premier-league'`).run()
+    expect(football.competitionLogos()).toEqual({ 'premier-league': 'media/pl.png' })
     saveWikimediaSnapshot('premier-league', {
       page: 'List of English football champions', sourceUrl: 'https://en.wikipedia.org/wiki/List_of_English_football_champions', revision: '124', body: 'Updated.',
       honoursComplete: true,

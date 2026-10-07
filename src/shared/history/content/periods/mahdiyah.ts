@@ -17,7 +17,7 @@ export default definePeriod({
     },
     { text: 'المهدية', lang: 'ar', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -103,5 +103,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/61/SLATIN%281896%29_p561_THE_KHALIFA_INCITING_HIS_TROOPS_TO_ATTACK_KASSALA.jpg/1280px-SLATIN%281896%29_p561_THE_KHALIFA_INCITING_HIS_TROOPS_TO_ATTACK_KASSALA.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:SLATIN(1896)_p561_THE_KHALIFA_INCITING_HIS_TROOPS_TO_ATTACK_KASSALA.jpg',
+    credit: { institution: 'British Library', creator: 'Robert Talbot Kelly' },
+    license: { id: 'public-domain' }
+  }
 })

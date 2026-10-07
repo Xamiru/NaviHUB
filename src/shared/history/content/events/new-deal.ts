@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'New Deal', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'reform',
   start: {
     alts: [
@@ -55,6 +55,23 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q13',
+          text: 'When President Franklin Delano Roosevelt took office in March 1933, he immediately focused his attention on the domestic economic situation created by the Great Depression. Believing that recovery would come from measures taken at home rather than abroad, he secured Congressional passage of a series of far-reaching domestic economic reforms that would come to be known as the first New Deal.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-export-import-bank',
+            loc: {
+              section: 'New Deal Trade Policy: The Export-Import Bank & the Reciprocal Trade Agreements Act, 1934',
+              para: '1'
+            }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://history.state.gov/milestones/1921-1936/export-import-bank'
+          }
+        },
         {
           id: 'q1',
           text: 'US-Präsident Roosevelt verkündet den "New Deal". Damit sollen vor allem die Arbeitslosigkeit bekämpft und die Bankenkrise überwunden werden.',

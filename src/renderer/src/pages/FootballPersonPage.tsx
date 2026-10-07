@@ -15,6 +15,7 @@ import { footballGoalBuckets } from '@shared/footballInsights'
 import { FOOTBALL_COMPETITIONS } from '@shared/football'
 import type { FootballCompetitionKey, FootballTenure } from '@shared/types'
 import {
+  FootballCompetitionMark,
   FootballHero,
   FootballMatchRow,
   FootballMediaShelf,
@@ -59,7 +60,7 @@ function CareerStrip({ tenures }: { tenures: FootballTenure[] }) {
               title={`${tenure.team.name}, ${start} to ${tenure.endDate ? end : 'present'}${tenure.loan ? ' (loan)' : ''}`}
             >
               <span className="absolute inset-y-0 left-0 w-1" style={{ background: colors.primary }} aria-hidden="true" />
-              <span className="truncate text-sm font-semibold text-ink">{tenure.team.name}</span>
+              <span className="flex min-w-0 items-center gap-1.5 text-sm font-semibold text-ink"><FootballTeamMark team={tenure.team} size="xs" /><span className="truncate">{tenure.team.name}</span></span>
               <span className="truncate text-[10px] tabular-nums text-ink-muted">{start}-{tenure.endDate ? end : 'now'}{tenure.goals != null ? ` / ${tenure.goals} goals` : ''}</span>
             </Link>
           )
@@ -120,11 +121,13 @@ export default function FootballPersonPage() {
   const clubs = new Set(data.tenures.filter((tenure) => tenure.role === 'player').map((tenure) => tenure.team.id))
   const mainClub = [...data.tenures].sort((a, b) => (b.appearances ?? 0) - (a.appearances ?? 0) || (year(b.endDate) ?? 9999) - (year(a.endDate) ?? 9999))[0]?.team
   const tint = mainClub ? footballTeamColors(mainClub.name, mainClub.colors).primary : null
-  const honours = new Map<string, number>()
+  const honours = new Map<string, { count: number; competitionKey: FootballCompetitionKey | null }>()
   for (const honour of data.honours) {
     if (honour.placement === 'runner-up') continue
     const label = honour.placement === 'individual' ? honour.title : honour.competitionName
-    honours.set(label, (honours.get(label) ?? 0) + 1)
+    const entry = honours.get(label) ?? { count: 0, competitionKey: honour.placement === 'individual' ? null : honour.competitionKey }
+    entry.count++
+    honours.set(label, entry)
   }
   const peak = Math.max(1, ...buckets.map((bucket) => bucket.total))
   const competitions = [...new Set(buckets.flatMap((bucket) => bucket.parts.map((part) => part.competitionKey)))]
@@ -144,8 +147,8 @@ export default function FootballPersonPage() {
             </p>
             <h1 className="mt-1 text-4xl font-semibold tracking-tight text-ink">{data.name}</h1>
             <div className="mt-3 flex flex-wrap gap-2">
-              {[...honours].slice(0, 5).map(([title, count]) => <span key={title} className="football-honour"><b className="font-semibold tabular-nums text-ink">{count}</b>{title}</span>)}
-              {mainClub && <Link to={`/football/team/${mainClub.id}`} className="football-honour hover:border-signal-link"><FootballTeamMark team={mainClub} size="xs" />{mainClub.name}</Link>}
+              {[...honours].slice(0, 5).map(([title, { count, competitionKey }]) => <span key={title} className="football-honour items-center">{competitionKey && <FootballCompetitionMark competitionKey={competitionKey} size="xs" />}<b className="font-semibold tabular-nums text-ink">{count}</b>{title}</span>)}
+              {mainClub && <Link to={`/football/team/${mainClub.id}`} className="football-honour items-center hover:border-signal-link"><FootballTeamMark team={mainClub} size="xs" />{mainClub.name}</Link>}
             </div>
           </div>
           <dl className="grid grid-cols-3 gap-x-8 text-right">
@@ -194,7 +197,7 @@ export default function FootballPersonPage() {
                     {buckets.map((bucket) => <span key={bucket.season} className="min-w-0 flex-1 truncate text-center">{bucket.season.slice(2)}</span>)}
                   </div>
                   <div className="mt-4 flex flex-wrap gap-4 text-xs text-ink-muted">
-                    {competitions.map((key) => <span key={key} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: `rgb(${FOOTBALL_COMPETITION_IDENTITY[key].rgb})` }} />{competitionName(key)}</span>)}
+                    {competitions.map((key) => <span key={key} className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: `rgb(${FOOTBALL_COMPETITION_IDENTITY[key].rgb})` }} /><FootballCompetitionMark competitionKey={key} size="xs" />{competitionName(key)}</span>)}
                   </div>
                 </div>
               ) : <p className="text-sm text-ink-muted">No goals are recorded for {data.name} in the archive.</p>)}
@@ -242,7 +245,7 @@ export default function FootballPersonPage() {
                 <div className="divide-y divide-line-subtle text-sm">
                   {data.scoredIn.map(({ match, goals }) => (
                     <Link key={match.id} to={`/football/match/${match.id}`} className="flex items-center justify-between gap-3 py-2 hover:text-signal-link">
-                      <span className="min-w-0 truncate text-ink">{match.home.name} {match.homeScore}-{match.awayScore} {match.away.name}</span>
+                      <span className="flex min-w-0 items-center gap-1.5 text-ink"><FootballTeamMark team={match.home} size="xs" /><span className="truncate">{match.home.name}</span><span className="shrink-0 tabular-nums">{match.homeScore}-{match.awayScore}</span><span className="truncate">{match.away.name}</span><FootballTeamMark team={match.away} size="xs" /></span>
                       <span className="shrink-0 text-xs text-ink-muted">{match.matchDate.slice(0, 4)} / {goals === 1 ? 'scored' : goals === 3 ? 'hat-trick' : `${goals} goals`}</span>
                     </Link>
                   ))}

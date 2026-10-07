@@ -16,7 +16,7 @@ export default definePeriod({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -97,5 +97,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/5/5e/Deodoro_da_Fonseca_%281889%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Deodoro_da_Fonseca_(1889).jpg',
+    credit: { institution: 'Galeria de Presidentes (Governo do Brasil)' },
+    license: { id: 'public-domain' }
+  }
 })

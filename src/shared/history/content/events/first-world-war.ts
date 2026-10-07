@@ -25,7 +25,7 @@ export default defineEvent({
     },
     { text: 'Erster Weltkrieg', lang: 'de', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -235,17 +235,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'The international crisis that began with the assassination of Archduke Franz Ferdinand in Sarajevo on 28 June 1914 and culminated in the British declaration of war on Germany on 4 August is referred to as the July Crisis.',
-          lang: 'en',
-          cite: { source: 'eo1418-mombauer-july-crisis-1914', loc: { section: 'July Crisis 1914' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://encyclopedia.1914-1918-online.net/article/july-crisis-1914/'
-          }
-        },
-        {
           id: 'q2',
           text: 'The First World War ended the somewhat ironically labelled “long peace” of the 19th century. The war represented the culmination of the industrialization of warfare, after intensifying capitalist competition and new technological developments.',
           lang: 'en',
@@ -254,6 +243,17 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://encyclopedia.1914-1918-online.net/article/persiairan/'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'The international crisis that began with the assassination of Archduke Franz Ferdinand in Sarajevo on 28 June 1914 and culminated in the British declaration of war on Germany on 4 August is referred to as the July Crisis.',
+          lang: 'en',
+          cite: { source: 'eo1418-mombauer-july-crisis-1914', loc: { section: 'July Crisis 1914' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://encyclopedia.1914-1918-online.net/article/july-crisis-1914/'
           }
         }
       ]

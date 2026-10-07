@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -143,5 +143,15 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Blockade_Against_Blockade_%28NAPOLEON_159%29.jpg/1280px-Blockade_Against_Blockade_%28NAPOLEON_159%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Blockade_Against_Blockade_(NAPOLEON_159).jpg',
+    title: 'Blockade Against Blockade — or John Bull a Match for Boney',
+    credit: {
+      institution: 'University of Washington Libraries, Special Collections',
+      creator: 'George Moutard Woodward; etched by Charles Williams'
+    },
+    license: { id: 'public-domain' }
+  }
 })

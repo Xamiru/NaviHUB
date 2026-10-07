@@ -28,7 +28,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -124,5 +124,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/f/fe/The_King_of_Hedjaz_and_Arab_Independence_%28page_04%29.png',
+    page: 'https://commons.wikimedia.org/wiki/File:The_King_of_Hedjaz_and_Arab_Independence_(page_04).png',
+    credit: { institution: 'World Digital Library, Library of Congress' },
+    license: { id: 'public-domain' }
+  }
 })

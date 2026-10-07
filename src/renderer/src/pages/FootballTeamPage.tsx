@@ -12,8 +12,9 @@ import { useIncrementalList } from '../lib/hooks'
 import { usePersistedState } from '../lib/navState'
 import { footballTeamColors } from '@shared/footballIdentity'
 import { footballLeagueFinishes } from '@shared/footballInsights'
-import type { FootballHonour, FootballStanding } from '@shared/types'
+import type { FootballCompetitionKey, FootballHonour, FootballStanding } from '@shared/types'
 import {
+  FootballCompetitionMark,
   FootballFlag,
   FootballHero,
   FootballMatchRow,
@@ -26,13 +27,15 @@ import {
 
 type TeamTab = 'seasons' | 'matches' | 'squad' | 'honours'
 
-function honourCounts(honours: FootballHonour[]): Array<{ title: string; count: number }> {
-  const counts = new Map<string, number>()
+function honourCounts(honours: FootballHonour[]): Array<{ title: string; competitionKey: FootballCompetitionKey; count: number }> {
+  const counts = new Map<string, { title: string; competitionKey: FootballCompetitionKey; count: number }>()
   for (const honour of honours) {
     if (honour.placement !== 'winner') continue
-    counts.set(honour.competitionName, (counts.get(honour.competitionName) ?? 0) + 1)
+    const entry = counts.get(honour.competitionName) ?? { title: honour.competitionName, competitionKey: honour.competitionKey, count: 0 }
+    entry.count++
+    counts.set(honour.competitionName, entry)
   }
-  return [...counts].map(([title, count]) => ({ title, count })).sort((a, b) => b.count - a.count)
+  return [...counts.values()].sort((a, b) => b.count - a.count)
 }
 
 function seasonStart(label: string | undefined): number {
@@ -149,7 +152,7 @@ export default function FootballTeamPage() {
             </p>
             <h1 className="mt-1 text-4xl font-semibold tracking-tight text-ink">{data.name}</h1>
             <div className="mt-3 flex flex-wrap gap-2">
-              {honours.slice(0, 5).map((honour) => <span key={honour.title} className="football-honour"><b className="font-semibold tabular-nums text-ink">{honour.count}</b>{honour.title}</span>)}
+              {honours.slice(0, 5).map((honour) => <span key={honour.title} className="football-honour items-center"><FootballCompetitionMark competitionKey={honour.competitionKey} size="xs" /><b className="font-semibold tabular-nums text-ink">{honour.count}</b>{honour.title}</span>)}
               {topFlight > 0 && <span className="football-honour"><b className="font-semibold tabular-nums text-ink">{topFlight}</b>top-flight seasons</span>}
             </div>
           </div>
@@ -236,7 +239,7 @@ export default function FootballTeamPage() {
                 <div className="divide-y divide-line-subtle">
                   {data.honours.map((honour) => (
                     <p key={honour.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                      <span className="text-ink">{honour.competitionName}<span className="ml-2 text-xs capitalize text-ink-muted">{honour.placement}</span></span>
+                      <span className="flex min-w-0 items-center gap-2 text-ink"><FootballCompetitionMark competitionKey={honour.competitionKey} size="xs" /><span className="truncate">{honour.competitionName}</span><span className="text-xs capitalize text-ink-muted">{honour.placement}</span></span>
                       {honour.seasonId ? <Link to={`/football/season/${honour.seasonId}`} className="font-mono text-xs text-ink-secondary hover:text-signal-link">{honour.seasonLabel}</Link> : <span className="text-xs text-ink-muted">{honour.seasonLabel}</span>}
                     </p>
                   ))}

@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -246,5 +246,11 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/china/23.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/d/de/Kaiguodadian.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Kaiguodadian.jpg',
+    credit: { institution: 'Huaxia, no. 7 (1998)', creator: 'Meng Zhaorui' },
+    license: { id: 'public-domain' }
+  }
 })

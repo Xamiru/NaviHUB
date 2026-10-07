@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Qajar succession crisis of 1834', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'crisis',
   start: {
     alts: [
@@ -308,7 +308,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q6',
-          text: 'His death at Isfahan (24 October 1834) stirred up succession disputes and intrigues.',
+          text: 'Disorders everywhere, and particularly in the south, had obliged Fatḥ-ʿAli Shah to undertake his last campaign. His death at Isfahan (24 October 1834) stirred up succession disputes and intrigues.',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -316,7 +316,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },
@@ -620,5 +620,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/2/2c/Portrait_of_Muhammad_Shah_Qadjar_-_MV_6700_-_v1.JPG',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Muhammad_Shah_Qadjar_-_MV_6700_-_v1.JPG',
+    credit: { institution: 'Musée du Louvre', creator: 'Muhammad Hasan Afshar' },
+    license: { id: 'public-domain' }
+  }
 })

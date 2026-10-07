@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -79,7 +79,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Soon after John McNeill’s return to Tehran as minister, a commercial treaty was signed on 28 October 1841 (Lambton, 1988, pp. 127-28).',
+          text: 'Russia and Britain political influence led to their progressive domination over Persian trade. The shah granted to British merchants in 1836 the same rights as those given to Russians. Soon after John McNeill’s return to Tehran as minister, a commercial treaty was signed on 28 October 1841 (Lambton, 1988, pp. 127-28).',
           lang: 'en',
           cite: {
             source: 'iranica-calmard-mohammad-shah',
@@ -87,7 +87,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
           }
         },

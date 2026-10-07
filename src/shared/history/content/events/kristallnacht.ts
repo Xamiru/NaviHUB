@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'massacre',
   start: {
     alts: [
@@ -102,6 +102,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'After the Kristallnacht (Crystal Night) of November 9, 1938, an organized act of violence perpetrated by Nazis against Jews in all parts of Germany, the persecution of Jews entered a new phase.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
+        },
+        {
           id: 'q2',
           text: 'Ernst vom Rath erliegt seinen Verletzungen. Kampftruppen der Sturmabteilung (SA) und der SS veranstalten ein Pogrom gegen die jüdische Bevölkerung in ganz Deutschland. Mit systematischen Misshandlungen und Morden werden Juden terrorisiert, über 25.000 werden in Konzentrationslager gebracht. Zahlreiche Synagogen, Friedhöfe und jüdische Geschäfte werden zerstört.',
           lang: 'de',
@@ -111,16 +121,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.dhm.de/lemo/jahreschronik/1938.html'
           }
-        },
-        {
-          id: 'q3',
-          text: 'After the Kristallnacht (Crystal Night) of November 9, 1938, an organized act of violence perpetrated by Nazis against Jews in all parts of Germany, the persecution of Jews entered a new phase.',
-          lang: 'en',
-          cite: {
-            source: 'loc-germany-country-study-1995',
-            loc: { section: 'Total Mobilization, Resistance, and the Holocaust', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/42.htm' }
         }
       ]
     },

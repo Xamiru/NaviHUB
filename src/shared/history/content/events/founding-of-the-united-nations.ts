@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Founding of the United Nations', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'founding',
   start: {
     alts: [
@@ -258,6 +258,12 @@ export default defineEvent({
       }
     }
   ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/6/64/UN_San_Francisco_Delegates_1945.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:UN_San_Francisco_Delegates_1945.jpg',
+    credit: { institution: 'UN Photo' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'san-francisco-parley-ends-1945',

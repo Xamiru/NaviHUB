@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Plessy v. Ferguson', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -72,26 +72,26 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'In 1896, the Supreme Court issued its decision in Plessy v. Ferguson. Justice Henry Brown of Michigan delivered the majority opinion, which sustained the constitutionality of Louisiana’s Jim Crow law.',
+          lang: 'en',
+          cite: {
+            source: 'nara-milestone-plessy-v-ferguson',
+            loc: { section: 'Plessy v. Ferguson (1896)', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.archives.gov/milestone-documents/plessy-v-ferguson'
+          }
+        },
+        {
           id: 'q1',
           text: 'The ruling in this Supreme Court case upheld a Louisiana state law that allowed for "equal but separate accommodations for the white and colored races."',
           lang: 'en',
           cite: {
             source: 'nara-milestone-plessy-v-ferguson',
             loc: { section: 'Plessy v. Ferguson (1896)', para: '1' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.archives.gov/milestone-documents/plessy-v-ferguson'
-          }
-        },
-        {
-          id: 'q2',
-          text: 'Justice Henry Brown of Michigan delivered the majority opinion, which sustained the constitutionality of Louisiana’s Jim Crow law.',
-          lang: 'en',
-          cite: {
-            source: 'nara-milestone-plessy-v-ferguson',
-            loc: { section: 'Plessy v. Ferguson (1896)', para: '6' }
           },
           provenance: {
             via: 'web',

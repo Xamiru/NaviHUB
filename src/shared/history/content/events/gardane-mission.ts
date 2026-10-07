@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Gardane mission', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -260,6 +260,12 @@ export default defineEvent({
       }
     }
   ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/2/23/The_Persian_Envoy_Mirza_Mohammed_Reza_Qazvini_Finkenstein_Castle_27_Avril_1807_by_Francois_Mulard.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:The_Persian_Envoy_Mirza_Mohammed_Reza_Qazvini_Finkenstein_Castle_27_Avril_1807_by_Francois_Mulard.jpg',
+    credit: { institution: 'L\'Histoire par l\'image', creator: 'François-Henri Mulard' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'gardane-1865-mission',

@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Reign of Nicholas I', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'reign',
   start: {
     alts: [
@@ -99,5 +99,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/4/4e/Franz_Kr%C3%BCger_%281797-1857%29_-_Nicholas_I%2C_Emperor_of_Russia_%281796-1855%29_-_RCIN_406814_-_Royal_Collection.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Franz_Kr%C3%BCger_(1797-1857)_-_Nicholas_I,_Emperor_of_Russia_(1796-1855)_-_RCIN_406814_-_Royal_Collection.jpg',
+    credit: { institution: 'Royal Collection', creator: 'Franz Krüger' },
+    license: { id: 'public-domain' }
+  }
 })

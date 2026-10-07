@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russo-Japanese War', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -123,6 +123,21 @@ export default defineEvent({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q10',
+          text: 'The strategic rivalry between Russia and Japan exploded in the Russo-Japanese War of 1904-5, won by Japan. Under the peace treaty signed in September 1905, Russia acknowledged Japan\'s "paramount political, military, and economic interest" in Korea.',
+          lang: 'en',
+          cite: {
+            source: 'loc-south-korea-country-study-1990',
+            loc: { section: 'The Choson Dynasty', para: '16' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/south-korea/5.htm' }
+        }
+      ]
+    },
     {
       kind: 'background',
       quotes: [

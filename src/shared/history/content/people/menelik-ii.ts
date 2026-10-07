@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Menelik II', lang: 'en', role: 'primary' },
     { text: 'ምኒልክ ፪ኛ', lang: 'am', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -102,5 +102,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/55/Menelik_II_in_coronation_garb%2C_Emperor_of_Ethiopia.jpg/1280px-Menelik_II_in_coronation_garb%2C_Emperor_of_Ethiopia.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Menelik_II_in_coronation_garb,_Emperor_of_Ethiopia.jpg',
+    credit: { institution: 'Richard Pankhurst, Ethiopia Photographed' },
+    license: { id: 'public-domain' }
+  }
 })

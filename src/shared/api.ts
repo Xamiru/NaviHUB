@@ -1358,6 +1358,8 @@ export interface NaviApi {
   football: {
     overview(): Promise<FootballOverview>
     competitions(): Promise<FootballCompetition[]>
+    /** Stored logo path per competition, for chips and marks everywhere. */
+    competitionLogos(): Promise<Partial<Record<FootballCompetitionKey, string>>>
     competition(key: FootballCompetitionKey): Promise<FootballCompetitionDetail | null>
     seasons(key?: FootballCompetitionKey | null): Promise<FootballSeason[]>
     season(id: number): Promise<FootballSeasonDetail | null>

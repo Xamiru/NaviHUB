@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Massacre of the Mamluks', lang: 'en', role: 'primary' },
     { text: 'Citadel massacre', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'massacre',
   start: {
     alts: [
@@ -69,16 +69,6 @@ export default defineEvent({
             loc: { section: 'Muhammad Ali, 1805-48', para: '1' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/21.htm' }
-        },
-        {
-          id: 'q2',
-          text: 'Between 1805 and 1811, Muhammad Ali consolidated his position in Egypt by defeating the Mamluks and bringing Upper Egypt under his control.',
-          lang: 'en',
-          cite: {
-            source: 'loc-egypt-country-study-1990',
-            loc: { section: 'Muhammad Ali, 1805-48', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/21.htm' }
         }
       ]
     },
@@ -87,13 +77,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'Finally, in March 1811, Muhammad Ali had sixty-four Mamluks, including twenty-four beys, assassinated in the citadel.',
+          text: 'Between 1805 and 1811, Muhammad Ali consolidated his position in Egypt by defeating the Mamluks and bringing Upper Egypt under his control. Finally, in March 1811, Muhammad Ali had sixty-four Mamluks, including twenty-four beys, assassinated in the citadel.',
           lang: 'en',
           cite: {
             source: 'loc-egypt-country-study-1990',
             loc: { section: 'Muhammad Ali, 1805-48', para: '4' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/21.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/egypt/21.htm' }
         },
         {
           id: 'q4',

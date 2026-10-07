@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'occupation',
   start: {
     alts: [
@@ -82,6 +82,18 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q7',
+          text: 'Italy incorporated Venetia and the former Papal States (including Rome) by 1871 following the Franco-Prussian War (1870-71).',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-countries-italy',
+            loc: {
+              section: 'A Guide to the United States’ History of Recognition, Diplomatic, and Consular Relations, by Country, since 1776: Italy'
+            }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://history.state.gov/countries/italy' }
+        },
         {
           id: 'q2',
           text: 'Besetzung Roms durch italienische Truppen. Die weltliche Herrschaft des Papstes in Rom ist damit beendet.',

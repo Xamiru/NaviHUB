@@ -67,7 +67,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -328,6 +328,16 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q25',
+          text: 'World War II began on September 1, 1939, when Nazi Germany invaded Poland.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-countries-poland',
+            loc: { section: 'Poland: Diplomatic Relations', para: '24' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://history.state.gov/countries/poland' }
+        },
         {
           id: 'q1',
           text: 'Mit dem Beschuss von polnischen Munitionslagern auf der Westerplatte bei Danzig durch das deutsche Linienschiff "Schleswig-Holstein" beginnt der Überfall auf Polen und damit der Zweite Weltkrieg. Die deutsche Wehrmacht marschiert ohne Kriegserklärung in Polen ein.',

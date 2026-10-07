@@ -43,7 +43,7 @@ function CompetitionCard({ competition }: { competition: FootballCompetition }) 
       <span className="absolute inset-x-0 top-0 h-1 bg-[rgb(var(--football-c))]" aria-hidden="true" />
       <span className="absolute -right-6 -top-6 h-28 w-28 rounded-full bg-[rgb(var(--football-c)/0.10)]" aria-hidden="true" />
       <span className="relative flex items-start gap-4 p-4 pt-5">
-        {competition.imagePath ? <FootballCompetitionMark competitionKey={competition.key} imagePath={competition.imagePath} size="md" /> : <FootballFlag competitionKey={competition.key} />}
+        <FootballCompetitionMark competitionKey={competition.key} imagePath={competition.imagePath} size="md" />
         <span className="min-w-0 flex-1">
           <span className="block text-lg font-semibold text-ink group-hover:text-signal-link">{competition.shortName ?? competition.name}</span>
           <span className="block text-xs text-ink-muted">
@@ -60,8 +60,10 @@ function CompetitionCard({ competition }: { competition: FootballCompetition }) 
             <span className="mt-4 block text-sm text-ink-muted">No verified champion yet</span>
           )}
           {leaders && (
-            <span className="mt-1 block truncate text-xs text-ink-muted">
-              Most titles: {leaders.teams.map((team) => team.name).join(', ')} {leaders.titles}
+            <span className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-ink-muted">
+              <span className="shrink-0">Most titles:</span>
+              <span className="flex shrink-0 -space-x-1">{leaders.teams.map((team) => <FootballTeamMark key={team.id} team={team} size="xs" />)}</span>
+              <span className="truncate">{leaders.teams.map((team) => team.name).join(', ')} {leaders.titles}</span>
             </span>
           )}
         </span>

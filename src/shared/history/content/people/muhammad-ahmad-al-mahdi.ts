@@ -25,7 +25,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -130,5 +130,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/6/68/Muhammad_Ahmad%2C_The_Mahdi_of_Sudan.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Muhammad_Ahmad,_The_Mahdi_of_Sudan.jpg',
+    credit: { institution: 'Charles Chaillé-Long, The Three Prophets (1884)' },
+    license: { id: 'public-domain' }
+  }
 })

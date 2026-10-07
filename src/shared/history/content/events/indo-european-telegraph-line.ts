@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -512,6 +512,12 @@ export default defineEvent({
       }
     }
   ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0c/The_Indo-European_Telegraph._Mussendom_Station%2C_Elphinstone_Inlet%2C_Persian_Gulf_-_ILN_1865.jpg/1280px-The_Indo-European_Telegraph._Mussendom_Station%2C_Elphinstone_Inlet%2C_Persian_Gulf_-_ILN_1865.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:The_Indo-European_Telegraph._Mussendom_Station,_Elphinstone_Inlet,_Persian_Gulf_-_ILN_1865.jpg',
+    credit: { institution: 'The Illustrated London News (8 July 1865)' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'goldsmid-telegraph-and-travel-1874',

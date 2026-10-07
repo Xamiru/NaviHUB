@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -231,5 +231,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/03/%D0%9F%D0%BE%D0%B4%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5_%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D0%B0_%D0%BC%D0%B5%D0%B6%D0%B4%D1%83_%D0%A0%D0%A1%D0%A4%D0%A1%D0%A0_%D0%B8_%D0%9F%D0%B5%D1%80%D1%81%D0%B8%D0%B5%D0%B9._%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0_26.02.1921.jpg/1280px-%D0%9F%D0%BE%D0%B4%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5_%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D0%B0_%D0%BC%D0%B5%D0%B6%D0%B4%D1%83_%D0%A0%D0%A1%D0%A4%D0%A1%D0%A0_%D0%B8_%D0%9F%D0%B5%D1%80%D1%81%D0%B8%D0%B5%D0%B9._%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0_26.02.1921.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:%D0%9F%D0%BE%D0%B4%D0%BF%D0%B8%D1%81%D0%B0%D0%BD%D0%B8%D0%B5_%D0%B4%D0%BE%D0%B3%D0%BE%D0%B2%D0%BE%D1%80%D0%B0_%D0%BC%D0%B5%D0%B6%D0%B4%D1%83_%D0%A0%D0%A1%D0%A4%D0%A1%D0%A0_%D0%B8_%D0%9F%D0%B5%D1%80%D1%81%D0%B8%D0%B5%D0%B9._%D0%9C%D0%BE%D1%81%D0%BA%D0%B2%D0%B0_26.02.1921.jpg',
+    credit: { institution: 'Russian Ministry of Foreign Affairs' },
+    license: { id: 'public-domain' }
+  }
 })

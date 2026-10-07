@@ -45,7 +45,10 @@ available as EPUB/PDF on the laptop; ask where.
 
 **Never use OpenStax** or any other site whose terms forbid ingestion by large language models or
 generative AI (OpenStax pages state it since at least 2026-10; found 2026-10-06). Read a new site's
-reuse or attribution notice before quoting it.
+reuse or attribution notice before quoting it, and skip it when it restricts copying or compiling.
+Excluded so far: un.org, USHMM, news.stanford.edu, Sciences Po's Mass Violence & Resistance, BAILII,
+habsburger.net, the Griffith Institute, and the robots-closed NYRB, Washington Post, Foreign Policy and
+JFK Library.
 
 - **Fetch or open the text and copy from it.** Never type a quote from memory. If a page cannot be
   read, the quote does not go in.
@@ -61,8 +64,10 @@ reuse or attribution notice before quoting it.
 
 ### Tools (`tools/`, Python 3, standard library only)
 
-New entities are written by a throwaway **session spec** in the scratchpad (never in the repo)
-that imports these tools; run it with `PYTHONPATH=.claude/skills/history-era/tools`.
+New entities are written by a **session spec** (never in the repo) that imports these tools; run it
+with `PYTHONPATH=.claude/skills/history-era/tools`. Keep specs, briefs and notes in
+`~/.cache/navihub-history-work/`, not the session scratchpad: `/tmp` is wiped, and on 2026-10-07 it
+took every 1800s-1940s spec with it.
 
 - `fetch.py URL [regex] [--max N]` prints a page's paragraphs numbered as `lib` addresses them.
   Pages are cached in `~/.cache/navihub-history` (override: `NAVIHUB_HISTORY_CACHE`) so every later
@@ -75,6 +80,11 @@ that imports these tools; run it with `PYTHONPATH=.claude/skills/history-era/too
   `holder` build the rest. `write_all(entities, session_json)` writes the `.ts` files and the lock
   entries, and refuses to overwrite any file this session did not create: from then on the `.ts`
   file is the truth and corrections are edited there by hand.
+- `edit.py`: once built, the `.ts` files are the truth and there is no rebuild. `edit.load()` gives
+  every committed file as a dict by path, `edit.save(path, entity)` writes one back in the exact
+  house format (`python3 edit.py --roundtrip` proves the format), and `recut` (take in an earlier
+  sentence of a quote's own paragraph), `register` (reuse an already-cited page with its committed
+  paragraph numbering) and `add_quote` (next free id) edit quotes without typing text.
 - `checks.py dates <spec>` prints every dated claim beside the words of its cited paragraph;
   `checks.py repeats <spec>` lists quotes repeated or nested on one article page (an entity plus
   the interpretations about it). Read both before the gate. `checks.py json <spec> out.json` dumps
@@ -86,6 +96,14 @@ that imports these tools; run it with `PYTHONPATH=.claude/skills/history-era/too
 - `gazetteer.py`: `coords(name, iso_country, today)` gives a place its Natural Earth position as cited
   data (by name and country, never by name alone). The decade builds apply it to every place without
   coordinates, so the map can pin its events; give a place `modernCountry` so it can be found.
+
+### The overview's first quote
+
+It is what a reader sees first on the page: it must say **what this event is**, in English, and
+stand alone (subject named, no "He…", "However…", "In that year…" pointing at text the reader has
+not seen). An encyclopedia or institution lede is ideal. Chronology lines (including LeMO's German
+ones), treaty articles, Hansard procedure, headwords with dates and citation walls are evidence:
+they go further down the page, never first (user, 2026-10-07).
 
 ## 3. Interpretations
 
@@ -107,7 +125,12 @@ with `usedBy` and citations.
   of Congress, national archives, Commons). Direct https file URL, landing page, holding
   institution, license, size if known. Check the license on the item's own page.
 - **Images** (`hero`, `portrait`): Commons or institution files, credited to the holding
-  institution with the license from the file's own page. Read the license, artist and credit
+  institution with the license from the file's own page. Every event, person and period should
+  have one (the user notices gaps, 2026-10-07): a file qualifies when its own page states the
+  license and a source (archive, collection or publication; credit that as the institution), even
+  with an unknown photographer. With no photograph, use a contemporary print, painting, document,
+  map or the main participant's portrait. Keep graphic photographs (corpses, atrocities) off
+  heroes: they also show as timeline medallions and cards. Read the license, artist and credit
   through the Commons API (`prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=1280`), store the
   1280 px thumbnail URL without its query string, and pace the requests (Commons answers bursts
   with 429). Set `title` only to the archive's own caption, copied verbatim; otherwise omit it.

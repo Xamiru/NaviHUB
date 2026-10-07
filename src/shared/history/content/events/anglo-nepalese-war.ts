@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Anglo-Nepalese War', lang: 'en', role: 'primary' },
     { text: 'Gurkha War', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -95,6 +95,21 @@ export default defineEvent({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q5',
+          text: 'The Anglo-Nepalese War (1814-16) was a total disaster for Nepal. According to the Treaty of Sagauli, signed in 1816, Nepal lost Sikkim, the territories west of the Kali River (Kumaon and Garhwal), and most of its lands in the Tarai.',
+          lang: 'en',
+          cite: {
+            source: 'loc-nepal-country-study-1991',
+            loc: { section: 'The Enclosing of Nepal', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/nepal/11.htm' }
+        }
+      ]
+    },
+    {
       kind: 'causes',
       quotes: [
         {
@@ -148,16 +163,6 @@ export default defineEvent({
       kind: 'consequences',
       quotes: [
         {
-          id: 'q5',
-          text: 'The Anglo-Nepalese War (1814-16) was a total disaster for Nepal. According to the Treaty of Sagauli, signed in 1816, Nepal lost Sikkim, the territories west of the Kali River (Kumaon and Garhwal), and most of its lands in the Tarai.',
-          lang: 'en',
-          cite: {
-            source: 'loc-nepal-country-study-1991',
-            loc: { section: 'The Enclosing of Nepal', para: '7' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/nepal/11.htm' }
-        },
-        {
           id: 'q6',
           text: 'Nevertheless, the glory days of conquest were over, and Nepal had been squeezed into the boundaries it still had in the early 1990s.',
           lang: 'en',
@@ -196,5 +201,14 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/nepal/11.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/85/Death_of_Rollo_Gillespie_%28Cassell%27s_illustrated_history_of_India%29.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Death_of_Rollo_Gillespie_(Cassell%27s_illustrated_history_of_India).png',
+    credit: {
+      institution: 'Cassell\'s Illustrated History of India, Indian Culture portal',
+      creator: 'George Henry Thompson'
+    },
+    license: { id: 'public-domain' }
+  }
 })

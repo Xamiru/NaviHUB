@@ -28,7 +28,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'movement',
   start: {
     alts: [
@@ -257,5 +257,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/Republic_of_Mahabad_-_Tehran_Mosavar_1947_April_-_2.jpg/1280px-Republic_of_Mahabad_-_Tehran_Mosavar_1947_April_-_2.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Republic_of_Mahabad_-_Tehran_Mosavar_1947_April_-_2.jpg',
+    credit: { institution: 'Tehran Mosavvar (April 1947)' },
+    license: { id: 'public-domain' }
+  }
 })

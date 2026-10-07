@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Uniform dress law of 1928', lang: 'en', role: 'primary' },
     { text: 'قانون متحدالشکل شدن البسه', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -224,5 +224,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/5/59/The_Pahlavi_Hat_in_the_1936_Pars_Yearbook.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:The_Pahlavi_Hat_in_the_1936_Pars_Yearbook.jpg',
+    credit: { institution: 'Pars Yearbook (1936)' },
+    license: { id: 'public-domain' }
+  }
 })

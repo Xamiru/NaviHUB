@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Subjugation of Sheikh Khazal', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -306,5 +306,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/9/94/Reza_Khan_in_Tehran_after_supressing_Sheikh_Khazal_rebellion.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Reza_Khan_in_Tehran_after_supressing_Sheikh_Khazal_rebellion.png',
+    credit: { institution: '28 hezar ruz-e tarikh-e Iran va jahan (Ettelaat, 2002)' },
+    license: { id: 'public-domain' }
+  }
 })

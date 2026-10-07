@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -428,5 +428,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/Portrait_of_Mirza_%27Ali_Asghar_Khan_%28Amin_al-Mulk%2C_Amin_al-Sultan%2C_Atabeg-i_Azam%29.jpg/1280px-Portrait_of_Mirza_%27Ali_Asghar_Khan_%28Amin_al-Mulk%2C_Amin_al-Sultan%2C_Atabeg-i_Azam%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Mirza_%27Ali_Asghar_Khan_(Amin_al-Mulk,_Amin_al-Sultan,_Atabeg-i_Azam).jpg',
+    credit: { institution: 'Metropolitan Museum of Art', creator: 'Isma\'il Jalayir' },
+    license: { id: 'public-domain' }
+  }
 })

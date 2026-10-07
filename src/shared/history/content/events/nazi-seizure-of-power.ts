@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Nazi seizure of power', lang: 'en', role: 'primary' },
     { text: 'Machtergreifung', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -98,6 +98,16 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q15',
+          text: 'Hitler rapidly transformed the Weimar Republic into a dictatorship. The National Socialists accomplished their "revolution" within months, using a combination of legal procedure, persuasion, and terror.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'The Third Reich, 1933-45: The Consolidation of Power', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/39.htm' }
+        },
         {
           id: 'q1',
           text: 'On January 30, 1933, Papen again put together a cabinet, this time with Hitler as chancellor.',

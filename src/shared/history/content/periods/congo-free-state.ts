@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Congo Free State', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -144,5 +144,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7c/Carte_du_Congo_Belge_LOC_2006627676.jpg/1280px-Carte_du_Congo_Belge_LOC_2006627676.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Carte_du_Congo_Belge_LOC_2006627676.jpg',
+    credit: { institution: 'Library of Congress', creator: 'J. Lebègue & Cie' },
+    license: { id: 'public-domain' }
+  }
 })

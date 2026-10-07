@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Chilean War of Independence', lang: 'en', role: 'primary' },
     { text: 'Guerra de la Independencia de Chile', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -81,32 +81,17 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'causes',
-      quotes: [
-        {
-          id: 'q1',
-          text: 'Aristocratic Chileans began considering independence only when the authority and legitimacy of the crown were cast in doubt by Napoleon Bonaparte\'s invasion of Spain in 1807.',
-          lang: 'en',
-          cite: {
-            source: 'loc-chile-country-study-1994',
-            loc: { section: 'WARS OF INDEPENDENCE, 1810-18', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/chile/8.htm' }
-        }
-      ]
-    },
-    {
       kind: 'overview',
       quotes: [
         {
           id: 'q2',
-          text: 'The latter option was tried on September 18, 1810, a date whose anniversary is celebrated as Chile\'s independence day.',
+          text: 'Aristocratic Chileans began considering independence only when the authority and legitimacy of the crown were cast in doubt by Napoleon Bonaparte\'s invasion of Spain in 1807. Napoleon replaced the Spanish king with his brother, Joseph Bonaparte. On the peninsula, Spanish loyalists formed juntas that claimed they would govern both the motherland and the colonies until the rightful king was restored. Thus, Chileans, like other Spanish Americans, had to confront the dilemma of who was in charge in the absence of the divine monarch: the French pretender to the throne, the Spanish rebels, or local leaders. The latter option was tried on September 18, 1810, a date whose anniversary is celebrated as Chile\'s independence day.',
           lang: 'en',
           cite: {
             source: 'loc-chile-country-study-1994',
             loc: { section: 'WARS OF INDEPENDENCE, 1810-18', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/chile/8.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/chile/8.htm' }
         },
         {
           id: 'q3',

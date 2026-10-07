@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Assassination of Shaka', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'assassination',
   start: {
     alts: [
@@ -123,5 +123,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/0/09/Isaacs_-_Sjaka%2C_Koning_van_die_Zulu_%281836%29.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Isaacs_-_Sjaka,_Koning_van_die_Zulu_(1836).png',
+    credit: { institution: 'Nathaniel Isaacs, Travels and Adventures in Eastern Africa (1836)' },
+    license: { id: 'public-domain' }
+  }
 })

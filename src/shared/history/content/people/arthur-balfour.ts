@@ -27,7 +27,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -163,5 +163,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/66/A.J._Balfour_LCCN2014682753_%28cropped%29.jpg/1280px-A.J._Balfour_LCCN2014682753_%28cropped%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:A.J._Balfour_LCCN2014682753_(cropped).jpg',
+    credit: { institution: 'Library of Congress', creator: 'Bain News Service' },
+    license: { id: 'public-domain' }
+  }
 })

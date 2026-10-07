@@ -659,6 +659,7 @@ const api: NaviApi = {
   football: {
     overview: () => ipcRenderer.invoke('football:overview'),
     competitions: () => ipcRenderer.invoke('football:competitions'),
+    competitionLogos: () => ipcRenderer.invoke('football:competitionLogos'),
     competition: (key) => ipcRenderer.invoke('football:competition', key),
     seasons: (key) => ipcRenderer.invoke('football:seasons', key),
     season: (id) => ipcRenderer.invoke('football:season', id),

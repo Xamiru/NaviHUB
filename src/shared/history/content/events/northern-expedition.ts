@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Northern Expedition', lang: 'en', role: 'primary' },
     { text: '北伐', lang: 'zh', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -224,5 +224,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/6/6a/%E5%8C%97%E4%BC%90%E8%BB%8D%E8%B3%80%E8%80%80%E7%A5%96%E9%83%A8%E8%B6%8A%E9%81%8E%E9%90%B5%E8%B7%AF%E6%94%BB%E5%85%8B%E6%BF%9F%E5%8D%97.png',
+    page: 'https://commons.wikimedia.org/wiki/File:%E5%8C%97%E4%BC%90%E8%BB%8D%E8%B3%80%E8%80%80%E7%A5%96%E9%83%A8%E8%B6%8A%E9%81%8E%E9%90%B5%E8%B7%AF%E6%94%BB%E5%85%8B%E6%BF%9F%E5%8D%97.png',
+    credit: { institution: 'Shandong doran haken-gun kinen shashincho (1928)' },
+    license: { id: 'cc0' }
+  }
 })

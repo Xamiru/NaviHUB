@@ -46,7 +46,7 @@ export const KIND: Record<
   footballCompetition: {
     table: 'football_competition',
     nameCol: 'name',
-    imageCol: 'NULL',
+    imageCol: 'e.image_path',
     subCol: 'country'
   },
   footballTeam: {

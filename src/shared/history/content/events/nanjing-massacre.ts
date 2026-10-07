@@ -33,7 +33,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'massacre',
   start: {
     alts: [
@@ -157,6 +157,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q5',
+          text: 'The Nanjing Incident refers to the killing and raping of large numbers of Chinese over a relatively short period of time by the Japanese military after the city of Nanjing was captured on 13 December 1937.',
+          lang: 'en',
+          cite: {
+            source: 'askew-2002-nanjing-incident-recent-research',
+            loc: { section: 'The Nanjing Incident: Recent Research and Trends', para: '3' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'http://www.japanesestudies.org.uk/articles/Askew.html'
+          }
+        },
         {
           id: 'q1',
           text: 'The Nanjing (or Nanking) Incident (also known as the Rape of Nanjing, the Nanjing Massacre and the Nanjing Atrocities) remains a highly controversial episode in Sino-Japanese relations.',

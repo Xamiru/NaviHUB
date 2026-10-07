@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Wall Street crash of 1929', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -32,17 +32,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Der Kurssturz an der New-Yorker Börse leitet die Weltwirtschaftskrise ein.',
-          lang: 'de',
-          cite: { source: 'lemo-chronik-1929', loc: { section: 'Chronik 1929', para: '214' } },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.dhm.de/lemo/jahreschronik/1929.html'
-          }
-        },
-        {
           id: 'q2',
           text: 'The U.S. stock market crash of 1929, an economic downturn in Germany, and financial difficulties in France and Great Britain all coincided to cause a global financial crisis.',
           lang: 'en',
@@ -54,6 +43,17 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1921-1936/great-depression'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'Der Kurssturz an der New-Yorker Börse leitet die Weltwirtschaftskrise ein.',
+          lang: 'de',
+          cite: { source: 'lemo-chronik-1929', loc: { section: 'Chronik 1929', para: '214' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.dhm.de/lemo/jahreschronik/1929.html'
           }
         }
       ]

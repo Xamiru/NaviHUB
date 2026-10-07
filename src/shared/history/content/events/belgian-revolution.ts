@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Belgian Revolution', lang: 'en', role: 'primary' },
     { text: 'Révolution belge', lang: 'fr', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -118,6 +118,13 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q16',
+          text: 'The Kingdom of Belgium declared its independence from the Kingdom of the Netherlands on October 4, 1830.',
+          lang: 'en',
+          cite: { source: 'state-dept-countries-belgium', loc: { section: 'Belgium: Summary' } },
+          provenance: { via: 'web', at: '2026-10-07', url: 'https://history.state.gov/countries/belgium' }
+        },
         {
           id: 'q5',
           text: 'After a series of incidents, the revolution erupted in Brussels in 1830.',

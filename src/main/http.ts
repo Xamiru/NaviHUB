@@ -15,6 +15,8 @@
 // ingest, so they are passed through raw here.
 import { logError, logWarn } from './logBus'
 import { currentActivitySignal } from './activityContext'
+import { createThrottle } from './requestThrottle'
+import { WIKIMEDIA_USER_AGENT } from '@shared/wikimediaAgent'
 
 const MAX_RATE_LIMIT_WAITS = 5 // safety valve against a stuck 429 loop
 const DEFAULT_TIMEOUT_MS = 30_000
@@ -76,6 +78,21 @@ function boundedResponse(response: Response, maxBytes: number, label: string): R
   })
 }
 
+// Wikimedia allows an identified client 200 requests a minute per IP, shared by
+// Wikipedia, Wikidata and Commons (the API and the upload servers alike). History
+// images, Football enrichment, wrestling imports and music art all run here, so
+// every attempt to those hosts takes a slot from this one process-wide budget and
+// carries the agent that earns the higher limit, whatever the caller passed.
+export const wikimediaThrottle = createThrottle(330)
+
+export function isWikimediaUrl(url: string): boolean {
+  try {
+    return /(^|\.)(wikipedia|wikidata|wikimedia)\.org$/.test(new URL(url).hostname)
+  } catch {
+    return false
+  }
+}
+
 export async function fetchWithRetry(
   url: string,
   init?: RequestInit & {
@@ -97,12 +114,22 @@ export async function fetchWithRetry(
     maxResponseBytes,
     ...rest
   } = init ?? {}
+  const wikimedia = isWikimediaUrl(url)
+  if (wikimedia) {
+    const headers = new Headers(rest.headers)
+    headers.set('User-Agent', WIKIMEDIA_USER_AGENT)
+    rest.headers = headers
+  }
   let rateLimitWaits = 0
   let attempt = 0
   while (true) {
     let res: Response
     try {
       throwIfAborted(taskSignal)
+      if (wikimedia) {
+        await wikimediaThrottle.take(taskSignal)
+        throwIfAborted(taskSignal)
+      }
       // The task signal is composed with a NEW timeout for every attempt. It
       // can stop active I/O without turning one timeout into a deadline across
       // the entire retry loop.

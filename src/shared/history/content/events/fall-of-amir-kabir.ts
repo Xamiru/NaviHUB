@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Fall and execution of Amir Kabir', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'assassination',
   start: {
     alts: [
@@ -187,6 +187,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q11',
+          text: '1852 Mirzā Taqi Khan Amir Kabir (b. 1807), reformist and capable prime minister, is executed by order of Nāṣer-al-Din Shah.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-2',
+            loc: { section: 'Chronology of Iranian History Part 2, 1927' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
+          }
+        },
         {
           id: 'q4',
           text: 'He was dismissed and put to death in 1851, a fate shared by earlier powerful prime ministers.',

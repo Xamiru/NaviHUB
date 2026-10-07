@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Battle of Boyacá', lang: 'en', role: 'primary' },
     { text: 'Batalla de Boyacá', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -86,16 +86,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q3',
-          text: 'Bolívar then quickly marched his troops across the llanos and into the Andes, where a surprise attack on the Spanish garrison at Boyacá, near Bogotá, routed the royalist forces and liberated New Granada.',
-          lang: 'en',
-          cite: {
-            source: 'loc-venezuela-country-study-1990',
-            loc: { section: 'The Epic of Independence', para: '8' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/venezuela/4.htm' }
-        },
-        {
           id: 'q4',
           text: 'After the decisive defeat of royalist forces at the Battle of Boyacá in August 1819, independence forces entered Bogotá without resistance.',
           lang: 'en',
@@ -104,6 +94,16 @@ export default defineEvent({
             loc: { section: 'The Independence Movement', para: '6' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/colombia/12.htm' }
+        },
+        {
+          id: 'q3',
+          text: 'Bolívar then quickly marched his troops across the llanos and into the Andes, where a surprise attack on the Spanish garrison at Boyacá, near Bogotá, routed the royalist forces and liberated New Granada.',
+          lang: 'en',
+          cite: {
+            source: 'loc-venezuela-country-study-1990',
+            loc: { section: 'The Epic of Independence', para: '8' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/venezuela/4.htm' }
         }
       ]
     },

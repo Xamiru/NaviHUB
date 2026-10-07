@@ -7,7 +7,7 @@ export default defineEvent({
     { text: '甲午戰爭', lang: 'zh', role: 'native' },
     { text: '日清戦争', lang: 'ja', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -110,16 +110,6 @@ export default defineEvent({
             loc: { section: 'The Choson Dynasty', para: '13' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/south-korea/5.htm' }
-        },
-        {
-          id: 'q3',
-          text: 'A crisis was precipitated in 1894 when a leading pro-Japanese Korean political figure was assassinated in Shanghai with Chinese complicity.',
-          lang: 'en',
-          cite: {
-            source: 'loc-japan-country-study-1994',
-            loc: { section: 'Overseas Expansion', para: '1' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/27.htm' }
         }
       ]
     },
@@ -128,13 +118,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'Japan responded with force and quickly defeated China in the First Sino-Japanese War (1894-95).',
+          text: 'A crisis was precipitated in 1894 when a leading pro-Japanese Korean political figure was assassinated in Shanghai with Chinese complicity. Prowar elements in Japan called for a punitive expedition, which the cabinet resisted. With assistance from several Japanese nationalistic societies, the illegal Tonghak (Eastern Learning) nationalistic religious movement in Korea staged a rebellion that was crushed by Chinese troops. Japan responded with force and quickly defeated China in the First Sino-Japanese War (1894-95).',
           lang: 'en',
           cite: {
             source: 'loc-japan-country-study-1994',
             loc: { section: 'Overseas Expansion', para: '1' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/japan/27.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/japan/27.htm' }
         },
         {
           id: 'q5',

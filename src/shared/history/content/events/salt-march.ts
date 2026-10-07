@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'Dandi March', lang: 'en', role: 'alternative' },
     { text: 'Salt Satyagraha', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'protest',
   start: {
     alts: [
@@ -217,5 +217,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/24/Gandhi_and_Indira_1924.jpg/1280px-Gandhi_and_Indira_1924.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Gandhi_and_Indira_1924.jpg',
+    credit: { institution: 'Gujarat Vidyapith' },
+    license: { id: 'public-domain' }
+  }
 })

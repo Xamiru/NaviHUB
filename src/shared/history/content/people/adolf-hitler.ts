@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Adolf Hitler', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -104,5 +104,15 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/3/32/Bundesarchiv_Bild_183-S33882%2C_Adolf_Hitler.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Bundesarchiv_Bild_183-S33882,_Adolf_Hitler.jpg',
+    credit: { institution: 'Bundesarchiv' },
+    license: {
+      id: 'cc-by-sa',
+      version: '3.0 de',
+      url: 'https://creativecommons.org/licenses/by-sa/3.0/de/deed.en'
+    }
+  }
 })

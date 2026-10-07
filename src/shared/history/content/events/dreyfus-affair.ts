@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Dreyfus affair', lang: 'en', role: 'primary' },
     { text: 'Affaire Dreyfus', lang: 'fr', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'crisis',
   start: {
     alts: [
@@ -97,13 +97,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'Dreyfus was convicted, and although he was eventually cleared, his career was ruined.',
+          text: 'The turning point in Herzl\'s thinking on the Jewish question occurred during the 1894 Paris trial of Alfred Dreyfus, a Jewish officer in the French army, on charges of treason (the sale of military secrets to Germany). Dreyfus was convicted, and although he was eventually cleared, his career was ruined.',
           lang: 'en',
           cite: {
             source: 'loc-israel-country-study-1988',
             loc: { section: 'Political Zionism', para: '5' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/israel/9.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/israel/9.htm' }
         },
         {
           id: 'q2',

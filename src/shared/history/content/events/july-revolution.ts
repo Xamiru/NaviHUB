@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'revolution',
   start: {
     alts: [
@@ -94,6 +94,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q5',
+          text: 'In 1830, the July days in Paris known as Les Trois Glorieuses [The Three Glorious Days] marked the alliance of the liberal (and Bonapartist) bourgeoisie with the proto-proletarian classes.',
+          lang: 'en',
+          cite: {
+            source: 'ehne-hauch-gender-and-revolution-in-europe',
+            loc: { section: 'Gender and revolution in Europe, 19th-20th centuries', para: '11' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://ehne.fr/en/encyclopedia/themes/gender-and-europe/gender-and-revolution-in-europe-19th-20th-century/gender-and-revolution-in-europe-19th-20th-centuries'
+          }
+        },
         {
           id: 'q2',
           text: 'Hardly had the news of the capture of Algiers reached Paris than Charles X was deposed, and his cousin Louis Philippe, the "citizen king," was named to preside over a constitutional monarchy.',

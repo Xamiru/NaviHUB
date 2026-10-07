@@ -54,7 +54,7 @@ async function search(kind: ListKind, q: string): Promise<PickedEntity[]> {
       return rows.competitions.map((item) => ({
         entityId: item.id,
         name: item.name,
-        imagePath: null,
+        imagePath: item.imagePath,
         mediaType: null
       }))
     }

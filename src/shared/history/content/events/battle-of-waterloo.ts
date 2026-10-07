@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Battle of Waterloo', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -81,6 +81,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'Prussian forces under General Gebhard von Blücher were essential to the final victory over Napoleon at the Battle of Waterloo in 1815.',
+          lang: 'en',
+          cite: {
+            source: 'loc-germany-country-study-1995',
+            loc: { section: 'The French Revolution and Germany', para: '3' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/22.htm' }
+        },
+        {
           id: 'q1',
           text: 'After defeating Blücher’s Prussian troops at Ligny on 16 June, he prepared for the decisive battle at Waterloo, south of Brussels. However, a combination of Ney and de Soult’s blunders, Grouchy’s failure to contain Blücher and prevent him from rejoining Wellington, and staunch English and Prussian resistance resulted in Napoleon’s defeat on 18 June.',
           lang: 'en',
@@ -93,16 +103,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.napoleon.org/en/young-historians/napodoc/timeline-consulate1st-french-empire/'
           }
-        },
-        {
-          id: 'q2',
-          text: 'Prussian forces under General Gebhard von Blücher were essential to the final victory over Napoleon at the Battle of Waterloo in 1815.',
-          lang: 'en',
-          cite: {
-            source: 'loc-germany-country-study-1995',
-            loc: { section: 'The French Revolution and Germany', para: '3' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/22.htm' }
         }
       ]
     },

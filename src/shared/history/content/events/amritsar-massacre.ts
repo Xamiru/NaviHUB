@@ -17,7 +17,7 @@ export default defineEvent({
     },
     { text: 'ਜਲ੍ਹਿਆਂਵਾਲਾ ਬਾਗ ਹੱਤਿਆਕਾਂਡ', lang: 'pa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'massacre',
   start: {
     alts: [
@@ -169,6 +169,16 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q11',
+          text: 'The British military commander, Brigadier Reginald E.H. Dyer, ordered his soldiers to fire at point-blank range into an unarmed and unsuspecting crowd of some 10,000 men, women, and children. They had assembled at Jallianwala Bagh, a walled garden, to celebrate a Hindu festival without prior knowledge of the imposition of martial law. A total of 1,650 rounds were fired, killing 379 persons and wounding 1,137 in the episode, which dispelled wartime hopes and goodwill in a frenzy of postwar reaction.',
+          lang: 'en',
+          cite: {
+            source: 'loc-india-country-study-1995',
+            loc: { section: 'The Independence Movement', para: '10' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/india/19.htm' }
+        },
         {
           id: 'q1',
           text: 'His less-than-celebrated actions in Punjab involved firing 1,650 rounds into a peaceful crowd of up to 20,000 religious pilgrims and political protestors assembled in a large square (the Jallianwala Bagh) in the middle of Amritsar.',

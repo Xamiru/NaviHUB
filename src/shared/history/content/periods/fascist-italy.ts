@@ -6,7 +6,7 @@ export default definePeriod({
     { text: 'Fascist Italy', lang: 'en', role: 'primary' },
     { text: 'Italia fascista', lang: 'it', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -100,5 +100,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/7/7d/Benito_Mussolini_marching_into_Rome.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Benito_Mussolini_marching_into_Rome.jpg',
+    credit: { institution: 'The Outlook (29 November 1922)', creator: 'Wide World Photos' },
+    license: { id: 'public-domain' }
+  }
 })

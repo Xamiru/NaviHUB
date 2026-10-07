@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Anglo-Persian treaties of 1801', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -216,5 +216,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/84/John_Malcolm_1769-1833.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:John_Malcolm_1769-1833.jpg',
+    credit: { institution: 'National Portrait Gallery, London', creator: 'Richard James Lane' },
+    license: { id: 'public-domain' }
+  }
 })

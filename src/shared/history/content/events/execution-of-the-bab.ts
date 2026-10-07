@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Execution of the Bab', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'religious',
   start: {
     alts: [
@@ -243,5 +243,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Where_Bab_executed.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Where_Bab_executed.jpg',
+    credit: { institution: 'The Dawn-Breakers (bahai-library.com)' },
+    license: { id: 'public-domain' }
+  }
 })

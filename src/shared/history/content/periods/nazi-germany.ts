@@ -7,7 +7,7 @@ export default definePeriod({
     { text: 'Third Reich', lang: 'en', role: 'alternative' },
     { text: 'Drittes Reich', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -108,5 +108,15 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/f/ff/Bundesarchiv_Bild_183-C12701%2C_N%C3%BCrnberg%2C_Reichsparteitag%2C_RAD-Appell.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Bundesarchiv_Bild_183-C12701,_N%C3%BCrnberg,_Reichsparteitag,_RAD-Appell.jpg',
+    credit: { institution: 'Bundesarchiv' },
+    license: {
+      id: 'cc-by-sa',
+      version: '3.0 de',
+      url: 'https://creativecommons.org/licenses/by-sa/3.0/de/deed.en'
+    }
+  }
 })

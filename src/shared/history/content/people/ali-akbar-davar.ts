@@ -6,7 +6,7 @@ export default definePerson({
     { text: 'Ali-Akbar Davar', lang: 'en', role: 'primary' },
     { text: 'علی‌اکبر داور', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -89,5 +89,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Davar_49.jpg/1280px-Davar_49.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Davar_49.jpg',
+    credit: { institution: 'Bagher Agheli, Davar va Adliyeh (Tehran, 1990)' },
+    license: { id: 'public-domain' }
+  }
 })

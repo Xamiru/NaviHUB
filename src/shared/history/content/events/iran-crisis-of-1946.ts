@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'crisis',
   start: {
     alts: [
@@ -200,6 +200,16 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q15',
+          text: 'In December 1945, the Azarbaijan Democratic Party, which had close links with the Tudeh and was led by Jafar Pishevari, announced the establishment of an autonomous republic. In a similar move, activists in neighboring Kordestan established the Kurdish Republic of Mahabad. Both autonomous republics enjoyed the support of the Soviets, and Soviet troops remaining in Khorasan, Gorgan, Mazandaran, and Gilan. Other Soviet troops prevented government forces from entering Azarbaijan and Kordestan. Soviet pressure on Iran continued as British and American troops evacuated in keeping with their treaty undertakings. Soviet troops remained in the country.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'WORLD WAR II AND THE AZARBAIJAN CRISIS', para: '4' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/iran/16.htm' }
+        },
         {
           id: 'q1',
           text: 'In the meantime, the Soviet Union was pressing toobtain oil concessions in northern Persia, a demand that was generally opposed, except by the Tudeh party. The pressure was particularly threatening because of the continued presence of Soviet troops in Azarbaijan and northern Persia, even after the war had ended and contrary to an agreement signed by Josef Stalin, Winston Churchill, and Franklin D. Roosevelt in their Tehran Conference of 1943.',
@@ -515,5 +525,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/14/Repros%2C_Bestanddeelnr_901-5673.jpg/1280px-Repros%2C_Bestanddeelnr_901-5673.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Repros,_Bestanddeelnr_901-5673.jpg',
+    credit: { institution: 'Nationaal Archief' },
+    license: { id: 'cc0' }
+  }
 })

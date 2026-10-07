@@ -20,7 +20,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   died: {
     alts: [
       {
@@ -171,5 +171,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/e/e8/Mirza_Abolghassem_Ghaem%2C_maghain_persan._by_Yahya_Daulatabadi%2C_Bruxelles_1934_%28cropped%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Mirza_Abolghassem_Ghaem,_maghain_persan._by_Yahya_Daulatabadi,_Bruxelles_1934_(cropped).jpg',
+    credit: { institution: 'Postcard published by Yahya Dowlatabadi, Brussels 1934' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -5,7 +5,7 @@ export default definePerson({
   names: [
     { text: 'Alfred Dreyfus', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   regions: ['europe'],
   roles: ['military'],
   sections: [
@@ -36,5 +36,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b2/Alfred_Dreyfus_%281859-1935%29_Restauration.jpg/1280px-Alfred_Dreyfus_%281859-1935%29_Restauration.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Alfred_Dreyfus_(1859-1935)_Restauration.jpg',
+    credit: { institution: 'Bibliothèque municipale de Reims', creator: 'Aron Gerschel' },
+    license: { id: 'public-domain' }
+  }
 })

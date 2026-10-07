@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'D’Arcy Concession', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -61,6 +61,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'The granting of an oil concession to William Knox D’Arcy, a British citizen, for a period of 60 years.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-2',
+            loc: { section: 'Chronology of Iranian History Part 2, 1901' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
+          }
+        },
+        {
           id: 'q1',
           text: 'At the same time, the prodigal Moẓaffar-al-Din Shah and his government were in dire need of ready cash and therefore, on 28 May 1901, he granted D’Arcy an oil concession valid for sixty years, with exclusive rights to oil exploration in the entire country apart from the five northern provinces of Azarbaijan, Gilān, Mazandarān, Astarābād, and Khorasan.',
           lang: 'en',
@@ -101,22 +115,14 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/oil-agreements-in-iran/'
           }
-        },
-        {
-          id: 'q4',
-          text: 'The granting of an oil concession to William Knox D’Arcy, a British citizen, for a period of 60 years.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-chronology-part-2',
-            loc: { section: 'Chronology of Iranian History Part 2, 1901' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
-          }
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bf/Persia%2C_Afghanistan_%26_Baluchistan._LOC_2006626010.tif/lossy-page1-1280px-Persia%2C_Afghanistan_%26_Baluchistan._LOC_2006626010.tif.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Persia,_Afghanistan_%26_Baluchistan._LOC_2006626010.tif',
+    credit: { institution: 'Library of Congress', creator: 'Scribner & Co.' },
+    license: { id: 'public-domain' }
+  }
 })

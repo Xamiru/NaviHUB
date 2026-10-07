@@ -72,11 +72,14 @@ function context(): views.ViewContext {
 
 export function overview(): HistoryOverview {
   const o = views.overview(index(), { marks: repo.marks(), cached: cachedUrl })
-  // The timeline's medallions: the lead events' pictures, through the paced
-  // queue behind any page that asked first. Cached once, so this is a no-op
-  // after the first visit.
-  const lead = o.items.filter((i) => i.prominence === 1 && i.image && !i.image.cached).map((i) => i.image!.url)
-  ensureImages(lead, 'Caching timeline images', Date.now(), { back: true })
+  // The timeline's medallions: every event's picture, through the paced queue
+  // behind any page that asked first, the lead events first. Cached once, so
+  // this is a no-op after the first complete run.
+  const missing = o.items
+    .filter((i) => i.image && !i.image.cached)
+    .sort((a, b) => a.prominence - b.prominence)
+    .map((i) => i.image!.url)
+  ensureImages(missing, 'Caching timeline images', Date.now(), { back: true })
   return o
 }
 

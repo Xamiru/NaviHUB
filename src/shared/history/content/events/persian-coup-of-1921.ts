@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'coup',
   start: {
     alts: [
@@ -445,6 +445,12 @@ export default defineEvent({
       }
     }
   ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/5/5d/%D8%A7%D8%B9%D9%84%D8%A7%D9%85%DB%8C%D9%87_%DB%B9_%D9%85%D8%A7%D8%AF%D9%87%E2%80%8C%D8%A7%DB%8C_%D8%AD%DA%A9%D9%85_%D9%85%DB%8C%DA%A9%D9%86%D9%85_%D8%B5%D8%A7%D8%AF%D8%B1%D9%87_%D8%A7%D8%B2_%D8%B3%D9%88%DB%8C_%D8%B1%D8%B6%D8%A7%D8%AE%D8%A7%D9%86_%D8%B1%D8%A6%DB%8C%D8%B3_%D8%AF%DB%8C%D9%88%DB%8C%D8%B2%DB%8C%D9%88%D9%86_%D9%82%D8%B2%D8%A7%D9%82.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:%D8%A7%D8%B9%D9%84%D8%A7%D9%85%DB%8C%D9%87_%DB%B9_%D9%85%D8%A7%D8%AF%D9%87%E2%80%8C%D8%A7%DB%8C_%D8%AD%DA%A9%D9%85_%D9%85%DB%8C%DA%A9%D9%86%D9%85_%D8%B5%D8%A7%D8%AF%D8%B1%D9%87_%D8%A7%D8%B2_%D8%B3%D9%88%DB%8C_%D8%B1%D8%B6%D8%A7%D8%AE%D8%A7%D9%86_%D8%B1%D8%A6%DB%8C%D8%B3_%D8%AF%DB%8C%D9%88%DB%8C%D8%B2%DB%8C%D9%88%D9%86_%D9%82%D8%B2%D8%A7%D9%82.jpg',
+    credit: { institution: 'Institute for Iranian Contemporary Historical Studies' },
+    license: { id: 'public-domain' }
+  },
   archive: [
     {
       id: 'balfour-recent-happenings-in-persia-1922',

@@ -7,7 +7,7 @@ export default defineEvent({
     { text: 'Deutsch-Französischer Krieg', lang: 'de', role: 'alternative' },
     { text: 'Guerre franco-allemande de 1870', lang: 'fr', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -173,13 +173,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'Nationalistic fervor was ignited by the promised annexation of Lorraine and Alsace, which had belonged to the Holy Roman Empire and had been seized by France in the seventeenth century. With this goal in sight, the south German states eagerly joined in the war against the country that had come to be seen as Germany\'s traditional enemy.',
+          text: 'The conflict would become known to history as the Franco-Prussian War. Nationalistic fervor was ignited by the promised annexation of Lorraine and Alsace, which had belonged to the Holy Roman Empire and had been seized by France in the seventeenth century. With this goal in sight, the south German states eagerly joined in the war against the country that had come to be seen as Germany\'s traditional enemy.',
           lang: 'en',
           cite: {
             source: 'loc-germany-country-study-1995',
             loc: { section: 'Bismarck and Unification', para: '5' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/27.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/germany/27.htm' }
         }
       ]
     },

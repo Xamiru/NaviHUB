@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Dismissal of Bismarck', lang: 'en', role: 'primary' },
     { text: 'Entlassung Bismarcks', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'crisis',
   start: {
     alts: [
@@ -66,6 +66,16 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q8',
+          text: 'When Kaiser Wilhelm II dismissed Bismarck in 1890, the loose Russo-Prussian entente collapsed after having lasted for more than twenty-five years.',
+          lang: 'en',
+          cite: {
+            source: 'loc-russia-country-study-1996',
+            loc: { section: 'Transformation of Russia in the Nineteenth Century', para: '20' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/6.htm' }
+        },
         {
           id: 'q2',
           text: 'Entlassung Bismarcks als Reichskanzler und preußischer Ministerpräsident.',

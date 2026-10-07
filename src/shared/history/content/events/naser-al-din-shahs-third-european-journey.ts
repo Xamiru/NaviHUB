@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Naser al-Din Shah’s third European journey', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -64,6 +64,17 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q8',
+          text: 'In April 1889 the shah set out upon his third voyage to Europe. After a visit to the principal courts, including a stay of a month in England, where he was accompanied by Sir Henry Drummond Wolff, he returned to his capital (Oct. 20).',
+          lang: 'en',
+          cite: { source: 'britannica-1911-persia', loc: { section: 'PERSIA', para: '1180' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Persia'
+          }
+        },
         {
           id: 'q1',
           text: 'In 1873, and again in 1889, he visited England in the course of his three sumptuous journeys to Europe, 1873, 1878, 1889.',
@@ -194,5 +205,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/a/a0/Nasser-ed-Din_Shah%27s_last_visit_to_Britain_-_11.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Nasser-ed-Din_Shah%27s_last_visit_to_Britain_-_11.jpg',
+    credit: { institution: 'Illustrated London News' },
+    license: { id: 'public-domain' }
+  }
 })

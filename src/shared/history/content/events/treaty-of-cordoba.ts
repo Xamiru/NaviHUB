@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Treaty of Córdoba', lang: 'en', role: 'primary' },
     { text: 'Tratado de Córdoba', lang: 'es', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -146,5 +146,14 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/mexico/13.htm' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fa/Tratados_de_C%C3%B3rdoba.JPG/1280px-Tratados_de_C%C3%B3rdoba.JPG',
+    page: 'https://commons.wikimedia.org/wiki/File:Tratados_de_C%C3%B3rdoba.JPG',
+    credit: {
+      institution: 'Archivo General de la Nación (Mexico)',
+      creator: 'Jaontiveros (photograph)'
+    },
+    license: { id: 'cc-by-sa', version: '4.0', url: 'https://creativecommons.org/licenses/by-sa/4.0' }
+  }
 })

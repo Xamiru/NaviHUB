@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -83,7 +83,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'It sat from 1259/1843 to 1263/1847, and its work culminated in the second Treaty of Erzurum, which was signed on 16 Jomādā II 1263/31 May 1847.',
+          text: 'Great Britain in particular feared that unceasing and savage raiding on both sides of the border would weaken both the Ottoman empire and Persia, thus exposing them to Russian territorial or commercial expansion. A border commission composed of representatives of the Ottoman government, Persia, Great Britain, and Russia was therefore established. It sat from 1259/1843 to 1263/1847, and its work culminated in the second Treaty of Erzurum, which was signed on 16 Jomādā II 1263/31 May 1847.',
           lang: 'en',
           cite: {
             source: 'iranica-mclachlan-boundaries-ottoman-empire',
@@ -91,7 +91,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/boundaries-i'
           }
         },
@@ -140,34 +140,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/mohammad-shah'
-          }
-        },
-        {
-          id: 'q5',
-          text: 'Great Britain in particular feared that unceasing and savage raiding on both sides of the border would weaken both the Ottoman empire and Persia, thus exposing them to Russian territorial or commercial expansion.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-mclachlan-boundaries-ottoman-empire',
-            loc: { section: 'BOUNDARIES i. With the Ottoman Empire', para: '2' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/boundaries-i'
-          }
-        },
-        {
-          id: 'q6',
-          text: 'A border commission composed of representatives of the Ottoman government, Persia, Great Britain, and Russia was therefore established.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-mclachlan-boundaries-ottoman-empire',
-            loc: { section: 'BOUNDARIES i. With the Ottoman Empire', para: '2' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/boundaries-i'
           }
         }
       ]

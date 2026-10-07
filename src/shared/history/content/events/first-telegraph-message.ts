@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'First telegraph message (“What hath God wrought”)', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'invention',
   start: {
     alts: [

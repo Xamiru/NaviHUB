@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Herat crisis of 1851–1853', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'crisis',
   start: {
     alts: [
@@ -131,7 +131,7 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
@@ -146,12 +146,7 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/anglo-iranian-relations-ii/'
           }
-        }
-      ]
-    },
-    {
-      kind: 'overview',
-      quotes: [
+        },
         {
           id: 'q2',
           text: 'In spite of warnings from the British minister in Tehran, Colonel Sheil, the Persians moved into Herat the next spring, but faced with British threats to break diplomatic relations and reoccupy Ḵārg island, the shah withdrew his troops (G. H. Hunt, Outram and Havelock’s Persian Campaign, London, 1858, pp. 149f.; P. P. Bushev, Gerat i anglo-iranskaya voĭna, Moscow, 1959, pp. 43f.), agreeing not to send them to Herat again unless it was threatened from the east and not to interfere in Herat’s internal affairs (engagement of 15 Rabīʿ II 1269/25 January 1853: see parts regarding ḵoṭba and coinage in C. U. Aitchison, A Collection of Treaties, Engagements, and Other Sanads Relating to India and Neighbouring Countries, Delhi, 1933, XIII, no. XVII, pp. 77f.; see also Hunt, Outram, pp. 155f.; Bushev, Gerat, pp. 44f.).',
@@ -336,5 +331,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bd/Herat_from_the_Citadel.png/1280px-Herat_from_the_Citadel.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Herat_from_the_Citadel.png',
+    credit: { institution: 'Illustrated London News (13 June 1863), Internet Archive' },
+    license: { id: 'public-domain' }
+  }
 })

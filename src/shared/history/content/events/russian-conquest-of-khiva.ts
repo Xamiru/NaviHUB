@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russian conquest of Khiva', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'invasion',
   start: {
     alts: [
@@ -61,20 +61,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: '1873 Ḵiva is conquered by Russian forces.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-yarshater-chronology-part-2',
-            loc: { section: 'Chronology of Iranian History Part 2, 1873' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
-          }
-        },
-        {
           id: 'q2',
           text: 'Russian military advance into Central Asia started in the 1860s, and by 1873 the territories of the Ḵoqand (Kokand), Bukhara, and Khiva khanates became Russian territories.',
           lang: 'en',
@@ -89,6 +75,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/russia-i-relations/'
+          }
+        },
+        {
+          id: 'q1',
+          text: '1873 Ḵiva is conquered by Russian forces.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-yarshater-chronology-part-2',
+            loc: { section: 'Chronology of Iranian History Part 2, 1873' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
         }
       ]

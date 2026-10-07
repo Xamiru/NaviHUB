@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Conscription law of 1925', lang: 'en', role: 'primary' },
     { text: 'قانون نظام وظیفه عمومی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -60,8 +60,8 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Reza Shah was the first monarch since Achaemenid times to organize a standing army.',
+          id: 'q2',
+          text: 'On 6 June 1925 the Majles passed the law of compulsory military conscription. It provided for two years of military service at the age of 21.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-iranian-history-islamic-period-5',
@@ -76,8 +76,8 @@ export default defineEvent({
           }
         },
         {
-          id: 'q2',
-          text: 'On 6 June 1925 the Majles passed the law of compulsory military conscription. It provided for two years of military service at the age of 21.',
+          id: 'q1',
+          text: 'Reza Shah was the first monarch since Achaemenid times to organize a standing army.',
           lang: 'en',
           cite: {
             source: 'iranica-yarshater-iranian-history-islamic-period-5',
@@ -136,5 +136,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/c/c3/%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%D8%AF%D8%B1_%D8%A7%D9%88%D8%A7%DB%8C%D9%84_%D8%B3%D9%84%D8%B7%D9%86%D8%AA_-_%D8%AA%D8%B5%D9%88%DB%8C%D8%B1_%D9%85%D9%86%D8%AA%D8%B4%D8%B1%D8%B4%D8%AF%D9%87_%D8%AF%D8%B1_%DA%A9%D8%AA%D8%A7%D8%A8_%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%DA%A9%D8%A8%DB%8C%D8%B1_%DB%8C%D8%A7_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86_%D9%86%D9%88.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%D8%AF%D8%B1_%D8%A7%D9%88%D8%A7%DB%8C%D9%84_%D8%B3%D9%84%D8%B7%D9%86%D8%AA_-_%D8%AA%D8%B5%D9%88%DB%8C%D8%B1_%D9%85%D9%86%D8%AA%D8%B4%D8%B1%D8%B4%D8%AF%D9%87_%D8%AF%D8%B1_%DA%A9%D8%AA%D8%A7%D8%A8_%D8%B1%D8%B6%D8%A7%D8%B4%D8%A7%D9%87_%DA%A9%D8%A8%DB%8C%D8%B1_%DB%8C%D8%A7_%D8%A7%DB%8C%D8%B1%D8%A7%D9%86_%D9%86%D9%88.jpg',
+    credit: { institution: 'Grand Ayatollah Boroujerdi Library' },
+    license: { id: 'public-domain' }
+  }
 })

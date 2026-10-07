@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Imprisonment of the Báb', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'religious',
   start: {
     alts: [
@@ -162,20 +162,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'Successive imprisonments between 1261/1845 and 1267/1850 prevented him from active participation in the affairs of the sect, but his writings were copied and widely disseminated and large numbers of pilgrims succeeded in obtaining personal interviews with him, in spite of official disapproval.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-maceoin-bab',
-            loc: { section: 'BĀB, ʿAli Moḥammad Širāzi', para: '6' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/bab-ali-mohammad-sirazi'
-          }
-        },
-        {
           id: 'q2',
           text: 'The Bāb was summoned by Moḥammad Shah to Tehran but en route diverted to Mākū in Azarbaijan, where he remained in confinement until his transfer in May, 1848 to the fortress of Čahrīq, his place of imprisonment until shortly before his execution in 1266/1850.',
           lang: 'en',
@@ -187,6 +173,20 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/babism'
+          }
+        },
+        {
+          id: 'q1',
+          text: 'Successive imprisonments between 1261/1845 and 1267/1850 prevented him from active participation in the affairs of the sect, but his writings were copied and widely disseminated and large numbers of pilgrims succeeded in obtaining personal interviews with him, in spite of official disapproval.',
+          lang: 'en',
+          cite: {
+            source: 'iranica-maceoin-bab',
+            loc: { section: 'BĀB, ʿAli Moḥammad Širāzi', para: '6' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-06',
+            url: 'https://www.iranicaonline.org/articles/bab-ali-mohammad-sirazi'
           }
         }
       ]

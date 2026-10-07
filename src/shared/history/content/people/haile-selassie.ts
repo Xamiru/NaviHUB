@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   died: {
     alts: [
       {
@@ -123,5 +123,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/2c/H.S._%28i.e.%2C_Haile_Selassie%29_in_robe_LOC_matpc.10374.jpg/1280px-H.S._%28i.e.%2C_Haile_Selassie%29_in_robe_LOC_matpc.10374.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:H.S._(i.e.,_Haile_Selassie)_in_robe_LOC_matpc.10374.jpg',
+    credit: { institution: 'Library of Congress, Matson Collection' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -24,7 +24,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'conference',
   start: {
     alts: [
@@ -114,6 +114,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q13',
+          text: 'The Berlin Conference of 1884-1885 defined the rules of the game that presided over the colonization of Africa.',
+          lang: 'en',
+          cite: {
+            source: 'ehne-jeannesson-concert-of-europe',
+            loc: { section: 'The Concert of Europe', para: '8' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://ehne.fr/en/article/europe-europeans-and-world/organizing-international-system/concert-europe'
+          }
+        },
         {
           id: 'q1',
           text: 'The conference assembled at Berlin on the 15th of November 1884, and after protracted deliberations the “General Act of the Berlin Conference” was signed by the representatives of all the powers attending the conference, on the 26th of February 1885.',

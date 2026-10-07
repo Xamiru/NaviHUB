@@ -6,7 +6,7 @@ export default definePeriod({
     { text: 'Pahlavi dynasty', lang: 'en', role: 'primary' },
     { text: 'دودمان پهلوی', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'dynasty',
   start: {
     alts: [
@@ -90,5 +90,13 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/4/48/Reza_shah_coronation.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Reza_shah_coronation.jpg',
+    credit: {
+      institution: 'Tajgozari-ye shahanshahan-e Iran (Central Council of the Imperial Celebrations, 1967)'
+    },
+    license: { id: 'public-domain' }
+  }
 })

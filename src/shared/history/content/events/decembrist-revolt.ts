@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Decembrist revolt', lang: 'en', role: 'primary' },
     { text: 'Восстание декабристов', lang: 'ru', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -79,16 +79,6 @@ export default defineEvent({
             loc: { section: 'Ruling the Empire', para: '10' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/5.htm' }
-        },
-        {
-          id: 'q3',
-          text: 'Several clandestine organizations were preparing for an uprising when Alexander died unexpectedly in 1825.',
-          lang: 'en',
-          cite: {
-            source: 'loc-russia-country-study-1996',
-            loc: { section: 'Ruling the Empire', para: '10' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/5.htm' }
         }
       ]
     },
@@ -97,13 +87,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'A group of officers commanding about 3,000 men refused to swear allegiance to the new tsar, Alexander\'s brother Nicholas, proclaiming instead their loyalty to the idea of a Russian constitution.',
+          text: 'Several clandestine organizations were preparing for an uprising when Alexander died unexpectedly in 1825. Following his death, there was confusion about who would succeed him because the next in line, his brother Constantine, had relinquished his right to the throne. A group of officers commanding about 3,000 men refused to swear allegiance to the new tsar, Alexander\'s brother Nicholas, proclaiming instead their loyalty to the idea of a Russian constitution.',
           lang: 'en',
           cite: {
             source: 'loc-russia-country-study-1996',
             loc: { section: 'Ruling the Empire', para: '10' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/russia/5.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/russia/5.htm' }
         },
         {
           id: 'q5',
@@ -187,5 +177,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ef/Peterburg%2C_Senate_Square%2C_1825%2C_dec._14.jpg/1280px-Peterburg%2C_Senate_Square%2C_1825%2C_dec._14.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Peterburg,_Senate_Square,_1825,_dec._14.jpg',
+    credit: { institution: 'Literaturnye mesta Rossii (Moscow)', creator: 'Karl Kollmann' },
+    license: { id: 'public-domain' }
+  }
 })

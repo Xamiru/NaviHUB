@@ -40,6 +40,10 @@ export function libraryPath(mediaType: MediaType, id: number): string {
   return `${MEDIA_TYPE_PATHS[mediaType]}/${id}`
 }
 
+// Each refresh rebuilds the open History views in main, so during a long batch (the
+// timeline prefetch runs for minutes) pictures land in waves, not on every poll.
+export const LIVE_IMAGE_REFRESH_MS = 10_000
+
 const NO_IMAGE_KEYS = new Set<unknown>([qk.history.imageStatus[1], qk.history.borders[1], qk.history.archiveJobs[1]])
 
 /**
@@ -58,10 +62,11 @@ export function useHistoryImageRefresh(loadedAt: number): void {
   useEffect(() => {
     if (loadedAt) void refetch()
   }, [loadedAt, refetch])
-  // Refresh the views as images land (each poll that saw progress) and once more
-  // when the queue settles, so pictures appear one by one instead of all at the end.
+  // Refresh the views as images land (at most every LIVE_IMAGE_REFRESH_MS) and once
+  // more when the queue settles, so pictures appear while it runs instead of all at the end.
   const wasRunning = useRef(false)
   const seenDone = useRef(0)
+  const lastRefresh = useRef(0)
   useEffect(() => {
     if (!data) return
     // Only views that carry images: the map's borders are large and never change.
@@ -70,9 +75,16 @@ export function useHistoryImageRefresh(loadedAt: number): void {
         predicate: (q) => q.queryKey[0] === 'history' && !NO_IMAGE_KEYS.has(q.queryKey[1])
       })
     if (data.running) {
-      if (wasRunning.current && data.done > seenDone.current) refresh()
+      if (!wasRunning.current) {
+        // Count from the batch's own start, not from a page that loaded mid-run.
+        seenDone.current = data.done
+        lastRefresh.current = Date.now()
+      } else if (data.done > seenDone.current && Date.now() - lastRefresh.current >= LIVE_IMAGE_REFRESH_MS) {
+        refresh()
+        seenDone.current = data.done
+        lastRefresh.current = Date.now()
+      }
       wasRunning.current = true
-      seenDone.current = data.done
     } else if (wasRunning.current) {
       wasRunning.current = false
       seenDone.current = 0

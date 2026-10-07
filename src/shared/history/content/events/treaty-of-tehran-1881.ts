@@ -20,7 +20,7 @@ export default defineEvent({
     },
     { text: 'Akhal-Khorasan boundary convention', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -140,20 +140,6 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/boundaries-ii'
           }
-        },
-        {
-          id: 'q3',
-          text: 'The pacification of the Teke by Russian troops in the 1880s naturally established the frontier at the foot of the mountains of Khorasan.',
-          lang: 'en',
-          cite: {
-            source: 'iranica-de-planhol-boundaries-russia',
-            loc: { section: 'BOUNDARIES ii. With Russia', para: '7' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/boundaries-ii'
-          }
         }
       ]
     },
@@ -162,7 +148,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q4',
-          text: 'The Treaty of Tehran in 1881 (text in Krausse, pp. 360-62) defined the line precisely, first along the Atrak as far as Čāt, from there following the base of the mountains to Loṭfābād in the Daragaz.',
+          text: 'The pacification of the Teke by Russian troops in the 1880s naturally established the frontier at the foot of the mountains of Khorasan. The Treaty of Tehran in 1881 (text in Krausse, pp. 360-62) defined the line precisely, first along the Atrak as far as Čāt, from there following the base of the mountains to Loṭfābād in the Daragaz.',
           lang: 'en',
           cite: {
             source: 'iranica-de-planhol-boundaries-russia',
@@ -170,7 +156,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/boundaries-ii'
           }
         },
@@ -364,5 +350,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f3/The_Young_Nasir_Al-Din_Shah_Qajar.jpg/1280px-The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:The_Young_Nasir_Al-Din_Shah_Qajar.jpg',
+    credit: { creator: 'Mirza Abolhassan Khan Ghaffari' },
+    license: { id: 'public-domain' }
+  }
 })

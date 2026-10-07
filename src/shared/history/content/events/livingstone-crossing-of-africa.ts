@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Livingstone\'s crossing of Africa', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'expedition',
   start: {
     alts: [
@@ -70,11 +70,11 @@ export default defineEvent({
   ],
   sections: [
     {
-      kind: 'background',
+      kind: 'overview',
       quotes: [
         {
           id: 'q1',
-          text: 'Livingstone was increasingly entertaining the hope of opening the continent to the outside world, by finding a possible “highway” to the coast (Schapera 1961:131-138). Learning about a major river to the North, the Zambezi, he hoped it might provide a “key to the Interior” (Schapera 1961:139-140; Roberts 2004).',
+          text: 'Livingstone was increasingly entertaining the hope of opening the continent to the outside world, by finding a possible “highway” to the coast (Schapera 1961:131-138). Learning about a major river to the North, the Zambezi, he hoped it might provide a “key to the Interior” (Schapera 1961:139-140; Roberts 2004). With Oswell, Livingstone reached the river in August 1851 and felt confirmed that this was the very highway he was looking for.',
           lang: 'en',
           cite: {
             source: 'livingstone-online-life-and-expeditions',
@@ -82,15 +82,10 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://livingstoneonline.org/life-and-times/livingstone-s-life-expeditions'
           }
-        }
-      ]
-    },
-    {
-      kind: 'overview',
-      quotes: [
+        },
         {
           id: 'q2',
           text: 'It was at this point that Livingstone’s travels started in earnest.',

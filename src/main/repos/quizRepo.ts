@@ -55,7 +55,8 @@ function footballChampionCandidates(): FootballChampionCandidate[] {
   return getSqlite().prepare(`
     SELECT s.id AS seasonId,c.key AS competitionKey,c.name AS competitionName,
       s.label AS seasonLabel,CAST(substr(COALESCE(s.start_date,s.key),1,4) AS INTEGER) AS year,
-      t.id AS teamId,t.name AS teamName,COALESCE(s.data_revision,'unknown') AS datasetRevision
+      t.id AS teamId,t.name AS teamName,t.image_path AS teamImagePath,
+      COALESCE(s.data_revision,'unknown') AS datasetRevision
     FROM football_season s
     JOIN football_competition c ON c.id=s.competition_id
     JOIN football_honour h ON h.season_id=s.id AND h.placement='winner'
@@ -75,7 +76,8 @@ function footballChampionCandidates(): FootballChampionCandidate[] {
 function footballScorelineCandidates(): FootballScorelineCandidate[] {
   return getSqlite().prepare(`
     SELECT m.id AS matchId,c.key AS competitionKey,c.name AS competitionName,
-      ht.name AS homeTeam,at.name AS awayTeam,m.match_date AS matchDate,
+      ht.name AS homeTeam,at.name AS awayTeam,ht.image_path AS homeImagePath,
+      at.image_path AS awayImagePath,m.match_date AS matchDate,
       st.name AS stage,m.home_score AS homeScore,m.away_score AS awayScore,
       m.home_extra_time AS homeExtraTime,m.away_extra_time AS awayExtraTime,
       m.home_penalties AS homePenalties,m.away_penalties AS awayPenalties,
@@ -98,7 +100,7 @@ function footballScorelineCandidates(): FootballScorelineCandidate[] {
 
 function footballCareerCandidates(): FootballCareerCandidate[] {
   const rows = getSqlite().prepare(`
-    SELECT p.id AS personId,p.name,t.name AS team,ft.start_date AS start,
+    SELECT p.id AS personId,p.name,t.name AS team,t.image_path AS imagePath,ft.start_date AS start,
       ft.end_date AS end,ft.loan,COALESCE(MAX(sr.revision),'unknown') AS datasetRevision
     FROM football_person p
     JOIN football_tenure ft ON ft.person_id=p.id AND ft.role='player'
@@ -115,6 +117,7 @@ function footballCareerCandidates(): FootballCareerCandidate[] {
     personId: number
     name: string
     team: string
+    imagePath: string | null
     start: string | null
     end: string | null
     loan: number
@@ -130,6 +133,7 @@ function footballCareerCandidates(): FootballCareerCandidate[] {
     }
     current.spells.push({
       team: row.team,
+      imagePath: row.imagePath,
       start: row.start,
       end: row.end,
       loan: !!row.loan

@@ -6,7 +6,7 @@ export default definePeriod({
     { text: 'Qajar dynasty', lang: 'en', role: 'primary' },
     { text: 'دودمان قاجار', lang: 'fa', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'dynasty',
   start: {
     alts: [
@@ -81,5 +81,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/Portrait_of_Fath_Ali_Shah_Standing.jpg/1280px-Portrait_of_Fath_Ali_Shah_Standing.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Fath_Ali_Shah_Standing.jpg',
+    credit: { institution: 'State Hermitage Museum', creator: 'Mihr \'Ali' },
+    license: { id: 'public-domain' }
+  }
 })

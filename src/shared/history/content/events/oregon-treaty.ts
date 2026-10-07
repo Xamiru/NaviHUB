@@ -19,7 +19,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -90,6 +90,20 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q4',
+          text: 'President James Polk, a supporter of Manifest Destiny with an eye also on the Mexican Southwest and California, was eager to settle the boundary of the Oregon Territory and proposed a settlement on the 49 degree line to Great Britain. British Minister to Washington, Richard Pakenham, and Secretary of State James Buchanan, supported and encouraged by British Foreign Secretary Lord Aberdeen and Senator John C. Calhoun of South Carolina, worked out a compromise. With some minor modifications, which reserved the whole of Vancouver Island to Canada, Great Britain agreed to Polk’s suggestion.',
+          lang: 'en',
+          cite: {
+            source: 'state-dept-milestones-oregon-territory',
+            loc: { section: 'The Oregon Territory, 1846', para: '7' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://history.state.gov/milestones/1830-1860/oregon-territory'
+          }
+        },
+        {
           id: 'q1',
           text: 'Along with territorial disputes with Spain and Mexico over the Southwest, the fate of the Oregon Territory was one of the major diplomatic issues of the first half of the 19th century.',
           lang: 'en',
@@ -138,40 +152,12 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://history.state.gov/milestones/1830-1860/oregon-territory'
           }
-        },
-        {
-          id: 'q4',
-          text: 'President James Polk, a supporter of Manifest Destiny with an eye also on the Mexican Southwest and California, was eager to settle the boundary of the Oregon Territory and proposed a settlement on the 49 degree line to Great Britain.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-oregon-territory',
-            loc: { section: 'The Oregon Territory, 1846', para: '7' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1830-1860/oregon-territory'
-          }
         }
       ]
     },
     {
       kind: 'consequences',
       quotes: [
-        {
-          id: 'q5',
-          text: 'With some minor modifications, which reserved the whole of Vancouver Island to Canada, Great Britain agreed to Polk’s suggestion.',
-          lang: 'en',
-          cite: {
-            source: 'state-dept-milestones-oregon-territory',
-            loc: { section: 'The Oregon Territory, 1846', para: '7' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://history.state.gov/milestones/1830-1860/oregon-territory'
-          }
-        },
         {
           id: 'q6',
           text: 'A later controversy over the precise boundaries in the Juan de Fuca Strait was resolved by international arbitration in favor of the United States.',
@@ -219,5 +205,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Oregon_Treaty_-_DPLA_-_d5c3b6b9f7a4863b56ec0d08f7659449_%28page_1%29.jpg/1280px-Oregon_Treaty_-_DPLA_-_d5c3b6b9f7a4863b56ec0d08f7659449_%28page_1%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Oregon_Treaty_-_DPLA_-_d5c3b6b9f7a4863b56ec0d08f7659449_(page_1).jpg',
+    credit: { institution: 'National Archives and Records Administration' },
+    license: { id: 'public-domain' }
+  }
 })

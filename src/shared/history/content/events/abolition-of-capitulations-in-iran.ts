@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Abolition of capitulations in Iran', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'reform',
   start: {
     alts: [
@@ -66,16 +66,6 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
-          id: 'q1',
-          text: 'In 1928 he abolished the capitulations under which Europeans in Iran had, since the nineteenth century, enjoyed the privilege of being subject to their own consular courts rather than to the Iranian judiciary.',
-          lang: 'en',
-          cite: {
-            source: 'loc-iran-country-study-1987',
-            loc: { section: 'THE ERA OF REZA SHAH', para: '9' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iran/15.htm' }
-        },
-        {
           id: 'q2',
           text: 'The capitulatory privileges of all foreigners living in Iran are abolished and foreign nationals become subject to Persian jurisdiction, ending a humiliating legacy from the Qajar era.',
           lang: 'en',
@@ -88,6 +78,16 @@ export default defineEvent({
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/chronology-of-iranian-history-part-2/'
           }
+        },
+        {
+          id: 'q1',
+          text: 'In 1928 he abolished the capitulations under which Europeans in Iran had, since the nineteenth century, enjoyed the privilege of being subject to their own consular courts rather than to the Iranian judiciary.',
+          lang: 'en',
+          cite: {
+            source: 'loc-iran-country-study-1987',
+            loc: { section: 'THE ERA OF REZA SHAH', para: '9' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/iran/15.htm' }
         },
         {
           id: 'q3',
@@ -187,5 +187,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e3/Davar_49.jpg/1280px-Davar_49.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Davar_49.jpg',
+    credit: { institution: 'Bagher Agheli, Davar va Adliyeh (Tehran, 1990)' },
+    license: { id: 'public-domain' }
+  }
 })

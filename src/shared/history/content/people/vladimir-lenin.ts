@@ -22,7 +22,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -157,5 +157,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3d/Lenin_LCCN2014715123_%28cropped%29.jpg/1280px-Lenin_LCCN2014715123_%28cropped%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Lenin_LCCN2014715123_(cropped).jpg',
+    credit: { institution: 'Library of Congress', creator: 'Viktor Bulla' },
+    license: { id: 'public-domain' }
+  }
 })

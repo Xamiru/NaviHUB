@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Naser al-Din Shah’s second European journey', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -168,5 +168,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9e/Naser_al-Din_Shah_Qajar%2C_close_up%2C_with_slight_smile_by_Nadar_-_Original.jpg/1280px-Naser_al-Din_Shah_Qajar%2C_close_up%2C_with_slight_smile_by_Nadar_-_Original.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Naser_al-Din_Shah_Qajar,_close_up,_with_slight_smile_by_Nadar_-_Original.jpg',
+    credit: { institution: 'Bibliothèque nationale de France (Gallica)', creator: 'Nadar' },
+    license: { id: 'public-domain' }
+  }
 })

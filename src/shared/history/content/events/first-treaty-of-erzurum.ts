@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -82,7 +82,7 @@ export default defineEvent({
       quotes: [
         {
           id: 'q1',
-          text: 'The Erzurum treaty of 19 Ḏu’l-qaʿda 1238/28 July 1823 that ended this military confrontation explicitly reconfirmed the provisions of the 1746 treaty and extended the formal legal recognition of the personal status of Persians in the Ottoman empire even more than before, including a section, for example, providing detailed instructions for the disposition of the estates and property of Persians who died there',
+          text: 'Changes in the relationship between Persia and Iraq in the Qajar era can also be perceived in the last substantial military conflict between the Ottomans and Persia in the early 1820s. It erupted, as had previous confrontations, due to tension that arose among groups living on the Persia-Iraq border and as an indirect consequence of increased European presence in the area. In contrast to previous hostilities, Ottoman clerics issued no anti-Shiʿite fatwās at all to justify the conflict. When peace negotiations commenced, the Ottoman Šayḵ-al-Eslām wrote a letter to the Qajar crown prince ʿAbbās Mirzā, who led the Persian army, extolling the basic friendship between their nations and describing them as “two great countries that are as one body” (Cevdet, XII, p. 254). The Erzurum treaty of 19 Ḏu’l-qaʿda 1238/28 July 1823 that ended this military confrontation explicitly reconfirmed the provisions of the 1746 treaty and extended the formal legal recognition of the personal status of Persians in the Ottoman empire even more than before, including a section, for example, providing detailed instructions for the disposition of the estates and property of Persians who died there',
           lang: 'en',
           cite: {
             source: 'iranica-tucker-iraq-afsharids-to-qajars',
@@ -90,7 +90,7 @@ export default defineEvent({
           },
           provenance: {
             via: 'web',
-            at: '2026-10-06',
+            at: '2026-10-07',
             url: 'https://www.iranicaonline.org/articles/iraq-v-afsharids-to-the-end-of-the-qajars/'
           }
         },
@@ -106,25 +106,6 @@ export default defineEvent({
             via: 'web',
             at: '2026-10-06',
             url: 'https://www.iranicaonline.org/articles/boundaries-i'
-          }
-        }
-      ]
-    },
-    {
-      kind: 'background',
-      quotes: [
-        {
-          id: 'q3',
-          text: 'When peace negotiations commenced, the Ottoman Šayḵ-al-Eslām wrote a letter to the Qajar crown prince ʿAbbās Mirzā, who led the Persian army, extolling the basic friendship between their nations and describing them as “two great countries that are as one body”',
-          lang: 'en',
-          cite: {
-            source: 'iranica-tucker-iraq-afsharids-to-qajars',
-            loc: { section: 'IRAQ v. AFSHARIDS TO THE END OF THE QAJARS', para: '12' }
-          },
-          provenance: {
-            via: 'web',
-            at: '2026-10-06',
-            url: 'https://www.iranicaonline.org/articles/iraq-v-afsharids-to-the-end-of-the-qajars/'
           }
         }
       ]
@@ -162,5 +143,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b4/An_official_copy_of_the_treaty_of_Erzurum%2C_Persia%2C_Qajar%2C_19th_Century.jpg/1280px-An_official_copy_of_the_treaty_of_Erzurum%2C_Persia%2C_Qajar%2C_19th_Century.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:An_official_copy_of_the_treaty_of_Erzurum,_Persia,_Qajar,_19th_Century.jpg',
+    credit: { institution: 'Sotheby\'s, Arts of the Islamic World (2013), lot 41' },
+    license: { id: 'public-domain' }
+  }
 })

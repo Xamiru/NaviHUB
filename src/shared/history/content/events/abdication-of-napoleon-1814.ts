@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'First abdication of Napoleon', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'other',
   start: {
     alts: [
@@ -49,6 +49,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q4',
+          text: 'On 6 April, Napoleon was forced to sign an abdication without being able to impose his conditions. He realized that he had lost the support of his marshals and of a portion of the population, exhausted as they were by years of war and conscription.',
+          lang: 'en',
+          cite: {
+            source: 'fondation-napoleon-napodoc-french-campaign',
+            loc: { section: 'The Abdication', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.napoleon.org/en/young-historians/napodoc/the-french-campaign/'
+          }
+        },
         {
           id: 'q1',
           text: 'He was exiled to the island of Elba and Louis XVIII was restored to the Bourbon throne.',

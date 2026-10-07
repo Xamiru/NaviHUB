@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Ottoman–Persian War of 1821–1823', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -322,5 +322,11 @@ export default defineEvent({
         provenance: { via: 'web', at: '2026-10-06', url: 'https://www.iranicaonline.org/articles/army-v/' }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/4/45/Portrait_of_Fath_Ali_Shah_Seated.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Fath_Ali_Shah_Seated.jpg',
+    credit: { institution: 'State Hermitage Museum', creator: 'Mihr \'Ali' },
+    license: { id: 'public-domain' }
+  }
 })

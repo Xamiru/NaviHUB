@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Persian students sent to France (1859)', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'cultural',
   start: {
     alts: [
@@ -205,5 +205,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/3/35/A_Portrait_of_Farrokh_Khan_Amin_al-Dowleh%2C_signed_by_Abu%27l_Hasan_Ghaffari.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:A_Portrait_of_Farrokh_Khan_Amin_al-Dowleh,_signed_by_Abu%27l_Hasan_Ghaffari.jpg',
+    credit: { creator: 'Mirza Abolhassan Khan Ghaffari' },
+    license: { id: 'public-domain' }
+  }
 })

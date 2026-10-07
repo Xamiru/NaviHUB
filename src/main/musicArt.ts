@@ -1,6 +1,7 @@
 import { getSqlite } from './db/connection'
 import * as imageOverrideRepo from './repos/imageOverrideRepo'
 import { fetchWithRetry, MAX_API_RESPONSE_BYTES, sleep } from './http'
+import { WIKIMEDIA_USER_AGENT } from '@shared/wikimediaAgent'
 import { downloadImage } from './files'
 import * as tasks from './tasks'
 import { cooperativeGate, type PauseGate } from './taskControls'
@@ -196,13 +197,15 @@ async function wikipediaArtist(name: string): Promise<ProviderResult<string>> {
     action: 'query',
     prop: 'pageimages|pageprops',
     piprop: 'original|thumbnail',
-    pithumbsize: '1200',
+    pithumbsize: '1280',
     redirects: '1',
     titles: name,
     format: 'json',
     origin: '*'
   })
-  const result = await getJson(`https://en.wikipedia.org/w/api.php?${params}`)
+  const result = await getJson(`https://en.wikipedia.org/w/api.php?${params}`, {
+    headers: { 'User-Agent': WIKIMEDIA_USER_AGENT }
+  })
   if (result.kind !== 'ok') return result
   const pages = (result.value as { query?: { pages?: Record<string, unknown> } }).query?.pages
   if (!pages) return { kind: 'error' }

@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Reforms of Mirza Hosayn Khan Moshir al-Dowla', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'reform',
   start: {
     alts: [
@@ -376,5 +376,11 @@ export default defineEvent({
         }
       }
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/Portrait_of_Mirza_Hossein_Khan_Moshir_al-Dowleh_-_Unknown_Artist_-_Islamic_Consultative_Assembly_Museum_of_Iran.jpg/1280px-Portrait_of_Mirza_Hossein_Khan_Moshir_al-Dowleh_-_Unknown_Artist_-_Islamic_Consultative_Assembly_Museum_of_Iran.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_of_Mirza_Hossein_Khan_Moshir_al-Dowleh_-_Unknown_Artist_-_Islamic_Consultative_Assembly_Museum_of_Iran.jpg',
+    credit: { institution: 'Islamic Consultative Assembly Museum of Iran' },
+    license: { id: 'public-domain' }
+  }
 })

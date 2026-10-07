@@ -16,7 +16,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   regions: ['southeast-asia'],
   roles: ['politician'],
   offices: [
@@ -97,5 +97,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/81/StamfordRaffles.jpeg',
+    page: 'https://commons.wikimedia.org/wiki/File:StamfordRaffles.jpeg',
+    credit: { institution: 'National Portrait Gallery, London', creator: 'James Thomson' },
+    license: { id: 'public-domain' }
+  }
 })

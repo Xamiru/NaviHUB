@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Ottoman constitution of 1876', lang: 'en', role: 'primary' },
     { text: 'Kanûn-ı Esâsî', lang: 'tr', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'law',
   start: {
     alts: [
@@ -91,13 +91,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q2',
-          text: 'In December of that year, on the eve of the war with Russia, the new sultan promulgated a constitution, based on European models, that had been drafted by senior political, military, and religious officials under Midhat\'s direction. Embodying the substance of the Young Ottoman program, this document created a representative parliament, guaranteed religious liberty, and provided for enlarged freedom of expression.',
+          text: 'In 1876 the hapless sultan was deposed by a fetva (legal opinion) obtained by Midhat Pasha, a reformist minister sympathetic to the aims of the Young Ottomans. His successor, Abdül Hamid II (r. 1876-1909), came to the throne with the approval of Midhat and other reformers. In December of that year, on the eve of the war with Russia, the new sultan promulgated a constitution, based on European models, that had been drafted by senior political, military, and religious officials under Midhat\'s direction. Embodying the substance of the Young Ottoman program, this document created a representative parliament, guaranteed religious liberty, and provided for enlarged freedom of expression.',
           lang: 'en',
           cite: {
             source: 'loc-turkey-country-study-1995',
             loc: { section: 'External Threats and Internal Transformations', para: '10' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/10.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/turkey/10.htm' }
         },
         {
           id: 'q3',
@@ -137,5 +137,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/83/Midah_Pacha_%28i.e._Midhat-Pacha%29_-_btv1b531377226.jpg/1280px-Midah_Pacha_%28i.e._Midhat-Pacha%29_-_btv1b531377226.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Midah_Pacha_(i.e._Midhat-Pacha)_-_btv1b531377226.jpg',
+    credit: { institution: 'Bibliothèque nationale de France', creator: 'Atelier Nadar' },
+    license: { id: 'public-domain' }
+  }
 })

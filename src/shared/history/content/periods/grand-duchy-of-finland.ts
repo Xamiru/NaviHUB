@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Grand Duchy of Finland', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -72,5 +72,14 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/02/Porvoon_valtiop%C3%A4iv%C3%A4t_1809_by_Emanuel_Thelning.jpg/1280px-Porvoon_valtiop%C3%A4iv%C3%A4t_1809_by_Emanuel_Thelning.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Porvoon_valtiop%C3%A4iv%C3%A4t_1809_by_Emanuel_Thelning.jpg',
+    credit: {
+      institution: 'Pinx – maalaustaide Suomessa (Weilin+Göös, 2001)',
+      creator: 'Emanuel Thelning'
+    },
+    license: { id: 'public-domain' }
+  }
 })

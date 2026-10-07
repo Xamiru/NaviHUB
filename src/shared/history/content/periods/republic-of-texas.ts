@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Republic of Texas', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -83,5 +83,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cd/Declaration_Broadside_from_transparency_1909_1_344.jpg/1280px-Declaration_Broadside_from_transparency_1909_1_344.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Declaration_Broadside_from_transparency_1909_1_344.jpg',
+    credit: { institution: 'Texas State Library and Archives Commission' },
+    license: { id: 'public-domain' }
+  }
 })

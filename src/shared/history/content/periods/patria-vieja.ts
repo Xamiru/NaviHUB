@@ -16,7 +16,7 @@ export default definePeriod({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -72,5 +72,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Chile%2C_1810_-_Primera_Junta_de_Gobierno.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Chile,_1810_-_Primera_Junta_de_Gobierno.jpg',
+    credit: { institution: 'Universidad Diego Portales, Fondo Sady Zañartu' },
+    license: { id: 'public-domain' }
+  }
 })

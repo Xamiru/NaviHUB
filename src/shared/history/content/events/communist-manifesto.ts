@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Publication of the Communist Manifesto', lang: 'en', role: 'primary' },
     { text: 'Manifest der Kommunistischen Partei', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'cultural',
   start: {
     alts: [
@@ -56,6 +56,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q6',
+          text: 'The Manifesto was published as the platform of the Communist League, a working men’ s association, first exclusively German, later on international, and under the political conditions of the Continent before 1848, unavoidably a secret society. At a Congress of the League, held in November 1847, Marx and Engels were commissioned to prepare a complete theoretical and practical party programme.',
+          lang: 'en',
+          cite: {
+            source: 'engels-1888-preface-communist-manifesto',
+            loc: { section: 'The 1888 English Edition', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://www.marxists.org/archive/marx/works/1848/communist-manifesto/preface.htm'
+          }
+        },
         {
           id: 'q1',
           text: 'Februar: In London wird das von Marx und Engels gemeinsam verfasste "Manifest der Kommunistischen Partei" veröffentlicht, das mit den Worten "Ein Gespenst geht um in Europa - das Gespenst des Kommunismus" beginnt und mit dem Aufruf "Proletarier aller Länder vereinigt euch!" schließt.',
@@ -119,5 +133,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d9/Manifest_der_kommunistischen_Partei_%28Marx%29_001.jpg/1280px-Manifest_der_kommunistischen_Partei_%28Marx%29_001.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Manifest_der_kommunistischen_Partei_(Marx)_001.jpg',
+    credit: { institution: 'Gale, The Making of the Modern World' },
+    license: { id: 'public-domain' }
+  }
 })

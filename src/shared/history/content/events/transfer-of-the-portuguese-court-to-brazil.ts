@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Transfer of the Portuguese court to Brazil', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'migration',
   start: {
     alts: [
@@ -105,5 +105,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Embarque_da_Fam%C3%ADlia_Real_para_o_Brasil_-_Nicolas-Louis-Albert_Delerive%2C_attrib._%28Museu_Nacional_dos_Coches%29.png/1280px-Embarque_da_Fam%C3%ADlia_Real_para_o_Brasil_-_Nicolas-Louis-Albert_Delerive%2C_attrib._%28Museu_Nacional_dos_Coches%29.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Embarque_da_Fam%C3%ADlia_Real_para_o_Brasil_-_Nicolas-Louis-Albert_Delerive,_attrib._(Museu_Nacional_dos_Coches).png',
+    credit: { institution: 'Museu Nacional dos Coches', creator: 'Nicolas-Louis-Albert Delerive' },
+    license: { id: 'public-domain' }
+  }
 })

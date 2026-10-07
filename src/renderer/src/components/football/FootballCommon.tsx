@@ -1,9 +1,11 @@
 import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import CoverImage from '../CoverImage'
 import { api } from '../../lib/api'
+import { qk } from '../../lib/queryKeys'
 import { formatFootballScore } from '@shared/football'
-import { mediaUrl } from '@shared/mediaUrl'
+import { mediaUrl, thumbUrl } from '@shared/mediaUrl'
 import {
   FOOTBALL_COMPETITION_IDENTITY,
   footballFateLabel,
@@ -26,10 +28,55 @@ export function footballCompetitionStyle(key: FootballCompetitionKey): CSSProper
   return { ['--football-c' as string]: identity.rgb, ['--football-ci' as string]: identity.ink }
 }
 
+/** Stored competition logos, read once and shared by every chip and mark. */
+export function useFootballCompetitionLogos(): Partial<Record<FootballCompetitionKey, string>> {
+  const { data } = useQuery({
+    queryKey: qk.football.competitionLogos,
+    queryFn: () => api.football.competitionLogos(),
+    staleTime: Infinity
+  })
+  return data ?? {}
+}
+
+/**
+ * A stored crest or logo: the cached thumbnail at `thumbWidth` (small slots must not
+ * decode the full badge), the original if that fails, then `fallback`.
+ */
+function StoredMark({
+  path,
+  thumbWidth,
+  className,
+  fallback = null
+}: {
+  path: string | null | undefined
+  thumbWidth: number
+  className: string
+  fallback?: ReactNode
+}) {
+  const [stage, setStage] = useState<'thumb' | 'full' | 'failed'>('thumb')
+  useEffect(() => setStage('thumb'), [path])
+  const thumb = path ? thumbUrl(path, thumbWidth) : null
+  const src = !path || stage === 'failed' ? null : stage === 'thumb' && thumb ? thumb : mediaUrl(path)
+  if (!src) return <>{fallback}</>
+  return (
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      className={`${className} shrink-0 object-contain`}
+      draggable={false}
+      onError={() => setStage(src === thumb ? 'full' : 'failed')}
+    />
+  )
+}
+
 export function FootballFlag({ competitionKey }: { competitionKey: FootballCompetitionKey }) {
   const identity = FOOTBALL_COMPETITION_IDENTITY[competitionKey]
+  const logo = useFootballCompetitionLogos()[competitionKey]
   return (
     <span className="football-chip" style={footballCompetitionStyle(competitionKey)}>
+      {/* Logos sit on a light tile: several are dark artwork on a transparent background. */}
+      <StoredMark path={logo} thumbWidth={160} className="-ml-1 h-4 w-4 rounded-sm bg-white p-px" />
       {identity.code}
     </span>
   )
@@ -42,26 +89,18 @@ export function FootballCompetitionMark({
 }: {
   competitionKey: FootballCompetitionKey
   imagePath?: string | null
-  size?: 'sm' | 'md' | 'lg'
+  size?: 'xs' | 'sm' | 'md' | 'lg'
 }) {
-  const dimensions = size === 'lg' ? 'h-24 w-24 text-3xl' : size === 'sm' ? 'h-8 w-8 text-[10px]' : 'h-12 w-12 text-sm'
-  const [failed, setFailed] = useState(false)
-  useEffect(() => setFailed(false), [imagePath])
-  const url = imagePath && !failed ? mediaUrl(imagePath) : null
-  if (url) {
-    return (
-      <img
-        src={url}
-        alt=""
-        className={`${dimensions} shrink-0 object-contain`}
-        draggable={false}
-        onError={() => setFailed(true)}
-      />
-    )
-  }
-  return (
+  const dimensions = {
+    xs: 'h-5 w-5 rounded-sm p-px text-[7px]',
+    sm: 'h-8 w-8 rounded-md p-0.5 text-[10px]',
+    md: 'h-12 w-12 rounded-lg p-1 text-sm',
+    lg: 'h-24 w-24 rounded-xl p-2 text-3xl'
+  }[size]
+  const logos = useFootballCompetitionLogos()
+  const badge = (
     <span
-      className={`${dimensions} inline-flex shrink-0 items-center justify-center rounded-xl font-bold tracking-tight shadow-lg`}
+      className={`${dimensions} inline-flex shrink-0 items-center justify-center font-bold tracking-tight shadow-lg`}
       style={{
         ...footballCompetitionStyle(competitionKey),
         background: 'rgb(var(--football-c))',
@@ -71,6 +110,14 @@ export function FootballCompetitionMark({
     >
       {FOOTBALL_COMPETITION_IDENTITY[competitionKey].code}
     </span>
+  )
+  return (
+    <StoredMark
+      path={imagePath ?? logos[competitionKey]}
+      thumbWidth={size === 'lg' ? 320 : 160}
+      className={`${dimensions} bg-white`}
+      fallback={badge}
+    />
   )
 }
 
@@ -86,23 +133,8 @@ const MARK_SIZES: Record<MarkSize, string> = {
 
 /** A club or national-team crest: the stored image, or a two-colour crest with its code. */
 export function FootballTeamMark({ team, size = 'md' }: { team: FootballTeamSummary; size?: MarkSize }) {
-  const [failed, setFailed] = useState(false)
-  useEffect(() => setFailed(false), [team.imagePath])
-  const url = team.imagePath && !failed ? mediaUrl(team.imagePath) : null
-  if (url) {
-    return (
-      <img
-        src={url}
-        alt=""
-        aria-hidden="true"
-        className={`${MARK_SIZES[size]} shrink-0 object-contain`}
-        draggable={false}
-        onError={() => setFailed(true)}
-      />
-    )
-  }
   const colors = footballTeamColors(team.name, team.colors)
-  return (
+  const generated = (
     <span
       className={`${MARK_SIZES[size]} inline-flex shrink-0 items-center justify-center rounded-md font-bold tracking-tight ring-1 ring-black/20`}
       style={{
@@ -114,6 +146,14 @@ export function FootballTeamMark({ team, size = 'md' }: { team: FootballTeamSumm
     >
       {footballTeamCode(team.name, team.shortName)}
     </span>
+  )
+  return (
+    <StoredMark
+      path={team.imagePath}
+      thumbWidth={size === 'xl' ? 320 : 160}
+      className={`${MARK_SIZES[size]} football-crest`}
+      fallback={generated}
+    />
   )
 }
 

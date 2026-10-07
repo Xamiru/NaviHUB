@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Anglo-Russian Convention of 1907', lang: 'en', role: 'primary' },
     { text: 'Anglo-Russian Agreement of 1907', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -179,5 +179,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/e/e6/The_Russo-British_Pact_in_1907.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:The_Russo-British_Pact_in_1907.jpg',
+    credit: { institution: 'The Strangling of Persia (W. Morgan Shuster, 1912)' },
+    license: { id: 'public-domain' }
+  }
 })

@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Siege of Khartoum', lang: 'en', role: 'primary' },
     { text: 'Fall of Khartoum', lang: 'en', role: 'alternative' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'battle',
   start: {
     alts: [
@@ -122,6 +122,22 @@ export default defineEvent({
     }
   ],
   sections: [
+    {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q15',
+          text: 'The history of the city is intimately bound up with that of the Sudan generally, but it may be recalled here that in 1884, at the time of the Mahdist rising, General Gordon was sent to Khartum to arrange for the evacuation by the Egyptians of the Sudan. At Khartum he was besieged by the Mahdists, whose headquarters were at Omdurman. Khartum was captured and Gordon killed on the 26th of January 1885, two days before the arrival off the town of a small British relief force, which withdrew on seeing the city in the hands of the enemy.',
+          lang: 'en',
+          cite: { source: 'britannica-1911-khartum', loc: { section: 'KHARTUM', para: '6' } },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/Khartum'
+          }
+        }
+      ]
+    },
     {
       kind: 'background',
       quotes: [

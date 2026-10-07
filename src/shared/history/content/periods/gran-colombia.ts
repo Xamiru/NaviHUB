@@ -5,7 +5,7 @@ export default definePeriod({
   names: [
     { text: 'Gran Colombia', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   periodType: 'regime',
   start: {
     alts: [
@@ -136,5 +136,11 @@ export default definePeriod({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/Carta_corogr%C3%A1fica_de_la_Gran_Colombia_1825.jpg/1280px-Carta_corogr%C3%A1fica_de_la_Gran_Colombia_1825.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Carta_corogr%C3%A1fica_de_la_Gran_Colombia_1825.jpg',
+    credit: { institution: 'Biblioteca Nacional de Colombia', creator: 'José Manuel Restrepo' },
+    license: { id: 'public-domain' }
+  }
 })

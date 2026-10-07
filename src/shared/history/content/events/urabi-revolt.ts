@@ -13,7 +13,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -163,6 +163,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q2',
+          text: 'The direct interference of Europeans in Egypt\'s affairs and the deposition of Khedive Ismail forged a nationalist movement composed of Egyptian landowners and merchants, especially former members of the assembly, Egyptian army officers, and the intelligentsia, including the ulama and Muslim reformers. A secret society of Egyptian army officers had also come into existence in 1876, comparable to the secret society of Egyptian notables. The army society included Colonel Ahmad Urabi, who would become the leader of the nationalist movement, and colonels Ali Fahmi and Abd al Al Hilmi.',
+          lang: 'en',
+          cite: {
+            source: 'loc-egypt-country-study-1990',
+            loc: { section: 'From Intervention to Occupation, 1876-82', para: '12' }
+          },
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/egypt/25.htm' }
+        },
+        {
           id: 'q1',
           text: 'The Urabi forces were routed and the capital captured. The nominal authority of the khedive was restored, and the British occupation of Egypt, which was to last for seventy-two years, had begun.',
           lang: 'en',
@@ -177,16 +187,6 @@ export default defineEvent({
     {
       kind: 'background',
       quotes: [
-        {
-          id: 'q2',
-          text: 'The direct interference of Europeans in Egypt\'s affairs and the deposition of Khedive Ismail forged a nationalist movement composed of Egyptian landowners and merchants, especially former members of the assembly, Egyptian army officers, and the intelligentsia, including the ulama and Muslim reformers.',
-          lang: 'en',
-          cite: {
-            source: 'loc-egypt-country-study-1990',
-            loc: { section: 'From Intervention to Occupation, 1876-82', para: '12' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/egypt/25.htm' }
-        },
         {
           id: 'q3',
           text: 'Britain was especially concerned about protecting the Suez Canal and the British lifeline to India.',

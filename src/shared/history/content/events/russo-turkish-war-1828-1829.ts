@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Russo-Turkish War of 1828–1829', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -246,5 +246,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Oorlog_tusschen_Rusland_en_Turkije_in_1828_Guerre_entre_la_Russie_et_la_Turquie_en_1828_%28titel_op_object%29%2C_RP-P-OB-201.970.jpg/1280px-Oorlog_tusschen_Rusland_en_Turkije_in_1828_Guerre_entre_la_Russie_et_la_Turquie_en_1828_%28titel_op_object%29%2C_RP-P-OB-201.970.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Oorlog_tusschen_Rusland_en_Turkije_in_1828_Guerre_entre_la_Russie_et_la_Turquie_en_1828_(titel_op_object),_RP-P-OB-201.970.jpg',
+    credit: { institution: 'Rijksmuseum' },
+    license: { id: 'cc0' }
+  }
 })

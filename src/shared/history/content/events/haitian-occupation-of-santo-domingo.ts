@@ -5,7 +5,7 @@ export default defineEvent({
   names: [
     { text: 'Haitian occupation of Santo Domingo', lang: 'en', role: 'primary' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'occupation',
   start: {
     alts: [
@@ -75,5 +75,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/8/8f/Portrait_du_pr%C3%A9sident_d%27Ha%C3%AFti_Jean-Pierre_Boyer.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Portrait_du_pr%C3%A9sident_d%27Ha%C3%AFti_Jean-Pierre_Boyer.jpg',
+    credit: { institution: 'New York Public Library' },
+    license: { id: 'cc0' }
+  }
 })

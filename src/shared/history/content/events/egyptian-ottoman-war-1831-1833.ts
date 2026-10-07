@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'war',
   start: {
     alts: [
@@ -125,16 +125,6 @@ export default defineEvent({
       kind: 'causes',
       quotes: [
         {
-          id: 'q1',
-          text: 'Muhammad Ali, an Ottoman officer who had been designated pasha of Egypt by the sultan in 1805, had given substantial aid to the Ottoman cause in the Greek war.',
-          lang: 'en',
-          cite: {
-            source: 'loc-turkey-country-study-1995',
-            loc: { section: 'External Threats and Internal Transformations', para: '4' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/10.htm' }
-        },
-        {
           id: 'q2',
           text: 'The Egyptian invasion of Syria was provoked ostensibly by the sultan\'s refusal to give Syria and Morea (Peloponnesus) to Muhammad Ali in return for his assistance in opposing the Greek war for independence in the late 1820s.',
           lang: 'en',
@@ -151,13 +141,13 @@ export default defineEvent({
       quotes: [
         {
           id: 'q3',
-          text: 'When he was not rewarded as promised for his assistance, he invaded Syria in 1831 and pursued the retreating Ottoman army deep into Anatolia.',
+          text: 'Muhammad Ali, an Ottoman officer who had been designated pasha of Egypt by the sultan in 1805, had given substantial aid to the Ottoman cause in the Greek war. When he was not rewarded as promised for his assistance, he invaded Syria in 1831 and pursued the retreating Ottoman army deep into Anatolia.',
           lang: 'en',
           cite: {
             source: 'loc-turkey-country-study-1995',
             loc: { section: 'External Threats and Internal Transformations', para: '4' }
           },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/turkey/10.htm' }
+          provenance: { via: 'web', at: '2026-10-07', url: 'http://countrystudies.us/turkey/10.htm' }
         },
         {
           id: 'q4',
@@ -216,5 +206,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/56/%D8%A5%D8%A8%D8%B1%D8%A7%D9%87%D9%8A%D9%85_%D8%A8%D8%A7%D8%B4%D8%A7_%D9%8A%D9%82%D9%88%D8%AF_%D8%AC%D9%8A%D8%B4%D9%87_%D9%81%D9%8A_%D9%85%D8%B9%D8%B1%D9%83%D8%A9_%D9%82%D9%88%D9%86%D9%8A%D8%A9.jpg/1280px-%D8%A5%D8%A8%D8%B1%D8%A7%D9%87%D9%8A%D9%85_%D8%A8%D8%A7%D8%B4%D8%A7_%D9%8A%D9%82%D9%88%D8%AF_%D8%AC%D9%8A%D8%B4%D9%87_%D9%81%D9%8A_%D9%85%D8%B9%D8%B1%D9%83%D8%A9_%D9%82%D9%88%D9%86%D9%8A%D8%A9.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:%D8%A5%D8%A8%D8%B1%D8%A7%D9%87%D9%8A%D9%85_%D8%A8%D8%A7%D8%B4%D8%A7_%D9%8A%D9%82%D9%88%D8%AF_%D8%AC%D9%8A%D8%B4%D9%87_%D9%81%D9%8A_%D9%85%D8%B9%D8%B1%D9%83%D8%A9_%D9%82%D9%88%D9%86%D9%8A%D8%A9.jpg',
+    credit: { institution: 'Ibrahim fi al-Maydan (Al-Hilal, 1934)' },
+    license: { id: 'public-domain' }
+  }
 })

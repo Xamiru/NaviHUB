@@ -6,7 +6,7 @@ export default defineEvent({
     { text: 'Vienna stock exchange crash of 1873', lang: 'en', role: 'primary' },
     { text: 'Wiener Börsenkrach', lang: 'de', role: 'native' }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'economic',
   start: {
     alts: [
@@ -107,5 +107,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Schwarzer_Freitag_Wien_1873.jpg/1280px-Schwarzer_Freitag_Wien_1873.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:Schwarzer_Freitag_Wien_1873.jpg',
+    credit: { institution: 'Die Presse Edition, Das Imperiale Zeitalter 1871-1914' },
+    license: { id: 'public-domain' }
+  }
 })

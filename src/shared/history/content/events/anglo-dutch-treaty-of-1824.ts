@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'treaty',
   start: {
     alts: [
@@ -105,5 +105,11 @@ export default defineEvent({
         }
       ]
     }
-  ]
+  ],
+  hero: {
+    url: 'https://upload.wikimedia.org/wikipedia/commons/b/bb/Bencoleen_Sumatra.png',
+    page: 'https://commons.wikimedia.org/wiki/File:Bencoleen_Sumatra.png',
+    credit: { institution: 'Leiden University Library' },
+    license: { id: 'public-domain' }
+  }
 })

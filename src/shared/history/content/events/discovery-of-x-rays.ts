@@ -14,7 +14,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'discovery',
   start: {
     alts: [
@@ -57,6 +57,20 @@ export default defineEvent({
     {
       kind: 'overview',
       quotes: [
+        {
+          id: 'q8',
+          text: 'W. K. Röntgen discovered in 1895 (Wied. Ann. 64, p. 1) that when the electric discharge passes through a tube exhausted so that the glass of the tube is brightly phosphorescent, phosphorescent substances such as potassium platinocyanide became luminous when brought near to the tube.',
+          lang: 'en',
+          cite: {
+            source: 'britannica-1911-rontgen-rays',
+            loc: { section: 'RÖNTGEN RAYS', para: '1' }
+          },
+          provenance: {
+            via: 'web',
+            at: '2026-10-07',
+            url: 'https://en.wikisource.org/wiki/1911_Encyclop%C3%A6dia_Britannica/R%C3%B6ntgen_Rays'
+          }
+        },
         {
           id: 'q1',
           text: 'Der Würzburger Physikprofessor Wilhelm Conrad Röntgen entdeckt die später nach ihm benannten X-Strahlen.',

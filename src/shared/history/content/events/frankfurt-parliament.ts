@@ -17,7 +17,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'conference',
   start: {
     alts: [
@@ -134,6 +134,16 @@ export default defineEvent({
       kind: 'overview',
       quotes: [
         {
+          id: 'q3',
+          text: 'German nationalists and liberals convened an assembly in Frankfurt in May 1848 that suspended the diet of the German Confederation and took tentative steps toward German unification.',
+          lang: 'en',
+          cite: {
+            source: 'loc-austria-country-study-1994',
+            loc: { section: 'Revolutionary Rise and Fall', para: '2' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/austria/23.htm' }
+        },
+        {
           id: 'q1',
           text: 'Liberals called for a national convention to draft a constitution for all of Germany.',
           lang: 'en',
@@ -152,16 +162,6 @@ export default defineEvent({
             loc: { section: 'The Revolutions of 1848', para: '2' }
           },
           provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/germany/25.htm' }
-        },
-        {
-          id: 'q3',
-          text: 'German nationalists and liberals convened an assembly in Frankfurt in May 1848 that suspended the diet of the German Confederation and took tentative steps toward German unification.',
-          lang: 'en',
-          cite: {
-            source: 'loc-austria-country-study-1994',
-            loc: { section: 'Revolutionary Rise and Fall', para: '2' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/austria/23.htm' }
         }
       ]
     },

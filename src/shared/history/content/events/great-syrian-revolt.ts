@@ -16,7 +16,7 @@ export default defineEvent({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   type: 'uprising',
   start: {
     alts: [
@@ -93,6 +93,21 @@ export default defineEvent({
   ],
   sections: [
     {
+      kind: 'overview',
+      quotes: [
+        {
+          id: 'q4',
+          text: 'Led by Sultan Pasha al Atrash, Druzes attacked and captured Salkhad on July 20, 1925, and on August 2 they took the Druze capital, As Suwayda.',
+          lang: 'en',
+          cite: {
+            source: 'loc-syria-country-study-1987',
+            loc: { section: 'THE FRENCH MANDATE', para: '7' }
+          },
+          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/syria/9.htm' }
+        }
+      ]
+    },
+    {
       kind: 'causes',
       quotes: [
         {
@@ -130,16 +145,6 @@ export default defineEvent({
     {
       kind: 'course',
       quotes: [
-        {
-          id: 'q4',
-          text: 'Led by Sultan Pasha al Atrash, Druzes attacked and captured Salkhad on July 20, 1925, and on August 2 they took the Druze capital, As Suwayda.',
-          lang: 'en',
-          cite: {
-            source: 'loc-syria-country-study-1987',
-            loc: { section: 'THE FRENCH MANDATE', para: '7' }
-          },
-          provenance: { via: 'web', at: '2026-10-06', url: 'http://countrystudies.us/syria/9.htm' }
-        },
         {
           id: 'q5',
           text: 'News of the Druze rebellion spread throughout Syria and ignited revolts in Aleppo and Damascus among Syrian nationalists, who pleaded with Atrash to attack the Syrian capital. In October the Druzes invaded the Damascus region; nationalist leaders led their own demonstrations; and the French began systematic bombardment of the city, resulting in the death of 5,000 Syrians.',

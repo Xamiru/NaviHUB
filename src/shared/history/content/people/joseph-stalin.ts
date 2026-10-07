@@ -17,7 +17,7 @@ export default definePerson({
       ]
     }
   ],
-  researched: '2026-10-06',
+  researched: '2026-10-07',
   born: {
     alts: [
       {
@@ -151,5 +151,11 @@ export default definePerson({
         }
       ]
     }
-  ]
+  ],
+  portrait: {
+    url: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/46/JStalin_Secretary_general_CCCP_1942_%283x4_cropped%29.jpg/1280px-JStalin_Secretary_general_CCCP_1942_%283x4_cropped%29.jpg',
+    page: 'https://commons.wikimedia.org/wiki/File:JStalin_Secretary_general_CCCP_1942_(3x4_cropped).jpg',
+    credit: { institution: 'Library of Congress' },
+    license: { id: 'public-domain' }
+  }
 })
